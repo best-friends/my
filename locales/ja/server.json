@@ -71,6 +71,10 @@
     "defaultMessage": "予期しないエラーが発生しました。しばらくしてからもう一度お試しください。",
     "description": "API error message for HTTP 500. Must not reveal internal details."
   },
+  "errors.invalid_parameter": {
+    "defaultMessage": "パラメーター {name} の値が正しくありません。",
+    "description": "Detail of an API error (HTTP 400) when a path, query, or header parameter cannot be parsed. {name} is the parameter name, e.g. limit (not translated)."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "このリソースでは {method} メソッドを使用できません。",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
