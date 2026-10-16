@@ -150,6 +150,10 @@ export interface MessageArgs {
   "server:mail.verify_email.subject": { host: string };
   /** Avatar of {name} */
   "server:preview.avatar_alt": { name: string };
+  /** A speech bubble with three dots on a blue gradient */
+  "server:preview.builtin_image_alt": {};
+  /** Image of {instance} */
+  "server:preview.default_image_alt": { instance: string };
   /** Header image of {name} */
   "server:preview.header_alt": { name: string };
   /** {name} (@{handle}) */

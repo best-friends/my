@@ -291,6 +291,14 @@
     "defaultMessage": "‮∀ʌɐʇɐɹ oɟ {name}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "preview.builtin_image_alt": {
+    "defaultMessage": "‮∀ sdǝǝɔɥ qnqqʅǝ ʍıʇɥ ʇɥɹǝǝ poʇs ou ɐ qʅnǝ ƃɹɐpıǝuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "preview.default_image_alt": {
+    "defaultMessage": "‮Iɯɐƃǝ oɟ {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "preview.header_alt": {
     "defaultMessage": "‮Hǝɐpǝɹ ıɯɐƃǝ oɟ {name}‬",
     "description": "Generated from en by tools/i18n; do not edit."

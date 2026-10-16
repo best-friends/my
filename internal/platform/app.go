@@ -253,7 +253,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: accounts, Clock: a.Clock, IDs: a.IDs, Sealer: a.Sealer, Host: cfg.Host,
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
-	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
+	a.Instance = instance.NewService(instance.Deps{
+		UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs,
+		// The preview_image setting refers to a media file, which setMedia sets up later.
+		Media: instanceMedia{a},
+	})
 	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -367,8 +371,10 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
 		// Profile and post pages carry link previews of what an anonymous visitor may see.
 		Previews: a.Previews, Messages: a.Messages,
-		NotFound: func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
-		Logger:   a.Logger,
+		// The instance's preview image is read per request, so that a change applies at once.
+		DefaultImage: a.previewImage,
+		NotFound:     func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:       a.Logger,
 	})
 	if err != nil {
 		return err
@@ -417,7 +423,7 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 		},
 		UnattachedTTL: cfg.MediaUnattachedTTL,
 		// Avatars and headers refer to media files from the account module.
-		Referrers: []content.MediaReferrer{a.Accounts},
+		Referrers: []content.MediaReferrer{a.Accounts, a.Instance},
 		Logger:    a.Logger,
 	})
 	a.Media.RegisterJobs(a.Handlers, a.Scheduler)
@@ -435,6 +441,31 @@ func (a *App) defaultPostLanguage(ctx context.Context, userID string) (string, e
 		return "", err
 	}
 	return p.DefaultPostLanguage, nil
+}
+
+// previewImage returns the instance's link preview image (the preview_image setting) for a
+// preview in language lang, or nil when it is unset or its media file is not a processed
+// image, which leaves the web client's built-in image.
+func (a *App) previewImage(ctx context.Context, lang string) (*web.Image, error) {
+	setting, err := a.Instance.PreviewImage(ctx, lang)
+	if err != nil || setting.MediaID == "" {
+		return nil, err
+	}
+	img, err := a.Previews.Image(ctx, setting.MediaID, setting.Alt)
+	if err != nil || img == nil {
+		return nil, err
+	}
+	return &web.Image{URL: img.URL, Width: img.Width, Height: img.Height, Alt: img.Alt}, nil
+}
+
+// instanceMedia checks the media files of the instance settings with the media use cases.
+type instanceMedia struct{ a *App }
+
+func (m instanceMedia) CheckImage(ctx context.Context, mediaID string) error {
+	if m.a.Media == nil {
+		return errors.New("media files are not set up")
+	}
+	return m.a.Media.CheckImage(ctx, mediaID)
 }
 
 func (a *App) setDBQueue(q *queuedb.Queue) {

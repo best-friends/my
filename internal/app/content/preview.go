@@ -112,10 +112,10 @@ func (p *Previews) profile(ctx context.Context, a appaccount.Actor) (ProfilePrev
 		return ProfilePreview{}, err
 	}
 	if prof := a.Profile; prof != nil {
-		if out.Header, err = p.image(ctx, prof.HeaderMediaID, ""); err != nil {
+		if out.Header, err = p.Image(ctx, prof.HeaderMediaID, ""); err != nil {
 			return ProfilePreview{}, err
 		}
-		if out.Avatar, err = p.image(ctx, prof.AvatarMediaID, ""); err != nil {
+		if out.Avatar, err = p.Image(ctx, prof.AvatarMediaID, ""); err != nil {
 			return ProfilePreview{}, err
 		}
 	}
@@ -188,7 +188,7 @@ func (p *Previews) Status(ctx context.Context, statusID string) (StatusPreview, 
 	}
 	if !rev.Sensitive && rev.SpoilerText == "" {
 		for _, at := range rev.Attachments {
-			img, err := p.image(ctx, at.MediaID, at.Description)
+			img, err := p.Image(ctx, at.MediaID, at.Description)
 			if err != nil {
 				return StatusPreview{}, err
 			}
@@ -216,9 +216,10 @@ func (p *Previews) defaultLanguage(ctx context.Context, userID string) (string, 
 	return lang, nil
 }
 
-// image returns the full variant of a processed still image, nil for no media, a file that is
-// missing, not processed, or not an image.
-func (p *Previews) image(ctx context.Context, mediaID, alt string) (*PreviewImage, error) {
+// Image returns the full variant of a processed still image with alt text alt, nil for no
+// media, a file that is missing, not processed, or not an image. Besides the images of profiles
+// and statuses, it reads the instance's preview image.
+func (p *Previews) Image(ctx context.Context, mediaID, alt string) (*PreviewImage, error) {
 	if mediaID == "" || p.d.Media == nil {
 		return nil, nil
 	}

@@ -228,3 +228,9 @@ func settingRevisions(rows []sqlitegen.InstanceSettingRevision) []instance.Setti
 	}
 	return out
 }
+
+// IsSettingValueUsed implements instance.Repository.
+func (r *InstanceRepository) IsSettingValueUsed(ctx context.Context, key instance.SettingKey, value string) (bool, error) {
+	ok, err := r.db.reader().IsInstanceSettingValueUsed(ctx, sqlitegen.IsInstanceSettingValueUsedParams{Key: string(key), Value: value})
+	return ok, wrap(err, "look up instance setting value")
+}
