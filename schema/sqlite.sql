@@ -246,3 +246,49 @@ CREATE TABLE dead_jobs (
   failed_at INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX dead_jobs_failed_at ON dead_jobs (failed_at);
+
+-- ---------------------------------------------------------------------------------------------
+-- instance: settings and texts (data-model §4.9). Owned by internal/app/instance.
+-- Keys are defined in internal/domain/instance; add a key there and to its CHECK here together.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event (revision): one change of a setting. value is the canonical string form of the key's
+-- scalar type. revised_by_user_id is NULL for a change from the CLI.
+CREATE TABLE instance_setting_revisions (
+  id TEXT NOT NULL PRIMARY KEY,
+  key TEXT NOT NULL CHECK (key IN (
+    'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled'
+  )),
+  value TEXT NOT NULL,
+  revised_by_user_id TEXT,
+  revised_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX instance_setting_revisions_key_id ON instance_setting_revisions (key, id DESC);
+
+-- Projection: the current value of each setting that has been set. Unset keys use the default
+-- defined in code.
+CREATE TABLE instance_settings (
+  key TEXT NOT NULL PRIMARY KEY,
+  revision_id TEXT NOT NULL,
+  value TEXT NOT NULL
+) STRICT;
+
+-- Event (revision): one version of a localized text. An empty body clears the text in that
+-- locale. revised_by_user_id is NULL for a change from the CLI.
+CREATE TABLE instance_text_revisions (
+  id TEXT NOT NULL PRIMARY KEY,
+  key TEXT NOT NULL CHECK (key IN ('name', 'short_description', 'description', 'terms', 'privacy_policy')),
+  locale TEXT NOT NULL,
+  body TEXT NOT NULL,
+  revised_by_user_id TEXT,
+  revised_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX instance_text_revisions_key_locale_id ON instance_text_revisions (key, locale, id DESC);
+
+-- Projection: the current revision of each text in each locale.
+CREATE TABLE instance_texts (
+  key TEXT NOT NULL,
+  locale TEXT NOT NULL,
+  revision_id TEXT NOT NULL,
+  PRIMARY KEY (key, locale)
+) STRICT;

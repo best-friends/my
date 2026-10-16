@@ -16,6 +16,19 @@ Values marked "not in v0" are decided in an ADR but not shipped in v0, and are r
 
 `my config check` validates the configuration and lists every problem at once; the server refuses to start on any of them.
 
+## Configuration and instance settings
+
+The settings on this page configure the deployment: what a process runs, which adapters it uses, where they are, and its secrets.
+These values are fixed for the life of a process and change only with a restart.
+The policies of the instance that administrators change while it runs (registration mode, maximum post length,
+default locale, which timelines are enabled) and its localized texts (name, descriptions, terms, privacy policy)
+are instance settings instead: they are stored in the database with every change kept as a revision (data-model §4.9),
+and are changed with `my instance set` ([instance settings](../operations/instance-settings.md)).
+
+The two never share a key, so neither overrides the other: no environment variable or config file key sets an
+instance setting, and the database never holds a setting from this page. A test keeps the two key sets disjoint.
+An instance setting that has never been set reads as its default, which is defined in code.
+
 ## Summary
 
 | Key | Environment variable | Default | Required | Secret |

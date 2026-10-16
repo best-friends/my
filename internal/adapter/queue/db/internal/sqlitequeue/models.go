@@ -90,6 +90,35 @@ type DeadJob struct {
 	FailedAt       int64
 }
 
+type InstanceSetting struct {
+	Key        string
+	RevisionID string
+	Value      string
+}
+
+type InstanceSettingRevision struct {
+	ID              string
+	Key             string
+	Value           string
+	RevisedByUserID sql.NullString
+	RevisedAt       int64
+}
+
+type InstanceText struct {
+	Key        string
+	Locale     string
+	RevisionID string
+}
+
+type InstanceTextRevision struct {
+	ID              string
+	Key             string
+	Locale          string
+	Body            string
+	RevisedByUserID sql.NullString
+	RevisedAt       int64
+}
+
 type Job struct {
 	ID             string
 	Type           string
