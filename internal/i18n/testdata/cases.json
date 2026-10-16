@@ -1,0 +1,30 @@
+{
+  "catalog": [
+    { "key": "server:config.errors", "args": { "count": 0 } },
+    { "key": "server:config.errors", "args": { "count": 1 } },
+    { "key": "server:config.errors", "args": { "count": 2 } },
+    { "key": "server:config.errors", "args": { "count": 1234 } },
+    { "key": "server:config.invalid", "args": { "name": "MY_DB" } },
+    { "key": "server:config.missing", "args": { "name": "MY_DATABASE_URL" } },
+    { "key": "server:errors.bad_request", "args": {} },
+    { "key": "server:errors.internal", "args": {} },
+    { "key": "server:errors.method_not_allowed", "args": { "method": "DELETE" } },
+    { "key": "server:errors.not_found", "args": {} },
+    { "key": "server:health.unavailable", "args": {} }
+  ],
+  "syntax": [
+    { "locale": "en", "message": "{gender, select, female {She} male {He} other {They}} replied", "args": { "gender": "female" } },
+    { "locale": "en", "message": "{gender, select, female {She} male {He} other {They}} replied", "args": { "gender": "nonbinary" } },
+    { "locale": "en", "message": "{n, plural, offset:1 =0 {Nobody} =1 {{name}} one {{name} and # other} other {{name} and # others}}", "args": { "n": 0, "name": "Alice" } },
+    { "locale": "en", "message": "{n, plural, offset:1 =0 {Nobody} =1 {{name}} one {{name} and # other} other {{name} and # others}}", "args": { "n": 2, "name": "Alice" } },
+    { "locale": "en", "message": "{n, plural, offset:1 =0 {Nobody} =1 {{name}} one {{name} and # other} other {{name} and # others}}", "args": { "n": 1235, "name": "Alice" } },
+    { "locale": "en", "message": "You are the {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} follower", "args": { "rank": 22 } },
+    { "locale": "en", "message": "You are the {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} follower", "args": { "rank": 113 } },
+    { "locale": "en", "message": "{count, plural, one {# {kind, select, reply {reply} other {post}}} other {# {kind, select, reply {replies} other {posts}}}}", "args": { "count": 3, "kind": "reply" } },
+    { "locale": "en", "message": "{n, number} items, {n, number, integer} rounded, {r, number, percent} done", "args": { "n": 1234.5, "r": 0.25 } },
+    { "locale": "en", "message": "It''s {name}''s turn. Type '{braces}' to insert literal braces.", "args": { "name": "Alice" } },
+    { "locale": "ja", "message": "{count, plural, other {#件}}の{n, number}", "args": { "count": 1234, "n": 1234.5 } },
+    { "locale": "fr", "message": "{n, number} {n, plural, one {abonné} many {d’abonnés} other {abonnés}}", "args": { "n": 1000000 } },
+    { "locale": "ar", "message": "{n, plural, zero {لا شيء} one {واحد} two {اثنان} few {# قليل} many {# كثير} other {# آخر}}", "args": { "n": 11 } }
+  ]
+}
