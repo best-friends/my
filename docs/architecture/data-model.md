@@ -77,8 +77,9 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 | コマンド | 書き込むリソース / イベント | 同期で更新する投影 | outbox |
 | --- | --- | --- | --- |
 | 利用者登録 | `users`, `password_credentials`, `accounts`, `local_accounts`, `account_profile_revisions`, `account_keys`, `local_account_private_keys` | `account_handles`, `account_profile_heads` | なし |
-| 投稿 | `statuses`, `local_statuses`, `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `account_post_counters` | 配送の展開・通知 |
+| 投稿 | `statuses`, `local_statuses`, `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `account_post_counters` | 配送の展開・通知 |
 | 投稿の編集 | `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `feed_entries`（言語）, `feed_tag_entries`, `feed_direct_recipients` | `Update` の配送 |
+| 投稿の削除 | `status_deletions` | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `account_post_counters`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients` | `Delete` の配送 |
 | ブースト | `boosts` | `boost_edges`, `feed_entries`, `status_counters` | `Announce` の配送（`local` 投稿のブーストは連合しない） |
 | フォロー | `follows`（＋自動承認なら `follow_acceptances`） | `follow_edges`, `feed_follow_edges`, `follow_counters` | `Follow` / `Accept` の配送 |
 | 処分 | `moderation_actions`（＋`moderation_action_statuses`） | `account_restrictions`, `feed_author_restrictions` | 通知・投稿の削除やセンシティブ化（大量なら非同期） |
@@ -406,12 +407,18 @@ flowchart LR
 
 | テーブル | カラム | 制約 / 用途 |
 | --- | --- | --- |
-| `status_heads` | `status_id`（PK）, `revision_id`, `seq`, `last_revised_at` | 現在版。`seq > 1` なら編集済み |
+| `status_heads` | `status_id`（PK）, `revision_id`, `seq`, `last_revised_at` | 現在版（`seq` が最大の版）。`seq > 1` なら編集済み |
 | `status_reply_links` | `status_id`（PK）, `parent_status_id`, `parent_author_account_id` | インデックス `(parent_status_id, status_id)`（返信一覧）。親が既知になった時点で作る |
-| `status_mention_index` | `account_id`, `status_id` | PK `(account_id, status_id)`。現在版のメンション（`direct` の閲覧判定・メンション通知） |
+| `status_mention_index` | `account_id`, `status_id` | PK `(account_id, status_id)`、インデックス `(status_id)`（編集・削除での置き換え）。現在版のメンション（`direct` の閲覧判定・メンション通知） |
 | `status_sensitivity_overrides` | `status_id`, `source_action_id` | PK `(status_id, source_action_id)`。モデレーションによる強制センシティブ |
-| `status_counters` | `status_id`（PK）, `replies_count`, `boosts_count`, `favourites_count` | §2.3 |
-| `account_post_counters` | `account_id`（PK）, `statuses_count`, `last_status_at`（NULL 可） | §2.3 |
+| `status_counters` | `status_id`（PK）, `replies_count`, `boosts_count`, `favourites_count`（`bigint`） | §2.3 |
+| `account_post_counters` | `account_id`（PK）, `statuses_count`（`bigint`、1 以上）, `last_status_at` | §2.3。投稿が 0 件のアカウントは行を持たない |
+
+- 投稿の投影は **削除されていない投稿だけ** を対象にします。削除イベントを記録したトランザクションで、その投稿の `status_heads`・`status_mention_index`・`status_counters`・`status_reply_links`（返信としての行と、親としての行の両方）を消します。削除された投稿への遅れた版は投影に反映しません。
+- `status_reply_links` は、返信と親の両方が既知で、どちらも削除されていないときに 1 行です。返信が先に届いた場合は、親の投稿のトランザクションで `statuses (in_reply_to_uri)` から返信を引いてつなぎます。
+- `replies_count` は、つながった返信のうち公開範囲が `public` / `local` / `unlisted` のものを数えます。`private` / `direct` の返信は、件数からも存在が分からないように数えません。
+- `account_post_counters` は削除されていない投稿の件数と、その中で最新の `published_at` です。後から届いた古いリモート投稿では `last_status_at` は戻りません。投稿を削除したときは、残りの投稿から `last_status_at` を取り直します。
+- 再構築（§9）は、各投影を空にして `statuses`・`status_revisions` と子テーブル・`status_deletions` から 1 つの SQL で作り直します。projector と同じ規則を SQL で書いたもので、両者の一致をコントラクトテストの性質テストで確かめます。
 
 #### ブースト
 
@@ -761,7 +768,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `user_registration_states` | `registration_decisions` | 同期 |
 | `user_roles` | `user_role_grants`, `user_role_revocations` | 同期 |
 | `account_handles` / `remote_account_heads` / `account_profile_heads` | `local_accounts`, `remote_account_snapshots`, `account_profile_revisions` | 同期 |
-| `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses` | 同期 |
+| `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses`、`status_deletions` | 同期 |
 | `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
 | `feed_*` | 上記の投影の元になるイベント | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |

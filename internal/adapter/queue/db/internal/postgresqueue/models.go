@@ -53,6 +53,12 @@ type AccountLifecycleState struct {
 	DeletionDueAt pgtype.Timestamptz
 }
 
+type AccountPostCounter struct {
+	AccountID     string
+	StatusesCount int64
+	LastStatusAt  time.Time
+}
+
 type AccountProfileField struct {
 	RevisionID string
 	Position   int32
@@ -195,6 +201,13 @@ type LocalAccountPrivateKey struct {
 	PrivateKeyEnc []byte
 }
 
+type LocalStatus struct {
+	StatusID        string
+	AuthorAccountID string
+	ClientID        *string
+	IdempotencyKey  *string
+}
+
 type OutboxEvent struct {
 	ID             string
 	JobType        string
@@ -222,6 +235,103 @@ type Role struct {
 type RolePermission struct {
 	RoleID     string
 	Permission string
+}
+
+type Status struct {
+	ID              string
+	Uri             string
+	Url             *string
+	AuthorAccountID string
+	IsLocal         bool
+	Visibility      string
+	InReplyToUri    *string
+	ConversationUri *string
+	PublishedAt     time.Time
+}
+
+type StatusCounter struct {
+	StatusID        string
+	RepliesCount    int64
+	BoostsCount     int64
+	FavouritesCount int64
+}
+
+type StatusDeletion struct {
+	StatusID           string
+	Uri                string
+	AuthorAccountID    string
+	Origin             string
+	ModerationActionID *string
+	DeletedAt          time.Time
+}
+
+type StatusHead struct {
+	StatusID      string
+	RevisionID    string
+	Seq           int32
+	LastRevisedAt time.Time
+}
+
+type StatusMentionIndex struct {
+	AccountID string
+	StatusID  string
+}
+
+type StatusReplyLink struct {
+	StatusID              string
+	ParentStatusID        string
+	ParentAuthorAccountID string
+}
+
+type StatusRevision struct {
+	ID          string
+	StatusID    string
+	Seq         int32
+	SpoilerText string
+	Sensitive   bool
+	Language    string
+	RevisedAt   time.Time
+}
+
+type StatusRevisionAttachment struct {
+	RevisionID  string
+	Position    int32
+	MediaID     string
+	Description *string
+}
+
+type StatusRevisionBody struct {
+	RevisionID  string
+	Language    string
+	ContentHtml string
+}
+
+type StatusRevisionEmoji struct {
+	RevisionID string
+	EmojiID    string
+}
+
+type StatusRevisionMention struct {
+	RevisionID string
+	AccountID  string
+}
+
+type StatusRevisionSource struct {
+	RevisionID   string
+	SourceText   string
+	SourceFormat string
+}
+
+type StatusRevisionTag struct {
+	RevisionID string
+	TagID      string
+}
+
+type Tag struct {
+	ID             string
+	Name           string
+	NameNormalized string
+	CreatedAt      time.Time
 }
 
 type User struct {

@@ -195,6 +195,152 @@ CREATE TABLE account_lifecycle_states (
 ) STRICT;
 CREATE INDEX account_lifecycle_states_state_deletion_due_at ON account_lifecycle_states (state, deletion_due_at);
 
+-- content: statuses (data-model §4.4) --------------------------------------------------------
+
+-- Resource: a status. Visibility, author, reply target, and publication time never change.
+CREATE TABLE statuses (
+  id TEXT NOT NULL PRIMARY KEY,
+  uri TEXT NOT NULL,
+  url TEXT,
+  author_account_id TEXT NOT NULL,
+  is_local INTEGER NOT NULL CHECK (is_local IN (0, 1)),
+  visibility TEXT NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  in_reply_to_uri TEXT,
+  conversation_uri TEXT,
+  published_at INTEGER NOT NULL,
+  -- local statuses are never federated, so only this instance has them (ADR-0017).
+  CHECK (visibility <> 'local' OR is_local = 1)
+) STRICT;
+CREATE UNIQUE INDEX statuses_uri ON statuses (uri);
+CREATE INDEX statuses_author_account_id_id ON statuses (author_account_id, id);
+CREATE INDEX statuses_in_reply_to_uri ON statuses (in_reply_to_uri);
+CREATE INDEX statuses_conversation_uri_id ON statuses (conversation_uri, id);
+
+-- Resource (subtype): a status posted on this instance, with the client API's Idempotency-Key.
+CREATE TABLE local_statuses (
+  status_id TEXT NOT NULL PRIMARY KEY,
+  author_account_id TEXT NOT NULL,
+  client_id TEXT,
+  idempotency_key TEXT
+) STRICT;
+CREATE UNIQUE INDEX local_statuses_author_account_id_idempotency_key ON local_statuses (author_account_id, idempotency_key);
+
+-- Event (revision): one version of a status's content (FR-109).
+CREATE TABLE status_revisions (
+  id TEXT NOT NULL PRIMARY KEY,
+  status_id TEXT NOT NULL,
+  seq INTEGER NOT NULL CHECK (seq >= 1),
+  spoiler_text TEXT NOT NULL,
+  sensitive INTEGER NOT NULL CHECK (sensitive IN (0, 1)),
+  language TEXT NOT NULL,
+  revised_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX status_revisions_status_id_seq ON status_revisions (status_id, seq);
+
+-- Event (child of a revision): the content per language, normalized from contentMap (NFR-I18N-5).
+CREATE TABLE status_revision_bodies (
+  revision_id TEXT NOT NULL,
+  language TEXT NOT NULL,
+  content_html TEXT NOT NULL,
+  PRIMARY KEY (revision_id, language)
+) STRICT;
+
+-- Event (subtype of a revision): the source text a local author typed.
+CREATE TABLE status_revision_sources (
+  revision_id TEXT NOT NULL PRIMARY KEY,
+  source_text TEXT NOT NULL,
+  source_format TEXT NOT NULL CHECK (source_format IN ('text_plain'))
+) STRICT;
+
+-- Event (child of a revision): the attached media, with per-revision alt text (FR-105).
+CREATE TABLE status_revision_attachments (
+  revision_id TEXT NOT NULL,
+  position INTEGER NOT NULL CHECK (position BETWEEN 0 AND 3),
+  media_id TEXT NOT NULL,
+  description TEXT,
+  PRIMARY KEY (revision_id, position)
+) STRICT;
+
+-- Event (child of a revision): the mentioned accounts.
+CREATE TABLE status_revision_mentions (
+  revision_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  PRIMARY KEY (revision_id, account_id)
+) STRICT;
+
+-- Event (child of a revision): the hashtags.
+CREATE TABLE status_revision_tags (
+  revision_id TEXT NOT NULL,
+  tag_id TEXT NOT NULL,
+  PRIMARY KEY (revision_id, tag_id)
+) STRICT;
+
+-- Event (child of a revision): the custom emoji.
+CREATE TABLE status_revision_emojis (
+  revision_id TEXT NOT NULL,
+  emoji_id TEXT NOT NULL,
+  PRIMARY KEY (revision_id, emoji_id)
+) STRICT;
+
+-- Event: the deletion of a status. It outlives the purge as the tombstone of the URI.
+CREATE TABLE status_deletions (
+  status_id TEXT NOT NULL PRIMARY KEY,
+  uri TEXT NOT NULL,
+  author_account_id TEXT NOT NULL,
+  origin TEXT NOT NULL CHECK (origin IN ('author', 'moderation', 'remote', 'account_deletion')),
+  moderation_action_id TEXT,
+  deleted_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX status_deletions_uri ON status_deletions (uri);
+
+-- Resource: a hashtag, unique by its normalized name.
+CREATE TABLE tags (
+  id TEXT NOT NULL PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_normalized TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX tags_name_normalized ON tags (name_normalized);
+
+-- Projection: the current revision of each status that is not deleted.
+CREATE TABLE status_heads (
+  status_id TEXT NOT NULL PRIMARY KEY,
+  revision_id TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  last_revised_at INTEGER NOT NULL
+) STRICT;
+
+-- Projection: the known parent of each reply, neither of them deleted (FR-106).
+CREATE TABLE status_reply_links (
+  status_id TEXT NOT NULL PRIMARY KEY,
+  parent_status_id TEXT NOT NULL,
+  parent_author_account_id TEXT NOT NULL
+) STRICT;
+CREATE INDEX status_reply_links_parent_status_id_status_id ON status_reply_links (parent_status_id, status_id);
+
+-- Projection: the accounts that the current revision of each status mentions.
+CREATE TABLE status_mention_index (
+  account_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  PRIMARY KEY (account_id, status_id)
+) STRICT;
+CREATE INDEX status_mention_index_status_id ON status_mention_index (status_id);
+
+-- Projection: the counters of each status that is not deleted (data-model §2.3).
+CREATE TABLE status_counters (
+  status_id TEXT NOT NULL PRIMARY KEY,
+  replies_count INTEGER NOT NULL CHECK (replies_count >= 0),
+  boosts_count INTEGER NOT NULL CHECK (boosts_count >= 0),
+  favourites_count INTEGER NOT NULL CHECK (favourites_count >= 0)
+) STRICT;
+
+-- Projection: the statuses of each account that are not deleted. No row means none.
+CREATE TABLE account_post_counters (
+  account_id TEXT NOT NULL PRIMARY KEY,
+  statuses_count INTEGER NOT NULL CHECK (statuses_count > 0),
+  last_status_at INTEGER NOT NULL
+) STRICT;
+
 -- graph: follows (data-model §4.5) ------------------------------------------------------------
 
 -- Resource: one follow relationship. Following again after a rejection or termination inserts a

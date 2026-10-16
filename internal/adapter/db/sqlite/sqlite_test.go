@@ -65,6 +65,13 @@ func TestAccountRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestStatusRepositoryContract(t *testing.T) {
+	testkit.StatusRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.StatusHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.StatusHarness{UnitOfWork: db, Statuses: db.StatusRepository()}
+	})
+}
+
 func TestFollowRepositoryContract(t *testing.T) {
 	testkit.FollowRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FollowHarness {
 		db, _ := newTestDB(t, "", opts)
