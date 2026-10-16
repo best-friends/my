@@ -18,6 +18,8 @@
 | `internal/interface/clientapi/apitest` | ハンドラの応答を spec と照合するテストヘルパー |
 | `scripts/generate.sh` | 生成スクリプト（`make generate` / `make generate-check`） |
 
+列挙型の定数は `<型名><値>`（`StatusVisibilityPublic`）の名前で生成します（`oapi-codegen.yaml` の `always-prefix-enum-values`）。別の列挙型を足しても名前が衝突・変化しません。
+
 spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バンドルの工程を持たないので、生成器・lint・照合ヘルパーが同じファイルをそのまま読みます。
 
 ## 2. 規約
@@ -39,6 +41,8 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
   アカウントの一覧のカーソルは、ページの最後の項目の位置（フォロー ID・ブロック ID・ミュートの作成時刻と対象）を base64url にしたものです（`Server.parsePage`）。
 - 生成コードは `minimum` / `maximum` などのスキーマの制約を検査しないので、`limit` やカーソル・本文の値の範囲はハンドラが検査し、外れたら 400 にします（`pageLimit`、`Server.invalidParameter`）。
 - 見せられない項目（[visibility.md §6](visibility.md#6-アカウントの表示)）を省く一覧では、最後でないページでも `limit` より少ないことがあります。
+- 投稿の一覧は `#/components/responses/StatusPage`（`items` が `#/components/schemas/Status` の配列）を返し、ハンドラは `Server.statuses` で投稿とブーストを詰め替えます（投稿は `Server.newStatus`）。
+  ブーストは、ブーストした人の `Status` の `boost` に元の投稿を入れて表します。
 
 ### 2.3 エラー
 
@@ -68,6 +72,7 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
   匿名でも使える操作にトークン付きで来た要求は利用者のロケールで答えるので、`public` の代わりに `private, max-age=60` を付けます。
 - `/api/v1` のすべての応答はローカライズされうるので、`Vary: Accept-Language` を付けます（`localize`）。
   `Vary` は spec の応答ヘッダに書きません（生成コードが `Set` で上書きし、CORS の `Vary: Origin` を消すため）。
+- 匿名でも使える操作の応答はトークンの有無で変わるので、`guard` がすべての操作の応答に `Vary: Authorization` を付けます（匿名の応答をキャッシュがログイン中の要求に返さないため）。
 - ADR-0019 §9 のセキュリティヘッダは `platform` が全応答に付けます。
 - CORS は `platform` が `/api/v1` 以下に適用し、設定 `web_origin` のオリジンだけを `Access-Control-Allow-Origin` に返します。
   `Access-Control-Allow-Credentials` は付けません（API は `Authorization: Bearer` だけで認証する）。

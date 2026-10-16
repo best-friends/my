@@ -130,6 +130,9 @@ func (s *Server) guard(pattern string, next http.Handler) http.Handler {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(withLocale(r))
+		// Responses to operations that serve anonymous requests differ with the credential, so
+		// that no cache answers an authenticated request with an anonymous response.
+		w.Header().Add("Vary", "Authorization")
 		v, ok := s.authenticate(w, r)
 		if !ok {
 			return

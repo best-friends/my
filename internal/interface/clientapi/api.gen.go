@@ -621,12 +621,29 @@ type SpoilerText = string
 // Status A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
 // describe the authenticated user's relation to it and are omitted for anonymous
 // requests; `pinned` is only given to the author.
+//
+// In a timeline, a boost is a status of the booster with `boost` set to the boosted
+// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+// `visibility` and `language` are those of the boosted status, its `content`,
+// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
+// are zero.
 type Status struct {
 	// Account An account, as clients show it (FR-006).
 	Account Account `json:"account"`
 
 	// Bookmarked Whether the authenticated user bookmarked the status.
 	Bookmarked *bool `json:"bookmarked,omitempty"`
+
+	// Boost A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
+	// describe the authenticated user's relation to it and are omitted for anonymous
+	// requests; `pinned` is only given to the author.
+	//
+	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
+	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+	// `visibility` and `language` are those of the boosted status, its `content`,
+	// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
+	// are zero.
+	Boost *Status `json:"boost,omitempty"`
 
 	// Boosted Whether the authenticated user boosts the status.
 	Boosted *bool `json:"boosted,omitempty"`
@@ -890,6 +907,12 @@ type AccountProfile = Account
 // StatusAfterAction A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
 // describe the authenticated user's relation to it and are omitted for anonymous
 // requests; `pinned` is only given to the author.
+//
+// In a timeline, a boost is a status of the booster with `boost` set to the boosted
+// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+// `visibility` and `language` are those of the boosted status, its `content`,
+// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
+// are zero.
 type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.
@@ -915,6 +938,24 @@ type ListAccountFollowersParams struct {
 
 // ListAccountFollowingParams defines parameters for ListAccountFollowing.
 type ListAccountFollowingParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAccountStatusesParams defines parameters for ListAccountStatuses.
+type ListAccountStatusesParams struct {
+	// ExcludeReplies Leave out the account's replies.
+	ExcludeReplies *bool `form:"exclude_replies,omitempty" json:"exclude_replies,omitempty"`
+
+	// ExcludeBoosts Leave out the account's boosts.
+	ExcludeBoosts *bool `form:"exclude_boosts,omitempty" json:"exclude_boosts,omitempty"`
+
+	// Pinned List only the account's pinned posts.
+	Pinned *bool `form:"pinned,omitempty" json:"pinned,omitempty"`
+
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -977,6 +1018,33 @@ type CreateStatusParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// GetHomeTimelineParams defines parameters for GetHomeTimeline.
+type GetHomeTimelineParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetLocalTimelineParams defines parameters for GetLocalTimeline.
+type GetLocalTimelineParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetHashtagTimelineParams defines parameters for GetHashtagTimeline.
+type GetHashtagTimelineParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // UpdateAccountCredentialsJSONRequestBody defines body for UpdateAccountCredentials for application/json ContentType.
 type UpdateAccountCredentialsJSONRequestBody = UpdateCredentialsRequest
 
@@ -1033,6 +1101,9 @@ type ServerInterface interface {
 	// RemoveAccountFromFollowers Remove an account from the viewer's followers
 	// (POST /accounts/{id}/remove_from_followers)
 	RemoveAccountFromFollowers(w http.ResponseWriter, r *http.Request, id AccountId)
+	// ListAccountStatuses List the posts and boosts of an account
+	// (GET /accounts/{id}/statuses)
+	ListAccountStatuses(w http.ResponseWriter, r *http.Request, id Id, params ListAccountStatusesParams)
 	// UnblockAccount Unblock an account
 	// (POST /accounts/{id}/unblock)
 	UnblockAccount(w http.ResponseWriter, r *http.Request, id AccountId)
@@ -1126,6 +1197,15 @@ type ServerInterface interface {
 	// GetStatusSource Get the source of the authenticated user's status, for editing it
 	// (GET /statuses/{id}/source)
 	GetStatusSource(w http.ResponseWriter, r *http.Request, id StatusId)
+	// GetHomeTimeline Get the home timeline
+	// (GET /timelines/home)
+	GetHomeTimeline(w http.ResponseWriter, r *http.Request, params GetHomeTimelineParams)
+	// GetLocalTimeline Get the local timeline
+	// (GET /timelines/local)
+	GetLocalTimeline(w http.ResponseWriter, r *http.Request, params GetLocalTimelineParams)
+	// GetHashtagTimeline Get the timeline of a hashtag
+	// (GET /timelines/tag/{hashtag})
+	GetHashtagTimeline(w http.ResponseWriter, r *http.Request, hashtag string, params GetHashtagTimelineParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1462,6 +1542,100 @@ func (siw *ServerInterfaceWrapper) RemoveAccountFromFollowers(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RemoveAccountFromFollowers(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAccountStatuses operation middleware
+func (siw *ServerInterfaceWrapper) ListAccountStatuses(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAccountStatusesParams
+
+	// ------------- Optional query parameter "exclude_replies" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "exclude_replies", r.URL.Query(), &params.ExcludeReplies, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "exclude_replies"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "exclude_replies", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "exclude_boosts" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "exclude_boosts", r.URL.Query(), &params.ExcludeBoosts, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "exclude_boosts"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "exclude_boosts", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "pinned" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pinned", r.URL.Query(), &params.Pinned, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "pinned"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pinned", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAccountStatuses(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2345,6 +2519,153 @@ func (siw *ServerInterfaceWrapper) GetStatusSource(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// GetHomeTimeline operation middleware
+func (siw *ServerInterfaceWrapper) GetHomeTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetHomeTimelineParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHomeTimeline(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLocalTimeline operation middleware
+func (siw *ServerInterfaceWrapper) GetLocalTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetLocalTimelineParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLocalTimeline(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHashtagTimeline operation middleware
+func (siw *ServerInterfaceWrapper) GetHashtagTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "hashtag" -------------
+	var hashtag string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "hashtag", r.PathValue("hashtag"), &hashtag, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "hashtag", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetHashtagTimelineParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHashtagTimeline(w, r, hashtag, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -2507,6 +2828,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.UnpinStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.PinStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/source", wrapper.GetStatusSource)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}/statuses", wrapper.ListAccountStatuses)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/home", wrapper.GetHomeTimeline)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/local", wrapper.GetLocalTimeline)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/tag/{hashtag}", wrapper.GetHashtagTimeline)
 
 	return m
 }
@@ -2557,6 +2882,15 @@ type StatusAfterActionJSONResponse struct {
 	Body Status
 
 	Headers StatusAfterActionResponseHeaders
+}
+
+type StatusPageResponseHeaders struct {
+	CacheControl *string
+}
+type StatusPageJSONResponse struct {
+	Body StatusPage
+
+	Headers StatusPageResponseHeaders
 }
 
 type LookupAccountRequestObject struct {
@@ -3188,6 +3522,62 @@ func (response RemoveAccountFromFollowersdefaultApplicationProblemPlusJSONRespon
 	return err
 }
 
+type ListAccountStatusesRequestObject struct {
+	Id     Id `json:"id"`
+	Params ListAccountStatusesParams
+}
+
+type ListAccountStatusesResponseObject interface {
+	VisitListAccountStatusesResponse(w http.ResponseWriter) error
+}
+
+type ListAccountStatuses200JSONResponse struct{ StatusPageJSONResponse }
+
+func (response ListAccountStatuses200JSONResponse) VisitListAccountStatusesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountStatusesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAccountStatusesdefaultApplicationProblemPlusJSONResponse) VisitListAccountStatusesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type UnblockAccountRequestObject struct {
 	Id AccountId `json:"id"`
 }
@@ -3644,7 +4034,6 @@ type GetInstanceResponseObject interface {
 
 type GetInstance200ResponseHeaders struct {
 	CacheControl *string
-	Vary         *string
 }
 
 type GetInstance200JSONResponse struct {
@@ -3661,9 +4050,6 @@ func (response GetInstance200JSONResponse) VisitGetInstanceResponse(w http.Respo
 	w.Header().Set("Content-Type", "application/json")
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
-	}
-	if response.Headers.Vary != nil {
-		w.Header().Set("Vary", fmt.Sprint(*response.Headers.Vary))
 	}
 	w.WriteHeader(200)
 	_, err := buf.WriteTo(w)
@@ -4976,6 +5362,172 @@ func (response GetStatusSourcedefaultApplicationProblemPlusJSONResponse) VisitGe
 	return err
 }
 
+type GetHomeTimelineRequestObject struct {
+	Params GetHomeTimelineParams
+}
+
+type GetHomeTimelineResponseObject interface {
+	VisitGetHomeTimelineResponse(w http.ResponseWriter) error
+}
+
+type GetHomeTimeline200JSONResponse struct{ StatusPageJSONResponse }
+
+func (response GetHomeTimeline200JSONResponse) VisitGetHomeTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHomeTimelinedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetHomeTimelinedefaultApplicationProblemPlusJSONResponse) VisitGetHomeTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLocalTimelineRequestObject struct {
+	Params GetLocalTimelineParams
+}
+
+type GetLocalTimelineResponseObject interface {
+	VisitGetLocalTimelineResponse(w http.ResponseWriter) error
+}
+
+type GetLocalTimeline200JSONResponse struct{ StatusPageJSONResponse }
+
+func (response GetLocalTimeline200JSONResponse) VisitGetLocalTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLocalTimelinedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetLocalTimelinedefaultApplicationProblemPlusJSONResponse) VisitGetLocalTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHashtagTimelineRequestObject struct {
+	Hashtag string `json:"hashtag"`
+	Params  GetHashtagTimelineParams
+}
+
+type GetHashtagTimelineResponseObject interface {
+	VisitGetHashtagTimelineResponse(w http.ResponseWriter) error
+}
+
+type GetHashtagTimeline200JSONResponse struct{ StatusPageJSONResponse }
+
+func (response GetHashtagTimeline200JSONResponse) VisitGetHashtagTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse) VisitGetHashtagTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// LookupAccount Look up an account by its handle
@@ -5011,6 +5563,9 @@ type StrictServerInterface interface {
 	// RemoveAccountFromFollowers Remove an account from the viewer's followers
 	// (POST /accounts/{id}/remove_from_followers)
 	RemoveAccountFromFollowers(ctx context.Context, request RemoveAccountFromFollowersRequestObject) (RemoveAccountFromFollowersResponseObject, error)
+	// ListAccountStatuses List the posts and boosts of an account
+	// (GET /accounts/{id}/statuses)
+	ListAccountStatuses(ctx context.Context, request ListAccountStatusesRequestObject) (ListAccountStatusesResponseObject, error)
 	// UnblockAccount Unblock an account
 	// (POST /accounts/{id}/unblock)
 	UnblockAccount(ctx context.Context, request UnblockAccountRequestObject) (UnblockAccountResponseObject, error)
@@ -5104,6 +5659,15 @@ type StrictServerInterface interface {
 	// GetStatusSource Get the source of the authenticated user's status, for editing it
 	// (GET /statuses/{id}/source)
 	GetStatusSource(ctx context.Context, request GetStatusSourceRequestObject) (GetStatusSourceResponseObject, error)
+	// GetHomeTimeline Get the home timeline
+	// (GET /timelines/home)
+	GetHomeTimeline(ctx context.Context, request GetHomeTimelineRequestObject) (GetHomeTimelineResponseObject, error)
+	// GetLocalTimeline Get the local timeline
+	// (GET /timelines/local)
+	GetLocalTimeline(ctx context.Context, request GetLocalTimelineRequestObject) (GetLocalTimelineResponseObject, error)
+	// GetHashtagTimeline Get the timeline of a hashtag
+	// (GET /timelines/tag/{hashtag})
+	GetHashtagTimeline(ctx context.Context, request GetHashtagTimelineRequestObject) (GetHashtagTimelineResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -5449,6 +6013,33 @@ func (sh *strictHandler) RemoveAccountFromFollowers(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RemoveAccountFromFollowersResponseObject); ok {
 		if err := validResponse.VisitRemoveAccountFromFollowersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAccountStatuses operation middleware
+func (sh *strictHandler) ListAccountStatuses(w http.ResponseWriter, r *http.Request, id Id, params ListAccountStatusesParams) {
+	var request ListAccountStatusesRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAccountStatuses(ctx, request.(ListAccountStatusesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAccountStatuses")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAccountStatusesResponseObject); ok {
+		if err := validResponse.VisitListAccountStatusesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6273,6 +6864,85 @@ func (sh *strictHandler) GetStatusSource(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetStatusSourceResponseObject); ok {
 		if err := validResponse.VisitGetStatusSourceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHomeTimeline operation middleware
+func (sh *strictHandler) GetHomeTimeline(w http.ResponseWriter, r *http.Request, params GetHomeTimelineParams) {
+	var request GetHomeTimelineRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHomeTimeline(ctx, request.(GetHomeTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHomeTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHomeTimelineResponseObject); ok {
+		if err := validResponse.VisitGetHomeTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLocalTimeline operation middleware
+func (sh *strictHandler) GetLocalTimeline(w http.ResponseWriter, r *http.Request, params GetLocalTimelineParams) {
+	var request GetLocalTimelineRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLocalTimeline(ctx, request.(GetLocalTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLocalTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLocalTimelineResponseObject); ok {
+		if err := validResponse.VisitGetLocalTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHashtagTimeline operation middleware
+func (sh *strictHandler) GetHashtagTimeline(w http.ResponseWriter, r *http.Request, hashtag string, params GetHashtagTimelineParams) {
+	var request GetHashtagTimelineRequestObject
+
+	request.Hashtag = hashtag
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHashtagTimeline(ctx, request.(GetHashtagTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHashtagTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHashtagTimelineResponseObject); ok {
+		if err := validResponse.VisitGetHashtagTimelineResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

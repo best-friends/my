@@ -154,7 +154,7 @@ func (q *Queries) DeleteFeedTagEntries(ctx context.Context, entryID string) erro
 
 const getFeedEntry = `-- name: GetFeedEntry :one
 SELECT id, kind, status_id, author_account_id, author_domain, original_author_account_id,
-  original_author_domain, visibility, is_local, language, revision_seq
+  original_author_domain, visibility, is_local, language, revision_seq, is_reply
 FROM feed_entries WHERE id = $1
 `
 
@@ -173,6 +173,7 @@ func (q *Queries) GetFeedEntry(ctx context.Context, id string) (FeedEntry, error
 		&i.IsLocal,
 		&i.Language,
 		&i.RevisionSeq,
+		&i.IsReply,
 	)
 	return i, err
 }
@@ -197,8 +198,8 @@ const insertFeedEntry = `-- name: InsertFeedEntry :execrows
 
 INSERT INTO feed_entries (
   id, kind, status_id, author_account_id, author_domain, original_author_account_id,
-  original_author_domain, visibility, is_local, language, revision_seq
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+  original_author_domain, visibility, is_local, language, revision_seq, is_reply
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 ON CONFLICT (id) DO NOTHING
 `
 
@@ -214,6 +215,7 @@ type InsertFeedEntryParams struct {
 	IsLocal                 bool
 	Language                string
 	RevisionSeq             int32
+	IsReply                 bool
 }
 
 // SPDX-License-Identifier: AGPL-3.0-only
@@ -232,6 +234,7 @@ func (q *Queries) InsertFeedEntry(ctx context.Context, arg InsertFeedEntryParams
 		arg.IsLocal,
 		arg.Language,
 		arg.RevisionSeq,
+		arg.IsReply,
 	)
 	if err != nil {
 		return 0, err
@@ -290,7 +293,7 @@ func (q *Queries) ListAllFeedDirectRecipients(ctx context.Context) ([]FeedDirect
 const listAllFeedEntries = `-- name: ListAllFeedEntries :many
 
 SELECT id, kind, status_id, author_account_id, author_domain, original_author_account_id,
-  original_author_domain, visibility, is_local, language, revision_seq
+  original_author_domain, visibility, is_local, language, revision_seq, is_reply
 FROM feed_entries ORDER BY id
 `
 
@@ -316,6 +319,7 @@ func (q *Queries) ListAllFeedEntries(ctx context.Context) ([]FeedEntry, error) {
 			&i.IsLocal,
 			&i.Language,
 			&i.RevisionSeq,
+			&i.IsReply,
 		); err != nil {
 			return nil, err
 		}
@@ -586,7 +590,7 @@ func (q *Queries) ListFeedFollowedAmong(ctx context.Context, arg ListFeedFollowe
 const listHomeEntries = `-- name: ListHomeEntries :many
 
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
-  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.author_account_id IN (
     SELECT f.followee_account_id FROM feed_follow_edges f WHERE f.follower_account_id = $1
@@ -665,6 +669,7 @@ func (q *Queries) ListHomeEntries(ctx context.Context, arg ListHomeEntriesParams
 			&i.IsLocal,
 			&i.Language,
 			&i.RevisionSeq,
+			&i.IsReply,
 		); err != nil {
 			return nil, err
 		}
@@ -678,7 +683,7 @@ func (q *Queries) ListHomeEntries(ctx context.Context, arg ListHomeEntriesParams
 
 const listLocalEntries = `-- name: ListLocalEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
-  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.is_local AND e.kind = 'post' AND e.visibility IN ('public', 'local')
   AND ($1::boolean OR e.visibility = 'public')
@@ -739,6 +744,7 @@ func (q *Queries) ListLocalEntries(ctx context.Context, arg ListLocalEntriesPara
 			&i.IsLocal,
 			&i.Language,
 			&i.RevisionSeq,
+			&i.IsReply,
 		); err != nil {
 			return nil, err
 		}
@@ -752,7 +758,7 @@ func (q *Queries) ListLocalEntries(ctx context.Context, arg ListLocalEntriesPara
 
 const listProfileEntries = `-- name: ListProfileEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
-  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.author_account_id = $1
   AND ($2::text = '' OR e.id < $2::text)
@@ -779,8 +785,10 @@ WHERE e.author_account_id = $1
         AND (dr.domain = e.original_author_domain
           OR right(e.original_author_domain, length(dr.domain) + 1) = '.' || dr.domain))))
   AND ($10::boolean OR e.language = 'und' OR e.language = ANY($11::text[]))
+  AND (NOT $12::boolean OR NOT e.is_reply)
+  AND (NOT $13::boolean OR e.kind = 'post')
 ORDER BY e.id DESC
-LIMIT $12
+LIMIT $14
 `
 
 type ListProfileEntriesParams struct {
@@ -795,6 +803,8 @@ type ListProfileEntriesParams struct {
 	Now             time.Time
 	AllLanguages    bool
 	Languages       []string
+	ExcludeReplies  bool
+	ExcludeBoosts   bool
 	PageLimit       int32
 }
 
@@ -802,7 +812,8 @@ type ListProfileEntriesParams struct {
 // boosts of each visibility whose include_* flag is 1, and, when include_direct is 1, the
 // direct posts addressed to the viewer (all of them when the viewer is the author). Boosts of
 // statuses whose author the viewer excludes, or whose author or domain is hidden from
-// profiles, are left out.
+// profiles, are left out. exclude_replies leaves out the posts that reply to a status, and
+// exclude_boosts the boosts.
 func (q *Queries) ListProfileEntries(ctx context.Context, arg ListProfileEntriesParams) ([]FeedEntry, error) {
 	rows, err := q.db.Query(ctx, listProfileEntries,
 		arg.Author,
@@ -816,6 +827,8 @@ func (q *Queries) ListProfileEntries(ctx context.Context, arg ListProfileEntries
 		arg.Now,
 		arg.AllLanguages,
 		arg.Languages,
+		arg.ExcludeReplies,
+		arg.ExcludeBoosts,
 		arg.PageLimit,
 	)
 	if err != nil {
@@ -837,6 +850,7 @@ func (q *Queries) ListProfileEntries(ctx context.Context, arg ListProfileEntries
 			&i.IsLocal,
 			&i.Language,
 			&i.RevisionSeq,
+			&i.IsReply,
 		); err != nil {
 			return nil, err
 		}
@@ -850,7 +864,7 @@ func (q *Queries) ListProfileEntries(ctx context.Context, arg ListProfileEntries
 
 const listTagEntries = `-- name: ListTagEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
-  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_tag_entries t
 JOIN feed_entries e ON e.id = t.entry_id
 WHERE t.tag_id = $1 AND t.visibility IN ('public', 'local')
@@ -919,6 +933,7 @@ func (q *Queries) ListTagEntries(ctx context.Context, arg ListTagEntriesParams) 
 			&i.IsLocal,
 			&i.Language,
 			&i.RevisionSeq,
+			&i.IsReply,
 		); err != nil {
 			return nil, err
 		}

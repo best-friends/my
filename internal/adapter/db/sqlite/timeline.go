@@ -34,6 +34,7 @@ func (r *TimelineRepository) InsertEntry(ctx context.Context, tx uow.Tx, e appti
 		AuthorAccountID: e.AuthorAccountID, AuthorDomain: e.AuthorDomain,
 		OriginalAuthorAccountID: e.OriginalAuthorAccountID, OriginalAuthorDomain: e.OriginalAuthorDomain,
 		Visibility: string(e.Visibility), IsLocal: boolToInt(e.IsLocal), Language: e.Language, RevisionSeq: int64(e.RevisionSeq),
+		IsReply: boolToInt(e.IsReply),
 	})
 	if err != nil {
 		return false, wrap(err, "insert feed entry")
@@ -298,6 +299,7 @@ func (r *TimelineRepository) ListProfile(ctx context.Context, pq apptimeline.Pro
 		IncludePublic: has(appcontent.VisibilityPublic), IncludeLocal: has(appcontent.VisibilityLocal),
 		IncludeUnlisted: has(appcontent.VisibilityUnlisted), IncludePrivate: has(appcontent.VisibilityPrivate),
 		IncludeDirect: boolToInt(pq.IncludeDirect), Viewer: pq.ViewerAccountID, Now: toMillis(pq.Now),
+		ExcludeReplies: boolToInt(pq.ExcludeReplies), ExcludeBoosts: boolToInt(pq.ExcludeBoosts),
 		AllLanguages: all, Languages: langs, PageLimit: int64(pq.Limit),
 	})
 	return entriesFrom(rows, err, "list profile entries")
@@ -419,7 +421,7 @@ func entryFrom(row sqlitegen.FeedEntry) apptimeline.Entry {
 		AuthorAccountID: row.AuthorAccountID, AuthorDomain: row.AuthorDomain,
 		OriginalAuthorAccountID: row.OriginalAuthorAccountID, OriginalAuthorDomain: row.OriginalAuthorDomain,
 		Visibility: appcontent.Visibility(row.Visibility), IsLocal: row.IsLocal == 1,
-		Language: row.Language, RevisionSeq: int(row.RevisionSeq),
+		Language: row.Language, RevisionSeq: int(row.RevisionSeq), IsReply: row.IsReply == 1,
 	}
 }
 

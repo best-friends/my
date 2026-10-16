@@ -66,8 +66,8 @@ func TestGetInstance(t *testing.T) {
 	if cc := res.Header.Get("Cache-Control"); cc != "public, max-age=60" {
 		t.Errorf("Cache-Control = %q, want public, max-age=60", cc)
 	}
-	if v := res.Header.Values("Vary"); !slices.Equal(v, []string{"Accept-Language"}) {
-		t.Errorf("Vary = %q, want Accept-Language", v)
+	if v := res.Header.Values("Vary"); !slices.Equal(v, []string{"Authorization", "Accept-Language"}) {
+		t.Errorf("Vary = %q, want Authorization and Accept-Language", v)
 	}
 }
 
