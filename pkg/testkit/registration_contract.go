@@ -1,0 +1,520 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package testkit
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/url"
+	"regexp"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	appaccount "github.com/best-friends/my/internal/app/account"
+	appidentity "github.com/best-friends/my/internal/app/identity"
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/domain/identity"
+)
+
+// RegistrationRepositoryContract verifies the registration persistence of a database adapter's
+// identity repository (data-model §4.1) through the sign-up use cases, one case per
+// registration mode: open mode approves at once (or waits for a moderator when email cannot be
+// verified), approval mode waits for a moderator's decision, invite mode needs a valid invite,
+// and closed mode refuses. It also checks that concurrent sign-ups never redeem an invite more
+// than its maximum uses, that an email verification token works exactly once (also when
+// redeemed concurrently), that a failed sign-up writes nothing, that sign-ups are rate-limited
+// per address, and the invite listing and revocation. It uses the same harness as
+// AccountRepositoryContract.
+func RegistrationRepositoryContract(t *testing.T, newHarness AccountFactory) {
+	t.Helper()
+	cases := []struct {
+		name string
+		run  func(t *testing.T, e *accountEnv)
+	}{
+		{"OpenModeApprovesAtOnce", registrationOpen},
+		{"OpenModeWithoutEmailWaitsForApproval", registrationOpenWithoutEmail},
+		{"ApprovalModeWaitsForAModerator", registrationApproval},
+		{"InviteModeNeedsAValidInvite", registrationInvite},
+		{"ClosedModeRefuses", registrationClosed},
+		{"InviteUsesHoldUnderConcurrency", registrationInviteConcurrency},
+		{"VerificationTokensWorkOnce", registrationTokenOnce},
+		{"FailedSignUpsWriteNothing", registrationFailureWritesNothing},
+		{"RateLimitsSignUpsPerAddress", registrationRateLimit},
+		{"ListsAndRevokesInvites", registrationInvites},
+		{"AdminsAreApprovedAndVerified", registrationAdmin},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) { tc.run(t, newAccountEnv(t, newHarness)) })
+	}
+}
+
+// registration is an identity service in one registration mode with a recording mailer.
+type registration struct {
+	*appidentity.Service
+	mailer *Mailer
+}
+
+func (e *accountEnv) registration(mode identity.RegistrationMode, requireVerification bool) registration {
+	m := &Mailer{}
+	return registration{
+		Service: appidentity.NewService(appidentity.Deps{
+			UnitOfWork: e.h.UnitOfWork, Repository: e.h.Identity, Clock: e.clock, IDs: e.ids, Passwords: e.hasher,
+			Accounts: e.accounts, RateLimiter: e.limiter,
+			RegistrationMode:         func(context.Context) (identity.RegistrationMode, error) { return mode, nil },
+			Mailer:                   m,
+			RequireEmailVerification: requireVerification,
+			BaseURL:                  "https://" + contractHost,
+		}),
+		mailer: m,
+	}
+}
+
+func signUpInput(name string) appidentity.SignUpInput {
+	return appidentity.SignUpInput{
+		Username: name, Email: name + "@example.com", Password: "correct horse " + name, Locale: "ja", UserAgent: "contract",
+	}
+}
+
+func (r registration) signUp(t *testing.T, in appidentity.SignUpInput) appidentity.SignedUp {
+	t.Helper()
+	got, err := r.SignUp(t.Context(), in)
+	if err != nil {
+		t.Fatalf("SignUp(%s) = %v", in.Username, err)
+	}
+	return got
+}
+
+func (r registration) access(t *testing.T, userID string) appidentity.Access {
+	t.Helper()
+	a, err := r.UserAccess(t.Context(), userID)
+	if err != nil {
+		t.Fatalf("UserAccess(%s) = %v", userID, err)
+	}
+	return a
+}
+
+var verifyLink = regexp.MustCompile(`https://` + regexp.QuoteMeta(contractHost) + `/auth/verify_email\?token=(\S+)`)
+
+// lastToken returns the token of the newest verification email sent to address.
+func (r registration) lastToken(t *testing.T, address string) string {
+	t.Helper()
+	sent := r.mailer.Sent()
+	for i := len(sent) - 1; i >= 0; i-- {
+		if sent[i].To != address {
+			continue
+		}
+		m := verifyLink.FindStringSubmatch(sent[i].Text)
+		if m == nil {
+			t.Fatalf("verification email without a link:\n%s", sent[i].Text)
+		}
+		token, err := url.QueryUnescape(m[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+		return token
+	}
+	t.Fatalf("no email to %s among %d", address, len(sent))
+	return ""
+}
+
+func registrationOpen(t *testing.T, e *accountEnv) {
+	r := e.registration(identity.RegistrationOpen, true)
+	in := signUpInput("alice")
+	in.Reason, in.InviteCode = "ignored outside approval mode", "IGNORED"
+	got := r.signUp(t, in)
+	if got.State != identity.RegistrationApproved || got.MailError != nil {
+		t.Fatalf("SignUp = state %s, mail error %v; want approved and sent", got.State, got.MailError)
+	}
+	app, err := e.h.Identity.FindRegistrationApplication(t.Context(), got.User.ID)
+	if err != nil || app.Reason != "" || app.InviteID != "" || !app.SubmittedAt.Equal(got.User.CreatedAt) {
+		t.Errorf("application = %+v, %v; want one without reason or invite", app, err)
+	}
+	a := r.access(t, got.User.ID)
+	if a.Registration != identity.RegistrationApproved || a.EmailVerified || a.Email != in.Email || a.Allowed() || !a.AwaitingVerification() {
+		t.Errorf("access before verification = %+v; want approved, unverified, not allowed", a)
+	}
+	// The sign-up signed the browser in.
+	if s, err := r.Authenticate(t.Context(), got.Session.Token); err != nil || s.UserID != got.User.ID {
+		t.Errorf("Authenticate(sign-up session) = %+v, %v", s, err)
+	}
+	// The verification email is in the user's locale and links to the confirmation page.
+	sent := r.mailer.Sent()
+	if len(sent) != 1 || sent[0].To != in.Email || !strings.Contains(sent[0].Subject, contractHost) || !strings.Contains(sent[0].Text, "24 時間") {
+		t.Fatalf("sent = %+v; want one Japanese verification email to %s", sent, in.Email)
+	}
+	token := r.lastToken(t, in.Email)
+	if !strings.HasPrefix(token, appidentity.EmailVerificationTokenPrefix) {
+		t.Errorf("token = %q", token)
+	}
+	if userID, err := r.VerifyEmail(t.Context(), token); err != nil || userID != got.User.ID {
+		t.Fatalf("VerifyEmail = %q, %v", userID, err)
+	}
+	if a := r.access(t, got.User.ID); !a.EmailVerified || !a.Allowed() {
+		t.Errorf("access after verification = %+v; want allowed", a)
+	}
+	if prefs := e.preferences(t, got.User.ID); prefs.Locale != "ja" {
+		t.Errorf("locale = %q, want the sign-up's", prefs.Locale)
+	}
+}
+
+func registrationOpenWithoutEmail(t *testing.T, e *accountEnv) {
+	r := e.registration(identity.RegistrationOpen, false)
+	got := r.signUp(t, signUpInput("alice"))
+	if got.State != identity.RegistrationPending {
+		t.Fatalf("state = %s; want pending, since no email proves the address", got.State)
+	}
+	a := r.access(t, got.User.ID)
+	if a.Allowed() || a.AwaitingVerification() {
+		t.Errorf("access = %+v; want pending without a verification requirement", a)
+	}
+	if _, err := r.DecideRegistration(t.Context(), appidentity.DecideInput{UserID: got.User.ID, Decision: identity.DecisionApproved}); err != nil {
+		t.Fatalf("DecideRegistration = %v", err)
+	}
+	if a := r.access(t, got.User.ID); !a.Allowed() {
+		t.Errorf("access after approval = %+v; want allowed without verification", a)
+	}
+}
+
+func registrationApproval(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	r := e.registration(identity.RegistrationApproval, true)
+	in := signUpInput("alice")
+	in.Reason = "  I like ducks.  "
+	alice := r.signUp(t, in)
+	e.clock.Advance(time.Second)
+	bob := r.signUp(t, signUpInput("bob"))
+	if alice.State != identity.RegistrationPending || bob.State != identity.RegistrationPending {
+		t.Fatalf("states = %s, %s; want pending", alice.State, bob.State)
+	}
+	if a := r.access(t, alice.User.ID); a.Allowed() || a.Registration != identity.RegistrationPending {
+		t.Errorf("access = %+v; want pending", a)
+	}
+	pending, err := r.ListRegistrations(ctx, identity.RegistrationPending, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pending) != 2 || pending[0].Application.UserID != alice.User.ID || pending[1].Application.UserID != bob.User.ID {
+		t.Fatalf("pending = %+v; want alice then bob", pending)
+	}
+	p := pending[0]
+	if p.Username != "alice" || p.Email != in.Email || p.EmailVerified || p.Application.Reason != "I like ducks." ||
+		!p.State.Since.Equal(alice.User.CreatedAt) {
+		t.Errorf("pending[0] = %+v", p)
+	}
+
+	e.clock.Advance(time.Minute)
+	d, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: identity.DecisionApproved, DecidedByUserID: "mod", Note: "welcome"})
+	if err != nil || d.DecidedBy != identity.DecidedByModerator || d.ApplicationID != p.Application.ID {
+		t.Fatalf("approve = %+v, %v", d, err)
+	}
+	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: identity.DecisionRejected}); !errors.Is(err, appidentity.ErrNotPending) {
+		t.Errorf("deciding again = %v, want ErrNotPending", err)
+	}
+	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: bob.User.ID, Decision: identity.DecisionRejected}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: "nobody", Decision: identity.DecisionApproved}); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("deciding on an unknown user = %v, want ErrNotFound", err)
+	}
+	st, err := e.h.Identity.FindRegistrationState(ctx, alice.User.ID)
+	if err != nil || st.State != identity.RegistrationApproved || !st.Since.Equal(e.clock.Now()) {
+		t.Errorf("alice's state = %+v, %v; want approved now", st, err)
+	}
+	if a := r.access(t, bob.User.ID); a.Registration != identity.RegistrationRejected || a.Allowed() {
+		t.Errorf("bob's access = %+v; want rejected", a)
+	}
+	if pending, _ := r.ListRegistrations(ctx, identity.RegistrationPending, 10); len(pending) != 0 {
+		t.Errorf("pending after the decisions = %+v", pending)
+	}
+	if rejected, _ := r.ListRegistrations(ctx, identity.RegistrationRejected, 10); len(rejected) != 1 || rejected[0].Username != "bob" {
+		t.Errorf("rejected = %+v", rejected)
+	}
+}
+
+func registrationInvite(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	r := e.registration(identity.RegistrationInvite, true)
+	if _, err := r.SignUp(ctx, signUpInput("alice")); !errors.Is(err, appidentity.ErrInviteRequired) {
+		t.Errorf("SignUp without a code = %v, want ErrInviteRequired", err)
+	}
+	in := signUpInput("alice")
+	in.InviteCode = "NOSUCHCODE"
+	if _, err := r.SignUp(ctx, in); !errors.Is(err, appidentity.ErrInvalidInvite) {
+		t.Errorf("SignUp with an unknown code = %v, want ErrInvalidInvite", err)
+	}
+	inv, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{CreatedByUserID: "admin", MaxUses: 1, ExpiresIn: time.Hour})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inv.Code) != identity.InviteCodeLength || inv.MaxUses != 1 || inv.ExpiresAt == nil {
+		t.Fatalf("invite = %+v", inv)
+	}
+	// Codes compare without case, spaces, and hyphens.
+	in.InviteCode = strings.ToLower(inv.Code[:4]) + "-" + inv.Code[4:8] + " " + inv.Code[8:]
+	got := r.signUp(t, in)
+	if got.State != identity.RegistrationApproved {
+		t.Errorf("state = %s; want approved", got.State)
+	}
+	if app, err := e.h.Identity.FindRegistrationApplication(ctx, got.User.ID); err != nil || app.InviteID != inv.ID {
+		t.Errorf("application = %+v, %v; want the invite", app, err)
+	}
+	bob := signUpInput("bob")
+	bob.InviteCode = inv.Code
+	if _, err := r.SignUp(ctx, bob); !errors.Is(err, appidentity.ErrInvalidInvite) {
+		t.Errorf("SignUp with a used-up invite = %v, want ErrInvalidInvite", err)
+	}
+
+	expiring, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{ExpiresIn: time.Minute})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.clock.Advance(time.Minute)
+	bob.InviteCode = expiring.Code
+	if _, err := r.SignUp(ctx, bob); !errors.Is(err, appidentity.ErrInvalidInvite) {
+		t.Errorf("SignUp with an expired invite = %v, want ErrInvalidInvite", err)
+	}
+	revoked, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.RevokeInvite(ctx, revoked.Code, ""); err != nil {
+		t.Fatal(err)
+	}
+	bob.InviteCode = revoked.Code
+	if _, err := r.SignUp(ctx, bob); !errors.Is(err, appidentity.ErrInvalidInvite) {
+		t.Errorf("SignUp with a revoked invite = %v, want ErrInvalidInvite", err)
+	}
+	unlimited, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bob.InviteCode = unlimited.Code
+	r.signUp(t, bob)
+}
+
+func registrationClosed(t *testing.T, e *accountEnv) {
+	r := e.registration(identity.RegistrationClosed, true)
+	if _, err := r.SignUp(t.Context(), signUpInput("alice")); !errors.Is(err, appidentity.ErrRegistrationClosed) {
+		t.Fatalf("SignUp = %v, want ErrRegistrationClosed", err)
+	}
+	if _, err := e.h.Identity.FindUserIDByEmail(t.Context(), "alice@example.com"); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("a refused sign-up wrote a user: %v", err)
+	}
+	if len(r.mailer.Sent()) != 0 {
+		t.Error("a refused sign-up sent email")
+	}
+}
+
+func registrationInviteConcurrency(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	r := e.registration(identity.RegistrationInvite, true)
+	const maxUses, applicants = 3, 8
+	inv, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{MaxUses: maxUses})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	errs := make([]error, applicants)
+	for i := range applicants {
+		wg.Go(func() {
+			in := signUpInput(fmt.Sprintf("user%d", i))
+			in.InviteCode = inv.Code
+			_, errs[i] = r.SignUp(ctx, in)
+		})
+	}
+	wg.Wait()
+	ok := 0
+	for i, err := range errs {
+		switch {
+		case err == nil:
+			ok++
+		case !errors.Is(err, appidentity.ErrInvalidInvite):
+			t.Errorf("applicant %d: %v", i, err)
+		}
+	}
+	if ok != maxUses {
+		t.Errorf("%d sign-ups redeemed an invite of %d uses", ok, maxUses)
+	}
+	list, err := r.ListInvites(ctx, 10)
+	if err != nil || len(list) != 1 || list[0].Uses != maxUses || list[0].Usable(e.clock.Now()) {
+		t.Errorf("ListInvites = %+v, %v; want %d uses and used up", list, err, maxUses)
+	}
+}
+
+func registrationTokenOnce(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	r := e.registration(identity.RegistrationOpen, true)
+	alice := r.signUp(t, signUpInput("alice"))
+	token := r.lastToken(t, "alice@example.com")
+	for _, bad := range []string{"", "my_evt_unknown", strings.TrimPrefix(token, appidentity.EmailVerificationTokenPrefix), token + "x"} {
+		if _, err := r.VerifyEmail(ctx, bad); !errors.Is(err, appidentity.ErrInvalidToken) {
+			t.Errorf("VerifyEmail(%q) = %v, want ErrInvalidToken", bad, err)
+		}
+	}
+	// Concurrent redemptions of one token: exactly one wins.
+	const tries = 5
+	var wg sync.WaitGroup
+	errs := make([]error, tries)
+	for i := range tries {
+		wg.Go(func() { _, errs[i] = r.VerifyEmail(ctx, token) })
+	}
+	wg.Wait()
+	ok := 0
+	for _, err := range errs {
+		switch {
+		case err == nil:
+			ok++
+		case !errors.Is(err, appidentity.ErrInvalidToken):
+			t.Errorf("VerifyEmail = %v", err)
+		}
+	}
+	if ok != 1 {
+		t.Errorf("%d of %d concurrent redemptions succeeded, want 1", ok, tries)
+	}
+	if _, err := r.VerifyEmail(ctx, token); !errors.Is(err, appidentity.ErrInvalidToken) {
+		t.Errorf("VerifyEmail again = %v, want ErrInvalidToken", err)
+	}
+	if err := r.ResendVerificationEmail(ctx, alice.User.ID); !errors.Is(err, appidentity.ErrAlreadyVerified) {
+		t.Errorf("ResendVerificationEmail after verification = %v, want ErrAlreadyVerified", err)
+	}
+
+	// A resent link works; an expired one does not.
+	bob := r.signUp(t, signUpInput("bob"))
+	first := r.lastToken(t, "bob@example.com")
+	if err := r.ResendVerificationEmail(ctx, bob.User.ID); err != nil {
+		t.Fatalf("ResendVerificationEmail = %v", err)
+	}
+	second := r.lastToken(t, "bob@example.com")
+	if second == first {
+		t.Fatal("the resent email carries the same token")
+	}
+	e.clock.Advance(appidentity.EmailVerificationTTL)
+	if _, err := r.VerifyEmail(ctx, second); !errors.Is(err, appidentity.ErrInvalidToken) {
+		t.Errorf("VerifyEmail(expired) = %v, want ErrInvalidToken", err)
+	}
+	for range appidentity.VerificationEmailLimit.Max {
+		if err := r.ResendVerificationEmail(ctx, bob.User.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := r.ResendVerificationEmail(ctx, bob.User.ID); !errors.Is(err, kernel.ErrRateLimited) {
+		t.Errorf("ResendVerificationEmail beyond the limit = %v, want ErrRateLimited", err)
+	}
+}
+
+func registrationFailureWritesNothing(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	r := e.registration(identity.RegistrationInvite, true)
+	inv, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{MaxUses: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	alice := signUpInput("alice")
+	alice.InviteCode = inv.Code
+	if _, err := e.identity.CreateAdmin(ctx, appidentity.CreateAdminInput{Username: "root", Email: alice.Email, Password: "admin password"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.SignUp(ctx, alice); !errors.Is(err, appidentity.ErrEmailTaken) {
+		t.Fatalf("SignUp with a taken email = %v, want ErrEmailTaken", err)
+	}
+	taken := alice
+	taken.Email, taken.Username = "other@example.com", "ROOT"
+	if _, err := r.SignUp(ctx, taken); !errors.Is(err, appaccount.ErrUsernameTaken) {
+		t.Fatalf("SignUp with a taken username = %v, want ErrUsernameTaken", err)
+	}
+	// Neither failure used the invite or left a user behind.
+	alice.Email = "alice@example.org"
+	got := r.signUp(t, alice)
+	if _, err := e.h.Identity.FindUserIDByEmail(ctx, "other@example.com"); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("the failed sign-up left its email address: %v", err)
+	}
+	if pending, _ := r.ListRegistrations(ctx, identity.RegistrationApproved, 10); len(pending) != 1 || pending[0].Application.UserID != got.User.ID {
+		t.Errorf("registrations = %+v; want only alice's", pending)
+	}
+	for _, bad := range []appidentity.SignUpInput{
+		{Username: "bad name", Email: "x@example.com", Password: "long enough", InviteCode: inv.Code},
+		{Username: "x", Email: "not an address", Password: "long enough", InviteCode: inv.Code},
+		{Username: "x", Email: "x@example.com", Password: "short", InviteCode: inv.Code},
+	} {
+		if _, err := r.SignUp(ctx, bad); err == nil {
+			t.Errorf("SignUp(%+v) succeeded", bad)
+		}
+	}
+	reason := signUpInput("carol")
+	reason.Reason = strings.Repeat("あ", identity.MaxRegistrationReasonLength+1)
+	if _, err := e.registration(identity.RegistrationApproval, true).SignUp(ctx, reason); !errors.Is(err, identity.ErrInvalidReason) {
+		t.Errorf("SignUp with a long reason = %v, want ErrInvalidReason", err)
+	}
+}
+
+func registrationRateLimit(t *testing.T, e *accountEnv) {
+	r := e.registration(identity.RegistrationOpen, true)
+	for i := range appidentity.SignUpIPLimit.Max {
+		in := signUpInput(fmt.Sprintf("user%d", i))
+		in.IP = "192.0.2.1"
+		r.signUp(t, in)
+	}
+	in := signUpInput("late")
+	in.IP = "192.0.2.1"
+	var limited *kernel.RateLimitedError
+	if _, err := r.SignUp(t.Context(), in); !errors.As(err, &limited) || limited.RetryAfter <= 0 {
+		t.Fatalf("SignUp beyond the limit = %v, want *kernel.RateLimitedError", err)
+	}
+	in.IP = "198.51.100.1"
+	r.signUp(t, in)
+}
+
+func registrationInvites(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	r := e.registration(identity.RegistrationInvite, true)
+	a, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{MaxUses: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.clock.Advance(time.Second)
+	b, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{CreatedByUserID: "admin", ExpiresIn: 24 * time.Hour})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Code == b.Code {
+		t.Fatal("two invites got the same code")
+	}
+	if _, err := r.RevokeInvite(ctx, strings.ToLower(a.Code), "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.RevokeInvite(ctx, a.Code, ""); err != nil {
+		t.Errorf("revoking again = %v, want nil", err)
+	}
+	if _, err := r.RevokeInvite(ctx, "NOSUCHCODE", ""); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("revoking an unknown code = %v, want ErrNotFound", err)
+	}
+	list, err := r.ListInvites(ctx, 10)
+	if err != nil || len(list) != 2 {
+		t.Fatalf("ListInvites = %+v, %v", list, err)
+	}
+	now := e.clock.Now()
+	if list[0].ID != b.ID || list[0].Revoked || !list[0].Usable(now) || list[0].CreatedByUserID != "admin" ||
+		list[0].ExpiresAt == nil || !list[0].ExpiresAt.Equal(b.CreatedAt.Add(24*time.Hour)) {
+		t.Errorf("list[0] = %+v; want b, usable", list[0])
+	}
+	if list[1].ID != a.ID || !list[1].Revoked || list[1].Usable(now) || list[1].MaxUses != 5 || list[1].CreatedByUserID != "" {
+		t.Errorf("list[1] = %+v; want a, revoked", list[1])
+	}
+	if _, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{MaxUses: -1}); err == nil {
+		t.Error("CreateInvite with negative uses succeeded")
+	}
+}
+
+func registrationAdmin(t *testing.T, e *accountEnv) {
+	r := e.registration(identity.RegistrationClosed, true)
+	reg, err := r.CreateAdmin(t.Context(), appidentity.CreateAdminInput{Username: "root", Email: "root@example.com", Password: "admin password"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a := r.access(t, reg.User.ID); !a.Allowed() || !a.EmailVerified || a.Registration != identity.RegistrationApproved {
+		t.Errorf("admin access = %+v; want allowed", a)
+	}
+}

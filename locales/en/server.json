@@ -31,6 +31,10 @@
     "defaultMessage": "{minutes, plural, one {Too many failed sign-in attempts. Try again in # minute.} other {Too many failed sign-in attempts. Try again in # minutes.}}",
     "description": "Error (HTTP 429) after too many failed sign-ins from the same network or for the same email address. {minutes} is the wait, rounded up to whole minutes."
   },
+  "auth.sign_in.sign_up_link": {
+    "defaultMessage": "Create an account",
+    "description": "Link from the sign-in page to the registration page; hidden while registration is closed."
+  },
   "auth.sign_in.submit": {
     "defaultMessage": "Sign in",
     "description": "Button that submits the sign-in form."
@@ -43,6 +47,98 @@
     "defaultMessage": "Sign out",
     "description": "Button that ends the current browser session."
   },
+  "auth.sign_up.closed": {
+    "defaultMessage": "This server is not accepting new accounts.",
+    "description": "Body of the registration page while the server accepts no new accounts."
+  },
+  "auth.sign_up.email_hint": {
+    "defaultMessage": "You sign in with this address.",
+    "description": "Hint under the email address field of the registration form."
+  },
+  "auth.sign_up.email_invalid": {
+    "defaultMessage": "Enter an email address such as alice@example.com.",
+    "description": "Error under the email address field when it is not a plain address."
+  },
+  "auth.sign_up.email_label": {
+    "defaultMessage": "Email address",
+    "description": "Label of the email address field on the registration form."
+  },
+  "auth.sign_up.email_taken": {
+    "defaultMessage": "This email address is already in use.",
+    "description": "Error under the email address field when another account uses the address."
+  },
+  "auth.sign_up.error_summary": {
+    "defaultMessage": "The account was not created. Check the fields marked below.",
+    "description": "Alert at the top of the registration form when one or more fields need fixing; each field shows its own error."
+  },
+  "auth.sign_up.invite_hint": {
+    "defaultMessage": "This server accepts new accounts by invitation only.",
+    "description": "Hint under the invite code field."
+  },
+  "auth.sign_up.invite_invalid": {
+    "defaultMessage": "This invite code is not valid. It may have expired or been used up.",
+    "description": "Error under the invite code field when the code is unknown, expired, revoked, or used up. Must not say which."
+  },
+  "auth.sign_up.invite_label": {
+    "defaultMessage": "Invite code",
+    "description": "Label of the invite code field, shown when the server accepts sign-ups by invitation only."
+  },
+  "auth.sign_up.invite_required": {
+    "defaultMessage": "Enter your invite code.",
+    "description": "Error under the invite code field when it is empty."
+  },
+  "auth.sign_up.password_hint": {
+    "defaultMessage": "{min, number} to {max, number} characters.",
+    "description": "Hint under the password field. {min} and {max} are the allowed lengths in characters."
+  },
+  "auth.sign_up.password_invalid": {
+    "defaultMessage": "Use {min, number} to {max, number} characters.",
+    "description": "Error under the password field when it is too short or too long. {min} and {max} are the allowed lengths in characters."
+  },
+  "auth.sign_up.password_label": {
+    "defaultMessage": "Password",
+    "description": "Label of the password field on the registration form."
+  },
+  "auth.sign_up.rate_limited": {
+    "defaultMessage": "{minutes, plural, one {Too many sign-up attempts from your network. Try again in # minute.} other {Too many sign-up attempts from your network. Try again in # minutes.}}",
+    "description": "Error (HTTP 429) after too many sign-ups from the same network. {minutes} is the wait, rounded up to whole minutes."
+  },
+  "auth.sign_up.reason_hint": {
+    "defaultMessage": "A moderator reviews new accounts before they can be used. Up to {max, number} characters.",
+    "description": "Hint under the reason field. {max} is the longest allowed answer in characters."
+  },
+  "auth.sign_up.reason_invalid": {
+    "defaultMessage": "Keep it to {max, number} characters.",
+    "description": "Error under the reason field when the answer is too long. {max} is the longest allowed length in characters."
+  },
+  "auth.sign_up.reason_label": {
+    "defaultMessage": "Why do you want to join? (optional)",
+    "description": "Label of the free-text field asking why the applicant wants to join, shown when sign-ups need a moderator's approval."
+  },
+  "auth.sign_up.submit": {
+    "defaultMessage": "Create account",
+    "description": "Button that submits the registration form."
+  },
+  "auth.sign_up.title": {
+    "defaultMessage": "Create an account",
+    "description": "Title and heading of the registration page."
+  },
+  "auth.sign_up.username_hint": {
+    "defaultMessage": "Up to {max, number} letters (a–z), digits, and underscores. It cannot be changed later.",
+    "description": "Hint under the username field. {max} is the longest allowed username in characters."
+  },
+  "auth.sign_up.username_invalid": {
+    "defaultMessage": "Use 1 to {max, number} letters (a–z), digits, and underscores.",
+    "description": "Error under the username field when it has characters other than a–z, digits, and underscores, or is too long. {max} is the longest allowed length."
+  },
+  "auth.sign_up.username_label": {
+    "defaultMessage": "Username",
+    "description": "Label of the username field on the registration form."
+  },
+  "auth.sign_up.username_taken": {
+    "defaultMessage": "This username is already taken.",
+    "description": "Error under the username field when another account has the username."
+  },
   "auth.signed_in.continue": {
     "defaultMessage": "Continue",
     "description": "Link on the signed-in page back to where the user was going."
@@ -50,6 +146,62 @@
   "auth.signed_in.title": {
     "defaultMessage": "You are signed in",
     "description": "Title and heading of the page shown when a signed-in user opens the sign-in page."
+  },
+  "auth.status.pending": {
+    "defaultMessage": "Your registration is waiting for a moderator's approval. You can sign in, but you can use the app only after it is approved.",
+    "description": "Explains that a moderator has not yet approved the registration and that the app cannot be used until then."
+  },
+  "auth.status.rejected": {
+    "defaultMessage": "Your registration was not approved, so this account cannot be used.",
+    "description": "Tells a signed-in user that a moderator rejected their registration."
+  },
+  "auth.status.resend_failed": {
+    "defaultMessage": "The email could not be sent. Please try again later.",
+    "description": "Error when the confirmation email could not be sent (for example, the mail server is down)."
+  },
+  "auth.status.resend_rate_limited": {
+    "defaultMessage": "{minutes, plural, one {You asked for the link too many times. Try again in # minute.} other {You asked for the link too many times. Try again in # minutes.}}",
+    "description": "Error (HTTP 429) after the user asked for the confirmation link too often. {minutes} is the wait, rounded up to whole minutes."
+  },
+  "auth.status.resend_submit": {
+    "defaultMessage": "Send the link again",
+    "description": "Button that sends the email confirmation link again."
+  },
+  "auth.status.resent": {
+    "defaultMessage": "We sent a new link to {email}.",
+    "description": "Notice after the confirmation link was sent again. {email} is the user's email address."
+  },
+  "auth.status.title": {
+    "defaultMessage": "Your account is not ready yet",
+    "description": "Title and heading of the page a signed-in user sees while their account cannot be used yet (waiting for approval or email confirmation, or rejected)."
+  },
+  "auth.status.verify_email": {
+    "defaultMessage": "Confirm your email address: open the link we sent to {email}.",
+    "description": "Asks the user to open the confirmation link. {email} is their email address."
+  },
+  "auth.verify_email.done": {
+    "defaultMessage": "Thank you. Your email address is confirmed.",
+    "description": "Body of the page after the email address was confirmed."
+  },
+  "auth.verify_email.done_title": {
+    "defaultMessage": "Email address confirmed",
+    "description": "Title and heading of the page after the email address was confirmed."
+  },
+  "auth.verify_email.invalid": {
+    "defaultMessage": "This link is not valid. It may have expired or been used already. Sign in to get a new one.",
+    "description": "Error when a confirmation link is unknown, expired, or already used. Must not say which."
+  },
+  "auth.verify_email.prompt": {
+    "defaultMessage": "Select the button below to confirm your email address.",
+    "description": "Text above the button that confirms the email address."
+  },
+  "auth.verify_email.submit": {
+    "defaultMessage": "Confirm email address",
+    "description": "Button that confirms the email address."
+  },
+  "auth.verify_email.title": {
+    "defaultMessage": "Confirm your email address",
+    "description": "Title and heading of the page that a confirmation email links to."
   },
   "config.errors": {
     "defaultMessage": "{count, plural, one {Found # configuration error.} other {Found # configuration errors.}}",
@@ -86,5 +238,13 @@
   "health.unavailable": {
     "defaultMessage": "The server is not ready to accept requests.",
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  },
+  "mail.verify_email.body": {
+    "defaultMessage": "Welcome to {host}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.",
+    "description": "Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
+  },
+  "mail.verify_email.subject": {
+    "defaultMessage": "Confirm your email address for {host}",
+    "description": "Subject of the email that confirms a new account's email address. {host} is the server's domain name."
   }
 }

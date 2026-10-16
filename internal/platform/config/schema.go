@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"net/mail"
 	"net/url"
 	"strconv"
 	"strings"
@@ -249,6 +250,51 @@ var schema = []field{
 			}
 		},
 	},
+	{
+		key: "mail",
+		doc: "Mailer adapter for verification emails (FR-002). With `none`, no email reaches users, so an unverified address does not keep a user out and sign-ups in the `open` registration mode wait for a moderator's approval instead.",
+		def: "none",
+		choices: []choice{
+			{value: "none", inV0: true, doc: "Logs each message, including its links, instead of sending it; for development and instances without email."},
+			{value: "smtp", inV0: true, doc: "SMTP submission with mandatory STARTTLS (`smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`)."},
+			{value: "ses", doc: "Amazon SES."},
+		},
+		set: func(c *Config, v string) { c.Mail = v },
+	},
+	{
+		key:          "mail_from",
+		doc:          "Sender address of emails, as a bare address such as `noreply@social.example`.",
+		requiredWhen: "when `mail` is not `none`",
+		check:        checkBareAddress,
+		set:          func(c *Config, v string) { c.MailFrom = v },
+	},
+	{
+		key:          "smtp_host",
+		doc:          "Host name of the SMTP server. The server must offer STARTTLS with a certificate valid for this name; the connection is refused otherwise.",
+		requiredWhen: "when `mail = smtp`",
+		check:        checkHostName,
+		set:          func(c *Config, v string) { c.SMTPHost = v },
+	},
+	{
+		key:   "smtp_port",
+		doc:   "TCP port of the SMTP server (submission).",
+		def:   "587",
+		check: checkPort,
+		set: func(c *Config, v string) {
+			c.SMTPPort, _ = strconv.Atoi(v) // validated by checkPort
+		},
+	},
+	{
+		key: "smtp_username",
+		doc: "User name for SMTP AUTH PLAIN, sent only after STARTTLS. Leave it empty for a server that needs no authentication.",
+		set: func(c *Config, v string) { c.SMTPUsername = v },
+	},
+	{
+		key:    "smtp_password",
+		doc:    "Password for SMTP AUTH PLAIN.",
+		secret: true,
+		set:    func(c *Config, v string) { c.SMTPPassword = v },
+	},
 }
 
 // crossChecks rejects missing conditional settings and contradictory combinations.
@@ -274,6 +320,12 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 			}
 			seen[k] = true
 		}
+	}
+	if mail, ok := vals["mail"]; ok && mail != "none" && !present["mail_from"] {
+		issues = append(issues, Issue{Key: "mail_from", Message: "required when mail is not none"})
+	}
+	if vals["mail"] == "smtp" && !present["smtp_host"] {
+		issues = append(issues, Issue{Key: "smtp_host", Message: "required when mail is smtp"})
 	}
 	if vals["queue"] == "inline" && vals["role"] != "" && vals["role"] != string(RoleAll) {
 		issues = append(issues, Issue{Key: "queue", Message: fmt.Sprintf("inline runs jobs in the enqueuing process and requires role = all, not %s", vals["role"])})
@@ -393,6 +445,34 @@ func checkKEK(v string) error {
 	}
 	if len(b) != kekSize {
 		return fmt.Errorf("must decode to %d bytes, got %d", kekSize, len(b))
+	}
+	return nil
+}
+
+// checkBareAddress accepts an email address without a display name or angle brackets.
+func checkBareAddress(v string) error {
+	a, err := mail.ParseAddress(v)
+	if err != nil || a.Name != "" || a.Address != v {
+		return errors.New("must be a bare email address such as noreply@example.com")
+	}
+	return nil
+}
+
+// checkHostName accepts a lower-case DNS name or an IP address, without a port.
+func checkHostName(v string) error {
+	if net.ParseIP(v) != nil {
+		return nil
+	}
+	if v != strings.ToLower(v) {
+		return errors.New("must be lower case")
+	}
+	if len(v) > 253 {
+		return errors.New("must be at most 253 characters")
+	}
+	for label := range strings.SplitSeq(v, ".") {
+		if !validLabel(label) {
+			return errors.New("must be a host name or an IP address, without scheme or port")
+		}
 	}
 	return nil
 }

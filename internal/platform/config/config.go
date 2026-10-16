@@ -54,6 +54,13 @@ type Config struct {
 	KeyManager          string
 	KEK                 []byte
 	PreviousKEKs        [][]byte
+	// Mail is the Mailer adapter; MailFrom and the SMTP fields configure it.
+	Mail         string
+	MailFrom     string
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUsername string
+	SMTPPassword string
 }
 
 // LogValue logs the configuration with its secrets redacted (ADR-0019 §6).
@@ -85,6 +92,12 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("key_manager", c.KeyManager),
 		slog.String("kek", redact(len(c.KEK) > 0)),
 		slog.Int("kek_previous", len(c.PreviousKEKs)),
+		slog.String("mail", c.Mail),
+		slog.String("mail_from", c.MailFrom),
+		slog.String("smtp_host", c.SMTPHost),
+		slog.Int("smtp_port", c.SMTPPort),
+		slog.String("smtp_username", c.SMTPUsername),
+		slog.String("smtp_password", redact(c.SMTPPassword != "")),
 	)
 }
 
