@@ -151,7 +151,9 @@ async function signInToApp(page: Page, user: User, { hasSession = false } = {}):
 
 /** Opens a section of the app from the main navigation, as a user does. */
 async function navigate(page: Page, label: "home" | "local" | "notifications" | "settings"): Promise<void> {
-  await page.getByRole("navigation", { name: message("shell.nav.label") }).getByRole("link", { name: literal(message(`shell.nav.${label}`)) }).click();
+  // Found by its address: the notifications link's name changes once unread notifications arrive
+  // ("Notifications, 1 unread", a message of its own in every locale).
+  await page.getByRole("navigation", { name: message("shell.nav.label") }).locator(`a[href="/${label}"]`).click();
   await expect(pageHeading(page)).toHaveText(message(`${label}.title`));
 }
 
