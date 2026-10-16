@@ -70,7 +70,7 @@ func (r *IdentityRepository) InsertAuthorizationCode(ctx context.Context, tx uow
 	}
 	err = q.InsertAuthorizationCode(ctx, sqlitegen.InsertAuthorizationCodeParams{
 		CodeHash: c.CodeHash, ClientID: c.ClientID, UserID: c.UserID, RedirectUri: c.RedirectURI, Scope: string(c.Scope),
-		CodeChallenge: c.CodeChallenge, IssuedAt: toMillis(c.IssuedAt), ExpiresAt: toMillis(c.ExpiresAt),
+		CodeChallenge: c.CodeChallenge, SessionID: toNullString(c.SessionID), IssuedAt: toMillis(c.IssuedAt), ExpiresAt: toMillis(c.ExpiresAt),
 	})
 	return wrap(err, "insert authorization code")
 }
@@ -128,6 +128,16 @@ func (r *IdentityRepository) RevokeTokenFamily(ctx context.Context, tx uow.Tx, f
 	return wrap(err, "revoke token family")
 }
 
+// RevokeSessionOfTokenFamily implements identity.Repository.
+func (r *IdentityRepository) RevokeSessionOfTokenFamily(ctx context.Context, tx uow.Tx, familyID string, reason identity.RevocationReason, at time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.RevokeSessionOfTokenFamily(ctx, sqlitegen.RevokeSessionOfTokenFamilyParams{Reason: string(reason), RevokedAt: toMillis(at), FamilyID: familyID})
+	return wrap(err, "revoke the session of a token family")
+}
+
 // FindOAuthClient implements identity.Repository.
 func (r *IdentityRepository) FindOAuthClient(ctx context.Context, clientID string) (identity.OAuthClient, []string, error) {
 	q := r.db.reader()
@@ -150,7 +160,7 @@ func (r *IdentityRepository) FindAuthorizationCode(ctx context.Context, codeHash
 	}
 	return identity.AuthorizationCode{
 		CodeHash: row.CodeHash, ClientID: row.ClientID, UserID: row.UserID, RedirectURI: row.RedirectUri,
-		Scope: identity.Scope(row.Scope), CodeChallenge: row.CodeChallenge,
+		Scope: identity.Scope(row.Scope), CodeChallenge: row.CodeChallenge, SessionID: row.SessionID.String,
 		IssuedAt: fromMillis(row.IssuedAt), ExpiresAt: fromMillis(row.ExpiresAt),
 	}, nil
 }

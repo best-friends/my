@@ -135,6 +135,10 @@ func TestAuthorizeSkipsConsentForFirstPartyClients(t *testing.T) {
 		q.Get("iss") != "https://social.example" {
 		t.Fatalf("redirect = %s, want the code, state, and iss at %s", u, webRedirect)
 	}
+	// The code records the session, so that the web client's sign-out can end it.
+	if session := b.cookies[authpages.CookieSession]; len(oauth.issued) != 1 || oauth.issued[0].SessionID != session {
+		t.Errorf("issued = %+v, want one code of the session %q", oauth.issued, session)
+	}
 }
 
 func TestAuthorizeIssuesNoCodeToAccountsThatCannotBeUsedYet(t *testing.T) {
