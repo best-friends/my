@@ -734,12 +734,16 @@ CREATE TABLE bookmarks (
 );
 CREATE INDEX bookmarks_account_id_id ON bookmarks (account_id, id);
 
--- Current value: a status its author pinned to the profile (the Featured collection).
+-- Current value: a status its author pinned to the profile (the Featured collection). Each pin
+-- holds one of the account's slots 1..5 (content.MaxPins), so the unique slot index caps the pins
+-- of an account even under concurrent inserts.
 CREATE TABLE status_pins (
   account_id text COLLATE "C" NOT NULL,
   status_id text COLLATE "C" NOT NULL,
+  slot integer NOT NULL CHECK (slot BETWEEN 1 AND 5),
   created_at timestamptz NOT NULL,
   id text COLLATE "C" NOT NULL,
   PRIMARY KEY (account_id, status_id)
 );
+CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot);
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
