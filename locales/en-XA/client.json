@@ -7,6 +7,234 @@
     "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ħȧȧƞḓŀḗḗ ŧħḗḗ řḗḗɋŭŭḗḗşŧ (ḗḗřřǿǿř {status}). Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.close": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƥǿǿşŧ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.language.label": {
+    "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.language.und": {
+    "defaultMessage": "[Ƞǿǿŧ şƥḗḗƈīƒīḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.add": {
+    "defaultMessage": "[Ȧḓḓ īḿȧȧɠḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.description.hint": {
+    "defaultMessage": "[Ḓḗḗşƈřīƀḗḗ ŧħḗḗ īḿȧȧɠḗḗ ƒǿǿř ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.description.label": {
+    "defaultMessage": "[Ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ īḿȧȧɠḗḗ {position}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.description.required": {
+    "defaultMessage": "[Ḓḗḗşƈřīƀḗḗ ŧħḗḗ īḿȧȧɠḗḗ ƒǿǿř ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ īŧ. Ẏǿǿŭŭř şḗḗŧŧīƞɠş ȧȧşķ ƒǿǿř ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ḗḗṽḗḗřẏ īḿȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ȧȧŧŧȧȧƈħ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.failed_processing": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ƥřǿǿƈḗḗşş ŧħīş īḿȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.hint": {
+    "defaultMessage": "[Ŭƥ ŧǿǿ {max,plural,other{# īḿȧȧɠḗḗş}}: ĴƤḖƓ, ƤȠƓ, ƓĪƑ ǿǿř ẆḗḗƀƤ. Ŀǿǿƈȧȧŧīǿǿƞ ȧȧƞḓ ǿǿŧħḗḗř ḿḗḗŧȧȧḓȧȧŧȧȧ ȧȧřḗḗ řḗḗḿǿǿṽḗḗḓ ƀḗḗƒǿǿřḗḗ ŭŭƥŀǿǿȧȧḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.list": {
+    "defaultMessage": "[Ȧŧŧȧȧƈħḗḗḓ īḿȧȧɠḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.processing": {
+    "defaultMessage": "[Ƥřǿǿƈḗḗşşīƞɠ…]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.remove": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ īḿȧȧɠḗḗ {position}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.too_many": {
+    "defaultMessage": "[Ȧ ƥǿǿşŧ ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ {max,plural,other{# īḿȧȧɠḗḗş}}. Ŧħḗḗ řḗḗşŧ ẇḗḗřḗḗ ƞǿǿŧ ȧȧḓḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.unsupported": {
+    "defaultMessage": "[{name} īş ƞǿǿŧ ȧȧ ĴƤḖƓ, ƤȠƓ, ƓĪƑ ǿǿř ẆḗḗƀƤ īḿȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.uploading": {
+    "defaultMessage": "[Ŭƥŀǿǿȧȧḓīƞɠ…]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.missing_description.add": {
+    "defaultMessage": "[Ȧḓḓ ḓḗḗşƈřīƥŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.missing_description.body": {
+    "defaultMessage": "[{count,plural,one{# īḿȧȧɠḗḗ ħȧȧş ƞǿǿ ḓḗḗşƈřīƥŧīǿǿƞ.} other{# īḿȧȧɠḗḗş ħȧȧṽḗḗ ƞǿǿ ḓḗḗşƈřīƥŧīǿǿƞ.}} Ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ ŧħḗḗ īḿȧȧɠḗḗş ẇīŀŀ ƞǿǿŧ ķƞǿǿẇ ẇħȧȧŧ ŧħḗḗẏ şħǿǿẇ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.missing_description.post": {
+    "defaultMessage": "[Ƥǿǿşŧ ȧȧƞẏẇȧȧẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.missing_description.title": {
+    "defaultMessage": "[Ƥǿǿşŧ ẇīŧħǿǿŭŭŧ īḿȧȧɠḗḗ ḓḗḗşƈřīƥŧīǿǿƞş?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.open": {
+    "defaultMessage": "[Ẇřīŧḗḗ ȧȧ ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.outbox.discard": {
+    "defaultMessage": "[Ḓīşƈȧȧřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.outbox.edit": {
+    "defaultMessage": "[Ḗḓīŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.outbox.failed": {
+    "defaultMessage": "[Ƞǿǿŧ şḗḗƞŧ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.outbox.label": {
+    "defaultMessage": "[Ƥǿǿşŧş ƀḗḗīƞɠ şḗḗƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.outbox.retry": {
+    "defaultMessage": "[Şḗḗƞḓ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.outbox.sending": {
+    "defaultMessage": "[Şḗḗƞḓīƞɠ…]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.outbox.unsent": {
+    "defaultMessage": "[Ƞǿǿŧ şḗḗƞŧ ẏḗḗŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.over": {
+    "defaultMessage": "[{count,plural,one{# ƈħȧȧřȧȧƈŧḗḗř ŧǿǿǿǿ ḿȧȧƞẏ} other{# ƈħȧȧřȧȧƈŧḗḗřş ŧǿǿǿǿ ḿȧȧƞẏ}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.posted": {
+    "defaultMessage": "[Ƥǿǿşŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.remaining": {
+    "defaultMessage": "[{count,plural,one{# ƈħȧȧřȧȧƈŧḗḗř ŀḗḗƒŧ} other{# ƈħȧȧřȧȧƈŧḗḗřş ŀḗḗƒŧ}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.reply.cancel": {
+    "defaultMessage": "[Ƈȧȧƞƈḗḗŀ řḗḗƥŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.reply.label": {
+    "defaultMessage": "[Řḗḗƥŀẏīƞɠ ŧǿǿ {name}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.reply.unavailable": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿşŧ ẏǿǿŭŭ ȧȧřḗḗ řḗḗƥŀẏīƞɠ ŧǿǿ ƈȧȧƞƞǿǿŧ ƀḗḗ şħǿǿẇƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.sensitive": {
+    "defaultMessage": "[Ħīḓḗḗ ŧħḗḗ īḿȧȧɠḗḗş ŭŭƞŧīŀ řḗḗȧȧḓḗḗřş şħǿǿẇ ŧħḗḗḿ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.submit": {
+    "defaultMessage": "[Ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.submit.reply": {
+    "defaultMessage": "[Řḗḗƥŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.text.label": {
+    "defaultMessage": "[Ẏǿǿŭŭř ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.title": {
+    "defaultMessage": "[Ƞḗḗẇ ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.button": {
+    "defaultMessage": "[Ṽīşīƀīŀīŧẏ: {visibility}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.direct": {
+    "defaultMessage": "[Ḿḗḗƞŧīǿǿƞḗḗḓ ƥḗḗǿǿƥŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.direct.description": {
+    "defaultMessage": "[Ǿƞŀẏ ŧħḗḗ ƥḗḗǿǿƥŀḗḗ ẏǿǿŭŭ ḿḗḗƞŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.done": {
+    "defaultMessage": "[Ḓǿǿƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.limited": {
+    "defaultMessage": "[Ƥǿǿşŧḗḗḓ ẇīŧħ ŧħḗḗ ṽīşīƀīŀīŧẏ “{visibility}”: ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ƈȧȧƞƞǿǿŧ ƥǿǿşŧ ḿǿǿřḗḗ ẇīḓḗḗŀẏ řīɠħŧ ƞǿǿẇ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.local": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.local.description": {
+    "defaultMessage": "[Ƥḗḗǿǿƥŀḗḗ şīɠƞḗḗḓ īƞ ħḗḗřḗḗ, ȧȧƞḓ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇḗḗřş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş. Şħǿǿẇƞ ǿǿƞ ŧħīş şḗḗřṽḗḗř'ş ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.private": {
+    "defaultMessage": "[Ƒǿǿŀŀǿǿẇḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.private.description": {
+    "defaultMessage": "[Ǿƞŀẏ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇḗḗřş ȧȧƞḓ ŧħḗḗ ƥḗḗǿǿƥŀḗḗ ẏǿǿŭŭ ḿḗḗƞŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.public": {
+    "defaultMessage": "[Ƥŭŭƀŀīƈ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.public.description": {
+    "defaultMessage": "[Ȧƞẏǿǿƞḗḗ, ħḗḗřḗḗ ȧȧƞḓ ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş. Şħǿǿẇƞ ǿǿƞ ŧħḗḗ ƥŭŭƀŀīƈ ŧīḿḗḗŀīƞḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.title": {
+    "defaultMessage": "[Ẇħǿǿ ƈȧȧƞ şḗḗḗḗ ŧħīş ƥǿǿşŧ?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.unlisted": {
+    "defaultMessage": "[Ŭƞŀīşŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.unlisted.description": {
+    "defaultMessage": "[Ȧƞẏǿǿƞḗḗ ẇīŧħ ŧħḗḗ ŀīƞķ, ƀŭŭŧ ƞǿǿŧ şħǿǿẇƞ ǿǿƞ ŧħḗḗ ƥŭŭƀŀīƈ ŧīḿḗḗŀīƞḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.warning.description": {
+    "defaultMessage": "[Řḗḗȧȧḓḗḗřş şḗḗḗḗ ŧħīş ƒīřşŧ ȧȧƞḓ ƈħǿǿǿǿşḗḗ ẇħḗḗŧħḗḗř ŧǿǿ şħǿǿẇ ŧħḗḗ ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.warning.label": {
+    "defaultMessage": "[Ƈǿǿƞŧḗḗƞŧ ẇȧȧřƞīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.warning.toggle": {
+    "defaultMessage": "[Ȧḓḓ ȧȧ ƈǿǿƞŧḗḗƞŧ ẇȧȧřƞīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "home.title": {
     "defaultMessage": "[Ħǿǿḿḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."

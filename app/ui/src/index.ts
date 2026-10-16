@@ -14,6 +14,8 @@ export { I18nProvider, type I18nProviderProps, RouterProvider } from "react-aria
 export { Button, type ButtonProps } from "./Button";
 export { Checkbox, type CheckboxProps } from "./Checkbox";
 export type { FieldErrorMessage, FieldTextProps } from "./Field";
+// The hidden file input behind a Button child (React Aria FileTrigger): it has no look of its own.
+export { FileTrigger, type FileTriggerProps } from "react-aria-components";
 export { Link, type LinkProps } from "./Link";
 export { Radio, RadioGroup, type RadioGroupProps, type RadioProps } from "./RadioGroup";
 export { Select, SelectItem, type SelectItemProps, type SelectProps } from "./Select";

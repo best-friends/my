@@ -181,7 +181,8 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - ルーターは遷移を `startTransition` の中で確定するので、次の画面を読み込む間も今の画面が残る（E4）。読み込みが `defaultPendingMs` を超えたときだけ `RoutePending` を出す。
   - `-` で始まるファイルとディレクトリはルートにならない。外枠の部品は `routes/-layout/` に置く。
 - **リンク**: 画面の間のリンクは `@my/ui` の `Link` に `href` を渡す。React Aria の `RouterProvider` が同じオリジンの `href` をルーターの遷移に変える。`#id` の `href`（本文へ移動するリンク）は、その要素にフォーカスを移す。
-- **レイアウト**（`routes/-layout/AppLayout.tsx`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` からサーバーについての 3 列目を出す。
+- **レイアウト**（`routes/-layout/AppLayout.tsx`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` から投稿フォームとサーバーについての 3 列目を出す。
+  `xl` 未満では、投稿フォームはタブバーの上（`md` からは画面の隅）に浮かぶボタンから開くシートになる（§12）。どちらにするかは外枠が `matchMedia` で決め（`useMediaQuery`）、ページに置くフォームは常に 1 つにする。
   ナビゲーションは 1 つの `nav` で、今いる区画のリンクに `aria-current="page"` を付ける。画面の端に接する要素は `env(safe-area-inset-*)` を足し、高さは `svh` で指定する。
   先頭に、フォーカスしたときだけ見える「本文へ移動」のリンクを置く。
 - **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。
@@ -213,6 +214,7 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   - 認可コードの交換も同じロックの中で行い、起動時の再開と競合しない。
   - サインイン・サインアウト・セッションの終了（更新が 4xx で断られた）も BroadcastChannel で他のタブに伝える。
   - 利用者が変わったとき（サインイン、またはセッションのあったタブでの終了）、`lib/auth/userData.ts` が Query のキャッシュをすべて消す。セッションが終わったときは、`lib/pwa` の `clearCaches()` で Cache Storage もすべて消す（§11）。
+    セッションが終わったときは、sessionStorage の `my:user:` で始まるキー（利用者が入力したもの。投稿の下書き、§12）も消す。サインインでは消さない（キーにアカウントの ID を含める）。
   - 状態（`unknown` / `signed-in` / `signed-out`）は `useSessionStatus()` で読む。サーバーのデータである閲覧者のアカウントは Context に置かず、`features/session` の `useViewer()` が Query で取る（S2、S6）。
 - **ログイン**（`lib/auth/signIn.ts`、Authorization Code + PKCE）: `/login` のボタンが、新しい verifier（32 バイトの乱数）と `state` を作り、S256 の challenge を付けてサーバーの認可画面（`/oauth/authorize`）にページごと遷移する。
   scope は指定せず、Web クライアントに登録されたすべてのスコープを受け取る。
@@ -248,3 +250,26 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **`my serve` の配信**: `sw.js` は長期キャッシュせず（`no-cache`）、Service Worker 自身に効く CSP（`default-src 'none'; connect-src 'self'`）で返す。既定の `default-src 'none'` のままだと Service Worker の `fetch` が止まる。
 - **インストール**: マニフェストのアイコンは `icon.svg`・192 / 512 px の PNG・512 px の maskable の PNG、外枠は iOS 用に `apple-touch-icon.png`（180 px）を指す。
   PNG は SVG から `scripts/web-icons.sh`（ImageMagick）で作り、コミットする。インストールの条件は E2E が Chrome の `Page.getInstallabilityErrors` で検査する。
+
+## 12. 投稿フォーム
+
+`features/compose` が新しい投稿と返信のフォームを受け持つ（FR-101〜105、FR-110）。
+
+- **置き場所**: 外枠が `ComposeProvider` に `panel`（`xl` 以上の 3 列目）か `sheet`（浮かぶボタンと `Sheet`）を渡し、`ComposeEntry` がその場所に描画する。
+  ほかの機能の返信ボタンは `useReply()` の関数に投稿を渡す。フォームが返信先を示し、返信先の作者とメンション（閲覧者を除く）を本文の先頭に入れ、シートを開くか本文にフォーカスを移す。サインインしていない間はどちらも出さない（`useReply()` は `null`）。
+- **下書き**（`hooks/draftStore.ts`）: フォームの外のストア（`useSyncExternalStore`）に置き、パネル・シート・返信ボタンが同じ下書きを共有する。
+  リロードやタブの異常終了で失わないように、アカウントごとのキー（`my:user:compose:<アカウント ID>`）で sessionStorage に保存する。このタブだけのもので、タブを閉じるかセッションが終わると消える（§10）。
+  アップロードの途中のファイルは保存しない（再開できない）。アップロード済みの画像は ID と説明を保存し、リロード後はサーバーのサムネイルを表示する。
+- **既定値**: 公開範囲と言語は、利用者が選ぶまで `GET /preferences` の既定値に従う（state にコピーせず、表示のたびに求める）。返信の公開範囲の既定は、既定値と返信先のうち狭いほう（ADR-0017。`local` への返信は `local`）。
+  公開範囲は 5 段階を説明付きのラジオグループ（ポップオーバーの中）で選ぶ。サーバーが制限で公開範囲を狭めたとき（data-model.md §5.4）は、投稿の後に結果の公開範囲をトーストで知らせる。API は投稿の前に上限を返さない。
+  言語の選択肢の名前は `Intl.DisplayNames` で表示中のロケールにする（カタログに言語名を持たない）。
+- **文字数**: `GET /instance` の `limits.max_post_characters` から CW の文字数を引いたものを本文の上限にし、`TextArea` の文字数カウンタで示す。数え方はサーバーと同じコードポイント。上限を超えると送信できない。
+- **画像**: 1 投稿 4 枚まで、JPEG・PNG・GIF・WebP。選んだファイルは `prepareImage` が `createImageBitmap`（EXIF の向きを適用）と `OffscreenCanvas` で 3840 × 2160 ピクセルの面積以内に縮め、描き直して EXIF などのメタデータを捨ててから送る。
+  GIF はアニメーションを保つためそのまま送る（GIF に EXIF はなく、残りはサーバーが除く）。`POST /media`（202）の後は、`GET /media/{id}` の query が `processing` の間だけポーリングする。
+  どの画像にも代替テキストの入力欄を必ず出し（Y9）、本文と一緒に `POST /statuses` の `media[].description` で送る。`require_media_description` が真で説明のない画像があるときは、送る前に `alertdialog` で確かめる。
+- **送信**: 送信は下書きを「送信中」の一覧（outbox）に移してフォームを空にし、一覧が送った内容を表示する（S8）。成功したら一覧から消し、トーストで知らせ、タイムラインの query を無効にする。
+  失敗したら、フォームが空ならそこへ下書きを戻し、空でなければ一覧に残して「もう一度送る」「編集する」「破棄する」を出す。一覧も保存するので、送信中にリロードしても失わない。
+  1 つの下書きの試行はすべて同じ `Idempotency-Key` を送り、応答が届かなかった再送で二重に投稿しない。下書きを編集するとキーを作り直す。
+- **テスト**: `features/compose/compose.test.tsx` がフォームの流れを MSW で検査する。jsdom には `matchMedia`・`createImageBitmap`・`OffscreenCanvas` がないので、必要なテストが差し替える。
+  jsdom の `FormData` と `Blob` は Node.js の fetch が本文にできないので、アップロードのテストは Node.js のものに差し替える。
+  E2E（`e2e/compose.spec.ts`）は、Playwright の要求の差し替えでクライアント API とトークンの更新に答え、サインイン済みの状態で axe・横スクロール・ARIA スナップショット・送信の失敗と再送を検査する。
