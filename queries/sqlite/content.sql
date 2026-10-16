@@ -1,0 +1,262 @@
+-- SPDX-License-Identifier: AGPL-3.0-only
+
+-- name: InsertStatus :exec
+INSERT INTO statuses (
+  id, uri, url, author_account_id, is_local, visibility, in_reply_to_uri, conversation_uri, published_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: InsertLocalStatus :exec
+INSERT INTO local_statuses (status_id, author_account_id, client_id, idempotency_key) VALUES (?, ?, ?, ?);
+
+-- name: InsertStatusRevision :exec
+INSERT INTO status_revisions (id, status_id, seq, spoiler_text, sensitive, language, revised_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+-- name: InsertStatusRevisionBody :exec
+INSERT INTO status_revision_bodies (revision_id, language, content_html) VALUES (?, ?, ?);
+
+-- name: InsertStatusRevisionSource :exec
+INSERT INTO status_revision_sources (revision_id, source_text, source_format) VALUES (?, ?, ?);
+
+-- name: InsertStatusRevisionAttachment :exec
+INSERT INTO status_revision_attachments (revision_id, position, media_id, description) VALUES (?, ?, ?, ?);
+
+-- name: InsertStatusRevisionMention :exec
+INSERT INTO status_revision_mentions (revision_id, account_id) VALUES (?, ?);
+
+-- name: InsertStatusRevisionTag :exec
+INSERT INTO status_revision_tags (revision_id, tag_id) VALUES (?, ?);
+
+-- name: InsertStatusRevisionEmoji :exec
+INSERT INTO status_revision_emojis (revision_id, emoji_id) VALUES (?, ?);
+
+-- name: InsertStatusDeletion :exec
+INSERT INTO status_deletions (status_id, uri, author_account_id, origin, moderation_action_id, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- name: InsertTagIfAbsent :exec
+INSERT INTO tags (id, name, name_normalized, created_at) VALUES (?, ?, ?, ?)
+ON CONFLICT (name_normalized) DO NOTHING;
+
+-- name: GetTagByName :one
+SELECT id, name, name_normalized, created_at FROM tags WHERE name_normalized = ?;
+
+-- Projections, written by the content module's projectors.
+
+-- name: GetStatusHead :one
+SELECT status_id, revision_id, seq, last_revised_at FROM status_heads WHERE status_id = ?;
+
+-- name: UpsertStatusHead :exec
+INSERT INTO status_heads (status_id, revision_id, seq, last_revised_at) VALUES (?, ?, ?, ?)
+ON CONFLICT (status_id) DO UPDATE SET
+  revision_id = excluded.revision_id,
+  seq = excluded.seq,
+  last_revised_at = excluded.last_revised_at;
+
+-- name: DeleteStatusHead :exec
+DELETE FROM status_heads WHERE status_id = ?;
+
+-- name: InsertStatusMention :exec
+INSERT INTO status_mention_index (account_id, status_id) VALUES (?, ?)
+ON CONFLICT (account_id, status_id) DO NOTHING;
+
+-- name: DeleteStatusMentions :exec
+DELETE FROM status_mention_index WHERE status_id = ?;
+
+-- name: StatusIsDeleted :one
+SELECT EXISTS (SELECT 1 FROM status_deletions WHERE status_id = ?);
+
+-- name: GetLiveStatusByURI :one
+SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
+  s.conversation_uri, s.published_at
+FROM statuses s
+WHERE s.uri = ? AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id);
+
+-- name: ListLiveRepliesTo :many
+SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
+  s.conversation_uri, s.published_at
+FROM statuses s
+WHERE s.in_reply_to_uri = ? AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+ORDER BY s.id;
+
+-- name: UpsertStatusReplyLink :exec
+INSERT INTO status_reply_links (status_id, parent_status_id, parent_author_account_id) VALUES (?, ?, ?)
+ON CONFLICT (status_id) DO UPDATE SET
+  parent_status_id = excluded.parent_status_id,
+  parent_author_account_id = excluded.parent_author_account_id;
+
+-- name: GetStatusReplyLink :one
+SELECT status_id, parent_status_id, parent_author_account_id FROM status_reply_links WHERE status_id = ?;
+
+-- name: DeleteStatusReplyLink :exec
+DELETE FROM status_reply_links WHERE status_id = ?;
+
+-- name: DeleteStatusReplyLinksToParent :exec
+DELETE FROM status_reply_links WHERE parent_status_id = ?;
+
+-- name: InsertStatusCounters :exec
+INSERT INTO status_counters (status_id, replies_count, boosts_count, favourites_count) VALUES (?, ?, ?, ?)
+ON CONFLICT (status_id) DO NOTHING;
+
+-- name: AddStatusReplies :exec
+UPDATE status_counters SET replies_count = replies_count + sqlc.arg(delta) WHERE status_id = sqlc.arg(status_id);
+
+-- name: DeleteStatusCounters :exec
+DELETE FROM status_counters WHERE status_id = ?;
+
+-- name: AddAccountPost :exec
+INSERT INTO account_post_counters (account_id, statuses_count, last_status_at) VALUES (?, 1, ?)
+ON CONFLICT (account_id) DO UPDATE SET
+  statuses_count = account_post_counters.statuses_count + 1,
+  last_status_at = CASE
+    WHEN excluded.last_status_at > account_post_counters.last_status_at THEN excluded.last_status_at
+    ELSE account_post_counters.last_status_at
+  END;
+
+-- name: LatestLivePublishedAt :one
+SELECT s.published_at FROM statuses s
+WHERE s.author_account_id = ? AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+ORDER BY s.published_at DESC
+LIMIT 1;
+
+-- name: RemoveAccountPost :exec
+UPDATE account_post_counters SET statuses_count = statuses_count - 1, last_status_at = ?
+WHERE account_id = ?;
+
+-- name: DeleteEmptyAccountPostCounter :exec
+DELETE FROM account_post_counters WHERE account_id = ? AND statuses_count <= 0;
+
+-- name: DeleteAccountPostCounter :exec
+DELETE FROM account_post_counters WHERE account_id = ?;
+
+-- Rebuilds: each empties a projection and derives it again from the statuses, their revisions,
+-- and their deletions (data-model section 9). They state the projectors' rules in SQL.
+
+-- name: DeleteAllStatusHeads :exec
+DELETE FROM status_heads;
+
+-- name: RebuildStatusHeads :exec
+INSERT INTO status_heads (status_id, revision_id, seq, last_revised_at)
+SELECT r.status_id, r.id, r.seq, r.revised_at
+FROM status_revisions r JOIN statuses s ON s.id = r.status_id
+WHERE NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+  AND NOT EXISTS (SELECT 1 FROM status_revisions n WHERE n.status_id = r.status_id AND n.seq > r.seq);
+
+-- name: DeleteAllStatusMentions :exec
+DELETE FROM status_mention_index;
+
+-- name: RebuildStatusMentions :exec
+INSERT INTO status_mention_index (account_id, status_id)
+SELECT m.account_id, r.status_id
+FROM status_revision_mentions m
+  JOIN status_revisions r ON r.id = m.revision_id
+  JOIN statuses s ON s.id = r.status_id
+WHERE NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+  AND NOT EXISTS (SELECT 1 FROM status_revisions n WHERE n.status_id = r.status_id AND n.seq > r.seq);
+
+-- name: DeleteAllStatusReplyLinks :exec
+DELETE FROM status_reply_links;
+
+-- name: RebuildStatusReplyLinks :exec
+INSERT INTO status_reply_links (status_id, parent_status_id, parent_author_account_id)
+SELECT c.id, p.id, p.author_account_id
+FROM statuses c JOIN statuses p ON p.uri = c.in_reply_to_uri
+WHERE NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = c.id)
+  AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = p.id);
+
+-- name: DeleteAllStatusCounters :exec
+DELETE FROM status_counters;
+
+-- name: RebuildStatusCounters :exec
+INSERT INTO status_counters (status_id, replies_count, boosts_count, favourites_count)
+SELECT s.id,
+  (SELECT COUNT(*) FROM statuses c
+    WHERE c.in_reply_to_uri = s.uri AND c.visibility IN ('public', 'local', 'unlisted')
+      AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = c.id)),
+  0, 0
+FROM statuses s
+WHERE NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id);
+
+-- name: DeleteAllAccountPostCounters :exec
+DELETE FROM account_post_counters;
+
+-- name: RebuildAccountPostCounters :exec
+INSERT INTO account_post_counters (account_id, statuses_count, last_status_at)
+SELECT s.author_account_id, COUNT(*), MAX(s.published_at)
+FROM statuses s
+WHERE NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+GROUP BY s.author_account_id;
+
+-- Projection contents, for verifying the projections.
+
+-- name: ListStatusHeads :many
+SELECT status_id, revision_id, seq, last_revised_at FROM status_heads ORDER BY status_id;
+
+-- name: ListStatusMentions :many
+SELECT account_id, status_id FROM status_mention_index ORDER BY account_id, status_id;
+
+-- name: ListStatusReplyLinks :many
+SELECT status_id, parent_status_id, parent_author_account_id FROM status_reply_links ORDER BY status_id;
+
+-- name: ListStatusCounters :many
+SELECT status_id, replies_count, boosts_count, favourites_count FROM status_counters ORDER BY status_id;
+
+-- name: ListAccountPostCounters :many
+SELECT account_id, statuses_count, last_status_at FROM account_post_counters ORDER BY account_id;
+
+-- Lookups.
+
+-- name: GetStatus :one
+SELECT id, uri, url, author_account_id, is_local, visibility, in_reply_to_uri, conversation_uri, published_at
+FROM statuses WHERE id = ?;
+
+-- name: GetStatusByURI :one
+SELECT id, uri, url, author_account_id, is_local, visibility, in_reply_to_uri, conversation_uri, published_at
+FROM statuses WHERE uri = ?;
+
+-- name: GetLocalStatus :one
+SELECT status_id, author_account_id, client_id, idempotency_key FROM local_statuses WHERE status_id = ?;
+
+-- name: GetLocalStatusByIdempotencyKey :one
+SELECT status_id, author_account_id, client_id, idempotency_key FROM local_statuses
+WHERE author_account_id = ? AND idempotency_key = ?;
+
+-- name: GetStatusRevision :one
+SELECT id, status_id, seq, spoiler_text, sensitive, language, revised_at FROM status_revisions WHERE id = ?;
+
+-- name: ListStatusRevisions :many
+SELECT id, status_id, seq, spoiler_text, sensitive, language, revised_at FROM status_revisions
+WHERE status_id = ? ORDER BY seq;
+
+-- name: ListStatusRevisionBodies :many
+SELECT revision_id, language, content_html FROM status_revision_bodies WHERE revision_id = ? ORDER BY language;
+
+-- name: GetStatusRevisionSource :one
+SELECT revision_id, source_text, source_format FROM status_revision_sources WHERE revision_id = ?;
+
+-- name: ListStatusRevisionAttachments :many
+SELECT revision_id, position, media_id, description FROM status_revision_attachments
+WHERE revision_id = ? ORDER BY position;
+
+-- name: ListStatusRevisionMentions :many
+SELECT account_id FROM status_revision_mentions WHERE revision_id = ? ORDER BY account_id;
+
+-- name: ListStatusRevisionTags :many
+SELECT tag_id FROM status_revision_tags WHERE revision_id = ? ORDER BY tag_id;
+
+-- name: ListStatusRevisionEmojis :many
+SELECT emoji_id FROM status_revision_emojis WHERE revision_id = ? ORDER BY emoji_id;
+
+-- name: GetStatusDeletion :one
+SELECT status_id, uri, author_account_id, origin, moderation_action_id, deleted_at FROM status_deletions
+WHERE status_id = ?;
+
+-- name: GetStatusDeletionByURI :one
+SELECT status_id, uri, author_account_id, origin, moderation_action_id, deleted_at FROM status_deletions
+WHERE uri = ?;
+
+-- name: GetStatusCounters :one
+SELECT status_id, replies_count, boosts_count, favourites_count FROM status_counters WHERE status_id = ?;
+
+-- name: GetAccountPostCounter :one
+SELECT account_id, statuses_count, last_status_at FROM account_post_counters WHERE account_id = ?;
