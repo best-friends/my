@@ -24,6 +24,10 @@ const (
 	assetsDir = "assets"
 	// iconPath is the instance-independent app icon (app/web/public/icon.svg).
 	iconPath = "icon.svg"
+	// serviceWorkerPath is the Service Worker that vite-plugin-pwa builds from app/web/sw/sw.ts (ADR-0028).
+	serviceWorkerPath = "sw.js"
+	// appleTouchIconPath is the home screen icon of iOS, which takes no SVG and applies its own mask.
+	appleTouchIconPath = "apple-touch-icon.png"
 )
 
 // chunk is one entry of the Vite build manifest
@@ -109,3 +113,13 @@ func readEntry(build fs.FS) (entryTags, error) {
 
 // fileURL is the absolute URL path of a file of the build.
 func fileURL(file string) string { return path.Join("/", file) }
+
+// appIcons are the icons of the Web App Manifest, in its order, each listed when the build has its file
+// (app/web/public, rendered by scripts/web-icons.sh). Chrome's install criteria ask for 192 and 512 px
+// icons; the maskable one fills the shapes that Android masks icons into.
+var appIcons = []manifestIcon{
+	{Src: "/" + iconPath, Sizes: "any", Type: "image/svg+xml", Purpose: "any"},
+	{Src: "/icon-192.png", Sizes: "192x192", Type: "image/png", Purpose: "any"},
+	{Src: "/icon-512.png", Sizes: "512x512", Type: "image/png", Purpose: "any"},
+	{Src: "/icon-maskable-512.png", Sizes: "512x512", Type: "image/png", Purpose: "maskable"},
+}

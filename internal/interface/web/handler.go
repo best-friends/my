@@ -105,7 +105,11 @@ type Handler struct {
 	tags      entryTags
 	apiOrigin string
 	hasIcon   bool
-	csp       string
+	// hasAppleTouchIcon reports whether the build has apple-touch-icon.png.
+	hasAppleTouchIcon bool
+	// icons are the manifest icons whose files the build has.
+	icons []manifestIcon
+	csp   string
 	// localized holds the shell and the manifest of each default locale seen, rendered once.
 	localized sync.Map // locale -> *localizedDocuments
 	// files are the servable files of the build, by path, with their ETags.
@@ -174,6 +178,13 @@ func New(o Options) (*Handler, error) {
 	}
 	h.files = files
 	_, h.hasIcon = files[iconPath]
+	_, h.hasAppleTouchIcon = files[appleTouchIconPath]
+	h.icons = []manifestIcon{}
+	for _, icon := range appIcons {
+		if _, ok := files[strings.TrimPrefix(icon.Src, "/")]; ok {
+			h.icons = append(h.icons, icon)
+		}
+	}
 
 	var tags entryTags
 	apiOrigin := "https://" + o.Host
@@ -200,7 +211,7 @@ func New(o Options) (*Handler, error) {
 	h.tags, h.apiOrigin = tags, apiOrigin
 	version := []string{
 		shellSource, h.o.DevViteOrigin, h.apiOrigin, h.o.Host, h.o.AccountDomain, h.o.InstanceName, h.o.ThemeColor,
-		strconv.FormatBool(h.hasIcon), tags.Script,
+		strconv.FormatBool(h.hasIcon), strconv.FormatBool(h.hasAppleTouchIcon), tags.Script,
 	}
 	version = append(append(version, tags.Stylesheet...), tags.Preload...)
 	h.previewVersion = etag([]byte(strings.Join(version, "\x00")))
@@ -232,12 +243,13 @@ func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
 func (h *Handler) render(locale string) (*localizedDocuments, error) {
 	shell, err := renderShell(shellData{
 		Lang: locale, Dir: i18n.Direction(locale), Title: h.o.InstanceName, ThemeColor: h.o.ThemeColor,
-		HasIcon: h.hasIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags, Config: h.runtimeConfig(locale),
+		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
+		Config: h.runtimeConfig(locale),
 	})
 	if err != nil {
 		return nil, err
 	}
-	manifest, err := renderWebManifest(&h.o, locale, h.hasIcon)
+	manifest, err := renderWebManifest(&h.o, locale, h.icons)
 	if err != nil {
 		return nil, err
 	}
@@ -325,6 +337,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if name := strings.TrimPrefix(p, "/"); name != "" && !strings.Contains(name, "/") {
 		if _, ok := h.files[name]; ok {
+			if name == serviceWorkerPath {
+				// A worker runs under the CSP of its own script's response, not the page's; the server's
+				// default for non-documents (default-src 'none') would block its fetches.
+				w.Header().Set("Content-Security-Policy", serviceWorkerContentSecurityPolicy)
+			}
 			h.serveFile(w, r, name, cacheRevalidate)
 			return
 		}
