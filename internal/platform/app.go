@@ -18,6 +18,7 @@ import (
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
 	"github.com/best-friends/my/internal/app/account"
+	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
@@ -59,6 +60,7 @@ type App struct {
 
 	Accounts *account.Service
 	Identity *identity.Service
+	Graph    *graph.Service
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -109,6 +111,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	var (
 		identities identity.Repository
 		accounts   account.Repository
+		follows    graph.Repository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -119,6 +122,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts = d.IdentityRepository(), d.AccountRepository()
+		follows = d.GraphRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -132,6 +136,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts = d.IdentityRepository(), d.AccountRepository()
+		follows = d.GraphRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -177,6 +182,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
 		RateLimiter: a.RateLimiter,
+	})
+	graph.RegisterProjectors(a.Projectors, follows)
+	a.Graph = graph.NewService(graph.Deps{
+		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
 
 	if opts.Version == "" {
