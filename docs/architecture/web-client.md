@@ -261,7 +261,7 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   画面を守るのは API で、これはサインインを先に促すだけである。
 - **テスト**: `src/test/msw/handlers.ts` が OAuth のエンドポイント（既定ではリフレッシュ Cookie がない状態）と、API の操作（Bearer が必要）の既定のハンドラを持つ。
   `renderApp` は main.tsx と同じくセッションを再開し、ページの外への遷移（認可画面）を `leftTo` に記録する（jsdom は別の文書を読み込めない）。
-  `GET /streaming` の既定のハンドラは、何も送らずに開いたままのストリームを返す。イベントを送るテストは `streamingServer()` の `current().send()` / `close()` を使う。
+  `GET /streaming` の既定のハンドラは、何も送らずにすぐ終わるストリームを返す（MSW は Node.js の `fetch` をソケットで横取りするので、テストの終わりに中止された流れ続ける応答があると、後のテストの要求が本物のネットワークに出ることがある）。イベントを送るテストは `streamingServer()` の `current().send()` / `close()` を使う。
   jsdom には Web Locks がないので、タブ間の直列化のテストは `src/test/locks.ts` の代わりの実装を 2 つの `Session` に共有させる。BroadcastChannel は Node.js のものを使う。
 
 ## 11. PWA

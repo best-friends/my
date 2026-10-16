@@ -417,12 +417,20 @@ export function streamingServer() {
   };
 }
 
-/** The default GET /streaming: a stream that sends nothing and stays open; it needs a token. */
+/**
+ * The default GET /streaming: a stream that sends nothing and ends at once, as a server ends a stream; it
+ * needs a token. It does not stay open: MSW intercepts Node's fetch at the socket, and a response that is
+ * still streaming when a test ends (its request aborted by the unmount) has let a later test's request
+ * reach the real network. A test that sends events opens its streams with `streamingServer()`.
+ */
 function streamingHandlers() {
   return [
-    http.get(`${apiBase}/streaming`, ({ request }) =>
-      request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? eventStreamResponse().response : unauthenticated(request),
-    ),
+    http.get(`${apiBase}/streaming`, ({ request }) => {
+      if (request.headers.get("Authorization") !== `Bearer ${validAccessToken}`) return unauthenticated(request);
+      const { response, stream } = eventStreamResponse();
+      stream.close();
+      return response;
+    }),
   ];
 }
 
