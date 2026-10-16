@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The design token sheet for Storybook (CSF 3). It needs no Storybook import, so it type-checks
-// before Storybook is set up (#120); the meta then gains `satisfies Meta`.
+// The design token sheet for Storybook (CSF 3). Like every story, it is also an axe and a visual
+// snapshot test (vitest.config.ts).
 // Swatches read the semantic colors with var() (theme.css emits them all) instead of building
 // class names, which web-client.md D9 forbids.
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { colorPairs, decorativeColors, surfaces } from "./tokens";
 
 export default {
   title: "Foundations/Tokens",
-  parameters: { layout: "padded" },
-};
+} satisfies Meta;
+
+type Story = StoryObj;
 
 function ColorPairs() {
   return (
@@ -17,7 +19,8 @@ function ColorPairs() {
         <li
           key={`${fg}/${bg}`}
           className="flex items-center gap-3 rounded-md border border-border p-3"
-          style={{ backgroundColor: `var(--color-${bg})`, color: `var(--color-${fg})` }}
+          // A UI pair only needs 3:1, so its label is body text; the swatch shows the pair.
+          style={{ backgroundColor: `var(--color-${bg})`, color: `var(--color-${use === "text" ? fg : "fg"})` }}
         >
           {use === "text" ? (
             <span className="text-lg font-semibold">Aa あ ع</span>
@@ -33,7 +36,7 @@ function ColorPairs() {
   );
 }
 
-export const Colors = { render: () => <ColorPairs /> };
+export const Colors: Story = { render: () => <ColorPairs /> };
 
 function DecorativeColors() {
   return (
@@ -48,7 +51,7 @@ function DecorativeColors() {
   );
 }
 
-export const Decorative = { render: () => <DecorativeColors /> };
+export const Decorative: Story = { render: () => <DecorativeColors /> };
 
 /** One line per script the font stack covers; lang and dir pick the right glyphs and direction. */
 const typeSamples = [
@@ -74,7 +77,7 @@ function TypeScale() {
   );
 }
 
-export const Typography = { render: () => <TypeScale /> };
+export const Typography: Story = { render: () => <TypeScale /> };
 
 function Shapes() {
   return (
@@ -104,4 +107,4 @@ function Shapes() {
   );
 }
 
-export const ShapesAndFocus = { name: "Radius, shadow and focus", render: () => <Shapes /> };
+export const ShapesAndFocus: Story = { name: "Radius, shadow and focus", render: () => <Shapes /> };
