@@ -47,9 +47,121 @@
     "defaultMessage": "ログイン",
     "description": "Heading and document title of the page that starts signing in."
   },
+  "notifications.empty.all": {
+    "defaultMessage": "まだ通知はありません",
+    "description": "Heading shown on the notifications page when the user has no notifications."
+  },
+  "notifications.empty.description": {
+    "defaultMessage": "フォローされたり、メンションされたり、投稿に反応があったりすると、ここに表示されます。",
+    "description": "Text under the heading of an empty notifications page."
+  },
+  "notifications.empty.filtered": {
+    "defaultMessage": "この種類の通知はありません",
+    "description": "Heading shown on the notifications page when no notification matches the selected type filter."
+  },
+  "notifications.filter.all": {
+    "defaultMessage": "すべて",
+    "description": "Tab on the notifications page that shows notifications of every type."
+  },
+  "notifications.filter.boosts": {
+    "defaultMessage": "ブースト",
+    "description": "Tab on the notifications page that shows only boosts of the user's posts."
+  },
+  "notifications.filter.favourites": {
+    "defaultMessage": "お気に入り",
+    "description": "Tab on the notifications page that shows only favourites of the user's posts."
+  },
+  "notifications.filter.follows": {
+    "defaultMessage": "フォロー",
+    "description": "Tab on the notifications page that shows only new followers, follow requests and accepted follow requests."
+  },
+  "notifications.filter.label": {
+    "defaultMessage": "通知の種類",
+    "description": "Accessible name of the tab list that filters the notifications by type."
+  },
+  "notifications.filter.mentions": {
+    "defaultMessage": "メンション",
+    "description": "Tab on the notifications page that shows only posts that mention the user."
+  },
+  "notifications.load_more": {
+    "defaultMessage": "さらに通知を読み込む",
+    "description": "Button at the end of the notifications that loads older ones."
+  },
+  "notifications.loading": {
+    "defaultMessage": "通知を読み込み中",
+    "description": "Accessible name of the progress indicator while notifications load."
+  },
+  "notifications.post.error": {
+    "defaultMessage": "この投稿を読み込めませんでした。",
+    "description": "Shown in a notification in place of the post it is about, when the post could not be loaded."
+  },
+  "notifications.post.open": {
+    "defaultMessage": "投稿を開く",
+    "description": "Link in a notification that opens the post it is about."
+  },
+  "notifications.post.show": {
+    "defaultMessage": "内容を表示",
+    "description": "Button that shows a post hidden behind its author's content warning, in a notification."
+  },
+  "notifications.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads the notifications again after they failed to load."
+  },
+  "notifications.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Link on the notifications page, when nobody is signed in, that opens the sign-in page."
+  },
+  "notifications.signed_out": {
+    "defaultMessage": "通知を見るにはログインしてください。",
+    "description": "Text on the notifications page when nobody is signed in."
+  },
+  "notifications.time": {
+    "defaultMessage": "{time, date, medium} {time, time, short}",
+    "description": "When a notification happened: its date and time, for example 'Oct 16, 2026 9:41 AM'. {time} is that moment."
+  },
   "notifications.title": {
     "defaultMessage": "通知",
     "description": "Heading and document title of the notifications page."
+  },
+  "notifications.type.boost": {
+    "defaultMessage": "{name}さんがあなたの投稿をブーストしました",
+    "description": "Notification sentence. {name} is the display name of the account that boosted the user's post."
+  },
+  "notifications.type.favourite": {
+    "defaultMessage": "{name}さんがあなたの投稿をお気に入りに登録しました",
+    "description": "Notification sentence. {name} is the display name of the account that favourited the user's post."
+  },
+  "notifications.type.follow": {
+    "defaultMessage": "{name}さんにフォローされました",
+    "description": "Notification sentence. {name} is the display name of the new follower."
+  },
+  "notifications.type.follow_accepted": {
+    "defaultMessage": "{name}さんがフォローリクエストを承認しました",
+    "description": "Notification sentence. {name} is the display name of the account that accepted the user's follow request."
+  },
+  "notifications.type.follow_request": {
+    "defaultMessage": "{name}さんからフォローリクエストが届きました",
+    "description": "Notification sentence. {name} is the display name of the account that asked to follow the user."
+  },
+  "notifications.type.mention": {
+    "defaultMessage": "{name}さんがあなたをメンションしました",
+    "description": "Notification sentence. {name} is the display name of the author of a post that mentions the user."
+  },
+  "notifications.type.moderation_notice": {
+    "defaultMessage": "このサーバーのモデレーターからお知らせが届きました",
+    "description": "Notification sentence: a notice to the user from the moderators of the server."
+  },
+  "notifications.type.poll_closed": {
+    "defaultMessage": "参加した投票が終了しました",
+    "description": "Notification sentence: a poll that the user created or voted in has closed."
+  },
+  "notifications.unread": {
+    "defaultMessage": "未読:",
+    "description": "Read by screen readers before the sentence of a notification that was new when the page opened."
+  },
+  "notifications.unread_count": {
+    "defaultMessage": "{count, plural, other {未読 # 件}}",
+    "description": "The number of unread notifications on the badge of the navigation item, for example '3 unread'."
   },
   "page.not_built": {
     "defaultMessage": "この画面はまだ準備中です。",
@@ -126,6 +238,10 @@
   "shell.nav.notifications": {
     "defaultMessage": "通知",
     "description": "Navigation item that opens the notifications. Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.nav.notifications_unread": {
+    "defaultMessage": "通知、{count, plural, other {未読 # 件}}",
+    "description": "Accessible name of the navigation item that opens the notifications while some are unread. Start it with the text of shell.nav.notifications, which is shown. {count} is the number of unread notifications."
   },
   "shell.nav.profile": {
     "defaultMessage": "プロフィール",
