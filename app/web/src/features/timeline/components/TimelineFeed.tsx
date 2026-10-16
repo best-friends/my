@@ -3,7 +3,7 @@ import { Button, EmptyState, Feed, Link, VisuallyHidden } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import type { Timeline } from "../api/timelines";
 import { useTimeline } from "../hooks/useTimeline";
-import { StatusCard } from "./StatusCard";
+import { StatusCard } from "../../status";
 
 export type TimelineFeedProps = {
   timeline: Timeline;

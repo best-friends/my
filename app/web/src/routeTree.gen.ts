@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as AtChar123acctChar125IdRouteImport } from './routes/@{$acct}_.$id'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 
@@ -54,6 +55,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtChar123acctChar125IdRoute = AtChar123acctChar125IdRouteImport.update({
+  id: '/@{$acct}_/$id',
+  path: '/@{$acct}/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
   id: '/login_/callback',
   path: '/login/callback',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/login/callback': typeof LoginCallbackRoute
   '/tags/$tag': typeof TagsTagRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/login/callback': typeof LoginCallbackRoute
   '/tags/$tag': typeof TagsTagRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/@{$acct}_/$id': typeof AtChar123acctChar125IdRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/tags/$tag': typeof TagsTagRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/@{$acct}/$id'
     | '/login/callback'
     | '/tags/$tag'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/@{$acct}/$id'
     | '/login/callback'
     | '/tags/$tag'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/@{$acct}_/$id'
     | '/login_/callback'
     | '/tags/$tag'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
+  AtChar123acctChar125IdRoute: typeof AtChar123acctChar125IdRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   TagsTagRoute: typeof TagsTagRoute
 }
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/$id': {
+      id: '/@{$acct}_/$id'
+      path: '/@{$acct}/$id'
+      fullPath: '/@{$acct}/$id'
+      preLoaderRoute: typeof AtChar123acctChar125IdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login_/callback': {
       id: '/login_/callback'
       path: '/login/callback'
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
+  AtChar123acctChar125IdRoute: AtChar123acctChar125IdRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   TagsTagRoute: TagsTagRoute,
 }

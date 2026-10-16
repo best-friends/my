@@ -194,6 +194,7 @@ export const handlers = [
   http.post(oauthPaths.revoke, () => new HttpResponse(null, { status: 200 })),
   ...statusHandlers,
   ...notificationHandlers(),
+  ...statusActionHandlers(),
 ];
 
 // --- notifications (#132) -------------------------------------------------------------------------
@@ -277,5 +278,33 @@ function notificationHandlers() {
     }),
     http.post(`${apiBase}/notifications/:id/dismiss`, ({ request }) => (authorized(request) ? new HttpResponse(null, { status: 204 }) : unauthenticated(request))),
     http.get(`${apiBase}/statuses/:id`, ({ params }) => HttpResponse.json(statusFixture(String(params["id"])))),
+  ];
+}
+
+// --- a post's thread and the actions on it (#130) ---------------------------------------------------
+
+/** The viewer's relations to a post, as the Status fields that the actions set. */
+type RelationFlag = "boosted" | "favourited" | "bookmarked";
+
+/**
+ * The thread around any post (GET /statuses/{id}/context): no ancestors and no replies; and the actions on
+ * any post (boost, favourite, bookmark and their removal; delete). An action answers Bob's post as
+ * `statusFixture` with the viewer's relation set as asked.
+ */
+function statusActionHandlers() {
+  const authorized = (request: Request) => request.headers.get("Authorization") === `Bearer ${validAccessToken}`;
+  const relation = (path: string, flag: RelationFlag) =>
+    [true, false].map((on) =>
+      (on ? http.post : http.delete)(`${apiBase}/statuses/:id/${path}`, ({ params, request }) =>
+        authorized(request) ? HttpResponse.json({ ...statusFixture(String(params["id"])), [flag]: on }) : unauthenticated(request),
+      ),
+    );
+  const context: Schemas["StatusContext"] = { ancestors: [], descendants: [] };
+  return [
+    http.get(`${apiBase}/statuses/:id/context`, () => HttpResponse.json(context)),
+    ...relation("boost", "boosted"),
+    ...relation("favourite", "favourited"),
+    ...relation("bookmark", "bookmarked"),
+    http.delete(`${apiBase}/statuses/:id`, ({ request }) => (authorized(request) ? new HttpResponse(null, { status: 204 }) : unauthenticated(request))),
   ];
 }

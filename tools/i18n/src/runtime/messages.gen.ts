@@ -262,6 +262,68 @@ export interface MessageArgs {
   "client:shell.update.apply": {};
   /** A new version of the app is available. */
   "client:shell.update.available": {};
+  /** Bookmark */
+  "client:status.action.bookmark": {};
+  /** Boost */
+  "client:status.action.boost": {};
+  /** Copy link */
+  "client:status.action.copy_link": {};
+  /** Delete */
+  "client:status.action.delete": {};
+  /** The change was not saved: {reason} */
+  "client:status.action.failed": { reason: string };
+  /** Favourite */
+  "client:status.action.favourite": {};
+  /** More actions */
+  "client:status.action.more": {};
+  /** Reply */
+  "client:status.action.reply": {};
+  /** Bookmark removed */
+  "client:status.bookmark.off": {};
+  /** Bookmarked */
+  "client:status.bookmark.on": {};
+  /** Boost retracted */
+  "client:status.boost.off": {};
+  /** Boosted */
+  "client:status.boost.on": {};
+  /** Cancel */
+  "client:status.delete.cancel": {};
+  /** Delete */
+  "client:status.delete.confirm": {};
+  /** It will be removed for everyone, along with its boosts and favourites. You cannot undo this. */
+  "client:status.delete.description": {};
+  /** Post deleted */
+  "client:status.delete.done": {};
+  /** Could not delete the post: {reason} */
+  "client:status.delete.failed": { reason: string };
+  /** Delete this post? */
+  "client:status.delete.title": {};
+  /** Removed from favourites */
+  "client:status.favourite.off": {};
+  /** Added to favourites */
+  "client:status.favourite.on": {};
+  /** Link copied */
+  "client:status.link.copied": {};
+  /** Could not copy the link. */
+  "client:status.link.failed": {};
+  /** This post does not exist, or you cannot see it. */
+  "client:status.not_found.body": {};
+  /** Post not found */
+  "client:status.not_found.title": {};
+  /** Earlier in the thread */
+  "client:status.thread.ancestors": {};
+  /** Could not load the replies: {reason} */
+  "client:status.thread.failed": { reason: string };
+  /** Loading the replies */
+  "client:status.thread.loading": {};
+  /** No replies yet. */
+  "client:status.thread.no_replies": {};
+  /** Replies */
+  "client:status.thread.replies": {};
+  /** Try again */
+  "client:status.thread.retry": {};
+  /** Post */
+  "client:status.title": {};
   /** #{tag} */
   "client:tag.title": { tag: string };
   /** {name} boosted */

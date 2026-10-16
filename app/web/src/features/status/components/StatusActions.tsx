@@ -1,0 +1,137 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import { Button, Dialog, Menu, MenuItem, MenuTrigger, ToggleButton, type ToggleButtonProps } from "@my/ui";
+import { type ReactNode, useId, useState } from "react";
+import { useIntl } from "react-intl";
+import { useT } from "../../../lib/i18n";
+import type { Status } from "../api/status";
+import { type RelationToggle, useStatusActions } from "../hooks/useStatusActions";
+import { BookmarkIcon, BoostIcon, MoreIcon, ReplyIcon, StarIcon } from "./icons";
+
+export type StatusActionsProps = {
+  status: Status;
+  /** Called after the post is deleted, for a page that shows only this post. */
+  onDeleted?: () => void;
+};
+
+/**
+ * The action bar of a post: reply, boost, favourite, bookmark, and a menu with the link and, for the
+ * viewer's own posts, delete behind a confirmation (WAI-ARIA APG, alert dialog pattern). Nothing while
+ * nobody is signed in. The toggles keep their names in both states and expose the state with
+ * `aria-pressed` (APG, button pattern); a count is the toggle's description.
+ */
+export function StatusActions({ status, onDeleted }: StatusActionsProps) {
+  const t = useT();
+  const repliesId = useId();
+  const actions = useStatusActions(status);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  if (actions === null) return null;
+  const post = status.boost ?? status;
+  const remove = actions.delete;
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-label={t("client:status.action.reply")}
+        {...(post.replies_count > 0 && { "aria-describedby": repliesId })}
+        onPress={actions.reply}
+        className="px-2 text-fg-muted"
+      >
+        <ReplyIcon />
+        <Count id={repliesId} value={post.replies_count} />
+      </Button>
+      <RelationButton label={t("client:status.action.boost")} toggle={actions.boost} tone="success" icon={(on) => <BoostIcon filled={on} />} />
+      <RelationButton label={t("client:status.action.favourite")} toggle={actions.favourite} tone="warning" icon={(on) => <StarIcon filled={on} />} />
+      <RelationButton label={t("client:status.action.bookmark")} toggle={actions.bookmark} tone="accent" icon={(on) => <BookmarkIcon filled={on} />} />
+      <MenuTrigger>
+        <Button variant="ghost" size="sm" aria-label={t("client:status.action.more")} className="px-2 text-fg-muted">
+          <MoreIcon />
+        </Button>
+        <Menu aria-label={t("client:status.action.more")} placement="bottom end">
+          <MenuItem onAction={actions.copyLink}>{t("client:status.action.copy_link")}</MenuItem>
+          {remove !== null && (
+            <MenuItem
+              intent="danger"
+              onAction={() => {
+                setIsConfirmingDelete(true);
+              }}
+            >
+              {t("client:status.action.delete")}
+            </MenuItem>
+          )}
+        </Menu>
+      </MenuTrigger>
+      {remove !== null && (
+        <Dialog
+          role="alertdialog"
+          size="sm"
+          title={t("client:status.delete.title")}
+          isOpen={isConfirmingDelete}
+          onOpenChange={setIsConfirmingDelete}
+        >
+          {({ close }) => (
+            <div className="flex flex-col gap-4">
+              <p>{t("client:status.delete.description")}</p>
+              <div className="flex flex-wrap justify-end gap-2">
+                {/* The least destructive choice has the focus first (APG, alert dialog pattern). */}
+                <Button autoFocus onPress={close}>
+                  {t("client:status.delete.cancel")}
+                </Button>
+                <Button
+                  variant="danger"
+                  isPending={actions.isDeleting}
+                  onPress={() => {
+                    void remove().then((isDeleted) => {
+                      if (!isDeleted) return;
+                      close();
+                      onDeleted?.();
+                    });
+                  }}
+                >
+                  {t("client:status.delete.confirm")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+type RelationButtonProps = {
+  label: string;
+  toggle: RelationToggle;
+  tone: NonNullable<ToggleButtonProps["tone"]>;
+  icon: (on: boolean) => ReactNode;
+};
+
+function RelationButton({ label, toggle, tone, icon }: RelationButtonProps) {
+  const countId = useId();
+  const hasCount = toggle.count !== null && toggle.count > 0;
+  return (
+    <ToggleButton
+      aria-label={label}
+      {...(hasCount && { "aria-describedby": countId })}
+      tone={tone}
+      isSelected={toggle.isSelected}
+      isDisabled={toggle.isDisabled}
+      onChange={toggle.onChange}
+    >
+      {icon(toggle.isSelected)}
+      {toggle.count !== null && <Count id={countId} value={toggle.count} />}
+    </ToggleButton>
+  );
+}
+
+/** A count next to an icon, compact ("1.2K") in the page's locale; nothing for zero. */
+function Count({ value, id }: { value: number; id?: string }) {
+  const intl = useIntl();
+  if (value === 0) return null;
+  return (
+    <span id={id} className="tabular-nums">
+      {intl.formatNumber(value, { notation: "compact" })}
+    </span>
+  );
+}
