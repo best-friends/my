@@ -10,10 +10,13 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: "jsdom",
-      include: ["src/**/*.test.{ts,tsx}", "sw/**/*.test.ts"],
+      include: ["src/**/*.test.{ts,tsx}", "sw/**/*.test.ts", "vite-plugins/**/*.test.ts"],
       setupFiles: ["./src/test/setup.ts"],
       restoreMocks: true,
       unstubGlobals: true,
+      // A test may wait several times for asyncUtilTimeout (src/test/setup.ts); the 5 s default cut off
+      // integration tests that a loaded machine slowed down, not tests that were stuck (web-client.md T7).
+      testTimeout: 30_000,
     },
   }),
 );

@@ -100,7 +100,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 4. `internal/interface/clientapi` にメソッドを実装します。アプリケーション層（`internal/app/<module>`）のユースケースを呼び、
    ドメインの型を生成された応答型に詰め替えます。必要な依存は `clientapi.Options` に追加し、`platform.NewApp` で渡します。
    閲覧者は `requireViewer(ctx)`（トークン必須の操作）か `ViewerFrom(ctx)`（匿名も受け付ける操作）で取ります。スコープの検査はハンドラの前に済んでいます。
-   アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースを含む）に、
+   アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースと、`Options.Posting` から読む投稿の制限 `posting` を含む）に、
    投稿は `appcontent.Reader` が閲覧者に見せる形にした `StatusView` を `Server.newStatus` で `Status` に詰め替えます。
    `Account` のアバター・ヘッダーの URL（`avatar_url` / `header_url`）は、応答に含めるアカウントの分を `Server.profileImages`（投稿なら著者を加える `Server.statusImages`）で
    1 回にまとめて読み、`newAccount` と `newStatus` に渡します。アカウントごとに読まない（N+1 にしない）ため、一覧は `Server.newAccounts` や `Server.presentStatuses` を使います。
@@ -136,7 +136,8 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
     この交換は `net/http.CrossOriginProtection` を通る要求だけを受け付けます。
   - `refresh_token` グラントは使えません。`POST /oauth/token/refresh` に `X-My-Token-Refresh: 1` ヘッダを付けて呼びます。応答のたびに Cookie はローテーションされます。
     使用済みのリフレッシュトークンを送ると系列全体が失効するので、同時に複数の更新を送らないようにします（タブ間で更新を 1 つにまとめる）。
-  - `POST /oauth/revoke` で失効させると、Cookie も削除されます。
+  - `POST /oauth/revoke` で失効させると、Cookie も削除されます。Web クライアントの失効はログアウトなので、その系列の認可コードを発行した
+    認可サーバーの画面のセッション（`__Host-my_session`）も `logout` で失効させます。Cookie ではなく、認可コードに記録したセッションから辿ります。
 - `web_origin` がサーバーのオリジンと異なる場合、これらのエンドポイントは `web_origin` にだけ資格情報付きの CORS を許可します。
 
 ### 4.1 スコープ

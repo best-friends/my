@@ -160,4 +160,10 @@ func TestOAuthWebClientFlow(t *testing.T) {
 	if _, err := s.app.Identity.AuthenticateAccessToken(t.Context(), access); err == nil {
 		t.Error("the revoked access token still authenticates")
 	}
+	// The revocation is the web client's sign-out: it ends the browser's session of the
+	// authorization screens too, so the next sign-in asks for the password again.
+	resp, _ = c.do(http.MethodGet, authorize, nil, nil)
+	if resp.StatusCode != http.StatusSeeOther || !strings.HasPrefix(resp.Header.Get("Location"), authpages.PathSignIn+"?return_to=") {
+		t.Errorf("authorize after the sign-out = %d → %q, want the sign-in form", resp.StatusCode, resp.Header.Get("Location"))
+	}
 }

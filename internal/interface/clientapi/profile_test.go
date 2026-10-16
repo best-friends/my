@@ -5,6 +5,7 @@ package clientapi_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -118,9 +119,53 @@ func TestVerifyAccountCredentialsHasTheSource(t *testing.T) {
 		Source: clientapi.AccountSource{
 			Note: "hi", Fields: []clientapi.AccountFieldSource{{Name: "web", Value: "https://alice.example"}}, AvatarMediaId: &mediaID,
 		},
+		Posting: clientapi.PostingLimits{
+			VisibilityCeiling: clientapi.VisibilityPublic,
+			Visibilities: []clientapi.Visibility{
+				clientapi.VisibilityPublic, clientapi.VisibilityLocal, clientapi.VisibilityUnlisted, clientapi.VisibilityPrivate, clientapi.VisibilityDirect,
+			},
+		},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("account = %+v, want %+v", got, want)
+	}
+}
+
+// fakePosting answers the posting limits of a silenced account (data-model §5.4), or err.
+type fakePosting struct{ err error }
+
+func (f fakePosting) PostingLimits(_ context.Context, accountID string) (appcontent.PostingLimits, error) {
+	if f.err != nil {
+		return appcontent.PostingLimits{}, f.err
+	}
+	if accountID != aliceAccountID {
+		return appcontent.PostingLimits{}, errors.New("unexpected account " + accountID)
+	}
+	silenced := content.AuthorRestrictions{VisibilityCeilingPrivate: true}
+	return appcontent.PostingLimits{VisibilityCeiling: silenced.VisibilityCeiling(), Visibilities: content.PostingVisibilities(silenced)}, nil
+}
+
+func TestCredentialAccountHasThePostingLimits(t *testing.T) {
+	e := newAuthEnv(t, func(o *clientapi.Options) { o.Posting = fakePosting{} })
+	res := e.get(t, "/accounts/verify_credentials", map[string]string{"Authorization": "Bearer read"})
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.StatusCode)
+	}
+	var got clientapi.CredentialAccount
+	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	want := clientapi.PostingLimits{
+		VisibilityCeiling: clientapi.VisibilityPrivate,
+		Visibilities:      []clientapi.Visibility{clientapi.VisibilityPrivate, clientapi.VisibilityDirect},
+	}
+	if !reflect.DeepEqual(got.Posting, want) {
+		t.Errorf("posting = %+v, want %+v", got.Posting, want)
+	}
+
+	failing := newAuthEnv(t, func(o *clientapi.Options) { o.Posting = fakePosting{err: errors.New("store down")} })
+	if res := failing.get(t, "/accounts/verify_credentials", map[string]string{"Authorization": "Bearer read"}); res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status with a failing policy = %d, want 500", res.StatusCode)
 	}
 }
 

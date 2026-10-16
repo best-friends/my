@@ -34,6 +34,8 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
     { code: "<p style={{ color: 'red' }} />", options: restrict.syntax },
     { code: "function C({ a = 1 }) { return a; }", options: restrict.syntax },
     { code: "function useX() { 'use strict'; return 'use no memo'; }", options: restrict.syntax },
+    { code: "useQuery(api.query.queryOptions('get', '/instance'));", options: restrict.syntax },
+    { code: "useMutation({ mutationFn: (body) => createStatus(api, body) });", options: restrict.syntax },
   ],
   invalid: [
     // A5
@@ -54,6 +56,8 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
     // R4
     { ...fails("function useX() { 'use no memo'; return 1; }"), options: restrict.syntax },
     { ...fails("'use no forget';"), options: restrict.syntax },
+    { ...fails("api.query.useQuery('get', '/instance');"), options: restrict.syntax },
+    { ...fails("const m = services.api.query.useMutation('post', '/statuses');"), options: restrict.syntax },
   ],
 });
 
@@ -62,6 +66,7 @@ ruleTester.run("no-restricted-syntax (tests)", core.get("no-restricted-syntax"),
   valid: [
     { code: "vi.mock('./useClock');", options: testSyntax },
     { code: "vi.spyOn(console, 'error');", options: testSyntax },
+    { code: "waitFor(() => expect(a).toBe(1));", options: testSyntax },
   ],
   invalid: [
     // T3
@@ -71,6 +76,8 @@ ruleTester.run("no-restricted-syntax (tests)", core.get("no-restricted-syntax"),
     { ...fails("vi.spyOn(globalThis, 'fetch');"), options: testSyntax },
     { ...fails("vi.stubGlobal('fetch', vi.fn());"), options: testSyntax },
     { ...fails("globalThis.fetch = vi.fn();"), options: testSyntax },
+    // T7
+    { ...fails("vi.waitFor(() => expect(a).toBe(1));"), options: testSyntax },
   ],
 });
 

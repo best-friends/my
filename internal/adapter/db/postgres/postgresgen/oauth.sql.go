@@ -113,7 +113,7 @@ func (q *Queries) GetAccessTokenByRefreshHash(ctx context.Context, refreshTokenH
 }
 
 const getAuthorizationCode = `-- name: GetAuthorizationCode :one
-SELECT code_hash, client_id, user_id, redirect_uri, scope, code_challenge, issued_at, expires_at
+SELECT code_hash, client_id, user_id, redirect_uri, scope, code_challenge, session_id, issued_at, expires_at
 FROM oauth_authorization_codes
 WHERE code_hash = $1
 `
@@ -128,6 +128,7 @@ func (q *Queries) GetAuthorizationCode(ctx context.Context, codeHash []byte) (Oa
 		&i.RedirectUri,
 		&i.Scope,
 		&i.CodeChallenge,
+		&i.SessionID,
 		&i.IssuedAt,
 		&i.ExpiresAt,
 	)
@@ -207,8 +208,8 @@ func (q *Queries) InsertAccessToken(ctx context.Context, arg InsertAccessTokenPa
 }
 
 const insertAuthorizationCode = `-- name: InsertAuthorizationCode :exec
-INSERT INTO oauth_authorization_codes (code_hash, client_id, user_id, redirect_uri, scope, code_challenge, issued_at, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO oauth_authorization_codes (code_hash, client_id, user_id, redirect_uri, scope, code_challenge, session_id, issued_at, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type InsertAuthorizationCodeParams struct {
@@ -218,6 +219,7 @@ type InsertAuthorizationCodeParams struct {
 	RedirectUri   string
 	Scope         string
 	CodeChallenge string
+	SessionID     *string
 	IssuedAt      time.Time
 	ExpiresAt     time.Time
 }
@@ -230,6 +232,7 @@ func (q *Queries) InsertAuthorizationCode(ctx context.Context, arg InsertAuthori
 		arg.RedirectUri,
 		arg.Scope,
 		arg.CodeChallenge,
+		arg.SessionID,
 		arg.IssuedAt,
 		arg.ExpiresAt,
 	)
@@ -346,6 +349,26 @@ func (q *Queries) ListOAuthClientRedirectURIs(ctx context.Context, clientID stri
 		return nil, err
 	}
 	return items, nil
+}
+
+const revokeSessionOfTokenFamily = `-- name: RevokeSessionOfTokenFamily :exec
+INSERT INTO session_revocations (session_id, reason, revoked_at)
+SELECT c.session_id, $1::text, $2::timestamptz
+FROM oauth_authorization_code_redemptions r
+JOIN oauth_authorization_codes c ON c.code_hash = r.code_hash
+WHERE r.token_id = $3 AND c.session_id IS NOT NULL
+ON CONFLICT (session_id) DO NOTHING
+`
+
+type RevokeSessionOfTokenFamilyParams struct {
+	Reason    string
+	RevokedAt time.Time
+	FamilyID  string
+}
+
+func (q *Queries) RevokeSessionOfTokenFamily(ctx context.Context, arg RevokeSessionOfTokenFamilyParams) error {
+	_, err := q.db.Exec(ctx, revokeSessionOfTokenFamily, arg.Reason, arg.RevokedAt, arg.FamilyID)
+	return err
 }
 
 const revokeTokenFamily = `-- name: RevokeTokenFamily :exec

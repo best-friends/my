@@ -46,6 +46,13 @@ export const syntax = [
     selector: String.raw`ExpressionStatement[directive=/^use no (memo|forget)$/]`,
     message: "Do not opt out of React Compiler. If a library cannot be compiled, wrap it in one hook and disable this line with a reason (web-client.md R4).",
   },
+  {
+    // R4, §10: a hook read from an object (openapi-react-query's api.query.useQuery) makes React Compiler
+    // skip the calling hook (react.dev "Don't dynamically use Hooks").
+    selector: "CallExpression > MemberExpression.callee[object.property.name='query'][property.name=/^use[A-Z]/]",
+    message:
+      "Do not call the hooks of the API client (api.query.useQuery / useMutation); React Compiler skips the calling hook. Pass api.query.queryOptions(...) to useQuery, and a function of features/<x>/api to useMutation (web-client.md R4, §10).",
+  },
 ];
 
 /** Modules that may be mocked only through MSW (T3): the API client and feature API modules. */
@@ -68,6 +75,11 @@ export const testSyntax = [
   {
     selector: "AssignmentExpression > MemberExpression.left[property.name='fetch']",
     message: "Do not replace fetch; mock the network with MSW (web-client.md T3).",
+  },
+  {
+    // T7: vi.waitFor has a fixed 1 s limit and does not wrap act(); Testing Library's waitFor uses the timeout of the test setup.
+    selector: "CallExpression[callee.object.name='vi'][callee.property.name='waitFor']",
+    message: "Wait with findBy or Testing Library's waitFor, which use the timeout of the test setup (web-client.md T7).",
   },
 ];
 

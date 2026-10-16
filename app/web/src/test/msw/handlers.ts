@@ -36,6 +36,7 @@ export const viewerFixture: Schemas["CredentialAccount"] = {
   discoverable: true,
   indexable: true,
   source: { note: "", fields: [] },
+  posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
 };
 
 /** An `Account` of another user, for the lists of accounts; `n` makes its ID unique. */
@@ -67,8 +68,8 @@ export const preferencesFixture: Schemas["Preferences"] = {
   timeline_languages: [],
 };
 
-/** The `Relationship` with account `id` when the viewer has none. */
-export function relationshipFixture(id: string): Schemas["Relationship"] {
+/** The `Relationship` with account `id` when the viewer has none, or with `overrides`. */
+export function relationshipFixture(id: string, overrides: Partial<Schemas["Relationship"]> = {}): Schemas["Relationship"] {
   return {
     id,
     following: false,
@@ -80,6 +81,7 @@ export function relationshipFixture(id: string): Schemas["Relationship"] {
     blocking: false,
     muting: false,
     muting_notifications: false,
+    ...overrides,
   };
 }
 
@@ -261,6 +263,7 @@ export const handlers = [
   http.post(oauthPaths.revoke, () => new HttpResponse(null, { status: 200 })),
   ...statusHandlers,
   ...notificationHandlers(),
+  ...accountHandlers(),
 ];
 
 // --- notifications (#132) -------------------------------------------------------------------------
@@ -343,5 +346,57 @@ function notificationHandlers() {
       return HttpResponse.json(body);
     }),
     http.post(`${apiBase}/notifications/:id/dismiss`, ({ request }) => (authorized(request) ? new HttpResponse(null, { status: 204 }) : unauthenticated(request))),
+  ];
+}
+
+// --- accounts, relationships and profiles (the compose hints #207, the profile pages #131) ----------
+
+/** An account of another server that the instance knows, which the viewer does not follow and is not followed by. */
+export const remoteAccountFixture: Schemas["Account"] = accountFixture(3, "Carol");
+
+/** The relationship that each change of the default handlers returns. */
+const relationshipAfter: Readonly<Record<string, Partial<Schemas["Relationship"]>>> = {
+  follow: { following: true },
+  unfollow: {},
+  block: { blocking: true },
+  unblock: {},
+  mute: { muting: true, muting_notifications: true },
+  unmute: {},
+};
+
+/**
+ * The default account handlers: GET /accounts/lookup finds Alice (the viewer) and Bob with their follow
+ * counts, and remoteAccountFixture; the viewer has no relationship with anyone; each change returns the
+ * relationship after it; an account's posts are the timeline fixture, and each follow list holds the other
+ * local account.
+ */
+function accountHandlers() {
+  const authorized = (request: Request) => request.headers.get("Authorization") === `Bearer ${validAccessToken}`;
+  // Built on each request: the `handlers` array at the top calls accountHandlers() before the fixtures of
+  // the later sections (otherAccountFixture, remoteAccountFixture) are initialized.
+  const known = (): Schemas["Account"][] => [
+    { ...viewerFixture, followers_count: 1, following_count: 1 },
+    { ...otherAccountFixture, followers_count: 1, following_count: 1 },
+    remoteAccountFixture,
+  ];
+  const followList = (id: string): Schemas["AccountPage"] => ({ accounts: [id === viewerFixture.id ? otherAccountFixture : viewerFixture] });
+  return [
+    http.get(`${apiBase}/accounts/lookup`, ({ request }) => {
+      const acct = (new URL(request.url).searchParams.get("acct") ?? "").replace(/^@/, "").toLowerCase();
+      const found = known().find((a) => a.acct === acct);
+      return found === undefined ? problem(404, "about:blank", "Not Found") : HttpResponse.json(found);
+    }),
+    http.get(`${apiBase}/accounts/relationships`, ({ request }) => {
+      if (!authorized(request)) return unauthenticated(request);
+      return HttpResponse.json(new URL(request.url).searchParams.getAll("id").map((id) => relationshipFixture(id)));
+    }),
+    http.post(`${apiBase}/accounts/:id/:action`, ({ request, params }) => {
+      if (!authorized(request)) return unauthenticated(request);
+      const after = relationshipAfter[String(params["action"])];
+      return after === undefined ? problem(404, "about:blank", "Not Found") : HttpResponse.json(relationshipFixture(String(params["id"]), after));
+    }),
+    http.get(`${apiBase}/accounts/:id/statuses`, () => HttpResponse.json(statusPage([timelineStatusFixture]))),
+    http.get(`${apiBase}/accounts/:id/followers`, ({ params }) => HttpResponse.json(followList(String(params["id"])))),
+    http.get(`${apiBase}/accounts/:id/following`, ({ params }) => HttpResponse.json(followList(String(params["id"])))),
   ];
 }

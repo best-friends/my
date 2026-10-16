@@ -19,8 +19,33 @@ export type MediaAttachment = components["schemas"]["MediaAttachment"];
 /** A page of a timeline. */
 export type StatusPage = components["schemas"]["StatusPage"];
 
+/**
+ * Which posts of an account its profile lists (FR-204): its posts and boosts without replies (`posts`),
+ * with its replies too (`replies`), or its own posts only, without boosts (`no_boosts`).
+ */
+export const accountTimelineFilters = ["posts", "replies", "no_boosts"] as const;
+
+export type AccountTimelineFilter = (typeof accountTimelineFilters)[number];
+
 /** Which timeline to show; the route puts it in the URL (web-client.md S3). */
-export type Timeline = { kind: "home" } | { kind: "local" } | { kind: "tag"; tag: string };
+export type Timeline =
+  | { kind: "home" }
+  | { kind: "local" }
+  | { kind: "tag"; tag: string }
+  /** The posts of the account `id` on its profile. */
+  | { kind: "account"; id: string; filter: AccountTimelineFilter };
+
+/** The query of GET /accounts/{id}/statuses for a filter (without the cursor). */
+function accountTimelineQuery(filter: AccountTimelineFilter) {
+  switch (filter) {
+    case "posts":
+      return { exclude_replies: true };
+    case "replies":
+      return {};
+    case "no_boosts":
+      return { exclude_replies: true, exclude_boosts: true };
+  }
+}
 
 /** The query key of a timeline. */
 function timelineQueryKey(timeline: Timeline) {
@@ -31,6 +56,8 @@ function timelineQueryKey(timeline: Timeline) {
       return ["get", "/timelines/local", "pages"] as const;
     case "tag":
       return ["get", "/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag } } }, "pages"] as const;
+    case "account":
+      return ["get", "/accounts/{id}/statuses", { params: { path: { id: timeline.id }, query: accountTimelineQuery(timeline.filter) } }, "pages"] as const;
   }
 }
 
@@ -42,7 +69,12 @@ async function fetchTimelinePage(api: Api, timeline: Timeline, cursor: string | 
       ? await api.fetch.GET("/timelines/home", { params: { query }, signal })
       : timeline.kind === "local"
         ? await api.fetch.GET("/timelines/local", { params: { query }, signal })
-        : await api.fetch.GET("/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag }, query }, signal });
+        : timeline.kind === "tag"
+          ? await api.fetch.GET("/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag }, query }, signal })
+          : await api.fetch.GET("/accounts/{id}/statuses", {
+              params: { path: { id: timeline.id }, query: { ...accountTimelineQuery(timeline.filter), ...query } },
+              signal,
+            });
   // The client's middleware throws an ApiError for every error status (lib/api/client.ts).
   if (data === undefined) throw new ApiError(error);
   return data;

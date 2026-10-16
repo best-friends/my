@@ -10,7 +10,9 @@ import { Badge, Link } from "@my/ui";
 import { useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useUnreadNotificationCount } from "../../features/notifications";
+import { useViewer } from "../../features/session";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
+import { profilePath } from "../../lib/paths";
 import { HomeIcon, LocalIcon, NotificationsIcon, ProfileIcon, SettingsIcon } from "./icons";
 
 type NavigationItem = {
@@ -27,15 +29,25 @@ const items: readonly NavigationItem[] = [
   { to: "/settings", label: "client:shell.nav.settings", icon: <SettingsIcon /> },
 ];
 
-/** Whether `pathname` is in the section of `to`: the page itself or one below it. */
-function inSection(pathname: string, to: NavigationItem["to"]): boolean {
-  return pathname === to || pathname.startsWith(`${to}/`);
+/** Whether `pathname` is `path` or a page below it. */
+function isUnder(pathname: string, path: string): boolean {
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
+/**
+ * Whether `pathname` is in the section of `to`: the page itself or one below it. "/profile" redirects to
+ * the viewer's own profile page, so that page and the pages below it are its section too.
+ */
+function inSection(pathname: string, to: NavigationItem["to"], ownProfile: string | null): boolean {
+  return isUnder(pathname, to) || (to === "/profile" && ownProfile !== null && isUnder(pathname, ownProfile));
 }
 
 export function Navigation() {
   const t = useT();
   const pathname = useLocation({ select: (location) => location.pathname });
   const unread = useUnreadNotificationCount();
+  const viewer = useViewer();
+  const ownProfile = viewer.status === "signed-in" ? profilePath(viewer.account.acct) : null;
   return (
     <nav
       aria-label={t("client:shell.nav.label")}
@@ -49,7 +61,7 @@ export function Navigation() {
               <Link
                 href={item.to}
                 {...(badge ? { "aria-label": t("client:shell.nav.notifications_unread", { count: unread }) } : {})}
-                aria-current={inSection(pathname, item.to) ? "page" : undefined}
+                aria-current={inSection(pathname, item.to, ownProfile) ? "page" : undefined}
                 variant="standalone"
                 className="group flex min-h-16 flex-col justify-center gap-1 px-1 text-xs font-normal text-fg-muted no-underline data-hovered:bg-surface-sunken data-hovered:no-underline pointer-coarse:min-h-16 aria-[current=page]:font-semibold aria-[current=page]:text-accent md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base"
               >

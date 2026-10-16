@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server data of the compose feature (web-client.md S1): the limits and preferences a new post
-// follows, the post being replied to, the uploaded media while the server processes them, and the
-// writes (uploading a file, posting). Types come from the spec (S9).
+// follows, the post being replied to, the uploaded media while the server processes them, the accounts
+// that mentions name and the viewer's relationships with them, and the writes (uploading a file,
+// posting). Types come from the spec (S9).
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -10,6 +11,7 @@ export type Status = components["schemas"]["Status"];
 export type MediaAttachment = components["schemas"]["MediaAttachment"];
 export type Visibility = components["schemas"]["Visibility"];
 export type CreateStatusRequest = components["schemas"]["CreateStatusRequest"];
+export type PostingLimits = components["schemas"]["PostingLimits"];
 
 /** The instance, for `limits.max_post_characters`. */
 export function instanceQueryOptions(api: Api) {
@@ -88,3 +90,27 @@ export async function cachePostedStatus(api: Api, queryClient: QueryClient, stat
   // openapi-react-query keys are [method, path, init].
   await queryClient.invalidateQueries({ predicate: (query) => typeof query.queryKey[1] === "string" && listsWithNewPosts.has(query.queryKey[1]) });
 }
+
+/**
+ * The viewer's own account, for its posting limits (data-model.md §5.4). The key is the session's viewer
+ * query, so this reads the account already in the cache.
+ */
+export function credentialsQueryOptions(api: Api) {
+  return api.query.queryOptions("get", "/accounts/verify_credentials");
+}
+
+/**
+ * The account a mention names. An unknown handle is a 404, an answer rather than a failure to retry: the
+ * server does not resolve it either.
+ */
+export function lookupAccountQueryOptions(api: Api, acct: string) {
+  return api.query.queryOptions("get", "/accounts/lookup", { params: { query: { acct } } }, { retry: false });
+}
+
+/** The viewer's relationships with the accounts `ids` (at most `maxRelationshipIds`). */
+export function relationshipsQueryOptions(api: Api, ids: readonly string[]) {
+  return api.query.queryOptions("get", "/accounts/relationships", { params: { query: { id: [...ids] } } });
+}
+
+/** The most accounts one GET /accounts/relationships asks about (the operation's `maxItems`). */
+export const maxRelationshipIds = 40;

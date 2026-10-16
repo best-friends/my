@@ -83,9 +83,8 @@ describe("the local timeline", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Something went wrong" })).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole("button", { name: "Try again" }));
-    // Recovering from the error takes about a second in jsdom, longer than findBy waits by default.
-    // The router reruns the loader after its pending delay, which can take longer than findBy waits by default.
-    expect(await screen.findByRole("feed", { name: "Local timeline" }, { timeout: 3000 })).toBeInTheDocument();
+    // The router reruns the loader after its pending delay: about a second in jsdom.
+    expect(await screen.findByRole("feed", { name: "Local timeline" })).toBeInTheDocument();
   });
 
   test("keeps the posts when an older page fails, announces it and tries again on request", async () => {

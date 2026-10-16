@@ -75,6 +75,10 @@
     "defaultMessage": "アップロード中…",
     "description": "State of an attached image while it is being sent to the server."
   },
+  "compose.mention.unreached": {
+    "defaultMessage": "{count, plural, other {{accounts} はほかのサーバーのアカウントで、あなたをフォローしていないため、この投稿は届きません。}}公開範囲「このサーバー」の投稿は、ほかのサーバーではあなたのフォロワーにだけ届きます。",
+    "description": "Warning under a post with the visibility 'This server' that mentions accounts of other servers that do not follow the author (ADR-0017). {accounts} is the list of their handles, for example '@carol@remote.example and @dave@other.example'; {count} is how many there are."
+  },
   "compose.missing_description.add": {
     "defaultMessage": "説明を書く",
     "description": "Button of the confirmation that goes back to the form to describe the images."
@@ -170,6 +174,10 @@
   "compose.visibility.button": {
     "defaultMessage": "公開範囲: {visibility}",
     "description": "Button that opens the choice of who can see the post. {visibility} is the current choice, for example 'Public'."
+  },
+  "compose.visibility.ceiling": {
+    "defaultMessage": "あなたのアカウントは、いまは「{visibility}」より広く投稿できません。より広い公開範囲を選ぶと「{visibility}」で投稿されます。",
+    "description": "Hint in the choice of visibility while a restriction on the account narrows what it can post. {visibility} is the widest visibility it can use, for example 'Followers'."
   },
   "compose.visibility.direct": {
     "defaultMessage": "メンションした人",
@@ -390,6 +398,238 @@
   "page.not_built": {
     "defaultMessage": "この画面はまだ準備中です。",
     "description": "Text below the heading of a page whose screen the web client does not have yet."
+  },
+  "profile.change_failed": {
+    "defaultMessage": "変更できませんでした: {reason}",
+    "description": "Toast when following, blocking, muting or undoing one of them failed. {reason} is the error message."
+  },
+  "profile.confirm.block.action": {
+    "defaultMessage": "ブロック",
+    "description": "Button of the dialog that blocks the account."
+  },
+  "profile.confirm.block.body": {
+    "defaultMessage": "お互いのフォローが解除され、ブロックを解除するまでどちらもフォローできなくなります。",
+    "description": "Text of the dialog that confirms blocking: what a block does."
+  },
+  "profile.confirm.block.title": {
+    "defaultMessage": "{name} をブロックしますか？",
+    "description": "Title of the dialog that confirms blocking. {name} is the account's display name."
+  },
+  "profile.confirm.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button of a confirmation dialog on a profile that closes it and changes nothing."
+  },
+  "profile.confirm.unblock.action": {
+    "defaultMessage": "ブロックを解除",
+    "description": "Button of the dialog that unblocks the account."
+  },
+  "profile.confirm.unblock.body": {
+    "defaultMessage": "ブロックで解除されたフォローは元に戻りません。",
+    "description": "Text of the dialog that confirms unblocking."
+  },
+  "profile.confirm.unblock.title": {
+    "defaultMessage": "{name} のブロックを解除しますか？",
+    "description": "Title of the dialog that confirms unblocking. {name} is the account's display name."
+  },
+  "profile.confirm.unfollow.action": {
+    "defaultMessage": "フォロー解除",
+    "description": "Button of the dialog that unfollows the account."
+  },
+  "profile.confirm.unfollow.body": {
+    "defaultMessage": "この人の投稿はホームタイムラインに表示されなくなります。",
+    "description": "Text of the dialog that confirms unfollowing."
+  },
+  "profile.confirm.unfollow.title": {
+    "defaultMessage": "{name} のフォローを解除しますか？",
+    "description": "Title of the dialog that confirms unfollowing. {name} is the account's display name."
+  },
+  "profile.confirm.withdraw.action": {
+    "defaultMessage": "リクエストを取り消す",
+    "description": "Button of the dialog that withdraws the follow request."
+  },
+  "profile.confirm.withdraw.body": {
+    "defaultMessage": "あとでもう一度リクエストできます。",
+    "description": "Text of the dialog that confirms withdrawing a follow request."
+  },
+  "profile.confirm.withdraw.title": {
+    "defaultMessage": "{name} へのフォローリクエストを取り消しますか？",
+    "description": "Title of the dialog that confirms withdrawing a pending follow request. {name} is the account's display name."
+  },
+  "profile.done.blocked": {
+    "defaultMessage": "{name} をブロックしました。",
+    "description": "Announced to screen readers when blocking succeeded. {name} is the account's display name."
+  },
+  "profile.done.followed": {
+    "defaultMessage": "{name} をフォローしました。",
+    "description": "Announced to screen readers when following succeeded. {name} is the account's display name."
+  },
+  "profile.done.muted": {
+    "defaultMessage": "{name} をミュートしました。",
+    "description": "Announced to screen readers when muting succeeded. {name} is the account's display name."
+  },
+  "profile.done.requested": {
+    "defaultMessage": "{name} にフォローをリクエストしました。",
+    "description": "Announced to screen readers when a follow request was sent. {name} is the account's display name."
+  },
+  "profile.done.unblocked": {
+    "defaultMessage": "{name} のブロックを解除しました。",
+    "description": "Announced to screen readers when unblocking succeeded. {name} is the account's display name."
+  },
+  "profile.done.unfollowed": {
+    "defaultMessage": "{name} のフォローを解除しました。",
+    "description": "Announced to screen readers when unfollowing or withdrawing a request succeeded. {name} is the account's display name."
+  },
+  "profile.done.unmuted": {
+    "defaultMessage": "{name} のミュートを解除しました。",
+    "description": "Announced to screen readers when unmuting succeeded. {name} is the account's display name."
+  },
+  "profile.edit": {
+    "defaultMessage": "プロフィールを編集",
+    "description": "Link on the user's own profile to the settings where they edit it."
+  },
+  "profile.follow": {
+    "defaultMessage": "フォロー",
+    "description": "Button on a profile that follows the account."
+  },
+  "profile.follow.back": {
+    "defaultMessage": "フォローバック",
+    "description": "Button on a profile of an account that follows the user, which follows it in turn."
+  },
+  "profile.follow.blocked": {
+    "defaultMessage": "ブロック中",
+    "description": "Button on a profile of an account the user blocks; pressing it offers to unblock."
+  },
+  "profile.follow.following": {
+    "defaultMessage": "フォロー中",
+    "description": "Button on a profile of an account the user follows; pressing it offers to unfollow."
+  },
+  "profile.follow.request": {
+    "defaultMessage": "フォローをリクエスト",
+    "description": "Button on a profile of an account that approves its followers: it sends a follow request."
+  },
+  "profile.follow.requested": {
+    "defaultMessage": "リクエスト中",
+    "description": "Button on a profile while the user's follow request awaits approval; pressing it offers to withdraw the request."
+  },
+  "profile.followers.empty": {
+    "defaultMessage": "まだフォロワーはいません",
+    "description": "Shown instead of the list of followers when there are none."
+  },
+  "profile.followers.title": {
+    "defaultMessage": "{name} のフォロワー",
+    "description": "Heading and document title of the list of an account's followers. {name} is the account's display name."
+  },
+  "profile.followers_count": {
+    "defaultMessage": "{count, plural, other {# フォロワー}}",
+    "description": "Link on a profile to the accounts that follow it, with their number."
+  },
+  "profile.following.empty": {
+    "defaultMessage": "まだ誰もフォローしていません",
+    "description": "Shown instead of the list of followed accounts when there are none."
+  },
+  "profile.following.title": {
+    "defaultMessage": "{name} がフォロー中のアカウント",
+    "description": "Heading and document title of the list of the accounts an account follows. {name} is the account's display name."
+  },
+  "profile.following_count": {
+    "defaultMessage": "{count, plural, other {# フォロー}}",
+    "description": "Link on a profile to the accounts it follows, with their number."
+  },
+  "profile.joined": {
+    "defaultMessage": "{date} に登録",
+    "description": "When the account was created, on its profile. {date} is the formatted date, for example 'October 1, 2026'."
+  },
+  "profile.list.back": {
+    "defaultMessage": "{name} のプロフィールに戻る",
+    "description": "Link from a follow list to the account's profile. {name} is the account's display name."
+  },
+  "profile.list.load_more": {
+    "defaultMessage": "もっと見る",
+    "description": "Button at the end of a follow list that loads the next accounts."
+  },
+  "profile.list.load_more_failed": {
+    "defaultMessage": "続きのアカウントを読み込めませんでした: {reason}",
+    "description": "Shown and announced when the next page of a follow list failed to load. {reason} is the error message."
+  },
+  "profile.list.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button at the end of a follow list after the next accounts failed to load."
+  },
+  "profile.menu.block": {
+    "defaultMessage": "ブロック",
+    "description": "Menu item that asks to block the account of the profile."
+  },
+  "profile.menu.mute": {
+    "defaultMessage": "ミュート",
+    "description": "Menu item that mutes the account of the profile."
+  },
+  "profile.menu.unblock": {
+    "defaultMessage": "ブロックを解除",
+    "description": "Menu item that asks to unblock the account of the profile."
+  },
+  "profile.menu.unmute": {
+    "defaultMessage": "ミュートを解除",
+    "description": "Menu item that ends the mute of the account of the profile."
+  },
+  "profile.more": {
+    "defaultMessage": "{name} へのその他の操作",
+    "description": "Accessible name of the menu button with mute and block on a profile. {name} is the account's display name."
+  },
+  "profile.not_found.body": {
+    "defaultMessage": "このアドレスのアカウントはないか、表示できません。",
+    "description": "Text below the heading of a profile that was not found."
+  },
+  "profile.not_found.title": {
+    "defaultMessage": "アカウントが見つかりません",
+    "description": "Heading and document title of a profile address that names no account the user may see."
+  },
+  "profile.relationship_failed": {
+    "defaultMessage": "フォローの状態を読み込めませんでした: {reason}",
+    "description": "Shown on a profile instead of the follow button when the relationship failed to load. {reason} is the error message."
+  },
+  "profile.sign_in_to_follow": {
+    "defaultMessage": "ログインしてフォロー",
+    "description": "Link on a profile when nobody is signed in: it opens the sign-in page and comes back."
+  },
+  "profile.signed_out.description": {
+    "defaultMessage": "ログインすると自分のプロフィールを見られます。",
+    "description": "Text of the Profile page of the navigation when nobody is signed in, above the sign-in link."
+  },
+  "profile.tab.no_boosts": {
+    "defaultMessage": "ブーストを除く",
+    "description": "Tab of a profile: only the posts the account wrote itself, without replies and boosts."
+  },
+  "profile.tab.posts": {
+    "defaultMessage": "投稿",
+    "description": "Tab of a profile: the account's posts and boosts, without its replies."
+  },
+  "profile.tab.replies": {
+    "defaultMessage": "投稿と返信",
+    "description": "Tab of a profile: the account's posts, boosts and replies."
+  },
+  "profile.tabs": {
+    "defaultMessage": "{name} の投稿",
+    "description": "Accessible name of the tab list that switches between the posts of a profile. {name} is the account's display name."
+  },
+  "profile.tag.bot": {
+    "defaultMessage": "ボット",
+    "description": "Label on a profile: the account is automated."
+  },
+  "profile.tag.follows_you": {
+    "defaultMessage": "フォローされています",
+    "description": "Label on a profile: the account follows the user."
+  },
+  "profile.tag.locked": {
+    "defaultMessage": "フォローは承認制",
+    "description": "Label on a profile: the account approves each follow request."
+  },
+  "profile.tag.muted": {
+    "defaultMessage": "ミュート中",
+    "description": "Label on a profile: the user mutes the account."
+  },
+  "profile.tag.requested_you": {
+    "defaultMessage": "フォローリクエストが届いています",
+    "description": "Label on a profile: the account has asked to follow the user and awaits approval."
   },
   "profile.title": {
     "defaultMessage": "プロフィール",
@@ -814,6 +1054,10 @@
   "timeline.content_warning.toggle": {
     "defaultMessage": "内容を表示",
     "description": "Button next to a post's content warning that shows or hides the post behind it. The same text is used while the post is shown."
+  },
+  "timeline.empty.account.heading": {
+    "defaultMessage": "まだ投稿がありません",
+    "description": "Shown instead of the posts of a profile's tab when it has none."
   },
   "timeline.empty.home.action": {
     "defaultMessage": "ローカルタイムラインを見る",

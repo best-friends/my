@@ -5,11 +5,23 @@
 // browser APIs and check what the client did with them.
 import { Button } from "@my/ui";
 import { createMemoryHistory, createRootRouteWithContext, createRouter, Outlet } from "@tanstack/react-router";
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RouterContext } from "../../lib/query";
-import { apiBase, instanceFixture, oauthPaths, preferencesFixture, problem, viewerStatusFixture, tokenResponse, uploadedMediaId } from "../../test/msw/handlers";
+import {
+  apiBase,
+  viewerFixture,
+  instanceFixture,
+  oauthPaths,
+  preferencesFixture,
+  problem,
+  relationshipFixture,
+  remoteAccountFixture,
+  viewerStatusFixture,
+  tokenResponse,
+  uploadedMediaId,
+} from "../../test/msw/handlers";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { ComposeEntry, ComposeProvider, useReply } from ".";
@@ -80,7 +92,7 @@ describe("the new-post form", () => {
     );
     await user.click(within(choices).getByRole("radio", { name: "Followers" }));
     await user.click(screen.getByRole("button", { name: "Done" }));
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(within(sheet).getByRole("button", { name: "Visibility: Followers" })).toHaveFocus();
     });
 
@@ -182,6 +194,88 @@ describe("the new-post form", () => {
   });
 });
 
+describe("hints before posting", () => {
+  test("a restricted account sees its visibility ceiling and the wider choices disabled, and posts with the ceiling", async () => {
+    signedIn();
+    server.use(
+      http.get(`${apiBase}/accounts/verify_credentials`, () =>
+        HttpResponse.json({ ...viewerFixture, posting: { visibility_ceiling: "private", visibilities: ["private", "direct"] } }),
+      ),
+    );
+    const sent = recordPosts();
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+
+    // The preference is public; the account can post at most as followers.
+    await user.click(await within(sheet).findByRole("button", { name: "Visibility: Followers" }));
+    const choices = await screen.findByRole("radiogroup", { name: "Who can see this post?" });
+    expect(choices).toHaveAccessibleDescription(
+      "Your account can post at most as “Followers” right now. A wider choice is posted as “Followers”.",
+    );
+    for (const name of ["Public", "This server", "Unlisted"]) expect(within(choices).getByRole("radio", { name })).toBeDisabled();
+    expect(within(choices).getByRole("radio", { name: "Followers" })).toBeChecked();
+    expect(within(choices).getByRole("radio", { name: "Mentioned people" })).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "Quietly");
+    await user.click(within(sheet).getByRole("button", { name: "Post" }));
+
+    expect(await findToast("Posted.")).toBeInTheDocument();
+    expect(sent[0]?.body).toMatchObject({ visibility: "private" });
+  });
+
+  test("a local post warns about the mentioned accounts of other servers that do not follow the viewer", async () => {
+    signedIn();
+    const asked: string[][] = [];
+    server.use(
+      http.get(`${apiBase}/accounts/relationships`, ({ request }) => {
+        asked.push(new URL(request.url).searchParams.getAll("id"));
+        return undefined;
+      }),
+    );
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+    const warning = "@carol@remote.example is on another server and does not follow you, so they will not receive this post. “This server” posts reach only your followers outside this server.";
+
+    // The local viewer and an unknown handle are not warned about; neither is a public post.
+    await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Hi @Carol@remote.example, @alice@my.example and @nobody@else.example");
+    await user.click(within(sheet).getByRole("button", { name: "Visibility: Public" }));
+    await user.click(await screen.findByRole("radio", { name: "This server" }));
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(await within(sheet).findByText(warning)).toBeInTheDocument();
+    expect(asked).toEqual([[remoteAccountFixture.id]]);
+
+    await user.click(within(sheet).getByRole("button", { name: "Visibility: This server" }));
+    await user.click(await screen.findByRole("radio", { name: "Unlisted" }));
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    expect(within(sheet).queryByText(warning)).not.toBeInTheDocument();
+  });
+
+  test("a local post does not warn about a mentioned follower on another server", async () => {
+    signedIn();
+    let asked = false;
+    server.use(
+      http.get(`${apiBase}/accounts/relationships`, () => {
+        asked = true;
+        return HttpResponse.json([{ ...relationshipFixture(remoteAccountFixture.id), followed_by: true }]);
+      }),
+    );
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+
+    await user.click(await within(sheet).findByRole("button", { name: "Visibility: Public" }));
+    await user.click(await screen.findByRole("radio", { name: "This server" }));
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "Hi @carol@remote.example");
+
+    await waitFor(() => {
+      expect(asked).toBe(true);
+    });
+    expect(within(sheet).queryByText(/does not follow you/)).not.toBeInTheDocument();
+  });
+});
+
 /** Stubs the browser's image decoding and encoding, and records what the client asked of them. */
 async function stubImageApis() {
   const drawn: { width: number; height: number }[] = [];
@@ -257,7 +351,7 @@ describe("images", () => {
     expect(description).toHaveAccessibleDescription(/Describe the image for people who cannot see it\./);
     expect(within(sheet).getByRole("button", { name: "Post" })).toBeDisabled();
     // 6000 × 4000 is more than 3840 × 2160 pixels of area: scaled to fit, with the aspect ratio kept.
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(uploads).toHaveLength(1);
     });
     expect(drawn).toEqual([{ width: 3527, height: 2351 }]);
@@ -269,9 +363,9 @@ describe("images", () => {
     await user.click(within(sheet).getByRole("checkbox", { name: "Hide the images until readers show them" }));
     // The upload was processing; the poll finds it ready.
     const post = within(sheet).getByRole("button", { name: "Post" });
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(post).toBeEnabled();
-    }, { timeout: 3000 });
+    });
     await user.click(post);
 
     expect(await findToast("Posted.")).toBeInTheDocument();
@@ -296,15 +390,15 @@ describe("images", () => {
     const description = await within(sheet).findByRole("textbox", { name: "Description of image 1" });
     expect(description).toHaveAccessibleDescription(/Your settings ask for a description of every image\./);
     const post = within(sheet).getByRole("button", { name: "Post" });
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(post).toBeEnabled();
-    }, { timeout: 3000 });
+    });
 
     await user.click(post);
     const question = await screen.findByRole("alertdialog", { name: "Post without image descriptions?" });
     expect(within(question).getByText(/1 image has no description\./)).toBeInTheDocument();
     await user.click(within(question).getByRole("button", { name: "Add descriptions" }));
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(description).toHaveFocus();
     });
     expect(sent).toHaveLength(0);

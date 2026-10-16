@@ -5,16 +5,17 @@ import { type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui"
 import { type IntlShape, useIntl } from "react-intl";
 import { useNow } from "../../../lib/clock";
 import { useConfig } from "../../../lib/config";
+import { profilePath } from "../../../lib/paths";
 import type { MediaAttachment, Status } from "../api/timelines";
 
 export type StatusView = {
-  /** The display name of the account that boosted the post, or null for a post of its own. */
-  boostedBy: string | null;
+  /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
+  boostedBy: { name: string; href: string } | null;
   /**
-   * The author's display name (the username when there is none), full handle (`@alice@example.com`), and
-   * avatar URL (undefined when the account has none, and the avatar shows its fallback).
+   * The author's display name (the username when there is none), full handle (`@alice@example.com`),
+   * profile page, and avatar URL (undefined when the account has none, and the avatar shows its fallback).
    */
-  author: { name: string; handle: string; avatar: string | undefined };
+  author: { name: string; handle: string; href: string; avatar: string | undefined };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
   time: { dateTime: string; relative: string; absolute: string };
   /** The body, as the server sanitized it. */
@@ -69,10 +70,12 @@ export function useStatusView(status: Status): StatusView {
   const lang = post.language === "und" ? undefined : post.language;
   const writtenAt = Date.parse(post.created_at);
   return {
-    boostedBy: status.boost === undefined ? null : status.account.display_name || status.account.username,
+    boostedBy:
+      status.boost === undefined ? null : { name: status.account.display_name || status.account.username, href: profilePath(status.account.acct) },
     author: {
       name: post.account.display_name || post.account.username,
       handle: handleOf(post.account.acct, accountDomain),
+      href: profilePath(post.account.acct),
       avatar: post.account.avatar_url,
     },
     time: {

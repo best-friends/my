@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, ContentWarning, MediaGrid, PostCard, PostContent } from "@my/ui";
+import { Avatar, ContentWarning, Link, MediaGrid, PostCard, PostContent } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/timelines";
 import { useStatusView } from "../hooks/useStatusView";
 
 export type StatusCardProps = { status: Status };
+
+/** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
+const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
 
 /** One status of a timeline: the hook's view of it placed into the slots of PostCard. */
 export function StatusCard({ status }: StatusCardProps) {
@@ -32,21 +35,38 @@ export function StatusCard({ status }: StatusCardProps) {
             <BoostIcon />
             <span>
               {/* The booster's name is the user's text, isolated from the sentence around it (Y10). */}
-              {intl.formatMessage({ id: "client:timeline.boosted_by" }, { name: <bdi key="name">{view.boostedBy}</bdi> })}
+              {intl.formatMessage(
+                { id: "client:timeline.boosted_by" },
+                {
+                  name: (
+                    <Link key="name" href={view.boostedBy.href} className={nameLink}>
+                      <bdi>{view.boostedBy.name}</bdi>
+                    </Link>
+                  ),
+                },
+              )}
             </span>
           </>
         ),
       })}
-      avatar={<Avatar src={view.author.avatar} name={view.author.name} decorative />}
+      avatar={
+        // React Aria's Link cannot leave the tab order, so the picture is a link of its own to the same
+        // profile as the name, and named by it.
+        <Link href={view.author.href} aria-label={view.author.name} className="block rounded-full">
+          <Avatar src={view.author.avatar} name={view.author.name} decorative />
+        </Link>
+      }
       author={
-        <>
-          <span dir="auto" className="font-semibold">
-            {view.author.name}
-          </span>{" "}
-          <span dir="ltr" className="text-sm text-fg-muted">
-            {view.author.handle}
-          </span>
-        </>
+        <Link href={view.author.href} className={nameLink}>
+          <>
+            <span dir="auto" className="font-semibold">
+              {view.author.name}
+            </span>{" "}
+            <span dir="ltr" className="text-sm text-fg-muted">
+              {view.author.handle}
+            </span>
+          </>
+        </Link>
       }
       time={
         <time dateTime={view.time.dateTime} title={view.time.absolute}>

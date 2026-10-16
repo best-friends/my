@@ -204,7 +204,7 @@ web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
 web-typecheck: web-install ## Type-check every client package with tsc
 	cd app && bun run typecheck
 
-web-build: web-install ## Build app/web into app/web/dist and copy it to internal/interface/web/dist for embedding (fails when React Compiler compiled nothing)
+web-build: web-install ## Build app/web into app/web/dist and copy it to internal/interface/web/dist for embedding (fails when React Compiler compiled nothing or skipped a function)
 	cd app && bun run build
 	find $(WEB_EMBED_DIR) -mindepth 1 ! -name .gitkeep -delete
 	cp -R app/web/dist/. $(WEB_EMBED_DIR)/

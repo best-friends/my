@@ -2,7 +2,7 @@
 // Integration tests of the error boundaries (web-client.md E1): the app's layout, error components and
 // router options over a route tree of the test's own, with a page whose loader fails.
 import { createRootRouteWithContext, createRoute, createRouter, type RouterHistory } from "@tanstack/react-router";
-import { act, screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import { expect, test } from "vitest";
 import type { RouterContext } from "./lib/query";
 import { routerOptions } from "./router";
@@ -50,7 +50,10 @@ test("a page that fails shows the error inside the layout, focused and titled, a
   await act(() => router.navigate({ href: "/broken" }));
 
   const heading = await screen.findByRole("heading", { level: 1, name: "Something went wrong" });
-  expect(heading).toHaveFocus();
+  // Focus moves when the router reports the page rendered, after the heading is in the document.
+  await waitFor(() => {
+    expect(heading).toHaveFocus();
+  });
   expect(document.title).toBe("Something went wrong – my example");
   // The layout stays, so the user can go elsewhere.
   expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();

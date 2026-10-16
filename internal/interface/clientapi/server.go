@@ -37,6 +37,9 @@ type Options struct {
 	Accounts Accounts
 	// Profiles changes the viewer's profile.
 	Profiles Profiles
+	// Posting reads what the viewer's restrictions let them post, for CredentialAccount; nil
+	// presents every account as unrestricted.
+	Posting PostingPolicy
 	// Preferences reads and changes the viewer's preferences.
 	Preferences UserPreferences
 	// Media runs the media use cases and presents profile images; nil serves no media

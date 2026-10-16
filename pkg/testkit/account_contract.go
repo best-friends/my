@@ -79,6 +79,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"ExpiresRefreshTokens", oauthRefreshTokensExpire},
 		{"RefreshesThirdPartyTokens", oauthRefreshesThirdPartyTokens},
 		{"RevokesTokens", oauthRevokesTokens},
+		{"EndsTheBrowserSessionOnWebSignOut", oauthWebSignOutEndsTheBrowserSession},
 		{"IncrementalProjectionEqualsRebuild", accountProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {

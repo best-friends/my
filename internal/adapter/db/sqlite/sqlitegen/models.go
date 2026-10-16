@@ -322,6 +322,7 @@ type OauthAuthorizationCode struct {
 	RedirectUri   string
 	Scope         string
 	CodeChallenge string
+	SessionID     sql.NullString
 	IssuedAt      int64
 	ExpiresAt     int64
 }
