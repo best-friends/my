@@ -27,8 +27,12 @@ Mastodon 4.x、Misskey、GoToSocial、Akkoma（Pleroma 系）。余力があれ�
 
 ### 実装方針
 
-- ライブラリ（Go）: go-ap 系（vocab・署名）と、RFC 9421 / draft-cavage の署名ライブラリを spike（#15）で評価する。
-  ライブラリに依存する範囲（JSON-LD の型・署名）と自前実装する範囲（配送・受信処理・Mastodon 拡張の解釈）を分け、ライブラリはアダプタ境界の内側に閉じ込める。
+- ライブラリ（Go）: spike #15（[報告](../spikes/15-go-activitypub.md)）の結果、次の構成を推奨する。
+  - 署名: RFC 9421 は `github.com/dadrus/httpsig`（MIT）、draft-cavage-12 は `code.superseriousbusiness.org/httpsig`（BSD-3-Clause、go-fed/httpsig の GoToSocial フォーク）。どちらも cgo は不要。
+  - 語彙（AS2 / Mastodon 拡張）は自前の型で持つ。`go-ap/activitypub` は未知のプロパティを捨て、タグ付きリリースもないため、コアの型にはしない（受信パースの補助に使うかは実装時に判断）。`go-ap/client` / `go-ap/auth` は依存が重く、go-ap 系の抽象に結合しているため採用しない。
+  - ライブラリが担うのは署名ベースの組み立て・暗号処理・`Content-Digest` の検証まで。受け入れポリシー（必須ヘッダ / コンポーネント、時間窓、`Digest` の検証、鍵の所有者と `actor` の一致）、鍵の解決、送信側の double-knocking、配送、Mastodon 拡張の解釈は自前で書く。ライブラリはアダプタ境界の内側に閉じ込める。
+- 署名の double-knocking: 受信は `Signature-Input` があれば RFC 9421、なければ draft-cavage で検証する。送信は RFC 9421 を先に試し、400/401/403 なら draft-cavage で 1 回だけ再送して、成功した方式をホストごとに TTL 付きで覚える（Mastodon 4.7 と同じ方針。Mastodon は 4.5 から RFC 9421 の受信を常時有効にしている）。
+- `@target-uri` / `(request-target)` は設定した公開オリジンから組み立て直し、`X-Forwarded-*` は信用しない。
 - Inbox は署名検証まで同期、処理は非同期（NFR-PERF-4）。
 - **HttpClient ポートに SSRF ガード** を組み込み、すべての外部取得を通す（NFR-SEC-1）。
 - 受信した HTML は許可リストでサニタイズ（NFR-SEC-2）。
@@ -43,5 +47,8 @@ Mastodon 4.x、Misskey、GoToSocial、Akkoma（Pleroma 系）。余力があれ�
 
 ## Open Questions / 要検証
 
-- [ ] #15 go-ap の保守状況・RFC 9421 / double-knocking 対応、自前実装する範囲の見積り
+- [x] #15 go-ap の保守状況・RFC 9421 / double-knocking 対応、自前実装する範囲の見積り（[報告](../spikes/15-go-activitypub.md)。上の「実装方針」に反映した）
+- [ ] 実 Mastodon との Follow / Accept の往復確認（#15 では公開 URL がなく未実施。フィクスチャと手組みの署名によるテストまで）
+- [ ] Mastodon が RFC 9421 の受信で必須とするコンポーネント（`@method` / `@target-uri` / `content-digest` で足りるか）と、送信時に付ける `alg` / `expires` の有無の確認
+- [ ] GoToSocial 式のクエリ文字列の有無による再検証・再送を入れるか
 - [ ] ライブ相互運用テスト環境の構築コスト

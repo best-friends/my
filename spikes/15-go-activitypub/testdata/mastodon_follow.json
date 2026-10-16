@@ -1,0 +1,1 @@
+{"@context":"https://www.w3.org/ns/activitystreams","id":"https://mastodon.example/7a1c3a0e-1b8a-4d3e-9a0f-2f0c5f6c9b11","type":"Follow","actor":"https://mastodon.example/users/alice","object":"https://my.example/users/bob"}
