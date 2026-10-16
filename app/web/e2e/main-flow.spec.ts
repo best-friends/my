@@ -29,7 +29,9 @@ const test = base.extend<{ secondPage: Page }>({
   },
 });
 
-test.use({ baseURL: serverURL });
+// Without motion the colors do not transition (motion-safe:), so axe never samples a button in the middle
+// of changing its colors, such as the follow button right after it was pressed.
+test.use({ baseURL: serverURL, reducedMotion: "reduce" });
 
 type Catalog = Record<string, { defaultMessage: string }>;
 
