@@ -38,6 +38,7 @@ func (r *TimelineRepository) InsertEntry(ctx context.Context, tx uow.Tx, e appti
 		AuthorAccountID: e.AuthorAccountID, AuthorDomain: e.AuthorDomain,
 		OriginalAuthorAccountID: e.OriginalAuthorAccountID, OriginalAuthorDomain: e.OriginalAuthorDomain,
 		Visibility: string(e.Visibility), IsLocal: e.IsLocal, Language: e.Language, RevisionSeq: seq,
+		IsReply: e.IsReply,
 	})
 	if err != nil {
 		return false, wrap(err, "insert feed entry")
@@ -303,6 +304,7 @@ func (r *TimelineRepository) ListProfile(ctx context.Context, pq apptimeline.Pro
 		IncludePublic: has(appcontent.VisibilityPublic), IncludeLocal: has(appcontent.VisibilityLocal),
 		IncludeUnlisted: has(appcontent.VisibilityUnlisted), IncludePrivate: has(appcontent.VisibilityPrivate),
 		IncludeDirect: pq.IncludeDirect, Viewer: pq.ViewerAccountID, Now: pq.Now,
+		ExcludeReplies: pq.ExcludeReplies, ExcludeBoosts: pq.ExcludeBoosts,
 		AllLanguages: all, Languages: langs, PageLimit: limit,
 	})
 	return entriesFrom(rows, err, "list profile entries")
@@ -415,7 +417,7 @@ func entryFrom(row postgresgen.FeedEntry) apptimeline.Entry {
 		AuthorAccountID: row.AuthorAccountID, AuthorDomain: row.AuthorDomain,
 		OriginalAuthorAccountID: row.OriginalAuthorAccountID, OriginalAuthorDomain: row.OriginalAuthorDomain,
 		Visibility: appcontent.Visibility(row.Visibility), IsLocal: row.IsLocal,
-		Language: row.Language, RevisionSeq: int(row.RevisionSeq),
+		Language: row.Language, RevisionSeq: int(row.RevisionSeq), IsReply: row.IsReply,
 	}
 }
 

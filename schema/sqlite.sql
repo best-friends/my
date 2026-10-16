@@ -928,7 +928,8 @@ CREATE TABLE feed_entries (
   visibility TEXT NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
   is_local INTEGER NOT NULL CHECK (is_local IN (0, 1)),
   language TEXT NOT NULL,
-  revision_seq INTEGER NOT NULL CHECK (revision_seq >= 1)
+  revision_seq INTEGER NOT NULL CHECK (revision_seq >= 1),
+  is_reply INTEGER NOT NULL CHECK (is_reply IN (0, 1))
 ) STRICT;
 CREATE INDEX feed_entries_author_account_id_id ON feed_entries (author_account_id, id);
 CREATE INDEX feed_entries_status_id ON feed_entries (status_id);

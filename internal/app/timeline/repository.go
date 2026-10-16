@@ -35,6 +35,8 @@ type Entry struct {
 	// Language and RevisionSeq are those of the status's current revision.
 	Language    string
 	RevisionSeq int
+	// IsReply is true for a post that replies to a status; a boost never is one.
+	IsReply bool
 }
 
 // DirectRecipient is an account that a direct post is addressed to (feed_direct_recipients).
@@ -137,6 +139,9 @@ type ProfileQuery struct {
 	Visibilities []appcontent.Visibility
 	// IncludeDirect also lists the direct posts addressed to the viewer.
 	IncludeDirect bool
+	// ExcludeReplies leaves out the posts that reply to a status; ExcludeBoosts the boosts.
+	ExcludeReplies bool
+	ExcludeBoosts  bool
 }
 
 // FactsQuery asks for what holds between a viewer and the accounts, domains, and entries of a

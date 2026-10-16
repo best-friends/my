@@ -42,6 +42,8 @@ tags:
     description: The authenticated user's notifications, their read marker, and dismissals.
   - name: statuses
     description: Posts, their threads and edit history, and boosts, favourites, bookmarks, and pins of them.
+  - name: timelines
+    description: The home, local, hashtag, and account timelines.
 paths:
   /instance:
     get:
@@ -840,6 +842,120 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of statuses (#109) --------------------------------------------------------------
+  # Timelines (FR-201 to FR-204, FR-208) ------------------------------------------------------
+  /accounts/{id}/statuses:
+    get:
+      operationId: listAccountStatuses
+      summary: List the posts and boosts of an account
+      description: |
+        The account's posts and boosts that the viewer may see, newest first: its public posts
+        for everyone, its local posts for logged-in viewers, its followers-only posts for its
+        followers, and its direct posts addressed to the viewer. With `pinned`, the page lists
+        the account's pinned posts instead, newest pin first, in a single page.
+      tags: [timelines]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The account.
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: exclude_replies
+          in: query
+          required: false
+          description: Leave out the account's replies.
+          schema:
+            type: boolean
+            default: false
+        - name: exclude_boosts
+          in: query
+          required: false
+          description: Leave out the account's boosts.
+          schema:
+            type: boolean
+            default: false
+        - name: pinned
+          in: query
+          required: false
+          description: List only the account's pinned posts.
+          schema:
+            type: boolean
+            default: false
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /timelines/home:
+    get:
+      operationId: getHomeTimeline
+      summary: Get the home timeline
+      description: |
+        The viewer's own posts and boosts and those of the accounts the viewer follows, newest
+        first, in the viewer's timeline languages.
+      tags: [timelines]
+      security:
+        - oauth2: ["read:statuses"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /timelines/local:
+    get:
+      operationId: getLocalTimeline
+      summary: Get the local timeline
+      description: |
+        The public posts of the instance's accounts, newest first, and their local posts for a
+        logged-in viewer, in the viewer's timeline languages.
+      tags: [timelines]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /timelines/tag/{hashtag}:
+    get:
+      operationId: getHashtagTimeline
+      summary: Get the timeline of a hashtag
+      description: |
+        The public posts with the hashtag, newest first, and its local posts for a logged-in
+        viewer, in the viewer's timeline languages. A hashtag that no post uses has an empty
+        timeline.
+      tags: [timelines]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - name: hashtag
+          in: path
+          required: true
+          description: The hashtag without the `#`, matched case-insensitively.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 256
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
 components:
   securitySchemes:
     oauth2:
@@ -928,6 +1044,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
   responses:
+    StatusPage:
+      description: A page of posts and boosts, newest first.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StatusPage"
     Problem:
       description: An error, as an RFC 9457 problem document.
       headers:
@@ -1401,6 +1526,12 @@ components:
         A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
         describe the authenticated user's relation to it and are omitted for anonymous
         requests; `pinned` is only given to the author.
+
+        In a timeline, a boost is a status of the booster with `boost` set to the boosted
+        status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+        `visibility` and `language` are those of the boosted status, its `content`,
+        `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
+        are zero.
       type: object
       required:
         - id
@@ -1453,6 +1584,8 @@ components:
           description: When the status was posted.
           type: string
           format: date-time
+        boost:
+          $ref: "#/components/schemas/Status"
         edited_at:
           description: When the status was last edited; omitted when it never was.
           type: string

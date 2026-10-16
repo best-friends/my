@@ -121,10 +121,18 @@ func (s *Service) Hashtag(ctx context.Context, viewer appcontent.Viewer, tagID s
 	return s.page(ctx, appcontent.ContextHashtag, viewer, w, rows)
 }
 
+// ProfileFilter narrows a profile timeline.
+type ProfileFilter struct {
+	// ExcludeReplies leaves out the author's posts that reply to a status.
+	ExcludeReplies bool
+	// ExcludeBoosts leaves out the author's boosts.
+	ExcludeBoosts bool
+}
+
 // Profile returns the profile timeline of an author (FR-204): the author's posts and boosts in
 // the visibilities that the viewer's relation to the author and the author's restrictions
-// allow, and the author's direct posts addressed to the viewer.
-func (s *Service) Profile(ctx context.Context, viewer appcontent.Viewer, authorAccountID string, q Query) (Page, error) {
+// allow, and the author's direct posts addressed to the viewer, narrowed by f.
+func (s *Service) Profile(ctx context.Context, viewer appcontent.Viewer, authorAccountID string, f ProfileFilter, q Query) (Page, error) {
 	w := s.window(viewer, q)
 	facts, err := s.d.Repository.Facts(ctx, FactsQuery{
 		ViewerAccountID: w.ViewerAccountID, AccountIDs: []string{authorAccountID}, Now: w.Now,
@@ -132,7 +140,7 @@ func (s *Service) Profile(ctx context.Context, viewer appcontent.Viewer, authorA
 	if err != nil {
 		return Page{}, err
 	}
-	pq := ProfileQuery{Window: w, AuthorAccountID: authorAccountID}
+	pq := ProfileQuery{Window: w, AuthorAccountID: authorAccountID, ExcludeReplies: f.ExcludeReplies, ExcludeBoosts: f.ExcludeBoosts}
 	// The visibilities CanView allows on the profile, judged as for a local author: a remote
 	// author has no local posts, and CanView below judges each entry by its real facts.
 	restrictions := facts.restrictions(authorAccountID, "")
