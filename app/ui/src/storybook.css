@@ -1,0 +1,5 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* The stylesheet of the Storybook preview (#120): the kit's components and stories with the tokens.
+   Tailwind scans this directory, stories included; apps scan src/ without the stories. */
+@import "tailwindcss";
+@import "./theme.css";
