@@ -258,8 +258,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
-	// The user step joins once API requests are authenticated (#107).
-	a.Locales = &i18n.Resolver{Bundle: a.Messages, InstanceDefault: a.instanceDefaultLocale}
+	// The user step is the locale of the client API request's authenticated viewer.
+	a.Locales = &i18n.Resolver{Bundle: a.Messages, UserLocale: a.viewerLocale, InstanceDefault: a.instanceDefaultLocale}
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
@@ -338,7 +338,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
-		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
+		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
+		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }

@@ -434,10 +434,11 @@ func (s *Service) ResendVerificationEmail(ctx context.Context, userID string) er
 
 // Access is what a user may do, from their registration state and email verification.
 //
-// Only an allowed user may use the app: the OAuth authorization endpoint and the token
-// issuance of the client API (#107) call UserAccess and refuse users for whom Allowed is
-// false, so that a pending, rejected, or unverified user gets no access token. Such users can
-// still sign in to the server-rendered screens, which tell them what they are waiting for.
+// Only an allowed user may use the app: the OAuth authorization endpoint calls UserAccess and
+// refuses users for whom Allowed is false, so that a pending, rejected, or unverified user gets
+// no access token, and AuthenticateBearer checks it again on every client API request. Such
+// users can still sign in to the server-rendered screens, which tell them what they are
+// waiting for.
 type Access struct {
 	Registration identity.RegistrationState
 	// Email is the user's primary email address ("" when none).

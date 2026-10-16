@@ -16,7 +16,7 @@ const (
 	corsAllowMethods = "GET, POST, PUT, PATCH, DELETE"
 	// Accept-Language is listed because browsers treat some of its values as not safelisted.
 	corsAllowHeaders  = "Authorization, Content-Type, Accept-Language, Idempotency-Key"
-	corsExposeHeaders = "Content-Language, X-Request-Id"
+	corsExposeHeaders = "Content-Language, X-Request-Id, WWW-Authenticate, Retry-After, RateLimit, RateLimit-Policy"
 	corsMaxAge        = "600"
 )
 
