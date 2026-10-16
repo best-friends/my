@@ -56,7 +56,8 @@ ON CONFLICT (account_id, target_account_id) DO UPDATE SET
   expires_at = excluded.expires_at,
   created_at = excluded.created_at;
 
--- name: DeleteMute :exec
+-- DeleteMute deletes the mute and reports, by the rows it deleted, whether there was one.
+-- name: DeleteMute :execrows
 DELETE FROM mutes WHERE account_id = $1 AND target_account_id = $2;
 
 -- GetActiveMute returns the mute unless it has expired at now.

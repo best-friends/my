@@ -51,6 +51,17 @@ type ProjectorDeps struct {
 // blocks the other or the recipient mutes the source with hide_notifications. Each notification
 // has a dedupe key unique per recipient (notification.FollowKey, MentionKey, InteractionKey),
 // so projecting an event again, or a repeated boost or favourite, creates nothing more.
+//
+// The exclusion projectors keep notification_exclusions, which the list and the unread count
+// apply at read time, so that a later block or mute also hides the notifications that came
+// before it:
+//
+//   - graph.blocked: block from the blocker to the blocked account, and blocked_by back.
+//   - graph.unblocked: deletes both.
+//   - graph.muted: mute from the account to the target with the mute's expiry when the mute
+//     hides notifications; deletes it otherwise.
+//   - graph.unmuted: deletes the mute.
+//
 // Register them after the graph and content projectors.
 func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 	p := &projector{d: d}
@@ -77,6 +88,37 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 			DedupeKey: notification.FollowKey(notification.TypeFollowAccepted, f.ID), CreatedAt: ev.Acceptance.AcceptedAt,
 		})
 	})
+	r.Register(appgraph.EventBlocked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		b := e.(appgraph.Blocked).Block
+		for _, x := range blockExclusions(b.BlockerAccountID, b.BlockedAccountID) {
+			if err := d.Repository.UpsertExclusion(ctx, tx, x); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	r.Register(appgraph.EventUnblocked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		b := e.(appgraph.Unblocked).Block
+		for _, x := range blockExclusions(b.BlockerAccountID, b.BlockedAccountID) {
+			if err := d.Repository.DeleteExclusion(ctx, tx, x.ViewerAccountID, x.TargetAccountID, x.Reason); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	r.Register(appgraph.EventMuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		m := e.(appgraph.Muted).Mute
+		if !m.HideNotifications {
+			return d.Repository.DeleteExclusion(ctx, tx, m.AccountID, m.TargetAccountID, notification.ExcludedMute)
+		}
+		return d.Repository.UpsertExclusion(ctx, tx, notification.Exclusion{
+			ViewerAccountID: m.AccountID, TargetAccountID: m.TargetAccountID, Reason: notification.ExcludedMute, ExpiresAt: m.ExpiresAt,
+		})
+	})
+	r.Register(appgraph.EventUnmuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appgraph.Unmuted)
+		return d.Repository.DeleteExclusion(ctx, tx, ev.AccountID, ev.TargetAccountID, notification.ExcludedMute)
+	})
 	r.Register(appcontent.EventStatusCreated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.StatusCreated)
 		return p.mentions(ctx, tx, ev.Status.ID, ev.Status.AuthorAccountID, ev.Revision.MentionedAccountIDs, ev.Revision.RevisedAt)
@@ -93,6 +135,15 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 		ev := e.(appcontent.Favourited)
 		return p.interaction(ctx, tx, notification.TypeFavourite, ev.Status, ev.Favourite.AccountID, ev.Favourite.CreatedAt)
 	})
+}
+
+// blockExclusions are the exclusions of blocker's block of blocked: each hides the other's
+// notifications.
+func blockExclusions(blocker, blocked string) []notification.Exclusion {
+	return []notification.Exclusion{
+		{ViewerAccountID: blocker, TargetAccountID: blocked, Reason: notification.ExcludedBlock},
+		{ViewerAccountID: blocked, TargetAccountID: blocker, Reason: notification.ExcludedBlockedBy},
+	}
 }
 
 type projector struct {

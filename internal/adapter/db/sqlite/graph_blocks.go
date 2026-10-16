@@ -186,12 +186,16 @@ func (r *GraphRepository) UpsertMute(ctx context.Context, tx uow.Tx, m graph.Mut
 }
 
 // DeleteMute implements graph.Repository.
-func (r *GraphRepository) DeleteMute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string) error {
+func (r *GraphRepository) DeleteMute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string) (bool, error) {
 	q, err := queries(tx)
 	if err != nil {
-		return err
+		return false, err
 	}
-	return wrap(q.DeleteMute(ctx, sqlitegen.DeleteMuteParams{AccountID: accountID, TargetAccountID: targetAccountID}), "delete mute")
+	rows, err := q.DeleteMute(ctx, sqlitegen.DeleteMuteParams{AccountID: accountID, TargetAccountID: targetAccountID})
+	if err != nil {
+		return false, wrap(err, "delete mute")
+	}
+	return rows == 1, nil
 }
 
 func muteFrom(row sqlitegen.Mute) graph.Mute {

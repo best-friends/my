@@ -55,15 +55,17 @@ func (q Query) limit() int {
 	return q.Limit
 }
 
-// List returns accountID's notifications that are not dismissed, newest first. An unknown type
-// in q.Types fails with notification.ErrInvalidType.
+// List returns accountID's notifications that are not dismissed, newest first. It leaves out
+// the notifications from accounts that accountID blocks or is blocked by, or mutes with
+// hide_notifications, at the time of reading, also those notified before the block or mute.
+// An unknown type in q.Types fails with notification.ErrInvalidType.
 func (s *Service) List(ctx context.Context, accountID string, q Query) ([]notification.Notification, error) {
 	for _, t := range q.Types {
 		if !t.Valid() {
 			return nil, fmt.Errorf("type %q: %w", t, notification.ErrInvalidType)
 		}
 	}
-	return s.d.Repository.ListNotifications(ctx, accountID, q.Types, q.Before, q.limit())
+	return s.d.Repository.ListNotifications(ctx, accountID, q.Types, q.Before, q.limit(), s.d.Clock.Now())
 }
 
 // ReadMarker returns accountID's read marker; an account that has read nothing has a marker
@@ -76,14 +78,14 @@ func (s *Service) ReadMarker(ctx context.Context, accountID string) (notificatio
 	return m, err
 }
 
-// UnreadCount returns the number of accountID's notifications that are not dismissed and are
-// newer than its read marker.
+// UnreadCount returns the number of accountID's notifications that List would return and that
+// are newer than its read marker.
 func (s *Service) UnreadCount(ctx context.Context, accountID string) (int64, error) {
 	m, err := s.ReadMarker(ctx, accountID)
 	if err != nil {
 		return 0, err
 	}
-	return s.d.Repository.CountNotificationsAfter(ctx, accountID, m.LastReadID)
+	return s.d.Repository.CountNotificationsAfter(ctx, accountID, m.LastReadID, s.d.Clock.Now())
 }
 
 // MarkRead marks accountID's notifications up to and including lastReadID as read, and

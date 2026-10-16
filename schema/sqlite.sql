@@ -833,7 +833,8 @@ CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
 
 -- ---------------------------------------------------------------------------------------------
--- notification: notifications, their dismissals, and read markers (data-model §4.7, FR-205).
+-- notification: notifications, their dismissals, read markers, and the exclusions that hide them
+-- (data-model §4.7, FR-205).
 -- Owned by internal/app/notification.
 -- ---------------------------------------------------------------------------------------------
 
@@ -867,4 +868,14 @@ CREATE TABLE notification_dismissals (
 CREATE TABLE notification_read_markers (
   account_id TEXT NOT NULL PRIMARY KEY,
   last_read_id TEXT NOT NULL
+) STRICT;
+
+-- Projection of the graph events: while in force (expires_at NULL or later than now), the
+-- notifications from target_account_id are hidden from viewer_account_id at read time.
+CREATE TABLE notification_exclusions (
+  viewer_account_id TEXT NOT NULL,
+  target_account_id TEXT NOT NULL,
+  reason TEXT NOT NULL CHECK (reason IN ('block', 'blocked_by', 'mute')),
+  expires_at INTEGER,
+  PRIMARY KEY (viewer_account_id, target_account_id, reason)
 ) STRICT;

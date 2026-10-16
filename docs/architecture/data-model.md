@@ -86,7 +86,8 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 | お気に入り / 取り消し | `favourites`（現在値） | `status_counters`, `notifications`（お気に入りだけ） | `Like` / `Undo Like` の配送（リモートの投稿だけ） |
 | ブックマーク・ピン留め / 取り消し | `bookmarks` / `status_pins`（現在値） | なし | なし |
 | フォロー | `follows`（＋自動承認なら `follow_acceptances`） | `follow_edges`, `feed_follow_edges`, `follow_counters`, `notifications` | `Follow` / `Accept` の配送 |
-| ブロック | `blocks`（＋両方向のフォローの `follow_terminations`） | `block_edges`, `follow_edges`, `feed_follow_edges`, `follow_counters` | `Block` の配送 |
+| ブロック | `blocks`（＋両方向のフォローの `follow_terminations`） | `block_edges`, `follow_edges`, `feed_follow_edges`, `follow_counters`, `notification_exclusions` | `Block` の配送 |
+| ミュート / 解除 | `mutes`（現在値） | `notification_exclusions` | なし |
 | 処分 | `moderation_actions`（＋`moderation_action_statuses`） | `account_restrictions`, `feed_author_restrictions` | 通知・投稿の削除やセンシティブ化（大量なら非同期） |
 | Inbox 処理 | `received_activities` と対象のリソース / イベント | 対象に応じて | 対象に応じて |
 
@@ -557,8 +558,8 @@ flowchart LR
 - リモートへのフォローは、`Accept` を受け取ったら `follow_acceptances` を記録し、投影を `active` にします。
 
 フォローとブロックのコマンドは、記録したイベントに応じて次のドメインイベントを発行します（`tx.Emit`、§2.1）。
-フォローのコマンドは 1 つ、ブロックは終了したフォローごとの `graph.follow_terminated` と `graph.blocked` を発行します。
-購読する projector はイベントの内容（`follows` の行と、承認・拒否・終了の行、設定、`blocks` の行と取り消しの行）だけで投影を更新します。
+フォローのコマンドは 1 つ、ブロックは終了したフォローごとの `graph.follow_terminated` と `graph.blocked` を発行します。ミュートと解除はそれぞれ 1 つを発行します。
+購読する projector はイベントの内容（`follows` の行と、承認・拒否・終了の行、設定、`blocks` の行と取り消しの行、`mutes` の行）だけで投影を更新します。
 
 | ドメインイベント | 発行するとき | `graph` の投影 | 想定する購読者 |
 | --- | --- | --- | --- |
@@ -568,8 +569,10 @@ flowchart LR
 | `graph.follow_rejected` | フォローリクエストの拒否 | `follow_edges` から削除 | — |
 | `graph.follow_terminated` | フォロー解除・申請の取り下げ・フォロワーの削除など（終了前の状態を載せる） | `follow_edges` から削除、`active` だったら `follow_counters` 減算 | `feed_follow_edges` |
 | `graph.follow_preferences_changed` | フォローごとの設定の変更 | — | `feed_follow_edges`（`show_boosts`） |
-| `graph.blocked` | ブロック（終了したフォローごとの `graph.follow_terminated`（`reason = blocked`）の後に発行する） | `block_edges` に追加 | 通知・タイムラインの絞り込み、`Block` の配送 |
-| `graph.unblocked` | ブロックの解除 | `block_edges` から削除 | `Undo Block` の配送 |
+| `graph.blocked` | ブロック（終了したフォローごとの `graph.follow_terminated`（`reason = blocked`）の後に発行する） | `block_edges` に追加 | `notification_exclusions`・`feed_exclusions`、`Block` の配送 |
+| `graph.unblocked` | ブロックの解除 | `block_edges` から削除 | `notification_exclusions`・`feed_exclusions`、`Undo Block` の配送 |
+| `graph.muted` | ミュート（ミュートし直して設定・期限を置き換えたときも。置き換えた後のミュートを載せる） | — | `notification_exclusions`・`feed_exclusions` |
+| `graph.unmuted` | ミュートの解除（ミュートが無ければ発行しない） | — | `notification_exclusions`・`feed_exclusions` |
 
 #### ブロック・ミュート
 
@@ -590,7 +593,8 @@ flowchart LR
 - ブロックの対象はローカルのアカウントだけです（存在すれば有効でなくてもよい）。リモートとのブロックは連合（`federation`）から記録します。
 - ミュートは本人だけに効き、履歴にも意味がないので現在値です（ADR-0020 規約 5）。ミュートし直すと設定・期限・`created_at` を置き換えます。
 - 期限付きのミュートは、読み取り時に `expires_at > 現在時刻` で絞り込むので、期限が来た時点で書き込み無しに無効になります。期限切れの行は、ミュートし直すか解除するまで残ります。
-- ミュートの対象はリモートのアカウントでもかまいません。ミュートは読み取り時の絞り込みにだけ使い、ドメインイベントを発行しません。
+- ミュートの対象はリモートのアカウントでもかまいません。ミュートは読み取り時の絞り込みにだけ使います。
+  他モジュールは `mutes` を読まず、`graph.muted` / `graph.unmuted` から自前の投影（`notification_exclusions`、`feed_exclusions`）を作ります。
 
 ### 4.6 timeline
 
@@ -617,6 +621,7 @@ flowchart LR
 | `notifications` | イベント | `id`, `recipient_account_id`, `type`（`enum(follow, follow_request, follow_accepted, mention, boost, favourite, poll_closed, moderation_notice)`）, `source_account_id`（NULL 可。`moderation_notice` はインスタンス）, `status_id`（NULL 可）, `moderation_action_id`（NULL 可）, `dedupe_key`, `created_at` | 一意 `(recipient_account_id, dedupe_key)`。インデックス `(recipient_account_id, id)`, `(recipient_account_id, type, id)` |
 | `notification_dismissals` | イベント | `notification_id`（PK）, `dismissed_at` | |
 | `notification_read_markers` | 現在値 | `account_id`（PK）, `last_read_id` | 未読数は `id > last_read_id` で数える |
+| `notification_exclusions` | 投影 | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可） | PK `(viewer_account_id, target_account_id, reason)`。`graph` のブロック・ミュートのイベントから作る |
 | `push_subscriptions` | 現在値 | `id`, `user_id`, `oauth_token_id`, `endpoint`, `key_p256dh`, `key_auth`, `created_at`, `updated_at` | 一意 `(endpoint)`（FR-206） |
 | `push_subscription_alerts` | 現在値 | `subscription_id`, `notification_type` | PK `(subscription_id, notification_type)` |
 
@@ -636,10 +641,15 @@ flowchart LR
   - 受け取るのはローカルのアカウントだけです（リモートの人には相手のサーバーが通知します）。自分の操作は通知しません（CHECK `source_account_id <> recipient_account_id`）。
   - どちらかがもう一方をブロックしているとき、または受け取る人が相手を `hide_notifications` 付きで（期限切れでなく）ミュートしているときは作りません。
   - 受け取る人がローカルかどうか（`account` の `IsLocal`）とブロック・ミュート（`graph` の `HidesNotifications`）は、他モジュールのテーブルを直接読まず、そのモジュールのアプリケーション層の公開 API をイベントのトランザクションの中で呼んで調べます。
-    ミュートはイベントを発行せず、ブロックの有無はイベントに載らない事実なので、§2.1 の「イベントの内容だけで更新する」の例外です。作成時に判定するので、後からのミュート・ブロックは作成済みの通知を隠しません。
-- 一覧は、消していない通知を `id` のキーセットで新しい順に引きます。種類の絞り込み（複数可）は `(recipient_account_id, type, id)` を使います。
+    作成するイベントにはブロック・ミュートの有無が載らないので、§2.1 の「イベントの内容だけで更新する」の例外です。
+- 後からのブロック・ミュートは、作成済みの通知を読み取り時に隠します。`notification_exclusions` は `graph` のイベントから同期 projector が作る投影です。
+  - `graph.blocked` は、ブロックした人から相手への `block` と、相手からブロックした人への `blocked_by` の 2 行を作り、`graph.unblocked` はその 2 行を消します。両方向にブロックしていれば、片方を解除してももう一方の行が残ります。
+  - `graph.muted` は、`hide_notifications` 付きなら `mute` の行をミュートの期限で作り（あれば期限を置き換え）、付いていなければ消します。`graph.unmuted` は `mute` の行を消します。
+  - 一覧と未読数は、`source_account_id` を `target_account_id` とする受け取る人の行のうち、読み取り時点で有効なもの（`expires_at` が NULL か現在時刻より後）がある通知を除きます。解除や期限切れで行が無効になれば、その通知はまた見えます。差出人の無い通知（`moderation_notice`）は除きません。
+  - 作成時の判定は残します。ミュート中に起きたことは、解除しても通知になりません。
+- 一覧は、消していない、除外されていない通知を `id` のキーセットで新しい順に引きます。種類の絞り込み（複数可）は `(recipient_account_id, type, id)` を使います。
 - 既読位置は前にだけ進みます（`last_read_id` より古い通知を指定しても変わりません）。同時に既読位置を送る複数の端末が位置を戻さないためです。指定できるのは自分の通知だけです。
-- 未読数は、消していない通知のうち `id > last_read_id` のものの件数です。既読位置が無ければすべてが未読です。
+- 未読数は、一覧に出る通知のうち `id > last_read_id` のものの件数です。既読位置が無ければすべてが未読です。
 - 処分の通知（`notify_target`）は `moderation_notice` として届きます。本人は処分の種類・公開理由・期限を見られ、異議申し立て（S/C）に進めます。
 
 ### 4.8 federation
@@ -872,6 +882,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses`、`status_deletions` | 同期 |
 | `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
 | `feed_*` | 上記の投影の元になるイベント | 同期 |
+| `notification_exclusions` | `blocks` と取り消し（`block_edges`）、`mutes` | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 | `instance_health` | `delivery_attempts` | 同期（間引き） |
 

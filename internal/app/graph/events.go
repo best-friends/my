@@ -10,7 +10,9 @@ import "github.com/best-friends/my/internal/domain/graph"
 // (timeline's feed_follow_edges, notification's follow notifications) see the same facts.
 // Each event carries everything its subscribers need; they never read the graph tables.
 // Blocking emits one EventFollowTerminated per follow it ends, then EventBlocked. Mutes are a
-// current value read at query time and emit no events.
+// current value with no event rows, but muting and unmuting emit EventMuted and EventUnmuted
+// so that other modules can keep their own projections of them (notification's
+// notification_exclusions).
 //
 //   - EventFollowed: a follow became active on creation (the followee is not locked).
 //   - EventFollowRequested: a follow awaits the followee's approval (the followee is locked).
@@ -20,6 +22,8 @@ import "github.com/best-friends/my/internal/domain/graph"
 //   - EventFollowPreferencesChanged: the follower changed the preferences of a live follow.
 //   - EventBlocked: an account blocked another.
 //   - EventUnblocked: a block was lifted.
+//   - EventMuted: an account muted another, or replaced the settings of its mute.
+//   - EventUnmuted: an account removed its mute of another.
 const (
 	EventFollowed                 = "graph.followed"
 	EventFollowRequested          = "graph.follow_requested"
@@ -29,6 +33,8 @@ const (
 	EventFollowPreferencesChanged = "graph.follow_preferences_changed"
 	EventBlocked                  = "graph.blocked"
 	EventUnblocked                = "graph.unblocked"
+	EventMuted                    = "graph.muted"
+	EventUnmuted                  = "graph.unmuted"
 )
 
 // Followed is emitted when a follow is created and accepted at once.
@@ -109,3 +115,21 @@ type Unblocked struct {
 
 // EventType implements uow.Event.
 func (Unblocked) EventType() string { return EventUnblocked }
+
+// Muted is emitted when an account mutes another, also when it replaces the settings and expiry
+// of an existing mute. Mute is the mute as it now is.
+type Muted struct {
+	Mute graph.Mute
+}
+
+// EventType implements uow.Event.
+func (Muted) EventType() string { return EventMuted }
+
+// Unmuted is emitted when an account removes its mute of another.
+type Unmuted struct {
+	AccountID       string
+	TargetAccountID string
+}
+
+// EventType implements uow.Event.
+func (Unmuted) EventType() string { return EventUnmuted }

@@ -41,7 +41,8 @@ type NotificationFactory func(t *testing.T, opts uow.Options) NotificationHarnes
 // mentions, also those an edit adds; boosts and favourites; never notifying an account of its
 // own actions or a remote recipient; projecting an event again, also concurrently, without
 // duplicates; hiding notifications across blocks and from accounts muted with
-// hide_notifications; listing with a type filter and keyset paging; and the read marker,
+// hide_notifications, also those notified before the block or mute, which a lifted block or
+// mute shows again; listing with a type filter and keyset paging; and the read marker,
 // unread count, and dismissals.
 func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 	t.Helper()
@@ -56,6 +57,7 @@ func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 		{"ProjectsAnEventOnce", notificationProjectsOnce},
 		{"AgreesOnConcurrentProjections", notificationConcurrent},
 		{"HidesBlockedAndMutedSources", notificationHides},
+		{"HidesLaterBlocksAndMutes", notificationHidesLater},
 		{"ListsWithTypesAndPages", notificationLists},
 		{"TracksReadMarkersAndDismissals", notificationReads},
 	}
@@ -514,4 +516,93 @@ func notificationReads(t *testing.T, e *notificationEnv) {
 	if n, err := e.svc.UnreadCount(ctx, bob); err != nil || n != 1 {
 		t.Errorf("UnreadCount(bob) = %d, %v; want 1", n, err)
 	}
+}
+
+func (e *notificationEnv) checkUnread(t *testing.T, accountID string, want int64) {
+	t.Helper()
+	if n, err := e.svc.UnreadCount(t.Context(), accountID); err != nil || n != want {
+		t.Errorf("UnreadCount(%s) = %d, %v; want %d", accountID, n, err, want)
+	}
+}
+
+func notificationHidesLater(t *testing.T, e *notificationEnv) {
+	ctx := t.Context()
+	alice, bob, carol, dave := e.user(t, "alice"), e.user(t, "bob"), e.user(t, "carol"), e.user(t, "dave")
+	e.follow(t, alice, bob)
+	p := e.post(t, alice, "hi @bob")
+	fromAlice := []summary{
+		{Type: notification.TypeMention, Source: alice, StatusID: p.Status.ID},
+		{Type: notification.TypeFollow, Source: alice},
+	}
+	// A notification from the instance has no source and stays through every block and mute.
+	notice := notification.Notification{
+		ID: e.ids.NewID(), RecipientAccountID: bob, Type: notification.TypeModerationNotice,
+		ModerationActionID: e.ids.NewID(), DedupeKey: "notice:" + e.ids.NewID(), CreatedAt: e.clock.Now(),
+	}
+	err := e.nh.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		_, err := e.nh.Notifications.InsertNotification(ctx, tx, notice)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("InsertNotification(notice) = %v", err)
+	}
+	noticeOnly := summary{Type: notification.TypeModerationNotice}
+	all := append([]summary{noticeOnly}, fromAlice...)
+	checkSummaries(t, e, bob, all...)
+	e.checkUnread(t, bob, 3)
+
+	mute := func(in appgraph.MuteInput) {
+		t.Helper()
+		if _, err := e.graph.Mute(ctx, bob, alice, in); err != nil {
+			t.Fatalf("Mute(%+v) = %v", in, err)
+		}
+	}
+	// A later mute without hide_notifications hides nothing; with it, it hides what came before.
+	mute(appgraph.MuteInput{})
+	checkSummaries(t, e, bob, all...)
+	mute(appgraph.MuteInput{HideNotifications: true})
+	checkSummaries(t, e, bob, noticeOnly)
+	e.checkUnread(t, bob, 1)
+	// Replacing it with a mute without hide_notifications, or unmuting, shows them again.
+	mute(appgraph.MuteInput{})
+	checkSummaries(t, e, bob, all...)
+	mute(appgraph.MuteInput{HideNotifications: true})
+	if _, err := e.graph.Unmute(ctx, bob, alice); err != nil {
+		t.Fatalf("Unmute = %v", err)
+	}
+	checkSummaries(t, e, bob, all...)
+	e.checkUnread(t, bob, 3)
+	// A mute with a duration hides them until it expires.
+	mute(appgraph.MuteInput{HideNotifications: true, Duration: time.Hour})
+	checkSummaries(t, e, bob, noticeOnly)
+	e.clock.Advance(2 * time.Hour)
+	checkSummaries(t, e, bob, all...)
+
+	// A later block in either direction hides them, until it is lifted.
+	e.follow(t, carol, dave)
+	e.follow(t, dave, carol)
+	fromDave := summary{Type: notification.TypeFollow, Source: dave}
+	fromCarol := summary{Type: notification.TypeFollow, Source: carol}
+	if _, err := e.graph.Block(ctx, carol, dave); err != nil {
+		t.Fatalf("Block = %v", err)
+	}
+	checkSummaries(t, e, carol)
+	checkSummaries(t, e, dave)
+	e.checkUnread(t, carol, 0)
+	e.checkUnread(t, dave, 0)
+	// With blocks both ways, lifting one leaves the other in force.
+	if _, err := e.graph.Block(ctx, dave, carol); err != nil {
+		t.Fatalf("Block = %v", err)
+	}
+	if _, err := e.graph.Unblock(ctx, carol, dave); err != nil {
+		t.Fatalf("Unblock = %v", err)
+	}
+	checkSummaries(t, e, carol)
+	checkSummaries(t, e, dave)
+	if _, err := e.graph.Unblock(ctx, dave, carol); err != nil {
+		t.Fatalf("Unblock = %v", err)
+	}
+	checkSummaries(t, e, carol, fromDave)
+	checkSummaries(t, e, dave, fromCarol)
+	e.checkUnread(t, carol, 1)
 }

@@ -105,3 +105,28 @@ type ReadMarker struct {
 	AccountID  string
 	LastReadID string
 }
+
+// ExclusionReason is why an exclusion hides a target's notifications from a viewer.
+type ExclusionReason string
+
+// Exclusion reasons.
+const (
+	// ExcludedBlock: the viewer blocks the target.
+	ExcludedBlock ExclusionReason = "block"
+	// ExcludedBlockedBy: the target blocks the viewer.
+	ExcludedBlockedBy ExclusionReason = "blocked_by"
+	// ExcludedMute: the viewer mutes the target with hide_notifications.
+	ExcludedMute ExclusionReason = "mute"
+)
+
+// Exclusion hides the notifications whose source is TargetAccountID from ViewerAccountID while
+// it is in force: until ExpiresAt, or for good when ExpiresAt is nil (notification_exclusions,
+// a projection of the graph module's blocks and mutes). Reading the list and the unread count
+// applies the exclusions in force at that time, so a block or mute also hides the notifications
+// that came before it, and lifting it shows them again.
+type Exclusion struct {
+	ViewerAccountID string
+	TargetAccountID string
+	Reason          ExclusionReason
+	ExpiresAt       *time.Time
+}
