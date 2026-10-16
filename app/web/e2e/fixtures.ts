@@ -43,7 +43,11 @@ export const test = base.extend<Fixtures>({
           return;
         }
         const response = await route.fetch();
-        const body = (await response.text()).replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`);
+        // The build's index.html links its entry relative to itself (base "./"), which resolves under
+        // the path of a nested page (/tags/cats); `my serve` writes root-relative links from the manifest.
+        const body = (await response.text())
+          .replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`)
+          .replaceAll(/(src|href)="\.\//g, '$1="/');
         await route.fulfill({ response, body });
       });
       await use(lang);
