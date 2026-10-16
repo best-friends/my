@@ -6,7 +6,7 @@
 import { Button } from "@my/ui";
 import { createMemoryHistory, createRootRouteWithContext, createRouter, Outlet } from "@tanstack/react-router";
 import { screen, waitFor, within } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RouterContext } from "../../lib/query";
 import {
@@ -113,6 +113,32 @@ describe("the new-post form", () => {
     const next = await openSheet(user);
     expect(within(next).getByRole("textbox", { name: "Your post" })).toHaveValue("");
     expect(within(next).getByRole("button", { name: "Visibility: Followers" })).toBeInTheDocument();
+  });
+
+  test("opens the sheet with focus on the text, never on the dialog itself, while the form's data is slow", async () => {
+    signedIn();
+    server.use(
+      http.get(`${apiBase}/instance`, async () => {
+        await delay(200);
+        return HttpResponse.json(instanceFixture);
+      }),
+    );
+    const { user } = await renderApp();
+    const focused: Element[] = [];
+    const onFocusIn = (event: FocusEvent) => {
+      if (event.target instanceof Element) focused.push(event.target);
+    };
+    document.addEventListener("focusin", onFocusIn);
+    try {
+      const sheet = await openSheet(user);
+
+      // A sheet that focused itself on open would be focused again by React Aria 500 ms later if focus were
+      // on the body then, taking focus from a popover in the form that is returning it to its trigger.
+      expect(within(sheet).getByRole("textbox", { name: "Your post" })).toHaveFocus();
+      expect(focused).not.toContain(sheet);
+    } finally {
+      document.removeEventListener("focusin", onFocusIn);
+    }
   });
 
   test("keeps the draft when posting fails, and sends it again with the same Idempotency-Key", async () => {

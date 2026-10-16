@@ -100,6 +100,17 @@ function requestBody(draft: Draft, visibility: Visibility, language: string): Cr
 }
 
 /**
+ * Whether the server's answers that the form needs (the instance's limits, the viewer's preferences) are
+ * still on their way. The sheet waits for them before it opens (Compose.tsx).
+ */
+export function useComposeFormPending(): boolean {
+  const api = useApi();
+  const instance = useQuery(instanceQueryOptions(api));
+  const preferences = useQuery(preferencesQueryOptions(api));
+  return instance.isPending || preferences.isPending;
+}
+
+/**
  * The logic of the new-post form (web-client.md A4): the draft from the store, the limits and defaults
  * from the server, the attachments, and sending.
  *
