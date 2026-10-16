@@ -9,3 +9,7 @@ generate:
   strict-server: true
 output-options:
   skip-prune: true
+compatibility:
+  # Enum constants are named <Type><Value> (StatusVisibilityPublic), so that the values of
+  # different enums never collide or get renamed when another enum is added.
+  always-prefix-enum-values: true

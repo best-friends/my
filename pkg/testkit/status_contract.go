@@ -343,6 +343,8 @@ func statusReportsMissing(t *testing.T, e *statusEnv) {
 		"FindDeletion":                    second(e.h.Statuses.FindDeletion(ctx, missing)),
 		"FindDeletionByURI":               second(e.h.Statuses.FindDeletionByURI(ctx, "https://nowhere.example/")),
 		"FindTagByName":                   second(e.h.Statuses.FindTagByName(ctx, "nothing")),
+		"FindTag":                         second(e.h.Statuses.FindTag(ctx, missing)),
+		"FindReplyLink":                   second(e.h.Statuses.FindReplyLink(ctx, missing)),
 		"FindCounters":                    second(e.h.Statuses.FindCounters(ctx, missing)),
 		"FindPostCounter":                 second(e.h.Statuses.FindPostCounter(ctx, missing)),
 	} {
@@ -500,6 +502,9 @@ func statusLinksReplies(t *testing.T, e *statusEnv) {
 		if l.ParentStatusID != parent.ID || l.ParentAuthorAccountID != parentAuthor {
 			t.Errorf("link %+v does not point at the parent %s", l, parent.ID)
 		}
+		if got, err := e.h.Statuses.FindReplyLink(ctx, l.StatusID); err != nil || got != l {
+			t.Errorf("FindReplyLink(%s) = %+v, %v; want %+v", l.StatusID, got, err, l)
+		}
 	}
 	if c := e.counters(t, parent.ID); c.RepliesCount != 2 {
 		t.Errorf("replies count = %d, want 2 (private and direct replies are not counted)", c.RepliesCount)
@@ -581,6 +586,9 @@ func statusEnsuresTags(t *testing.T, e *statusEnv) {
 	}
 	if got, err := e.h.Statuses.FindTagByName(ctx, "golang"); err != nil || got != first {
 		t.Errorf("FindTagByName = %+v, %v; want %+v", got, err, first)
+	}
+	if got, err := e.h.Statuses.FindTag(ctx, first.ID); err != nil || got != first {
+		t.Errorf("FindTag = %+v, %v; want %+v", got, err, first)
 	}
 }
 

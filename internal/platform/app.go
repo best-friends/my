@@ -100,6 +100,8 @@ type App struct {
 	Interactions *content.Interactions
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
+	// Views reads statuses as the client API shows them, and the pinned statuses of profiles.
+	Views *content.Views
 
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
@@ -305,6 +307,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	// the timelines (data-model §4.6).
 	timeline.RegisterProjectors(a.Projectors, feeds)
 	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
+	a.Views = content.NewViews(content.ViewDeps{
+		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
+		Restrictions: content.NoRestrictions{},
+	})
 	// After the graph and content projectors, whose events these projectors turn into notifications.
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
 		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
@@ -348,9 +354,23 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
 		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
+		Timelines: a.Timeline, StatusViews: a.Views, Media: a.Media, TimelineLanguages: a.timelineLanguages,
 		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
+}
+
+// timelineLanguages returns the languages that a user's timelines show (FR-208); a user without
+// preferences sees every language.
+func (a *App) timelineLanguages(ctx context.Context, userID string) ([]string, error) {
+	p, err := a.Identity.Preferences(ctx, userID)
+	if errors.Is(err, identity.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return p.TimelineLanguages, nil
 }
 
 // setUpWeb builds the web client's handler (ADR-0028), registers its assets and manifest, and

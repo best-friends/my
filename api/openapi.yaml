@@ -38,6 +38,8 @@ tags:
     description: Public information about the instance.
   - name: accounts
     description: Accounts and the authenticated user's own account.
+  - name: timelines
+    description: The home, local, hashtag, and account timelines.
 paths:
   /instance:
     get:
@@ -74,6 +76,120 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Account"
+        default:
+          $ref: "#/components/responses/Problem"
+  # Timelines (FR-201 to FR-204, FR-208) ------------------------------------------------------
+  /accounts/{id}/statuses:
+    get:
+      operationId: listAccountStatuses
+      summary: List the posts and boosts of an account
+      description: |
+        The account's posts and boosts that the viewer may see, newest first: its public posts
+        for everyone, its local posts for logged-in viewers, its followers-only posts for its
+        followers, and its direct posts addressed to the viewer. With `pinned`, the page lists
+        the account's pinned posts instead, newest pin first, in a single page.
+      tags: [timelines]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The account.
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: exclude_replies
+          in: query
+          required: false
+          description: Leave out the account's replies.
+          schema:
+            type: boolean
+            default: false
+        - name: exclude_boosts
+          in: query
+          required: false
+          description: Leave out the account's boosts.
+          schema:
+            type: boolean
+            default: false
+        - name: pinned
+          in: query
+          required: false
+          description: List only the account's pinned posts.
+          schema:
+            type: boolean
+            default: false
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /timelines/home:
+    get:
+      operationId: getHomeTimeline
+      summary: Get the home timeline
+      description: |
+        The viewer's own posts and boosts and those of the accounts the viewer follows, newest
+        first, in the viewer's timeline languages.
+      tags: [timelines]
+      security:
+        - oauth2: ["read:statuses"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /timelines/local:
+    get:
+      operationId: getLocalTimeline
+      summary: Get the local timeline
+      description: |
+        The public posts of the instance's accounts, newest first, and their local posts for a
+        logged-in viewer, in the viewer's timeline languages.
+      tags: [timelines]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /timelines/tag/{hashtag}:
+    get:
+      operationId: getHashtagTimeline
+      summary: Get the timeline of a hashtag
+      description: |
+        The public posts with the hashtag, newest first, and its local posts for a logged-in
+        viewer, in the viewer's timeline languages. A hashtag that no post uses has an empty
+        timeline.
+      tags: [timelines]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - name: hashtag
+          in: path
+          required: true
+          description: The hashtag without the `#`, matched case-insensitively.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 256
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
         default:
           $ref: "#/components/responses/Problem"
 components:
@@ -136,6 +252,15 @@ components:
         maximum: 40
         default: 20
   responses:
+    StatusPage:
+      description: A page of posts and boosts, newest first.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StatusPage"
     Problem:
       description: An error, as an RFC 9457 problem document.
       headers:
@@ -279,3 +404,213 @@ components:
           description: When the account was created.
           type: string
           format: date-time
+    # Statuses: mirrors the schemas of #109 (Status adds `boost` for timelines) ------------
+    MediaAttachment:
+      description: |
+        A media file. Statuses attach only files that finished processing; `url` and
+        `preview_url` are omitted while a file is not ready.
+      type: object
+      required: [id, type]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        type:
+          description: The kind of media; `unknown` until processing finishes, or when it failed.
+          type: string
+          enum: [image, gifv, video, audio, unknown]
+        url:
+          description: The processed file, without metadata.
+          type: string
+          format: uri
+        preview_url:
+          description: A smaller rendition for previews.
+          type: string
+          format: uri
+        description:
+          description: The alternative text; omitted when there is none.
+          type: string
+        blurhash:
+          description: A BlurHash of the image, shown while it loads.
+          type: string
+        width:
+          description: The width of `url` in pixels.
+          type: integer
+          minimum: 1
+        height:
+          description: The height of `url` in pixels.
+          type: integer
+          minimum: 1
+        focus:
+          $ref: "#/components/schemas/MediaFocus"
+    MediaFocus:
+      description: The focal point that crops keep in view; omitted for the center.
+      type: object
+      required: [x, y]
+      properties:
+        x:
+          description: From -1 (left edge) to 1 (right edge).
+          type: number
+          minimum: -1
+          maximum: 1
+        y:
+          description: From -1 (bottom edge) to 1 (top edge).
+          type: number
+          minimum: -1
+          maximum: 1
+    Status:
+      description: |
+        A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
+        describe the authenticated user's relation to it and are omitted for anonymous
+        requests; `pinned` is only given to the author.
+
+        In a timeline, a boost is a status of the booster with `boost` set to the boosted
+        status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+        `visibility` and `language` are those of the boosted status, its `content`,
+        `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
+        are zero.
+      type: object
+      required:
+        - id
+        - uri
+        - account
+        - content
+        - spoiler_text
+        - sensitive
+        - visibility
+        - language
+        - created_at
+        - media_attachments
+        - mentions
+        - tags
+        - replies_count
+        - boosts_count
+        - favourites_count
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        uri:
+          description: The ActivityPub ID of the status.
+          type: string
+          format: uri
+        url:
+          description: The HTML page of the status; omitted when it has none.
+          type: string
+          format: uri
+        account:
+          $ref: "#/components/schemas/Account"
+        content:
+          description: The text as sanitized HTML, with mentions, hashtags, and URLs linked.
+          type: string
+        spoiler_text:
+          description: The content warning; empty when there is none.
+          type: string
+        sensitive:
+          description: Whether the media are sensitive.
+          type: boolean
+        visibility:
+          $ref: "#/components/schemas/Visibility"
+        language:
+          description: The BCP 47 language tag of the text; `und` when it is unknown.
+          type: string
+        in_reply_to_id:
+          $ref: "#/components/schemas/Id"
+        in_reply_to_account_id:
+          $ref: "#/components/schemas/Id"
+        created_at:
+          description: When the status was posted.
+          type: string
+          format: date-time
+        boost:
+          $ref: "#/components/schemas/Status"
+        edited_at:
+          description: When the status was last edited; omitted when it never was.
+          type: string
+          format: date-time
+        media_attachments:
+          description: The attached media, in order.
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaAttachment"
+        mentions:
+          description: The accounts the text mentions.
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusMention"
+        tags:
+          description: The hashtags of the text.
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusTag"
+        replies_count:
+          description: The number of replies.
+          type: integer
+          minimum: 0
+        boosts_count:
+          description: The number of boosts.
+          type: integer
+          minimum: 0
+        favourites_count:
+          description: The number of favourites.
+          type: integer
+          minimum: 0
+        favourited:
+          description: Whether the authenticated user favourited the status.
+          type: boolean
+        boosted:
+          description: Whether the authenticated user boosts the status.
+          type: boolean
+        bookmarked:
+          description: Whether the authenticated user bookmarked the status.
+          type: boolean
+        pinned:
+          description: Whether the status is pinned to the author's profile; given only to the author.
+          type: boolean
+    StatusMention:
+      description: An account that a status mentions.
+      type: object
+      required: [id, username, acct, url]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        username:
+          description: The username, without the domain.
+          type: string
+        acct:
+          description: The username for local accounts, `username@domain` for remote ones.
+          type: string
+        url:
+          description: The account's profile page.
+          type: string
+          format: uri
+    StatusPage:
+      description: A page of statuses.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              description: The statuses of the page.
+              type: array
+              items:
+                $ref: "#/components/schemas/Status"
+    StatusTag:
+      description: A hashtag of a status.
+      type: object
+      required: [name, url]
+      properties:
+        name:
+          description: The hashtag as written, without `#`.
+          type: string
+        url:
+          description: The hashtag's page.
+          type: string
+          format: uri
+    Visibility:
+      description: |
+        Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
+        `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
+        public timelines; `private` followers and mentioned accounts; `direct` mentioned
+        accounts.
+      type: string
+      enum: [public, local, unlisted, private, direct]

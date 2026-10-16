@@ -8,5 +8,9 @@ package clientapi
 // http.ServeMux pattern that the generated code registers it with.
 var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/accounts/verify_credentials": {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
+	"GET /api/v1/accounts/{id}/statuses":      {Operation: "listAccountStatuses", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"GET /api/v1/instance":                    {Operation: "getInstance", Anonymous: true},
+	"GET /api/v1/timelines/home":              {Operation: "getHomeTimeline", Scopes: []string{"read:statuses"}},
+	"GET /api/v1/timelines/local":             {Operation: "getLocalTimeline", Anonymous: true, Scopes: []string{"read:statuses"}},
+	"GET /api/v1/timelines/tag/{hashtag}":     {Operation: "getHashtagTimeline", Anonymous: true, Scopes: []string{"read:statuses"}},
 }

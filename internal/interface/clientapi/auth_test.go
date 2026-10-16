@@ -114,8 +114,10 @@ func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {
 				return ""
 			},
 		},
-		RequestID: func(context.Context) string { return "req-1" },
-		Logger:    slog.New(slog.DiscardHandler),
+		RequestID:   func(context.Context) string { return "req-1" },
+		Logger:      slog.New(slog.DiscardHandler),
+		Timelines:   &fakeTimelines{},
+		StatusViews: &fakeViews{},
 	}
 	if tweak != nil {
 		tweak(&o)

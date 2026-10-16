@@ -1,0 +1,366 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package clientapi_test
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"slices"
+	"testing"
+	"time"
+
+	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
+	apptimeline "github.com/best-friends/my/internal/app/timeline"
+	"github.com/best-friends/my/internal/domain/account"
+	"github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/timeline"
+	"github.com/best-friends/my/internal/interface/clientapi"
+)
+
+const (
+	bobAccountID = "01890a5d-ac96-774b-bcce-b302099a8058"
+	postID       = "01890a5d-ac96-774b-bcce-b302099a8100"
+	parentID     = "01890a5d-ac96-774b-bcce-b302099a8101"
+	boostID      = "01890a5d-ac96-774b-bcce-b302099a8102"
+	mediaID      = "01890a5d-ac96-774b-bcce-b302099a8103"
+	tagID        = "01890a5d-ac96-774b-bcce-b302099a8104"
+)
+
+// timelineCall records a call of fakeTimelines.
+type timelineCall struct {
+	timeline string
+	viewer   appcontent.Viewer
+	arg      string
+	filter   apptimeline.ProfileFilter
+	query    apptimeline.Query
+}
+
+// fakeTimelines returns page from every timeline and records the calls.
+type fakeTimelines struct {
+	page  apptimeline.Page
+	calls []timelineCall
+}
+
+func (f *fakeTimelines) record(c timelineCall) (apptimeline.Page, error) {
+	f.calls = append(f.calls, c)
+	return f.page, nil
+}
+
+func (f *fakeTimelines) Home(_ context.Context, v appcontent.Viewer, q apptimeline.Query) (apptimeline.Page, error) {
+	return f.record(timelineCall{timeline: "home", viewer: v, query: q})
+}
+
+func (f *fakeTimelines) Local(_ context.Context, v appcontent.Viewer, q apptimeline.Query) (apptimeline.Page, error) {
+	return f.record(timelineCall{timeline: "local", viewer: v, query: q})
+}
+
+func (f *fakeTimelines) Hashtag(_ context.Context, v appcontent.Viewer, tagID string, q apptimeline.Query) (apptimeline.Page, error) {
+	return f.record(timelineCall{timeline: "hashtag", viewer: v, arg: tagID, query: q})
+}
+
+func (f *fakeTimelines) Profile(_ context.Context, v appcontent.Viewer, author string, pf apptimeline.ProfileFilter, q apptimeline.Query) (apptimeline.Page, error) {
+	return f.record(timelineCall{timeline: "profile", viewer: v, arg: author, filter: pf, query: q})
+}
+
+// fakeViews holds the statuses, boosts, tags, and pins that the handlers read.
+type fakeViews struct {
+	statuses map[string]appcontent.StatusView
+	boosts   map[string]content.Boost
+	tags     map[string]content.Tag
+	pinned   []string
+	viewers  []string
+}
+
+func (f *fakeViews) Statuses(_ context.Context, viewer string, ids []string) ([]appcontent.StatusView, error) {
+	f.viewers = append(f.viewers, viewer)
+	var out []appcontent.StatusView
+	for _, id := range ids {
+		if v, ok := f.statuses[id]; ok {
+			if viewer == "" {
+				v.Viewer = nil
+			}
+			out = append(out, v)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeViews) Boosts(_ context.Context, ids []string) ([]content.Boost, error) {
+	var out []content.Boost
+	for _, id := range ids {
+		if b, ok := f.boosts[id]; ok {
+			out = append(out, b)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeViews) Tag(_ context.Context, name string) (content.Tag, error) {
+	t, ok := f.tags[appcontent.NormalizeTag(name)]
+	if !ok {
+		return content.Tag{}, appcontent.ErrNotFound
+	}
+	return t, nil
+}
+
+func (f *fakeViews) Pinned(context.Context, appcontent.Viewer, string) ([]string, error) {
+	return f.pinned, nil
+}
+
+type fakeMedia struct{}
+
+func (fakeMedia) Media(_ context.Context, id string) (appcontent.Media, error) {
+	if id != mediaID {
+		return appcontent.Media{}, appcontent.ErrNotFound
+	}
+	return appcontent.Media{
+		File: content.MediaFile{ID: id},
+		Result: &content.MediaProcessingResult{
+			MediaID: id, Outcome: content.MediaReady, MediaType: content.MediaTypeImage, Width: 640, Height: 480, Blurhash: "LEHV6n",
+			Variants: []content.MediaVariant{
+				{Kind: content.VariantFull, BlobKey: "full"}, {Kind: content.VariantThumbnail, BlobKey: "thumb"},
+			},
+		},
+	}, nil
+}
+
+func (fakeMedia) URL(v content.MediaVariant) string { return "https://media.example/" + v.BlobKey }
+
+var publishedAt = time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)
+
+// timelineEnv is an authEnv whose timelines list a boost by bob of alice's reply, and alice's
+// reply itself.
+type timelineEnv struct {
+	*authEnv
+	timelines *fakeTimelines
+	views     *fakeViews
+	languages []string
+}
+
+func newTimelineEnv(t *testing.T) *timelineEnv {
+	t.Helper()
+	te := &timelineEnv{
+		timelines: &fakeTimelines{page: apptimeline.Page{
+			Entries: []apptimeline.Entry{
+				{ID: boostID, Kind: timeline.KindBoost, StatusID: postID, AuthorAccountID: bobAccountID, OriginalAuthorAccountID: aliceAccountID},
+				{ID: postID, Kind: timeline.KindPost, StatusID: postID, AuthorAccountID: aliceAccountID, OriginalAuthorAccountID: aliceAccountID},
+				// A status deleted after the page was read is left out.
+				{ID: "gone", Kind: timeline.KindPost, StatusID: "gone", AuthorAccountID: aliceAccountID, OriginalAuthorAccountID: aliceAccountID},
+			},
+			Next: "gone",
+		}},
+		views: &fakeViews{
+			statuses: map[string]appcontent.StatusView{postID: {
+				Post: appcontent.Post{
+					Status: content.Status{
+						ID: postID, URI: "https://social.example/ap/statuses/" + postID, URL: "https://social.example/@alice/" + postID,
+						AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic,
+						InReplyToURI: "https://social.example/ap/statuses/" + parentID, PublishedAt: publishedAt,
+					},
+					Revision: content.Revision{
+						Seq: 2, SpoilerText: "cw", Sensitive: true, Language: "ja", RevisedAt: publishedAt.Add(time.Hour),
+						Bodies:              []content.Body{{Language: "en", ContentHTML: "<p>en</p>"}, {Language: "ja", ContentHTML: "<p>ja</p>"}},
+						Attachments:         []content.Attachment{{MediaID: mediaID, Description: "a cat"}, {Position: 1, MediaID: "missing"}},
+						MentionedAccountIDs: []string{bobAccountID, "unknown"},
+						TagIDs:              []string{tagID},
+					},
+				},
+				Counters:  content.Counters{StatusID: postID, RepliesCount: 1, BoostsCount: 2, FavouritesCount: 3},
+				Tags:      []content.Tag{{ID: tagID, Name: "Cats", NameNormalized: "cats"}},
+				InReplyTo: &content.ReplyLink{StatusID: postID, ParentStatusID: parentID, ParentAuthorAccountID: bobAccountID},
+				Viewer:    &appcontent.ViewerState{Favourited: true, Bookmarked: true},
+			}},
+			boosts: map[string]content.Boost{boostID: {
+				ID: boostID, URI: "https://social.example/ap/boosts/" + boostID, BoosterAccountID: bobAccountID, StatusID: postID,
+				Visibility: content.VisibilityPublic, IsLocal: true, BoostedAt: publishedAt.Add(2 * time.Hour),
+			}},
+			tags: map[string]content.Tag{"cats": {ID: tagID, Name: "Cats", NameNormalized: "cats"}},
+		},
+		languages: []string{"ja"},
+	}
+	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
+		o.Timelines, o.StatusViews, o.Media = te.timelines, te.views, fakeMedia{}
+		o.TimelineLanguages = func(_ context.Context, userID string) ([]string, error) {
+			if userID != "user-"+aliceAccountID {
+				t.Errorf("TimelineLanguages(%q), want alice's user", userID)
+			}
+			return te.languages, nil
+		}
+		accounts := o.Accounts.(fakeAccounts)
+		accounts[bobAccountID] = appaccount.Actor{
+			Account: account.Account{ID: bobAccountID, URI: "https://social.example/ap/actors/" + bobAccountID, CreatedAt: createdAt},
+			Local:   &account.LocalAccount{AccountID: bobAccountID, UserID: "user-" + bobAccountID, Username: "bob"},
+		}
+	})
+	return te
+}
+
+func decodePage(t *testing.T, res *http.Response) clientapi.StatusPage {
+	t.Helper()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.StatusCode)
+	}
+	var p clientapi.StatusPage
+	if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func TestHomeTimelineRendersPostsAndBoosts(t *testing.T) {
+	e := newTimelineEnv(t)
+	res := e.get(t, "/timelines/home?cursor=abc&limit=3", map[string]string{"Authorization": "Bearer read"})
+	page := decodePage(t, res)
+
+	want := []timelineCall{{
+		timeline: "home", viewer: appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: aliceAccountID},
+		query: apptimeline.Query{Before: "abc", Limit: 3, Languages: []string{"ja"}},
+	}}
+	if !slices.EqualFunc(e.timelines.calls, want, equalCall) {
+		t.Errorf("calls = %+v, want %+v", e.timelines.calls, want)
+	}
+	if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", cc)
+	}
+	if page.NextCursor == nil || *page.NextCursor != "gone" {
+		t.Errorf("next_cursor = %v, want the last entry read", page.NextCursor)
+	}
+	if len(page.Items) != 2 {
+		t.Fatalf("items = %+v, want the boost and the post", page.Items)
+	}
+	boost, post := page.Items[0], page.Items[1]
+
+	if post.Id != postID || post.Account.Username != "alice" || post.Content != "<p>ja</p>" || post.SpoilerText != "cw" ||
+		!post.Sensitive || post.Visibility != clientapi.VisibilityPublic || post.Language != "ja" ||
+		deref(post.Url) != "https://social.example/@alice/"+postID || !post.CreatedAt.Equal(publishedAt) ||
+		post.EditedAt == nil || !post.EditedAt.Equal(publishedAt.Add(time.Hour)) ||
+		post.RepliesCount != 1 || post.BoostsCount != 2 || post.FavouritesCount != 3 || post.Boost != nil {
+		t.Errorf("post = %+v", post)
+	}
+	if deref(post.InReplyToId) != parentID || deref(post.InReplyToAccountId) != bobAccountID {
+		t.Errorf("reply = %v %v, want the parent and its author", post.InReplyToId, post.InReplyToAccountId)
+	}
+	if !deref(post.Favourited) || deref(post.Boosted) || !deref(post.Bookmarked) || post.Pinned == nil || *post.Pinned {
+		t.Errorf("viewer state = %v %v %v %v, want favourited and bookmarked", post.Favourited, post.Boosted, post.Bookmarked, post.Pinned)
+	}
+	if got := post.Mentions; len(got) != 1 || got[0].Id != bobAccountID || got[0].Acct != "bob" || got[0].Url != "https://social.example/@bob" {
+		t.Errorf("mentions = %+v, want bob only", got)
+	}
+	if got := post.Tags; len(got) != 1 || got[0].Name != "Cats" || got[0].Url != "https://social.example/tags/cats" {
+		t.Errorf("tags = %+v", got)
+	}
+	media := post.MediaAttachments
+	if len(media) != 2 {
+		t.Fatalf("media = %+v, want 2", media)
+	}
+	if m := media[0]; m.Type != clientapi.MediaAttachmentTypeImage || deref(m.Url) != "https://media.example/full" ||
+		deref(m.PreviewUrl) != "https://media.example/thumb" || deref(m.Description) != "a cat" || deref(m.Blurhash) != "LEHV6n" ||
+		deref(m.Width) != 640 || deref(m.Height) != 480 {
+		t.Errorf("media[0] = %+v", m)
+	}
+	if m := media[1]; m.Id != "missing" || m.Type != clientapi.MediaAttachmentTypeUnknown || m.Url != nil {
+		t.Errorf("media[1] = %+v, want an unknown file without a URL", m)
+	}
+
+	// A boost is the booster's, at the time of the boost, with the boosted post inside.
+	if boost.Id != boostID || boost.Account.Username != "bob" || !boost.CreatedAt.Equal(publishedAt.Add(2*time.Hour)) ||
+		boost.Content != "" || boost.Language != "ja" || len(boost.MediaAttachments)+len(boost.Mentions)+len(boost.Tags) != 0 || boost.Url != nil {
+		t.Errorf("boost = %+v", boost)
+	}
+	if boost.Boost == nil || boost.Boost.Id != postID || boost.Boost.Account.Username != "alice" || boost.Boost.Content != "<p>ja</p>" {
+		t.Errorf("boosted status = %+v, want alice's post", boost.Boost)
+	}
+}
+
+func equalCall(a, b timelineCall) bool {
+	return a.timeline == b.timeline && a.viewer == b.viewer && a.arg == b.arg && a.filter == b.filter &&
+		a.query.Before == b.query.Before && a.query.Limit == b.query.Limit && slices.Equal(a.query.Languages, b.query.Languages)
+}
+
+func deref[T any](p *T) T {
+	var zero T
+	if p == nil {
+		return zero
+	}
+	return *p
+}
+
+func TestLocalTimelineForVisitors(t *testing.T) {
+	e := newTimelineEnv(t)
+	res := e.get(t, "/timelines/local", nil)
+	page := decodePage(t, res)
+	want := []timelineCall{{timeline: "local", viewer: appcontent.Viewer{Kind: appcontent.ViewerAnonymous}}}
+	if !slices.EqualFunc(e.timelines.calls, want, equalCall) {
+		t.Errorf("calls = %+v, want an anonymous viewer without languages", e.timelines.calls)
+	}
+	if cc := res.Header.Get("Cache-Control"); cc != "public, max-age=60" {
+		t.Errorf("Cache-Control = %q, want public, max-age=60", cc)
+	}
+	if !slices.Contains(res.Header.Values("Vary"), "Authorization") {
+		t.Errorf("Vary = %q, want Authorization", res.Header.Values("Vary"))
+	}
+	if !slices.Equal(e.views.viewers, []string{""}) {
+		t.Errorf("views read for %q, want an anonymous viewer", e.views.viewers)
+	}
+	for _, it := range page.Items {
+		if it.Favourited != nil || it.Boosted != nil || it.Bookmarked != nil || it.Pinned != nil {
+			t.Errorf("item %s has viewer state for a visitor", it.Id)
+		}
+	}
+
+	// A logged-in viewer gets their own, unshared page.
+	res = e.get(t, "/timelines/local", map[string]string{"Authorization": "Bearer read"})
+	decodePage(t, res)
+	if c := e.timelines.calls[1]; c.viewer.Kind != appcontent.ViewerLocal || c.viewer.AccountID != aliceAccountID || !slices.Equal(c.query.Languages, []string{"ja"}) {
+		t.Errorf("logged-in call = %+v", c)
+	}
+	if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("logged-in Cache-Control = %q, want no-store", cc)
+	}
+}
+
+func TestHashtagTimeline(t *testing.T) {
+	e := newTimelineEnv(t)
+	page := decodePage(t, e.get(t, "/timelines/tag/nobody-uses-this", nil))
+	if len(page.Items) != 0 || page.NextCursor != nil || len(e.timelines.calls) != 0 {
+		t.Errorf("unknown hashtag = %+v after %+v, want an empty page without reading a timeline", page, e.timelines.calls)
+	}
+	page = decodePage(t, e.get(t, "/timelines/tag/CATS", nil))
+	if len(e.timelines.calls) != 1 || e.timelines.calls[0].arg != tagID || len(page.Items) != 2 {
+		t.Errorf("hashtag CATS = %d items after %+v, want the timeline of #cats", len(page.Items), e.timelines.calls)
+	}
+}
+
+func TestListAccountStatuses(t *testing.T) {
+	e := newTimelineEnv(t)
+	auth := map[string]string{"Authorization": "Bearer read"}
+	decodePage(t, e.get(t, "/accounts/"+aliceAccountID+"/statuses?exclude_replies=true&exclude_boosts=true&limit=5", auth))
+	want := []timelineCall{{
+		timeline: "profile", viewer: appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: aliceAccountID}, arg: aliceAccountID,
+		filter: apptimeline.ProfileFilter{ExcludeReplies: true, ExcludeBoosts: true}, query: apptimeline.Query{Limit: 5},
+	}}
+	if !slices.EqualFunc(e.timelines.calls, want, equalCall) {
+		t.Errorf("calls = %+v, want %+v (a profile shows every language)", e.timelines.calls, want)
+	}
+
+	e.views.pinned = []string{postID}
+	page := decodePage(t, e.get(t, "/accounts/"+aliceAccountID+"/statuses?pinned=true", nil))
+	if len(page.Items) != 1 || page.Items[0].Id != postID || page.NextCursor != nil || len(e.timelines.calls) != 1 {
+		t.Errorf("pinned = %+v, want the pinned post in one page", page)
+	}
+	page = decodePage(t, e.get(t, "/accounts/"+aliceAccountID+"/statuses?pinned=true&cursor="+postID, nil))
+	if len(page.Items) != 0 || page.NextCursor != nil {
+		t.Errorf("pinned after the first page = %+v, want none", page)
+	}
+
+	res := e.get(t, "/accounts/01890a5d-ac96-774b-bcce-b302099a80ff/statuses", map[string]string{"Accept-Language": "ja"})
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("unknown account = %d, want 404", res.StatusCode)
+	}
+	if p := decodeProblem(t, res); p.Type != clientapi.ProblemTypeBlank || p.Title != "指定されたリソースが見つかりません。" ||
+		res.Header.Get("Content-Language") != "ja" || res.Header.Get("Cache-Control") != "no-store" {
+		t.Errorf("unknown account problem = %+v %v", p, res.Header)
+	}
+}

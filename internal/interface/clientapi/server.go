@@ -31,6 +31,14 @@ type Options struct {
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// Timelines reads the timelines, and StatusViews the statuses they list.
+	Timelines   Timelines
+	StatusViews StatusViews
+	// Media reads the media attachments of statuses; nil shows them as unprocessed.
+	Media Media
+	// TimelineLanguages returns the languages that a user's timelines show, none for every
+	// language (FR-208); nil shows every language.
+	TimelineLanguages func(ctx context.Context, userID string) ([]string, error)
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when
