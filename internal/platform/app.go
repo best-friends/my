@@ -9,26 +9,31 @@ import (
 	"log/slog"
 	"net/http"
 
+	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
 	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
+	"github.com/best-friends/my/internal/adapter/media/native"
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
 	"github.com/best-friends/my/internal/app/account"
+	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
 	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	mediahttp "github.com/best-friends/my/internal/interface/media"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -78,11 +83,20 @@ type App struct {
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
 
+	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
+	Blobs          blob.Store
+	MediaProcessor media.Processor
+	Media          *content.MediaService
+	// Scheduler enqueues the periodic jobs for the worker role.
+	Scheduler *queue.Scheduler
+
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
 	ready  func(ctx context.Context) error
 	closer func() error
-	routes []route
+	// closeBlobs releases the blob store.
+	closeBlobs func() error
+	routes     []route
 }
 
 type route struct {
@@ -131,6 +145,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows      graph.Repository
 		statuses     content.Repository
 		interactions content.InteractionRepository
+		medias       content.MediaRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -141,7 +156,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows, statuses = d.GraphRepository(), d.StatusRepository()
+		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions = d.InteractionRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
@@ -156,7 +171,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows, statuses = d.GraphRepository(), d.StatusRepository()
+		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions = d.InteractionRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
@@ -240,6 +255,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
 	authpages.New(authpages.Options{Identity: a.Identity, Locales: a.Locales, Logger: a.Logger}).Register(a)
+	if err := a.setMedia(cfg, medias); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
@@ -247,6 +267,41 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
+}
+
+// setMedia builds the blob store, the media processor, and the media use cases, and registers
+// their jobs and schedules.
+func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
+	switch cfg.Blob {
+	case "fs":
+		store, err := blobfs.New(blobfs.Options{Dir: cfg.BlobFSDir, BaseURL: "https://" + cfg.Host})
+		if err != nil {
+			return err
+		}
+		a.Blobs, a.closeBlobs = store, store.Close
+	default:
+		return fmt.Errorf("blob %q is not implemented yet", cfg.Blob)
+	}
+	switch cfg.Media {
+	case "native":
+		a.MediaProcessor = native.New(native.Options{})
+	default:
+		return fmt.Errorf("media %q is not implemented yet", cfg.Media)
+	}
+	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
+	a.Media = content.NewMediaService(content.MediaDeps{
+		UnitOfWork: a.UnitOfWork, Repository: repo, Blobs: a.Blobs, Processor: a.MediaProcessor,
+		Outbox: a.Outbox, Jobs: a.Jobs, Clock: a.Clock, IDs: a.IDs,
+		Limits: media.Limits{
+			MaxBytes: cfg.MediaMaxImageBytes, MaxSide: cfg.MediaMaxImageSide, MaxPixels: cfg.MediaMaxImagePixels,
+		},
+		UnattachedTTL: cfg.MediaUnattachedTTL,
+		// Avatars and headers refer to media files from the account module.
+		Referrers: []content.MediaReferrer{a.Accounts},
+		Logger:    a.Logger,
+	})
+	a.Media.RegisterJobs(a.Handlers, a.Scheduler)
+	return nil
 }
 
 // defaultPostLanguage returns the default post language of a user's preferences, or "" for a
@@ -292,6 +347,9 @@ func (a *App) Handle(pattern string, h http.Handler) {
 
 // Close releases the database connections.
 func (a *App) Close() error {
+	if a.closeBlobs != nil {
+		_ = a.closeBlobs()
+	}
 	if a.closer == nil {
 		return nil
 	}

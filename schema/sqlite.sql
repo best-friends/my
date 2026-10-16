@@ -565,6 +565,66 @@ CREATE TABLE instance_texts (
 ) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
+-- content: media files (data-model §4.4, ADR-0005, ADR-0019 §8). Owned by internal/app/content.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a media file, uploaded by a local account or fetched from a remote server.
+CREATE TABLE media_files (
+  id TEXT NOT NULL PRIMARY KEY,
+  owner_account_id TEXT NOT NULL,
+  origin TEXT NOT NULL CHECK (origin IN ('upload', 'remote')),
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX media_files_owner_account_id_id ON media_files (owner_account_id, id);
+
+-- Resource (subtype): an upload as received. content_type is detected from the content. The
+-- blob under blob_key is private and is deleted once processing has a result.
+CREATE TABLE uploaded_media (
+  media_id TEXT NOT NULL PRIMARY KEY,
+  blob_key TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL CHECK (file_size >= 0)
+) STRICT;
+
+-- Event: one processing of a media file. The newest row of a file is its current state.
+CREATE TABLE media_processing_results (
+  id TEXT NOT NULL PRIMARY KEY,
+  media_id TEXT NOT NULL,
+  outcome TEXT NOT NULL CHECK (outcome IN ('ready', 'failed')),
+  media_type TEXT NOT NULL CHECK (media_type IN ('image', 'gifv', 'video', 'audio', 'unknown')),
+  width INTEGER,
+  height INTEGER,
+  duration_ms INTEGER,
+  blurhash TEXT,
+  processed_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX media_processing_results_media_id_id ON media_processing_results (media_id, id DESC);
+
+-- Event (child of a result): a processed rendition in blob storage, under the public prefix.
+CREATE TABLE media_variants (
+  result_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('full', 'thumbnail')),
+  blob_key TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL CHECK (file_size >= 0),
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  PRIMARY KEY (result_id, kind)
+) STRICT;
+
+-- Current value: the focal point of a media file. No row means the center.
+CREATE TABLE media_focus (
+  media_id TEXT NOT NULL PRIMARY KEY,
+  focus_x REAL NOT NULL CHECK (focus_x BETWEEN -1.0 AND 1.0),
+  focus_y REAL NOT NULL CHECK (focus_y BETWEEN -1.0 AND 1.0)
+) STRICT;
+
+-- The cleanup of unattached uploads (FR-803) looks up the references to a media file.
+CREATE INDEX status_revision_attachments_media_id ON status_revision_attachments (media_id);
+CREATE INDEX account_profile_revisions_avatar_media_id ON account_profile_revisions (avatar_media_id);
+CREATE INDEX account_profile_revisions_header_media_id ON account_profile_revisions (header_media_id);
+
+-- ---------------------------------------------------------------------------------------------
 -- identity: browser sessions of the server-rendered screens (data-model.md §4.1, ADR-0019 §4).
 -- ---------------------------------------------------------------------------------------------
 
