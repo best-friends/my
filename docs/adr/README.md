@@ -31,4 +31,5 @@
 | [0017](0017-visibility-local.md) | 公開範囲 `local`（サーバーローカル）を追加する | Accepted |
 | [0018](0018-federated-uris.md) | 連合 URI は ID ベースで `/ap/` 名前空間に置き、表示用 URL と分離する | Proposed |
 | [0019](0019-security-baseline.md) | セキュリティベースライン | Proposed |
+| [0020](0020-data-modeling-principles.md) | データモデリング方針（リソース・イベント・投影の分離と状態の直交分解） | Proposed |
 <!-- adr-index:end -->

@@ -62,6 +62,9 @@ These come from Proposed ADRs and will be confirmed when they are accepted; foll
 - Core (domain + application) must not import cloud SDKs or drivers; those live in adapters and `cmd/` entrypoints.
 - Keep the server buildable with `CGO_ENABLED=0`; a cgo dependency needs an ADR.
 - Every external resource goes through a port; every adapter must pass that port's contract test suite.
+- Data modeling follows [ADR-0020](docs/adr/0020-data-modeling-principles.md): classify every table as resource / event / projection / current-value;
+  never encode state as nullable timestamp columns; record state changes as events and derive current state in projections owned by one module;
+  no JSON for queried or constrained data. Read [docs/architecture/data-model.md](docs/architecture/data-model.md) before touching persistence.
 - Keep DB transactions short, retryable, and free of external I/O (HTTP, queue, blob); enqueue jobs via the outbox. Make writes safe to repeat with unique constraints, upserts, idempotency keys ([ADR-0003](docs/adr/0003-database-abstraction.md)).
 - Job handlers must be idempotent; delivery is at-least-once ([ADR-0004](docs/adr/0004-job-queue-abstraction.md)).
 - All outbound HTTP goes through the SSRF-guarded `HttpClient` port.
