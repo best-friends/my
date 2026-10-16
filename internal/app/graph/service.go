@@ -74,6 +74,10 @@ type Relationship struct {
 	MutingNotifications bool
 }
 
+// ActivelyFollowing reports whether the account's follow of the target is active; a pending
+// follow request does not count.
+func (r Relationship) ActivelyFollowing() bool { return r.Following == graph.StateActive }
+
 // Follow makes followerID follow followeeID. The follow is active at once, unless the followee's
 // current profile is locked: then it is a follow request, pending until the followee accepts it
 // (FR-302). Following an account that the follower already follows or has requested to follow

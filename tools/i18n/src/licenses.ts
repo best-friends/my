@@ -31,6 +31,10 @@ const reviewed: Record<string, string> = {
   // @babel/helper-compilation-targets); none of it is bundled into the client. The FSF lists
   // CC BY 4.0 as compatible with GPLv3, and so with AGPLv3.
   "caniuse-lite@1.0.30001814": "CC-BY-4.0",
+  // Glob matcher that ESLint and typescript-eslint require (app/ lint only; never bundled into the
+  // client). The Blue Oak Model License 1.0.0 is an OSI-approved permissive license with only a
+  // notice condition, so it imposes nothing that conflicts with AGPL-3.0.
+  "minimatch@10.2.6": "BlueOak-1.0.0",
 };
 
 type Manifest ={ name?: string; version?: string; license?: unknown; licenses?: unknown };

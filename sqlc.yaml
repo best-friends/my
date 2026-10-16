@@ -23,6 +23,7 @@ sql:
         package: sqlitegen
         out: internal/adapter/db/sqlite/sqlitegen
         emit_empty_slices: true
+        omit_unused_structs: true
   - name: postgres
     engine: postgresql
     schema: schema/postgres.sql
@@ -33,6 +34,7 @@ sql:
         out: internal/adapter/db/postgres/postgresgen
         sql_package: pgx/v5
         emit_empty_slices: true
+        omit_unused_structs: true
         emit_pointers_for_null_types: true
         overrides:
           - db_type: timestamptz
@@ -51,6 +53,7 @@ sql:
         package: sqlitequeue
         out: internal/adapter/queue/db/internal/sqlitequeue
         emit_empty_slices: true
+        omit_unused_structs: true
   - name: postgres-queue
     engine: postgresql
     schema: schema/postgres.sql
@@ -61,6 +64,7 @@ sql:
         out: internal/adapter/queue/db/internal/postgresqueue
         sql_package: pgx/v5
         emit_empty_slices: true
+        omit_unused_structs: true
         emit_pointers_for_null_types: true
         overrides:
           - db_type: timestamptz
@@ -74,6 +78,7 @@ sql:
         package: sqlitekv
         out: internal/adapter/kv/db/internal/sqlitekv
         emit_empty_slices: true
+        omit_unused_structs: true
   - name: postgres-kv
     engine: postgresql
     schema: schema/postgres.sql
@@ -84,6 +89,7 @@ sql:
         out: internal/adapter/kv/db/internal/postgreskv
         sql_package: pgx/v5
         emit_empty_slices: true
+        omit_unused_structs: true
         emit_pointers_for_null_types: true
         overrides:
           - db_type: timestamptz
