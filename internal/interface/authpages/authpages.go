@@ -66,9 +66,6 @@ const (
 	CookieCSRF    = "__Host-my_csrf"
 )
 
-// DefaultStylesheet is the URL of the stylesheet that the pages link to.
-const DefaultStylesheet = "/assets/server-pages.css"
-
 // contentSecurityPolicy allows the pages nothing but their own stylesheet, images, and forms.
 // Browsers check form-action on the redirects that follow a form, so it lists the origins a
 // form may end up at: this site, Options.FormActionOrigins, and the consent page's redirect URI.
@@ -116,7 +113,8 @@ type Options struct {
 	FormActionOrigins []string
 	// Locales resolves the locale of the screens (ADR-0009 §2).
 	Locales *i18n.Resolver
-	// Stylesheet is the URL of the pages' stylesheet; empty means DefaultStylesheet.
+	// Stylesheet is the URL of the pages' stylesheet, the web build's server pages entry
+	// (web.Handler.Stylesheet); empty leaves the pages unstyled.
 	Stylesheet string
 	// Logger logs unexpected errors; nil means slog.Default().
 	Logger *slog.Logger
@@ -146,9 +144,6 @@ const (
 
 // New returns a Handler on o.
 func New(o Options) *Handler {
-	if o.Stylesheet == "" {
-		o.Stylesheet = DefaultStylesheet
-	}
 	if o.Logger == nil {
 		o.Logger = slog.Default()
 	}

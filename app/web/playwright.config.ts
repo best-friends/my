@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Playwright E2E for the web client (ADR-0015, ADR-0027). Every test runs in one project per
 // viewport width × locale. E2E_MATRIX=full runs all of them (nightly); otherwise only the per-PR subset
-// runs: every locale at the narrowest and widest width. Tests run against `vite preview` of the built
-// app (`make web-e2e` builds it first), or against E2E_BASE_URL when it is set.
+// runs: every locale at the narrowest and widest width. The client's tests run against `vite preview` of
+// the built app (`make web-e2e` builds it first), or against E2E_BASE_URL when it is set. The tests of the
+// server-rendered pages (e2e/auth-pages.spec.ts) run against a real `my serve` on SQLite that
+// e2e/server.ts starts from bin/my, or against E2E_SERVER_URL when it is set.
 import { defineConfig, devices, type Project } from "@playwright/test";
+import { serverPort } from "./e2e/server-origin.ts";
 
 /** Viewport widths in CSS px (ADR-0027). */
 const widths = [320, 390, 768, 1024, 1440] as const;
@@ -16,6 +19,7 @@ const fullMatrix = process.env["E2E_MATRIX"] === "full";
 const ci = process.env["CI"] !== undefined;
 const port = 4173;
 const externalBaseURL = process.env["E2E_BASE_URL"];
+const externalServer = process.env["E2E_SERVER_URL"] !== undefined;
 
 const projects: Project[] = widths
   .filter((width) => fullMatrix || prWidths.has(width))
@@ -48,13 +52,26 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects,
-  ...(externalBaseURL === undefined
-    ? {
-        webServer: {
-          command: `bun run preview --host 127.0.0.1 --port ${port} --strictPort`,
-          url: `http://127.0.0.1:${port}`,
-          reuseExistingServer: !ci,
-        },
-      }
-    : {}),
+  webServer: [
+    ...(externalBaseURL === undefined
+      ? [
+          {
+            command: `bun run preview --host 127.0.0.1 --port ${port} --strictPort`,
+            url: `http://127.0.0.1:${port}`,
+            reuseExistingServer: !ci,
+          },
+        ]
+      : []),
+    ...(externalServer
+      ? []
+      : [
+          {
+            // A fresh database every run: the specs depend on its seed and on rate limits not yet used up.
+            command: "node e2e/server.ts",
+            url: `http://127.0.0.1:${serverPort}/readyz`,
+            reuseExistingServer: false,
+            gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
+          } as const,
+        ]),
+  ],
 });

@@ -1,8 +1,10 @@
 {{define "content"}}
 <h1>{{.L.ServerAuthSignedInTitle}}</h1>
-<p><a href="{{.ReturnTo}}">{{.L.ServerAuthSignedInContinue}}</a></p>
-<form method="post" action="/auth/sign_out">
+<p class="links"><a href="{{.ReturnTo}}">{{.L.ServerAuthSignedInContinue}}</a></p>
+<form class="form" method="post" action="/auth/sign_out">
 <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-<button type="submit">{{.L.ServerAuthSignOutSubmit}}</button>
+<div class="actions">
+<button class="button button-secondary" type="submit">{{.L.ServerAuthSignOutSubmit}}</button>
+</div>
 </form>
 {{end}}

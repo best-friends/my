@@ -1,17 +1,21 @@
 {{define "content"}}
 <h1>{{.L.ServerAuthStatusTitle}}</h1>
-{{if .Error}}<p role="alert">{{.Error}}</p>{{end}}
-{{if .Notice}}<p role="status">{{.Notice}}</p>{{end}}
+{{if .Error}}<p class="alert" role="alert">{{.Error}}</p>{{end}}
+{{if .Notice}}<p class="notice" role="status">{{.Notice}}</p>{{end}}
 {{with .Status}}
 {{if .Rejected}}<p>{{$.L.ServerAuthStatusRejected}}</p>{{else if .Pending}}<p>{{$.L.ServerAuthStatusPending}}</p>{{end}}
 {{if .VerifyEmail}}<p>{{.VerifyEmail}}</p>
-<form method="post" action="/auth/verify_email/resend">
+<form class="form" method="post" action="/auth/verify_email/resend">
 <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-<button type="submit">{{$.L.ServerAuthStatusResendSubmit}}</button>
+<div class="actions">
+<button class="button" type="submit">{{$.L.ServerAuthStatusResendSubmit}}</button>
+</div>
 </form>{{end}}
 {{end}}
-<form method="post" action="/auth/sign_out">
+<form class="form" method="post" action="/auth/sign_out">
 <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-<button type="submit">{{.L.ServerAuthSignOutSubmit}}</button>
+<div class="actions">
+<button class="button button-secondary" type="submit">{{.L.ServerAuthSignOutSubmit}}</button>
+</div>
 </form>
 {{end}}
