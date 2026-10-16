@@ -1,0 +1,38 @@
+{
+  "greeting": {
+    "defaultMessage": "Hello, {name}!",
+    "description": "Shown at the top of the home timeline. name = display name."
+  },
+  "notifications.unread": {
+    "defaultMessage": "{count, plural, =0 {No unread notifications} one {# unread notification} other {# unread notifications}}",
+    "description": "Badge tooltip on the notifications tab."
+  },
+  "post.boosted_own": {
+    "defaultMessage": "{gender, select, female {{name} boosted her own post} male {{name} boosted his own post} other {{name} boosted their own post}}",
+    "description": "Notification line. gender comes from the account's pronoun setting."
+  },
+  "follow.rank": {
+    "defaultMessage": "You are the {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} follower",
+    "description": "Shown after following an account."
+  },
+  "profile.followers": {
+    "defaultMessage": "{count, number} followers",
+    "description": "Follower counter on a profile header."
+  },
+  "post.favourited_by": {
+    "defaultMessage": "{count, plural, offset:1 =0 {Nobody favourited this} =1 {{name} favourited this} one {{name} and # other favourited this} other {{name} and # others favourited this}}",
+    "description": "name = most recent favouriter; count = total favourites including them."
+  },
+  "post.reply_summary": {
+    "defaultMessage": "{visibility, select, public {{count, plural, one {# public reply} other {# public replies}}} other {{count, plural, one {# reply} other {# replies}}}}",
+    "description": "Nested select + plural."
+  },
+  "profile.moved": {
+    "defaultMessage": "{name} has moved to {account}.",
+    "description": "Intentionally untranslated in ja to exercise fallback and the missing-key report."
+  },
+  "compose.hint": {
+    "defaultMessage": "It's {name}'s turn. Type '{'braces'}' to insert literal braces.",
+    "description": "Apostrophe escaping test (ICU DOUBLE_OPTIONAL)."
+  }
+}

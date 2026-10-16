@@ -41,4 +41,5 @@ Fediverse サーバーの運営コストで最も膨らみやすいのが **リ�
 ## Open Questions / 要検証
 
 - [ ] pure Go の画像処理（JPEG / PNG / WebP / AVIF のデコードとエンコード）の対応状況・速度・メモリの実測
-- [ ] GCS の S3 互換 API での署名付き URL 互換性
+- [ ] GCS の S3 互換 API での署名付き URL 互換性（2026-10-16 確認: GCS は XML API で HMAC キーによる `AWS4-HMAC-SHA256` 署名をサポートし、署名付き URL は最大 7 日。aws-sdk-go-v2 の presigner・マルチパート・チェックサムヘッダとの実機互換は未確認）
+- [ ] R2 の署名付き URL は S3 API ドメインでのみ有効で、カスタムドメイン（公開バケット）では使えない（2026-10-16 確認）。`publicUrl` と `signedUrl` で異なるホストを返す設計で問題ないか確認する（出典は [deployment-targets.md](../architecture/deployment-targets.md)）

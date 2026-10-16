@@ -19,7 +19,7 @@ i18n の対象は UI 文字列だけでなく、サーバー生成文言（メ�
 - キーは意味ベース（`timeline.empty.home`）。文字列の連結・断片の組み合わせは禁止し、1 文 = 1 メッセージ。
 - サーバー（Go）・Web・モバイル（TS）で **同一カタログファイルを共有** する（namespace でサーバー専用 / クライアント専用を分ける）。
   Go 側は ICU MessageFormat を解釈できるライブラリ（または自前の最小実装）を使い、カタログはバイナリに `embed` する。
-- 型安全: キーとプレースホルダの型を生成し、存在しないキーや引数不足をコンパイル時に検出する（ライブラリは実装 Issue で選定。候補: FormatJS, Lingui, Paraglide 等）。
+- 型安全: キーとプレースホルダの型を生成し、存在しないキーや引数不足をコンパイル時に検出する（ライブラリは実装 Issue で選定。候補: FormatJS, Lingui, Paraglide 等。#20 の推奨は Open Questions を参照）。
 - CI 検査: (a) `en` に対する未翻訳キーの一覧（失敗にはしない）、(b) プレースホルダの不一致・ICU 構文エラー（失敗にする）、(c) 未使用キー。
 - **疑似ロケール**（`en-XA`: 文字列を 30〜40% 伸ばしアクセント付与、`ar-XB`: RTL 疑似）を開発・E2E テストで使う。
 
@@ -68,6 +68,15 @@ i18n の対象は UI 文字列だけでなく、サーバー生成文言（メ�
 
 ## Open Questions / 要検証
 
-- [ ] #20 i18n ライブラリ選定（Go 側: ICU MessageFormat の複数形 / select 対応、TS 側: Web / Tauri で共有）
-- [ ] Weblate / Crowdin の選定
+- [x] #20 i18n ライブラリ選定（Go 側: ICU MessageFormat の複数形 / select 対応、TS 側: Web / Tauri で共有）
+  → [spike レポート](../spikes/20-i18n-libraries.md)。推奨案:
+  Go は `github.com/kaptinlin/messageformat-go/mf1`（MIT。FormatJS と共有カタログ 96/96・CLDR 12 ロケール 132/132 で出力一致）を自前パッケージの裏に隠して使う。
+  TS は FormatJS `intl-messageformat`（BSD-3-Clause、AST 事前コンパイルでランタイム 2.6 KiB gzip）。
+  カタログは Format.JS JSON 形式（`{"key": {"defaultMessage", "description"}}`）。型付きアクセサは 1 つの生成器から Go / TS の両方に生成し、生成物をコミットする。
+  疑似ロケールは FormatJS の AST 変換で生成し、`en` の CLDR 規則で整形する。
+- [ ] Go 側ライブラリの保守リスク（保守者が実質 1 名、v0.x）とバイナリ +5.1 MB / RSS +7 MB を受け入れるか。
+  受け入れる場合も、FormatJS との出力一致テストと CLDR ドリフトテストを CI に常設し、フォーク / 自前実装（3〜5 人日の見積もり）へ切り替えられるようにする
+- [ ] Go と TS で出力が一致する「共有サブセット」の採用: サーバーと共有する namespace ではリッチテキストタグ・数値スケルトン（`::`）・`date` / `time` 引数を禁止し、
+  日付は整形済み文字列で渡す（lint で強制）。namespace の分け方（`server` / `shared` / `client`）もあわせて決める
+- [ ] Weblate / Crowdin の選定（spike の推奨は Weblate の Libre プラン: GPL-3.0 でセルフホスト可、Format.JS JSON と ICU 検査をネイティブサポート）
 - [ ] v0 で `en` / `ja` 以外に追加する言語（コミュニティ次第）

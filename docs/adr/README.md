@@ -29,4 +29,6 @@
 | [0015](0015-testing-strategy.md) | テスト戦略 | Proposed |
 | [0016](0016-client-api-style.md) | クライアント API の様式 | Proposed |
 | [0017](0017-visibility-local.md) | 公開範囲 `local`（サーバーローカル）を追加する | Accepted |
+| [0018](0018-federated-uris.md) | 連合 URI は ID ベースで `/ap/` 名前空間に置き、表示用 URL と分離する | Proposed |
+| [0019](0019-security-baseline.md) | セキュリティベースライン | Proposed |
 <!-- adr-index:end -->
