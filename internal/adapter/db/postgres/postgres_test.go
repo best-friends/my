@@ -1,0 +1,293 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package postgres
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"net/url"
+	"os"
+	"os/exec"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/testcontainers/testcontainers-go"
+	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
+
+	"github.com/best-friends/my/internal/adapter/db/postgres/internal/contract"
+	"github.com/best-friends/my/internal/adapter/db/postgres/internal/contract/contractdb"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/pkg/testkit"
+	"github.com/best-friends/my/schema"
+)
+
+// Environment variables that control where the tests find PostgreSQL.
+const (
+	// envURL points the tests at an existing server, as a postgres:// URL whose user may create
+	// databases. Without it, the tests start a container with testcontainers-go.
+	envURL = "TEST_POSTGRES_URL"
+	// envRequired, when non-empty, turns "no PostgreSQL available" into a failure instead of a
+	// skip. CI sets it so that the PostgreSQL tests can never be skipped silently.
+	envRequired = "TEST_POSTGRES_REQUIRED"
+	// envImage overrides the container image; it defaults to the one `make db-up` uses.
+	envImage     = "TEST_POSTGRES_IMAGE"
+	defaultImage = "postgres:18-alpine"
+)
+
+var (
+	// serverURL is the URL of the test server, or empty when there is none.
+	serverURL string
+	// skipReason says why serverURL is empty.
+	skipReason string
+)
+
+func TestMain(m *testing.M) {
+	code, cleanup := setUpServer()
+	if code == 0 {
+		code = m.Run()
+	}
+	cleanup()
+	os.Exit(code)
+}
+
+// setUpServer finds or starts the PostgreSQL server for the tests.
+func setUpServer() (code int, cleanup func()) {
+	cleanup = func() {}
+	if u := os.Getenv(envURL); u != "" {
+		serverURL = u
+		return 0, cleanup
+	}
+	if err := exec.Command("docker", "info").Run(); err != nil {
+		skipReason = fmt.Sprintf("%s is unset and Docker is unavailable (%v)", envURL, err)
+		if os.Getenv(envRequired) != "" {
+			fmt.Fprintf(os.Stderr, "postgres tests: %s, but %s is set\n", skipReason, envRequired)
+			return 1, cleanup
+		}
+		return 0, cleanup
+	}
+	image := os.Getenv(envImage)
+	if image == "" {
+		image = defaultImage
+	}
+	ctx := context.Background()
+	c, err := tcpostgres.Run(ctx, image,
+		tcpostgres.WithDatabase("my"), tcpostgres.WithUsername("my"), tcpostgres.WithPassword("my"),
+		tcpostgres.BasicWaitStrategies(),
+	)
+	cleanup = func() {
+		if c != nil {
+			_ = testcontainers.TerminateContainer(c)
+		}
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "postgres tests: start container %s: %v\n", image, err)
+		return 1, cleanup
+	}
+	if serverURL, err = c.ConnectionString(ctx, "sslmode=disable"); err != nil {
+		fmt.Fprintf(os.Stderr, "postgres tests: %v\n", err)
+		return 1, cleanup
+	}
+	return 0, cleanup
+}
+
+// newTestDB creates a new database on the test server, applies the bootstrap SQL, the product
+// schema, and the probe table (see package schema for why executing the files matches an Atlas
+// apply), and opens it.
+func newTestDB(t *testing.T, opts uow.Options) *DB {
+	t.Helper()
+	if serverURL == "" {
+		t.Skip(skipReason)
+	}
+	ctx := t.Context()
+	admin, err := pgx.Connect(ctx, serverURL)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	defer func() { _ = admin.Close(context.WithoutCancel(ctx)) }()
+
+	suffix := make([]byte, 8)
+	_, _ = rand.Read(suffix)
+	name := "test_" + hex.EncodeToString(suffix)
+	if _, err := admin.Exec(ctx, "CREATE DATABASE "+name); err != nil {
+		t.Fatalf("create database: %v", err)
+	}
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		t.Fatalf("%s must be a postgres:// URL: %v", envURL, err)
+	}
+	u.Path = "/" + name
+
+	db, err := Open(ctx, u.String(), opts)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() {
+		db.Close()
+		ctx := context.Background()
+		if c, err := pgx.Connect(ctx, serverURL); err == nil {
+			_, _ = c.Exec(ctx, "DROP DATABASE "+name+" WITH (FORCE)")
+			_ = c.Close(ctx)
+		}
+	})
+	for _, ddl := range []string{schema.PostgresBootstrap, schema.Postgres, contract.Schema} {
+		if _, err := db.pool.Exec(ctx, ddl); err != nil {
+			t.Fatalf("apply schema: %v", err)
+		}
+	}
+	return db
+}
+
+func queries(tx uow.Tx) (*contractdb.Queries, error) {
+	pgTx, err := txOf(tx)
+	if err != nil {
+		return nil, err
+	}
+	return contractdb.New(pgTx), nil
+}
+
+func TestUnitOfWorkContract(t *testing.T) {
+	testkit.UnitOfWorkContract(t, func(t *testing.T, opts uow.Options) testkit.UnitOfWorkHarness {
+		db := newTestDB(t, opts)
+		return testkit.UnitOfWorkHarness{
+			UnitOfWork: db,
+			Insert: func(ctx context.Context, tx uow.Tx, name string) error {
+				q, err := queries(tx)
+				if err != nil {
+					return err
+				}
+				return q.InsertProbe(ctx, name)
+			},
+			Keys: func(ctx context.Context) ([]string, error) {
+				return contractdb.New(db.pool).ListProbeNames(ctx)
+			},
+		}
+	})
+}
+
+func TestTransactionsAreReadCommitted(t *testing.T) {
+	db := newTestDB(t, uow.Options{})
+	err := db.Tx(t.Context(), func(tx uow.Tx) error {
+		pgTx, err := txOf(tx)
+		if err != nil {
+			return err
+		}
+		var level string
+		if err := pgTx.QueryRow(t.Context(), "SHOW transaction_isolation").Scan(&level); err != nil {
+			return err
+		}
+		if level != "read committed" {
+			t.Errorf("transaction_isolation = %q, want read committed", level)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Tx = %v", err)
+	}
+}
+
+// TestRetriesDeadlocks makes two transactions lock two rows in opposite orders. PostgreSQL
+// aborts one of them with deadlock_detected; the UnitOfWork must retry it to success.
+func TestRetriesDeadlocks(t *testing.T) {
+	var (
+		mu      sync.Mutex
+		retries []error
+	)
+	db := newTestDB(t, uow.Options{Retry: uow.RetryPolicy{OnRetry: func(_ int, err error) {
+		mu.Lock()
+		defer mu.Unlock()
+		retries = append(retries, err)
+	}}})
+	setup := contractdb.New(db.pool)
+	for _, name := range []string{"x", "y"} {
+		if err := setup.InsertProbe(t.Context(), name); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var bothLocked sync.WaitGroup
+	bothLocked.Add(2)
+	increment := func(first, second string) error {
+		attempt := 0
+		return db.Tx(t.Context(), func(tx uow.Tx) error {
+			attempt++
+			q, err := queries(tx)
+			if err != nil {
+				return err
+			}
+			if _, err := q.IncrementProbe(t.Context(), first); err != nil {
+				return err
+			}
+			if attempt == 1 {
+				bothLocked.Done()
+				bothLocked.Wait()
+			}
+			_, err = q.IncrementProbe(t.Context(), second)
+			return err
+		})
+	}
+	errs := make(chan error, 2)
+	go func() { errs <- increment("x", "y") }()
+	go func() { errs <- increment("y", "x") }()
+	for range 2 {
+		if err := <-errs; err != nil {
+			t.Fatalf("Tx = %v", err)
+		}
+	}
+
+	if len(retries) != 1 {
+		t.Fatalf("retried %d times, want 1", len(retries))
+	}
+	var pgErr *pgconn.PgError
+	if !errors.Is(retries[0], uow.ErrRetryable) || !errors.As(retries[0], &pgErr) || pgErr.Code != "40P01" {
+		t.Errorf("retried error = %v, want a retryable deadlock_detected (40P01)", retries[0])
+	}
+	for _, name := range []string{"x", "y"} {
+		if n, err := setup.GetProbeCount(t.Context(), name); err != nil || n != 2 {
+			t.Errorf("%s incremented to %d (%v), want 2", name, n, err)
+		}
+	}
+}
+
+func TestIsRetryable(t *testing.T) {
+	for _, tc := range []struct {
+		err  error
+		want bool
+	}{
+		{&pgconn.PgError{Code: "40001"}, true},
+		{&pgconn.PgError{Code: "40P01"}, true},
+		{fmt.Errorf("postgres: commit: %w", &pgconn.PgError{Code: "40001"}), true},
+		{&pgconn.PgError{Code: "23505"}, false},
+		{errors.New("40001"), false},
+		{nil, false},
+	} {
+		if got := isRetryable(tc.err); got != tc.want {
+			t.Errorf("isRetryable(%v) = %v, want %v", tc.err, got, tc.want)
+		}
+	}
+}
+
+func TestOpenHidesTheURLInErrors(t *testing.T) {
+	_, err := Open(t.Context(), "postgres://user:s3cret@host:notaport/db", uow.Options{})
+	if err == nil {
+		t.Fatal("Open succeeded with an invalid URL")
+	}
+	if got := err.Error(); strings.Contains(got, "s3cret") {
+		t.Errorf("error %q leaks the password", got)
+	}
+}
+
+func TestRejectsForeignTransactions(t *testing.T) {
+	if _, err := txOf(foreignTx{}); err == nil {
+		t.Fatal("txOf accepted a transaction of another adapter")
+	}
+}
+
+type foreignTx struct{}
+
+func (foreignTx) Emit(context.Context, uow.Event) error { return nil }

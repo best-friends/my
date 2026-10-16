@@ -57,6 +57,22 @@ make db-down                       # コンテナとデータを削除
 - 差分の適用に失敗する変更（v0 では許容される破壊的変更、[ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)）は `make db-reset` で作り直します。
 - CI は両方言について、空の DB への適用と、適用後に差分が残らないことを検査します（`make db-check`）。
 
+## SQL とデータベースのテスト
+
+- クエリは方言ごとに `queries/<dialect>/*.sql` に書き、[sqlc](https://sqlc.dev/) で Go コードを生成します（[ADR-0003](docs/adr/0003-database-abstraction.md)）。
+  設定は `sqlc.yaml`、sqlc のバージョンは `tools/go.mod` で固定しています。生成物はコミットし、`make check` が古くないかを検査します。
+
+```sh
+make sqlc        # sqlc.yaml から生成し直す
+make sqlc-check  # 生成物が最新でなければ失敗（make check に含まれる）
+```
+
+- DB アダプタは `pkg/testkit` のコントラクトテスト（例: `testkit.UnitOfWorkContract`）を SQLite と PostgreSQL の両方で通します。
+  テスト用の DB には目標スキーマ `schema/<dialect>.sql` を直接流します（空の DB に対する Atlas の適用と同じ SQL になります）。
+- PostgreSQL のテストは Docker があれば testcontainers-go でコンテナを起動し、なければスキップします。
+  既存のサーバーを使うときは `TEST_POSTGRES_URL=postgres://...`（DB を作成できるユーザー）を指定します。
+  CI は `TEST_POSTGRES_REQUIRED=1` を設定し、PostgreSQL のテストをスキップせず必ず実行します。
+
 ## 設計判断
 
 アーキテクチャに関わる変更は ADR を書きます: `make adr-new TITLE="..." SLUG=...`。

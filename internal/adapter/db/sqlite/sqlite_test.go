@@ -1,0 +1,178 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package sqlite
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	msqlite "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
+
+	"github.com/best-friends/my/internal/adapter/db/sqlite/internal/contract"
+	"github.com/best-friends/my/internal/adapter/db/sqlite/internal/contract/contractdb"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/pkg/testkit"
+	"github.com/best-friends/my/schema"
+)
+
+// newTestDB opens a new database file under t.TempDir() with the product schema and the probe
+// table applied (see package schema for why executing the file matches an Atlas apply).
+func newTestDB(t *testing.T, dsnSuffix string, opts uow.Options) (*DB, string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "test.db")
+	db, err := Open(t.Context(), path+dsnSuffix, opts)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	for _, ddl := range []string{schema.SQLite, contract.Schema} {
+		if _, err := db.db.ExecContext(t.Context(), ddl); err != nil {
+			t.Fatalf("apply schema: %v", err)
+		}
+	}
+	return db, path
+}
+
+func queries(tx uow.Tx) (*contractdb.Queries, error) {
+	sqlTx, err := txOf(tx)
+	if err != nil {
+		return nil, err
+	}
+	return contractdb.New(sqlTx), nil
+}
+
+func TestUnitOfWorkContract(t *testing.T) {
+	testkit.UnitOfWorkContract(t, func(t *testing.T, opts uow.Options) testkit.UnitOfWorkHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.UnitOfWorkHarness{
+			UnitOfWork: db,
+			Insert: func(ctx context.Context, tx uow.Tx, name string) error {
+				q, err := queries(tx)
+				if err != nil {
+					return err
+				}
+				return q.InsertProbe(ctx, name)
+			},
+			Keys: func(ctx context.Context) ([]string, error) {
+				return contractdb.New(db.db).ListProbeNames(ctx)
+			},
+		}
+	})
+}
+
+func TestOpenSetsRequiredParameters(t *testing.T) {
+	for _, tc := range []struct {
+		dsn  string
+		want []string
+		not  []string
+	}{
+		{
+			dsn:  "my.db",
+			want: []string{"file:my.db?", "_txlock=immediate", "busy_timeout%285000%29", "journal_mode%28wal%29", "foreign_keys%281%29", "synchronous%28normal%29"},
+		},
+		{
+			dsn:  "file:/var/lib/my/my.db?_txlock=deferred&_pragma=busy_timeout(100)",
+			want: []string{"file:/var/lib/my/my.db?", "_txlock=immediate", "busy_timeout%28100%29"},
+			not:  []string{"deferred", "busy_timeout%285000%29"},
+		},
+	} {
+		got, err := normalizeDSN(tc.dsn)
+		if err != nil {
+			t.Fatalf("normalizeDSN(%q) = %v", tc.dsn, err)
+		}
+		for _, w := range tc.want {
+			if !strings.Contains(got, w) {
+				t.Errorf("normalizeDSN(%q) = %q, missing %q", tc.dsn, got, w)
+			}
+		}
+		for _, n := range tc.not {
+			if strings.Contains(got, n) {
+				t.Errorf("normalizeDSN(%q) = %q, must not contain %q", tc.dsn, got, n)
+			}
+		}
+	}
+	for _, dsn := range []string{"", "file:", ":memory:", "file:x?mode=memory"} {
+		if _, err := normalizeDSN(dsn); err == nil {
+			t.Errorf("normalizeDSN(%q) succeeded, want an error", dsn)
+		}
+	}
+}
+
+func TestConnectionsUseWAL(t *testing.T) {
+	db, _ := newTestDB(t, "", uow.Options{})
+	var mode string
+	if err := db.db.QueryRowContext(t.Context(), "PRAGMA journal_mode").Scan(&mode); err != nil {
+		t.Fatal(err)
+	}
+	if mode != "wal" {
+		t.Errorf("journal_mode = %q, want wal", mode)
+	}
+}
+
+// TestRetriesWhenTheDatabaseIsLocked holds the write lock from a second connection so that the
+// UnitOfWork's BEGIN IMMEDIATE times out with SQLITE_BUSY, and releases it on the first retry.
+func TestRetriesWhenTheDatabaseIsLocked(t *testing.T) {
+	var (
+		retries []error
+		blocker *sql.Tx
+	)
+	opts := uow.Options{Retry: uow.RetryPolicy{OnRetry: func(_ int, err error) {
+		retries = append(retries, err)
+		if blocker != nil {
+			if err := blocker.Commit(); err != nil {
+				t.Errorf("release the lock: %v", err)
+			}
+			blocker = nil
+		}
+	}}}
+	db, path := newTestDB(t, "?_pragma=busy_timeout(10)", opts)
+
+	other, err := Open(t.Context(), path, uow.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = other.Close() })
+	if blocker, err = other.db.BeginTx(t.Context(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := contractdb.New(blocker).InsertProbe(t.Context(), "blocker"); err != nil {
+		t.Fatal(err)
+	}
+
+	err = db.Tx(t.Context(), func(tx uow.Tx) error {
+		q, err := queries(tx)
+		if err != nil {
+			return err
+		}
+		return q.InsertProbe(t.Context(), "a")
+	})
+	if err != nil {
+		t.Fatalf("Tx = %v", err)
+	}
+	if len(retries) != 1 {
+		t.Fatalf("retried %d times, want 1", len(retries))
+	}
+	var se *msqlite.Error
+	if !errors.Is(retries[0], uow.ErrRetryable) || !errors.As(retries[0], &se) || se.Code()&0xff != sqlite3.SQLITE_BUSY {
+		t.Errorf("retried error = %v, want a retryable SQLITE_BUSY", retries[0])
+	}
+	got, err := contractdb.New(db.db).ListProbeNames(t.Context())
+	if err != nil || strings.Join(got, ",") != "a,blocker" {
+		t.Errorf("committed keys = %q (%v), want [a blocker]", got, err)
+	}
+}
+
+func TestRejectsForeignTransactions(t *testing.T) {
+	if _, err := txOf(foreignTx{}); err == nil {
+		t.Fatal("txOf accepted a transaction of another adapter")
+	}
+}
+
+type foreignTx struct{}
+
+func (foreignTx) Emit(context.Context, uow.Event) error { return nil }

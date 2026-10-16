@@ -46,7 +46,14 @@ build: ## Build bin/my with the version from git (override: make build VERSION=v
 config-docs: ## Regenerate docs/reference/configuration.md from the config schema (go-test fails when it is stale)
 	go test ./internal/platform/config -run '^TestReferenceUpToDate$$' -update
 
-go-check: go-mod-check go-vet go-lint go-test go-build go-licenses ## Run all offline Go checks
+.PHONY: sqlc sqlc-check
+sqlc: ## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
+	scripts/sqlc.sh
+
+sqlc-check: ## Fail if the committed sqlc-generated code is stale
+	scripts/sqlc.sh --check
+
+go-check: go-mod-check go-vet go-lint go-test go-build go-licenses sqlc-check ## Run all offline Go checks
 
 go-mod-check: ## Fail if go.mod/go.sum are not tidy
 	go mod tidy -diff
