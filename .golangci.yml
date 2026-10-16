@@ -169,6 +169,15 @@ linters:
             - $gostd
             - github.com/best-friends/my/internal/domain/instance
             - github.com/best-friends/my/internal/app
+        # app/kernel holds the ports and helpers shared by every module (Clock, IDGenerator);
+        # it depends on nothing in the repository so that any module can import it.
+        app-kernel:
+          list-mode: strict
+          files:
+            - "**/internal/app/kernel/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/app/kernel
         interface:
           list-mode: lax
           files:

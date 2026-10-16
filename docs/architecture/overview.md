@@ -70,7 +70,8 @@ Remote servers ──AP──►│                               │
   | --- | --- |
   | `internal/domain/<module>` | 標準ライブラリと自モジュールの `domain` だけ |
   | `internal/app/<module>` | 標準ライブラリ、自モジュールの `domain`、各モジュールの `app`（モジュール間の唯一の経路） |
-  | `internal/interface/*` | `app` と `domain`（`adapter` と `platform` は不可） |
+  | `internal/app/kernel` | 標準ライブラリだけ（全モジュール共通のポート） |
+  | `internal/interface/*` | `app` と `domain`（`adapter` / `platform` / `pkg/testkit` は不可） |
   | `internal/adapter/*` | `app` のポートと `domain`（`interface` と `platform` は不可） |
   | `pkg/testkit` | `app` と `domain`（`interface` / `adapter` / `platform` は不可） |
   | `internal/platform`, `cmd/*` | すべて（composition root）。`cmd/` はどこからも import しない |
@@ -80,6 +81,7 @@ Remote servers ──AP──►│                               │
 ## 3. ポート一覧
 
 各ポートは、それを使うモジュールの `internal/app/<module>` に Go のインターフェイスとして定義する（§6）。
+全モジュールが使う `Clock` / `IdGenerator`（Go 名 `IDGenerator`）は `internal/app/kernel` に置き、ドメインには `time.Time` と ID 文字列を値で渡す。
 
 | ポート | 役割 | 既定アダプタ（self-hosted） | 関連 ADR |
 | --- | --- | --- | --- |
@@ -93,7 +95,7 @@ Remote servers ──AP──►│                               │
 | `HttpClient` | 外部 HTTP（SSRF ガード・タイムアウト・UA 付与） | `net/http` + SSRF ガード | [0006](../adr/0006-federation-protocol-scope.md) |
 | `Mailer` | メール送信 | none（ログ出力） | [0010](../adr/0010-configuration-and-packaging.md) |
 | `PushSender` | Web Push 送信 | webpush | — |
-| `Clock` / `IdGenerator` | 時刻・ID 生成（テスト容易性のため注入） | system / UUIDv7 | [0003](../adr/0003-database-abstraction.md) |
+| `Clock` / `IdGenerator` | 時刻（UTC・ミリ秒）・ID 生成（テスト容易性のため注入） | system（システム時計 / `uuid.NewV7()`） | [0003](../adr/0003-database-abstraction.md) |
 | `SearchIndex` | アカウント・タグ検索（将来全文） | db（FTS） | [0009](../adr/0009-internationalization.md) |
 | `Logger` / `Tracer` | 観測性 | JSON stdout / OTel 任意 | — |
 
@@ -143,6 +145,7 @@ cmd/
 internal/
   domain/<module>/   # 純粋なドメイン（identity, account, content, graph, ...）
   app/<module>/      # ユースケースとポート定義
+  app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator）と UUIDv7 ヘルパー
   interface/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
@@ -154,9 +157,10 @@ internal/
     media/{native,vips,none}/
     kv/{db,memory}/
     mail/{none,smtp,ses}/
+    system/          # Clock / IDGenerator の本番実装（システム時計・UUIDv7）
   platform/          # 設定、composition root、ログ、HTTP サーバー
 pkg/
-  testkit/           # コントラクトテスト・フィクスチャ（独自アダプタ作者向けに公開）
+  testkit/           # コントラクトテスト・フィクスチャ・決定的なフェイク（独自アダプタ作者向けに公開）
 api/                 # openapi.yaml（クライアント API の正）
 schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用。ADR-0023）
 queries/             # sqlc 用クエリ（方言別）
