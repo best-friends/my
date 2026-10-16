@@ -25,6 +25,9 @@ jobs:
       options: --ipc=host
     env:
       E2E_MATRIX: ${{ inputs.matrix }}
+      # The checkout belongs to another user than the container's root, so git refuses it and `go build`
+      # cannot stamp the VCS state into bin/my; the E2E server does not need it.
+      GOFLAGS: -buildvcs=false
     steps:
       - uses: actions/checkout@v5
       # The image has neither make nor the unzip that setup-bun extracts Bun with.
@@ -43,6 +46,13 @@ jobs:
           path: ~/.bun/install/cache
           key: bun-e2e-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}
           restore-keys: bun-e2e-${{ runner.os }}-
+      # `make web-e2e` builds bin/my, which e2e/server.ts starts for the server-rendered pages.
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: .tool-versions
+          cache-dependency-path: |
+            go.mod
+            go.sum
       - name: make web-e2e
         run: make web-e2e
       - name: Upload the Playwright report

@@ -226,10 +226,11 @@ web-test: web-install ## Run the client component tests with Vitest (jsdom + MSW
 	cd app/web && bun run test
 	cd app/ui && bun run test:unit
 
-# Playwright runs against `vite preview` of the fresh build. E2E_MATRIX=full runs every width × locale
-# project (nightly); the default is the per-PR subset (app/web/playwright.config.ts). CI runs it in the
-# pinned Playwright image; locally, install the browser once with `make web-e2e-install`.
-web-e2e: web-build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for the whole matrix)
+# Playwright runs against `vite preview` of the fresh build, and the server-rendered pages against
+# `my serve` on SQLite from the fresh bin/my (app/web/e2e/server.ts). E2E_MATRIX=full runs every width ×
+# locale project (nightly); the default is the per-PR subset (app/web/playwright.config.ts). CI runs it in
+# the pinned Playwright image; locally, install the browser once with `make web-e2e-install`.
+web-e2e: build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for the whole matrix)
 	cd app/web && bun run e2e
 
 web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
