@@ -29,7 +29,6 @@ import {
   clearCachesMessage,
   isMessage,
   mediaCacheName,
-  precachePrefix,
   shellPath,
   skipWaitingMessage,
 } from "../src/lib/sw-protocol.ts";
@@ -107,11 +106,11 @@ registerRoute(
 // The precached build files, answered from the cache.
 addRoute();
 
-/** Deletes every cache but the precache, and the expiration metadata of the media cache. */
+/** Deletes every cache, the precache included, and the expiration metadata of the media cache. */
 async function clearCaches(): Promise<void> {
   await mediaExpiration.deleteCacheAndMetadata();
   const names = await caches.keys();
-  await Promise.all(names.filter((name) => !name.startsWith(precachePrefix)).map((name) => caches.delete(name)));
+  await Promise.all(names.map((name) => caches.delete(name)));
 }
 
 self.addEventListener("message", (event) => {

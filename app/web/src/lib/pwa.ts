@@ -3,7 +3,7 @@
 // update waits for the user, clearing the caches at sign-out, and reloading when a deploy removed the
 // chunks of the running version.
 import { useSyncExternalStore } from "react";
-import { cachesClearedMessage, clearCachesMessage, isMessage, precachePrefix, skipWaitingMessage } from "./sw-protocol";
+import { cachesClearedMessage, clearCachesMessage, isMessage, skipWaitingMessage } from "./sw-protocol";
 
 /** A downloaded version waiting to take over; `apply` activates it, and the page reloads into it. */
 export type PendingUpdate = { apply: () => void };
@@ -91,17 +91,17 @@ export function usePendingUpdate(): PendingUpdate | null {
 const clearTimeoutMs = 3000;
 
 /**
- * Deletes every cache of the origin except the precache (the build and the generic shell, which are the
- * same for every visitor), so that nothing the signed-in account loaded stays on the device. The API
- * client calls it at sign-out. The worker deletes its media cache with its expiration metadata; the page
- * then deletes whatever is left, which also covers a page without a controlling worker.
+ * Deletes every cache of the origin, the precache included, so that nothing stays on the device after
+ * sign-out (ADR-0028). The worker deletes its media cache with its expiration metadata; the page then
+ * deletes whatever is left, which also covers a page without a controlling worker. The app keeps working
+ * online; it works offline again once a new version of the worker precaches the build.
  */
 export async function clearCaches(): Promise<void> {
   const controller = "serviceWorker" in navigator ? navigator.serviceWorker.controller : null;
   if (controller !== null) await askWorkerToClear(controller);
   if (!("caches" in globalThis)) return;
   const names = await caches.keys();
-  await Promise.all(names.filter((name) => !name.startsWith(precachePrefix)).map((name) => caches.delete(name)));
+  await Promise.all(names.map((name) => caches.delete(name)));
 }
 
 function askWorkerToClear(worker: ServiceWorker): Promise<void> {

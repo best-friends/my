@@ -6,7 +6,7 @@ import { clearCaches, reloadOnPreloadError } from "./pwa";
 import { mediaCacheName } from "./sw-protocol";
 
 describe("clearCaches", () => {
-  test("deletes every cache but the precache", async () => {
+  test("deletes every cache, the precache included", async () => {
     const names = new Set(["my-precache-v2-http://localhost/", mediaCacheName, "other"]);
     vi.stubGlobal("caches", {
       keys: () => Promise.resolve([...names]),
@@ -15,7 +15,7 @@ describe("clearCaches", () => {
 
     await clearCaches();
 
-    expect([...names]).toEqual(["my-precache-v2-http://localhost/"]);
+    expect([...names]).toEqual([]);
   });
 });
 

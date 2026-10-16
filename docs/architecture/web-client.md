@@ -202,8 +202,8 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   - 最初の Service Worker は有効になるとすぐページを制御する（`clientsClaim`）。新しい版は待機し、`UpdatePrompt` が「新しい版があります」のトースト（`timeout: null`、「更新する」の操作付き）を出す。
     利用者が押したときだけ `SKIP_WAITING` を送り、新しい版がページを制御したら読み直す。ページが表示に戻るたびに更新を確かめる。
   - デプロイで古いチャンクが消えたとき（`vite:preloadError`）は読み直す。10 秒以内に繰り返したら読み直さず、エラー境界に任せる。
-- **ログアウト**: API クライアントはログアウトで `clearCaches()` を呼ぶ。事前のキャッシュ（ビルドと汎用の外枠。アカウントのデータを含まない）以外のキャッシュと、メディアの期限のメタデータを消す。
-  事前のキャッシュは消すと次のデプロイまでオフラインの外枠が使えなくなるので残す。
+- **ログアウト**: API クライアントはログアウトで `clearCaches()` を呼ぶ。事前のキャッシュも含めてすべてのキャッシュと、メディアの期限のメタデータを消す（ADR-0028）。
+  消したあともオンラインでは同じように動き、新しい版の Service Worker が事前にキャッシュし直すまでオフラインの外枠は使えない。
 - **`my serve` の配信**: `sw.js` は長期キャッシュせず（`no-cache`）、Service Worker 自身に効く CSP（`default-src 'none'; connect-src 'self'`）で返す。既定の `default-src 'none'` のままだと Service Worker の `fetch` が止まる。
 - **インストール**: マニフェストのアイコンは `icon.svg`・192 / 512 px の PNG・512 px の maskable の PNG、外枠は iOS 用に `apple-touch-icon.png`（180 px）を指す。
   PNG は SVG から `scripts/web-icons.sh`（ImageMagick）で作り、コミットする。インストールの条件は E2E が Chrome の `Page.getInstallabilityErrors` で検査する。

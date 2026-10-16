@@ -6,12 +6,6 @@
 /** The prefix of every Cache Storage cache the worker creates (workbox-core's setCacheNameDetails). */
 export const cachePrefix = "my";
 
-/**
- * The precache holds the build and the generic HTML shell, which are the same for every visitor and hold
- * no account data; it is the only cache that survives a sign-out, so that the offline shell keeps working.
- */
-export const precachePrefix = `${cachePrefix}-precache-`;
-
 /** The cache of public media (/media/ images), first-hit and bounded. */
 export const mediaCacheName = `${cachePrefix}-media`;
 
@@ -21,7 +15,7 @@ export const shellPath = "/";
 /** Activates a waiting worker; workbox-window's messageSkipWaiting() sends it. */
 export const skipWaitingMessage = { type: "SKIP_WAITING" } as const;
 
-/** Asks the worker to delete every cache but the precache, with their metadata; it replies on the port. */
+/** Asks the worker to delete every cache, with the media cache's metadata; it replies on the port. */
 export const clearCachesMessage = { type: "CLEAR_CACHES" } as const;
 
 /** The worker's reply to clearCachesMessage. */
