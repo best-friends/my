@@ -336,6 +336,19 @@ func accountFrom(row postgresgen.Account) account.Account {
 	}
 }
 
+// Account implements account.Repository.
+func (r *AccountRepository) Account(ctx context.Context, tx uow.Tx, id string) (account.Account, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return account.Account{}, err
+	}
+	row, err := q.GetAccount(ctx, id)
+	if err != nil {
+		return account.Account{}, notFound(err, appaccount.ErrNotFound, "account "+id)
+	}
+	return accountFrom(row), nil
+}
+
 // FindAccount implements account.Repository.
 func (r *AccountRepository) FindAccount(ctx context.Context, id string) (account.Account, error) {
 	row, err := r.db.reader().GetAccount(ctx, id)
