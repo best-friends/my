@@ -143,6 +143,10 @@ components:
           description: The locale of `title` and `detail`.
           schema:
             type: string
+        Cache-Control:
+          description: Always `no-store`; problems are never cached.
+          schema:
+            type: string
         WWW-Authenticate:
           description: |
             The Bearer challenge of a 401 or a 403 `insufficient_scope` (RFC 6750 §3), with

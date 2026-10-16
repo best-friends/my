@@ -292,6 +292,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 }
 
 type ProblemResponseHeaders struct {
+	CacheControl    *string
 	ContentLanguage *string
 	RetryAfter      *int
 	WWWAuthenticate *string
@@ -346,6 +347,9 @@ func (response VerifyAccountCredentialsdefaultApplicationProblemPlusJSONResponse
 		return err
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
 	if response.Headers.ContentLanguage != nil {
 		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
 	}
@@ -404,6 +408,9 @@ func (response GetInstancedefaultApplicationProblemPlusJSONResponse) VisitGetIns
 		return err
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
 	if response.Headers.ContentLanguage != nil {
 		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
 	}

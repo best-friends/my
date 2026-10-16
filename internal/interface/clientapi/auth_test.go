@@ -436,7 +436,8 @@ func TestLimitProblem(t *testing.T) {
 		t.Fatal("the first event is limited")
 	}
 	p, h, limited := s.LimitProblem(t.Context(), lim, aliceAccountID)
-	if !limited || p.Status != http.StatusTooManyRequests || h.RetryAfter == nil || *h.RetryAfter < 1 || h.ContentLanguage == nil {
+	if !limited || p.Status != http.StatusTooManyRequests || h.RetryAfter == nil || *h.RetryAfter < 1 || h.ContentLanguage == nil ||
+		h.CacheControl == nil || *h.CacheControl != "no-store" {
 		t.Errorf("second event = %+v %+v %v, want a 429 problem with Retry-After", p, h, limited)
 	}
 	if _, _, limited := clientapi.New(clientapi.Options{}).LimitProblem(t.Context(), lim, aliceAccountID); limited {

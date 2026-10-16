@@ -61,7 +61,8 @@ func (s *Server) Localizer(ctx context.Context) *i18n.Localizer {
 }
 
 // NewProblem returns a problem document of status with the localized title and optional
-// detail, and the response headers that go with it. Handlers return it as the body of their
+// detail, and the response headers that go with it (Content-Language, and Cache-Control:
+// no-store since problems are never cached). Handlers return it as the body of their
 // operation's default response, for example
 //
 //	body, headers := s.NewProblem(ctx, http.StatusNotFound, ProblemTypeBlank, l.ServerErrorsNotFound(), "")
@@ -74,8 +75,8 @@ func (s *Server) NewProblem(ctx context.Context, status int, typ, title, detail 
 	if id := s.o.RequestID(ctx); id != "" {
 		p.RequestId = &id
 	}
-	locale := s.Localizer(ctx).Locale()
-	return p, ProblemResponseHeaders{ContentLanguage: &locale}
+	locale, cache := s.Localizer(ctx).Locale(), cacheNoStore
+	return p, ProblemResponseHeaders{ContentLanguage: &locale, CacheControl: &cache}
 }
 
 // writeProblem writes a problem document outside the strict handlers: for requests that the
