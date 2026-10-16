@@ -314,3 +314,20 @@ func TestRejectsForeignTransactions(t *testing.T) {
 type foreignTx struct{}
 
 func (foreignTx) Emit(context.Context, uow.Event) error { return nil }
+
+func TestReady(t *testing.T) {
+	db := newTestDB(t, uow.Options{})
+	if err := db.Ready(t.Context()); err != nil {
+		t.Fatalf("Ready on an applied schema = %v", err)
+	}
+	if _, err := db.pool.Exec(t.Context(), "DROP TABLE dead_jobs"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Ready(t.Context()); err == nil || !strings.Contains(err.Error(), "dead_jobs") {
+		t.Errorf("Ready with a missing table = %v, want an error naming dead_jobs", err)
+	}
+	db.Close()
+	if err := db.Ready(t.Context()); err == nil {
+		t.Error("Ready on a closed pool = nil, want an error")
+	}
+}

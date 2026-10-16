@@ -21,6 +21,7 @@
 ## 運用
 
 - [鍵暗号化鍵（KEK）の管理](operations/key-management.md)
+- [サーバーの起動・停止とヘルスチェック](operations/running.md)
 
 ## 開発プロセス
 

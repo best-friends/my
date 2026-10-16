@@ -117,9 +117,27 @@ func (r *PullRunner) Worker() string { return r.opts.Worker }
 // Run implements JobRunner: it runs due jobs one after another and polls every PollInterval
 // while none is due. Errors of single jobs are logged, not returned.
 func (r *PullRunner) Run(ctx context.Context) error {
+	return r.RunUntil(ctx, ctx.Done())
+}
+
+// RunUntil runs jobs like Run until stop is closed or ctx ends, then returns nil. Closing stop
+// is a graceful stop: the runner claims no more jobs, but the job in progress keeps ctx and
+// runs to its end. Ending ctx also cancels the context of the job in progress.
+func (r *PullRunner) RunUntil(ctx context.Context, stop <-chan struct{}) error {
+	stopped := func() bool {
+		select {
+		case <-stop:
+			return true
+		default:
+			return ctx.Err() != nil
+		}
+	}
 	for {
+		if stopped() {
+			return nil
+		}
 		ran, err := r.RunOnce(ctx)
-		if ctx.Err() != nil {
+		if stopped() {
 			return nil
 		}
 		if err != nil {
@@ -131,6 +149,9 @@ func (r *PullRunner) Run(ctx context.Context) error {
 		timer := time.NewTimer(r.opts.PollInterval)
 		select {
 		case <-ctx.Done():
+			timer.Stop()
+			return nil
+		case <-stop:
 			timer.Stop()
 			return nil
 		case <-timer.C:

@@ -1,0 +1,257 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package platform
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"net/http"
+	"time"
+
+	"github.com/best-friends/my/internal/i18n"
+	"github.com/best-friends/my/internal/platform/config"
+)
+
+// Health check paths (FR-802).
+const (
+	// PathLiveness answers 200 while the process can serve HTTP at all; it checks nothing else,
+	// so that a slow database never gets the process restarted.
+	PathLiveness = "/healthz"
+	// PathReadiness answers 200 when the database is reachable and its schema is applied
+	// (every table of schema/<dialect>.sql exists), and 503 with a problem document otherwise.
+	PathReadiness = "/readyz"
+)
+
+// readinessTimeout bounds one readiness check, so that a hung database fails the probe
+// instead of hanging it.
+const readinessTimeout = 3 * time.Second
+
+// Handler returns the HTTP handler of the App: the routes of its role behind the middleware
+// that every response passes (request ID, access log, security headers, panic recovery).
+// The worker role serves only the health checks, for the platform's probes.
+func (a *App) Handler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET "+PathLiveness, a.liveness)
+	mux.HandleFunc("GET "+PathReadiness, a.readiness)
+	if a.Config.Role != config.RoleWorker {
+		for _, r := range a.routes {
+			mux.Handle(r.pattern, r.handler)
+		}
+	}
+	h := a.problemFallback(mux)
+	h = a.recoverPanics(h)
+	h = securityHeaders(h)
+	h = a.accessLog(h)
+	return a.requestIDs(h)
+}
+
+func (a *App) liveness(w http.ResponseWriter, _ *http.Request) {
+	writeStatusOK(w)
+}
+
+func (a *App) readiness(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), readinessTimeout)
+	defer cancel()
+	if err := a.Ready(ctx); err != nil {
+		a.Logger.WarnContext(r.Context(), "not ready", slog.Any("error", err))
+		l := a.localizer(r)
+		a.writeProblem(w, r, l, http.StatusServiceUnavailable, l.ServerHealthUnavailable())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func writeStatusOK(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write([]byte(`{"status":"ok"}` + "\n"))
+}
+
+// problem is an RFC 9457 problem document (ADR-0016). Problems that mean no more than their
+// HTTP status use the type about:blank; the title is localized from the request's
+// Accept-Language and never reveals internal details.
+type problem struct {
+	Type      string `json:"type"`
+	Title     string `json:"title"`
+	Status    int    `json:"status"`
+	RequestID string `json:"request_id,omitempty"`
+}
+
+func (a *App) localizer(r *http.Request) *i18n.Localizer {
+	return a.Messages.Localizer(a.Messages.Resolve(i18n.Preferences{AcceptLanguage: r.Header.Get("Accept-Language")}))
+}
+
+func (a *App) writeProblem(w http.ResponseWriter, r *http.Request, l *i18n.Localizer, status int, title string) {
+	body, err := json.Marshal(problem{Type: "about:blank", Title: title, Status: status, RequestID: RequestID(r.Context())})
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "application/problem+json")
+	h.Set("Content-Language", l.Locale())
+	h.Set("Cache-Control", "no-store")
+	h.Add("Vary", "Accept-Language")
+	w.WriteHeader(status)
+	_, _ = w.Write(append(body, '\n'))
+}
+
+// problemFallback serves mux, replacing its plain-text 404 and 405 responses with problem
+// documents.
+func (a *App) problemFallback(mux *http.ServeMux) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h, pattern := mux.Handler(r)
+		if pattern != "" {
+			mux.ServeHTTP(w, r) // sets the request's pattern and path values
+			return
+		}
+		rec := &bufferedResponse{header: http.Header{}, status: http.StatusOK}
+		h.ServeHTTP(rec, r)
+		l := a.localizer(r)
+		switch rec.status {
+		case http.StatusNotFound:
+			a.writeProblem(w, r, l, http.StatusNotFound, l.ServerErrorsNotFound())
+		case http.StatusMethodNotAllowed:
+			w.Header().Set("Allow", rec.header.Get("Allow"))
+			a.writeProblem(w, r, l, http.StatusMethodNotAllowed, l.ServerErrorsMethodNotAllowed(r.Method))
+		default: // the mux's redirects to the canonical path
+			for k, v := range rec.header {
+				w.Header()[k] = v
+			}
+			w.WriteHeader(rec.status)
+			_, _ = w.Write(rec.body.Bytes())
+		}
+	})
+}
+
+// bufferedResponse captures a response that problemFallback may replace.
+type bufferedResponse struct {
+	header http.Header
+	status int
+	body   bytes.Buffer
+}
+
+func (b *bufferedResponse) Header() http.Header         { return b.header }
+func (b *bufferedResponse) Write(p []byte) (int, error) { return b.body.Write(p) }
+func (b *bufferedResponse) WriteHeader(status int)      { b.status = status }
+
+// recoverPanics turns a handler panic into a 500 problem and logs it. http.ErrAbortHandler
+// keeps its meaning (abort the response silently).
+func (a *App) recoverPanics(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			p := recover()
+			if p == nil {
+				return
+			}
+			if err, ok := p.(error); ok && errors.Is(err, http.ErrAbortHandler) {
+				panic(p)
+			}
+			a.Logger.ErrorContext(r.Context(), "handler panicked", slog.Any("panic", p))
+			if rw, ok := w.(*responseWriter); ok && rw.wroteHeader {
+				return // too late for an error response
+			}
+			l := a.localizer(r)
+			a.writeProblem(w, r, l, http.StatusInternalServerError, l.ServerErrorsInternal())
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+// securityHeaders sets the headers of ADR-0019 §9 that every response carries. A handler may
+// override them, for example Cross-Origin-Resource-Policy: cross-origin for ActivityPub JSON
+// and public media. The Content-Security-Policy is the policy for responses that are not
+// documents; the web client's responses set their own.
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
+		h.Set("Cross-Origin-Opener-Policy", "same-origin")
+		h.Set("Cross-Origin-Resource-Policy", "same-site")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// HeaderRequestID carries the request ID in requests (from a trusted proxy) and responses.
+const HeaderRequestID = "X-Request-Id"
+
+// requestIDs gives every request an ID, kept in its context for logging and echoed in the
+// response. An incoming X-Request-Id is kept when it is short and made of safe characters,
+// so that IDs assigned by a load balancer can be followed; otherwise a new UUIDv7 is used.
+func (a *App) requestIDs(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := r.Header.Get(HeaderRequestID)
+		if !validRequestID(id) {
+			id = a.IDs.NewID()
+		}
+		w.Header().Set(HeaderRequestID, id)
+		next.ServeHTTP(w, r.WithContext(withRequestID(r.Context(), id)))
+	})
+}
+
+func validRequestID(id string) bool {
+	if id == "" || len(id) > 128 {
+		return false
+	}
+	for _, c := range []byte(id) {
+		ok := c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.' || c == ':'
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// accessLog logs one line per request. It logs the path without the query string, which may
+// carry tokens, and logs the health checks at debug level, since probes call them constantly.
+func (a *App) accessLog(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rw, r)
+		level := slog.LevelInfo
+		if r.URL.Path == PathLiveness || r.URL.Path == PathReadiness {
+			level = slog.LevelDebug
+		}
+		a.Logger.LogAttrs(r.Context(), level, "http request",
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", rw.status),
+			slog.Int64("bytes", rw.bytes),
+			slog.Duration("duration", time.Since(start)),
+		)
+	})
+}
+
+// responseWriter records the status and size of a response.
+type responseWriter struct {
+	http.ResponseWriter
+	status      int
+	bytes       int64
+	wroteHeader bool
+}
+
+func (w *responseWriter) WriteHeader(status int) {
+	if !w.wroteHeader {
+		w.status, w.wroteHeader = status, true
+	}
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *responseWriter) Write(p []byte) (int, error) {
+	w.wroteHeader = true
+	n, err := w.ResponseWriter.Write(p)
+	w.bytes += int64(n)
+	return n, err
+}
+
+// Unwrap lets http.ResponseController reach the underlying writer.
+func (w *responseWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
