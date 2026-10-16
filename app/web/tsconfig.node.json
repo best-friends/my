@@ -1,10 +1,10 @@
 {
   "extends": "../tsconfig.base.json",
-  "//": "Tool configs and E2E specs, which run on Node.js. DOM is for the callbacks E2E specs run in the page with page.evaluate.",
+  "//": "Tool configs, the Vite plugins of vite-plugins/ and E2E specs, which run on Node.js. DOM is for the callbacks E2E specs run in the page with page.evaluate.",
   "compilerOptions": {
     "lib": ["ES2023", "DOM"],
     "types": ["node"],
     "allowImportingTsExtensions": true
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e"]
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "vite-plugins", "e2e"]
 }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The app's providers, outermost first: the runtime config, i18n (react-intl and React Aria's locale),
-// the TanStack Query cache, the session and the API client, the live regions and toasts of @my/ui (with the
-// prompt for a new version of the app), React Aria's router binding, and the router with every page.
+// The app's providers, outermost first: the runtime config, the locale store and i18n in its current locale
+// (react-intl and React Aria's locale), the TanStack Query cache, the session and the API client, the live
+// regions and toasts of @my/ui (with the prompt for a new version of the app), React Aria's router binding,
+// and the router with every page.
 import { AnnouncerProvider, Center, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, ToastProvider } from "@my/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { type AnyRouter, RouterProvider } from "@tanstack/react-router";
@@ -9,17 +10,17 @@ import type { ReactNode } from "react";
 import { SessionProvider } from "./lib/auth/SessionProvider";
 import { ConfigProvider, type RuntimeConfig } from "./lib/config";
 import { type I18n, MessagesProvider, useT } from "./lib/i18n";
+import { AppLocaleProvider, useDisplaySettings } from "./lib/locale";
 import type { AppServices } from "./lib/services";
 import { UpdatePrompt } from "./UpdatePrompt";
 
 export type AppProps = AppServices & {
   config: RuntimeConfig;
-  i18n: I18n;
   /** The app router (createAppRouter); tests may pass a router over routes of their own. */
   router: AnyRouter;
 };
 
-export function App({ config, i18n, queryClient, api, session, leaveApp, router }: AppProps) {
+export function App({ config, locale, queryClient, api, session, leaveApp, router }: AppProps) {
   /**
    * Every @my/ui Link (and Menu item, Tab) with a same-origin href navigates through the router instead
    * of loading a new document. An in-page target (the skip link's "#main") gets focus instead, as the
@@ -34,30 +35,42 @@ export function App({ config, i18n, queryClient, api, session, leaveApp, router 
   };
   return (
     <ConfigProvider config={config}>
-      <AppI18nProvider i18n={i18n}>
-        <QueryClientProvider client={queryClient}>
-          <SessionProvider session={session} api={api} leaveApp={leaveApp}>
-            <AnnouncerProvider>
-              <Toasts>
-                <UpdatePrompt />
-                <AriaRouterProvider navigate={navigate}>
-                  <RouterProvider router={router} />
-                </AriaRouterProvider>
-              </Toasts>
-            </AnnouncerProvider>
-          </SessionProvider>
-        </QueryClientProvider>
-      </AppI18nProvider>
+      <AppLocaleProvider locale={locale}>
+        <DisplayedI18nProvider>
+          <QueryClientProvider client={queryClient}>
+            <SessionProvider session={session} api={api} leaveApp={leaveApp}>
+              <AnnouncerProvider>
+                <Toasts>
+                  <UpdatePrompt />
+                  <AriaRouterProvider navigate={navigate}>
+                    <RouterProvider router={router} />
+                  </AriaRouterProvider>
+                </Toasts>
+              </AnnouncerProvider>
+            </SessionProvider>
+          </QueryClientProvider>
+        </DisplayedI18nProvider>
+      </AppLocaleProvider>
     </ConfigProvider>
   );
 }
 
-export type AppI18nProviderProps = { i18n: I18n; children: ReactNode };
+/** The i18n providers in the locale and time zone the app is displayed in now (lib/locale). */
+function DisplayedI18nProvider({ children }: { children: ReactNode }) {
+  const { i18n, timeZone } = useDisplaySettings();
+  return (
+    <AppI18nProvider i18n={i18n} timeZone={timeZone}>
+      {children}
+    </AppI18nProvider>
+  );
+}
+
+export type AppI18nProviderProps = { i18n: I18n; timeZone?: string | undefined; children: ReactNode };
 
 /** react-intl's messages and React Aria's locale (for the @my/ui components), from the same locale. */
-export function AppI18nProvider({ i18n, children }: AppI18nProviderProps) {
+export function AppI18nProvider({ i18n, timeZone, children }: AppI18nProviderProps) {
   return (
-    <MessagesProvider i18n={i18n}>
+    <MessagesProvider i18n={i18n} timeZone={timeZone}>
       <AriaI18nProvider locale={i18n.locale}>{children}</AriaI18nProvider>
     </MessagesProvider>
   );

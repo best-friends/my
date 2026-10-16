@@ -814,6 +814,7 @@ flowchart LR
 - **過去の投稿**: `statuses.visibility` は書き換えません。`canView` が「実効公開範囲 = min(元の公開範囲, 上限)」で判定するので、このサーバー上ではサイレンス中は過去の投稿もフォロワー限定として扱われ、解除すれば元に戻ります。
 - **連合**: 公開として配送済みの過去の投稿を、連合先から取り消すことはできません（ActivityPub の制約）。サイレンス後の新しい投稿は `private` として配送されます。
 - 実効公開範囲は `content.EffectiveVisibility` が求めます。`canView` の判定表は [公開範囲の閲覧判定](visibility.md) にあります。
+- **投稿の前**: 上限と、要求どおりに記録される公開範囲（`content.PostingVisibilities`。`EffectiveVisibility` が変えないもの）は `content.Service.PostingLimits` が返し、クライアント API は閲覧者の `CredentialAccount` の `posting` で示します。クライアントは投稿の前に上限を知らせられます。
 
 ## 6. タイムラインのクエリ
 
