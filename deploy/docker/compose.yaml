@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Minimal self-hosted setup (ADR-0010): one `my serve` process with role = all on a SQLite file in a named volume.
+# The `schema` service applies schema/sqlite.sql with Atlas Community Edition (ADR-0023) and exits; the server
+# starts only after it succeeds. Copy .env.example to .env and fill it in first (README.md, "Quick start").
+#
+#   docker compose up -d --build
+#   docker compose exec -T my my admin create -username alice -email alice@example.com < password.txt
+
+name: my
+
+services:
+  schema:
+    build:
+      context: ../..
+      target: schema
+    image: my-schema:${MY_VERSION:-dev}
+    command:
+      - schema
+      - apply
+      - --url=sqlite:///data/my.db
+      - --to=file:///schema/sqlite.sql
+      - --dev-url=sqlite://dev?mode=memory
+      - --auto-approve
+    volumes:
+      - data:/data
+    restart: "no"
+
+  my:
+    build:
+      context: ../..
+      target: app
+      args:
+        VERSION: ${MY_VERSION:-dev}
+    image: my:${MY_VERSION:-dev}
+    depends_on:
+      schema:
+        condition: service_completed_successfully
+    environment:
+      MY_HOST: ${MY_HOST:?set MY_HOST in .env}
+      MY_ROLE: all
+      MY_DB: sqlite
+      MY_DATABASE_URL: /data/my.db
+      # The KEK reaches the container as a Docker secret file, not as an environment variable (ADR-0019 §6).
+      MY_KEK_FILE: /run/secrets/my_kek
+    secrets:
+      - my_kek
+    volumes:
+      - data:/data
+    ports:
+      # Loopback only: federation needs HTTPS, so put a TLS-terminating reverse proxy in front.
+      - "127.0.0.1:${MY_HTTP_PORT:-8080}:8080"
+    restart: unless-stopped
+
+secrets:
+  my_kek:
+    # Taken from MY_KEK in .env (or the shell) and mounted at /run/secrets/my_kek.
+    environment: MY_KEK
+
+volumes:
+  data:

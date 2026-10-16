@@ -21,7 +21,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
-check: lint-docs adr-index-check go-check i18n-check ## Run every offline check CI runs
+check: lint-docs adr-index-check go-check i18n-check dockerfile-check ## Run every offline check CI runs
 
 lint-docs: ## Lint Markdown files
 	$(MARKDOWNLINT)
@@ -139,6 +139,20 @@ db-check: db-reset ## Reset DB_URL, apply the schema, and fail if any diff remai
 	@diff="$$($(ATLAS) schema diff --from '$(DB_URL)' --to 'file://$(DB_SCHEMA)' --dev-url '$(DB_DEV_URL)' --format '{{ sql . }}')" \
 		&& if [ -n "$$diff" ]; then printf 'schema diff is not empty after apply:\n%s\n' "$$diff" >&2; exit 1; fi
 	@echo "$(DB_DIALECT): schema applies cleanly and leaves no diff"
+
+# --- Container image (ADR-0010) ---------------------------------------------------------------
+
+.PHONY: docker-build docker-smoke dockerfile-check
+
+docker-build: ## Build the server image my:$(VERSION) for the local platform
+	docker build --build-arg VERSION=$(VERSION) -t my:$(VERSION) .
+
+docker-smoke: ## Start deploy/docker/compose.yaml, create an admin, check WebFinger / Actor / NodeInfo, tear down
+	MY_VERSION=$(VERSION) scripts/docker-smoke.sh
+
+dockerfile-check: ## Fail if the Dockerfile's Go image differs from the Go version in .tool-versions
+	@want="golang:$$(awk '$$1 == "golang" { print $$2 }' .tool-versions)-"; \
+		grep -q "^ARG GO_IMAGE=$$want" Dockerfile || { echo "Dockerfile: GO_IMAGE must start with $$want" >&2; exit 1; }
 
 i18n-install: ## Install the pinned i18n tool dependencies (tools/i18n/bun.lock)
 	cd tools/i18n && bun install --frozen-lockfile

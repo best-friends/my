@@ -1,0 +1,10 @@
+# Keep the build context to what the Dockerfile reads.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!pkg/
+!locales/
+!schema/
+!scripts/install-atlas.sh
