@@ -9,15 +9,19 @@ An ActivityPub-compatible microblog server written in Go, designed to run at nea
 or a self-hosted VM (Docker / microk8s), with swappable RDB / queue / storage adapters, its own client API (no Mastodon client API compatibility),
 a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OSS.
 
-## Current phase: M1 — Walking Skeleton
+## Current phase: M2 — Local Microblog
 
-- Goal: one process that starts, answers WebFinger and Actor requests, persists to SQLite, and threads every layer thinly,
-  so that Mastodon can find and display an account ([vision](docs/requirements/00-vision.md)).
-- The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md)); the web client and Tauri UI are TypeScript with Bun.
+- Goal: the instance works as a local microblog — sign-up / login (OAuth2 PKCE), posting with all five visibilities, CW, mentions,
+  hashtags and images, home / local / hashtag / profile timelines, local follow / block / mute, notifications — through our own
+  client API (OpenAPI) and the web client (PWA, React + TailwindCSS) in `en` and `ja` ([vision](docs/requirements/00-vision.md), #27).
+- The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md)); clients are TypeScript under `app/` with Bun.
   Cloudflare Workers is **not** a target.
+- **Web client work must follow [docs/architecture/web-client.md](docs/architecture/web-client.md).** Do not write React from memory or
+  from typical online examples; when unsure, check react.dev, the WAI-ARIA APG and the official docs of the library in use.
+- The web-client ADRs (ADR-0025 to ADR-0030) are *Proposed*. By the owner's instruction for M2, implementation follows them before
+  they are accepted; do not pick libraries outside them without a new ADR.
 - The Go package layout follows [overview §6](docs/architecture/overview.md#6-リポジトリ構成); `cmd/my` is the single binary.
-  Build only what an issue asks for, and pick a library only when an Accepted ADR covers it
-  (spikes may try libraries on their own `spike/*` branch).
+  Build only what an issue asks for.
 - Spike reports go in the spike issue as a comment and spike code stays on an unmerged `spike/<issue>-<slug>` branch;
   only the resulting ADR / doc updates are merged ([ADR-0022](docs/adr/0022-spike-outputs-outside-repository.md)).
 

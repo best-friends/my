@@ -12,6 +12,7 @@
 - [アーキテクチャ概要（基礎設計）](architecture/overview.md)
 - [論理データモデル](architecture/data-model.md)
 - [デプロイターゲットと低コスト構成](architecture/deployment-targets.md)
+- [Web クライアントの設計規約](architecture/web-client.md)
 - [ADR 一覧](adr/README.md)
 
 ## リファレンス
