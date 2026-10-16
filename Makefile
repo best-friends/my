@@ -192,7 +192,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-build web-licenses web-tokens web-test web-e2e web-e2e-install web-check
+.PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-check
 
 # internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its
 # .gitkeep is committed, so Go builds and tests need no Bun; `make build` embeds the real build.
@@ -212,6 +212,13 @@ web-build: web-install ## Build app/web into app/web/dist and copy it to interna
 web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules
 
+web-lint: web-install ## Lint the client workspace: ESLint (app/eslint.config.js), its rule tests, knip, no 100vh in CSS
+	cd app && bun run lint
+	cd app && bun run lint:rules
+	cd app && bun run knip
+	@! grep -rn --include='*.css' '100vh' app/ui/src app/web/src \
+		|| { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
+
 web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors, motion only under motion-safe
 	cd app/ui && bun run check-tokens
 
@@ -227,4 +234,4 @@ web-e2e: web-build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for
 web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
 	cd app/web && bun run playwright install chromium
 
-web-check: web-typecheck web-build web-licenses web-tokens web-test ## Run every offline web client check
+web-check: web-typecheck web-lint web-build web-licenses web-tokens web-test ## Run every offline web client check
