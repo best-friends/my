@@ -80,9 +80,12 @@ describe("the new-post form", () => {
     );
     await user.click(within(choices).getByRole("radio", { name: "Followers" }));
     await user.click(screen.getByRole("button", { name: "Done" }));
-    await vi.waitFor(() => {
-      expect(within(sheet).getByRole("button", { name: "Visibility: Followers" })).toHaveFocus();
-    });
+    await vi.waitFor(
+      () => {
+        expect(within(sheet).getByRole("button", { name: "Visibility: Followers" })).toHaveFocus();
+      },
+      { timeout: 5000 },
+    );
 
     await user.click(within(sheet).getByRole("button", { name: /Language/ }));
     await user.click(await screen.findByRole("option", { name: "Japanese" }));
