@@ -408,6 +408,48 @@ CREATE TABLE follow_counters (
   following_count bigint NOT NULL CHECK (following_count >= 0)
 );
 
+-- graph: blocks and mutes (data-model §4.5) -------------------------------------------------
+
+-- Resource: one block. Blocking again after a retraction inserts a new row. uri is NULL only for
+-- a received Block without an id.
+CREATE TABLE blocks (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  uri text,
+  blocker_account_id text COLLATE "C" NOT NULL,
+  blocked_account_id text COLLATE "C" NOT NULL,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX blocks_uri ON blocks (uri);
+
+-- Event: a block was lifted.
+CREATE TABLE block_retractions (
+  block_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  retracted_at timestamptz NOT NULL
+);
+
+-- Projection: the block in force of each pair (without a retraction).
+CREATE TABLE block_edges (
+  blocker_account_id text COLLATE "C" NOT NULL,
+  blocked_account_id text COLLATE "C" NOT NULL,
+  block_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (blocker_account_id, blocked_account_id)
+);
+CREATE INDEX block_edges_blocked_account_id ON block_edges (blocked_account_id);
+CREATE INDEX block_edges_blocker_block_id ON block_edges (blocker_account_id, block_id);
+
+-- Current value: an account's mute of another. A mute whose expires_at has passed no longer
+-- applies; readers filter it out.
+CREATE TABLE mutes (
+  account_id text COLLATE "C" NOT NULL,
+  target_account_id text COLLATE "C" NOT NULL,
+  hide_notifications boolean NOT NULL,
+  expires_at timestamptz,
+  created_at timestamptz NOT NULL,
+  PRIMARY KEY (account_id, target_account_id),
+  CHECK (expires_at IS NULL OR expires_at > created_at)
+);
+CREATE INDEX mutes_account_created_at_target ON mutes (account_id, created_at, target_account_id);
+
 -- ---------------------------------------------------------------------------------------------
 -- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).
 -- Owned by internal/adapter/queue/db.

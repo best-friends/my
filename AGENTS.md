@@ -123,7 +123,7 @@ These come from Accepted ADRs and are binding.
 | `make docker-smoke` | Build and start `deploy/docker/compose.yaml`, create an admin, check WebFinger / Actor / NodeInfo, tear down (CI job `docker-smoke`) |
 | `make i18n-gen` | Regenerate pseudo-locales, Go / TS typed accessors, and parity fixtures from `locales/` (commit the result) |
 | `make i18n-check` | Catalog lint (ICU syntax, placeholders, plural categories, shared subset), stale generated files, npm licenses, TS runtime tests |
-| `make web-check` | Client workspace `app/`: `web-typecheck` (tsc), `web-build` (Vite; fails when React Compiler compiled nothing), `web-licenses` (npm licenses) |
+| `make web-check` | Client workspace `app/`: `web-typecheck` (tsc), `web-build` (Vite; fails when React Compiler compiled nothing), `web-licenses` (npm licenses), `web-tokens` (design token contrast and color / motion usage, [app/ui/README.md](app/ui/README.md)) |
 | `make web-install` | Install the client workspace dependencies from `app/bun.lock` |
 
 Toolchain versions (Go, golangci-lint, Bun, shellcheck, Node.js) are pinned in `.tool-versions` (asdf / mise).

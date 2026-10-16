@@ -82,6 +82,7 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 | 投稿の削除 | `status_deletions` | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `account_post_counters`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients` | `Delete` の配送 |
 | ブースト | `boosts` | `boost_edges`, `feed_entries`, `status_counters` | `Announce` の配送（`local` 投稿のブーストは連合しない） |
 | フォロー | `follows`（＋自動承認なら `follow_acceptances`） | `follow_edges`, `feed_follow_edges`, `follow_counters` | `Follow` / `Accept` の配送 |
+| ブロック | `blocks`（＋両方向のフォローの `follow_terminations`） | `block_edges`, `follow_edges`, `feed_follow_edges`, `follow_counters` | `Block` の配送 |
 | 処分 | `moderation_actions`（＋`moderation_action_statuses`） | `account_restrictions`, `feed_author_restrictions` | 通知・投稿の削除やセンシティブ化（大量なら非同期） |
 | Inbox 処理 | `received_activities` と対象のリソース / イベント | 対象に応じて | 対象に応じて |
 
@@ -491,8 +492,9 @@ flowchart LR
 - `follow_edges` の行があるペアへのフォローは何もしません。同時に 2 つのフォローが作られた場合は、投影の主キーで後の方を再実行させ、既存のフォローを返します。
 - リモートへのフォローは、`Accept` を受け取ったら `follow_acceptances` を記録し、投影を `active` にします。
 
-フォローのコマンドは、記録したイベントに応じて次のドメインイベントを 1 つ発行します（`tx.Emit`、§2.1）。
-購読する projector はイベントの内容（`follows` の行と、承認・拒否・終了の行、設定）だけで投影を更新します。
+フォローとブロックのコマンドは、記録したイベントに応じて次のドメインイベントを発行します（`tx.Emit`、§2.1）。
+フォローのコマンドは 1 つ、ブロックは終了したフォローごとの `graph.follow_terminated` と `graph.blocked` を発行します。
+購読する projector はイベントの内容（`follows` の行と、承認・拒否・終了の行、設定、`blocks` の行と取り消しの行）だけで投影を更新します。
 
 | ドメインイベント | 発行するとき | `graph` の投影 | 想定する購読者 |
 | --- | --- | --- | --- |
@@ -502,19 +504,29 @@ flowchart LR
 | `graph.follow_rejected` | フォローリクエストの拒否 | `follow_edges` から削除 | — |
 | `graph.follow_terminated` | フォロー解除・申請の取り下げ・フォロワーの削除など（終了前の状態を載せる） | `follow_edges` から削除、`active` だったら `follow_counters` 減算 | `feed_follow_edges` |
 | `graph.follow_preferences_changed` | フォローごとの設定の変更 | — | `feed_follow_edges`（`show_boosts`） |
+| `graph.blocked` | ブロック（終了したフォローごとの `graph.follow_terminated`（`reason = blocked`）の後に発行する） | `block_edges` に追加 | 通知・タイムラインの絞り込み、`Block` の配送 |
+| `graph.unblocked` | ブロックの解除 | `block_edges` から削除 | `Undo Block` の配送 |
 
 #### ブロック・ミュート
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `blocks` | リソース | `id`, `uri`（NULL 可）, `blocker_account_id`, `blocked_account_id`, `created_at` | 一意 `(uri)` |
+| `blocks` | リソース | `id`, `uri`（`Block` の IRI。ローカルのブロックは `https://{host}/ap/activities/{id}`、ADR-0018。`id` の無い `Block` を受信したときだけ NULL）, `blocker_account_id`, `blocked_account_id`, `created_at` | 一意 `(uri)`。ブロックし直すと新しい行になる（過去のブロックが残る） |
 | `block_retractions` | イベント | `block_id`（PK）, `retracted_at` | |
-| `block_edges` | 投影 | `blocker_account_id`, `blocked_account_id`, `block_id` | PK `(blocker_account_id, blocked_account_id)`。インデックス `(blocked_account_id)` |
-| `mutes` | 現在値 | `account_id`, `target_account_id`, `hide_notifications`（`bool`）, `expires_at`（NULL 可）, `created_at` | PK `(account_id, target_account_id)` |
+| `block_edges` | 投影 | `blocker_account_id`, `blocked_account_id`, `block_id` | PK `(blocker_account_id, blocked_account_id)`。インデックス `(blocked_account_id)`、`(blocker_account_id, block_id)`（ブロック中の一覧。`block_id` のキーセットで新しい順に引く）。取り消しで行を消す |
+| `mutes` | 現在値 | `account_id`, `target_account_id`, `hide_notifications`（`bool`）, `expires_at`（NULL 可。NULL は解除まで）, `created_at` | PK `(account_id, target_account_id)`。`expires_at > created_at`。インデックス `(account_id, created_at, target_account_id)`（ミュート中の一覧。`(created_at, target_account_id)` のキーセットで新しい順に引く） |
 | `account_domain_mutes` | 現在値 | `account_id`, `domain`, `created_at` | PK `(account_id, domain)`（FR-304、C） |
 
 - ブロックは連合（`Block` / `Undo Block`）やフォロー関係の終了と連動し、嫌がらせの調査にも使うので、イベントとして持ちます。
-- ミュートは本人だけに効き、履歴にも意味がないので現在値です（ADR-0020 規約 5）。
+- ブロックすると、同じトランザクションで 2 人の間のフォローを両方向とも（承認待ちも含めて）`follow_terminations`（`reason = blocked`）で終了します。
+  解除してもフォローは戻りません。ブロックが有効な間は、どちらの向きのフォローも作れません。
+- フォローとブロックは、2 人の組（順序なし）単位でトランザクションを直列化します（`Repository.LockPair`）。
+  PostgreSQL は READ COMMITTED なので、トランザクションスコープのアドバイザリロックを取ります。SQLite は書き込みトランザクションが `BEGIN IMMEDIATE` で直列なので何もしません。
+  これが無いと、同時に走ったフォローとブロックが互いを見落とし、ブロック中のフォローが残ります。
+- ブロックの対象はローカルのアカウントだけです（存在すれば有効でなくてもよい）。リモートとのブロックは連合（`federation`）から記録します。
+- ミュートは本人だけに効き、履歴にも意味がないので現在値です（ADR-0020 規約 5）。ミュートし直すと設定・期限・`created_at` を置き換えます。
+- 期限付きのミュートは、読み取り時に `expires_at > 現在時刻` で絞り込むので、期限が来た時点で書き込み無しに無効になります。期限切れの行は、ミュートし直すか解除するまで残ります。
+- ミュートの対象はリモートのアカウントでもかまいません。ミュートは読み取り時の絞り込みにだけ使い、ドメインイベントを発行しません。
 
 ### 4.6 timeline
 

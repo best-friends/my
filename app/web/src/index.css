@@ -1,5 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 @import "tailwindcss";
+/* Semantic design tokens; the only colors components may use (web-client.md D8). */
+@import "@my/ui/theme.css";
 
 /* @my/ui ships source only, so scan it for the utilities its components use (ADR-0026). */
 @source "../../ui/src";
+@source not "../../ui/src/**/*.stories.tsx";

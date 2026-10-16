@@ -1,0 +1,199 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/*
+ * Design tokens of @my/ui (web-client.md D8). Apps import this file right after Tailwind:
+ *
+ *   @import "tailwindcss";
+ *   @import "@my/ui/theme.css";
+ *
+ * Layers:
+ *   1. --palette-*  primitive colors. Not a Tailwind namespace, so they produce no utilities and
+ *                   components cannot use them directly.
+ *   2. --color-*    semantic colors, the only colors with utilities (bg-surface, text-fg-muted ...).
+ *                   Each one is light-dark(<light>, <dark>), resolved by the used color-scheme.
+ *
+ * The contrast check (scripts/check-tokens.ts, run by `make web-check`) reads this file, so keep
+ * every color as oklch() or hex, in the sRGB gamut, and every semantic color as a var(--palette-*)
+ * or light-dark() of them. The fg / bg pairs it verifies are listed in src/tokens.ts.
+ */
+
+@theme {
+  /* --- Primitive palette (sRGB-safe OKLCH) -------------------------------------------------- */
+  --palette-white: oklch(100% 0 0);
+  --palette-black: oklch(0% 0 0);
+
+  --palette-gray-50: oklch(98.5% 0.002 247.839);
+  --palette-gray-100: oklch(96.7% 0.003 264.542);
+  --palette-gray-200: oklch(92.8% 0.006 264.531);
+  --palette-gray-300: oklch(87.2% 0.01 258.338);
+  --palette-gray-400: oklch(70.7% 0.022 261.325);
+  --palette-gray-500: oklch(55.1% 0.027 264.364);
+  --palette-gray-600: oklch(44.6% 0.03 256.802);
+  --palette-gray-700: oklch(37.3% 0.034 259.733);
+  --palette-gray-800: oklch(27.8% 0.033 256.848);
+  --palette-gray-850: oklch(24.2% 0.034 260);
+  --palette-gray-900: oklch(21% 0.034 264.665);
+  --palette-gray-950: oklch(16% 0.03 262);
+
+  --palette-blue-300: oklch(80.9% 0.098 251.813);
+  --palette-blue-400: oklch(70.7% 0.155 254.624);
+  --palette-blue-600: oklch(54.6% 0.245 262.881);
+  --palette-blue-700: oklch(48.8% 0.243 264.376);
+
+  --palette-red-400: oklch(70.4% 0.187 22.216);
+  --palette-red-700: oklch(50.5% 0.206 27.518);
+
+  --palette-green-400: oklch(79.2% 0.209 151.711);
+  --palette-green-700: oklch(52.7% 0.145 150.069);
+
+  --palette-amber-400: oklch(82.8% 0.17 84.429);
+  --palette-amber-800: oklch(47.3% 0.133 46.201);
+}
+
+/* --- Semantic colors ------------------------------------------------------------------------- */
+/* static: every semantic color is emitted, so code and stories can also read them with var(). */
+@theme static {
+  /* Drop Tailwind's default palette: an undefined color (bg-red-500) produces no CSS, and
+     scripts/check-tokens.ts fails on it. */
+  --color-*: initial;
+
+  /* Backgrounds. surface is the page; raised sits above it (cards, menus, dialogs); sunken sits
+     below it (inputs, wells). */
+  --color-surface: light-dark(var(--palette-gray-50), var(--palette-gray-950));
+  --color-surface-raised: light-dark(var(--palette-white), var(--palette-gray-900));
+  --color-surface-sunken: light-dark(var(--palette-gray-100), var(--palette-black));
+
+  /* Text and icons on any surface. */
+  --color-fg: light-dark(var(--palette-gray-900), var(--palette-gray-50));
+  --color-fg-muted: light-dark(var(--palette-gray-600), var(--palette-gray-400));
+
+  /* The brand / primary action color: links and primary buttons. accent-fg is text on accent. */
+  --color-accent: light-dark(var(--palette-blue-600), var(--palette-blue-400));
+  --color-accent-hover: light-dark(var(--palette-blue-700), var(--palette-blue-300));
+  --color-accent-fg: light-dark(var(--palette-white), var(--palette-gray-950));
+
+  /* Status colors: as text on surfaces, or as a solid background with the matching -fg text. */
+  --color-danger: light-dark(var(--palette-red-700), var(--palette-red-400));
+  --color-danger-fg: light-dark(var(--palette-white), var(--palette-gray-950));
+  --color-success: light-dark(var(--palette-green-700), var(--palette-green-400));
+  --color-success-fg: light-dark(var(--palette-white), var(--palette-gray-950));
+  --color-warning: light-dark(var(--palette-amber-800), var(--palette-amber-400));
+  --color-warning-fg: light-dark(var(--palette-white), var(--palette-gray-950));
+
+  /* border separates regions and is decorative; border-strong outlines controls (WCAG 1.4.11). */
+  --color-border: light-dark(var(--palette-gray-200), var(--palette-gray-800));
+  --color-border-strong: var(--palette-gray-500);
+
+  /* The focus ring (see the focus-ring utility below). */
+  --color-focus: light-dark(var(--palette-blue-600), var(--palette-blue-400));
+
+  /* The scrim behind modal dialogs and sheets. */
+  --color-overlay: light-dark(oklch(0% 0 0 / 0.4), oklch(0% 0 0 / 0.6));
+}
+
+@theme {
+  /* --- Typography ---------------------------------------------------------------------------- */
+  /* OS fonts first, no web fonts. After the Latin UI fonts come Japanese / Chinese / Korean and
+     Arabic system fonts, then the Noto families Linux and Android ship, then emoji. */
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, "PingFang SC", "Microsoft YaHei UI", "Malgun Gothic",
+    "Geeza Pro", "Segoe UI Arabic", Tahoma, "Noto Sans", "Noto Sans CJK JP", "Noto Sans JP", "Noto Sans Arabic",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "BIZ UDGothic", "Osaka-Mono", "Noto Sans Mono CJK JP",
+    monospace;
+  --font-serif: initial;
+
+  /* Line heights are taller than Tailwind's defaults because CJK and Arabic need the room. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.6;
+  --text-base: 1rem;
+  --text-base--line-height: 1.7;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.5;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.4;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.3;
+  --text-4xl: initial;
+  --text-5xl: initial;
+  --text-6xl: initial;
+  --text-7xl: initial;
+  --text-8xl: initial;
+  --text-9xl: initial;
+
+  /* --- Spacing, radius, shadow --------------------------------------------------------------- */
+  /* Spacing stays Tailwind's 0.25rem step: p-1 = 0.25rem, p-4 = 1rem. */
+  --spacing: 0.25rem;
+
+  --radius-*: initial;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-*: initial;
+  --shadow-sm: 0 1px 2px 0 oklch(0% 0 0 / 0.08);
+  --shadow-md: 0 2px 6px -1px oklch(0% 0 0 / 0.12), 0 1px 3px -1px oklch(0% 0 0 / 0.08);
+  --shadow-lg: 0 12px 24px -6px oklch(0% 0 0 / 0.18), 0 4px 8px -4px oklch(0% 0 0 / 0.1);
+
+  /* --- Motion (only ever applied under motion-safe:, web-client.md D6) ----------------------- */
+  --ease-*: initial;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --transition-duration-fast: 100ms;
+  --transition-duration-normal: 200ms;
+  --transition-duration-slow: 300ms;
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* `dark:` follows the same rule as the color tokens: data-theme wins, otherwise the OS setting. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+/* A visible focus indicator. Use it as `focus-visible:focus-ring` (or `data-focus-visible:focus-ring`
+   on React Aria Components); an outline survives forced-colors mode, unlike a box-shadow. */
+@utility focus-ring {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@layer base {
+  /* The theme hook: <html data-theme="light|dark"> forces a theme; without it the OS decides.
+     color-scheme drives light-dark() and the browser's own controls and scrollbars. */
+  :root {
+    color-scheme: light dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+    line-height: var(--text-base--line-height);
+  }
+
+  /* A fallback ring for focusable elements that do not style their own. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
