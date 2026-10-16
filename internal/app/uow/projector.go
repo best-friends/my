@@ -20,11 +20,19 @@ type Event interface {
 // transaction function.
 type Projector func(ctx context.Context, tx Tx, e Event) error
 
-// Projectors is a registry of synchronous projectors keyed by event type. The zero value is
-// empty and ready to use; a nil *Projectors is an empty registry. It is safe for concurrent use.
+// CommitHook observes an event after the transaction that emitted it has committed. It runs
+// outside any transaction, in the goroutine of the command, before UnitOfWork.Tx returns, so it
+// must return quickly and never fail the command: use it to signal in-process listeners (such
+// as the streaming endpoint), not for work that must happen (enqueue jobs through the outbox).
+type CommitHook func(ctx context.Context, e Event)
+
+// Projectors is a registry of synchronous projectors and commit hooks keyed by event type. The
+// zero value is empty and ready to use; a nil *Projectors is an empty registry. It is safe for
+// concurrent use.
 type Projectors struct {
 	mu     sync.RWMutex
 	byType map[string][]Projector
+	hooks  map[string][]CommitHook
 }
 
 // Register subscribes p to events of eventType. Projectors of one event type run in the order
@@ -53,4 +61,32 @@ func (r *Projectors) Project(ctx context.Context, tx Tx, e Event) error {
 		}
 	}
 	return nil
+}
+
+// OnCommit subscribes h to events of eventType that committed transactions emitted. Hooks of
+// one event type run in the order they were registered.
+func (r *Projectors) OnCommit(eventType string, h CommitHook) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.hooks == nil {
+		r.hooks = make(map[string][]CommitHook)
+	}
+	r.hooks[eventType] = append(r.hooks[eventType], h)
+}
+
+// Committed runs the commit hooks of events, in order, once the transaction that emitted them
+// through Tx.Emit has committed. Adapters call it after a successful commit with the events of
+// that attempt only, so that a rolled-back or retried attempt signals nothing.
+func (r *Projectors) Committed(ctx context.Context, events []Event) {
+	if r == nil {
+		return
+	}
+	for _, e := range events {
+		r.mu.RLock()
+		hs := r.hooks[e.EventType()]
+		r.mu.RUnlock()
+		for _, h := range hs {
+			h(ctx, e)
+		}
+	}
 }
