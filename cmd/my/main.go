@@ -49,6 +49,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 		_, _ = fmt.Fprintf(stdout, "my %s\n", resolveVersion(version, debug.ReadBuildInfo))
 		return 0
+	case "config":
+		return runConfig(fs.Args()[1:], stdout, stderr)
 	case "":
 		usage(stderr)
 		return 2
@@ -63,6 +65,7 @@ func usage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage: my <command>
 
 Commands:
+  config    Check the configuration (my config check)
   version   Print the version
 `)
 }
