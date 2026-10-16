@@ -15,6 +15,25 @@ export { Switch, type SwitchProps } from "./Switch";
 export { TextArea, type TextAreaProps } from "./TextArea";
 export { TextField, type TextFieldProps } from "./TextField";
 
+// Overlays, tabs and announcements.
+export { AnnouncerProvider, useAnnouncer, type Announce, type AnnouncerProviderProps, type Politeness } from "./Announcer";
+export { Dialog, DialogTrigger, Sheet, type DialogProps, type DialogTriggerProps, type SheetProps } from "./Dialog";
+export {
+  Menu,
+  MenuItem,
+  MenuSeparator,
+  MenuTrigger,
+  SubmenuTrigger,
+  type MenuItemProps,
+  type MenuProps,
+  type MenuTriggerProps,
+  type SubmenuTriggerProps,
+} from "./Menu";
+export { Popover, PopoverTrigger, type PopoverProps } from "./Popover";
+export { Tab, TabList, TabPanel, Tabs, type TabListProps, type TabPanelProps, type TabProps, type TabsProps } from "./Tabs";
+export { ToastProvider, useToast, type ToastApi, type ToastOptions, type ToastProviderProps, type ToastTone } from "./Toast";
+export { Tooltip, TooltipTrigger, type TooltipProps, type TooltipTriggerProps } from "./Tooltip";
+
 // Display.
 export { Avatar, type AvatarProps } from "./Avatar";
 export { Badge, type BadgeProps } from "./Badge";

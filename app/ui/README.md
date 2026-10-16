@@ -149,6 +149,28 @@ string through props or children.
     reaches 50, 20 or 0 ([ADR-0027](../../docs/adr/0027-ui-quality-gates.md));
   - longer text is kept, not cut off: the count turns `danger` and the field becomes invalid.
 
+## Overlays and announcements
+
+The overlay components wrap React Aria Components, which handle focus, Esc and the reading direction
+([WAI-ARIA APG](https://www.w3.org/WAI/ARIA/apg/patterns/)). All strings, including the accessible names of × buttons, come in as props.
+
+| Component | Pattern | Notes |
+| --- | --- | --- |
+| `Dialog` / `Sheet` in a `DialogTrigger` | Modal dialog | Traps focus, closes on Esc, returns focus to the trigger. `closeLabel` adds the × button; `role="alertdialog"` for confirmations; `isOpen` / `onOpenChange` without a trigger. `Sheet` sits on the bottom edge below a 32rem container width, with safe-area padding and a height capped in `svh`. |
+| `Popover` in a `PopoverTrigger` | Non-modal dialog | Named by `title` or `aria-label`. |
+| `Menu`, `MenuItem`, `MenuSeparator` in a `MenuTrigger`; `SubmenuTrigger` | Menu button | `intent="danger"` for destructive items. Submenus open towards the inline end. |
+| `Tooltip` in a `TooltipTrigger` | Tooltip | Describes its trigger; never the trigger's only name. |
+| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. |
+| `AnnouncerProvider`, `useAnnouncer` | Live regions | One polite `role="status"` and one assertive `role="alert"` region for the app. |
+| `ToastProvider`, `useToast` | Toasts | Announced through the Announcer; the visible list is a labelled region. |
+
+Mount `AnnouncerProvider` once at the app root and `ToastProvider` inside it. `announce(message, politeness)` and
+`toast.show(...)` are called from event handlers and mutation callbacks, and never move focus. Each announcement is a new node in its
+region, so a repeated message is read again, and it is removed after `clearAfter` (7 s). The regions carry `data-live-announcer`, so they
+stay exposed while a modal hides the rest of the page. The kit has its own regions and toast queue because React Aria Components' Toast is
+`UNSTABLE_` and its live announcer is internal to react-aria. A toast without an action closes after `defaultTimeout` (5 s), but not
+while the pointer is over the toasts or focus is in them; a toast with an action stays until it is dismissed.
+
 ## Component tests
 
 Each component has Testing Library tests next to it (`src/<Component>.test.tsx`) that find elements by role and drive them with
@@ -168,4 +190,8 @@ Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)).
 anything in it still animates then; stories render and run their `play` functions (which find elements by role, with
 `storybook/test`) without it. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
 them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
+A story's `play` function also tests behaviour in the real browser (focus trap and return, Esc, arrow keys in RTL, announcements that
+keep focus); it runs before axe and the screenshots, in all four projects. The overlay components' jsdom tests cover the same
+behaviour in `make check`. Overlays portal into the story frame, which has layout
+containment, so a modal covers the frame and appears in its screenshots.
 The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package authpages serves the server-rendered sign-in, sign-out, registration, and email
-// verification screens (ADR-0030): plain HTML forms from html/template that work without
-// JavaScript, worded from the server message catalog and styled by one stylesheet that the web
-// client's build provides.
+// Package authpages serves the server-rendered sign-in, sign-out, registration, email
+// verification, and OAuth authorization (consent) screens (ADR-0030): plain HTML forms from
+// html/template that work without JavaScript, worded from the server message catalog and styled
+// by one stylesheet that the web client's build provides.
 //
 // A sign-in or sign-up starts a browser session carried by the __Host-my_session cookie
 // (Secure, HttpOnly, SameSite=Lax, Path=/) with a new token every time (ADR-0019 §4). Every POST
@@ -15,6 +15,12 @@
 // A signed-in user whose account cannot be used yet (a registration waiting for approval or
 // rejected, or an email address waiting for confirmation, identity.Access) sees a page that
 // says so instead of continuing to where they were going.
+//
+// The authorization endpoint (RFC 6749 §3.1) asks a signed-in user to consent to a third-party
+// client and answers the client by a 303 redirect to its registered redirect URI with the code
+// or the error, the state, and the issuer (RFC 9207). First-party clients skip the consent.
+// Without a session, it sends the browser to the sign-in form and back; a user whose account
+// cannot be used yet gets the status page and no code.
 package authpages
 
 import (
@@ -30,6 +36,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -48,6 +55,8 @@ const (
 	PathVerifyEmail = appidentity.PathVerifyEmail
 	// PathResendVerification sends a signed-in user a new verification email.
 	PathResendVerification = "/auth/verify_email/resend"
+	// PathAuthorize is the OAuth authorization endpoint.
+	PathAuthorize = "/oauth/authorize"
 )
 
 // Cookie names. The __Host- prefix makes browsers accept the cookies only when Secure, without
@@ -61,8 +70,12 @@ const (
 const DefaultStylesheet = "/assets/server-pages.css"
 
 // contentSecurityPolicy allows the pages nothing but their own stylesheet, images, and forms.
-const contentSecurityPolicy = "default-src 'none'; style-src 'self'; img-src 'self'; form-action 'self'; " +
-	"frame-ancestors 'none'; base-uri 'none'"
+// Browsers check form-action on the redirects that follow a form, so it lists the origins a
+// form may end up at: this site, Options.FormActionOrigins, and the consent page's redirect URI.
+func contentSecurityPolicy(formAction []string) string {
+	return "default-src 'none'; style-src 'self'; img-src 'self'; form-action " + strings.Join(append([]string{"'self'"}, formAction...), " ") +
+		"; frame-ancestors 'none'; base-uri 'none'"
+}
 
 // maxFormBytes bounds a form body; the largest is the registration form, whose reason field
 // holds up to identity.MaxRegistrationReasonLength characters.
@@ -83,9 +96,24 @@ type Identity interface {
 	ResendVerificationEmail(ctx context.Context, userID string) error
 }
 
+// OAuth is what the authorization endpoint needs from the identity module; *identity.Service
+// implements it.
+type OAuth interface {
+	ValidateAuthorization(ctx context.Context, req appidentity.AuthorizationRequest) (appidentity.Authorization, error)
+	IssueAuthorizationCode(ctx context.Context, a appidentity.Authorization, userID string) (string, error)
+}
+
 // Options configure a Handler.
 type Options struct {
 	Identity Identity
+	// OAuth serves the authorization endpoint; nil leaves it out.
+	OAuth OAuth
+	// Issuer is the authorization server's identifier, sent as the iss parameter of the
+	// authorization response (RFC 9207), e.g. https://social.example.
+	Issuer string
+	// FormActionOrigins are the origins besides this site that a sign-in may be redirected to,
+	// such as the web client's origin for its callback.
+	FormActionOrigins []string
 	// Locales resolves the locale of the screens (ADR-0009 §2).
 	Locales *i18n.Resolver
 	// Stylesheet is the URL of the pages' stylesheet; empty means DefaultStylesheet.
@@ -113,6 +141,7 @@ const (
 	pageStatus      = "status"
 	pageVerifyEmail = "verify_email"
 	pageVerified    = "verified"
+	pageAuthorize   = "authorize"
 )
 
 // New returns a Handler on o.
@@ -124,7 +153,7 @@ func New(o Options) *Handler {
 		o.Logger = slog.Default()
 	}
 	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
-	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified} {
+	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize} {
 		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
 	h.cop.SetDenyHandler(http.HandlerFunc(h.crossOrigin))
@@ -146,6 +175,10 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathVerifyEmail, http.HandlerFunc(h.verifyEmailPage))
 	r.Handle("POST "+PathVerifyEmail, h.cop.Handler(http.HandlerFunc(h.verifyEmail)))
 	r.Handle("POST "+PathResendVerification, h.cop.Handler(http.HandlerFunc(h.resendVerification)))
+	if h.o.OAuth != nil {
+		r.Handle("GET "+PathAuthorize, http.HandlerFunc(h.authorizePage))
+		r.Handle("POST "+PathAuthorize, h.cop.Handler(http.HandlerFunc(h.authorize)))
+	}
 }
 
 // page is the data of a template.
@@ -169,6 +202,11 @@ type page struct {
 	Status *statusView
 	// Token is the email verification token of the confirmation form.
 	Token string
+	// Consent is the authorization request on the consent page.
+	Consent *consent
+	// formAction lists origins the page's forms may be redirected to besides
+	// Options.FormActionOrigins.
+	formAction []string
 }
 
 func (h *Handler) newPage(r *http.Request, title func(*i18n.Localizer) string) page {
@@ -180,7 +218,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 	hd := w.Header()
 	hd.Set("Content-Type", "text/html; charset=utf-8")
 	hd.Set("Content-Language", p.Lang)
-	hd.Set("Content-Security-Policy", contentSecurityPolicy)
+	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...)))
 	hd.Set("Cache-Control", "no-store")
 	hd.Add("Vary", "Accept-Language, Cookie")
 	w.WriteHeader(status)

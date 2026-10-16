@@ -68,7 +68,7 @@ func TestWebClient(t *testing.T) {
 		{"client API", http.MethodGet, "/api/v1/nope", acceptBrowser, http.StatusNotFound, problem, []string{"Origin", "Accept", "Accept-Language"}},
 		{"sign-in page", http.MethodGet, "/auth/sign_in", acceptBrowser, http.StatusOK, "signin", []string{"Accept-Language, Cookie"}},
 		{"unknown auth page", http.MethodGet, "/auth/nope", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
-		{"OAuth", http.MethodGet, "/oauth/authorize", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
+		{"unknown OAuth path", http.MethodGet, "/oauth/nope", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
 		{"ActivityPub", http.MethodGet, "/ap/nope/x/y", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
 		{"NodeInfo", http.MethodGet, "/nodeinfo", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
 		{"well-known", http.MethodGet, "/.well-known/nope", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},

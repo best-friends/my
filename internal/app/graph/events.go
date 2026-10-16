@@ -7,10 +7,11 @@ import "github.com/best-friends/my/internal/domain/graph"
 // Event types of the graph module, for uow.Projectors (data-model §4.5). Every follow command
 // emits exactly one of them inside its transaction, after writing the event rows, so that the
 // projectors of this module (follow_edges, follow_counters, block_edges) and of other modules
-// (timeline's feed_follow_edges, notification's follow notifications) see the same facts.
-// Each event carries everything its subscribers need; they never read the graph tables.
-// Blocking emits one EventFollowTerminated per follow it ends, then EventBlocked. Mutes are a
-// current value read at query time and emit no events.
+// (timeline's feed_follow_edges and feed_exclusions, notification's follow notifications) see
+// the same facts. Each event carries everything its subscribers need; they never read the graph
+// tables. Blocking emits one EventFollowTerminated per follow it ends, then EventBlocked. Mutes
+// are a current value that this module reads at query time; their commands emit EventMuted and
+// EventUnmuted for other modules' projections.
 //
 //   - EventFollowed: a follow became active on creation (the followee is not locked).
 //   - EventFollowRequested: a follow awaits the followee's approval (the followee is locked).
@@ -20,6 +21,8 @@ import "github.com/best-friends/my/internal/domain/graph"
 //   - EventFollowPreferencesChanged: the follower changed the preferences of a live follow.
 //   - EventBlocked: an account blocked another.
 //   - EventUnblocked: a block was lifted.
+//   - EventMuted: an account muted another, or replaced the settings and expiry of a mute.
+//   - EventUnmuted: an account removed its mute of another (emitted even without a mute).
 const (
 	EventFollowed                 = "graph.followed"
 	EventFollowRequested          = "graph.follow_requested"
@@ -29,7 +32,32 @@ const (
 	EventFollowPreferencesChanged = "graph.follow_preferences_changed"
 	EventBlocked                  = "graph.blocked"
 	EventUnblocked                = "graph.unblocked"
+	EventMuted                    = "graph.muted"
+	EventUnmuted                  = "graph.unmuted"
 )
+
+// Muted is emitted when a mute is stored. Mute.ExpiresAt is nil for a mute until unmuted.
+type Muted struct {
+	Mute graph.Mute
+}
+
+// EventType implements uow.Event.
+func (Muted) EventType() string { return EventMuted }
+
+// Unmuted is emitted when an account removes its mute of a target.
+type Unmuted struct {
+	AccountID       string
+	TargetAccountID string
+}
+
+// EventType implements uow.Event.
+func (Unmuted) EventType() string { return EventUnmuted }
+
+// WasActive reports whether the follow was active when it ended, rather than pending.
+func (e FollowTerminated) WasActive() bool { return e.PreviousState == graph.StateActive }
+
+// Active reports whether the follow was active, rather than pending, when its preferences changed.
+func (e FollowPreferencesChanged) Active() bool { return e.State == graph.StateActive }
 
 // Followed is emitted when a follow is created and accepted at once.
 type Followed struct {

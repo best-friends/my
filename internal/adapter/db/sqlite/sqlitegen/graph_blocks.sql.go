@@ -227,6 +227,42 @@ func (q *Queries) ListActiveMutesPage(ctx context.Context, arg ListActiveMutesPa
 	return items, nil
 }
 
+const listAllMutes = `-- name: ListAllMutes :many
+SELECT account_id, target_account_id, hide_notifications, expires_at, created_at
+FROM mutes ORDER BY account_id, target_account_id
+`
+
+// ListAllMutes returns every mute, expired ones included, ordered by account and target, as the
+// source of other modules' projections.
+func (q *Queries) ListAllMutes(ctx context.Context) ([]Mute, error) {
+	rows, err := q.db.QueryContext(ctx, listAllMutes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Mute{}
+	for rows.Next() {
+		var i Mute
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.TargetAccountID,
+			&i.HideNotifications,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listBlockEdges = `-- name: ListBlockEdges :many
 SELECT blocker_account_id, blocked_account_id, block_id
 FROM block_edges ORDER BY blocker_account_id, blocked_account_id
