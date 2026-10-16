@@ -1043,6 +1043,130 @@
     "defaultMessage": "アプリの新しい版があります。",
     "description": "Message shown when a new version of the web app has been downloaded and waits until the user applies it."
   },
+  "status.action.bookmark": {
+    "defaultMessage": "ブックマーク",
+    "description": "Toggle button under a post that bookmarks it or removes the bookmark. Bookmarks are private. The same text is used in both states."
+  },
+  "status.action.boost": {
+    "defaultMessage": "ブースト",
+    "description": "Toggle button under a post that shares (boosts) it with the user's followers, or retracts the boost. The same text is used in both states."
+  },
+  "status.action.copy_link": {
+    "defaultMessage": "リンクをコピー",
+    "description": "Menu item that copies the address of a post to the clipboard."
+  },
+  "status.action.delete": {
+    "defaultMessage": "削除",
+    "description": "Menu item, on the user's own post, that asks to delete it."
+  },
+  "status.action.failed": {
+    "defaultMessage": "変更を保存できませんでした: {reason}",
+    "description": "Toast when boosting, favouriting or bookmarking a post failed; the button is set back. {reason} is the error message, a full sentence."
+  },
+  "status.action.favourite": {
+    "defaultMessage": "お気に入り",
+    "description": "Toggle button under a post that adds it to or removes it from the user's favourites. The same text is used in both states."
+  },
+  "status.action.more": {
+    "defaultMessage": "その他の操作",
+    "description": "Button under a post that opens a menu with more actions on it, and the name of that menu."
+  },
+  "status.action.reply": {
+    "defaultMessage": "返信",
+    "description": "Button under a post that starts a reply to it."
+  },
+  "status.bookmark.off": {
+    "defaultMessage": "ブックマークを外しました",
+    "description": "Read out by screen readers after the user removed the bookmark of a post."
+  },
+  "status.bookmark.on": {
+    "defaultMessage": "ブックマークしました",
+    "description": "Read out by screen readers after the user bookmarked a post."
+  },
+  "status.boost.off": {
+    "defaultMessage": "ブーストを取り消しました",
+    "description": "Read out by screen readers after the user retracted the boost of a post."
+  },
+  "status.boost.on": {
+    "defaultMessage": "ブーストしました",
+    "description": "Read out by screen readers after the user boosted a post."
+  },
+  "status.delete.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button in the delete confirmation dialog that keeps the post."
+  },
+  "status.delete.confirm": {
+    "defaultMessage": "削除する",
+    "description": "Button in the delete confirmation dialog that deletes the post."
+  },
+  "status.delete.description": {
+    "defaultMessage": "すべての人から見えなくなり、ブーストとお気に入りも消えます。元に戻すことはできません。",
+    "description": "Text of the dialog that asks the user to confirm deleting their post."
+  },
+  "status.delete.done": {
+    "defaultMessage": "投稿を削除しました",
+    "description": "Toast after the user's post was deleted."
+  },
+  "status.delete.failed": {
+    "defaultMessage": "投稿を削除できませんでした: {reason}",
+    "description": "Toast when deleting the user's post failed. {reason} is the error message, a full sentence."
+  },
+  "status.delete.title": {
+    "defaultMessage": "この投稿を削除しますか？",
+    "description": "Heading of the dialog that asks the user to confirm deleting their post."
+  },
+  "status.favourite.off": {
+    "defaultMessage": "お気に入りから外しました",
+    "description": "Read out by screen readers after the user removed a post from their favourites."
+  },
+  "status.favourite.on": {
+    "defaultMessage": "お気に入りに追加しました",
+    "description": "Read out by screen readers after the user favourited a post."
+  },
+  "status.link.copied": {
+    "defaultMessage": "リンクをコピーしました",
+    "description": "Toast after the address of a post was copied to the clipboard."
+  },
+  "status.link.failed": {
+    "defaultMessage": "リンクをコピーできませんでした。",
+    "description": "Toast when the browser refused to copy the address of a post to the clipboard."
+  },
+  "status.not_found.body": {
+    "defaultMessage": "この投稿は存在しないか、閲覧できません。",
+    "description": "Text under the heading of the page of a post that does not exist or that the user may not see."
+  },
+  "status.not_found.title": {
+    "defaultMessage": "投稿が見つかりません",
+    "description": "Heading of the page of a post that does not exist or that the user may not see."
+  },
+  "status.thread.ancestors": {
+    "defaultMessage": "スレッドの前の投稿",
+    "description": "Heading above the posts that the post of the page replies to, oldest first."
+  },
+  "status.thread.failed": {
+    "defaultMessage": "返信を読み込めませんでした: {reason}",
+    "description": "Shown under the post of the page when its thread failed to load. {reason} is the error message, a full sentence."
+  },
+  "status.thread.loading": {
+    "defaultMessage": "返信を読み込んでいます",
+    "description": "Accessible name of the progress indicator while the thread around a post loads."
+  },
+  "status.thread.no_replies": {
+    "defaultMessage": "まだ返信はありません。",
+    "description": "Shown under the Replies heading when the post has no replies."
+  },
+  "status.thread.replies": {
+    "defaultMessage": "返信",
+    "description": "Heading above the replies to the post of the page."
+  },
+  "status.thread.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads the thread around a post again after a failure."
+  },
+  "status.title": {
+    "defaultMessage": "投稿",
+    "description": "Heading of the page of one post and the thread around it."
+  },
   "tag.title": {
     "defaultMessage": "#{tag}",
     "description": "Heading and document title of the page with the posts of one hashtag. {tag} is the hashtag without the #, for example 'cats'."

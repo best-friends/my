@@ -122,32 +122,37 @@ test.describe("the local timeline", () => {
         - article:
           - link /Bartholomew/
           - link /Bartholomew/
-          - time
+          - link:
+            - time
           - paragraph
         - article:
           - paragraph:
             - link /Carol/
           - link /Bob/
           - link /Bob/
-          - time
+          - link:
+            - time
           - paragraph
         - article:
           - link /Bob/
           - link /Bob/
-          - time
+          - link:
+            - time
           - paragraph: Food
           - button [expanded=false]
         - article:
           - link /Bob/
           - link /Bob/
-          - time
+          - link:
+            - time
           - paragraph
           - img "A blue square"
           - img
         - article:
           - link /Bob/
           - link /Bob/
-          - time
+          - link:
+            - time
           - paragraph
     `);
   });

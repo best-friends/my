@@ -6,7 +6,7 @@ import { type IntlShape, useIntl } from "react-intl";
 import { useNow } from "../../../lib/clock";
 import { useConfig } from "../../../lib/config";
 import { profilePath } from "../../../lib/paths";
-import type { MediaAttachment, Status } from "../api/timelines";
+import { type MediaAttachment, type Status, statusPath } from "../api/status";
 
 export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
@@ -18,6 +18,8 @@ export type StatusView = {
   author: { name: string; handle: string; href: string };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
   time: { dateTime: string; relative: string; absolute: string };
+  /** The web client's address of the post (the boosted post for a boost), which its time links to. */
+  path: string;
   /** The body, as the server sanitized it. */
   html: SanitizedHtml;
   /** The language of the post (BCP 47), or undefined when the server does not know it. */
@@ -82,6 +84,7 @@ export function useStatusView(status: Status): StatusView {
       relative: relativeTime(intl, writtenAt, now),
       absolute: intl.formatDate(writtenAt, { dateStyle: "full", timeStyle: "short" }),
     },
+    path: statusPath(post),
     // `content` is sanitized HTML (api/openapi.yaml, Status.content).
     html: serverSanitizedHtml(post.content),
     lang,

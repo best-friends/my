@@ -13,9 +13,6 @@ import type { components } from "../../../lib/api/schema.gen";
 /** A status (post or boost), as the client API returns it. */
 export type Status = components["schemas"]["Status"];
 
-/** One attachment of a status. */
-export type MediaAttachment = components["schemas"]["MediaAttachment"];
-
 /** A page of a timeline. */
 export type StatusPage = components["schemas"]["StatusPage"];
 

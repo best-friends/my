@@ -22,6 +22,7 @@ export { Select, SelectItem, type SelectItemProps, type SelectProps } from "./Se
 export { Switch, type SwitchProps } from "./Switch";
 export { TextArea, type TextAreaProps } from "./TextArea";
 export { TextField, type TextFieldProps } from "./TextField";
+export { ToggleButton, type ToggleButtonProps } from "./ToggleButton";
 
 // Overlays, tabs and announcements.
 export { AnnouncerProvider, useAnnouncer, type Announce, type AnnouncerProviderProps, type Politeness } from "./Announcer";
