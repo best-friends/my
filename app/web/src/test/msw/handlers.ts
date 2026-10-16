@@ -21,8 +21,8 @@ export const instanceFixture: Schemas["Instance"] = {
   limits: { max_post_characters: 500 },
 };
 
-/** The signed-in user's `Account` for GET /accounts/verify_credentials (operationId verifyAccountCredentials). */
-export const viewerFixture: Schemas["Account"] = {
+/** The signed-in user's `CredentialAccount` for GET /accounts/verify_credentials (operationId verifyAccountCredentials). */
+export const viewerFixture: Schemas["CredentialAccount"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000001",
   username: "alice",
   acct: "alice",
@@ -33,7 +33,27 @@ export const viewerFixture: Schemas["Account"] = {
   locked: false,
   bot: false,
   created_at: "2026-10-01T00:00:00Z",
+  discoverable: true,
+  indexable: true,
+  source: { note: "", fields: [] },
 };
+
+/** An `Account` of another user, for the lists of accounts; `n` makes its ID unique. */
+export function accountFixture(n: number, name: string): Schemas["Account"] {
+  const username = name.toLowerCase();
+  return {
+    id: `0192f0c4-7a8e-7000-8000-${String(n).padStart(12, "0")}`,
+    username,
+    acct: `${username}@remote.example`,
+    display_name: name,
+    note: "",
+    fields: [],
+    url: `https://remote.example/@${username}`,
+    locked: false,
+    bot: false,
+    created_at: "2026-10-01T00:00:00Z",
+  };
+}
 
 // --- statuses, media and preferences (the compose feature, #129) ---
 
@@ -46,6 +66,22 @@ export const preferencesFixture: Schemas["Preferences"] = {
   require_media_description: false,
   timeline_languages: [],
 };
+
+/** The `Relationship` with account `id` when the viewer has none. */
+export function relationshipFixture(id: string): Schemas["Relationship"] {
+  return {
+    id,
+    following: false,
+    requested: false,
+    followed_by: false,
+    requested_by: false,
+    show_boosts: true,
+    notify: false,
+    blocking: false,
+    muting: false,
+    muting_notifications: false,
+  };
+}
 
 /** A `Status` by the viewer, with `overrides`. */
 export function viewerStatusFixture(overrides: Partial<Schemas["Status"]> = {}): Schemas["Status"] {
@@ -73,7 +109,7 @@ export function viewerStatusFixture(overrides: Partial<Schemas["Status"]> = {}):
  * A `MediaAttachment` with `id` in `state`; a ready one has its renditions and blurhash, as GET /media/{id}
  * answers once the server has processed the file.
  */
-function mediaFixture(id: string, state: Schemas["MediaAttachment"]["state"] = "ready", description?: string): Schemas["MediaAttachment"] {
+export function mediaFixture(id: string, state: Schemas["MediaAttachment"]["state"] = "ready", description?: string): Schemas["MediaAttachment"] {
   const variant = (size: string) => ({ url: `https://my.example/media/${id}/${size}.jpg`, content_type: "image/jpeg", width: 640, height: 360, size: 1000 });
   return {
     id,
@@ -177,10 +213,41 @@ export function oauthError(error: string, status = 400) {
   return HttpResponse.json({ error }, { status, headers: { "Cache-Control": "no-store" } });
 }
 
+/** Answers with `respond()` when the request carries the access token the default handlers accept. */
+function withViewer(request: Request, respond: () => Response): Response {
+  return request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? respond() : unauthenticated(request);
+}
+
+/** Makes the session resume: the refresh endpoint answers with the access token the default handlers accept. */
+export const signedInHandler = http.post(oauthPaths.refresh, () => tokenResponse(validAccessToken));
+
 export const handlers = [
   http.get(`${apiBase}/instance`, () => HttpResponse.json(instanceFixture)),
   http.get(`${apiBase}/accounts/verify_credentials`, ({ request }) =>
     request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(viewerFixture) : unauthenticated(request),
+  ),
+  // The user's own profile and preferences (operationIds updateAccountCredentials, updatePreferences; getPreferences is with the compose handlers).
+  http.patch(`${apiBase}/accounts/update_credentials`, ({ request }) => withViewer(request, () => HttpResponse.json(viewerFixture))),
+  http.patch(`${apiBase}/preferences`, async ({ request }) => {
+    const change = (await request.clone().json()) as Schemas["UpdatePreferencesRequest"];
+    return withViewer(request, () => HttpResponse.json({ ...preferencesFixture, ...change }));
+  }),
+  // Blocks, mutes and follow requests (operationIds listBlocks, listMutes, listFollowRequests, unblockAccount,
+  // unmuteAccount, acceptFollowRequest, rejectFollowRequest): empty lists by default.
+  http.get(`${apiBase}/blocks`, ({ request }) => withViewer(request, () => HttpResponse.json({ accounts: [] }))),
+  http.get(`${apiBase}/mutes`, ({ request }) => withViewer(request, () => HttpResponse.json({ mutes: [] }))),
+  http.get(`${apiBase}/follow_requests`, ({ request }) => withViewer(request, () => HttpResponse.json({ accounts: [] }))),
+  http.post(`${apiBase}/accounts/:id/unblock`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(relationshipFixture(String(params["id"])))),
+  ),
+  http.post(`${apiBase}/accounts/:id/unmute`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(relationshipFixture(String(params["id"])))),
+  ),
+  http.post(`${apiBase}/follow_requests/:id/authorize`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json({ ...relationshipFixture(String(params["id"])), followed_by: true })),
+  ),
+  http.post(`${apiBase}/follow_requests/:id/reject`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(relationshipFixture(String(params["id"])))),
   ),
   // Timelines (#128): one page each; the home timeline needs a token.
   http.get(`${apiBase}/timelines/home`, ({ request }) =>
