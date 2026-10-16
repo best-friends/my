@@ -6,11 +6,15 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App, StartupError } from "./App";
 import { readRuntimeConfig, type RuntimeConfig } from "./lib/config";
+import { conformToContentSecurityPolicy } from "./lib/csp";
 import { applyDocumentLocale, loadI18n } from "./lib/i18n";
 import { registerServiceWorker, reloadOnPreloadError } from "./lib/pwa";
 import { createAppRouter } from "./router";
 import { createAppServices } from "./lib/services";
 import "./index.css";
+
+// Before any component renders: React Aria must stay inside the shell's CSP.
+conformToContentSecurityPolicy(document);
 
 // Before anything loads a chunk: a deploy may have removed the chunks of this version (ADR-0028).
 reloadOnPreloadError(window);

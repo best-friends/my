@@ -6,6 +6,120 @@ export interface MessageArgs {
   "client:api.error.network": {};
   /** The server could not handle the request (error {status}). Try again later. */
   "client:api.error.status": { status: string };
+  /** Close */
+  "client:compose.close": {};
+  /** Could not post: {reason} */
+  "client:compose.failed": { reason: string };
+  /** Language */
+  "client:compose.language.label": {};
+  /** Not specified */
+  "client:compose.language.und": {};
+  /** Add images */
+  "client:compose.media.add": {};
+  /** Describe the image for people who cannot see it. */
+  "client:compose.media.description.hint": {};
+  /** Description of image {position} */
+  "client:compose.media.description.label": { position: string };
+  /** Describe the image for people who cannot see it. Your settings ask for a description of every image. */
+  "client:compose.media.description.required": {};
+  /** Could not attach: {reason} */
+  "client:compose.media.failed": { reason: string };
+  /** The server could not process this image. */
+  "client:compose.media.failed_processing": {};
+  /** Up to {max, plural, other {# images}}: JPEG, PNG, GIF or WebP. Location and other metadata are removed before upload. */
+  "client:compose.media.hint": { max: number };
+  /** Attached images */
+  "client:compose.media.list": {};
+  /** Processing… */
+  "client:compose.media.processing": {};
+  /** Remove image {position} */
+  "client:compose.media.remove": { position: string };
+  /** A post can have at most {max, plural, other {# images}}. The rest were not added. */
+  "client:compose.media.too_many": { max: number };
+  /** {name} is not a JPEG, PNG, GIF or WebP image. */
+  "client:compose.media.unsupported": { name: string };
+  /** Uploading… */
+  "client:compose.media.uploading": {};
+  /** Add descriptions */
+  "client:compose.missing_description.add": {};
+  /** {count, plural, one {# image has no description.} other {# images have no description.}} People who cannot see the images will not know what they show. */
+  "client:compose.missing_description.body": { count: number };
+  /** Post anyway */
+  "client:compose.missing_description.post": {};
+  /** Post without image descriptions? */
+  "client:compose.missing_description.title": {};
+  /** Write a post */
+  "client:compose.open": {};
+  /** Discard */
+  "client:compose.outbox.discard": {};
+  /** Edit */
+  "client:compose.outbox.edit": {};
+  /** Not sent: {reason} */
+  "client:compose.outbox.failed": { reason: string };
+  /** Posts being sent */
+  "client:compose.outbox.label": {};
+  /** Send again */
+  "client:compose.outbox.retry": {};
+  /** Sending… */
+  "client:compose.outbox.sending": {};
+  /** Not sent yet. */
+  "client:compose.outbox.unsent": {};
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:compose.over": { count: number };
+  /** Posted. */
+  "client:compose.posted": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:compose.remaining": { count: number };
+  /** Cancel reply */
+  "client:compose.reply.cancel": {};
+  /** Replying to {name} */
+  "client:compose.reply.label": { name: string };
+  /** The post you are replying to cannot be shown. */
+  "client:compose.reply.unavailable": {};
+  /** Hide the images until readers show them */
+  "client:compose.sensitive": {};
+  /** Post */
+  "client:compose.submit": {};
+  /** Reply */
+  "client:compose.submit.reply": {};
+  /** Your post */
+  "client:compose.text.label": {};
+  /** New post */
+  "client:compose.title": {};
+  /** Visibility: {visibility} */
+  "client:compose.visibility.button": { visibility: string };
+  /** Mentioned people */
+  "client:compose.visibility.direct": {};
+  /** Only the people you mention. */
+  "client:compose.visibility.direct.description": {};
+  /** Done */
+  "client:compose.visibility.done": {};
+  /** Posted with the visibility “{visibility}”: your account cannot post more widely right now. */
+  "client:compose.visibility.limited": { visibility: string };
+  /** This server */
+  "client:compose.visibility.local": {};
+  /** People signed in here, and your followers on other servers. Shown on this server's local timeline. */
+  "client:compose.visibility.local.description": {};
+  /** Followers */
+  "client:compose.visibility.private": {};
+  /** Only your followers and the people you mention. */
+  "client:compose.visibility.private.description": {};
+  /** Public */
+  "client:compose.visibility.public": {};
+  /** Anyone, here and on other servers. Shown on the public timelines. */
+  "client:compose.visibility.public.description": {};
+  /** Who can see this post? */
+  "client:compose.visibility.title": {};
+  /** Unlisted */
+  "client:compose.visibility.unlisted": {};
+  /** Anyone with the link, but not shown on the public timelines. */
+  "client:compose.visibility.unlisted.description": {};
+  /** Readers see this first and choose whether to show the post. */
+  "client:compose.warning.description": {};
+  /** Content warning */
+  "client:compose.warning.label": {};
+  /** Add a content warning */
+  "client:compose.warning.toggle": {};
   /** Home */
   "client:home.title": {};
   /** Local timeline */
@@ -48,8 +162,6 @@ export interface MessageArgs {
   "client:notifications.load_more": {};
   /** Loading notifications */
   "client:notifications.loading": {};
-  /** This post could not be loaded. */
-  "client:notifications.post.error": {};
   /** Open post */
   "client:notifications.post.open": {};
   /** Show content */

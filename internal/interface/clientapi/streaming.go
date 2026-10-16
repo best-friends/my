@@ -193,16 +193,15 @@ func (st *streamState) notifications(ctx context.Context) error {
 	}
 	ns = slices.DeleteFunc(ns, func(n notification.Notification) bool { return n.ID <= st.lastNotification })
 	slices.Reverse(ns)
-	accounts := map[string]*Account{}
-	for _, n := range ns {
-		item, err := st.s.newNotification(ctx, n, accounts)
-		if err != nil {
-			return err
-		}
+	items, err := st.s.newNotifications(ctx, st.viewer.AccountID, ns)
+	if err != nil {
+		return err
+	}
+	for i, item := range items {
 		if err := st.event("notification", item); err != nil {
 			return err
 		}
-		st.lastNotification = n.ID
+		st.lastNotification = ns[i].ID
 	}
 	return nil
 }

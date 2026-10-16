@@ -59,6 +59,10 @@ export default defineConfig({
       },
     },
   },
+  resolve: {
+    // Zod without eval, for every importer of "zod" in the app and its dependencies (src/lib/zod.ts).
+    alias: [{ find: /^zod$/, replacement: fileURLToPath(new URL("src/lib/zod.ts", import.meta.url)) }],
+  },
   server: {
     // `my serve -dev-vite-origin http://localhost:5173` loads the client from here (CONTRIBUTING.md),
     // so the URLs of assets must point at this server, not at the page's origin.
