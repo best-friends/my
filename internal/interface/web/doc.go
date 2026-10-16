@@ -8,9 +8,14 @@
 // committed, so the package compiles and its tests run without Bun; a binary built that way
 // serves a shell without scripts and logs a warning at start.
 //
-// The shell is the same for every SPA route and every visitor: requests for HTML are always
-// treated as anonymous, so the shell is rendered once and cached by shared caches. The
-// instance's runtime settings reach the client as a JSON data block in the shell
+// Requests for HTML are always treated as anonymous, so every shell is the same for every
+// visitor and is cached by shared caches. The generic shell is the same for every SPA route.
+// Profile pages (/@alice) and post pages (/@alice/{id}) get a shell with link preview meta
+// tags (OGP, the X card, fediverse:creator) when an anonymous visitor may see the profile or
+// the post (Options.Previews); otherwise they get the generic shell with 404 and noindex,
+// identical whatever the reason (docs/operations/link-previews.md).
+//
+// The instance's runtime settings reach the client as a JSON data block in the shell
 // (<script type="application/json" id="config">), not through the build, so the
 // Content-Security-Policy needs no nonce and allows only scripts from the server itself.
 //

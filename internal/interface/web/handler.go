@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -50,6 +51,16 @@ type Options struct {
 	DefaultLocale func(ctx context.Context) string
 	// ThemeColor and BackgroundColor go into the manifest; empty means the defaults.
 	ThemeColor, BackgroundColor string
+
+	// Previews reads the profiles and statuses that the shells of profile pages (/@alice) and
+	// post pages (/@alice/{id}) describe in their link preview meta tags; nil serves the
+	// generic shell there.
+	Previews Previews
+	// Messages formats the texts of link previews; nil loads the embedded catalogs.
+	Messages *i18n.Bundle
+	// DefaultImage is the instance's preview image, for profiles and posts without images;
+	// nil means none.
+	DefaultImage *Image
 
 	// NotFound writes the 404 response of the server, for paths the web client does not own.
 	NotFound func(w http.ResponseWriter, r *http.Request)
@@ -98,6 +109,9 @@ type Handler struct {
 	files map[string]string
 	// stylesheet is the URL of the entry's first stylesheet, empty without one.
 	stylesheet string
+	// previewVersion identifies the template, the assets, and the instance settings that
+	// previews render, for their ETags.
+	previewVersion string
 }
 
 // localizedDocuments are the documents that depend on the default locale.
@@ -110,6 +124,8 @@ type document struct {
 	body        []byte
 	etag        string
 	contentType string
+	// noIndex asks search engines not to index the document (X-Robots-Tag).
+	noIndex bool
 }
 
 // New returns a Handler on o. A build without a Vite manifest is not an error: the shell then
@@ -141,6 +157,13 @@ func New(o Options) (*Handler, error) {
 	}
 	if o.Logger == nil {
 		o.Logger = slog.Default()
+	}
+	if o.Messages == nil {
+		m, err := i18n.Load()
+		if err != nil {
+			return nil, err
+		}
+		o.Messages = m
 	}
 	h := &Handler{o: o}
 
@@ -177,6 +200,12 @@ func New(o Options) (*Handler, error) {
 		h.stylesheet = tags.Stylesheet[0]
 	}
 	h.tags, h.apiOrigin = tags, apiOrigin
+	version := []string{
+		shellSource, h.o.DevViteOrigin, h.apiOrigin, h.o.Host, h.o.AccountDomain, h.o.InstanceName, h.o.ThemeColor,
+		strconv.FormatBool(h.hasIcon), tags.Script,
+	}
+	version = append(append(version, tags.Stylesheet...), tags.Preload...)
+	h.previewVersion = etag([]byte(strings.Join(version, "\x00")))
 	// Render once now, so that a template or encoding error fails the start.
 	if _, err := h.render(i18n.SourceLocale); err != nil {
 		return nil, err
@@ -184,12 +213,17 @@ func New(o Options) (*Handler, error) {
 	return h, nil
 }
 
+// instanceLocale returns the instance's current default locale.
+func (h *Handler) instanceLocale(ctx context.Context) string {
+	if locale := h.o.DefaultLocale(ctx); locale != "" {
+		return locale
+	}
+	return i18n.SourceLocale
+}
+
 // documents returns the shell and the manifest for the current default locale.
 func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
-	locale := h.o.DefaultLocale(ctx)
-	if locale == "" {
-		locale = i18n.SourceLocale
-	}
+	locale := h.instanceLocale(ctx)
 	if d, ok := h.localized.Load(locale); ok {
 		return d.(*localizedDocuments), nil
 	}
@@ -198,12 +232,9 @@ func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
 
 // render renders and caches the documents of a default locale.
 func (h *Handler) render(locale string) (*localizedDocuments, error) {
-	cfg := runtimeConfig{
-		APIOrigin: h.apiOrigin, InstanceName: h.o.InstanceName, AccountDomain: h.o.AccountDomain, DefaultLocale: locale,
-	}
 	shell, err := renderShell(shellData{
 		Lang: locale, Dir: i18n.Direction(locale), Title: h.o.InstanceName, ThemeColor: h.o.ThemeColor,
-		HasIcon: h.hasIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags, Config: cfg,
+		HasIcon: h.hasIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags, Config: h.runtimeConfig(locale),
 	})
 	if err != nil {
 		return nil, err
@@ -214,6 +245,13 @@ func (h *Handler) render(locale string) (*localizedDocuments, error) {
 	}
 	d, _ := h.localized.LoadOrStore(locale, &localizedDocuments{shell: shell, manifest: manifest})
 	return d.(*localizedDocuments), nil
+}
+
+// runtimeConfig returns the runtime config of the shell for the default locale.
+func (h *Handler) runtimeConfig(locale string) runtimeConfig {
+	return runtimeConfig{
+		APIOrigin: h.apiOrigin, InstanceName: h.o.InstanceName, AccountDomain: h.o.AccountDomain, DefaultLocale: locale,
+	}
 }
 
 func viteClient(origin string) string {
@@ -278,8 +316,8 @@ func (h *Handler) Register(r Router) {
 }
 
 // ServeHTTP serves a GET request for an SPA route: a file at the root of the build when one
-// has the requested name, the server's 404 under the paths of other endpoints, and the shell
-// otherwise.
+// has the requested name, the server's 404 under the paths of other endpoints, the shell with
+// link preview meta tags at profile and post pages, and the generic shell otherwise.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	if (r.Method != http.MethodGet && r.Method != http.MethodHead) || reserved(p) {
@@ -289,6 +327,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if name := strings.TrimPrefix(p, "/"); name != "" && !strings.Contains(name, "/") {
 		if _, ok := h.files[name]; ok {
 			h.serveFile(w, r, name, cacheRevalidate)
+			return
+		}
+	}
+	if h.o.Previews != nil {
+		if route, ok := h.parsePreviewRoute(p); ok {
+			h.servePreview(w, r, route)
 			return
 		}
 	}
@@ -311,7 +355,13 @@ func (h *Handler) serveShell(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err)
 		return
 	}
-	hd := w.Header()
+	h.shellHeaders(w.Header())
+	d.shell.serve(w, r)
+}
+
+// shellHeaders sets the headers that every shell carries: Vary: Accept, since the same URL
+// may be an ActivityPub document, the Content-Security-Policy, and short public caching.
+func (h *Handler) shellHeaders(hd http.Header) {
 	addVary(hd, "Accept")
 	hd.Set("Content-Security-Policy", h.csp)
 	if h.o.DevViteOrigin != "" {
@@ -319,7 +369,6 @@ func (h *Handler) serveShell(w http.ResponseWriter, r *http.Request) {
 	} else {
 		hd.Set("Cache-Control", cacheShell)
 	}
-	d.shell.serve(w, r)
 }
 
 func (h *Handler) webManifest(w http.ResponseWriter, r *http.Request) {

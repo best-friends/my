@@ -437,3 +437,24 @@ func (l *Localizer) ServerMailVerifyEmailBody(host string, hours int, url string
 func (l *Localizer) ServerMailVerifyEmailSubject(host string) string {
 	return l.format("server:mail.verify_email.subject", map[string]any{"host": host})
 }
+
+// ServerPreviewAvatarAlt formats "server:preview.avatar_alt". Alt text of a profile's avatar in a link preview (og:image:alt) when the avatar is the preview image. {name} is the display name, or the username when there is none.
+//
+//	en: Avatar of {name}
+func (l *Localizer) ServerPreviewAvatarAlt(name string) string {
+	return l.format("server:preview.avatar_alt", map[string]any{"name": name})
+}
+
+// ServerPreviewHeaderAlt formats "server:preview.header_alt". Alt text of a profile's header image in a link preview (og:image:alt) when the header is the preview image. {name} is the display name, or the username when there is none.
+//
+//	en: Header image of {name}
+func (l *Localizer) ServerPreviewHeaderAlt(name string) string {
+	return l.format("server:preview.header_alt", map[string]any{"name": name})
+}
+
+// ServerPreviewTitle formats "server:preview.title". Title of the link preview (og:title and the page title) of a profile or a post. {name} is the display name, or the username when there is none; {handle} is username@domain.
+//
+//	en: {name} (@{handle})
+func (l *Localizer) ServerPreviewTitle(handle string, name string) string {
+	return l.format("server:preview.title", map[string]any{"handle": handle, "name": name})
+}

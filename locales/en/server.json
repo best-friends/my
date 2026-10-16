@@ -246,5 +246,17 @@
   "mail.verify_email.subject": {
     "defaultMessage": "Confirm your email address for {host}",
     "description": "Subject of the email that confirms a new account's email address. {host} is the server's domain name."
+  },
+  "preview.avatar_alt": {
+    "defaultMessage": "Avatar of {name}",
+    "description": "Alt text of a profile's avatar in a link preview (og:image:alt) when the avatar is the preview image. {name} is the display name, or the username when there is none."
+  },
+  "preview.header_alt": {
+    "defaultMessage": "Header image of {name}",
+    "description": "Alt text of a profile's header image in a link preview (og:image:alt) when the header is the preview image. {name} is the display name, or the username when there is none."
+  },
+  "preview.title": {
+    "defaultMessage": "{name} (@{handle})",
+    "description": "Title of the link preview (og:title and the page title) of a profile or a post. {name} is the display name, or the username when there is none; {handle} is username@domain."
   }
 }

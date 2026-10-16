@@ -128,6 +128,12 @@ export interface MessageArgs {
   "server:mail.verify_email.body": { host: string; hours: number; url: string };
   /** Confirm your email address for {host} */
   "server:mail.verify_email.subject": { host: string };
+  /** Avatar of {name} */
+  "server:preview.avatar_alt": { name: string };
+  /** Header image of {name} */
+  "server:preview.header_alt": { name: string };
+  /** {name} (@{handle}) */
+  "server:preview.title": { handle: string; name: string };
 }
 
 export type MessageKey = keyof MessageArgs;

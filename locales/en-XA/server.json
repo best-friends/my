@@ -246,5 +246,17 @@
   "mail.verify_email.subject": {
     "defaultMessage": "[Ƈǿǿƞƒīřḿ ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ƒǿǿř {host}]",
     "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "preview.avatar_alt": {
+    "defaultMessage": "[Ȧṽȧȧŧȧȧř ǿǿƒ {name}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "preview.header_alt": {
+    "defaultMessage": "[Ħḗḗȧȧḓḗḗř īḿȧȧɠḗḗ ǿǿƒ {name}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "preview.title": {
+    "defaultMessage": "[{name} (@{handle})]",
+    "description": "Generated from en by tools/i18n; do not edit."
   }
 }
