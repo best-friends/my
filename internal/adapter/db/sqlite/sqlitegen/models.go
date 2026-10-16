@@ -266,6 +266,7 @@ type StatusMentionIndex struct {
 type StatusPin struct {
 	AccountID string
 	StatusID  string
+	Slot      int64
 	CreatedAt int64
 	ID        string
 }

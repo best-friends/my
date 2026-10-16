@@ -49,6 +49,7 @@ func InteractionRepositoryContract(t *testing.T, newHarness InteractionFactory) 
 		{"BoostsCopyVisibility", interactionBoostsCopyVisibility},
 		{"FavouritesAndUnfavourites", interactionFavourites},
 		{"BookmarksAndPins", interactionBookmarksAndPins},
+		{"LimitsConcurrentPins", interactionLimitsConcurrentPins},
 		{"ChecksVisibility", interactionChecksVisibility},
 		{"CountsConcurrentCommandsOnce", interactionCountsConcurrentOnce},
 		{"ForgetsDeletedStatuses", interactionForgetsDeletedStatuses},
@@ -484,6 +485,65 @@ func interactionBookmarksAndPins(t *testing.T, e *interactionEnv) {
 	}
 	if got := e.takeEvents(); len(got) != 0 {
 		t.Errorf("bookmarks and pins emitted %v", got)
+	}
+}
+
+// interactionLimitsConcurrentPins checks that concurrent pins of one account never exceed
+// content.MaxPins: exactly MaxPins of them succeed and the rest fail with content.ErrPinLimit.
+func interactionLimitsConcurrentPins(t *testing.T, e *interactionEnv) {
+	ctx := t.Context()
+	author := e.localAccount()
+	const writers = 2 * content.MaxPins
+	posts := make([]string, writers)
+	for i := range posts {
+		posts[i] = e.post(t, author, content.VisibilityPublic).ID
+	}
+	pinAll := func(ids []string) (ok int) {
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		for _, id := range ids {
+			wg.Go(func() {
+				err := e.svc.Pin(ctx, author, id)
+				switch {
+				case err == nil:
+					mu.Lock()
+					ok++
+					mu.Unlock()
+				case !errors.Is(err, content.ErrPinLimit):
+					t.Errorf("concurrent Pin = %v, want nil or ErrPinLimit", err)
+				}
+			})
+		}
+		wg.Wait()
+		return ok
+	}
+	if ok := pinAll(posts); ok != content.MaxPins {
+		t.Errorf("%d concurrent pins: %d succeeded, want %d", writers, ok, content.MaxPins)
+	}
+	pins, err := e.h.Interactions.ListPins(ctx, author)
+	if err != nil || len(pins) != content.MaxPins {
+		t.Fatalf("ListPins = %d pins, %v; want %d", len(pins), err, content.MaxPins)
+	}
+
+	// Freeing one pin lets exactly one of the concurrent pins that follow take its place.
+	if err := e.svc.Unpin(ctx, author, pins[0].StatusID); err != nil {
+		t.Fatalf("Unpin = %v", err)
+	}
+	pinnedSet := map[string]bool{}
+	for _, p := range pins[1:] {
+		pinnedSet[p.StatusID] = true
+	}
+	var rest []string
+	for _, id := range posts {
+		if !pinnedSet[id] {
+			rest = append(rest, id)
+		}
+	}
+	if ok := pinAll(rest); ok != 1 {
+		t.Errorf("%d concurrent pins with one free slot: %d succeeded, want 1", len(rest), ok)
+	}
+	if pins, err := e.h.Interactions.ListPins(ctx, author); err != nil || len(pins) != content.MaxPins {
+		t.Errorf("ListPins = %d pins, %v; want %d", len(pins), err, content.MaxPins)
 	}
 }
 
