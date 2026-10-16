@@ -72,6 +72,7 @@ Remote servers ──AP──►│                               │
   | `internal/app/<module>` | 標準ライブラリ、自モジュールの `domain`、各モジュールの `app`（モジュール間の唯一の経路）、`internal/i18n` |
   | `internal/app/kernel` | 標準ライブラリだけ（全モジュール共通のポート） |
   | `internal/app/uow` | 標準ライブラリだけ（`UnitOfWork` ポート・リトライ・同期 projector の登録先） |
+  | `internal/app/blob`, `internal/app/media` | 標準ライブラリだけ（`BlobStore` / `MediaProcessor` ポート） |
   | `internal/i18n` | 標準ライブラリ、`locales`（埋め込みカタログ）、MessageFormat エンジンだけ（`app` と `interface` から使う末端のライブラリ） |
   | `internal/interface/*` | `app` と `domain`（`adapter` / `platform` は不可。`pkg/testkit` はテストからだけ可） |
   | `internal/adapter/*` | `app` のポートと `domain`（`interface` と `platform` は不可） |
@@ -87,7 +88,10 @@ Remote servers ──AP──►│                               │
 `UnitOfWork` も全モジュールと全 DB アダプタが共有するので `internal/app/uow` に置く。リポジトリポートは各モジュールの `app` に置き、
 DB アダプタの実装は受け取った `uow.Tx` から自分のトランザクションを取り出す。
 ジョブキューのポート（`JobQueue` / `Outbox` / `JobHandlerRegistry` / `JobRunner`）も全モジュールと全キューアダプタが共有するので `internal/app/queue` に置く。
-ここにはリトライ方針（指数バックオフ + ジッタ）と、キューアダプタの `queue.Source` を駆動する pull runner も置く。
+ここにはリトライ方針（指数バックオフ + ジッタ）と、キューアダプタの `queue.Source` を駆動する pull runner、プロセス内の `Scheduler` も置く。
+`Scheduler` は定期ジョブを周期ごとの冪等キー付きで enqueue するだけで、worker と all のロールで動く。
+ファイルを持つモジュールとそのアダプタが共有する `BlobStore` は `internal/app/blob`（Go 名 `blob.Store`）、`MediaProcessor` は `internal/app/media`（Go 名 `media.Processor`）に置く。
+Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Za-z0-9._-]` のセグメントを `/` でつなぐ）に限る。`media/` で始まるキーだけが公開で、`/media/` で配信する。
 
 | ポート | 役割 | 既定アダプタ（self-hosted） | 関連 ADR |
 | --- | --- | --- | --- |
@@ -154,10 +158,13 @@ internal/
   app/<module>/      # ユースケースとポート定義
   app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator / KeyManager）、UUIDv7 ヘルパー、Sealer
   app/uow/           # UnitOfWork ポート、トランザクションのリトライ、同期 projector の登録先
-  app/queue/         # ジョブキューのポート、ハンドラの登録先、リトライ方針、pull runner
+  app/queue/         # ジョブキューのポート、ハンドラの登録先、リトライ方針、pull runner、プロセス内 Scheduler
+  app/blob/          # BlobStore ポートとキーの構文
+  app/media/         # MediaProcessor ポート、形式の判定、上限の既定値
   interface/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
+    media/           # 公開メディア（Blob のキー media/...）の配信 /media/
     admin/
   adapter/
     db/{sqlite,libsql,postgres}/

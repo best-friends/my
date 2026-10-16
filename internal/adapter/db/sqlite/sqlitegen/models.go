@@ -206,6 +206,41 @@ type LocalStatus struct {
 	IdempotencyKey  sql.NullString
 }
 
+type MediaFile struct {
+	ID             string
+	OwnerAccountID string
+	Origin         string
+	CreatedAt      int64
+}
+
+type MediaFocu struct {
+	MediaID string
+	FocusX  float64
+	FocusY  float64
+}
+
+type MediaProcessingResult struct {
+	ID          string
+	MediaID     string
+	Outcome     string
+	MediaType   string
+	Width       sql.NullInt64
+	Height      sql.NullInt64
+	DurationMs  sql.NullInt64
+	Blurhash    sql.NullString
+	ProcessedAt int64
+}
+
+type MediaVariant struct {
+	ResultID    string
+	Kind        string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+	Width       int64
+	Height      int64
+}
+
 type OutboxEvent struct {
 	ID             string
 	JobType        string
@@ -330,6 +365,13 @@ type Tag struct {
 	Name           string
 	NameNormalized string
 	CreatedAt      int64
+}
+
+type UploadedMedium struct {
+	MediaID     string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
 }
 
 type User struct {

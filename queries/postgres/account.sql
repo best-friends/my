@@ -119,3 +119,11 @@ SELECT private_key_enc FROM local_account_private_keys WHERE account_key_id = $1
 SELECT COUNT(*) FROM local_accounts la
 LEFT JOIN account_lifecycle_states s ON s.account_id = la.account_id
 WHERE s.state IS NULL OR s.state <> 'deleted';
+
+-- Whether any profile revision uses a media file as its avatar or header; the content module's
+-- cleanup keeps such files.
+-- name: IsMediaReferencedByProfiles :one
+SELECT EXISTS (
+  SELECT 1 FROM account_profile_revisions
+  WHERE avatar_media_id = sqlc.arg(media_id) OR header_media_id = sqlc.arg(media_id)
+);

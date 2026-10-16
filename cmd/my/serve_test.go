@@ -52,6 +52,7 @@ func TestServeStopsOnSIGTERM(t *testing.T) {
 	addr := freeAddr(t)
 	t.Setenv("MY_HOST", "example.test")
 	t.Setenv("MY_DATABASE_URL", path)
+	t.Setenv("MY_BLOB_FS_DIR", t.TempDir())
 	t.Setenv("MY_KEK", base64.StdEncoding.EncodeToString(kek))
 	t.Setenv("MY_LISTEN", addr)
 

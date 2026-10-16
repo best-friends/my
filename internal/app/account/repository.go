@@ -89,6 +89,9 @@ type Repository interface {
 	ListKeys(ctx context.Context, accountID string) ([]account.Key, error)
 	// FindSealedPrivateKey returns the sealed private key of a local actor's key.
 	FindSealedPrivateKey(ctx context.Context, accountKeyID string) ([]byte, error)
+	// IsMediaReferenced reports whether any profile revision uses a media file as its avatar
+	// or header.
+	IsMediaReferenced(ctx context.Context, mediaID string) (bool, error)
 	// CountLocalAccounts counts the local accounts of users (not the instance actor) that are
 	// not deleted.
 	CountLocalAccounts(ctx context.Context) (int, error)
