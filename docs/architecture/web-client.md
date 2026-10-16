@@ -127,6 +127,8 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - サーバーが描画する画面（§8）の E2E（`e2e/auth-pages.spec.ts`）は、本物の `my serve` が相手になる。`e2e/server.ts` が一時ディレクトリの SQLite に `schema/sqlite.sql` を適用し、
     管理者とサードパーティの OAuth クライアントを入れてから、`make build` で作った `bin/my` を起動する。ホストは `localhost`（`__Host-` の Cookie を HTTP で受け取れるのは `localhost` だけ）。
     疑似ロケールは利用者に出さないので、`my serve` は開発・テスト専用のフラグ `-pseudo-locales` を付けたときだけ `en-XA` / `ar-XB` を選べる。`e2e/server.ts` はこれを付けて起動し、各ページがプロジェクトのロケールの `lang` と向き（`ar-XB` は `rtl`）で描画されることを確かめる。
+  - Playwright は Service Worker を止めて動かす（`serviceWorkers: 'block'`）。Service Worker が遷移に応えると、ロケールの fixture の `page.route()` を通らないため。
+    Service Worker を検査する `e2e/pwa.spec.ts` だけが許可し、本物の `my serve` を相手に 1 つのプロジェクト（`en-1440`、Chromium）で動かす（§11）。
   - JavaScript を無効にしたテスト（`javaScriptEnabled: false`）で、ログイン・登録・認可同意のフォームがスクリプトなしで動くことを確かめる。axe はページの中でスクリプトを動かすので、その画面の axe は同じ Cookie の JavaScript ありのコンテキストで行う。
   - サーバーのレート制限（登録は 1 つのアドレスから 30 分に 5 回、ログインの失敗は 1 分に 5 回）を使い切らないように、アカウントを作るテストは 1 つのプロジェクト（`en-320`）だけで動かし、
     エラーの表示は制限を数える前に断られる入力（期限切れのフォーム、形式の誤り）で確かめる。
@@ -218,7 +220,7 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
     届いていなければ自分で更新するが、前の更新でローテーションされた Cookie を送るので、再利用にはならない。同じタブの中の同時の更新は 1 つの要求を共有する。
   - 認可コードの交換も同じロックの中で行い、起動時の再開と競合しない。
   - サインイン・サインアウト・セッションの終了（更新が 4xx で断られた）も BroadcastChannel で他のタブに伝える。
-  - 利用者が変わったとき（サインイン、またはセッションのあったタブでの終了）、`lib/auth/userData.ts` が Query のキャッシュをすべて消し、Service Worker の Cache Storage を消す（ビルドのファイルだけを持つ Workbox の precache は残す）。
+  - 利用者が変わったとき（サインイン、またはセッションのあったタブでの終了）、`lib/auth/userData.ts` が Query のキャッシュをすべて消す。セッションが終わったときは、`lib/pwa` の `clearCaches()` で Cache Storage もすべて消す（§11）。
   - 状態（`unknown` / `signed-in` / `signed-out`）は `useSessionStatus()` で読む。サーバーのデータである閲覧者のアカウントは Context に置かず、`features/session` の `useViewer()` が Query で取る（S2、S6）。
 - **ログイン**（`lib/auth/signIn.ts`、Authorization Code + PKCE）: `/login` のボタンが、新しい verifier（32 バイトの乱数）と `state` を作り、S256 の challenge を付けてサーバーの認可画面（`/oauth/authorize`）にページごと遷移する。
   scope は指定せず、Web クライアントに登録されたすべてのスコープを受け取る。
@@ -233,3 +235,26 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
 - **テスト**: `src/test/msw/handlers.ts` が OAuth のエンドポイント（既定ではリフレッシュ Cookie がない状態）と、API の操作（Bearer が必要）の既定のハンドラを持つ。
   `renderApp` は main.tsx と同じくセッションを再開し、ページの外への遷移（認可画面）を `leftTo` に記録する（jsdom は別の文書を読み込めない）。
   jsdom には Web Locks がないので、タブ間の直列化のテストは `src/test/locks.ts` の代わりの実装を 2 つの `Session` に共有させる。BroadcastChannel は Node.js のものを使う。
+
+## 11. PWA
+
+Service Worker は `app/web/sw/sw.ts` にあり、`vite-plugin-pwa` の `injectManifest` が Workbox のモジュールと一緒に `dist/sw.js` にビルドする（ADR-0028）。
+Web App Manifest と HTML は Go が返すので、プラグインはどちらも作らず、登録のスクリプトも差し込まない。
+
+- **キャッシュの規則**（`sw/routing.ts` の `classify`。単体テストは `sw/routing.test.ts`）
+  - **ビルドの成果物**: ハッシュ付きのアセット・アイコンを事前にキャッシュする。Vite の `index.html`（`vite preview` 用の代わりの外枠）とサーバーが描画する画面の CSS は含めない。
+  - **汎用の外枠**: `/` をビルドの版から作った revision で事前にキャッシュし、オフラインの外枠にする。外枠は訪問者ごとに変わらない（ADR-0028）。
+  - **遷移**: ネットワークだけに問い合わせる（3 秒でタイムアウト）。失敗かタイムアウトのときだけ、事前にキャッシュした汎用の外枠を返す。遷移の応答は保存しないので、ある URL の外枠（OGP・404・`noindex`）を別の URL に返すことはない。
+  - **Service Worker が応えないパス**: `/api`・`/oauth`・`/auth`・`/.well-known`・`/nodeinfo`・`/ap`・`/media`・`/uploads`（サーバーの予約パス）と `/manifest.webmanifest` への遷移。
+    サーバーが描画する画面（§8）はネットワークが要り、SPA の外枠に置き換えてはいけない。
+  - **クライアント API**: `/api` への要求には応えない（ネットワークだけになり、何もキャッシュしない）。`Authorization` 付きの要求はどのパスでもキャッシュしない。
+  - **公開メディア**: 同じオリジンの `/media/` の画像だけを、キャッシュ優先（最大 300 件、30 日、200 の応答だけ）にする。動画は範囲要求の部分応答を再生できないので対象にしない。
+- **登録と更新**（`src/lib/pwa.ts`）: ビルドしたアプリだけが `/sw.js` をスコープ `/` で登録する。外枠の CSP が Trusted Types を要求するので、URL は `/sw.js` だけを通すポリシーで作る。
+  - 最初の Service Worker は有効になるとすぐページを制御する（`clientsClaim`）。新しい版は待機し、`UpdatePrompt` が「新しい版があります」のトースト（`timeout: null`、「更新する」の操作付き）を出す。
+    利用者が押したときだけ `SKIP_WAITING` を送り、新しい版がページを制御したら読み直す。ページが表示に戻るたびに更新を確かめる。
+  - デプロイで古いチャンクが消えたとき（`vite:preloadError`）は読み直す。10 秒以内に繰り返したら読み直さず、エラー境界に任せる。
+- **ログアウト**: セッションが終わると、`lib/auth/userData.ts` が `clearCaches()` を呼ぶ（§10）。事前のキャッシュも含めてすべてのキャッシュと、メディアの期限のメタデータを消す（ADR-0028）。
+  消したあともオンラインでは同じように動き、新しい版の Service Worker が事前にキャッシュし直すまでオフラインの外枠は使えない。
+- **`my serve` の配信**: `sw.js` は長期キャッシュせず（`no-cache`）、Service Worker 自身に効く CSP（`default-src 'none'; connect-src 'self'`）で返す。既定の `default-src 'none'` のままだと Service Worker の `fetch` が止まる。
+- **インストール**: マニフェストのアイコンは `icon.svg`・192 / 512 px の PNG・512 px の maskable の PNG、外枠は iOS 用に `apple-touch-icon.png`（180 px）を指す。
+  PNG は SVG から `scripts/web-icons.sh`（ImageMagick）で作り、コミットする。インストールの条件は E2E が Chrome の `Page.getInstallabilityErrors` で検査する。

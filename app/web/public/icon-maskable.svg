@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- SPDX-License-Identifier: AGPL-3.0-only -->
+  <!-- icon.svg without the rounded corners, for platforms that apply their own mask (the maskable icon, the
+       iOS home screen icon). The glyph lies inside the central circle of 80 % that every mask keeps. -->
+  <rect width="512" height="512" fill="#1f2937"/>
+  <path d="M136 152h240a40 40 0 0 1 40 40v120a40 40 0 0 1-40 40H232l-72 56v-56h-24a40 40 0 0 1-40-40V192a40 40 0 0 1 40-40z" fill="#f9fafb"/>
+</svg>

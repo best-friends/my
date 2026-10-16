@@ -454,5 +454,13 @@
   "shell.toast.region": {
     "defaultMessage": "Messages",
     "description": "Accessible name of the area where short status messages (toasts) appear, such as 'Post published'."
+  },
+  "shell.update.apply": {
+    "defaultMessage": "Update",
+    "description": "Button in the message about a new version of the app; pressing it reloads the page into the new version."
+  },
+  "shell.update.available": {
+    "defaultMessage": "A new version of the app is available.",
+    "description": "Message shown when a new version of the web app has been downloaded and waits until the user applies it."
   }
 }

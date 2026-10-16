@@ -58,7 +58,7 @@ export default defineConfig(
     linterOptions: { reportUnusedDisableDirectives: "error", reportUnusedInlineConfigs: "error" },
     languageOptions: {
       parserOptions: {
-        project: ["./ui/tsconfig.json", "./ui/tsconfig.node.json", "./ui/scripts/tsconfig.json", "./web/tsconfig.json", "./web/tsconfig.node.json"],
+        project: ["./ui/tsconfig.json", "./ui/tsconfig.node.json", "./ui/scripts/tsconfig.json", "./web/tsconfig.json", "./web/tsconfig.node.json", "./web/tsconfig.sw.json"],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -80,6 +80,11 @@ export default defineConfig(
   {
     files: ["web/vite.config.ts", "ui/*.config.ts", "ui/.storybook/main.ts", "ui/scripts/**/*.ts"],
     languageOptions: { globals: globals.node },
+  },
+  {
+    // The Service Worker (web/sw), built apart from the app by vite-plugin-pwa (ADR-0028).
+    files: ["web/sw/**/*.ts"],
+    languageOptions: { globals: globals.serviceworker },
   },
 
   // --- Client source (@my/ui and app/web) -----------------------------------------------------
