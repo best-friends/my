@@ -1,0 +1,134 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/*
+ * The stylesheet of the pages the Go server renders without JavaScript: sign-in, sign-up, email
+ * verification, account status and OAuth consent (internal/interface/authpages, ADR-0030).
+ * It is a separate entry of the Vite build, so the pages load no SPA CSS, and `my serve` links it
+ * from the build manifest (web.Handler.Stylesheet). The templates use only the classes below,
+ * so Tailwind scans no source files (source(none)); the rules are built with @apply from the
+ * same @my/ui tokens as the client (web-client.md D8).
+ */
+@import "tailwindcss" source(none);
+@import "@my/ui/theme.css";
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply min-h-svh;
+  }
+
+  a {
+    @apply rounded-sm text-accent underline underline-offset-2 hover:text-accent-hover;
+  }
+
+  /* Forms keep the native constraint validation, so they work without JavaScript. */
+  input,
+  textarea {
+    @apply block w-full min-w-0 rounded-md border border-border-strong bg-surface-sunken px-3 py-2 text-base text-fg;
+    @apply pointer-coarse:min-h-11;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible {
+    @apply focus-ring;
+  }
+
+  input[aria-invalid="true"],
+  textarea[aria-invalid="true"] {
+    @apply border-danger;
+  }
+
+  textarea {
+    @apply resize-y;
+  }
+}
+
+@layer components {
+  /* The page: one centered card, as wide as the screen on phones. */
+  .page {
+    @apply mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8 sm:py-16;
+  }
+
+  .card {
+    @apply flex flex-col gap-5 rounded-lg border border-border bg-surface-raised p-5 shadow-sm sm:p-8;
+  }
+
+  .card h1 {
+    @apply text-2xl font-bold break-words text-fg;
+  }
+
+  .card p,
+  .card li {
+    @apply break-words;
+  }
+
+  .form {
+    @apply flex flex-col gap-5;
+  }
+
+  .field {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .field label {
+    @apply font-semibold text-fg;
+  }
+
+  .hint {
+    @apply text-sm text-fg-muted;
+  }
+
+  .field-error {
+    @apply text-sm font-semibold text-danger;
+  }
+
+  /* A message about the whole form or page: role="alert" for failures, role="status" for success. */
+  .alert,
+  .notice {
+    @apply rounded-md border px-4 py-3 text-sm;
+  }
+
+  .alert {
+    @apply border-danger font-semibold text-danger;
+  }
+
+  .notice {
+    @apply border-success text-success;
+  }
+
+  .actions {
+    @apply flex flex-col gap-3 sm:flex-row sm:flex-wrap;
+  }
+
+  .button {
+    @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md border border-transparent bg-accent px-4 py-2 text-base font-semibold text-accent-fg hover:bg-accent-hover;
+    @apply pointer-coarse:min-h-11;
+    @apply motion-safe:transition-colors;
+  }
+
+  .button:focus-visible {
+    @apply focus-ring;
+  }
+
+  .button-secondary {
+    @apply border-border-strong bg-surface-raised text-fg hover:bg-surface-sunken;
+  }
+
+  .links {
+    @apply flex flex-col gap-2 text-sm;
+  }
+
+  /* Links that stand alone get the larger target on touch screens (web-client.md D4). */
+  .links a {
+    @apply inline-flex items-center pointer-coarse:min-h-11;
+  }
+
+  .scopes {
+    @apply flex flex-col gap-1 rounded-md bg-surface-sunken py-3 ps-8 pe-4;
+    list-style: disc;
+  }
+}
