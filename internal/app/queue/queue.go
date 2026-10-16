@@ -7,6 +7,28 @@
 // Delivery is at-least-once: a job may run more than once (a worker can stop after running a
 // handler and before recording the result), so handlers must be idempotent.
 //
+// # Ordering keys
+//
+// Jobs with the same non-empty OrderingKey run one at a time, in enqueue order. A Source hands
+// out a job of a key only when no other job of that key is leased and no job of that key
+// enqueued before it is still in the queue, whether due, waiting for its RunAt, waiting to be
+// retried, or leased. Enqueue order is (CreatedAt, ID): the IDs are UUIDv7s, ordered within a
+// millisecond by the generating process, so the jobs one process enqueues keep their order,
+// while the order of jobs that different processes enqueue in the same millisecond is
+// arbitrary. A dead job no longer holds back its key, and a requeued dead job keeps its
+// CreatedAt and ID, so it runs before the later jobs of its key that have not started.
+//
+// So a job waits behind every earlier job of its key, including one delayed by RunAt or one
+// backing off between retries, until that job completes or becomes a dead job: one failing job
+// holds back its key for up to its retry policy's attempts. Choose keys as narrow as the order
+// that matters, for example a delivery's target inbox rather than the whole remote server.
+// Jobs with different keys, or without a key, do not wait for each other.
+//
+// The mutual exclusion lasts as long as the lease: when a handler is still running after its
+// lease expired, the job may run again (at-least-once) and later jobs of its key may start.
+// Handlers get a context that ends with the lease, so a handler that returns when it ends keeps
+// the guarantee.
+//
 // The adapters live in internal/adapter/queue/*; their shared contract test suite is
 // testkit.QueueContract in pkg/testkit.
 package queue
@@ -35,8 +57,9 @@ type Job struct {
 	// IdempotencyKey, when not empty, is unique among the jobs not yet completed: enqueuing a
 	// job with the key of such a job does nothing.
 	IdempotencyKey string
-	// OrderingKey groups jobs that need to run one at a time (for example the inbox of one
-	// actor). Adapters store and return it; the pull runner does not serialize by it yet.
+	// OrderingKey, when not empty, serializes the jobs that share it (for example the inbox
+	// of one remote actor, or the activities about one object); see "Ordering keys" in the
+	// package documentation.
 	OrderingKey string
 	// Attempt is the number of this run, from 1. A run counts as soon as a worker claims the
 	// job, so runs cut short by a crash count too.

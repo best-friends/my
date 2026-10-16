@@ -77,17 +77,46 @@ func (postgresStore) claim(ctx context.Context, tx uow.Tx, worker string, now, u
 	if err != nil {
 		return queue.Job{}, false, err
 	}
-	r, err := q.ClaimJob(ctx, postgresqueue.ClaimJobParams{
-		Worker:      &worker,
-		LockedUntil: pgtype.Timestamptz{Time: until, Valid: true},
-		Now:         now,
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return queue.Job{}, false, nil
+	// A candidate fails the second check only when a claim of its ordering key committed in
+	// between, which the next pick sees; the bound keeps a claim short under contention.
+	for range maxClaimPicks {
+		c, err := q.PickJob(ctx, now)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return queue.Job{}, false, nil
+		}
+		if err != nil {
+			return queue.Job{}, false, err
+		}
+		if c.OrderingKey != nil {
+			if err := q.LockOrderingKey(ctx, orderingLockPrefix+*c.OrderingKey); err != nil {
+				return queue.Job{}, false, err
+			}
+		}
+		r, err := q.ClaimJob(ctx, postgresqueue.ClaimJobParams{
+			Worker:      &worker,
+			LockedUntil: pgtype.Timestamptz{Time: until, Valid: true},
+			ID:          c.ID,
+			Now:         now,
+		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return queue.Job{}, false, err
+		}
+		return claimedJob(r), true, nil
 	}
-	if err != nil {
-		return queue.Job{}, false, err
-	}
+	return queue.Job{}, false, nil
+}
+
+const (
+	// maxClaimPicks bounds the candidates one claim tries.
+	maxClaimPicks = 4
+	// orderingLockPrefix namespaces the advisory locks of ordering keys.
+	orderingLockPrefix = "queue:ordering:"
+)
+
+func claimedJob(r postgresqueue.ClaimJobRow) queue.Job {
 	return queue.Job{
 		ID:             r.ID,
 		Type:           r.Type,
@@ -98,7 +127,7 @@ func (postgresStore) claim(ctx context.Context, tx uow.Tx, worker string, now, u
 		RunAt:          kernel.Normalize(r.RunAt),
 		LastError:      deref(r.LastError),
 		CreatedAt:      kernel.Normalize(r.CreatedAt),
-	}, true, nil
+	}
 }
 
 func (postgresStore) deleteClaimed(ctx context.Context, tx uow.Tx, id, worker string, attempt int) (int64, error) {

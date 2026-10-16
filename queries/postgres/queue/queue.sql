@@ -7,19 +7,45 @@ INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run
 VALUES ($1, $2, $3, $4, $5, 0, $6, $7)
 ON CONFLICT (idempotency_key) DO NOTHING;
 
--- ClaimJob leases the due, unleased job with the earliest run_at. FOR UPDATE SKIP LOCKED lets
--- concurrent workers pass over the rows that others are claiming instead of waiting for them.
+-- A claim takes three statements in one transaction, because under READ COMMITTED a claim
+-- may not see the lease of a job of the same ordering key that another worker is claiming at
+-- the same time:
+--
+--  1. PickJob finds a candidate: the due, unleased job with the earliest run_at that its
+--     ordering key does not hold back (no other job of the key leased or enqueued before it, by
+--     (created_at, id)). FOR UPDATE SKIP LOCKED lets concurrent workers pass over the rows that
+--     others are claiming instead of waiting for them.
+--  2. LockOrderingKey, for a candidate with an ordering key, serializes the claims of that key
+--     until the transaction ends.
+--  3. ClaimJob checks the candidate again in a snapshot taken after the lock, so it sees the
+--     leases committed by earlier claims of the key, and leases it.
+
+-- name: PickJob :one
+SELECT j.id, j.ordering_key FROM jobs AS j
+WHERE j.run_at <= sqlc.arg(now) AND (j.locked_until IS NULL OR j.locked_until <= sqlc.arg(now))
+  AND NOT EXISTS (
+    SELECT 1 FROM jobs AS k
+    WHERE k.ordering_key = j.ordering_key AND k.id <> j.id
+      AND (k.locked_until > sqlc.arg(now) OR k.created_at < j.created_at OR (k.created_at = j.created_at AND k.id < j.id))
+  )
+ORDER BY j.run_at, j.id
+LIMIT 1
+FOR UPDATE SKIP LOCKED;
+
+-- name: LockOrderingKey :exec
+SELECT pg_advisory_xact_lock(hashtextextended(sqlc.arg(lock_key)::text, 0));
+
 -- name: ClaimJob :one
-UPDATE jobs
-SET locked_by = sqlc.arg(worker), locked_until = sqlc.arg(locked_until), attempt = attempt + 1
-WHERE id = (
-  SELECT j.id FROM jobs AS j
-  WHERE j.run_at <= sqlc.arg(now) AND (j.locked_until IS NULL OR j.locked_until <= sqlc.arg(now))
-  ORDER BY j.run_at, j.id
-  LIMIT 1
-  FOR UPDATE SKIP LOCKED
-)
-RETURNING id, type, payload, idempotency_key, ordering_key, attempt, run_at, last_error, created_at;
+UPDATE jobs AS j
+SET locked_by = sqlc.arg(worker), locked_until = sqlc.arg(locked_until), attempt = j.attempt + 1
+WHERE j.id = sqlc.arg(id)
+  AND j.run_at <= sqlc.arg(now) AND (j.locked_until IS NULL OR j.locked_until <= sqlc.arg(now))
+  AND NOT EXISTS (
+    SELECT 1 FROM jobs AS k
+    WHERE k.ordering_key = j.ordering_key AND k.id <> j.id
+      AND (k.locked_until > sqlc.arg(now) OR k.created_at < j.created_at OR (k.created_at = j.created_at AND k.id < j.id))
+  )
+RETURNING j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.attempt, j.run_at, j.last_error, j.created_at;
 
 -- name: DeleteClaimedJob :execrows
 DELETE FROM jobs WHERE id = $1 AND locked_by = $2 AND attempt = $3;

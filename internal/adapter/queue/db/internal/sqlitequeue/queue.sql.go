@@ -18,6 +18,11 @@ SET locked_by = ?1, locked_until = ?2, attempt = attempt + 1
 WHERE id = (
   SELECT j.id FROM jobs AS j
   WHERE j.run_at <= ?3 AND (j.locked_until IS NULL OR j.locked_until <= ?3)
+    AND NOT EXISTS (
+      SELECT 1 FROM jobs AS k
+      WHERE k.ordering_key = j.ordering_key AND k.id <> j.id
+        AND (k.locked_until > ?3 OR k.created_at < j.created_at OR (k.created_at = j.created_at AND k.id < j.id))
+    )
   ORDER BY j.run_at, j.id
   LIMIT 1
 )
@@ -42,8 +47,10 @@ type ClaimJobRow struct {
 	CreatedAt      int64
 }
 
-// ClaimJob leases the due, unleased job with the earliest run_at. BEGIN IMMEDIATE serializes
-// claims, so two workers never claim the same job.
+// ClaimJob leases the due, unleased job with the earliest run_at that its ordering key does
+// not hold back: no other job of the key may be leased or enqueued before it, by (created_at,
+// id). BEGIN IMMEDIATE serializes claims, so two workers never claim the same job or two jobs
+// of one key.
 func (q *Queries) ClaimJob(ctx context.Context, arg ClaimJobParams) (ClaimJobRow, error) {
 	row := q.db.QueryRowContext(ctx, claimJob, arg.Worker, arg.LockedUntil, arg.Now)
 	var i ClaimJobRow

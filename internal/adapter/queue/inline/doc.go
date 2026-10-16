@@ -4,7 +4,7 @@
 // tests and development (ADR-0004). Jobs do not survive the process.
 //
 // Queue implements queue.JobQueue, queue.Source for queue.PullRunner, and queue.DeadJobs, with
-// the same lease, retry, and dead-job semantics as the database queue. After RunSynchronously,
+// the same lease, retry, dead-job, and ordering-key semantics as the database queue. After RunSynchronously,
 // Enqueue runs the due jobs with the given runner before it returns.
 //
 // Options.MaxDelay emulates a queue service with a delay limit (SQS allows 15 minutes): jobs

@@ -9,8 +9,14 @@
 // jobs.locked_until: a worker that stops while running a job leaves the lease to expire, and
 // another worker claims the job again.
 //
+// A claim passes over the jobs that their ordering key holds back (see "Ordering keys" in
+// internal/app/queue): those with another job of the key leased, or enqueued before them and
+// still in jobs.
+//
 //   - PostgreSQL claims with FOR UPDATE SKIP LOCKED, so any number of workers can share the
-//     queue without waiting on each other.
+//     queue without waiting on each other. A claim of a job with an ordering key also takes a
+//     transaction-scoped advisory lock on the key and checks the job again after it, so that two
+//     workers claiming jobs of one key at the same time cannot both succeed.
 //   - SQLite serializes every write transaction (BEGIN IMMEDIATE), so claims never collide; run
 //     a single worker per database, since more workers only contend for the same lock.
 //

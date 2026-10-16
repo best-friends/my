@@ -124,7 +124,7 @@ func (q *Queue) Claim(_ context.Context, worker string, now time.Time, lease tim
 	defer q.mu.Unlock()
 	var next *entry
 	for _, e := range q.jobs {
-		if e.visibleAt.After(now) || (e.lockedBy != "" && e.lockedUntil.After(now)) {
+		if e.visibleAt.After(now) || e.leased(now) || q.heldBack(e, now) {
 			continue
 		}
 		if next == nil || e.visibleAt.Before(next.visibleAt) ||
@@ -141,6 +141,31 @@ func (q *Queue) Claim(_ context.Context, worker string, now time.Time, lease tim
 	j := next.job
 	j.Payload = slices.Clone(j.Payload)
 	return j, true, nil
+}
+
+func (e *entry) leased(now time.Time) bool { return e.lockedBy != "" && e.lockedUntil.After(now) }
+
+// enqueuedBefore reports whether e comes before o in enqueue order, (CreatedAt, ID).
+func (e *entry) enqueuedBefore(o *entry) bool {
+	if c := e.job.CreatedAt.Compare(o.job.CreatedAt); c != 0 {
+		return c < 0
+	}
+	return e.job.ID < o.job.ID
+}
+
+// heldBack reports whether the ordering key of e holds it back: another job of the key is
+// leased or was enqueued before it.
+func (q *Queue) heldBack(e *entry, now time.Time) bool {
+	key := e.job.OrderingKey
+	if key == "" {
+		return false
+	}
+	for _, o := range q.jobs {
+		if o != e && o.job.OrderingKey == key && (o.leased(now) || o.enqueuedBefore(e)) {
+			return true
+		}
+	}
+	return false
 }
 
 // claimed returns the entry of j while worker still holds its claim.

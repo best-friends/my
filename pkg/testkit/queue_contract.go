@@ -61,7 +61,8 @@ func FixedRandom(v float64) func() float64 { return func() float64 { return v } 
 // exponential backoff with jitter or after the requested delay; jobs that fail for good or
 // use up their attempts become dead jobs, which can be requeued; a job whose worker stopped
 // is claimed again once its lease expires (at-least-once), and the stale worker's result is
-// dropped; concurrent workers run each job once; and, where the harness enables them,
+// dropped; concurrent workers run each job once; jobs of one ordering key run one at a time,
+// in enqueue order, even across retries, delays, and concurrent workers; and, where the harness enables them,
 // transactional enqueue, survival of a restart, and the re-enqueue chain beyond a delay limit.
 func QueueContract(t *testing.T, newHarness QueueFactory) {
 	t.Helper()
@@ -81,6 +82,9 @@ func QueueContract(t *testing.T, newHarness QueueFactory) {
 		{"RequeuesDeadJobs", queueRequeuesDeadJobs},
 		{"ReclaimsJobsOfAStoppedWorker", queueReclaimsAfterLeaseExpiry},
 		{"RunsEachJobOnceUnderConcurrentWorkers", queueConcurrentWorkers},
+		{"LeasesOneJobPerOrderingKeyAtATime", queueLeasesOnePerOrderingKey},
+		{"KeepsEnqueueOrderWithinAnOrderingKey", queueKeepsOrderWithinKey},
+		{"SerializesOrderingKeysUnderConcurrentWorkers", queueSerializesKeysUnderConcurrency},
 		{"EnqueuesAtomicallyWithTheTransaction", queueTransactionalEnqueue},
 		{"KeepsJobsAcrossARestart", queueSurvivesRestart},
 		{"ReenqueuesJobsBeyondTheDelayLimit", queueReenqueueChain},
@@ -520,6 +524,210 @@ func queueConcurrentWorkers(t *testing.T, newHarness QueueFactory) {
 		if c != 1 {
 			t.Errorf("job %s ran %d times, want once", n, c)
 		}
+	}
+}
+
+func keyedProbe(n, key string) queue.NewJob {
+	j := probe(fmt.Sprintf(`{"N":%q}`, n))
+	j.OrderingKey = key
+	return j
+}
+
+// wantClaim claims a job as worker and checks its payload; want "" expects no job.
+func (f *queueFixture) wantClaim(worker, want string) queue.Job {
+	f.t.Helper()
+	j, ok, err := f.h.Source.Claim(f.t.Context(), worker, f.clock.Now(), contractLease)
+	switch {
+	case err != nil:
+		f.t.Fatalf("Claim(%s): %v", worker, err)
+	case want == "" && ok:
+		f.t.Fatalf("Claim(%s) = %s, want no job", worker, j.Payload)
+	case want != "" && !ok:
+		f.t.Fatalf("Claim(%s) found no job, want %s", worker, want)
+	case ok && payloadOf(f.t, j) != want:
+		f.t.Fatalf("Claim(%s) = %s, want %s", worker, j.Payload, want)
+	}
+	return j
+}
+
+func (f *queueFixture) complete(worker string, j queue.Job) {
+	f.t.Helper()
+	if err := f.h.Source.Complete(f.t.Context(), worker, j); err != nil {
+		f.t.Fatalf("Complete(%s): %v", worker, err)
+	}
+}
+
+func (f *queueFixture) relay() {
+	f.t.Helper()
+	if f.h.Relay != nil {
+		if err := f.h.Relay(f.t.Context()); err != nil {
+			f.t.Fatalf("Relay: %v", err)
+		}
+	}
+}
+
+func queueLeasesOnePerOrderingKey(t *testing.T, newHarness QueueFactory) {
+	f := newQueueFixture(t, newHarness)
+	f.enqueue(keyedProbe("a1", "a"), keyedProbe("a2", "a"), keyedProbe("b1", "b"), probe(`{"N":"plain"}`))
+	f.relay()
+
+	a1 := f.wantClaim("w1", "a1")
+	f.wantClaim("w2", "b1") // a2 waits for a1
+	f.wantClaim("w3", "plain")
+	f.wantClaim("w4", "")
+
+	// The leased job holds back its key for jobs enqueued later too.
+	f.enqueue(keyedProbe("a3", "a"))
+	f.relay()
+	f.wantClaim("w4", "")
+
+	f.complete("w1", a1)
+	a2 := f.wantClaim("w4", "a2")
+	f.wantClaim("w1", "")
+
+	// When the lease of a2 expires, a2 is claimed again before a3.
+	f.clock.Advance(contractLease)
+	again := f.wantClaim("w1", "a2")
+	if again.Attempt != a2.Attempt+1 {
+		t.Errorf("reclaimed a2 has Attempt %d, want %d", again.Attempt, a2.Attempt+1)
+	}
+	f.wantClaim("w2", "b1") // its lease expired too; key b does not wait for key a
+	f.wantClaim("w3", "plain")
+	f.wantClaim("w4", "")
+	f.complete("w1", again)
+	f.wantClaim("w4", "a3")
+}
+
+func queueKeepsOrderWithinKey(t *testing.T, newHarness QueueFactory) {
+	f := newQueueFixture(t, newHarness)
+	f.reg.Register("testkit.flaky", func(_ context.Context, j queue.Job) queue.Result {
+		if j.Attempt == 1 {
+			return queue.Retry(0, errors.New("remote is down"))
+		}
+		return queue.Done()
+	})
+	f.reg.Register("testkit.broken", func(context.Context, queue.Job) queue.Result {
+		return queue.Fail(errors.New("malformed activity"))
+	})
+	ran := func(want ...string) {
+		t.Helper()
+		got := []string{}
+		for _, j := range f.rec.snapshot() {
+			got = append(got, payloadOf(t, j))
+		}
+		if !slices.Equal(got, want) {
+			t.Fatalf("ran %v, want %v", got, want)
+		}
+	}
+
+	// A job backing off between retries holds back the later jobs of its key, but not others.
+	f.enqueue(queue.NewJob{Type: "testkit.flaky", OrderingKey: "k"}, keyedProbe("k2", "k"), keyedProbe("other", "o"))
+	f.drain()
+	ran("other")
+	f.clock.Advance(45*time.Second - time.Millisecond) // the backoff after run 1
+	f.drain()
+	ran("other")
+	f.clock.Advance(time.Millisecond)
+	f.drain()
+	ran("other", "k2")
+
+	// A job delayed by RunAt holds back the jobs of its key enqueued after it.
+	delayed := keyedProbe("delayed", "k")
+	delayed.RunAt = f.clock.Now().Add(10 * time.Minute)
+	f.enqueue(delayed)
+	f.clock.Advance(time.Millisecond)
+	f.enqueue(keyedProbe("after delayed", "k"))
+	f.drain()
+	ran("other", "k2")
+	f.clock.Advance(10 * time.Minute)
+	f.drain()
+	ran("other", "k2", "delayed", "after delayed")
+
+	// A dead job no longer holds back its key.
+	f.enqueue(queue.NewJob{Type: "testkit.broken", OrderingKey: "k"}, keyedProbe("after dead", "k"))
+	f.drain()
+	ran("other", "k2", "delayed", "after delayed", "after dead")
+	if d := f.dead(); len(d) != 1 || d[0].OrderingKey != "k" {
+		t.Fatalf("dead jobs = %+v, want the broken job with its ordering key", d)
+	}
+}
+
+func queueSerializesKeysUnderConcurrency(t *testing.T, newHarness QueueFactory) {
+	f := newQueueFixture(t, newHarness)
+	const keys, perKey, workers = 3, 8, 4
+	var (
+		mu       sync.Mutex
+		inFlight = map[string]int{}
+		order    = map[string][]int{}
+		overlaps []string
+	)
+	f.reg.Register("testkit.ordered", func(_ context.Context, j queue.Job) queue.Result {
+		var v struct{ Seq int }
+		if err := json.Unmarshal(j.Payload, &v); err != nil {
+			return queue.Fail(err)
+		}
+		mu.Lock()
+		inFlight[j.OrderingKey]++
+		if inFlight[j.OrderingKey] > 1 {
+			overlaps = append(overlaps, fmt.Sprintf("%s#%d", j.OrderingKey, v.Seq))
+		}
+		order[j.OrderingKey] = append(order[j.OrderingKey], v.Seq)
+		mu.Unlock()
+		time.Sleep(time.Millisecond) // give the other workers time to try the key
+		mu.Lock()
+		inFlight[j.OrderingKey]--
+		mu.Unlock()
+		return queue.Done()
+	})
+	var batch []queue.NewJob
+	for seq := range perKey {
+		for k := range keys {
+			batch = append(batch, queue.NewJob{
+				Type: "testkit.ordered", OrderingKey: fmt.Sprintf("key-%d", k),
+				Payload: json.RawMessage(fmt.Sprintf(`{"Seq":%d}`, seq)),
+			})
+		}
+		batch = append(batch, probe(fmt.Sprintf(`{"N":"plain-%d"}`, seq)))
+	}
+	f.enqueue(batch...)
+	f.relay()
+
+	var wg sync.WaitGroup
+	errs := make(chan error, workers)
+	for w := range workers {
+		r := f.runner(fmt.Sprintf("w%d", w))
+		wg.Go(func() {
+			_, err := r.Drain(t.Context())
+			errs <- err
+		})
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Errorf("concurrent Drain: %v", err)
+		}
+	}
+	// A worker stops when every remaining job waits for a key that another worker holds; the
+	// worker that completes the last job of a key runs on, so nothing should be left.
+	if n := f.drain(); n != 0 {
+		t.Errorf("a final drain claimed %d jobs, want 0", n)
+	}
+	if len(overlaps) > 0 {
+		t.Errorf("jobs ran while another job of their key ran: %v", overlaps)
+	}
+	want := make([]int, perKey)
+	for i := range want {
+		want[i] = i
+	}
+	for k := range keys {
+		key := fmt.Sprintf("key-%d", k)
+		if got := order[key]; !slices.Equal(got, want) {
+			t.Errorf("jobs of %s ran in order %v, want %v", key, got, want)
+		}
+	}
+	if n := len(f.rec.snapshot()); n != perKey {
+		t.Errorf("ran %d unkeyed jobs, want %d", n, perKey)
 	}
 }
 
