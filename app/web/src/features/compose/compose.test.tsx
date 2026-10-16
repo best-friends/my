@@ -269,7 +269,7 @@ describe("hints before posting", () => {
     await user.click(screen.getByRole("button", { name: "Done" }));
     await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "Hi @carol@remote.example");
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(asked).toBe(true);
     });
     expect(within(sheet).queryByText(/does not follow you/)).not.toBeInTheDocument();
