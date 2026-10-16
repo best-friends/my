@@ -9,7 +9,7 @@ import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RouterContext } from "../../lib/query";
-import { apiBase, instanceFixture, oauthPaths, preferencesFixture, problem, statusFixture, tokenResponse, uploadedMediaId } from "../../test/msw/handlers";
+import { apiBase, instanceFixture, oauthPaths, preferencesFixture, problem, viewerStatusFixture, tokenResponse, uploadedMediaId } from "../../test/msw/handlers";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { ComposeEntry, ComposeProvider, useReply } from ".";
@@ -318,9 +318,9 @@ describe("images", () => {
 });
 
 /** A post by someone else, in the `local` visibility, that mentions the viewer and a third account. */
-const localPost = statusFixture({
+const localPost = viewerStatusFixture({
   id: "0192f0c4-7a8e-7000-8000-0000000000c1",
-  account: { ...statusFixture().account, id: "0192f0c4-7a8e-7000-8000-000000000002", username: "bob", acct: "bob", display_name: "Bob" },
+  account: { ...viewerStatusFixture().account, id: "0192f0c4-7a8e-7000-8000-000000000002", username: "bob", acct: "bob", display_name: "Bob" },
   content: "<p>Anyone around?</p>",
   visibility: "local",
   mentions: [

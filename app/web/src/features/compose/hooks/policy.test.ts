@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from "vitest";
-import { statusFixture, viewerFixture } from "../../../test/msw/handlers";
+import { viewerStatusFixture, viewerFixture } from "../../../test/msw/handlers";
 import { fitWithin } from "./prepareImage";
 import { countCharacters, defaultVisibility, narrower, replyMentions } from "./policy";
 
@@ -22,8 +22,8 @@ describe("defaultVisibility", () => {
   });
 
   test("of a reply is the narrower of the preference and the replied-to post's", () => {
-    expect(defaultVisibility("public", statusFixture({ visibility: "local" }))).toBe("local");
-    expect(defaultVisibility("private", statusFixture({ visibility: "public" }))).toBe("private");
+    expect(defaultVisibility("public", viewerStatusFixture({ visibility: "local" }))).toBe("local");
+    expect(defaultVisibility("private", viewerStatusFixture({ visibility: "public" }))).toBe("private");
   });
 });
 
@@ -31,7 +31,7 @@ describe("replyMentions", () => {
   const bob = { ...viewerFixture, id: "bob-id", username: "bob", acct: "bob" };
 
   test("mentions the author and the mentioned accounts once, without the viewer", () => {
-    const post = statusFixture({
+    const post = viewerStatusFixture({
       account: bob,
       mentions: [
         { id: viewerFixture.id, username: "alice", acct: "alice", url: "https://my.example/@alice" },
@@ -43,7 +43,7 @@ describe("replyMentions", () => {
   });
 
   test("is empty for a reply to the viewer's own post that mentions nobody else", () => {
-    expect(replyMentions(statusFixture(), viewerFixture.id)).toBe("");
+    expect(replyMentions(viewerStatusFixture(), viewerFixture.id)).toBe("");
   });
 });
 

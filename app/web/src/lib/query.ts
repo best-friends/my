@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The TanStack Query client: the only cache of server data (web-client.md S1). Routes reach it through
-// the router context to call `ensureQueryData` in their loaders (S7), with the API client and the session;
+// the router context to load what is not cached yet in their loaders (`queryClient.query` with `staleTime: "static"`, S7), with the API client and the session;
 // components use the hooks.
 import { QueryClient } from "@tanstack/react-query";
 import type { Api } from "./api/client";

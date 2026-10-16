@@ -14,9 +14,9 @@ type Fixtures = {
   /**
    * Serves the HTML documents of `vite preview` (the client) with the project's locale in
    * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028);
-   * `vite preview` serves index.html as it is. The runtime config's apiOrigin becomes the preview's
-   * own origin, which changes with the port of each run, so the client never calls a server of another
-   * run. Pages of a real `my serve` are left alone.
+   * `vite preview` serves index.html as it is. The runtime config's `apiOrigin` becomes the preview's own
+   * origin, which the run picks (server-origin.ts), so that the client's API and OAuth requests stay on it,
+   * where specs can answer them with `page.route`. Pages of a real `my serve` are left alone.
    */
   shellLocale: string;
 };
@@ -47,7 +47,7 @@ export const test = base.extend<Fixtures>({
         const response = await route.fetch();
         const body = (await response.text())
           .replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`)
-          .replace(/"apiOrigin":"[^"]*"/, `"apiOrigin":${JSON.stringify(previewOrigin)}`);
+          .replace(/"apiOrigin":"[^"]*"/, `"apiOrigin":"${previewOrigin}"`);
         await route.fulfill({ response, body });
       });
       await use(lang);
