@@ -8,9 +8,9 @@
 ```text
                 ┌──────────────── Clients ────────────────┐
                 │ Web (PWA) │ Mobile (Tauri 2) │ 3rd-party │
-                │           │                  │ Mastodon  │
+                │           │                  │           │
                 └─────┬─────┴────────┬─────────┴─────┬─────┘
-                      │ Mastodon Client API + 拡張 API │
+                      │  Client API (OpenAPI, 独自)    │
 Remote servers ──AP──►│                               │
 (Mastodon, Misskey…)  ▼                               ▼
         ┌──────────────────── Entrypoints (ターゲット別) ─────────────────────┐
@@ -18,7 +18,7 @@ Remote servers ──AP──►│                               │
         └───────┬──────┴──────────────┬───────────────┴──────────┬────────────┘
                 ▼                     ▼                          ▼
         ┌─────────────── Interface layer (inbound adapters) ──────────────────┐
-        │ Mastodon API │ Extension API │ ActivityPub (inbox/outbox/actor) │ Admin │
+        │ Client API │ ActivityPub (inbox/outbox/actor/webfinger) │ Admin       │
         └───────┬──────────────────────────────────────────────────────────────┘
                 ▼
         ┌─────────────── Application layer (use cases) ───────────────────────┐
@@ -62,8 +62,8 @@ Remote servers ──AP──►│                               │
 
 - `domain` は他のどの層にも依存しない（純粋関数・値オブジェクト中心）。
 - モジュール間はアプリケーション層の公開 API（ユースケース / イベント）経由でのみ参照する。テーブルの直接参照は禁止。
-- インターフェイス層（Mastodon API / AP）はアプリケーション層のユースケースを呼ぶだけで、ドメインロジックを持たない。
-- **公開範囲の判定（`canView(viewer, status)`）はドメイン層の 1 箇所に集約**（NFR-SEC-4）。
+- インターフェイス層（Client API / AP）はアプリケーション層のユースケースを呼ぶだけで、ドメインロジックを持たない。
+- **公開範囲の判定（`canView(viewer, status)`）はドメイン層の 1 箇所に集約**（NFR-SEC-4）。公開範囲は `public` / `local` / `unlisted` / `private` / `direct`（[ADR-0017](../adr/0017-visibility-local.md)）。
 
 ## 3. ポート一覧
 
@@ -89,11 +89,11 @@ Remote servers ──AP──►│                               │
 
 ### 4.1 ローカル投稿 → 連合配送
 
-1. API `POST /api/v1/statuses` → `PostStatus` ユースケース
+1. Client API の投稿作成 → `PostStatus` ユースケース
 2. ドメインで検証（文字数・公開範囲・メンション解決）→ `Status` を生成
 3. **1 回のアトミックバッチ** で `statuses` + 付随行 + `outbox_events`（配送予定）を書き込む（Transactional Outbox）
 4. `JobQueue.enqueue(FanOutDelivery{statusId})`（失敗しても outbox から再投入できる）
-5. ワーカー: 宛先 inbox を算出し、**shared inbox 単位** に `DeliverActivity{inbox, activityId}` を投入
+5. ワーカー: 公開範囲に応じて宛先 inbox を算出し（`local` はリモートフォロワーのみ）、**shared inbox 単位** に `DeliverActivity{inbox, activityId}` を投入
 6. `DeliverActivity` が署名付き POST。失敗時はバックオフで再投入、ドメインが連続失敗したら一時停止
 
 ### 4.2 Inbox 受信
@@ -111,7 +111,7 @@ Remote servers ──AP──►│                               │
 
 ## 5. データ設計の原則
 
-- ID は時系列ソート可能な **UUIDv7**（文字列表現）。Mastodon API の `id` はそのまま文字列で返す。
+- ID は時系列ソート可能な **UUIDv7**（文字列表現）。API ではそのまま文字列で返す。
 - 時刻は UTC で保存、API では RFC 3339。
 - 方言差を吸収するため、型は「共通部分集合」で設計（真偽値は整数、JSON は TEXT 保存も許容、等）。
 - 対話的トランザクションを前提にしない。整合性は「アトミックバッチ」「一意制約 + upsert」「冪等キー」で担保。
@@ -129,7 +129,7 @@ internal/
   domain/<module>/   # 純粋なドメイン（identity, account, content, graph, ...）
   app/<module>/      # ユースケースとポート定義
   interface/
-    mastodon/        # Mastodon Client API
+    clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
     admin/
   adapter/
@@ -142,6 +142,7 @@ internal/
   platform/          # 設定、composition root、ログ、HTTP サーバー
 pkg/
   testkit/           # コントラクトテスト・フィクスチャ（独自アダプタ作者向けに公開）
+api/                 # openapi.yaml（クライアント API の正）
 schema/              # sqlite.sql, postgres.sql（v0 はマイグレーションなし）
 queries/             # sqlc 用クエリ（方言別）
 locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有）
