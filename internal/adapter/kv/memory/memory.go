@@ -94,12 +94,15 @@ func (s *Store) IncrBy(_ context.Context, namespace, key string, n int64, ttl ti
 }
 
 // DeleteExpired implements kernel.KeyValueStore.
-func (s *Store) DeleteExpired(context.Context) (int64, error) {
+func (s *Store) DeleteExpired(_ context.Context, limit int) (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := s.clock.Now()
 	var n int64
 	for k, e := range s.entries {
+		if n >= int64(limit) {
+			break
+		}
 		if !e.live(now) {
 			delete(s.entries, k)
 			n++

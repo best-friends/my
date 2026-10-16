@@ -27,11 +27,20 @@ func (q *Queries) DeleteEntry(ctx context.Context, arg DeleteEntryParams) error 
 }
 
 const deleteExpiredEntries = `-- name: DeleteExpiredEntries :execrows
-DELETE FROM kv_entries WHERE expires_at <= ?1
+DELETE FROM kv_entries
+WHERE rowid IN (
+  SELECT e.rowid FROM kv_entries AS e WHERE e.expires_at <= ?1 ORDER BY e.expires_at LIMIT ?2
+)
 `
 
-func (q *Queries) DeleteExpiredEntries(ctx context.Context, now sql.NullInt64) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deleteExpiredEntries, now)
+type DeleteExpiredEntriesParams struct {
+	Now        sql.NullInt64
+	BatchLimit int64
+}
+
+// DeleteExpiredEntries removes at most @batch_limit expired entries, the earliest expired first.
+func (q *Queries) DeleteExpiredEntries(ctx context.Context, arg DeleteExpiredEntriesParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteExpiredEntries, arg.Now, arg.BatchLimit)
 	if err != nil {
 		return 0, err
 	}

@@ -27,11 +27,26 @@ func (q *Queries) DeleteEntry(ctx context.Context, arg DeleteEntryParams) error 
 }
 
 const deleteExpiredEntries = `-- name: DeleteExpiredEntries :execrows
-DELETE FROM kv_entries WHERE expires_at <= $1::timestamptz
+DELETE FROM kv_entries
+WHERE expires_at <= $1::timestamptz
+  AND (namespace, key) IN (
+    SELECT namespace, key FROM kv_entries
+    WHERE expires_at <= $1::timestamptz
+    ORDER BY expires_at
+    LIMIT $2::integer
+  )
 `
 
-func (q *Queries) DeleteExpiredEntries(ctx context.Context, now time.Time) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteExpiredEntries, now)
+type DeleteExpiredEntriesParams struct {
+	Now        time.Time
+	BatchLimit int32
+}
+
+// DeleteExpiredEntries removes at most @batch_limit expired entries, the earliest expired first.
+// The outer condition is checked again on each row it locks, so that an entry that IncrEntry
+// renewed meanwhile stays.
+func (q *Queries) DeleteExpiredEntries(ctx context.Context, arg DeleteExpiredEntriesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredEntries, arg.Now, arg.BatchLimit)
 	if err != nil {
 		return 0, err
 	}
