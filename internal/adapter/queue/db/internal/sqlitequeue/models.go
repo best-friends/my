@@ -78,6 +78,25 @@ type AccountProfileRevision struct {
 	RevisedAt     int64
 }
 
+type Block struct {
+	ID               string
+	Uri              sql.NullString
+	BlockerAccountID string
+	BlockedAccountID string
+	CreatedAt        int64
+}
+
+type BlockEdge struct {
+	BlockerAccountID string
+	BlockedAccountID string
+	BlockID          string
+}
+
+type BlockRetraction struct {
+	BlockID     string
+	RetractedAt int64
+}
+
 type DeadJob struct {
 	ID             string
 	Type           string
@@ -162,6 +181,14 @@ type LocalAccount struct {
 type LocalAccountPrivateKey struct {
 	AccountKeyID  string
 	PrivateKeyEnc []byte
+}
+
+type Mute struct {
+	AccountID         string
+	TargetAccountID   string
+	HideNotifications int64
+	ExpiresAt         sql.NullInt64
+	CreatedAt         int64
 }
 
 type OutboxEvent struct {

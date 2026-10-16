@@ -80,6 +80,25 @@ type AccountProfileRevision struct {
 	RevisedAt     time.Time
 }
 
+type Block struct {
+	ID               string
+	Uri              *string
+	BlockerAccountID string
+	BlockedAccountID string
+	CreatedAt        time.Time
+}
+
+type BlockEdge struct {
+	BlockerAccountID string
+	BlockedAccountID string
+	BlockID          string
+}
+
+type BlockRetraction struct {
+	BlockID     string
+	RetractedAt time.Time
+}
+
 type DeadJob struct {
 	ID             string
 	Type           string
@@ -164,6 +183,14 @@ type LocalAccount struct {
 type LocalAccountPrivateKey struct {
 	AccountKeyID  string
 	PrivateKeyEnc []byte
+}
+
+type Mute struct {
+	AccountID         string
+	TargetAccountID   string
+	HideNotifications bool
+	ExpiresAt         pgtype.Timestamptz
+	CreatedAt         time.Time
 }
 
 type OutboxEvent struct {

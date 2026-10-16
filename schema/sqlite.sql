@@ -257,6 +257,48 @@ CREATE TABLE follow_counters (
   following_count INTEGER NOT NULL CHECK (following_count >= 0)
 ) STRICT;
 
+-- graph: blocks and mutes (data-model §4.5) -------------------------------------------------
+
+-- Resource: one block. Blocking again after a retraction inserts a new row. uri is NULL only for
+-- a received Block without an id.
+CREATE TABLE blocks (
+  id TEXT NOT NULL PRIMARY KEY,
+  uri TEXT,
+  blocker_account_id TEXT NOT NULL,
+  blocked_account_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX blocks_uri ON blocks (uri);
+
+-- Event: a block was lifted.
+CREATE TABLE block_retractions (
+  block_id TEXT NOT NULL PRIMARY KEY,
+  retracted_at INTEGER NOT NULL
+) STRICT;
+
+-- Projection: the block in force of each pair (without a retraction).
+CREATE TABLE block_edges (
+  blocker_account_id TEXT NOT NULL,
+  blocked_account_id TEXT NOT NULL,
+  block_id TEXT NOT NULL,
+  PRIMARY KEY (blocker_account_id, blocked_account_id)
+) STRICT;
+CREATE INDEX block_edges_blocked_account_id ON block_edges (blocked_account_id);
+CREATE INDEX block_edges_blocker_block_id ON block_edges (blocker_account_id, block_id);
+
+-- Current value: an account's mute of another. A mute whose expires_at has passed no longer
+-- applies; readers filter it out.
+CREATE TABLE mutes (
+  account_id TEXT NOT NULL,
+  target_account_id TEXT NOT NULL,
+  hide_notifications INTEGER NOT NULL CHECK (hide_notifications IN (0, 1)),
+  expires_at INTEGER,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (account_id, target_account_id),
+  CHECK (expires_at IS NULL OR expires_at > created_at)
+) STRICT;
+CREATE INDEX mutes_account_created_at_target ON mutes (account_id, created_at, target_account_id);
+
 -- Tables follow docs/architecture/data-model.md, mapping logical types per its §1.2.
 
 -- ---------------------------------------------------------------------------------------------
