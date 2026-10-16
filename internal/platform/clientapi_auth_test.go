@@ -22,6 +22,34 @@ import (
 	"github.com/best-friends/my/internal/platform"
 )
 
+// issueToken issues tokens of the web client with scope ("" for all of the client's) to a
+// user through the authorization code flow.
+func issueToken(t *testing.T, app *platform.App, userID, scope string) identity.IssuedTokens {
+	t.Helper()
+	ctx := t.Context()
+	verifier := strings.Repeat("v", 43)
+	redirect := webOrigin + platform.WebClientCallbackPath
+	a, err := app.Identity.ValidateAuthorization(ctx, identity.AuthorizationRequest{
+		ResponseType: "code", ClientID: identity.DefaultWebClientID, RedirectURI: redirect, Scope: scope,
+		CodeChallenge: domain.S256Challenge(verifier), CodeChallengeMethod: domain.CodeChallengeMethodS256,
+	})
+	if err != nil {
+		t.Fatalf("ValidateAuthorization(%q): %v", scope, err)
+	}
+	code, err := app.Identity.IssueAuthorizationCode(ctx, a, userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokens, err := app.Identity.ExchangeAuthorizationCode(ctx, identity.CodeExchange{
+		ClientCredentials: identity.ClientCredentials{ClientID: identity.DefaultWebClientID},
+		Code:              code, RedirectURI: redirect, CodeVerifier: verifier,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tokens
+}
+
 // TestClientAPIAuthentication drives the authenticated client API end to end on the real
 // database: tokens from the authorization server, verify_credentials, scopes, revocation,
 // the user's locale, an account that may no longer use the app, and cookies, which never
@@ -43,30 +71,7 @@ func TestClientAPIAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateAdmin: %v", err)
 	}
-	verifier := strings.Repeat("v", 43)
-	redirect := webOrigin + platform.WebClientCallbackPath
-	issueFor := func(userID, scope string) identity.IssuedTokens {
-		t.Helper()
-		a, err := app.Identity.ValidateAuthorization(ctx, identity.AuthorizationRequest{
-			ResponseType: "code", ClientID: identity.DefaultWebClientID, RedirectURI: redirect, Scope: scope,
-			CodeChallenge: domain.S256Challenge(verifier), CodeChallengeMethod: domain.CodeChallengeMethodS256,
-		})
-		if err != nil {
-			t.Fatalf("ValidateAuthorization(%q): %v", scope, err)
-		}
-		code, err := app.Identity.IssueAuthorizationCode(ctx, a, userID)
-		if err != nil {
-			t.Fatal(err)
-		}
-		tokens, err := app.Identity.ExchangeAuthorizationCode(ctx, identity.CodeExchange{
-			ClientCredentials: identity.ClientCredentials{ClientID: identity.DefaultWebClientID},
-			Code:              code, RedirectURI: redirect, CodeVerifier: verifier,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		return tokens
-	}
+	issueFor := func(userID, scope string) identity.IssuedTokens { t.Helper(); return issueToken(t, app, userID, scope) }
 	issue := func(scope string) identity.IssuedTokens { t.Helper(); return issueFor(alice.User.ID, scope) }
 	get := func(header map[string]string) (*http.Response, clientapi.Problem) {
 		t.Helper()

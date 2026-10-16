@@ -250,6 +250,11 @@ type LocalStatus struct {
 	IdempotencyKey  *string
 }
 
+type MediaDescription struct {
+	MediaID     string
+	Description string
+}
+
 type MediaFile struct {
 	ID             string
 	OwnerAccountID string

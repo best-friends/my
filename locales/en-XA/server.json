@@ -351,6 +351,42 @@
     "defaultMessage": "[Ẏǿǿŭŭř şīɠƞ-īƞ ħȧȧş ḗḗẋƥīřḗḗḓ ǿǿř ẇȧȧş řḗḗṽǿǿķḗḗḓ. Şīɠƞ īƞ ȧȧɠȧȧīƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.media_attached": {
+    "defaultMessage": "[Ŧħīş ḿḗḗḓīȧȧ īş ȧȧŧŧȧȧƈħḗḗḓ ŧǿǿ ȧȧ ƥǿǿşŧ ȧȧƞḓ ƈȧȧƞ ƞǿǿ ŀǿǿƞɠḗḗř ƀḗḗ ƈħȧȧƞɠḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_attached_detail": {
+    "defaultMessage": "[Ḗḓīŧ ŧħḗḗ ƥǿǿşŧ ŧǿǿ ƈħȧȧƞɠḗḗ īŧş ḓḗḗşƈřīƥŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_corrupt": {
+    "defaultMessage": "[Ŧħḗḗ ƒīŀḗḗ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ řḗḗȧȧḓ ȧȧş ȧȧƞ īḿȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_description_too_long": {
+    "defaultMessage": "[Ŧħḗḗ ḓḗḗşƈřīƥŧīǿǿƞ īş ŧǿǿǿǿ ŀǿǿƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_description_too_long_detail": {
+    "defaultMessage": "[{max,plural,one{Ȧ ḓḗḗşƈřīƥŧīǿǿƞ ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗř.} other{Ȧ ḓḗḗşƈřīƥŧīǿǿƞ ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗřş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_dimensions": {
+    "defaultMessage": "[Ŧħḗḗ īḿȧȧɠḗḗ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ īƞ ẇīḓŧħ, ħḗḗīɠħŧ, ǿǿř ƞŭŭḿƀḗḗř ǿǿƒ ƒřȧȧḿḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_invalid_focus": {
+    "defaultMessage": "[Ŧħḗḗ ƒǿǿƈȧȧŀ ƥǿǿīƞŧ ḿŭŭşŧ ƀḗḗ ƀḗḗŧẇḗḗḗḗƞ -1.0 ȧȧƞḓ 1.0 ǿǿƞ ḗḗȧȧƈħ ȧȧẋīş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_too_large": {
+    "defaultMessage": "[Ŧħḗḗ ƒīŀḗḗ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_unsupported_format": {
+    "defaultMessage": "[Ŧħīş ƒīŀḗḗ ƒǿǿřḿȧȧŧ īş ƞǿǿŧ şŭŭƥƥǿǿřŧḗḗḓ. Ŭƥŀǿǿȧȧḓ ȧȧ ĴƤḖƓ, ƤȠƓ, ƓĪƑ, ǿǿř ẆḗḗƀƤ īḿȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "[Ŧħḗḗ {method} ḿḗḗŧħǿǿḓ īş ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ƒǿǿř ŧħīş řḗḗşǿǿŭŭřƈḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -365,6 +401,10 @@
   },
   "errors.rate_limited_detail": {
     "defaultMessage": "[{seconds,plural,one{Ŧřẏ ȧȧɠȧȧīƞ īƞ # şḗḗƈǿǿƞḓ.} other{Ŧřẏ ȧȧɠȧȧīƞ īƞ # şḗḗƈǿǿƞḓş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.request_too_large": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.unauthenticated": {

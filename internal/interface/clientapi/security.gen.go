@@ -9,4 +9,7 @@ package clientapi
 var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/accounts/verify_credentials": {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/instance":                    {Operation: "getInstance", Anonymous: true},
+	"GET /api/v1/media/{id}":                  {Operation: "getMedia", Scopes: []string{"write:media"}},
+	"PATCH /api/v1/media/{id}":                {Operation: "updateMedia", Scopes: []string{"write:media"}},
+	"POST /api/v1/media":                      {Operation: "uploadMedia", Scopes: []string{"write:media"}},
 }

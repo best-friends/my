@@ -38,6 +38,8 @@ tags:
     description: Public information about the instance.
   - name: accounts
     description: Accounts and the authenticated user's own account.
+  - name: media
+    description: Media files that the user uploads to attach to posts.
 paths:
   /instance:
     get:
@@ -76,6 +78,102 @@ paths:
                 $ref: "#/components/schemas/Account"
         default:
           $ref: "#/components/responses/Problem"
+  # --- media (#112) ---------------------------------------------------------------------
+  /media:
+    post:
+      operationId: uploadMedia
+      summary: Upload a media file
+      description: |
+        Uploads an image to attach to a post. The server checks the format from the content
+        (JPEG, PNG, GIF, or WebP; the declared type must match it) and the size and dimension
+        limits before it accepts the file, then processes it in the background: it removes the
+        metadata (such as the location) by re-encoding the image, and makes a thumbnail and a
+        blurhash. The answer is 202 with the file in its current `state`, usually `processing`;
+        poll `getMedia` until it is `ready` or `failed`.
+
+        A body larger than the size limit is refused with a 413 before it is read. Uploads
+        count against a limit per account besides the API-wide one. Only the uploader can
+        read and change the file.
+      tags: [media]
+      security:
+        - oauth2: ["write:media"]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MediaUpload"
+      responses:
+        "202":
+          description: The file is accepted and being processed.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAttachment"
+        default:
+          $ref: "#/components/responses/Problem"
+  /media/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the media file.
+        schema:
+          $ref: "#/components/schemas/Id"
+    get:
+      operationId: getMedia
+      summary: Get a media file that the user uploaded
+      description: |
+        Returns a media file of the authenticated user with its processing state. A file of
+        another account is a 404: other accounts see a file only as an attachment of a post.
+      tags: [media]
+      security:
+        - oauth2: ["write:media"]
+      responses:
+        "200":
+          description: The media file.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAttachment"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateMedia
+      summary: Change the description or focal point of a media file
+      description: |
+        Changes the description (alternative text) or the focal point of a media file of the
+        authenticated user that no post attaches yet; a property left out keeps its value. A
+        post copies the description when it attaches the file, so a file that a post attaches
+        is a 409 `media-attached`: edit the post instead. A file of another account is a 404.
+      tags: [media]
+      security:
+        - oauth2: ["write:media"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaUpdate"
+      responses:
+        "200":
+          description: The changed media file.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAttachment"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of media ------------------------------------------------------------------------
 components:
   securitySchemes:
     oauth2:
@@ -194,6 +292,16 @@ components:
         - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
           use the app (registration pending or rejected, email unverified, or the account
           deactivated or deleted).
+        - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
+          instance accepts.
+        - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
+          accepted format, or its declared type does not match its content.
+        - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
+          many pixels or frames.
+        - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
+          of its format.
+        - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
+          no longer be changed on its own.
       type: object
       required: [type, title, status]
       properties:
@@ -279,3 +387,126 @@ components:
           description: When the account was created.
           type: string
           format: date-time
+    # --- media (#112) -------------------------------------------------------------------
+    MediaAttachment:
+      description: |
+        A media file, as an upload of the user or as an attachment of a post. `variants` and
+        `blurhash` are present once the file is `ready`.
+      type: object
+      required: [id, type, state, meta]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        type:
+          description: The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+          type: string
+          enum: [image, gifv, video, audio, unknown]
+        state:
+          description: |
+            The processing state: `processing` until the server has re-encoded the file,
+            then `ready`, or `failed` when the content could not be processed.
+          type: string
+          enum: [processing, ready, failed]
+        description:
+          description: The alternative text; absent when there is none.
+          type: string
+          maxLength: 1500
+        blurhash:
+          description: The blurhash (https://blurha.sh) of the image, to show while it loads.
+          type: string
+        meta:
+          $ref: "#/components/schemas/MediaMeta"
+        variants:
+          $ref: "#/components/schemas/MediaVariants"
+    MediaFocus:
+      description: |
+        The focal point that previews keep in view when they crop the image, from -1.0 (left,
+        bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+      type: object
+      required: [x, y]
+      properties:
+        x:
+          type: number
+          format: double
+          minimum: -1
+          maximum: 1
+        y:
+          type: number
+          format: double
+          minimum: -1
+          maximum: 1
+    MediaMeta:
+      description: What the server knows about the media file.
+      type: object
+      required: [focus]
+      properties:
+        width:
+          description: The width of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+          type: integer
+          minimum: 1
+        height:
+          description: The height of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+          type: integer
+          minimum: 1
+        focus:
+          $ref: "#/components/schemas/MediaFocus"
+    MediaUpdate:
+      description: The changes to a media file; a property left out keeps its value.
+      type: object
+      properties:
+        description:
+          description: The alternative text; an empty string removes it.
+          type: string
+          maxLength: 1500
+        focus:
+          $ref: "#/components/schemas/MediaFocus"
+    MediaUpload:
+      description: An upload of a media file.
+      type: object
+      required: [file]
+      properties:
+        file:
+          description: The file. Its declared type, if any, must match its content.
+          type: string
+          format: binary
+        description:
+          description: The alternative text.
+          type: string
+          maxLength: 1500
+    MediaVariant:
+      description: A rendition of a media file, without metadata.
+      type: object
+      required: [url, content_type, width, height, size]
+      properties:
+        url:
+          description: Where the rendition is served.
+          type: string
+          format: uri
+        content_type:
+          description: The media type of the rendition.
+          type: string
+        width:
+          description: The width in pixels.
+          type: integer
+          minimum: 1
+        height:
+          description: The height in pixels.
+          type: integer
+          minimum: 1
+        size:
+          description: The size of the file in bytes.
+          type: integer
+          format: int64
+          minimum: 1
+    MediaVariants:
+      description: The renditions of a ready media file.
+      type: object
+      required: [full, thumbnail]
+      properties:
+        full:
+          description: The file itself, scaled down to at most 3840 × 2160 pixels of area.
+          $ref: "#/components/schemas/MediaVariant"
+        thumbnail:
+          description: The preview, at most 640 × 360 pixels of area.
+          $ref: "#/components/schemas/MediaVariant"
+    # --- end of media --------------------------------------------------------------------

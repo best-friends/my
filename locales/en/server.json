@@ -351,6 +351,42 @@
     "defaultMessage": "Your sign-in has expired or was revoked. Sign in again.",
     "description": "API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked."
   },
+  "errors.media_attached": {
+    "defaultMessage": "This media is attached to a post and can no longer be changed.",
+    "description": "API error title for HTTP 409 when the user tries to change the description or focal point of an uploaded media file that a post already attaches."
+  },
+  "errors.media_attached_detail": {
+    "defaultMessage": "Edit the post to change its description.",
+    "description": "Detail of the HTTP 409 media-attached API error."
+  },
+  "errors.media_corrupt": {
+    "defaultMessage": "The file could not be read as an image.",
+    "description": "API error title for HTTP 422 when an uploaded file has the signature of an image format but does not decode."
+  },
+  "errors.media_description_too_long": {
+    "defaultMessage": "The description is too long.",
+    "description": "API error title for HTTP 422 when the description (alternative text) of a media file is longer than allowed."
+  },
+  "errors.media_description_too_long_detail": {
+    "defaultMessage": "{max, plural, one {A description can have at most # character.} other {A description can have at most # characters.}}",
+    "description": "Detail of the HTTP 422 API error for a description that is too long. {max} is the maximum number of characters."
+  },
+  "errors.media_dimensions": {
+    "defaultMessage": "The image is too large in width, height, or number of frames.",
+    "description": "API error title for HTTP 422 when an uploaded image is too wide or tall, or has too many pixels or animation frames."
+  },
+  "errors.media_invalid_focus": {
+    "defaultMessage": "The focal point must be between -1.0 and 1.0 on each axis.",
+    "description": "API error title for HTTP 422 when the focal point of a media file is outside the image."
+  },
+  "errors.media_too_large": {
+    "defaultMessage": "The file is too large.",
+    "description": "API error title for HTTP 413 when an uploaded media file is larger than the server accepts."
+  },
+  "errors.media_unsupported_format": {
+    "defaultMessage": "This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image.",
+    "description": "API error title for HTTP 415 when an uploaded file is not an accepted image format, or its declared type does not match its content. JPEG, PNG, GIF, WebP are format names (not translated)."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "The {method} method is not allowed for this resource.",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
@@ -366,6 +402,10 @@
   "errors.rate_limited_detail": {
     "defaultMessage": "{seconds, plural, one {Try again in # second.} other {Try again in # seconds.}}",
     "description": "Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds."
+  },
+  "errors.request_too_large": {
+    "defaultMessage": "The request is too large.",
+    "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",

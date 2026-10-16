@@ -136,7 +136,7 @@ func (r *MediaRepository) DeleteUnattachedMedia(ctx context.Context, tx uow.Tx, 
 		return false, wrap(err, "delete media file")
 	}
 	for _, del := range []func(context.Context, string) error{
-		q.DeleteUploadedMedia, q.DeleteMediaVariantsOf, q.DeleteMediaProcessingResults, q.DeleteMediaFocus,
+		q.DeleteUploadedMedia, q.DeleteMediaVariantsOf, q.DeleteMediaProcessingResults, q.DeleteMediaFocus, q.DeleteMediaDescription,
 	} {
 		if err := del(ctx, mediaID); err != nil {
 			return false, wrap(err, "delete media file rows")
@@ -226,4 +226,41 @@ func (r *MediaRepository) ListUnattachedUploads(ctx context.Context, afterID str
 		AfterID: afterID, BeforeID: kernel.UUIDv7Floor(createdBefore), RowLimit: n,
 	})
 	return ids, wrap(err, "list unattached uploads")
+}
+
+// UpsertDescription implements content.MediaRepository.
+func (r *MediaRepository) UpsertDescription(ctx context.Context, tx uow.Tx, d content.MediaDescription) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.UpsertMediaDescription(ctx, postgresgen.UpsertMediaDescriptionParams{MediaID: d.MediaID, Description: d.Text}), "upsert media description")
+}
+
+// DeleteDescription implements content.MediaRepository.
+func (r *MediaRepository) DeleteDescription(ctx context.Context, tx uow.Tx, mediaID string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.DeleteMediaDescription(ctx, mediaID), "delete media description")
+}
+
+// IsAttached implements content.MediaRepository.
+func (r *MediaRepository) IsAttached(ctx context.Context, tx uow.Tx, mediaID string) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	ok, err := q.IsMediaAttached(ctx, mediaID)
+	return ok, wrap(err, "look up media attachments")
+}
+
+// FindDescription implements content.MediaRepository.
+func (r *MediaRepository) FindDescription(ctx context.Context, mediaID string) (content.MediaDescription, error) {
+	row, err := r.db.reader().GetMediaDescription(ctx, mediaID)
+	if err != nil {
+		return content.MediaDescription{}, notFound(err, appcontent.ErrNotFound, "media description of "+mediaID)
+	}
+	return content.MediaDescription{MediaID: row.MediaID, Text: row.Description}, nil
 }

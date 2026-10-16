@@ -626,6 +626,13 @@ CREATE TABLE media_focus (
   focus_y double precision NOT NULL CHECK (focus_y BETWEEN -1.0 AND 1.0)
 );
 
+-- Current value: the description that the uploader set on an upload, which a post copies into
+-- its attachment (client API #112). No row means none.
+CREATE TABLE media_descriptions (
+  media_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  description text NOT NULL CHECK (description <> '')
+);
+
 -- The cleanup of unattached uploads (FR-803) looks up the references to a media file.
 CREATE INDEX status_revision_attachments_media_id ON status_revision_attachments (media_id);
 CREATE INDEX account_profile_revisions_avatar_media_id ON account_profile_revisions (avatar_media_id);

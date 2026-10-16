@@ -180,6 +180,24 @@ export interface MessageArgs {
   "server:errors.invalid_parameter": { name: string };
   /** Your sign-in has expired or was revoked. Sign in again. */
   "server:errors.invalid_token": {};
+  /** This media is attached to a post and can no longer be changed. */
+  "server:errors.media_attached": {};
+  /** Edit the post to change its description. */
+  "server:errors.media_attached_detail": {};
+  /** The file could not be read as an image. */
+  "server:errors.media_corrupt": {};
+  /** The description is too long. */
+  "server:errors.media_description_too_long": {};
+  /** {max, plural, one {A description can have at most # character.} other {A description can have at most # characters.}} */
+  "server:errors.media_description_too_long_detail": { max: number };
+  /** The image is too large in width, height, or number of frames. */
+  "server:errors.media_dimensions": {};
+  /** The focal point must be between -1.0 and 1.0 on each axis. */
+  "server:errors.media_invalid_focus": {};
+  /** The file is too large. */
+  "server:errors.media_too_large": {};
+  /** This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image. */
+  "server:errors.media_unsupported_format": {};
   /** The {method} method is not allowed for this resource. */
   "server:errors.method_not_allowed": { method: string };
   /** The requested resource was not found. */
@@ -188,6 +206,8 @@ export interface MessageArgs {
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
   "server:errors.rate_limited_detail": { seconds: number };
+  /** The request is too large. */
+  "server:errors.request_too_large": {};
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
   /** The server is not ready to accept requests. */
