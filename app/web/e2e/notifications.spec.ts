@@ -22,13 +22,6 @@ const bob = {
 const mentionId = "0192f0c4-7a8e-7000-8000-0000000000a3";
 const postId = "0192f0c4-7a8e-7000-8000-0000000000b1";
 
-/** Newest first: a mention (unread), a boost of a post behind a content warning (unread), a follow (read). */
-const notifications = [
-  { id: mentionId, type: "mention", created_at: "2026-10-16T09:00:00Z", account: bob, status_id: postId },
-  { id: "0192f0c4-7a8e-7000-8000-0000000000a2", type: "boost", created_at: "2026-10-16T08:00:00Z", account: bob, status_id: postId },
-  { id: "0192f0c4-7a8e-7000-8000-0000000000a1", type: "follow", created_at: "2026-10-15T09:00:00Z", account: { ...bob, display_name: "ボブ・とても長い表示名の人です ✨✨✨✨✨" } },
-];
-
 const post = {
   id: postId,
   uri: `https://my.example/users/bob/statuses/${postId}`,
@@ -48,9 +41,26 @@ const post = {
   favourites_count: 0,
 };
 
-/** Answers the session refresh and the notification operations; returns the read marker updates it got. */
+/** Newest first: a mention (unread), a boost of a post behind a content warning (unread), a follow (read). */
+const notifications = [
+  { id: mentionId, type: "mention", created_at: "2026-10-16T09:00:00Z", account: bob, status: post },
+  {
+    id: "0192f0c4-7a8e-7000-8000-0000000000a2",
+    type: "boost",
+    created_at: "2026-10-16T08:00:00Z",
+    account: bob,
+    status: { ...post, spoiler_text: "spoilers" },
+  },
+  { id: "0192f0c4-7a8e-7000-8000-0000000000a1", type: "follow", created_at: "2026-10-15T09:00:00Z", account: { ...bob, display_name: "ボブ・とても長い表示名の人です ✨✨✨✨✨" } },
+];
+
+/**
+ * Answers the session refresh and the notification operations; returns the read marker updates it got and
+ * the posts requested on their own, which should be none: the notifications embed them.
+ */
 async function signedInServer(page: Page) {
   const updates: string[] = [];
+  const statusRequests: string[] = [];
   let marker: { last_read_id: string; unread_count: number } = { last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a1", unread_count: 2 };
   const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   await page.route("**/oauth/token/refresh", (route) => route.fulfill(json({ access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 })));
@@ -69,8 +79,11 @@ async function signedInServer(page: Page) {
       return route.fulfill(json({ items: notifications.filter((n) => types.length === 0 || types.includes(n.type)) }));
     },
   );
-  await page.route("**/api/v1/statuses/*", (route) => route.fulfill(json(post)));
-  return { updates };
+  await page.route("**/api/v1/statuses/*", (route) => {
+    statusRequests.push(route.request().url());
+    return route.fulfill({ status: 404 });
+  });
+  return { updates, statusRequests };
 }
 
 test.describe("notifications", () => {
@@ -91,8 +104,9 @@ test.describe("notifications", () => {
     await page.goto("/notifications");
     const feed = page.getByRole("feed");
     await expect(feed.getByRole("article")).toHaveCount(3);
-    // The post of the mention has loaded, and the boosted post is behind its content warning.
+    // The post of the mention is shown, and the boosted post is behind its content warning.
     await expect(feed.getByRole("article").first().getByRole("link")).toHaveAttribute("href", post.url);
+    await expect(feed.getByRole("article").nth(1).getByRole("button")).toBeVisible();
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading [level=1]
       - tablist:
@@ -109,6 +123,7 @@ test.describe("notifications", () => {
     `);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+    expect(server.statusRequests).toEqual([]);
   });
 
   test("showing the list marks the newest notification read and clears the badge", async ({ page }) => {

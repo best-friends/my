@@ -1,0 +1,179 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import { Button, Checkbox, Dialog, FileTrigger, Select, SelectItem, Spinner, TextArea, TextField } from "@my/ui";
+import type { SubmitEvent } from "react";
+import { useT } from "../../../lib/i18n";
+import { acceptedImageTypes, maxAttachments } from "../hooks/policy";
+import { type ComposeController, composeTextId } from "../hooks/useCompose";
+import { type ReadyComposeForm, useComposeForm } from "../hooks/useComposeForm";
+import { useFormatRemaining } from "../hooks/useFormatRemaining";
+import { AttachmentList } from "./AttachmentList";
+import { Outbox } from "./Outbox";
+import { ReplyContext } from "./ReplyContext";
+import { VisibilityPicker } from "./VisibilityPicker";
+
+export type ComposeFormProps = {
+  controller: ComposeController;
+  /** The id of the heading that names the form. */
+  labelledBy: string;
+  /** Focus the text area when the form appears (in the sheet, which the user just opened). */
+  autoFocus?: boolean;
+};
+
+/** The new-post form; its logic is useComposeForm. */
+export function ComposeForm({ controller, labelledBy, autoFocus = false }: ComposeFormProps) {
+  const t = useT();
+  const form = useComposeForm(controller);
+  switch (form.status) {
+    case "loading":
+      return <Spinner label={t("client:shell.loading")} />;
+    case "error":
+      return (
+        <div className="flex flex-col items-start gap-2">
+          <p>{form.message}</p>
+          <Button size="sm" onPress={form.retry}>
+            {t("client:shell.error.retry")}
+          </Button>
+        </div>
+      );
+    case "ready":
+      return <ReadyForm form={form} labelledBy={labelledBy} autoFocus={autoFocus} />;
+  }
+}
+
+type ReadyFormProps = { form: ReadyComposeForm; labelledBy: string; autoFocus: boolean };
+
+function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
+  const t = useT();
+  const formatRemaining = useFormatRemaining();
+  const { draft, attachments } = form;
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    form.submit();
+  };
+  return (
+    <div className="flex flex-col gap-4 @container">
+      <form aria-labelledby={labelledBy} onSubmit={onSubmit} className="flex flex-col gap-3">
+        {form.replyTo.status !== "none" && <ReplyContext replyTo={form.replyTo} onCancel={form.cancelReply} />}
+        <Checkbox
+          isSelected={draft.hasWarning}
+          onChange={(hasWarning) => {
+            form.edit({ hasWarning });
+          }}
+        >
+          {t("client:compose.warning.toggle")}
+        </Checkbox>
+        {draft.hasWarning && (
+          <TextField
+            label={t("client:compose.warning.label")}
+            description={t("client:compose.warning.description")}
+            value={draft.spoilerText}
+            onChange={(spoilerText) => {
+              form.edit({ spoilerText });
+            }}
+          />
+        )}
+        <TextArea
+          id={composeTextId}
+          label={t("client:compose.text.label")}
+          value={draft.text}
+          onChange={(text) => {
+            form.edit({ text });
+          }}
+          rows={4}
+          characterLimit={form.textLimit}
+          formatRemaining={formatRemaining}
+          autoFocus={autoFocus}
+        />
+        <AttachmentList
+          items={attachments.items}
+          onDescribe={attachments.describe}
+          onRemove={attachments.remove}
+          requireDescriptions={form.requireDescriptions}
+        />
+        <div className="flex flex-col items-start gap-1">
+          <FileTrigger
+            acceptedFileTypes={acceptedImageTypes}
+            allowsMultiple
+            onSelect={(files) => {
+              attachments.add(files === null ? [] : Array.from(files));
+            }}
+          >
+            <Button size="sm" isDisabled={!attachments.canAdd}>
+              {t("client:compose.media.add")}
+            </Button>
+          </FileTrigger>
+          <p className="text-sm text-fg-muted">{t("client:compose.media.hint", { max: maxAttachments })}</p>
+        </div>
+        {attachments.items.length > 0 && (
+          <Checkbox
+            isSelected={draft.sensitive}
+            onChange={(sensitive) => {
+              form.edit({ sensitive });
+            }}
+          >
+            {t("client:compose.sensitive")}
+          </Checkbox>
+        )}
+        <div className="flex flex-col gap-3 @sm:flex-row @sm:flex-wrap @sm:items-end">
+          <VisibilityPicker
+            value={form.visibility}
+            onChange={(visibility) => {
+              form.edit({ visibility });
+            }}
+          />
+          <Select
+            label={t("client:compose.language.label")}
+            items={form.languages}
+            value={form.language}
+            onChange={(language) => {
+              if (typeof language === "string") form.edit({ language });
+            }}
+            className="min-w-40"
+          >
+            {(option) => (
+              <SelectItem id={option.id} textValue={option.name}>
+                {option.name}
+              </SelectItem>
+            )}
+          </Select>
+        </div>
+        {form.error !== null && <p className="text-danger">{form.error}</p>}
+        <Button type="submit" variant="primary" className="self-end" isDisabled={!form.canSubmit}>
+          {t(form.replyTo.status === "none" ? "client:compose.submit" : "client:compose.submit.reply")}
+        </Button>
+      </form>
+      <Outbox items={form.outbox} onRetry={form.retry} onEdit={form.editOutbox} canEdit={form.canEditOutbox} onDiscard={form.discard} />
+      <Dialog
+        role="alertdialog"
+        title={t("client:compose.missing_description.title")}
+        isOpen={form.confirmation.isOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) form.confirm("describe");
+        }}
+        size="sm"
+      >
+        <div className="flex flex-col gap-4">
+          <p>{t("client:compose.missing_description.body", { count: form.confirmation.missing })}</p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              autoFocus
+              onPress={() => {
+                form.confirm("describe");
+              }}
+            >
+              {t("client:compose.missing_description.add")}
+            </Button>
+            <Button
+              variant="primary"
+              onPress={() => {
+                form.confirm("send");
+              }}
+            >
+              {t("client:compose.missing_description.post")}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+    </div>
+  );
+}

@@ -25,7 +25,8 @@ const maxNewStatuses = 200;
  */
 export function newHomeStatusesQueryOptions() {
   return queryOptions<NewStatuses>({
-    queryKey: ["stream", "/timelines/home", "new"] as const,
+    // Not an API path in the second place, so that invalidating the lists of a path never reaches it.
+    queryKey: ["stream", "home-new-statuses"] as const,
     queryFn: skipToken,
     staleTime: Infinity,
     gcTime: Infinity,

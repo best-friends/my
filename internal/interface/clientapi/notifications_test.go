@@ -14,7 +14,9 @@ import (
 	"testing"
 	"time"
 
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appnotification "github.com/best-friends/my/internal/app/notification"
+	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/domain/notification"
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
@@ -102,12 +104,21 @@ func (f *fakeNotifications) Dismiss(_ context.Context, accountID, id string) err
 const (
 	bobAccountID = "01890a5d-ac96-774b-bcce-b302099a8058"
 	statusID     = "01890a5d-ac96-774b-bcce-b302099a9000"
+	// hiddenStatusID is a status that alice may not see.
+	hiddenStatusID = "01890a5d-ac96-774b-bcce-b302099a9001"
 )
 
 // notificationID returns the ID of the i-th notification; IDs grow with i.
 func notificationID(i int) string { return fmt.Sprintf("01890a5d-ac96-774b-bcce-b302099a%04d", i) }
 
 func newNotificationEnv(t *testing.T) (*authEnv, *fakeNotifications) {
+	e, f, _ := newNotificationEnvWithViews(t)
+	return e, f
+}
+
+// newNotificationEnvWithViews is newNotificationEnv that also returns the statuses that alice
+// may see: only statusID.
+func newNotificationEnvWithViews(t *testing.T) (*authEnv, *fakeNotifications, *fakeViews) {
 	t.Helper()
 	at := time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)
 	f := &fakeNotifications{dismissed: map[string]bool{}, markers: map[string]string{}}
@@ -118,7 +129,9 @@ func newNotificationEnv(t *testing.T) (*authEnv, *fakeNotifications) {
 			CreatedAt: at.Add(time.Duration(i) * time.Minute),
 		}
 		switch typ {
-		case notification.TypeMention, notification.TypeFavourite:
+		case notification.TypeMention:
+			n.StatusID = hiddenStatusID
+		case notification.TypeFavourite:
 			n.StatusID = statusID
 		case notification.TypeModerationNotice:
 			n.SourceAccountID = ""
@@ -129,11 +142,22 @@ func newNotificationEnv(t *testing.T) (*authEnv, *fakeNotifications) {
 	f.ns = append(f.ns, notification.Notification{
 		ID: notificationID(9), RecipientAccountID: bobAccountID, Type: notification.TypeFollow, SourceAccountID: aliceAccountID, CreatedAt: at,
 	})
+	views := &fakeViews{statuses: map[string]appcontent.StatusView{statusID: {
+		Status: content.Status{
+			ID: statusID, URI: "https://social.example/ap/statuses/" + statusID, URL: "https://social.example/@alice/" + statusID,
+			AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic, PublishedAt: at,
+		},
+		Revision: content.Revision{Seq: 1, Language: "en", RevisedAt: at, Bodies: []content.Body{{Language: "en", ContentHTML: "<p>hi</p>"}}},
+		Author:   aliceActor,
+		Counters: content.Counters{StatusID: statusID, FavouritesCount: 1},
+		Relation: &appcontent.ViewerRelation{Author: true},
+	}}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Notifications = f
+		o.TimelineReader = views
 		o.Accounts.(fakeAccounts)[bobAccountID] = o.Accounts.(fakeAccounts)[aliceAccountID]
 	})
-	return e, f
+	return e, f, views
 }
 
 func (e *authEnv) send(t *testing.T, method, path, token, body string) *http.Response {
@@ -167,7 +191,7 @@ func ids(page clientapi.NotificationPage) []string {
 }
 
 func TestListNotifications(t *testing.T) {
-	e, f := newNotificationEnv(t)
+	e, f, views := newNotificationEnvWithViews(t)
 
 	res := e.send(t, http.MethodGet, "/notifications", "read", "")
 	if res.StatusCode != http.StatusOK {
@@ -186,13 +210,27 @@ func TestListNotifications(t *testing.T) {
 	if got := f.queries[0]; got.Limit != 21 || got.Before != "" || got.Types != nil {
 		t.Errorf("query = %+v, want the default limit and one more", got)
 	}
-	notice, fav := page.Items[0], page.Items[1]
-	if notice.Type != "moderation_notice" || notice.Account != nil || notice.StatusId != nil {
+	notice, fav, mention := page.Items[0], page.Items[1], page.Items[2]
+	if notice.Type != "moderation_notice" || notice.Account != nil || notice.Status != nil {
 		t.Errorf("moderation notice = %+v, want neither account nor status", notice)
 	}
-	if fav.Type != "favourite" || fav.Account == nil || fav.Account.Username != "alice" || fav.StatusId == nil || *fav.StatusId != statusID ||
+	if fav.Type != "favourite" || fav.Account == nil || fav.Account.Username != "alice" ||
 		!fav.CreatedAt.Equal(time.Date(2026, 10, 15, 0, 2, 0, 0, time.UTC)) {
 		t.Errorf("favourite = %+v", fav)
+	}
+	if fav.Status == nil || fav.Status.Id != statusID || fav.Status.Content != "<p>hi</p>" || fav.Status.FavouritesCount != 1 {
+		t.Errorf("favourite status = %+v, want the embedded status", fav.Status)
+	}
+	// The post that alice may not see is left out; the notification stays.
+	if mention.Type != "mention" || mention.Status != nil || mention.Account == nil {
+		t.Errorf("mention = %+v, want the account without the hidden status", mention)
+	}
+	// The posts of the page are read in one call, as alice sees them.
+	if len(views.requests) != 1 || !slices.Equal(views.requests[0], []string{statusID, hiddenStatusID}) {
+		t.Errorf("Views calls = %v, want one call with both statuses", views.requests)
+	}
+	if want := (appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: aliceAccountID}); len(views.viewers) != 1 || views.viewers[0] != want {
+		t.Errorf("Views viewers = %+v, want %+v", views.viewers, want)
 	}
 
 	// Pages follow next_cursor until the last one, which has none.

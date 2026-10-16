@@ -69,10 +69,12 @@ type fakeViews struct {
 	tags     map[string]content.Tag
 	pinned   []string
 	viewers  []appcontent.Viewer
+	requests [][]string // the ids of each call of Views
 }
 
 func (f *fakeViews) Views(_ context.Context, viewer appcontent.Viewer, ids []string) ([]appcontent.StatusView, error) {
 	f.viewers = append(f.viewers, viewer)
+	f.requests = append(f.requests, ids)
 	var out []appcontent.StatusView
 	for _, id := range ids {
 		if v, ok := f.statuses[id]; ok {
