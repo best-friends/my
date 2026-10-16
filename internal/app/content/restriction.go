@@ -24,6 +24,14 @@ func (r Restrictions) CanPost() bool { return !r.Post }
 // VisibilityCeiling returns the widest visibility the account may post with (data-model §5.4).
 func (r Restrictions) VisibilityCeiling() content.Visibility { return r.Author.VisibilityCeiling() }
 
+// PostingLimits are what an account's current restrictions let it post (data-model §5.4).
+type PostingLimits struct {
+	// VisibilityCeiling is the widest visibility a new status gets.
+	VisibilityCeiling content.Visibility
+	// Visibilities are the visibilities a new status keeps as asked for, widest first.
+	Visibilities []content.Visibility
+}
+
 // RestrictionPolicy is the port through which the content module reads an account's effective
 // restrictions (data-model §5.3). Use cases decide posting rights and the visibility ceiling
 // only through it, never from the moderation tables.

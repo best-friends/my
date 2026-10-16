@@ -78,7 +78,7 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
   {
-    files: ["web/vite.config.ts", "ui/*.config.ts", "ui/.storybook/main.ts", "ui/scripts/**/*.ts"],
+    files: ["web/vite.config.ts", "web/vite-plugins/**/*.ts", "ui/*.config.ts", "ui/.storybook/main.ts", "ui/scripts/**/*.ts"],
     languageOptions: { globals: globals.node },
   },
   {

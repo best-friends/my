@@ -1490,6 +1490,7 @@ export interface components {
             /** @description Whether the account's public posts may be indexed for search. */
             indexable: boolean;
             source: components["schemas"]["AccountSource"];
+            posting: components["schemas"]["PostingLimits"];
         };
         /** @description A change of the profile; properties left out keep their current values. */
         UpdateCredentialsRequest: {
@@ -1545,6 +1546,19 @@ export interface components {
             require_media_description?: boolean;
             /** @description The languages that timelines show, at most 64; empty shows every language. */
             timeline_languages?: string[];
+        };
+        /**
+         * @description What the account's current moderation restrictions let it post (data-model.md §5.4). The
+         *     server applies the same policy when it posts: a status asked for with a visibility that is
+         *     not in `visibilities` gets `visibility_ceiling` instead.
+         */
+        PostingLimits: {
+            visibility_ceiling: components["schemas"]["Visibility"];
+            /**
+             * @description The visibilities that a new status keeps as asked for, from the widest audience to the
+             *     narrowest; every visibility while the account is not restricted.
+             */
+            visibilities: components["schemas"]["Visibility"][];
         };
     };
     responses: {

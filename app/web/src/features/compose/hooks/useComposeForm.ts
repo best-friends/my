@@ -9,7 +9,9 @@ import {
   cachePostedStatus,
   createStatus,
   type CreateStatusRequest,
+  credentialsQueryOptions,
   instanceQueryOptions,
+  type PostingLimits,
   preferencesQueryOptions,
   type Status,
   statusQueryOptions,
@@ -17,9 +19,10 @@ import {
 } from "../api/compose";
 import { type Draft, isEmptyDraft } from "./draftStore";
 import { type LanguageOption, languageOptions } from "./languages";
-import { countCharacters, defaultVisibility } from "./policy";
+import { countCharacters, defaultVisibility, postedVisibility, visibilities } from "./policy";
 import { type Attachments, descriptionFieldId, useAttachments } from "./useAttachments";
 import { type ComposeController, composeTextId, useComposeState } from "./useCompose";
+import { useUnreachedMentions } from "./useUnreachedMentions";
 import { visibilityLabel } from "./visibilityMessages";
 
 /** The key of every post mutation, so that the outbox can read their state (useMutationState). */
@@ -50,7 +53,15 @@ export type ReadyComposeForm = {
   edit: (change: Partial<Omit<Draft, "idempotencyKey" | "attachments">>) => void;
   /** The characters the text may have: the instance's limit less the content warning. */
   textLimit: number;
+  /** The visibility the post gets: the chosen one, or the ceiling of the account's posting limits. */
   visibility: Visibility;
+  /** What the account's restrictions let it post (data-model.md §5.4), or null while they keep every visibility. */
+  limits: PostingLimits | null;
+  /**
+   * The accounts of other servers that the text mentions and that will not receive the post because it is
+   * `local` and they do not follow the viewer (ADR-0017); empty for the other visibilities.
+   */
+  unreachedMentions: string[];
   language: string;
   languages: LanguageOption[];
   replyTo: ReplyTarget;
@@ -111,6 +122,13 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
   const instance = useQuery(instanceQueryOptions(api));
   const preferences = useQuery(preferencesQueryOptions(api));
   const replyQuery = useQuery({ ...statusQueryOptions(api, draft.replyToId ?? ""), enabled: draft.replyToId !== null });
+  // The form exists only for a signed-in viewer, so the account is in the cache already.
+  const limits = useQuery(credentialsQueryOptions(api)).data?.posting;
+  const replyPost = draft.replyToId === null ? undefined : replyQuery.data;
+  const preferredVisibility = preferences.data?.default_visibility;
+  const visibility =
+    preferredVisibility === undefined ? undefined : postedVisibility(draft.visibility ?? defaultVisibility(preferredVisibility, replyPost), limits);
+  const unreachedMentions = useUnreachedMentions(draft.text, visibility === "local");
   const attachments = useAttachments(store, draft.attachments);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -156,20 +174,18 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
       },
     };
   }
-  if (instance.data === undefined || preferences.data === undefined) return { status: "loading" };
+  if (instance.data === undefined || preferences.data === undefined || visibility === undefined) return { status: "loading" };
 
   const { max_post_characters: maxCharacters } = instance.data.limits;
-  const { default_visibility: preferredVisibility, default_post_language: preferredLanguage, require_media_description: requireDescriptions } =
-    preferences.data;
+  const { default_post_language: preferredLanguage, require_media_description: requireDescriptions } = preferences.data;
   const replyTo: ReplyTarget =
     draft.replyToId === null
       ? { status: "none" }
-      : replyQuery.data !== undefined
-        ? { status: "ready", post: replyQuery.data }
+      : replyPost !== undefined
+        ? { status: "ready", post: replyPost }
         : replyQuery.isError
           ? { status: "error" }
           : { status: "loading" };
-  const visibility = draft.visibility ?? defaultVisibility(preferredVisibility, replyTo.status === "ready" ? replyTo.post : undefined);
   const language = draft.language ?? preferredLanguage;
   const warningLength = draft.hasWarning ? countCharacters(draft.spoilerText) : 0;
   const textLimit = maxCharacters - warningLength;
@@ -203,6 +219,8 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
     },
     textLimit,
     visibility,
+    limits: limits === undefined || limits.visibilities.length === visibilities.length ? null : limits,
+    unreachedMentions,
     language,
     languages: languageOptions(locale, [preferredLanguage, language], t("client:compose.language.und")),
     replyTo,
