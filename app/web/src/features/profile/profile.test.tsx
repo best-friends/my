@@ -2,7 +2,7 @@
 // The profile pages through the whole app (web-client.md T4): the real router and QueryClient, with MSW as
 // the server (FR-204, FR-301 to FR-303). Each state of the viewer's relationship with the account shows its
 // own buttons; the changes go to the server and the page shows the relationship the server returns.
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
 import {
@@ -73,6 +73,32 @@ describe("a profile", () => {
     expect(screen.getByRole("tab", { name: "Posts", selected: true })).toBeInTheDocument();
     const feed = screen.getByRole("feed", { name: "Posts" });
     expect(within(feed).getByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
+  });
+
+  test("shows the account's header image and avatar, decorative, with the band in place of an image that fails", async () => {
+    const header = "https://my.example/media/header/full.png";
+    const avatar = "https://my.example/media/avatar/full.png";
+    bobServer({}, { header_url: header, avatar_url: avatar });
+    await renderApp({ path: "/@bob" });
+    await screen.findByRole("heading", { level: 1, name: "Bob" });
+
+    // Both are decorative (alt=""): the name next to them says whose they are.
+    const images = within(main()).getAllByRole("presentation");
+    expect(images.map((image) => image.getAttribute("src"))).toEqual(expect.arrayContaining([header, avatar]));
+    const headerImage = images.find((image) => image.getAttribute("src") === header);
+    if (headerImage === undefined) throw new Error("no header image");
+    fireEvent.error(headerImage);
+    await waitFor(() => {
+      expect(within(main()).getAllByRole("presentation").map((image) => image.getAttribute("src"))).not.toContain(header);
+    });
+  });
+
+  test("shows the first letter of the name without an avatar", async () => {
+    bobServer();
+    await renderApp({ path: "/@bob" });
+    await screen.findByRole("heading", { level: 1, name: "Bob" });
+    expect(within(main()).queryAllByRole("presentation")).toHaveLength(0);
+    expect(within(main()).getAllByText("B").length).toBeGreaterThan(0);
   });
 
   test("offers to sign in to follow while signed out", async () => {

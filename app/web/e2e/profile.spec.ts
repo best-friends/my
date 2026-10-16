@@ -25,7 +25,11 @@ const alice: Account = {
   created_at: "2026-10-01T00:00:00Z",
 };
 
-/** A profile that tests the layout: a long name, a long unbroken link and fields in two scripts. */
+/** Pictures as data URLs, so that no request leaves the page. */
+const avatar = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#8f4f6d"/></svg>')}`;
+const header = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100"><rect width="300" height="100" fill="#4f6d8f"/></svg>')}`;
+
+/** A profile that tests the layout: a long name, a long unbroken link, fields in two scripts, and images. */
 const bob: Account = {
   ...alice,
   id: "0192f0c4-7a8e-7000-8000-000000000002",
@@ -41,6 +45,8 @@ const bob: Account = {
   locked: true,
   followers_count: 1234,
   following_count: 1,
+  avatar_url: avatar,
+  header_url: header,
 };
 
 function post(n: number): Status {
@@ -128,6 +134,17 @@ test.describe("a profile", () => {
   test("has no axe violations and does not scroll sideways", async ({ page, makeAxeBuilder }) => {
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+  });
+
+  test("shows the header image and the avatar, both decorative", async ({ page }) => {
+    // The header's images come before the tabs; the posts below show the avatar again.
+    const images = page.getByRole("main").locator("header").first().getByRole("presentation");
+    await expect(images).toHaveCount(2);
+    for (const [index, src] of [header, avatar].entries()) {
+      const image = images.nth(index);
+      await expect(image).toHaveAttribute("src", src);
+      await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    }
   });
 
   test("is a heading, the relationship buttons, the profile and its posts in tabs", async ({ page }) => {
