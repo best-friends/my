@@ -5,13 +5,17 @@ import { type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui"
 import { type IntlShape, useIntl } from "react-intl";
 import { useNow } from "../../../lib/clock";
 import { useConfig } from "../../../lib/config";
+import { profilePath } from "../../../lib/paths";
 import { type MediaAttachment, type Status, statusPath } from "../api/status";
 
 export type StatusView = {
-  /** The display name of the account that boosted the post, or null for a post of its own. */
-  boostedBy: string | null;
-  /** The author's display name (the username when there is none) and full handle (`@alice@example.com`). */
-  author: { name: string; handle: string };
+  /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
+  boostedBy: { name: string; href: string } | null;
+  /**
+   * The author's display name (the username when there is none), full handle (`@alice@example.com`) and
+   * profile page.
+   */
+  author: { name: string; handle: string; href: string };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
   time: { dateTime: string; relative: string; absolute: string };
   /** The web client's address of the post (the boosted post for a boost), which its time links to. */
@@ -68,8 +72,13 @@ export function useStatusView(status: Status): StatusView {
   const lang = post.language === "und" ? undefined : post.language;
   const writtenAt = Date.parse(post.created_at);
   return {
-    boostedBy: status.boost === undefined ? null : status.account.display_name || status.account.username,
-    author: { name: post.account.display_name || post.account.username, handle: handleOf(post.account.acct, accountDomain) },
+    boostedBy:
+      status.boost === undefined ? null : { name: status.account.display_name || status.account.username, href: profilePath(status.account.acct) },
+    author: {
+      name: post.account.display_name || post.account.username,
+      handle: handleOf(post.account.acct, accountDomain),
+      href: profilePath(post.account.acct),
+    },
     time: {
       dateTime: post.created_at,
       relative: relativeTime(intl, writtenAt, now),

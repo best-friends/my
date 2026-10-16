@@ -18,9 +18,12 @@ export type StatusCardProps = {
   onDeleted?: () => void;
 };
 
+/** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
+const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
+
 /**
- * One status: the hook's view of it placed into the slots of PostCard, with the action bar. Its time links
- * to the post's page (FR-113).
+ * One status: the hook's view of it placed into the slots of PostCard, with the action bar. Its names link
+ * to the profiles and its time to the post's page (FR-113).
  */
 export function StatusCard({ status, variant = "compact", onDeleted }: StatusCardProps) {
   const t = useT();
@@ -56,21 +59,38 @@ export function StatusCard({ status, variant = "compact", onDeleted }: StatusCar
             <BoostIcon />
             <span>
               {/* The booster's name is the user's text, isolated from the sentence around it (Y10). */}
-              {intl.formatMessage({ id: "client:timeline.boosted_by" }, { name: <bdi key="name">{view.boostedBy}</bdi> })}
+              {intl.formatMessage(
+                { id: "client:timeline.boosted_by" },
+                {
+                  name: (
+                    <Link key="name" href={view.boostedBy.href} className={nameLink}>
+                      <bdi>{view.boostedBy.name}</bdi>
+                    </Link>
+                  ),
+                },
+              )}
             </span>
           </>
         ),
       })}
-      avatar={<Avatar name={view.author.name} decorative />}
+      avatar={
+        // React Aria's Link cannot leave the tab order, so the picture is a link of its own to the same
+        // profile as the name, and named by it.
+        <Link href={view.author.href} aria-label={view.author.name} className="block rounded-full">
+          <Avatar name={view.author.name} decorative />
+        </Link>
+      }
       author={
-        <>
-          <span dir="auto" className="font-semibold">
-            {view.author.name}
-          </span>{" "}
-          <span dir="ltr" className="text-sm text-fg-muted">
-            {view.author.handle}
-          </span>
-        </>
+        <Link href={view.author.href} className={nameLink}>
+          <>
+            <span dir="auto" className="font-semibold">
+              {view.author.name}
+            </span>{" "}
+            <span dir="ltr" className="text-sm text-fg-muted">
+              {view.author.handle}
+            </span>
+          </>
+        </Link>
       }
       time={time}
       content={
