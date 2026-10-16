@@ -32,3 +32,6 @@ The script picks the next number, fills in the date and `Status: Proposed`, and 
 
 Open (or update) the `type:adr` issue for the ADR, summarize the options and recommendation in 5 lines or less,
 add `status:needs-decision`, and link the PR.
+
+Link the ADR from the issue with a `blob/main/...` URL. If the ADR is not merged yet, link the PR instead of a file on the PR branch:
+branches are deleted on merge, so branch URLs break.
