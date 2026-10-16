@@ -117,8 +117,8 @@ func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {
 		spec:  apitest.Load(t),
 	}
 	o := clientapi.Options{
-		Host: "social.example", Name: "Example Social", SoftwareVersion: "1.2.3",
-		SourceURL: "https://git.example/my", MaxPostCharacters: 500,
+		Host: "social.example", SoftwareVersion: "1.2.3",
+		SourceURL:     "https://git.example/my",
 		Authenticator: e.auth,
 		Accounts: fakeAccounts{aliceAccountID: {
 			Account:   account.Account{ID: aliceAccountID, URI: "https://social.example/ap/actors/" + aliceAccountID, CreatedAt: createdAt},

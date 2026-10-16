@@ -122,7 +122,7 @@ func (s *Server) notFoundResponse(ctx context.Context) problem {
 }
 
 // VerifyAccountCredentials serves GET /api/v1/accounts/verify_credentials: the viewer's own
-// account.
+// account with the source of its profile.
 func (s *Server) VerifyAccountCredentials(ctx context.Context, _ VerifyAccountCredentialsRequestObject) (VerifyAccountCredentialsResponseObject, error) {
 	v, err := requireViewer(ctx)
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *Server) VerifyAccountCredentials(ctx context.Context, _ VerifyAccountCr
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: the viewer's account %s: %w", v.AccountID, err)
 	}
-	body, err := s.newProfile(ctx, a)
+	body, err := s.newCredentialAccount(ctx, a)
 	if err != nil {
 		return nil, err
 	}

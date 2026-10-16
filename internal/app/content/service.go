@@ -505,12 +505,29 @@ func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in T
 	}
 
 	parsed := ParseText(in.Text)
+	html, mentions, err := s.render(ctx, parsed)
+	if err != nil {
+		return preparedText{}, err
+	}
+	return preparedText{
+		in:          in,
+		language:    language,
+		attachments: attachments,
+		html:        html,
+		mentions:    mentions,
+		hashtags:    parsed.Hashtags(),
+	}, nil
+}
+
+// render resolves the mentions of parsed text to local, active accounts and renders it. It
+// returns the HTML and the IDs of the mentioned accounts, sorted.
+func (s *Service) render(ctx context.Context, parsed ParsedText) (string, []string, error) {
 	targets := map[MentionHandle]MentionTarget{}
 	var mentions []string
 	for _, h := range parsed.Mentions() {
 		a, ok, err := s.mentioned(ctx, h)
 		if err != nil {
-			return preparedText{}, err
+			return "", nil, err
 		}
 		if !ok {
 			continue
@@ -521,14 +538,16 @@ func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in T
 		}
 	}
 	slices.Sort(mentions)
-	return preparedText{
-		in:          in,
-		language:    language,
-		attachments: attachments,
-		html:        parsed.HTML(RenderOptions{Host: s.d.Host, Mentions: targets}),
-		mentions:    mentions,
-		hashtags:    parsed.Hashtags(),
-	}, nil
+	return parsed.HTML(RenderOptions{Host: s.d.Host, Mentions: targets}), mentions, nil
+}
+
+// RenderProfileText renders the typed note or field value of a local profile to HTML through
+// the same rules as the text of a post (FR-006, ADR-0019 §2): mentions of local, active
+// accounts, hashtags, and URLs become links and everything else is escaped. It implements the
+// account module's RenderProfileText.
+func (s *Service) RenderProfileText(ctx context.Context, text string) (string, error) {
+	html, _, err := s.render(ctx, ParseText(text))
+	return html, err
 }
 
 // attachments checks the media files that authorID attaches (FR-105): at most MaxAttachments

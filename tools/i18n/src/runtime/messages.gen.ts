@@ -238,6 +238,8 @@ export interface MessageArgs {
   "server:errors.invalid_parameter": { name: string };
   /** Your sign-in has expired or was revoked. Sign in again. */
   "server:errors.invalid_token": {};
+  /** The value of {name} is invalid. */
+  "server:errors.invalid_value": { name: string };
   /** This media is attached to a post and can no longer be changed. */
   "server:errors.media_attached": {};
   /** Edit the post to change its description. */
@@ -304,10 +306,16 @@ export interface MessageArgs {
   "server:errors.streaming.too_many": {};
   /** Real-time updates are unavailable right now. Try again later. */
   "server:errors.streaming.unavailable": {};
+  /** {max, plural, one {{name} can be at most # character long.} other {{name} can be at most # characters long.}} */
+  "server:errors.too_long": { max: number; name: string };
+  /** {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}} */
+  "server:errors.too_many": { max: number; name: string };
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
   /** The request cannot be processed. */
   "server:errors.unprocessable": {};
+  /** {name} must be an image that you uploaded and that has finished processing. */
+  "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
   /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */

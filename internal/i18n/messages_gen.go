@@ -641,6 +641,13 @@ func (l *Localizer) ServerErrorsInvalidToken() string {
 	return l.format("server:errors.invalid_token", nil)
 }
 
+// ServerErrorsInvalidValue formats "server:errors.invalid_value". Detail of an API error (HTTP 422) when a property of the request body has a value that the server rejects. {name} is the property name, e.g. time_zone (not translated).
+//
+//	en: The value of {name} is invalid.
+func (l *Localizer) ServerErrorsInvalidValue(name string) string {
+	return l.format("server:errors.invalid_value", map[string]any{"name": name})
+}
+
 // ServerErrorsMediaAttached formats "server:errors.media_attached". API error title for HTTP 409 when the user tries to change the description or focal point of an uploaded media file that a post already attaches.
 //
 //	en: This media is attached to a post and can no longer be changed.
@@ -872,6 +879,20 @@ func (l *Localizer) ServerErrorsStreamingUnavailable() string {
 	return l.format("server:errors.streaming.unavailable", nil)
 }
 
+// ServerErrorsTooLong formats "server:errors.too_long". Detail of an API error (HTTP 422) when a text property of the request body is too long. {name} is the property name, e.g. display_name (not translated); {max} is the limit in characters.
+//
+//	en: {max, plural, one {{name} can be at most # character long.} other {{name} can be at most # characters long.}}
+func (l *Localizer) ServerErrorsTooLong(max int, name string) string {
+	return l.format("server:errors.too_long", map[string]any{"max": max, "name": name})
+}
+
+// ServerErrorsTooMany formats "server:errors.too_many". Detail of an API error (HTTP 422) when a list property of the request body has too many items. {name} is the property name, e.g. fields (not translated); {max} is the limit.
+//
+//	en: {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}}
+func (l *Localizer) ServerErrorsTooMany(max int, name string) string {
+	return l.format("server:errors.too_many", map[string]any{"max": max, "name": name})
+}
+
 // ServerErrorsUnauthenticated formats "server:errors.unauthenticated". API error title for HTTP 401 when the request carries no access token and the operation needs one.
 //
 //	en: Sign in to do this.
@@ -884,6 +905,13 @@ func (l *Localizer) ServerErrorsUnauthenticated() string {
 //	en: The request cannot be processed.
 func (l *Localizer) ServerErrorsUnprocessable() string {
 	return l.format("server:errors.unprocessable", nil)
+}
+
+// ServerErrorsUnusableImage formats "server:errors.unusable_image". Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated).
+//
+//	en: {name} must be an image that you uploaded and that has finished processing.
+func (l *Localizer) ServerErrorsUnusableImage(name string) string {
+	return l.format("server:errors.unusable_image", map[string]any{"name": name})
 }
 
 // ServerHealthUnavailable formats "server:health.unavailable". Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable.

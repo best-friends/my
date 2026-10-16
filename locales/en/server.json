@@ -363,6 +363,10 @@
     "defaultMessage": "Your sign-in has expired or was revoked. Sign in again.",
     "description": "API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked."
   },
+  "errors.invalid_value": {
+    "defaultMessage": "The value of {name} is invalid.",
+    "description": "Detail of an API error (HTTP 422) when a property of the request body has a value that the server rejects. {name} is the property name, e.g. time_zone (not translated)."
+  },
   "errors.media_attached": {
     "defaultMessage": "This media is attached to a post and can no longer be changed.",
     "description": "API error title for HTTP 409 when the user tries to change the description or focal point of an uploaded media file that a post already attaches."
@@ -495,6 +499,14 @@
     "defaultMessage": "Real-time updates are unavailable right now. Try again later.",
     "description": "Title of the HTTP 503 API error when the server is shutting down and accepts no new real-time update streams."
   },
+  "errors.too_long": {
+    "defaultMessage": "{max, plural, one {{name} can be at most # character long.} other {{name} can be at most # characters long.}}",
+    "description": "Detail of an API error (HTTP 422) when a text property of the request body is too long. {name} is the property name, e.g. display_name (not translated); {max} is the limit in characters."
+  },
+  "errors.too_many": {
+    "defaultMessage": "{max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}}",
+    "description": "Detail of an API error (HTTP 422) when a list property of the request body has too many items. {name} is the property name, e.g. fields (not translated); {max} is the limit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
@@ -502,6 +514,10 @@
   "errors.unprocessable": {
     "defaultMessage": "The request cannot be processed.",
     "description": "API error title for HTTP 422; the detail says what is wrong with the request."
+  },
+  "errors.unusable_image": {
+    "defaultMessage": "{name} must be an image that you uploaded and that has finished processing.",
+    "description": "Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated)."
   },
   "health.unavailable": {
     "defaultMessage": "The server is not ready to accept requests.",

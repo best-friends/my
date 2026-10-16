@@ -23,20 +23,24 @@ type Options struct {
 	// AccountDomain is the domain of local handles (@alice@AccountDomain) when it differs
 	// from Host; "" means Host.
 	AccountDomain string
-	// Name is the display name of the instance.
-	Name string
 	// SoftwareVersion is the server version.
 	SoftwareVersion string
 	// SourceURL is where users get the server's source code (ADR-0011).
 	SourceURL string
-	// MaxPostCharacters is the maximum number of characters in the text of a post.
-	MaxPostCharacters int
+	// Instance reads the instance settings and texts; nil reads every setting as its default
+	// and no text.
+	Instance InstanceInfo
 
 	// Authenticator authenticates bearer access tokens; nil accepts none.
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
-	// Media runs the media use cases; nil serves no media operation (they fail with 500).
+	// Profiles changes the viewer's profile.
+	Profiles Profiles
+	// Preferences reads and changes the viewer's preferences.
+	Preferences UserPreferences
+	// Media runs the media use cases and presents profile images; nil serves no media
+	// operation (they fail with 500) and presents no images.
 	Media MediaFiles
 	// Graph reads and changes follows, blocks, and mutes.
 	Graph Graph
@@ -144,23 +148,4 @@ func (m routerMux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.
 // ServeHTTP is never called: the Router serves the registered handlers.
 func (routerMux) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
-}
-
-// cachePublic is the Cache-Control of anonymous public GETs, which shared caches may store
-// (ADR-0016).
-const cachePublic = "public, max-age=60"
-
-// GetInstance serves GET /api/v1/instance.
-func (s *Server) GetInstance(context.Context, GetInstanceRequestObject) (GetInstanceResponseObject, error) {
-	cache := cachePublic
-	return GetInstance200JSONResponse{
-		Body: Instance{
-			Domain:    s.o.Host,
-			Name:      s.o.Name,
-			Version:   s.o.SoftwareVersion,
-			SourceUrl: s.o.SourceURL,
-			Limits:    InstanceLimits{MaxPostCharacters: s.o.MaxPostCharacters},
-		},
-		Headers: GetInstance200ResponseHeaders{CacheControl: &cache},
-	}, nil
 }
