@@ -19,7 +19,6 @@ make check
 - 脆弱性検査はネットワークが必要なため `make check` には含めず、`make go-vuln` で実行します（CI では毎回実行）。
 - 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`）に限ります。
   増やす場合は PR で理由を説明してください。
-- `spikes/` 配下は独立したモジュールで、ルートの lint・テスト・ビルド対象外です。
 
 ## 進め方
 

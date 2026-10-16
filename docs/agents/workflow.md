@@ -29,8 +29,10 @@ git switch -c <type>/<N>-<short-slug>     # e.g. task/42-sqlite-adapter, spike/1
 
 - Keep the change scoped to the issue. Unrelated fixes go in a new issue.
 - Update docs that the change makes stale (ADR open questions, architecture overview, i18n catalogs).
-- Spikes: put throwaway code under `spikes/<N>-<slug>/` and the findings report in the issue (or `docs/spikes/<N>-<slug>.md`).
-  Spike code is never imported by product code.
+- Spikes ([ADR-0022](../adr/0022-spike-outputs-outside-repository.md)):
+  - Push throwaway code to a `spike/<N>-<slug>` branch only. Never open a PR to merge it.
+  - Post the findings report as a comment on the issue, linking the code by commit permalink.
+  - Put the conclusions into ADRs / docs in the present tense, from a separate `docs/<N>-<slug>` branch and PR, linking the report comment as evidence.
 
 ## 5. Verify
 

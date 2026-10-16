@@ -11,5 +11,5 @@
     "MD060": false
   },
   "globs": ["**/*.md"],
-  "ignores": ["node_modules/**", "**/node_modules/**", "spikes/**"]
+  "ignores": ["node_modules/**", "**/node_modules/**"]
 }

@@ -13,8 +13,10 @@ a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OS
 
 - **No production code yet.** The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md), Accepted); the web client and Tauri UI are TypeScript with Bun.
   Cloudflare Workers is **not** a target. Do not scaffold application code or pick libraries until the relevant ADR is *Accepted*
-  (spikes may try libraries under `spikes/`).
-- Work in this phase is: refining requirements, drafting/refining ADRs, spikes (throwaway, clearly marked), and harness/tooling.
+  (spikes may try libraries on their own `spike/*` branch).
+- Work in this phase is: refining requirements, drafting/refining ADRs, spikes, and harness/tooling.
+- Spike reports go in the spike issue as a comment and spike code stays on an unmerged `spike/<issue>-<slug>` branch;
+  only the resulting ADR / doc updates are merged ([ADR-0022](docs/adr/0022-spike-outputs-outside-repository.md)).
 
 ## Source of truth
 
@@ -60,7 +62,7 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 
 ## Design rules that will apply once implementation starts
 
-These come from Proposed ADRs and will be confirmed when they are accepted; follow them in drafts and spikes.
+These come from Proposed ADRs and will be confirmed when they are accepted; follow them in drafts.
 
 - Core (domain + application) must not import cloud SDKs or drivers; those live in adapters and `cmd/` entrypoints.
 - Keep the server buildable with `CGO_ENABLED=0`; a cgo dependency needs an ADR.
@@ -93,4 +95,3 @@ These come from Proposed ADRs and will be confirmed when they are accepted; foll
 Toolchain versions (Go, golangci-lint, Bun, shellcheck) are pinned in `.tool-versions` (asdf / mise).
 Go tools (govulncheck, go-licenses) are pinned with `tool` directives in `tools/go.mod` and run via
 `go tool -modfile=tools/go.mod <tool>`. Go steps skip with a message while the root module has no packages.
-Spikes under `spikes/` are separate modules and are excluded from root Go checks.
