@@ -186,7 +186,9 @@ shadow and the focus ring. [src/storybook.css](src/storybook.css) is the Storybo
 
 Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)). `make ui-test` runs each story in Chromium in
 `en` and `ar-XB`, light and dark; a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
-1024 px container widths. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
+1024 px container widths. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
+anything in it still animates then; stories render and run their `play` functions (which find elements by role, with
+`storybook/test`) without it. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
 them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
 A story's `play` function also tests behaviour in the real browser (focus trap and return, Esc, arrow keys in RTL, announcements that
 keep focus); it runs before axe and the screenshots, in all four projects. The overlay components' jsdom tests cover the same
