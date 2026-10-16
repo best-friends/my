@@ -628,6 +628,28 @@ func (r *StatusRepository) FindTagByName(ctx context.Context, nameNormalized str
 	return tagFrom(row), nil
 }
 
+// FindTag implements content.Repository.
+func (r *StatusRepository) FindTag(ctx context.Context, id string) (content.Tag, error) {
+	row, err := r.db.reader().GetTag(ctx, id)
+	if err != nil {
+		return content.Tag{}, notFound(err, appcontent.ErrNotFound, "tag "+id)
+	}
+	return tagFrom(row), nil
+}
+
+// ListReplies implements content.Repository.
+func (r *StatusRepository) ListReplies(ctx context.Context, uri string) ([]content.Status, error) {
+	rows, err := r.db.reader().ListLiveRepliesTo(ctx, toNullString(uri))
+	if err != nil {
+		return nil, wrap(err, "list replies")
+	}
+	out := make([]content.Status, len(rows))
+	for i, row := range rows {
+		out[i] = statusFrom(row)
+	}
+	return out, nil
+}
+
 // FindCounters implements content.Repository.
 func (r *StatusRepository) FindCounters(ctx context.Context, statusID string) (content.Counters, error) {
 	row, err := r.db.reader().GetStatusCounters(ctx, statusID)

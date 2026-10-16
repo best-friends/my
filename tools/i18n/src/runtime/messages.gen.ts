@@ -170,6 +170,10 @@ export interface MessageArgs {
   "server:errors.account_unavailable": {};
   /** The request is invalid. */
   "server:errors.bad_request": {};
+  /** The request conflicts with the current state of the resource. */
+  "server:errors.conflict": {};
+  /** You are not allowed to do this. */
+  "server:errors.forbidden": {};
   /** This app is not allowed to do this. */
   "server:errors.insufficient_scope": {};
   /** The access token needs the scope {scope}. */
@@ -188,8 +192,40 @@ export interface MessageArgs {
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
   "server:errors.rate_limited_detail": { seconds: number };
+  /** The post created with this Idempotency-Key has been deleted. */
+  "server:errors.status.already_deleted": {};
+  /** The post has no text. */
+  "server:errors.status.empty_text": {};
+  /** The language is not a valid language tag. */
+  "server:errors.status.invalid_language": {};
+  /** {max, plural, one {An image description must be at most # character.} other {An image description must be at most # characters.}} */
+  "server:errors.status.invalid_media_description": { max: number };
+  /** The text contains characters that cannot be posted. */
+  "server:errors.status.invalid_text": {};
+  /** An attached file was not found among your uploads. */
+  "server:errors.status.media_not_found": {};
+  /** An attached file is still being processed or could not be processed. */
+  "server:errors.status.media_not_ready": {};
+  /** Only the author can change this post. */
+  "server:errors.status.not_author": {};
+  /** This post cannot be boosted. */
+  "server:errors.status.not_boostable": {};
+  /** Only your own posts that are not direct can be pinned. */
+  "server:errors.status.not_pinnable": {};
+  /** {max, plural, one {You can pin at most # post.} other {You can pin at most # posts.}} */
+  "server:errors.status.pin_limit": { max: number };
+  /** Your account may not post right now. */
+  "server:errors.status.posting_restricted": {};
+  /** The post you are replying to was not found. */
+  "server:errors.status.reply_not_found": {};
+  /** {max, plural, one {The text and content warning must be at most # character.} other {The text and content warning must be at most # characters.}} */
+  "server:errors.status.text_too_long": { max: number };
+  /** {max, plural, one {A post can attach at most # distinct file.} other {A post can attach at most # distinct files.}} */
+  "server:errors.status.too_many_media": { max: number };
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
+  /** The request cannot be processed. */
+  "server:errors.unprocessable": {};
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
   /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
