@@ -117,6 +117,8 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 
 ### 4.1 ローカル投稿 → 連合配送
 
+連合の受信・配送・取得の詳細は [連合の設計](federation.md) にあります。
+
 1. Client API の投稿作成 → `PostStatus` ユースケース
 2. ドメインで検証（文字数・公開範囲・メンション解決）→ `Status` を生成
 3. **1 回のトランザクション**（`UnitOfWork.Tx`）で `statuses` + 付随行 + `outbox_events`（配送予定）を書き込む（Transactional Outbox）

@@ -12,6 +12,7 @@
 - [アーキテクチャ概要（基礎設計）](architecture/overview.md)
 - [論理データモデル](architecture/data-model.md)
 - [公開範囲の閲覧判定（canView）](architecture/visibility.md)
+- [連合の設計（ActivityPub S2S）](architecture/federation.md)
 - [デプロイターゲットと低コスト構成](architecture/deployment-targets.md)
 - [Web クライアントの設計規約](architecture/web-client.md)
 - [ADR 一覧](adr/README.md)
