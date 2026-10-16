@@ -1,0 +1,34 @@
+{
+  "config.errors": {
+    "defaultMessage": "{count, plural, other {設定エラーが#件あります。}}",
+    "description": "Summary printed before the list of configuration problems when the server refuses to start."
+  },
+  "config.invalid": {
+    "defaultMessage": "設定 {name} の値が正しくありません。",
+    "description": "A configuration value failed validation at startup. {name} is the environment variable or config file key, e.g. MY_DB."
+  },
+  "config.missing": {
+    "defaultMessage": "必須の設定 {name} が設定されていません。",
+    "description": "A required configuration value is absent at startup. {name} is the environment variable or config file key, e.g. MY_DATABASE_URL."
+  },
+  "errors.bad_request": {
+    "defaultMessage": "リクエストが正しくありません。",
+    "description": "API error message for HTTP 400 when no more specific message applies."
+  },
+  "errors.internal": {
+    "defaultMessage": "予期しないエラーが発生しました。しばらくしてからもう一度お試しください。",
+    "description": "API error message for HTTP 500. Must not reveal internal details."
+  },
+  "errors.method_not_allowed": {
+    "defaultMessage": "このリソースでは {method} メソッドを使用できません。",
+    "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
+  },
+  "errors.not_found": {
+    "defaultMessage": "指定されたリソースが見つかりません。",
+    "description": "API error message for HTTP 404."
+  },
+  "health.unavailable": {
+    "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",
+    "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  }
+}

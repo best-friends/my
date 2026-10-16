@@ -9,16 +9,19 @@ MARKDOWNLINT := bunx --bun markdownlint-cli2@0.23.2
 GO_TOOL := go tool -modfile=tools/go.mod
 # Licenses compatible with AGPL-3.0-only (ADR-0011). Anything else, including unknown, fails.
 GO_ALLOWED_LICENSES := 0BSD,AGPL-3.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,BSL-1.0,CC0-1.0,ISC,MIT,MPL-2.0,Unlicense,Zlib
+# npm dependencies of tools/i18n must satisfy the same allowlist.
+NPM_ALLOWED_LICENSES := $(GO_ALLOWED_LICENSES)
 # Version that `make build` stamps into cmd/my.
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 .PHONY: help check lint-docs lint-shell adr-index adr-index-check adr-new build \
-	go-check go-mod-check go-vet go-lint go-test go-build go-licenses go-vuln
+	go-check go-mod-check go-vet go-lint go-test go-build go-licenses go-vuln \
+	i18n-install i18n-gen i18n-check
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
-check: lint-docs adr-index-check go-check ## Run every offline check CI runs
+check: lint-docs adr-index-check go-check i18n-check ## Run every offline check CI runs
 
 lint-docs: ## Lint Markdown files
 	$(MARKDOWNLINT)
@@ -136,3 +139,15 @@ db-check: db-reset ## Reset DB_URL, apply the schema, and fail if any diff remai
 	@diff="$$($(ATLAS) schema diff --from '$(DB_URL)' --to 'file://$(DB_SCHEMA)' --dev-url '$(DB_DEV_URL)' --format '{{ sql . }}')" \
 		&& if [ -n "$$diff" ]; then printf 'schema diff is not empty after apply:\n%s\n' "$$diff" >&2; exit 1; fi
 	@echo "$(DB_DIALECT): schema applies cleanly and leaves no diff"
+
+i18n-install: ## Install the pinned i18n tool dependencies (tools/i18n/bun.lock)
+	cd tools/i18n && bun install --frozen-lockfile
+
+i18n-gen: i18n-install ## Regenerate pseudo-locales, typed accessors, and parity fixtures from locales/
+	cd tools/i18n && bun run src/gen.ts
+
+i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, check npm licenses, test the TS runtime
+	cd tools/i18n && bun run src/check.ts
+	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES)
+	cd tools/i18n && bun test
+	cd tools/i18n && bun --bun run tsc --noEmit -p .

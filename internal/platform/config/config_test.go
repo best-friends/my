@@ -3,16 +3,22 @@
 package config
 
 import (
+	"bytes"
 	"encoding/base64"
 	"errors"
 	"io/fs"
+	"log/slog"
 	"reflect"
 	"slices"
 	"strings"
 	"testing"
 )
 
-var testKEK = base64.StdEncoding.EncodeToString(make([]byte, kekSize))
+var (
+	testKEK  = base64.StdEncoding.EncodeToString(make([]byte, kekSize))
+	testKEK1 = base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{1}, kekSize))
+	testKEK2 = base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{2}, kekSize))
+)
 
 // minimal is the smallest valid environment.
 func minimal() map[string]string {
@@ -92,6 +98,16 @@ listen = "127.0.0.1:9000"
 			},
 		},
 		{
+			name: "previous KEKs",
+			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+", "+testKEK2),
+			want: Config{
+				Host: "social.example.org", AccountDomain: "social.example.org", Role: RoleAll, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				KeyManager: "local", KEK: kek,
+				PreviousKEKs: [][]byte{bytes.Repeat([]byte{1}, kekSize), bytes.Repeat([]byte{2}, kekSize)},
+			},
+		},
+		{
 			name: "host with port",
 			env:  with(minimal(), "MY_HOST", "localhost:3000"),
 			want: Config{
@@ -168,6 +184,21 @@ func TestLoadInvalid(t *testing.T) {
 			},
 		},
 		{
+			name: "malformed previous KEK",
+			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+",c2hvcnQ="),
+			want: []string{"kek_previous (MY_KEK_PREVIOUS): key #2 must decode to 32 bytes, got 5"},
+		},
+		{
+			name: "previous KEK repeats the current one",
+			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+","+testKEK),
+			want: []string{"kek_previous (MY_KEK_PREVIOUS): must not repeat a key or contain the current kek"},
+		},
+		{
+			name: "previous KEK given twice",
+			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+", "+testKEK1),
+			want: []string{"kek_previous (MY_KEK_PREVIOUS): must not repeat a key or contain the current kek"},
+		},
+		{
 			name: "inline queue with a split role",
 			env:  with(minimal(), "MY_QUEUE", "inline", "MY_ROLE", "worker"),
 			want: []string{"queue (MY_QUEUE): inline runs jobs in the enqueuing process and requires role = all, not worker"},
@@ -237,7 +268,7 @@ kek = "nope"
 }
 
 func TestLoadSettingsRedactSecrets(t *testing.T) {
-	_, settings, err := Load(source(minimal(), nil))
+	_, settings, err := Load(source(with(minimal(), "MY_KEK_PREVIOUS", testKEK1), nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,6 +304,26 @@ func TestSchemaWellFormed(t *testing.T) {
 		}
 		if f.secret && f.def != "" {
 			t.Errorf("%s: secrets have no default", f.key)
+		}
+	}
+}
+
+func TestConfigLogValueRedactsSecrets(t *testing.T) {
+	cfg, _, err := Load(source(with(minimal(), "MY_DATABASE_URL", "postgres://user:hunter2@db/my", "MY_KEK_PREVIOUS", testKEK1), nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	slog.New(slog.NewTextHandler(&buf, nil)).Info("config", "config", cfg)
+	out := buf.String()
+	for _, secret := range []string{"hunter2", string(cfg.KEK), string(cfg.PreviousKEKs[0]), testKEK, testKEK1} {
+		if strings.Contains(out, secret) {
+			t.Errorf("log output %q contains secret %q", out, secret)
+		}
+	}
+	for _, want := range []string{"config.host=social.example.org", "config.database_url=(redacted)", "config.kek=(redacted)", "config.kek_previous=1"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("log output %q does not contain %q", out, want)
 		}
 	}
 }

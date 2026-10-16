@@ -73,7 +73,8 @@ These come from Accepted ADRs and are binding.
 
 - Dependency direction ([ADR-0002](docs/adr/0002-modular-monolith-hexagonal.md)) is enforced by depguard rules in `.golangci.yml` (part of `make check`):
   `internal/domain/<module>` imports only the standard library and its own module's domain;
-  `internal/app/<module>` adds its own module's domain and other modules' `internal/app` packages (the only cross-module path);
+  `internal/app/<module>` adds its own module's domain and other modules' `internal/app` packages (the only cross-module path)
+  and the leaf library `internal/i18n`;
   `internal/interface/*` and `internal/adapter/*` never import each other or `internal/platform`;
   `internal/platform` and `cmd/` assemble everything, and nothing imports `cmd/`.
   Never weaken a rule to make an import pass; restructure the code instead.
@@ -90,14 +91,16 @@ These come from Accepted ADRs and are binding.
 - All outbound HTTP goes through the SSRF-guarded `HttpClient` port.
 - Visibility checks go through the single domain policy function; never re-implement them in API or federation code.
   Levels are `public` / `local` / `unlisted` / `private` / `direct`; `local` is never federated beyond the author's followers ([ADR-0017](docs/adr/0017-visibility-local.md)).
-- **i18n**: never hard-code user-facing strings or date/number formats. Add ICU messages to `locales/en` *and* `locales/ja`;
+- **i18n**: never hard-code user-facing strings or date/number formats. Add ICU messages to `locales/en` *and* `locales/ja`,
+  run `make i18n-gen`, and format them through the generated typed accessors (`internal/i18n` in Go);
   use CSS logical properties; render user content with `dir="auto"` ([ADR-0009](docs/adr/0009-internationalization.md)).
+  Namespaces other than `client*` are formatted by Go too and must avoid rich-text tags, number skeletons, and `date` / `time` arguments.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `make check` | Every offline check CI runs: docs lint, ADR index check, and `make go-check` |
+| `make check` | Every offline check CI runs: docs lint, ADR index check, `make go-check`, and `make i18n-check` |
 | `make go-check` | `go mod tidy` check, `go vet`, `golangci-lint`, `go test`, `CGO_ENABLED=0 go build`, license check |
 | `make go-lint` / `go-test` / `go-build` | Run one Go step (`go-lint` uses `.golangci.yml`, including the depguard architecture rules) |
 | `make build [VERSION=...]` | Build `bin/my` with the version stamped in (`git describe` by default) |
@@ -112,8 +115,11 @@ These come from Accepted ADRs and are binding.
 | `make db-apply` / `db-diff` / `db-reset` [`DB_DIALECT=sqlite\|postgres`] | Apply / preview / reset-and-apply `schema/<dialect>.sql` with Atlas (override `DB_URL`, `DB_DEV_URL`) |
 | `make db-check` [`DB_DIALECT=...`] | Reset the DB, apply the schema, and fail if a diff remains (CI runs it for both dialects) |
 | `make db-up` / `db-down` | Start / remove the dev PostgreSQL container (`my` and dev DB `my_dev`, bootstrapped) |
+| `make i18n-gen` | Regenerate pseudo-locales, Go / TS typed accessors, and parity fixtures from `locales/` (commit the result) |
+| `make i18n-check` | Catalog lint (ICU syntax, placeholders, plural categories, shared subset), stale generated files, npm licenses, TS runtime tests |
 
 Toolchain versions (Go, golangci-lint, Bun, shellcheck) are pinned in `.tool-versions` (asdf / mise).
 Atlas Community Edition is pinned and checksum-verified in `scripts/install-atlas.sh` (`make atlas` installs `bin/atlas`).
 Go tools (govulncheck, go-licenses, sqlc) are pinned with `tool` directives in `tools/go.mod` and run via
 `go tool -modfile=tools/go.mod <tool>`.
+The i18n generator and checks are a Bun package in `tools/i18n` with exact versions in `package.json` and a committed `bun.lock`.

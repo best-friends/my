@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Package kernel holds the ports and helpers shared by every module's application layer:
-// the Clock and IDGenerator ports and UUIDv7 helpers.
+// the Clock and IDGenerator ports and UUIDv7 helpers, and the KeyManager port with the Sealer
+// that encrypts secrets for storage (ADR-0019 §6).
 // Use cases obtain time and IDs only through these ports and pass plain values
 // (time.Time, ID strings) to the domain, so that tests stay deterministic (ADR-0015).
-// The production implementations live in internal/adapter/system; deterministic fakes live in pkg/testkit.
+// The production Clock and IDGenerator live in internal/adapter/system and the KeyManager adapters
+// in internal/adapter/keymanager; contract tests and deterministic fakes live in pkg/testkit.
 package kernel
 
 import "time"
