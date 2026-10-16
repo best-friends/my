@@ -42,6 +42,9 @@ type App struct {
 	Config   *config.Config
 	Logger   *slog.Logger
 	Messages *i18n.Bundle
+	// Locales resolves the locale of every HTTP response (ADR-0009 §2) on Messages and the
+	// instance's default_locale setting; every HTTP surface localizes through it.
+	Locales *i18n.Resolver
 
 	Clock      kernel.Clock
 	IDs        kernel.IDGenerator
@@ -190,6 +193,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
+	// The user step joins once API requests are authenticated (#107).
+	a.Locales = &i18n.Resolver{Bundle: a.Messages, InstanceDefault: a.instanceDefaultLocale}
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
@@ -210,12 +215,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	authpages.New(authpages.Options{Identity: a.Identity, Messages: a.Messages, Logger: a.Logger}).Register(a)
+	authpages.New(authpages.Options{Identity: a.Identity, Locales: a.Locales, Logger: a.Logger}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
-		Messages:          a.Messages, RequestID: RequestID, Logger: a.Logger,
+		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }
