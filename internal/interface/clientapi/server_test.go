@@ -5,11 +5,15 @@ package clientapi_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
+	appinstance "github.com/best-friends/my/internal/app/instance"
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/interface/clientapi/apitest"
@@ -27,8 +31,8 @@ func newServerWithLocales(t *testing.T, locales func(*i18n.Bundle) *i18n.Resolve
 		t.Fatal(err)
 	}
 	s := clientapi.New(clientapi.Options{
-		Host: "social.example", Name: "Example Social", SoftwareVersion: "1.2.3",
-		SourceURL: "https://git.example/my", MaxPostCharacters: 500,
+		Host: "social.example", SoftwareVersion: "1.2.3",
+		SourceURL: "https://git.example/my",
 		Locales:   locales(messages),
 		RequestID: func(context.Context) string { return "req-1" },
 		Logger:    slog.New(slog.DiscardHandler),
@@ -50,15 +54,90 @@ func TestGetInstance(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
+	// Without stored settings and texts, the defaults apply and the instance is named after its host.
 	want := clientapi.Instance{
-		Domain: "social.example", Name: "Example Social", Version: "1.2.3", SourceUrl: "https://git.example/my",
-		Limits: clientapi.InstanceLimits{MaxPostCharacters: 500},
+		Domain: "social.example", Name: "social.example", Version: "1.2.3", SourceUrl: "https://git.example/my",
+		Registrations: clientapi.InstanceRegistrations{Mode: clientapi.Approval},
+		Limits:        clientapi.InstanceLimits{MaxPostCharacters: 500},
 	}
 	if got != want {
 		t.Errorf("instance = %+v, want %+v", got, want)
 	}
 	if cc := res.Header.Get("Cache-Control"); cc != "public, max-age=60" {
 		t.Errorf("Cache-Control = %q, want public, max-age=60", cc)
+	}
+	if v := res.Header.Values("Vary"); !slices.Equal(v, []string{"Accept-Language"}) {
+		t.Errorf("Vary = %q, want Accept-Language", v)
+	}
+}
+
+// fakeInstance holds settings and texts by key and locale.
+type fakeInstance struct {
+	settings []instance.CurrentSetting
+	texts    map[instance.TextKey]map[string]string
+	err      error
+}
+
+func (f *fakeInstance) Settings(context.Context) (instance.Settings, error) {
+	return instance.NewSettings(f.settings), f.err
+}
+
+func (f *fakeInstance) Text(_ context.Context, key instance.TextKey, locale string) (instance.Text, bool, error) {
+	var texts []instance.Text
+	for l, body := range f.texts[key] {
+		texts = append(texts, instance.Text{Key: key, Locale: l, Body: body})
+	}
+	t, ok := instance.PickText(texts, appinstance.TextFallbackChain(locale, "en"))
+	return t, ok, nil
+}
+
+func TestGetInstanceFromSettings(t *testing.T) {
+	fake := &fakeInstance{
+		settings: []instance.CurrentSetting{
+			{Key: instance.SettingMaxStatusLength, RevisionID: "r1", Value: "1200"},
+			{Key: instance.SettingRegistrationMode, RevisionID: "r2", Value: "invite"},
+		},
+		texts: map[instance.TextKey]map[string]string{
+			instance.TextName:             {"en": "Example Social", "ja": "例のソーシャル"},
+			instance.TextShortDescription: {"en": "A small instance."},
+		},
+	}
+	e := newAuthEnv(t, func(o *clientapi.Options) { o.Instance = fake })
+	for _, tt := range []struct {
+		name, acceptLanguage, token, wantName, wantCache string
+	}{
+		{"anonymous en", "en", "", "Example Social", "public, max-age=60"},
+		{"anonymous ja", "ja-JP,ja;q=0.9", "", "例のソーシャル", "public, max-age=60"},
+		{"anonymous fr falls back to the default", "fr", "", "Example Social", "public, max-age=60"},
+		// alice's locale is ja, whatever Accept-Language says, so the answer is private.
+		{"user locale", "en", "read", "例のソーシャル", "private, max-age=60"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			header := map[string]string{"Accept-Language": tt.acceptLanguage}
+			if tt.token != "" {
+				header["Authorization"] = "Bearer " + tt.token
+			}
+			res := e.get(t, "/instance", header)
+			if res.StatusCode != http.StatusOK {
+				t.Fatalf("status = %d, want 200", res.StatusCode)
+			}
+			var got clientapi.Instance
+			if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
+				t.Fatal(err)
+			}
+			if got.Name != tt.wantName || got.ShortDescription == nil || *got.ShortDescription != "A small instance." ||
+				got.Description != nil || got.Limits.MaxPostCharacters != 1200 || got.Registrations.Mode != clientapi.Invite {
+				t.Errorf("instance = %+v, want name %q and the stored settings", got, tt.wantName)
+			}
+			if cc := res.Header.Get("Cache-Control"); cc != tt.wantCache {
+				t.Errorf("Cache-Control = %q, want %q", cc, tt.wantCache)
+			}
+		})
+	}
+
+	fake.err = errors.New("database down")
+	if res := e.get(t, "/instance", nil); res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("failing settings = %d, want 500", res.StatusCode)
 	}
 }
 

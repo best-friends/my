@@ -3,6 +3,7 @@
 package testkit
 
 import (
+	"context"
 	"crypto"
 	"crypto/ed25519"
 	"crypto/rsa"
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -56,6 +58,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"CreatesTheInstanceActorOnce", accountCreatesInstanceActorOnce},
 		{"ReportsMissingAccounts", accountReportsMissing},
 		{"RevisesProfiles", accountRevisesProfiles},
+		{"UpdatesLocalProfiles", accountUpdatesLocalProfiles},
 		{"RecordsLifecycleEvents", accountRecordsLifecycle},
 		{"CountsLocalUsers", accountCountsLocalUsers},
 		{"EnsuresBuiltinRoles", accountEnsuresBuiltinRoles},
@@ -114,6 +117,15 @@ func newAccountEnv(t *testing.T, newHarness AccountFactory) *accountEnv {
 		Sealer:      kernel.NewSealer(NewKeyManager("contract")),
 		Host:        contractHost,
 		GenerateKey: cachedKey,
+		RenderProfileText: func(_ context.Context, text string) (string, error) {
+			return "<p>rendered " + text + "</p>", nil
+		},
+		CheckProfileImage: func(_ context.Context, _, mediaID string) error {
+			if mediaID != contractProfileImage {
+				return appaccount.ErrUnusableImage
+			}
+			return nil
+		},
 	})
 	e := &accountEnv{
 		h:        h,
@@ -419,6 +431,97 @@ func accountRevisesProfiles(t *testing.T, e *accountEnv) {
 	wg.Wait()
 	if actor, err := e.accounts.FindByID(ctx, reg.AccountID); err != nil || actor.Profile == nil || actor.Profile.Seq != 3+writers {
 		t.Errorf("after %d concurrent revisions: profile = %+v, %v; want seq %d", writers, actor.Profile, err, 3+writers)
+	}
+}
+
+// contractProfileImage is the only media file that the contract's accounts may use as an avatar
+// or header.
+const contractProfileImage = "0192f3a4-0000-7000-8000-0000000000aa"
+
+// accountUpdatesLocalProfiles checks UpdateProfile: every update is a new revision holding the
+// typed text as its source, properties left out keep their values, and invalid content and
+// unusable images change nothing.
+func accountUpdatesLocalProfiles(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	reg := e.register(t, "fern")
+	ptr := func(s string) *string { return &s }
+	yes := true
+	fields := []account.FieldSource{{Name: "web", Value: "https://fern.example"}, {Name: "pronouns", Value: "she/her"}}
+	e.clock.Advance(time.Second)
+	got, err := e.accounts.UpdateProfile(ctx, reg.AccountID, appaccount.ProfileUpdate{
+		DisplayName: ptr("Fern"), Note: ptr("hello\nworld"), Fields: &fields, AvatarMediaID: ptr(contractProfileImage), Locked: &yes,
+	})
+	if err != nil {
+		t.Fatalf("UpdateProfile = %v", err)
+	}
+	want := account.ProfileRevision{
+		ID: got.Profile.ID, AccountID: reg.AccountID, Seq: 2, DisplayName: "Fern", NoteHTML: "<p>rendered hello\nworld</p>",
+		Locked: true, AvatarMediaID: contractProfileImage, RevisedAt: e.clock.Now(),
+		Fields: []account.ProfileField{
+			{Position: 0, Name: "web", ValueHTML: "<p>rendered https://fern.example</p>"},
+			{Position: 1, Name: "pronouns", ValueHTML: "<p>rendered she/her</p>"},
+		},
+		Source: &account.ProfileSource{Note: "hello\nworld", FieldValues: []string{"https://fern.example", "she/her"}},
+	}
+	stored, err := e.accounts.FindByID(ctx, reg.AccountID)
+	if err != nil || stored.Profile == nil {
+		t.Fatalf("FindByID = %+v, %v", stored, err)
+	}
+	for name, p := range map[string]account.ProfileRevision{"returned": *got.Profile, "stored": *stored.Profile} {
+		if !p.RevisedAt.Equal(want.RevisedAt) {
+			t.Errorf("%s RevisedAt = %v, want %v", name, p.RevisedAt, want.RevisedAt)
+		}
+		p.RevisedAt = want.RevisedAt
+		if !reflect.DeepEqual(p, want) {
+			t.Errorf("%s profile = %+v, want %+v", name, p, want)
+		}
+	}
+
+	// A partial update keeps the rest, sources included, and removes the avatar with "".
+	got, err = e.accounts.UpdateProfile(ctx, reg.AccountID, appaccount.ProfileUpdate{DisplayName: ptr("Fern F."), AvatarMediaID: ptr("")})
+	if err != nil {
+		t.Fatalf("UpdateProfile(display name) = %v", err)
+	}
+	if p := got.Profile; p.Seq != 3 || p.DisplayName != "Fern F." || p.NoteHTML != want.NoteHTML || !p.Locked || p.AvatarMediaID != "" ||
+		!reflect.DeepEqual(p.Fields, want.Fields) || !reflect.DeepEqual(p.Source, want.Source) {
+		t.Errorf("after a partial update: profile = %+v (source %+v), want seq 3 with the rest kept", p, p.Source)
+	}
+	if stored, err := e.accounts.FindByID(ctx, reg.AccountID); err != nil || !reflect.DeepEqual(stored.Profile.Source, want.Source) {
+		t.Errorf("stored source = %+v, %v; want %+v", stored.Profile.Source, err, want.Source)
+	}
+
+	tooMany := make([]account.FieldSource, account.MaxProfileFields+1)
+	for _, tc := range []struct {
+		name string
+		in   appaccount.ProfileUpdate
+		want account.ProfileError
+	}{
+		{"long display name", appaccount.ProfileUpdate{DisplayName: ptr(strings.Repeat("あ", account.MaxDisplayNameLength+1))},
+			account.ProfileError{Property: account.PropertyDisplayName, Problem: account.ProblemTooLong, Max: account.MaxDisplayNameLength}},
+		{"line break in the display name", appaccount.ProfileUpdate{DisplayName: ptr("a\nb")},
+			account.ProfileError{Property: account.PropertyDisplayName, Problem: account.ProblemInvalid}},
+		{"too many fields", appaccount.ProfileUpdate{Fields: &tooMany},
+			account.ProfileError{Property: account.PropertyFields, Problem: account.ProblemTooMany, Max: account.MaxProfileFields}},
+		{"another account's image", appaccount.ProfileUpdate{HeaderMediaID: ptr("0192f3a4-0000-7000-8000-0000000000bb")},
+			account.ProfileError{Property: account.PropertyHeader, Problem: account.ProblemInvalid}},
+	} {
+		_, err := e.accounts.UpdateProfile(ctx, reg.AccountID, tc.in)
+		var pe *account.ProfileError
+		if !errors.As(err, &pe) || *pe != tc.want || !errors.Is(err, account.ErrInvalidProfile) {
+			t.Errorf("%s: UpdateProfile = %v, want %+v", tc.name, err, tc.want)
+		}
+	}
+	if stored, err := e.accounts.FindByID(ctx, reg.AccountID); err != nil || stored.Profile.Seq != 3 {
+		t.Errorf("after rejected updates: seq = %d, %v; want 3", stored.Profile.Seq, err)
+	}
+
+	// The instance actor has no profile to edit.
+	ia, err := e.accounts.EnsureInstanceActor(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.accounts.UpdateProfile(ctx, ia.ID, appaccount.ProfileUpdate{DisplayName: ptr("x")}); !errors.Is(err, appaccount.ErrNotLocal) {
+		t.Errorf("UpdateProfile(instance actor) = %v, want ErrNotLocal", err)
 	}
 }
 

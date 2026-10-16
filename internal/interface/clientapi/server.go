@@ -18,19 +18,24 @@ const BasePath = "/api/v1"
 type Options struct {
 	// Host is the domain that serves the instance.
 	Host string
-	// Name is the display name of the instance.
-	Name string
 	// SoftwareVersion is the server version.
 	SoftwareVersion string
 	// SourceURL is where users get the server's source code (ADR-0011).
 	SourceURL string
-	// MaxPostCharacters is the maximum number of characters in the text of a post.
-	MaxPostCharacters int
+	// Instance reads the instance settings and texts; nil reads every setting as its default
+	// and no text.
+	Instance InstanceInfo
 
 	// Authenticator authenticates bearer access tokens; nil accepts none.
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// Profiles changes the viewer's profile.
+	Profiles Profiles
+	// Preferences reads and changes the viewer's preferences.
+	Preferences UserPreferences
+	// Media presents the media files of profiles; nil presents no images.
+	Media MediaFiles
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when
@@ -115,23 +120,4 @@ func (m routerMux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.
 // ServeHTTP is never called: the Router serves the registered handlers.
 func (routerMux) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
-}
-
-// cachePublic is the Cache-Control of anonymous public GETs, which shared caches may store
-// (ADR-0016).
-const cachePublic = "public, max-age=60"
-
-// GetInstance serves GET /api/v1/instance.
-func (s *Server) GetInstance(context.Context, GetInstanceRequestObject) (GetInstanceResponseObject, error) {
-	cache := cachePublic
-	return GetInstance200JSONResponse{
-		Body: Instance{
-			Domain:    s.o.Host,
-			Name:      s.o.Name,
-			Version:   s.o.SoftwareVersion,
-			SourceUrl: s.o.SourceURL,
-			Limits:    InstanceLimits{MaxPostCharacters: s.o.MaxPostCharacters},
-		},
-		Headers: GetInstance200ResponseHeaders{CacheControl: &cache},
-	}, nil
 }

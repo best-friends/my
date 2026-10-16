@@ -229,6 +229,17 @@ func (q *Queries) GetProfileRevision(ctx context.Context, id string) (AccountPro
 	return i, err
 }
 
+const getProfileRevisionSource = `-- name: GetProfileRevisionSource :one
+SELECT note_source FROM account_profile_revision_sources WHERE revision_id = $1
+`
+
+func (q *Queries) GetProfileRevisionSource(ctx context.Context, revisionID string) (string, error) {
+	row := q.db.QueryRow(ctx, getProfileRevisionSource, revisionID)
+	var note_source string
+	err := row.Scan(&note_source)
+	return note_source, err
+}
+
 const insertAccount = `-- name: InsertAccount :exec
 
 INSERT INTO accounts (id, uri, domain, actor_type, created_at) VALUES ($1, $2, $3, $4, $5)
@@ -364,6 +375,21 @@ func (q *Queries) InsertProfileField(ctx context.Context, arg InsertProfileField
 	return err
 }
 
+const insertProfileFieldSource = `-- name: InsertProfileFieldSource :exec
+INSERT INTO account_profile_field_sources (revision_id, position, value_source) VALUES ($1, $2, $3)
+`
+
+type InsertProfileFieldSourceParams struct {
+	RevisionID  string
+	Position    int32
+	ValueSource string
+}
+
+func (q *Queries) InsertProfileFieldSource(ctx context.Context, arg InsertProfileFieldSourceParams) error {
+	_, err := q.db.Exec(ctx, insertProfileFieldSource, arg.RevisionID, arg.Position, arg.ValueSource)
+	return err
+}
+
 const insertProfileRevision = `-- name: InsertProfileRevision :exec
 INSERT INTO account_profile_revisions (
   id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable,
@@ -401,6 +427,20 @@ func (q *Queries) InsertProfileRevision(ctx context.Context, arg InsertProfileRe
 		arg.HeaderMediaID,
 		arg.RevisedAt,
 	)
+	return err
+}
+
+const insertProfileRevisionSource = `-- name: InsertProfileRevisionSource :exec
+INSERT INTO account_profile_revision_sources (revision_id, note_source) VALUES ($1, $2)
+`
+
+type InsertProfileRevisionSourceParams struct {
+	RevisionID string
+	NoteSource string
+}
+
+func (q *Queries) InsertProfileRevisionSource(ctx context.Context, arg InsertProfileRevisionSourceParams) error {
+	_, err := q.db.Exec(ctx, insertProfileRevisionSource, arg.RevisionID, arg.NoteSource)
 	return err
 }
 
@@ -562,6 +602,35 @@ func (q *Queries) ListLocalAccounts(ctx context.Context) ([]LocalAccount, error)
 			&i.Username,
 			&i.UsernameNormalized,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProfileFieldSources = `-- name: ListProfileFieldSources :many
+SELECT position, value_source FROM account_profile_field_sources WHERE revision_id = $1 ORDER BY position
+`
+
+type ListProfileFieldSourcesRow struct {
+	Position    int32
+	ValueSource string
+}
+
+func (q *Queries) ListProfileFieldSources(ctx context.Context, revisionID string) ([]ListProfileFieldSourcesRow, error) {
+	rows, err := q.db.Query(ctx, listProfileFieldSources, revisionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListProfileFieldSourcesRow{}
+	for rows.Next() {
+		var i ListProfileFieldSourcesRow
+		if err := rows.Scan(&i.Position, &i.ValueSource); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

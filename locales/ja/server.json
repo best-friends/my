@@ -351,6 +351,10 @@
     "defaultMessage": "ログインの有効期限が切れたか、取り消されました。もう一度ログインしてください。",
     "description": "API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked."
   },
+  "errors.invalid_value": {
+    "defaultMessage": "{name} の値が正しくありません。",
+    "description": "Detail of an API error (HTTP 422) when a property of the request body has a value that the server rejects. {name} is the property name, e.g. time_zone (not translated)."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "このリソースでは {method} メソッドを使用できません。",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
@@ -367,9 +371,25 @@
     "defaultMessage": "{seconds, plural, other {# 秒後にもう一度お試しください。}}",
     "description": "Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds."
   },
+  "errors.too_long": {
+    "defaultMessage": "{max, plural, other {{name} は # 文字以内にしてください。}}",
+    "description": "Detail of an API error (HTTP 422) when a text property of the request body is too long. {name} is the property name, e.g. display_name (not translated); {max} is the limit in characters."
+  },
+  "errors.too_many": {
+    "defaultMessage": "{max, plural, other {{name} は # 個までにしてください。}}",
+    "description": "Detail of an API error (HTTP 422) when a list property of the request body has too many items. {name} is the property name, e.g. fields (not translated); {max} is the limit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
+  },
+  "errors.unprocessable": {
+    "defaultMessage": "リクエストの内容が正しくありません。",
+    "description": "API error title for HTTP 422 when the request body is well-formed but a property has a value that the server rejects."
+  },
+  "errors.unusable_image": {
+    "defaultMessage": "{name} には、自分でアップロードして処理が終わった画像を指定してください。",
+    "description": "Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated)."
   },
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",

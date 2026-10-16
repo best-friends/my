@@ -320,12 +320,17 @@ flowchart LR
 | `account_profile_revisions` | イベント | `id`, `account_id`, `seq`, `display_name`, `note_html`, `locked`, `bot`, `discoverable`, `indexable`（`bool`）, `avatar_media_id` / `header_media_id`（NULL 可）, `revised_at` | 一意 `(account_id, seq)` |
 | `account_profile_revision_sources` | イベント（部分型） | `revision_id`（PK）, `note_source` | ローカルのみ。入力されたままの自己紹介 |
 | `account_profile_fields` | イベント（版の子） | `revision_id`, `position`（`int`）, `name`, `value_html` | PK `(revision_id, position)`（FR-006） |
+| `account_profile_field_sources` | イベント（部分型） | `revision_id`, `position`, `value_source` | PK `(revision_id, position)`。ローカルのみ。入力されたままの補足情報の値 |
 | `account_profile_field_verifications` | イベント | `revision_id`, `position`, `verified_at` | PK `(revision_id, position)`。`rel="me"` リンクの検証結果 |
 | `account_profile_heads` | 投影 | `account_id`（PK）, `revision_id` | `seq` が最大の版を指す |
 
 - 鍵アカウント（`locked`）・bot などのフラグはプロフィールの一部として版を持ちます。いつから鍵アカウントだったかが分かります。
 - 新しい版の `seq` は現在の版の `seq + 1` です。同時に版を作って `(account_id, seq)` が衝突したら、トランザクションを再実行して次の `seq` を取ります。
 - ローカルアカウントは作成時に `seq = 1` の版を持ちます。
+- ローカルの版は、入力されたままの自己紹介と補足情報の値を `account_profile_revision_sources` と `account_profile_field_sources` に持ちます。
+  サーバーはそれを投稿の本文と同じ規則（メンション・ハッシュタグ・URL をリンクにし、ほかはエスケープ）で HTML にして `note_html` と `value_html` に保存します（ADR-0019 §2）。
+  補足情報の `name` はプレーンテキストです。プロフィールの更新は、変えない項目を現在の版から写した新しい版を作ります。
+- アバター・ヘッダーにできるのは、本人がアップロードして処理が成功した `media_files` だけです。
 - リモートのプロフィールは、取得した文書から版を作ります（内容が変わったときだけ）。
 
 #### 署名鍵

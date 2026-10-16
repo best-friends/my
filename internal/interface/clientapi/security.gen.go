@@ -7,6 +7,9 @@ package clientapi
 // operationSecurity is the security of each operation of api/openapi.yaml, by the
 // http.ServeMux pattern that the generated code registers it with.
 var operationSecurity = map[string]operationAccess{
-	"GET /api/v1/accounts/verify_credentials": {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
-	"GET /api/v1/instance":                    {Operation: "getInstance", Anonymous: true},
+	"GET /api/v1/accounts/verify_credentials":   {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
+	"GET /api/v1/instance":                      {Operation: "getInstance", Anonymous: true},
+	"GET /api/v1/preferences":                   {Operation: "getPreferences", Scopes: []string{"read:accounts"}},
+	"PATCH /api/v1/accounts/update_credentials": {Operation: "updateAccountCredentials", Scopes: []string{"write:accounts"}},
+	"PATCH /api/v1/preferences":                 {Operation: "updatePreferences", Scopes: []string{"write:accounts"}},
 }

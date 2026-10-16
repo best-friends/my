@@ -180,6 +180,8 @@ export interface MessageArgs {
   "server:errors.invalid_parameter": { name: string };
   /** Your sign-in has expired or was revoked. Sign in again. */
   "server:errors.invalid_token": {};
+  /** The value of {name} is invalid. */
+  "server:errors.invalid_value": { name: string };
   /** The {method} method is not allowed for this resource. */
   "server:errors.method_not_allowed": { method: string };
   /** The requested resource was not found. */
@@ -188,8 +190,16 @@ export interface MessageArgs {
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
   "server:errors.rate_limited_detail": { seconds: number };
+  /** {max, plural, one {{name} can be at most # character long.} other {{name} can be at most # characters long.}} */
+  "server:errors.too_long": { max: number; name: string };
+  /** {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}} */
+  "server:errors.too_many": { max: number; name: string };
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
+  /** The request has invalid content. */
+  "server:errors.unprocessable": {};
+  /** {name} must be an image that you uploaded and that has finished processing. */
+  "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
   /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */

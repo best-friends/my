@@ -105,6 +105,106 @@ func (s *Service) SetPreferences(ctx context.Context, userID string, in Preferen
 // identity.ErrTooManyLanguages for invalid input, and with ErrNotFound when the user has no
 // preferences.
 func (s *Service) SetTimelineLanguages(ctx context.Context, userID string, languages []string) ([]string, error) {
+	out, err := canonicalTimelineLanguages(languages)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.d.Repository.FindPreferences(ctx, userID); err != nil {
+		return nil, err
+	}
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		return s.d.Repository.ReplaceTimelineLanguages(ctx, tx, userID, out)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PreferencesUpdate is a change of a user's preferences; nil fields keep their current value.
+type PreferencesUpdate struct {
+	Locale                  *string
+	TimeZone                *string
+	DefaultVisibility       *identity.Visibility
+	DefaultPostLanguage     *string
+	RequireMediaDescription *bool
+	// TimelineLanguages replace the languages timelines show; empty shows every language.
+	TimelineLanguages *[]string
+}
+
+// PreferenceError is an invalid value of one preference in a PreferencesUpdate.
+type PreferenceError struct {
+	// Preference is the column of user_preferences, or timeline_languages.
+	Preference string
+	// Err wraps one of identity.ErrInvalidLanguageTag, identity.ErrInvalidTimeZone,
+	// identity.ErrInvalidVisibility, and identity.ErrTooManyLanguages.
+	Err error
+}
+
+func (e *PreferenceError) Error() string { return e.Preference + ": " + e.Err.Error() }
+
+// Unwrap returns Err.
+func (e *PreferenceError) Unwrap() error { return e.Err }
+
+// UpdatePreferences applies a change to the preferences of a user in one transaction and
+// returns the result. Language tags are canonicalized and timeline languages deduplicated and
+// sorted. Invalid input fails with a *PreferenceError, and a user without preferences with
+// ErrNotFound.
+func (s *Service) UpdatePreferences(ctx context.Context, userID string, in PreferencesUpdate) (UserPreferences, error) {
+	cur, err := s.Preferences(ctx, userID)
+	if err != nil {
+		return UserPreferences{}, err
+	}
+	p := cur.Preferences
+	if in.Locale != nil {
+		if p.Locale, err = CanonicalLocale(*in.Locale); err != nil {
+			return UserPreferences{}, &PreferenceError{Preference: "locale", Err: err}
+		}
+	}
+	if in.TimeZone != nil {
+		if err := identity.ValidateTimeZone(*in.TimeZone); err != nil {
+			return UserPreferences{}, &PreferenceError{Preference: "time_zone", Err: err}
+		}
+		p.TimeZone = *in.TimeZone
+	}
+	if in.DefaultVisibility != nil {
+		if err := identity.ValidateVisibility(*in.DefaultVisibility); err != nil {
+			return UserPreferences{}, &PreferenceError{Preference: "default_visibility", Err: err}
+		}
+		p.DefaultVisibility = *in.DefaultVisibility
+	}
+	if in.DefaultPostLanguage != nil {
+		if p.DefaultPostLanguage, err = CanonicalLanguage(*in.DefaultPostLanguage); err != nil {
+			return UserPreferences{}, &PreferenceError{Preference: "default_post_language", Err: err}
+		}
+	}
+	if in.RequireMediaDescription != nil {
+		p.RequireMediaDescription = *in.RequireMediaDescription
+	}
+	langs := cur.TimelineLanguages
+	if in.TimelineLanguages != nil {
+		if langs, err = canonicalTimelineLanguages(*in.TimelineLanguages); err != nil {
+			return UserPreferences{}, &PreferenceError{Preference: "timeline_languages", Err: err}
+		}
+	}
+	p.UpdatedAt = s.d.Clock.Now()
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if err := s.d.Repository.UpdatePreferences(ctx, tx, p); err != nil {
+			return err
+		}
+		if in.TimelineLanguages == nil {
+			return nil
+		}
+		return s.d.Repository.ReplaceTimelineLanguages(ctx, tx, userID, langs)
+	})
+	if err != nil {
+		return UserPreferences{}, err
+	}
+	return UserPreferences{Preferences: p, TimelineLanguages: langs}, nil
+}
+
+// canonicalTimelineLanguages canonicalizes, deduplicates, and sorts timeline languages.
+func canonicalTimelineLanguages(languages []string) ([]string, error) {
 	if len(languages) > identity.MaxTimelineLanguageCount {
 		return nil, fmt.Errorf("%w: at most %d", identity.ErrTooManyLanguages, identity.MaxTimelineLanguageCount)
 	}
@@ -117,17 +217,7 @@ func (s *Service) SetTimelineLanguages(ctx context.Context, userID string, langu
 		out = append(out, c)
 	}
 	slices.Sort(out)
-	out = slices.Compact(out)
-	if _, err := s.d.Repository.FindPreferences(ctx, userID); err != nil {
-		return nil, err
-	}
-	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		return s.d.Repository.ReplaceTimelineLanguages(ctx, tx, userID, out)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	return slices.Compact(out), nil
 }
 
 // CanonicalLanguage returns the canonical form of a BCP 47 language tag ("ja-jp" -> "ja-JP",

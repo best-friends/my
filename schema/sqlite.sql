@@ -1040,3 +1040,24 @@ CREATE TABLE notification_exclusions (
 CREATE TABLE notification_deleted_statuses (
   status_id TEXT NOT NULL PRIMARY KEY
 ) STRICT;
+
+-- ---------------------------------------------------------------------------------------------
+-- account: what the owner of a local profile typed (data-model §4.2). Owned by
+-- internal/app/account; the client API returns it for editing the profile.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event (subtype of account_profile_revisions): the profile text of a local revision as typed,
+-- from which note_html is rendered.
+CREATE TABLE account_profile_revision_sources (
+  revision_id TEXT NOT NULL PRIMARY KEY,
+  note_source TEXT NOT NULL
+) STRICT;
+
+-- Event (subtype of account_profile_fields): the value of a local field as typed, from which
+-- value_html is rendered.
+CREATE TABLE account_profile_field_sources (
+  revision_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  value_source TEXT NOT NULL,
+  PRIMARY KEY (revision_id, position)
+) STRICT;

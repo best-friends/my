@@ -38,6 +38,8 @@ tags:
     description: Public information about the instance.
   - name: accounts
     description: Accounts and the authenticated user's own account.
+  - name: preferences
+    description: The authenticated user's preferences.
 paths:
   /instance:
     get:
@@ -47,7 +49,11 @@ paths:
       security: []
       responses:
         "200":
-          description: The instance.
+          description: |
+            The instance. Its texts are in the locale of the request (the user's locale,
+            then `Accept-Language`, then the instance's default locale), falling back along
+            the locale chain to the instance's default locale. Like every response of the
+            API, it varies with `Accept-Language`.
           headers:
             Cache-Control:
               $ref: "#/components/headers/CacheControl"
@@ -66,14 +72,92 @@ paths:
         - oauth2: ["read:accounts"]
       responses:
         "200":
-          description: The account that the access token acts as.
+          description: The account that the access token acts as, with the source of its profile.
           headers:
             Cache-Control:
               $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Account"
+                $ref: "#/components/schemas/CredentialAccount"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- The user's own profile and preferences (#113) ---
+  /accounts/update_credentials:
+    patch:
+      operationId: updateAccountCredentials
+      summary: Change the authenticated user's profile
+      description: |
+        Records a new revision of the profile. Properties left out of the request keep their
+        current values. The note and the field values are plain text that the server renders
+        to HTML like the text of a post (mentions, hashtags, and URLs become links). A 422
+        problem names the property that is invalid in `detail`.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCredentialsRequest"
+      responses:
+        "200":
+          description: The account with its new profile.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialAccount"
+        default:
+          $ref: "#/components/responses/Problem"
+  /preferences:
+    get:
+      operationId: getPreferences
+      summary: Get the authenticated user's preferences
+      tags: [preferences]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The preferences.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updatePreferences
+      summary: Change the authenticated user's preferences
+      description: |
+        Properties left out of the request keep their current values. Language tags are
+        canonicalized (`ja-jp` becomes `ja-JP`). A 422 problem names the property that is
+        invalid in `detail`.
+      tags: [preferences]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreferencesRequest"
+      responses:
+        "200":
+          description: The preferences after the change.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
         default:
           $ref: "#/components/responses/Problem"
 components:
@@ -220,14 +304,22 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, limits]
+      required: [domain, name, version, source_url, registrations, limits]
       properties:
         domain:
           description: The domain that serves the instance.
           type: string
         name:
-          description: The display name of the instance.
+          description: The display name of the instance; the domain when the instance has none.
           type: string
+        short_description:
+          description: A one-paragraph summary of the instance, as plain text; omitted when there is none.
+          type: string
+        description:
+          description: The full description of the instance, as plain text; omitted when there is none.
+          type: string
+        registrations:
+          $ref: "#/components/schemas/InstanceRegistrations"
         version:
           description: The server version.
           type: string
@@ -237,13 +329,24 @@ components:
           format: uri
         limits:
           $ref: "#/components/schemas/InstanceLimits"
+    InstanceRegistrations:
+      description: How people sign up on the instance.
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          description: |
+            Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
+            approval), `invite` (only with an invite), or `closed` (nobody).
+          type: string
+          enum: [open, approval, invite, closed]
     InstanceLimits:
       description: Limits that clients check before sending a request.
       type: object
       required: [max_post_characters]
       properties:
         max_post_characters:
-          description: The maximum number of characters in the text of a post.
+          description: The maximum number of characters in the text and content warning of a post.
           type: integer
           minimum: 1
     Account:
@@ -279,3 +382,166 @@ components:
           description: When the account was created.
           type: string
           format: date-time
+    # --- The user's own profile and preferences (#113) ---
+    AccountField:
+      description: A metadata field of a profile, as clients show it.
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          description: The label, as plain text.
+          type: string
+        value:
+          description: The value as sanitized HTML.
+          type: string
+    AccountFieldSource:
+      description: A metadata field of a profile as the user typed it.
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          description: The label, at most 255 characters.
+          type: string
+        value:
+          description: The value as plain text, at most 255 characters.
+          type: string
+    AccountSource:
+      description: The profile as the user typed it, for editing.
+      type: object
+      required: [note, fields]
+      properties:
+        note:
+          description: The profile text as plain text; empty when there is none.
+          type: string
+        fields:
+          description: The metadata fields as typed.
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountFieldSource"
+        avatar_media_id:
+          description: The media file of the avatar; omitted when there is none.
+          type: string
+        header_media_id:
+          description: The media file of the header image; omitted when there is none.
+          type: string
+    CredentialAccount:
+      description: The authenticated user's own account, with what only its owner sees.
+      allOf:
+        - $ref: "#/components/schemas/Account"
+        - type: object
+          required: [fields, discoverable, indexable, source]
+          properties:
+            avatar:
+              description: The URL of the avatar image; omitted when there is none.
+              type: string
+              format: uri
+            header:
+              description: The URL of the header image; omitted when there is none.
+              type: string
+              format: uri
+            fields:
+              description: The metadata fields of the profile.
+              type: array
+              items:
+                $ref: "#/components/schemas/AccountField"
+            discoverable:
+              description: Whether the account may be suggested to others and listed in directories.
+              type: boolean
+            indexable:
+              description: Whether the account's public posts may be indexed for search.
+              type: boolean
+            source:
+              $ref: "#/components/schemas/AccountSource"
+    UpdateCredentialsRequest:
+      description: A change of the profile; properties left out keep their current values.
+      type: object
+      properties:
+        display_name:
+          description: The display name, at most 30 characters; empty removes it.
+          type: string
+        note:
+          description: The profile text as plain text, at most 500 characters; empty removes it.
+          type: string
+        fields:
+          description: The metadata fields, replacing the current ones; at most 4.
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountFieldSource"
+        avatar_media_id:
+          description: |
+            The ID of a processed image that the user uploaded, to become the avatar; empty
+            removes the avatar.
+          type: string
+        header_media_id:
+          description: |
+            The ID of a processed image that the user uploaded, to become the header image;
+            empty removes the header image.
+          type: string
+        locked:
+          description: Whether follow requests need the user's approval.
+          type: boolean
+        bot:
+          description: Whether the account is automated.
+          type: boolean
+        discoverable:
+          description: Whether the account may be suggested to others and listed in directories.
+          type: boolean
+        indexable:
+          description: Whether the account's public posts may be indexed for search.
+          type: boolean
+    Visibility:
+      description: |
+        The audience of a post (ADR-0017): `public` (everyone, in public timelines), `local`
+        (everyone, in public timelines of this instance only, never federated beyond the
+        author's followers), `unlisted` (everyone, not in public timelines), `private`
+        (followers), or `direct` (the mentioned accounts).
+      type: string
+      enum: [public, local, unlisted, private, direct]
+    Preferences:
+      description: The authenticated user's preferences.
+      type: object
+      required: [locale, time_zone, default_visibility, default_post_language, require_media_description, timeline_languages]
+      properties:
+        locale:
+          description: The UI locale, a BCP 47 language tag.
+          type: string
+        time_zone:
+          description: The time zone, an IANA name such as `Asia/Tokyo`.
+          type: string
+        default_visibility:
+          $ref: "#/components/schemas/Visibility"
+        default_post_language:
+          description: The language of new posts that name none, a BCP 47 language tag; `und` when undetermined.
+          type: string
+        require_media_description:
+          description: Whether clients ask for a description before posting media without one.
+          type: boolean
+        timeline_languages:
+          description: The languages that timelines show, sorted; empty shows every language.
+          type: array
+          items:
+            type: string
+    UpdatePreferencesRequest:
+      description: A change of the preferences; properties left out keep their current values.
+      type: object
+      properties:
+        locale:
+          description: The UI locale, a BCP 47 language tag.
+          type: string
+        time_zone:
+          description: The time zone, an IANA name.
+          type: string
+        default_visibility:
+          $ref: "#/components/schemas/Visibility"
+        default_post_language:
+          description: The language of new posts that name none; `und` for undetermined.
+          type: string
+        require_media_description:
+          description: Whether clients ask for a description before posting media without one.
+          type: boolean
+        timeline_languages:
+          description: The languages that timelines show, at most 64; empty shows every language.
+          type: array
+          maxItems: 64
+          items:
+            type: string
