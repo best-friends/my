@@ -50,3 +50,41 @@ func TestPostingIsWired(t *testing.T) {
 		}
 	})
 }
+
+// TestInteractionsAreWired checks that the composition root wires the interaction use cases and
+// registers each content projector exactly once: a boost and a favourite count one each, and a
+// repeated command changes nothing.
+func TestInteractionsAreWired(t *testing.T) {
+	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
+	start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
+		ctx := t.Context()
+		var accounts []string
+		for _, name := range []string{"alice", "bob"} {
+			reg, err := a.Identity.RegisterLocalUser(ctx, identity.RegisterInput{
+				Username: name, Password: "correct horse battery staple", DisplayName: name, Locale: "en",
+			})
+			if err != nil {
+				t.Fatalf("RegisterLocalUser(%s): %v", name, err)
+			}
+			accounts = append(accounts, reg.AccountID)
+		}
+		p, err := a.Content.Create(ctx, appcontent.CreateInput{
+			AuthorAccountID: accounts[0], TextInput: appcontent.TextInput{Text: "boost me"}, Visibility: domcontent.VisibilityPublic,
+		})
+		if err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		for range 2 {
+			if _, err := a.Interactions.Boost(ctx, accounts[1], p.Status.ID); err != nil {
+				t.Fatalf("Boost: %v", err)
+			}
+			if _, err := a.Interactions.Favourite(ctx, accounts[1], p.Status.ID); err != nil {
+				t.Fatalf("Favourite: %v", err)
+			}
+		}
+		c, err := a.Interactions.Counters(ctx, p.Status.ID)
+		if err != nil || c.BoostsCount != 1 || c.FavouritesCount != 1 || c.RepliesCount != 0 {
+			t.Errorf("Counters = %+v, %v; want one boost and one favourite", c, err)
+		}
+	})
+}

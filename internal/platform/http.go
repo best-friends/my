@@ -62,7 +62,8 @@ func (a *App) readiness(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	if err := a.Ready(ctx); err != nil {
 		a.Logger.WarnContext(r.Context(), "not ready", slog.Any("error", err))
-		l := a.localizer(r)
+		// The default locale lives in the database that just failed, so it is not consulted.
+		l := (&i18n.Resolver{Bundle: a.Messages}).RequestLocalizer(r)
 		a.writeProblem(w, r, l, http.StatusServiceUnavailable, l.ServerHealthUnavailable())
 		return
 	}
@@ -85,8 +86,18 @@ type problem struct {
 	RequestID string `json:"request_id,omitempty"`
 }
 
-func (a *App) localizer(r *http.Request) *i18n.Localizer {
-	return a.Messages.Localizer(a.Messages.Resolve(i18n.Preferences{AcceptLanguage: r.Header.Get("Accept-Language")}))
+func (a *App) localizer(r *http.Request) *i18n.Localizer { return a.Locales.RequestLocalizer(r) }
+
+// instanceDefaultLocale returns the current default_locale setting for Locales, read per
+// call so that a change applies without a restart; it returns "" (meaning en) when the
+// setting cannot be read.
+func (a *App) instanceDefaultLocale(ctx context.Context) string {
+	locale, err := a.Instance.DefaultLocale(ctx)
+	if err != nil {
+		a.Logger.WarnContext(ctx, "cannot read the default locale", slog.Any("error", err))
+		return ""
+	}
+	return locale
 }
 
 func (a *App) writeProblem(w http.ResponseWriter, r *http.Request, l *i18n.Localizer, status int, title string) {

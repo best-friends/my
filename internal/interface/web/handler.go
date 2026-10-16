@@ -4,6 +4,7 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -15,6 +16,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/best-friends/my/internal/i18n"
@@ -41,8 +43,11 @@ type Options struct {
 	AccountDomain string
 	// InstanceName is the name the shell and the Web App Manifest show.
 	InstanceName string
-	// Locale is the instance's default locale, for <html lang dir> and the manifest.
-	Locale string
+	// DefaultLocale returns the instance's current default locale, for <html lang dir>, the
+	// runtime config, and the manifest; nil means the source locale. It is read per request so
+	// that a change of the setting applies without a restart. The HTML never depends on
+	// Accept-Language, so that shared caches keep one copy (ADR-0028).
+	DefaultLocale func(ctx context.Context) string
 	// ThemeColor and BackgroundColor go into the manifest; empty means the defaults.
 	ThemeColor, BackgroundColor string
 
@@ -81,17 +86,25 @@ const (
 // Handler serves the web client. Its ServeHTTP serves the shell at SPA routes, and the
 // files at the root of the build (sw.js, icon.svg).
 type Handler struct {
-	o        Options
-	shell    document
-	manifest document
-	csp      string
+	o         Options
+	tags      entryTags
+	apiOrigin string
+	hasIcon   bool
+	csp       string
+	// localized holds the shell and the manifest of each default locale seen, rendered once.
+	localized sync.Map // locale -> *localizedDocuments
 	// files are the servable files of the build, by path, with their ETags.
 	files map[string]string
 	// stylesheet is the URL of the entry's first stylesheet, empty without one.
 	stylesheet string
 }
 
-// document is a response rendered once at start.
+// localizedDocuments are the documents that depend on the default locale.
+type localizedDocuments struct {
+	shell, manifest document
+}
+
+// document is a response rendered once.
 type document struct {
 	body        []byte
 	etag        string
@@ -110,8 +123,8 @@ func New(o Options) (*Handler, error) {
 	if o.InstanceName == "" {
 		o.InstanceName = o.Host
 	}
-	if o.Locale == "" {
-		o.Locale = i18n.SourceLocale
+	if o.DefaultLocale == nil {
+		o.DefaultLocale = func(context.Context) string { return i18n.SourceLocale }
 	}
 	if o.ThemeColor == "" {
 		o.ThemeColor = DefaultThemeColor
@@ -135,7 +148,7 @@ func New(o Options) (*Handler, error) {
 		return nil, err
 	}
 	h.files = files
-	_, hasIcon := files[iconPath]
+	_, h.hasIcon = files[iconPath]
 
 	var tags entryTags
 	apiOrigin := "https://" + o.Host
@@ -162,19 +175,44 @@ func New(o Options) (*Handler, error) {
 	if len(tags.Stylesheet) > 0 {
 		h.stylesheet = tags.Stylesheet[0]
 	}
-	cfg := runtimeConfig{
-		APIOrigin: apiOrigin, InstanceName: o.InstanceName, AccountDomain: o.AccountDomain, DefaultLocale: o.Locale,
-	}
-	if h.shell, err = renderShell(shellData{
-		Lang: o.Locale, Dir: i18n.Direction(o.Locale), Title: o.InstanceName, ThemeColor: o.ThemeColor,
-		HasIcon: hasIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: tags, Config: cfg,
-	}); err != nil {
-		return nil, err
-	}
-	if h.manifest, err = renderWebManifest(&o, hasIcon); err != nil {
+	h.tags, h.apiOrigin = tags, apiOrigin
+	// Render once now, so that a template or encoding error fails the start.
+	if _, err := h.render(i18n.SourceLocale); err != nil {
 		return nil, err
 	}
 	return h, nil
+}
+
+// documents returns the shell and the manifest for the current default locale.
+func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
+	locale := h.o.DefaultLocale(ctx)
+	if locale == "" {
+		locale = i18n.SourceLocale
+	}
+	if d, ok := h.localized.Load(locale); ok {
+		return d.(*localizedDocuments), nil
+	}
+	return h.render(locale)
+}
+
+// render renders and caches the documents of a default locale.
+func (h *Handler) render(locale string) (*localizedDocuments, error) {
+	cfg := runtimeConfig{
+		APIOrigin: h.apiOrigin, InstanceName: h.o.InstanceName, AccountDomain: h.o.AccountDomain, DefaultLocale: locale,
+	}
+	shell, err := renderShell(shellData{
+		Lang: locale, Dir: i18n.Direction(locale), Title: h.o.InstanceName, ThemeColor: h.o.ThemeColor,
+		HasIcon: h.hasIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags, Config: cfg,
+	})
+	if err != nil {
+		return nil, err
+	}
+	manifest, err := renderWebManifest(&h.o, locale, h.hasIcon)
+	if err != nil {
+		return nil, err
+	}
+	d, _ := h.localized.LoadOrStore(locale, &localizedDocuments{shell: shell, manifest: manifest})
+	return d.(*localizedDocuments), nil
 }
 
 func viteClient(origin string) string {
@@ -267,6 +305,11 @@ func reserved(p string) bool {
 }
 
 func (h *Handler) serveShell(w http.ResponseWriter, r *http.Request) {
+	d, err := h.documents(r.Context())
+	if err != nil {
+		h.fail(w, r, err)
+		return
+	}
 	hd := w.Header()
 	addVary(hd, "Accept")
 	hd.Set("Content-Security-Policy", h.csp)
@@ -275,12 +318,24 @@ func (h *Handler) serveShell(w http.ResponseWriter, r *http.Request) {
 	} else {
 		hd.Set("Cache-Control", cacheShell)
 	}
-	h.shell.serve(w, r)
+	d.shell.serve(w, r)
 }
 
 func (h *Handler) webManifest(w http.ResponseWriter, r *http.Request) {
+	d, err := h.documents(r.Context())
+	if err != nil {
+		h.fail(w, r, err)
+		return
+	}
 	w.Header().Set("Cache-Control", cacheShell)
-	h.manifest.serve(w, r)
+	d.manifest.serve(w, r)
+}
+
+// fail answers a document that cannot be rendered with 500 after logging it.
+func (h *Handler) fail(w http.ResponseWriter, r *http.Request, err error) {
+	h.o.Logger.ErrorContext(r.Context(), "web: render failed", slog.Any("error", err))
+	w.Header().Set("Cache-Control", "no-store")
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
 // asset serves GET /assets/{path...}: content-hashed files, cached for a year.

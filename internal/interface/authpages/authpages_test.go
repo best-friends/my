@@ -68,7 +68,7 @@ func newServer(t *testing.T, id authpages.Identity) http.Handler {
 		t.Fatal(err)
 	}
 	m := mux{http.NewServeMux()}
-	authpages.New(authpages.Options{Identity: id, Messages: b}).Register(m)
+	authpages.New(authpages.Options{Identity: id, Locales: &i18n.Resolver{Bundle: b}}).Register(m)
 	return m
 }
 
@@ -183,7 +183,7 @@ func TestRightToLeftLocale(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := mux{http.NewServeMux()}
-	authpages.New(authpages.Options{Identity: newFakeIdentity(), Messages: b, Stylesheet: "/assets/x.css"}).Register(m)
+	authpages.New(authpages.Options{Identity: newFakeIdentity(), Locales: &i18n.Resolver{Bundle: b}, Stylesheet: "/assets/x.css"}).Register(m)
 	w := newBrowser(t, m).do(http.MethodGet, authpages.PathSignIn, nil, map[string]string{"Accept-Language": "ar-XB"})
 	if body := w.Body.String(); !strings.Contains(body, `<html lang="ar-XB" dir="rtl">`) || !strings.Contains(body, `href="/assets/x.css"`) {
 		t.Errorf("page = %s", body)

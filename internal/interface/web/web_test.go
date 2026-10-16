@@ -4,6 +4,7 @@ package web_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -35,6 +36,10 @@ func fakeBuild() fstest.MapFS {
 		"icon.svg":               {Data: []byte("<svg xmlns='http://www.w3.org/2000/svg'/>")},
 		"sw.js":                  {Data: []byte("self.addEventListener('fetch', () => {})")},
 	}
+}
+
+func locale(l string) func(context.Context) string {
+	return func(context.Context) string { return l }
 }
 
 func newHandler(t *testing.T, o web.Options) (*web.Handler, *http.ServeMux) {
@@ -141,7 +146,7 @@ func TestShellCSP(t *testing.T) {
 // data block through html/template, which must keep them from ending the script element.
 func TestRuntimeConfigIsEscaped(t *testing.T) {
 	name := `</script><script>alert(1)</script><!-- "quoted" & 'single' \ ` + "\u2028"
-	_, mux := newHandler(t, web.Options{InstanceName: name, Host: "social.example", AccountDomain: "example.org", Locale: "ja"})
+	_, mux := newHandler(t, web.Options{InstanceName: name, Host: "social.example", AccountDomain: "example.org", DefaultLocale: locale("ja")})
 	body := get(mux, "/", nil).Body.String()
 	if strings.Count(body, "</script>") != 2 || strings.Contains(body, "<script>alert") || strings.Contains(body, "<!--") {
 		t.Fatalf("the instance name escaped the data block:\n%s", body)
@@ -166,9 +171,20 @@ func TestRuntimeConfigIsEscaped(t *testing.T) {
 }
 
 func TestShellLanguageAndDirection(t *testing.T) {
-	_, mux := newHandler(t, web.Options{Locale: "ar"})
-	if body := get(mux, "/", nil).Body.String(); !strings.Contains(body, `<html lang="ar" dir="rtl">`) {
+	current := "ar"
+	_, mux := newHandler(t, web.Options{DefaultLocale: func(context.Context) string { return current }})
+	ar := get(mux, "/", map[string]string{"Accept-Language": "ja"})
+	if body := ar.Body.String(); !strings.Contains(body, `<html lang="ar" dir="rtl">`) {
 		t.Errorf("shell for an Arabic instance:\n%s", body)
+	}
+	// A change of the default locale applies to the next request, with a new ETag.
+	current = "ja"
+	ja := get(mux, "/", nil)
+	if body := ja.Body.String(); !strings.Contains(body, `<html lang="ja" dir="ltr">`) || !strings.Contains(body, `"defaultLocale":"ja"`) {
+		t.Errorf("shell after the default locale changed:\n%s", body)
+	}
+	if ja.Header().Get("ETag") == ar.Header().Get("ETag") {
+		t.Errorf("the ETag did not change with the locale")
 	}
 }
 
@@ -232,7 +248,7 @@ func TestStaticFiles(t *testing.T) {
 }
 
 func TestWebManifest(t *testing.T) {
-	_, mux := newHandler(t, web.Options{InstanceName: "Example Social", Locale: "ar"})
+	_, mux := newHandler(t, web.Options{InstanceName: "Example Social", DefaultLocale: locale("ar")})
 	rec := get(mux, web.PathWebManifest, nil)
 	if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "application/manifest+json" || rec.Header().Get("ETag") == "" {
 		t.Fatalf("manifest = %d %v", rec.Code, rec.Header())

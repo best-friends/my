@@ -46,6 +46,9 @@ type App struct {
 	Config   *config.Config
 	Logger   *slog.Logger
 	Messages *i18n.Bundle
+	// Locales resolves the locale of every HTTP response (ADR-0009 §2) on Messages and the
+	// instance's default_locale setting; every HTTP surface localizes through it.
+	Locales *i18n.Resolver
 
 	Clock      kernel.Clock
 	IDs        kernel.IDGenerator
@@ -75,6 +78,8 @@ type App struct {
 	Instance *instance.Service
 	Graph    *graph.Service
 	Content  *content.Service
+	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
+	Interactions *content.Interactions
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -135,11 +140,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Sealer = kernel.NewSealer(a.KeyManager)
 
 	var (
-		identities identity.Repository
-		accounts   account.Repository
-		instances  instance.Repository
-		follows    graph.Repository
-		statuses   content.Repository
+		identities   identity.Repository
+		accounts     account.Repository
+		instances    instance.Repository
+		follows      graph.Repository
+		statuses     content.Repository
+		interactions content.InteractionRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -151,6 +157,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses = d.GraphRepository(), d.StatusRepository()
+		interactions = d.InteractionRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -165,6 +172,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses = d.GraphRepository(), d.StatusRepository()
+		interactions = d.InteractionRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -208,6 +216,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
+	// The user step joins once API requests are authenticated (#107).
+	a.Locales = &i18n.Resolver{Bundle: a.Messages, InstanceDefault: a.instanceDefaultLocale}
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
@@ -229,6 +239,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		DefaultLanguage: a.defaultPostLanguage,
 		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
 	})
+	// After RegisterProjectors, which creates the counters that these projectors update.
+	content.RegisterInteractionProjectors(a.Projectors, interactions)
+	a.Interactions = content.NewInteractions(content.InteractionDeps{
+		UnitOfWork: a.UnitOfWork, Statuses: statuses, Interactions: interactions,
+		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
+		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
+	})
 
 	if opts.Version == "" {
 		opts.Version = "dev"
@@ -239,13 +256,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}).Register(a)
 	// The sign-in screens share the web client's built CSS (ADR-0030).
 	authpages.New(authpages.Options{
-		Identity: a.Identity, Messages: a.Messages, Stylesheet: a.webStylesheet, Logger: a.Logger,
+		Identity: a.Identity, Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
 	}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
-		Messages:          a.Messages, RequestID: RequestID, Logger: a.Logger,
+		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }
@@ -259,11 +276,12 @@ func (a *App) setUpWeb(opts AppOptions) error {
 	h, err := web.New(web.Options{
 		Build: opts.WebBuild, DevViteOrigin: opts.DevViteOrigin,
 		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain,
-		// The instance is named after its host, and uses the source locale, until the instance
-		// settings hold a name and a default locale.
-		InstanceName: a.Config.Host, Locale: i18n.SourceLocale,
-		NotFound: func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
-		Logger:   a.Logger,
+		// The instance is named after its host until the instance settings hold a name.
+		InstanceName: a.Config.Host,
+		// The HTML is the same for every visitor, so only the instance default applies.
+		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
+		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:        a.Logger,
 	})
 	if err != nil {
 		return err

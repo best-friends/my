@@ -142,10 +142,10 @@ type manifestIcon struct {
 }
 
 // renderWebManifest generates the manifest from the instance settings in o.
-func renderWebManifest(o *Options, hasIcon bool) (document, error) {
+func renderWebManifest(o *Options, locale string, hasIcon bool) (document, error) {
 	m := webManifest{
 		ID: "/", Name: o.InstanceName, ShortName: o.InstanceName, StartURL: "/", Scope: "/", Display: "standalone",
-		Lang: o.Locale, Dir: i18n.Direction(o.Locale), ThemeColor: o.ThemeColor, BackgroundColor: o.BackgroundColor,
+		Lang: locale, Dir: i18n.Direction(locale), ThemeColor: o.ThemeColor, BackgroundColor: o.BackgroundColor,
 		Icons: []manifestIcon{},
 	}
 	if hasIcon {
