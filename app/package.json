@@ -1,0 +1,11 @@
+{
+  "name": "@my/app",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "workspaces": ["ui", "web"],
+  "scripts": {
+    "typecheck": "bun run --filter '*' typecheck",
+    "build": "bun run --filter @my/web build"
+  }
+}

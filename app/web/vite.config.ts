@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Vite 8 build of the web client (ADR-0025). React Compiler runs through @rolldown/plugin-babel
+// with the preset from @vitejs/plugin-react, as react.dev/learn/react-compiler/installation describes.
+import { fileURLToPath } from "node:url";
+import babel from "@rolldown/plugin-babel";
+import tailwindcss from "@tailwindcss/vite";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import { defineConfig, type Plugin, searchForWorkspaceRoot } from "vite";
+
+/** The shared message catalogs at the repository root (ADR-0009). */
+const localesDir = fileURLToPath(new URL("../../locales", import.meta.url));
+
+/**
+ * Fails `vite build` when React Compiler compiled no component or hook, so a broken compiler
+ * setup cannot ship silently (ADR-0025). Functions the compiler bails out on are reported as
+ * warnings; the react-hooks lint rules are what reject them.
+ */
+function reactCompilerCheck() {
+  let compiled = 0;
+  const problems: string[] = [];
+  const logger = {
+    logEvent(filename: string | null, event: { kind: string; fnName?: string | null; reason?: string }) {
+      if (event.kind === "CompileSuccess") compiled++;
+      else if (event.kind === "CompileError" || event.kind === "PipelineError") {
+        problems.push(`${filename ?? "<unknown>"}: React Compiler skipped ${event.fnName ?? "a function"}`);
+      }
+    },
+  };
+  const plugin: Plugin = {
+    name: "my:react-compiler-check",
+    apply: "build",
+    buildEnd(error) {
+      if (error) return;
+      for (const p of problems) this.warn(p);
+      if (compiled === 0) this.error("React Compiler compiled no function; check the babel preset in vite.config.ts");
+      this.info(`React Compiler compiled ${compiled} function(s)`);
+    },
+  };
+  return { logger, plugin };
+}
+
+const compilerCheck = reactCompilerCheck();
+
+export default defineConfig({
+  // Go serves index.html and builds its <script> / <link> tags from the manifest (ADR-0028).
+  base: "./",
+  build: { manifest: true },
+  server: {
+    // Catalogs are imported from locales/, outside the workspace root.
+    fs: { allow: [searchForWorkspaceRoot(process.cwd()), localesDir] },
+  },
+  plugins: [
+    react(),
+    babel({ presets: [reactCompilerPreset({ logger: compilerCheck.logger })] }),
+    compilerCheck.plugin,
+    tailwindcss(),
+  ],
+});
