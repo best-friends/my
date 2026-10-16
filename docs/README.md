@@ -27,6 +27,7 @@
 - [利用者登録（登録モード・招待・承認・メール確認）](operations/registration.md)
 - [鍵暗号化鍵（KEK）の管理](operations/key-management.md)
 - [サーバーの起動・停止とヘルスチェック](operations/running.md)
+- [リンクプレビュー（OGP / X Card / fediverse:creator）](operations/link-previews.md)
 
 ## 開発プロセス
 

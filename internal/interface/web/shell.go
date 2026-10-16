@@ -35,16 +35,57 @@ type shellData struct {
 	// Config is a struct, not a string: html/template encodes it as JSON in the data block and
 	// escapes what could end the script element.
 	Config runtimeConfig
+	// Preview holds the link preview meta tags of a profile or a post page, nil for the
+	// generic shell.
+	Preview *previewMeta
 }
 
-// shellTemplate is the generic shell of the SPA. html/template escapes every value for its
-// context; nothing is marked as safe HTML.
-var shellTemplate = template.Must(template.New("shell").Parse(`<!doctype html>
+// shellTemplate is the shell of the SPA: the generic shell, or with Preview the shell of a
+// profile or a post page. html/template escapes every value for its context; nothing is
+// marked as safe HTML, and user data never becomes template.HTML (ADR-0028).
+var shellTemplate = template.Must(template.New("shell").Parse(shellSource))
+
+// shellSource is the source of shellTemplate. Its hash is part of the ETag of previews.
+const shellSource = `<!doctype html>
 <html lang="{{.Lang}}" dir="{{.Dir}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{{.Title}}</title>
+{{- with .Preview}}
+{{- if .NoIndex}}
+<meta name="robots" content="noindex">
+{{- end}}
+<meta property="og:type" content="{{.Type}}">
+<meta property="og:site_name" content="{{.SiteName}}">
+<meta property="og:title" content="{{.Title}}">
+<meta property="og:url" content="{{.URL}}">
+{{- if .Description}}
+<meta property="og:description" content="{{.Description}}">
+{{- end}}
+<meta property="og:locale" content="{{.Locale}}">
+{{- with .Image}}
+<meta property="og:image" content="{{.URL}}">
+{{- if and .Width .Height}}
+<meta property="og:image:width" content="{{.Width}}">
+<meta property="og:image:height" content="{{.Height}}">
+{{- end}}
+{{- if .Alt}}
+<meta property="og:image:alt" content="{{.Alt}}">
+{{- end}}
+{{- end}}
+{{- if .PublishedTime}}
+<meta property="article:published_time" content="{{.PublishedTime}}">
+<meta property="article:author" content="{{.AuthorURL}}">
+{{- end}}
+{{- if .Username}}
+<meta property="profile:username" content="{{.Username}}">
+{{- end}}
+<meta name="twitter:card" content="{{.Card}}">
+<meta name="fediverse:creator" content="{{.Creator}}">
+<link rel="canonical" href="{{.URL}}">
+<link rel="alternate" type="application/activity+json" href="{{.ActivityPubID}}">
+{{- end}}
 <meta name="theme-color" content="{{.ThemeColor}}">
 <link rel="manifest" href="` + PathWebManifest + `">
 {{- if .HasIcon}}
@@ -68,7 +109,7 @@ var shellTemplate = template.Must(template.New("shell").Parse(`<!doctype html>
 <div id="root"></div>
 </body>
 </html>
-`))
+`
 
 func renderShell(d shellData) (document, error) {
 	var buf bytes.Buffer
