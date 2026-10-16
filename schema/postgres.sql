@@ -570,3 +570,46 @@ CREATE TABLE instance_texts (
   revision_id text COLLATE "C" NOT NULL,
   PRIMARY KEY (key, locale)
 );
+
+-- ---------------------------------------------------------------------------------------------
+-- identity: browser sessions of the server-rendered screens (data-model.md §4.1, ADR-0019 §4).
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a sign-in. token_hash is the SHA-256 digest of the session cookie's value.
+CREATE TABLE sessions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  token_hash bytea NOT NULL,
+  user_agent text,
+  ip text,
+  created_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX sessions_token_hash ON sessions (token_hash);
+
+-- Event: a session ended before it expired.
+CREATE TABLE session_revocations (
+  session_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  reason text NOT NULL CHECK (reason IN ('logout', 'replaced', 'password_changed', 'moderation', 'expired_cleanup')),
+  revoked_at timestamptz NOT NULL
+);
+
+-- Current value: when a session was last used, updated at most once per interval.
+CREATE TABLE session_activity (
+  session_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  last_seen_at timestamptz NOT NULL
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- 基盤: key-value store (data-model.md §4.10). Owned by internal/adapter/kv/db.
+-- ---------------------------------------------------------------------------------------------
+
+-- Entries of the KeyValueStore port. expires_at is NULL for entries that never expire.
+CREATE TABLE kv_entries (
+  namespace text NOT NULL,
+  key text NOT NULL,
+  value bytea NOT NULL,
+  expires_at timestamptz,
+  PRIMARY KEY (namespace, key)
+);
+CREATE INDEX kv_entries_expires_at ON kv_entries (expires_at);

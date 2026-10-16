@@ -363,6 +363,15 @@ func (r *AccountRepository) FindLocalAccount(ctx context.Context, accountID stri
 	return account.LocalAccount(row), nil
 }
 
+// FindLocalAccountByUser implements account.Repository.
+func (r *AccountRepository) FindLocalAccountByUser(ctx context.Context, userID string) (account.LocalAccount, error) {
+	row, err := r.db.reader().GetLocalAccountByUserID(ctx, userID)
+	if err != nil {
+		return account.LocalAccount{}, notFound(err, appaccount.ErrNotFound, "local account of user "+userID)
+	}
+	return account.LocalAccount(row), nil
+}
+
 // FindHandle implements account.Repository.
 func (r *AccountRepository) FindHandle(ctx context.Context, usernameNormalized, domain string) (account.Handle, error) {
 	row, err := r.db.reader().GetAccountHandleByName(ctx, postgresgen.GetAccountHandleByNameParams{

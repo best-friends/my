@@ -14,6 +14,8 @@ import (
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
+	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
+	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
@@ -26,6 +28,7 @@ import (
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
+	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/interface/web"
 	"github.com/best-friends/my/internal/platform/config"
@@ -60,6 +63,10 @@ type App struct {
 	// Runner runs the jobs of the queue for the worker role.
 	Runner *queue.PullRunner
 
+	// KV is the key-value store that cfg.KV selects; RateLimiter keeps its counters there.
+	KV          kernel.KeyValueStore
+	RateLimiter *kernel.RateLimiter
+
 	Accounts *account.Service
 	Identity *identity.Service
 	// Instance holds the instance settings and texts, which live in the database; Config holds
@@ -74,6 +81,8 @@ type App struct {
 	routes []route
 	// page serves the web client's HTML at the GET paths that no route serves.
 	page http.Handler
+	// webStylesheet is the URL of the web client's built CSS, empty without a build.
+	webStylesheet string
 }
 
 type route struct {
@@ -142,6 +151,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
+		if cfg.KV == "db" {
+			a.KV = kvdb.NewSQLite(d, a.Clock)
+		}
 	case "postgres":
 		d, err := postgres.Open(ctx, cfg.DatabaseURL, uow.Options{Projectors: a.Projectors})
 		if err != nil {
@@ -152,6 +164,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows = d.GraphRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
+		}
+		if cfg.KV == "db" {
+			a.KV = kvdb.NewPostgres(d, a.Clock)
 		}
 	default:
 		return nil, fmt.Errorf("db %q is not implemented yet", cfg.DB)
@@ -173,6 +188,16 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if a.Runner == nil {
 		a.Runner = queue.NewPullRunner(a.source, a.Handlers, runnerOpts)
 	}
+	switch cfg.KV {
+	case "db":
+		// Set with the database above.
+	case "memory":
+		a.KV = kvmemory.New(a.Clock)
+	default:
+		_ = a.Close()
+		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
+	}
+	a.RateLimiter = kernel.NewRateLimiter(a.KV, a.Clock)
 
 	account.RegisterProjectors(a.Projectors, accounts)
 	a.Accounts = account.NewService(account.Deps{
@@ -183,6 +208,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
+		RateLimiter: a.RateLimiter,
 		// The default locale is an instance setting in the database, never configuration
 		// (docs/reference/configuration.md); it is read per registration so changes apply at once.
 		DefaultLocale: a.Instance.DefaultLocale,
@@ -198,6 +224,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
+	}).Register(a)
+	// The sign-in screens share the web client's built CSS (ADR-0030).
+	authpages.New(authpages.Options{
+		Identity: a.Identity, Messages: a.Messages, Stylesheet: a.webStylesheet, Logger: a.Logger,
 	}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
@@ -227,6 +257,7 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		return err
 	}
 	h.Register(a)
+	a.webStylesheet = h.Stylesheet()
 	a.page = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// The same URL may be an ActivityPub document, so every answer depends on Accept.
 		if !slices.Contains(w.Header().Values("Vary"), "Accept") {

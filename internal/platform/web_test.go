@@ -25,9 +25,10 @@ const (
 func TestWebClient(t *testing.T) {
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	build := fstest.MapFS{
-		".vite/manifest.json":  {Data: []byte(`{"index.html": {"file": "assets/index-AAAA.js", "isEntry": true}}`)},
-		"assets/index-AAAA.js": {Data: []byte("export {}")},
-		"sw.js":                {Data: []byte("// sw")},
+		".vite/manifest.json":   {Data: []byte(`{"index.html": {"file": "assets/index-AAAA.js", "isEntry": true, "css": ["assets/index-CCCC.css"]}}`)},
+		"assets/index-AAAA.js":  {Data: []byte("export {}")},
+		"assets/index-CCCC.css": {Data: []byte("body{}")},
+		"sw.js":                 {Data: []byte("// sw")},
 	}
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler), WebBuild: build})
 	if err != nil {
@@ -65,6 +66,8 @@ func TestWebClient(t *testing.T) {
 		{"missing asset", http.MethodGet, "/assets/gone.js", "", http.StatusNotFound, problem, []string{"Accept-Language"}},
 		{"manifest", http.MethodGet, "/manifest.webmanifest", "", http.StatusOK, "", nil},
 		{"client API", http.MethodGet, "/api/v1/nope", acceptBrowser, http.StatusNotFound, problem, []string{"Origin", "Accept", "Accept-Language"}},
+		{"sign-in page", http.MethodGet, "/auth/sign_in", acceptBrowser, http.StatusOK, "signin", []string{"Accept-Language, Cookie"}},
+		{"unknown auth page", http.MethodGet, "/auth/nope", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
 		{"OAuth", http.MethodGet, "/oauth/authorize", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
 		{"ActivityPub", http.MethodGet, "/ap/nope/x/y", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
 		{"NodeInfo", http.MethodGet, "/nodeinfo", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
@@ -92,6 +95,11 @@ func TestWebClient(t *testing.T) {
 				csp := hd.Get("Content-Security-Policy")
 				if !strings.Contains(csp, "script-src 'self';") || strings.Contains(csp, "nonce") {
 					t.Errorf("shell CSP = %q", csp)
+				}
+			case "signin":
+				// The server-rendered screens share the web client's built CSS (ADR-0030).
+				if body := rec.Body.String(); !strings.Contains(body, `<link rel="stylesheet" href="/assets/index-CCCC.css">`) || strings.Contains(body, `id="config"`) {
+					t.Errorf("sign-in page is the shell or lacks the built CSS: %s", body)
 				}
 			case problem:
 				if hd.Get("Content-Type") != "application/problem+json" {

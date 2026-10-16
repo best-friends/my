@@ -87,6 +87,8 @@ type Handler struct {
 	csp      string
 	// files are the servable files of the build, by path, with their ETags.
 	files map[string]string
+	// stylesheet is the URL of the entry's first stylesheet, empty without one.
+	stylesheet string
 }
 
 // document is a response rendered once at start.
@@ -157,6 +159,9 @@ func New(o Options) (*Handler, error) {
 		h.csp = contentSecurityPolicy
 	}
 
+	if len(tags.Stylesheet) > 0 {
+		h.stylesheet = tags.Stylesheet[0]
+	}
 	cfg := runtimeConfig{
 		APIOrigin: apiOrigin, InstanceName: o.InstanceName, AccountDomain: o.AccountDomain, DefaultLocale: o.Locale,
 	}
@@ -326,3 +331,7 @@ func addVary(h http.Header, value string) {
 		h.Add("Vary", value)
 	}
 }
+
+// Stylesheet returns the URL of the client's built CSS, for server-rendered pages that share
+// it (ADR-0030), or "" when the build has none (no build, or a Vite dev server).
+func (h *Handler) Stylesheet() string { return h.stylesheet }

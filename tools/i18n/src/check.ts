@@ -116,7 +116,11 @@ function checkCatalog(catalog: Catalog) {
   return sourceArgs;
 }
 
-/** Warns about keys referenced neither by a Go accessor call nor by a TS key literal. */
+/**
+ * Warns about keys referenced neither by a Go accessor (a call, a method expression such as
+ * `(*i18n.Localizer).ServerX`, or a field chain such as `.L.ServerX` in an html/template file)
+ * nor by a TS key literal.
+ */
 function checkUnused(ids: Iterable<string>) {
   const read = (pattern: string, skip: (p: string) => boolean) =>
     [...new Bun.Glob(pattern).scanSync({ cwd: repoRoot })]
@@ -124,9 +128,13 @@ function checkUnused(ids: Iterable<string>) {
       .map((p) => readFileSync(join(repoRoot, p), "utf8"))
       .join("\n");
   const go = read("{cmd,internal,pkg}/**/*.go", (p) => p.endsWith("_gen.go") || p.endsWith("_test.go"));
+  const templates = read("internal/**/*.html", () => false);
   const ts = existsSync(join(repoRoot, "app")) ? read("app/**/*.{ts,tsx}", (p) => p.endsWith(".gen.ts")) : "";
   for (const id of ids) {
-    const used = (!isClientNamespace(id) && go.includes(`.${goName(id)}(`)) || ts.includes(JSON.stringify(id));
+    const name = goName(id);
+    const usedByGo =
+      go.includes(`.${name}(`) || go.includes(`).${name}`) || new RegExp(`\\.${name}(?![A-Za-z0-9_])`).test(templates);
+    const used = (!isClientNamespace(id) && usedByGo) || ts.includes(JSON.stringify(id));
     if (!used) warn(`unused ${id}`);
   }
 }
