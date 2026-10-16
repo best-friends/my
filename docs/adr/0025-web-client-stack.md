@@ -48,7 +48,7 @@ React は、ネット上のコードや一般的な知識に古い・誤った�
 | テスト | Vitest（ブラウザモードを含む）、Testing Library、`user-event`、MSW、Playwright + `@axe-core/playwright`（ADR-0027） |
 | 部品カタログ | Storybook 10（`@storybook/react-vite`、a11y アドオン、Vitest アドオン） |
 | lint | ESLint（flat config）、typescript-eslint、`eslint-plugin-react-hooks`（コンパイラ由来のルールを含む `recommended`）、`@eslint-react`、TanStack Query / Router のプラグイン、`eslint-plugin-testing-library`、`eslint-plugin-boundaries`、`eslint-plugin-better-tailwindcss`、`knip` |
-| Node.js | Storybook・Playwright・Vitest のブラウザモードは Node.js を前提とするため、Node.js（LTS）を `.tool-versions` で固定する |
+| Node.js | Vite・Vitest・Storybook・Playwright は Node.js（LTS、`.tool-versions` で固定）で動かす。`bun --bun` は使わない |
 
 選定の理由:
 
@@ -56,8 +56,12 @@ React は、ネット上のコードや一般的な知識に古い・誤った�
 - **TanStack Router**: React Router の型安全なルートは framework mode 限定で、SPA では型安全にならない。
 - **TanStack Query**: React 19 の `use` はキャッシュを持たず、無効化・ページングも提供しない。
 - **Vitest**: React Compiler の変換をテストにも同じように適用でき、Storybook と組み合わせて実ブラウザでアクセシビリティの検査ができる。
+- **Vite・Vitest の実行環境を Node.js にする**: `bun --bun` で動かしても Vite のビルド成果物は Node.js と同一で、速さの差も 1 秒未満と小さい。
+  一方、Vitest は `bun --bun` だと jsdom 環境のワーカーを起動できない（2026-10-16 に Vite 8.3.2・Vitest 5.0.3・Bun 1.4.3・Node.js 24.21 で確認、#117）。
+  Storybook・Playwright も Node.js を前提とするので、ツールの実行環境は Node.js の 1 つにそろえる。
+  パッケージのスクリプトは `bun run` で起動し、`vite` などの bin は shebang に従って Node.js で動く。
 
-具体的なバージョンは各パッケージの `package.json` と lockfile で固定する。公開から 2 週間未満の版は使わない。
+具体的なバージョンは各パッケージの `package.json` と lockfile で固定する。公開から 2 週間未満の版は使わない（`app/bunfig.toml` の `minimumReleaseAge`）。
 
 ## Consequences
 
@@ -67,5 +71,4 @@ React は、ネット上のコードや一般的な知識に古い・誤った�
 
 ## Open Questions / 要検証
 
-- [ ] Vite 8 と Vitest 5 を `bun --bun` で動かすか、Node.js で動かすか。CI では Node.js でのビルドも確認する
 - [ ] TypeScript 7（Go 製コンパイラ）への移行時期（typescript-eslint の対応待ち）

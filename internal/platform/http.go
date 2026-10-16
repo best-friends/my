@@ -30,7 +30,8 @@ const (
 const readinessTimeout = 3 * time.Second
 
 // Handler returns the HTTP handler of the App: the routes of its role behind the middleware
-// that every response passes (request ID, access log, security headers, panic recovery).
+// that every response passes (request ID, access log, security headers, panic recovery, and
+// the CORS of the client API).
 // The worker role serves only the health checks, for the platform's probes.
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -42,6 +43,7 @@ func (a *App) Handler() http.Handler {
 		}
 	}
 	h := a.problemFallback(mux)
+	h = clientAPICORS(a.Config.WebOrigin, h)
 	h = a.recoverPanics(h)
 	h = securityHeaders(h)
 	h = a.accessLog(h)

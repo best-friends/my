@@ -103,11 +103,12 @@ These come from Accepted ADRs and are binding.
 
 | Command | Purpose |
 | --- | --- |
-| `make check` | Every offline check CI runs: docs lint, ADR index check, `make go-check`, `make i18n-check`, and the Dockerfile Go version check |
+| `make check` | Every offline check CI runs: docs lint, ADR index check, `make go-check`, `make i18n-check`, the Dockerfile Go version check, `make api-check` and `make web-check` |
 | `make go-check` | `go mod tidy` check, `go vet`, `golangci-lint`, `go test`, `CGO_ENABLED=0 go build`, license check |
 | `make go-lint` / `go-test` / `go-build` | Run one Go step (`go-lint` uses `.golangci.yml`, including the depguard architecture rules) |
 | `make build [VERSION=...]` | Build `bin/my` with the version stamped in (`git describe` by default) |
 | `make sqlc` / `sqlc-check` | Regenerate the sqlc code from `sqlc.yaml` / fail when the committed code is stale (`sqlc-check` is part of `make check`) |
+| `make generate` / `generate-check` / `api-lint` | Regenerate the client API code from `api/openapi.yaml` / fail when it is stale / lint the spec with Redocly CLI (`api/redocly.yaml`); `make api-check` runs the last two and is part of `make check`. Follow [docs/architecture/client-api.md](docs/architecture/client-api.md) to add an endpoint |
 | `make config-docs` | Regenerate [docs/reference/configuration.md](docs/reference/configuration.md) from the config schema (`go-test` fails when it is stale) |
 | `make go-licenses` | Fail on Go dependency licenses incompatible with AGPL-3.0 (allowlist in `Makefile`) |
 | `make go-vuln` | govulncheck (needs network; run in CI, not part of `make check`) |
@@ -122,9 +123,14 @@ These come from Accepted ADRs and are binding.
 | `make docker-smoke` | Build and start `deploy/docker/compose.yaml`, create an admin, check WebFinger / Actor / NodeInfo, tear down (CI job `docker-smoke`) |
 | `make i18n-gen` | Regenerate pseudo-locales, Go / TS typed accessors, and parity fixtures from `locales/` (commit the result) |
 | `make i18n-check` | Catalog lint (ICU syntax, placeholders, plural categories, shared subset), stale generated files, npm licenses, TS runtime tests |
+| `make web-check` | Client workspace `app/`: `web-typecheck` (tsc), `web-build` (Vite; fails when React Compiler compiled nothing), `web-licenses` (npm licenses) |
+| `make web-install` | Install the client workspace dependencies from `app/bun.lock` |
 
-Toolchain versions (Go, golangci-lint, Bun, shellcheck) are pinned in `.tool-versions` (asdf / mise).
+Toolchain versions (Go, golangci-lint, Bun, shellcheck, Node.js) are pinned in `.tool-versions` (asdf / mise).
 Atlas Community Edition is pinned and checksum-verified in `scripts/install-atlas.sh` (`make atlas` installs `bin/atlas`).
-Go tools (govulncheck, go-licenses, sqlc) are pinned with `tool` directives in `tools/go.mod` and run via
+Go tools (govulncheck, go-licenses, sqlc, oapi-codegen) are pinned with `tool` directives in `tools/go.mod` and run via
 `go tool -modfile=tools/go.mod <tool>`.
 The i18n generator and checks are a Bun package in `tools/i18n` with exact versions in `package.json` and a committed `bun.lock`.
+The clients live in the Bun workspace `app/` (`app/ui` = `@my/ui`, shipped as TypeScript source; `app/web`) with exact versions,
+one committed `app/bun.lock`, and `app/bunfig.toml` (isolated installs, no version younger than two weeks).
+Bun installs packages and runs scripts; Vite runs on Node.js — never add `--bun` ([ADR-0025](docs/adr/0025-web-client-stack.md)).

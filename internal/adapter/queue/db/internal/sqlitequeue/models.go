@@ -90,6 +90,54 @@ type DeadJob struct {
 	FailedAt       int64
 }
 
+type Follow struct {
+	ID                string
+	Uri               string
+	FollowerAccountID string
+	FolloweeAccountID string
+	RequestedAt       int64
+}
+
+type FollowAcceptance struct {
+	FollowID    string
+	AcceptedBy  string
+	ActivityUri sql.NullString
+	AcceptedAt  int64
+}
+
+type FollowCounter struct {
+	AccountID      string
+	FollowersCount int64
+	FollowingCount int64
+}
+
+type FollowEdge struct {
+	FollowerAccountID string
+	FolloweeAccountID string
+	FollowID          string
+	State             string
+	Since             int64
+}
+
+type FollowPreference struct {
+	FollowID   string
+	ShowBoosts int64
+	Notify     int64
+}
+
+type FollowRejection struct {
+	FollowID    string
+	RejectedBy  string
+	ActivityUri sql.NullString
+	RejectedAt  int64
+}
+
+type FollowTermination struct {
+	FollowID     string
+	Reason       string
+	TerminatedAt int64
+}
+
 type InstanceSetting struct {
 	Key        string
 	RevisionID string

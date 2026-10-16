@@ -13,7 +13,7 @@ Web クライアント（`app/web`）と共有 UI キット（`app/ui`）を書�
 | R1 | コンポーネントとフックは純粋にする。レンダリング中に副作用・変更・`Date.now()` / `Math.random()` を書かない | `react-hooks/purity`, `globals` |
 | R2 | props・state・フックに渡した値・JSX に渡した値を変更しない（`push` / `sort` ではなく `toSorted` / スプレッド） | `react-hooks/immutability` |
 | R3 | フックはコンポーネントか `use*` 関数のトップレベルでだけ呼ぶ | `react-hooks/rules-of-hooks` |
-| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint で失敗させる | `react-hooks` のコンパイラ由来のルールを error |
+| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint で失敗させる | `react-hooks` のコンパイラ由来のルールを error、`vite build`（コンパイラが 1 つも関数を変換しないと失敗） |
 | R5 | `useMemo` / `useCallback` / `memo` は書かない。必要なとき（Effect の依存に安定した参照が要るなど）は理由をコメントに書く | `react-hooks/use-memo`、レビュー |
 | R6 | 他の値から計算できるものは state にせず、レンダリング中に計算する | `react-hooks/set-state-in-effect` |
 | R7 | 利用者の操作で起きる処理（送信・通知・計測）はイベントハンドラに書く。Effect に書かない | レビュー |
@@ -102,3 +102,4 @@ Web クライアント（`app/web`）と共有 UI キット（`app/ui`）を書�
 | T3 | ネットワークは MSW だけでモックする。`fetch` や API のモジュールをモックしない | `no-restricted-syntax`、レビュー |
 | T4 | 既定は統合テスト（本物の QueryClient とルーター + MSW）にする。純粋なロジックは単体テスト、主要な流れは 4 ロケールの E2E にする | レビュー |
 | T5 | `@my/ui` の部品は必ずストーリーを持つ。ストーリーはアクセシビリティ・見た目・RTL のテストの入力になる | レビュー、`knip` |
+| T6 | 部品のテストは jsdom かブラウザモードで動かす。React Compiler の preset はクライアント向けの変換にだけ効くので、Vitest の `node` 環境では本番と違うコードをテストすることになる | Vitest の設定 |

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# oapi-codegen (pinned in tools/go.mod) generates the strict net/http server of api/openapi.yaml
+# into api.gen.go (ADR-0029). Run `make generate` (scripts/generate.sh); never edit api.gen.go by hand.
+package: clientapi
+generate:
+  models: true
+  std-http-server: true
+  strict-server: true
+output-options:
+  skip-prune: true

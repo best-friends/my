@@ -33,17 +33,19 @@ type Config struct {
 	Host          string
 	AccountDomain string
 	SourceURL     string
-	Role          Role
-	Listen        string
-	DB            string
-	DatabaseURL   string
-	Queue         string
-	Blob          string
-	Media         string
-	KV            string
-	KeyManager    string
-	KEK           []byte
-	PreviousKEKs  [][]byte
+	// WebOrigin is the origin of the web client that the client API allows by CORS.
+	WebOrigin    string
+	Role         Role
+	Listen       string
+	DB           string
+	DatabaseURL  string
+	Queue        string
+	Blob         string
+	Media        string
+	KV           string
+	KeyManager   string
+	KEK          []byte
+	PreviousKEKs [][]byte
 }
 
 // LogValue logs the configuration with its secrets redacted (ADR-0019 §6).
@@ -58,6 +60,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("host", c.Host),
 		slog.String("account_domain", c.AccountDomain),
 		slog.String("source_url", c.SourceURL),
+		slog.String("web_origin", c.WebOrigin),
 		slog.String("role", string(c.Role)),
 		slog.String("listen", c.Listen),
 		slog.String("db", c.DB),
@@ -196,6 +199,9 @@ func Load(src Source) (*Config, []Setting, error) {
 	issues = append(issues, crossChecks(valid, present)...)
 	if cfg.AccountDomain == "" {
 		cfg.AccountDomain = cfg.Host
+	}
+	if cfg.WebOrigin == "" {
+		cfg.WebOrigin = "https://" + cfg.Host
 	}
 	if len(issues) > 0 {
 		return nil, settings, &ValidationError{Issues: issues}

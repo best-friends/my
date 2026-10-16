@@ -28,6 +28,16 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .tool-versions
+      # Vite runs on Node.js; Bun only installs packages and runs scripts (ADR-0025).
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .tool-versions
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
       - uses: actions/setup-go@v6
         with:
           go-version-file: .tool-versions
