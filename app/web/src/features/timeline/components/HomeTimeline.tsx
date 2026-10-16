@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { EmptyState, Link } from "@my/ui";
+import { EmptyState, Link, NewItemsButton } from "@my/ui";
 import { useSessionStatus } from "../../../lib/auth/SessionProvider";
 import { useT } from "../../../lib/i18n";
+import { useNewHomeStatuses } from "../hooks/useNewHomeStatuses";
 import { TimelineFeed } from "./TimelineFeed";
 
 export type HomeTimelineProps = {
@@ -26,5 +27,30 @@ export function HomeTimeline({ "aria-labelledby": labelledBy }: HomeTimelineProp
       />
     );
   }
-  return <TimelineFeed timeline={{ kind: "home" }} aria-labelledby={labelledBy} />;
+  return <SignedInHomeTimeline aria-labelledby={labelledBy} />;
+}
+
+/**
+ * The feed with the "N new posts" button above it (web-client.md Y7): the stream's new entries wait until
+ * the reader presses it. The button floats over the top of the feed in a region of no height, so neither
+ * its appearance nor its count moves the posts being read. Pressing it moves focus to the page heading,
+ * above the inserted posts, since the button goes away (WCAG 2.4.3).
+ */
+function SignedInHomeTimeline({ "aria-labelledby": labelledBy }: HomeTimelineProps) {
+  const t = useT();
+  const { count, show } = useNewHomeStatuses();
+  return (
+    <div className="flex flex-col">
+      <NewItemsButton
+        count={count}
+        label={t("client:timeline.new_posts", { count })}
+        onPress={() => {
+          show();
+          document.getElementById(labelledBy)?.focus();
+        }}
+        className="sticky top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 h-0 items-start"
+      />
+      <TimelineFeed timeline={{ kind: "home" }} aria-labelledby={labelledBy} />
+    </div>
+  );
 }

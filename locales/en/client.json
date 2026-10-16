@@ -355,6 +355,14 @@
     "defaultMessage": "Show sensitive media",
     "description": "Toggle button over the pictures of a post that the author marked sensitive; it shows or hides them."
   },
+  "timeline.new_posts": {
+    "defaultMessage": "{count, plural, one {# new post} other {# new posts}}",
+    "description": "Button above the home timeline when new posts have arrived; pressing it shows them at the top. Screen readers also read it out when the count changes."
+  },
+  "timeline.new_posts.failed": {
+    "defaultMessage": "Could not load the new posts: {reason}",
+    "description": "Message read out when pressing the new posts button failed to load them. {reason} is the error message, a full sentence."
+  },
   "timeline.retry": {
     "defaultMessage": "Try again",
     "description": "Button at the end of a timeline that tries again to load older posts after a failure."

@@ -355,6 +355,14 @@
     "defaultMessage": "[Şħǿǿẇ şḗḗƞşīŧīṽḗḗ ḿḗḗḓīȧȧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "timeline.new_posts": {
+    "defaultMessage": "[{count,plural,one{# ƞḗḗẇ ƥǿǿşŧ} other{# ƞḗḗẇ ƥǿǿşŧş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.new_posts.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ŀǿǿȧȧḓ ŧħḗḗ ƞḗḗẇ ƥǿǿşŧş: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "timeline.retry": {
     "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
