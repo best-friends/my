@@ -41,6 +41,8 @@ type Repository interface {
 	ListCurrentSettings(ctx context.Context) ([]instance.CurrentSetting, error)
 	// ListSettingHistory returns the revisions of key, newest first, at most limit of them.
 	ListSettingHistory(ctx context.Context, key instance.SettingKey, limit int) ([]instance.SettingRevision, error)
+	// IsSettingValueUsed reports whether any revision of key, current or not, has value.
+	IsSettingValueUsed(ctx context.Context, key instance.SettingKey, value string) (bool, error)
 	// ListCurrentTexts returns the current text of key in every locale that has one, including
 	// cleared (empty) texts, by locale.
 	ListCurrentTexts(ctx context.Context, key instance.TextKey) ([]instance.Text, error)

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/best-friends/my/internal/i18n"
+	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -95,6 +96,21 @@ func (a *App) instanceDefaultLocale(ctx context.Context) string {
 	locale, err := a.Instance.DefaultLocale(ctx)
 	if err != nil {
 		a.Logger.WarnContext(ctx, "cannot read the default locale", slog.Any("error", err))
+		return ""
+	}
+	return locale
+}
+
+// viewerLocale returns the saved locale of the client API request's authenticated user for
+// Locales, or "" for an anonymous request or when it cannot be read.
+func (a *App) viewerLocale(ctx context.Context) string {
+	v, ok := clientapi.ViewerFrom(ctx)
+	if !ok {
+		return ""
+	}
+	locale, err := a.Identity.UserLocale(ctx, v.UserID)
+	if err != nil {
+		a.Logger.WarnContext(ctx, "cannot read the user's locale", slog.Any("error", err))
 		return ""
 	}
 	return locale

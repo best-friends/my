@@ -4,11 +4,15 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 func runInstanceCmd(t *testing.T, stdin string, args ...string) (code int, stdout, stderr string) {
@@ -86,6 +90,50 @@ func TestInstanceRejectsBadInput(t *testing.T) {
 		{[]string{"set", "max_status_length", "0"}, 1, "outside 1..100000"},
 		{[]string{"set", "registration_mode", "everyone"}, 1, "not one of open, approval, invite, closed"},
 		{[]string{"get", "terms"}, 1, "not set in any locale"},
+	} {
+		code, _, stderr := runInstanceCmd(t, "", tc.args...)
+		if code != tc.code || !strings.Contains(stderr, tc.want) {
+			t.Errorf("my instance %q = %d, %q; want %d and %q", tc.args, code, stderr, tc.code, tc.want)
+		}
+	}
+}
+
+// TestInstancePreviewImage checks that `my instance set -owner` uploads an image file as the
+// preview_image setting, which also takes the ID of an uploaded media file.
+func TestInstancePreviewImage(t *testing.T) {
+	newAdminEnv(t)
+	if code, _, stderr := runAdminCreate(t, adminPassword+"\n", "-username", "admin", "-email", "admin@example.com"); code != 0 {
+		t.Fatalf("admin create: exit code %d, stderr %q", code, stderr)
+	}
+	file := filepath.Join(t.TempDir(), "preview.png")
+	if err := os.WriteFile(file, testkit.FixturePNG(1200, 630, false), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out := mustInstance(t, "", "set", "-owner", "admin", "preview_image", file)
+	m := regexp.MustCompile(`^uploaded .+ as media ([0-9a-f-]{36}); .*\nset preview_image = ([0-9a-f-]{36}) \(revision `).FindStringSubmatch(out)
+	if m == nil || m[1] != m[2] {
+		t.Fatalf("set -owner stdout = %q", out)
+	}
+	if got := mustInstance(t, "", "get", "preview_image"); got != m[1]+"\n" {
+		t.Errorf("get preview_image = %q, want %s", got, m[1])
+	}
+	mustInstance(t, "", "set", "preview_image", "")
+	mustInstance(t, "", "set", "preview_image", strings.ToUpper(m[1]))
+	if got := mustInstance(t, "", "get", "preview_image"); got != m[1]+"\n" {
+		t.Errorf("get preview_image after setting the ID = %q, want %s", got, m[1])
+	}
+	mustInstance(t, "", "set", "-locale", "ja", "preview_image_alt", "マスコット")
+
+	for _, tc := range []struct {
+		args []string
+		code int
+		want string
+	}{
+		{[]string{"set", "preview_image", "preview.png"}, 1, "is not a media ID"},
+		{[]string{"set", "preview_image", "0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f"}, 1, "not found"},
+		{[]string{"set", "-owner", "admin", "registration_mode", "open"}, 2, "-owner applies only to media keys"},
+		{[]string{"set", "-owner", "nobody", "preview_image", file}, 1, "owner nobody"},
+		{[]string{"set", "-owner", "admin", "preview_image", file + ".missing"}, 1, "no such file"},
 	} {
 		code, _, stderr := runInstanceCmd(t, "", tc.args...)
 		if code != tc.code || !strings.Contains(stderr, tc.want) {

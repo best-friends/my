@@ -53,7 +53,7 @@ func TestClientAPI(t *testing.T) {
 	}
 	for k, want := range map[string]string{
 		"Access-Control-Allow-Origin":   webOrigin,
-		"Access-Control-Expose-Headers": "Content-Language, X-Request-Id",
+		"Access-Control-Expose-Headers": "Content-Language, X-Request-Id, WWW-Authenticate, Retry-After, RateLimit, RateLimit-Policy",
 		"Vary":                          "Origin",
 		"X-Content-Type-Options":        "nosniff",
 		"Cross-Origin-Resource-Policy":  "same-site",

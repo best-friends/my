@@ -1,0 +1,189 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+// Command securitygen generates the security metadata of the client API from the security
+// requirements of api/openapi.yaml: for each operation, under the http.ServeMux pattern that
+// the generated code registers it with, whether it accepts anonymous requests and the scopes
+// an access token needs. The clientapi Server enforces it before the generated code parses the
+// request, so the spec is the only place where an operation's scopes are written
+// (scripts/generate.sh runs it).
+//
+//	go run ./internal/interface/clientapi/internal/securitygen -o security.gen.go api/openapi.yaml
+//
+// It accepts these forms of an operation's security, and fails on any other:
+//
+//	security: []                          anonymous, or any access token
+//	security: [{oauth2: [s, ...]}]        an access token with every scope s
+//	security: [{}, {oauth2: [s, ...]}]    anonymous, or an access token with every scope s
+//
+// An operation that takes an access token names at least one scope, and every scope is one
+// that the oauth2 security scheme declares.
+package main
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"go/format"
+	"maps"
+	"os"
+	"slices"
+	"strconv"
+	"strings"
+
+	"github.com/getkin/kin-openapi/openapi3"
+)
+
+// schemeName is the security scheme of the client API.
+const schemeName = "oauth2"
+
+// access is the generated metadata of one operation.
+type access struct {
+	operation string
+	anonymous bool
+	scopes    []string
+}
+
+func main() {
+	out := flag.String("o", "", "output file")
+	flag.Parse()
+	if *out == "" || flag.NArg() != 1 {
+		fmt.Fprintln(os.Stderr, "usage: securitygen -o OUT SPEC")
+		os.Exit(2)
+	}
+	if err := run(flag.Arg(0), *out); err != nil {
+		fmt.Fprintln(os.Stderr, "securitygen:", err)
+		os.Exit(1)
+	}
+}
+
+func run(specPath, out string) error {
+	doc, err := openapi3.NewLoader().LoadFromFile(specPath)
+	if err != nil {
+		return err
+	}
+	if err := doc.Validate(context.Background()); err != nil {
+		return err
+	}
+	ops, err := operations(doc)
+	if err != nil {
+		return err
+	}
+	src, err := render(ops)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(out, src, 0o600)
+}
+
+// operations returns the access of every operation of doc by its route pattern.
+func operations(doc *openapi3.T) (map[string]access, error) {
+	declared, err := declaredScopes(doc)
+	if err != nil {
+		return nil, err
+	}
+	if len(doc.Servers) != 1 {
+		return nil, errors.New("the spec has exactly one server, whose URL is the base path")
+	}
+	base := doc.Servers[0].URL
+	ops := map[string]access{}
+	var errs []error
+	for path, item := range doc.Paths.Map() {
+		for method, op := range item.Operations() {
+			reqs := doc.Security
+			if op.Security != nil {
+				reqs = *op.Security
+			}
+			a, err := describe(reqs, declared)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("%s %s (%s): %w", method, path, op.OperationID, err))
+				continue
+			}
+			a.operation = op.OperationID
+			ops[strings.ToUpper(method)+" "+base+path] = a
+		}
+	}
+	return ops, errors.Join(errs...)
+}
+
+// declaredScopes returns the scopes of the oauth2 scheme's flow.
+func declaredScopes(doc *openapi3.T) (map[string]bool, error) {
+	var ref *openapi3.SecuritySchemeRef
+	if doc.Components != nil {
+		ref = doc.Components.SecuritySchemes[schemeName]
+	}
+	if ref == nil || ref.Value == nil || ref.Value.Type != "oauth2" || ref.Value.Flows == nil || ref.Value.Flows.AuthorizationCode == nil {
+		return nil, fmt.Errorf("the spec has no oauth2 security scheme %q with an authorizationCode flow", schemeName)
+	}
+	declared := map[string]bool{}
+	for s := range ref.Value.Flows.AuthorizationCode.Scopes {
+		declared[s] = true
+	}
+	return declared, nil
+}
+
+// describe turns the security requirements of an operation into its access.
+func describe(reqs openapi3.SecurityRequirements, declared map[string]bool) (access, error) {
+	var a access
+	if len(reqs) == 0 {
+		return access{anonymous: true}, nil
+	}
+	var token openapi3.SecurityRequirement
+	for _, req := range reqs {
+		switch {
+		case len(req) == 0:
+			if a.anonymous {
+				return a, errors.New("security lists {} twice")
+			}
+			a.anonymous = true
+		case token != nil:
+			return a, errors.New("security lists more than one requirement besides {}")
+		default:
+			token = req
+		}
+	}
+	if token == nil {
+		return a, errors.New("security is only {}; write security: [] for an anonymous operation")
+	}
+	scopes, ok := token[schemeName]
+	if !ok || len(token) != 1 {
+		return a, fmt.Errorf("a requirement names only the %s scheme", schemeName)
+	}
+	if len(scopes) == 0 {
+		return a, errors.New("an operation that takes an access token names its scopes")
+	}
+	for _, s := range scopes {
+		if !declared[s] {
+			return a, fmt.Errorf("scope %q is not declared by the %s scheme", s, schemeName)
+		}
+	}
+	a.scopes = slices.Compact(slices.Sorted(slices.Values(scopes)))
+	return a, nil
+}
+
+func render(ops map[string]access) ([]byte, error) {
+	var b bytes.Buffer
+	b.WriteString("// Code generated by securitygen from api/openapi.yaml. DO NOT EDIT.\n\n")
+	b.WriteString("package clientapi\n\n")
+	b.WriteString("// operationSecurity is the security of each operation of api/openapi.yaml, by the\n")
+	b.WriteString("// http.ServeMux pattern that the generated code registers it with.\n")
+	b.WriteString("var operationSecurity = map[string]operationAccess{\n")
+	for _, pattern := range slices.Sorted(maps.Keys(ops)) {
+		a := ops[pattern]
+		fields := []string{"Operation: " + strconv.Quote(a.operation)}
+		if a.anonymous {
+			fields = append(fields, "Anonymous: true")
+		}
+		if len(a.scopes) > 0 {
+			quoted := make([]string, len(a.scopes))
+			for i, s := range a.scopes {
+				quoted[i] = strconv.Quote(s)
+			}
+			fields = append(fields, "Scopes: []string{"+strings.Join(quoted, ", ")+"}")
+		}
+		fmt.Fprintf(&b, "\t%s: {%s},\n", strconv.Quote(pattern), strings.Join(fields, ", "))
+	}
+	b.WriteString("}\n")
+	return format.Source(b.Bytes())
+}

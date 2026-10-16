@@ -535,7 +535,8 @@ CREATE TABLE user_timeline_languages (
 CREATE TABLE instance_setting_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   key text COLLATE "C" NOT NULL CHECK (key IN (
-    'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled'
+    'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
+    'preview_image'
   )),
   value text NOT NULL,
   revised_by_user_id text COLLATE "C",
@@ -555,7 +556,9 @@ CREATE TABLE instance_settings (
 -- locale. revised_by_user_id is NULL for a change from the CLI.
 CREATE TABLE instance_text_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
-  key text COLLATE "C" NOT NULL CHECK (key IN ('name', 'short_description', 'description', 'terms', 'privacy_policy')),
+  key text COLLATE "C" NOT NULL CHECK (key IN (
+    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt'
+  )),
   locale text COLLATE "C" NOT NULL,
   body text NOT NULL,
   revised_by_user_id text COLLATE "C",

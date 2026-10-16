@@ -52,3 +52,8 @@ ORDER BY t.key, t.locale;
 -- name: ListInstanceTextHistory :many
 SELECT id, key, locale, body, revised_by_user_id, revised_at FROM instance_text_revisions
 WHERE key = ? AND locale = ? ORDER BY id DESC LIMIT ?;
+
+-- Whether any revision of a setting, current or not, has a value; the content module's media
+-- cleanup keeps the media files that a media setting refers to.
+-- name: IsInstanceSettingValueUsed :one
+SELECT EXISTS (SELECT 1 FROM instance_setting_revisions WHERE key = sqlc.arg(key) AND value = sqlc.arg(value));

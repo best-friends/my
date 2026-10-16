@@ -60,11 +60,130 @@ func (l *Localizer) ServerAuthAuthorizeScopeRead() string {
 	return l.format("server:auth.authorize.scope.read", nil)
 }
 
+// ServerAuthAuthorizeScopeReadAccounts formats "server:auth.authorize.scope.read_accounts". Permission (OAuth scope read:accounts) listed on the authorization page.
+//
+//	en: Read accounts and your profile
+func (l *Localizer) ServerAuthAuthorizeScopeReadAccounts() string {
+	return l.format("server:auth.authorize.scope.read_accounts", nil)
+}
+
+// ServerAuthAuthorizeScopeReadBlocks formats "server:auth.authorize.scope.read_blocks". Permission (OAuth scope read:blocks) listed on the authorization page.
+//
+//	en: Read the accounts you block
+func (l *Localizer) ServerAuthAuthorizeScopeReadBlocks() string {
+	return l.format("server:auth.authorize.scope.read_blocks", nil)
+}
+
+// ServerAuthAuthorizeScopeReadBookmarks formats "server:auth.authorize.scope.read_bookmarks". Permission (OAuth scope read:bookmarks) listed on the authorization page.
+//
+//	en: Read your bookmarks
+func (l *Localizer) ServerAuthAuthorizeScopeReadBookmarks() string {
+	return l.format("server:auth.authorize.scope.read_bookmarks", nil)
+}
+
+// ServerAuthAuthorizeScopeReadFavourites formats "server:auth.authorize.scope.read_favourites". Permission (OAuth scope read:favourites) listed on the authorization page.
+//
+//	en: Read your favourites
+func (l *Localizer) ServerAuthAuthorizeScopeReadFavourites() string {
+	return l.format("server:auth.authorize.scope.read_favourites", nil)
+}
+
+// ServerAuthAuthorizeScopeReadFollows formats "server:auth.authorize.scope.read_follows". Permission (OAuth scope read:follows) listed on the authorization page.
+//
+//	en: Read your follows and follow requests
+func (l *Localizer) ServerAuthAuthorizeScopeReadFollows() string {
+	return l.format("server:auth.authorize.scope.read_follows", nil)
+}
+
+// ServerAuthAuthorizeScopeReadMutes formats "server:auth.authorize.scope.read_mutes". Permission (OAuth scope read:mutes) listed on the authorization page.
+//
+//	en: Read the accounts you mute
+func (l *Localizer) ServerAuthAuthorizeScopeReadMutes() string {
+	return l.format("server:auth.authorize.scope.read_mutes", nil)
+}
+
+// ServerAuthAuthorizeScopeReadNotifications formats "server:auth.authorize.scope.read_notifications". Permission (OAuth scope read:notifications) listed on the authorization page.
+//
+//	en: Read your notifications
+func (l *Localizer) ServerAuthAuthorizeScopeReadNotifications() string {
+	return l.format("server:auth.authorize.scope.read_notifications", nil)
+}
+
+// ServerAuthAuthorizeScopeReadStatuses formats "server:auth.authorize.scope.read_statuses". Permission (OAuth scope read:statuses) listed on the authorization page.
+//
+//	en: Read posts and timelines
+func (l *Localizer) ServerAuthAuthorizeScopeReadStatuses() string {
+	return l.format("server:auth.authorize.scope.read_statuses", nil)
+}
+
 // ServerAuthAuthorizeScopeWrite formats "server:auth.authorize.scope.write". Permission (OAuth scope write) listed on the authorization page.
 //
 //	en: Post and change things for you
 func (l *Localizer) ServerAuthAuthorizeScopeWrite() string {
 	return l.format("server:auth.authorize.scope.write", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteAccounts formats "server:auth.authorize.scope.write_accounts". Permission (OAuth scope write:accounts) listed on the authorization page.
+//
+//	en: Change your profile and settings
+func (l *Localizer) ServerAuthAuthorizeScopeWriteAccounts() string {
+	return l.format("server:auth.authorize.scope.write_accounts", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteBlocks formats "server:auth.authorize.scope.write_blocks". Permission (OAuth scope write:blocks) listed on the authorization page.
+//
+//	en: Block and unblock accounts
+func (l *Localizer) ServerAuthAuthorizeScopeWriteBlocks() string {
+	return l.format("server:auth.authorize.scope.write_blocks", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteBookmarks formats "server:auth.authorize.scope.write_bookmarks". Permission (OAuth scope write:bookmarks) listed on the authorization page.
+//
+//	en: Add and remove bookmarks
+func (l *Localizer) ServerAuthAuthorizeScopeWriteBookmarks() string {
+	return l.format("server:auth.authorize.scope.write_bookmarks", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteFavourites formats "server:auth.authorize.scope.write_favourites". Permission (OAuth scope write:favourites) listed on the authorization page.
+//
+//	en: Add and remove favourites
+func (l *Localizer) ServerAuthAuthorizeScopeWriteFavourites() string {
+	return l.format("server:auth.authorize.scope.write_favourites", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteFollows formats "server:auth.authorize.scope.write_follows". Permission (OAuth scope write:follows) listed on the authorization page.
+//
+//	en: Follow and unfollow accounts and answer follow requests
+func (l *Localizer) ServerAuthAuthorizeScopeWriteFollows() string {
+	return l.format("server:auth.authorize.scope.write_follows", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteMedia formats "server:auth.authorize.scope.write_media". Permission (OAuth scope write:media) listed on the authorization page.
+//
+//	en: Upload images and edit their descriptions
+func (l *Localizer) ServerAuthAuthorizeScopeWriteMedia() string {
+	return l.format("server:auth.authorize.scope.write_media", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteMutes formats "server:auth.authorize.scope.write_mutes". Permission (OAuth scope write:mutes) listed on the authorization page.
+//
+//	en: Mute and unmute accounts
+func (l *Localizer) ServerAuthAuthorizeScopeWriteMutes() string {
+	return l.format("server:auth.authorize.scope.write_mutes", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteNotifications formats "server:auth.authorize.scope.write_notifications". Permission (OAuth scope write:notifications) listed on the authorization page.
+//
+//	en: Mark notifications as read and dismiss them
+func (l *Localizer) ServerAuthAuthorizeScopeWriteNotifications() string {
+	return l.format("server:auth.authorize.scope.write_notifications", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteStatuses formats "server:auth.authorize.scope.write_statuses". Permission (OAuth scope write:statuses) listed on the authorization page.
+//
+//	en: Post, edit, delete, boost, and pin posts
+func (l *Localizer) ServerAuthAuthorizeScopeWriteStatuses() string {
+	return l.format("server:auth.authorize.scope.write_statuses", nil)
 }
 
 // ServerAuthAuthorizeTitle formats "server:auth.authorize.title". Title and heading of the authorization (consent) page. {app} is the name of the application asking for access.
@@ -452,11 +571,32 @@ func (l *Localizer) ServerConfigMissing(name string) string {
 	return l.format("server:config.missing", map[string]any{"name": name})
 }
 
+// ServerErrorsAccountUnavailable formats "server:errors.account_unavailable". API error title for HTTP 403 when the access token is valid but its user cannot use the app: the registration is pending or rejected, the email address is unconfirmed, or the account is deactivated or deleted.
+//
+//	en: Your account cannot use the app right now.
+func (l *Localizer) ServerErrorsAccountUnavailable() string {
+	return l.format("server:errors.account_unavailable", nil)
+}
+
 // ServerErrorsBadRequest formats "server:errors.bad_request". API error message for HTTP 400 when no more specific message applies.
 //
 //	en: The request is invalid.
 func (l *Localizer) ServerErrorsBadRequest() string {
 	return l.format("server:errors.bad_request", nil)
+}
+
+// ServerErrorsInsufficientScope formats "server:errors.insufficient_scope". API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs.
+//
+//	en: This app is not allowed to do this.
+func (l *Localizer) ServerErrorsInsufficientScope() string {
+	return l.format("server:errors.insufficient_scope", nil)
+}
+
+// ServerErrorsInsufficientScopeDetail formats "server:errors.insufficient_scope_detail". Detail of the HTTP 403 insufficient-scope API error. {scope} is the missing OAuth scope, e.g. read:accounts (not translated).
+//
+//	en: The access token needs the scope {scope}.
+func (l *Localizer) ServerErrorsInsufficientScopeDetail(scope string) string {
+	return l.format("server:errors.insufficient_scope_detail", map[string]any{"scope": scope})
 }
 
 // ServerErrorsInternal formats "server:errors.internal". API error message for HTTP 500. Must not reveal internal details.
@@ -473,6 +613,13 @@ func (l *Localizer) ServerErrorsInvalidParameter(name string) string {
 	return l.format("server:errors.invalid_parameter", map[string]any{"name": name})
 }
 
+// ServerErrorsInvalidToken formats "server:errors.invalid_token". API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked.
+//
+//	en: Your sign-in has expired or was revoked. Sign in again.
+func (l *Localizer) ServerErrorsInvalidToken() string {
+	return l.format("server:errors.invalid_token", nil)
+}
+
 // ServerErrorsMethodNotAllowed formats "server:errors.method_not_allowed". API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated).
 //
 //	en: The {method} method is not allowed for this resource.
@@ -485,6 +632,27 @@ func (l *Localizer) ServerErrorsMethodNotAllowed(method string) string {
 //	en: The requested resource was not found.
 func (l *Localizer) ServerErrorsNotFound() string {
 	return l.format("server:errors.not_found", nil)
+}
+
+// ServerErrorsRateLimited formats "server:errors.rate_limited". API error title for HTTP 429 when a client sent more requests than the rate limit allows.
+//
+//	en: Too many requests.
+func (l *Localizer) ServerErrorsRateLimited() string {
+	return l.format("server:errors.rate_limited", nil)
+}
+
+// ServerErrorsRateLimitedDetail formats "server:errors.rate_limited_detail". Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds.
+//
+//	en: {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}}
+func (l *Localizer) ServerErrorsRateLimitedDetail(seconds int) string {
+	return l.format("server:errors.rate_limited_detail", map[string]any{"seconds": seconds})
+}
+
+// ServerErrorsUnauthenticated formats "server:errors.unauthenticated". API error title for HTTP 401 when the request carries no access token and the operation needs one.
+//
+//	en: Sign in to do this.
+func (l *Localizer) ServerErrorsUnauthenticated() string {
+	return l.format("server:errors.unauthenticated", nil)
 }
 
 // ServerHealthUnavailable formats "server:health.unavailable". Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable.
@@ -513,6 +681,20 @@ func (l *Localizer) ServerMailVerifyEmailSubject(host string) string {
 //	en: Avatar of {name}
 func (l *Localizer) ServerPreviewAvatarAlt(name string) string {
 	return l.format("server:preview.avatar_alt", map[string]any{"name": name})
+}
+
+// ServerPreviewBuiltinImageAlt formats "server:preview.builtin_image_alt". Alt text of the built-in preview image in a link preview (og:image:alt), for profiles and posts without images on an instance without its own preview image. The image is a white speech bubble with three dots on a blue gradient.
+//
+//	en: A speech bubble with three dots on a blue gradient
+func (l *Localizer) ServerPreviewBuiltinImageAlt() string {
+	return l.format("server:preview.builtin_image_alt", nil)
+}
+
+// ServerPreviewDefaultImageAlt formats "server:preview.default_image_alt". Alt text of the instance's preview image in a link preview (og:image:alt), for profiles and posts without images, when the preview_image_alt text is not set. {instance} is the instance name.
+//
+//	en: Image of {instance}
+func (l *Localizer) ServerPreviewDefaultImageAlt(instance string) string {
+	return l.format("server:preview.default_image_alt", map[string]any{"instance": instance})
 }
 
 // ServerPreviewHeaderAlt formats "server:preview.header_alt". Alt text of a profile's header image in a link preview (og:image:alt) when the header is the preview image. {name} is the display name, or the username when there is none.
