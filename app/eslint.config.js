@@ -155,7 +155,7 @@ export default defineConfig(
   },
   {
     // A8: the single audited component that renders server-sanitized post HTML.
-    files: ["**/PostContent.tsx"],
+    files: ["ui/src/PostContent.tsx"],
     rules: { "@eslint-react/dom-no-dangerously-set-innerhtml": "off" },
   },
 
