@@ -1,18 +1,20 @@
 {{define "content"}}
 <h1>{{.L.ServerAuthSignInTitle}}</h1>
-{{if .Error}}<p id="sign-in-error" role="alert">{{.Error}}</p>{{end}}
-<form method="post" action="/auth/sign_in">
+{{if .Error}}<p id="sign-in-error" class="alert" role="alert">{{.Error}}</p>{{end}}
+<form class="form" method="post" action="/auth/sign_in">
 <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
 {{if .ReturnTo}}<input type="hidden" name="return_to" value="{{.ReturnTo}}">{{end}}
-<div>
+<div class="field">
 <label for="sign-in-email">{{.L.ServerAuthSignInEmailLabel}}</label>
 <input id="sign-in-email" name="email" type="email" value="{{.Email}}" autocomplete="username" autocapitalize="none" spellcheck="false" required{{if .Error}} aria-invalid="true" aria-describedby="sign-in-error"{{end}}>
 </div>
-<div>
+<div class="field">
 <label for="sign-in-password">{{.L.ServerAuthSignInPasswordLabel}}</label>
 <input id="sign-in-password" name="password" type="password" autocomplete="current-password" required{{if .Error}} aria-invalid="true" aria-describedby="sign-in-error"{{end}}>
 </div>
-<button type="submit">{{.L.ServerAuthSignInSubmit}}</button>
+<div class="actions">
+<button class="button" type="submit">{{.L.ServerAuthSignInSubmit}}</button>
+</div>
 </form>
-{{if .CanSignUp}}<p><a href="/auth/sign_up">{{.L.ServerAuthSignInSignUpLink}}</a></p>{{end}}
+{{if .CanSignUp}}<p class="links"><a href="/auth/sign_up">{{.L.ServerAuthSignInSignUpLink}}</a></p>{{end}}
 {{end}}

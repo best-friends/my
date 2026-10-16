@@ -216,13 +216,12 @@ func TestSignInPageIsAccessibleHTML(t *testing.T) {
 	for _, want := range []string{
 		`<html lang="ja" dir="ltr">`,
 		`<title>ログイン</title>`,
-		`<link rel="stylesheet" href="` + authpages.DefaultStylesheet + `">`,
 		`<label for="sign-in-email">メールアドレス</label>`,
 		`id="sign-in-email" name="email" type="email"`,
 		`autocomplete="username"`,
 		`<label for="sign-in-password">パスワード</label>`,
 		`autocomplete="current-password"`,
-		`<form method="post" action="/auth/sign_in">`,
+		`<form class="form" method="post" action="/auth/sign_in">`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("page lacks %s:\n%s", want, body)
@@ -233,6 +232,9 @@ func TestSignInPageIsAccessibleHTML(t *testing.T) {
 	}
 	if strings.Contains(body, "aria-invalid") {
 		t.Errorf("a fresh form marks fields invalid")
+	}
+	if strings.Contains(body, `rel="stylesheet"`) {
+		t.Errorf("page links a stylesheet although Options.Stylesheet is empty:\n%s", body)
 	}
 	csrf, ok := b.cookies[authpages.CookieCSRF]
 	if !ok || !strings.Contains(body, `value="`+csrf+`"`) {
@@ -305,7 +307,7 @@ func TestFailedSignInsLookAlike(t *testing.T) {
 			t.Fatalf("failed sign-in = %d, want 422", w.Code)
 		}
 		body := w.Body.String()
-		if !strings.Contains(body, `<p id="sign-in-error" role="alert">The email address or password is incorrect.</p>`) ||
+		if !strings.Contains(body, `<p id="sign-in-error" class="alert" role="alert">The email address or password is incorrect.</p>`) ||
 			!strings.Contains(body, `aria-invalid="true" aria-describedby="sign-in-error"`) {
 			t.Errorf("failed sign-in page lacks the associated error:\n%s", body)
 		}

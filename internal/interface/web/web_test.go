@@ -17,24 +17,26 @@ import (
 	"github.com/best-friends/my/internal/interface/web"
 )
 
-// fakeBuild is a Vite build with an entry that imports a shared chunk, CSS on both, and a
-// lazily loaded chunk that must not be preloaded.
+// fakeBuild is a Vite build with an entry that imports a shared chunk, CSS on both, a
+// lazily loaded chunk that must not be preloaded, and the server pages' stylesheet entry.
 func fakeBuild() fstest.MapFS {
 	return fstest.MapFS{
 		".vite/manifest.json": {Data: []byte(`{
 			"index.html": {"file": "assets/index-AAAA.js", "src": "index.html", "isEntry": true,
 				"imports": ["_shared-BBBB.js"], "dynamicImports": ["src/lazy.tsx"], "css": ["assets/index-CCCC.css"]},
 			"_shared-BBBB.js": {"file": "assets/shared-BBBB.js", "css": ["assets/shared-DDDD.css"]},
-			"src/lazy.tsx": {"file": "assets/lazy-EEEE.js", "src": "src/lazy.tsx", "isDynamicEntry": true}
+			"src/lazy.tsx": {"file": "assets/lazy-EEEE.js", "src": "src/lazy.tsx", "isDynamicEntry": true},
+			"src/server-pages.css": {"file": "assets/server-pages-FFFF.css", "src": "src/server-pages.css", "isEntry": true}
 		}`)},
-		"index.html":             {Data: []byte("<!doctype html><title>vite</title>")},
-		"assets/index-AAAA.js":   {Data: []byte("console.log('entry')")},
-		"assets/shared-BBBB.js":  {Data: []byte("export {}")},
-		"assets/index-CCCC.css":  {Data: []byte("body{}")},
-		"assets/shared-DDDD.css": {Data: []byte("p{}")},
-		"assets/lazy-EEEE.js":    {Data: []byte("export {}")},
-		"icon.svg":               {Data: []byte("<svg xmlns='http://www.w3.org/2000/svg'/>")},
-		"sw.js":                  {Data: []byte("self.addEventListener('fetch', () => {})")},
+		"index.html":                   {Data: []byte("<!doctype html><title>vite</title>")},
+		"assets/index-AAAA.js":         {Data: []byte("console.log('entry')")},
+		"assets/shared-BBBB.js":        {Data: []byte("export {}")},
+		"assets/index-CCCC.css":        {Data: []byte("body{}")},
+		"assets/shared-DDDD.css":       {Data: []byte("p{}")},
+		"assets/lazy-EEEE.js":          {Data: []byte("export {}")},
+		"assets/server-pages-FFFF.css": {Data: []byte("main{}")},
+		"icon.svg":                     {Data: []byte("<svg xmlns='http://www.w3.org/2000/svg'/>")},
+		"sw.js":                        {Data: []byte("self.addEventListener('fetch', () => {})")},
 	}
 }
 
@@ -91,8 +93,8 @@ func TestShellLoadsTheBuildFromTheManifest(t *testing.T) {
 			t.Errorf("shell lacks %s:\n%s", want, body)
 		}
 	}
-	if strings.Contains(body, "lazy-EEEE") || strings.Contains(body, "vite</title>") {
-		t.Errorf("shell preloads a lazy chunk or is Vite's index.html:\n%s", body)
+	if strings.Contains(body, "lazy-EEEE") || strings.Contains(body, "vite</title>") || strings.Contains(body, "server-pages") {
+		t.Errorf("shell preloads a lazy chunk, loads the server pages' stylesheet, or is Vite's index.html:\n%s", body)
 	}
 	h := rec.Header()
 	if h.Get("Cache-Control") != "public, max-age=60, stale-while-revalidate=300" || h.Get("Vary") != "Accept" || h.Get("ETag") == "" {
@@ -103,6 +105,23 @@ func TestShellLoadsTheBuildFromTheManifest(t *testing.T) {
 	again := get(mux, "/home", map[string]string{"If-None-Match": h.Get("ETag")})
 	if again.Code != http.StatusNotModified {
 		t.Errorf("conditional shell = %d, want 304", again.Code)
+	}
+}
+
+func TestStylesheetIsTheServerPagesEntry(t *testing.T) {
+	h, mux := newHandler(t, web.Options{})
+	if got := h.Stylesheet(); got != "/assets/server-pages-FFFF.css" {
+		t.Fatalf("Stylesheet() = %q, want the server pages' entry", got)
+	}
+	if rec := get(mux, h.Stylesheet(), nil); rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "text/css; charset=utf-8" {
+		t.Errorf("GET %s = %d %q", h.Stylesheet(), rec.Code, rec.Header().Get("Content-Type"))
+	}
+
+	build := fakeBuild()
+	build[".vite/manifest.json"] = &fstest.MapFile{Data: []byte(`{"index.html": {"file": "assets/index-AAAA.js", "isEntry": true}}`)}
+	without, _ := newHandler(t, web.Options{Build: build})
+	if got := without.Stylesheet(); got != "" {
+		t.Errorf("Stylesheet() without the entry = %q, want empty", got)
 	}
 }
 

@@ -48,6 +48,14 @@ export default defineConfig({
     manifest: true,
     // Emit every asset as a file: the CSP of ADR-0019 §9 has no data: source.
     assetsInlineLimit: 0,
+    rolldownOptions: {
+      // The SPA, and the stylesheet of the pages the Go server renders without JavaScript
+      // (src/server-pages.css, ADR-0030). Go finds both by these manifest keys.
+      input: {
+        index: fileURLToPath(new URL("index.html", import.meta.url)),
+        "server-pages": fileURLToPath(new URL("src/server-pages.css", import.meta.url)),
+      },
+    },
   },
   server: {
     // `my serve -dev-vite-origin http://localhost:5173` loads the client from here (CONTRIBUTING.md),

@@ -72,13 +72,13 @@ func TestSignUpPageIsAccessibleHTML(t *testing.T) {
 		`<title>アカウントを作成</title>`,
 		`<label for="sign-up-username">ユーザー名</label>`,
 		`aria-describedby="sign-up-username-hint"`,
-		`<p id="sign-up-username-hint">半角英字（a–z）・数字・アンダースコアで 30 文字まで。あとから変更できません。</p>`,
+		`<p id="sign-up-username-hint" class="hint">半角英字（a–z）・数字・アンダースコアで 30 文字まで。あとから変更できません。</p>`,
 		`<label for="sign-up-email">メールアドレス</label>`,
 		`autocomplete="username"`,
 		`<label for="sign-up-password">パスワード</label>`,
 		`autocomplete="new-password" required minlength="8" maxlength="128"`,
 		`<label for="sign-up-reason">参加したい理由（任意）</label>`,
-		`<form method="post" action="/auth/sign_up">`,
+		`<form class="form" method="post" action="/auth/sign_up">`,
 		`<a href="/auth/sign_in">ログイン</a>`,
 	)
 	wantLacks(t, body, "<script", "style=", "aria-invalid", `role="alert"`)
@@ -118,8 +118,8 @@ func TestSignUpSignsTheNewUserIn(t *testing.T) {
 		"<h1>Your account is not ready yet</h1>",
 		"Your registration is waiting for a moderator&#39;s approval.",
 		"Confirm your email address: open the link we sent to alice@example.com.",
-		`<form method="post" action="/auth/verify_email/resend">`,
-		`<form method="post" action="/auth/sign_out">`,
+		`<form class="form" method="post" action="/auth/verify_email/resend">`,
+		`<form class="form" method="post" action="/auth/sign_out">`,
 	)
 	wantLacks(t, body, "Continue")
 
@@ -140,14 +140,14 @@ func TestSignUpShowsEveryFieldError(t *testing.T) {
 	}
 	body := w.Body.String()
 	wantContains(t, body,
-		`<p id="sign-up-error" role="alert">The account was not created. Check the fields marked below.</p>`,
-		`<p id="sign-up-username-error">Use 1 to 30 letters (a–z), digits, and underscores.</p>`,
+		`<p id="sign-up-error" class="alert" role="alert">The account was not created. Check the fields marked below.</p>`,
+		`<p id="sign-up-username-error" class="field-error">Use 1 to 30 letters (a–z), digits, and underscores.</p>`,
 		`aria-describedby="sign-up-username-hint sign-up-username-error" aria-invalid="true"`,
-		`<p id="sign-up-email-error">Enter an email address such as alice@example.com.</p>`,
+		`<p id="sign-up-email-error" class="field-error">Enter an email address such as alice@example.com.</p>`,
 		`aria-describedby="sign-up-email-hint sign-up-email-error" aria-invalid="true"`,
-		`<p id="sign-up-password-error">Use 8 to 128 characters.</p>`,
+		`<p id="sign-up-password-error" class="field-error">Use 8 to 128 characters.</p>`,
 		`aria-describedby="sign-up-password-hint sign-up-password-error" aria-invalid="true"`,
-		`<p id="sign-up-invite-error">Enter your invite code.</p>`,
+		`<p id="sign-up-invite-error" class="field-error">Enter your invite code.</p>`,
 		`value="al ice"`, `value="alice"`,
 	)
 	wantLacks(t, body, `value="short"`)
@@ -162,12 +162,12 @@ func TestSignUpReportsWhatTheServiceRejects(t *testing.T) {
 		status int
 		want   string
 	}{
-		{appaccount.ErrUsernameTaken, http.StatusUnprocessableEntity, `<p id="sign-up-username-error">This username is already taken.</p>`},
-		{appidentity.ErrEmailTaken, http.StatusUnprocessableEntity, `<p id="sign-up-email-error">This email address is already in use.</p>`},
-		{appidentity.ErrInvalidInvite, http.StatusUnprocessableEntity, `<p id="sign-up-invite-error">This invite code is not valid.`},
+		{appaccount.ErrUsernameTaken, http.StatusUnprocessableEntity, `<p id="sign-up-username-error" class="field-error">This username is already taken.</p>`},
+		{appidentity.ErrEmailTaken, http.StatusUnprocessableEntity, `<p id="sign-up-email-error" class="field-error">This email address is already in use.</p>`},
+		{appidentity.ErrInvalidInvite, http.StatusUnprocessableEntity, `<p id="sign-up-invite-error" class="field-error">This invite code is not valid.`},
 		{appidentity.ErrRegistrationClosed, http.StatusForbidden, "This server is not accepting new accounts."},
 		{&kernel.RateLimitedError{RetryAfter: 90 * time.Second}, http.StatusTooManyRequests,
-			`<p id="sign-up-error" role="alert">Too many sign-up attempts from your network. Try again in 2 minutes.</p>`},
+			`<p id="sign-up-error" class="alert" role="alert">Too many sign-up attempts from your network. Try again in 2 minutes.</p>`},
 	} {
 		id := newFakeIdentity()
 		id.mode = identity.RegistrationInvite
@@ -238,7 +238,7 @@ func TestVerifyEmail(t *testing.T) {
 	if page.Code != http.StatusOK {
 		t.Fatalf("GET verify_email = %d", page.Code)
 	}
-	wantContains(t, page.Body.String(), `<input type="hidden" name="token" value="my_evt_good">`, `<button type="submit">Confirm email address</button>`)
+	wantContains(t, page.Body.String(), `<input type="hidden" name="token" value="my_evt_good">`, `<button class="button" type="submit">Confirm email address</button>`)
 	if id.verified["my_evt_good"] {
 		t.Fatal("GET redeemed the token")
 	}
@@ -269,11 +269,11 @@ func TestResendVerification(t *testing.T) {
 	if w.Code != http.StatusOK || id.resent != 1 {
 		t.Fatalf("POST resend = %d, resent %d", w.Code, id.resent)
 	}
-	wantContains(t, w.Body.String(), `<p role="status">We sent a new link to alice@example.com.</p>`)
+	wantContains(t, w.Body.String(), `<p class="notice" role="status">We sent a new link to alice@example.com.</p>`)
 
 	id.resendErr = &kernel.RateLimitedError{RetryAfter: time.Minute}
 	w = b.do(http.MethodPost, authpages.PathResendVerification, b.form(page), nil)
-	if w.Code != http.StatusTooManyRequests || !strings.Contains(w.Body.String(), `<p role="alert">You asked for the link too many times. Try again in 1 minute.</p>`) {
+	if w.Code != http.StatusTooManyRequests || !strings.Contains(w.Body.String(), `<p class="alert" role="alert">You asked for the link too many times. Try again in 1 minute.</p>`) {
 		t.Errorf("rate-limited resend = %d %s", w.Code, w.Body.String())
 	}
 
