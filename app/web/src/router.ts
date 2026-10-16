@@ -19,6 +19,9 @@ export const routerOptions = {
   // TanStack Query caches the data (web-client.md S1), so the router keeps no preloaded data of its own.
   defaultPreloadStaleTime: 0,
   scrollRestoration: true,
+  // A remote account's profile is /@alice@example.com, as the server's shell routes have it (ADR-0028);
+  // the `@` of a path param stays as it is instead of becoming %40.
+  pathParamsAllowedCharacters: ["@"],
 } as const;
 
 export type AppRouterOptions = RouterContext & {

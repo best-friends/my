@@ -116,30 +116,37 @@ test.describe("the local timeline", () => {
     const articles = page.getByRole("feed").getByRole("article");
     // The second page may have loaded already (its end is in view on tall screens); the first page comes first.
     await expect(articles.first()).toHaveAttribute("aria-posinset", "1");
+    // Each post links its author's picture and name to the author's profile, and a boost its booster's name.
     await expect(page.getByRole("feed")).toMatchAriaSnapshot(`
       - feed:
         - article:
-          - text: /Bartholomew/
+          - link /Bartholomew/
+          - link /Bartholomew/
           - time
           - paragraph
         - article:
-          - paragraph
-          - text: /Bob/
+          - paragraph:
+            - link /Carol/
+          - link /Bob/
+          - link /Bob/
           - time
           - paragraph
         - article:
-          - text: /Bob/
+          - link /Bob/
+          - link /Bob/
           - time
           - paragraph: Food
           - button [expanded=false]
         - article:
-          - text: /Bob/
+          - link /Bob/
+          - link /Bob/
           - time
           - paragraph
           - img "A blue square"
           - img
         - article:
-          - text: /Bob/
+          - link /Bob/
+          - link /Bob/
           - time
           - paragraph
     `);

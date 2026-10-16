@@ -399,6 +399,238 @@
     "defaultMessage": "This screen is not ready yet.",
     "description": "Text below the heading of a page whose screen the web client does not have yet."
   },
+  "profile.change_failed": {
+    "defaultMessage": "The change did not go through: {reason}",
+    "description": "Toast when following, blocking, muting or undoing one of them failed. {reason} is the error message."
+  },
+  "profile.confirm.block.action": {
+    "defaultMessage": "Block",
+    "description": "Button of the dialog that blocks the account."
+  },
+  "profile.confirm.block.body": {
+    "defaultMessage": "You will stop following each other, and neither of you can follow the other until you unblock them.",
+    "description": "Text of the dialog that confirms blocking: what a block does."
+  },
+  "profile.confirm.block.title": {
+    "defaultMessage": "Block {name}?",
+    "description": "Title of the dialog that confirms blocking. {name} is the account's display name."
+  },
+  "profile.confirm.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button of a confirmation dialog on a profile that closes it and changes nothing."
+  },
+  "profile.confirm.unblock.action": {
+    "defaultMessage": "Unblock",
+    "description": "Button of the dialog that unblocks the account."
+  },
+  "profile.confirm.unblock.body": {
+    "defaultMessage": "The follows that the block ended do not come back.",
+    "description": "Text of the dialog that confirms unblocking."
+  },
+  "profile.confirm.unblock.title": {
+    "defaultMessage": "Unblock {name}?",
+    "description": "Title of the dialog that confirms unblocking. {name} is the account's display name."
+  },
+  "profile.confirm.unfollow.action": {
+    "defaultMessage": "Unfollow",
+    "description": "Button of the dialog that unfollows the account."
+  },
+  "profile.confirm.unfollow.body": {
+    "defaultMessage": "Their posts will no longer appear in your home timeline.",
+    "description": "Text of the dialog that confirms unfollowing."
+  },
+  "profile.confirm.unfollow.title": {
+    "defaultMessage": "Unfollow {name}?",
+    "description": "Title of the dialog that confirms unfollowing. {name} is the account's display name."
+  },
+  "profile.confirm.withdraw.action": {
+    "defaultMessage": "Withdraw request",
+    "description": "Button of the dialog that withdraws the follow request."
+  },
+  "profile.confirm.withdraw.body": {
+    "defaultMessage": "You can send a new request later.",
+    "description": "Text of the dialog that confirms withdrawing a follow request."
+  },
+  "profile.confirm.withdraw.title": {
+    "defaultMessage": "Withdraw your follow request to {name}?",
+    "description": "Title of the dialog that confirms withdrawing a pending follow request. {name} is the account's display name."
+  },
+  "profile.done.blocked": {
+    "defaultMessage": "You blocked {name}.",
+    "description": "Announced to screen readers when blocking succeeded. {name} is the account's display name."
+  },
+  "profile.done.followed": {
+    "defaultMessage": "You follow {name} now.",
+    "description": "Announced to screen readers when following succeeded. {name} is the account's display name."
+  },
+  "profile.done.muted": {
+    "defaultMessage": "You muted {name}.",
+    "description": "Announced to screen readers when muting succeeded. {name} is the account's display name."
+  },
+  "profile.done.requested": {
+    "defaultMessage": "Follow request sent to {name}.",
+    "description": "Announced to screen readers when a follow request was sent. {name} is the account's display name."
+  },
+  "profile.done.unblocked": {
+    "defaultMessage": "You unblocked {name}.",
+    "description": "Announced to screen readers when unblocking succeeded. {name} is the account's display name."
+  },
+  "profile.done.unfollowed": {
+    "defaultMessage": "You no longer follow {name}.",
+    "description": "Announced to screen readers when unfollowing or withdrawing a request succeeded. {name} is the account's display name."
+  },
+  "profile.done.unmuted": {
+    "defaultMessage": "You unmuted {name}.",
+    "description": "Announced to screen readers when unmuting succeeded. {name} is the account's display name."
+  },
+  "profile.edit": {
+    "defaultMessage": "Edit profile",
+    "description": "Link on the user's own profile to the settings where they edit it."
+  },
+  "profile.follow": {
+    "defaultMessage": "Follow",
+    "description": "Button on a profile that follows the account."
+  },
+  "profile.follow.back": {
+    "defaultMessage": "Follow back",
+    "description": "Button on a profile of an account that follows the user, which follows it in turn."
+  },
+  "profile.follow.blocked": {
+    "defaultMessage": "Blocked",
+    "description": "Button on a profile of an account the user blocks; pressing it offers to unblock."
+  },
+  "profile.follow.following": {
+    "defaultMessage": "Following",
+    "description": "Button on a profile of an account the user follows; pressing it offers to unfollow."
+  },
+  "profile.follow.request": {
+    "defaultMessage": "Request to follow",
+    "description": "Button on a profile of an account that approves its followers: it sends a follow request."
+  },
+  "profile.follow.requested": {
+    "defaultMessage": "Requested",
+    "description": "Button on a profile while the user's follow request awaits approval; pressing it offers to withdraw the request."
+  },
+  "profile.followers.empty": {
+    "defaultMessage": "No followers yet",
+    "description": "Shown instead of the list of followers when there are none."
+  },
+  "profile.followers.title": {
+    "defaultMessage": "Followers of {name}",
+    "description": "Heading and document title of the list of an account's followers. {name} is the account's display name."
+  },
+  "profile.followers_count": {
+    "defaultMessage": "{count, plural, one {# follower} other {# followers}}",
+    "description": "Link on a profile to the accounts that follow it, with their number."
+  },
+  "profile.following.empty": {
+    "defaultMessage": "Not following anyone yet",
+    "description": "Shown instead of the list of followed accounts when there are none."
+  },
+  "profile.following.title": {
+    "defaultMessage": "Accounts {name} follows",
+    "description": "Heading and document title of the list of the accounts an account follows. {name} is the account's display name."
+  },
+  "profile.following_count": {
+    "defaultMessage": "{count, plural, one {# following} other {# following}}",
+    "description": "Link on a profile to the accounts it follows, with their number."
+  },
+  "profile.joined": {
+    "defaultMessage": "Joined on {date}",
+    "description": "When the account was created, on its profile. {date} is the formatted date, for example 'October 1, 2026'."
+  },
+  "profile.list.back": {
+    "defaultMessage": "Back to the profile of {name}",
+    "description": "Link from a follow list to the account's profile. {name} is the account's display name."
+  },
+  "profile.list.load_more": {
+    "defaultMessage": "Show more",
+    "description": "Button at the end of a follow list that loads the next accounts."
+  },
+  "profile.list.load_more_failed": {
+    "defaultMessage": "Could not load more accounts: {reason}",
+    "description": "Shown and announced when the next page of a follow list failed to load. {reason} is the error message."
+  },
+  "profile.list.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button at the end of a follow list after the next accounts failed to load."
+  },
+  "profile.menu.block": {
+    "defaultMessage": "Block",
+    "description": "Menu item that asks to block the account of the profile."
+  },
+  "profile.menu.mute": {
+    "defaultMessage": "Mute",
+    "description": "Menu item that mutes the account of the profile."
+  },
+  "profile.menu.unblock": {
+    "defaultMessage": "Unblock",
+    "description": "Menu item that asks to unblock the account of the profile."
+  },
+  "profile.menu.unmute": {
+    "defaultMessage": "Unmute",
+    "description": "Menu item that ends the mute of the account of the profile."
+  },
+  "profile.more": {
+    "defaultMessage": "More actions for {name}",
+    "description": "Accessible name of the menu button with mute and block on a profile. {name} is the account's display name."
+  },
+  "profile.not_found.body": {
+    "defaultMessage": "No account has this address, or it is not available to you.",
+    "description": "Text below the heading of a profile that was not found."
+  },
+  "profile.not_found.title": {
+    "defaultMessage": "Account not found",
+    "description": "Heading and document title of a profile address that names no account the user may see."
+  },
+  "profile.relationship_failed": {
+    "defaultMessage": "Could not load whether you follow this account: {reason}",
+    "description": "Shown on a profile instead of the follow button when the relationship failed to load. {reason} is the error message."
+  },
+  "profile.sign_in_to_follow": {
+    "defaultMessage": "Sign in to follow",
+    "description": "Link on a profile when nobody is signed in: it opens the sign-in page and comes back."
+  },
+  "profile.signed_out.description": {
+    "defaultMessage": "Sign in to see your profile.",
+    "description": "Text of the Profile page of the navigation when nobody is signed in, above the sign-in link."
+  },
+  "profile.tab.no_boosts": {
+    "defaultMessage": "Without boosts",
+    "description": "Tab of a profile: only the posts the account wrote itself, without replies and boosts."
+  },
+  "profile.tab.posts": {
+    "defaultMessage": "Posts",
+    "description": "Tab of a profile: the account's posts and boosts, without its replies."
+  },
+  "profile.tab.replies": {
+    "defaultMessage": "Posts and replies",
+    "description": "Tab of a profile: the account's posts, boosts and replies."
+  },
+  "profile.tabs": {
+    "defaultMessage": "Posts of {name}",
+    "description": "Accessible name of the tab list that switches between the posts of a profile. {name} is the account's display name."
+  },
+  "profile.tag.bot": {
+    "defaultMessage": "Bot",
+    "description": "Label on a profile: the account is automated."
+  },
+  "profile.tag.follows_you": {
+    "defaultMessage": "Follows you",
+    "description": "Label on a profile: the account follows the user."
+  },
+  "profile.tag.locked": {
+    "defaultMessage": "Approves followers",
+    "description": "Label on a profile: the account approves each follow request."
+  },
+  "profile.tag.muted": {
+    "defaultMessage": "Muted",
+    "description": "Label on a profile: the user mutes the account."
+  },
+  "profile.tag.requested_you": {
+    "defaultMessage": "Wants to follow you",
+    "description": "Label on a profile: the account has asked to follow the user and awaits approval."
+  },
   "profile.title": {
     "defaultMessage": "Profile",
     "description": "Heading and document title of the signed-in user's own profile page."
@@ -822,6 +1054,10 @@
   "timeline.content_warning.toggle": {
     "defaultMessage": "Show content",
     "description": "Button next to a post's content warning that shows or hides the post behind it. The same text is used while the post is shown."
+  },
+  "timeline.empty.account.heading": {
+    "defaultMessage": "No posts yet",
+    "description": "Shown instead of the posts of a profile's tab when it has none."
   },
   "timeline.empty.home.action": {
     "defaultMessage": "Browse the local timeline",
