@@ -31,6 +31,8 @@ type Options struct {
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// Notifications runs the use cases of the viewer's notifications.
+	Notifications Notifications
 	// Statuses posts, edits, and deletes statuses; StatusReader presents them; Interactions
 	// boosts, favourites, bookmarks, and pins them (the statuses operations).
 	Statuses     Statuses

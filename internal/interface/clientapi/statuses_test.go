@@ -21,16 +21,16 @@ import (
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
 
-const statusID = "01890a5d-ac96-774b-bcce-b302099a9001"
+const sampleStatusID = "01890a5d-ac96-774b-bcce-b302099a9001"
 
 // fakeStatuses implements the Statuses, StatusReader, and Interactions ports. A nil function
 // answers ErrNotFound, so that a Server without statuses serves only 404s.
 type fakeStatuses struct {
 	create   func(appcontent.CreateInput) (appcontent.Post, error)
 	edit     func(appcontent.EditInput) (appcontent.Post, error)
-	del      func(accountID, statusID string) error
+	del      func(accountID, id string) error
 	view     func(appcontent.Viewer, string) (appcontent.StatusView, error)
-	interact func(op, accountID, statusID string) error
+	interact func(op, accountID, id string) error
 }
 
 var errNotFound = fmt.Errorf("fake: %w", appcontent.ErrNotFound)
@@ -49,11 +49,11 @@ func (f *fakeStatuses) Edit(_ context.Context, in appcontent.EditInput) (appcont
 	return f.edit(in)
 }
 
-func (f *fakeStatuses) Delete(_ context.Context, accountID, statusID string) (content.Deletion, error) {
+func (f *fakeStatuses) Delete(_ context.Context, accountID, id string) (content.Deletion, error) {
 	if f.del == nil {
 		return content.Deletion{}, errNotFound
 	}
-	return content.Deletion{}, f.del(accountID, statusID)
+	return content.Deletion{}, f.del(accountID, id)
 }
 
 func (f *fakeStatuses) View(_ context.Context, v appcontent.Viewer, id string) (appcontent.StatusView, error) {
@@ -88,7 +88,7 @@ func (f *fakeStatuses) Source(_ context.Context, accountID, id string) (content.
 }
 
 func (f *fakeStatuses) Bookmarks(_ context.Context, accountID, _ string, limit int) (appcontent.BookmarkPage, error) {
-	view, err := f.View(context.Background(), appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: accountID}, statusID)
+	view, err := f.View(context.Background(), appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: accountID}, sampleStatusID)
 	if errors.Is(err, appcontent.ErrNotFound) {
 		return appcontent.BookmarkPage{}, nil
 	}
@@ -134,11 +134,11 @@ func sampleView(viewer appcontent.Viewer) appcontent.StatusView {
 	}
 	v := appcontent.StatusView{
 		Status: content.Status{
-			ID: statusID, URI: "https://social.example/ap/statuses/" + statusID, URL: "https://social.example/@alice/" + statusID,
+			ID: sampleStatusID, URI: "https://social.example/ap/statuses/" + sampleStatusID, URL: "https://social.example/@alice/" + sampleStatusID,
 			AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic, PublishedAt: published,
 		},
 		Revision: content.Revision{
-			ID: "rev-2", StatusID: statusID, Seq: 2, SpoilerText: "cw", Sensitive: true, Language: "en", RevisedAt: published.Add(time.Hour),
+			ID: "rev-2", StatusID: sampleStatusID, Seq: 2, SpoilerText: "cw", Sensitive: true, Language: "en", RevisedAt: published.Add(time.Hour),
 			Bodies: []content.Body{{Language: "en", ContentHTML: "<p>hi</p>"}},
 			Source: &content.Source{Text: "hi", Format: content.SourceTextPlain},
 		},
@@ -158,7 +158,7 @@ func sampleView(viewer appcontent.Viewer) appcontent.StatusView {
 		}},
 		Mentions: []appaccount.Actor{alice},
 		Tags:     []content.Tag{{Name: "GoLang", NameNormalized: "golang"}},
-		Counters: content.Counters{StatusID: statusID, RepliesCount: 1, BoostsCount: 2, FavouritesCount: 3},
+		Counters: content.Counters{StatusID: sampleStatusID, RepliesCount: 1, BoostsCount: 2, FavouritesCount: 3},
 	}
 	if viewer.Kind == appcontent.ViewerLocal {
 		v.Relation = &appcontent.ViewerRelation{Favourited: true, Author: viewer.AccountID == aliceAccountID}
@@ -173,22 +173,6 @@ func newStatusEnv(t *testing.T, f *fakeStatuses) *authEnv {
 	})
 }
 
-func (e *authEnv) send(t *testing.T, method, path, token, body string) *http.Response {
-	t.Helper()
-	var req *http.Request
-	if body == "" {
-		req = httptest.NewRequest(method, clientapi.BasePath+path, nil)
-	} else {
-		req = httptest.NewRequest(method, clientapi.BasePath+path, strings.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-	}
-	req.RemoteAddr = "192.0.2.1:1234"
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-	return e.spec.Serve(t, e.h, req)
-}
-
 func decodeStatus(t *testing.T, res *http.Response) clientapi.Status {
 	t.Helper()
 	var s clientapi.Status
@@ -200,19 +184,19 @@ func decodeStatus(t *testing.T, res *http.Response) clientapi.Status {
 
 func TestGetStatus(t *testing.T) {
 	f := &fakeStatuses{view: func(v appcontent.Viewer, id string) (appcontent.StatusView, error) {
-		if id != statusID {
+		if id != sampleStatusID {
 			return appcontent.StatusView{}, errNotFound
 		}
 		return sampleView(v), nil
 	}}
 	e := newStatusEnv(t, f)
 
-	res := e.send(t, http.MethodGet, "/statuses/"+statusID, "", "")
+	res := e.send(t, http.MethodGet, "/statuses/"+sampleStatusID, "", "")
 	if res.StatusCode != http.StatusOK || res.Header.Get("Cache-Control") != "public, max-age=60" {
 		t.Fatalf("anonymous GET = %d, Cache-Control %q", res.StatusCode, res.Header.Get("Cache-Control"))
 	}
 	s := decodeStatus(t, res)
-	if s.Id != statusID || s.Account.Username != "alice" || s.Content != "<p>hi</p>" || s.SpoilerText != "cw" || !s.Sensitive ||
+	if s.Id != sampleStatusID || s.Account.Username != "alice" || s.Content != "<p>hi</p>" || s.SpoilerText != "cw" || !s.Sensitive ||
 		s.Visibility != clientapi.VisibilityPublic || s.Language != "en" || s.EditedAt == nil || s.InReplyToId == nil ||
 		s.RepliesCount != 1 || s.BoostsCount != 2 || s.FavouritesCount != 3 {
 		t.Errorf("status = %+v", s)
@@ -228,14 +212,14 @@ func TestGetStatus(t *testing.T) {
 		t.Errorf("tags = %+v, mentions = %+v", s.Tags, s.Mentions)
 	}
 
-	res = e.send(t, http.MethodGet, "/statuses/"+statusID, "read", "")
+	res = e.send(t, http.MethodGet, "/statuses/"+sampleStatusID, "read", "")
 	if res.StatusCode != http.StatusOK || res.Header.Get("Cache-Control") != "no-store" {
 		t.Fatalf("GET with a token = %d, Cache-Control %q", res.StatusCode, res.Header.Get("Cache-Control"))
 	}
 	if s := decodeStatus(t, res); s.Favourited == nil || !*s.Favourited || s.Pinned == nil || *s.Pinned {
 		t.Errorf("the author's status = %+v, want favourited and pinned false", s)
 	}
-	res = e.send(t, http.MethodGet, "/statuses/"+statusID, "bob", "")
+	res = e.send(t, http.MethodGet, "/statuses/"+sampleStatusID, "bob", "")
 	if s := decodeStatus(t, res); s.Favourited == nil || s.Pinned != nil {
 		t.Errorf("another viewer's status = %+v, want no pinned", s)
 	}
@@ -246,11 +230,11 @@ func TestGetStatus(t *testing.T) {
 	}
 
 	for _, path := range []string{"/context", "/history"} {
-		if res := e.send(t, http.MethodGet, "/statuses/"+statusID+path, "", ""); res.StatusCode != http.StatusOK {
+		if res := e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+path, "", ""); res.StatusCode != http.StatusOK {
 			t.Errorf("GET %s = %d", path, res.StatusCode)
 		}
 	}
-	if res := e.send(t, http.MethodGet, "/statuses/"+statusID+"/source", "read", ""); res.StatusCode != http.StatusOK {
+	if res := e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+"/source", "read", ""); res.StatusCode != http.StatusOK {
 		t.Errorf("GET source = %d", res.StatusCode)
 	}
 	res = e.send(t, http.MethodGet, "/bookmarks?limit=5", "read", "")
@@ -265,7 +249,7 @@ func TestCreateStatus(t *testing.T) {
 	f := &fakeStatuses{
 		create: func(in appcontent.CreateInput) (appcontent.Post, error) {
 			got = in
-			return appcontent.Post{Status: content.Status{ID: statusID}}, nil
+			return appcontent.Post{Status: content.Status{ID: sampleStatusID}}, nil
 		},
 		view: func(v appcontent.Viewer, _ string) (appcontent.StatusView, error) { return sampleView(v), nil },
 	}
@@ -341,7 +325,7 @@ func TestStatusProblems(t *testing.T) {
 	}
 	for _, tc := range interactions {
 		e := newStatusEnv(t, &fakeStatuses{interact: func(string, string, string) error { return tc.err }})
-		res := e.send(t, tc.method, "/statuses/"+statusID+tc.path, "write", "")
+		res := e.send(t, tc.method, "/statuses/"+sampleStatusID+tc.path, "write", "")
 		p := decodeProblem(t, res)
 		want := http.StatusUnprocessableEntity
 		if errors.Is(tc.err, appcontent.ErrNotFound) {
@@ -373,15 +357,15 @@ func TestEditAndDeleteOfAnotherAccountsStatus(t *testing.T) {
 		want    int
 	}{{true, http.StatusForbidden}, {false, http.StatusNotFound}} {
 		visible = tc.visible
-		if res := e.send(t, http.MethodPut, "/statuses/"+statusID, "write", `{"text":"mine"}`); res.StatusCode != tc.want {
+		if res := e.send(t, http.MethodPut, "/statuses/"+sampleStatusID, "write", `{"text":"mine"}`); res.StatusCode != tc.want {
 			t.Errorf("PUT another account's status (visible %v) = %d, want %d", tc.visible, res.StatusCode, tc.want)
 		}
-		if res := e.send(t, http.MethodDelete, "/statuses/"+statusID, "write", ""); res.StatusCode != tc.want {
+		if res := e.send(t, http.MethodDelete, "/statuses/"+sampleStatusID, "write", ""); res.StatusCode != tc.want {
 			t.Errorf("DELETE another account's status (visible %v) = %d, want %d", tc.visible, res.StatusCode, tc.want)
 		}
 	}
 	f.del = func(string, string) error { return nil }
-	if res := e.send(t, http.MethodDelete, "/statuses/"+statusID, "write", ""); res.StatusCode != http.StatusNoContent {
+	if res := e.send(t, http.MethodDelete, "/statuses/"+sampleStatusID, "write", ""); res.StatusCode != http.StatusNoContent {
 		t.Errorf("DELETE own status = %d, want 204", res.StatusCode)
 	}
 }
@@ -392,7 +376,7 @@ func TestInteractionsReturnTheStatus(t *testing.T) {
 	var ops []string
 	f := &fakeStatuses{
 		interact: func(op, accountID, id string) error {
-			if accountID != aliceAccountID || id != statusID {
+			if accountID != aliceAccountID || id != sampleStatusID {
 				return fmt.Errorf("unexpected %s by %s of %s", op, accountID, id)
 			}
 			ops = append(ops, op)
@@ -403,8 +387,8 @@ func TestInteractionsReturnTheStatus(t *testing.T) {
 	e := newStatusEnv(t, f)
 	for _, path := range []string{"boost", "favourite", "bookmark", "pin"} {
 		for _, method := range []string{http.MethodPost, http.MethodDelete} {
-			res := e.send(t, method, "/statuses/"+statusID+"/"+path, "write", "")
-			if res.StatusCode != http.StatusOK || decodeStatus(t, res).Id != statusID {
+			res := e.send(t, method, "/statuses/"+sampleStatusID+"/"+path, "write", "")
+			if res.StatusCode != http.StatusOK || decodeStatus(t, res).Id != sampleStatusID {
 				t.Errorf("%s %s = %d", method, path, res.StatusCode)
 			}
 		}
@@ -417,7 +401,7 @@ func TestInteractionsReturnTheStatus(t *testing.T) {
 func TestPostLimit(t *testing.T) {
 	f := &fakeStatuses{
 		create: func(appcontent.CreateInput) (appcontent.Post, error) {
-			return appcontent.Post{Status: content.Status{ID: statusID}}, nil
+			return appcontent.Post{Status: content.Status{ID: sampleStatusID}}, nil
 		},
 		view: func(v appcontent.Viewer, _ string) (appcontent.StatusView, error) { return sampleView(v), nil },
 	}
