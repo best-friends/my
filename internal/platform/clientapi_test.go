@@ -52,7 +52,7 @@ func TestClientAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	if info.Domain != "example.test" || info.Name != "example.test" || info.Version != "1.2.3" ||
-		info.Limits.MaxPostCharacters != 500 || info.Registrations.Mode != clientapi.Approval {
+		info.Limits.MaxPostCharacters != 500 || info.Registrations.Mode != clientapi.InstanceRegistrationsModeApproval {
 		t.Errorf("instance = %+v, want example.test, version 1.2.3, the default settings", info)
 	}
 	for k, want := range map[string]string{
@@ -164,7 +164,7 @@ func TestClientAPIInstanceSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.Name != "例" || got.Description == nil || *got.Description != "About us" || got.ShortDescription != nil ||
-		got.Limits.MaxPostCharacters != 1000 || got.Registrations.Mode != clientapi.Open {
+		got.Limits.MaxPostCharacters != 1000 || got.Registrations.Mode != clientapi.InstanceRegistrationsModeOpen {
 		t.Errorf("instance = %+v (description %v), want the stored settings and the ja name", got, got.Description)
 	}
 }

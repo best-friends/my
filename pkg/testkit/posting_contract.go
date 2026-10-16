@@ -28,6 +28,7 @@ type PostingHarness struct {
 	Graph    appgraph.Repository
 	Instance appinstance.Repository
 	Statuses appcontent.Repository
+	Media    appcontent.MediaRepository
 }
 
 // PostingFactory returns a harness on a new, empty database whose UnitOfWork uses opts.
@@ -38,7 +39,7 @@ type PostingFactory func(t *testing.T, opts uow.Options) PostingHarness
 // posting with mentions, hashtags, and links rendered to HTML; returning the same status for a
 // repeated Idempotency-Key, also under concurrency; the max_status_length setting; rejecting
 // invalid input; capping the visibility through the RestrictionPolicy; replies to statuses the
-// author may see; the default post language; editing into new revisions that move the head;
+// author may see; attaching only the author's own processed uploads; the default post language; editing into new revisions that move the head;
 // deleting into a tombstone that removes the status from the projections; and the emitted
 // domain events.
 func PostingContract(t *testing.T, newHarness PostingFactory) {
@@ -57,6 +58,7 @@ func PostingContract(t *testing.T, newHarness PostingFactory) {
 		{"RepliesToVisibleStatuses", postingReplies},
 		{"UsesTheDefaultLanguage", postingDefaultLanguage},
 		{"EditsIntoNewRevisions", postingEdits},
+		{"AttachesOwnProcessedMedia", postingAttachesMedia},
 		{"DeletesIntoATombstone", postingDeletes},
 	}
 	for _, tc := range cases {
@@ -67,6 +69,7 @@ func PostingContract(t *testing.T, newHarness PostingFactory) {
 type postingEnv struct {
 	*accountEnv
 	repo         appcontent.Repository
+	media        appcontent.MediaRepository
 	graph        *appgraph.Service
 	instance     *appinstance.Service
 	content      *appcontent.Service
@@ -119,6 +122,7 @@ func newPostingEnv(t *testing.T, newHarness PostingFactory) *postingEnv {
 	e := &postingEnv{
 		accountEnv:   ae,
 		repo:         ph.Statuses,
+		media:        ph.Media,
 		restrictions: &fakeRestrictions{byID: map[string]appcontent.Restrictions{}},
 		languages:    map[string]string{},
 		events:       log,
@@ -135,6 +139,7 @@ func newPostingEnv(t *testing.T, newHarness PostingFactory) *postingEnv {
 		Accounts:        ae.accounts,
 		Relationships:   e.graph,
 		Restrictions:    e.restrictions,
+		Media:           ph.Media,
 		MaxStatusLength: e.instance.MaxStatusLength,
 		DefaultLanguage: func(_ context.Context, userID string) (string, error) { return e.languages[userID], nil },
 		Clock:           ae.clock,
@@ -641,5 +646,81 @@ func postingDeletes(t *testing.T, e *postingEnv) {
 	}
 	if ev := e.events.take(); len(ev) != 0 {
 		t.Errorf("a second deletion emitted %v", eventTypes(ev))
+	}
+}
+
+// upload stores a media file of owner with a processing result of outcome, or none when
+// outcome is "".
+func (e *postingEnv) upload(t *testing.T, owner string, outcome content.MediaOutcome) string {
+	t.Helper()
+	ctx := t.Context()
+	e.clock.Advance(time.Second)
+	id := e.ids.NewID()
+	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		err := e.media.InsertMediaFile(ctx, tx, content.MediaFile{ID: id, OwnerAccountID: owner, Origin: content.MediaOriginUpload, CreatedAt: e.clock.Now()})
+		if err != nil || outcome == "" {
+			return err
+		}
+		r := content.MediaProcessingResult{ID: e.ids.NewID(), MediaID: id, Outcome: outcome, MediaType: content.MediaTypeUnknown, ProcessedAt: e.clock.Now()}
+		if outcome == content.MediaReady {
+			r.MediaType, r.Width, r.Height = content.MediaTypeImage, 4, 3
+		}
+		return e.media.InsertProcessingResult(ctx, tx, r)
+	})
+	if err != nil {
+		t.Fatalf("upload = %v", err)
+	}
+	return id
+}
+
+func postingAttachesMedia(t *testing.T, e *postingEnv) {
+	ctx := t.Context()
+	alice, bob := e.user(t, "alice"), e.user(t, "bob")
+	first, second := e.upload(t, alice, content.MediaReady), e.upload(t, alice, content.MediaReady)
+	p := e.post(t, appcontent.CreateInput{
+		AuthorAccountID: alice, Visibility: content.VisibilityPublic,
+		TextInput: appcontent.TextInput{Text: "pictures", Media: []appcontent.MediaInput{{MediaID: second, Description: "a cat"}, {MediaID: first}}},
+	})
+	want := []content.Attachment{{Position: 0, MediaID: second, Description: "a cat"}, {Position: 1, MediaID: first}}
+	if !reflect.DeepEqual(p.Revision.Attachments, want) {
+		t.Errorf("attachments = %+v, want %+v", p.Revision.Attachments, want)
+	}
+	if got, err := e.content.Find(ctx, p.Status.ID); err != nil || !reflect.DeepEqual(got.Revision.Attachments, want) {
+		t.Errorf("stored attachments = %+v, %v; want %+v", got.Revision.Attachments, err, want)
+	}
+
+	five := make([]appcontent.MediaInput, appcontent.MaxAttachments+1)
+	for i := range five {
+		five[i].MediaID = e.upload(t, alice, content.MediaReady)
+	}
+	for name, tc := range map[string]struct {
+		media []appcontent.MediaInput
+		want  error
+	}{
+		"another account's file": {[]appcontent.MediaInput{{MediaID: e.upload(t, bob, content.MediaReady)}}, appcontent.ErrMediaNotFound},
+		"a missing file":         {[]appcontent.MediaInput{{MediaID: e.ids.NewID()}}, appcontent.ErrMediaNotFound},
+		"a file in processing":   {[]appcontent.MediaInput{{MediaID: e.upload(t, alice, "")}}, appcontent.ErrMediaNotReady},
+		"a failed file":          {[]appcontent.MediaInput{{MediaID: e.upload(t, alice, content.MediaFailed)}}, appcontent.ErrMediaNotReady},
+		"too many files":         {five, appcontent.ErrTooManyMedia},
+		"a file twice":           {[]appcontent.MediaInput{{MediaID: first}, {MediaID: first}}, appcontent.ErrTooManyMedia},
+		"a long description":     {[]appcontent.MediaInput{{MediaID: first, Description: strings.Repeat("a", appcontent.MaxMediaDescription+1)}}, appcontent.ErrInvalidMediaDescription},
+	} {
+		_, err := e.content.Create(ctx, appcontent.CreateInput{
+			AuthorAccountID: alice, Visibility: content.VisibilityPublic, TextInput: appcontent.TextInput{Text: "x", Media: tc.media},
+		})
+		if !errors.Is(err, tc.want) {
+			t.Errorf("Create with %s = %v, want %v", name, err, tc.want)
+		}
+		_, err = e.content.Edit(ctx, appcontent.EditInput{AccountID: alice, StatusID: p.Status.ID, TextInput: appcontent.TextInput{Text: "x", Media: tc.media}})
+		if !errors.Is(err, tc.want) {
+			t.Errorf("Edit with %s = %v, want %v", name, err, tc.want)
+		}
+	}
+
+	edited, err := e.content.Edit(ctx, appcontent.EditInput{
+		AccountID: alice, StatusID: p.Status.ID, TextInput: appcontent.TextInput{Text: "one picture", Media: []appcontent.MediaInput{{MediaID: first, Description: "a dog"}}},
+	})
+	if err != nil || !reflect.DeepEqual(edited.Revision.Attachments, []content.Attachment{{Position: 0, MediaID: first, Description: "a dog"}}) {
+		t.Errorf("Edit = %+v, %v; want the one attachment", edited.Revision.Attachments, err)
 	}
 }

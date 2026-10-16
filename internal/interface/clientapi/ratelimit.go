@@ -19,6 +19,8 @@ import (
 var (
 	AnonymousLimit = kernel.Limit{Name: "api.ip", Max: 300, Window: 5 * time.Minute}
 	AccountLimit   = kernel.Limit{Name: "api.account", Max: 1500, Window: 5 * time.Minute}
+	// PostLimit bounds the statuses one account posts (createStatus).
+	PostLimit = kernel.Limit{Name: "api.post", Max: 300, Window: 3 * time.Hour}
 )
 
 // Names of the rate-limit policies in the RateLimit and RateLimit-Policy fields.

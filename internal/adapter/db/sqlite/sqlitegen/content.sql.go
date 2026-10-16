@@ -389,6 +389,22 @@ func (q *Queries) GetStatusRevisionSource(ctx context.Context, revisionID string
 	return i, err
 }
 
+const getTag = `-- name: GetTag :one
+SELECT id, name, name_normalized, created_at FROM tags WHERE id = ?
+`
+
+func (q *Queries) GetTag(ctx context.Context, id string) (Tag, error) {
+	row := q.db.QueryRowContext(ctx, getTag, id)
+	var i Tag
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.NameNormalized,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getTagByName = `-- name: GetTagByName :one
 SELECT id, name, name_normalized, created_at FROM tags WHERE name_normalized = ?
 `

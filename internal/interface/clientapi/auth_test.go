@@ -105,6 +105,8 @@ func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {
 			Profile: &account.ProfileRevision{DisplayName: "Alice", NoteHTML: "<p>hi</p>", Locked: true},
 		}},
 		RateLimiter: kernel.NewRateLimiter(testkit.NewKeyValueStore(e.clock), e.clock),
+		// No statuses exist.
+		Statuses: &fakeStatuses{}, StatusReader: &fakeStatuses{}, Interactions: &fakeStatuses{},
 		Locales: &i18n.Resolver{
 			Bundle: messages,
 			UserLocale: func(ctx context.Context) string {

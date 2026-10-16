@@ -73,7 +73,7 @@ func TestGetPreferences(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := clientapi.Preferences{
-		Locale: "ja", TimeZone: "Asia/Tokyo", DefaultVisibility: clientapi.Unlisted, DefaultPostLanguage: "ja",
+		Locale: "ja", TimeZone: "Asia/Tokyo", DefaultVisibility: clientapi.VisibilityUnlisted, DefaultPostLanguage: "ja",
 		TimelineLanguages: []string{},
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -97,7 +97,7 @@ func TestUpdatePreferences(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
-	if got.DefaultVisibility != clientapi.Local || !reflect.DeepEqual(got.TimelineLanguages, []string{"en", "ja"}) || got.Locale != "ja" {
+	if got.DefaultVisibility != clientapi.VisibilityLocal || !reflect.DeepEqual(got.TimelineLanguages, []string{"en", "ja"}) || got.Locale != "ja" {
 		t.Errorf("preferences = %+v, want the change applied to the rest", got)
 	}
 	if prefs.p.DefaultVisibility != "local" {

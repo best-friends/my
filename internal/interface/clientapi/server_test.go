@@ -57,7 +57,7 @@ func TestGetInstance(t *testing.T) {
 	// Without stored settings and texts, the defaults apply and the instance is named after its host.
 	want := clientapi.Instance{
 		Domain: "social.example", Name: "social.example", Version: "1.2.3", SourceUrl: "https://git.example/my",
-		Registrations: clientapi.InstanceRegistrations{Mode: clientapi.Approval},
+		Registrations: clientapi.InstanceRegistrations{Mode: clientapi.InstanceRegistrationsModeApproval},
 		Limits:        clientapi.InstanceLimits{MaxPostCharacters: 500},
 	}
 	if got != want {
@@ -126,7 +126,7 @@ func TestGetInstanceFromSettings(t *testing.T) {
 				t.Fatal(err)
 			}
 			if got.Name != tt.wantName || got.ShortDescription == nil || *got.ShortDescription != "A small instance." ||
-				got.Description != nil || got.Limits.MaxPostCharacters != 1200 || got.Registrations.Mode != clientapi.Invite {
+				got.Description != nil || got.Limits.MaxPostCharacters != 1200 || got.Registrations.Mode != clientapi.InstanceRegistrationsModeInvite {
 				t.Errorf("instance = %+v, want name %q and the stored settings", got, tt.wantName)
 			}
 			if cc := res.Header.Get("Cache-Control"); cc != tt.wantCache {
