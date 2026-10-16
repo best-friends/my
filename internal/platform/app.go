@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
+	"slices"
 
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
@@ -34,6 +36,7 @@ import (
 	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	mediahttp "github.com/best-friends/my/internal/interface/media"
+	"github.com/best-friends/my/internal/interface/web"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -97,6 +100,10 @@ type App struct {
 	// closeBlobs releases the blob store.
 	closeBlobs func() error
 	routes     []route
+	// page serves the web client's HTML at the GET paths that no route serves.
+	page http.Handler
+	// webStylesheet is the URL of the web client's built CSS, empty without a build.
+	webStylesheet string
 }
 
 type route struct {
@@ -110,6 +117,11 @@ type AppOptions struct {
 	Logger *slog.Logger
 	// Version is the server version that NodeInfo reports; the default is "dev".
 	Version string
+	// WebBuild is the build of the web client; the default is the one embedded in the binary.
+	WebBuild fs.FS
+	// DevViteOrigin, when set, makes the web client's shell load the client from a Vite dev
+	// server at this origin (`my serve -dev-vite-origin`). Development only.
+	DevViteOrigin string
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -133,6 +145,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Handlers:   &queue.JobHandlerRegistry{},
 	}
 
+	if err := a.setUpWeb(opts); err != nil {
+		return nil, err
+	}
 	if a.KeyManager, err = newKeyManager(cfg); err != nil {
 		return nil, err
 	}
@@ -252,9 +267,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
+		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	authpages.New(authpages.Options{Identity: a.Identity, Locales: a.Locales, Logger: a.Logger}).Register(a)
+	// The sign-in screens share the web client's built CSS (ADR-0030).
+	authpages.New(authpages.Options{
+		Identity: a.Identity, Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
+	}).Register(a)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -267,6 +285,41 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
+}
+
+// setUpWeb builds the web client's handler (ADR-0028), registers its assets and manifest, and
+// sets a.page, which serves its HTML to the requests that do not ask for ActivityPub.
+func (a *App) setUpWeb(opts AppOptions) error {
+	if opts.WebBuild == nil {
+		opts.WebBuild = web.Embedded()
+	}
+	h, err := web.New(web.Options{
+		Build: opts.WebBuild, DevViteOrigin: opts.DevViteOrigin,
+		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain,
+		// The instance is named after its host until the instance settings hold a name.
+		InstanceName: a.Config.Host,
+		// The HTML is the same for every visitor, so only the instance default applies.
+		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
+		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:        a.Logger,
+	})
+	if err != nil {
+		return err
+	}
+	h.Register(a)
+	a.webStylesheet = h.Stylesheet()
+	a.page = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The same URL may be an ActivityPub document, so every answer depends on Accept.
+		if !slices.Contains(w.Header().Values("Vary"), "Accept") {
+			w.Header().Add("Vary", "Accept")
+		}
+		if activitypub.AsksForActivityPub(r) {
+			a.writeStatusProblem(w, r, http.StatusNotFound)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+	return nil
 }
 
 // setMedia builds the blob store, the media processor, and the media use cases, and registers
