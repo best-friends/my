@@ -51,6 +51,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	case "config":
 		return runConfig(fs.Args()[1:], stdout, stderr)
+	case "admin":
+		return runAdmin(fs.Args()[1:], os.Stdin, stdout, stderr)
 	case "":
 		usage(stderr)
 		return 2
@@ -65,6 +67,7 @@ func usage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage: my <command>
 
 Commands:
+  admin     Create an administrator (my admin create)
   config    Check the configuration (my config check)
   version   Print the version
 `)
