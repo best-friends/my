@@ -18,8 +18,7 @@ a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OS
   Cloudflare Workers is **not** a target.
 - **Web client work must follow [docs/architecture/web-client.md](docs/architecture/web-client.md).** Do not write React from memory or
   from typical online examples; when unsure, check react.dev, the WAI-ARIA APG and the official docs of the library in use.
-- The web-client ADRs (ADR-0025 to ADR-0030) are *Proposed*. By the owner's instruction for M2, implementation follows them before
-  they are accepted; do not pick libraries outside them without a new ADR.
+- The web-client ADRs are ADR-0025 to ADR-0030; do not pick libraries outside them without a new ADR.
 - The Go package layout follows [overview §6](docs/architecture/overview.md#6-リポジトリ構成); `cmd/my` is the single binary.
   Build only what an issue asks for.
 - Spike reports go in the spike issue as a comment and spike code stays on an unmerged `spike/<issue>-<slug>` branch;

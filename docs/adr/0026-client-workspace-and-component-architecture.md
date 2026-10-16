@@ -1,6 +1,6 @@
 # ADR-0026: クライアントのワークスペース構成と、ロジックと UI の責務分離
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #86
@@ -23,7 +23,7 @@ ADR-0010 は `app/` にクライアントアプリを 1 アプリ 1 ディレク
 2. まず `app/web/src/ui` に置き、必要になったら切り出す
 3. 層を分けずに機能ごとに部品を作る
 
-## Decision（推奨案）
+## Decision
 
 **1 を採用する。** `app/` を Bun ワークスペースのルートとし、アプリと、アプリ間で共有するパッケージを置く。
 

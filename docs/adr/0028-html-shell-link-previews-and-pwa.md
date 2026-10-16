@@ -1,6 +1,6 @@
 # ADR-0028: Go が HTML の外枠を返し、リンクプレビュー（OGP / X Card）と PWA を両立する
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #88
@@ -19,7 +19,7 @@ Web クライアントは React の SPA で、インストールできる PWA �
 3. 事前レンダリング（投稿は実行時に増えるので合わない）
 4. ボットだけに別の HTML を返す動的レンダリング（Google が非推奨）
 
-## Decision（推奨案）
+## Decision
 
 **1 を採用する。**
 
