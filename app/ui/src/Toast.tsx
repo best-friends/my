@@ -99,12 +99,17 @@ export type ToastProviderProps = {
   dismissLabel: string;
   /** The timeout of a toast without an action, in ms. */
   defaultTimeout?: number;
+  /**
+   * Classes merged into the region's, such as a bottom offset that keeps the toasts clear of a bar along
+   * the bottom edge of the screen, which they would otherwise cover.
+   */
+  regionClassName?: string;
 };
 
 /**
  * Renders the toasts and gives `useToast()` to its children. Mount it once, inside the AnnouncerProvider.
  */
-export function ToastProvider({ children, regionLabel, dismissLabel, defaultTimeout = 5000 }: ToastProviderProps) {
+export function ToastProvider({ children, regionLabel, dismissLabel, defaultTimeout = 5000, regionClassName }: ToastProviderProps) {
   const announce = useAnnouncer();
   const [toasts, setToasts] = useState<readonly QueuedToast[]>([]);
   const nextIdRef = useRef(0);
@@ -180,7 +185,7 @@ export function ToastProvider({ children, regionLabel, dismissLabel, defaultTime
           aria-label={regionLabel}
           // Stays reachable while a modal hides the rest of the page (React Aria's ariaHideOutside).
           data-react-aria-top-layer="true"
-          className={styles.region()}
+          className={styles.region({ class: regionClassName })}
           onPointerEnter={() => {
             holdRef.current.hovered = true;
             pause();

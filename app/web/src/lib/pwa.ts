@@ -25,23 +25,32 @@ const scriptURL = "/sw.js";
 
 /** The part of the Trusted Types API (https://developer.mozilla.org/docs/Web/API/Trusted_Types_API) used here. */
 type TrustedTypes = {
-  createPolicy: (name: string, rules: { createScriptURL: (url: string) => string }) => { createScriptURL: (url: string) => unknown };
+  createPolicy: (name: string, rules: { createScriptURL: (url: string) => string }) => ScriptURLPolicy;
 };
+type ScriptURLPolicy = { createScriptURL: (url: string) => unknown };
+
+/** The policy of each Trusted Types factory, made on first use: the CSP allows its name only once. */
+const policies = new WeakMap<TrustedTypes, ScriptURLPolicy>();
 
 /**
  * The worker's URL as a TrustedScriptURL where the browser has Trusted Types: the shell's CSP sets
- * `require-trusted-types-for 'script'` (ADR-0019), and register() is a sink for script URLs. The policy
- * passes the one fixed URL and nothing else.
+ * `require-trusted-types-for 'script'` and allows only the policies `my-service-worker` (this one) and
+ * `my-server-sanitized-html` (@my/ui PostContent) with `trusted-types` (ADR-0019), and register() is a
+ * sink for script URLs. The policy passes the one fixed URL and nothing else.
  */
 function trustedScriptURL(): string {
   const factory = (globalThis as { trustedTypes?: TrustedTypes }).trustedTypes;
   if (factory === undefined) return scriptURL;
-  const policy = factory.createPolicy("my-service-worker", {
-    createScriptURL(url) {
-      if (url !== scriptURL) throw new TypeError(`not the Service Worker's URL: ${url}`);
-      return url;
-    },
-  });
+  let policy = policies.get(factory);
+  if (policy === undefined) {
+    policy = factory.createPolicy("my-service-worker", {
+      createScriptURL(url) {
+        if (url !== scriptURL) throw new TypeError(`not the Service Worker's URL: ${url}`);
+        return url;
+      },
+    });
+    policies.set(factory, policy);
+  }
   // register() accepts the TrustedScriptURL in place of the string its DOM type names.
   return policy.createScriptURL(scriptURL) as string;
 }

@@ -134,8 +134,16 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - Playwright は Service Worker を止めて動かす（`serviceWorkers: 'block'`）。Service Worker が遷移に応えると、ロケールの fixture の `page.route()` を通らないため。
     Service Worker を検査する `e2e/pwa.spec.ts` だけが許可し、本物の `my serve` を相手に 1 つのプロジェクト（`en-1440`、Chromium）で動かす（§11）。
   - JavaScript を無効にしたテスト（`javaScriptEnabled: false`）で、ログイン・登録・認可同意のフォームがスクリプトなしで動くことを確かめる。axe はページの中でスクリプトを動かすので、その画面の axe は同じ Cookie の JavaScript ありのコンテキストで行う。
-  - サーバーのレート制限（登録は 1 つのアドレスから 30 分に 5 回、ログインの失敗は 1 分に 5 回）を使い切らないように、アカウントを作るテストは 1 つのプロジェクト（`en-320`）だけで動かし、
+  - M2 の主要な流れ（`e2e/main-flow.spec.ts`）も本物の `my serve` が相手になる。2 人の利用者がそれぞれのブラウザコンテキストで、登録、サーバーの画面からのログイン（PKCE）、CW と代替テキスト付きの画像のある投稿、
+    ホームとローカルのタイムライン、フォロー（フォロワーを承認する鍵アカウントへのリクエストと承認を含む）、フォロワー限定の投稿の見え方、通知までを通し、途中の画面ごとに axe・横スクロール・ARIA スナップショットを検査する。
+    利用者は毎回ランダムな名前で作るので、再試行や他のプロジェクトの投稿・フォローと混ざらない。他のプロジェクトも投稿するローカルタイムラインでは、Page Down で feed を進めて自分の投稿を探す。
+    `bin/my` のコマンド（`my admin create`、`my registration approve`）は、`e2e/server-cli.ts` が `e2e/server.ts` と同じ設定（実行ごとに選ぶ一時ディレクトリと鍵）でサーバーのデータベースに対して実行する。
+    アプリは利用者の表示言語で表示されるので、ログインした利用者の表示言語をクライアント API（`PATCH /api/v1/preferences`）でプロジェクトのロケールにしてから進める。
+  - サーバーのレート制限（登録は 1 つのアドレスから 30 分に 5 回、ログインの失敗は 1 分に 5 回）を使い切らないように、登録の画面からアカウントを作るテストは 1 つのプロジェクト（`en-320`）だけで動かす。
+    主要な流れも `en-320` でだけ登録の画面から登録し、`my registration approve` で承認する。他のプロジェクトと 2 人目の利用者は `my admin create` で作る。
     エラーの表示は制限を数える前に断られる入力（期限切れのフォーム、形式の誤り）で確かめる。
+  - axe は React Aria のライブアナウンサー（`[data-live-announcer]`）を検査しない（`e2e/fixtures.ts` の `axeBuilder`）。React Aria の Button は待機の始まりと終わりを、ボタンを `aria-labelledby` で指す要素で 7 秒間そこに知らせるので、
+    その間に画面の移動でボタンが消えると、名前のない要素が残るため。
   - プロジェクトは画面幅 320 / 390 / 768 / 1024 / 1440 px × ロケール `en` / `ja` / `en-XA` / `ar-XB` の 20 個。768 px 未満はタッチと粗いポインタのスマートフォンとして動かす。
   - 毎 PR は全ロケールの 320 / 1440 px だけを動かし、nightly（`E2E_MATRIX=full`）は全体を動かす。
   - spec は `e2e/fixtures.ts` から `test` / `expect` を import する。`vite preview` は `index.html`（ランタイム設定の代わりを含む）をそのまま返すので、fixture がプロジェクトのロケールを `<html lang dir>` に書き込み、サーバーの外枠と同じ状態にする。ビルドのファイルへの相対のリンクは、`my serve` と同じくルートからのものにする（ルートより下の画面のため）。ランタイム設定の `apiOrigin` もその回の `vite preview` のオリジンに書き換えるので、クライアントの API と OAuth の要求はプレビューに届き、spec が `page.route` で応答できる（ログイン済みの画面は、`/oauth/token/refresh` と API の操作に応答して作る）。axe は `makeAxeBuilder` と `expectNoAxeViolations`（規則と対象のセレクタの一覧が空であることを検査）、横スクロールは `expectNoHorizontalScroll` で検査する。
@@ -181,6 +189,12 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 - **CSP に収める**: 外枠の CSP（`require-trusted-types-for 'script'` と nonce のない `style-src 'self'`）を破るライブラリの動作は止めておく。
   Zod はスキーマを作るときに `eval` でのコンパイルを試すので、`"zod"` の import は Vite の alias で `lib/zod.ts`（`jitless` にした Zod）に向ける。
   React Aria の `usePress` が `<head>` に差し込む `<style>` は、`main.tsx` が最初に同じ id の空の `<template>` を置いて止め（`lib/csp.ts`）、その規則は `index.css` に置く。
+  Trusted Types の下では `innerHTML` に文字列を入れられないので、`PostContent`（A8）はサニタイズ済みの本文を、そのまま通すだけの Trusted Types のポリシー `my-server-sanitized-html` で TrustedHTML にしてから入れる。
+  文字列を TrustedHTML にするのはこのポリシーだけで、受け取るのは `SanitizedHtml` だけにする。
+  このポリシーがそのまま通してよいのは、渡る HTML がすべてサーバーのサニタイザ（Go の許可リスト）を通ったものだからである。連合で届くリモートの HTML（M3）も、クライアントに渡す前に同じサニタイザを通す。
+  - 外枠の CSP は `trusted-types my-server-sanitized-html my-service-worker` で、作れるポリシーをクライアントの 2 つ（`PostContent` の HTML と、`lib/pwa.ts` の Service Worker の URL）に限る。
+    どちらもそれぞれ 1 つのモジュールで、最初に使うときに 1 回だけ作るので、`'allow-duplicates'` は付けない。ほかのスクリプト（依存ライブラリを含む）は自分のポリシーを作れない。
+    Vite・React・React Aria・Zod（`jitless`）はポリシーを作らない。ポリシーを作るコードを足すときは、この一覧と `internal/interface/web/shell.go` の CSP を一緒に変える。
   - 止められない動作が 1 つ残る: iOS / iPadOS の WebKit では、React Aria の `usePreventScroll`（モーダルの overlay と、Select / Menu のようなモーダルの popover が使う）が、開いている間 `<head>` の先頭に `* { overscroll-behavior: contain }` の `<style>` を差し込む。
     これを止める手段はなく、外枠の CSP がこの `<style>` を拒むので、iOS では overlay を開くたびに CSP の違反が 1 件報告される。この報告は受け入れ、CSP（ADR-0019 §9）は変えない。
     代わりに `@my/ui` の Dialog / Sheet / Popover / Select / Menu は、スクロールする面に `overscroll-contain` を自分で付け、overlay の中のスクロールがページに伝わらないようにする。overlay の中に別のスクロールする領域を作るときも、その領域に `overscroll-contain` を付ける。
