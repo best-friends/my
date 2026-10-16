@@ -10,12 +10,39 @@ export const axeTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] 
 type Fixtures = {
   /** Returns an AxeBuilder for the page, limited to `axeTags`; chain `.include()` / `.exclude()` to scope it. */
   makeAxeBuilder: () => AxeBuilder;
+  /**
+   * Serves the HTML documents of the client (`baseURL`, `vite preview`) with the project's locale in
+   * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028);
+   * `vite preview` serves index.html as it is. Pages of a real `my serve` are left alone.
+   */
+  shellLocale: string;
 };
+
+/** Pseudo-locale and right-to-left languages the projects use; the rest are left to right. */
+const rtlLocales: ReadonlySet<string> = new Set(["ar-XB"]);
 
 export const test = base.extend<Fixtures>({
   makeAxeBuilder: async ({ page }, use) => {
     await use(() => new AxeBuilder({ page }).withTags([...axeTags]));
   },
+  shellLocale: [
+    async ({ page, locale, baseURL }, use) => {
+      const lang = locale ?? "en";
+      const origin = new URL(baseURL ?? "http://127.0.0.1").origin;
+      await page.route((url) => url.origin === origin, async (route) => {
+        if (route.request().resourceType() !== "document") {
+          await route.fallback();
+          return;
+        }
+        const response = await route.fetch();
+        const dir = rtlLocales.has(lang) ? "rtl" : "ltr";
+        const body = (await response.text()).replace(/<html [^>]*>/, `<html lang="${lang}" dir="${dir}">`);
+        await route.fulfill({ response, body });
+      });
+      await use(lang);
+    },
+    { auto: true },
+  ],
 });
 
 export { expect };

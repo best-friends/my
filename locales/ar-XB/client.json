@@ -1,6 +1,110 @@
 {
-  "app.placeholder": {
-    "defaultMessage": "‮⊥ɥǝ ʍǝq ɔʅıǝuʇ ıs nupǝɹ ɔousʇɹnɔʇıou.‬",
+  "home.title": {
+    "defaultMessage": "‮Hoɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "local.title": {
+    "defaultMessage": "‮⅂oɔɐʅ ʇıɯǝʅıuǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.title": {
+    "defaultMessage": "‮Noʇıɟıɔɐʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "page.not_built": {
+    "defaultMessage": "‮⊥ɥıs sɔɹǝǝu ıs uoʇ ɹǝɐpʎ ʎǝʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.title": {
+    "defaultMessage": "‮Ԁɹoɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.title": {
+    "defaultMessage": "‮Sǝʇʇıuƃs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.about.domain": {
+    "defaultMessage": "‮∀ɔɔonuʇs ɥǝɹǝ ǝup ʍıʇɥ @{domain}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.about.title": {
+    "defaultMessage": "‮∀qonʇ ʇɥıs sǝɹʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.document_title": {
+    "defaultMessage": "‮{page} – {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.body": {
+    "defaultMessage": "‮⊥ɥıs dɐƃǝ ɔonʅp uoʇ qǝ sɥoʍu. ⊥ɹʎ ɐƃɐıu, oɹ ɔoɯǝ qɐɔʞ ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.retry": {
+    "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.title": {
+    "defaultMessage": "‮Soɯǝʇɥıuƃ ʍǝuʇ ʍɹouƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.loading": {
+    "defaultMessage": "‮⅂oɐpıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.home": {
+    "defaultMessage": "‮Hoɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.label": {
+    "defaultMessage": "‮Wɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.local": {
+    "defaultMessage": "‮⅂oɔɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.notifications": {
+    "defaultMessage": "‮Noʇıɟıɔɐʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.profile": {
+    "defaultMessage": "‮Ԁɹoɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.settings": {
+    "defaultMessage": "‮Sǝʇʇıuƃs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.not_found.body": {
+    "defaultMessage": "‮⊥ɥǝɹǝ ıs uo dɐƃǝ ɐʇ ʇɥıs ɐppɹǝss.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.not_found.home": {
+    "defaultMessage": "‮⅁o ʇo ʇɥǝ ɥoɯǝ ʇıɯǝʅıuǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.not_found.title": {
+    "defaultMessage": "‮Ԁɐƃǝ uoʇ ɟonup‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.skip_to_main": {
+    "defaultMessage": "‮Sʞıd ʇo ɯɐıu ɔouʇǝuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.startup_error.body": {
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ sǝuʇ sǝʇʇıuƃs ʇɥǝ ɐdd ɔɐuuoʇ ɹǝɐp. ᴚǝʅoɐp ʇɥǝ dɐƃǝ; ıɟ ʇɥıs ʞǝǝds ɥɐddǝuıuƃ, ʇǝʅʅ ʇɥǝ sǝɹʌǝɹ's ɐpɯıuısʇɹɐʇoɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.startup_error.title": {
+    "defaultMessage": "‮⊥ɥǝ ɐdd ɔonʅp uoʇ sʇɐɹʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.toast.dismiss": {
+    "defaultMessage": "‮ᗡısɯıss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.toast.region": {
+    "defaultMessage": "‮Wǝssɐƃǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   }
 }
