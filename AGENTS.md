@@ -72,6 +72,8 @@ These come from Accepted ADRs and are binding.
 - Data modeling follows [ADR-0020](docs/adr/0020-data-modeling-principles.md): classify every table as resource / event / projection / current-value;
   never encode state as nullable timestamp columns; record state changes as events and derive current state in projections owned by one module;
   no JSON for queried or constrained data. Read [docs/architecture/data-model.md](docs/architecture/data-model.md) before touching persistence.
+- Schema changes: edit only the desired-state files `schema/<dialect>.sql` (all dialects together) and apply them with Atlas
+  Community Edition; never hand-write migration SQL or rely on Atlas features that need `atlas login` ([ADR-0023](docs/adr/0023-declarative-schema-management.md)).
 - Keep DB transactions short, retryable, and free of external I/O (HTTP, queue, blob); enqueue jobs via the outbox. Make writes safe to repeat with unique constraints, upserts, idempotency keys ([ADR-0003](docs/adr/0003-database-abstraction.md)).
 - Job handlers must be idempotent; delivery is at-least-once ([ADR-0004](docs/adr/0004-job-queue-abstraction.md)).
 - All outbound HTTP goes through the SSRF-guarded `HttpClient` port.

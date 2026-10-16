@@ -146,7 +146,7 @@ internal/
 pkg/
   testkit/           # コントラクトテスト・フィクスチャ（独自アダプタ作者向けに公開）
 api/                 # openapi.yaml（クライアント API の正）
-schema/              # sqlite.sql, postgres.sql（v0 はマイグレーションなし）
+schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用。ADR-0023）
 queries/             # sqlc 用クエリ（方言別）
 locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有）
 app/                 # クライアントアプリ（Bun ワークスペース。1 アプリ 1 ディレクトリ）

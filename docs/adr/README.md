@@ -34,4 +34,5 @@
 | [0020](0020-data-modeling-principles.md) | データモデリング方針（リソース・イベント・投影の分離と状態の直交分解） | Accepted |
 | [0021](0021-documents-describe-present-state.md) | リポジトリ内の文書は現在の状態だけを記述し、履歴は git に任せる | Accepted |
 | [0022](0022-spike-outputs-outside-repository.md) | 調査（spike）の報告と試作コードはリポジトリに置かない | Accepted |
+| [0023](0023-declarative-schema-management.md) | DB スキーマは宣言的に管理し、Atlas（Community Edition）で適用する | Accepted |
 <!-- adr-index:end -->
