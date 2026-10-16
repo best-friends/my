@@ -348,7 +348,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
 		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
-		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
+		Notifications: a.Notifications,
+		Locales:       a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }

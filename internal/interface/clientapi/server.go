@@ -31,6 +31,8 @@ type Options struct {
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// Notifications runs the use cases of the viewer's notifications.
+	Notifications Notifications
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

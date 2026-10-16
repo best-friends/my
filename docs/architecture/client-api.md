@@ -33,7 +33,7 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 
 - ID は UUIDv7 の文字列で、`#/components/schemas/Id` を参照します（`x-go-type: string` により Go では `string`）。
 - 一覧はキーセットページングです。クエリで `#/components/parameters/Cursor` と `#/components/parameters/Limit` を受け、
-  応答は `allOf` で `#/components/schemas/PageInfo` を含めて `next_cursor` を返します。最後のページでは `next_cursor` を省きます。
+  応答は `allOf` で `#/components/schemas/PageInfo` を含めて `next_cursor` を返し、要素の配列は `items` に入れます。最後のページでは `next_cursor` を省きます。
 - カーソルは不透明な文字列です。クライアントは解釈せずにそのまま返します。
 
 ### 2.3 エラー
