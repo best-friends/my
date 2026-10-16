@@ -12,6 +12,7 @@ import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
 import { Navigation } from "./Navigation";
 import { ServerInfo } from "./ServerInfo";
+import { useLiveUpdates } from "./useLiveUpdates";
 import { useMediaQuery } from "./useMediaQuery";
 import { useViewChange } from "./useViewChange";
 
@@ -25,6 +26,7 @@ export function AppLayout() {
   const t = useT();
   const mainRef = useRef<HTMLElement>(null);
   useViewChange(mainRef);
+  useLiveUpdates();
   // Every page is displayed in the signed-in user's locale and time zone.
   useUserDisplaySettings();
   const wide = useMediaQuery(wideQuery);

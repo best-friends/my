@@ -620,6 +620,10 @@ export interface MessageArgs {
   "client:timeline.media.no_description": {};
   /** Show sensitive media */
   "client:timeline.media.reveal": {};
+  /** {count, plural, one {# new post} other {# new posts}} */
+  "client:timeline.new_posts": { count: number };
+  /** Could not load the new posts: {reason} */
+  "client:timeline.new_posts.failed": { reason: string };
   /** Try again */
   "client:timeline.retry": {};
   /** Sign in */

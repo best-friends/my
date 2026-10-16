@@ -15,7 +15,7 @@ export function createQueryClient(): QueryClient {
     defaultOptions: {
       queries: {
         // Navigating back to a page within this time shows its cached data without a refetch; the
-        // streaming API (S10) keeps timelines fresh in between.
+        // streaming API (S10, lib/sse) brings the home timeline's new posts and the unread count in between.
         staleTime: 30_000,
       },
     },
