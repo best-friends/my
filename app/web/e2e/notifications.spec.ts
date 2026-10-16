@@ -105,7 +105,8 @@ test.describe("notifications", () => {
     const feed = page.getByRole("feed");
     await expect(feed.getByRole("article")).toHaveCount(3);
     // The post of the mention is shown, and the boosted post is behind its content warning.
-    await expect(feed.getByRole("article").first().getByRole("link")).toHaveAttribute("href", post.url);
+    // Its link opens the post's page in the app.
+    await expect(feed.getByRole("article").first().getByRole("link")).toHaveAttribute("href", `/@bob/${postId}`);
     await expect(feed.getByRole("article").nth(1).getByRole("button")).toBeVisible();
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading [level=1]

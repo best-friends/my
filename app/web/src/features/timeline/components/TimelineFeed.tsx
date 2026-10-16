@@ -3,7 +3,7 @@ import { Button, EmptyState, Feed, Link, VisuallyHidden } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import type { Timeline } from "../api/timelines";
 import { useTimeline } from "../hooks/useTimeline";
-import { StatusCard } from "./StatusCard";
+import { StatusCard } from "../../status";
 
 export type TimelineFeedProps = {
   timeline: Timeline;
@@ -75,5 +75,8 @@ function TimelineEmpty({ timeline }: { timeline: Timeline }) {
           description={t("client:timeline.empty.tag.description", { tag: timeline.tag })}
         />
       );
+    case "account":
+      // A profile's timeline sits under the level-two heading of its tab.
+      return <EmptyState headingLevel={3} heading={t("client:timeline.empty.account.heading")} />;
   }
 }

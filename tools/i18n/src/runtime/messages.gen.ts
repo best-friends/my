@@ -202,6 +202,122 @@ export interface MessageArgs {
   "client:notifications.unread_count": { count: number };
   /** This screen is not ready yet. */
   "client:page.not_built": {};
+  /** The change did not go through: {reason} */
+  "client:profile.change_failed": { reason: string };
+  /** Block */
+  "client:profile.confirm.block.action": {};
+  /** You will stop following each other, and neither of you can follow the other until you unblock them. */
+  "client:profile.confirm.block.body": {};
+  /** Block {name}? */
+  "client:profile.confirm.block.title": { name: string };
+  /** Cancel */
+  "client:profile.confirm.cancel": {};
+  /** Unblock */
+  "client:profile.confirm.unblock.action": {};
+  /** The follows that the block ended do not come back. */
+  "client:profile.confirm.unblock.body": {};
+  /** Unblock {name}? */
+  "client:profile.confirm.unblock.title": { name: string };
+  /** Unfollow */
+  "client:profile.confirm.unfollow.action": {};
+  /** Their posts will no longer appear in your home timeline. */
+  "client:profile.confirm.unfollow.body": {};
+  /** Unfollow {name}? */
+  "client:profile.confirm.unfollow.title": { name: string };
+  /** Withdraw request */
+  "client:profile.confirm.withdraw.action": {};
+  /** You can send a new request later. */
+  "client:profile.confirm.withdraw.body": {};
+  /** Withdraw your follow request to {name}? */
+  "client:profile.confirm.withdraw.title": { name: string };
+  /** You blocked {name}. */
+  "client:profile.done.blocked": { name: string };
+  /** You follow {name} now. */
+  "client:profile.done.followed": { name: string };
+  /** You muted {name}. */
+  "client:profile.done.muted": { name: string };
+  /** Follow request sent to {name}. */
+  "client:profile.done.requested": { name: string };
+  /** You unblocked {name}. */
+  "client:profile.done.unblocked": { name: string };
+  /** You no longer follow {name}. */
+  "client:profile.done.unfollowed": { name: string };
+  /** You unmuted {name}. */
+  "client:profile.done.unmuted": { name: string };
+  /** Edit profile */
+  "client:profile.edit": {};
+  /** Follow */
+  "client:profile.follow": {};
+  /** Follow back */
+  "client:profile.follow.back": {};
+  /** Blocked */
+  "client:profile.follow.blocked": {};
+  /** Following */
+  "client:profile.follow.following": {};
+  /** Request to follow */
+  "client:profile.follow.request": {};
+  /** Requested */
+  "client:profile.follow.requested": {};
+  /** {count, plural, one {# follower} other {# followers}} */
+  "client:profile.followers_count": { count: number };
+  /** No followers yet */
+  "client:profile.followers.empty": {};
+  /** Followers of {name} */
+  "client:profile.followers.title": { name: string };
+  /** {count, plural, one {# following} other {# following}} */
+  "client:profile.following_count": { count: number };
+  /** Not following anyone yet */
+  "client:profile.following.empty": {};
+  /** Accounts {name} follows */
+  "client:profile.following.title": { name: string };
+  /** Joined on {date} */
+  "client:profile.joined": { date: string };
+  /** Back to the profile of {name} */
+  "client:profile.list.back": { name: string };
+  /** Show more */
+  "client:profile.list.load_more": {};
+  /** Could not load more accounts: {reason} */
+  "client:profile.list.load_more_failed": { reason: string };
+  /** Try again */
+  "client:profile.list.retry": {};
+  /** Block */
+  "client:profile.menu.block": {};
+  /** Mute */
+  "client:profile.menu.mute": {};
+  /** Unblock */
+  "client:profile.menu.unblock": {};
+  /** Unmute */
+  "client:profile.menu.unmute": {};
+  /** More actions for {name} */
+  "client:profile.more": { name: string };
+  /** No account has this address, or it is not available to you. */
+  "client:profile.not_found.body": {};
+  /** Account not found */
+  "client:profile.not_found.title": {};
+  /** Could not load whether you follow this account: {reason} */
+  "client:profile.relationship_failed": { reason: string };
+  /** Sign in to follow */
+  "client:profile.sign_in_to_follow": {};
+  /** Sign in to see your profile. */
+  "client:profile.signed_out.description": {};
+  /** Without boosts */
+  "client:profile.tab.no_boosts": {};
+  /** Posts */
+  "client:profile.tab.posts": {};
+  /** Posts and replies */
+  "client:profile.tab.replies": {};
+  /** Posts of {name} */
+  "client:profile.tabs": { name: string };
+  /** Bot */
+  "client:profile.tag.bot": {};
+  /** Follows you */
+  "client:profile.tag.follows_you": {};
+  /** Approves followers */
+  "client:profile.tag.locked": {};
+  /** Muted */
+  "client:profile.tag.muted": {};
+  /** Wants to follow you */
+  "client:profile.tag.requested_you": {};
   /** Profile */
   "client:profile.title": {};
   /** Account */
@@ -408,12 +524,76 @@ export interface MessageArgs {
   "client:shell.update.apply": {};
   /** A new version of the app is available. */
   "client:shell.update.available": {};
+  /** Bookmark */
+  "client:status.action.bookmark": {};
+  /** Boost */
+  "client:status.action.boost": {};
+  /** Copy link */
+  "client:status.action.copy_link": {};
+  /** Delete */
+  "client:status.action.delete": {};
+  /** The change was not saved: {reason} */
+  "client:status.action.failed": { reason: string };
+  /** Favourite */
+  "client:status.action.favourite": {};
+  /** More actions */
+  "client:status.action.more": {};
+  /** Reply */
+  "client:status.action.reply": {};
+  /** Bookmark removed */
+  "client:status.bookmark.off": {};
+  /** Bookmarked */
+  "client:status.bookmark.on": {};
+  /** Boost retracted */
+  "client:status.boost.off": {};
+  /** Boosted */
+  "client:status.boost.on": {};
+  /** Cancel */
+  "client:status.delete.cancel": {};
+  /** Delete */
+  "client:status.delete.confirm": {};
+  /** It will be removed for everyone, along with its boosts and favourites. You cannot undo this. */
+  "client:status.delete.description": {};
+  /** Post deleted */
+  "client:status.delete.done": {};
+  /** Could not delete the post: {reason} */
+  "client:status.delete.failed": { reason: string };
+  /** Delete this post? */
+  "client:status.delete.title": {};
+  /** Removed from favourites */
+  "client:status.favourite.off": {};
+  /** Added to favourites */
+  "client:status.favourite.on": {};
+  /** Link copied */
+  "client:status.link.copied": {};
+  /** Could not copy the link. */
+  "client:status.link.failed": {};
+  /** This post does not exist, or you cannot see it. */
+  "client:status.not_found.body": {};
+  /** Post not found */
+  "client:status.not_found.title": {};
+  /** Earlier in the thread */
+  "client:status.thread.ancestors": {};
+  /** Could not load the replies: {reason} */
+  "client:status.thread.failed": { reason: string };
+  /** Loading the replies */
+  "client:status.thread.loading": {};
+  /** No replies yet. */
+  "client:status.thread.no_replies": {};
+  /** Replies */
+  "client:status.thread.replies": {};
+  /** Try again */
+  "client:status.thread.retry": {};
+  /** Post */
+  "client:status.title": {};
   /** #{tag} */
   "client:tag.title": { tag: string };
   /** {name} boosted */
   "client:timeline.boosted_by": { name: string };
   /** Show content */
   "client:timeline.content_warning.toggle": {};
+  /** No posts yet */
+  "client:timeline.empty.account.heading": {};
   /** Browse the local timeline */
   "client:timeline.empty.home.action": {};
   /** Your posts and the posts of the people you follow appear here. */
