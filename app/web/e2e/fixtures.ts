@@ -27,9 +27,19 @@ const rtlLocales: ReadonlySet<string> = new Set(["ar-XB"]);
 /** The text direction of a project locale. */
 export const localeDir = (locale: string): "ltr" | "rtl" => (rtlLocales.has(locale) ? "rtl" : "ltr");
 
+/**
+ * An AxeBuilder for `page`, limited to `axeTags`, without React Aria's live announcer. The announcer is
+ * no content of the page: React Aria's Button announces the start and the end of its pending state there
+ * with a node that is named by the button (aria-labelledby) and stays for 7 seconds, so a button that a
+ * navigation removed in the meantime leaves a nameless node behind until then.
+ */
+export function axeBuilder(page: Page): AxeBuilder {
+  return new AxeBuilder({ page }).withTags([...axeTags]).exclude("[data-live-announcer]");
+}
+
 export const test = base.extend<Fixtures>({
   makeAxeBuilder: async ({ page }, use) => {
-    await use(() => new AxeBuilder({ page }).withTags([...axeTags]));
+    await use(() => axeBuilder(page));
   },
   shellLocale: [
     async ({ page, locale }, use) => {

@@ -3,7 +3,7 @@
 // viewport width × locale. E2E_MATRIX=full runs all of them (nightly); otherwise only the per-PR subset
 // runs: every locale at the narrowest and widest width. The client's tests run against `vite preview` of
 // the built app (`make web-e2e` builds it first), or against E2E_BASE_URL when it is set. The tests of the
-// server-rendered pages (e2e/auth-pages.spec.ts) run against a real `my serve` on SQLite that
+// server-rendered pages (e2e/auth-pages.spec.ts) and of the main flow (e2e/main-flow.spec.ts) run against a real `my serve` on SQLite that
 // e2e/server.ts starts from bin/my with the pseudo-locales enabled, or against E2E_SERVER_URL when it is
 // set (a server started with `my serve -pseudo-locales`). Both servers listen on free ports picked per
 // run (E2E_PREVIEW_PORT and E2E_SERVER_PORT override them; e2e/server-origin.ts), and a run never reuses a
