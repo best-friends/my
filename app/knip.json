@@ -12,7 +12,9 @@
     },
     "web": {
       "entry": ["e2e/server.ts"],
-      "project": ["src/**/*.{ts,tsx,css}", "e2e/**/*.ts", "*.config.ts"]
+      "project": ["src/**/*.{ts,tsx,css}", "e2e/**/*.ts", "*.config.ts"],
+      "ignore": ["src/lib/api/schema.gen.ts"],
+      "ignoreDependencies": ["openapi-typescript"]
     }
   }
 }

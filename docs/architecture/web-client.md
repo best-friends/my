@@ -168,7 +168,8 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 - **起動**（`main.tsx`）: サーバーが外枠に書いた `<html lang>` から、カタログのある最も近いロケールを決め（`ja-JP` → `ja`、ない言語は `en`）、`<html>` の `lang` / `dir` をそれに合わせる。
   次に `<script type="application/json" id="config">` のランタイム設定を Zod で検証して読む（`lib/config`、`useConfig()`）。読めなければアプリの代わりに起動エラーの画面を出す。
-- **プロバイダ**（`App.tsx`）: 外側から、ランタイム設定、i18n（`react-intl` と React Aria の `I18nProvider`）、QueryClient（`lib/query`）、`AnnouncerProvider` / `ToastProvider`、React Aria の `RouterProvider`、ルーターの順に置く。
+  読めたら、QueryClient・セッション・API クライアント（`lib/services.ts`）を作り、リフレッシュトークンの Cookie からセッションを再開し始める（§10）。
+- **プロバイダ**（`App.tsx`）: 外側から、ランタイム設定、i18n（`react-intl` と React Aria の `I18nProvider`）、QueryClient（`lib/query`）、セッションと API クライアント（`lib/auth/SessionProvider`、§10）、`AnnouncerProvider` / `ToastProvider`、React Aria の `RouterProvider`、ルーターの順に置く。
 - **文言**（`lib/i18n`）: クライアントの文言は `locales/<locale>/client.json` にあり、ロケールごとに別のチャンクで読み込む。足りない文言は `ja-JP` → `ja` → `en` の順に補う。
   ID の型は `tools/i18n` が生成する `MessageArgs` から作る（`ClientMessageKey`）。文字列にするときは `useT()` の `t("client:…", 引数)` を使い、ID と引数の型を検査する。
 - **ルーティング**（`router.ts`）: TanStack Router のファイルルート。Vite のプラグインが `routes/` から `routeTree.gen.ts` を生成する（自動コード分割）。生成物はコミットし、`tsc` がビルドの前に使う。
@@ -182,3 +183,38 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
 - **エラー**（E1）: 画面の失敗はルーターの `defaultErrorComponent`（`RouteError`）がレイアウトの中に出し、「もう一度試す」で Query のエラー境界を戻してから loader を再実行する。
   レイアウト自体の失敗はルートの `errorComponent`（`RootError`）が画面全体に出す。合うルートのないアドレスは `NotFound` を出す。独立した区画（3 列目など）は `react-error-boundary` で囲む。
+
+## 10. API クライアントと認証
+
+API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱う（ADR-0029、ADR-0030）。機能はこれを作り直さない。
+
+- **型**（S9）: `make generate` が openapi-typescript で `api/openapi.yaml` から `lib/api/schema.gen.ts` を生成する。生成物はコミットし、`make generate-check` が差分を検査する。
+  機能は API の型を自分の `features/<x>/api` から export して使う（`lib/api` を直接 import できるのは `features/*/api` と `lib/` だけ。S1）。
+- **クライアント**（`lib/api/client.ts`）: openapi-fetch のクライアントと、その上の openapi-react-query のクライアントを 1 つずつ作る（`Api` の `fetch` と `query`）。
+  機能は `features/<x>/api` で `api.query.queryOptions(...)` から `queryOptions` を作る。キーは `[method, path, params]` になる。
+  - ページのロケールを `Accept-Language` で送り、サーバーが problem の `title` / `detail` をそのロケールで返すようにする。
+  - ミドルウェアが、セッションのアクセストークンを `Authorization: Bearer` で付ける。最初の要求は、起動時のセッションの再開（`session.restore()`）を待ってから送る。
+  - トークンを付けた要求が 401 になったら、トークンを 1 度だけ更新し、要求の写しを新しいトークンで送り直す。2 度目の 401 はそのまま失敗にする。
+  - 失敗した応答は `lib/errors.ts` の `ApiError`（RFC 9457 の problem そのものに `message` を足したもの）に、通信の失敗は `NetworkError` にして投げる。
+    どちらも `message` がローカライズ済みで、そのまま表示できる。problem でない本文（プロキシの HTML など）は、クライアントのカタログの文言（`client:api.error.status`）にする。
+    生成された型は失敗をすべて problem と呼ぶので、表示する文言は `errorMessage(error)` で取る。
+- **セッション**（`lib/auth/session.ts`）: アクセストークンはこのオブジェクトのメモリにだけ置き、localStorage・sessionStorage・IndexedDB・読める Cookie には書かない。
+  リフレッシュトークンは HttpOnly の `__Host-my_rt` Cookie にあり、`POST /oauth/token/refresh`（`X-My-Token-Refresh: 1`、`credentials: "include"`）だけがそれを読む。
+  - サーバーはリフレッシュトークンを厳格にローテーションし、同じトークンが 2 度使われるとトークン系列ごと失効させる。そこで、更新はオリジンで 1 つの Web Lock（`navigator.locks.request("my:oauth-refresh", …)`）の中で行う。
+    更新したタブは新しいアクセストークンを BroadcastChannel（`my:oauth-session`）で他のタブに送る。ロックを待っていたタブは、その間に届いたトークンを使う。
+    届いていなければ自分で更新するが、前の更新でローテーションされた Cookie を送るので、再利用にはならない。同じタブの中の同時の更新は 1 つの要求を共有する。
+  - 認可コードの交換も同じロックの中で行い、起動時の再開と競合しない。
+  - サインイン・サインアウト・セッションの終了（更新が 4xx で断られた）も BroadcastChannel で他のタブに伝える。
+  - 利用者が変わったとき（サインイン、またはセッションのあったタブでの終了）、`lib/auth/userData.ts` が Query のキャッシュをすべて消し、Service Worker の Cache Storage を消す（ビルドのファイルだけを持つ Workbox の precache は残す）。
+  - 状態（`unknown` / `signed-in` / `signed-out`）は `useSessionStatus()` で読む。サーバーのデータである閲覧者のアカウントは Context に置かず、`features/session` の `useViewer()` が Query で取る（S2、S6）。
+- **ログイン**（`lib/auth/signIn.ts`、Authorization Code + PKCE）: `/login` のボタンが、新しい verifier（32 バイトの乱数）と `state` を作り、S256 の challenge を付けてサーバーの認可画面（`/oauth/authorize`）にページごと遷移する。
+  scope は指定せず、Web クライアントに登録されたすべてのスコープを受け取る。
+  - verifier・`state`・戻り先は、往復の間だけ sessionStorage（このタブだけ）に置き、コールバックが読んだ時点で消す。どれも資格情報ではない（コードは 1 回限り・短命で、verifier に結び付く）。
+  - コールバック（`/login/callback`、`routes/login_.callback.tsx`）は `beforeLoad` で `state` を照合し、コードを交換してから、戻り先に `replace` で遷移する。コードは履歴にもアドレスバーにも残らない。
+    失敗（拒否・`state` の不一致・交換の失敗・通信の失敗）は、そのルートの `errorComponent` が理由とやり直しのリンクを出す。
+  - 戻り先（`return_to`）は、1 つの `/` で始まるパスだけを受け付ける（`//example.com` や `javascript:` は捨てる）。
+- **ログアウト**（設定画面の「ログアウト」）: アクセストークンを `POST /oauth/revoke` で失効させ（サーバーはトークン系列ごと失効させ、Cookie を消す）、メモリのトークンを消して他のタブに伝え、`/login` を開く。
+  サーバーに届かなかったときも、このタブはログアウトし、セッションが残り得ることをトーストで知らせる。認可サーバーの画面のセッション（`/auth/sign_in` の Cookie）は終わらない。
+- **テスト**: `src/test/msw/handlers.ts` が OAuth のエンドポイント（既定ではリフレッシュ Cookie がない状態）と `verify_credentials`（Bearer が必要）の既定のハンドラを持つ。
+  `renderApp` は main.tsx と同じくセッションを再開し、ページの外への遷移（認可画面）を `leftTo` に記録する（jsdom は別の文書を読み込めない）。
+  jsdom には Web Locks がないので、タブ間の直列化のテストは `src/test/locks.ts` の代わりの実装を 2 つの `Session` に共有させる。BroadcastChannel は Node.js のものを使う。

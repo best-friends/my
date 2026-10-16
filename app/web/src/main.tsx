@@ -7,8 +7,8 @@ import { createRoot } from "react-dom/client";
 import { App, StartupError } from "./App";
 import { readRuntimeConfig, type RuntimeConfig } from "./lib/config";
 import { applyDocumentLocale, loadI18n } from "./lib/i18n";
-import { createQueryClient } from "./lib/query";
 import { createAppRouter } from "./router";
+import { createAppServices } from "./lib/services";
 import "./index.css";
 
 const container = document.getElementById("root");
@@ -33,11 +33,13 @@ if (config === undefined) {
     </StrictMode>,
   );
 } else {
-  const queryClient = createQueryClient();
-  const router = createAppRouter({ queryClient });
+  const services = createAppServices(config, i18n);
+  // Resume the session from the refresh token cookie while the first page loads; API requests wait for it.
+  void services.session.restore();
+  const router = createAppRouter(services);
   root.render(
     <StrictMode>
-      <App config={config} i18n={i18n} queryClient={queryClient} router={router} />
+      <App config={config} i18n={i18n} {...services} router={router} />
     </StrictMode>,
   );
 }

@@ -59,10 +59,10 @@ sqlc-check: ## Fail if the committed sqlc-generated code is stale
 REDOCLY := REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true bunx --bun @redocly/cli@2.57.0
 
 .PHONY: generate generate-check api-lint api-check
-generate: ## Regenerate the client API code from api/openapi.yaml (scripts/generate.sh)
+generate: web-install ## Regenerate the client API code from api/openapi.yaml (scripts/generate.sh)
 	scripts/generate.sh
 
-generate-check: ## Fail if the committed client API code is stale
+generate-check: web-install ## Fail if the committed client API code is stale
 	scripts/generate.sh --check
 
 api-lint: ## Lint api/openapi.yaml, including the supported OpenAPI 3.1 subset (api/redocly.yaml)

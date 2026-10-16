@@ -35,6 +35,10 @@ const reviewed: Record<string, string> = {
   // client). The Blue Oak Model License 1.0.0 is an OSI-approved permissive license with only a
   // notice condition, so it imposes nothing that conflicts with AGPL-3.0.
   "minimatch@10.2.6": "BlueOak-1.0.0",
+  // The YAML loader's argument parser (js-yaml, through @redocly/openapi-core), which openapi-typescript
+  // runs in `make generate` (app/web devDependency; never bundled into the client). The FSF lists the
+  // Python license of 2.0.1 and later as compatible with the GPL, and so with AGPLv3.
+  "argparse@2.0.1": "Python-2.0",
 };
 
 type Manifest ={ name?: string; version?: string; license?: unknown; licenses?: unknown };
