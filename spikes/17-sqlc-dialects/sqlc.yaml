@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+version: "2"
+sql:
+  - engine: sqlite
+    schema: schema/sqlite.sql
+    queries: queries/sqlite
+    gen:
+      go:
+        package: sqlitegen
+        out: adapter/sqlitedb/sqlitegen
+        emit_empty_slices: true
+  - engine: postgresql
+    schema: schema/postgres.sql
+    queries: queries/postgres
+    gen:
+      go:
+        package: pggen
+        out: adapter/pgdb/pggen
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time
