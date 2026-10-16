@@ -58,6 +58,8 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`; `!` for breaking).
 - License is AGPL-3.0-only ([ADR-0011](docs/adr/0011-license.md)). New source files start with `SPDX-License-Identifier: AGPL-3.0-only`;
   only add dependencies with AGPL-compatible licenses.
+- Links from issues and comments to repository files use `blob/main/...` or a commit permalink, never a feature branch
+  (branches are deleted on merge). Before merge, link the PR instead.
 - Do not commit secrets, `.env` files, or credentials. Do not run destructive commands against remote resources.
 
 ## Design rules that will apply once implementation starts
