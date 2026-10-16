@@ -58,7 +58,7 @@ func parseSubcommand(name string, args []string, nargs int, stderr io.Writer, us
 func (c subcommand) open(ctx context.Context, stderr io.Writer) (*platform.App, int) {
 	cfg, _, err := config.Load(config.Source{File: *c.file})
 	if err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
+		printLoadError(stderr, err)
 		return nil, 1
 	}
 	app, err := platform.NewApp(ctx, cfg, platform.AppOptions{})

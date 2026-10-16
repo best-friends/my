@@ -35,12 +35,13 @@ func TestRunConfig(t *testing.T) {
 		{
 			name:     "invalid lists every issue",
 			args:     []string{"config", "check"},
-			env:      map[string]string{"MY_DB": "mysql"},
+			env:      map[string]string{"MY_DB": "mysql", "LC_ALL": "C"},
 			wantCode: 1,
 			wantStderr: []string{
-				"host (MY_HOST): required",
-				`db (MY_DB): unknown value "mysql"`,
-				"database_url (MY_DATABASE_URL): required",
+				"The required setting MY_HOST is not set.",
+				"The setting MY_DB has an invalid value.",
+				`db: unknown value "mysql"`,
+				"The required setting MY_DATABASE_URL is not set.",
 			},
 		},
 		{name: "no subcommand", args: []string{"config"}, wantCode: 2, wantStderr: []string{"Usage: my config check"}},
@@ -49,7 +50,8 @@ func TestRunConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for _, k := range []string{"MY_CONFIG", "MY_HOST", "MY_DATABASE_URL", "MY_KEK", "MY_DB"} {
+			t.Setenv("LANGUAGE", "")
+			for _, k := range []string{"MY_CONFIG", "MY_HOST", "MY_DATABASE_URL", "MY_KEK", "MY_DB", "LC_ALL"} {
 				t.Setenv(k, tt.env[k]) // restores the original value after the test
 				if _, ok := tt.env[k]; !ok {
 					if err := os.Unsetenv(k); err != nil {

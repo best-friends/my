@@ -29,8 +29,10 @@ func TestServeArguments(t *testing.T) {
 		t.Errorf("serve extra = %d %q, want 2", code, stderr.String())
 	}
 	t.Setenv("MY_HOST", "")
+	t.Setenv("LANGUAGE", "")
+	t.Setenv("LC_ALL", "C")
 	stderr.Reset()
-	if code := run([]string{"serve"}, &bytes.Buffer{}, &stderr); code != 1 || !strings.Contains(stderr.String(), "invalid configuration") {
+	if code := run([]string{"serve"}, &bytes.Buffer{}, &stderr); code != 1 || !strings.Contains(stderr.String(), "The required setting MY_HOST is not set.") {
 		t.Errorf("serve with a bad configuration = %d %q, want 1", code, stderr.String())
 	}
 }
