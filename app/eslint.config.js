@@ -54,11 +54,13 @@ export default defineConfig(
     linterOptions: { reportUnusedDisableDirectives: "error", reportUnusedInlineConfigs: "error" },
     languageOptions: {
       parserOptions: {
-        project: ["./ui/tsconfig.json", "./web/tsconfig.json", "./web/tsconfig.node.json"],
+        project: ["./ui/tsconfig.json", "./ui/scripts/tsconfig.json", "./web/tsconfig.json", "./web/tsconfig.node.json"],
         tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {
+      // Numbers format unambiguously in messages; only objects, nullish values and the like are rejected.
+      "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
       // A disable comment must say why (R5, Y2: the documented escape hatches).
       "@eslint-community/eslint-comments/require-description": ["error", { ignore: [] }],
       "@eslint-community/eslint-comments/no-unlimited-disable": "error",
@@ -72,7 +74,7 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
   {
-    files: ["web/vite.config.ts"],
+    files: ["web/vite.config.ts", "ui/scripts/**/*.ts"],
     languageOptions: { globals: globals.node },
   },
 

@@ -33,7 +33,7 @@ function reactCompilerCheck() {
       if (error) return;
       for (const p of problems) this.warn(p);
       if (compiled === 0) this.error("React Compiler compiled no function; check the babel preset in vite.config.ts");
-      this.info(`React Compiler compiled ${String(compiled)} function(s)`);
+      this.info(`React Compiler compiled ${compiled} function(s)`);
     },
   };
   return { logger, plugin };
