@@ -192,6 +192,28 @@ type InstanceTextRevision struct {
 	RevisedAt       int64
 }
 
+type Invite struct {
+	ID              string
+	Code            string
+	CreatedByUserID sql.NullString
+	MaxUses         sql.NullInt64
+	ExpiresAt       sql.NullInt64
+	CreatedAt       int64
+}
+
+type InviteRedemption struct {
+	InviteID   string
+	Seq        int64
+	UserID     string
+	RedeemedAt int64
+}
+
+type InviteRevocation struct {
+	InviteID        string
+	RevokedByUserID sql.NullString
+	RevokedAt       int64
+}
+
 type Job struct {
 	ID             string
 	Type           string
@@ -255,6 +277,24 @@ type PasswordCredential struct {
 	UserID       string
 	PasswordHash string
 	SetAt        int64
+}
+
+type RegistrationApplication struct {
+	ID          string
+	UserID      string
+	Reason      sql.NullString
+	InviteID    sql.NullString
+	SubmittedAt int64
+}
+
+type RegistrationDecision struct {
+	ID              string
+	ApplicationID   string
+	Decision        string
+	DecidedBy       string
+	DecidedByUserID sql.NullString
+	Note            sql.NullString
+	DecidedAt       int64
 }
 
 type Role struct {
@@ -400,6 +440,11 @@ type UserEmailAddress struct {
 	AddedAt           int64
 }
 
+type UserEmailVerification struct {
+	EmailAddressID string
+	VerifiedAt     int64
+}
+
 type UserPreference struct {
 	UserID                  string
 	Locale                  string
@@ -414,6 +459,12 @@ type UserPrimaryEmail struct {
 	UserID            string
 	EmailAddressID    string
 	AddressNormalized string
+}
+
+type UserRegistrationState struct {
+	UserID string
+	State  string
+	Since  int64
 }
 
 type UserRole struct {
@@ -439,4 +490,19 @@ type UserRoleRevocation struct {
 type UserTimelineLanguage struct {
 	UserID   string
 	Language string
+}
+
+type UserToken struct {
+	ID             string
+	UserID         string
+	Purpose        string
+	EmailAddressID sql.NullString
+	TokenHash      []byte
+	ExpiresAt      int64
+	IssuedAt       int64
+}
+
+type UserTokenRedemption struct {
+	TokenID    string
+	RedeemedAt int64
 }

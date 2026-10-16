@@ -20,16 +20,92 @@ export interface MessageArgs {
   "server:auth.sign_in.password_label": {};
   /** {minutes, plural, one {Too many failed sign-in attempts. Try again in # minute.} other {Too many failed sign-in attempts. Try again in # minutes.}} */
   "server:auth.sign_in.rate_limited": { minutes: number };
+  /** Create an account */
+  "server:auth.sign_in.sign_up_link": {};
   /** Sign in */
   "server:auth.sign_in.submit": {};
   /** Sign in */
   "server:auth.sign_in.title": {};
   /** Sign out */
   "server:auth.sign_out.submit": {};
+  /** This server is not accepting new accounts. */
+  "server:auth.sign_up.closed": {};
+  /** You sign in with this address. */
+  "server:auth.sign_up.email_hint": {};
+  /** Enter an email address such as alice@example.com. */
+  "server:auth.sign_up.email_invalid": {};
+  /** Email address */
+  "server:auth.sign_up.email_label": {};
+  /** This email address is already in use. */
+  "server:auth.sign_up.email_taken": {};
+  /** The account was not created. Check the fields marked below. */
+  "server:auth.sign_up.error_summary": {};
+  /** This server accepts new accounts by invitation only. */
+  "server:auth.sign_up.invite_hint": {};
+  /** This invite code is not valid. It may have expired or been used up. */
+  "server:auth.sign_up.invite_invalid": {};
+  /** Invite code */
+  "server:auth.sign_up.invite_label": {};
+  /** Enter your invite code. */
+  "server:auth.sign_up.invite_required": {};
+  /** {min, number} to {max, number} characters. */
+  "server:auth.sign_up.password_hint": { max: number; min: number };
+  /** Use {min, number} to {max, number} characters. */
+  "server:auth.sign_up.password_invalid": { max: number; min: number };
+  /** Password */
+  "server:auth.sign_up.password_label": {};
+  /** {minutes, plural, one {Too many sign-up attempts from your network. Try again in # minute.} other {Too many sign-up attempts from your network. Try again in # minutes.}} */
+  "server:auth.sign_up.rate_limited": { minutes: number };
+  /** A moderator reviews new accounts before they can be used. Up to {max, number} characters. */
+  "server:auth.sign_up.reason_hint": { max: number };
+  /** Keep it to {max, number} characters. */
+  "server:auth.sign_up.reason_invalid": { max: number };
+  /** Why do you want to join? (optional) */
+  "server:auth.sign_up.reason_label": {};
+  /** Create account */
+  "server:auth.sign_up.submit": {};
+  /** Create an account */
+  "server:auth.sign_up.title": {};
+  /** Up to {max, number} letters (a–z), digits, and underscores. It cannot be changed later. */
+  "server:auth.sign_up.username_hint": { max: number };
+  /** Use 1 to {max, number} letters (a–z), digits, and underscores. */
+  "server:auth.sign_up.username_invalid": { max: number };
+  /** Username */
+  "server:auth.sign_up.username_label": {};
+  /** This username is already taken. */
+  "server:auth.sign_up.username_taken": {};
   /** Continue */
   "server:auth.signed_in.continue": {};
   /** You are signed in */
   "server:auth.signed_in.title": {};
+  /** Your registration is waiting for a moderator's approval. You can sign in, but you can use the app only after it is approved. */
+  "server:auth.status.pending": {};
+  /** Your registration was not approved, so this account cannot be used. */
+  "server:auth.status.rejected": {};
+  /** The email could not be sent. Please try again later. */
+  "server:auth.status.resend_failed": {};
+  /** {minutes, plural, one {You asked for the link too many times. Try again in # minute.} other {You asked for the link too many times. Try again in # minutes.}} */
+  "server:auth.status.resend_rate_limited": { minutes: number };
+  /** Send the link again */
+  "server:auth.status.resend_submit": {};
+  /** We sent a new link to {email}. */
+  "server:auth.status.resent": { email: string };
+  /** Your account is not ready yet */
+  "server:auth.status.title": {};
+  /** Confirm your email address: open the link we sent to {email}. */
+  "server:auth.status.verify_email": { email: string };
+  /** Thank you. Your email address is confirmed. */
+  "server:auth.verify_email.done": {};
+  /** Email address confirmed */
+  "server:auth.verify_email.done_title": {};
+  /** This link is not valid. It may have expired or been used already. Sign in to get a new one. */
+  "server:auth.verify_email.invalid": {};
+  /** Select the button below to confirm your email address. */
+  "server:auth.verify_email.prompt": {};
+  /** Confirm email address */
+  "server:auth.verify_email.submit": {};
+  /** Confirm your email address */
+  "server:auth.verify_email.title": {};
   /** {count, plural, one {Found # configuration error.} other {Found # configuration errors.}} */
   "server:config.errors": { count: number };
   /** The setting {name} has an invalid value. */
@@ -48,6 +124,10 @@ export interface MessageArgs {
   "server:errors.not_found": {};
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
+  /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.  */
+  "server:mail.verify_email.body": { host: string; hours: number; url: string };
+  /** Confirm your email address for {host} */
+  "server:mail.verify_email.subject": { host: string };
 }
 
 export type MessageKey = keyof MessageArgs;

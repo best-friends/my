@@ -60,6 +60,13 @@ func (l *Localizer) ServerAuthSignInRateLimited(minutes int) string {
 	return l.format("server:auth.sign_in.rate_limited", map[string]any{"minutes": minutes})
 }
 
+// ServerAuthSignInSignUpLink formats "server:auth.sign_in.sign_up_link". Link from the sign-in page to the registration page; hidden while registration is closed.
+//
+//	en: Create an account
+func (l *Localizer) ServerAuthSignInSignUpLink() string {
+	return l.format("server:auth.sign_in.sign_up_link", nil)
+}
+
 // ServerAuthSignInSubmit formats "server:auth.sign_in.submit". Button that submits the sign-in form.
 //
 //	en: Sign in
@@ -81,6 +88,167 @@ func (l *Localizer) ServerAuthSignOutSubmit() string {
 	return l.format("server:auth.sign_out.submit", nil)
 }
 
+// ServerAuthSignUpClosed formats "server:auth.sign_up.closed". Body of the registration page while the server accepts no new accounts.
+//
+//	en: This server is not accepting new accounts.
+func (l *Localizer) ServerAuthSignUpClosed() string {
+	return l.format("server:auth.sign_up.closed", nil)
+}
+
+// ServerAuthSignUpEmailHint formats "server:auth.sign_up.email_hint". Hint under the email address field of the registration form.
+//
+//	en: You sign in with this address.
+func (l *Localizer) ServerAuthSignUpEmailHint() string {
+	return l.format("server:auth.sign_up.email_hint", nil)
+}
+
+// ServerAuthSignUpEmailInvalid formats "server:auth.sign_up.email_invalid". Error under the email address field when it is not a plain address.
+//
+//	en: Enter an email address such as alice@example.com.
+func (l *Localizer) ServerAuthSignUpEmailInvalid() string {
+	return l.format("server:auth.sign_up.email_invalid", nil)
+}
+
+// ServerAuthSignUpEmailLabel formats "server:auth.sign_up.email_label". Label of the email address field on the registration form.
+//
+//	en: Email address
+func (l *Localizer) ServerAuthSignUpEmailLabel() string {
+	return l.format("server:auth.sign_up.email_label", nil)
+}
+
+// ServerAuthSignUpEmailTaken formats "server:auth.sign_up.email_taken". Error under the email address field when another account uses the address.
+//
+//	en: This email address is already in use.
+func (l *Localizer) ServerAuthSignUpEmailTaken() string {
+	return l.format("server:auth.sign_up.email_taken", nil)
+}
+
+// ServerAuthSignUpErrorSummary formats "server:auth.sign_up.error_summary". Alert at the top of the registration form when one or more fields need fixing; each field shows its own error.
+//
+//	en: The account was not created. Check the fields marked below.
+func (l *Localizer) ServerAuthSignUpErrorSummary() string {
+	return l.format("server:auth.sign_up.error_summary", nil)
+}
+
+// ServerAuthSignUpInviteHint formats "server:auth.sign_up.invite_hint". Hint under the invite code field.
+//
+//	en: This server accepts new accounts by invitation only.
+func (l *Localizer) ServerAuthSignUpInviteHint() string {
+	return l.format("server:auth.sign_up.invite_hint", nil)
+}
+
+// ServerAuthSignUpInviteInvalid formats "server:auth.sign_up.invite_invalid". Error under the invite code field when the code is unknown, expired, revoked, or used up. Must not say which.
+//
+//	en: This invite code is not valid. It may have expired or been used up.
+func (l *Localizer) ServerAuthSignUpInviteInvalid() string {
+	return l.format("server:auth.sign_up.invite_invalid", nil)
+}
+
+// ServerAuthSignUpInviteLabel formats "server:auth.sign_up.invite_label". Label of the invite code field, shown when the server accepts sign-ups by invitation only.
+//
+//	en: Invite code
+func (l *Localizer) ServerAuthSignUpInviteLabel() string {
+	return l.format("server:auth.sign_up.invite_label", nil)
+}
+
+// ServerAuthSignUpInviteRequired formats "server:auth.sign_up.invite_required". Error under the invite code field when it is empty.
+//
+//	en: Enter your invite code.
+func (l *Localizer) ServerAuthSignUpInviteRequired() string {
+	return l.format("server:auth.sign_up.invite_required", nil)
+}
+
+// ServerAuthSignUpPasswordHint formats "server:auth.sign_up.password_hint". Hint under the password field. {min} and {max} are the allowed lengths in characters.
+//
+//	en: {min, number} to {max, number} characters.
+func (l *Localizer) ServerAuthSignUpPasswordHint(max float64, min float64) string {
+	return l.format("server:auth.sign_up.password_hint", map[string]any{"max": max, "min": min})
+}
+
+// ServerAuthSignUpPasswordInvalid formats "server:auth.sign_up.password_invalid". Error under the password field when it is too short or too long. {min} and {max} are the allowed lengths in characters.
+//
+//	en: Use {min, number} to {max, number} characters.
+func (l *Localizer) ServerAuthSignUpPasswordInvalid(max float64, min float64) string {
+	return l.format("server:auth.sign_up.password_invalid", map[string]any{"max": max, "min": min})
+}
+
+// ServerAuthSignUpPasswordLabel formats "server:auth.sign_up.password_label". Label of the password field on the registration form.
+//
+//	en: Password
+func (l *Localizer) ServerAuthSignUpPasswordLabel() string {
+	return l.format("server:auth.sign_up.password_label", nil)
+}
+
+// ServerAuthSignUpRateLimited formats "server:auth.sign_up.rate_limited". Error (HTTP 429) after too many sign-ups from the same network. {minutes} is the wait, rounded up to whole minutes.
+//
+//	en: {minutes, plural, one {Too many sign-up attempts from your network. Try again in # minute.} other {Too many sign-up attempts from your network. Try again in # minutes.}}
+func (l *Localizer) ServerAuthSignUpRateLimited(minutes int) string {
+	return l.format("server:auth.sign_up.rate_limited", map[string]any{"minutes": minutes})
+}
+
+// ServerAuthSignUpReasonHint formats "server:auth.sign_up.reason_hint". Hint under the reason field. {max} is the longest allowed answer in characters.
+//
+//	en: A moderator reviews new accounts before they can be used. Up to {max, number} characters.
+func (l *Localizer) ServerAuthSignUpReasonHint(max float64) string {
+	return l.format("server:auth.sign_up.reason_hint", map[string]any{"max": max})
+}
+
+// ServerAuthSignUpReasonInvalid formats "server:auth.sign_up.reason_invalid". Error under the reason field when the answer is too long. {max} is the longest allowed length in characters.
+//
+//	en: Keep it to {max, number} characters.
+func (l *Localizer) ServerAuthSignUpReasonInvalid(max float64) string {
+	return l.format("server:auth.sign_up.reason_invalid", map[string]any{"max": max})
+}
+
+// ServerAuthSignUpReasonLabel formats "server:auth.sign_up.reason_label". Label of the free-text field asking why the applicant wants to join, shown when sign-ups need a moderator's approval.
+//
+//	en: Why do you want to join? (optional)
+func (l *Localizer) ServerAuthSignUpReasonLabel() string {
+	return l.format("server:auth.sign_up.reason_label", nil)
+}
+
+// ServerAuthSignUpSubmit formats "server:auth.sign_up.submit". Button that submits the registration form.
+//
+//	en: Create account
+func (l *Localizer) ServerAuthSignUpSubmit() string {
+	return l.format("server:auth.sign_up.submit", nil)
+}
+
+// ServerAuthSignUpTitle formats "server:auth.sign_up.title". Title and heading of the registration page.
+//
+//	en: Create an account
+func (l *Localizer) ServerAuthSignUpTitle() string {
+	return l.format("server:auth.sign_up.title", nil)
+}
+
+// ServerAuthSignUpUsernameHint formats "server:auth.sign_up.username_hint". Hint under the username field. {max} is the longest allowed username in characters.
+//
+//	en: Up to {max, number} letters (a–z), digits, and underscores. It cannot be changed later.
+func (l *Localizer) ServerAuthSignUpUsernameHint(max float64) string {
+	return l.format("server:auth.sign_up.username_hint", map[string]any{"max": max})
+}
+
+// ServerAuthSignUpUsernameInvalid formats "server:auth.sign_up.username_invalid". Error under the username field when it has characters other than a–z, digits, and underscores, or is too long. {max} is the longest allowed length.
+//
+//	en: Use 1 to {max, number} letters (a–z), digits, and underscores.
+func (l *Localizer) ServerAuthSignUpUsernameInvalid(max float64) string {
+	return l.format("server:auth.sign_up.username_invalid", map[string]any{"max": max})
+}
+
+// ServerAuthSignUpUsernameLabel formats "server:auth.sign_up.username_label". Label of the username field on the registration form.
+//
+//	en: Username
+func (l *Localizer) ServerAuthSignUpUsernameLabel() string {
+	return l.format("server:auth.sign_up.username_label", nil)
+}
+
+// ServerAuthSignUpUsernameTaken formats "server:auth.sign_up.username_taken". Error under the username field when another account has the username.
+//
+//	en: This username is already taken.
+func (l *Localizer) ServerAuthSignUpUsernameTaken() string {
+	return l.format("server:auth.sign_up.username_taken", nil)
+}
+
 // ServerAuthSignedInContinue formats "server:auth.signed_in.continue". Link on the signed-in page back to where the user was going.
 //
 //	en: Continue
@@ -93,6 +261,104 @@ func (l *Localizer) ServerAuthSignedInContinue() string {
 //	en: You are signed in
 func (l *Localizer) ServerAuthSignedInTitle() string {
 	return l.format("server:auth.signed_in.title", nil)
+}
+
+// ServerAuthStatusPending formats "server:auth.status.pending". Explains that a moderator has not yet approved the registration and that the app cannot be used until then.
+//
+//	en: Your registration is waiting for a moderator's approval. You can sign in, but you can use the app only after it is approved.
+func (l *Localizer) ServerAuthStatusPending() string {
+	return l.format("server:auth.status.pending", nil)
+}
+
+// ServerAuthStatusRejected formats "server:auth.status.rejected". Tells a signed-in user that a moderator rejected their registration.
+//
+//	en: Your registration was not approved, so this account cannot be used.
+func (l *Localizer) ServerAuthStatusRejected() string {
+	return l.format("server:auth.status.rejected", nil)
+}
+
+// ServerAuthStatusResendFailed formats "server:auth.status.resend_failed". Error when the confirmation email could not be sent (for example, the mail server is down).
+//
+//	en: The email could not be sent. Please try again later.
+func (l *Localizer) ServerAuthStatusResendFailed() string {
+	return l.format("server:auth.status.resend_failed", nil)
+}
+
+// ServerAuthStatusResendRateLimited formats "server:auth.status.resend_rate_limited". Error (HTTP 429) after the user asked for the confirmation link too often. {minutes} is the wait, rounded up to whole minutes.
+//
+//	en: {minutes, plural, one {You asked for the link too many times. Try again in # minute.} other {You asked for the link too many times. Try again in # minutes.}}
+func (l *Localizer) ServerAuthStatusResendRateLimited(minutes int) string {
+	return l.format("server:auth.status.resend_rate_limited", map[string]any{"minutes": minutes})
+}
+
+// ServerAuthStatusResendSubmit formats "server:auth.status.resend_submit". Button that sends the email confirmation link again.
+//
+//	en: Send the link again
+func (l *Localizer) ServerAuthStatusResendSubmit() string {
+	return l.format("server:auth.status.resend_submit", nil)
+}
+
+// ServerAuthStatusResent formats "server:auth.status.resent". Notice after the confirmation link was sent again. {email} is the user's email address.
+//
+//	en: We sent a new link to {email}.
+func (l *Localizer) ServerAuthStatusResent(email string) string {
+	return l.format("server:auth.status.resent", map[string]any{"email": email})
+}
+
+// ServerAuthStatusTitle formats "server:auth.status.title". Title and heading of the page a signed-in user sees while their account cannot be used yet (waiting for approval or email confirmation, or rejected).
+//
+//	en: Your account is not ready yet
+func (l *Localizer) ServerAuthStatusTitle() string {
+	return l.format("server:auth.status.title", nil)
+}
+
+// ServerAuthStatusVerifyEmail formats "server:auth.status.verify_email". Asks the user to open the confirmation link. {email} is their email address.
+//
+//	en: Confirm your email address: open the link we sent to {email}.
+func (l *Localizer) ServerAuthStatusVerifyEmail(email string) string {
+	return l.format("server:auth.status.verify_email", map[string]any{"email": email})
+}
+
+// ServerAuthVerifyEmailDone formats "server:auth.verify_email.done". Body of the page after the email address was confirmed.
+//
+//	en: Thank you. Your email address is confirmed.
+func (l *Localizer) ServerAuthVerifyEmailDone() string {
+	return l.format("server:auth.verify_email.done", nil)
+}
+
+// ServerAuthVerifyEmailDoneTitle formats "server:auth.verify_email.done_title". Title and heading of the page after the email address was confirmed.
+//
+//	en: Email address confirmed
+func (l *Localizer) ServerAuthVerifyEmailDoneTitle() string {
+	return l.format("server:auth.verify_email.done_title", nil)
+}
+
+// ServerAuthVerifyEmailInvalid formats "server:auth.verify_email.invalid". Error when a confirmation link is unknown, expired, or already used. Must not say which.
+//
+//	en: This link is not valid. It may have expired or been used already. Sign in to get a new one.
+func (l *Localizer) ServerAuthVerifyEmailInvalid() string {
+	return l.format("server:auth.verify_email.invalid", nil)
+}
+
+// ServerAuthVerifyEmailPrompt formats "server:auth.verify_email.prompt". Text above the button that confirms the email address.
+//
+//	en: Select the button below to confirm your email address.
+func (l *Localizer) ServerAuthVerifyEmailPrompt() string {
+	return l.format("server:auth.verify_email.prompt", nil)
+}
+
+// ServerAuthVerifyEmailSubmit formats "server:auth.verify_email.submit". Button that confirms the email address.
+//
+//	en: Confirm email address
+func (l *Localizer) ServerAuthVerifyEmailSubmit() string {
+	return l.format("server:auth.verify_email.submit", nil)
+}
+
+// ServerAuthVerifyEmailTitle formats "server:auth.verify_email.title". Title and heading of the page that a confirmation email links to.
+//
+//	en: Confirm your email address
+func (l *Localizer) ServerAuthVerifyEmailTitle() string {
+	return l.format("server:auth.verify_email.title", nil)
 }
 
 // ServerConfigErrors formats "server:config.errors". Summary printed before the list of configuration problems when the server refuses to start.
@@ -156,4 +422,18 @@ func (l *Localizer) ServerErrorsNotFound() string {
 //	en: The server is not ready to accept requests.
 func (l *Localizer) ServerHealthUnavailable() string {
 	return l.format("server:health.unavailable", nil)
+}
+
+// ServerMailVerifyEmailBody formats "server:mail.verify_email.body". Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works.
+//
+//	en: Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. 
+func (l *Localizer) ServerMailVerifyEmailBody(host string, hours int, url string) string {
+	return l.format("server:mail.verify_email.body", map[string]any{"host": host, "hours": hours, "url": url})
+}
+
+// ServerMailVerifyEmailSubject formats "server:mail.verify_email.subject". Subject of the email that confirms a new account's email address. {host} is the server's domain name.
+//
+//	en: Confirm your email address for {host}
+func (l *Localizer) ServerMailVerifyEmailSubject(host string) string {
+	return l.format("server:mail.verify_email.subject", map[string]any{"host": host})
 }

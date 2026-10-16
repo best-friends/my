@@ -31,6 +31,10 @@
     "defaultMessage": "{minutes, plural, other {ログインの失敗が多すぎます。#分後にもう一度お試しください。}}",
     "description": "Error (HTTP 429) after too many failed sign-ins from the same network or for the same email address. {minutes} is the wait, rounded up to whole minutes."
   },
+  "auth.sign_in.sign_up_link": {
+    "defaultMessage": "アカウントを作成",
+    "description": "Link from the sign-in page to the registration page; hidden while registration is closed."
+  },
   "auth.sign_in.submit": {
     "defaultMessage": "ログイン",
     "description": "Button that submits the sign-in form."
@@ -43,6 +47,98 @@
     "defaultMessage": "ログアウト",
     "description": "Button that ends the current browser session."
   },
+  "auth.sign_up.closed": {
+    "defaultMessage": "このサーバーは現在、新規登録を受け付けていません。",
+    "description": "Body of the registration page while the server accepts no new accounts."
+  },
+  "auth.sign_up.email_hint": {
+    "defaultMessage": "ログインに使います。",
+    "description": "Hint under the email address field of the registration form."
+  },
+  "auth.sign_up.email_invalid": {
+    "defaultMessage": "alice@example.com のような形式でメールアドレスを入力してください。",
+    "description": "Error under the email address field when it is not a plain address."
+  },
+  "auth.sign_up.email_label": {
+    "defaultMessage": "メールアドレス",
+    "description": "Label of the email address field on the registration form."
+  },
+  "auth.sign_up.email_taken": {
+    "defaultMessage": "このメールアドレスはすでに使われています。",
+    "description": "Error under the email address field when another account uses the address."
+  },
+  "auth.sign_up.error_summary": {
+    "defaultMessage": "アカウントを作成できませんでした。下の項目を確認してください。",
+    "description": "Alert at the top of the registration form when one or more fields need fixing; each field shows its own error."
+  },
+  "auth.sign_up.invite_hint": {
+    "defaultMessage": "このサーバーは招待を受けた人だけが登録できます。",
+    "description": "Hint under the invite code field."
+  },
+  "auth.sign_up.invite_invalid": {
+    "defaultMessage": "この招待コードは使えません。期限切れか、使用回数の上限に達した可能性があります。",
+    "description": "Error under the invite code field when the code is unknown, expired, revoked, or used up. Must not say which."
+  },
+  "auth.sign_up.invite_label": {
+    "defaultMessage": "招待コード",
+    "description": "Label of the invite code field, shown when the server accepts sign-ups by invitation only."
+  },
+  "auth.sign_up.invite_required": {
+    "defaultMessage": "招待コードを入力してください。",
+    "description": "Error under the invite code field when it is empty."
+  },
+  "auth.sign_up.password_hint": {
+    "defaultMessage": "{min, number}〜{max, number} 文字。",
+    "description": "Hint under the password field. {min} and {max} are the allowed lengths in characters."
+  },
+  "auth.sign_up.password_invalid": {
+    "defaultMessage": "{min, number}〜{max, number} 文字にしてください。",
+    "description": "Error under the password field when it is too short or too long. {min} and {max} are the allowed lengths in characters."
+  },
+  "auth.sign_up.password_label": {
+    "defaultMessage": "パスワード",
+    "description": "Label of the password field on the registration form."
+  },
+  "auth.sign_up.rate_limited": {
+    "defaultMessage": "{minutes, plural, other {同じネットワークからの登録が多すぎます。# 分後にもう一度お試しください。}}",
+    "description": "Error (HTTP 429) after too many sign-ups from the same network. {minutes} is the wait, rounded up to whole minutes."
+  },
+  "auth.sign_up.reason_hint": {
+    "defaultMessage": "新しいアカウントは、モデレーターの承認後に使えるようになります。{max, number} 文字まで。",
+    "description": "Hint under the reason field. {max} is the longest allowed answer in characters."
+  },
+  "auth.sign_up.reason_invalid": {
+    "defaultMessage": "{max, number} 文字以内にしてください。",
+    "description": "Error under the reason field when the answer is too long. {max} is the longest allowed length in characters."
+  },
+  "auth.sign_up.reason_label": {
+    "defaultMessage": "参加したい理由（任意）",
+    "description": "Label of the free-text field asking why the applicant wants to join, shown when sign-ups need a moderator's approval."
+  },
+  "auth.sign_up.submit": {
+    "defaultMessage": "アカウントを作成",
+    "description": "Button that submits the registration form."
+  },
+  "auth.sign_up.title": {
+    "defaultMessage": "アカウントを作成",
+    "description": "Title and heading of the registration page."
+  },
+  "auth.sign_up.username_hint": {
+    "defaultMessage": "半角英字（a–z）・数字・アンダースコアで {max, number} 文字まで。あとから変更できません。",
+    "description": "Hint under the username field. {max} is the longest allowed username in characters."
+  },
+  "auth.sign_up.username_invalid": {
+    "defaultMessage": "半角英字（a–z）・数字・アンダースコアで 1〜{max, number} 文字にしてください。",
+    "description": "Error under the username field when it has characters other than a–z, digits, and underscores, or is too long. {max} is the longest allowed length."
+  },
+  "auth.sign_up.username_label": {
+    "defaultMessage": "ユーザー名",
+    "description": "Label of the username field on the registration form."
+  },
+  "auth.sign_up.username_taken": {
+    "defaultMessage": "このユーザー名はすでに使われています。",
+    "description": "Error under the username field when another account has the username."
+  },
   "auth.signed_in.continue": {
     "defaultMessage": "続ける",
     "description": "Link on the signed-in page back to where the user was going."
@@ -50,6 +146,62 @@
   "auth.signed_in.title": {
     "defaultMessage": "ログインしています",
     "description": "Title and heading of the page shown when a signed-in user opens the sign-in page."
+  },
+  "auth.status.pending": {
+    "defaultMessage": "登録はモデレーターの承認待ちです。ログインはできますが、アプリを使えるのは承認されてからです。",
+    "description": "Explains that a moderator has not yet approved the registration and that the app cannot be used until then."
+  },
+  "auth.status.rejected": {
+    "defaultMessage": "登録が承認されなかったため、このアカウントは使えません。",
+    "description": "Tells a signed-in user that a moderator rejected their registration."
+  },
+  "auth.status.resend_failed": {
+    "defaultMessage": "メールを送信できませんでした。しばらくしてからもう一度お試しください。",
+    "description": "Error when the confirmation email could not be sent (for example, the mail server is down)."
+  },
+  "auth.status.resend_rate_limited": {
+    "defaultMessage": "{minutes, plural, other {リンクの再送を求めた回数が多すぎます。# 分後にもう一度お試しください。}}",
+    "description": "Error (HTTP 429) after the user asked for the confirmation link too often. {minutes} is the wait, rounded up to whole minutes."
+  },
+  "auth.status.resend_submit": {
+    "defaultMessage": "リンクを再送する",
+    "description": "Button that sends the email confirmation link again."
+  },
+  "auth.status.resent": {
+    "defaultMessage": "{email} に新しいリンクを送りました。",
+    "description": "Notice after the confirmation link was sent again. {email} is the user's email address."
+  },
+  "auth.status.title": {
+    "defaultMessage": "アカウントはまだ使えません",
+    "description": "Title and heading of the page a signed-in user sees while their account cannot be used yet (waiting for approval or email confirmation, or rejected)."
+  },
+  "auth.status.verify_email": {
+    "defaultMessage": "{email} に送ったリンクを開いて、メールアドレスを確認してください。",
+    "description": "Asks the user to open the confirmation link. {email} is their email address."
+  },
+  "auth.verify_email.done": {
+    "defaultMessage": "ありがとうございます。メールアドレスを確認しました。",
+    "description": "Body of the page after the email address was confirmed."
+  },
+  "auth.verify_email.done_title": {
+    "defaultMessage": "メールアドレスを確認しました",
+    "description": "Title and heading of the page after the email address was confirmed."
+  },
+  "auth.verify_email.invalid": {
+    "defaultMessage": "このリンクは使えません。期限切れか、すでに使われた可能性があります。ログインすると新しいリンクを受け取れます。",
+    "description": "Error when a confirmation link is unknown, expired, or already used. Must not say which."
+  },
+  "auth.verify_email.prompt": {
+    "defaultMessage": "下のボタンを押して、メールアドレスを確認してください。",
+    "description": "Text above the button that confirms the email address."
+  },
+  "auth.verify_email.submit": {
+    "defaultMessage": "メールアドレスを確認",
+    "description": "Button that confirms the email address."
+  },
+  "auth.verify_email.title": {
+    "defaultMessage": "メールアドレスの確認",
+    "description": "Title and heading of the page that a confirmation email links to."
   },
   "config.errors": {
     "defaultMessage": "{count, plural, other {設定エラーが#件あります。}}",
@@ -86,5 +238,13 @@
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  },
+  "mail.verify_email.body": {
+    "defaultMessage": "{host} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。\n",
+    "description": "Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
+  },
+  "mail.verify_email.subject": {
+    "defaultMessage": "{host} のメールアドレスの確認",
+    "description": "Subject of the email that confirms a new account's email address. {host} is the server's domain name."
   }
 }

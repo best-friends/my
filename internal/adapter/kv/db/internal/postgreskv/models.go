@@ -192,6 +192,28 @@ type InstanceTextRevision struct {
 	RevisedAt       time.Time
 }
 
+type Invite struct {
+	ID              string
+	Code            string
+	CreatedByUserID *string
+	MaxUses         *int32
+	ExpiresAt       *time.Time
+	CreatedAt       time.Time
+}
+
+type InviteRedemption struct {
+	InviteID   string
+	Seq        int32
+	UserID     string
+	RedeemedAt time.Time
+}
+
+type InviteRevocation struct {
+	InviteID        string
+	RevokedByUserID *string
+	RevokedAt       time.Time
+}
+
 type Job struct {
 	ID             string
 	Type           string
@@ -255,6 +277,24 @@ type PasswordCredential struct {
 	UserID       string
 	PasswordHash string
 	SetAt        time.Time
+}
+
+type RegistrationApplication struct {
+	ID          string
+	UserID      string
+	Reason      *string
+	InviteID    *string
+	SubmittedAt time.Time
+}
+
+type RegistrationDecision struct {
+	ID              string
+	ApplicationID   string
+	Decision        string
+	DecidedBy       string
+	DecidedByUserID *string
+	Note            *string
+	DecidedAt       time.Time
 }
 
 type Role struct {
@@ -400,6 +440,11 @@ type UserEmailAddress struct {
 	AddedAt           time.Time
 }
 
+type UserEmailVerification struct {
+	EmailAddressID string
+	VerifiedAt     time.Time
+}
+
 type UserPreference struct {
 	UserID                  string
 	Locale                  string
@@ -414,6 +459,12 @@ type UserPrimaryEmail struct {
 	UserID            string
 	EmailAddressID    string
 	AddressNormalized string
+}
+
+type UserRegistrationState struct {
+	UserID string
+	State  string
+	Since  time.Time
 }
 
 type UserRole struct {
@@ -439,4 +490,19 @@ type UserRoleRevocation struct {
 type UserTimelineLanguage struct {
 	UserID   string
 	Language string
+}
+
+type UserToken struct {
+	ID             string
+	UserID         string
+	Purpose        string
+	EmailAddressID *string
+	TokenHash      []byte
+	ExpiresAt      time.Time
+	IssuedAt       time.Time
+}
+
+type UserTokenRedemption struct {
+	TokenID    string
+	RedeemedAt time.Time
 }

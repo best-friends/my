@@ -53,6 +53,15 @@ func (s *Service) DefaultLocale(ctx context.Context) (string, error) {
 	return settings.DefaultLocale(), nil
 }
 
+// RegistrationMode returns the current value of the registration_mode setting.
+func (s *Service) RegistrationMode(ctx context.Context) (instance.RegistrationMode, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return "", err
+	}
+	return settings.RegistrationMode(), nil
+}
+
 // SetSettingInput describes a change of a setting.
 type SetSettingInput struct {
 	Key   instance.SettingKey

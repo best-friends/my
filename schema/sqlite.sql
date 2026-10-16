@@ -606,3 +606,94 @@ CREATE TABLE kv_entries (
   PRIMARY KEY (namespace, key)
 ) STRICT;
 CREATE INDEX kv_entries_expires_at ON kv_entries (expires_at);
+
+-- ---------------------------------------------------------------------------------------------
+-- identity: registration, invites, email verification, and one-time tokens
+-- (data-model.md §4.1, FR-001, FR-002).
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: an email address was verified, at most once per address.
+CREATE TABLE user_email_verifications (
+  email_address_id TEXT NOT NULL PRIMARY KEY,
+  verified_at INTEGER NOT NULL
+) STRICT;
+
+-- Resource: a sign-up from the registration page, one per user. reason is the applicant's
+-- answer in approval mode; invite_id is the invite it redeemed in invite mode.
+CREATE TABLE registration_applications (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  reason TEXT,
+  invite_id TEXT,
+  submitted_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX registration_applications_user_id ON registration_applications (user_id);
+
+-- Event: an application was approved or rejected. decided_by_user_id is NULL for the system
+-- and for a decision from the CLI.
+CREATE TABLE registration_decisions (
+  id TEXT NOT NULL PRIMARY KEY,
+  application_id TEXT NOT NULL,
+  decision TEXT NOT NULL CHECK (decision IN ('approved', 'rejected')),
+  decided_by TEXT NOT NULL CHECK (decided_by IN ('moderator', 'system')),
+  decided_by_user_id TEXT,
+  note TEXT,
+  decided_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX registration_decisions_application_id_id ON registration_decisions (application_id, id DESC);
+
+-- Projection: the registration state of each user who signed up; users without a row (created
+-- with the CLI) are approved.
+CREATE TABLE user_registration_states (
+  user_id TEXT NOT NULL PRIMARY KEY,
+  state TEXT NOT NULL CHECK (state IN ('pending', 'approved', 'rejected')),
+  since INTEGER NOT NULL
+) STRICT;
+CREATE INDEX user_registration_states_state_since ON user_registration_states (state, since);
+
+-- Resource: an invite code. created_by_user_id is NULL for an invite from the CLI; max_uses
+-- and expires_at are NULL for no limit.
+CREATE TABLE invites (
+  id TEXT NOT NULL PRIMARY KEY,
+  code TEXT NOT NULL,
+  created_by_user_id TEXT,
+  max_uses INTEGER,
+  expires_at INTEGER,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX invites_code ON invites (code);
+
+-- Event: one use of an invite. seq is 1 + the uses before it, so that the primary key keeps
+-- concurrent sign-ups from exceeding max_uses.
+CREATE TABLE invite_redemptions (
+  invite_id TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  user_id TEXT NOT NULL,
+  redeemed_at INTEGER NOT NULL,
+  PRIMARY KEY (invite_id, seq)
+) STRICT;
+
+-- Event: an invite was revoked. revoked_by_user_id is NULL for a revocation from the CLI.
+CREATE TABLE invite_revocations (
+  invite_id TEXT NOT NULL PRIMARY KEY,
+  revoked_by_user_id TEXT,
+  revoked_at INTEGER NOT NULL
+) STRICT;
+
+-- Resource: a one-time token sent to a user. token_hash is the SHA-256 digest of the token.
+CREATE TABLE user_tokens (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  purpose TEXT NOT NULL CHECK (purpose IN ('email_verification', 'password_reset')),
+  email_address_id TEXT,
+  token_hash BLOB NOT NULL,
+  expires_at INTEGER NOT NULL,
+  issued_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX user_tokens_token_hash ON user_tokens (token_hash);
+
+-- Event: a token was used; the primary key makes every token single-use.
+CREATE TABLE user_token_redemptions (
+  token_id TEXT NOT NULL PRIMARY KEY,
+  redeemed_at INTEGER NOT NULL
+) STRICT;

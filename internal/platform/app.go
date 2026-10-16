@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres"
@@ -14,6 +15,8 @@ import (
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
 	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
+	mailnone "github.com/best-friends/my/internal/adapter/mail/none"
+	mailsmtp "github.com/best-friends/my/internal/adapter/mail/smtp"
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
@@ -24,6 +27,7 @@ import (
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
+	domainidentity "github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
 	"github.com/best-friends/my/internal/interface/authpages"
@@ -63,6 +67,8 @@ type App struct {
 	// KV is the key-value store that cfg.KV selects; RateLimiter keeps its counters there.
 	KV          kernel.KeyValueStore
 	RateLimiter *kernel.RateLimiter
+	// Mailer is the mail adapter that cfg.Mail selects.
+	Mailer kernel.Mailer
 
 	Accounts *account.Service
 	Identity *identity.Service
@@ -190,13 +196,27 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
+	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
 		RateLimiter: a.RateLimiter,
-		// The default locale is an instance setting in the database, never configuration
-		// (docs/reference/configuration.md); it is read per registration so changes apply at once.
+		// The default locale and the registration mode are instance settings in the database,
+		// never configuration (docs/reference/configuration.md); they are read per registration so
+		// changes apply at once.
 		DefaultLocale: a.Instance.DefaultLocale,
+		RegistrationMode: func(ctx context.Context) (domainidentity.RegistrationMode, error) {
+			mode, err := a.Instance.RegistrationMode(ctx)
+			return domainidentity.RegistrationMode(mode), err
+		},
+		Mailer: a.Mailer,
+		// mail = none delivers nothing, so a moderator's approval stands in for verification (FR-002).
+		RequireEmailVerification: cfg.Mail != "none",
+		Messages:                 a.Messages,
+		BaseURL:                  "https://" + cfg.Host,
 	})
 	graph.RegisterProjectors(a.Projectors, follows)
 	a.Graph = graph.NewService(graph.Deps{
@@ -222,6 +242,28 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 
 func (a *App) setDBQueue(q *queuedb.Queue) {
 	a.Jobs, a.Outbox, a.DeadJobs, a.source = q, q, q, q
+}
+
+func newMailer(cfg *config.Config, logger *slog.Logger) (kernel.Mailer, error) {
+	switch cfg.Mail {
+	case "", "none":
+		return mailnone.New(logger), nil
+	case "smtp":
+		return mailsmtp.New(mailsmtp.Options{
+			Host: cfg.SMTPHost, Port: cfg.SMTPPort, Username: cfg.SMTPUsername, Password: cfg.SMTPPassword,
+			From: cfg.MailFrom, HelloName: hostOnly(cfg.Host),
+		})
+	default:
+		return nil, fmt.Errorf("mail %q is not implemented yet", cfg.Mail)
+	}
+}
+
+// hostOnly returns host without a port.
+func hostOnly(host string) string {
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		return h
+	}
+	return host
 }
 
 func newKeyManager(cfg *config.Config) (kernel.KeyManager, error) {

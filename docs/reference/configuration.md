@@ -48,6 +48,12 @@ An instance setting that has never been set reads as its default, which is defin
 | [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
 | [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
 | [`kek_previous`](#kek_previous) | `MY_KEK_PREVIOUS` | none | no | yes |
+| [`mail`](#mail) | `MY_MAIL` | `none` | no | no |
+| [`mail_from`](#mail_from) | `MY_MAIL_FROM` | none | when `mail` is not `none` | no |
+| [`smtp_host`](#smtp_host) | `MY_SMTP_HOST` | none | when `mail = smtp` | no |
+| [`smtp_port`](#smtp_port) | `MY_SMTP_PORT` | `587` | no | no |
+| [`smtp_username`](#smtp_username) | `MY_SMTP_USERNAME` | none | no | no |
+| [`smtp_password`](#smtp_password) | `MY_SMTP_PASSWORD` | none | no | yes |
 
 ## Settings
 
@@ -211,5 +217,59 @@ Key-encryption key for actor private keys: 32 random bytes in standard base64 (f
 Previous key-encryption keys, comma-separated, each in the format of `kek`. They only decrypt; new secrets are always encrypted with `kek`. Set the replaced key here while rotating `kek` (docs/operations/key-management.md).
 
 - Environment variable: `MY_KEK_PREVIOUS` or `MY_KEK_PREVIOUS_FILE`
+- Default: none
+- Required: no
+
+### `mail`
+
+Mailer adapter for verification emails (FR-002). With `none`, no email reaches users, so an unverified address does not keep a user out and sign-ups in the `open` registration mode wait for a moderator's approval instead.
+
+- Environment variable: `MY_MAIL`
+- Default: `none`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `none` | yes | Logs each message, including its links, instead of sending it; for development and instances without email. |
+| `smtp` | yes | SMTP submission with mandatory STARTTLS (`smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`). |
+| `ses` | not in v0 | Amazon SES. |
+
+### `mail_from`
+
+Sender address of emails, as a bare address such as `noreply@social.example`.
+
+- Environment variable: `MY_MAIL_FROM`
+- Default: none
+- Required: when `mail` is not `none`
+
+### `smtp_host`
+
+Host name of the SMTP server. The server must offer STARTTLS with a certificate valid for this name; the connection is refused otherwise.
+
+- Environment variable: `MY_SMTP_HOST`
+- Default: none
+- Required: when `mail = smtp`
+
+### `smtp_port`
+
+TCP port of the SMTP server (submission).
+
+- Environment variable: `MY_SMTP_PORT`
+- Default: `587`
+- Required: no
+
+### `smtp_username`
+
+User name for SMTP AUTH PLAIN, sent only after STARTTLS. Leave it empty for a server that needs no authentication.
+
+- Environment variable: `MY_SMTP_USERNAME`
+- Default: none
+- Required: no
+
+### `smtp_password`
+
+Password for SMTP AUTH PLAIN.
+
+- Environment variable: `MY_SMTP_PASSWORD` or `MY_SMTP_PASSWORD_FILE`
 - Default: none
 - Required: no

@@ -14,4 +14,5 @@
 </div>
 <button type="submit">{{.L.ServerAuthSignInSubmit}}</button>
 </form>
+{{if .CanSignUp}}<p><a href="/auth/sign_up">{{.L.ServerAuthSignInSignUpLink}}</a></p>{{end}}
 {{end}}
