@@ -19,6 +19,10 @@
     "defaultMessage": "‮∀u nuǝxdǝɔʇǝp ǝɹɹoɹ oɔɔnɹɹǝp. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.invalid_parameter": {
+    "defaultMessage": "‮⊥ɥǝ dɐɹɐɯǝʇǝɹ {name} ɥɐs ɐu ıuʌɐʅıp ʌɐʅnǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "‮⊥ɥǝ {method} ɯǝʇɥop ıs uoʇ ɐʅʅoʍǝp ɟoɹ ʇɥıs ɹǝsonɹɔǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

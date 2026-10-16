@@ -13,12 +13,12 @@ make check
 ```
 
 `make check` はネットワーク不要のチェック（Markdown lint、ADR 索引、Go の `go vet` / golangci-lint / テスト /
-`CGO_ENABLED=0` ビルド / 依存ライセンス検査 / sqlc 生成物の検査、i18n カタログ検査、`Dockerfile` の Go イメージと `.tool-versions` の一致）をすべて実行します。初回のみ Go モジュールとツール、`tools/i18n` の npm パッケージのダウンロードが必要です。
+`CGO_ENABLED=0` ビルド / 依存ライセンス検査 / sqlc 生成物の検査、i18n カタログ検査、クライアント API の spec の lint と生成物の検査、`Dockerfile` の Go イメージと `.tool-versions` の一致、Web クライアントの型検査・ビルド・依存ライセンス検査）をすべて実行します。初回のみ Go モジュールとツール、`tools/i18n` と `app/` の npm パッケージのダウンロードが必要です。
 
-- Go ツール（govulncheck, go-licenses, sqlc）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
+- Go ツール（govulncheck, go-licenses, sqlc, oapi-codegen）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
 - 脆弱性検査はネットワークが必要なため `make check` には含めず、`make go-vuln` で実行します（CI では毎回実行）。
 - Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `make check` には含めず、`make docker-smoke` で実行します（CI では毎回実行）。
-- 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`。`tools/i18n` の npm パッケージも同じ一覧で検査）に限ります。
+- 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`。`tools/i18n` と `app/` の npm パッケージも同じ一覧で検査）に限ります。
   増やす場合は PR で理由を説明してください。
 
 ## 進め方
@@ -57,6 +57,17 @@ make db-down                       # コンテナとデータを削除
   （例: `PG_BOOTSTRAP='psql -v ON_ERROR_STOP=1 -q "postgres://..."'`）。開発用 DB にも準備 SQL を先に流しておきます。
 - 差分の適用に失敗する変更（v0 では許容される破壊的変更、[ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)）は `make db-reset` で作り直します。
 - CI は両方言について、空の DB への適用と、適用後に差分が残らないことを検査します（`make db-check`）。
+
+## クライアント API
+
+- `api/openapi.yaml`（OpenAPI 3.1）が正です。Go の strict server は oapi-codegen（`tools/go.mod` で固定）で `internal/interface/clientapi/api.gen.go` に生成し、生成物はコミットします（[ADR-0029](docs/adr/0029-api-code-generation.md)）。
+- 規約とエンドポイントの追加手順は [docs/architecture/client-api.md](docs/architecture/client-api.md) にあります。
+
+```sh
+make generate        # api/openapi.yaml から生成し直す
+make api-lint        # spec を Redocly CLI で lint（使える 3.1 の部分集合を含む。設定は api/redocly.yaml）
+make api-check       # api-lint と、生成物が最新でなければ失敗する generate-check（make check に含まれる）
+```
 
 ## SQL とデータベースのテスト
 

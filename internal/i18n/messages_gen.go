@@ -39,6 +39,13 @@ func (l *Localizer) ServerErrorsInternal() string {
 	return l.format("server:errors.internal", nil)
 }
 
+// ServerErrorsInvalidParameter formats "server:errors.invalid_parameter". Detail of an API error (HTTP 400) when a path, query, or header parameter cannot be parsed. {name} is the parameter name, e.g. limit (not translated).
+//
+//	en: The parameter {name} has an invalid value.
+func (l *Localizer) ServerErrorsInvalidParameter(name string) string {
+	return l.format("server:errors.invalid_parameter", map[string]any{"name": name})
+}
+
 // ServerErrorsMethodNotAllowed formats "server:errors.method_not_allowed". API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated).
 //
 //	en: The {method} method is not allowed for this resource.

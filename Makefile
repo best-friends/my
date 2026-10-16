@@ -9,7 +9,7 @@ MARKDOWNLINT := bunx --bun markdownlint-cli2@0.23.2
 GO_TOOL := go tool -modfile=tools/go.mod
 # Licenses compatible with AGPL-3.0-only (ADR-0011). Anything else, including unknown, fails.
 GO_ALLOWED_LICENSES := 0BSD,AGPL-3.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,BSL-1.0,CC0-1.0,ISC,MIT,MPL-2.0,Unlicense,Zlib
-# npm dependencies of tools/i18n must satisfy the same allowlist.
+# npm dependencies of tools/i18n and of the client workspace app/ must satisfy the same allowlist.
 NPM_ALLOWED_LICENSES := $(GO_ALLOWED_LICENSES)
 # Version that `make build` stamps into cmd/my.
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -21,7 +21,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
-check: lint-docs adr-index-check go-check i18n-check dockerfile-check ## Run every offline check CI runs
+check: lint-docs adr-index-check go-check i18n-check dockerfile-check api-check web-check ## Run every offline check CI runs
 
 lint-docs: ## Lint Markdown files
 	$(MARKDOWNLINT)
@@ -52,6 +52,22 @@ sqlc: ## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
 
 sqlc-check: ## Fail if the committed sqlc-generated code is stale
 	scripts/sqlc.sh --check
+
+# --- Client API (ADR-0016, ADR-0029) ----------------------------------------------------------
+# api/openapi.yaml is the source of truth; oapi-codegen is pinned in tools/go.mod and Redocly CLI here.
+REDOCLY := REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true bunx --bun @redocly/cli@2.57.0
+
+.PHONY: generate generate-check api-lint api-check
+generate: ## Regenerate the client API code from api/openapi.yaml (scripts/generate.sh)
+	scripts/generate.sh
+
+generate-check: ## Fail if the committed client API code is stale
+	scripts/generate.sh --check
+
+api-lint: ## Lint api/openapi.yaml, including the supported OpenAPI 3.1 subset (api/redocly.yaml)
+	$(REDOCLY) lint --config api/redocly.yaml api/openapi.yaml
+
+api-check: api-lint generate-check ## Lint the client API spec and fail on stale generated code
 
 go-check: go-mod-check go-vet go-lint go-test go-build go-licenses sqlc-check ## Run all offline Go checks
 
@@ -165,3 +181,24 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES)
 	cd tools/i18n && bun test
 	cd tools/i18n && bun --bun run tsc --noEmit -p .
+
+# --- Web client (ADR-0025, ADR-0026) ----------------------------------------------------------
+# app/ is the Bun workspace of the TypeScript clients (app/ui = @my/ui, app/web). Bun installs the
+# packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
+# `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
+
+.PHONY: web-install web-typecheck web-build web-licenses web-check
+
+web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
+	cd app && bun install --frozen-lockfile
+
+web-typecheck: web-install ## Type-check every client package with tsc
+	cd app && bun run typecheck
+
+web-build: web-install ## Build app/web into app/web/dist (fails when React Compiler compiled nothing)
+	cd app && bun run build
+
+web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
+	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules
+
+web-check: web-typecheck web-build web-licenses ## Run every offline web client check

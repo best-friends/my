@@ -1,0 +1,100 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Lint rules of api/openapi.yaml for Redocly CLI (pinned in the Makefile, run by `make api-lint`).
+# Besides the recommended rules, the custom rules keep the document inside the OpenAPI 3.1
+# subset that oapi-codegen and openapi-typescript support (ADR-0029) and enforce the
+# conventions of ADR-0016. docs/architecture/client-api.md lists the conventions.
+extends:
+  - recommended
+
+rules:
+  # Every operation has an operationId: it names the generated Go method and TS operation.
+  operation-operationId: error
+  # Problems are documented once, as the default response.
+  operation-4xx-response: off
+  # The shared parts (Id, Cursor, PageInfo, Limit) exist before the operations that use them.
+  no-unused-components: off
+  # Errors are RFC 9457 problem documents: every operation documents a default response,
+  # whose $ref is components/responses/Problem.
+  rule/operation-default-problem:
+    subject:
+      type: Responses
+    assertions:
+      required: [default]
+    message: Every operation has a `default` response that refers to `#/components/responses/Problem` (ADR-0016).
+  rule/default-response-is-problem:
+    subject:
+      type: Responses
+      property: default
+    assertions:
+      ref: /^#\/components\/responses\/Problem$/
+    message: The `default` response refers to `#/components/responses/Problem` (ADR-0016).
+  # snake_case property and parameter names, like the rest of the API.
+  rule/property-snake-case:
+    subject:
+      type: SchemaProperties
+    assertions:
+      casing: snake_case
+    message: Property names are snake_case.
+  rule/parameter-snake-case:
+    subject:
+      type: Parameter
+      property: name
+    where:
+      - subject:
+          type: Parameter
+          property: in
+        assertions:
+          enum: [path, query]
+    assertions:
+      casing: snake_case
+    message: Path and query parameter names are snake_case.
+  # JSON Schema keywords that the generators do not support (ADR-0029).
+  rule/schema-supported-keywords:
+    subject:
+      type: Schema
+    assertions:
+      disallowed:
+        - $dynamicRef
+        - $dynamicAnchor
+        - $anchor
+        - $defs
+        - if
+        - then
+        - else
+        - prefixItems
+        - contains
+        - minContains
+        - maxContains
+        - dependentSchemas
+        - dependentRequired
+        - unevaluatedProperties
+        - unevaluatedItems
+        - patternProperties
+        - propertyNames
+        - contentEncoding
+        - contentMediaType
+        - contentSchema
+        - not
+    message: This JSON Schema keyword is outside the OpenAPI 3.1 subset that the code generators support (ADR-0029).
+  # A type is one name and never null: a property without a value is left out of the object.
+  rule/schema-single-type:
+    subject:
+      type: Schema
+      property: type
+    assertions:
+      enum: [string, number, integer, boolean, array, object]
+    message: A schema has a single non-null `type`; a property without a value is left out of the object instead of being `null`.
+  # Webhooks and callbacks are not generated.
+  rule/no-webhooks:
+    subject:
+      type: Root
+    assertions:
+      disallowed: [webhooks, jsonSchemaDialect]
+    message: Webhooks and jsonSchemaDialect are outside the supported OpenAPI 3.1 subset (ADR-0029).
+  rule/no-callbacks:
+    subject:
+      type: Operation
+    assertions:
+      disallowed: [callbacks]
+    message: Callbacks are outside the supported OpenAPI 3.1 subset (ADR-0029).
