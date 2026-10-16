@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@tailwindcss/oxide": "4.3.3",
-    "@types/bun": "1.4.3",
+    "@types/bun": "1.4.2",
     "@types/react": "19.3.0",
     "react": "19.3.0",
     "tailwindcss": "4.3.3",
