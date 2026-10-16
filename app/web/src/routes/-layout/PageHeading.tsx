@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 export type PageHeadingProps = {
   children: ReactNode;
-  /** An ID, for what the heading names (a feed's `aria-labelledby`). */
+  /** For a region named by the page heading (a feed with `aria-labelledby`). */
   id?: string;
 };
 

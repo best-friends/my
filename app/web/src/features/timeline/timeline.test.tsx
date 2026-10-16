@@ -5,13 +5,13 @@ import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Status } from "./api/timelines";
-import { apiBase, oauthPaths, problem, statusFixture, statusPage, tokenResponse } from "../../test/msw/handlers";
+import { apiBase, oauthPaths, problem, timelineStatusFixture, statusPage, tokenResponse } from "../../test/msw/handlers";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 
 /** A status like the fixture, with its own ID and text. */
 function status(n: number, overrides: Partial<Status> = {}): Status {
-  return { ...statusFixture, id: `0192f0c4-7a8e-7000-8000-${String(n).padStart(12, "0")}`, content: `<p>Post ${String(n)}</p>`, ...overrides };
+  return { ...timelineStatusFixture, id: `0192f0c4-7a8e-7000-8000-${String(n).padStart(12, "0")}`, content: `<p>Post ${String(n)}</p>`, ...overrides };
 }
 
 beforeEach(() => {
@@ -118,7 +118,7 @@ describe("a status card", () => {
   test("shows a boost as the boosted post under the booster's name", async () => {
     const original = status(1, { created_at: "2026-10-16T11:55:00Z" });
     const boost = status(2, {
-      account: { ...statusFixture.account, id: "0192f0c4-7a8e-7000-8000-000000000003", username: "carol", acct: "carol@remote.example", display_name: "" },
+      account: { ...timelineStatusFixture.account, id: "0192f0c4-7a8e-7000-8000-000000000003", username: "carol", acct: "carol@remote.example", display_name: "" },
       content: "",
       created_at: "2026-10-16T11:59:30Z",
       boost: original,
