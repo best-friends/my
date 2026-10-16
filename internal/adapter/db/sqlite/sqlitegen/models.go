@@ -78,6 +78,32 @@ type AccountProfileRevision struct {
 	RevisedAt     int64
 }
 
+type DeadJob struct {
+	ID             string
+	Type           string
+	Payload        string
+	IdempotencyKey sql.NullString
+	OrderingKey    sql.NullString
+	Attempt        int64
+	LastError      string
+	CreatedAt      int64
+	FailedAt       int64
+}
+
+type Job struct {
+	ID             string
+	Type           string
+	Payload        string
+	IdempotencyKey sql.NullString
+	OrderingKey    sql.NullString
+	Attempt        int64
+	RunAt          int64
+	LockedBy       sql.NullString
+	LockedUntil    sql.NullInt64
+	LastError      sql.NullString
+	CreatedAt      int64
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -88,6 +114,16 @@ type LocalAccount struct {
 type LocalAccountPrivateKey struct {
 	AccountKeyID  string
 	PrivateKeyEnc []byte
+}
+
+type OutboxEvent struct {
+	ID             string
+	JobType        string
+	Payload        string
+	IdempotencyKey sql.NullString
+	OrderingKey    sql.NullString
+	RunAt          int64
+	CreatedAt      int64
 }
 
 type PasswordCredential struct {

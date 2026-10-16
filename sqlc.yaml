@@ -1,13 +1,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
-# sqlc configuration (ADR-0003): one entry per dialect. The sqlc version is pinned in
-# tools/go.mod. Regenerate with `make sqlc`; `make sqlc-check` (part of `make check`) fails
-# when the committed code is stale.
+# sqlc configuration (ADR-0003). The sqlc version is pinned in tools/go.mod. Regenerate with
+# `make sqlc`; `make sqlc-check` (part of `make check`) fails when the committed code is stale.
 #
-# Queries live in queries/<dialect>/*.sql, read schema/<dialect>.sql, and generate into
-# internal/adapter/db/<dialect>/<dialect>gen. Keep query files ASCII: the SQLite engine of sqlc
-# miscounts byte offsets after a non-ASCII character and cuts the generated queries short.
-# Comments above a query become the doc comment of its generated method.
+# Product queries live in queries/<dialect>/*.sql, read schema/<dialect>.sql, and generate into
+# internal/adapter/db/<dialect>/<dialect>gen. Comments above a query become the doc comment of
+# its generated method.
+#
+# The queue entries generate the queries of the database job queue (internal/adapter/queue/db)
+# from queries/<dialect>/queue/*.sql into internal/adapter/queue/db/internal/<dialect>queue.
+#
+# Keep query files ASCII-only: the sqlite engine of sqlc miscounts byte offsets after a
+# multi-byte character, which cuts generated queries short or rejects sqlc.arg / @name rewrites.
 version: "2"
 sql:
   - name: sqlite
@@ -38,3 +42,26 @@ sql:
             go_type:
               type: time.Time
               pointer: true
+  - name: sqlite-queue
+    engine: sqlite
+    schema: schema/sqlite.sql
+    queries: queries/sqlite/queue
+    gen:
+      go:
+        package: sqlitequeue
+        out: internal/adapter/queue/db/internal/sqlitequeue
+        emit_empty_slices: true
+  - name: postgres-queue
+    engine: postgresql
+    schema: schema/postgres.sql
+    queries: queries/postgres/queue
+    gen:
+      go:
+        package: postgresqueue
+        out: internal/adapter/queue/db/internal/postgresqueue
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time

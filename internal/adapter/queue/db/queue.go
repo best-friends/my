@@ -1,0 +1,203 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package db
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/best-friends/my/internal/adapter/db/postgres"
+	"github.com/best-friends/my/internal/adapter/db/sqlite"
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/uow"
+)
+
+// Options configure a Queue or an Outbox. Both fields are required.
+type Options struct {
+	Clock kernel.Clock
+	IDs   kernel.IDGenerator
+}
+
+func (o Options) check() {
+	if o.Clock == nil || o.IDs == nil {
+		panic("queue/db: Options.Clock and Options.IDs are required")
+	}
+}
+
+// store runs the dialect's queries inside a transaction of the dialect's UnitOfWork.
+type store interface {
+	insertJob(ctx context.Context, tx uow.Tx, j queue.Job) error
+	claim(ctx context.Context, tx uow.Tx, worker string, now, until time.Time) (queue.Job, bool, error)
+	deleteClaimed(ctx context.Context, tx uow.Tx, id, worker string, attempt int) (int64, error)
+	release(ctx context.Context, tx uow.Tx, id, worker string, attempt, newAttempt int, runAt time.Time, lastErr string) (int64, error)
+	insertDeadFromClaim(ctx context.Context, tx uow.Tx, id, worker string, attempt int, lastErr string, failedAt time.Time) (int64, error)
+	listDead(ctx context.Context, tx uow.Tx, limit int) ([]queue.DeadJob, error)
+	requeueDead(ctx context.Context, tx uow.Tx, id string, runAt time.Time) error
+	deleteDead(ctx context.Context, tx uow.Tx, id string) (int64, error)
+	insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) error
+	listOutbox(ctx context.Context, tx uow.Tx, limit int) ([]queue.Job, error)
+	deleteOutbox(ctx context.Context, tx uow.Tx, id string) error
+}
+
+// Queue is the database job queue.
+type Queue struct {
+	db   uow.UnitOfWork
+	st   store
+	opts Options
+}
+
+var (
+	_ queue.JobQueue = (*Queue)(nil)
+	_ queue.Outbox   = (*Queue)(nil)
+	_ queue.Source   = (*Queue)(nil)
+	_ queue.DeadJobs = (*Queue)(nil)
+)
+
+// NewSQLite returns the queue kept in the SQLite database d.
+func NewSQLite(d *sqlite.DB, opts Options) *Queue {
+	opts.check()
+	return &Queue{db: d, st: sqliteStore{}, opts: opts}
+}
+
+// NewPostgres returns the queue kept in the PostgreSQL database d.
+func NewPostgres(d *postgres.DB, opts Options) *Queue {
+	opts.check()
+	return &Queue{db: d, st: postgresStore{}, opts: opts}
+}
+
+// build turns new jobs into stored jobs with fresh IDs.
+func build(opts Options, jobs []queue.NewJob) ([]queue.Job, error) {
+	now := opts.Clock.Now()
+	out := make([]queue.Job, len(jobs))
+	for i, n := range jobs {
+		j, err := n.Build(opts.IDs.NewID(), now)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = j
+	}
+	return out, nil
+}
+
+// Enqueue implements queue.JobQueue in a transaction of its own.
+func (q *Queue) Enqueue(ctx context.Context, jobs ...queue.NewJob) error {
+	built, err := build(q.opts, jobs)
+	if err != nil {
+		return err
+	}
+	return q.db.Tx(ctx, func(tx uow.Tx) error { return q.insert(ctx, tx, built) })
+}
+
+// EnqueueTx implements queue.Outbox: it inserts the jobs in tx, so they commit or roll back
+// with the caller's domain writes. tx must come from the database this queue lives in.
+func (q *Queue) EnqueueTx(ctx context.Context, tx uow.Tx, jobs ...queue.NewJob) error {
+	// IDs are generated per attempt: a retried transaction rolled the previous rows back.
+	built, err := build(q.opts, jobs)
+	if err != nil {
+		return err
+	}
+	return q.insert(ctx, tx, built)
+}
+
+func (q *Queue) insert(ctx context.Context, tx uow.Tx, jobs []queue.Job) error {
+	for _, j := range jobs {
+		if err := q.st.insertJob(ctx, tx, j); err != nil {
+			return fmt.Errorf("queue/db: enqueue %s: %w", j.Type, err)
+		}
+	}
+	return nil
+}
+
+// Claim implements queue.Source.
+func (q *Queue) Claim(ctx context.Context, worker string, now time.Time, lease time.Duration) (queue.Job, bool, error) {
+	var (
+		j  queue.Job
+		ok bool
+	)
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		j, ok, err = q.st.claim(ctx, tx, worker, now, now.Add(lease))
+		return err
+	})
+	if err != nil {
+		return queue.Job{}, false, fmt.Errorf("queue/db: claim: %w", err)
+	}
+	return j, ok, nil
+}
+
+// Complete implements queue.Source.
+func (q *Queue) Complete(ctx context.Context, worker string, j queue.Job) error {
+	return q.db.Tx(ctx, func(tx uow.Tx) error {
+		n, err := q.st.deleteClaimed(ctx, tx, j.ID, worker, j.Attempt)
+		return claimResult("complete", n, err)
+	})
+}
+
+// Release implements queue.Source. The database has no delay limit, so runAt is used as is.
+func (q *Queue) Release(ctx context.Context, worker string, j queue.Job, attempt int, runAt time.Time, lastErr string) error {
+	return q.db.Tx(ctx, func(tx uow.Tx) error {
+		n, err := q.st.release(ctx, tx, j.ID, worker, j.Attempt, attempt, kernel.Normalize(runAt), lastErr)
+		return claimResult("release", n, err)
+	})
+}
+
+// Bury implements queue.Source.
+func (q *Queue) Bury(ctx context.Context, worker string, j queue.Job, lastErr string, failedAt time.Time) error {
+	return q.db.Tx(ctx, func(tx uow.Tx) error {
+		n, err := q.st.insertDeadFromClaim(ctx, tx, j.ID, worker, j.Attempt, lastErr, kernel.Normalize(failedAt))
+		if err := claimResult("bury", n, err); err != nil {
+			return err
+		}
+		n, err = q.st.deleteClaimed(ctx, tx, j.ID, worker, j.Attempt)
+		return claimResult("bury", n, err)
+	})
+}
+
+func claimResult(op string, rows int64, err error) error {
+	switch {
+	case err != nil:
+		return fmt.Errorf("queue/db: %s: %w", op, err)
+	case rows == 0:
+		return fmt.Errorf("queue/db: %s: %w", op, queue.ErrLeaseLost)
+	}
+	return nil
+}
+
+// ListDeadJobs implements queue.DeadJobs.
+func (q *Queue) ListDeadJobs(ctx context.Context, limit int) ([]queue.DeadJob, error) {
+	if limit <= 0 {
+		return nil, nil
+	}
+	var out []queue.DeadJob
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		out, err = q.st.listDead(ctx, tx, limit)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("queue/db: list dead jobs: %w", err)
+	}
+	return out, nil
+}
+
+// RequeueDeadJob implements queue.DeadJobs.
+func (q *Queue) RequeueDeadJob(ctx context.Context, id string) error {
+	now := q.opts.Clock.Now()
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		if err := q.st.requeueDead(ctx, tx, id, now); err != nil {
+			return err
+		}
+		n, err := q.st.deleteDead(ctx, tx, id)
+		if err == nil && n == 0 {
+			return queue.ErrDeadJobNotFound
+		}
+		return err
+	})
+	if err != nil && !errors.Is(err, queue.ErrDeadJobNotFound) {
+		return fmt.Errorf("queue/db: requeue dead job: %w", err)
+	}
+	return err
+}

@@ -78,6 +78,32 @@ type AccountProfileRevision struct {
 	RevisedAt     time.Time
 }
 
+type DeadJob struct {
+	ID             string
+	Type           string
+	Payload        []byte
+	IdempotencyKey *string
+	OrderingKey    *string
+	Attempt        int32
+	LastError      string
+	CreatedAt      time.Time
+	FailedAt       time.Time
+}
+
+type Job struct {
+	ID             string
+	Type           string
+	Payload        []byte
+	IdempotencyKey *string
+	OrderingKey    *string
+	Attempt        int32
+	RunAt          time.Time
+	LockedBy       *string
+	LockedUntil    *time.Time
+	LastError      *string
+	CreatedAt      time.Time
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -88,6 +114,16 @@ type LocalAccount struct {
 type LocalAccountPrivateKey struct {
 	AccountKeyID  string
 	PrivateKeyEnc []byte
+}
+
+type OutboxEvent struct {
+	ID             string
+	JobType        string
+	Payload        []byte
+	IdempotencyKey *string
+	OrderingKey    *string
+	RunAt          time.Time
+	CreatedAt      time.Time
 }
 
 type PasswordCredential struct {

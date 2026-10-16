@@ -159,3 +159,8 @@ func txOf(tx uow.Tx) (*sql.Tx, error) {
 	}
 	return t.tx, nil
 }
+
+// SQLTx returns the database/sql transaction behind tx, for the adapters of other ports that
+// keep their tables in this database (the database job queue, internal/adapter/queue/db).
+// It fails for a Tx of another adapter.
+func SQLTx(tx uow.Tx) (*sql.Tx, error) { return txOf(tx) }
