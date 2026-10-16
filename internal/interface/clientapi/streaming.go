@@ -1,0 +1,231 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package clientapi
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"slices"
+	"time"
+
+	appcontent "github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/kernel"
+	appnotification "github.com/best-friends/my/internal/app/notification"
+	"github.com/best-friends/my/internal/app/stream"
+	apptimeline "github.com/best-friends/my/internal/app/timeline"
+	"github.com/best-friends/my/internal/domain/notification"
+)
+
+// Defaults of the streaming endpoint.
+const (
+	// DefaultStreamHeartbeat is how often an idle stream sends a comment line, which keeps
+	// proxies from closing it and lets the server notice a client that has gone.
+	DefaultStreamHeartbeat = 30 * time.Second
+	// streamWriteTimeout bounds each write to a stream, so that a client that stops reading
+	// releases its stream.
+	streamWriteTimeout = 10 * time.Second
+)
+
+// ProblemTypeTooManyStreams is the problem type of a stream refused because the user already
+// holds as many open streams as the server allows.
+const ProblemTypeTooManyStreams = "/api/v1/problems/too-many-streams"
+
+// streamingPattern is the http.ServeMux pattern of the streaming endpoint.
+const streamingPattern = "GET " + BasePath + "/streaming"
+
+// HomeEntries tells whether a home timeline lists a new entry. *apptimeline.Service implements it.
+type HomeEntries interface {
+	HomeEntry(ctx context.Context, viewer appcontent.Viewer, id string, q apptimeline.Query) (apptimeline.Entry, bool, error)
+}
+
+// registerStreaming registers GET /streaming (operation streamEvents), which the strict server
+// does not generate (ADR-0029), behind the same guard as the generated operations.
+func (s *Server) registerStreaming(r Router) {
+	r.Handle(streamingPattern, s.guard(streamingPattern, http.HandlerFunc(s.serveStreaming)))
+}
+
+// serveStreaming serves GET /api/v1/streaming: a Server-Sent Events stream of the viewer's new
+// home timeline entries (event update, data a Status) and notifications (event notification,
+// data a Notification). The stream subscribes to the signals of stream.Subscriber and reads
+// each change back through the use cases, as the viewer would see it in the home timeline or
+// the notification list. It ends when the client goes, the subscription ends (the broker shuts
+// down or the client fell behind), a write times out, or the access token is no longer valid,
+// which every heartbeat checks again.
+func (s *Server) serveStreaming(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	v, ok := ViewerFrom(ctx)
+	if !ok {
+		s.responseError(w, r, errNoViewer)
+		return
+	}
+	if s.o.Streams == nil {
+		s.writeProblem(w, r, http.StatusServiceUnavailable, ProblemTypeBlank, s.localizer(r).ServerErrorsStreamingUnavailable(), "")
+		return
+	}
+	sub, err := s.o.Streams.Subscribe(v.AccountID)
+	switch {
+	case errors.Is(err, stream.ErrTooManySubscriptions):
+		l := s.localizer(r)
+		s.writeProblem(w, r, http.StatusTooManyRequests, ProblemTypeTooManyStreams, l.ServerErrorsRateLimited(), l.ServerErrorsStreamingTooMany())
+		return
+	case errors.Is(err, stream.ErrClosed):
+		s.writeProblem(w, r, http.StatusServiceUnavailable, ProblemTypeBlank, s.localizer(r).ServerErrorsStreamingUnavailable(), "")
+		return
+	case err != nil:
+		s.responseError(w, r, err)
+		return
+	}
+	defer sub.Close()
+
+	home, err := s.timelineQuery(ctx, &v, nil, nil, true)
+	if err != nil {
+		s.responseError(w, r, err)
+		return
+	}
+	st := &streamState{
+		s: s, w: w, rc: http.NewResponseController(w), viewer: v, home: home,
+		// Notifications from the moment the stream opens; earlier ones are in the list.
+		lastNotification: kernel.UUIDv7Floor(time.Now()),
+	}
+	token, _, _ := bearerToken(r.Header)
+
+	// The stream outlives the server's read timeout, which would otherwise end it.
+	if err := st.rc.SetReadDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
+		s.responseError(w, r, err)
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "text/event-stream")
+	h.Set("Cache-Control", cacheNoStore)
+	h.Set("X-Accel-Buffering", "no") // nginx: do not buffer the stream
+	w.WriteHeader(http.StatusOK)
+	if st.write(": connected\n\n") != nil {
+		return
+	}
+
+	heartbeat := s.o.StreamHeartbeat
+	if heartbeat <= 0 {
+		heartbeat = DefaultStreamHeartbeat
+	}
+	ticker := time.NewTicker(heartbeat)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-sub.Done():
+			return
+		case <-ticker.C:
+			if _, err := s.o.Authenticator.AuthenticateBearer(ctx, token); err != nil {
+				return // revoked, expired, or the account became unusable
+			}
+			if st.write(": heartbeat\n\n") != nil {
+				return
+			}
+		case e := <-sub.Events():
+			if err := st.handle(ctx, e); err != nil {
+				if !errors.Is(err, errStreamWrite) && ctx.Err() == nil {
+					s.o.Logger.ErrorContext(ctx, "streaming", slog.String("account_id", v.AccountID), slog.Any("error", err))
+				}
+				return
+			}
+		}
+	}
+}
+
+// errStreamWrite reports a write to the client that failed: the client went or stopped reading.
+var errStreamWrite = errors.New("clientapi: write to the stream")
+
+// streamState is one open stream.
+type streamState struct {
+	s      *Server
+	w      http.ResponseWriter
+	rc     *http.ResponseController
+	viewer Viewer
+	// home selects the viewer's timeline languages.
+	home apptimeline.Query
+	// lastNotification is the ID of the last notification sent, or the floor of the time the
+	// stream opened.
+	lastNotification string
+}
+
+// handle sends what signal e means for the viewer.
+func (st *streamState) handle(ctx context.Context, e stream.Event) error {
+	switch e.Kind {
+	case stream.KindHomeEntry:
+		return st.homeEntry(ctx, e.EntryID)
+	case stream.KindNotifications:
+		return st.notifications(ctx)
+	}
+	return nil
+}
+
+func (st *streamState) homeEntry(ctx context.Context, id string) error {
+	if st.s.o.HomeEntries == nil {
+		return nil
+	}
+	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: st.viewer.AccountID}
+	entry, ok, err := st.s.o.HomeEntries.HomeEntry(ctx, viewer, id, st.home)
+	if err != nil || !ok {
+		return err
+	}
+	statuses, err := st.s.statuses(ctx, viewer, entryItems([]apptimeline.Entry{entry}))
+	if err != nil {
+		return err
+	}
+	for _, status := range statuses {
+		if err := st.event("update", status); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// notifications sends the viewer's notifications after the last one sent, oldest first.
+func (st *streamState) notifications(ctx context.Context) error {
+	ns, err := st.s.o.Notifications.List(ctx, st.viewer.AccountID, appnotification.Query{Limit: appnotification.MaxPageLimit})
+	if err != nil {
+		return fmt.Errorf("list the notifications of %s: %w", st.viewer.AccountID, err)
+	}
+	ns = slices.DeleteFunc(ns, func(n notification.Notification) bool { return n.ID <= st.lastNotification })
+	slices.Reverse(ns)
+	accounts := map[string]*Account{}
+	for _, n := range ns {
+		item, err := st.s.newNotification(ctx, n, accounts)
+		if err != nil {
+			return err
+		}
+		if err := st.event("notification", item); err != nil {
+			return err
+		}
+		st.lastNotification = n.ID
+	}
+	return nil
+}
+
+// event writes one event with data as its JSON.
+func (st *streamState) event(name string, data any) error {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return st.write("event: " + name + "\ndata: " + string(b) + "\n\n")
+}
+
+// write writes and flushes text, within streamWriteTimeout.
+func (st *streamState) write(text string) error {
+	if err := st.rc.SetWriteDeadline(time.Now().Add(streamWriteTimeout)); err != nil && !errors.Is(err, http.ErrNotSupported) {
+		return errors.Join(errStreamWrite, err)
+	}
+	if _, err := st.w.Write([]byte(text)); err != nil {
+		return errors.Join(errStreamWrite, err)
+	}
+	if err := st.rc.Flush(); err != nil {
+		return errors.Join(errStreamWrite, err)
+	}
+	return nil
+}

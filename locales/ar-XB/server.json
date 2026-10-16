@@ -491,6 +491,14 @@
     "defaultMessage": "‮{max,plural,one{∀ dosʇ ɔɐu ɐʇʇɐɔɥ ɐʇ ɯosʇ # pısʇıuɔʇ ɟıʅǝ.} other{∀ dosʇ ɔɐu ɐʇʇɐɔɥ ɐʇ ɯosʇ # pısʇıuɔʇ ɟıʅǝs.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.streaming.too_many": {
+    "defaultMessage": "‮⅄on ɥɐʌǝ ʇoo ɯɐuʎ sʇɹǝɐɯs odǝu. Ↄʅosǝ ouǝ ɐup ʇɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.streaming.unavailable": {
+    "defaultMessage": "‮ᴚǝɐʅ-ʇıɯǝ ndpɐʇǝs ɐɹǝ nuɐʌɐıʅɐqʅǝ ɹıƃɥʇ uoʍ. ⊥ɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.too_long": {
     "defaultMessage": "‮{max,plural,one{{name} ɔɐu qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹ ʅouƃ.} other{{name} ɔɐu qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹs ʅouƃ.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."

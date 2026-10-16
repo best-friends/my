@@ -302,6 +302,10 @@ export interface MessageArgs {
   "server:errors.status.text_too_long": { max: number };
   /** {max, plural, one {A post can attach at most # distinct file.} other {A post can attach at most # distinct files.}} */
   "server:errors.status.too_many_media": { max: number };
+  /** You have too many streams open. Close one and try again. */
+  "server:errors.streaming.too_many": {};
+  /** Real-time updates are unavailable right now. Try again later. */
+  "server:errors.streaming.unavailable": {};
   /** {max, plural, one {{name} can be at most # character long.} other {{name} can be at most # characters long.}} */
   "server:errors.too_long": { max: number; name: string };
   /** {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}} */

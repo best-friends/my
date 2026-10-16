@@ -643,6 +643,8 @@ type Preferences struct {
 //     of its format.
 //   - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
 //     no longer be changed on its own.
+//   - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
+//     (`GET /streaming`) open as the server allows. Close one first.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`

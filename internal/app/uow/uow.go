@@ -38,7 +38,9 @@ type UnitOfWork interface {
 type Tx interface {
 	// Emit runs the synchronous projectors registered for e.EventType() inside this transaction,
 	// in registration order. It returns the first projector error; returning that error from fn
-	// rolls back the command together with its projections.
+	// rolls back the command together with its projections. Once the transaction commits, the
+	// adapter passes the events of that attempt to Projectors.Committed, which runs the commit
+	// hooks registered for them.
 	Emit(ctx context.Context, e Event) error
 }
 
@@ -46,7 +48,8 @@ type Tx interface {
 // no projectors.
 type Options struct {
 	Retry RetryPolicy
-	// Projectors are the synchronous projectors that Tx.Emit runs. The registry is shared, not
+	// Projectors are the synchronous projectors that Tx.Emit runs and the commit hooks that run
+	// after the commit. The registry is shared, not
 	// copied, so the composition root may register projectors after creating the adapter, as
 	// long as it does so before the first transaction.
 	Projectors *Projectors
