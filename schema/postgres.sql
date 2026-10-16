@@ -747,3 +747,40 @@ CREATE TABLE status_pins (
 );
 CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot);
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
+
+-- ---------------------------------------------------------------------------------------------
+-- notification: notifications, their dismissals, and read markers (data-model §4.7, FR-205).
+-- Owned by internal/app/notification.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: something happened to a local account. dedupe_key makes generating it again from the
+-- same domain event, or from an action the source repeats, insert nothing.
+CREATE TABLE notifications (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  recipient_account_id text COLLATE "C" NOT NULL,
+  type text NOT NULL CHECK (type IN (
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice'
+  )),
+  source_account_id text COLLATE "C",
+  status_id text COLLATE "C",
+  moderation_action_id text COLLATE "C",
+  dedupe_key text NOT NULL,
+  created_at timestamptz NOT NULL,
+  -- nobody is notified of their own actions.
+  CONSTRAINT notifications_self_check CHECK (source_account_id IS NULL OR source_account_id <> recipient_account_id)
+);
+CREATE UNIQUE INDEX notifications_recipient_account_id_dedupe_key ON notifications (recipient_account_id, dedupe_key);
+CREATE INDEX notifications_recipient_account_id_id ON notifications (recipient_account_id, id);
+CREATE INDEX notifications_recipient_account_id_type_id ON notifications (recipient_account_id, type, id);
+
+-- Event: the recipient dismissed a notification. A notification is dismissed at most once.
+CREATE TABLE notification_dismissals (
+  notification_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  dismissed_at timestamptz NOT NULL
+);
+
+-- Current value: the newest notification an account has read; greater IDs are unread.
+CREATE TABLE notification_read_markers (
+  account_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  last_read_id text COLLATE "C" NOT NULL
+);

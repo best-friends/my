@@ -244,6 +244,22 @@ type Mute struct {
 	CreatedAt         int64
 }
 
+type Notification struct {
+	ID                 string
+	RecipientAccountID string
+	Type               string
+	SourceAccountID    sql.NullString
+	StatusID           sql.NullString
+	ModerationActionID sql.NullString
+	DedupeKey          string
+	CreatedAt          int64
+}
+
+type NotificationReadMarker struct {
+	AccountID  string
+	LastReadID string
+}
+
 type PasswordCredential struct {
 	ID           string
 	UserID       string

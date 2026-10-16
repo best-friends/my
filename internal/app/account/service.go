@@ -331,6 +331,19 @@ func (s *Service) FindByID(ctx context.Context, id string) (Actor, error) {
 	return s.actor(ctx, a)
 }
 
+// IsLocal reports, inside tx, whether an account exists and is local. Projectors of other
+// modules call it in the transaction of the event they project.
+func (s *Service) IsLocal(ctx context.Context, tx uow.Tx, id string) (bool, error) {
+	a, err := s.d.Repository.Account(ctx, tx, id)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return a.IsLocal(), nil
+}
+
 // FindByHandle returns the actor with a handle. username compares case-insensitively; domain is
 // account.LocalDomain for local accounts. It fails with ErrNotFound when there is none.
 func (s *Service) FindByHandle(ctx context.Context, username, domain string) (Actor, error) {

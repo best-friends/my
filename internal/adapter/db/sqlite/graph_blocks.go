@@ -201,9 +201,22 @@ func muteFrom(row sqlitegen.Mute) graph.Mute {
 	}
 }
 
+// Mute implements graph.Repository.
+func (r *GraphRepository) Mute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string, now time.Time) (graph.Mute, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return graph.Mute{}, err
+	}
+	return activeMute(ctx, q, accountID, targetAccountID, now)
+}
+
 // FindMute implements graph.Repository.
 func (r *GraphRepository) FindMute(ctx context.Context, accountID, targetAccountID string, now time.Time) (graph.Mute, error) {
-	row, err := r.db.reader().GetActiveMute(ctx, sqlitegen.GetActiveMuteParams{
+	return activeMute(ctx, r.db.reader(), accountID, targetAccountID, now)
+}
+
+func activeMute(ctx context.Context, q *sqlitegen.Queries, accountID, targetAccountID string, now time.Time) (graph.Mute, error) {
+	row, err := q.GetActiveMute(ctx, sqlitegen.GetActiveMuteParams{
 		AccountID: accountID, TargetAccountID: targetAccountID, Now: toMillis(now),
 	})
 	if err != nil {
