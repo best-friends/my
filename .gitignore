@@ -22,6 +22,8 @@ coverage/
 *.sqlite3
 *.db
 .wrangler/
+# The default blob_fs_dir of a server run from the repository root.
+/blobs/
 
 # Claude Code local settings
 .claude/settings.local.json
@@ -30,3 +32,7 @@ coverage/
 test-results/
 playwright-report/
 blob-report/
+
+# Storybook build and Vitest browser-mode attachments (app/ui)
+storybook-static/
+.vitest/

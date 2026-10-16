@@ -394,6 +394,17 @@ func accountRevisesProfiles(t *testing.T, e *accountEnv) {
 	if got.Fields[1].Position != 1 {
 		t.Errorf("field positions = %+v, want 0 and 1", got.Fields)
 	}
+	header := "0192f3a4-0000-7000-8000-000000000002"
+	e.clock.Advance(time.Second)
+	if _, err := e.accounts.ReviseProfile(ctx, reg.AccountID, appaccount.ProfileInput{DisplayName: "Dave", HeaderMediaID: header}); err != nil {
+		t.Fatalf("ReviseProfile: %v", err)
+	}
+	// Media files stay referenced by revisions that are no longer current.
+	for id, want := range map[string]bool{in.AvatarMediaID: true, header: true, "0192f3a4-0000-7000-8000-000000000003": false} {
+		if got, err := e.accounts.IsMediaReferenced(ctx, id); err != nil || got != want {
+			t.Errorf("IsMediaReferenced(%s) = %v, %v; want %v", id, got, err, want)
+		}
+	}
 
 	// Concurrent revisions each take the next seq; none is lost.
 	const writers = 8
@@ -406,8 +417,8 @@ func accountRevisesProfiles(t *testing.T, e *accountEnv) {
 		})
 	}
 	wg.Wait()
-	if actor, err := e.accounts.FindByID(ctx, reg.AccountID); err != nil || actor.Profile == nil || actor.Profile.Seq != 2+writers {
-		t.Errorf("after %d concurrent revisions: profile = %+v, %v; want seq %d", writers, actor.Profile, err, 2+writers)
+	if actor, err := e.accounts.FindByID(ctx, reg.AccountID); err != nil || actor.Profile == nil || actor.Profile.Seq != 3+writers {
+		t.Errorf("after %d concurrent revisions: profile = %+v, %v; want seq %d", writers, actor.Profile, err, 3+writers)
 	}
 }
 

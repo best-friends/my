@@ -201,6 +201,41 @@ type LocalStatus struct {
 	IdempotencyKey  *string
 }
 
+type MediaFile struct {
+	ID             string
+	OwnerAccountID string
+	Origin         string
+	CreatedAt      time.Time
+}
+
+type MediaFocu struct {
+	MediaID string
+	FocusX  float64
+	FocusY  float64
+}
+
+type MediaProcessingResult struct {
+	ID          string
+	MediaID     string
+	Outcome     string
+	MediaType   string
+	Width       *int32
+	Height      *int32
+	DurationMs  *int32
+	Blurhash    *string
+	ProcessedAt time.Time
+}
+
+type MediaVariant struct {
+	ResultID    string
+	Kind        string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+	Width       int32
+	Height      int32
+}
+
 type Mute struct {
 	AccountID         string
 	TargetAccountID   string
@@ -295,6 +330,7 @@ type StatusMentionIndex struct {
 type StatusPin struct {
 	AccountID string
 	StatusID  string
+	Slot      int32
 	CreatedAt time.Time
 	ID        string
 }
@@ -339,6 +375,13 @@ type Tag struct {
 	Name           string
 	NameNormalized string
 	CreatedAt      time.Time
+}
+
+type UploadedMedium struct {
+	MediaID     string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
 }
 
 type User struct {

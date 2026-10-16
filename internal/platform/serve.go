@@ -30,7 +30,7 @@ type ServeOptions struct {
 // Serve runs the App in its configured role until ctx ends, then shuts down gracefully:
 //
 //   - every role serves HTTP on the listen address (the worker role only the health checks);
-//   - the worker and all roles run the job runner.
+//   - the worker and all roles run the job runner and the scheduler of periodic jobs.
 //
 // When ctx ends, Serve stops accepting connections and claiming jobs, and waits up to
 // ShutdownTimeout for the requests and the job in progress to finish. After the timeout it
@@ -76,6 +76,9 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 	stopJobs := make(chan struct{})
 	if a.Config.Role != config.RoleWeb {
 		jobs.Go(func() { _ = a.Runner.RunUntil(hardCtx, stopJobs) })
+		if a.Scheduler != nil {
+			jobs.Go(func() { a.Scheduler.RunUntil(hardCtx, stopJobs, 0) })
+		}
 	}
 	a.Logger.InfoContext(ctx, "started", slog.String("role", string(a.Config.Role)), slog.String("addr", ln.Addr().String()))
 
