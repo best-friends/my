@@ -4,11 +4,13 @@ package graph
 
 import "github.com/best-friends/my/internal/domain/graph"
 
-// Event types of the graph module's follows, for uow.Projectors (data-model §4.5). Every follow
-// command emits exactly one of them inside its transaction, after writing the event rows, so
-// that the projectors of this module (follow_edges, follow_counters) and of other modules
+// Event types of the graph module, for uow.Projectors (data-model §4.5). Every follow command
+// emits exactly one of them inside its transaction, after writing the event rows, so that the
+// projectors of this module (follow_edges, follow_counters, block_edges) and of other modules
 // (timeline's feed_follow_edges, notification's follow notifications) see the same facts.
 // Each event carries everything its subscribers need; they never read the graph tables.
+// Blocking emits one EventFollowTerminated per follow it ends, then EventBlocked. Mutes are a
+// current value read at query time and emit no events.
 //
 //   - EventFollowed: a follow became active on creation (the followee is not locked).
 //   - EventFollowRequested: a follow awaits the followee's approval (the followee is locked).
@@ -16,6 +18,8 @@ import "github.com/best-friends/my/internal/domain/graph"
 //   - EventFollowRejected: a pending follow was declined.
 //   - EventFollowTerminated: a pending or active follow ended.
 //   - EventFollowPreferencesChanged: the follower changed the preferences of a live follow.
+//   - EventBlocked: an account blocked another.
+//   - EventUnblocked: a block was lifted.
 const (
 	EventFollowed                 = "graph.followed"
 	EventFollowRequested          = "graph.follow_requested"
@@ -23,6 +27,8 @@ const (
 	EventFollowRejected           = "graph.follow_rejected"
 	EventFollowTerminated         = "graph.follow_terminated"
 	EventFollowPreferencesChanged = "graph.follow_preferences_changed"
+	EventBlocked                  = "graph.blocked"
+	EventUnblocked                = "graph.unblocked"
 )
 
 // Followed is emitted when a follow is created and accepted at once.
@@ -85,3 +91,21 @@ type FollowPreferencesChanged struct {
 
 // EventType implements uow.Event.
 func (FollowPreferencesChanged) EventType() string { return EventFollowPreferencesChanged }
+
+// Blocked is emitted when an account blocks another, after the FollowTerminated events of the
+// follows between them that the block ended.
+type Blocked struct {
+	Block graph.Block
+}
+
+// EventType implements uow.Event.
+func (Blocked) EventType() string { return EventBlocked }
+
+// Unblocked is emitted when a block is lifted.
+type Unblocked struct {
+	Block      graph.Block
+	Retraction graph.BlockRetraction
+}
+
+// EventType implements uow.Event.
+func (Unblocked) EventType() string { return EventUnblocked }
