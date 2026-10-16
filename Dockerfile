@@ -13,7 +13,8 @@ ARG NODE_IMAGE=node:24.21.0-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d0
 ARG BUN_IMAGE=oven/bun:1.4.3-slim@sha256:14a223fa35747ec728bce300ef85888bc5f7958164d15bbba6a54b22b52a3288
 ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
 
-FROM ${BUN_IMAGE} AS bun
+# The bun binary for the web stage, which runs on the build host's platform.
+FROM --platform=$BUILDPLATFORM ${BUN_IMAGE} AS bun
 
 # The web client (app/web), built as `make web-build` does: Bun installs the packages and runs the
 # script, Vite runs on Node.js (ADR-0025). The output is the same for every platform, so it is built
