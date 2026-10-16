@@ -4,7 +4,7 @@
 // versions:
 //   sqlc v1.31.1
 
-package contractdb
+package postgresgen
 
 import (
 	"context"

@@ -12,6 +12,74 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Account struct {
+	ID        string
+	Uri       string
+	Domain    string
+	ActorType string
+	CreatedAt time.Time
+}
+
+type AccountHandle struct {
+	AccountID          string
+	Username           string
+	UsernameNormalized string
+	Domain             string
+}
+
+type AccountKey struct {
+	ID           string
+	AccountID    string
+	KeyID        string
+	Algorithm    string
+	PublicKeyPem string
+	CreatedAt    time.Time
+}
+
+type AccountLifecycleEvent struct {
+	ID                 string
+	AccountID          string
+	Kind               string
+	InitiatedBy        string
+	ModerationActionID *string
+	DeletionDueAt      pgtype.Timestamptz
+	OccurredAt         time.Time
+}
+
+type AccountLifecycleState struct {
+	AccountID     string
+	State         string
+	Since         time.Time
+	DeletionDueAt pgtype.Timestamptz
+}
+
+type AccountProfileField struct {
+	RevisionID string
+	Position   int32
+	Name       string
+	ValueHtml  string
+}
+
+type AccountProfileHead struct {
+	AccountID  string
+	RevisionID string
+}
+
+type AccountProfileRevision struct {
+	ID            string
+	AccountID     string
+	Seq           int32
+	DisplayName   string
+	NoteHtml      string
+	Locked        bool
+	Bot           bool
+	Discoverable  bool
+	Indexable     bool
+	AvatarMediaID *string
+	HeaderMediaID *string
+	RevisedAt     time.Time
+}
+
 type DeadJob struct {
 	ID             string
 	Type           string
@@ -38,6 +106,18 @@ type Job struct {
 	CreatedAt      time.Time
 }
 
+type LocalAccount struct {
+	AccountID          string
+	UserID             string
+	Username           string
+	UsernameNormalized string
+}
+
+type LocalAccountPrivateKey struct {
+	AccountKeyID  string
+	PrivateKeyEnc []byte
+}
+
 type OutboxEvent struct {
 	ID             string
 	JobType        string
@@ -46,4 +126,48 @@ type OutboxEvent struct {
 	OrderingKey    *string
 	RunAt          time.Time
 	CreatedAt      time.Time
+}
+
+type PasswordCredential struct {
+	ID           string
+	UserID       string
+	PasswordHash string
+	SetAt        time.Time
+}
+
+type Role struct {
+	ID        string
+	Key       string
+	Position  int32
+	CreatedAt time.Time
+}
+
+type RolePermission struct {
+	RoleID     string
+	Permission string
+}
+
+type User struct {
+	ID        string
+	CreatedAt time.Time
+}
+
+type UserRole struct {
+	UserID  string
+	RoleID  string
+	GrantID string
+}
+
+type UserRoleGrant struct {
+	ID              string
+	UserID          string
+	RoleID          string
+	GrantedByUserID *string
+	GrantedAt       time.Time
+}
+
+type UserRoleRevocation struct {
+	GrantID         string
+	RevokedByUserID *string
+	RevokedAt       time.Time
 }

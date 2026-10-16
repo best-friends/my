@@ -10,6 +10,74 @@ import (
 	"database/sql"
 )
 
+type Account struct {
+	ID        string
+	Uri       string
+	Domain    string
+	ActorType string
+	CreatedAt int64
+}
+
+type AccountHandle struct {
+	AccountID          string
+	Username           string
+	UsernameNormalized string
+	Domain             string
+}
+
+type AccountKey struct {
+	ID           string
+	AccountID    string
+	KeyID        string
+	Algorithm    string
+	PublicKeyPem string
+	CreatedAt    int64
+}
+
+type AccountLifecycleEvent struct {
+	ID                 string
+	AccountID          string
+	Kind               string
+	InitiatedBy        string
+	ModerationActionID sql.NullString
+	DeletionDueAt      sql.NullInt64
+	OccurredAt         int64
+}
+
+type AccountLifecycleState struct {
+	AccountID     string
+	State         string
+	Since         int64
+	DeletionDueAt sql.NullInt64
+}
+
+type AccountProfileField struct {
+	RevisionID string
+	Position   int64
+	Name       string
+	ValueHtml  string
+}
+
+type AccountProfileHead struct {
+	AccountID  string
+	RevisionID string
+}
+
+type AccountProfileRevision struct {
+	ID            string
+	AccountID     string
+	Seq           int64
+	DisplayName   string
+	NoteHtml      string
+	Locked        int64
+	Bot           int64
+	Discoverable  int64
+	Indexable     int64
+	AvatarMediaID sql.NullString
+	HeaderMediaID sql.NullString
+	RevisedAt     int64
+}
+
 type DeadJob struct {
 	ID             string
 	Type           string
@@ -36,6 +104,18 @@ type Job struct {
 	CreatedAt      int64
 }
 
+type LocalAccount struct {
+	AccountID          string
+	UserID             string
+	Username           string
+	UsernameNormalized string
+}
+
+type LocalAccountPrivateKey struct {
+	AccountKeyID  string
+	PrivateKeyEnc []byte
+}
+
 type OutboxEvent struct {
 	ID             string
 	JobType        string
@@ -44,4 +124,48 @@ type OutboxEvent struct {
 	OrderingKey    sql.NullString
 	RunAt          int64
 	CreatedAt      int64
+}
+
+type PasswordCredential struct {
+	ID           string
+	UserID       string
+	PasswordHash string
+	SetAt        int64
+}
+
+type Role struct {
+	ID        string
+	Key       string
+	Position  int64
+	CreatedAt int64
+}
+
+type RolePermission struct {
+	RoleID     string
+	Permission string
+}
+
+type User struct {
+	ID        string
+	CreatedAt int64
+}
+
+type UserRole struct {
+	UserID  string
+	RoleID  string
+	GrantID string
+}
+
+type UserRoleGrant struct {
+	ID              string
+	UserID          string
+	RoleID          string
+	GrantedByUserID sql.NullString
+	GrantedAt       int64
+}
+
+type UserRoleRevocation struct {
+	GrantID         string
+	RevokedByUserID sql.NullString
+	RevokedAt       int64
 }

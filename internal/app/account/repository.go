@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package account
+
+import (
+	"context"
+	"errors"
+
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/account"
+)
+
+var (
+	// ErrNotFound reports that no row matches a lookup.
+	ErrNotFound = errors.New("account: not found")
+	// ErrUsernameTaken reports a local username that another local account already has,
+	// compared case-insensitively.
+	ErrUsernameTaken = errors.New("account: username is taken")
+	// ErrInstanceActorExists reports a second instance actor: there is only one local
+	// Application actor.
+	ErrInstanceActorExists = errors.New("account: the instance actor already exists")
+)
+
+// Repository is the persistence port of the account module (data-model §4.2). The database
+// adapters implement it and pass testkit.AccountRepositoryContract.
+//
+// Methods that take a uow.Tx run inside that transaction; the others read committed data outside
+// any transaction. Lookups that find nothing return an error wrapping ErrNotFound.
+type Repository interface {
+	// Resources and events, written by commands.
+
+	// InsertAccount inserts an account. A second local Application actor fails with
+	// ErrInstanceActorExists.
+	InsertAccount(ctx context.Context, tx uow.Tx, a account.Account) error
+	// InsertLocalAccount inserts the local subtype of an account. A username whose normalized
+	// form is taken fails with ErrUsernameTaken.
+	InsertLocalAccount(ctx context.Context, tx uow.Tx, la account.LocalAccount) error
+	// InsertProfileRevision inserts a profile revision and its fields.
+	InsertProfileRevision(ctx context.Context, tx uow.Tx, r account.ProfileRevision) error
+	// InsertKey inserts a public key and, when sealedPrivateKey is not nil, the sealed private
+	// key of a local actor.
+	InsertKey(ctx context.Context, tx uow.Tx, k account.Key, sealedPrivateKey []byte) error
+	// InsertLifecycleEvent inserts a lifecycle event.
+	InsertLifecycleEvent(ctx context.Context, tx uow.Tx, e account.LifecycleEvent) error
+
+	// Projections, written only by this module's projectors and rebuild.
+
+	UpsertHandle(ctx context.Context, tx uow.Tx, h account.Handle) error
+	DeleteAllHandles(ctx context.Context, tx uow.Tx) error
+	// ProfileHead returns the head of an account with the Seq of the revision it points at.
+	ProfileHead(ctx context.Context, tx uow.Tx, accountID string) (account.ProfileHead, error)
+	UpsertProfileHead(ctx context.Context, tx uow.Tx, h account.ProfileHead) error
+	DeleteAllProfileHeads(ctx context.Context, tx uow.Tx) error
+	LifecycleState(ctx context.Context, tx uow.Tx, accountID string) (account.LifecycleState, error)
+	UpsertLifecycleState(ctx context.Context, tx uow.Tx, s account.LifecycleState) error
+	DeleteAllLifecycleStates(ctx context.Context, tx uow.Tx) error
+
+	// Projection sources, in a stable order, for rebuilding the projections.
+
+	// ListLocalAccounts returns every local account, ordered by account ID.
+	ListLocalAccounts(ctx context.Context, tx uow.Tx) ([]account.LocalAccount, error)
+	// ListProfileRevisionSeqs returns every profile revision as a head candidate
+	// (account ID, revision ID, Seq), ordered by account ID and Seq.
+	ListProfileRevisionSeqs(ctx context.Context, tx uow.Tx) ([]account.ProfileHead, error)
+	// ListLifecycleEvents returns every lifecycle event, ordered by account ID and event ID.
+	ListLifecycleEvents(ctx context.Context, tx uow.Tx) ([]account.LifecycleEvent, error)
+
+	// Projection contents, ordered by account ID, for verifying the projections.
+
+	ListHandles(ctx context.Context) ([]account.Handle, error)
+	ListProfileHeads(ctx context.Context) ([]account.ProfileHead, error)
+	ListLifecycleStates(ctx context.Context) ([]account.LifecycleState, error)
+
+	// Lookups.
+
+	FindAccount(ctx context.Context, id string) (account.Account, error)
+	// FindInstanceActor returns the local Application actor.
+	FindInstanceActor(ctx context.Context) (account.Account, error)
+	FindLocalAccount(ctx context.Context, accountID string) (account.LocalAccount, error)
+	// FindHandle resolves a normalized username and a domain (account.LocalDomain for local
+	// accounts) through the account_handles projection.
+	FindHandle(ctx context.Context, usernameNormalized, domain string) (account.Handle, error)
+	FindHandleOf(ctx context.Context, accountID string) (account.Handle, error)
+	// FindCurrentProfile returns the revision that the account's profile head points at, with its fields.
+	FindCurrentProfile(ctx context.Context, accountID string) (account.ProfileRevision, error)
+	// FindLifecycleState returns the projected state; ErrNotFound means the account is active.
+	FindLifecycleState(ctx context.Context, accountID string) (account.LifecycleState, error)
+	// ListKeys returns an account's public keys, oldest first.
+	ListKeys(ctx context.Context, accountID string) ([]account.Key, error)
+	// FindSealedPrivateKey returns the sealed private key of a local actor's key.
+	FindSealedPrivateKey(ctx context.Context, accountKeyID string) ([]byte, error)
+}

@@ -119,7 +119,7 @@ DB アダプタの実装は受け取った `uow.Tx` から自分のトランザ�
 
 ### 4.2 Inbox 受信
 
-1. `POST /inbox` or `/users/:id/inbox`
+1. `POST /ap/inbox`（shared inbox）または `/ap/actors/{uuid}/inbox`（[ADR-0018](../adr/0018-federated-uris.md)）
 2. 同期処理: サイズ制限 → 署名検証（鍵は KV / DB キャッシュ、未取得なら取得）→ ドメインブロック判定 → `202 Accepted`
 3. `JobQueue.enqueue(ProcessInbox{activity, verifiedActor})`
 4. ワーカー: Activity 種別ごとのハンドラ（冪等: Activity ID で重複排除）→ 通知生成など

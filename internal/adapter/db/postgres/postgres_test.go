@@ -14,14 +14,14 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/internal/contract"
-	"github.com/best-friends/my/internal/adapter/db/postgres/internal/contract/contractdb"
+	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/pkg/testkit"
 	"github.com/best-friends/my/schema"
@@ -96,9 +96,8 @@ func setUpServer() (code int, cleanup func()) {
 	return 0, cleanup
 }
 
-// newTestDB creates a new database on the test server, applies the bootstrap SQL, the product
-// schema, and the probe table (see package schema for why executing the files matches an Atlas
-// apply), and opens it.
+// newTestDB creates a new database on the test server, applies the bootstrap SQL and the product
+// schema (see package schema for why executing the files matches an Atlas apply), and opens it.
 func newTestDB(t *testing.T, opts uow.Options) *DB {
 	t.Helper()
 	if serverURL == "" {
@@ -135,7 +134,7 @@ func newTestDB(t *testing.T, opts uow.Options) *DB {
 			_ = c.Close(ctx)
 		}
 	})
-	for _, ddl := range []string{schema.PostgresBootstrap, schema.Postgres, contract.Schema} {
+	for _, ddl := range []string{schema.PostgresBootstrap, schema.Postgres} {
 		if _, err := db.pool.Exec(ctx, ddl); err != nil {
 			t.Fatalf("apply schema: %v", err)
 		}
@@ -143,12 +142,29 @@ func newTestDB(t *testing.T, opts uow.Options) *DB {
 	return db
 }
 
-func queries(tx uow.Tx) (*contractdb.Queries, error) {
-	pgTx, err := txOf(tx)
+// The UnitOfWork contract uses users as its probe table: a row per key, keyed by id.
+
+func insertProbe(ctx context.Context, q *postgresgen.Queries, key string) error {
+	return q.InsertUser(ctx, postgresgen.InsertUserParams{ID: key, CreatedAt: time.UnixMilli(0)})
+}
+
+func probeKeys(ctx context.Context, db *DB) ([]string, error) {
+	rows, err := db.pool.Query(ctx, "SELECT id FROM users ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
-	return contractdb.New(pgTx), nil
+	keys, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if keys == nil {
+		keys = []string{}
+	}
+	return keys, err
+}
+
+func TestAccountRepositoryContract(t *testing.T) {
+	testkit.AccountRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.AccountHarness {
+		db := newTestDB(t, opts)
+		return testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()}
+	})
 }
 
 func TestUnitOfWorkContract(t *testing.T) {
@@ -161,11 +177,9 @@ func TestUnitOfWorkContract(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				return q.InsertProbe(ctx, name)
+				return insertProbe(ctx, q, name)
 			},
-			Keys: func(ctx context.Context) ([]string, error) {
-				return contractdb.New(db.pool).ListProbeNames(ctx)
-			},
+			Keys: func(ctx context.Context) ([]string, error) { return probeKeys(ctx, db) },
 		}
 	})
 }
@@ -203,37 +217,47 @@ func TestRetriesDeadlocks(t *testing.T) {
 		defer mu.Unlock()
 		retries = append(retries, err)
 	}}})
-	setup := contractdb.New(db.pool)
+	setup := postgresgen.New(db.pool)
 	for _, name := range []string{"x", "y"} {
-		if err := setup.InsertProbe(t.Context(), name); err != nil {
+		if err := insertProbe(t.Context(), setup, name); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	var bothLocked sync.WaitGroup
 	bothLocked.Add(2)
-	increment := func(first, second string) error {
+	lock := func(tx uow.Tx, key string) error {
+		pgTx, err := txOf(tx)
+		if err != nil {
+			return err
+		}
+		_, err = pgTx.Exec(t.Context(), "SELECT 1 FROM users WHERE id = $1 FOR UPDATE", key)
+		return err
+	}
+	lockBoth := func(first, second string) error {
 		attempt := 0
 		return db.Tx(t.Context(), func(tx uow.Tx) error {
 			attempt++
-			q, err := queries(tx)
-			if err != nil {
-				return err
-			}
-			if _, err := q.IncrementProbe(t.Context(), first); err != nil {
+			if err := lock(tx, first); err != nil {
 				return err
 			}
 			if attempt == 1 {
 				bothLocked.Done()
 				bothLocked.Wait()
 			}
-			_, err = q.IncrementProbe(t.Context(), second)
-			return err
+			if err := lock(tx, second); err != nil {
+				return err
+			}
+			q, err := queries(tx)
+			if err != nil {
+				return err
+			}
+			return insertProbe(t.Context(), q, first+"-done")
 		})
 	}
 	errs := make(chan error, 2)
-	go func() { errs <- increment("x", "y") }()
-	go func() { errs <- increment("y", "x") }()
+	go func() { errs <- lockBoth("x", "y") }()
+	go func() { errs <- lockBoth("y", "x") }()
 	for range 2 {
 		if err := <-errs; err != nil {
 			t.Fatalf("Tx = %v", err)
@@ -247,10 +271,9 @@ func TestRetriesDeadlocks(t *testing.T) {
 	if !errors.Is(retries[0], uow.ErrRetryable) || !errors.As(retries[0], &pgErr) || pgErr.Code != "40P01" {
 		t.Errorf("retried error = %v, want a retryable deadlock_detected (40P01)", retries[0])
 	}
-	for _, name := range []string{"x", "y"} {
-		if n, err := setup.GetProbeCount(t.Context(), name); err != nil || n != 2 {
-			t.Errorf("%s incremented to %d (%v), want 2", name, n, err)
-		}
+	got, err := probeKeys(t.Context(), db)
+	if err != nil || strings.Join(got, ",") != "x,x-done,y,y-done" {
+		t.Errorf("committed keys = %q (%v), want both transactions committed", got, err)
 	}
 }
 

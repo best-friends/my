@@ -1,49 +1,47 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
-# sqlc configuration (ADR-0003): one entry per dialect and query set. The sqlc version is pinned
-# in tools/go.mod. Regenerate with `make sqlc`; `make sqlc-check` (part of `make check`) fails
-# when the committed code is stale.
+# sqlc configuration (ADR-0003). The sqlc version is pinned in tools/go.mod. Regenerate with
+# `make sqlc`; `make sqlc-check` (part of `make check`) fails when the committed code is stale.
 #
 # Product queries live in queries/<dialect>/*.sql, read schema/<dialect>.sql, and generate into
-# internal/adapter/db/<dialect>/<dialect>gen. sqlc rejects an entry without queries, so each
-# dialect's product entry is added together with its first query.
+# internal/adapter/db/<dialect>/<dialect>gen. Comments above a query become the doc comment of
+# its generated method.
 #
 # The queue entries generate the queries of the database job queue (internal/adapter/queue/db)
 # from queries/<dialect>/queue/*.sql into internal/adapter/queue/db/internal/<dialect>queue.
 #
-# Keep query files ASCII-only: the sqlite engine misplaces sqlc.arg / @name rewrites that
-# follow a multi-byte character and rejects the query.
-#
-# The contract entries generate the probe-table queries of the UnitOfWork contract tests.
-# They read the product schema plus a test-only probe schema.
+# Keep query files ASCII-only: the sqlite engine of sqlc miscounts byte offsets after a
+# multi-byte character, which cuts generated queries short or rejects sqlc.arg / @name rewrites.
 version: "2"
 sql:
-  - name: sqlite-contract
+  - name: sqlite
     engine: sqlite
-    schema:
-      - schema/sqlite.sql
-      - internal/adapter/db/sqlite/internal/contract/schema.sql
-    queries: internal/adapter/db/sqlite/internal/contract/queries.sql
+    schema: schema/sqlite.sql
+    queries: queries/sqlite
     gen:
       go:
-        package: contractdb
-        out: internal/adapter/db/sqlite/internal/contract/contractdb
+        package: sqlitegen
+        out: internal/adapter/db/sqlite/sqlitegen
         emit_empty_slices: true
-  - name: postgres-contract
+  - name: postgres
     engine: postgresql
-    schema:
-      - schema/postgres.sql
-      - internal/adapter/db/postgres/internal/contract/schema.sql
-    queries: internal/adapter/db/postgres/internal/contract/queries.sql
+    schema: schema/postgres.sql
+    queries: queries/postgres
     gen:
       go:
-        package: contractdb
-        out: internal/adapter/db/postgres/internal/contract/contractdb
+        package: postgresgen
+        out: internal/adapter/db/postgres/postgresgen
         sql_package: pgx/v5
         emit_empty_slices: true
+        emit_pointers_for_null_types: true
         overrides:
           - db_type: timestamptz
             go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              type: time.Time
+              pointer: true
   - name: sqlite-queue
     engine: sqlite
     schema: schema/sqlite.sql

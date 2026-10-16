@@ -13,15 +13,14 @@ import (
 	msqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/internal/contract"
-	"github.com/best-friends/my/internal/adapter/db/sqlite/internal/contract/contractdb"
+	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/pkg/testkit"
 	"github.com/best-friends/my/schema"
 )
 
-// newTestDB opens a new database file under t.TempDir() with the product schema and the probe
-// table applied (see package schema for why executing the file matches an Atlas apply).
+// newTestDB opens a new database file under t.TempDir() with the product schema applied
+// (see package schema for why executing the file matches an Atlas apply).
 func newTestDB(t *testing.T, dsnSuffix string, opts uow.Options) (*DB, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "test.db")
@@ -30,20 +29,40 @@ func newTestDB(t *testing.T, dsnSuffix string, opts uow.Options) (*DB, string) {
 		t.Fatalf("Open: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	for _, ddl := range []string{schema.SQLite, contract.Schema} {
-		if _, err := db.db.ExecContext(t.Context(), ddl); err != nil {
-			t.Fatalf("apply schema: %v", err)
-		}
+	if _, err := db.db.ExecContext(t.Context(), schema.SQLite); err != nil {
+		t.Fatalf("apply schema: %v", err)
 	}
 	return db, path
 }
 
-func queries(tx uow.Tx) (*contractdb.Queries, error) {
-	sqlTx, err := txOf(tx)
+// The UnitOfWork contract uses users as its probe table: a row per key, keyed by id.
+
+func insertProbe(ctx context.Context, q *sqlitegen.Queries, key string) error {
+	return q.InsertUser(ctx, sqlitegen.InsertUserParams{ID: key})
+}
+
+func probeKeys(ctx context.Context, db *DB) ([]string, error) {
+	rows, err := db.db.QueryContext(ctx, "SELECT id FROM users ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
-	return contractdb.New(sqlTx), nil
+	defer func() { _ = rows.Close() }()
+	keys := []string{}
+	for rows.Next() {
+		var k string
+		if err := rows.Scan(&k); err != nil {
+			return nil, err
+		}
+		keys = append(keys, k)
+	}
+	return keys, rows.Err()
+}
+
+func TestAccountRepositoryContract(t *testing.T) {
+	testkit.AccountRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.AccountHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()}
+	})
 }
 
 func TestUnitOfWorkContract(t *testing.T) {
@@ -56,11 +75,9 @@ func TestUnitOfWorkContract(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				return q.InsertProbe(ctx, name)
+				return insertProbe(ctx, q, name)
 			},
-			Keys: func(ctx context.Context) ([]string, error) {
-				return contractdb.New(db.db).ListProbeNames(ctx)
-			},
+			Keys: func(ctx context.Context) ([]string, error) { return probeKeys(ctx, db) },
 		}
 	})
 }
@@ -140,7 +157,7 @@ func TestRetriesWhenTheDatabaseIsLocked(t *testing.T) {
 	if blocker, err = other.db.BeginTx(t.Context(), nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := contractdb.New(blocker).InsertProbe(t.Context(), "blocker"); err != nil {
+	if err := insertProbe(t.Context(), sqlitegen.New(blocker), "blocker"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -149,7 +166,7 @@ func TestRetriesWhenTheDatabaseIsLocked(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return q.InsertProbe(t.Context(), "a")
+		return insertProbe(t.Context(), q, "a")
 	})
 	if err != nil {
 		t.Fatalf("Tx = %v", err)
@@ -161,7 +178,7 @@ func TestRetriesWhenTheDatabaseIsLocked(t *testing.T) {
 	if !errors.Is(retries[0], uow.ErrRetryable) || !errors.As(retries[0], &se) || se.Code()&0xff != sqlite3.SQLITE_BUSY {
 		t.Errorf("retried error = %v, want a retryable SQLITE_BUSY", retries[0])
 	}
-	got, err := contractdb.New(db.db).ListProbeNames(t.Context())
+	got, err := probeKeys(t.Context(), db)
 	if err != nil || strings.Join(got, ",") != "a,blocker" {
 		t.Errorf("committed keys = %q (%v), want [a blocker]", got, err)
 	}
