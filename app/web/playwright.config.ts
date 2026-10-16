@@ -5,7 +5,9 @@
 // the built app (`make web-e2e` builds it first), or against E2E_BASE_URL when it is set. The tests of the
 // server-rendered pages (e2e/auth-pages.spec.ts) run against a real `my serve` on SQLite that
 // e2e/server.ts starts from bin/my with the pseudo-locales enabled, or against E2E_SERVER_URL when it is
-// set (a server started with `my serve -pseudo-locales`).
+// set (a server started with `my serve -pseudo-locales`). Both servers listen on free ports picked per
+// run (E2E_PREVIEW_PORT and E2E_SERVER_PORT override them; e2e/server-origin.ts), and a run never reuses a
+// server it did not start, so runs in several worktrees on one machine stay apart.
 import { defineConfig, devices, type Project } from "@playwright/test";
 import { previewOrigin, previewPort, serverPort } from "./e2e/server-origin.ts";
 
@@ -57,9 +59,11 @@ export default defineConfig({
     ...(externalBaseURL === undefined
       ? [
           {
-            command: `bun run preview --host 127.0.0.1 --port ${port} --strictPort`,
-            url: `http://127.0.0.1:${port}`,
-            reuseExistingServer: !ci,
+            command: `bun run preview --host 127.0.0.1 --port ${String(port)} --strictPort`,
+            url: `http://127.0.0.1:${String(port)}`,
+            // A server already on the port belongs to someone else (another worktree's build, say), so the
+            // run fails rather than test it; E2E_BASE_URL is the way to test a server this run does not start.
+            reuseExistingServer: false,
           },
         ]
       : []),
@@ -69,7 +73,7 @@ export default defineConfig({
           {
             // A fresh database every run: the specs depend on its seed and on rate limits not yet used up.
             command: "node e2e/server.ts",
-            url: `http://127.0.0.1:${serverPort}/readyz`,
+            url: `http://127.0.0.1:${String(serverPort)}/readyz`,
             reuseExistingServer: false,
             gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
           } as const,
