@@ -11,12 +11,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/schema"
 )
 
 // DB is a PostgreSQL connection pool. It implements uow.UnitOfWork.
@@ -50,6 +52,37 @@ func Open(ctx context.Context, url string, opts uow.Options) (*DB, error) {
 
 // Close closes every connection of the pool.
 func (d *DB) Close() { d.pool.Close() }
+
+// Ready reports whether the database is reachable and its schema is applied, for the
+// readiness check. The schema counts as applied when every table that schema/postgres.sql
+// declares exists in the connection's current schema; Atlas applies the file as a whole
+// (ADR-0023), so a missing table means the schema was never applied or is out of date.
+func (d *DB) Ready(ctx context.Context) error {
+	want := schema.Tables(schema.Postgres)
+	rows, err := d.pool.Query(ctx,
+		"SELECT table_name::text FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ANY($1)", want)
+	if err != nil {
+		return fmt.Errorf("postgres: ready: %w", err)
+	}
+	names, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return fmt.Errorf("postgres: ready: %w", err)
+	}
+	present := map[string]bool{}
+	for _, n := range names {
+		present[n] = true
+	}
+	var missing []string
+	for _, t := range want {
+		if !present[t] {
+			missing = append(missing, t)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("postgres: schema not applied: missing tables %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
 
 // Tx implements uow.UnitOfWork.
 func (d *DB) Tx(ctx context.Context, fn func(tx uow.Tx) error) error {

@@ -53,6 +53,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runConfig(fs.Args()[1:], stdout, stderr)
 	case "admin":
 		return runAdmin(fs.Args()[1:], os.Stdin, stdout, stderr)
+	case "serve":
+		return runServe(fs.Args()[1:], stderr)
 	case "":
 		usage(stderr)
 		return 2
@@ -69,6 +71,7 @@ func usage(w io.Writer) {
 Commands:
   admin     Create an administrator (my admin create)
   config    Check the configuration (my config check)
+  serve     Run the server (role web, worker, or all)
   version   Print the version
 `)
 }

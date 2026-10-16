@@ -69,13 +69,13 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 
 	ctx := context.Background()
-	cli, err := platform.OpenAdminCLI(ctx, cfg)
+	app, err := platform.NewApp(ctx, cfg, platform.AppOptions{})
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "my admin create: %v\n", err)
 		return 1
 	}
-	defer cli.Close()
-	reg, err := cli.Identity.CreateAdmin(ctx, appidentity.CreateAdminInput{Username: *username, Email: *email, Password: password})
+	defer func() { _ = app.Close() }()
+	reg, err := app.Identity.CreateAdmin(ctx, appidentity.CreateAdminInput{Username: *username, Email: *email, Password: password})
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "my admin create: %s\n", describeAdminError(err, *username, *email))
 		return 1

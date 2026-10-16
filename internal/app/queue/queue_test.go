@@ -156,3 +156,62 @@ func TestRunStopsWhenContextEnds(t *testing.T) {
 		t.Errorf("Run = %v, want nil after the context ends", err)
 	}
 }
+
+// oneJobSource hands out one job and records whether it was completed.
+type oneJobSource struct {
+	emptySource
+	claimed   bool
+	completed chan struct{}
+}
+
+func (s *oneJobSource) Claim(ctx context.Context, w string, now time.Time, lease time.Duration) (queue.Job, bool, error) {
+	if s.claimed {
+		return s.emptySource.Claim(ctx, w, now, lease)
+	}
+	s.claimed = true
+	return queue.Job{ID: "j", Type: "slow", Attempt: 1, RunAt: now}, true, nil
+}
+
+func (s *oneJobSource) Complete(context.Context, string, queue.Job) error {
+	close(s.completed)
+	return nil
+}
+
+func TestRunUntilFinishesTheJobInProgress(t *testing.T) {
+	src := &oneJobSource{emptySource: emptySource{claims: make(chan struct{}, 1)}, completed: make(chan struct{})}
+	started, release := make(chan struct{}), make(chan struct{})
+	reg := &queue.JobHandlerRegistry{}
+	reg.Register("slow", func(ctx context.Context, _ queue.Job) queue.Result {
+		close(started)
+		<-release
+		if ctx.Err() != nil {
+			return queue.Retry(0, ctx.Err())
+		}
+		return queue.Done()
+	})
+	r := queue.NewPullRunner(src, reg, queue.RunnerOptions{Clock: clock{}, PollInterval: time.Hour})
+	stop := make(chan struct{})
+	done := make(chan error)
+	go func() { done <- r.RunUntil(t.Context(), stop) }()
+	<-started
+	close(stop)
+	select {
+	case <-done:
+		t.Fatal("RunUntil returned while a job was in progress")
+	case <-time.After(20 * time.Millisecond):
+	}
+	close(release)
+	if err := <-done; err != nil {
+		t.Errorf("RunUntil = %v, want nil", err)
+	}
+	select {
+	case <-src.completed:
+	default:
+		t.Error("the job in progress was not completed")
+	}
+	select {
+	case <-src.claims:
+		t.Error("RunUntil claimed again after stop was closed")
+	default:
+	}
+}
