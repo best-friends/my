@@ -48,7 +48,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | # | 規約 | 強制 |
 | --- | --- | --- |
 | A1 | 依存の向きは `routes → features → (@my/ui, lib)` だけにする | `boundaries/dependencies`（要素は `shell`（`web/src` 直下）・`route`・`feature`・`lib`・`ui`）、`boundaries/no-unknown-files` |
-| A2 | `@my/ui` は React・React Aria Components・Tailwind と、`Feed` の仮想化に使う TanStack Virtual（ADR-0025 の長いリスト）にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`@tanstack/react-virtual`・`tailwind-variants`・`tailwind-merge` だけ）、パッケージの依存関係（Bun の isolated linker） |
+| A2 | `@my/ui` は React・React Aria Components・Tailwind のユーティリティと、ドメインを持たない振る舞いのライブラリ（許可リストは ADR-0031）にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`@tanstack/react-virtual`・`tailwind-variants`・`tailwind-merge` だけ）、パッケージの依存関係（Bun の isolated linker） |
 | A3 | 機能は、ほかの機能を `index.ts` 経由でだけ使う | `boundaries/dependencies`（ほかの `feature` は `index.ts` だけ） |
 | A4 | 機能のロジックは `features/<x>/hooks` のカスタムフックに置く。フックは JSX を返さない。機能の部品はフックの戻り値を `@my/ui` に渡すだけにする | レビュー |
 | A5 | 操作できる要素は `@my/ui`（React Aria Components を包んだ部品）から使う。`onClick` を付けた `div` / `span` を書かない | `no-restricted-syntax`（`div` / `span` の `onClick`・`onKeyDown`・`onPointerDown` など） |
