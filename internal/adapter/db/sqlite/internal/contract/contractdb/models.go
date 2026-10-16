@@ -6,7 +6,47 @@
 
 package contractdb
 
+import (
+	"database/sql"
+)
+
 type ContractProbe struct {
 	Name string
 	N    int64
+}
+
+type DeadJob struct {
+	ID             string
+	Type           string
+	Payload        string
+	IdempotencyKey sql.NullString
+	OrderingKey    sql.NullString
+	Attempt        int64
+	LastError      string
+	CreatedAt      int64
+	FailedAt       int64
+}
+
+type Job struct {
+	ID             string
+	Type           string
+	Payload        string
+	IdempotencyKey sql.NullString
+	OrderingKey    sql.NullString
+	Attempt        int64
+	RunAt          int64
+	LockedBy       sql.NullString
+	LockedUntil    sql.NullInt64
+	LastError      sql.NullString
+	CreatedAt      int64
+}
+
+type OutboxEvent struct {
+	ID             string
+	JobType        string
+	Payload        string
+	IdempotencyKey sql.NullString
+	OrderingKey    sql.NullString
+	RunAt          int64
+	CreatedAt      int64
 }

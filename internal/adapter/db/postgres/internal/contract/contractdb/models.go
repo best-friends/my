@@ -6,7 +6,49 @@
 
 package contractdb
 
+import (
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
 type ContractProbe struct {
 	Name string
 	N    int64
+}
+
+type DeadJob struct {
+	ID             string
+	Type           string
+	Payload        []byte
+	IdempotencyKey pgtype.Text
+	OrderingKey    pgtype.Text
+	Attempt        int32
+	LastError      string
+	CreatedAt      time.Time
+	FailedAt       time.Time
+}
+
+type Job struct {
+	ID             string
+	Type           string
+	Payload        []byte
+	IdempotencyKey pgtype.Text
+	OrderingKey    pgtype.Text
+	Attempt        int32
+	RunAt          time.Time
+	LockedBy       pgtype.Text
+	LockedUntil    pgtype.Timestamptz
+	LastError      pgtype.Text
+	CreatedAt      time.Time
+}
+
+type OutboxEvent struct {
+	ID             string
+	JobType        string
+	Payload        []byte
+	IdempotencyKey pgtype.Text
+	OrderingKey    pgtype.Text
+	RunAt          time.Time
+	CreatedAt      time.Time
 }

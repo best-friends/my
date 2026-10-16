@@ -97,7 +97,7 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 | クライアントからの投稿 | `local_statuses (author_account_id, idempotency_key)` | API の `Idempotency-Key`。再送には同じ投稿を返す |
 | 通知 | `notifications (recipient_account_id, dedupe_key)` | 例: `favourite:<status_id>:<account_id>` |
 | 配送 | `deliveries (outbound_activity_id, inbox_url)` | 展開ジョブの再実行で重複しない |
-| ジョブ | `jobs (idempotency_key)` | ADR-0004 |
+| ジョブ | `jobs (idempotency_key)` | 未完了のジョブの重複投入を no-op にする（ADR-0004） |
 
 ### 2.3 集計値
 
@@ -536,12 +536,17 @@ flowchart LR
 
 | テーブル | カラム | 一意 | インデックス |
 | --- | --- | --- | --- |
-| `outbox_events` | `id`, `job_type`, `payload`（`document`）, `idempotency_key`, `created_at` | — | PK 順に読み、キュー投入後に削除 |
+| `outbox_events` | `id`, `job_type`, `payload`（`document`）, `idempotency_key`（NULL 可）, `ordering_key`（NULL 可）, `run_at`, `created_at` | — | PK 順に読み、キュー投入後に削除 |
 | `jobs`（`queue/db`） | `id`, `type`, `payload`（`document`）, `idempotency_key`（NULL 可）, `ordering_key`（NULL 可）, `attempt`, `run_at`, `locked_by`（NULL 可）, `locked_until`（NULL 可）, `last_error`（NULL 可）, `created_at` | `(idempotency_key)` | `(run_at)`, `(ordering_key, run_at)` |
-| `dead_jobs` | `id`, `type`, `payload`, `idempotency_key`, `attempt`, `last_error`, `created_at`, `failed_at` | — | `(failed_at)` |
+| `dead_jobs` | `id`, `type`, `payload`（`document`）, `idempotency_key`（NULL 可）, `ordering_key`（NULL 可）, `attempt`, `last_error`, `created_at`, `failed_at` | — | `(failed_at)` |
 | `kv_entries`（`kv/db`） | `namespace`, `key`, `value`（`bytes`）, `expires_at`（NULL 可） | PK `(namespace, key)` | `(expires_at)` |
 
 - ジョブのペイロードはアダプタ間を渡る「解釈しない文書」なので `document` 型です（ドメインのデータは入れず、ID を渡します）。
+- `outbox_events` は投入先のキューに渡す値（`run_at` を含む）をすべて持ち、リレーがそのまま `JobQueue.Enqueue` に渡します。
+- `jobs` は未完了のジョブだけを持ちます。完了したジョブは削除し、恒久的に失敗したジョブは `dead_jobs` に移します。
+  そのため `jobs (idempotency_key)` の一意制約は「未完了のジョブの間での一意」を表します。
+- `locked_by` と `locked_until` はワーカーのリース（ADR-0004）で、取得時に両方を設定し、結果の記録時に両方を NULL に戻します（`CHECK` で同時性を保証）。
+  リースが切れた（`locked_until <= now`）ジョブは他のワーカーが取り直します。結果の記録は `(id, locked_by, attempt)` が一致するときだけ有効です。
 
 ## 5. 状態とポリシー
 
