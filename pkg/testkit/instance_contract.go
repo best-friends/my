@@ -30,8 +30,9 @@ type InstanceFactory func(t *testing.T, opts uow.Options) InstanceHarness
 // InstanceRepositoryContract verifies the instance repository of a database adapter through the
 // use cases that drive it: defaults for unset settings, every change kept as a revision,
 // canonical values, rejection of invalid input without writing, localized texts with their
-// history, lookups through the locale fallback chain, and the property that the synchronous
-// projections equal a rebuild from the revisions.
+// history, lookups through the locale fallback chain, the media files that media settings
+// refer to, and the property that the synchronous projections equal a rebuild from the
+// revisions.
 func InstanceRepositoryContract(t *testing.T, newHarness InstanceFactory) {
 	t.Helper()
 	cases := []struct {
@@ -46,6 +47,7 @@ func InstanceRepositoryContract(t *testing.T, newHarness InstanceFactory) {
 		{"LooksUpTextsThroughTheFallbackChain", instanceLooksUpTextsThroughFallback},
 		{"RejectsInvalidTexts", instanceRejectsInvalidTexts},
 		{"IncrementalProjectionEqualsRebuild", instanceProjectionEqualsRebuild},
+		{"ReferencesMediaFromSettings", instanceReferencesMedia},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newInstanceEnv(t, newHarness)) })
@@ -325,6 +327,8 @@ func instanceProjectionEqualsRebuild(t *testing.T, e *instanceEnv) {
 			return fmt.Sprint(d.Min + rng.IntN(1000))
 		case instance.KindEnum:
 			return d.Choices[rng.IntN(len(d.Choices))]
+		case instance.KindMedia:
+			return fmt.Sprintf("0199f0e0-0000-7000-8000-%012x", rng.IntN(3))
 		default:
 			return locales[rng.IntN(len(locales))]
 		}
@@ -372,4 +376,39 @@ func snapshotInstanceProjections(t *testing.T, repo appinstance.Repository) inst
 		t.Fatalf("ListAllCurrentTexts = %v", err)
 	}
 	return instanceProjections{settings: settings, texts: texts}
+}
+
+func instanceReferencesMedia(t *testing.T, e *instanceEnv) {
+	ctx := t.Context()
+	const (
+		first  = "0199f0e0-0000-7000-8000-00000000f001"
+		second = "0199f0e0-0000-7000-8000-00000000f002"
+		other  = "0199f0e0-0000-7000-8000-00000000f003"
+	)
+	if p, err := e.service.PreviewImage(ctx, "ja"); err != nil || p != (appinstance.PreviewImage{}) {
+		t.Errorf("PreviewImage unset = %+v, %v; want none", p, err)
+	}
+	e.set(t, instance.SettingPreviewImage, strings.ToUpper(first), "")
+	e.set(t, instance.SettingPreviewImage, second, "")
+	e.setText(t, instance.TextPreviewImageAlt, "en", "A mascot")
+	e.setText(t, instance.TextPreviewImageAlt, "ja", "マスコット")
+	for locale, alt := range map[string]string{"ja-JP": "マスコット", "fr": "A mascot"} {
+		if p, err := e.service.PreviewImage(ctx, locale); err != nil || p.MediaID != second || p.Alt != alt {
+			t.Errorf("PreviewImage(%s) = %+v, %v; want %s with %q", locale, p, err, second, alt)
+		}
+	}
+	// Every revision keeps its file, so that the setting can go back to an earlier one.
+	for id, want := range map[string]bool{first: true, second: true, other: false} {
+		if got, err := e.service.IsMediaReferenced(ctx, id); err != nil || got != want {
+			t.Errorf("IsMediaReferenced(%s) = %v, %v; want %v", id, got, err, want)
+		}
+	}
+	e.set(t, instance.SettingPreviewImage, "", "")
+	if p, err := e.service.PreviewImage(ctx, "ja"); err != nil || p != (appinstance.PreviewImage{}) {
+		t.Errorf("PreviewImage cleared = %+v, %v; want none", p, err)
+	}
+	// "" is the cleared value, never a media file.
+	if got, err := e.service.IsMediaReferenced(ctx, ""); err != nil || got {
+		t.Errorf("IsMediaReferenced(\"\") = %v, %v; want false", got, err)
+	}
 }

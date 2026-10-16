@@ -3,9 +3,12 @@
 package web_test
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html"
+	"image/png"
 	"net/http"
 	"regexp"
 	"strings"
@@ -218,12 +221,13 @@ func TestPostPreview(t *testing.T) {
 }
 
 // TestPreviewImageOrder checks the order of ADR-0028: the attached image, the header image or
-// avatar, the instance's default image, and no image.
+// avatar, the instance's preview image, and the built-in image.
 func TestPreviewImageOrder(t *testing.T) {
 	attached := &appcontent.PreviewImage{URL: "https://social.example/media/at/full.png", Width: 800, Height: 800, Alt: "attached"}
 	header := &appcontent.PreviewImage{URL: "https://social.example/media/hd/full.png", Width: 1500, Height: 500}
 	avatar := &appcontent.PreviewImage{URL: "https://social.example/media/av/full.png", Width: 400, Height: 400}
-	def := &web.Image{URL: "https://social.example/default.png", Width: 1200, Height: 630, Alt: "Example Social"}
+	def := &web.Image{URL: "https://social.example/media/def/full.png", Width: 1200, Height: 600, Alt: "Our mascot"}
+	const builtIn = "https://social.example" + web.PathDefaultImage
 	tests := []struct {
 		name                     string
 		attached, header, avatar *appcontent.PreviewImage
@@ -233,8 +237,9 @@ func TestPreviewImageOrder(t *testing.T) {
 		{"attached", attached, header, avatar, def, attached.URL, "attached", "summary"},
 		{"header", nil, header, avatar, def, header.URL, "Header image of Alice", "summary_large_image"},
 		{"avatar", nil, nil, avatar, def, avatar.URL, "Avatar of Alice", "summary"},
-		{"default", nil, nil, nil, def, def.URL, "Example Social", "summary_large_image"},
-		{"none", nil, nil, nil, nil, "", "", "summary"},
+		{"instance", nil, nil, nil, def, def.URL, "Our mascot", "summary_large_image"},
+		{"instance without alt text", nil, nil, nil, &web.Image{URL: def.URL, Width: 1200, Height: 600}, def.URL, "Image of Example Social", "summary_large_image"},
+		{"built-in", nil, nil, nil, nil, builtIn, "A speech bubble with three dots on a blue gradient", "summary_large_image"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -243,12 +248,100 @@ func TestPreviewImageOrder(t *testing.T) {
 			a.Header, a.Avatar = tt.header, tt.avatar
 			s := status(a, content.VisibilityPublic, "<p>hi</p>")
 			s.Image = tt.attached
-			mux := previewHandler(t, &fakePreviews{statuses: map[string]appcontent.StatusPreview{statusID: s}}, web.Options{DefaultImage: tt.def})
+			var gotLang string
+			mux := previewHandler(t, &fakePreviews{statuses: map[string]appcontent.StatusPreview{statusID: s}}, web.Options{
+				DefaultImage: func(_ context.Context, lang string) (*web.Image, error) {
+					gotLang = lang
+					return tt.def, nil
+				},
+			})
 			got := metas(t, get(mux, "/@alice/"+statusID, nil).Body.String())
 			if got["og:image"] != tt.want || got["og:image:alt"] != tt.alt || got["twitter:card"] != tt.card {
 				t.Errorf("image %q alt %q card %q, want %q %q %q", got["og:image"], got["og:image:alt"], got["twitter:card"], tt.want, tt.alt, tt.card)
 			}
+			if tt.want == builtIn && (got["og:image:width"] != "1200" || got["og:image:height"] != "630") {
+				t.Errorf("built-in image size = %sx%s", got["og:image:width"], got["og:image:height"])
+			}
+			if tt.def != nil && tt.want == tt.def.URL && gotLang != "en" {
+				t.Errorf("DefaultImage got language %q, want the post's en", gotLang)
+			}
 		})
+	}
+}
+
+// TestPostsAndProfilesWithoutImagesGetTheBuiltInImage checks that a handler without
+// Options.DefaultImage gives profiles and posts without images the built-in image, with alt
+// text in the preview's language.
+func TestPostsAndProfilesWithoutImagesGetTheBuiltInImage(t *testing.T) {
+	a := alice("Alice", "")
+	s := status(a, content.VisibilityPublic, "<p>hi</p>")
+	mux := previewHandler(t, &fakePreviews{
+		profiles: map[string]appcontent.ProfilePreview{"alice": a},
+		statuses: map[string]appcontent.StatusPreview{statusID: s},
+	}, web.Options{})
+	for path, alt := range map[string]string{
+		"/@alice":             "青いグラデーションの上に、点が 3 つ並んだ吹き出し",
+		"/@alice/" + statusID: "A speech bubble with three dots on a blue gradient",
+	} {
+		got := metas(t, get(mux, path, nil).Body.String())
+		if got["og:image"] != "https://social.example"+web.PathDefaultImage || got["og:image:alt"] != alt ||
+			got["og:image:width"] != "1200" || got["og:image:height"] != "630" || got["twitter:card"] != "summary_large_image" {
+			t.Errorf("GET %s image meta = %v", path, got)
+		}
+	}
+}
+
+// TestInstanceImageIsReadPerRequest checks that a change of the instance's preview image
+// changes the preview, and its ETag, of the same handler.
+func TestInstanceImageIsReadPerRequest(t *testing.T) {
+	a := alice("Alice", "")
+	var current *web.Image
+	mux := previewHandler(t, &fakePreviews{profiles: map[string]appcontent.ProfilePreview{"alice": a}}, web.Options{
+		DefaultImage: func(context.Context, string) (*web.Image, error) { return current, nil },
+	})
+	first := get(mux, "/@alice", nil)
+	current = &web.Image{URL: "https://social.example/media/new/full.png", Width: 1200, Height: 630, Alt: "新しい画像"}
+	second := get(mux, "/@alice", nil)
+	if got := metas(t, first.Body.String()); got["og:image"] != "https://social.example"+web.PathDefaultImage {
+		t.Errorf("first image = %q, want the built-in one", got["og:image"])
+	}
+	if got := metas(t, second.Body.String()); got["og:image"] != current.URL || got["og:image:alt"] != current.Alt {
+		t.Errorf("second image = %q %q, want %q %q", got["og:image"], got["og:image:alt"], current.URL, current.Alt)
+	}
+	if first.Header().Get("ETag") == second.Header().Get("ETag") {
+		t.Errorf("the ETag did not change with the image: %s", first.Header().Get("ETag"))
+	}
+
+	failing := previewHandler(t, &fakePreviews{profiles: map[string]appcontent.ProfilePreview{"alice": a}}, web.Options{
+		DefaultImage: func(context.Context, string) (*web.Image, error) { return nil, errors.New("database down") },
+	})
+	if rec := get(failing, "/@alice", nil); rec.Code != http.StatusInternalServerError {
+		t.Errorf("a failing DefaultImage = %d, want 500", rec.Code)
+	}
+}
+
+// TestBuiltInImage checks that the built-in preview image is a 1200x630 PNG served with an
+// ETag that answers conditional requests.
+func TestBuiltInImage(t *testing.T) {
+	_, mux := newHandler(t, web.Options{})
+	rec := get(mux, web.PathDefaultImage, nil)
+	if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "image/png" || rec.Header().Get("ETag") == "" ||
+		rec.Header().Get("Cache-Control") != "no-cache" {
+		t.Fatalf("GET %s = %d %v", web.PathDefaultImage, rec.Code, rec.Header())
+	}
+	cfg, err := png.DecodeConfig(bytes.NewReader(rec.Body.Bytes()))
+	if err != nil || cfg.Width != 1200 || cfg.Height != 630 || web.DefaultImageWidth != 1200 || web.DefaultImageHeight != 630 {
+		t.Errorf("built-in image = %+v, %v; want a 1200x630 PNG", cfg, err)
+	}
+	// Small enough to fetch quickly from any preview bot.
+	if n := rec.Body.Len(); n > 64<<10 {
+		t.Errorf("built-in image is %d bytes", n)
+	}
+	if again := get(mux, web.PathDefaultImage, nil); !bytes.Equal(again.Body.Bytes(), rec.Body.Bytes()) {
+		t.Errorf("the built-in image changed between requests")
+	}
+	if rec := get(mux, web.PathDefaultImage, map[string]string{"If-None-Match": rec.Header().Get("ETag")}); rec.Code != http.StatusNotModified {
+		t.Errorf("conditional GET = %d, want 304", rec.Code)
 	}
 }
 

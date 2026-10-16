@@ -809,6 +809,20 @@ func (l *Localizer) ServerPreviewAvatarAlt(name string) string {
 	return l.format("server:preview.avatar_alt", map[string]any{"name": name})
 }
 
+// ServerPreviewBuiltinImageAlt formats "server:preview.builtin_image_alt". Alt text of the built-in preview image in a link preview (og:image:alt), for profiles and posts without images on an instance without its own preview image. The image is a white speech bubble with three dots on a blue gradient.
+//
+//	en: A speech bubble with three dots on a blue gradient
+func (l *Localizer) ServerPreviewBuiltinImageAlt() string {
+	return l.format("server:preview.builtin_image_alt", nil)
+}
+
+// ServerPreviewDefaultImageAlt formats "server:preview.default_image_alt". Alt text of the instance's preview image in a link preview (og:image:alt), for profiles and posts without images, when the preview_image_alt text is not set. {instance} is the instance name.
+//
+//	en: Image of {instance}
+func (l *Localizer) ServerPreviewDefaultImageAlt(instance string) string {
+	return l.format("server:preview.default_image_alt", map[string]any{"instance": instance})
+}
+
 // ServerPreviewHeaderAlt formats "server:preview.header_alt". Alt text of a profile's header image in a link preview (og:image:alt) when the header is the preview image. {name} is the display name, or the username when there is none.
 //
 //	en: Header image of {name}

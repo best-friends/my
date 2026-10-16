@@ -459,6 +459,14 @@
     "defaultMessage": "Avatar of {name}",
     "description": "Alt text of a profile's avatar in a link preview (og:image:alt) when the avatar is the preview image. {name} is the display name, or the username when there is none."
   },
+  "preview.builtin_image_alt": {
+    "defaultMessage": "A speech bubble with three dots on a blue gradient",
+    "description": "Alt text of the built-in preview image in a link preview (og:image:alt), for profiles and posts without images on an instance without its own preview image. The image is a white speech bubble with three dots on a blue gradient."
+  },
+  "preview.default_image_alt": {
+    "defaultMessage": "Image of {instance}",
+    "description": "Alt text of the instance's preview image in a link preview (og:image:alt), for profiles and posts without images, when the preview_image_alt text is not set. {instance} is the instance name."
+  },
   "preview.header_alt": {
     "defaultMessage": "Header image of {name}",
     "description": "Alt text of a profile's header image in a link preview (og:image:alt) when the header is the preview image. {name} is the display name, or the username when there is none."
