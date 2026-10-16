@@ -22,8 +22,13 @@ import (
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
+	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/platform/config"
 )
+
+// defaultMaxPostCharacters is the post length limit that the client API reports until the
+// instance settings hold it (FR-101).
+const defaultMaxPostCharacters = 500
 
 // App is the assembled application: the adapters chosen by the configuration and the
 // application services built on them. NewApp builds it with plain constructor calls; there is
@@ -161,6 +166,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
+	}).Register(a)
+	// The instance is named after its host until the instance settings hold a name.
+	clientapi.New(clientapi.Options{
+		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
+		MaxPostCharacters: defaultMaxPostCharacters,
+		Messages:          a.Messages, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }

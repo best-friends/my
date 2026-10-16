@@ -21,7 +21,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
-check: lint-docs adr-index-check go-check i18n-check dockerfile-check ## Run every offline check CI runs
+check: lint-docs adr-index-check go-check i18n-check dockerfile-check api-check ## Run every offline check CI runs
 
 lint-docs: ## Lint Markdown files
 	$(MARKDOWNLINT)
@@ -52,6 +52,22 @@ sqlc: ## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
 
 sqlc-check: ## Fail if the committed sqlc-generated code is stale
 	scripts/sqlc.sh --check
+
+# --- Client API (ADR-0016, ADR-0029) ----------------------------------------------------------
+# api/openapi.yaml is the source of truth; oapi-codegen is pinned in tools/go.mod and Redocly CLI here.
+REDOCLY := REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true bunx --bun @redocly/cli@2.57.0
+
+.PHONY: generate generate-check api-lint api-check
+generate: ## Regenerate the client API code from api/openapi.yaml (scripts/generate.sh)
+	scripts/generate.sh
+
+generate-check: ## Fail if the committed client API code is stale
+	scripts/generate.sh --check
+
+api-lint: ## Lint api/openapi.yaml, including the supported OpenAPI 3.1 subset (api/redocly.yaml)
+	$(REDOCLY) lint --config api/redocly.yaml api/openapi.yaml
+
+api-check: api-lint generate-check ## Lint the client API spec and fail on stale generated code
 
 go-check: go-mod-check go-vet go-lint go-test go-build go-licenses sqlc-check ## Run all offline Go checks
 

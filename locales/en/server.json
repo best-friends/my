@@ -19,6 +19,10 @@
     "defaultMessage": "An unexpected error occurred. Please try again later.",
     "description": "API error message for HTTP 500. Must not reveal internal details."
   },
+  "errors.invalid_parameter": {
+    "defaultMessage": "The parameter {name} has an invalid value.",
+    "description": "Detail of an API error (HTTP 400) when a path, query, or header parameter cannot be parsed. {name} is the parameter name, e.g. limit (not translated)."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "The {method} method is not allowed for this resource.",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."

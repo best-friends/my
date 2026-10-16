@@ -83,6 +83,13 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.SourceURL = v },
 	},
 	{
+		key:    "web_origin",
+		defDoc: "`https://{host}`",
+		doc:    "Origin (`scheme://host[:port]`) of the web client. The client API allows only this origin by CORS (ADR-0019 §4). Set it when the web client is served from another origin, for example a development server at `http://localhost:5173`.",
+		check:  checkOrigin,
+		set:    func(c *Config, v string) { c.WebOrigin = v },
+	},
+	{
 		key: "role",
 		doc: "What this process runs.",
 		def: string(RoleAll),
@@ -278,6 +285,18 @@ func checkSourceURL(v string) error {
 	u, err := url.Parse(v)
 	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
 		return errors.New("must be an absolute https URL without user info or fragment")
+	}
+	return nil
+}
+
+func checkOrigin(v string) error {
+	u, err := url.Parse(v)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil ||
+		u.Path != "" || u.RawQuery != "" || u.Fragment != "" || v != u.Scheme+"://"+u.Host {
+		return errors.New("must be an origin: http or https, a host, and an optional port, without path or trailing slash")
+	}
+	if u.Host != strings.ToLower(u.Host) {
+		return errors.New("must be lower case")
 	}
 	return nil
 }

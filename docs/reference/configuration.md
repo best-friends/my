@@ -23,6 +23,7 @@ Values marked "not in v0" are decided in an ADR but not shipped in v0, and are r
 | [`host`](#host) | `MY_HOST` | none | yes | no |
 | [`account_domain`](#account_domain) | `MY_ACCOUNT_DOMAIN` | value of `host` | no | no |
 | [`source_url`](#source_url) | `MY_SOURCE_URL` | `https://github.com/best-friends/my` | no | no |
+| [`web_origin`](#web_origin) | `MY_WEB_ORIGIN` | `https://{host}` | no | no |
 | [`role`](#role) | `MY_ROLE` | `all` | no | no |
 | [`listen`](#listen) | `MY_LISTEN` | `:8080` | no | no |
 | [`db`](#db) | `MY_DB` | `sqlite` | no | no |
@@ -59,6 +60,14 @@ Where users get the source code of the running server, as an `https` URL. NodeIn
 
 - Environment variable: `MY_SOURCE_URL`
 - Default: `https://github.com/best-friends/my`
+- Required: no
+
+### `web_origin`
+
+Origin (`scheme://host[:port]`) of the web client. The client API allows only this origin by CORS (ADR-0019 §4). Set it when the web client is served from another origin, for example a development server at `http://localhost:5173`.
+
+- Environment variable: `MY_WEB_ORIGIN`
+- Default: `https://{host}`
 - Required: no
 
 ### `role`

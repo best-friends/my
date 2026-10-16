@@ -12,6 +12,8 @@ export interface MessageArgs {
   "server:errors.bad_request": {};
   /** An unexpected error occurred. Please try again later. */
   "server:errors.internal": {};
+  /** The parameter {name} has an invalid value. */
+  "server:errors.invalid_parameter": { name: string };
   /** The {method} method is not allowed for this resource. */
   "server:errors.method_not_allowed": { method: string };
   /** The requested resource was not found. */

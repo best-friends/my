@@ -1,0 +1,162 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The client API (ADR-0007, ADR-0016). This file is the source of truth: `make generate` generates
+# the Go server interface in internal/interface/clientapi from it, and `make api-lint` enforces the
+# OpenAPI 3.1 subset that the generators support (ADR-0029). docs/architecture/client-api.md
+# explains how to add an endpoint.
+openapi: 3.1.0
+info:
+  title: my client API
+  version: 0.1.0
+  description: |
+    The client API of my, an ActivityPub microblog server. It is not compatible with the
+    Mastodon client API.
+
+    - Every error is an RFC 9457 problem document (`application/problem+json`) whose `title`
+      and `detail` are localized from `Accept-Language`. Clients branch on `type` and `status`,
+      never on the text.
+    - IDs are UUIDv7 strings. Collections use keyset pagination: pass the `next_cursor` of a
+      page as `cursor` to get the next page.
+  license:
+    name: AGPL-3.0-only
+    identifier: AGPL-3.0-only
+servers:
+  - url: /api/v1
+security:
+  - bearer: []
+tags:
+  - name: instance
+    description: Public information about the instance.
+paths:
+  /instance:
+    get:
+      operationId: getInstance
+      summary: Get the public information of the instance
+      tags: [instance]
+      security: []
+      responses:
+        "200":
+          description: The instance.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Instance"
+        default:
+          $ref: "#/components/responses/Problem"
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: An OAuth 2.0 access token (Authorization Code + PKCE).
+  headers:
+    CacheControl:
+      description: The caching policy. Anonymous public GETs are cacheable by shared caches (ADR-0016).
+      schema:
+        type: string
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      description: The `next_cursor` of the previous page; omitted for the first page.
+      required: false
+      schema:
+        $ref: "#/components/schemas/Cursor"
+    Limit:
+      name: limit
+      in: query
+      description: The maximum number of items in the page.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 40
+        default: 20
+  responses:
+    Problem:
+      description: An error, as an RFC 9457 problem document.
+      headers:
+        Content-Language:
+          description: The locale of `title` and `detail`.
+          schema:
+            type: string
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Id:
+      description: The ID of a resource, a UUIDv7 in its canonical string form.
+      type: string
+      format: uuid
+      examples: ["01890a5d-ac96-774b-bcce-b302099a8057"]
+      # The application layer passes IDs as strings (kernel.IDGenerator).
+      x-go-type: string
+    Cursor:
+      description: An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+      type: string
+      minLength: 1
+      maxLength: 256
+    PageInfo:
+      description: The pagination of a collection page; collection responses embed it with allOf.
+      type: object
+      properties:
+        next_cursor:
+          $ref: "#/components/schemas/Cursor"
+    Problem:
+      description: An RFC 9457 problem document.
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          description: |
+            A URI that identifies the problem type, stable for clients to branch on.
+            It is `about:blank` when the problem means no more than its HTTP status.
+          type: string
+          format: uri-reference
+        title:
+          description: A short summary of the problem type, localized from `Accept-Language`.
+          type: string
+        status:
+          description: The HTTP status code.
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          description: An explanation of this occurrence, localized from `Accept-Language`.
+          type: string
+        request_id:
+          description: The request ID (the `X-Request-Id` response header), for reporting the problem.
+          type: string
+    Instance:
+      description: Public information about the instance.
+      type: object
+      required: [domain, name, version, source_url, limits]
+      properties:
+        domain:
+          description: The domain that serves the instance.
+          type: string
+        name:
+          description: The display name of the instance.
+          type: string
+        version:
+          description: The server version.
+          type: string
+        source_url:
+          description: Where users get the source code of the running server (AGPL-3.0 section 13).
+          type: string
+          format: uri
+        limits:
+          $ref: "#/components/schemas/InstanceLimits"
+    InstanceLimits:
+      description: Limits that clients check before sending a request.
+      type: object
+      required: [max_post_characters]
+      properties:
+        max_post_characters:
+          description: The maximum number of characters in the text of a post.
+          type: integer
+          minimum: 1
