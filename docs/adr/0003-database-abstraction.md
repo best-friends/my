@@ -56,7 +56,7 @@ MySQL 系（MySQL、TiDB Serverless、PlanetScale 等）は v0 では対象外�
 
 ### 型・ID・時刻の共通規約
 
-- ID: UUIDv7 を文字列（36 文字）で保存。時系列ソート可能で、Mastodon API のページング（`max_id` / `since_id` / `min_id`）に使える。
+- ID: UUIDv7 を文字列（36 文字）で保存。時系列ソート可能で、クライアント API のキーセットページングに使える。
 - 時刻: UTC。保存形式（ミリ秒精度の整数 Unix 時刻 / ISO 8601 文字列）は spike で確定。
 - 真偽値: 整数 0/1（SQLite）/ `boolean`（PG）をアダプタで吸収。JSON: SQLite は TEXT、PG は `jsonb`。
 - 文字列比較・照合順序に依存したロジックを書かない（ユーザー名は保存時に正規化した小文字カラムを別に持つ）。

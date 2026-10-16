@@ -21,7 +21,7 @@
 | G3 | 差し替え可能性: RDB・キュー・ストレージ・メール等を設定で切り替えられ、利用者が独自アダプタを追加できる |
 | G4 | 相互運用性: Mastodon / Misskey / GoToSocial / Pleroma(Akkoma) と問題なく連合できる |
 | G5 | 多言語: UI・通知・投稿メタデータを含め、最初期から i18n / l10n を前提にする |
-| G6 | マルチクライアント: Web(PWA) と、モバイルアプリ（Tauri 2 もしくはネイティブ）を提供する。既存の Mastodon クライアントも使える |
+| G6 | マルチクライアント: Web(PWA) と、モバイルアプリ（Tauri 2 もしくはネイティブ）を提供する。クライアント API は独自（Mastodon クライアント互換はしない） |
 | G7 | エージェント駆動開発: コーディングエージェントが Issue 単位で自律的に作業し、`make check` 一発で検証できる |
 
 ## 非目標（Non-goals, v0）
@@ -51,7 +51,7 @@
 | --- | --- | --- |
 | **M0: Design & Harness** | 要件定義・基礎設計・ADR 確定・開発ハーネス整備 | 主要 ADR が Accepted、言語ツールチェーンと CI が動く |
 | **M1: Walking Skeleton** | 1 プロセスで起動し、WebFinger / Actor を返し、SQLite に永続化。全レイヤを細く貫通 | Self-hosted で起動、Mastodon から検索・表示できる |
-| **M2: Local Microblog** | アカウント・投稿・タイムライン・フォロー（ローカルのみ）・Mastodon API サブセット・Web クライアント最小版 | ローカルで SNS として使える |
+| **M2: Local Microblog** | アカウント・投稿・タイムライン・フォロー（ローカルのみ）・独自クライアント API・Web クライアント（PWA） | ローカルで SNS として使える |
 | **M3: Federation** | 連合（Follow / Create / Announce / Like / Delete …）、配送キュー、リトライ | Mastodon / Misskey / GoToSocial と相互フォロー・投稿が往復 |
 | **M4: Multi-target** | GCP / AWS / microk8s のデプロイテンプレートと各アダプタ | 3 系統すべてで E2E スモークテストが通る |
 | **M5: v0 Release** | モデレーション最小機能、i18n（en / ja + α）、ドキュメント、Tauri 2 モバイルの検証版 | v0.x として公開し実運用を開始できる |
