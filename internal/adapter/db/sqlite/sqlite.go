@@ -20,6 +20,7 @@ import (
 	sqlite3 "modernc.org/sqlite/lib"
 
 	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/schema"
 )
 
 // DefaultBusyTimeoutMillis is how long a connection waits for the database lock before a
@@ -92,6 +93,39 @@ func normalizeDSN(dsn string) (string, error) {
 
 // Close closes the database.
 func (d *DB) Close() error { return d.db.Close() }
+
+// Ready reports whether the database is reachable and its schema is applied, for the
+// readiness check. The schema counts as applied when every table that schema/sqlite.sql
+// declares exists; Atlas applies the file as a whole (ADR-0023), so a missing table means the
+// schema was never applied or is out of date.
+func (d *DB) Ready(ctx context.Context) error {
+	rows, err := d.db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type = 'table'")
+	if err != nil {
+		return fmt.Errorf("sqlite: ready: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	present := map[string]bool{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return fmt.Errorf("sqlite: ready: %w", err)
+		}
+		present[name] = true
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("sqlite: ready: %w", err)
+	}
+	var missing []string
+	for _, t := range schema.Tables(schema.SQLite) {
+		if !present[t] {
+			missing = append(missing, t)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("sqlite: schema not applied: missing tables %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
 
 // Tx implements uow.UnitOfWork.
 func (d *DB) Tx(ctx context.Context, fn func(tx uow.Tx) error) error {

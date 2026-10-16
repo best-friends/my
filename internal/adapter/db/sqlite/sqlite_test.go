@@ -193,3 +193,28 @@ func TestRejectsForeignTransactions(t *testing.T) {
 type foreignTx struct{}
 
 func (foreignTx) Emit(context.Context, uow.Event) error { return nil }
+
+func TestReady(t *testing.T) {
+	db, _ := newTestDB(t, "", uow.Options{})
+	if err := db.Ready(t.Context()); err != nil {
+		t.Fatalf("Ready on an applied schema = %v", err)
+	}
+	if _, err := db.db.ExecContext(t.Context(), "DROP TABLE dead_jobs"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Ready(t.Context()); err == nil || !strings.Contains(err.Error(), "dead_jobs") {
+		t.Errorf("Ready with a missing table = %v, want an error naming dead_jobs", err)
+	}
+
+	empty, err := Open(t.Context(), filepath.Join(t.TempDir(), "empty.db"), uow.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := empty.Ready(t.Context()); err == nil {
+		t.Error("Ready on an empty database = nil, want an error")
+	}
+	_ = empty.Close()
+	if err := empty.Ready(t.Context()); err == nil {
+		t.Error("Ready on a closed database = nil, want an error")
+	}
+}
