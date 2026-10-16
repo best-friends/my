@@ -34,6 +34,7 @@ import (
 	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
@@ -106,6 +107,10 @@ type App struct {
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
 	Notifications *notification.Service
+	// Streams is the in-process broker of the streaming endpoint (FR-207): the timeline and
+	// notification commit hooks publish to it, and each open stream subscribes. It reaches only
+	// the streams of this process (docs/architecture/overview.md §4.4).
+	Streams *stream.Hub
 
 	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
 	Blobs          blob.Store
@@ -320,6 +325,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
 	})
 	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
+	a.Streams = stream.NewHub(stream.HubOptions{})
+	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
+	notification.RegisterCommitHooks(a.Projectors, a.Streams)
 
 	if opts.Version == "" {
 		opts.Version = "dev"
@@ -367,6 +375,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Notifications: a.Notifications,
 		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
+		Streams: a.Streams, HomeEntries: a.Timeline,
 		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
@@ -548,6 +557,9 @@ func (a *App) Handle(pattern string, h http.Handler) {
 
 // Close releases the database connections.
 func (a *App) Close() error {
+	if a.Streams != nil {
+		a.Streams.Close()
+	}
 	if a.closeBlobs != nil {
 		_ = a.closeBlobs()
 	}

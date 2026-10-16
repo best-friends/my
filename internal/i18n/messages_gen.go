@@ -858,6 +858,20 @@ func (l *Localizer) ServerErrorsStatusTooManyMedia(max int) string {
 	return l.format("server:errors.status.too_many_media", map[string]any{"max": max})
 }
 
+// ServerErrorsStreamingTooMany formats "server:errors.streaming.too_many". Detail of the HTTP 429 API error when the user already has as many real-time update streams (open tabs or devices) as the server allows.
+//
+//	en: You have too many streams open. Close one and try again.
+func (l *Localizer) ServerErrorsStreamingTooMany() string {
+	return l.format("server:errors.streaming.too_many", nil)
+}
+
+// ServerErrorsStreamingUnavailable formats "server:errors.streaming.unavailable". Title of the HTTP 503 API error when the server is shutting down and accepts no new real-time update streams.
+//
+//	en: Real-time updates are unavailable right now. Try again later.
+func (l *Localizer) ServerErrorsStreamingUnavailable() string {
+	return l.format("server:errors.streaming.unavailable", nil)
+}
+
 // ServerErrorsUnauthenticated formats "server:errors.unauthenticated". API error title for HTTP 401 when the request carries no access token and the operation needs one.
 //
 //	en: Sign in to do this.

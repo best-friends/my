@@ -77,3 +77,24 @@ func TestServe(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateSchema(t *testing.T) {
+	spec := apitest.Load(t)
+	tests := []struct {
+		name     string
+		data     string
+		wantFail bool
+	}{
+		{name: "conforming", data: `{"type":"about:blank","title":"Not found","status":404}`},
+		{name: "missing required property", data: `{"type":"about:blank","status":404}`, wantFail: true},
+		{name: "not JSON", data: `event: update`, wantFail: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := failures(t, func(tb testing.TB) { spec.ValidateSchema(tb, "Problem", []byte(tt.data)) })
+			if failed := len(got) > 0; failed != tt.wantFail {
+				t.Errorf("ValidateSchema failed = %v (%q), want %v", failed, got, tt.wantFail)
+			}
+		})
+	}
+}

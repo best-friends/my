@@ -487,6 +487,14 @@
     "defaultMessage": "[{max,plural,one{Ȧ ƥǿǿşŧ ƈȧȧƞ ȧȧŧŧȧȧƈħ ȧȧŧ ḿǿǿşŧ # ḓīşŧīƞƈŧ ƒīŀḗḗ.} other{Ȧ ƥǿǿşŧ ƈȧȧƞ ȧȧŧŧȧȧƈħ ȧȧŧ ḿǿǿşŧ # ḓīşŧīƞƈŧ ƒīŀḗḗş.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.streaming.too_many": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ŧǿǿǿǿ ḿȧȧƞẏ şŧřḗḗȧȧḿş ǿǿƥḗḗƞ. Ƈŀǿǿşḗḗ ǿǿƞḗḗ ȧȧƞḓ ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.streaming.unavailable": {
+    "defaultMessage": "[Řḗḗȧȧŀ-ŧīḿḗḗ ŭŭƥḓȧȧŧḗḗş ȧȧřḗḗ ŭŭƞȧȧṽȧȧīŀȧȧƀŀḗḗ řīɠħŧ ƞǿǿẇ. Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ ḓǿǿ ŧħīş.]",
     "description": "Generated from en by tools/i18n; do not edit."

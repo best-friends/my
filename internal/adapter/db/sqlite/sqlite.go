@@ -149,13 +149,15 @@ func (d *DB) attempt(ctx context.Context, fn func(tx uow.Tx) error) (err error) 
 			_ = sqlTx.Rollback()
 		}
 	}()
-	if err := fn(&Tx{tx: sqlTx, projectors: d.opts.Projectors}); err != nil {
+	tx := &Tx{tx: sqlTx, projectors: d.opts.Projectors}
+	if err := fn(tx); err != nil {
 		return err
 	}
 	if err := sqlTx.Commit(); err != nil {
 		return fmt.Errorf("sqlite: commit: %w", err)
 	}
 	committed = true
+	d.opts.Projectors.Committed(ctx, tx.events)
 	return nil
 }
 
@@ -176,12 +178,15 @@ func isRetryable(err error) bool {
 type Tx struct {
 	tx         *sql.Tx
 	projectors *uow.Projectors
+	// events are the events emitted so far, for the commit hooks.
+	events []uow.Event
 }
 
 var _ uow.Tx = (*Tx)(nil)
 
 // Emit implements uow.Tx.
 func (t *Tx) Emit(ctx context.Context, e uow.Event) error {
+	t.events = append(t.events, e)
 	return t.projectors.Project(ctx, t, e)
 }
 

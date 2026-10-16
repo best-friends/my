@@ -122,3 +122,35 @@ func TestServiceChecksBoostedStatuses(t *testing.T) {
 		t.Errorf("Home floors = %v, want %d widening bounds and then none", floors, len(timeline.HomeWindows()))
 	}
 }
+
+func TestHomeEntry(t *testing.T) {
+	repo := &leakyRepository{
+		rows: []apptimeline.Entry{
+			post("03", "followee", appcontent.VisibilityPublic),
+			post("02", "followee", appcontent.VisibilityDirect),
+			post("01", "followee", appcontent.VisibilityPublic),
+		},
+		facts: apptimeline.Facts{Followed: map[string]bool{"followee": true}},
+	}
+	svc := apptimeline.NewService(apptimeline.Deps{Repository: repo, Clock: fixedClock{time.Now()}})
+	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: "viewer"}
+	q := apptimeline.Query{Languages: []string{"en"}}
+
+	e, ok, err := svc.HomeEntry(t.Context(), viewer, "01", q)
+	if err != nil || !ok || e.ID != "01" {
+		t.Errorf("HomeEntry(01) = %+v, %v, %v; want the entry", e, ok, err)
+	}
+	if hq := repo.homes[len(repo.homes)-1]; hq.Floor != "01" || hq.ViewerAccountID != "viewer" || !slices.Equal(hq.Languages, q.Languages) {
+		t.Errorf("HomeEntry read %+v, want the viewer's entries from 01 up in its languages", hq)
+	}
+	// CanView still applies: a direct post not addressed to the viewer is not listed.
+	if _, ok, err := svc.HomeEntry(t.Context(), viewer, "02", q); err != nil || ok {
+		t.Errorf("HomeEntry(02) = %v, %v; want not listed", ok, err)
+	}
+	if _, ok, err := svc.HomeEntry(t.Context(), viewer, "04", q); err != nil || ok {
+		t.Errorf("HomeEntry(04) = %v, %v; want not listed", ok, err)
+	}
+	if _, _, err := svc.HomeEntry(t.Context(), appcontent.Viewer{}, "01", q); err == nil {
+		t.Error("HomeEntry for a visitor succeeded")
+	}
+}
