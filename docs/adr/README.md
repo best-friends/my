@@ -21,7 +21,7 @@
 | [0007](0007-client-api.md) | Mastodon Client API とは互換させず、独自のクライアント API を提供する | Accepted |
 | [0008](0008-web-and-mobile-clients.md) | Web クライアントとモバイルアプリ | Proposed |
 | [0009](0009-internationalization.md) | 国際化（i18n）と地域化（l10n） | Proposed |
-| [0010](0010-configuration-and-packaging.md) | 設定・パッケージング・デプロイテンプレート | Proposed |
+| [0010](0010-configuration-and-packaging.md) | 設定・パッケージング・デプロイテンプレート | Accepted |
 | [0011](0011-license.md) | ライセンスは AGPL-3.0 とする | Accepted |
 | [0012](0012-v0-breaking-change-policy.md) | v0 期間中は破壊的変更を全面的に許容する | Accepted |
 | [0013](0013-timeline-strategy.md) | タイムラインは fan-out-on-read を既定とする | Proposed |

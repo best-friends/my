@@ -1,6 +1,6 @@
 # ADR-0010: 設定・パッケージング・デプロイテンプレート
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #11
@@ -9,7 +9,7 @@
 
 利用者が自由にカスタマイズでき（G3）、3 系統のターゲットに配れる（G2, NFR-DIST-2）必要がある。
 
-## Decision（推奨案）
+## Decision
 
 ### 設定
 
