@@ -104,6 +104,15 @@ func (r *NotificationRepository) DeleteExclusion(ctx context.Context, tx uow.Tx,
 	}), "delete notification exclusion")
 }
 
+// InsertDeletedStatus implements notification.Repository.
+func (r *NotificationRepository) InsertDeletedStatus(ctx context.Context, tx uow.Tx, statusID string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertNotificationDeletedStatus(ctx, statusID), "insert notification deleted status")
+}
+
 // ListNotifications implements notification.Repository.
 func (r *NotificationRepository) ListNotifications(ctx context.Context, recipientAccountID string, types []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error) {
 	names := make([]string, len(types))

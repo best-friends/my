@@ -833,8 +833,8 @@ CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
 
 -- ---------------------------------------------------------------------------------------------
--- notification: notifications, their dismissals, read markers, and the exclusions that hide them
--- (data-model §4.7, FR-205).
+-- notification: notifications, their dismissals, read markers, and the exclusions and deleted
+-- statuses that hide them (data-model §4.7, FR-205).
 -- Owned by internal/app/notification.
 -- ---------------------------------------------------------------------------------------------
 
@@ -878,4 +878,10 @@ CREATE TABLE notification_exclusions (
   reason TEXT NOT NULL CHECK (reason IN ('block', 'blocked_by', 'mute')),
   expires_at INTEGER,
   PRIMARY KEY (viewer_account_id, target_account_id, reason)
+) STRICT;
+
+-- Projection of content.status_deleted: the notifications about these statuses are hidden at
+-- read time; the erasure job deletes them and the row.
+CREATE TABLE notification_deleted_statuses (
+  status_id TEXT NOT NULL PRIMARY KEY
 ) STRICT;

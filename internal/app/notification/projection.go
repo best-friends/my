@@ -62,6 +62,11 @@ type ProjectorDeps struct {
 //     hides notifications; deletes it otherwise.
 //   - graph.unmuted: deletes the mute.
 //
+// The projector of content.status_deleted records the status in notification_deleted_statuses,
+// which the list and the unread count also apply, so that the mention, boost, and favourite
+// notifications about a deleted status no longer appear. Notifications are events and stay
+// until the erasure job deletes them.
+//
 // Register them after the graph and content projectors.
 func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 	p := &projector{d: d}
@@ -126,6 +131,9 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 	r.Register(appcontent.EventStatusRevised, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.StatusRevised)
 		return p.mentions(ctx, tx, ev.Status.ID, ev.Status.AuthorAccountID, ev.Revision.MentionedAccountIDs, ev.Revision.RevisedAt)
+	})
+	r.Register(appcontent.EventStatusDeleted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		return d.Repository.InsertDeletedStatus(ctx, tx, e.(appcontent.StatusDeleted).Deletion.StatusID)
 	})
 	r.Register(appcontent.EventBoosted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.Boosted)

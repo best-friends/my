@@ -42,7 +42,7 @@ type NotificationFactory func(t *testing.T, opts uow.Options) NotificationHarnes
 // own actions or a remote recipient; projecting an event again, also concurrently, without
 // duplicates; hiding notifications across blocks and from accounts muted with
 // hide_notifications, also those notified before the block or mute, which a lifted block or
-// mute shows again; listing with a type filter and keyset paging; and the read marker,
+// mute shows again; leaving out notifications about deleted statuses; listing with a type filter and keyset paging; and the read marker,
 // unread count, and dismissals.
 func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 	t.Helper()
@@ -58,6 +58,7 @@ func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 		{"AgreesOnConcurrentProjections", notificationConcurrent},
 		{"HidesBlockedAndMutedSources", notificationHides},
 		{"HidesLaterBlocksAndMutes", notificationHidesLater},
+		{"LeavesOutDeletedStatuses", notificationDeletedStatuses},
 		{"ListsWithTypesAndPages", notificationLists},
 		{"TracksReadMarkersAndDismissals", notificationReads},
 	}
@@ -605,4 +606,42 @@ func notificationHidesLater(t *testing.T, e *notificationEnv) {
 	checkSummaries(t, e, carol, fromDave)
 	checkSummaries(t, e, dave, fromCarol)
 	e.checkUnread(t, carol, 1)
+}
+
+func notificationDeletedStatuses(t *testing.T, e *notificationEnv) {
+	ctx := t.Context()
+	alice, bob, carol := e.user(t, "alice"), e.user(t, "bob"), e.user(t, "carol")
+	e.follow(t, carol, alice)
+	mention := e.post(t, alice, "hi @bob")
+	kept := e.post(t, alice, "kept")
+	gone := e.post(t, alice, "gone")
+	for _, id := range []string{kept.Status.ID, gone.Status.ID} {
+		e.favourite(t, bob, id)
+		e.clock.Advance(time.Second)
+		if _, err := e.interactions.Boost(ctx, bob, id); err != nil {
+			t.Fatalf("Boost = %v", err)
+		}
+	}
+	checkSummaries(t, e, bob, summary{Type: notification.TypeMention, Source: alice, StatusID: mention.Status.ID})
+	e.checkUnread(t, alice, 5)
+
+	for _, id := range []string{mention.Status.ID, gone.Status.ID} {
+		e.clock.Advance(time.Second)
+		if _, err := e.content.Delete(ctx, alice, id); err != nil {
+			t.Fatalf("Delete(%s) = %v", id, err)
+		}
+	}
+	// Projecting a deletion again changes nothing.
+	e.project(t, appcontent.StatusDeleted{
+		Status:   gone.Status,
+		Deletion: content.Deletion{StatusID: gone.Status.ID, URI: gone.Status.URI, AuthorAccountID: alice, Origin: content.DeletedByAuthor, DeletedAt: e.clock.Now()},
+	})
+	checkSummaries(t, e, bob)
+	e.checkUnread(t, bob, 0)
+	checkSummaries(t, e, alice,
+		summary{Type: notification.TypeBoost, Source: bob, StatusID: kept.Status.ID},
+		summary{Type: notification.TypeFavourite, Source: bob, StatusID: kept.Status.ID},
+		summary{Type: notification.TypeFollow, Source: carol},
+	)
+	e.checkUnread(t, alice, 3)
 }

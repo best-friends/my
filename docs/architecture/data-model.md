@@ -80,7 +80,7 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 | 利用者登録 | `users`, `password_credentials`, `accounts`, `local_accounts`, `account_profile_revisions`, `account_keys`, `local_account_private_keys`（登録画面からは加えて `user_email_addresses`, `registration_applications`, `registration_decisions`, `invite_redemptions`, `user_tokens`, `sessions`） | `account_handles`, `account_profile_heads`（登録画面からは加えて `user_primary_emails`, `user_registration_states`, `session_activity`） | なし（確認メールはコミット後に `Mailer` で送る） |
 | 投稿 | `statuses`, `local_statuses`, `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `account_post_counters`, `notifications`（メンション） | 配送の展開 |
 | 投稿の編集 | `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `feed_entries`（言語）, `feed_tag_entries`, `feed_direct_recipients`, `notifications`（増えたメンション） | `Update` の配送 |
-| 投稿の削除 | `status_deletions` | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `account_post_counters`, `boost_edges`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients` | `Delete` の配送 |
+| 投稿の削除 | `status_deletions` | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `account_post_counters`, `boost_edges`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `notification_deleted_statuses` | `Delete` の配送 |
 | ブースト | `boosts` | `boost_edges`, `feed_entries`, `status_counters`, `notifications` | `Announce` の配送（`local` 投稿のブーストは連合しない） |
 | ブーストの取り消し | `boost_retractions` | `boost_edges`, `feed_entries`, `status_counters` | `Undo Announce` の配送（連合したブーストだけ） |
 | お気に入り / 取り消し | `favourites`（現在値） | `status_counters`, `notifications`（お気に入りだけ） | `Like` / `Undo Like` の配送（リモートの投稿だけ） |
@@ -460,7 +460,7 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | `content.status_created` | 投稿 | 投稿、最初の版 | `status_heads`、`status_mention_index`、`status_reply_links`、`status_counters`、`account_post_counters` | `feed_entries`・`feed_tag_entries`・`feed_direct_recipients`、通知 `mention` |
 | `content.status_revised` | 編集 | 投稿、新しい版 | `status_heads`、`status_mention_index` | `feed_entries`（言語）・`feed_tag_entries`・`feed_direct_recipients`、通知 `mention`（編集で増えたメンション） |
-| `content.status_deleted` | 削除 | 投稿、削除の行 | すべての投稿の投影から外す、`account_post_counters` 減算 | `feed_*` から外す |
+| `content.status_deleted` | 削除 | 投稿、削除の行 | すべての投稿の投影から外す、`account_post_counters` 減算 | `feed_*` から外す、`notification_deleted_statuses` |
 
 #### ブースト
 
@@ -622,6 +622,7 @@ flowchart LR
 | `notification_dismissals` | イベント | `notification_id`（PK）, `dismissed_at` | |
 | `notification_read_markers` | 現在値 | `account_id`（PK）, `last_read_id` | 未読数は `id > last_read_id` で数える |
 | `notification_exclusions` | 投影 | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可） | PK `(viewer_account_id, target_account_id, reason)`。`graph` のブロック・ミュートのイベントから作る |
+| `notification_deleted_statuses` | 投影 | `status_id`（PK） | `content.status_deleted` から作る |
 | `push_subscriptions` | 現在値 | `id`, `user_id`, `oauth_token_id`, `endpoint`, `key_p256dh`, `key_auth`, `created_at`, `updated_at` | 一意 `(endpoint)`（FR-206） |
 | `push_subscription_alerts` | 現在値 | `subscription_id`, `notification_type` | PK `(subscription_id, notification_type)` |
 
@@ -647,7 +648,10 @@ flowchart LR
   - `graph.muted` は、`hide_notifications` 付きなら `mute` の行をミュートの期限で作り（あれば期限を置き換え）、付いていなければ消します。`graph.unmuted` は `mute` の行を消します。
   - 一覧と未読数は、`source_account_id` を `target_account_id` とする受け取る人の行のうち、読み取り時点で有効なもの（`expires_at` が NULL か現在時刻より後）がある通知を除きます。解除や期限切れで行が無効になれば、その通知はまた見えます。差出人の無い通知（`moderation_notice`）は除きません。
   - 作成時の判定は残します。ミュート中に起きたことは、解除しても通知になりません。
-- 一覧は、消していない、除外されていない通知を `id` のキーセットで新しい順に引きます。種類の絞り込み（複数可）は `(recipient_account_id, type, id)` を使います。
+- 投稿が削除されたら、その投稿についての通知（メンション・ブースト・お気に入り）は読み取り時に隠します。
+  - 通知は【イベント】なので、projector は通知の行を消しません。`content.status_deleted` を購読する同期 projector が `notification_deleted_statuses` に投稿の `status_id` を記録し、一覧と未読数は `status_id` がそこにある通知を除きます（同じ削除を再処理しても 1 行です）。
+  - 行を物理削除するのは消去ジョブだけです（§1.4、§8）。表示から消えるのは削除のトランザクションで即時、物理削除は非同期です。
+- 一覧は、消していない、除外されていない、削除された投稿についてでない通知を `id` のキーセットで新しい順に引きます。種類の絞り込み（複数可）は `(recipient_account_id, type, id)` を使います。
 - 既読位置は前にだけ進みます（`last_read_id` より古い通知を指定しても変わりません）。同時に既読位置を送る複数の端末が位置を戻さないためです。指定できるのは自分の通知だけです。
 - 未読数は、一覧に出る通知のうち `id > last_read_id` のものの件数です。既読位置が無ければすべてが未読です。
 - 処分の通知（`notify_target`）は `moderation_notice` として届きます。本人は処分の種類・公開理由・期限を見られ、異議申し立て（S/C）に進めます。
@@ -862,7 +866,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 
 | 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
 | --- | --- | --- | --- |
-| 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `bookmarks` / `status_pins` | `status_deletions`（URI = tombstone） |
+| 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
 | アカウント削除（FR-008） | `account_lifecycle_events`（`deletion_scheduled` → 期日に `deleted`） | プロフィールの版・メールアドレス・資格情報・投稿（上と同じ）・現在値の関係 | `accounts`（`uri` と `domain` のみ。URI の再利用防止）、処分の記録（理由・種類・日時） |
 | BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
 
@@ -883,6 +887,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
 | `feed_*` | 上記の投影の元になるイベント | 同期 |
 | `notification_exclusions` | `blocks` と取り消し（`block_edges`）、`mutes` | 同期 |
+| `notification_deleted_statuses` | `status_deletions` | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 | `instance_health` | `delivery_attempts` | 同期（間引き） |
 

@@ -57,7 +57,8 @@ func (q Query) limit() int {
 
 // List returns accountID's notifications that are not dismissed, newest first. It leaves out
 // the notifications from accounts that accountID blocks or is blocked by, or mutes with
-// hide_notifications, at the time of reading, also those notified before the block or mute.
+// hide_notifications, at the time of reading, also those notified before the block or mute,
+// and the notifications about deleted statuses.
 // An unknown type in q.Types fails with notification.ErrInvalidType.
 func (s *Service) List(ctx context.Context, accountID string, q Query) ([]notification.Notification, error) {
 	for _, t := range q.Types {

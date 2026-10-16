@@ -18,8 +18,8 @@ FROM notifications WHERE id = $1;
 INSERT INTO notification_dismissals (notification_id, dismissed_at) VALUES ($1, $2)
 ON CONFLICT (notification_id) DO NOTHING;
 
--- ListNotifications pages the notifications of a recipient that are not dismissed and whose
--- source no exclusion in force at now hides, newest first; an empty before starts at the
+-- ListNotifications pages the notifications of a recipient that are not dismissed, whose
+-- source no exclusion in force at now hides, and whose status is not deleted, newest first; an empty before starts at the
 -- newest. With all_types false only the listed types count.
 -- name: ListNotifications :many
 SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.dedupe_key, n.created_at
@@ -31,6 +31,7 @@ WHERE n.recipient_account_id = sqlc.arg(recipient_account_id)
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
     WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
       AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
+  AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id)
 ORDER BY n.id DESC
 LIMIT sqlc.arg(page_limit);
 
@@ -43,7 +44,8 @@ WHERE n.recipient_account_id = sqlc.arg(recipient_account_id)
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
     WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
-      AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz));
+      AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
+  AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id);
 
 -- Read markers (current value).
 
@@ -66,3 +68,10 @@ ON CONFLICT (viewer_account_id, target_account_id, reason) DO UPDATE SET expires
 
 -- name: DeleteNotificationExclusion :exec
 DELETE FROM notification_exclusions WHERE viewer_account_id = $1 AND target_account_id = $2 AND reason = $3;
+
+-- Deleted statuses (projection of content.status_deleted).
+
+-- InsertNotificationDeletedStatus inserts nothing when the status is already recorded.
+-- name: InsertNotificationDeletedStatus :exec
+INSERT INTO notification_deleted_statuses (status_id) VALUES ($1)
+ON CONFLICT (status_id) DO NOTHING;
