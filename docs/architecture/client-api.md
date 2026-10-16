@@ -203,7 +203,7 @@ strict server は SSE を返せないので、`oapi-codegen.yaml` の `exclude-o
 - イベントは `update`（`data` は `Status`）と `notification`（`data` は `Notification`）です。`id` は付けず、`Last-Event-ID` での再開はしません。
   切れたら再接続し、ホームと通知を読み直します。
 - 接続の流れは [overview §4.4](overview.md#44-リアルタイム更新sse) のとおりです。ハンドラは `stream.Subscriber` で購読し、知らせを受けるたびにユースケース
-  （`HomeEntries.HomeEntry`、`Notifications.List`）で閲覧者に見せる形に読み直して、`Server.statuses` と `Server.newNotification` で詰め替えます。
+  （`HomeEntries.HomeEntry`、`Notifications.List`）で閲覧者に見せる形に読み直して、`Server.statuses` と `Server.newNotifications` で詰め替えます。
 - 開くと `: connected` を、その後 30 秒ごと（`Options.StreamHeartbeat`）に `: heartbeat` のコメント行を送ります。ハートビートのたびにアクセストークンを照合し直し、無効なら閉じます。
 - 接続数の上限は、アカウントごとに 8、プロセス全体で 1,000 です（`stream.HubOptions`）。アカウントの上限を超えると 429（`/api/v1/problems/too-many-streams`）、
   シャットダウン中は 503 です。
