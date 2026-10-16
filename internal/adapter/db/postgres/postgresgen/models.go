@@ -64,11 +64,6 @@ type AccountProfileField struct {
 	ValueHtml  string
 }
 
-type AccountProfileHead struct {
-	AccountID  string
-	RevisionID string
-}
-
 type AccountProfileRevision struct {
 	ID            string
 	AccountID     string
@@ -96,11 +91,6 @@ type BlockEdge struct {
 	BlockerAccountID string
 	BlockedAccountID string
 	BlockID          string
-}
-
-type BlockRetraction struct {
-	BlockID     string
-	RetractedAt time.Time
 }
 
 type Bookmark struct {
@@ -132,18 +122,6 @@ type BoostRetraction struct {
 	RetractedAt time.Time
 }
 
-type DeadJob struct {
-	ID             string
-	Type           string
-	Payload        []byte
-	IdempotencyKey *string
-	OrderingKey    *string
-	Attempt        int32
-	LastError      string
-	CreatedAt      time.Time
-	FailedAt       time.Time
-}
-
 type Favourite struct {
 	AccountID string
 	StatusID  string
@@ -158,13 +136,6 @@ type Follow struct {
 	FollowerAccountID string
 	FolloweeAccountID string
 	RequestedAt       time.Time
-}
-
-type FollowAcceptance struct {
-	FollowID    string
-	AcceptedBy  string
-	ActivityUri *string
-	AcceptedAt  time.Time
 }
 
 type FollowCounter struct {
@@ -185,19 +156,6 @@ type FollowPreference struct {
 	FollowID   string
 	ShowBoosts bool
 	Notify     bool
-}
-
-type FollowRejection struct {
-	FollowID    string
-	RejectedBy  string
-	ActivityUri *string
-	RejectedAt  time.Time
-}
-
-type FollowTermination struct {
-	FollowID     string
-	Reason       string
-	TerminatedAt time.Time
 }
 
 type InstanceSetting struct {
@@ -229,37 +187,11 @@ type InstanceTextRevision struct {
 	RevisedAt       time.Time
 }
 
-type Job struct {
-	ID             string
-	Type           string
-	Payload        []byte
-	IdempotencyKey *string
-	OrderingKey    *string
-	Attempt        int32
-	RunAt          time.Time
-	LockedBy       *string
-	LockedUntil    *time.Time
-	LastError      *string
-	CreatedAt      time.Time
-}
-
-type KvEntry struct {
-	Namespace string
-	Key       string
-	Value     []byte
-	ExpiresAt *time.Time
-}
-
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
 	Username           string
 	UsernameNormalized string
-}
-
-type LocalAccountPrivateKey struct {
-	AccountKeyID  string
-	PrivateKeyEnc []byte
 }
 
 type LocalStatus struct {
@@ -277,16 +209,6 @@ type Mute struct {
 	CreatedAt         time.Time
 }
 
-type OutboxEvent struct {
-	ID             string
-	JobType        string
-	Payload        []byte
-	IdempotencyKey *string
-	OrderingKey    *string
-	RunAt          time.Time
-	CreatedAt      time.Time
-}
-
 type PasswordCredential struct {
 	ID           string
 	UserID       string
@@ -299,32 +221,6 @@ type Role struct {
 	Key       string
 	Position  int32
 	CreatedAt time.Time
-}
-
-type RolePermission struct {
-	RoleID     string
-	Permission string
-}
-
-type Session struct {
-	ID        string
-	UserID    string
-	TokenHash []byte
-	UserAgent *string
-	Ip        *string
-	CreatedAt time.Time
-	ExpiresAt time.Time
-}
-
-type SessionActivity struct {
-	SessionID  string
-	LastSeenAt time.Time
-}
-
-type SessionRevocation struct {
-	SessionID string
-	Reason    string
-	RevokedAt time.Time
 }
 
 type Status struct {
@@ -403,25 +299,10 @@ type StatusRevisionBody struct {
 	ContentHtml string
 }
 
-type StatusRevisionEmoji struct {
-	RevisionID string
-	EmojiID    string
-}
-
-type StatusRevisionMention struct {
-	RevisionID string
-	AccountID  string
-}
-
 type StatusRevisionSource struct {
 	RevisionID   string
 	SourceText   string
 	SourceFormat string
-}
-
-type StatusRevisionTag struct {
-	RevisionID string
-	TagID      string
 }
 
 type Tag struct {
@@ -436,14 +317,6 @@ type User struct {
 	CreatedAt time.Time
 }
 
-type UserEmailAddress struct {
-	ID                string
-	UserID            string
-	Address           string
-	AddressNormalized string
-	AddedAt           time.Time
-}
-
 type UserPreference struct {
 	UserID                  string
 	Locale                  string
@@ -452,35 +325,4 @@ type UserPreference struct {
 	DefaultPostLanguage     string
 	RequireMediaDescription bool
 	UpdatedAt               time.Time
-}
-
-type UserPrimaryEmail struct {
-	UserID            string
-	EmailAddressID    string
-	AddressNormalized string
-}
-
-type UserRole struct {
-	UserID  string
-	RoleID  string
-	GrantID string
-}
-
-type UserRoleGrant struct {
-	ID              string
-	UserID          string
-	RoleID          string
-	GrantedByUserID *string
-	GrantedAt       time.Time
-}
-
-type UserRoleRevocation struct {
-	GrantID         string
-	RevokedByUserID *string
-	RevokedAt       time.Time
-}
-
-type UserTimelineLanguage struct {
-	UserID   string
-	Language string
 }

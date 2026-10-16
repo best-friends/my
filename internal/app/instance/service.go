@@ -53,6 +53,15 @@ func (s *Service) DefaultLocale(ctx context.Context) (string, error) {
 	return settings.DefaultLocale(), nil
 }
 
+// MaxStatusLength returns the current value of the max_status_length setting (FR-101).
+func (s *Service) MaxStatusLength(ctx context.Context) (int, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return settings.MaxStatusLength(), nil
+}
+
 // SetSettingInput describes a change of a setting.
 type SetSettingInput struct {
 	Key   instance.SettingKey

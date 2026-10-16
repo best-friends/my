@@ -78,7 +78,7 @@ func (e *statusEnv) newStatus(author string, v content.Visibility) content.Statu
 	id := e.ids.NewID()
 	return content.Status{
 		ID:              id,
-		URI:             "https://" + contractHost + "/ap/statuses/" + id,
+		URI:             content.StatusURI(contractHost, id),
 		AuthorAccountID: author,
 		IsLocal:         true,
 		Visibility:      v,

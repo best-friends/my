@@ -74,9 +74,9 @@ type Relationship struct {
 	MutingNotifications bool
 }
 
-// Follows reports whether the account actively follows the target. Other modules read the
-// follow state through it and RequestedFollow, without the graph module's domain types.
-func (r Relationship) Follows() bool { return r.Following == graph.StateActive }
+// ActivelyFollowing reports whether the account's follow of the target is active; a pending
+// follow request does not count.
+func (r Relationship) ActivelyFollowing() bool { return r.Following == graph.StateActive }
 
 // RequestedFollow reports whether the account's follow of the target awaits approval.
 func (r Relationship) RequestedFollow() bool { return r.Following == graph.StatePending }
