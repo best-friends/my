@@ -200,6 +200,152 @@ CREATE TABLE account_lifecycle_states (
 );
 CREATE INDEX account_lifecycle_states_state_deletion_due_at ON account_lifecycle_states (state, deletion_due_at);
 
+-- content: statuses (data-model §4.4) --------------------------------------------------------
+
+-- Resource: a status. Visibility, author, reply target, and publication time never change.
+CREATE TABLE statuses (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  uri text NOT NULL,
+  url text,
+  author_account_id text COLLATE "C" NOT NULL,
+  is_local boolean NOT NULL,
+  visibility text NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  in_reply_to_uri text,
+  conversation_uri text,
+  published_at timestamptz NOT NULL,
+  -- local statuses are never federated, so only this instance has them (ADR-0017).
+  CONSTRAINT statuses_local_check CHECK (visibility <> 'local' OR is_local)
+);
+CREATE UNIQUE INDEX statuses_uri ON statuses (uri);
+CREATE INDEX statuses_author_account_id_id ON statuses (author_account_id, id);
+CREATE INDEX statuses_in_reply_to_uri ON statuses (in_reply_to_uri);
+CREATE INDEX statuses_conversation_uri_id ON statuses (conversation_uri, id);
+
+-- Resource (subtype): a status posted on this instance, with the client API's Idempotency-Key.
+CREATE TABLE local_statuses (
+  status_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  author_account_id text COLLATE "C" NOT NULL,
+  client_id text COLLATE "C",
+  idempotency_key text
+);
+CREATE UNIQUE INDEX local_statuses_author_account_id_idempotency_key ON local_statuses (author_account_id, idempotency_key);
+
+-- Event (revision): one version of a status's content (FR-109).
+CREATE TABLE status_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  status_id text COLLATE "C" NOT NULL,
+  seq integer NOT NULL CHECK (seq >= 1),
+  spoiler_text text NOT NULL,
+  sensitive boolean NOT NULL,
+  language text NOT NULL,
+  revised_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX status_revisions_status_id_seq ON status_revisions (status_id, seq);
+
+-- Event (child of a revision): the content per language, normalized from contentMap (NFR-I18N-5).
+CREATE TABLE status_revision_bodies (
+  revision_id text COLLATE "C" NOT NULL,
+  language text NOT NULL,
+  content_html text NOT NULL,
+  PRIMARY KEY (revision_id, language)
+);
+
+-- Event (subtype of a revision): the source text a local author typed.
+CREATE TABLE status_revision_sources (
+  revision_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  source_text text NOT NULL,
+  source_format text NOT NULL CHECK (source_format IN ('text_plain'))
+);
+
+-- Event (child of a revision): the attached media, with per-revision alt text (FR-105).
+CREATE TABLE status_revision_attachments (
+  revision_id text COLLATE "C" NOT NULL,
+  position integer NOT NULL CHECK (position BETWEEN 0 AND 3),
+  media_id text COLLATE "C" NOT NULL,
+  description text,
+  PRIMARY KEY (revision_id, position)
+);
+
+-- Event (child of a revision): the mentioned accounts.
+CREATE TABLE status_revision_mentions (
+  revision_id text COLLATE "C" NOT NULL,
+  account_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (revision_id, account_id)
+);
+
+-- Event (child of a revision): the hashtags.
+CREATE TABLE status_revision_tags (
+  revision_id text COLLATE "C" NOT NULL,
+  tag_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (revision_id, tag_id)
+);
+
+-- Event (child of a revision): the custom emoji.
+CREATE TABLE status_revision_emojis (
+  revision_id text COLLATE "C" NOT NULL,
+  emoji_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (revision_id, emoji_id)
+);
+
+-- Event: the deletion of a status. It outlives the purge as the tombstone of the URI.
+CREATE TABLE status_deletions (
+  status_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  uri text NOT NULL,
+  author_account_id text COLLATE "C" NOT NULL,
+  origin text NOT NULL CHECK (origin IN ('author', 'moderation', 'remote', 'account_deletion')),
+  moderation_action_id text COLLATE "C",
+  deleted_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX status_deletions_uri ON status_deletions (uri);
+
+-- Resource: a hashtag, unique by its normalized name.
+CREATE TABLE tags (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  name text NOT NULL,
+  name_normalized text NOT NULL,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX tags_name_normalized ON tags (name_normalized);
+
+-- Projection: the current revision of each status that is not deleted.
+CREATE TABLE status_heads (
+  status_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revision_id text COLLATE "C" NOT NULL,
+  seq integer NOT NULL,
+  last_revised_at timestamptz NOT NULL
+);
+
+-- Projection: the known parent of each reply, neither of them deleted (FR-106).
+CREATE TABLE status_reply_links (
+  status_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  parent_status_id text COLLATE "C" NOT NULL,
+  parent_author_account_id text COLLATE "C" NOT NULL
+);
+CREATE INDEX status_reply_links_parent_status_id_status_id ON status_reply_links (parent_status_id, status_id);
+
+-- Projection: the accounts that the current revision of each status mentions.
+CREATE TABLE status_mention_index (
+  account_id text COLLATE "C" NOT NULL,
+  status_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (account_id, status_id)
+);
+CREATE INDEX status_mention_index_status_id ON status_mention_index (status_id);
+
+-- Projection: the counters of each status that is not deleted (data-model §2.3).
+CREATE TABLE status_counters (
+  status_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  replies_count bigint NOT NULL CHECK (replies_count >= 0),
+  boosts_count bigint NOT NULL CHECK (boosts_count >= 0),
+  favourites_count bigint NOT NULL CHECK (favourites_count >= 0)
+);
+
+-- Projection: the statuses of each account that are not deleted. No row means none.
+CREATE TABLE account_post_counters (
+  account_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  statuses_count bigint NOT NULL CHECK (statuses_count > 0),
+  last_status_at timestamptz NOT NULL
+);
+
 -- graph: follows (data-model §4.5) ------------------------------------------------------------
 
 -- Resource: one follow relationship. Following again after a rejection or termination inserts a
@@ -376,4 +522,51 @@ CREATE TABLE user_timeline_languages (
   user_id text COLLATE "C" NOT NULL,
   language text NOT NULL,
   PRIMARY KEY (user_id, language)
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- instance: settings and texts (data-model §4.9). Owned by internal/app/instance.
+-- Keys are defined in internal/domain/instance; add a key there and to its CHECK here together.
+-- key and locale use COLLATE "C" so that listings sort as in SQLite.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event (revision): one change of a setting. value is the canonical string form of the key's
+-- scalar type. revised_by_user_id is NULL for a change from the CLI.
+CREATE TABLE instance_setting_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  key text COLLATE "C" NOT NULL CHECK (key IN (
+    'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled'
+  )),
+  value text NOT NULL,
+  revised_by_user_id text COLLATE "C",
+  revised_at timestamptz NOT NULL
+);
+CREATE INDEX instance_setting_revisions_key_id ON instance_setting_revisions (key, id DESC);
+
+-- Projection: the current value of each setting that has been set. Unset keys use the default
+-- defined in code.
+CREATE TABLE instance_settings (
+  key text COLLATE "C" NOT NULL PRIMARY KEY,
+  revision_id text COLLATE "C" NOT NULL,
+  value text NOT NULL
+);
+
+-- Event (revision): one version of a localized text. An empty body clears the text in that
+-- locale. revised_by_user_id is NULL for a change from the CLI.
+CREATE TABLE instance_text_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  key text COLLATE "C" NOT NULL CHECK (key IN ('name', 'short_description', 'description', 'terms', 'privacy_policy')),
+  locale text COLLATE "C" NOT NULL,
+  body text NOT NULL,
+  revised_by_user_id text COLLATE "C",
+  revised_at timestamptz NOT NULL
+);
+CREATE INDEX instance_text_revisions_key_locale_id ON instance_text_revisions (key, locale, id DESC);
+
+-- Projection: the current revision of each text in each locale.
+CREATE TABLE instance_texts (
+  key text COLLATE "C" NOT NULL,
+  locale text COLLATE "C" NOT NULL,
+  revision_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (key, locale)
 );
