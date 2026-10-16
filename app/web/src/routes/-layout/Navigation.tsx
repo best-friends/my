@@ -14,22 +14,22 @@ import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { HomeIcon, LocalIcon, NotificationsIcon, ProfileIcon, SettingsIcon } from "./icons";
 
 type NavigationItem = {
-  to: "/" | "/local" | "/notifications" | "/profile" | "/settings";
+  to: "/home" | "/local" | "/notifications" | "/profile" | "/settings";
   label: ClientMessageKey;
   icon: ReactNode;
 };
 
 const items: readonly NavigationItem[] = [
-  { to: "/", label: "client:shell.nav.home", icon: <HomeIcon /> },
+  { to: "/home", label: "client:shell.nav.home", icon: <HomeIcon /> },
   { to: "/local", label: "client:shell.nav.local", icon: <LocalIcon /> },
   { to: "/notifications", label: "client:shell.nav.notifications", icon: <NotificationsIcon /> },
   { to: "/profile", label: "client:shell.nav.profile", icon: <ProfileIcon /> },
   { to: "/settings", label: "client:shell.nav.settings", icon: <SettingsIcon /> },
 ];
 
-/** Whether `pathname` is in the section of `to`: the page itself or one below it. Home is only "/". */
+/** Whether `pathname` is in the section of `to`: the page itself or one below it. */
 function inSection(pathname: string, to: NavigationItem["to"]): boolean {
-  return to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
+  return pathname === to || pathname.startsWith(`${to}/`);
 }
 
 export function Navigation() {

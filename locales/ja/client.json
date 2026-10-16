@@ -290,5 +290,85 @@
   "shell.update.available": {
     "defaultMessage": "アプリの新しい版があります。",
     "description": "Message shown when a new version of the web app has been downloaded and waits until the user applies it."
+  },
+  "tag.title": {
+    "defaultMessage": "#{tag}",
+    "description": "Heading and document title of the page with the posts of one hashtag. {tag} is the hashtag without the #, for example 'cats'."
+  },
+  "timeline.boosted_by": {
+    "defaultMessage": "{name} さんがブースト",
+    "description": "Line above a post in a timeline that someone else shared (boosted). {name} is the display name of the account that boosted it."
+  },
+  "timeline.content_warning.toggle": {
+    "defaultMessage": "内容を表示",
+    "description": "Button next to a post's content warning that shows or hides the post behind it. The same text is used while the post is shown."
+  },
+  "timeline.empty.home.action": {
+    "defaultMessage": "ローカルタイムラインを見る",
+    "description": "Link from the empty home timeline to the local timeline, where the user can find people to follow."
+  },
+  "timeline.empty.home.description": {
+    "defaultMessage": "自分の投稿と、フォローしている人の投稿がここに表示されます。",
+    "description": "Text under the heading of the empty home timeline."
+  },
+  "timeline.empty.home.heading": {
+    "defaultMessage": "ホームタイムラインに投稿はありません",
+    "description": "Heading shown instead of posts when the home timeline has none."
+  },
+  "timeline.empty.local.description": {
+    "defaultMessage": "このサーバーの人の公開投稿がここに表示されます。",
+    "description": "Text under the heading of the empty local timeline."
+  },
+  "timeline.empty.local.heading": {
+    "defaultMessage": "まだ投稿はありません",
+    "description": "Heading shown instead of posts when the local timeline has none."
+  },
+  "timeline.empty.tag.description": {
+    "defaultMessage": "#{tag} の付いた公開投稿がここに表示されます。",
+    "description": "Text under the heading of an empty hashtag timeline. {tag} is the hashtag without the #."
+  },
+  "timeline.empty.tag.heading": {
+    "defaultMessage": "#{tag} の投稿はありません",
+    "description": "Heading shown instead of posts when no post has the hashtag. {tag} is the hashtag without the #."
+  },
+  "timeline.keyboard_hint": {
+    "defaultMessage": "タイムラインでは Page Down と Page Up で投稿の間を移動できます。",
+    "description": "Hint for screen reader users before a timeline, about the keys that move from post to post."
+  },
+  "timeline.load_more": {
+    "defaultMessage": "さらに読み込む",
+    "description": "Button at the end of a timeline that loads older posts."
+  },
+  "timeline.load_more.failed": {
+    "defaultMessage": "投稿を読み込めませんでした: {reason}",
+    "description": "Message, read out and shown at the end of a timeline, when older posts failed to load. {reason} is the error message, a full sentence."
+  },
+  "timeline.loading": {
+    "defaultMessage": "投稿を読み込み中",
+    "description": "Accessible name of the progress indicator while posts of a timeline load."
+  },
+  "timeline.media.no_description": {
+    "defaultMessage": "説明なし",
+    "description": "Badge on a picture of a post whose author gave no description (alternative text); screen readers read it as the picture's name."
+  },
+  "timeline.media.reveal": {
+    "defaultMessage": "センシティブなメディアを表示",
+    "description": "Toggle button over the pictures of a post that the author marked sensitive; it shows or hides them."
+  },
+  "timeline.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button at the end of a timeline that tries again to load older posts after a failure."
+  },
+  "timeline.signed_out.action": {
+    "defaultMessage": "ログイン",
+    "description": "Link on the home page, when nobody is signed in, that opens the sign-in page."
+  },
+  "timeline.signed_out.description": {
+    "defaultMessage": "ログインすると、フォローしている人の投稿を読めます。",
+    "description": "Text on the home page when nobody is signed in."
+  },
+  "timeline.signed_out.heading": {
+    "defaultMessage": "ログインしていません",
+    "description": "Heading on the home page when nobody is signed in, shown instead of the home timeline."
   }
 }

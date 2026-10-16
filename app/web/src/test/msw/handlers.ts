@@ -35,6 +35,31 @@ export const viewerFixture: Schemas["Account"] = {
   created_at: "2026-10-01T00:00:00Z",
 };
 
+/** A local post of another account, for the timelines. */
+export const timelineStatusFixture: Schemas["Status"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000a1",
+  uri: "https://my.example/ap/statuses/0192f0c4-7a8e-7000-8000-0000000000a1",
+  url: "https://my.example/@bob/0192f0c4-7a8e-7000-8000-0000000000a1",
+  account: { ...viewerFixture, id: "0192f0c4-7a8e-7000-8000-000000000002", username: "bob", acct: "bob", display_name: "Bob", url: "https://my.example/@bob" },
+  content: "<p>Hello from the local timeline!</p>",
+  spoiler_text: "",
+  sensitive: false,
+  visibility: "public",
+  language: "en",
+  created_at: "2026-10-16T09:00:00Z",
+  media_attachments: [],
+  mentions: [],
+  tags: [],
+  replies_count: 0,
+  boosts_count: 0,
+  favourites_count: 0,
+};
+
+/** A page of a timeline with the given statuses and, when there are older ones, the cursor to them. */
+export function statusPage(items: Schemas["Status"][], nextCursor?: string): Schemas["StatusPage"] {
+  return nextCursor === undefined ? { items } : { items, next_cursor: nextCursor };
+}
+
 /** An RFC 9457 problem response, as the client API writes it. */
 export function problem(status: number, type: string, title: string, init: { headers?: Record<string, string> } = {}) {
   const body: Schemas["Problem"] = { type, title, status };
@@ -74,6 +99,12 @@ export const handlers = [
   http.get(`${apiBase}/accounts/verify_credentials`, ({ request }) =>
     request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(viewerFixture) : unauthenticated(request),
   ),
+  // Timelines (#128): one page each; the home timeline needs a token.
+  http.get(`${apiBase}/timelines/home`, ({ request }) =>
+    request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(statusPage([timelineStatusFixture])) : unauthenticated(request),
+  ),
+  http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([timelineStatusFixture]))),
+  http.get(`${apiBase}/timelines/tag/:hashtag`, () => HttpResponse.json(statusPage([timelineStatusFixture]))),
   // No refresh token cookie: the browser has no session to resume.
   http.post(oauthPaths.refresh, () => oauthError("invalid_grant")),
   http.post(oauthPaths.token, () => oauthError("invalid_grant")),

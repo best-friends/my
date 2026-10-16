@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { createFileRoute } from "@tanstack/react-router";
-import { PlaceholderPage } from "./-layout/PlaceholderPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-/** The home timeline (placeholder until the timeline feature exists). */
+/** The root address opens the home timeline; the timelines are named by their own paths (web-client.md S3). */
 export const Route = createFileRoute("/")({
-  component: HomePage,
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router's redirects are thrown objects.
+    throw redirect({ to: "/home", replace: true });
+  },
 });
-
-function HomePage() {
-  return <PlaceholderPage titleKey="client:home.title" />;
-}
