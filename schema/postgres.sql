@@ -200,6 +200,68 @@ CREATE TABLE account_lifecycle_states (
 );
 CREATE INDEX account_lifecycle_states_state_deletion_due_at ON account_lifecycle_states (state, deletion_due_at);
 
+-- graph: follows (data-model §4.5) ------------------------------------------------------------
+
+-- Resource: one follow relationship. Following again after a rejection or termination inserts a
+-- new row, so earlier relationships stay on record.
+CREATE TABLE follows (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  uri text NOT NULL,
+  follower_account_id text COLLATE "C" NOT NULL,
+  followee_account_id text COLLATE "C" NOT NULL,
+  requested_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX follows_uri ON follows (uri);
+
+-- Event: a follow became active.
+CREATE TABLE follow_acceptances (
+  follow_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  accepted_by text NOT NULL CHECK (accepted_by IN ('auto', 'followee', 'remote')),
+  activity_uri text,
+  accepted_at timestamptz NOT NULL
+);
+
+-- Event: a pending follow was declined.
+CREATE TABLE follow_rejections (
+  follow_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  rejected_by text NOT NULL CHECK (rejected_by IN ('followee', 'remote', 'system')),
+  activity_uri text,
+  rejected_at timestamptz NOT NULL
+);
+
+-- Event: a pending or active follow ended.
+CREATE TABLE follow_terminations (
+  follow_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  reason text NOT NULL CHECK (reason IN ('unfollowed', 'removed_by_followee', 'blocked', 'account_deleted', 'moderation')),
+  terminated_at timestamptz NOT NULL
+);
+
+-- Projection: the live follow of each pair (neither rejected nor terminated).
+CREATE TABLE follow_edges (
+  follower_account_id text COLLATE "C" NOT NULL,
+  followee_account_id text COLLATE "C" NOT NULL,
+  follow_id text COLLATE "C" NOT NULL,
+  state text NOT NULL CHECK (state IN ('pending', 'active')),
+  since timestamptz NOT NULL,
+  PRIMARY KEY (follower_account_id, followee_account_id)
+);
+CREATE INDEX follow_edges_followee_state_follow_id ON follow_edges (followee_account_id, state, follow_id);
+CREATE INDEX follow_edges_follower_state_follow_id ON follow_edges (follower_account_id, state, follow_id);
+
+-- Current value: the follower's settings of a follow.
+CREATE TABLE follow_preferences (
+  follow_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  show_boosts boolean NOT NULL,
+  notify boolean NOT NULL
+);
+
+-- Projection: the numbers of active follows into and out of an account. No row means zero.
+CREATE TABLE follow_counters (
+  account_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  followers_count bigint NOT NULL CHECK (followers_count >= 0),
+  following_count bigint NOT NULL CHECK (following_count >= 0)
+);
+
 -- ---------------------------------------------------------------------------------------------
 -- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).
 -- Owned by internal/adapter/queue/db.
