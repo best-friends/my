@@ -1,0 +1,121 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    "https://purl.archive.org/socialweb/webfinger",
+    {
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "toot": "http://joinmastodon.org/ns#",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "featuredTags": {
+        "@id": "toot:featuredTags",
+        "@type": "@id"
+      },
+      "alsoKnownAs": {
+        "@id": "as:alsoKnownAs",
+        "@type": "@id"
+      },
+      "movedTo": {
+        "@id": "as:movedTo",
+        "@type": "@id"
+      },
+      "schema": "http://schema.org#",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value",
+      "discoverable": "toot:discoverable",
+      "suspended": "toot:suspended",
+      "memorial": "toot:memorial",
+      "indexable": "toot:indexable",
+      "attributionDomains": {
+        "@id": "toot:attributionDomains",
+        "@container": "@set"
+      },
+      "showFeatured": "toot:showFeatured",
+      "showMedia": "toot:showMedia",
+      "showRepliesInMedia": "toot:showRepliesInMedia",
+      "gts": "https://gotosocial.org/ns#",
+      "interactionPolicy": {
+        "@id": "gts:interactionPolicy",
+        "@type": "@id"
+      },
+      "canFeature": {
+        "@id": "https://w3id.org/fep/7aa9#canFeature",
+        "@type": "@id"
+      },
+      "canQuote": {
+        "@id": "gts:canQuote",
+        "@type": "@id"
+      },
+      "automaticApproval": {
+        "@id": "gts:automaticApproval",
+        "@type": "@id"
+      },
+      "manualApproval": {
+        "@id": "gts:manualApproval",
+        "@type": "@id"
+      },
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      }
+    }
+  ],
+  "id": "https://mastodon.example/users/alice",
+  "webfinger": "alice@mastodon.example",
+  "type": "Person",
+  "following": "https://mastodon.example/users/alice/following",
+  "followers": "https://mastodon.example/users/alice/followers",
+  "inbox": "https://mastodon.example/users/alice/inbox",
+  "outbox": "https://mastodon.example/users/alice/outbox",
+  "featured": "https://mastodon.example/users/alice/collections/featured",
+  "featuredTags": "https://mastodon.example/users/alice/collections/tags",
+  "preferredUsername": "alice",
+  "name": "Alice",
+  "summary": "<p>Hello</p>",
+  "url": "https://mastodon.example/@alice",
+  "manuallyApprovesFollowers": false,
+  "discoverable": true,
+  "indexable": false,
+  "published": "2024-05-09T00:00:00Z",
+  "memorial": false,
+  "showFeatured": true,
+  "showMedia": true,
+  "showRepliesInMedia": true,
+  "interactionPolicy": {
+    "canFeature": {
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    }
+  },
+  "featuredCollections": "https://mastodon.example/ap/users/28400/featured_collections",
+  "publicKey": {
+    "id": "https://mastodon.example/users/alice#main-key",
+    "owner": "https://mastodon.example/users/alice",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1ADBNY0tjSyvU0UBHSYr\nc4+xoFmJlI0gqZ2GX2g6HlduBCW++uRtOqKKWHEFs9lsMOOHaK8APTr6IILi/wPX\nsAAlAxph2AKpPc5EmWFWlajvo2Rto65AyTgcn7S17m2/zbtt3dpcOBmMIdJGjSl6\nmeOGfKuji9HI9B/qOEm56fyd6gsmGVEovG2UEPn0OgMwk0FQiHhY4u0baz71N6c9\nqFIUozKfGxM8fyk9ww0LzMGSx0S0lePrILezQiyhyoEABkmQbOgp3FnKfwIOHGXf\nYoSxr7vqdo5qPuv3FzF5fKTvlWvTO3Xu6zltmbyMqVc3+wnx3X32/uK6WB7SVQJN\n3wIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "tag": [],
+  "attachment": [
+    {
+      "type": "PropertyValue",
+      "name": "Website",
+      "value": "<a href=\"https://example.org\" rel=\"me\">example.org</a>"
+    }
+  ],
+  "endpoints": {
+    "sharedInbox": "https://mastodon.example/inbox"
+  },
+  "icon": {
+    "type": "Image",
+    "mediaType": "image/png",
+    "url": "https://files.mastodon.example/avatar.png"
+  },
+  "image": {
+    "type": "Image",
+    "mediaType": "image/png",
+    "url": "https://files.mastodon.example/header.png"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "links": [
+    {
+      "rel": "lrdd",
+      "template": "https://social.example.org/.well-known/webfinger?resource={uri}"
+    }
+  ]
+}
+

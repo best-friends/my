@@ -1,0 +1,28 @@
+{
+  "version": "2.0",
+  "software": {
+    "name": "gotosocial",
+    "version": "0.22.1"
+  },
+  "protocols": [
+    "activitypub"
+  ],
+  "services": {
+    "inbound": [],
+    "outbound": []
+  },
+  "openRegistrations": false,
+  "usage": {
+    "users": {
+      "total": 5
+    },
+    "localPosts": 8000
+  },
+  "metadata": {
+    "nodeName": "Example",
+    "nodeDescription": "",
+    "langs": [
+      "en"
+    ]
+  }
+}

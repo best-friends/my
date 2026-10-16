@@ -1,0 +1,40 @@
+{
+  "version": "2.1",
+  "software": {
+    "name": "misskey",
+    "version": "2025.4.1",
+    "homepage": "https://github.com/misskey-dev/misskey",
+    "repository": "https://github.com/misskey-dev/misskey"
+  },
+  "protocols": [
+    "activitypub"
+  ],
+  "services": {
+    "inbound": [],
+    "outbound": [
+      "atom1.0",
+      "rss2.0"
+    ]
+  },
+  "openRegistrations": false,
+  "usage": {
+    "users": {
+      "total": 1200,
+      "activeHalfyear": null,
+      "activeMonth": null
+    },
+    "localPosts": 45000,
+    "localComments": 0
+  },
+  "metadata": {
+    "nodeName": "Example",
+    "nodeDescription": "",
+    "maintainer": {
+      "name": "Admin",
+      "email": "mailto:admin@misskey.example"
+    },
+    "langs": [
+      "ja"
+    ]
+  }
+}
