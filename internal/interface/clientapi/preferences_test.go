@@ -89,7 +89,7 @@ func TestGetPreferences(t *testing.T) {
 
 func TestUpdatePreferences(t *testing.T) {
 	e, prefs := newPreferencesEnv(t)
-	res := e.send(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","timeline_languages":["en","ja"]}`)
+	res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","timeline_languages":["en","ja"]}`)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", res.StatusCode)
 	}
@@ -103,7 +103,7 @@ func TestUpdatePreferences(t *testing.T) {
 	if prefs.p.DefaultVisibility != "local" {
 		t.Errorf("stored visibility = %q", prefs.p.DefaultVisibility)
 	}
-	if res := e.send(t, http.MethodPatch, "/preferences", "read", `{}`); res.StatusCode != http.StatusForbidden {
+	if res := e.sendJSON(t, http.MethodPatch, "/preferences", "read", `{}`); res.StatusCode != http.StatusForbidden {
 		t.Errorf("read token = %d, want 403", res.StatusCode)
 	}
 
@@ -116,7 +116,7 @@ func TestUpdatePreferences(t *testing.T) {
 			"timeline_languages は 64 個までにしてください。"},
 	} {
 		prefs.err = tt.err
-		res := e.send(t, http.MethodPatch, "/preferences", "write", `{"time_zone":"Mars/Olympus"}`)
+		res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"time_zone":"Mars/Olympus"}`)
 		if res.StatusCode != http.StatusUnprocessableEntity {
 			t.Fatalf("%v: status = %d, want 422", tt.err, res.StatusCode)
 		}

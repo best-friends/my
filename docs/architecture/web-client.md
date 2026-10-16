@@ -16,7 +16,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | R1 | コンポーネントとフックは純粋にする。レンダリング中に副作用・変更・`Date.now()` / `Math.random()` を書かない | `react-hooks/purity`、`react-hooks/globals` |
 | R2 | props・state・フックに渡した値・JSX に渡した値を変更しない（`push` / `sort` ではなく `toSorted` / スプレッド） | `react-hooks/immutability`（代入を検出する。`push` / `sort` などのメソッド呼び出しはレビュー） |
 | R3 | フックはコンポーネントか `use*` 関数のトップレベルでだけ呼ぶ | `react-hooks/rules-of-hooks` |
-| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint で失敗させる | `eslint-plugin-react-hooks` の `recommended-latest`（`react-hooks/incompatible-library`・`react-hooks/unsupported-syntax` も error）、`vite build`（コンパイラが 1 つも関数を変換しないと失敗） |
+| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint で失敗させる。コンパイラから外す（`"use no memo"`）のは、コンパイルできないライブラリを包む 1 つのフックだけにし、理由を書く（`@my/ui` の `Feed` が TanStack Virtual の仮想化を読むフック） | `eslint-plugin-react-hooks` の `recommended-latest`（`react-hooks/incompatible-library`・`react-hooks/unsupported-syntax` も error）、`vite build`（コンパイラが 1 つも関数を変換しないと失敗）、`no-restricted-syntax`（`"use no memo"` / `"use no forget"`。必要なときは理由付きの無効化コメント） |
 | R5 | `useMemo` / `useCallback` / `memo` は書かない。必要なとき（Effect の依存に安定した参照が要るなど）は理由をコメントに書く | `no-restricted-imports`・`no-restricted-syntax`（`useMemo` / `useCallback` / `memo` の使用。必要なときは理由付きの無効化コメント）、`react-hooks/use-memo` |
 | R6 | 他の値から計算できるものは state にせず、レンダリング中に計算する | `react-hooks/set-state-in-effect`、`react-hooks/no-deriving-state-in-effects` |
 | R7 | 利用者の操作で起きる処理（送信・通知・計測）はイベントハンドラに書く。Effect に書かない | レビュー |
@@ -48,13 +48,13 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | # | 規約 | 強制 |
 | --- | --- | --- |
 | A1 | 依存の向きは `routes → features → (@my/ui, lib)` だけにする | `boundaries/dependencies`（要素は `shell`（`web/src` 直下）・`route`・`feature`・`lib`・`ui`）、`boundaries/no-unknown-files` |
-| A2 | `@my/ui` は React・React Aria Components・Tailwind にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`tailwind-variants`・`tailwind-merge` だけ）、パッケージの依存関係（Bun の isolated linker） |
+| A2 | `@my/ui` は React・React Aria Components・Tailwind と、`Feed` の仮想化に使う TanStack Virtual（ADR-0025 の長いリスト）にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`@tanstack/react-virtual`・`tailwind-variants`・`tailwind-merge` だけ）、パッケージの依存関係（Bun の isolated linker） |
 | A3 | 機能は、ほかの機能を `index.ts` 経由でだけ使う | `boundaries/dependencies`（ほかの `feature` は `index.ts` だけ） |
 | A4 | 機能のロジックは `features/<x>/hooks` のカスタムフックに置く。フックは JSX を返さない。機能の部品はフックの戻り値を `@my/ui` に渡すだけにする | レビュー |
 | A5 | 操作できる要素は `@my/ui`（React Aria Components を包んだ部品）から使う。`onClick` を付けた `div` / `span` を書かない | `no-restricted-syntax`（`div` / `span` の `onClick`・`onKeyDown`・`onPointerDown` など） |
 | A6 | `@my/ui` の部品は表示に専念し、状態はできるだけ外から渡す（`value` / `onChange`） | レビュー |
 | A7 | props は型を明示する（`React.FC` を使わない）。ネイティブ要素の props は `ComponentPropsWithRef<'button'>` で拡張する。多態的な `as` props を使わない | `@typescript-eslint/no-restricted-types`（`FC` / `FunctionComponent`）、レビュー |
-| A8 | `dangerouslySetInnerHTML` は、サーバーでサニタイズ済みの投稿本文を表示する 1 つの監査済み部品（`PostContent`）でだけ使う | `@eslint-react/dom-no-dangerously-set-innerhtml`（`PostContent.tsx` だけ許可） |
+| A8 | `dangerouslySetInnerHTML` は、サーバーでサニタイズ済みの投稿本文を表示する 1 つの監査済み部品（`PostContent`）でだけ使う。`PostContent` は本文を `SanitizedHtml` 型で受け取る。この型は `serverSanitizedHtml()` でだけ作り、API の応答でサーバーがサニタイズ済みと定める項目を読む場所でだけ呼ぶ | `@eslint-react/dom-no-dangerously-set-innerhtml`（`app/ui/src/PostContent.tsx` だけ許可）、型検査（ただの `string` は `SanitizedHtml` にならない）、レビュー |
 | A9 | 利用者に見える文字列はすべて `react-intl` を通す。JSX に文字列リテラルを書かない | `formatjs/no-literal-string-in-jsx`（子要素と `aria-*`・`label`・`placeholder`・`title`・`alt`。テストとストーリーは除く） |
 
 ## 4. エラー・読み込み・遷移
@@ -75,8 +75,8 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | Y3 | コントラストは AA（文字 4.5:1、UI 3:1）をライト / ダークの両方で満たす | `make web-tokens`（トークンの組）、実ブラウザの axe |
 | Y4 | フォーカスできる要素はすべて `focus-visible` のリングを持つ。固定ヘッダでフォーカスを隠さない（`scroll-padding`） | 見た目のスナップショット、レビュー |
 | Y5 | ルートが変わったら、新しい画面の `h1`（`tabindex="-1"`）にフォーカスを移し、`document.title` を更新する | Playwright |
-| Y6 | タイムラインは feed パターンにする（`role="feed"`、`<article>`、`aria-posinset` / `aria-setsize`、`aria-busy` を必ず戻す、Page Down / Page Up） | ARIA スナップショット、キーボードのテスト |
-| Y7 | 新しい投稿を自動で差し込まない。件数・完了・エラーは、共通の `role="status"` / `role="alert"` の通知部品（`@my/ui` の `AnnouncerProvider` / `useAnnouncer`、見える通知は `ToastProvider` / `useToast`）だけで知らせる。フォーカスを奪わない | ARIA スナップショット、部品のテスト（Announcer のストーリー）、レビュー |
+| Y6 | タイムラインは feed パターンにする（`@my/ui` の `Feed`。`role="feed"`、`<article>`、`aria-posinset` / `aria-setsize`（総数が分からないときは `-1`）、`aria-busy` を必ず戻す、Page Down / Page Up で記事の間を移動し、Control + End / Control + Home で feed の外に出る）。仮想化しても、フォーカスのある記事は表示範囲の外でもマウントしておく | ARIA スナップショット、キーボードのテスト（`Feed` の部品のテストとストーリー） |
+| Y7 | 新しい投稿を自動で差し込まない。「N 件の新しい投稿」は `@my/ui` の `NewItemsButton`（`role="status"` の中のボタン）で知らせ、押されたときだけ差し込む。それ以外の件数・完了・エラーは、共通の `role="status"` / `role="alert"` の通知部品（`@my/ui` の `AnnouncerProvider` / `useAnnouncer`、見える通知は `ToastProvider` / `useToast`）だけで知らせる。フォーカスを奪わない | ARIA スナップショット、部品のテスト（Announcer・NewItemsButton のテストとストーリー）、レビュー |
 | Y8 | CW は disclosure パターン（`aria-expanded` のボタン、閉じた内容は `hidden`）にする | 部品のテスト |
 | Y9 | 画像の添付には代替テキストの入力欄を必ず出す。リモートの画像で代替テキストがないものには「説明なし」のバッジを付ける | 部品のテスト |
 | Y10 | 利用者が書いた内容（表示名・投稿・プロフィール）は `dir="auto"` で表示し、分かる場合は `lang` を付ける | 部品のテスト、ARIA スナップショット |
@@ -115,6 +115,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - 部品は `src/test/render.tsx` の `renderWithProviders` で描画する。`user-event` は描画の前に `setup()` する。
   - `@my/ui` の部品のテストも `app/ui/src` の部品の隣に置き、`make web-test` で動かす（`app/ui/vitest.config.ts` の `unit` プロジェクト、jsdom）。
     `app/ui/test/setup.ts` が jest-dom のマッチャーを読み込む。キットは通信しないので MSW もプロバイダもなく、Testing Library の `render` で描画する。
+    構造は `app/ui/test/aria-snapshot.ts` の `ariaSnapshot()`（Playwright の ARIA スナップショットと同じ形の、ロール・名前・説明・状態の木）で検査する。
 - E2E は `app/web/e2e/*.spec.ts` に置き、`make web-e2e` で動かす（`app/web/playwright.config.ts`、ビルドした `vite preview` が相手）。
   - プロジェクトは画面幅 320 / 390 / 768 / 1024 / 1440 px × ロケール `en` / `ja` / `en-XA` / `ar-XB` の 20 個。768 px 未満はタッチと粗いポインタのスマートフォンとして動かす。
   - 毎 PR は全ロケールの 320 / 1440 px だけを動かし、nightly（`E2E_MATRIX=full`）は全体を動かす。
@@ -131,6 +132,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
     - ダイアログ・ポップオーバー・トーストなどのオーバーレイは、`<body>` ではなくストーリーの枠に portal する（`UNSAFE_PortalProvider`）。枠は `contain: layout` なので、`position: fixed` のオーバーレイも枠を覆い、スクリーンショットに写る。
       オーバーレイのストーリーは、デコレーターで枠に高さを与える。
     - 描画と axe のあと、ストーリーの枠（コンテナクエリの基準）を幅 320 / 640 / 1024 px にして `toMatchScreenshot` で比較する（`.storybook/vitest.setup.ts`）。
+      `play` 関数のためだけにある長いストーリー（仮想化した `Feed`）は `no-screenshot` のタグで比較を外す。同じ部品のほかのストーリーが見た目を検査する。
     - スクリーンショットは `prefers-reduced-motion: reduce` を模擬して撮る。その状態で枠の中に動いているアニメーションが 1 つでもあれば失敗する（D6）。ストーリーの描画と `play` 関数は模擬なしで動く。
     - `play` 関数（`storybook/test`）で、部品をロールとアクセシブルネームで探して検査する（Y2）。
   - 基準画像は `app/ui/src/__screenshots__/` にあり、固定した Playwright のイメージ（`Makefile` の `PLAYWRIGHT_IMAGE`）の中でだけ作る。

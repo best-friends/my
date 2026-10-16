@@ -146,3 +146,33 @@ func TestTextValidate(t *testing.T) {
 		}
 	}
 }
+
+func TestParseMedia(t *testing.T) {
+	d, err := instance.Lookup(instance.SettingPreviewImage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for raw, want := range map[string]string{
+		"":                                     "",
+		"0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f": "0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f",
+		"0192F3A4-7B1C-7D2E-9F00-1A2B3C4D5E6F": "0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f",
+	} {
+		if got, err := d.Parse(raw); err != nil || got != want {
+			t.Errorf("Parse(%q) = %q, %v; want %q", raw, got, err, want)
+		}
+	}
+	for _, raw := range []string{
+		"x", "0192f3a47b1c7d2e9f001a2b3c4d5e6f", "0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6g", "0192f3a4_7b1c-7d2e-9f00-1a2b3c4d5e6f",
+	} {
+		if got, err := d.Parse(raw); !errors.Is(err, instance.ErrInvalidValue) {
+			t.Errorf("Parse(%q) = %q, %v; want ErrInvalidValue", raw, got, err)
+		}
+	}
+	if keys := instance.MediaKeys(); len(keys) != 1 || keys[0] != instance.SettingPreviewImage {
+		t.Errorf("MediaKeys() = %v", keys)
+	}
+	var zero instance.Settings
+	if zero.PreviewImageMediaID() != "" {
+		t.Errorf("default preview image = %q", zero.PreviewImageMediaID())
+	}
+}

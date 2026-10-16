@@ -29,6 +29,7 @@ const (
 	SettingDefaultLocale            SettingKey = "default_locale"
 	SettingLocalTimelineEnabled     SettingKey = "local_timeline_enabled"
 	SettingFederatedTimelineEnabled SettingKey = "federated_timeline_enabled"
+	SettingPreviewImage             SettingKey = "preview_image"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -57,6 +58,8 @@ const (
 	KindInt    Kind = "int"    // a decimal integer in [Min, Max]
 	KindEnum   Kind = "enum"   // one of Choices
 	KindLocale Kind = "locale" // a canonical BCP 47 language tag
+	// KindMedia is the ID of a media file (a lowercase UUID), or "" for none.
+	KindMedia Kind = "media"
 )
 
 // Definition describes a setting key: its type, allowed values, and default. A key that has
@@ -93,6 +96,10 @@ var definitions = []Definition{
 	{
 		Key: SettingFederatedTimelineEnabled, Kind: KindBool, Default: "true",
 		Doc: "Whether the federated timeline is available (FR-202).",
+	},
+	{
+		Key: SettingPreviewImage, Kind: KindMedia, Default: "",
+		Doc: "Media ID of the link preview image of profiles and posts without images; empty means the built-in image (ADR-0028).",
 	},
 }
 
@@ -151,6 +158,12 @@ func (d Definition) Parse(raw string) (string, error) {
 			return "", invalid("is not a BCP 47 language tag")
 		}
 		return raw, nil
+	case KindMedia:
+		id := strings.ToLower(raw)
+		if id != "" && !wellFormedUUID(id) {
+			return "", invalid("is not a media ID")
+		}
+		return id, nil
 	}
 	return "", invalid("has an unknown kind " + string(d.Kind))
 }
@@ -169,6 +182,26 @@ func wellFormedTag(tag string) bool {
 		for _, r := range p {
 			letter := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 			if !letter && (i == 0 || r < '0' || r > '9') {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// wellFormedUUID reports whether id is a UUID in lowercase hexadecimal, 8-4-4-4-12.
+func wellFormedUUID(id string) bool {
+	if len(id) != 36 {
+		return false
+	}
+	for i, r := range id {
+		switch i {
+		case 8, 13, 18, 23:
+			if r != '-' {
+				return false
+			}
+		default:
+			if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
 				return false
 			}
 		}
@@ -265,4 +298,21 @@ func (s Settings) LocalTimelineEnabled() bool { return s.boolValue(SettingLocalT
 // FederatedTimelineEnabled returns the value of SettingFederatedTimelineEnabled.
 func (s Settings) FederatedTimelineEnabled() bool {
 	return s.boolValue(SettingFederatedTimelineEnabled)
+}
+
+// PreviewImageMediaID returns the value of SettingPreviewImage, "" when unset.
+func (s Settings) PreviewImageMediaID() string {
+	v, _ := s.Value(SettingPreviewImage)
+	return v
+}
+
+// MediaKeys returns the setting keys whose values are media IDs.
+func MediaKeys() []SettingKey {
+	var out []SettingKey
+	for _, d := range definitions {
+		if d.Kind == KindMedia {
+			out = append(out, d.Key)
+		}
+	}
+	return out
 }

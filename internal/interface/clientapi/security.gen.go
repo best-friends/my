@@ -9,7 +9,11 @@ package clientapi
 var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/accounts/verify_credentials":   {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/instance":                      {Operation: "getInstance", Anonymous: true},
+	"GET /api/v1/notifications":                 {Operation: "listNotifications", Scopes: []string{"read:notifications"}},
+	"GET /api/v1/notifications/marker":          {Operation: "getNotificationMarker", Scopes: []string{"read:notifications"}},
 	"GET /api/v1/preferences":                   {Operation: "getPreferences", Scopes: []string{"read:accounts"}},
 	"PATCH /api/v1/accounts/update_credentials": {Operation: "updateAccountCredentials", Scopes: []string{"write:accounts"}},
 	"PATCH /api/v1/preferences":                 {Operation: "updatePreferences", Scopes: []string{"write:accounts"}},
+	"POST /api/v1/notifications/{id}/dismiss":   {Operation: "dismissNotification", Scopes: []string{"write:notifications"}},
+	"PUT /api/v1/notifications/marker":          {Operation: "updateNotificationMarker", Scopes: []string{"write:notifications"}},
 }

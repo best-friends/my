@@ -75,9 +75,9 @@ func (fakeMedia) Media(_ context.Context, id string) (appcontent.Media, error) {
 
 func (fakeMedia) URL(v content.MediaVariant) string { return "https://files.example/" + v.BlobKey }
 
-// send sends a request with a JSON body, which must conform to the spec unless it contains
+// sendJSON sends a request with a JSON body, which must conform to the spec unless it contains
 // "invalid-on-purpose".
-func (e *authEnv) send(t *testing.T, method, path, token, body string) *http.Response {
+func (e *authEnv) sendJSON(t *testing.T, method, path, token, body string) *http.Response {
 	t.Helper()
 	newRequest := func() *http.Request {
 		req := httptest.NewRequest(method, clientapi.BasePath+path, strings.NewReader(body))
@@ -142,7 +142,7 @@ func TestUpdateAccountCredentials(t *testing.T) {
 		o.Profiles = profiles
 		o.Media = fakeMedia{}
 	})
-	res := e.send(t, http.MethodPatch, "/accounts/update_credentials", "write",
+	res := e.sendJSON(t, http.MethodPatch, "/accounts/update_credentials", "write",
 		`{"display_name":"Alice A.","note":"hello","fields":[{"name":"pronouns","value":"she/her"}],"bot":true}`)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", res.StatusCode)
@@ -168,11 +168,11 @@ func TestUpdateAccountCredentials(t *testing.T) {
 
 	// write:accounts is needed; read and follow do not grant it.
 	for _, token := range []string{"read", "follow-push"} {
-		if res := e.send(t, http.MethodPatch, "/accounts/update_credentials", token, `{}`); res.StatusCode != http.StatusForbidden {
+		if res := e.sendJSON(t, http.MethodPatch, "/accounts/update_credentials", token, `{}`); res.StatusCode != http.StatusForbidden {
 			t.Errorf("%s: status = %d, want 403", token, res.StatusCode)
 		}
 	}
-	if res := e.send(t, http.MethodPatch, "/accounts/update_credentials", "", `{}`); res.StatusCode != http.StatusUnauthorized {
+	if res := e.sendJSON(t, http.MethodPatch, "/accounts/update_credentials", "", `{}`); res.StatusCode != http.StatusUnauthorized {
 		t.Errorf("anonymous: status = %d, want 401", res.StatusCode)
 	}
 }
@@ -195,7 +195,7 @@ func TestUpdateAccountCredentialsProblems(t *testing.T) {
 			"avatar_media_id には、自分でアップロードして処理が終わった画像を指定してください。"},
 	} {
 		profiles.err = tt.err
-		res := e.send(t, http.MethodPatch, "/accounts/update_credentials", "write", `{"display_name":"x"}`)
+		res := e.sendJSON(t, http.MethodPatch, "/accounts/update_credentials", "write", `{"display_name":"x"}`)
 		if res.StatusCode != http.StatusUnprocessableEntity {
 			t.Fatalf("%v: status = %d, want 422", tt.err, res.StatusCode)
 		}
@@ -207,7 +207,7 @@ func TestUpdateAccountCredentialsProblems(t *testing.T) {
 		}
 	}
 	// A body that is not JSON is a 400.
-	if res := e.send(t, http.MethodPatch, "/accounts/update_credentials", "write", `invalid-on-purpose`); res.StatusCode != http.StatusBadRequest {
+	if res := e.sendJSON(t, http.MethodPatch, "/accounts/update_credentials", "write", `invalid-on-purpose`); res.StatusCode != http.StatusBadRequest {
 		t.Errorf("malformed body = %d, want 400", res.StatusCode)
 	}
 }

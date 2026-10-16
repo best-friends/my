@@ -36,6 +36,8 @@ type Options struct {
 	Preferences UserPreferences
 	// Media presents the media files of profiles; nil presents no images.
 	Media MediaFiles
+	// Notifications runs the use cases of the viewer's notifications.
+	Notifications Notifications
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when
