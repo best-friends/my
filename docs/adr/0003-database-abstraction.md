@@ -1,6 +1,6 @@
 # ADR-0003: RDB の抽象化と対応方言
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #3
@@ -26,7 +26,7 @@ Cloudflare D1 は ADR-0001 により対象外である。候補のうち Aurora 
 - 抽象化: (i) ORM の方言吸収に任せる / (ii) **リポジトリポート + 方言別アダプタ + 共通コントラクトテスト** / (iii) 生 SQL を方言別に手書き
 - トランザクション: (α) 書き込みはアトミックバッチのみ（対話的トランザクションを使わない）/ (β) **短い対話的トランザクションを許容**
 
-## Decision（推奨案）
+## Decision
 
 ### 対応方言（v0）
 

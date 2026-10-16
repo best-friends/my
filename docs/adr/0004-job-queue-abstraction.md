@@ -1,6 +1,6 @@
 # ADR-0004: ジョブキューとスケジューラの抽象化
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #4
@@ -27,7 +27,7 @@ SQS と Cloud Tasks の値は 2026-10-16 時点の公式ドキュメントによ
 - push / pull どちらのモデルでも同じジョブハンドラが動くこと
 - at-least-once・冪等性・長期バックオフ（NFR-REL-1, 2）
 
-## Decision（推奨案）
+## Decision
 
 ### ジョブモデル
 

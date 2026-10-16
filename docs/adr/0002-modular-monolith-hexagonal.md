@@ -1,6 +1,6 @@
 # ADR-0002: モジュラーモノリス + ヘキサゴナルアーキテクチャ
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #6
@@ -22,7 +22,7 @@ RDB・キュー・ストレージ・実行環境を利用者が差し替えら�
 2. レイヤードなモノリス（境界なし）
 3. **モジュラーモノリス + Ports & Adapters**
 
-## Decision（推奨案）
+## Decision
 
 3 を採用する。
 

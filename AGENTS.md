@@ -64,7 +64,7 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 
 ## Design rules that will apply once implementation starts
 
-These come from Proposed ADRs and will be confirmed when they are accepted; follow them in drafts.
+These come from Accepted ADRs and are binding.
 
 - Core (domain + application) must not import cloud SDKs or drivers; those live in adapters and `cmd/` entrypoints.
 - Keep the server buildable with `CGO_ENABLED=0`; a cgo dependency needs an ADR.

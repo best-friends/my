@@ -1,6 +1,6 @@
 # ADR-0013: タイムラインは fan-out-on-read を既定とする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #13
@@ -10,7 +10,7 @@
 Mastodon はホームタイムラインを Redis 上に fan-out-on-write で構築するが、これは常駐ミドルウェアを要求する（NFR-COST-2 に反する）。
 小〜中規模では、読み取り時にフォロー関係と投稿を JOIN する fan-out-on-read で十分な性能が出る見込み。
 
-## Decision（推奨案）
+## Decision
 
 - v0 は **fan-out-on-read**: `statuses`（`account_id, id DESC` の複合インデックス）と `follows` を JOIN し、UUIDv7 の `id` でキーセットページング。
 - 可視性フィルタ（ブロック・ミュート・公開範囲）はドメインの `canView` を SQL 条件に写像した共通クエリビルダで適用。
