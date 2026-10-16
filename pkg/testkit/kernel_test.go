@@ -46,10 +46,33 @@ func TestClockStandsStillUntilMoved(t *testing.T) {
 
 func TestIDGeneratorContract(t *testing.T) {
 	// A stopped clock puts every ID in the same millisecond.
-	ids := testkit.IDGeneratorContract(t, testkit.NewIDGenerator(testkit.NewClock(start)))
+	c := testkit.NewClock(start)
+	ids := testkit.IDGeneratorContract(t, testkit.NewIDGenerator(c), c)
 	for _, id := range ids {
 		if ms, _ := testkit.UUIDv7Millis(id); ms != start.UnixMilli() {
 			t.Fatalf("ID %q has timestamp %d, want %d", id, ms, start.UnixMilli())
+		}
+	}
+}
+
+func TestIDGeneratorNewIDAtIsDeterministic(t *testing.T) {
+	c := testkit.NewClock(start)
+	g := testkit.NewIDGenerator(c)
+	got := []string{
+		g.NewID(),
+		g.NewIDAt(start.Add(-time.Second)),
+		g.NewIDAt(start.Add(time.Hour)), // rounded down to the clock's time
+		g.NewIDAt(start.Add(-time.Second)),
+	}
+	want := []string{
+		"01a14495-5600-7000-8000-000000000001",
+		"01a14495-5218-7000-8000-000000000002",
+		"01a14495-5600-7000-8000-000000000003",
+		"01a14495-5218-7000-8000-000000000004",
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("IDs = %q, want %q", got, want)
 		}
 	}
 }
