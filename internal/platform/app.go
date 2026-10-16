@@ -48,6 +48,9 @@ type App struct {
 	Config   *config.Config
 	Logger   *slog.Logger
 	Messages *i18n.Bundle
+	// Locales resolves the locale of every HTTP response (ADR-0009 §2) on Messages and the
+	// instance's default_locale setting; every HTTP surface localizes through it.
+	Locales *i18n.Resolver
 
 	Clock      kernel.Clock
 	IDs        kernel.IDGenerator
@@ -77,6 +80,8 @@ type App struct {
 	Instance *instance.Service
 	Graph    *graph.Service
 	Content  *content.Service
+	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
+	Interactions *content.Interactions
 
 	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
 	Blobs          blob.Store
@@ -134,12 +139,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Sealer = kernel.NewSealer(a.KeyManager)
 
 	var (
-		identities identity.Repository
-		accounts   account.Repository
-		instances  instance.Repository
-		follows    graph.Repository
-		medias     content.MediaRepository
-		statuses   content.Repository
+		identities   identity.Repository
+		accounts     account.Repository
+		instances    instance.Repository
+		follows      graph.Repository
+		statuses     content.Repository
+		interactions content.InteractionRepository
+		medias       content.MediaRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -151,6 +157,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
+		interactions = d.InteractionRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -165,6 +172,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
+		interactions = d.InteractionRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -208,6 +216,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
+	// The user step joins once API requests are authenticated (#107).
+	a.Locales = &i18n.Resolver{Bundle: a.Messages, InstanceDefault: a.instanceDefaultLocale}
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
@@ -229,6 +239,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		DefaultLanguage: a.defaultPostLanguage,
 		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
 	})
+	// After RegisterProjectors, which creates the counters that these projectors update.
+	content.RegisterInteractionProjectors(a.Projectors, interactions)
+	a.Interactions = content.NewInteractions(content.InteractionDeps{
+		UnitOfWork: a.UnitOfWork, Statuses: statuses, Interactions: interactions,
+		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
+		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
+	})
 
 	if opts.Version == "" {
 		opts.Version = "dev"
@@ -237,7 +254,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	authpages.New(authpages.Options{Identity: a.Identity, Messages: a.Messages, Logger: a.Logger}).Register(a)
+	authpages.New(authpages.Options{Identity: a.Identity, Locales: a.Locales, Logger: a.Logger}).Register(a)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -247,7 +264,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
-		Messages:          a.Messages, RequestID: RequestID, Logger: a.Logger,
+		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }

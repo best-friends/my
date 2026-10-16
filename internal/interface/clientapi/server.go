@@ -26,8 +26,8 @@ type Options struct {
 	// MaxPostCharacters is the maximum number of characters in the text of a post.
 	MaxPostCharacters int
 
-	// Messages localizes problem documents from the request's Accept-Language.
-	Messages *i18n.Bundle
+	// Locales resolves the locale of problem documents (ADR-0009 §2).
+	Locales *i18n.Resolver
 	// RequestID returns the ID of the request in ctx, echoed in problem documents; nil omits it.
 	RequestID func(ctx context.Context) string
 	// Logger logs unexpected errors; nil means slog.Default().

@@ -93,6 +93,43 @@ type BlockEdge struct {
 	BlockID          string
 }
 
+type Bookmark struct {
+	AccountID string
+	StatusID  string
+	CreatedAt int64
+	ID        string
+}
+
+type Boost struct {
+	ID               string
+	Uri              string
+	BoosterAccountID string
+	StatusID         string
+	Visibility       string
+	IsLocal          int64
+	BoostedAt        int64
+}
+
+type BoostEdge struct {
+	BoosterAccountID string
+	StatusID         string
+	BoostID          string
+}
+
+type BoostRetraction struct {
+	BoostID     string
+	Origin      string
+	RetractedAt int64
+}
+
+type Favourite struct {
+	AccountID string
+	StatusID  string
+	Uri       string
+	CreatedAt int64
+	ID        string
+}
+
 type Follow struct {
 	ID                string
 	Uri               string
@@ -259,6 +296,13 @@ type StatusHead struct {
 type StatusMentionIndex struct {
 	AccountID string
 	StatusID  string
+}
+
+type StatusPin struct {
+	AccountID string
+	StatusID  string
+	CreatedAt int64
+	ID        string
 }
 
 type StatusReplyLink struct {
