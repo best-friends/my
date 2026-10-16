@@ -130,8 +130,8 @@ type MuteInput struct {
 
 // Mute makes accountID mute targetID (FR-303), replacing the settings and expiry of an existing
 // mute of the target. A mute with a duration stops applying when it expires, without any
-// write: Relationship and Mutes leave it out from then on. The account must be local and
-// active; the target must exist and may be remote.
+// write: Relationship and Mutes leave it out from then on. It emits Muted. The account must be
+// local and active; the target must exist and may be remote.
 func (s *Service) Mute(ctx context.Context, accountID, targetID string, in MuteInput) (Relationship, error) {
 	m := graph.Mute{
 		AccountID: accountID, TargetAccountID: targetID, HideNotifications: in.HideNotifications,
@@ -165,10 +165,12 @@ func (s *Service) Mute(ctx context.Context, accountID, targetID string, in MuteI
 	return s.Relationship(ctx, accountID, targetID)
 }
 
-// Unmute removes accountID's mute of targetID. Without a mute it changes nothing.
+// Unmute removes accountID's mute of targetID and emits Unmuted. Without a mute it changes
+// nothing and emits nothing.
 func (s *Service) Unmute(ctx context.Context, accountID, targetID string) (Relationship, error) {
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := s.d.Repository.DeleteMute(ctx, tx, accountID, targetID); err != nil {
+		deleted, err := s.d.Repository.DeleteMute(ctx, tx, accountID, targetID)
+		if err != nil || !deleted {
 			return err
 		}
 		return tx.Emit(ctx, Unmuted{AccountID: accountID, TargetAccountID: targetID})

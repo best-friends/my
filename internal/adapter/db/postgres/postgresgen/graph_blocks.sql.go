@@ -36,7 +36,7 @@ func (q *Queries) DeleteBlockEdge(ctx context.Context, arg DeleteBlockEdgeParams
 	return err
 }
 
-const deleteMute = `-- name: DeleteMute :exec
+const deleteMute = `-- name: DeleteMute :execrows
 DELETE FROM mutes WHERE account_id = $1 AND target_account_id = $2
 `
 
@@ -45,9 +45,13 @@ type DeleteMuteParams struct {
 	TargetAccountID string
 }
 
-func (q *Queries) DeleteMute(ctx context.Context, arg DeleteMuteParams) error {
-	_, err := q.db.Exec(ctx, deleteMute, arg.AccountID, arg.TargetAccountID)
-	return err
+// DeleteMute deletes the mute and reports, by the rows it deleted, whether there was one.
+func (q *Queries) DeleteMute(ctx context.Context, arg DeleteMuteParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteMute, arg.AccountID, arg.TargetAccountID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getActiveMute = `-- name: GetActiveMute :one

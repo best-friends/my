@@ -48,7 +48,7 @@ func BlockRepositoryContract(t *testing.T, newHarness FollowFactory) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newFollowEnv(t, newHarness)
-			for _, typ := range []string{appgraph.EventBlocked, appgraph.EventUnblocked} {
+			for _, typ := range []string{appgraph.EventBlocked, appgraph.EventUnblocked, appgraph.EventMuted, appgraph.EventUnmuted} {
 				e.captured.Register(typ, e.events.record)
 			}
 			tc.run(t, e)
@@ -375,11 +375,32 @@ func blockEmitsEvents(t *testing.T, e *followEnv) {
 		t.Errorf("events of Block without follows = %+v, want one Blocked", got)
 	}
 	e.block(t, alice, bob)
-	if _, err := e.graph.Mute(ctx, alice, bob, appgraph.MuteInput{}); err != nil {
-		t.Fatal(err)
-	}
 	if got := e.events.take(); len(got) != 0 {
-		t.Errorf("events of a no-op Block and a Mute = %+v, want none", got)
+		t.Errorf("events of a no-op Block = %+v, want none", got)
+	}
+
+	// Muting, also again with other settings, emits Muted with the mute as it now is; unmuting
+	// emits Unmuted, and unmuting without a mute emits nothing.
+	for _, hide := range []bool{false, true} {
+		if _, err := e.graph.Mute(ctx, alice, bob, appgraph.MuteInput{HideNotifications: hide}); err != nil {
+			t.Fatal(err)
+		}
+		got := e.events.take()
+		if len(got) != 1 {
+			t.Fatalf("events of Mute = %+v, want one Muted", got)
+		}
+		if m, ok := got[0].(appgraph.Muted); !ok || m.Mute.AccountID != alice || m.Mute.TargetAccountID != bob || m.Mute.HideNotifications != hide {
+			t.Errorf("Muted = %+v, want alice's mute of bob with hide_notifications %v", got[0], hide)
+		}
+	}
+	for range 2 {
+		if _, err := e.graph.Unmute(ctx, alice, bob); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := []uow.Event{appgraph.Unmuted{AccountID: alice, TargetAccountID: bob}}
+	if got := e.events.take(); !reflect.DeepEqual(got, want) {
+		t.Errorf("events of two Unmutes = %+v, want %+v", got, want)
 	}
 }
 

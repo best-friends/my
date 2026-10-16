@@ -18,8 +18,9 @@ FROM notifications WHERE id = $1;
 INSERT INTO notification_dismissals (notification_id, dismissed_at) VALUES ($1, $2)
 ON CONFLICT (notification_id) DO NOTHING;
 
--- ListNotifications pages the notifications of a recipient that are not dismissed, newest
--- first; an empty before starts at the newest. With all_types false only the listed types count.
+-- ListNotifications pages the notifications of a recipient that are not dismissed, whose
+-- source no exclusion in force at now hides, and whose status is not deleted, newest first; an empty before starts at the
+-- newest. With all_types false only the listed types count.
 -- name: ListNotifications :many
 SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.dedupe_key, n.created_at
 FROM notifications n
@@ -27,16 +28,24 @@ WHERE n.recipient_account_id = sqlc.arg(recipient_account_id)
   AND (sqlc.arg(before)::text = '' OR n.id < sqlc.arg(before)::text)
   AND (sqlc.arg(all_types)::boolean OR n.type = ANY(sqlc.arg(types)::text[]))
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
+  AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
+    WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
+      AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
+  AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id)
 ORDER BY n.id DESC
 LIMIT sqlc.arg(page_limit);
 
--- CountNotificationsAfter counts the notifications of a recipient after the ID after that are
--- not dismissed; an empty after counts them all.
+-- CountNotificationsAfter counts the notifications of a recipient after the ID after that
+-- ListNotifications would return; an empty after counts them all.
 -- name: CountNotificationsAfter :one
 SELECT COUNT(*) FROM notifications n
 WHERE n.recipient_account_id = sqlc.arg(recipient_account_id)
   AND n.id > sqlc.arg(after)::text
-  AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id);
+  AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
+  AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
+    WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
+      AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
+  AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id);
 
 -- Read markers (current value).
 
@@ -49,3 +58,20 @@ SELECT account_id, last_read_id FROM notification_read_markers WHERE account_id 
 INSERT INTO notification_read_markers (account_id, last_read_id) VALUES ($1, $2)
 ON CONFLICT (account_id) DO UPDATE SET last_read_id = excluded.last_read_id
 WHERE excluded.last_read_id > notification_read_markers.last_read_id;
+
+-- Exclusions (projection of the graph events).
+
+-- UpsertNotificationExclusion replaces the expiry of an existing exclusion.
+-- name: UpsertNotificationExclusion :exec
+INSERT INTO notification_exclusions (viewer_account_id, target_account_id, reason, expires_at) VALUES ($1, $2, $3, $4)
+ON CONFLICT (viewer_account_id, target_account_id, reason) DO UPDATE SET expires_at = excluded.expires_at;
+
+-- name: DeleteNotificationExclusion :exec
+DELETE FROM notification_exclusions WHERE viewer_account_id = $1 AND target_account_id = $2 AND reason = $3;
+
+-- Deleted statuses (projection of content.status_deleted).
+
+-- InsertNotificationDeletedStatus inserts nothing when the status is already recorded.
+-- name: InsertNotificationDeletedStatus :exec
+INSERT INTO notification_deleted_statuses (status_id) VALUES ($1)
+ON CONFLICT (status_id) DO NOTHING;

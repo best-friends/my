@@ -4,6 +4,7 @@ package sqlite
 
 import (
 	"context"
+	"time"
 
 	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
 	appnotification "github.com/best-friends/my/internal/app/notification"
@@ -81,8 +82,39 @@ func (r *NotificationRepository) AdvanceReadMarker(ctx context.Context, tx uow.T
 	return rows == 1, nil
 }
 
+// UpsertExclusion implements notification.Repository.
+func (r *NotificationRepository) UpsertExclusion(ctx context.Context, tx uow.Tx, x notification.Exclusion) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.UpsertNotificationExclusion(ctx, sqlitegen.UpsertNotificationExclusionParams{
+		ViewerAccountID: x.ViewerAccountID, TargetAccountID: x.TargetAccountID, Reason: string(x.Reason), ExpiresAt: toNullMillis(x.ExpiresAt),
+	}), "upsert notification exclusion")
+}
+
+// DeleteExclusion implements notification.Repository.
+func (r *NotificationRepository) DeleteExclusion(ctx context.Context, tx uow.Tx, viewerAccountID, targetAccountID string, reason notification.ExclusionReason) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.DeleteNotificationExclusion(ctx, sqlitegen.DeleteNotificationExclusionParams{
+		ViewerAccountID: viewerAccountID, TargetAccountID: targetAccountID, Reason: string(reason),
+	}), "delete notification exclusion")
+}
+
+// InsertDeletedStatus implements notification.Repository.
+func (r *NotificationRepository) InsertDeletedStatus(ctx context.Context, tx uow.Tx, statusID string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertNotificationDeletedStatus(ctx, statusID), "insert notification deleted status")
+}
+
 // ListNotifications implements notification.Repository.
-func (r *NotificationRepository) ListNotifications(ctx context.Context, recipientAccountID string, types []notification.Type, before string, limit int) ([]notification.Notification, error) {
+func (r *NotificationRepository) ListNotifications(ctx context.Context, recipientAccountID string, types []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error) {
 	set := ""
 	if len(types) > 0 {
 		set = ","
@@ -91,7 +123,7 @@ func (r *NotificationRepository) ListNotifications(ctx context.Context, recipien
 		}
 	}
 	rows, err := r.db.reader().ListNotifications(ctx, sqlitegen.ListNotificationsParams{
-		RecipientAccountID: recipientAccountID, Before: before, Types: set, PageLimit: int64(limit),
+		RecipientAccountID: recipientAccountID, Before: before, Types: set, Now: toMillis(now), PageLimit: int64(limit),
 	})
 	if err != nil {
 		return nil, wrap(err, "list notifications")
@@ -104,9 +136,9 @@ func (r *NotificationRepository) ListNotifications(ctx context.Context, recipien
 }
 
 // CountNotificationsAfter implements notification.Repository.
-func (r *NotificationRepository) CountNotificationsAfter(ctx context.Context, recipientAccountID, after string) (int64, error) {
+func (r *NotificationRepository) CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, now time.Time) (int64, error) {
 	n, err := r.db.reader().CountNotificationsAfter(ctx, sqlitegen.CountNotificationsAfterParams{
-		RecipientAccountID: recipientAccountID, After: after,
+		RecipientAccountID: recipientAccountID, After: after, Now: toMillis(now),
 	})
 	return n, wrap(err, "count notifications")
 }

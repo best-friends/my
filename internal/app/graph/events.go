@@ -11,7 +11,8 @@ import "github.com/best-friends/my/internal/domain/graph"
 // the same facts. Each event carries everything its subscribers need; they never read the graph
 // tables. Blocking emits one EventFollowTerminated per follow it ends, then EventBlocked. Mutes
 // are a current value that this module reads at query time; their commands emit EventMuted and
-// EventUnmuted for other modules' projections.
+// EventUnmuted for other modules' projections (timeline's feed_exclusions, notification's
+// notification_exclusions).
 //
 //   - EventFollowed: a follow became active on creation (the followee is not locked).
 //   - EventFollowRequested: a follow awaits the followee's approval (the followee is locked).
@@ -22,7 +23,7 @@ import "github.com/best-friends/my/internal/domain/graph"
 //   - EventBlocked: an account blocked another.
 //   - EventUnblocked: a block was lifted.
 //   - EventMuted: an account muted another, or replaced the settings and expiry of a mute.
-//   - EventUnmuted: an account removed its mute of another (emitted even without a mute).
+//   - EventUnmuted: an account removed its mute of another (not emitted without a mute).
 const (
 	EventFollowed                 = "graph.followed"
 	EventFollowRequested          = "graph.follow_requested"
