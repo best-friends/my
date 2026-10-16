@@ -11,5 +11,7 @@
     "MD060": false
   },
   "globs": ["**/*.md"],
+  // Skip generated, git-ignored output such as the Playwright reports under app/web.
+  "gitignore": true,
   "ignores": ["node_modules/**", "**/node_modules/**"]
 }
