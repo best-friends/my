@@ -1,0 +1,26 @@
+# OS / editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies & build output
+node_modules/
+dist/
+build/
+coverage/
+*.log
+
+# Local data
+*.sqlite
+*.sqlite3
+*.db
+.wrangler/
+
+# Claude Code local settings
+.claude/settings.local.json
