@@ -21,6 +21,9 @@ afterEach(async (context) => {
   const { locale, theme } = story.globals;
   for (const width of widths) {
     frame.style.inlineSize = `${width}px`;
+    // Open popovers and tooltips are positioned against their trigger, and React Aria repositions them on
+    // window resize; the trigger moves with the frame width (in RTL it sits at the inline end).
+    window.dispatchEvent(new Event("resize"));
     // The tester page paints only what fits its viewport, so it grows to the whole story. The width stays
     // the 1200 px that the Storybook addon sets; the container width is what the components answer to.
     const bottom = Math.ceil(frame.getBoundingClientRect().bottom + window.scrollY);

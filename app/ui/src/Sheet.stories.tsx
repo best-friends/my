@@ -1,0 +1,93 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Sheet stories. At the 320 px container width the sheet sits on the bottom edge; at 640 and 1024 px
+// it is a centered dialog. The play function tests focus in, Esc and focus return.
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { Button } from "react-aria-components";
+import { expect, waitFor } from "storybook/test";
+import { DialogTrigger, Sheet, type SheetProps } from "./Dialog";
+
+const button =
+  "rounded-md border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
+const item = "w-full rounded-md px-3 py-3 text-start text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
+
+const meta = {
+  title: "Overlays/Sheet",
+  component: Sheet,
+  decorators: [
+    (Story) => (
+      <div className="min-h-136">
+        <Story />
+      </div>
+    ),
+  ],
+  args: {
+    title: "Who can see this post?",
+    closeLabel: "Close",
+    children: ({ close }) => (
+      <ul className="flex flex-col">
+        {["Public", "Local only", "Unlisted", "Followers only", "Mentioned people only"].map((label) => (
+          <li key={label}>
+            <Button className={item} onPress={close}>
+              {label}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    ),
+  },
+  render: (args) => (
+    <DialogTrigger>
+      <Button className={button}>Visibility</Button>
+      <Sheet {...args} />
+    </DialogTrigger>
+  ),
+} satisfies Meta<typeof Sheet>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const FocusTrapAndReturn: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const trigger = canvas.getByRole("button", { name: "Visibility" });
+    await userEvent.click(trigger);
+    const sheet = await canvas.findByRole("dialog", { name: "Who can see this post?" });
+    await waitFor(() => expect(sheet).toContainElement(document.activeElement as HTMLElement));
+    for (let i = 0; i < 7; i++) {
+      await userEvent.tab();
+      await expect(sheet).toContainElement(document.activeElement as HTMLElement);
+    }
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  },
+};
+
+function renderOpen(args: SheetProps) {
+  return (
+    <DialogTrigger defaultOpen>
+      <Button className={button}>Visibility</Button>
+      <Sheet {...args} />
+    </DialogTrigger>
+  );
+}
+
+export const Open: Story = { render: renderOpen };
+
+/** Taller content than fits: the list scrolls, the title stays. */
+export const LongContent: Story = {
+  args: {
+    title: "Languages",
+    children: ({ close }) => (
+      <ul className="flex flex-col">
+        {Array.from({ length: 20 }, (_, i) => `Language ${String(i + 1)}`).map((label) => (
+          <li key={label}>
+            <Button className={item} onPress={close}>
+              {label}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    ),
+  },
+  render: renderOpen,
+};
