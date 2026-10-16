@@ -3,7 +3,7 @@
 - Status: Proposed
 - Date: 2026-10-16
 - Deciders: @rosylilly
-- Issue: <!-- 起票後に追記 -->
+- Issue: #11
 
 ## Context
 

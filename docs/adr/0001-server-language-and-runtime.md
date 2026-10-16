@@ -3,7 +3,7 @@
 - Status: Proposed
 - Date: 2026-10-16
 - Deciders: @rosylilly
-- Issue: <!-- 起票後に追記 -->
+- Issue: #2
 
 ## Context
 
@@ -72,7 +72,7 @@
 
 ## Open Questions / 要検証
 
-- [ ] Spike: Fedify + Hono の最小 Actor を Bun と Workers の両方で起動し、Mastodon からフォローできるか
-- [ ] Spike: Workers でのバンドルサイズ・CPU 時間（RSA 署名検証、Argon2 / PBKDF2）の実測
+- [ ] #15 Spike: Fedify + Hono の最小 Actor を Bun と Workers の両方で起動し、Mastodon からフォローできるか
+- [ ] #16 Spike: Workers でのバンドルサイズ・CPU 時間（RSA 署名検証、Argon2 / PBKDF2）の実測
 - [ ] Self-hosted で Bun プロセスのアイドル時メモリの実測
 - [ ] （A を選ぶ場合）go-ap の保守状況と RFC 9421 実装の確認、Cloudflare Containers の価格・GA 状況の確認

@@ -3,7 +3,7 @@
 - Status: Proposed
 - Date: 2026-10-16
 - Deciders: @rosylilly
-- Issue: <!-- 起票後に追記 -->
+- Issue: #5
 
 ## Context
 
@@ -67,6 +67,6 @@ i18n の対象は UI 文字列だけでなく、サーバー生成文言（メ�
 
 ## Open Questions / 要検証
 
-- [ ] i18n ライブラリ選定（サーバー / Web / Tauri で共有でき、Workers でも動くもの）
+- [ ] #20 i18n ライブラリ選定（サーバー / Web / Tauri で共有でき、Workers でも動くもの）
 - [ ] Weblate / Crowdin の選定
 - [ ] v0 で `en` / `ja` 以外に追加する言語（コミュニティ次第）

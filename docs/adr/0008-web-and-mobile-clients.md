@@ -3,7 +3,7 @@
 - Status: Proposed
 - Date: 2026-10-16
 - Deciders: @rosylilly
-- Issue: <!-- 起票後に追記 -->
+- Issue: #10
 
 ## Context
 
@@ -34,5 +34,5 @@ Web と、Tauri 2 もしくはネイティブのモバイルアプリを提供�
 
 ## Open Questions / 要検証
 
-- [ ] Spike: Tauri 2 で Web クライアントをラップし、iOS / Android で APNs / FCM のリモート Push を受信できるか
+- [ ] #31 Spike: Tauri 2 で Web クライアントをラップし、iOS / Android で APNs / FCM のリモート Push を受信できるか
 - [ ] UI フレームワーク選定（React / Solid / Svelte 等）

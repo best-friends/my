@@ -3,7 +3,7 @@
 - Status: Proposed
 - Date: 2026-10-16
 - Deciders: @rosylilly
-- Issue: <!-- 起票後に追記 -->
+- Issue: #9
 
 ## Context
 
@@ -37,4 +37,4 @@ Mastodon Client API に互換させれば、既存のクライアント（Ivory,
 ## Open Questions / 要検証
 
 - [ ] Mastodon OpenAPI 定義のライセンスと網羅度
-- [ ] 主要クライアントが要求する最小エンドポイント集合の調査（起動時に叩く API）
+- [ ] #19 主要クライアントが要求する最小エンドポイント集合の調査（起動時に叩く API）

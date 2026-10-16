@@ -3,7 +3,7 @@
 - Status: Proposed
 - Date: 2026-10-16
 - Deciders: @rosylilly
-- Issue: <!-- 起票後に追記 -->
+- Issue: #4
 
 ## Context
 
@@ -71,6 +71,6 @@ Redis / NATS / RabbitMQ 等はコミュニティアダプタとして受け入�
 
 ## Open Questions / 要検証
 
-- [ ] 各サービスの遅延上限・メッセージサイズ上限・料金の確認
+- [ ] #18 各サービスの遅延上限・メッセージサイズ上限・料金の確認
 - [ ] Cloud Tasks の HTTP ターゲット認証（OIDC トークン）と Cloud Run の組み合わせ
 - [ ] SQLite DB キューで web と worker を同一プロセスにした時のロック競合

@@ -3,7 +3,7 @@
 - Status: Proposed
 - Date: 2026-10-16
 - Deciders: @rosylilly
-- Issue: <!-- 起票後に追記 -->
+- Issue: #3
 
 ## Context
 
@@ -69,7 +69,7 @@ MySQL 系（MySQL、TiDB Serverless、PlanetScale 等）は v0 では対象外�
 
 ## Open Questions / 要検証
 
-- [ ] Spike: Kysely（または Drizzle）で SQLite / D1 / PG を同一リポジトリ実装から扱えるか、D1 の `batch()` を UnitOfWork に写像できるか
-- [ ] D1 のバッチ上限・1 クエリの行数制限・無料枠の rows read 上限と、タイムライン取得のコスト試算
+- [ ] #17 Spike: Kysely（または Drizzle）で SQLite / D1 / PG を同一リポジトリ実装から扱えるか、D1 の `batch()` を UnitOfWork に写像できるか
+- [ ] #18 D1 のバッチ上限・1 クエリの行数制限・無料枠の rows read 上限と、タイムライン取得のコスト試算
 - [ ] Aurora DSQL のコントラクトテスト通過可否（外部キー・シーケンス・DDL 制約）
 - [ ] 時刻の保存形式の確定
