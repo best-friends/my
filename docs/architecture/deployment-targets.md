@@ -1,7 +1,7 @@
 # デプロイターゲットと低コスト構成
 
-> 価格・制限値は **2026-10-16 に公式ドキュメント / 公式料金ページで確認** した値です（#18）。各数値の出典は節末の「出典」に URL で示します。
-> 公式資料で確認できなかったものは **要検証** のまま残し、理由を併記しています。料金は改定されるので、最終的には各社の公式ページを正としてください。
+> 価格・制限値は **2026-10-16 時点の公式ドキュメント / 公式料金ページ** の値です。各数値の出典は節末の「出典」に URL で示します。
+> 公式資料で確認できないものは **要検証** とし、理由を併記しています。料金は改定されるので、最終的には各社の公式ページを正としてください。
 > 価格は特記がない限り USD・税抜・代表リージョン（GCP は us-central1、AWS は us-east-1）の値です。M4 で実測し、本ファイルを更新します。
 
 ## サマリ
@@ -12,19 +12,19 @@
 | **AWS** | Lambda（Function URL）+ Lambda Web Adapter | Aurora Serverless v2（0 ACU）/ Aurora DSQL / RDS / 外部 | SQS（event source） | S3 + CloudFront | EventBridge Scheduler | ほぼ $0（DB 次第。Aurora は常時接続があると 0 ACU にならない） |
 | **Self-hosted** | Docker Compose / microk8s | SQLite（+ Litestream）/ PostgreSQL | DB キュー | ローカル FS / MinIO / 外部 S3 互換 | プロセス内 cron | VM 代（$4〜6/月 クラス、要検証） |
 
-## 設計に効く確認結果（要点）
+## 設計に効く事実（要点）
 
 1. **Aurora Serverless v2 の 0 ACU は「ユーザー接続が 1 本もない」ときだけ** 一時停止する。常駐ワーカーの DB ポーリングやコネクションプール、RDS Proxy があると停止しない。復帰は通常約 15 秒、24 時間超の停止後は 30 秒以上。
    → 連合サーバーは受信が途切れにくく、「ほぼ $0」になる前提は弱い。AWS の最安 DB 構成として Aurora DSQL / 外部 DB を併記する。
-2. **Aurora DSQL は外部キーとシーケンスをサポートしている**（ADR-0003 の旧記述「外部キー不可」は誤り）。残る主な制約は、1 トランザクションあたり 3,000 行・10 MiB・5 分、DDL と DML の分離（1 トランザクション 1 DDL）、分離レベルは Repeatable Read 固定、楽観的同時実行制御（コミット時に SQLSTATE 40001）。
+2. **Aurora DSQL は外部キーとシーケンスをサポートしている**。残る主な制約は、1 トランザクションあたり 3,000 行・10 MiB・5 分、DDL と DML の分離（1 トランザクション 1 DDL）、分離レベルは Repeatable Read 固定、楽観的同時実行制御（コミット時に SQLSTATE 40001）。
 3. **Neon Free は 100 CU-hours/プロジェクト/月**。最小 0.25 CU で 400 時間/月（約 16.7 日）分で、常時起動（約 730 時間）には足りない。5 分無通信で scale to zero（Free では無効化不可）。
 4. **Turso Free** は 100 DB・5 GB・月 5 億 rows read・月 1,000 万 rows written。上限超過のクエリは `BLOCKED` で失敗する（課金で継続されない）。なお料金ページに「Turso is joining Supabase」との告知があり、プラン体系が変わる可能性がある。
-5. **SQS の遅延上限 15 分・Cloud Tasks の予約上限 30 日** は確認済み（ADR-0004 の前提どおり）。SQS のメッセージ上限は現在 **1 MiB**（256 KiB ではない）。
+5. **SQS の遅延上限は 15 分、Cloud Tasks の予約上限は 30 日**。SQS のメッセージ上限は **1 MiB**。
 6. **AWS Lambda Web Functions**（2026-10 発表の新形態。HTTP サーバーをそのまま動かせる）は現時点で **Node.js のみ** 対応で、Go サーバーには使えない。Go では引き続き Lambda Web Adapter（Event Functions）を使う。
 
 ## Cloudflare（実行環境としては対象外）
 
-- [ADR-0001](../adr/0001-server-language-and-runtime.md) により、Cloudflare Workers（と D1 / Cloudflare Queues）は v0 の実行環境から除外した。
+- [ADR-0001](../adr/0001-server-language-and-runtime.md) により、Cloudflare Workers（と D1 / Cloudflare Queues）は v0 の実行環境の対象外。
 - ただし **R2（S3 互換 API）と CDN は他ターゲットと組み合わせて使える**。R2 は転送量（egress）課金がなく、メディア配信のコストを下げる候補。
 - Cloudflare Containers 上での実行は将来の検討事項（需要があれば別 ADR）。
 

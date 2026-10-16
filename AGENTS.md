@@ -45,6 +45,9 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 - **Never change an ADR's status to `Accepted`/`Rejected` on your own judgment.** Only the human decider decides. You may record a decision
   the decider has explicitly stated (quote it in the PR description). You may create and edit *Proposed* ADRs.
 - Do not rewrite the body of an Accepted ADR; supersede it with a new ADR instead (typo fixes are fine).
+- **Every file in the repo describes the present, never its history** ([ADR-0021](docs/adr/0021-documents-describe-present-state.md)).
+  No changelog sections, no "previously / in the first draft / old proposal" wording, no `[x]` resolved items in Open Questions —
+  fold resolved answers into the body. Explain *why it changed* in the commit message and PR description instead.
 - After adding/renaming an ADR, run `make adr-index`.
 - v0 allows breaking changes everywhere ([ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)) — no migrations, no compat shims.
   Exception: ActivityPub wire formats and federated URIs must stay spec-compliant.
