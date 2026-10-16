@@ -35,3 +35,26 @@ func TestBuiltinRoles(t *testing.T) {
 		t.Errorf("admin does not outrank moderator")
 	}
 }
+
+func TestValidateEmail(t *testing.T) {
+	for _, ok := range []string{"alice@example.com", "Alice.Smith+tag@Example.COM", "ä@例え.jp"} {
+		if err := identity.ValidateEmail(ok); err != nil {
+			t.Errorf("ValidateEmail(%q) = %v", ok, err)
+		}
+	}
+	for _, bad := range []string{
+		"", "alice", "@example.com", "alice@", " alice@example.com", "Alice <alice@example.com>",
+		"<alice@example.com>", "a@b, c@d", "alice@example.com (comment)", "\xff@example.com",
+		strings.Repeat("a", identity.MaxEmailLength-len("@example.com")+1) + "@example.com",
+	} {
+		if err := identity.ValidateEmail(bad); !errors.Is(err, identity.ErrInvalidEmail) {
+			t.Errorf("ValidateEmail(%q) = %v, want ErrInvalidEmail", bad, err)
+		}
+	}
+}
+
+func TestNormalizeEmail(t *testing.T) {
+	if got := identity.NormalizeEmail("Alice.Smith@Example.COM"); got != "alice.smith@example.com" {
+		t.Errorf("NormalizeEmail = %q", got)
+	}
+}

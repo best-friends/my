@@ -782,7 +782,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-708 交流の禁止 | S | `moderation_actions`（`restrict_interaction`）, `account_restrictions`（`interact`） |
 | FR-704 監査ログ | S | 処分・解除・通報対応・設定の版（各イベントテーブル） |
 | FR-705 インスタンス設定 | M | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules` とその版 |
-| FR-801 CLI | M | `dead_jobs`, §9 の再構築 |
+| FR-801 CLI | M | `dead_jobs`, §9 の再構築、管理者作成（`users`, `user_primary_emails`, `user_role_grants`） |
 | FR-803 定期クリーンアップ | M | `received_activities`, `received_activity_documents`, `delivery_attempts`, `remote_media_cache`, 未添付の `media_files`, `kv_entries`, 期限切れの制限 |
 
 ## 11. 未決事項

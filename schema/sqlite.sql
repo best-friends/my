@@ -25,6 +25,24 @@ CREATE TABLE password_credentials (
 ) STRICT;
 CREATE INDEX password_credentials_user_id_id ON password_credentials (user_id, id DESC);
 
+-- Resource: an email address a user added.
+CREATE TABLE user_email_addresses (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  address TEXT NOT NULL,
+  address_normalized TEXT NOT NULL,
+  added_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX user_email_addresses_user_id_id ON user_email_addresses (user_id, id);
+
+-- Projection: the primary email address of each user, for login and against duplicates.
+CREATE TABLE user_primary_emails (
+  user_id TEXT NOT NULL PRIMARY KEY,
+  email_address_id TEXT NOT NULL,
+  address_normalized TEXT NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX user_primary_emails_address_normalized ON user_primary_emails (address_normalized);
+
 -- Resource: a role, such as the built-in admin and moderator.
 CREATE TABLE roles (
   id TEXT NOT NULL PRIMARY KEY,

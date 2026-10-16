@@ -4,6 +4,7 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
 	appidentity "github.com/best-friends/my/internal/app/identity"
@@ -105,4 +106,68 @@ func (r *IdentityRepository) FindRole(ctx context.Context, key string) (identity
 		out[i] = identity.Permission(p)
 	}
 	return roleFrom(row), out, nil
+}
+
+// InsertEmailAddress implements identity.Repository.
+func (r *IdentityRepository) InsertEmailAddress(ctx context.Context, tx uow.Tx, e identity.EmailAddress) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.InsertEmailAddress(ctx, sqlitegen.InsertEmailAddressParams{
+		ID: e.ID, UserID: e.UserID, Address: e.Address, AddressNormalized: e.AddressNormalized, AddedAt: toMillis(e.AddedAt),
+	})
+	return wrap(err, "insert email address")
+}
+
+// InsertPrimaryEmail implements identity.Repository.
+func (r *IdentityRepository) InsertPrimaryEmail(ctx context.Context, tx uow.Tx, e identity.EmailAddress) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.InsertPrimaryEmail(ctx, sqlitegen.InsertPrimaryEmailParams{
+		UserID: e.UserID, EmailAddressID: e.ID, AddressNormalized: e.AddressNormalized,
+	})
+	if isUniqueViolation(err, "user_primary_emails.address_normalized") {
+		return fmt.Errorf("insert primary email of user %s: %w", e.UserID, appidentity.ErrEmailTaken)
+	}
+	return wrap(err, "insert primary email")
+}
+
+// InsertRoleGrant implements identity.Repository.
+func (r *IdentityRepository) InsertRoleGrant(ctx context.Context, tx uow.Tx, g identity.RoleGrant) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.InsertUserRoleGrant(ctx, sqlitegen.InsertUserRoleGrantParams{
+		ID: g.ID, UserID: g.UserID, RoleID: g.RoleID, GrantedByUserID: toNullString(g.GrantedByUserID), GrantedAt: toMillis(g.GrantedAt),
+	})
+	if err != nil {
+		return wrap(err, "insert role grant")
+	}
+	return wrap(q.InsertUserRole(ctx, sqlitegen.InsertUserRoleParams{UserID: g.UserID, RoleID: g.RoleID, GrantID: g.ID}), "insert user role")
+}
+
+// FindUserIDByEmail implements identity.Repository.
+func (r *IdentityRepository) FindUserIDByEmail(ctx context.Context, normalized string) (string, error) {
+	id, err := r.db.reader().GetUserIDByPrimaryEmail(ctx, normalized)
+	if err != nil {
+		return "", notFound(err, appidentity.ErrNotFound, "user by email")
+	}
+	return id, nil
+}
+
+// ListUserRoles implements identity.Repository.
+func (r *IdentityRepository) ListUserRoles(ctx context.Context, userID string) ([]identity.Role, error) {
+	rows, err := r.db.reader().ListUserRoles(ctx, userID)
+	if err != nil {
+		return nil, wrap(err, "list user roles")
+	}
+	out := make([]identity.Role, len(rows))
+	for i, row := range rows {
+		out[i] = roleFrom(row)
+	}
+	return out, nil
 }

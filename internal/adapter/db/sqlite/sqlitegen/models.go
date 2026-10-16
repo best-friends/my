@@ -150,6 +150,20 @@ type User struct {
 	CreatedAt int64
 }
 
+type UserEmailAddress struct {
+	ID                string
+	UserID            string
+	Address           string
+	AddressNormalized string
+	AddedAt           int64
+}
+
+type UserPrimaryEmail struct {
+	UserID            string
+	EmailAddressID    string
+	AddressNormalized string
+}
+
 type UserRole struct {
 	UserID  string
 	RoleID  string

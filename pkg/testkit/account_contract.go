@@ -37,7 +37,8 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // AccountRepositoryContract verifies the identity and account repositories of a database
 // adapter through the use cases that drive them: registering a local user with sealed RSA and
 // Ed25519 keys, rejecting a taken username, creating the instance actor exactly once, lookups by
-// handle and ID, profile revisions, lifecycle events, the built-in roles, and the property that
+// handle and ID, profile revisions, lifecycle events, the built-in roles, creating an admin with
+// an email address and a role grant while rejecting a taken username or email, and the property that
 // the account module's synchronous projections equal a rebuild from their events.
 func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
@@ -53,6 +54,8 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RevisesProfiles", accountRevisesProfiles},
 		{"RecordsLifecycleEvents", accountRecordsLifecycle},
 		{"EnsuresBuiltinRoles", accountEnsuresBuiltinRoles},
+		{"CreatesAnAdmin", accountCreatesAdmin},
+		{"RejectsATakenAdminUsernameOrEmail", accountRejectsTakenAdmin},
 		{"IncrementalProjectionEqualsRebuild", accountProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
@@ -448,6 +451,87 @@ func accountEnsuresBuiltinRoles(t *testing.T, e *accountEnv) {
 		if !reflect.DeepEqual(got, want) || len(perms) != len(b.Permissions) {
 			t.Errorf("role %s permissions = %v, want %v", b.Key, perms, b.Permissions)
 		}
+	}
+}
+
+func accountCreatesAdmin(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	e.clock.Advance(time.Second)
+	reg, err := e.identity.CreateAdmin(ctx, appidentity.CreateAdminInput{
+		Username: "Root", Email: "Root@Example.COM", Password: "correct horse battery staple",
+	})
+	if err != nil {
+		t.Fatalf("CreateAdmin = %v", err)
+	}
+	if id, err := e.h.Identity.FindUserIDByEmail(ctx, "root@example.com"); err != nil || id != reg.User.ID {
+		t.Errorf("FindUserIDByEmail = %q, %v; want %s", id, err, reg.User.ID)
+	}
+	cred, err := e.h.Identity.FindCurrentPasswordCredential(ctx, reg.User.ID)
+	if err != nil {
+		t.Fatalf("FindCurrentPasswordCredential = %v", err)
+	}
+	if ok, _, err := e.hasher.Verify(ctx, "correct horse battery staple", cred.Hash); !ok || err != nil {
+		t.Errorf("stored hash does not verify the password: %v, %v", ok, err)
+	}
+	roles, err := e.h.Identity.ListUserRoles(ctx, reg.User.ID)
+	if err != nil || len(roles) != 1 || roles[0].Key != identity.RoleAdmin {
+		t.Fatalf("ListUserRoles = %+v, %v; want admin", roles, err)
+	}
+	if _, perms, err := e.h.Identity.FindRole(ctx, identity.RoleAdmin); err != nil || len(perms) != len(identity.AllPermissions()) {
+		t.Errorf("admin role permissions = %v, %v; want all", perms, err)
+	}
+	actor, err := e.accounts.FindByHandle(ctx, "root", account.LocalDomain)
+	if err != nil || actor.Account.ID != reg.AccountID || actor.Local == nil || actor.Local.UserID != reg.User.ID {
+		t.Fatalf("FindByHandle(root) = %+v, %v; want the admin's account %s", actor.Local, err, reg.AccountID)
+	}
+
+	// A second admin reuses the built-in roles.
+	e.clock.Advance(time.Second)
+	second, err := e.identity.CreateAdmin(ctx, appidentity.CreateAdminInput{
+		Username: "root2", Email: "root2@example.com", Password: "another long password",
+	})
+	if err != nil {
+		t.Fatalf("CreateAdmin(root2) = %v", err)
+	}
+	again, err := e.h.Identity.ListUserRoles(ctx, second.User.ID)
+	if err != nil || len(again) != 1 || again[0].ID != roles[0].ID {
+		t.Errorf("second admin roles = %+v, %v; want the same admin role %s", again, err, roles[0].ID)
+	}
+	if none, err := e.h.Identity.ListUserRoles(ctx, e.register(t, "plain").User.ID); err != nil || len(none) != 0 {
+		t.Errorf("roles of a registered user = %+v, %v; want none", none, err)
+	}
+}
+
+func accountRejectsTakenAdmin(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	first, err := e.identity.CreateAdmin(ctx, appidentity.CreateAdminInput{
+		Username: "root", Email: "root@example.com", Password: "correct horse battery staple",
+	})
+	if err != nil {
+		t.Fatalf("CreateAdmin = %v", err)
+	}
+	for _, tc := range []struct {
+		in   appidentity.CreateAdminInput
+		want error
+	}{
+		{appidentity.CreateAdminInput{Username: "ROOT", Email: "other@example.com", Password: "long enough"}, appaccount.ErrUsernameTaken},
+		{appidentity.CreateAdminInput{Username: "other", Email: "ROOT@example.com", Password: "long enough"}, appidentity.ErrEmailTaken},
+		{appidentity.CreateAdminInput{Username: "other", Email: "not an address", Password: "long enough"}, identity.ErrInvalidEmail},
+		{appidentity.CreateAdminInput{Username: "other", Email: "other@example.com", Password: "short"}, identity.ErrInvalidPassword},
+	} {
+		if _, err := e.identity.CreateAdmin(ctx, tc.in); !errors.Is(err, tc.want) {
+			t.Errorf("CreateAdmin(%q, %q) = %v, want %v", tc.in.Username, tc.in.Email, err, tc.want)
+		}
+	}
+	// The failed attempts rolled back: one handle, and the email still belongs to the first admin.
+	if handles, err := e.h.Accounts.ListHandles(ctx); err != nil || len(handles) != 1 {
+		t.Errorf("handles = %+v, %v; want only root", handles, err)
+	}
+	if id, err := e.h.Identity.FindUserIDByEmail(ctx, "root@example.com"); err != nil || id != first.User.ID {
+		t.Errorf("FindUserIDByEmail = %q, %v; want %s", id, err, first.User.ID)
+	}
+	if _, err := e.h.Identity.FindUserIDByEmail(ctx, "other@example.com"); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("FindUserIDByEmail(other) = %v, want ErrNotFound", err)
 	}
 }
 
