@@ -46,10 +46,21 @@ type MediaRepository interface {
 	// ListProcessingResults returns every processing result of a media file with its
 	// variants, oldest first.
 	ListProcessingResults(ctx context.Context, mediaID string) ([]content.MediaProcessingResult, error)
+	// ListReadyVariants returns the variant of kind of the current processing result of each
+	// media file with an ID in ids, with the file, ordered by file ID. A file that is missing,
+	// still being processed, whose current result failed, or that has no such variant is left
+	// out. It reads every file in one query, for the images of a page of accounts.
+	ListReadyVariants(ctx context.Context, ids []string, kind content.MediaVariantKind) ([]FileVariant, error)
 	FindFocus(ctx context.Context, mediaID string) (content.MediaFocus, error)
 	FindDescription(ctx context.Context, mediaID string) (content.MediaDescription, error)
 	// ListUnattachedUploads returns the IDs of up to limit uploaded media files after afterID
 	// ("" for the first page) that were created before createdBefore and that no status
 	// revision attaches, ordered by ID.
 	ListUnattachedUploads(ctx context.Context, afterID string, createdBefore time.Time, limit int) ([]string, error)
+}
+
+// FileVariant is a variant of a media file's current processing result, with the file.
+type FileVariant struct {
+	File    content.MediaFile
+	Variant content.MediaVariant
 }

@@ -107,38 +107,54 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 			statusIDs = append(statusIDs, n.StatusID)
 		}
 	}
-	statuses := map[string]Status{}
+	var views []appcontent.StatusView
 	if len(statusIDs) > 0 {
-		views, err := s.o.TimelineReader.Views(ctx, appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: accountID}, statusIDs)
+		var err error
+		views, err = s.o.TimelineReader.Views(ctx, appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: accountID}, statusIDs)
 		if err != nil {
 			return nil, fmt.Errorf("clientapi: the statuses of the notifications of %s: %w", accountID, err)
 		}
-		for _, v := range views {
-			statuses[v.Status.ID] = s.newStatus(v)
+	}
+	// The source accounts, read once each; nil for one that no longer exists.
+	sources := map[string]*appaccount.Actor{}
+	var found []appaccount.Actor
+	for _, n := range ns {
+		if _, ok := sources[n.SourceAccountID]; ok || n.SourceAccountID == "" {
+			continue
+		}
+		actor, err := s.o.Accounts.FindByID(ctx, n.SourceAccountID)
+		switch {
+		case err == nil:
+			sources[n.SourceAccountID] = &actor
+			found = append(found, actor)
+		case errors.Is(err, appaccount.ErrNotFound):
+			sources[n.SourceAccountID] = nil
+		default:
+			return nil, fmt.Errorf("clientapi: the source account %s of notification %s: %w", n.SourceAccountID, n.ID, err)
 		}
 	}
-	accounts := map[string]*Account{}
+	imgs, err := s.statusImages(ctx, views, found...)
+	if err != nil {
+		return nil, err
+	}
+	statuses := make(map[string]Status, len(views))
+	for _, v := range views {
+		statuses[v.Status.ID] = s.newStatus(v, imgs)
+	}
+	accounts := make(map[string]Account, len(found))
+	for id, a := range sources {
+		if a != nil {
+			accounts[id] = s.newAccount(*a, imgs)
+		}
+	}
 	out := make([]Notification, 0, len(ns))
 	for _, n := range ns {
 		item := Notification{Id: n.ID, Type: NotificationType(n.Type), CreatedAt: n.CreatedAt}
 		if st, ok := statuses[n.StatusID]; ok {
 			item.Status = &st
 		}
-		if n.SourceAccountID != "" {
-			a, ok := accounts[n.SourceAccountID]
-			if !ok {
-				actor, err := s.o.Accounts.FindByID(ctx, n.SourceAccountID)
-				switch {
-				case errors.Is(err, appaccount.ErrNotFound):
-				case err != nil:
-					return nil, fmt.Errorf("clientapi: the source account %s of notification %s: %w", n.SourceAccountID, n.ID, err)
-				default:
-					acc := s.newAccount(actor)
-					a = &acc
-				}
-				accounts[n.SourceAccountID] = a
-			}
-			item.Account = a
+		if a, ok := accounts[n.SourceAccountID]; ok {
+			item.Account = &a
 		}
 		out = append(out, item)
 	}

@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"mime"
+	"slices"
 	"strings"
 	"time"
 
@@ -361,6 +362,44 @@ func (s *MediaService) CheckImage(ctx context.Context, id string) error {
 
 // URL returns the public URL of a variant.
 func (s *MediaService) URL(v content.MediaVariant) string { return s.d.Blobs.PublicURL(v.BlobKey) }
+
+// ImageRef names a media file that an account shows as an image of its own, such as the
+// avatar or header of its profile.
+type ImageRef struct {
+	AccountID string
+	MediaID   string
+}
+
+// ImageURLs returns the URL of the full variant of each ref's media file, keyed by ref, for the
+// files that the ref's account owns and whose processing succeeded; the other refs are absent.
+// It reads every file in one repository call, so that presenting a page of accounts reads their
+// images together instead of one by one.
+func (s *MediaService) ImageURLs(ctx context.Context, refs []ImageRef) (map[ImageRef]string, error) {
+	out := map[ImageRef]string{}
+	ids := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		if ref.MediaID != "" && !slices.Contains(ids, ref.MediaID) {
+			ids = append(ids, ref.MediaID)
+		}
+	}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	variants, err := s.d.Repository.ListReadyVariants(ctx, ids, content.VariantFull)
+	if err != nil {
+		return nil, fmt.Errorf("content: the images %v: %w", ids, err)
+	}
+	byID := make(map[string]FileVariant, len(variants))
+	for _, v := range variants {
+		byID[v.File.ID] = v
+	}
+	for _, ref := range refs {
+		if v, ok := byID[ref.MediaID]; ok && v.File.OwnerAccountID == ref.AccountID {
+			out[ref] = s.URL(v.Variant)
+		}
+	}
+	return out, nil
+}
 
 // ErrNotOwner reports a change to a media file of another account.
 var ErrNotOwner = errors.New("content: the media file belongs to another account")

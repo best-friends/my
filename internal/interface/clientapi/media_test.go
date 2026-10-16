@@ -34,6 +34,8 @@ type fakeMedia struct {
 	files    map[string]appcontent.Media
 	attached map[string]bool
 	next     int
+	// imageCalls counts the calls of ImageURLs.
+	imageCalls int
 }
 
 func newFakeMedia() *fakeMedia {
@@ -132,6 +134,24 @@ func (f *fakeMedia) Update(ctx context.Context, accountID string, u appcontent.M
 }
 
 func (f *fakeMedia) URL(v content.MediaVariant) string { return "https://social.example/" + v.BlobKey }
+
+// ImageURLs answers as the real service does and counts its calls in imageCalls.
+func (f *fakeMedia) ImageURLs(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]string, error) {
+	f.mu.Lock()
+	f.imageCalls++
+	f.mu.Unlock()
+	out := map[appcontent.ImageRef]string{}
+	for _, ref := range refs {
+		m, err := f.OwnMedia(ctx, ref.AccountID, ref.MediaID)
+		if err != nil || !m.Ready() {
+			continue
+		}
+		if v, ok := m.Result.Variant(content.VariantFull); ok {
+			out[ref] = f.URL(v)
+		}
+	}
+	return out, nil
+}
 
 func (f *fakeMedia) Limits() media.Limits { return media.Limits{MaxBytes: testMaxBytes}.WithDefaults() }
 

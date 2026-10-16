@@ -162,6 +162,10 @@ type Account struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
 	Acct string `json:"acct"`
 
+	// AvatarUrl The URL of the avatar image; omitted when the account has none, or its image is not
+	// processed yet or could not be processed. Clients show a placeholder instead.
+	AvatarUrl *string `json:"avatar_url,omitempty"`
+
 	// Bot Whether the account is automated.
 	Bot bool `json:"bot"`
 
@@ -181,6 +185,9 @@ type Account struct {
 
 	// FollowingCount The number of accounts that the account actively follows; present where `followers_count` is.
 	FollowingCount *int `json:"following_count,omitempty"`
+
+	// HeaderUrl The URL of the header image; omitted when there is none, as `avatar_url` is.
+	HeaderUrl *string `json:"header_url,omitempty"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
@@ -266,8 +273,9 @@ type CredentialAccount struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
 	Acct string `json:"acct"`
 
-	// Avatar The URL of the avatar image; omitted when there is none.
-	Avatar *string `json:"avatar,omitempty"`
+	// AvatarUrl The URL of the avatar image; omitted when the account has none, or its image is not
+	// processed yet or could not be processed. Clients show a placeholder instead.
+	AvatarUrl *string `json:"avatar_url,omitempty"`
 
 	// Bot Whether the account is automated.
 	Bot bool `json:"bot"`
@@ -292,8 +300,8 @@ type CredentialAccount struct {
 	// FollowingCount The number of accounts that the account actively follows; present where `followers_count` is.
 	FollowingCount *int `json:"following_count,omitempty"`
 
-	// Header The URL of the header image; omitted when there is none.
-	Header *string `json:"header,omitempty"`
+	// HeaderUrl The URL of the header image; omitted when there is none, as `avatar_url` is.
+	HeaderUrl *string `json:"header_url,omitempty"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//

@@ -1502,6 +1502,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProfileField"
+        avatar_url:
+          description: |
+            The URL of the avatar image; omitted when the account has none, or its image is not
+            processed yet or could not be processed. Clients show a placeholder instead.
+          type: string
+          format: uri
+        header_url:
+          description: The URL of the header image; omitted when there is none, as `avatar_url` is.
+          type: string
+          format: uri
         followers_count:
           description: |
             The number of accounts that actively follow the account, as far as the instance
@@ -2142,14 +2152,6 @@ components:
         - type: object
           required: [discoverable, indexable, source]
           properties:
-            avatar:
-              description: The URL of the avatar image; omitted when there is none.
-              type: string
-              format: uri
-            header:
-              description: The URL of the header image; omitted when there is none.
-              type: string
-              format: uri
             discoverable:
               description: Whether the account may be suggested to others and listed in directories.
               type: boolean

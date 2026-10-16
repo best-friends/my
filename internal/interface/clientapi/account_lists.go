@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/domain/graph"
 )
@@ -60,17 +61,17 @@ func trim[T any](items []T, limit int) ([]T, int) {
 // presentAccounts presents the accounts with ids in order, leaving out those that are gone
 // or not presentable (presentable with blockCheck).
 func (s *Server) presentAccounts(ctx context.Context, viewer *Viewer, ids []string, blockCheck bool) ([]Account, error) {
-	out := []Account{}
+	var actors []appaccount.Actor
 	for _, id := range ids {
 		a, ok, err := s.presentableByID(ctx, viewer, id, blockCheck)
 		if err != nil {
 			return nil, err
 		}
 		if ok {
-			out = append(out, s.newAccount(a))
+			actors = append(actors, a)
 		}
 	}
-	return out, nil
+	return s.newAccounts(ctx, actors)
 }
 
 // edgePage presents a page of follow edges as a page of accounts: the followers of the edges
@@ -248,15 +249,23 @@ func (s *Server) ListMutes(ctx context.Context, req ListMutesRequestObject) (Lis
 	}
 	mutes, last := trim(mutes, q.limit)
 	page := MutePage{Mutes: []MutedAccount{}}
+	var actors []appaccount.Actor
+	var shown []graph.Mute
 	for _, m := range mutes {
 		a, ok, err := s.presentableByID(ctx, &v, m.TargetAccountID, false)
 		if err != nil {
 			return nil, err
 		}
-		if !ok {
-			continue
+		if ok {
+			actors, shown = append(actors, a), append(shown, m)
 		}
-		page.Mutes = append(page.Mutes, MutedAccount{Account: s.newAccount(a), Notifications: m.HideNotifications, ExpiresAt: m.ExpiresAt})
+	}
+	accounts, err := s.newAccounts(ctx, actors)
+	if err != nil {
+		return nil, err
+	}
+	for i, m := range shown {
+		page.Mutes = append(page.Mutes, MutedAccount{Account: accounts[i], Notifications: m.HideNotifications, ExpiresAt: m.ExpiresAt})
 	}
 	if last >= 0 {
 		page.NextCursor = encodeMuteCursor(mutes[last])

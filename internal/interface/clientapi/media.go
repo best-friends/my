@@ -30,6 +30,9 @@ type MediaFiles interface {
 	Update(ctx context.Context, accountID string, u appcontent.MediaUpdate) (appcontent.Media, error)
 	// URL returns the public URL of a variant.
 	URL(v content.MediaVariant) string
+	// ImageURLs returns the URLs of the images that accounts show as their own (avatars and
+	// headers), keyed by ref, leaving out files of other accounts and unprocessed files.
+	ImageURLs(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]string, error)
 	// Limits returns the upload limits.
 	Limits() media.Limits
 }

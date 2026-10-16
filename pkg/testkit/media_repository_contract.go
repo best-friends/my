@@ -54,6 +54,7 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"RetriesOnTransientErrors", mediaRetriesTransient},
 		{"KeepsTheFocusAsACurrentValue", mediaKeepsFocus},
 		{"ChecksProfileImages", mediaChecksProfileImages},
+		{"ReadsImagesTogether", mediaReadsImagesTogether},
 		{"UpdatesOnlyOwnUnattachedUploads", mediaUpdates},
 		{"CleansUpOldUnattachedUploads", mediaCleansUp},
 		{"CleanupPagesPastReferencedUploads", mediaCleanupPages},
@@ -415,6 +416,68 @@ func mediaChecksProfileImages(t *testing.T, e *mediaEnv) {
 	}
 	if err := e.service.CheckProfileImage(ctx, mediaOwner, "0192f0c1-0000-7000-8000-00000000dead"); !errors.Is(err, appaccount.ErrUnusableImage) {
 		t.Errorf("unknown file = %v, want ErrUnusableImage", err)
+	}
+}
+
+// mediaReadsImagesTogether checks ListReadyVariants and ImageURLs: the variant of each listed
+// file whose newest processing result is ready, and its URL when the file's account owns it.
+func mediaReadsImagesTogether(t *testing.T, e *mediaEnv) {
+	ctx := t.Context()
+	ready := e.upload(t, FixturePNG(4, 3, false))
+	e.process(t, ready.File.ID)
+	other := e.upload(t, FixturePNG(5, 3, false))
+	e.process(t, other.File.ID)
+	pending := e.upload(t, FixturePNG(6, 3, false))
+	reprocessed := e.upload(t, FixturePNG(7, 3, false))
+	e.process(t, reprocessed.File.ID)
+	// A newer result that failed makes the file's current state a failure.
+	e.clock.Advance(time.Millisecond)
+	failed := content.MediaProcessingResult{
+		ID: e.ids.NewID(), MediaID: reprocessed.File.ID, Outcome: content.MediaFailed, MediaType: content.MediaTypeUnknown,
+		ProcessedAt: e.clock.Now(),
+	}
+	if err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return e.h.Media.InsertProcessingResult(ctx, tx, failed) }); err != nil {
+		t.Fatal(err)
+	}
+	unknown := "0192f0c1-0000-7000-8000-00000000dead"
+
+	ids := []string{other.File.ID, ready.File.ID, pending.File.ID, reprocessed.File.ID, unknown}
+	variants, err := e.h.Media.ListReadyVariants(ctx, ids, content.VariantThumbnail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, v := range variants {
+		if v.Variant.Kind != content.VariantThumbnail || v.File.OwnerAccountID != mediaOwner || v.Variant.BlobKey == "" {
+			t.Errorf("variant = %+v", v)
+		}
+		got = append(got, v.File.ID)
+	}
+	if want := []string{ready.File.ID, other.File.ID}; !slices.Equal(got, want) {
+		t.Errorf("ListReadyVariants = %v, want %v (ordered by ID)", got, want)
+	}
+	if none, err := e.h.Media.ListReadyVariants(ctx, nil, content.VariantFull); err != nil || len(none) != 0 {
+		t.Errorf("ListReadyVariants(nil) = %v, %v", none, err)
+	}
+
+	full, ok := e.media(t, ready.File.ID).Result.Variant(content.VariantFull)
+	if !ok {
+		t.Fatal("no full variant")
+	}
+	refs := []appcontent.ImageRef{
+		{AccountID: mediaOwner, MediaID: ready.File.ID},
+		{AccountID: "someone-else", MediaID: other.File.ID},
+		{AccountID: mediaOwner, MediaID: pending.File.ID},
+		{AccountID: mediaOwner, MediaID: reprocessed.File.ID},
+		{AccountID: mediaOwner, MediaID: unknown},
+		{AccountID: mediaOwner, MediaID: ""},
+	}
+	urls, err := e.service.ImageURLs(ctx, refs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(urls) != 1 || urls[refs[0]] != e.service.URL(full) {
+		t.Errorf("ImageURLs = %v, want only %s: %s", urls, refs[0].MediaID, e.service.URL(full))
 	}
 }
 
