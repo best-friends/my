@@ -13,6 +13,8 @@ import (
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
+	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
+	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
 	"github.com/best-friends/my/internal/adapter/media/native"
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
@@ -29,6 +31,7 @@ import (
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
+	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	mediahttp "github.com/best-friends/my/internal/interface/media"
 	"github.com/best-friends/my/internal/platform/config"
@@ -63,12 +66,17 @@ type App struct {
 	// Runner runs the jobs of the queue for the worker role.
 	Runner *queue.PullRunner
 
+	// KV is the key-value store that cfg.KV selects; RateLimiter keeps its counters there.
+	KV          kernel.KeyValueStore
+	RateLimiter *kernel.RateLimiter
+
 	Accounts *account.Service
 	Identity *identity.Service
 	// Instance holds the instance settings and texts, which live in the database; Config holds
 	// the deployment configuration. They never share a key (docs/reference/configuration.md).
 	Instance *instance.Service
 	Graph    *graph.Service
+	Content  *content.Service
 
 	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
 	Blobs          blob.Store
@@ -131,6 +139,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		instances  instance.Repository
 		follows    graph.Repository
 		medias     content.MediaRepository
+		statuses   content.Repository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -141,10 +150,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows = d.GraphRepository()
-		medias = d.MediaRepository()
+		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
+		}
+		if cfg.KV == "db" {
+			a.KV = kvdb.NewSQLite(d, a.Clock)
 		}
 	case "postgres":
 		d, err := postgres.Open(ctx, cfg.DatabaseURL, uow.Options{Projectors: a.Projectors})
@@ -153,10 +164,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows = d.GraphRepository()
-		medias = d.MediaRepository()
+		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
+		}
+		if cfg.KV == "db" {
+			a.KV = kvdb.NewPostgres(d, a.Clock)
 		}
 	default:
 		return nil, fmt.Errorf("db %q is not implemented yet", cfg.DB)
@@ -178,6 +191,16 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if a.Runner == nil {
 		a.Runner = queue.NewPullRunner(a.source, a.Handlers, runnerOpts)
 	}
+	switch cfg.KV {
+	case "db":
+		// Set with the database above.
+	case "memory":
+		a.KV = kvmemory.New(a.Clock)
+	default:
+		_ = a.Close()
+		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
+	}
+	a.RateLimiter = kernel.NewRateLimiter(a.KV, a.Clock)
 
 	account.RegisterProjectors(a.Projectors, accounts)
 	a.Accounts = account.NewService(account.Deps{
@@ -188,6 +211,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
+		RateLimiter: a.RateLimiter,
 		// The default locale is an instance setting in the database, never configuration
 		// (docs/reference/configuration.md); it is read per registration so changes apply at once.
 		DefaultLocale: a.Instance.DefaultLocale,
@@ -195,6 +219,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	graph.RegisterProjectors(a.Projectors, follows)
 	a.Graph = graph.NewService(graph.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
+	})
+	content.RegisterProjectors(a.Projectors, statuses)
+	a.Content = content.NewService(content.Deps{
+		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
+		// No moderation restrictions exist yet; posting still goes through the policy port.
+		Restrictions:    content.NoRestrictions{},
+		MaxStatusLength: a.Instance.MaxStatusLength,
+		DefaultLanguage: a.defaultPostLanguage,
+		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
 	})
 
 	if opts.Version == "" {
@@ -204,12 +237,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	// The instance is named after its host until the instance settings hold a name.
+	authpages.New(authpages.Options{Identity: a.Identity, Messages: a.Messages, Logger: a.Logger}).Register(a)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
+	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
@@ -251,6 +285,19 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 	})
 	a.Media.RegisterJobs(a.Handlers, a.Scheduler)
 	return nil
+}
+
+// defaultPostLanguage returns the default post language of a user's preferences, or "" for a
+// user without preferences.
+func (a *App) defaultPostLanguage(ctx context.Context, userID string) (string, error) {
+	p, err := a.Identity.Preferences(ctx, userID)
+	if errors.Is(err, identity.ErrNotFound) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return p.DefaultPostLanguage, nil
 }
 
 func (a *App) setDBQueue(q *queuedb.Queue) {

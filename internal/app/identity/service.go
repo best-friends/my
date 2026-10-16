@@ -4,6 +4,8 @@ package identity
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/kernel"
@@ -25,11 +27,20 @@ type Deps struct {
 	// change of the instance setting applies to the next registration. Nil or an empty result
 	// means i18n.SourceLocale.
 	DefaultLocale func(ctx context.Context) (string, error)
+
+	// RateLimiter limits failed sign-ins (LoginIPLimit, LoginAccountLimit); SignIn needs it.
+	RateLimiter *kernel.RateLimiter
+	// SessionTTL is the lifetime of a session; zero means DefaultSessionTTL.
+	SessionTTL time.Duration
 }
 
 // Service runs the identity module's use cases.
 type Service struct {
 	d Deps
+
+	// dummy is the hash that SignIn verifies against for unknown users, made on first use.
+	dummyMu sync.Mutex
+	dummy   string
 }
 
 // NewService returns a Service on d.

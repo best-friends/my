@@ -4,6 +4,32 @@
 export interface MessageArgs {
   /** The web client is under construction. */
   "client:app.placeholder": {};
+  /** The request was refused because it came from another site. */
+  "server:auth.cross_origin": {};
+  /** Something went wrong */
+  "server:auth.error.title": {};
+  /** This form has expired. Please try again. */
+  "server:auth.form_expired": {};
+  /** Email address */
+  "server:auth.sign_in.email_label": {};
+  /** The email address or password is incorrect. */
+  "server:auth.sign_in.failed": {};
+  /** Enter your email address and password. */
+  "server:auth.sign_in.missing": {};
+  /** Password */
+  "server:auth.sign_in.password_label": {};
+  /** {minutes, plural, one {Too many failed sign-in attempts. Try again in # minute.} other {Too many failed sign-in attempts. Try again in # minutes.}} */
+  "server:auth.sign_in.rate_limited": { minutes: number };
+  /** Sign in */
+  "server:auth.sign_in.submit": {};
+  /** Sign in */
+  "server:auth.sign_in.title": {};
+  /** Sign out */
+  "server:auth.sign_out.submit": {};
+  /** Continue */
+  "server:auth.signed_in.continue": {};
+  /** You are signed in */
+  "server:auth.signed_in.title": {};
   /** {count, plural, one {Found # configuration error.} other {Found # configuration errors.}} */
   "server:config.errors": { count: number };
   /** The setting {name} has an invalid value. */

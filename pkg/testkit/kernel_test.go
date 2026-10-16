@@ -3,6 +3,7 @@
 package testkit_test
 
 import (
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -109,5 +110,69 @@ func TestIDGeneratorConcurrentIDsAreUnique(t *testing.T) {
 			t.Fatalf("duplicate ID %q", id)
 		}
 		seen[id] = true
+	}
+}
+
+func TestKeyValueStoreContract(t *testing.T) {
+	testkit.KeyValueStoreContract(t, func(_ *testing.T, clock *testkit.Clock) kernel.KeyValueStore {
+		return testkit.NewKeyValueStore(clock)
+	})
+}
+
+func TestRateLimiterSlidesItsWindow(t *testing.T) {
+	clock := testkit.NewClock(start) // start is on a minute boundary
+	l := kernel.NewRateLimiter(testkit.NewKeyValueStore(clock), clock)
+	lim := kernel.Limit{Name: "test", Max: 5, Window: time.Minute}
+	ctx := t.Context()
+	for range 5 {
+		if err := l.Record(ctx, lim, "k"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d, err := l.Check(ctx, lim, "k")
+	// The next window starts in 60 s; there the 5 events weigh (60-t)/60*5, which drops to 4 at t = 12 s.
+	if err != nil || d.Allowed || d.RetryAfter != 72*time.Second || d.Reset != time.Minute {
+		t.Fatalf("Check after 5 events = %+v, %v; want refused, retry after 72s, reset in 1m", d, err)
+	}
+	clock.Advance(72*time.Second - time.Millisecond)
+	if d, _ := l.Check(ctx, lim, "k"); d.Allowed {
+		t.Fatalf("Check 1 ms before Retry-After = %+v, want refused", d)
+	}
+	clock.Advance(time.Millisecond)
+	if d, _ := l.Check(ctx, lim, "k"); !d.Allowed || d.Remaining != 1 {
+		t.Fatalf("Check at Retry-After = %+v, want allowed with 1 remaining", d)
+	}
+	// Take counts the event it allows.
+	if d, _ := l.Take(ctx, lim, "k"); !d.Allowed || d.Remaining != 0 {
+		t.Fatalf("Take = %+v, want allowed with 0 remaining", d)
+	}
+	d, _ = l.Take(ctx, lim, "k")
+	if d.Allowed || d.RetryAfter <= 0 {
+		t.Fatalf("Take over the limit = %+v, want refused", d)
+	}
+	clock.Advance(d.RetryAfter)
+	if d, _ := l.Check(ctx, lim, "k"); !d.Allowed {
+		t.Fatalf("Check at the refused Take's Retry-After = %+v, want allowed", d)
+	}
+}
+
+func TestRateLimitedErrorMatchesErrRateLimited(t *testing.T) {
+	var err error = &kernel.RateLimitedError{RetryAfter: time.Second}
+	if !errors.Is(err, kernel.ErrRateLimited) {
+		t.Fatal("errors.Is(RateLimitedError, ErrRateLimited) = false")
+	}
+}
+
+func TestClientKey(t *testing.T) {
+	for in, want := range map[string]string{
+		"192.0.2.1":                 "192.0.2.1",
+		"::ffff:192.0.2.1":          "192.0.2.1",
+		"2001:db8:1:2:3:4:5:6":      "2001:db8:1:2::/64",
+		"2001:db8:1:2:ffff::1%eth0": "2001:db8:1:2::/64",
+		"not an ip":                 "not an ip",
+	} {
+		if got := kernel.ClientKey(in); got != want {
+			t.Errorf("ClientKey(%q) = %q, want %q", in, got, want)
+		}
 	}
 }

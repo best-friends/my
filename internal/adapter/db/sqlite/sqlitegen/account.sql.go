@@ -157,6 +157,22 @@ func (q *Queries) GetLocalAccount(ctx context.Context, accountID string) (LocalA
 	return i, err
 }
 
+const getLocalAccountByUserID = `-- name: GetLocalAccountByUserID :one
+SELECT account_id, user_id, username, username_normalized FROM local_accounts WHERE user_id = ?
+`
+
+func (q *Queries) GetLocalAccountByUserID(ctx context.Context, userID string) (LocalAccount, error) {
+	row := q.db.QueryRowContext(ctx, getLocalAccountByUserID, userID)
+	var i LocalAccount
+	err := row.Scan(
+		&i.AccountID,
+		&i.UserID,
+		&i.Username,
+		&i.UsernameNormalized,
+	)
+	return i, err
+}
+
 const getLocalAccountPrivateKey = `-- name: GetLocalAccountPrivateKey :one
 SELECT private_key_enc FROM local_account_private_keys WHERE account_key_id = ?
 `

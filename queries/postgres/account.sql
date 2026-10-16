@@ -92,6 +92,9 @@ WHERE domain = '' AND actor_type = 'application';
 -- name: GetLocalAccount :one
 SELECT account_id, user_id, username, username_normalized FROM local_accounts WHERE account_id = $1;
 
+-- name: GetLocalAccountByUserID :one
+SELECT account_id, user_id, username, username_normalized FROM local_accounts WHERE user_id = $1;
+
 -- name: GetAccountHandleByName :one
 SELECT account_id, username, username_normalized, domain FROM account_handles
 WHERE username_normalized = $1 AND domain = $2;

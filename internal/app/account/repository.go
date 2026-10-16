@@ -77,6 +77,8 @@ type Repository interface {
 	// FindInstanceActor returns the local Application actor.
 	FindInstanceActor(ctx context.Context) (account.Account, error)
 	FindLocalAccount(ctx context.Context, accountID string) (account.LocalAccount, error)
+	// FindLocalAccountByUser returns the local account a user logs in as.
+	FindLocalAccountByUser(ctx context.Context, userID string) (account.LocalAccount, error)
 	// FindHandle resolves a normalized username and a domain (account.LocalDomain for local
 	// accounts) through the account_handles projection.
 	FindHandle(ctx context.Context, usernameNormalized, domain string) (account.Handle, error)

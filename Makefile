@@ -9,8 +9,9 @@ MARKDOWNLINT := bunx --bun markdownlint-cli2@0.23.2
 GO_TOOL := go tool -modfile=tools/go.mod
 # Licenses compatible with AGPL-3.0-only (ADR-0011). Anything else, including unknown, fails.
 GO_ALLOWED_LICENSES := 0BSD,AGPL-3.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,BSL-1.0,CC0-1.0,ISC,MIT,MPL-2.0,Unlicense,Zlib
-# npm dependencies of tools/i18n and of the client workspace app/ must satisfy the same allowlist.
-NPM_ALLOWED_LICENSES := $(GO_ALLOWED_LICENSES)
+# npm dependencies of tools/i18n and of the client workspace app/ must satisfy the same allowlist, plus the
+# permissive BlueOak-1.0.0 and MIT-0 (no attribution clause), which jsdom's dependencies use.
+NPM_ALLOWED_LICENSES := $(GO_ALLOWED_LICENSES),BlueOak-1.0.0,MIT-0
 # Version that `make build` stamps into cmd/my.
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
@@ -187,7 +188,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-build web-licenses web-check
+.PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-check
 
 web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
 	cd app && bun install --frozen-lockfile
@@ -201,4 +202,26 @@ web-build: web-install ## Build app/web into app/web/dist (fails when React Comp
 web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules
 
-web-check: web-typecheck web-build web-licenses ## Run every offline web client check
+web-lint: web-install ## Lint the client workspace: ESLint (app/eslint.config.js), its rule tests, knip, no 100vh in CSS
+	cd app && bun run lint
+	cd app && bun run lint:rules
+	cd app && bun run knip
+	@! grep -rn --include='*.css' '100vh' app/ui/src app/web/src \
+		|| { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
+
+web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors, motion only under motion-safe
+	cd app/ui && bun run check-tokens
+
+web-test: web-install ## Run the client component tests with Vitest (jsdom + MSW)
+	cd app/web && bun run test
+
+# Playwright runs against `vite preview` of the fresh build. E2E_MATRIX=full runs every width × locale
+# project (nightly); the default is the per-PR subset (app/web/playwright.config.ts). CI runs it in the
+# pinned Playwright image; locally, install the browser once with `make web-e2e-install`.
+web-e2e: web-build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for the whole matrix)
+	cd app/web && bun run e2e
+
+web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
+	cd app/web && bun run playwright install chromium
+
+web-check: web-typecheck web-lint web-build web-licenses web-tokens web-test ## Run every offline web client check

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/kernel"
@@ -19,6 +20,8 @@ var (
 	// ErrRemoteAccount reports a remote follower or followee: these use cases cover local
 	// accounts only, and federated follows go through the federation module.
 	ErrRemoteAccount = errors.New("graph: the account is not local")
+	// ErrBlocked reports a follow between two accounts when either blocks the other.
+	ErrBlocked = errors.New("graph: one of the accounts blocks the other")
 )
 
 // Accounts is the part of the account module's public API that the graph module reads: an
@@ -35,11 +38,11 @@ type Deps struct {
 	Accounts   Accounts
 	Clock      kernel.Clock
 	IDs        kernel.IDGenerator
-	// Host is the serving domain of the Follow activity URIs (ADR-0018).
+	// Host is the serving domain of the Follow and Block activity URIs (ADR-0018).
 	Host string
 }
 
-// Service runs the graph module's follow use cases between local accounts.
+// Service runs the graph module's follow, block, and mute use cases of local accounts.
 type Service struct {
 	d Deps
 }
@@ -47,8 +50,8 @@ type Service struct {
 // NewService returns a Service on d.
 func NewService(d Deps) *Service { return &Service{d: d} }
 
-// Relationship is the follow relationship between an account and a target account, as the
-// account sees it.
+// Relationship is the follow, block, and mute relationship between an account and a target
+// account, as the account sees it.
 type Relationship struct {
 	AccountID       string
 	TargetAccountID string
@@ -61,12 +64,25 @@ type Relationship struct {
 	// account does not follow the target.
 	ShowBoosts bool
 	Notify     bool
+	// Blocking reports that the account blocks the target; BlockedBy that the target blocks
+	// the account.
+	Blocking  bool
+	BlockedBy bool
+	// Muting reports that the account mutes the target (a mute that has not expired), and
+	// MutingNotifications that the mute also hides the target's notifications.
+	Muting              bool
+	MutingNotifications bool
 }
+
+// ActivelyFollowing reports whether the account's follow of the target is active; a pending
+// follow request does not count.
+func (r Relationship) ActivelyFollowing() bool { return r.Following == graph.StateActive }
 
 // Follow makes followerID follow followeeID. The follow is active at once, unless the followee's
 // current profile is locked: then it is a follow request, pending until the followee accepts it
 // (FR-302). Following an account that the follower already follows or has requested to follow
-// changes nothing. Both accounts must be local and active.
+// changes nothing. Both accounts must be local and active, and neither may block the other
+// (ErrBlocked).
 func (s *Service) Follow(ctx context.Context, followerID, followeeID string) (Relationship, error) {
 	f := graph.Follow{FollowerAccountID: followerID, FolloweeAccountID: followeeID}
 	if err := f.Validate(); err != nil {
@@ -89,6 +105,12 @@ func (s *Service) Follow(ctx context.Context, followerID, followeeID string) (Re
 
 	repo := s.d.Repository
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if err := repo.LockPair(ctx, tx, followerID, followeeID); err != nil {
+			return err
+		}
+		if err := s.checkNotBlocked(ctx, tx, followerID, followeeID); err != nil {
+			return err
+		}
 		if _, err := repo.Edge(ctx, tx, followerID, followeeID); !errors.Is(err, ErrNotFound) {
 			return err // nil: already following or requested
 		}
@@ -203,19 +225,25 @@ func (s *Service) RemoveFollower(ctx context.Context, followeeID, followerID str
 func (s *Service) terminate(ctx context.Context, followerID, followeeID string, reason graph.TerminationReason, activeOnly bool) error {
 	now := s.d.Clock.Now()
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		edge, f, err := s.liveFollow(ctx, tx, followerID, followeeID)
-		if errors.Is(err, ErrNotFound) || (err == nil && activeOnly && edge.State != graph.StateActive) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		t := graph.Termination{FollowID: f.ID, Reason: reason, TerminatedAt: now}
-		if err := s.d.Repository.InsertTermination(ctx, tx, t); err != nil {
-			return err
-		}
-		return tx.Emit(ctx, FollowTerminated{Follow: f, Termination: t, PreviousState: edge.State})
+		return s.terminateIn(ctx, tx, followerID, followeeID, reason, activeOnly, now)
 	})
+}
+
+// terminateIn ends the follow from followerID to followeeID inside tx, if there is one (and it
+// is active, when activeOnly).
+func (s *Service) terminateIn(ctx context.Context, tx uow.Tx, followerID, followeeID string, reason graph.TerminationReason, activeOnly bool, now time.Time) error {
+	edge, f, err := s.liveFollow(ctx, tx, followerID, followeeID)
+	if errors.Is(err, ErrNotFound) || (err == nil && activeOnly && edge.State != graph.StateActive) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	t := graph.Termination{FollowID: f.ID, Reason: reason, TerminatedAt: now}
+	if err := s.d.Repository.InsertTermination(ctx, tx, t); err != nil {
+		return err
+	}
+	return tx.Emit(ctx, FollowTerminated{Follow: f, Termination: t, PreviousState: edge.State})
 }
 
 // liveFollow returns the edge from follower to followee and its follow; ErrNotFound means none.
@@ -257,7 +285,7 @@ func (s *Service) UpdatePreferences(ctx context.Context, followerID, followeeID 
 	return s.Relationship(ctx, followerID, followeeID)
 }
 
-// Relationship returns the follow relationship between accountID and targetID.
+// Relationship returns the follow, block, and mute relationship between accountID and targetID.
 func (s *Service) Relationship(ctx context.Context, accountID, targetID string) (Relationship, error) {
 	repo := s.d.Repository
 	out := Relationship{AccountID: accountID, TargetAccountID: targetID, Following: graph.StateNone, FollowedBy: graph.StateNone}
@@ -285,7 +313,28 @@ func (s *Service) Relationship(ctx context.Context, accountID, targetID string) 
 	case !errors.Is(err, ErrNotFound):
 		return Relationship{}, err
 	}
+	if out.Blocking, err = found(repo.FindBlockEdge(ctx, accountID, targetID)); err != nil {
+		return Relationship{}, err
+	}
+	if out.BlockedBy, err = found(repo.FindBlockEdge(ctx, targetID, accountID)); err != nil {
+		return Relationship{}, err
+	}
+	m, err := repo.FindMute(ctx, accountID, targetID, s.d.Clock.Now())
+	switch {
+	case err == nil:
+		out.Muting, out.MutingNotifications = true, m.HideNotifications
+	case !errors.Is(err, ErrNotFound):
+		return Relationship{}, err
+	}
 	return out, nil
+}
+
+// found turns the result of a lookup into whether it found a row; ErrNotFound is not an error.
+func found[T any](_ T, err error) (bool, error) {
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 // Page selects a page of a list ordered newest first.

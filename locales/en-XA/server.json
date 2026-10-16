@@ -1,4 +1,56 @@
 {
+  "auth.cross_origin": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ẇȧȧş řḗḗƒŭŭşḗḗḓ ƀḗḗƈȧȧŭŭşḗḗ īŧ ƈȧȧḿḗḗ ƒřǿǿḿ ȧȧƞǿǿŧħḗḗř şīŧḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.error.title": {
+    "defaultMessage": "[Şǿǿḿḗḗŧħīƞɠ ẇḗḗƞŧ ẇřǿǿƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.form_expired": {
+    "defaultMessage": "[Ŧħīş ƒǿǿřḿ ħȧȧş ḗḗẋƥīřḗḗḓ. Ƥŀḗḗȧȧşḗḗ ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.email_label": {
+    "defaultMessage": "[Ḗḿȧȧīŀ ȧȧḓḓřḗḗşş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.failed": {
+    "defaultMessage": "[Ŧħḗḗ ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ǿǿř ƥȧȧşşẇǿǿřḓ īş īƞƈǿǿřřḗḗƈŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.missing": {
+    "defaultMessage": "[Ḗƞŧḗḗř ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ȧȧƞḓ ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.password_label": {
+    "defaultMessage": "[Ƥȧȧşşẇǿǿřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.rate_limited": {
+    "defaultMessage": "[{minutes,plural,one{Ŧǿǿǿǿ ḿȧȧƞẏ ƒȧȧīŀḗḗḓ şīɠƞ-īƞ ȧȧŧŧḗḗḿƥŧş. Ŧřẏ ȧȧɠȧȧīƞ īƞ # ḿīƞŭŭŧḗḗ.} other{Ŧǿǿǿǿ ḿȧȧƞẏ ƒȧȧīŀḗḗḓ şīɠƞ-īƞ ȧȧŧŧḗḗḿƥŧş. Ŧřẏ ȧȧɠȧȧīƞ īƞ # ḿīƞŭŭŧḗḗş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.submit": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.title": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_out.submit": {
+    "defaultMessage": "[Şīɠƞ ǿǿŭŭŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.signed_in.continue": {
+    "defaultMessage": "[Ƈǿǿƞŧīƞŭŭḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.signed_in.title": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ şīɠƞḗḗḓ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "config.errors": {
     "defaultMessage": "[{count,plural,one{Ƒǿǿŭŭƞḓ # ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ḗḗřřǿǿř.} other{Ƒǿǿŭŭƞḓ # ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ḗḗřřǿǿřş.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
