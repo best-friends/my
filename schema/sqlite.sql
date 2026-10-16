@@ -195,8 +195,6 @@ CREATE TABLE account_lifecycle_states (
 ) STRICT;
 CREATE INDEX account_lifecycle_states_state_deletion_due_at ON account_lifecycle_states (state, deletion_due_at);
 
--- Tables follow docs/architecture/data-model.md, mapping logical types per its §1.2.
-
 -- ---------------------------------------------------------------------------------------------
 -- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).
 -- Owned by internal/adapter/queue/db.
