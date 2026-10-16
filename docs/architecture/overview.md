@@ -85,7 +85,7 @@ Remote servers ──AP──►│                               │
 
 | ポート | 役割 | 既定アダプタ（self-hosted） | 関連 ADR |
 | --- | --- | --- | --- |
-| `Repositories` / `UnitOfWork` | 永続化。書き込みは **アトミックバッチ** 単位 | sqlite | [0003](../adr/0003-database-abstraction.md) |
+| `Repositories` / `UnitOfWork` | 永続化。書き込みは **短く再実行可能なトランザクション** 単位 | sqlite | [0003](../adr/0003-database-abstraction.md) |
 | `JobQueue` | ジョブ投入（遅延・冪等キー付き） | db | [0004](../adr/0004-job-queue-abstraction.md) |
 | `JobRunner` | ジョブ実行（pull ループ or push 受信） | db（pull） | [0004](../adr/0004-job-queue-abstraction.md) |
 | `Scheduler` | 定期実行のトリガー | in-process cron | [0004](../adr/0004-job-queue-abstraction.md) |
@@ -105,7 +105,7 @@ Remote servers ──AP──►│                               │
 
 1. Client API の投稿作成 → `PostStatus` ユースケース
 2. ドメインで検証（文字数・公開範囲・メンション解決）→ `Status` を生成
-3. **1 回のアトミックバッチ** で `statuses` + 付随行 + `outbox_events`（配送予定）を書き込む（Transactional Outbox）
+3. **1 回のトランザクション** で `statuses` + 付随行 + `outbox_events`（配送予定）を書き込む（Transactional Outbox）
 4. `JobQueue.enqueue(FanOutDelivery{statusId})`（失敗しても outbox から再投入できる）
 5. ワーカー: 公開範囲に応じて宛先 inbox を算出し（`local` はリモートフォロワーのみ）、**shared inbox 単位** に `DeliverActivity{inbox, activityId}` を投入
 6. `DeliverActivity` が署名付き POST。失敗時はバックオフで再投入、ドメインが連続失敗したら一時停止
