@@ -387,6 +387,14 @@
     "defaultMessage": "[Ȧṽȧȧŧȧȧř ǿǿƒ {name}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "preview.builtin_image_alt": {
+    "defaultMessage": "[Ȧ şƥḗḗḗḗƈħ ƀŭŭƀƀŀḗḗ ẇīŧħ ŧħřḗḗḗḗ ḓǿǿŧş ǿǿƞ ȧȧ ƀŀŭŭḗḗ ɠřȧȧḓīḗḗƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "preview.default_image_alt": {
+    "defaultMessage": "[Īḿȧȧɠḗḗ ǿǿƒ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "preview.header_alt": {
     "defaultMessage": "[Ħḗḗȧȧḓḗḗř īḿȧȧɠḗḗ ǿǿƒ {name}]",
     "description": "Generated from en by tools/i18n; do not edit."

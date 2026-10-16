@@ -8,11 +8,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
 	"unicode/utf8"
 
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appinstance "github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/platform"
@@ -53,6 +55,10 @@ func runInstance(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	file := fs.String("config", "", "TOML config file (default: $"+config.EnvConfigFile+")")
 	var locale *string
 	limit := 20
+	owner := ""
+	if sub == "set" {
+		fs.StringVar(&owner, "owner", "", "local username that owns an image file given as a media setting's value")
+	}
 	if sub != "list" {
 		locale = fs.String("locale", "", "locale of a text key (default: the default_locale setting)")
 	}
@@ -80,6 +86,10 @@ func runInstance(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 		if key.setting != "" && *locale != "" {
 			_, _ = fmt.Fprintf(stderr, "%s: -locale applies only to text keys, not to %s\n", name, pos[0])
+			return 2
+		}
+		if owner != "" && !key.media() {
+			_, _ = fmt.Fprintf(stderr, "%s: -owner applies only to media keys, not to %s\n", name, pos[0])
 			return 2
 		}
 	}
@@ -112,14 +122,14 @@ func runInstance(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 	defer func() { _ = app.Close() }()
-	cmd := instanceCommand{svc: app.Instance, stdout: stdout}
+	cmd := instanceCommand{svc: app.Instance, app: app, stdout: stdout}
 	switch sub {
 	case "list":
 		err = cmd.list(ctx)
 	case "get":
 		err = cmd.get(ctx, key, *locale)
 	case "set":
-		err = cmd.set(ctx, key, *locale, value)
+		err = cmd.set(ctx, key, *locale, owner, value)
 	case "history":
 		err = cmd.history(ctx, key, *locale, limit)
 	}
@@ -136,6 +146,12 @@ type instanceKey struct {
 	text    instance.TextKey
 }
 
+// media reports whether the key is a setting whose value is a media ID.
+func (k instanceKey) media() bool {
+	d, err := instance.Lookup(k.setting)
+	return err == nil && d.Kind == instance.KindMedia
+}
+
 func parseInstanceKey(name string) (instanceKey, error) {
 	if d, err := instance.Lookup(instance.SettingKey(name)); err == nil {
 		return instanceKey{setting: d.Key}, nil
@@ -148,6 +164,7 @@ func parseInstanceKey(name string) (instanceKey, error) {
 
 type instanceCommand struct {
 	svc    *appinstance.Service
+	app    *platform.App
 	stdout io.Writer
 }
 
@@ -213,7 +230,14 @@ func (c instanceCommand) get(ctx context.Context, key instanceKey, locale string
 	return err
 }
 
-func (c instanceCommand) set(ctx context.Context, key instanceKey, locale, value string) error {
+func (c instanceCommand) set(ctx context.Context, key instanceKey, locale, owner, value string) error {
+	if owner != "" {
+		id, err := c.upload(ctx, owner, value)
+		if err != nil {
+			return err
+		}
+		value = id
+	}
 	if key.setting != "" {
 		rev, err := c.svc.SetSetting(ctx, appinstance.SetSettingInput{Key: key.setting, Value: value})
 		if err != nil {
@@ -236,6 +260,30 @@ func (c instanceCommand) set(ctx context.Context, key instanceKey, locale, value
 	}
 	_, err = fmt.Fprintf(c.stdout, "%s %s in %s (revision %s)\n", verb, rev.Key, rev.Locale, rev.ID)
 	return err
+}
+
+// upload uploads the image file at path as a media file of the local account owner, and
+// returns its ID. The worker processes it like any upload; until then, previews keep the
+// built-in image.
+func (c instanceCommand) upload(ctx context.Context, owner, path string) (string, error) {
+	a, err := c.app.Accounts.FindByHandle(ctx, owner, "")
+	if err != nil {
+		return "", fmt.Errorf("owner %s: %w", owner, err)
+	}
+	if !a.Account.IsLocal() || a.Local == nil {
+		return "", fmt.Errorf("owner %s is not a local account", owner)
+	}
+	f, err := os.Open(path) //nolint:gosec // the operator names the file to upload
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = f.Close() }()
+	m, err := c.app.Media.Upload(ctx, appcontent.UploadInput{OwnerAccountID: a.Account.ID, Content: f})
+	if err != nil {
+		return "", fmt.Errorf("upload %s: %w", path, err)
+	}
+	_, err = fmt.Fprintf(c.stdout, "uploaded %s as media %s; previews use it once the worker has processed it\n", path, m.File.ID)
+	return m.File.ID, err
 }
 
 func (c instanceCommand) history(ctx context.Context, key instanceKey, locale string, limit int) error {
@@ -285,6 +333,7 @@ func instanceUsage(w io.Writer) {
   my instance list [-config <file>]
   my instance get [-locale <tag>] [-config <file>] <key>
   my instance set [-locale <tag>] [-config <file>] <key> <value>
+  my instance set -owner <username> [-config <file>] preview_image <image file>
   my instance history [-locale <tag>] [-limit <n>] [-config <file>] <key>
 
 Reads and changes the instance settings and localized texts stored in the
@@ -298,6 +347,12 @@ privacy_policy) hold one text per locale: -locale selects it, defaulting to the
 default_locale setting. get follows the locale fallback chain (ja-JP, ja, the
 default locale, en). An empty value clears a text in that locale. A value of
 "-" is read from standard input.
+
+preview_image is the media ID of the image of link previews for profiles and
+posts without images (empty: the built-in image), and the text
+preview_image_alt is its alt text. With -owner, the value is an image file
+instead: it is uploaded as a media file of that local account and used once the
+worker has processed it.
 
 Deployment configuration (adapters, host, secrets) is not an instance setting;
 it comes from the environment and the config file (my config check).

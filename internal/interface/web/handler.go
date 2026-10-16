@@ -58,9 +58,12 @@ type Options struct {
 	Previews Previews
 	// Messages formats the texts of link previews; nil loads the embedded catalogs.
 	Messages *i18n.Bundle
-	// DefaultImage is the instance's preview image, for profiles and posts without images;
-	// nil means none.
-	DefaultImage *Image
+	// DefaultImage returns the instance's preview image for profiles and posts without images,
+	// for a preview in language lang (ADR-0028), or nil for the built-in image at
+	// PathDefaultImage. An image without alt text gets a generic one naming the instance.
+	// It is called per request, so that a change of the setting applies without a restart; nil
+	// means the built-in image.
+	DefaultImage func(ctx context.Context, lang string) (*Image, error)
 
 	// NotFound writes the 404 response of the server, for paths the web client does not own.
 	NotFound func(w http.ResponseWriter, r *http.Request)
@@ -308,11 +311,12 @@ func etag(content []byte) string {
 	return `"` + base64.RawURLEncoding.EncodeToString(sum[:18]) + `"`
 }
 
-// Register registers the hashed assets and the Web App Manifest on r. The shell and the
+// Register registers the hashed assets, the Web App Manifest, and the built-in preview image on r. The shell and the
 // files at the root of the build are served by ServeHTTP, which the caller routes to.
 func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathAssets+"{path...}", http.HandlerFunc(h.asset))
 	r.Handle("GET "+PathWebManifest, http.HandlerFunc(h.webManifest))
+	r.Handle("GET "+PathDefaultImage, http.HandlerFunc(h.serveDefaultImage))
 }
 
 // ServeHTTP serves a GET request for an SPA route: a file at the root of the build when one

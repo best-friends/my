@@ -21,6 +21,7 @@ const (
 	TextDescription      TextKey = "description"
 	TextTerms            TextKey = "terms"
 	TextPrivacyPolicy    TextKey = "privacy_policy"
+	TextPreviewImageAlt  TextKey = "preview_image_alt"
 )
 
 // TextDefinition describes a text key.
@@ -39,6 +40,7 @@ var textDefinitions = []TextDefinition{
 	{Key: TextDescription, MaxLength: 20000, Doc: "Full description of the instance."},
 	{Key: TextTerms, MaxLength: 100000, Doc: "Terms of service."},
 	{Key: TextPrivacyPolicy, MaxLength: 100000, Doc: "Privacy policy."},
+	{Key: TextPreviewImageAlt, MaxLength: 1500, Doc: "Alt text of the preview_image setting's image (og:image:alt)."},
 }
 
 // TextDefinitions returns the definitions of every text key, in a fixed order.
