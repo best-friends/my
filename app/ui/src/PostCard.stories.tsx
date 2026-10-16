@@ -107,6 +107,23 @@ export const WithContentWarning: Story = {
   },
 };
 
+/** A boost: the line above the post says who boosted it, and starts the article's name. */
+export const Boosted: Story = {
+  args: {
+    context: (
+      <>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3" />
+        </svg>
+        <span dir="auto">Bob boosted</span>
+      </>
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("article", { name: /^Bob boosted\s+Alice\s+@alice\s+2h$/ })).toBeInTheDocument();
+  },
+};
+
 /** A long display name and handle wrap inside the card at 320 px. */
 export const LongNames: Story = {
   args: {

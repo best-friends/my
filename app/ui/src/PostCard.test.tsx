@@ -21,4 +21,16 @@ describe("PostCard", () => {
     expect(article).not.toHaveAttribute("tabindex");
     expect(article).not.toHaveAttribute("aria-posinset");
   });
+
+  it("starts its name with the context line when there is one", () => {
+    render(
+      <PostCard
+        context="Bob boosted"
+        author="Alice @alice"
+        time={<time dateTime="2026-10-16T09:00:00Z">2h</time>}
+        content={<PostContent html={serverSanitizedHtml("<p>Hello</p>")} lang="en" />}
+      />,
+    );
+    expect(screen.getByRole("article", { name: "Bob boosted Alice @alice 2h" })).toHaveAccessibleDescription("Hello");
+  });
 });
