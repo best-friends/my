@@ -54,6 +54,8 @@ linters:
             - github.com/best-friends/my/internal/i18n
             # Argon2id password hashing (ADR-0019 §3): a pure-Go algorithm, not an external resource.
             - golang.org/x/crypto/argon2
+            # BCP 47 tag parsing and canonicalization for preferences (ADR-0009): pure-Go data, not an external resource.
+            - golang.org/x/text/language
         domain-account:
           list-mode: strict
           files:

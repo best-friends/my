@@ -68,6 +68,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 type accountEnv struct {
 	h        AccountHarness
 	clock    *Clock
+	ids      *IDGenerator
 	accounts *appaccount.Service
 	identity *appidentity.Service
 	hasher   *appidentity.PasswordHasher
@@ -98,6 +99,7 @@ func newAccountEnv(t *testing.T, newHarness AccountFactory) *accountEnv {
 	return &accountEnv{
 		h:        h,
 		clock:    clock,
+		ids:      ids,
 		accounts: accounts,
 		hasher:   hasher,
 		identity: appidentity.NewService(appidentity.Deps{

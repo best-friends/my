@@ -20,6 +20,9 @@ type Deps struct {
 	Passwords  *PasswordHasher
 	// Accounts creates the local account a new user logs in as.
 	Accounts *account.Service
+	// DefaultLocale is the instance's default locale, which a new user gets unless the
+	// registration names one; empty means i18n.SourceLocale.
+	DefaultLocale string
 }
 
 // Service runs the identity module's use cases.
@@ -37,6 +40,8 @@ type RegisterInput struct {
 	Username    string
 	Password    string
 	DisplayName string
+	// Locale is the new user's UI locale, a BCP 47 tag; empty means Deps.DefaultLocale.
+	Locale string
 }
 
 // Registration is the result of RegisterLocalUser.
@@ -46,9 +51,10 @@ type Registration struct {
 	AccountID string
 }
 
-// RegisterLocalUser creates a user with a password and the local account it logs in as, in one
-// transaction. It fails with account.ErrUsernameTaken when the username is taken, and with
-// errors wrapping identity.ErrInvalidPassword or account.ErrInvalidUsername for invalid input.
+// RegisterLocalUser creates a user with a password, default preferences, and the local account it
+// logs in as, in one transaction. It fails with account.ErrUsernameTaken when the username is
+// taken, and with errors wrapping identity.ErrInvalidPassword, identity.ErrInvalidLanguageTag, or
+// account.ErrInvalidUsername for invalid input.
 //
 // Hashing the password and generating the account's keys happen before the transaction.
 func (s *Service) RegisterLocalUser(ctx context.Context, in RegisterInput) (Registration, error) {
@@ -69,8 +75,8 @@ type CreateAdminInput struct {
 	Password string
 }
 
-// CreateAdmin creates a user with a password, a primary email address, the local account it logs
-// in as, and a grant of the built-in admin role from the CLI (no granting user), in one
+// CreateAdmin creates a user with a password, a primary email address, default preferences in the
+// instance's default locale, the local account it logs in as, and a grant of the built-in admin role from the CLI (no granting user), in one
 // transaction. It creates the built-in roles first if they are missing.
 //
 // It fails with account.ErrUsernameTaken or ErrEmailTaken when another user has the username or
@@ -127,9 +133,10 @@ func (s *Service) CreateAdmin(ctx context.Context, in CreateAdminInput) (Registr
 // preparedUser is a new user with everything slow (hashing, key generation) done, ready to be
 // written by writeUser; a retried transaction writes the same values.
 type preparedUser struct {
-	user identity.User
-	cred identity.PasswordCredential
-	acct *account.PreparedLocalAccount
+	user  identity.User
+	cred  identity.PasswordCredential
+	prefs identity.Preferences
+	acct  *account.PreparedLocalAccount
 }
 
 func (p *preparedUser) registration() Registration {
@@ -142,6 +149,10 @@ func (s *Service) prepareUser(ctx context.Context, in RegisterInput) (*preparedU
 	}
 	now := s.d.Clock.Now()
 	user := identity.User{ID: s.d.IDs.NewID(), CreatedAt: now}
+	prefs, err := s.defaultPreferences(user.ID, in.Locale, now)
+	if err != nil {
+		return nil, err
+	}
 	acct, err := s.d.Accounts.PrepareLocalAccount(ctx, account.LocalAccountInput{
 		UserID:      user.ID,
 		Username:    in.Username,
@@ -155,7 +166,7 @@ func (s *Service) prepareUser(ctx context.Context, in RegisterInput) (*preparedU
 		return nil, err
 	}
 	cred := identity.PasswordCredential{ID: s.d.IDs.NewID(), UserID: user.ID, Hash: hash, SetAt: now}
-	return &preparedUser{user: user, cred: cred, acct: acct}, nil
+	return &preparedUser{user: user, cred: cred, prefs: prefs, acct: acct}, nil
 }
 
 func (s *Service) writeUser(ctx context.Context, tx uow.Tx, p *preparedUser) error {
@@ -163,6 +174,9 @@ func (s *Service) writeUser(ctx context.Context, tx uow.Tx, p *preparedUser) err
 		return err
 	}
 	if err := s.d.Repository.InsertPasswordCredential(ctx, tx, p.cred); err != nil {
+		return err
+	}
+	if err := s.d.Repository.InsertPreferences(ctx, tx, p.prefs); err != nil {
 		return err
 	}
 	return s.d.Accounts.WriteLocalAccount(ctx, tx, p.acct)
