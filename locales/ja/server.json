@@ -331,6 +331,10 @@
     "defaultMessage": "リクエストが正しくありません。",
     "description": "API error message for HTTP 400 when no more specific message applies."
   },
+  "errors.blocking": {
+    "defaultMessage": "このアカウントをブロックしています。先にブロックを解除してください。",
+    "description": "API error title for HTTP 409 when the user tries to follow an account that they block."
+  },
   "errors.conflict": {
     "defaultMessage": "このリクエストはリソースの現在の状態と矛盾しています。",
     "description": "API error title for HTTP 409 when no more specific message applies."
@@ -374,6 +378,14 @@
   "errors.rate_limited_detail": {
     "defaultMessage": "{seconds, plural, other {# 秒後にもう一度お試しください。}}",
     "description": "Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds."
+  },
+  "errors.remote_account": {
+    "defaultMessage": "他のサーバーのアカウントにはこの操作を行えません。",
+    "description": "Detail of the HTTP 422 API error when a follow or block targets an account on another server, which the operation does not support."
+  },
+  "errors.self_relationship": {
+    "defaultMessage": "自分のアカウントにはこの操作を行えません。",
+    "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
   },
   "errors.status.already_deleted": {
     "defaultMessage": "この Idempotency-Key で作成された投稿は削除されています。",

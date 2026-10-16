@@ -585,6 +585,13 @@ func (l *Localizer) ServerErrorsBadRequest() string {
 	return l.format("server:errors.bad_request", nil)
 }
 
+// ServerErrorsBlocking formats "server:errors.blocking". API error title for HTTP 409 when the user tries to follow an account that they block.
+//
+//	en: You block this account. Unblock it first.
+func (l *Localizer) ServerErrorsBlocking() string {
+	return l.format("server:errors.blocking", nil)
+}
+
 // ServerErrorsConflict formats "server:errors.conflict". API error title for HTTP 409 when no more specific message applies.
 //
 //	en: The request conflicts with the current state of the resource.
@@ -660,6 +667,20 @@ func (l *Localizer) ServerErrorsRateLimited() string {
 //	en: {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}}
 func (l *Localizer) ServerErrorsRateLimitedDetail(seconds int) string {
 	return l.format("server:errors.rate_limited_detail", map[string]any{"seconds": seconds})
+}
+
+// ServerErrorsRemoteAccount formats "server:errors.remote_account". Detail of the HTTP 422 API error when a follow or block targets an account on another server, which the operation does not support.
+//
+//	en: This is not available for accounts on other servers.
+func (l *Localizer) ServerErrorsRemoteAccount() string {
+	return l.format("server:errors.remote_account", nil)
+}
+
+// ServerErrorsSelfRelationship formats "server:errors.self_relationship". Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account.
+//
+//	en: You cannot do this to your own account.
+func (l *Localizer) ServerErrorsSelfRelationship() string {
+	return l.format("server:errors.self_relationship", nil)
 }
 
 // ServerErrorsStatusAlreadyDeleted formats "server:errors.status.already_deleted". Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated).
