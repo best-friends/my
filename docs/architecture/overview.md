@@ -1,7 +1,7 @@
 # アーキテクチャ概要（基礎設計）
 
-> この文書は Proposed な ADR を前提にした **基礎設計のたたき台** です。ADR が確定したら追従して更新します。
-> 実装言語に依存しない書き方をしており、言語別の対応は [ADR-0001](../adr/0001-server-language-and-runtime.md) を参照してください。
+> この文書はサーバーの基礎設計で、Accepted な ADR に従います。判断の根拠は各 ADR を参照してください。
+> サーバーの実装言語は Go です（[ADR-0001](../adr/0001-server-language-and-runtime.md)）。
 
 ## 1. 全体像
 
@@ -79,7 +79,7 @@ Remote servers ──AP──►│                               │
 
 ## 3. ポート一覧
 
-詳細なシグネチャは実装開始時（M1）に `core` パッケージで定義し、ここからリンクします。
+各ポートは、それを使うモジュールの `internal/app/<module>` に Go のインターフェイスとして定義する（§6）。
 
 | ポート | 役割 | 既定アダプタ（self-hosted） | 関連 ADR |
 | --- | --- | --- | --- |
@@ -90,7 +90,7 @@ Remote servers ──AP──►│                               │
 | `BlobStore` | メディアの保存・署名付き URL | fs | [0005](../adr/0005-blob-storage-and-media.md) |
 | `MediaProcessor` | サムネイル・リサイズ・EXIF 除去 | native | [0005](../adr/0005-blob-storage-and-media.md) |
 | `KeyValueStore` | キャッシュ・レート制限・連合ライブラリ用 KV | db | [0003](../adr/0003-database-abstraction.md) |
-| `HttpClient` | 外部 HTTP（SSRF ガード・タイムアウト・UA 付与） | 標準 fetch + guard | [0006](../adr/0006-federation-protocol-scope.md) |
+| `HttpClient` | 外部 HTTP（SSRF ガード・タイムアウト・UA 付与） | `net/http` + SSRF ガード | [0006](../adr/0006-federation-protocol-scope.md) |
 | `Mailer` | メール送信 | none（ログ出力） | [0010](../adr/0010-configuration-and-packaging.md) |
 | `PushSender` | Web Push 送信 | webpush | — |
 | `Clock` / `IdGenerator` | 時刻・ID 生成（テスト容易性のため注入） | system / UUIDv7 | [0003](../adr/0003-database-abstraction.md) |
@@ -134,7 +134,7 @@ Remote servers ──AP──►│                               │
 
 ## 6. リポジトリ構成
 
-サーバーは Go（[ADR-0001](../adr/0001-server-language-and-runtime.md)）。詳細は [ADR-0010](../adr/0010-configuration-and-packaging.md) で確定させます。
+サーバーは Go（[ADR-0001](../adr/0001-server-language-and-runtime.md)）、構成は [ADR-0010](../adr/0010-configuration-and-packaging.md) に従う。
 
 ```text
 cmd/
