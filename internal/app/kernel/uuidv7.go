@@ -29,3 +29,14 @@ func UUIDv7Floor(t time.Time) string {
 	u[8] = 0x80
 	return u.String()
 }
+
+// UUIDv7Time returns the millisecond that the UUIDv7 id was generated in, in UTC, and false
+// when id is not a UUIDv7.
+func UUIDv7Time(id string) (time.Time, bool) {
+	u, err := uuid.Parse(id)
+	if err != nil || u[6]>>4 != 7 {
+		return time.Time{}, false
+	}
+	ms := binary.BigEndian.Uint64(u[0:8]) >> 16
+	return time.UnixMilli(int64(ms)).UTC(), true
+}

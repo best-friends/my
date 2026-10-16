@@ -262,3 +262,14 @@ SELECT status_id, replies_count, boosts_count, favourites_count FROM status_coun
 
 -- name: GetAccountPostCounter :one
 SELECT account_id, statuses_count, last_status_at FROM account_post_counters WHERE account_id = $1;
+
+-- Sources of other modules' projections.
+
+-- ListLiveStatusHeads returns every status that is not deleted (each has a head) with the ID of
+-- its current revision, ordered by ID.
+-- name: ListLiveStatusHeads :many
+SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
+  s.conversation_uri, s.published_at, h.revision_id
+FROM statuses s
+JOIN status_heads h ON h.status_id = s.id
+ORDER BY s.id;

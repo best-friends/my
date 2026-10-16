@@ -87,6 +87,9 @@ type Repository interface {
 	ListHistories(ctx context.Context, tx uow.Tx) ([]graph.History, error)
 	// ListBlockHistories returns every block with its retraction, ordered by block ID.
 	ListBlockHistories(ctx context.Context, tx uow.Tx) ([]graph.BlockHistory, error)
+	// ListAllMutes returns every mute, expired ones included, ordered by account and target, as
+	// a source of other modules' projections (ReplayEvents).
+	ListAllMutes(ctx context.Context, tx uow.Tx) ([]graph.Mute, error)
 
 	// Projection contents, for verifying the projections.
 

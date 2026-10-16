@@ -53,6 +53,9 @@ type InteractionRepository interface {
 	RebuildBoostEdges(ctx context.Context, tx uow.Tx) error
 	// ListBoostEdges returns boost_edges ordered by booster and status, for verifying it.
 	ListBoostEdges(ctx context.Context) ([]content.BoostEdge, error)
+	// ListLiveBoosts returns the boosts that boost_edges holds, ordered by ID, as a source of
+	// other modules' projections (ReplayEvents).
+	ListLiveBoosts(ctx context.Context, tx uow.Tx) ([]content.Boost, error)
 
 	// status_counters, shared with the status projectors (Repository.RebuildCounters counts
 	// the boosts and favourites by the same rules).

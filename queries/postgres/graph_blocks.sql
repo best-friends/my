@@ -79,3 +79,9 @@ WHERE account_id = sqlc.arg(account_id)
     OR (created_at = sqlc.arg(before_created_at)::timestamptz AND target_account_id < sqlc.arg(before_target_account_id)::text))
 ORDER BY created_at DESC, target_account_id DESC
 LIMIT sqlc.arg(page_limit);
+
+-- ListAllMutes returns every mute, expired ones included, ordered by account and target, as the
+-- source of other modules' projections.
+-- name: ListAllMutes :many
+SELECT account_id, target_account_id, hide_notifications, expires_at, created_at
+FROM mutes ORDER BY account_id, target_account_id;
