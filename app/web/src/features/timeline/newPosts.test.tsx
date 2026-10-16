@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Real-time updates of the home timeline through the whole app (web-client.md S10, Y7, T4; FR-207): the
 // layout's event stream, MSW as the server's GET /streaming, and the "N new posts" button.
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { Status } from "./api/timelines";
 import {
   apiBase,
@@ -42,7 +42,7 @@ describe("new posts in the home timeline", () => {
     const streams = streamingServer();
     server.use(resumableSession(), streams.handler);
     const { user, feed } = await openHome();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(1);
     });
 
@@ -73,7 +73,7 @@ describe("new posts in the home timeline", () => {
     const streams = streamingServer();
     server.use(resumableSession(), streams.handler);
     const { feed } = await openHome();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(1);
     });
 
@@ -95,7 +95,7 @@ describe("the event stream", () => {
       http.get(`${apiBase}/timelines/home`, () => HttpResponse.json(statusPage(home))),
     );
     const { feed } = await openHome();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(1);
     });
 
@@ -103,7 +103,7 @@ describe("the event stream", () => {
     home = [newStatus(1), timelineStatusFixture];
     streams.current().close();
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(2);
     }, reconnectTimeout);
     expect(await screen.findByRole("button", { name: "1 new post" })).toBeInTheDocument();
@@ -123,7 +123,7 @@ describe("the event stream", () => {
       http.get(`${apiBase}/timelines/home`, () => HttpResponse.json(page)),
     );
     const { user, feed } = await openHome();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(1);
     });
 
@@ -133,7 +133,7 @@ describe("the event stream", () => {
     await user.click(await screen.findByRole("button", { name: "2 new posts" }, reconnectTimeout));
 
     // The feed starts again from the new first page; the older posts follow it on scrolling.
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(within(feed).getAllByRole("article").map((article) => article.getAttribute("aria-posinset"))).toEqual(["1", "2"]);
     });
     expect(within(feed).getAllByRole("article")[0]).toHaveAccessibleDescription("New post 3");
@@ -154,7 +154,7 @@ describe("the event stream", () => {
     );
     await openHome();
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(1);
     }, reconnectTimeout);
     streams.current().send("update", newStatus(1));
@@ -186,7 +186,7 @@ describe("the event stream", () => {
       }),
     );
     await openHome();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams).toHaveLength(1);
     });
 
@@ -194,7 +194,7 @@ describe("the event stream", () => {
     issued += 1;
     streams[0]?.close();
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams).toHaveLength(2);
     }, reconnectTimeout);
     expect(tokens).toEqual(["Bearer token-1", "Bearer token-1", "Bearer token-3"]);
@@ -206,7 +206,7 @@ describe("the event stream", () => {
     const streams = streamingServer();
     server.use(resumableSession(), streams.handler);
     const { session } = await openHome();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(1);
     });
 

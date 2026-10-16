@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Notifications from the event stream through the whole app (web-client.md S10, T4; FR-207): they update
 // the unread badge of the navigation.
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { apiBase, notificationsFixture, otherAccountFixture, resumableSession, streamingServer } from "../../test/msw/handlers";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -31,7 +31,7 @@ describe("a notification from the stream", () => {
     );
     await renderApp({ path: "/home" });
     expect(await screen.findByRole("link", { name: "Notifications, 1 unread" })).toBeInTheDocument();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(1);
     });
 
@@ -51,7 +51,7 @@ describe("a notification from the stream", () => {
     );
     await renderApp({ path: "/home" });
     expect(await screen.findByRole("link", { name: "Notifications, 1 unread" })).toBeInTheDocument();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(streams.connections()).toBe(1);
     });
 
