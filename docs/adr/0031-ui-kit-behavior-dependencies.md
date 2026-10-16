@@ -1,6 +1,6 @@
 # ADR-0031: 共有 UI キットは、ドメインを持たない振る舞いのライブラリにも依存してよい
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #188
@@ -26,7 +26,7 @@ ADR-0026 の依存の制限の目的は、UI キットがアプリのドメイ�
 2. 仮想化などは `app/web` の機能側で行い、UI キットは仮想化しない一覧だけを持つ
 3. 必要な振る舞いを UI キット内で自前実装する
 
-## Decision（推奨案）
+## Decision
 
 **1 を採用する。** `@my/ui` が依存してよいのは次のものに限り、許可リストは lint（`eslint-plugin-boundaries`）と `app/ui/package.json` で管理する。
 

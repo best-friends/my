@@ -86,6 +86,10 @@ export interface MessageArgs {
   "client:shell.toast.dismiss": {};
   /** Messages */
   "client:shell.toast.region": {};
+  /** Update */
+  "client:shell.update.apply": {};
+  /** A new version of the app is available. */
+  "client:shell.update.available": {};
   /** #{tag} */
   "client:tag.title": { tag: string };
   /** {name} boosted */

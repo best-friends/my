@@ -7,6 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig, type Plugin, searchForWorkspaceRoot } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 /** The shared message catalogs at the repository root (ADR-0009). */
 const localesDir = fileURLToPath(new URL("../../locales", import.meta.url));
@@ -76,5 +77,28 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset({ logger: compilerCheck.logger })] }),
     compilerCheck.plugin,
     tailwindcss(),
+    // The Service Worker (ADR-0028): sw/sw.ts with the precache manifest injected, built into dist/sw.js
+    // (https://vite-pwa-org.netlify.app/guide/inject-manifest.html). Go generates the Web App Manifest and
+    // the HTML, so the plugin writes neither and injects no registration script; src/lib/pwa.ts registers
+    // the worker and asks before activating an update.
+    VitePWA({
+      strategies: "injectManifest",
+      srcDir: "sw",
+      filename: "sw.ts",
+      manifest: false,
+      injectRegister: false,
+      // Absolute, unlike the build's relative base: the worker lives at /sw.js and controls the whole
+      // origin, whichever page registers it.
+      base: "/",
+      scope: "/",
+      injectManifest: {
+        // A classic script, which every browser registers.
+        rollupFormat: "iife",
+        globPatterns: ["**/*.{js,css,svg,png,woff2}"],
+        // index.html is the stand-in shell of `vite preview` (the worker precaches the server's shell at /
+        // instead), and the stylesheet of the server-rendered pages is never loaded by the app.
+        globIgnores: ["index.html", "sw.js", "assets/server-pages-*.css"],
+      },
+    }),
   ],
 });

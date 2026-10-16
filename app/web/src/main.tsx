@@ -7,9 +7,13 @@ import { createRoot } from "react-dom/client";
 import { App, StartupError } from "./App";
 import { readRuntimeConfig, type RuntimeConfig } from "./lib/config";
 import { applyDocumentLocale, loadI18n } from "./lib/i18n";
+import { registerServiceWorker, reloadOnPreloadError } from "./lib/pwa";
 import { createAppRouter } from "./router";
 import { createAppServices } from "./lib/services";
 import "./index.css";
+
+// Before anything loads a chunk: a deploy may have removed the chunks of this version (ADR-0028).
+reloadOnPreloadError(window);
 
 const container = document.getElementById("root");
 if (container === null) throw new Error("the shell has no #root element");
@@ -33,6 +37,15 @@ if (config === undefined) {
     </StrictMode>,
   );
 } else {
+  // The built app only: the Vite dev server builds no worker, and under `my serve -dev-vite-origin` the
+  // scripts come from another origin. Without the worker the app works the same, only not offline.
+  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+    registerServiceWorker(navigator.serviceWorker, () => {
+      window.location.reload();
+    }).catch((error: unknown) => {
+      console.error("the Service Worker could not be registered", error);
+    });
+  }
   const services = createAppServices(config, i18n);
   // Resume the session from the refresh token cookie while the first page loads; API requests wait for it.
   void services.session.restore();
