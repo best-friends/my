@@ -3,14 +3,9 @@
 // `make ui-test`): focus moves in on open, Tab stays inside, Esc and the close buttons close it,
 // and focus returns to the trigger.
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "react-aria-components";
 import { expect, waitFor } from "storybook/test";
+import { Button } from "./Button";
 import { Dialog, type DialogProps, DialogTrigger } from "./Dialog";
-
-const button =
-  "rounded-md border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
-const primary = "rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-fg data-hovered:bg-accent-hover data-focus-visible:focus-ring";
-const danger = "rounded-md bg-danger px-3 py-2 text-sm font-medium text-danger-fg data-focus-visible:focus-ring";
 
 const meta = {
   title: "Overlays/Dialog",
@@ -30,10 +25,10 @@ const meta = {
       <div className="flex flex-col gap-4">
         <p className="text-fg-muted">Your display name and bio are shown on your profile and next to your posts.</p>
         <div className="flex flex-wrap justify-end gap-2">
-          <Button className={button} onPress={close}>
+          <Button onPress={close}>
             Cancel
           </Button>
-          <Button className={primary} onPress={close}>
+          <Button variant="primary" onPress={close}>
             Save
           </Button>
         </div>
@@ -42,7 +37,7 @@ const meta = {
   },
   render: (args) => (
     <DialogTrigger>
-      <Button className={button}>Edit profile</Button>
+      <Button>Edit profile</Button>
       <Dialog {...args} />
     </DialogTrigger>
   ),
@@ -92,7 +87,7 @@ export const CloseButtonReturnsFocus: Story = {
 function renderOpen(args: DialogProps) {
   return (
     <DialogTrigger defaultOpen>
-      <Button className={button}>Edit profile</Button>
+      <Button>Edit profile</Button>
       <Dialog {...args} />
     </DialogTrigger>
   );
@@ -113,10 +108,10 @@ export const AlertDialog: Story = {
       <div className="flex flex-col gap-4">
         <p>This cannot be undone. Replies to the post stay, without it.</p>
         <div className="flex flex-wrap justify-end gap-2">
-          <Button className={button} onPress={close}>
+          <Button onPress={close}>
             Cancel
           </Button>
-          <Button className={danger} onPress={close}>
+          <Button variant="danger" onPress={close}>
             Delete
           </Button>
         </div>
@@ -126,7 +121,7 @@ export const AlertDialog: Story = {
   // Leaves out the meta's closeLabel.
   render: ({ title, children }) => (
     <DialogTrigger defaultOpen>
-      <Button className={button}>Delete</Button>
+      <Button>Delete</Button>
       <Dialog role="alertdialog" title={title}>
         {children}
       </Dialog>
@@ -152,7 +147,7 @@ export const LongContent: Story = {
           </p>
         ))}
         <div className="flex justify-end">
-          <Button className={primary} onPress={close}>
+          <Button variant="primary" onPress={close}>
             Accept
           </Button>
         </div>

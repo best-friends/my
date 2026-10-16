@@ -3,12 +3,9 @@
 // on its first item, arrows move, Esc closes and returns focus to the trigger, and the submenu keys
 // follow the reading direction (Right opens a submenu in LTR, Left in RTL).
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "react-aria-components";
 import { expect, fn, waitFor } from "storybook/test";
+import { Button } from "./Button";
 import { Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger } from "./Menu";
-
-const button =
-  "rounded-md border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
 
 /** The keys that move into and out of a submenu in the page's reading direction. */
 function submenuKeys() {
@@ -30,7 +27,7 @@ const meta = {
   args: { "aria-label": "Post options", onAction },
   render: (args) => (
     <MenuTrigger>
-      <Button className={button}>Post options</Button>
+      <Button>Post options</Button>
       <Menu {...args}>
         <MenuItem id="copy">Copy link</MenuItem>
         <MenuItem id="bookmark">Bookmark</MenuItem>
@@ -122,7 +119,7 @@ export const SubmenuDirection: Story = {
 export const Open: Story = {
   render: (args) => (
     <MenuTrigger defaultOpen>
-      <Button className={button}>Post options</Button>
+      <Button>Post options</Button>
       <Menu {...args}>
         <MenuItem id="copy">Copy link</MenuItem>
         <MenuItem id="bookmark">Bookmark</MenuItem>

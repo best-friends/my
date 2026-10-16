@@ -2,13 +2,9 @@
 // Popover stories. The play function tests that focus moves in on open, Esc closes it and focus
 // returns to the trigger.
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "react-aria-components";
 import { expect, waitFor } from "storybook/test";
+import { Button } from "./Button";
 import { Popover, type PopoverProps, PopoverTrigger } from "./Popover";
-
-const button =
-  "rounded-md border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
-const link = "self-start rounded-sm text-sm font-medium text-accent data-hovered:underline data-focus-visible:focus-ring";
 
 /** The titled form of Popover; the aria-label form is its own story. */
 type TitledPopoverProps = Pick<PopoverProps, "children" | "placement"> & { title: string };
@@ -27,7 +23,7 @@ const meta = {
     children: ({ close }) => (
       <>
         <p className="text-sm text-fg-muted">A content warning hides the post behind a summary until a reader chooses to show it.</p>
-        <Button className={link} onPress={close}>
+        <Button variant="ghost" size="sm" className="self-start" onPress={close}>
           Got it
         </Button>
       </>
@@ -35,7 +31,7 @@ const meta = {
   },
   render: (args) => (
     <PopoverTrigger>
-      <Button className={button}>What is this?</Button>
+      <Button>What is this?</Button>
       <Popover {...args} />
     </PopoverTrigger>
   ),
@@ -64,7 +60,7 @@ export const FocusAndReturn: Story = {
 export const Open: Story = {
   render: (args) => (
     <PopoverTrigger defaultOpen>
-      <Button className={button}>What is this?</Button>
+      <Button>What is this?</Button>
       <Popover {...args} />
     </PopoverTrigger>
   ),
@@ -74,7 +70,7 @@ export const Open: Story = {
 export const LabelledByAriaLabel: Story = {
   render: () => (
     <PopoverTrigger defaultOpen>
-      <Button className={button}>Add emoji</Button>
+      <Button>Add emoji</Button>
       <Popover aria-label="Emoji">
         <p className="text-2xl">😀 🎉 🙏 ❤️</p>
       </Popover>

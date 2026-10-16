@@ -2,13 +2,9 @@
 // Sheet stories. At the 320 px container width the sheet sits on the bottom edge; at 640 and 1024 px
 // it is a centered dialog. The play function tests focus in, Esc and focus return.
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "react-aria-components";
 import { expect, waitFor } from "storybook/test";
+import { Button } from "./Button";
 import { DialogTrigger, Sheet, type SheetProps } from "./Dialog";
-
-const button =
-  "rounded-md border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
-const item = "w-full rounded-md px-3 py-3 text-start text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
 
 const meta = {
   title: "Overlays/Sheet",
@@ -27,7 +23,7 @@ const meta = {
       <ul className="flex flex-col">
         {["Public", "Local only", "Unlisted", "Followers only", "Mentioned people only"].map((label) => (
           <li key={label}>
-            <Button className={item} onPress={close}>
+            <Button variant="ghost" className="w-full justify-start" onPress={close}>
               {label}
             </Button>
           </li>
@@ -37,7 +33,7 @@ const meta = {
   },
   render: (args) => (
     <DialogTrigger>
-      <Button className={button}>Visibility</Button>
+      <Button>Visibility</Button>
       <Sheet {...args} />
     </DialogTrigger>
   ),
@@ -65,7 +61,7 @@ export const FocusTrapAndReturn: Story = {
 function renderOpen(args: SheetProps) {
   return (
     <DialogTrigger defaultOpen>
-      <Button className={button}>Visibility</Button>
+      <Button>Visibility</Button>
       <Sheet {...args} />
     </DialogTrigger>
   );
@@ -81,7 +77,7 @@ export const LongContent: Story = {
       <ul className="flex flex-col">
         {Array.from({ length: 20 }, (_, i) => `Language ${String(i + 1)}`).map((label) => (
           <li key={label}>
-            <Button className={item} onPress={close}>
+            <Button variant="ghost" className="w-full justify-start" onPress={close}>
               {label}
             </Button>
           </li>

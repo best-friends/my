@@ -2,12 +2,9 @@
 // Tooltip stories. The play function tests that keyboard focus shows the tooltip, that it describes the
 // trigger, and that Esc hides it while focus stays on the trigger.
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "react-aria-components";
 import { expect, waitFor } from "storybook/test";
+import { Button } from "./Button";
 import { Tooltip, TooltipTrigger } from "./Tooltip";
-
-const iconButton =
-  "grid size-10 place-items-center rounded-md border border-border-strong bg-surface-raised text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
 
 function BoostIcon() {
   return (
@@ -30,7 +27,7 @@ const meta = {
   args: { children: "Boost to your followers" },
   render: (args) => (
     <TooltipTrigger>
-      <Button aria-label="Boost" className={iconButton}>
+      <Button aria-label="Boost" className="size-10 px-0">
         <BoostIcon />
       </Button>
       <Tooltip {...args} />
@@ -59,7 +56,7 @@ export const KeyboardFocus: Story = {
 export const Open: Story = {
   render: (args) => (
     <TooltipTrigger defaultOpen>
-      <Button aria-label="Boost" className={iconButton}>
+      <Button aria-label="Boost" className="size-10 px-0">
         <BoostIcon />
       </Button>
       <Tooltip {...args} />

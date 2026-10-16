@@ -2,19 +2,16 @@
 // Announcer stories. The live regions are visually hidden, so the play function is the point: an
 // announcement lands in the polite or the assertive region, and focus stays where it was.
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "react-aria-components";
 import { expect, waitFor } from "storybook/test";
+import { Button } from "./Button";
 import { AnnouncerProvider, useAnnouncer } from "./Announcer";
-
-const button =
-  "rounded-md border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
 
 function Demo() {
   const announce = useAnnouncer();
   return (
     <div className="flex flex-wrap gap-2">
       <Button
-        className={button}
+       
         onPress={() => {
           announce("3 new posts");
         }}
@@ -22,7 +19,7 @@ function Demo() {
         Load new posts
       </Button>
       <Button
-        className={button}
+       
         onPress={() => {
           announce("Could not send the post. Check your connection.", "assertive");
         }}

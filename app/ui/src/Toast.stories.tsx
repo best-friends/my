@@ -2,13 +2,10 @@
 // Toast stories. The play functions test that showing a toast announces it without moving focus, that
 // dismissing a focused toast hands focus on, and that auto-dismiss waits while the pointer is over it.
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "react-aria-components";
 import { expect, fn, waitFor } from "storybook/test";
+import { Button } from "./Button";
 import { AnnouncerProvider } from "./Announcer";
 import { ToastProvider, useToast } from "./Toast";
-
-const button =
-  "rounded-md border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-fg data-hovered:bg-surface-sunken data-focus-visible:focus-ring";
 
 function Demo({ onUndo, timeout }: { onUndo: () => void; timeout?: number | null | undefined }) {
   const toast = useToast();
@@ -16,7 +13,7 @@ function Demo({ onUndo, timeout }: { onUndo: () => void; timeout?: number | null
   return (
     <div className="flex flex-wrap gap-2">
       <Button
-        className={button}
+       
         onPress={() => {
           toast.show({ message: "Draft saved", tone: "success", ...timing });
         }}
@@ -24,7 +21,7 @@ function Demo({ onUndo, timeout }: { onUndo: () => void; timeout?: number | null
         Save draft
       </Button>
       <Button
-        className={button}
+       
         onPress={() => {
           toast.show({ message: "Post deleted", action: { label: "Undo", onAction: onUndo }, ...timing });
         }}
@@ -32,7 +29,7 @@ function Demo({ onUndo, timeout }: { onUndo: () => void; timeout?: number | null
         Delete post
       </Button>
       <Button
-        className={button}
+       
         onPress={() => {
           toast.show({ message: "Could not send the post", tone: "danger", ...timing });
         }}
