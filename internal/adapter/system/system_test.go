@@ -24,7 +24,7 @@ func TestClockTracksSystemTime(t *testing.T) {
 }
 
 func TestIDGeneratorContract(t *testing.T) {
-	ids := testkit.IDGeneratorContract(t, system.IDGenerator{})
+	ids := testkit.IDGeneratorContract(t, system.IDGenerator{}, system.Clock{})
 
 	// The contract already checks strict ordering; make sure that check covered IDs
 	// sharing a millisecond, which is where ordering relies on the sub-millisecond counter.

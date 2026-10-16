@@ -27,8 +27,17 @@ type Clock interface {
 // NewID returns a new UUIDv7 in its canonical form (36 lowercase characters).
 // IDs returned by one generator sort in increasing order, also within the same millisecond,
 // unless the underlying clock moves backwards.
+//
+// NewIDAt returns a new UUIDv7 whose timestamp is the millisecond containing at, for records
+// whose place in time comes from elsewhere, such as a remote status's AP published time
+// (docs/architecture/data-model.md §1.3). A time after the generator's current time is rounded
+// down to the current time, so a remote clock cannot place a record ahead of local ones;
+// times outside the 48-bit range are clamped as in UUIDv7Floor. IDs issued for the same
+// millisecond are unique, held apart by their random bits, but their order is unspecified;
+// all of them sort above UUIDv7Floor of that millisecond.
 type IDGenerator interface {
 	NewID() string
+	NewIDAt(at time.Time) string
 }
 
 // Normalize converts t to the form Clock.Now returns: UTC, truncated to milliseconds,
