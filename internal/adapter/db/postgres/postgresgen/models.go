@@ -84,6 +84,35 @@ type AccountProfileRevision struct {
 	RevisedAt     time.Time
 }
 
+type Bookmark struct {
+	AccountID string
+	StatusID  string
+	CreatedAt time.Time
+	ID        string
+}
+
+type Boost struct {
+	ID               string
+	Uri              string
+	BoosterAccountID string
+	StatusID         string
+	Visibility       string
+	IsLocal          bool
+	BoostedAt        time.Time
+}
+
+type BoostEdge struct {
+	BoosterAccountID string
+	StatusID         string
+	BoostID          string
+}
+
+type BoostRetraction struct {
+	BoostID     string
+	Origin      string
+	RetractedAt time.Time
+}
+
 type DeadJob struct {
 	ID             string
 	Type           string
@@ -94,6 +123,14 @@ type DeadJob struct {
 	LastError      string
 	CreatedAt      time.Time
 	FailedAt       time.Time
+}
+
+type Favourite struct {
+	AccountID string
+	StatusID  string
+	Uri       string
+	CreatedAt time.Time
+	ID        string
 }
 
 type Follow struct {
@@ -273,6 +310,13 @@ type StatusHead struct {
 type StatusMentionIndex struct {
 	AccountID string
 	StatusID  string
+}
+
+type StatusPin struct {
+	AccountID string
+	StatusID  string
+	CreatedAt time.Time
+	ID        string
 }
 
 type StatusReplyLink struct {

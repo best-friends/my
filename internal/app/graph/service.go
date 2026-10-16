@@ -63,6 +63,13 @@ type Relationship struct {
 	Notify     bool
 }
 
+// Follows reports whether the account actively follows the target. Other modules read the
+// follow state through it and RequestedFollow, without the graph module's domain types.
+func (r Relationship) Follows() bool { return r.Following == graph.StateActive }
+
+// RequestedFollow reports whether the account's follow of the target awaits approval.
+func (r Relationship) RequestedFollow() bool { return r.Following == graph.StatePending }
+
 // Follow makes followerID follow followeeID. The follow is active at once, unless the followee's
 // current profile is locked: then it is a follow request, pending until the followee accepts it
 // (FR-302). Following an account that the follower already follows or has requested to follow
