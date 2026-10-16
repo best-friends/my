@@ -162,7 +162,7 @@ internal/
 pkg/
   testkit/           # コントラクトテスト・フィクスチャ・決定的なフェイク（独自アダプタ作者向けに公開）
 api/                 # openapi.yaml（クライアント API の正）
-schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用。ADR-0023）
+schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用）と準備 SQL postgres.bootstrap.sql（ADR-0023）
 queries/             # sqlc 用クエリ（方言別）
 locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有）
 app/                 # クライアントアプリ（Bun ワークスペース。1 アプリ 1 ディレクトリ）

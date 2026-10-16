@@ -1,0 +1,9 @@
+-- SPDX-License-Identifier: AGPL-3.0-only
+--
+-- Desired-state schema for SQLite (ADR-0023). Atlas Community Edition diffs this file
+-- against the target database and applies the difference: `make db-apply DB_DIALECT=sqlite`.
+--
+-- Edit this file and schema/postgres.sql together; never write migration SQL by hand.
+-- Tables follow docs/architecture/data-model.md, mapping logical types per its §1.2.
+--
+-- No tables are defined yet.

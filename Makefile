@@ -62,3 +62,66 @@ go-licenses: ## Fail on dependency licenses incompatible with AGPL-3.0
 
 go-vuln: ## Scan for known vulnerabilities with govulncheck (needs network)
 	$(GO_TOOL) govulncheck ./...
+
+# --- Database schema (ADR-0023) ---------------------------------------------------------------
+# Atlas Community Edition, pinned and checksum-verified by scripts/install-atlas.sh.
+# Pick the dialect with DB_DIALECT and point DB_URL / DB_DEV_URL elsewhere to override the defaults.
+ATLAS := bin/atlas
+DB_DIALECT ?= sqlite
+PG_CONTAINER ?= my-postgres
+PG_IMAGE ?= postgres:18-alpine
+PG_PORT ?= 5432
+ifeq ($(DB_DIALECT),sqlite)
+DB_URL ?= sqlite://my.db
+DB_DEV_URL ?= sqlite://dev?mode=memory
+else ifeq ($(DB_DIALECT),postgres)
+# Schema-scoped URLs: Atlas manages only the `public` schema.
+DB_URL ?= postgres://my:my@localhost:$(PG_PORT)/my?sslmode=disable&search_path=public
+DB_DEV_URL ?= postgres://my:my@localhost:$(PG_PORT)/my_dev?sslmode=disable&search_path=public
+else
+$(error DB_DIALECT must be sqlite or postgres, got "$(DB_DIALECT)")
+endif
+# Runs schema/postgres.bootstrap.sql (from stdin) against the target database before each apply.
+# For a database outside the db-up container: PG_BOOTSTRAP='psql -v ON_ERROR_STOP=1 -q "postgres://..."'
+PG_BOOTSTRAP ?= docker exec -i -e PGOPTIONS=--client-min-messages=warning $(PG_CONTAINER) psql -v ON_ERROR_STOP=1 -q -U my -d my
+DB_SCHEMA := schema/$(DB_DIALECT).sql
+
+.PHONY: atlas db-up db-down db-bootstrap db-apply db-diff db-reset db-check
+
+atlas: ## Install the pinned Atlas Community Edition into bin/atlas
+	scripts/install-atlas.sh $(ATLAS)
+
+db-up: ## Start the dev PostgreSQL container (databases `my` and `my_dev`, both bootstrapped)
+	@docker inspect $(PG_CONTAINER) >/dev/null 2>&1 || docker run -d --name $(PG_CONTAINER) \
+		-e POSTGRES_USER=my -e POSTGRES_PASSWORD=my -e POSTGRES_DB=my -p $(PG_PORT):5432 $(PG_IMAGE) >/dev/null
+	@docker start $(PG_CONTAINER) >/dev/null
+	@for _ in $$(seq 60); do docker exec $(PG_CONTAINER) pg_isready -q -U my -d my -h 127.0.0.1 && break; sleep 1; done
+	@docker exec $(PG_CONTAINER) psql -q -U my -d my -tAc "SELECT 1 FROM pg_database WHERE datname = 'my_dev'" | grep -q 1 \
+		|| docker exec $(PG_CONTAINER) createdb -U my my_dev
+	@for db in my my_dev; do \
+		docker exec -i -e PGOPTIONS=--client-min-messages=warning $(PG_CONTAINER) psql -v ON_ERROR_STOP=1 -q -U my -d $$db < schema/postgres.bootstrap.sql || exit 1; \
+	done
+	@echo "PostgreSQL is up in container $(PG_CONTAINER) on localhost:$(PG_PORT)"
+
+db-down: ## Remove the dev PostgreSQL container and its data
+	docker rm -f $(PG_CONTAINER)
+
+db-bootstrap: ## Run the dialect's bootstrap SQL against DB_URL (PostgreSQL only; no-op for SQLite)
+ifeq ($(DB_DIALECT),postgres)
+	$(PG_BOOTSTRAP) < schema/postgres.bootstrap.sql
+endif
+
+db-apply: atlas db-bootstrap ## Apply schema/<DB_DIALECT>.sql to DB_URL (DB_DIALECT=sqlite|postgres)
+	$(ATLAS) schema apply --url '$(DB_URL)' --to 'file://$(DB_SCHEMA)' --dev-url '$(DB_DEV_URL)' --auto-approve
+
+db-diff: atlas ## Print the SQL that would bring DB_URL to schema/<DB_DIALECT>.sql
+	$(ATLAS) schema diff --from '$(DB_URL)' --to 'file://$(DB_SCHEMA)' --dev-url '$(DB_DEV_URL)'
+
+db-reset: atlas ## Drop everything in DB_URL, then apply the schema (destroys data)
+	$(ATLAS) schema clean --url '$(DB_URL)' --auto-approve
+	$(MAKE) --no-print-directory db-apply
+
+db-check: db-reset ## Reset DB_URL, apply the schema, and fail if any diff remains
+	@diff="$$($(ATLAS) schema diff --from '$(DB_URL)' --to 'file://$(DB_SCHEMA)' --dev-url '$(DB_DEV_URL)' --format '{{ sql . }}')" \
+		&& if [ -n "$$diff" ]; then printf 'schema diff is not empty after apply:\n%s\n' "$$diff" >&2; exit 1; fi
+	@echo "$(DB_DIALECT): schema applies cleanly and leaves no diff"

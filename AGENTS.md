@@ -107,7 +107,11 @@ These come from Accepted ADRs and are binding.
 | `make adr-new TITLE="..." [SLUG=...]` | Create a new Proposed ADR (pass `SLUG` when the title is not ASCII) |
 | `make adr-index` | Regenerate the ADR table in `docs/adr/README.md` |
 | `make lint-docs` | markdownlint on all Markdown files |
+| `make db-apply` / `db-diff` / `db-reset` [`DB_DIALECT=sqlite\|postgres`] | Apply / preview / reset-and-apply `schema/<dialect>.sql` with Atlas (override `DB_URL`, `DB_DEV_URL`) |
+| `make db-check` [`DB_DIALECT=...`] | Reset the DB, apply the schema, and fail if a diff remains (CI runs it for both dialects) |
+| `make db-up` / `db-down` | Start / remove the dev PostgreSQL container (`my` and dev DB `my_dev`, bootstrapped) |
 
 Toolchain versions (Go, golangci-lint, Bun, shellcheck) are pinned in `.tool-versions` (asdf / mise).
+Atlas Community Edition is pinned and checksum-verified in `scripts/install-atlas.sh` (`make atlas` installs `bin/atlas`).
 Go tools (govulncheck, go-licenses) are pinned with `tool` directives in `tools/go.mod` and run via
 `go tool -modfile=tools/go.mod <tool>`.
