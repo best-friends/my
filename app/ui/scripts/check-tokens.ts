@@ -66,7 +66,7 @@ function resolveColor(value: string, scheme: Scheme, seen: string[] = []): Linea
   }
   const reference = /^var\(--(palette|color)-([a-z0-9-]+)\)$/.exec(value);
   if (reference !== null) {
-    const [, layer, name = ""] = reference;
+    const [, layer = "", name = ""] = reference;
     const key = `${layer}-${name}`;
     if (seen.includes(key)) throw new Error(`circular reference: ${[...seen, key].join(" -> ")}`);
     const target = (layer === "palette" ? palette : semantic).get(name);
@@ -115,7 +115,7 @@ for (const pair of colorPairs) {
     }
     return ratio.toFixed(2).padStart(5);
   });
-  rows.push(`  ${`${pair.fg} on ${pair.bg}`.padEnd(32)} ${pair.use.padEnd(4)} light ${ratios[0]}  dark ${ratios[1]}`);
+  rows.push(`  ${`${pair.fg} on ${pair.bg}`.padEnd(32)} ${pair.use.padEnd(4)} light ${ratios[0] ?? ""}  dark ${ratios[1] ?? ""}`);
 }
 for (const name of semantic.keys()) {
   if (!covered.has(name)) {
@@ -182,11 +182,11 @@ const colorLiteral =/#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|c
 const colorProperties = /(?:^|-)(?:color|fill|stroke|background)$|^background$|^border(?:-[a-z]+)*-color$/;
 
 /** Resolves the stylesheet and package imports of an app's entry stylesheet the way Vite does. */
-async function loadStylesheet(id: string, base: string) {
+function loadStylesheet(id: string, base: string) {
   let path = id.startsWith(".") || id.startsWith("/") ? resolve(base, id) : Bun.resolveSync(id, base);
   // A bare `@import "tailwindcss"` resolves to the package's JS entry; its CSS entry is index.css.
   if (extname(path) !== ".css") path = Bun.resolveSync(`${id}/index.css`, base);
-  return { path, base: dirname(path), content: readFileSync(path, "utf8") };
+  return Promise.resolve({ path, base: dirname(path), content: readFileSync(path, "utf8") });
 }
 
 function lineOf(content: string, position: number): number {

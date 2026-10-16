@@ -63,7 +63,8 @@ func newOAuthServer(t *testing.T, id authpages.Identity, oauth *fakeOAuth) http.
 	}
 	m := mux{http.NewServeMux()}
 	authpages.New(authpages.Options{
-		Identity: id, OAuth: oauth, Issuer: "https://social.example", FormActionOrigins: []string{"https://web.example"}, Messages: b,
+		Identity: id, OAuth: oauth, Issuer: "https://social.example", FormActionOrigins: []string{"https://web.example"},
+		Locales: &i18n.Resolver{Bundle: b},
 	}).Register(m)
 	return m
 }

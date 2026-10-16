@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package content
+
+import "github.com/best-friends/my/internal/domain/content"
+
+// Event types of the interactions with statuses, for uow.Projectors (data-model §4.4). Each
+// interaction command emits at most one of them inside its transaction, and only when it
+// actually wrote a row: repeating a command that changes nothing emits nothing, so subscribers
+// never count twice. Each event carries everything its subscribers need; they never read the
+// content tables.
+//
+//   - EventBoosted: a boost was created. This module projects boost_edges and boosts_count;
+//     the timeline module projects a feed entry of kind boost, the notification module a boost
+//     notification to the status's author, and the federation module delivers the Announce
+//     when Boost.Federates.
+//   - EventBoostRetracted: a live boost was retracted. This module removes the edge and
+//     decrements boosts_count; the timeline module removes the feed entry, and the federation
+//     module delivers Undo Announce when the boost federated.
+//   - EventFavourited: a favourite was inserted. This module increments favourites_count; the
+//     notification module notifies the status's author, and the federation module delivers the
+//     Like of a remote status.
+//   - EventUnfavourited: a favourite was deleted. This module decrements favourites_count; the
+//     federation module delivers Undo Like.
+//
+// Bookmarks and pins are private to their account and emit no events.
+const (
+	EventBoosted        = "content.boosted"
+	EventBoostRetracted = "content.boost_retracted"
+	EventFavourited     = "content.favourited"
+	EventUnfavourited   = "content.unfavourited"
+)
+
+// StatusRef is what subscribers of an interaction event need to know about the status.
+type StatusRef struct {
+	ID              string
+	URI             string
+	AuthorAccountID string
+	IsLocal         bool
+	Visibility      content.Visibility
+}
+
+// RefOf returns the reference to s.
+func RefOf(s content.Status) StatusRef {
+	return StatusRef{ID: s.ID, URI: s.URI, AuthorAccountID: s.AuthorAccountID, IsLocal: s.IsLocal, Visibility: s.Visibility}
+}
+
+// Boosted is emitted when a boost is inserted.
+type Boosted struct {
+	Boost  content.Boost
+	Status StatusRef
+}
+
+// EventType implements uow.Event.
+func (Boosted) EventType() string { return EventBoosted }
+
+// BoostRetracted is emitted when the retraction of a live boost is inserted.
+type BoostRetracted struct {
+	Boost      content.Boost
+	Retraction content.BoostRetraction
+	Status     StatusRef
+}
+
+// EventType implements uow.Event.
+func (BoostRetracted) EventType() string { return EventBoostRetracted }
+
+// Favourited is emitted when a favourite is inserted.
+type Favourited struct {
+	Favourite content.Favourite
+	Status    StatusRef
+}
+
+// EventType implements uow.Event.
+func (Favourited) EventType() string { return EventFavourited }
+
+// Unfavourited is emitted when a favourite is deleted.
+type Unfavourited struct {
+	Favourite content.Favourite
+	Status    StatusRef
+}
+
+// EventType implements uow.Event.
+func (Unfavourited) EventType() string { return EventUnfavourited }

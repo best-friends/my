@@ -82,6 +82,8 @@ type Repository interface {
 	RebuildHeads(ctx context.Context, tx uow.Tx) error
 	RebuildMentions(ctx context.Context, tx uow.Tx) error
 	RebuildReplyLinks(ctx context.Context, tx uow.Tx) error
+	// RebuildCounters also counts the boosts that are not retracted and the favourites of
+	// each status, by the rules of RegisterInteractionProjectors.
 	RebuildCounters(ctx context.Context, tx uow.Tx) error
 	RebuildPostCounters(ctx context.Context, tx uow.Tx) error
 

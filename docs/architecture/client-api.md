@@ -39,7 +39,10 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 - すべての操作は `default` 応答で `#/components/responses/Problem` を参照します（lint で強制）。
   本文は RFC 9457 の `application/problem+json` です。
 - 状態コード以上の意味を持たない問題は `type: about:blank` です。クライアントが分岐に使う問題には、安定した `type` の URI を割り当てます。
-- `title` と `detail` は `Accept-Language` に応じて `internal/i18n` の `server` 名前空間からローカライズし、`Content-Language` を返します。
+- `title` と `detail` は `internal/i18n` の `server` 名前空間からローカライズし、`Content-Language` を返します。
+  ロケールは `i18n.Resolver` が ADR-0009 §2 の順（利用者設定 → `Accept-Language` → インスタンス設定 `default_locale` → `en`）で決めます。
+  サーバーの HTTP 応答（クライアント API、ログイン画面、HTML の外枠、プラットフォームの問題応答）はすべて `platform.App.Locales` の同じ Resolver を使います。
+  `default_locale` は解決のたびに読むので、変更は再起動なしで反映されます。
   文言は `locales/en` と `locales/ja` に追加して `make i18n-gen` を実行し、生成された型付きアクセサ（`l.ServerErrors...()`）で整形します。
 - ハンドラが返す問題は `Server.NewProblem` で作り、その操作の `default` 応答型（`<Operation>defaultApplicationProblemPlusJSONResponse`）で返します。
   ローカライザは `Server.Localizer(ctx)` で取得します。

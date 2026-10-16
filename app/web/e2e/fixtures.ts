@@ -5,7 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { test as base, expect, type Page } from "@playwright/test";
 
 /** The axe rule tags for WCAG 2.2 AA (ADR-0027, web-client.md Y1). */
-export const axeTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] as const;
+const axeTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] as const;
 
 type Fixtures = {
   /** Returns an AxeBuilder for the page, limited to `axeTags`; chain `.include()` / `.exclude()` to scope it. */
@@ -21,7 +21,7 @@ export const test = base.extend<Fixtures>({
 export { expect };
 
 /** One axe violation reduced to what identifies it: the rule and the elements it fails on. */
-export type ViolationFingerprint = { rule: string; targets: string[] };
+type ViolationFingerprint = { rule: string; targets: string[] };
 
 /**
  * Scans the page with axe and asserts that it has no violations. The assertion compares fingerprints

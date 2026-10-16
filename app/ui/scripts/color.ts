@@ -45,7 +45,7 @@ function parseOklch(body: string): LinearRgba {
 }
 
 function parseHex(hex: string): LinearRgba {
-  const digits = hex.length <= 4 ? [...hex].map((d) => d + d).join("") : hex;
+  const digits = hex.length <= 4 ? hex.replace(/./g, (d) => d + d) : hex;
   if (!/^[0-9a-f]{6}([0-9a-f]{2})?$/i.test(digits)) throw new Error(`bad hex color: #${hex}`);
   const channel = (i: number) => Number.parseInt(digits.slice(i, i + 2), 16) / 255;
   return {
@@ -71,13 +71,13 @@ export function inSrgbGamut(color: LinearRgba): boolean {
 }
 
 /** Paints `top` over the opaque `bottom` the way browsers composite: in gamma-encoded sRGB. */
-export function composite(top: LinearRgba, bottom: LinearRgba): LinearRgba {
+function composite(top: LinearRgba, bottom: LinearRgba): LinearRgba {
   const mix = (t: number, b: number) => toLinear(toGamma(t) * top.alpha + toGamma(b) * (1 - top.alpha));
   return { r: mix(top.r, bottom.r), g: mix(top.g, bottom.g), b: mix(top.b, bottom.b), alpha: 1 };
 }
 
 /** WCAG relative luminance of an opaque color. */
-export function luminance(color: LinearRgba): number {
+function luminance(color: LinearRgba): number {
   const clamp = (c: number) => Math.min(1, Math.max(0, c));
   return 0.2126 * clamp(color.r) + 0.7152 * clamp(color.g) + 0.0722 * clamp(color.b);
 }
