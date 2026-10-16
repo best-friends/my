@@ -3,6 +3,7 @@
 package testkit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -46,7 +47,7 @@ func (e *accountEnv) withDefaultLocale(locale string) *appidentity.Service {
 		IDs:           e.ids,
 		Passwords:     e.hasher,
 		Accounts:      e.accounts,
-		DefaultLocale: locale,
+		DefaultLocale: func(context.Context) (string, error) { return locale, nil },
 	})
 }
 

@@ -20,9 +20,11 @@ type Deps struct {
 	Passwords  *PasswordHasher
 	// Accounts creates the local account a new user logs in as.
 	Accounts *account.Service
-	// DefaultLocale is the instance's default locale, which a new user gets unless the
-	// registration names one; empty means i18n.SourceLocale.
-	DefaultLocale string
+	// DefaultLocale returns the instance's default locale, which a new user gets unless the
+	// registration names one. It is called once per registration, before the transaction, so a
+	// change of the instance setting applies to the next registration. Nil or an empty result
+	// means i18n.SourceLocale.
+	DefaultLocale func(ctx context.Context) (string, error)
 }
 
 // Service runs the identity module's use cases.
@@ -149,7 +151,7 @@ func (s *Service) prepareUser(ctx context.Context, in RegisterInput) (*preparedU
 	}
 	now := s.d.Clock.Now()
 	user := identity.User{ID: s.d.IDs.NewID(), CreatedAt: now}
-	prefs, err := s.defaultPreferences(user.ID, in.Locale, now)
+	prefs, err := s.defaultPreferences(ctx, user.ID, in.Locale, now)
 	if err != nil {
 		return nil, err
 	}

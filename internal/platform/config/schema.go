@@ -59,6 +59,15 @@ type field struct {
 // env returns the environment variable that sets f.
 func (f *field) env() string { return EnvPrefix + strings.ToUpper(f.key) }
 
+// Keys returns the key of every setting, in documentation order.
+func Keys() []string {
+	keys := make([]string, len(schema))
+	for i := range schema {
+		keys[i] = schema[i].key
+	}
+	return keys
+}
+
 // schema lists every setting in documentation order.
 var schema = []field{
 	{

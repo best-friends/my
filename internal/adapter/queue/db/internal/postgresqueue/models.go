@@ -140,6 +140,35 @@ type FollowTermination struct {
 	TerminatedAt time.Time
 }
 
+type InstanceSetting struct {
+	Key        string
+	RevisionID string
+	Value      string
+}
+
+type InstanceSettingRevision struct {
+	ID              string
+	Key             string
+	Value           string
+	RevisedByUserID *string
+	RevisedAt       time.Time
+}
+
+type InstanceText struct {
+	Key        string
+	Locale     string
+	RevisionID string
+}
+
+type InstanceTextRevision struct {
+	ID              string
+	Key             string
+	Locale          string
+	Body            string
+	RevisedByUserID *string
+	RevisedAt       time.Time
+}
+
 type Job struct {
 	ID             string
 	Type           string
