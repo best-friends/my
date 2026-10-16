@@ -30,7 +30,7 @@ RDB・キュー・ストレージ・実行環境を利用者が差し替えら�
 - モジュール（`identity` `account` `content` `graph` `timeline` `notification` `federation` `moderation` `instance`）は
   アプリケーション層の公開 API 経由でのみ相互参照する。DB テーブルの所有者はモジュール単位で決める。
 - 依存性注入はコンストラクタ / ファクトリ関数で明示的に行い、DI コンテナは使わない。組み立ては entrypoint の 1 箇所（composition root）。
-- 依存方向は lint（例: dependency-cruiser / eslint-plugin-boundaries、Go なら depguard）で CI 検査する。
+- 依存方向は lint（golangci-lint の depguard、または go-arch-lint）で CI 検査する。
 - モジュール間の非同期連携はドメインイベント → Transactional Outbox → JobQueue。
 
 ## Consequences

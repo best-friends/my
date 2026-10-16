@@ -27,8 +27,8 @@ Mastodon 4.x、Misskey、GoToSocial、Akkoma（Pleroma 系）。余力があれ�
 
 ### 実装方針
 
-- ライブラリ: ADR-0001 で TS を選ぶ場合は **Fedify** を採用し、そのキュー / KV を本プロジェクトのポートに接続する。
-  Go の場合は go-ap 系 + 署名ライブラリを評価する。
+- ライブラリ（Go）: go-ap 系（vocab・署名）と、RFC 9421 / draft-cavage の署名ライブラリを spike（#15）で評価する。
+  ライブラリに依存する範囲（JSON-LD の型・署名）と自前実装する範囲（配送・受信処理・Mastodon 拡張の解釈）を分け、ライブラリはアダプタ境界の内側に閉じ込める。
 - Inbox は署名検証まで同期、処理は非同期（NFR-PERF-4）。
 - **HttpClient ポートに SSRF ガード** を組み込み、すべての外部取得を通す（NFR-SEC-1）。
 - 受信した HTML は許可リストでサニタイズ（NFR-SEC-2）。
@@ -38,10 +38,10 @@ Mastodon 4.x、Misskey、GoToSocial、Akkoma（Pleroma 系）。余力があれ�
 
 ## Consequences
 
-- Fedify 採用時は互換性の大半をライブラリに委ねられるが、ライブラリのバージョンアップ追従が必要。
+- 互換性を担うライブラリが無いため、相互運用の細部は自前で持つ。フィクスチャ回帰テストとライブ相互運用テストへの投資が必須になる。
 - フィクスチャ駆動の回帰テストにより、エージェントが互換性を壊したことを CI で検知できる。
 
 ## Open Questions / 要検証
 
-- [ ] Fedify のキュー / KV 抽象と ADR-0004 のポートの接続方法（Workers では `processQueuedTask` を `queue` ハンドラから呼ぶ方式）
+- [ ] #15 go-ap の保守状況・RFC 9421 / double-knocking 対応、自前実装する範囲の見積り
 - [ ] ライブ相互運用テスト環境の構築コスト

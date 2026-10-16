@@ -15,8 +15,8 @@
 | レベル | 対象 | 実行環境 | 実行タイミング |
 | --- | --- | --- | --- |
 | Unit | domain / application（フェイクのポート使用） | ローカル・CI | 毎 PR |
-| Contract | 各ポートの全アダプタ（同一スイート） | SQLite in-memory / PG（コンテナ）/ D1・Queues（ローカルエミュレータ）/ MinIO | 毎 PR（クラウド実体が必要なものは nightly） |
-| Runtime compat | core を Bun と workerd の両方で実行 | CI | 毎 PR |
+| Contract | 各ポートの全アダプタ（同一スイート） | SQLite in-memory / PG（コンテナ）/ MinIO / LocalStack（SQS）/ Cloud Tasks エミュレータ | 毎 PR（クラウド実体が必要なものは nightly） |
+| Build matrix | `CGO_ENABLED=0` で linux/amd64・linux/arm64 をビルド、ビルドタグでアダプタを除外してもビルドできる | CI | 毎 PR |
 | API conformance | Mastodon API のレスポンススキーマ | CI | 毎 PR |
 | Federation fixtures | 実サーバー由来の JSON を入力にした受信・生成の回帰テスト | CI | 毎 PR |
 | Federation live | docker compose で Mastodon / GoToSocial 等と実際に連合 | CI | nightly / 手動 |

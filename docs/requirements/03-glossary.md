@@ -9,8 +9,8 @@
 | 配送 (delivery) | ローカルで発生した Activity をリモートの inbox に POST すること |
 | 受信 (inbox processing) | リモートから受け取った Activity を検証・反映すること |
 | ポート (port) | ドメイン/アプリケーション層が外部資源に求めるインターフェイス |
-| アダプタ (adapter) | ポートの具体実装（例: `queue-sqs`, `db-d1`） |
-| ターゲット (target) | 実行環境の組み合わせ（Cloudflare / GCP / AWS / Self-hosted） |
+| アダプタ (adapter) | ポートの具体実装（例: `queue/sqs`, `db/sqlite`） |
+| ターゲット (target) | 実行環境の組み合わせ（GCP / AWS / Self-hosted） |
 | エントリポイント (entrypoint) | ターゲットごとの起動コード（HTTP ハンドラ・キューコンシューマ・cron のバインド） |
 | コントラクトテスト | 1 つのポートに対し、全アダプタが共通で通すべきテストスイート |
 | Visibility | 投稿の公開範囲: `public` / `unlisted` / `private` / `direct` |

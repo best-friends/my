@@ -8,21 +8,21 @@
 ## Context
 
 Fediverse サーバーの運営コストで最も膨らみやすいのが **リモートメディアのキャッシュ**（ストレージと転送量）。
-また画像のリサイズ・サムネイル生成は、Workers のような CPU 時間制限のある環境ではネイティブライブラリ（sharp / libvips）が使えない。
+また画像のリサイズ・サムネイル生成は CPU とメモリを使い、libvips 等のネイティブライブラリは cgo を要求する（ADR-0001 の静的ビルド方針と衝突）。
 
 ## Decision（推奨案）
 
 ### BlobStore ポート
 
 - 操作: `put` / `get`（ストリーム）/ `delete` / `head` / `publicUrl` / `signedUrl`（任意）
-- アダプタ: `blob-fs`（ローカル FS）、`blob-s3`（S3 互換 API: AWS S3 / R2 / GCS の XML 互換 API / MinIO / その他）、`blob-r2`（Workers バインディング）
+- アダプタ: `blob/fs`（ローカル FS）、`blob/s3`（S3 互換 API: AWS S3 / Cloudflare R2 / GCS の XML 互換 API / MinIO / その他）。必要なら `blob/gcs`（ネイティブ API）
 - 配信は可能な限り CDN / オブジェクトストレージの公開 URL から直接行い、アプリを経由させない。
 
 ### MediaProcessor ポート
 
 - 責務: 画像の EXIF 除去・リサイズ・サムネイル・blurhash 生成・形式検証
-- アダプタ: `media-native`（Bun/Node: sharp 等）、`media-wasm`（Workers でも動く Wasm 実装、CPU 時間の範囲で）、
-  `media-cloudflare-images`（Cloudflare Images の変換）、`media-none`（無加工。ただし EXIF 除去だけは軽量実装で必須）
+- アダプタ: `media/native`（pure Go: `golang.org/x/image` 等。既定）、`media/vips`（libvips、cgo。ビルドタグで任意）、
+  `media/none`（無加工。ただし EXIF 除去だけは軽量実装で必須）
 - 自前クライアント（Web / モバイル）は **アップロード前にクライアント側でリサイズ・EXIF 除去** する。サーバー側処理は保険。
 
 ### リモートメディア方針（FR-409, NFR-COST-4）
@@ -35,10 +35,10 @@ Fediverse サーバーの運営コストで最も膨らみやすいのが **リ�
 ## Consequences
 
 - 最小構成ではストレージ費用はローカルメディアの分だけになる。
-- メディアプロキシは転送量を消費する（CDN キャッシュヒット率に依存）。Cloudflare では R2 / Workers の転送量課金が小さい点を活かせる。
+- メディアプロキシは転送量を消費する（CDN キャッシュヒット率に依存）。Cloudflare R2 + CDN を Blob 先に選ぶと、転送量課金を抑えられる（他ターゲットと併用可）。
 - 動画のトランスコードは v0 では行わない（サイズ・形式制限のみ）。
 
 ## Open Questions / 要検証
 
-- [ ] Workers で動く Wasm 画像処理の CPU 時間の実測
+- [ ] pure Go の画像処理（JPEG / PNG / WebP / AVIF のデコードとエンコード）の対応状況・速度・メモリの実測
 - [ ] GCS の S3 互換 API での署名付き URL 互換性

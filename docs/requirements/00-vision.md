@@ -10,14 +10,14 @@
 - 既存の Fediverse サーバー（Mastodon など）は Ruby + PostgreSQL + Redis + Sidekiq + Elasticsearch などの構成が前提です。
   小規模インスタンスでも VM 1 台を常時動かす必要があり、月額 $20〜 かかることが珍しくありません。
 - 運営コストの大部分は **常時起動のコンピュート**、**マネージド RDB の最低料金**、**リモートメディアのキャッシュ（ストレージ・転送量）** で決まります。
-- サーバーレス（scale-to-zero）や無料枠の大きい DB（SQLite 系 / D1 / Turso / Neon 等）を前提にした設計なら、小規模運営のコストを一桁下げられる見込みです。
+- サーバーレス（scale-to-zero）や無料枠の大きい DB（SQLite / Turso / Neon 等）を前提にした設計なら、小規模運営のコストを一桁下げられる見込みです。
 
 ## 目標（Goals）
 
 | ID | 目標 |
 | --- | --- |
-| G1 | 低コスト: おひとりさま〜数十人規模なら、プラットフォーム固定費（例: Cloudflare Workers Paid $5）以外はほぼ無料枠で収まる |
-| G2 | 可搬性: Cloudflare / Google Cloud / AWS / Self-hosted（Docker, microk8s）の 4 系統で同じコードベースが動く |
+| G1 | 低コスト: おひとりさま〜数十人規模なら、小さな VM 1 台（$4〜6/月）か、サーバーレス（Cloud Run / Lambda）の無料枠でほぼ収まる |
+| G2 | 可搬性: Google Cloud / AWS / Self-hosted（Docker, microk8s）の 3 系統で同じコードベースが動く（Cloudflare Workers は対象外。[ADR-0001](../adr/0001-server-language-and-runtime.md)） |
 | G3 | 差し替え可能性: RDB・キュー・ストレージ・メール等を設定で切り替えられ、利用者が独自アダプタを追加できる |
 | G4 | 相互運用性: Mastodon / Misskey / GoToSocial / Pleroma(Akkoma) と問題なく連合できる |
 | G5 | 多言語: UI・通知・投稿メタデータを含め、最初期から i18n / l10n を前提にする |
@@ -53,5 +53,5 @@
 | **M1: Walking Skeleton** | 1 プロセスで起動し、WebFinger / Actor を返し、SQLite に永続化。全レイヤを細く貫通 | Self-hosted で起動、Mastodon から検索・表示できる |
 | **M2: Local Microblog** | アカウント・投稿・タイムライン・フォロー（ローカルのみ）・Mastodon API サブセット・Web クライアント最小版 | ローカルで SNS として使える |
 | **M3: Federation** | 連合（Follow / Create / Announce / Like / Delete …）、配送キュー、リトライ | Mastodon / Misskey / GoToSocial と相互フォロー・投稿が往復 |
-| **M4: Multi-target** | Cloudflare / GCP / AWS / microk8s のデプロイテンプレートと各アダプタ | 4 系統すべてで E2E スモークテストが通る |
+| **M4: Multi-target** | GCP / AWS / microk8s のデプロイテンプレートと各アダプタ | 3 系統すべてで E2E スモークテストが通る |
 | **M5: v0 Release** | モデレーション最小機能、i18n（en / ja + α）、ドキュメント、Tauri 2 モバイルの検証版 | v0.x として公開し実運用を開始できる |

@@ -20,8 +20,8 @@ Mastodon はホームタイムラインを Redis 上に fan-out-on-write で構�
 ## Consequences
 
 - 追加インフラ不要。書き込みが軽い。
-- フォロー数が多い利用者で読み取りが重くなる。D1 / Neon の rows read 課金に効くため、M2 で計測して閾値を決める。
+- フォロー数が多い利用者で読み取りが重くなる。Neon 等の従量課金 DB では読み取り量が費用に効くため、M2 で計測して閾値を決める。
 
 ## Open Questions / 要検証
 
-- [ ] フォロー 1,000 / 投稿 100 万件規模でのクエリ計画と rows read の測定（SQLite / D1 / PG）
+- [ ] フォロー 1,000 / 投稿 100 万件規模でのクエリ計画と rows read の測定（SQLite / PG）

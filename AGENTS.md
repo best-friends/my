@@ -5,14 +5,15 @@ Human contributors should read [CONTRIBUTING.md](CONTRIBUTING.md); the rules are
 
 ## Project in one paragraph
 
-An ActivityPub-compatible microblog server designed to run at near-zero cost on Cloudflare, Google Cloud, AWS,
+An ActivityPub-compatible microblog server written in Go, designed to run at near-zero cost on Google Cloud, AWS,
 or a self-hosted VM (Docker / microk8s), with swappable RDB / queue / storage adapters, Mastodon-compatible client API,
 a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OSS.
 
 ## Current phase: M0 — Design & Harness
 
-- **No production code yet.** The implementation language is decided by [ADR-0001](docs/adr/0001-server-language-and-runtime.md) (currently *Proposed*).
-  Do not scaffold application code, add dependencies, or choose libraries until the relevant ADR is *Accepted*.
+- **No production code yet.** The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md), Accepted); the web client and Tauri UI are TypeScript with Bun.
+  Cloudflare Workers is **not** a target. Do not scaffold application code or pick libraries until the relevant ADR is *Accepted*
+  (spikes may try libraries under `spikes/`).
 - Work in this phase is: refining requirements, drafting/refining ADRs, spikes (throwaway, clearly marked), and harness/tooling.
 
 ## Source of truth
@@ -41,22 +42,26 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 
 ## Hard rules
 
-- **Never change an ADR's status to `Accepted`/`Rejected`.** Only the human decider does that. You may create and edit *Proposed* ADRs.
+- **Never change an ADR's status to `Accepted`/`Rejected` on your own judgment.** Only the human decider decides. You may record a decision
+  the decider has explicitly stated (quote it in the PR description). You may create and edit *Proposed* ADRs.
 - Do not rewrite the body of an Accepted ADR; supersede it with a new ADR instead (typo fixes are fine).
 - After adding/renaming an ADR, run `make adr-index`.
 - v0 allows breaking changes everywhere ([ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)) — no migrations, no compat shims.
   Exception: ActivityPub / Mastodon API wire formats and federated URIs must stay spec-compliant.
 - Language: design docs (ADR, requirements) in Japanese during v0; code, identifiers, code comments, commit messages, and PR titles in English.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`; `!` for breaking).
+- License is AGPL-3.0-only ([ADR-0011](docs/adr/0011-license.md)). New source files start with `SPDX-License-Identifier: AGPL-3.0-only`;
+  only add dependencies with AGPL-compatible licenses.
 - Do not commit secrets, `.env` files, or credentials. Do not run destructive commands against remote resources.
 
 ## Design rules that will apply once implementation starts
 
 These come from Proposed ADRs and will be confirmed when they are accepted; follow them in drafts and spikes.
 
-- Core (domain + application) must not import cloud SDKs or runtime-specific APIs; those live in adapters and entrypoints.
+- Core (domain + application) must not import cloud SDKs or drivers; those live in adapters and `cmd/` entrypoints.
+- Keep the server buildable with `CGO_ENABLED=0`; a cgo dependency needs an ADR.
 - Every external resource goes through a port; every adapter must pass that port's contract test suite.
-- Do not rely on interactive DB transactions. Write = one atomic batch; resolve races with unique constraints, upserts, conditional updates, idempotency keys ([ADR-0003](docs/adr/0003-database-abstraction.md)).
+- Keep DB transactions short, retryable, and free of external I/O (HTTP, queue, blob); enqueue jobs via the outbox. Make writes safe to repeat with unique constraints, upserts, idempotency keys ([ADR-0003](docs/adr/0003-database-abstraction.md)).
 - Job handlers must be idempotent; delivery is at-least-once ([ADR-0004](docs/adr/0004-job-queue-abstraction.md)).
 - All outbound HTTP goes through the SSRF-guarded `HttpClient` port.
 - Visibility checks go through the single domain policy function; never re-implement them in API or federation code.

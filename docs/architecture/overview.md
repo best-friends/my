@@ -30,12 +30,12 @@ Remote servers ──AP──►│                               │
         └──────────────────────────────────────────────────────────────────────┘
                 ▲  ports (interfaces) — application 層が定義
         ┌───────┴─────────── Outbound adapters（設定で選択）────────────────────┐
-        │ DB: sqlite │ libsql │ d1 │ postgres                                   │
-        │ Queue: db │ cloudflare-queues │ sqs │ cloud-tasks │ inline            │
-        │ Blob: fs │ s3-compatible(R2/S3/GCS/MinIO) │ r2-binding                │
-        │ KV/Cache: db │ memory │ workers-kv │ redis(任意)                       │
+        │ DB: sqlite │ libsql │ postgres                                        │
+        │ Queue: db │ sqs │ cloud-tasks │ inline                                │
+        │ Blob: fs │ s3-compatible(S3/R2/GCS/MinIO)                             │
+        │ KV/Cache: db │ memory │ redis(任意)                                    │
         │ Mail: none │ smtp │ ses │ http-api   Push: webpush                    │
-        │ Media: none │ native(sharp 等) │ wasm │ cloudflare-images             │
+        │ Media: none │ native(pure Go) │ vips(cgo, 任意)                       │
         └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -117,32 +117,37 @@ Remote servers ──AP──►│                               │
 - 対話的トランザクションを前提にしない。整合性は「アトミックバッチ」「一意制約 + upsert」「冪等キー」で担保。
 - v0 期間はマイグレーション履歴を持たず、方言ごとの単一スキーマファイルから作り直す（[ADR-0012](../adr/0012-v0-breaking-change-policy.md)）。
 
-## 6. リポジトリ構成（案）
+## 6. リポジトリ構成
 
-言語確定後に [ADR-0010](../adr/0010-configuration-and-packaging.md) で確定させます。TypeScript を選んだ場合の例:
+サーバーは Go（[ADR-0001](../adr/0001-server-language-and-runtime.md)）。詳細は [ADR-0010](../adr/0010-configuration-and-packaging.md) で確定させます。
 
 ```text
-packages/
-  core/            # domain + application + ports（ランタイム非依存）
-  federation/      # ActivityPub（Fedify 統合）
-  api-mastodon/    # Mastodon Client API の HTTP ハンドラ
-  i18n/            # メッセージカタログ + ランタイム（サーバー・Web・モバイル共用）
-  adapters/
-    db-sqlite/ db-d1/ db-postgres/ db-libsql/
-    queue-db/ queue-cloudflare/ queue-sqs/ queue-cloudtasks/
-    blob-fs/ blob-s3/ blob-r2/
-    ...
-  testkit/         # コントラクトテスト・フィクスチャ・フェイク
-apps/
-  server/          # Bun エントリ（self-hosted / Cloud Run / コンテナ）
-  server-workers/  # Cloudflare Workers エントリ
-  server-lambda/   # AWS Lambda エントリ
-  web/             # PWA
-  mobile/          # Tauri 2
+cmd/
+  my/                # 単一バイナリ: serve / worker / cli（Self-hosted, Cloud Run, コンテナ）
+  my-lambda/         # AWS Lambda エントリ（Lambda Web Adapter で my を流用できるなら不要）
+internal/
+  domain/<module>/   # 純粋なドメイン（identity, account, content, graph, ...）
+  app/<module>/      # ユースケースとポート定義
+  interface/
+    mastodon/        # Mastodon Client API
+    activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
+    admin/
+  adapter/
+    db/{sqlite,libsql,postgres}/
+    queue/{db,inline,sqs,cloudtasks}/
+    blob/{fs,s3}/
+    media/{native,vips,none}/
+    kv/{db,memory}/
+    mail/{none,smtp,ses}/
+  platform/          # 設定、composition root、ログ、HTTP サーバー
+pkg/
+  testkit/           # コントラクトテスト・フィクスチャ（独自アダプタ作者向けに公開）
+schema/              # sqlite.sql, postgres.sql（v0 はマイグレーションなし）
+queries/             # sqlc 用クエリ（方言別）
+locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有）
+web/                 # Web クライアント（TypeScript + Bun）
+mobile/              # Tauri 2
 deploy/
-  docker/ k8s/ cloudflare/ gcp/ aws/
-locales/           # ICU MessageFormat のカタログ（en がソース）
+  docker/ k8s/ gcp/ aws/
 docs/
 ```
-
-Go を選んだ場合は `internal/core`, `internal/adapters/...`, `cmd/my`, `cmd/my-lambda` 等に対応させ、Web/モバイル/i18n カタログは TS 側に置きます。

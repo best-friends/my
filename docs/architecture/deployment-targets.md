@@ -7,21 +7,15 @@
 
 | ターゲット | コンピュート | RDB | キュー | Blob | スケジューラ | 想定固定費 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Cloudflare** | Workers（+ Static Assets） | D1 | Cloudflare Queues | R2 | Cron Triggers | Workers Paid $5/月（要検証: Free プランで足りるか） |
-| **Google Cloud** | Cloud Run（min instances 0） | 外部 Neon / Turso、または Cloud SQL | Cloud Tasks（push） | GCS | Cloud Scheduler | ほぼ $0（Cloud SQL を使うと数ドル〜） |
+| **Google Cloud** | Cloud Run（min instances 0） | 外部 Neon / Turso、または Cloud SQL | Cloud Tasks（push） | GCS（または R2） | Cloud Scheduler | ほぼ $0（Cloud SQL を使うと数ドル〜） |
 | **AWS** | Lambda（Function URL）+ Lambda Web Adapter | Aurora Serverless v2（0 ACU）/ Aurora DSQL / RDS / 外部 | SQS（event source） | S3 + CloudFront | EventBridge Scheduler | ほぼ $0（DB 次第） |
 | **Self-hosted** | Docker Compose / microk8s | SQLite（+ Litestream）/ PostgreSQL | DB キュー | ローカル FS / MinIO / 外部 S3 互換 | プロセス内 cron | VM 代（$4〜6/月 クラス） |
 
-## Cloudflare
+## Cloudflare（実行環境としては対象外）
 
-- **構成**: 1 つの Worker が `fetch`（HTTP）・`queue`（コンシューマ）・`scheduled`（cron）の 3 ハンドラを持つ。
-- **制約と対策**
-  - D1 は **対話的トランザクション非対応**（`batch()` のみアトミック、1 バッチのステートメント数に上限あり。要検証）。→ アトミックバッチ前提の UnitOfWork 設計（ADR-0003）。
-  - Queues の遅延は最大 12 時間。→ それ以上のバックオフは「再投入チェーン」で実現（ADR-0004）。
-  - Worker の CPU 時間・バンドルサイズ上限。→ 画像処理は Cloudflare Images / クライアント側リサイズ / 非加工で選択（ADR-0005）。
-  - Node 互換 API は `nodejs_compat` フラグで部分的に利用可能。
-- **言語の影響**: TypeScript ならネイティブ。Go の場合は Cloudflare Containers（Worker から起動するコンテナ）か Go→Wasm を使うことになり、
-  D1 / Queues バインディングへのアクセスに Worker シムが必要（ADR-0001）。
+- [ADR-0001](../adr/0001-server-language-and-runtime.md) により、Cloudflare Workers（と D1 / Cloudflare Queues）は v0 の実行環境から除外した。
+- ただし **R2（S3 互換 API）と CDN は他ターゲットと組み合わせて使える**。R2 は転送量課金が小さく、メディア配信のコストを下げる候補。
+- Cloudflare Containers 上での実行は将来の検討事項（需要があれば別 ADR）。
 
 ## Google Cloud
 
@@ -50,6 +44,6 @@
 | --- | --- |
 | 1 投稿あたりの配送リクエスト数 | フォロワーのドメイン分布 × shared inbox 利用率 |
 | 受信アクティビティ量 | 連合タイムラインの流量（リレー非接続時） |
-| DB 読み書き行数 | タイムライン 1 回取得あたりの rows read（D1 / Neon の課金単位） |
+| DB 読み書き行数 | タイムライン 1 回取得あたりの 読み取り行数・コンピュート時間（Neon 等の課金単位） |
 | ストレージ | ローカルメディア総量、リモートメディアのキャッシュ方針別 |
 | 転送量 | メディア配信（CDN 経由 / 直接） |

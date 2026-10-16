@@ -19,8 +19,8 @@ Web と、Tauri 2 もしくはネイティブのモバイルアプリを提供�
 
 ## Decision（推奨案）
 
-- **Web クライアント**: TypeScript の SPA を PWA として提供（インストール可能、Web Push、iOS はホーム画面追加で Push 可）。
-  静的アセットとしてビルドし、各ターゲットの CDN / 静的配信（Workers Static Assets、Cloud Storage + CDN、S3 + CloudFront、サーバー同梱）から配る。
+- **Web クライアント**: TypeScript の SPA を PWA として提供（ツールチェーンは Bun。サーバーは Go なので、API の型は OpenAPI 等から生成する）（インストール可能、Web Push、iOS はホーム画面追加で Push 可）。
+  静的アセットとしてビルドし、各ターゲットの CDN / 静的配信（Cloud Storage + CDN、S3 + CloudFront、Go バイナリへの `embed` 同梱）から配る。
   UI フレームワークは別 Issue で選定（判断基準: エージェントの習熟度、バンドルサイズ、i18n ライブラリとの相性、Tauri との相性）。
 - **モバイル**: **Tauri 2** で Web クライアントの UI を共有する方針を第一候補とし、v0 では **検証版（spike）** に留める。
   v0 の間のモバイル体験は Mastodon 互換 API による既存アプリで補う（ADR-0007）。

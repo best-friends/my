@@ -1,6 +1,6 @@
 # my
 
-ActivityPub 互換のマイクロブログサーバー。Cloudflare / Google Cloud / AWS / セルフホスト（Docker, microk8s）で、
+ActivityPub 互換のマイクロブログサーバー。Go 製。Google Cloud / AWS / セルフホスト（Docker, microk8s）で、
 できる限り低コストに運営できることを目指す OSS です。
 
 > **Status: v0 の設計中（M0: Design & Harness）。** まだ動くコードはありません。
@@ -22,4 +22,4 @@ ActivityPub 互換のマイクロブログサーバー。Cloudflare / Google Clo
 
 ## License
 
-未定です（[ADR-0011](docs/adr/0011-license.md)）。
+[GNU Affero General Public License v3.0](LICENSE)（[ADR-0011](docs/adr/0011-license.md)）。

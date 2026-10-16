@@ -1,6 +1,6 @@
-# ADR-0011: ライセンス
+# ADR-0011: ライセンスは AGPL-3.0 とする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #12
@@ -12,20 +12,23 @@ Fediverse の主要サーバー実装（Mastodon、Misskey、GoToSocial、Plerom
 
 ## Considered Options
 
-1. **AGPL-3.0-only（サーバー）+ MIT / Apache-2.0（クライアント SDK・ユーティリティ）**
-2. Apache-2.0（全体）
-3. MIT（全体）
+1. **AGPL-3.0**
+2. AGPL-3.0（サーバー）+ MIT / Apache-2.0（クライアント SDK・ユーティリティ）
+3. Apache-2.0（全体）
+4. MIT（全体）
 
-## Decision（推奨案）
+## Decision
 
-判断はプロジェクトオーナーに委ねる（ビジネス上の判断を含むため）。参考として:
+**リポジトリ全体を AGPL-3.0（SPDX: `AGPL-3.0-only`）とする。**
 
-- **1 を選ぶ場合**: 改変版をホストする事業者にもソース公開を求められ、コミュニティへの還元が担保される。一方、企業による採用の障壁になり得る。
-  依存ライブラリ（Fedify: MIT 等）との互換性は問題ない。
-- **2 を選ぶ場合**: 採用障壁が最も低く、特許条項もある。改変版のクローズド運用を許容する。
-
-どちらの場合も、外部コントリビュータには DCO（`Signed-off-by`）を求め、CLA は採用しない方針を推奨する。
+- 改変版をネットワーク越しに提供する事業者にもソース公開を求め、コミュニティへの還元を担保する。Fediverse の主要実装と同じ立場をとる。
+- ルートに `LICENSE`（GNU 公式テキスト）を置く。ソースファイルには SPDX ヘッダ（`// SPDX-License-Identifier: AGPL-3.0-only`）を付ける。
+- AGPL 第 13 条に従い、サーバーは利用者にソースの入手先を示す（NodeInfo の `software.repository`、Web クライアントのフッター / about ページ）。
+  ソース URL は設定で変更でき、改変版の運営者が自分のリポジトリを指せるようにする。
 
 ## Consequences
 
-- ライセンス決定は公開（リポジトリの public 化）前に必須。依存ライブラリのライセンス検査を CI に入れる。
+- 依存ライブラリは AGPL-3.0 と両立するもの（MIT / BSD / Apache-2.0 / MPL-2.0 等）に限る。依存ライセンスの検査を CI に入れる（別 Issue）。
+- 企業による採用の障壁になり得る点は受け入れる。
+- 将来、一部（クライアント SDK 等）を MIT / Apache-2.0 で出したくなった場合、外部コントリビュータの同意が必要になる。
+  外部コントリビュートを受け入れる前に、DCO / CLA の扱いと合わせて決める（別 Issue）。

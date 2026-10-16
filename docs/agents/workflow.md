@@ -22,7 +22,7 @@ gh issue list -R best-friends/my --label agent:ready --search "no:assignee" --js
 
 ```sh
 git switch main && git pull --ff-only
-git switch -c <type>/<N>-<short-slug>     # e.g. task/42-sqlite-adapter, spike/17-fedify-workers
+git switch -c <type>/<N>-<short-slug>     # e.g. task/42-sqlite-adapter, spike/17-sqlc-dialects
 ```
 
 ## 4. Implement

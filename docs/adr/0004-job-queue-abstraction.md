@@ -13,7 +13,6 @@
 | サービス | 配信モデル | 遅延上限（要検証） | 備考 |
 | --- | --- | --- | --- |
 | DB キュー（自前） | pull（ポーリング） | 無制限 | PG は `FOR UPDATE SKIP LOCKED`、SQLite は単一ワーカー前提 |
-| Cloudflare Queues | push（Worker の `queue` ハンドラ）/ HTTP pull | 12 時間 | バッチ配信、ack / retry |
 | Amazon SQS | pull（Lambda event source なら push 的） | 15 分 | 可視性タイムアウト |
 | Google Cloud Tasks | push（HTTP ターゲット） | 30 日程度 | タスク名で重複排除、レート制御 |
 | Google Pub/Sub | push / pull | — | 遅延配信なし |
@@ -46,8 +45,8 @@ Job {
 - `JobHandlerRegistry` — `type` → ハンドラ。ハンドラは `(ctx, job) => Result<Done | Retry(after) | Fail>` の純粋なアプリケーション関数
 - `JobRunner` — アダプタ側。2 種類の実装形態を持つ:
   - **pull runner**: ループでデキュー → ハンドラ実行 → ack / 再投入（DB キュー、SQS 常駐ワーカー）
-  - **push receiver**: プラットフォームから渡されたメッセージを処理（Workers `queue` ハンドラ、Lambda SQS イベント、Cloud Tasks の HTTP ターゲット `/_internal/jobs`。OIDC 等で認証）
-- `Scheduler` — 定期ジョブの起動トリガー（Cloudflare Cron Triggers / Cloud Scheduler / EventBridge Scheduler / プロセス内 cron）。
+  - **push receiver**: プラットフォームから渡されたメッセージを処理（Lambda SQS イベント、Cloud Tasks の HTTP ターゲット `/_internal/jobs`。OIDC 等で認証）
+- `Scheduler` — 定期ジョブの起動トリガー（Cloud Scheduler / EventBridge Scheduler / Kubernetes CronJob / プロセス内 cron）。
   トリガーは「該当ジョブを enqueue する」だけにし、実処理は JobQueue に流す。
 
 ### セマンティクス
@@ -56,11 +55,11 @@ Job {
 - リトライ: 指数バックオフ + ジッタ。配送は最大数日（例: 1m, 5m, 30m, 2h, 12h, 24h ×3）。
 - **遅延上限を超えるバックオフは「再投入チェーン」**: 上限まで遅延 → 起動時に `runAt` 未到来ならそのまま再遅延。
 - 最大試行回数超過は `dead_jobs` テーブル（DB）へ記録し、管理画面 / CLI から再実行できる（DLQ を持つサービスでも DB に寄せる）。
-- 連合ライブラリ（Fedify を採用する場合）の MessageQueue インターフェイスは、本ポートのアダプタとして実装し、キューの実体を一本化する。
+- 連合の配送・受信処理も独自キューを持たず、本ポートに一本化する。
 
 ### v0 で提供するアダプタ
 
-`queue-db`（既定）、`queue-inline`（テスト・開発用の同期実行）、`queue-cloudflare`、`queue-sqs`、`queue-cloudtasks`。
+`queue/db`（既定）、`queue/inline`（テスト・開発用の同期実行）、`queue/sqs`、`queue/cloudtasks`。
 Redis / NATS / RabbitMQ 等はコミュニティアダプタとして受け入れ可能にする。
 
 ## Consequences
