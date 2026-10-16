@@ -6,7 +6,7 @@ import { Avatar, Link, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed } from "../../timeline";
-import { useProfile } from "../hooks/useProfile";
+import { isolate, useProfile } from "../hooks/useProfile";
 import { useRelationship } from "../hooks/useRelationship";
 import { RelationshipActions } from "./RelationshipActions";
 
@@ -54,8 +54,9 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
         <div className="mt-3 flex flex-col gap-3 px-4">
           <div className="min-w-0 wrap-anywhere">
             {renderHeading(<span dir="auto">{profile.name}</span>)}
-            <p dir="ltr" className="text-fg-muted">
-              {profile.handle}
+            {/* The handle reads left to right, and lines up with the page's start in either direction. */}
+            <p className="text-fg-muted">
+              <span dir="ltr">{profile.handle}</span>
             </p>
           </div>
           {tags.length > 0 && (
@@ -123,7 +124,7 @@ function ProfileTabs({ accountId, name, tab, onTabChange }: ProfileTabsProps) {
         if (next !== undefined) onTabChange(next);
       }}
     >
-      <TabList aria-label={t("client:profile.tabs", { name: `⁨${name}⁩` })}>
+      <TabList aria-label={t("client:profile.tabs", { name: isolate(name) })}>
         {accountTimelineFilters.map((filter) => (
           <Tab key={filter} id={filter}>
             {t(tabLabels[filter])}

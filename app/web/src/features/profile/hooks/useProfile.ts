@@ -31,6 +31,15 @@ export function handleOf(acct: string, localDomain: string): string {
   return acct.includes("@") ? `@${acct}` : `@${acct}@${localDomain}`;
 }
 
+/**
+ * A name inside a sentence of the UI's language. It is the user's text in any script, so it is wrapped in
+ * Unicode directional isolates (FSI … PDI): a right-to-left name does not reorder the sentence around it
+ * (web-client.md Y10).
+ */
+export function isolate(name: string): string {
+  return `⁨${name}⁩`;
+}
+
 /** The name an account goes by in the UI. */
 export function nameOf(account: Account): string {
   return account.display_name || account.username;

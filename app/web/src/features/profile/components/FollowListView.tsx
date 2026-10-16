@@ -8,7 +8,7 @@ import { useT } from "../../../lib/i18n";
 import { profilePath } from "../../../lib/paths";
 import type { FollowList } from "../api/accounts";
 import { useFollowList } from "../hooks/useFollowList";
-import { useProfile } from "../hooks/useProfile";
+import { isolate, useProfile } from "../hooks/useProfile";
 
 export type FollowListViewProps = {
   /** The handle in the address: `username`, or `username@domain`. */
@@ -24,7 +24,7 @@ export function FollowListView({ acct, list, renderHeading }: FollowListViewProp
   const profile = useProfile(acct);
   const { items, hasMore, isLoadingMore, loadMore, loadMoreError } = useFollowList(profile.account.id, list);
   // The name is the user's text, isolated from the sentence around it (FSI … PDI, web-client.md Y10).
-  const isolated = `\u2068${profile.name}\u2069`;
+  const isolated = isolate(profile.name);
 
   return (
     <div className="flex flex-col gap-4">

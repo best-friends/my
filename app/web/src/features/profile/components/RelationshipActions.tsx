@@ -5,8 +5,9 @@
 // blocking and unblocking ask first in an alert dialog (WAI-ARIA APG, alert dialog pattern).
 import { Button, Dialog, Link, Menu, MenuItem, MenuTrigger } from "@my/ui";
 import { useState } from "react";
-import { useT } from "../../../lib/i18n";
+import { type Translate, useT } from "../../../lib/i18n";
 import type { Account, RelationshipAction } from "../api/accounts";
+import { isolate } from "../hooks/useProfile";
 import type { RelationshipState } from "../hooks/useRelationship";
 
 /** The changes that ask the viewer first. */
@@ -43,74 +44,71 @@ export function RelationshipActions({ account, name, state }: RelationshipAction
   }
 }
 
-function OtherActions({ account, name, state }: { account: Account; name: string; state: Extract<RelationshipState, { kind: "other" }> }) {
+type OtherActionsProps = { account: Account; name: string; state: Extract<RelationshipState, { kind: "other" }> };
+
+/** The follow button's label and variant, and the change it asks for, for where the follow stands. */
+function followButtonOf(t: Translate, account: Account, state: OtherActionsProps["state"]) {
+  switch (state.follow) {
+    case "none": {
+      const label = account.locked
+        ? t("client:profile.follow.request")
+        : state.relationship.followed_by
+          ? t("client:profile.follow.back")
+          : t("client:profile.follow");
+      return { label, variant: "primary", press: "follow" } as const;
+    }
+    case "requested":
+      return { label: t("client:profile.follow.requested"), variant: "secondary", press: "withdraw" } as const;
+    case "following":
+      return { label: t("client:profile.follow.following"), variant: "secondary", press: "unfollow" } as const;
+    case "blocking":
+      return { label: t("client:profile.follow.blocked"), variant: "secondary", press: "unblock" } as const;
+  }
+}
+
+function OtherActions({ account, name, state }: OtherActionsProps) {
   const t = useT();
-  // The kind stays while the dialog closes, so that its exit transition still shows what it asked.
+  // The kind stays while the dialog closes, so that it shows what it asked until it is gone.
   const [dialog, setDialog] = useState<{ isOpen: boolean; kind: Confirmable }>({ isOpen: false, kind: "unfollow" });
   const confirm = (kind: Confirmable) => {
     setDialog({ isOpen: true, kind });
   };
-  const { follow, relationship, pending, change } = state;
+  const { relationship, pending, change } = state;
   const isPending = pending !== null;
-
-  const followButton = (() => {
-    switch (follow) {
-      case "none":
-        return (
-          <Button variant="primary" isPending={isPending} onPress={() => { change("follow"); }}>
-            {account.locked ? t("client:profile.follow.request") : relationship.followed_by ? t("client:profile.follow.back") : t("client:profile.follow")}
-          </Button>
-        );
-      case "requested":
-        return (
-          <Button isPending={isPending} onPress={() => { confirm("withdraw"); }}>
-            {t("client:profile.follow.requested")}
-          </Button>
-        );
-      case "following":
-        return (
-          <Button isPending={isPending} onPress={() => { confirm("unfollow"); }}>
-            {t("client:profile.follow.following")}
-          </Button>
-        );
-      case "blocking":
-        return (
-          <Button isPending={isPending} onPress={() => { confirm("unblock"); }}>
-            {t("client:profile.follow.blocked")}
-          </Button>
-        );
-    }
-  })();
+  const followButton = followButtonOf(t, account, state);
+  const moreLabel = t("client:profile.more", { name: isolate(name) });
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {followButton}
+      {/* One button for every state, so that it keeps the focus when its label changes. */}
+      <Button
+        variant={followButton.variant}
+        isPending={isPending}
+        onPress={() => {
+          if (followButton.press === "follow") change("follow");
+          else confirm(followButton.press);
+        }}
+      >
+        {followButton.label}
+      </Button>
       <MenuTrigger>
-        <Button variant="ghost" isPending={isPending} aria-label={t("client:profile.more", { name: `⁨${name}⁩` })} className="px-2">
+        <Button variant="ghost" isPending={isPending} aria-label={moreLabel} className="px-2">
           <MoreIcon />
         </Button>
         <Menu
-          aria-label={t("client:profile.more", { name: `⁨${name}⁩` })}
+          aria-label={moreLabel}
           placement="bottom end"
           onAction={(key) => {
-            if (key === "mute") change("mute");
-            if (key === "unmute") change("unmute");
-            if (key === "block") confirm("block");
-            if (key === "unblock") confirm("unblock");
+            if (key === "mute") change(relationship.muting ? "unmute" : "mute");
+            if (key === "block") confirm(relationship.blocking ? "unblock" : "block");
           }}
         >
-          {relationship.muting ? (
-            <MenuItem id="unmute">{t("client:profile.menu.unmute")}</MenuItem>
-          ) : (
-            <MenuItem id="mute">{t("client:profile.menu.mute")}</MenuItem>
-          )}
-          {relationship.blocking ? (
-            <MenuItem id="unblock">{t("client:profile.menu.unblock")}</MenuItem>
-          ) : (
-            <MenuItem id="block" intent="danger">
-              {t("client:profile.menu.block")}
-            </MenuItem>
-          )}
+          {/* The items keep their ids when their action flips: React Aria's collections cannot change an
+              item's id while the menu is still mounted while it closes. */}
+          <MenuItem id="mute">{relationship.muting ? t("client:profile.menu.unmute") : t("client:profile.menu.mute")}</MenuItem>
+          <MenuItem id="block" intent={relationship.blocking ? "neutral" : "danger"}>
+            {relationship.blocking ? t("client:profile.menu.unblock") : t("client:profile.menu.block")}
+          </MenuItem>
         </Menu>
       </MenuTrigger>
       <ConfirmDialog
@@ -137,36 +135,64 @@ type ConfirmDialogProps = {
   onConfirm: (action: RelationshipAction) => void;
 };
 
-/** Asks before a change that the viewer may not mean: one alert dialog, whose text is the change's. */
+/** The texts of the confirmation of `kind`, and the change it confirms. */
+function confirmationOf(t: Translate, kind: Confirmable, name: string) {
+  const values = { name: isolate(name) };
+  switch (kind) {
+    case "unfollow":
+      return {
+        title: t("client:profile.confirm.unfollow.title", values),
+        body: t("client:profile.confirm.unfollow.body"),
+        action: t("client:profile.confirm.unfollow.action"),
+        run: "unfollow",
+      } as const;
+    case "withdraw":
+      return {
+        title: t("client:profile.confirm.withdraw.title", values),
+        body: t("client:profile.confirm.withdraw.body"),
+        action: t("client:profile.confirm.withdraw.action"),
+        run: "unfollow",
+      } as const;
+    case "block":
+      return {
+        title: t("client:profile.confirm.block.title", values),
+        body: t("client:profile.confirm.block.body"),
+        action: t("client:profile.confirm.block.action"),
+        run: "block",
+      } as const;
+    case "unblock":
+      return {
+        title: t("client:profile.confirm.unblock.title", values),
+        body: t("client:profile.confirm.unblock.body"),
+        action: t("client:profile.confirm.unblock.action"),
+        run: "unblock",
+      } as const;
+  }
+}
+
+/** Asks before a change that the viewer may not mean: one alert dialog, whose texts are the change's. */
 function ConfirmDialog({ isOpen, kind, name, onCancel, onConfirm }: ConfirmDialogProps) {
   const t = useT();
-  const values = { name: `⁨${name}⁩` };
-  const text = (() => {
-    switch (kind) {
-      case "unfollow":
-        return { title: t("client:profile.confirm.unfollow.title", values), body: t("client:profile.confirm.unfollow.body"), action: t("client:profile.confirm.unfollow.action"), run: "unfollow" as const };
-      case "withdraw":
-        return { title: t("client:profile.confirm.withdraw.title", values), body: t("client:profile.confirm.withdraw.body"), action: t("client:profile.confirm.withdraw.action"), run: "unfollow" as const };
-      case "block":
-        return { title: t("client:profile.confirm.block.title", values), body: t("client:profile.confirm.block.body"), action: t("client:profile.confirm.block.action"), run: "block" as const };
-      case "unblock":
-        return { title: t("client:profile.confirm.unblock.title", values), body: t("client:profile.confirm.unblock.body"), action: t("client:profile.confirm.unblock.action"), run: "unblock" as const };
-    }
-  })();
+  const text = confirmationOf(t, kind, name);
   return (
     <Dialog
       role="alertdialog"
       size="sm"
       title={text.title}
       isOpen={isOpen}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) onCancel();
+      onOpenChange={(open) => {
+        if (!open) onCancel();
       }}
     >
       <p>{text.body}</p>
       <div className="mt-4 flex flex-wrap justify-end gap-2">
         <Button onPress={onCancel}>{t("client:profile.confirm.cancel")}</Button>
-        <Button variant={text.run === "block" ? "danger" : "primary"} onPress={() => { onConfirm(text.run); }}>
+        <Button
+          variant={text.run === "block" ? "danger" : "primary"}
+          onPress={() => {
+            onConfirm(text.run);
+          }}
+        >
           {text.action}
         </Button>
       </div>

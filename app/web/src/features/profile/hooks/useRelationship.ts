@@ -10,7 +10,7 @@ import { type Translate, useT } from "../../../lib/i18n";
 import { profilePath } from "../../../lib/paths";
 import { useViewer } from "../../session";
 import { type Account, changeRelationship, type Relationship, type RelationshipAction, relationshipQueryOptions, storeRelationship } from "../api/accounts";
-import { nameOf } from "./useProfile";
+import { isolate, nameOf } from "./useProfile";
 
 /** Where the viewer's follow of the account stands; a block replaces the follow, which it ends. */
 type FollowState = "none" | "requested" | "following" | "blocking";
@@ -41,9 +41,9 @@ function followStateOf(relationship: Relationship): FollowState {
   return "none";
 }
 
-/** What a screen reader hears once a change is done. The name is isolated from the sentence (FSI … PDI, Y10). */
+/** What a screen reader hears once a change is done. The name is isolated from the sentence (Y10). */
 function doneMessage(t: Translate, action: RelationshipAction, relationship: Relationship, name: string): string {
-  const values = { name: `⁨${name}⁩` };
+  const values = { name: isolate(name) };
   switch (action) {
     case "follow":
       return relationship.requested ? t("client:profile.done.requested", values) : t("client:profile.done.followed", values);

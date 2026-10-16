@@ -141,7 +141,7 @@ describe("the follow button", () => {
 
     expect(await screen.findByRole("button", { name: "Following" })).toBeInTheDocument();
     expect(changes).toEqual(["follow"]);
-    expect(await screen.findByText(/^You follow ⁨Bob⁩ now\.$/)).toBeInTheDocument();
+    expect(await screen.findByText(/^You follow \u2068Bob\u2069 now\.$/)).toBeInTheDocument();
   });
 
   test("sends a follow request to an account that approves its followers", async () => {
@@ -172,7 +172,7 @@ describe("the follow button", () => {
 
     const following = await screen.findByRole("button", { name: "Following" });
     await user.click(following);
-    const dialog = await screen.findByRole("alertdialog", { name: "Unfollow ⁨Bob⁩?" });
+    const dialog = await screen.findByRole("alertdialog", { name: "Unfollow \u2068Bob\u2069?" });
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
@@ -195,7 +195,7 @@ describe("the follow button", () => {
     const { user } = await renderApp({ path: "/@bob" });
 
     await user.click(await screen.findByRole("button", { name: "Requested" }));
-    const dialog = await screen.findByRole("alertdialog", { name: "Withdraw your follow request to ⁨Bob⁩?" });
+    const dialog = await screen.findByRole("alertdialog", { name: "Withdraw your follow request to \u2068Bob\u2069?" });
     await user.click(within(dialog).getByRole("button", { name: "Withdraw request" }));
 
     expect(await screen.findByRole("button", { name: "Follow" })).toBeInTheDocument();
@@ -208,7 +208,7 @@ describe("the follow button", () => {
     const { user } = await renderApp({ path: "/@bob" });
 
     await user.click(await screen.findByRole("button", { name: "Blocked" }));
-    const dialog = await screen.findByRole("alertdialog", { name: "Unblock ⁨Bob⁩?" });
+    const dialog = await screen.findByRole("alertdialog", { name: "Unblock \u2068Bob\u2069?" });
     await user.click(within(dialog).getByRole("button", { name: "Unblock" }));
 
     expect(await screen.findByRole("button", { name: "Follow" })).toBeInTheDocument();
@@ -234,12 +234,12 @@ describe("the menu of a profile", () => {
     const { changes } = bobServer();
     const { user } = await renderApp({ path: "/@bob" });
 
-    await user.click(await screen.findByRole("button", { name: "More actions for ⁨Bob⁩" }));
+    await user.click(await screen.findByRole("button", { name: "More actions for \u2068Bob\u2069" }));
     await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Mute" }));
 
     expect(await within(main()).findByText("Muted")).toBeInTheDocument();
     expect(changes).toEqual(["mute"]);
-    await user.click(screen.getByRole("button", { name: "More actions for ⁨Bob⁩" }));
+    await user.click(screen.getByRole("button", { name: "More actions for \u2068Bob\u2069" }));
     expect(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Unmute" })).toBeInTheDocument();
   });
 
@@ -248,16 +248,16 @@ describe("the menu of a profile", () => {
     const { changes } = bobServer({ following: true });
     const { user } = await renderApp({ path: "/@bob" });
 
-    await user.click(await screen.findByRole("button", { name: "More actions for ⁨Bob⁩" }));
+    await user.click(await screen.findByRole("button", { name: "More actions for \u2068Bob\u2069" }));
     await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Block" }));
-    const dialog = await screen.findByRole("alertdialog", { name: "Block ⁨Bob⁩?" });
+    const dialog = await screen.findByRole("alertdialog", { name: "Block \u2068Bob\u2069?" });
     await user.click(within(dialog).getByRole("button", { name: "Block" }));
 
     expect(await screen.findByRole("button", { name: "Blocked" })).toBeInTheDocument();
     expect(changes).toEqual(["block"]);
     // The menu's item is gone with the menu, so the focus goes back to the menu button.
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "More actions for ⁨Bob⁩" })).toHaveFocus();
+      expect(screen.getByRole("button", { name: "More actions for \u2068Bob\u2069" })).toHaveFocus();
     });
   });
 });
@@ -279,9 +279,9 @@ describe("the follow lists", () => {
     );
     const { user } = await renderApp({ path: "/@bob/followers" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Followers of ⁨Bob⁩" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Followers of \u2068Bob\u2069" })).toBeInTheDocument();
     expect(within(main()).getByRole("link", { name: "Alice @alice@my.example" })).toHaveAttribute("href", "/@alice");
-    expect(within(main()).getByRole("link", { name: "Back to the profile of ⁨Bob⁩" })).toHaveAttribute("href", "/@bob");
+    expect(within(main()).getByRole("link", { name: "Back to the profile of \u2068Bob\u2069" })).toHaveAttribute("href", "/@bob");
 
     await user.click(screen.getByRole("button", { name: "Show more" }));
 
@@ -295,7 +295,7 @@ describe("the follow lists", () => {
     server.use(http.get(`${apiBase}/accounts/:id/following`, () => HttpResponse.json({ accounts: [] })));
     await renderApp({ path: "/@bob/following" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Accounts ⁨Bob⁩ follows" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Accounts \u2068Bob\u2069 follows" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Not following anyone yet" })).toBeInTheDocument();
   });
 });
