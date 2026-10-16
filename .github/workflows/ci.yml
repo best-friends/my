@@ -87,6 +87,12 @@ jobs:
       - name: Apply the schema to an empty database and check for drift
         run: make db-check
 
+  web-e2e:
+    # Playwright E2E of the web client over the per-PR subset of the width × locale matrix; nightly.yml runs all of it.
+    uses: ./.github/workflows/web-e2e.yml
+    with:
+      matrix: pr
+
   docker-smoke:
     # Build the images and run deploy/docker/compose.yaml end to end: schema apply, server start, admin creation,
     # then WebFinger, Actor, and NodeInfo (scripts/docker-smoke.sh dumps the logs on failure and always tears down).

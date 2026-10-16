@@ -1,0 +1,21 @@
+name: Nightly
+
+# Checks too slow for every PR (ADR-0015): the web E2E over the full width × locale matrix.
+
+on:
+  schedule:
+    - cron: "0 18 * * *" # 03:00 JST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+jobs:
+  web-e2e:
+    uses: ./.github/workflows/web-e2e.yml
+    with:
+      matrix: full
