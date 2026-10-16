@@ -224,4 +224,37 @@ web-e2e: web-build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for
 web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
 	cd app/web && bun run playwright install chromium
 
-web-check: web-typecheck web-lint web-build web-licenses web-tokens web-test ## Run every offline web client check
+web-check: web-typecheck web-lint web-build web-licenses web-tokens web-test playwright-image-check ## Run every offline web client check
+
+# --- @my/ui Storybook and story tests (ADR-0027) ----------------------------------------------
+# The story tests run every story in Chromium (Vitest browser mode, Playwright): axe must find no
+# violation and each story must match its screenshots at 3 container widths × light / dark × LTR / RTL.
+# They need a browser, so they are not part of `make check`; CI runs `make ui-test` in PLAYWRIGHT_IMAGE
+# on every PR. Baselines (app/ui/src/__screenshots__/) come only from that image: `make ui-snapshots-update`.
+
+# The official Playwright image every browser job runs in, pinned by digest. Its version must match the
+# playwright packages in app/; playwright-image-check also keeps the workflows on this exact reference.
+PLAYWRIGHT_IMAGE := mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+
+.PHONY: storybook storybook-build ui-test ui-test-install ui-test-docker ui-snapshots-update playwright-image-check
+
+storybook: web-install ## Start the @my/ui Storybook on http://localhost:6006
+	cd app/ui && bun run storybook
+
+storybook-build: web-install ## Build the static @my/ui Storybook into app/ui/storybook-static
+	cd app/ui && bun run build-storybook
+
+ui-test: web-install ## Run the @my/ui story tests (axe + screenshots) in Chromium; screenshots match only in PLAYWRIGHT_IMAGE
+	cd app/ui && bun run test
+
+ui-test-install: web-install ## Download the Chromium that ui-test uses (local runs only)
+	cd app/ui && bun run playwright install chromium
+
+ui-test-docker: ## Run the @my/ui story tests in PLAYWRIGHT_IMAGE, as CI does (needs docker)
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/ui-test-docker.sh
+
+ui-snapshots-update: ## Regenerate the @my/ui screenshot baselines in PLAYWRIGHT_IMAGE (needs docker); review and commit them
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/ui-test-docker.sh --update
+
+playwright-image-check: ## Fail if a workflow's Playwright image or a playwright package version differs from PLAYWRIGHT_IMAGE
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/playwright-image-check.sh

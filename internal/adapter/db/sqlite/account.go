@@ -461,6 +461,12 @@ func (r *AccountRepository) FindSealedPrivateKey(ctx context.Context, accountKey
 	return sealed, nil
 }
 
+// IsMediaReferenced implements account.Repository.
+func (r *AccountRepository) IsMediaReferenced(ctx context.Context, mediaID string) (bool, error) {
+	ok, err := r.db.reader().IsMediaReferencedByProfiles(ctx, toNullString(mediaID))
+	return ok, wrap(err, "look up profile media")
+}
+
 // CountLocalAccounts implements account.Repository.
 func (r *AccountRepository) CountLocalAccounts(ctx context.Context) (int, error) {
 	n, err := r.db.reader().CountLocalAccounts(ctx)

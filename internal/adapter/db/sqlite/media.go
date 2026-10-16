@@ -1,0 +1,194 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package sqlite
+
+import (
+	"context"
+	"database/sql"
+	"time"
+
+	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
+	appcontent "github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/content"
+)
+
+// MediaRepository implements content.MediaRepository on SQLite.
+type MediaRepository struct {
+	db *DB
+}
+
+var _ appcontent.MediaRepository = (*MediaRepository)(nil)
+
+// MediaRepository returns the content module's media repository on d.
+func (d *DB) MediaRepository() *MediaRepository { return &MediaRepository{db: d} }
+
+// Zero dimensions, durations, and blurhashes are unknown and NULL in the database.
+func toNullInt(n int) sql.NullInt64 { return sql.NullInt64{Int64: int64(n), Valid: n != 0} }
+
+// InsertMediaFile implements content.MediaRepository.
+func (r *MediaRepository) InsertMediaFile(ctx context.Context, tx uow.Tx, m content.MediaFile) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertMediaFile(ctx, sqlitegen.InsertMediaFileParams{
+		ID: m.ID, OwnerAccountID: m.OwnerAccountID, Origin: string(m.Origin), CreatedAt: toMillis(m.CreatedAt),
+	}), "insert media file")
+}
+
+// InsertUploadedMedia implements content.MediaRepository.
+func (r *MediaRepository) InsertUploadedMedia(ctx context.Context, tx uow.Tx, u content.UploadedMedia) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertUploadedMedia(ctx, sqlitegen.InsertUploadedMediaParams{
+		MediaID: u.MediaID, BlobKey: u.BlobKey, ContentType: u.ContentType, FileSize: u.FileSize,
+	}), "insert uploaded media")
+}
+
+// InsertProcessingResult implements content.MediaRepository.
+func (r *MediaRepository) InsertProcessingResult(ctx context.Context, tx uow.Tx, res content.MediaProcessingResult) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.InsertMediaProcessingResult(ctx, sqlitegen.InsertMediaProcessingResultParams{
+		ID: res.ID, MediaID: res.MediaID, Outcome: string(res.Outcome), MediaType: string(res.MediaType),
+		Width: toNullInt(res.Width), Height: toNullInt(res.Height), DurationMs: toNullInt(res.DurationMS),
+		Blurhash: toNullString(res.Blurhash), ProcessedAt: toMillis(res.ProcessedAt),
+	})
+	if err != nil {
+		return wrap(err, "insert media processing result")
+	}
+	for _, v := range res.Variants {
+		err := q.InsertMediaVariant(ctx, sqlitegen.InsertMediaVariantParams{
+			ResultID: res.ID, Kind: string(v.Kind), BlobKey: v.BlobKey, ContentType: v.ContentType, FileSize: v.FileSize,
+			Width: int64(v.Width), Height: int64(v.Height),
+		})
+		if err != nil {
+			return wrap(err, "insert media variant")
+		}
+	}
+	return nil
+}
+
+// HasProcessingResult implements content.MediaRepository.
+func (r *MediaRepository) HasProcessingResult(ctx context.Context, tx uow.Tx, mediaID string) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	ok, err := q.HasMediaProcessingResult(ctx, mediaID)
+	return ok, wrap(err, "look up media processing result")
+}
+
+// UpsertFocus implements content.MediaRepository.
+func (r *MediaRepository) UpsertFocus(ctx context.Context, tx uow.Tx, f content.MediaFocus) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.UpsertMediaFocus(ctx, sqlitegen.UpsertMediaFocusParams{MediaID: f.MediaID, FocusX: f.X, FocusY: f.Y}), "upsert media focus")
+}
+
+// DeleteUnattachedMedia implements content.MediaRepository.
+func (r *MediaRepository) DeleteUnattachedMedia(ctx context.Context, tx uow.Tx, mediaID string) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := q.DeleteUnattachedMediaFile(ctx, mediaID)
+	if err != nil || n == 0 {
+		return false, wrap(err, "delete media file")
+	}
+	for _, del := range []func(context.Context, string) error{
+		q.DeleteUploadedMedia, q.DeleteMediaVariantsOf, q.DeleteMediaProcessingResults, q.DeleteMediaFocus,
+	} {
+		if err := del(ctx, mediaID); err != nil {
+			return false, wrap(err, "delete media file rows")
+		}
+	}
+	return true, nil
+}
+
+// FindMediaFile implements content.MediaRepository.
+func (r *MediaRepository) FindMediaFile(ctx context.Context, id string) (content.MediaFile, error) {
+	row, err := r.db.reader().GetMediaFile(ctx, id)
+	if err != nil {
+		return content.MediaFile{}, notFound(err, appcontent.ErrNotFound, "media file "+id)
+	}
+	return content.MediaFile{
+		ID: row.ID, OwnerAccountID: row.OwnerAccountID, Origin: content.MediaOrigin(row.Origin), CreatedAt: fromMillis(row.CreatedAt),
+	}, nil
+}
+
+// FindUploadedMedia implements content.MediaRepository.
+func (r *MediaRepository) FindUploadedMedia(ctx context.Context, mediaID string) (content.UploadedMedia, error) {
+	row, err := r.db.reader().GetUploadedMedia(ctx, mediaID)
+	if err != nil {
+		return content.UploadedMedia{}, notFound(err, appcontent.ErrNotFound, "uploaded media "+mediaID)
+	}
+	return content.UploadedMedia{MediaID: row.MediaID, BlobKey: row.BlobKey, ContentType: row.ContentType, FileSize: row.FileSize}, nil
+}
+
+// FindLatestProcessingResult implements content.MediaRepository.
+func (r *MediaRepository) FindLatestProcessingResult(ctx context.Context, mediaID string) (content.MediaProcessingResult, error) {
+	results, err := r.ListProcessingResults(ctx, mediaID)
+	if err != nil {
+		return content.MediaProcessingResult{}, err
+	}
+	if len(results) == 0 {
+		return content.MediaProcessingResult{}, notFound(sql.ErrNoRows, appcontent.ErrNotFound, "media processing result of "+mediaID)
+	}
+	return results[len(results)-1], nil
+}
+
+// ListProcessingResults implements content.MediaRepository.
+func (r *MediaRepository) ListProcessingResults(ctx context.Context, mediaID string) ([]content.MediaProcessingResult, error) {
+	rows, err := r.db.reader().ListMediaProcessingResults(ctx, mediaID)
+	if err != nil {
+		return nil, wrap(err, "list media processing results")
+	}
+	variants, err := r.db.reader().ListMediaVariantsOf(ctx, mediaID)
+	if err != nil {
+		return nil, wrap(err, "list media variants")
+	}
+	results := make([]content.MediaProcessingResult, 0, len(rows))
+	for _, row := range rows {
+		res := content.MediaProcessingResult{
+			ID: row.ID, MediaID: row.MediaID, Outcome: content.MediaOutcome(row.Outcome), MediaType: content.MediaType(row.MediaType),
+			Width: int(row.Width.Int64), Height: int(row.Height.Int64), DurationMS: int(row.DurationMs.Int64),
+			Blurhash: row.Blurhash.String, ProcessedAt: fromMillis(row.ProcessedAt),
+		}
+		for _, v := range variants {
+			if v.ResultID == row.ID {
+				res.Variants = append(res.Variants, content.MediaVariant{
+					ResultID: v.ResultID, Kind: content.MediaVariantKind(v.Kind), BlobKey: v.BlobKey, ContentType: v.ContentType,
+					FileSize: v.FileSize, Width: int(v.Width), Height: int(v.Height),
+				})
+			}
+		}
+		results = append(results, res)
+	}
+	return results, nil
+}
+
+// FindFocus implements content.MediaRepository.
+func (r *MediaRepository) FindFocus(ctx context.Context, mediaID string) (content.MediaFocus, error) {
+	row, err := r.db.reader().GetMediaFocus(ctx, mediaID)
+	if err != nil {
+		return content.MediaFocus{}, notFound(err, appcontent.ErrNotFound, "media focus of "+mediaID)
+	}
+	return content.MediaFocus{MediaID: row.MediaID, X: row.FocusX, Y: row.FocusY}, nil
+}
+
+// ListUnattachedUploads implements content.MediaRepository.
+func (r *MediaRepository) ListUnattachedUploads(ctx context.Context, afterID string, createdBefore time.Time, limit int) ([]string, error) {
+	ids, err := r.db.reader().ListUnattachedUploads(ctx, sqlitegen.ListUnattachedUploadsParams{
+		AfterID: afterID, BeforeID: kernel.UUIDv7Floor(createdBefore), RowLimit: int64(limit),
+	})
+	return ids, wrap(err, "list unattached uploads")
+}

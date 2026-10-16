@@ -65,6 +65,13 @@ func TestAccountRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestMediaRepositoryContract(t *testing.T) {
+	testkit.MediaRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.MediaHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.MediaHarness{UnitOfWork: db, Media: db.MediaRepository(), Statuses: db.StatusRepository()}
+	})
+}
+
 func TestStatusRepositoryContract(t *testing.T) {
 	testkit.StatusRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.StatusHarness {
 		db, _ := newTestDB(t, "", opts)

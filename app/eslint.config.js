@@ -20,6 +20,8 @@ import * as restrict from "./eslint/restrictions.js";
 const src = ["ui/src/**/*.{ts,tsx}", "web/src/**/*.{ts,tsx}"];
 const tests = ["**/*.test.{ts,tsx}"];
 const stories = ["**/*.stories.{ts,tsx}"];
+/** The Storybook preview and the story test setup of @my/ui, which run in the browser like the kit. */
+const storybookPreview = ["ui/.storybook/preview.tsx", "ui/.storybook/vitest.setup.ts"];
 /** Components: Tailwind rules for D2 apply here (the app shell may use viewport breakpoints). */
 const components = ["ui/src/**/*.tsx", "web/src/features/**/*.tsx"];
 /** Where the API client and fetch may be used (S1); src/test holds the MSW setup and its own tests. */
@@ -44,7 +46,7 @@ const eslintReactHookDuplicates = Object.fromEntries(
 );
 
 export default defineConfig(
-  globalIgnores(["**/node_modules/", "**/dist/"]),
+  globalIgnores(["**/node_modules/", "**/dist/", "**/storybook-static/"]),
 
   // --- Every file -----------------------------------------------------------------------------
   js.configs.recommended,
@@ -54,7 +56,7 @@ export default defineConfig(
     linterOptions: { reportUnusedDisableDirectives: "error", reportUnusedInlineConfigs: "error" },
     languageOptions: {
       parserOptions: {
-        project: ["./ui/tsconfig.json", "./ui/scripts/tsconfig.json", "./web/tsconfig.json", "./web/tsconfig.node.json"],
+        project: ["./ui/tsconfig.json", "./ui/tsconfig.node.json", "./ui/scripts/tsconfig.json", "./web/tsconfig.json", "./web/tsconfig.node.json"],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -74,13 +76,13 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
   {
-    files: ["web/vite.config.ts", "ui/scripts/**/*.ts"],
+    files: ["web/vite.config.ts", "ui/*.config.ts", "ui/.storybook/main.ts", "ui/scripts/**/*.ts"],
     languageOptions: { globals: globals.node },
   },
 
   // --- Client source (@my/ui and app/web) -----------------------------------------------------
   {
-    files: src,
+    files: [...src, ...storybookPreview],
     extends: [
       // R1–R6, R9, R11: React Compiler rules, all at error.
       reactHooks.configs.flat["recommended-latest"],
@@ -212,6 +214,11 @@ export default defineConfig(
                   },
                 },
               },
+            },
+            // T5: stories also import the Storybook types; components never do.
+            {
+              from: { element: { type: "ui", fileInternalPath: "**/*.stories.tsx" } },
+              allow: { to: { module: { origin: "external", source: ["@storybook/react-vite"] } } },
             },
           ],
         },
