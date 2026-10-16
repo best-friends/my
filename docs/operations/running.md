@@ -56,6 +56,7 @@ SIGTERM または SIGINT で graceful shutdown する。
 文書ではないレスポンス向けの `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'` が付く。
 ActivityPub の JSON や公開メディアなど、別の値が必要なレスポンスはハンドラが上書きする。
 Web クライアントの HTML には、nonce を使わない文書用の CSP（`script-src 'self'` など ADR-0019 §9 のポリシー）が付く。
+Trusted Types を必須にし（`require-trusted-types-for 'script'`）、作れるポリシーをクライアントの 2 つ（`trusted-types my-server-sanitized-html my-service-worker`）に限る。
 
 ## Web クライアント
 

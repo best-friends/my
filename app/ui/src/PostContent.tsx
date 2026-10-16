@@ -4,7 +4,13 @@
 // before it reaches the client; this component trusts that and adds nothing of its own. The app's
 // Content-Security-Policy requires Trusted Types (`require-trusted-types-for 'script'`, ADR-0019 §9), under
 // which the browser refuses a plain string as innerHTML, so the HTML goes in as a TrustedHTML made by the
-// one policy below, the only place that turns a string into TrustedHTML.
+// one policy below, the only place that turns a string into TrustedHTML. The shell's CSP allows this
+// policy's name once (`trusted-types my-server-sanitized-html …`), so no other script can make a policy
+// of its own, and this module makes it once.
+//
+// The policy passes the HTML through unchanged. That is safe only because every HTML it receives comes
+// out of the server's sanitizer (the allowlist in the Go server); HTML from anywhere else, such as the
+// remote posts that federation brings (M3), must go through the same sanitizer on the server first.
 import type { ComponentPropsWithRef } from "react";
 import { tv } from "tailwind-variants";
 

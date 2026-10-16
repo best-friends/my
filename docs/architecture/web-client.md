@@ -191,6 +191,10 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   React Aria の `usePress` が `<head>` に差し込む `<style>` は、`main.tsx` が最初に同じ id の空の `<template>` を置いて止め（`lib/csp.ts`）、その規則は `index.css` に置く。
   Trusted Types の下では `innerHTML` に文字列を入れられないので、`PostContent`（A8）はサニタイズ済みの本文を、そのまま通すだけの Trusted Types のポリシー `my-server-sanitized-html` で TrustedHTML にしてから入れる。
   文字列を TrustedHTML にするのはこのポリシーだけで、受け取るのは `SanitizedHtml` だけにする。
+  このポリシーがそのまま通してよいのは、渡る HTML がすべてサーバーのサニタイザ（Go の許可リスト）を通ったものだからである。連合で届くリモートの HTML（M3）も、クライアントに渡す前に同じサニタイザを通す。
+  - 外枠の CSP は `trusted-types my-server-sanitized-html my-service-worker` で、作れるポリシーをクライアントの 2 つ（`PostContent` の HTML と、`lib/pwa.ts` の Service Worker の URL）に限る。
+    どちらもそれぞれ 1 つのモジュールで、最初に使うときに 1 回だけ作るので、`'allow-duplicates'` は付けない。ほかのスクリプト（依存ライブラリを含む）は自分のポリシーを作れない。
+    Vite・React・React Aria・Zod（`jitless`）はポリシーを作らない。ポリシーを作るコードを足すときは、この一覧と `internal/interface/web/shell.go` の CSP を一緒に変える。
   - 止められない動作が 1 つ残る: iOS / iPadOS の WebKit では、React Aria の `usePreventScroll`（モーダルの overlay と、Select / Menu のようなモーダルの popover が使う）が、開いている間 `<head>` の先頭に `* { overscroll-behavior: contain }` の `<style>` を差し込む。
     これを止める手段はなく、外枠の CSP がこの `<style>` を拒むので、iOS では overlay を開くたびに CSP の違反が 1 件報告される。この報告は受け入れ、CSP（ADR-0019 §9）は変えない。
     代わりに `@my/ui` の Dialog / Sheet / Popover / Select / Menu は、スクロールする面に `overscroll-contain` を自分で付け、overlay の中のスクロールがページに伝わらないようにする。overlay の中に別のスクロールする領域を作るときも、その領域に `overscroll-contain` を付ける。

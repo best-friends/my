@@ -124,7 +124,11 @@ func renderShell(d shellData) (document, error) {
 
 // contentSecurityPolicy is the policy of the web client's documents (ADR-0019 §9). It has no
 // nonce, so that the shell can be cached (ADR-0028). The client API and media are on the
-// server's own origin.
+// server's own origin. Trusted Types are required for every script sink, and `trusted-types`
+// allows exactly the client's two policies, each created once (no 'allow-duplicates'):
+// my-server-sanitized-html (@my/ui PostContent, the server-sanitized post HTML) and
+// my-service-worker (app/web src/lib/pwa.ts, the worker's fixed URL). No other script can make a
+// policy of its own.
 const contentSecurityPolicy = "default-src 'none'; " +
 	"script-src 'self'; " +
 	"style-src 'self'; " +
@@ -139,6 +143,7 @@ const contentSecurityPolicy = "default-src 'none'; " +
 	"base-uri 'none'; " +
 	"object-src 'none'; " +
 	"require-trusted-types-for 'script'; " +
+	"trusted-types my-server-sanitized-html my-service-worker; " +
 	"upgrade-insecure-requests"
 
 // serviceWorkerContentSecurityPolicy is the policy of the Service Worker (sw.js), which applies to the

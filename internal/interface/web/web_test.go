@@ -138,12 +138,14 @@ func TestShellCSP(t *testing.T) {
 	_, mux := newHandler(t, web.Options{})
 	rec := get(mux, "/", nil)
 	csp := rec.Header().Get("Content-Security-Policy")
-	for _, want := range []string{"default-src 'none'", "script-src 'self';", "style-src 'self';", "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'", "require-trusted-types-for 'script'"} {
+	for _, want := range []string{"default-src 'none'", "script-src 'self';", "style-src 'self';", "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'", "require-trusted-types-for 'script'",
+		// Only the client's own Trusted Types policies, each created once (web-client.md §9).
+		"trusted-types my-server-sanitized-html my-service-worker;"} {
 		if !strings.Contains(csp, want) {
 			t.Errorf("CSP %q lacks %s", csp, want)
 		}
 	}
-	for _, bad := range []string{"nonce-", "'unsafe-inline'", "'unsafe-eval'", "sha256-", "http:", "https:"} {
+	for _, bad := range []string{"nonce-", "'unsafe-inline'", "'unsafe-eval'", "sha256-", "http:", "https:", "'allow-duplicates'"} {
 		if strings.Contains(csp, bad) {
 			t.Errorf("CSP %q contains %s", csp, bad)
 		}
