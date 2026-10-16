@@ -74,7 +74,7 @@ describe("the notifications page", () => {
     expect(articles[1]).toHaveAccessibleName(/^\u2068Bob\u2069 followed you/);
     // The post the mention is about.
     expect(await within(articles[0] ?? feed).findByText("hello", { exact: false })).toBeInTheDocument();
-    expect(within(articles[0] ?? feed).getByRole("link", { name: "Open post" })).toHaveAttribute("href", "https://my.example/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
+    expect(within(articles[0] ?? feed).getByRole("link", { name: "Open post" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
 
     // Showing the list moved the marker to the newest notification, once, and the badge went away.
     await vi.waitFor(() => {
@@ -96,6 +96,19 @@ describe("the notifications page", () => {
     const feed = await screen.findByRole("feed", { name: "Notifications" });
     expect(within(feed).getAllByRole("article")[0]).toHaveAccessibleName(/^\u2068Bob\u2069 mentioned you/);
     expect(marker.updates).toEqual([]);
+  });
+
+  test("opens the post a notification is about on its page in the app", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a2", unread_count: 0 });
+    const { user, router } = await renderApp({ path: "/notifications" });
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+
+    await user.click(within(feed).getByRole("link", { name: "Open post" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Post" })).toHaveFocus();
+    expect(router.state.location.pathname).toBe("/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
+    expect(await screen.findByRole("region", { name: "Replies" })).toBeInTheDocument();
   });
 
   test("filters by type from the URL and the tabs, without moving the marker", async () => {
