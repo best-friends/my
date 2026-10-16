@@ -37,6 +37,10 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 - 一覧はキーセットページングです。クエリで `#/components/parameters/Cursor` と `#/components/parameters/Limit` を受け、
   応答は `allOf` で `#/components/schemas/PageInfo` を含めて `next_cursor` を返し、要素の配列は `items` に入れます。最後のページでは `next_cursor` を省きます。
 - カーソルは不透明な文字列です。クライアントは解釈せずにそのまま返します。
+  ハンドラは `limit` より 1 件多く読み、次のページがあるときだけ `next_cursor` を返します。
+  アカウントの一覧のカーソルは、ページの最後の項目の位置（フォロー ID・ブロック ID・ミュートの作成時刻と対象）を base64url にしたものです（`Server.parsePage`）。
+- 生成コードは `minimum` / `maximum` などのスキーマの制約を検査しないので、`limit` やカーソル・本文の値の範囲はハンドラが検査し、外れたら 400 にします（`pageLimit`、`Server.invalidParameter`）。
+- 見せられない項目（[visibility.md §6](visibility.md#6-アカウントの表示)）を省く一覧では、最後でないページでも `limit` より少ないことがあります。
 - 投稿の一覧は `#/components/responses/StatusPage`（`items` が `#/components/schemas/Status` の配列）を返し、ハンドラは `Server.statuses` で投稿とブーストを詰め替えます（投稿は `Server.newStatus`）。
   ブーストは、ブーストした人の `Status` の `boost` に元の投稿を入れて表します。
 
@@ -52,6 +56,7 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
   `default_locale` は解決のたびに読むので、変更は再起動なしで反映されます。
   文言は `locales/en` と `locales/ja` に追加して `make i18n-gen` を実行し、生成された型付きアクセサ（`l.ServerErrors...()`）で整形します。
 - ハンドラが返す問題は `Server.NewProblem` で作り、その操作の `default` 応答型（`<Operation>defaultApplicationProblemPlusJSONResponse`）で返します。
+  `Server.problem` は同じ問題をどの操作の `default` 応答型にも型変換できる `problem` で返します（`GetAccountdefaultApplicationProblemPlusJSONResponse(s.problem(...))`）。
   生成コードの外（認証・認可・レート制限、解釈できないリクエスト）で返す問題は `Server.writeProblem` が書き、`Cache-Control: no-store` を付けます。
   ローカライザは `Server.Localizer(ctx)` で取得します。
 - 生成コードが解釈できないリクエスト（パラメータの形式違いなど）は 400 になり、`detail` がパラメータ名を示します。
@@ -89,6 +94,8 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    ドメインの型を生成された応答型に詰め替えます。必要な依存は `clientapi.Options` に追加し、`platform.NewApp` で渡します。
    閲覧者は `requireViewer(ctx)`（トークン必須の操作）か `ViewerFrom(ctx)`（匿名も受け付ける操作）で取ります。スコープの検査はハンドラの前に済んでいます。
    アカウントは `Server.newAccount` で `Account` に、投稿は `appcontent.Reader` が閲覧者に見せる形にした `StatusView` を `Server.newStatus` で `Status` に詰め替えます。
+   フォロー数を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います。
+   ID で指定されたアカウントは `Server.visibleAccount` で引き、見せられないアカウント（[visibility.md §6](visibility.md#6-アカウントの表示)）は存在しないものと同じ 404 にします。
 5. 新しい利用者向けの文言は `locales/en` と `locales/ja` の `server` 名前空間に追加し、`make i18n-gen` を実行します。
 6. テストは `apitest.Load(t).Serve(t, handler, req)` を通してリクエストを送ります。応答の状態コード・`Content-Type`・本文が spec と一致しない場合、テストが失敗します。
    不正なリクエストを送るテストもそのまま使えます（`Serve` はリクエストを照合しません。照合するときは `ValidateRequest`）。

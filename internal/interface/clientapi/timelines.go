@@ -176,6 +176,9 @@ func (s *Server) GetHomeTimeline(ctx context.Context, req GetHomeTimelineRequest
 	if v == nil {
 		return nil, errNoViewer
 	}
+	if _, ok := pageLimit(req.Params.Limit); !ok {
+		return GetHomeTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	}
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
 		return nil, err
@@ -192,6 +195,9 @@ func (s *Server) GetHomeTimeline(ctx context.Context, req GetHomeTimelineRequest
 // public posts; local posts need a logged-in viewer (ADR-0017).
 func (s *Server) GetLocalTimeline(ctx context.Context, req GetLocalTimelineRequestObject) (GetLocalTimelineResponseObject, error) {
 	cv, v := timelineViewer(ctx)
+	if _, ok := pageLimit(req.Params.Limit); !ok {
+		return GetLocalTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	}
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
 		return nil, err
@@ -208,6 +214,9 @@ func (s *Server) GetLocalTimeline(ctx context.Context, req GetLocalTimelineReque
 // has an empty timeline.
 func (s *Server) GetHashtagTimeline(ctx context.Context, req GetHashtagTimelineRequestObject) (GetHashtagTimelineResponseObject, error) {
 	cv, v := timelineViewer(ctx)
+	if _, ok := pageLimit(req.Params.Limit); !ok {
+		return GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	}
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
 		return nil, err
@@ -231,6 +240,9 @@ func (s *Server) GetHashtagTimeline(ctx context.Context, req GetHashtagTimelineR
 // timeline languages do not apply: a profile shows the account in every language.
 func (s *Server) ListAccountStatuses(ctx context.Context, req ListAccountStatusesRequestObject) (ListAccountStatusesResponseObject, error) {
 	cv, v := timelineViewer(ctx)
+	if _, ok := pageLimit(req.Params.Limit); !ok {
+		return ListAccountStatusesdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	}
 	if _, err := s.o.Accounts.FindByID(ctx, req.Id); errors.Is(err, appaccount.ErrNotFound) {
 		l := s.Localizer(ctx)
 		body, headers := s.NewProblem(ctx, http.StatusNotFound, ProblemTypeBlank, l.ServerErrorsNotFound(), "")

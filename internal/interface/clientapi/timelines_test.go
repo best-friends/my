@@ -334,3 +334,16 @@ func TestListAccountStatuses(t *testing.T) {
 		t.Errorf("unknown account problem = %+v %v", p, res.Header)
 	}
 }
+
+func TestTimelinesRejectLimitsOutOfRange(t *testing.T) {
+	e := newTimelineEnv(t)
+	for _, path := range []string{"/timelines/local?limit=0", "/timelines/tag/cats?limit=41", "/accounts/" + aliceAccountID + "/statuses?limit=41"} {
+		res := e.get(t, path, nil)
+		if res.StatusCode != http.StatusBadRequest {
+			t.Errorf("%s = %d, want 400", path, res.StatusCode)
+		}
+	}
+	if len(e.timelines.calls) != 0 {
+		t.Errorf("calls = %+v, want none", e.timelines.calls)
+	}
+}
