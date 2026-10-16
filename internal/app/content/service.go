@@ -41,6 +41,25 @@ var (
 	ErrInvalidText = errors.New("content: the text is not valid")
 	// ErrInvalidLanguage reports a language that is not a well-formed BCP 47 tag.
 	ErrInvalidLanguage = errors.New("content: the language is not a valid BCP 47 tag")
+	// ErrTooManyMedia reports more than MaxAttachments media files, or one file attached twice.
+	ErrTooManyMedia = errors.New("content: too many media files")
+	// ErrMediaNotFound reports an attachment that names no upload of the author: a file that
+	// does not exist and another account's file fail alike.
+	ErrMediaNotFound = errors.New("content: the media file does not exist or belongs to another account")
+	// ErrMediaNotReady reports an attachment whose media file is still being processed or
+	// failed processing.
+	ErrMediaNotReady = errors.New("content: the media file is not processed")
+	// ErrInvalidMediaDescription reports an alt text longer than MaxMediaDescription, or one
+	// that is not valid UTF-8 or contains a NUL character.
+	ErrInvalidMediaDescription = errors.New("content: the media description is not valid")
+)
+
+// Limits of the media attached to a local status (FR-105).
+const (
+	// MaxAttachments is the number of media files one status may attach.
+	MaxAttachments = 4
+	// MaxMediaDescription is the number of characters of an alt text.
+	MaxMediaDescription = 1500
 )
 
 // UndeterminedLanguage is the language of a status whose language is unknown (BCP 47 "und").
@@ -67,6 +86,8 @@ type Deps struct {
 	Accounts      Accounts
 	Relationships Relationships
 	Restrictions  RestrictionPolicy
+	// Media reads the media files that posts attach; nil accepts no attachments.
+	Media MediaRepository
 	// MaxStatusLength returns the current max_status_length instance setting (FR-101); it is
 	// read per command, so that changes apply at once.
 	MaxStatusLength func(ctx context.Context) (int, error)
@@ -115,6 +136,16 @@ type TextInput struct {
 	Sensitive bool
 	// Language is a BCP 47 tag; "" means the author's default post language (FR-110).
 	Language string
+	// Media are the media files to attach, in order (FR-105): at most MaxAttachments, each
+	// an upload of the author that finished processing.
+	Media []MediaInput
+}
+
+// MediaInput is a media file to attach.
+type MediaInput struct {
+	MediaID string
+	// Description is the alt text, "" for none.
+	Description string
 }
 
 // CreateInput describes a new local status.
@@ -133,7 +164,8 @@ type CreateInput struct {
 }
 
 // Create posts a local status. The text becomes HTML with mentions of local, active accounts,
-// hashtags, and URLs linked; the visibility is capped by the author's visibility ceiling
+// hashtags, and URLs linked; attached media must be the author's own processed uploads
+// (ErrMediaNotFound, ErrMediaNotReady); the visibility is capped by the author's visibility ceiling
 // (data-model §5.4) and stored as capped. A reply must target a status the author may see.
 //
 // Retrying with an IdempotencyKey that the author already used returns the status posted with it
@@ -276,7 +308,8 @@ type EditInput struct {
 	StatusID  string
 }
 
-// Edit records a new revision of a local status with new content (FR-109). The visibility,
+// Edit records a new revision of a local status with new content (FR-109), checking the text
+// and the attached media as Create does. The visibility,
 // author, and reply target never change. The new revision becomes the head. A status that does
 // not exist or is deleted fails with ErrNotFound; another account's status with ErrNotAuthor.
 func (s *Service) Edit(ctx context.Context, in EditInput) (Post, error) {
@@ -417,11 +450,12 @@ func (s *Service) postingRestrictions(ctx context.Context, accountID string) (Re
 
 // preparedText is validated, rendered content, ready to be stored as a revision.
 type preparedText struct {
-	in       TextInput
-	language string
-	html     string
-	mentions []string // account IDs, sorted
-	hashtags []Hashtag
+	in          TextInput
+	language    string
+	attachments []content.Attachment
+	html        string
+	mentions    []string // account IDs, sorted
+	hashtags    []Hashtag
 }
 
 // CountCharacters returns the length of a post as max_status_length counts it: the characters
@@ -452,6 +486,10 @@ func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in T
 	if err != nil {
 		return preparedText{}, err
 	}
+	attachments, err := s.attachments(ctx, author.Account.ID, in.Media)
+	if err != nil {
+		return preparedText{}, err
+	}
 
 	parsed := ParseText(in.Text)
 	targets := map[MentionHandle]MentionTarget{}
@@ -471,12 +509,69 @@ func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in T
 	}
 	slices.Sort(mentions)
 	return preparedText{
-		in:       in,
-		language: language,
-		html:     parsed.HTML(RenderOptions{Host: s.d.Host, Mentions: targets}),
-		mentions: mentions,
-		hashtags: parsed.Hashtags(),
+		in:          in,
+		language:    language,
+		attachments: attachments,
+		html:        parsed.HTML(RenderOptions{Host: s.d.Host, Mentions: targets}),
+		mentions:    mentions,
+		hashtags:    parsed.Hashtags(),
 	}, nil
+}
+
+// attachments checks the media files that authorID attaches (FR-105): at most MaxAttachments
+// distinct files, each an upload of authorID whose newest processing result is ready, with a
+// valid alt text.
+func (s *Service) attachments(ctx context.Context, authorID string, in []MediaInput) ([]content.Attachment, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+	if len(in) > MaxAttachments {
+		return nil, fmt.Errorf("%w: %d, at most %d", ErrTooManyMedia, len(in), MaxAttachments)
+	}
+	out := make([]content.Attachment, 0, len(in))
+	for i, m := range in {
+		if slices.ContainsFunc(in[:i], func(o MediaInput) bool { return o.MediaID == m.MediaID }) {
+			return nil, fmt.Errorf("%w: %s is attached twice", ErrTooManyMedia, m.MediaID)
+		}
+		d := m.Description
+		if !utf8.ValidString(d) || strings.ContainsRune(d, 0) || utf8.RuneCountInString(d) > MaxMediaDescription {
+			return nil, fmt.Errorf("media %s: %w", m.MediaID, ErrInvalidMediaDescription)
+		}
+		if err := s.checkMedia(ctx, authorID, m.MediaID); err != nil {
+			return nil, err
+		}
+		out = append(out, content.Attachment{Position: i, MediaID: m.MediaID, Description: d})
+	}
+	return out, nil
+}
+
+// checkMedia fails unless mediaID is an upload of authorID that was processed successfully.
+func (s *Service) checkMedia(ctx context.Context, authorID, mediaID string) error {
+	notFound := fmt.Errorf("media %s: %w", mediaID, ErrMediaNotFound)
+	if s.d.Media == nil {
+		return notFound
+	}
+	file, err := s.d.Media.FindMediaFile(ctx, mediaID)
+	if errors.Is(err, ErrNotFound) {
+		return notFound
+	}
+	if err != nil {
+		return err
+	}
+	if file.OwnerAccountID != authorID || file.Origin != content.MediaOriginUpload {
+		return notFound
+	}
+	result, err := s.d.Media.FindLatestProcessingResult(ctx, mediaID)
+	if errors.Is(err, ErrNotFound) {
+		return fmt.Errorf("media %s: %w", mediaID, ErrMediaNotReady)
+	}
+	if err != nil {
+		return err
+	}
+	if result.Outcome != content.MediaReady {
+		return fmt.Errorf("media %s: %w", mediaID, ErrMediaNotReady)
+	}
+	return nil
 }
 
 // mentioned resolves a mentioned handle to a local, active account. Handles of other domains
@@ -529,6 +624,7 @@ func (p preparedText) revision(id, statusID string, seq int, at time.Time) conte
 		RevisedAt:           at,
 		Bodies:              []content.Body{{Language: p.language, ContentHTML: p.html}},
 		Source:              &content.Source{Text: p.in.Text, Format: content.SourceTextPlain},
+		Attachments:         p.attachments,
 		MentionedAccountIDs: p.mentions,
 	}
 }

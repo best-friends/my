@@ -229,6 +229,7 @@ func TestPostingContract(t *testing.T) {
 			Graph:          db.GraphRepository(),
 			Instance:       db.InstanceRepository(),
 			Statuses:       db.StatusRepository(),
+			Media:          db.MediaRepository(),
 		}
 	})
 }

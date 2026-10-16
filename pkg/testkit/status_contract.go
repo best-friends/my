@@ -343,6 +343,7 @@ func statusReportsMissing(t *testing.T, e *statusEnv) {
 		"FindDeletion":                    second(e.h.Statuses.FindDeletion(ctx, missing)),
 		"FindDeletionByURI":               second(e.h.Statuses.FindDeletionByURI(ctx, "https://nowhere.example/")),
 		"FindTagByName":                   second(e.h.Statuses.FindTagByName(ctx, "nothing")),
+		"FindTag":                         second(e.h.Statuses.FindTag(ctx, missing)),
 		"FindCounters":                    second(e.h.Statuses.FindCounters(ctx, missing)),
 		"FindPostCounter":                 second(e.h.Statuses.FindPostCounter(ctx, missing)),
 	} {
@@ -507,6 +508,13 @@ func statusLinksReplies(t *testing.T, e *statusEnv) {
 
 	e.mustRemove(t, early)
 	e.mustRemove(t, hidden)
+	// ListReplies reads the live replies of a URI outside a transaction, ordered by ID.
+	if got, err := e.h.Statuses.ListReplies(ctx, parent.URI); err != nil || len(got) != 2 || got[0].ID != late.ID || got[1].ID != private.ID {
+		t.Errorf("ListReplies = %+v, %v; want the live replies %s, %s", got, err, late.ID, private.ID)
+	}
+	if got, err := e.h.Statuses.ListReplies(ctx, "https://nowhere.example/"); err != nil || len(got) != 0 {
+		t.Errorf("ListReplies(unknown) = %+v, %v; want none", got, err)
+	}
 	if c := e.counters(t, parent.ID); c.RepliesCount != 1 {
 		t.Errorf("replies count after deleting replies = %d, want 1", c.RepliesCount)
 	}
@@ -581,6 +589,9 @@ func statusEnsuresTags(t *testing.T, e *statusEnv) {
 	}
 	if got, err := e.h.Statuses.FindTagByName(ctx, "golang"); err != nil || got != first {
 		t.Errorf("FindTagByName = %+v, %v; want %+v", got, err, first)
+	}
+	if got, err := e.h.Statuses.FindTag(ctx, first.ID); err != nil || got != first {
+		t.Errorf("FindTag = %+v, %v; want %+v", got, err, first)
 	}
 }
 
