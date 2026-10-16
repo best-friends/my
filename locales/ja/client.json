@@ -423,9 +423,297 @@
     "defaultMessage": "ログインしていません。",
     "description": "Text in the account section of the settings page when nobody is signed in."
   },
+  "settings.back": {
+    "defaultMessage": "設定に戻る",
+    "description": "Link under the heading of a settings page that opens the list of settings pages."
+  },
+  "settings.blocks.empty": {
+    "defaultMessage": "ブロックしているアカウントはありません",
+    "description": "Shown when the user blocks no account."
+  },
+  "settings.blocks.summary": {
+    "defaultMessage": "あなたをフォローできず、投稿も見られないアカウント",
+    "description": "Description of the blocked accounts page in the list of settings pages."
+  },
+  "settings.blocks.title": {
+    "defaultMessage": "ブロックしたアカウント",
+    "description": "Heading and document title of the settings page with the blocked accounts."
+  },
+  "settings.blocks.unblock": {
+    "defaultMessage": "ブロック解除",
+    "description": "Button that unblocks an account."
+  },
+  "settings.blocks.unblocked": {
+    "defaultMessage": "{name} さんのブロックを解除しました。",
+    "description": "Announced after an account was unblocked. {name} is the account's display name."
+  },
+  "settings.default_visibility.description": {
+    "defaultMessage": "投稿ごとに変えることもできます。",
+    "description": "Help text of the default visibility radio group."
+  },
+  "settings.default_visibility.label": {
+    "defaultMessage": "投稿の既定の公開範囲",
+    "description": "Label of the radio group of the visibility new posts start with."
+  },
+  "settings.follow_requests.accept": {
+    "defaultMessage": "承認",
+    "description": "Button that accepts a follow request."
+  },
+  "settings.follow_requests.accepted": {
+    "defaultMessage": "{name} さんのフォローを承認しました。",
+    "description": "Announced after a follow request was accepted. {name} is the account's display name."
+  },
+  "settings.follow_requests.empty": {
+    "defaultMessage": "フォローリクエストはありません",
+    "description": "Shown when no follow request awaits approval."
+  },
+  "settings.follow_requests.reject": {
+    "defaultMessage": "拒否",
+    "description": "Button that rejects a follow request."
+  },
+  "settings.follow_requests.rejected": {
+    "defaultMessage": "{name} さんのフォローリクエストを拒否しました。",
+    "description": "Announced after a follow request was rejected. {name} is the account's display name."
+  },
+  "settings.follow_requests.summary": {
+    "defaultMessage": "あなたをフォローしたい人",
+    "description": "Description of the follow requests page in the list of settings pages."
+  },
+  "settings.follow_requests.title": {
+    "defaultMessage": "フォローリクエスト",
+    "description": "Heading and document title of the settings page with the follow requests awaiting approval."
+  },
+  "settings.list.action": {
+    "defaultMessage": "{action}: {name}",
+    "description": "Accessible name of a button in a list of accounts. {action} is the button's visible text (for example 'Unblock'), {name} the account's display name."
+  },
+  "settings.list.more": {
+    "defaultMessage": "さらに表示",
+    "description": "Button under a list of accounts in the settings that loads more of them."
+  },
+  "settings.locale.description": {
+    "defaultMessage": "選ぶとすぐに切り替わります。",
+    "description": "Help text of the display language select."
+  },
+  "settings.locale.label": {
+    "defaultMessage": "表示言語",
+    "description": "Label of the select of the language the app is shown in."
+  },
+  "settings.menu.title": {
+    "defaultMessage": "設定の項目",
+    "description": "Heading of the list of links to the pages of the settings."
+  },
+  "settings.mutes.empty": {
+    "defaultMessage": "ミュートしているアカウントはありません",
+    "description": "Shown when the user mutes no account."
+  },
+  "settings.mutes.notifications": {
+    "defaultMessage": "通知も非表示",
+    "description": "Under a muted account whose mute also hides its notifications."
+  },
+  "settings.mutes.summary": {
+    "defaultMessage": "投稿を表示しないアカウント",
+    "description": "Description of the muted accounts page in the list of settings pages."
+  },
+  "settings.mutes.title": {
+    "defaultMessage": "ミュートしたアカウント",
+    "description": "Heading and document title of the settings page with the muted accounts."
+  },
+  "settings.mutes.unmute": {
+    "defaultMessage": "ミュート解除",
+    "description": "Button that unmutes an account."
+  },
+  "settings.mutes.unmuted": {
+    "defaultMessage": "{name} さんのミュートを解除しました。",
+    "description": "Announced after an account was unmuted. {name} is the account's display name."
+  },
+  "settings.mutes.until": {
+    "defaultMessage": "{date} まで",
+    "description": "When a mute ends, under the muted account. {date} is a formatted date and time."
+  },
+  "settings.preferences.autosave": {
+    "defaultMessage": "変更はすぐに保存されます。",
+    "description": "Text at the top of the preferences page."
+  },
+  "settings.preferences.summary": {
+    "defaultMessage": "表示言語・タイムゾーン・投稿の既定の公開範囲・タイムラインの言語",
+    "description": "Description of the preferences page in the list of settings pages."
+  },
+  "settings.preferences.title": {
+    "defaultMessage": "表示と投稿",
+    "description": "Heading and document title of the settings page with the language, time zone, default visibility and timeline languages."
+  },
+  "settings.profile.avatar": {
+    "defaultMessage": "アイコン",
+    "description": "Heading of the part of the profile form for the user's profile picture."
+  },
+  "settings.profile.bot": {
+    "defaultMessage": "このアカウントは bot です",
+    "description": "Checkbox of the profile form: the account is automated."
+  },
+  "settings.profile.bot.description": {
+    "defaultMessage": "自動で投稿するアカウントであることを、ほかの人に示します。",
+    "description": "Help text of the 'This is a bot' checkbox."
+  },
+  "settings.profile.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Character count under the bio field while the text is within the limit."
+  },
+  "settings.profile.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Character count under the bio field when the text is longer than the limit."
+  },
+  "settings.profile.display_name": {
+    "defaultMessage": "表示名",
+    "description": "Label of the display name field of the profile form."
+  },
+  "settings.profile.display_name.description": {
+    "defaultMessage": "{max} 文字まで。空にするとユーザー名を表示します。",
+    "description": "Help text of the display name field. {max} is the character limit, for example 30."
+  },
+  "settings.profile.field": {
+    "defaultMessage": "補足情報 {number}",
+    "description": "Caption of one field of the profile form. {number} is its position, starting at 1."
+  },
+  "settings.profile.field.name": {
+    "defaultMessage": "ラベル",
+    "description": "Label of the name part of a profile field."
+  },
+  "settings.profile.field.name_required": {
+    "defaultMessage": "この補足情報にラベルを付けてください。",
+    "description": "Error of a profile field that has content but no label."
+  },
+  "settings.profile.field.remove": {
+    "defaultMessage": "補足情報 {number} を削除",
+    "description": "Button that removes one field from the profile form. {number} is its position, starting at 1."
+  },
+  "settings.profile.field.value": {
+    "defaultMessage": "内容",
+    "description": "Label of the value part of a profile field."
+  },
+  "settings.profile.fields": {
+    "defaultMessage": "補足情報",
+    "description": "Heading of the part of the profile form with the label and content pairs shown on the profile."
+  },
+  "settings.profile.fields.add": {
+    "defaultMessage": "補足情報を追加",
+    "description": "Button that adds an empty field to the profile form."
+  },
+  "settings.profile.fields.description": {
+    "defaultMessage": "プロフィールに表示するラベルと内容の組。{max} 組まで。内容のリンクは有効になります。",
+    "description": "Help text of the profile fields. {max} is how many fields a profile can have, for example 4."
+  },
+  "settings.profile.header": {
+    "defaultMessage": "ヘッダー画像",
+    "description": "Heading of the part of the profile form for the wide image at the top of the profile."
+  },
+  "settings.profile.image.choose": {
+    "defaultMessage": "画像を選ぶ",
+    "description": "Button that opens the file picker to choose a new avatar or header image."
+  },
+  "settings.profile.image.failed": {
+    "defaultMessage": "サーバーがこの画像を処理できませんでした。別の画像を試してください。",
+    "description": "Error under an avatar or header image whose upload failed during processing."
+  },
+  "settings.profile.image.remove": {
+    "defaultMessage": "画像を外す",
+    "description": "Button that removes the avatar or header image when the profile is saved."
+  },
+  "settings.profile.locked": {
+    "defaultMessage": "フォローを承認制にする",
+    "description": "Checkbox of the profile form: follow requests need the user's approval."
+  },
+  "settings.profile.locked.description": {
+    "defaultMessage": "フォローするにはリクエストが必要になり、承認する相手を選べます。",
+    "description": "Help text of the 'Approve followers' checkbox."
+  },
+  "settings.profile.note": {
+    "defaultMessage": "自己紹介",
+    "description": "Label of the profile text field of the profile form."
+  },
+  "settings.profile.save": {
+    "defaultMessage": "プロフィールを保存",
+    "description": "Submit button of the profile form."
+  },
+  "settings.profile.saved": {
+    "defaultMessage": "プロフィールを保存しました。",
+    "description": "Notification after the profile was saved."
+  },
+  "settings.profile.summary": {
+    "defaultMessage": "名前・自己紹介・画像・補足情報と、フォローの承認",
+    "description": "Description of the profile page in the list of settings pages."
+  },
+  "settings.profile.title": {
+    "defaultMessage": "プロフィール",
+    "description": "Heading and document title of the settings page that edits the user's profile."
+  },
+  "settings.profile.too_long": {
+    "defaultMessage": "{max} 文字以内にしてください。",
+    "description": "Error of a profile field whose text is longer than its limit. {max} is the limit."
+  },
+  "settings.saved": {
+    "defaultMessage": "保存しました",
+    "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
+  },
+  "settings.time_zone.description": {
+    "defaultMessage": "日時をこのタイムゾーンで表示します。",
+    "description": "Help text of the time zone select."
+  },
+  "settings.time_zone.label": {
+    "defaultMessage": "タイムゾーン",
+    "description": "Label of the select of the user's time zone."
+  },
+  "settings.timeline_languages.description": {
+    "defaultMessage": "チェックした言語の投稿だけをタイムラインに表示します。何もチェックしなければすべての言語を表示します。",
+    "description": "Help text of the timeline languages."
+  },
+  "settings.timeline_languages.label": {
+    "defaultMessage": "タイムラインの言語",
+    "description": "Caption of the group of checkboxes of the languages timelines show."
+  },
   "settings.title": {
     "defaultMessage": "設定",
     "description": "Heading and document title of the settings page."
+  },
+  "settings.visibility.direct": {
+    "defaultMessage": "メンションした相手",
+    "description": "Visibility option: only the mentioned accounts."
+  },
+  "settings.visibility.direct.description": {
+    "defaultMessage": "メンションした相手だけ",
+    "description": "Description of the 'Mentioned people' visibility option."
+  },
+  "settings.visibility.local": {
+    "defaultMessage": "このサーバー",
+    "description": "Visibility option: signed-in users of this server and followers."
+  },
+  "settings.visibility.local.description": {
+    "defaultMessage": "このサーバーにログインしている人と、フォロワー",
+    "description": "Description of the 'This server' visibility option."
+  },
+  "settings.visibility.private": {
+    "defaultMessage": "フォロワー",
+    "description": "Visibility option: followers and mentioned accounts."
+  },
+  "settings.visibility.private.description": {
+    "defaultMessage": "フォロワーと、メンションした相手",
+    "description": "Description of the 'Followers' visibility option."
+  },
+  "settings.visibility.public": {
+    "defaultMessage": "公開",
+    "description": "Visibility option: everyone, listed on public timelines."
+  },
+  "settings.visibility.public.description": {
+    "defaultMessage": "誰でも見られ、公開タイムラインにも載ります",
+    "description": "Description of the 'Public' visibility option."
+  },
+  "settings.visibility.unlisted": {
+    "defaultMessage": "未収載",
+    "description": "Visibility option: everyone, but kept off public timelines."
+  },
+  "settings.visibility.unlisted.description": {
+    "defaultMessage": "誰でも見られますが、公開タイムラインには載りません",
+    "description": "Description of the 'Unlisted' visibility option."
   },
   "shell.about.domain": {
     "defaultMessage": "このサーバーのアカウントは @{domain} で終わります。",

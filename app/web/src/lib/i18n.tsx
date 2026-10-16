@@ -4,8 +4,8 @@
 // from the typed accessors that tools/i18n generates (make i18n-gen), so an unknown ID or a missing
 // argument is a type error.
 //
-// The locale is the server's: `my serve` writes the instance's default locale into <html lang> of the
-// shell (ADR-0028). A user's own choice of locale replaces it once accounts have one.
+// The page starts in the server's locale: `my serve` writes the instance's default locale into <html lang>
+// of the shell (ADR-0028). The signed-in user's own locale replaces it while the page is open (lib/locale).
 import type { ReactNode } from "react";
 import { createIntl, IntlProvider, useIntl } from "react-intl";
 import type { MessageArgs, MessageKey } from "../../../../tools/i18n/src/runtime/messages.gen";
@@ -111,15 +111,25 @@ export function applyDocumentLocale(doc: Document, locale: string): void {
   doc.documentElement.dir = direction(locale);
 }
 
-export type MessagesProviderProps = { i18n: I18n; children: ReactNode };
+export type MessagesProviderProps = {
+  i18n: I18n;
+  /** The IANA time zone that dates and times are formatted in; the browser's by default. */
+  timeZone?: string | undefined;
+  children: ReactNode;
+};
 
 /**
  * Provides react-intl. The app shell renders it together with the @my/ui I18nProvider (React Aria's
  * locale), which gets `i18n.locale` as it is: React Aria reads the direction from it, ar-XB included.
  */
-export function MessagesProvider({ i18n, children }: MessagesProviderProps) {
+export function MessagesProvider({ i18n, timeZone, children }: MessagesProviderProps) {
   return (
-    <IntlProvider locale={formattingLocale(i18n.locale)} defaultLocale={sourceLocale} messages={i18n.messages}>
+    <IntlProvider
+      locale={formattingLocale(i18n.locale)}
+      defaultLocale={sourceLocale}
+      messages={i18n.messages}
+      {...(timeZone === undefined ? {} : { timeZone })}
+    >
       {children}
     </IntlProvider>
   );

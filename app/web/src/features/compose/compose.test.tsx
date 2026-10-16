@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RouterContext } from "../../lib/query";
 import {
   apiBase,
-  credentialAccountFixture,
+  viewerFixture,
   instanceFixture,
   oauthPaths,
   preferencesFixture,
@@ -199,7 +199,7 @@ describe("hints before posting", () => {
     signedIn();
     server.use(
       http.get(`${apiBase}/accounts/verify_credentials`, () =>
-        HttpResponse.json({ ...credentialAccountFixture, posting: { visibility_ceiling: "private", visibilities: ["private", "direct"] } }),
+        HttpResponse.json({ ...viewerFixture, posting: { visibility_ceiling: "private", visibilities: ["private", "direct"] } }),
       ),
     );
     const sent = recordPosts();
@@ -258,7 +258,7 @@ describe("hints before posting", () => {
     server.use(
       http.get(`${apiBase}/accounts/relationships`, () => {
         asked = true;
-        return HttpResponse.json([relationshipFixture(remoteAccountFixture.id, { followed_by: true })]);
+        return HttpResponse.json([{ ...relationshipFixture(remoteAccountFixture.id), followed_by: true }]);
       }),
     );
     const { user } = await renderApp();

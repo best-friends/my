@@ -60,6 +60,6 @@ export async function renderApp({ path = "/", locale = "en", createRouter = crea
   void services.session.restore();
   const router = createRouter({ ...services, history: createMemoryHistory({ initialEntries: [path] }) });
   const user = userEvent.setup();
-  const result = render(<App config={testConfig} i18n={i18n} {...services} router={router} />);
+  const result = render(<App config={testConfig} {...services} router={router} />);
   return { user, i18n, router, leftTo, ...services, ...result };
 }
