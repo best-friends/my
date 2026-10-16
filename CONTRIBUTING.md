@@ -13,9 +13,9 @@ make check
 ```
 
 `make check` はネットワーク不要のチェック（Markdown lint、ADR 索引、Go の `go vet` / golangci-lint / テスト /
-`CGO_ENABLED=0` ビルド / 依存ライセンス検査、i18n カタログ検査）をすべて実行します。初回のみ Go モジュールとツール、`tools/i18n` の npm パッケージのダウンロードが必要です。
+`CGO_ENABLED=0` ビルド / 依存ライセンス検査 / sqlc 生成物の検査、i18n カタログ検査）をすべて実行します。初回のみ Go モジュールとツール、`tools/i18n` の npm パッケージのダウンロードが必要です。
 
-- Go ツール（govulncheck, go-licenses）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
+- Go ツール（govulncheck, go-licenses, sqlc）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
 - 脆弱性検査はネットワークが必要なため `make check` には含めず、`make go-vuln` で実行します（CI では毎回実行）。
 - 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`。`tools/i18n` の npm パッケージも同じ一覧で検査）に限ります。
   増やす場合は PR で理由を説明してください。
