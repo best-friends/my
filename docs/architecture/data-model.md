@@ -514,7 +514,7 @@ flowchart LR
   版が添付したあとは説明を版の `status_revision_attachments.description` で持つので、ファイル単体の説明・焦点は変えられません（投稿を編集して直す）。
 - 未添付のアップロード（どの版からも参照されず、`account_profile_revisions` のアバター・ヘッダーにも使われていない `media_files`）は、
   作成から `media_unattached_ttl`（既定 24 時間）後に、1 時間ごとの消去ジョブ `media.cleanup` が行と Blob ごと削除します（FR-803）。
-  アバター・ヘッダーの参照は `account` モジュールの公開 API で問い合わせます。削除は同じトランザクションで添付の有無を再検査します。
+  アバター・ヘッダーの参照は `account` モジュール、インスタンスのプレビュー画像（`preview_image`、§4.9）の参照は `instance` モジュールの公開 API で問い合わせます。削除は同じトランザクションで添付の有無を再検査します。
 
 #### タグ・カスタム絵文字・投票
 
@@ -690,9 +690,9 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
+| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
 | `instance_settings` | 投影 | `key`（PK）, `revision_id`, `value` | |
-| `instance_text_revisions` | イベント（版） | `id`, `key`（`enum(name, short_description, description, terms, privacy_policy)`）, `locale`（`lang`）, `body`（空 = そのロケールの文章を消す）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, locale, id DESC)` |
+| `instance_text_revisions` | イベント（版） | `id`, `key`（`enum(name, short_description, description, terms, privacy_policy, preview_image_alt)`）, `locale`（`lang`）, `body`（空 = そのロケールの文章を消す）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, locale, id DESC)` |
 | `instance_texts` | 投影 | `key`, `locale`, `revision_id` | PK `(key, locale)`。表示はロケールのフォールバックチェーン（ADR-0009）で選ぶ |
 | `instance_rules` | リソース | `id`, `created_at` | ルールの識別子。通報が引用する（`report_rule_citations`） |
 | `instance_rule_revisions` | イベント（版） | `id`, `rule_id`, `position`, `revised_by_user_id`, `revised_at` | インデックス `(rule_id, id DESC)` |
@@ -703,6 +703,8 @@ flowchart LR
 - 設定値は 1 キー 1 スカラーにします。複合的な設定はキーを分けます（JSON にしない）。
   キー・型・既定値・検証は `internal/domain/instance` に定義し、`key` の `CHECK` と一緒に増やします。一度も設定していないキーは既定値として読みます。
 - 現在値の投影は、キー（文章はキーとロケール）ごとに `id` が最大の版を指します。
+- メディアを指す設定（`preview_image`）の値は `media_files.id` の論理参照で、空文字は未設定です。
+  どれかの版（現在値でなくても）が指すメディアは、`content` モジュールの未添付アップロードの消去（§4.4）から外れます。
 - 文章は読み手のロケールのフォールバックチェーン、`default_locale` のチェーン、`en` の順に探し、空の文章は飛ばします。
 - 環境変数・設定ファイルによる設定（ADR-0010）とインスタンス設定は、同じキーを持ちません。
   再起動で反映するデプロイの構成（アダプタ・接続先・ホスト名・秘密情報）は設定に、運営者が稼働中に変える方針と文章はこの表に置きます。

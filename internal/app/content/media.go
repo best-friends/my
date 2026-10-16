@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"mime"
+	"strings"
 	"time"
 
 	"github.com/best-friends/my/internal/app/blob"
@@ -334,6 +335,27 @@ func (s *MediaService) Update(ctx context.Context, accountID string, u MediaUpda
 		return Media{}, err
 	}
 	return s.Media(ctx, u.MediaID)
+}
+
+// ErrNotAnImage reports a media file that is not a still image, or whose processing failed.
+var ErrNotAnImage = errors.New("content: the media file is not a still image")
+
+// CheckImage fails with ErrNotFound for an unknown media file, and with ErrNotAnImage for a
+// file that is not a still image: a processed file of another media type, a file whose
+// processing failed, or an upload being processed whose format is not an image. It implements
+// instance.MediaFiles for the instance's preview image.
+func (s *MediaService) CheckImage(ctx context.Context, id string) error {
+	m, err := s.Media(ctx, id)
+	if err != nil {
+		return err
+	}
+	switch {
+	case m.Result != nil && (!m.Ready() || m.Result.MediaType != content.MediaTypeImage):
+		return fmt.Errorf("media %s: %w", id, ErrNotAnImage)
+	case m.Result == nil && (m.Upload == nil || !strings.HasPrefix(m.Upload.ContentType, "image/")):
+		return fmt.Errorf("media %s: %w", id, ErrNotAnImage)
+	}
+	return nil
 }
 
 // URL returns the public URL of a variant.
