@@ -244,6 +244,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if a.Runner == nil {
 		a.Runner = queue.NewPullRunner(a.source, a.Handlers, runnerOpts)
 	}
+	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
 	switch cfg.KV {
 	case "db":
 		// Set with the database above.
@@ -254,6 +255,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
 	}
 	a.RateLimiter = kernel.NewRateLimiter(a.KV, a.Clock)
+	a.registerKVCleanup()
 
 	account.RegisterProjectors(a.Projectors, accounts)
 	a.Accounts = account.NewService(account.Deps{
@@ -296,6 +298,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Graph = graph.NewService(graph.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	a.Graph.RegisterJobs(a.Handlers, a.Scheduler)
 	content.RegisterProjectors(a.Projectors, statuses)
 	a.Content = content.NewService(content.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
@@ -367,6 +370,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
 		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
+		Media:         a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Notifications: a.Notifications,
 		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
@@ -448,7 +452,6 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 	default:
 		return fmt.Errorf("media %q is not implemented yet", cfg.Media)
 	}
-	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
 	a.Media = content.NewMediaService(content.MediaDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Blobs: a.Blobs, Processor: a.MediaProcessor,
 		Outbox: a.Outbox, Jobs: a.Jobs, Clock: a.Clock, IDs: a.IDs,

@@ -23,6 +23,10 @@ if [[ -d src/__screenshots__ ]]; then chown -R "$HOST_UID:$HOST_GID" src/__scree
 exit "$status"
 '
 
+# Docker creates missing mount points as root, and an empty root-owned node_modules makes the host's
+# `bun install` fail, so they are created here as the calling user.
+mkdir -p "$root/app/node_modules" "$root/app/ui/node_modules" "$root/app/web/node_modules"
+
 exec docker run --rm --ipc=host \
 	-v "$root:/work" -w /work \
 	-v /work/app/node_modules -v /work/app/ui/node_modules -v /work/app/web/node_modules \

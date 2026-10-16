@@ -28,5 +28,9 @@ ON CONFLICT (namespace, key) DO UPDATE SET
   value = CAST(CAST(CAST(CAST(kv_entries.value AS TEXT) AS INTEGER) + CAST(CAST(excluded.value AS TEXT) AS INTEGER) AS TEXT) AS BLOB)
 RETURNING value;
 
+-- DeleteExpiredEntries removes at most @batch_limit expired entries, the earliest expired first.
 -- name: DeleteExpiredEntries :execrows
-DELETE FROM kv_entries WHERE expires_at <= @now;
+DELETE FROM kv_entries
+WHERE rowid IN (
+  SELECT e.rowid FROM kv_entries AS e WHERE e.expires_at <= @now ORDER BY e.expires_at LIMIT @batch_limit
+);

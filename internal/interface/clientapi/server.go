@@ -36,6 +36,8 @@ type Options struct {
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// Media runs the media use cases; nil serves no media operation (they fail with 500).
+	Media MediaFiles
 	// Graph reads and changes follows, blocks, and mutes.
 	Graph Graph
 	// Notifications runs the use cases of the viewer's notifications.

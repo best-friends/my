@@ -155,6 +155,9 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    クライアント IP は接続元です（信頼するプロキシの設定はまだなく、転送ヘッダは読みません）。
 4. **認可**: `security.gen.go` の操作の表を引き、トークンが要る操作に閲覧者がなければ 401、スコープが足りなければ 403 にします。
    表にない操作は `Register` が起動時に panic するので、検査されないまま公開されることはありません。
+5. **本文の上限**: リクエスト本文は 1 MiB まで、`uploadMedia` だけはアップロードの上限（`media_max_image_bytes`）に 64 KiB を足した大きさまでです。
+   `Content-Length` が上限を超える要求は本文を読まずに 413 にし、長さのない要求は `http.MaxBytesReader` で上限で打ち切ります（413）。
+   `uploadMedia` の 413 は `/api/v1/problems/media-too-large`、ほかは `about:blank` です。
 
 `security` の書き方は 3 つです（`internal/securitygen` がこれ以外を拒否します）。
 

@@ -196,31 +196,21 @@ func (s *Server) newStatus(v appcontent.StatusView) Status {
 	return out
 }
 
-// newMediaAttachments presents processed media as MediaAttachment.
+// newMediaAttachments presents the attachments of a revision as MediaAttachment (media.go),
+// with the revision's copy of each description.
 func newMediaAttachments(in []appcontent.MediaView) []MediaAttachment {
 	out := make([]MediaAttachment, 0, len(in))
 	for _, m := range in {
-		a := MediaAttachment{Id: m.Media.File.ID, Type: MediaAttachmentTypeUnknown}
-		if r := m.Media.Result; r != nil {
-			a.Type = MediaAttachmentType(r.MediaType)
-			if r.Blurhash != "" {
-				a.Blurhash = &r.Blurhash
+		url := func(v content.MediaVariant) string {
+			if v.Kind == content.VariantThumbnail && m.PreviewURL != "" {
+				return m.PreviewURL
 			}
-			if full, ok := r.Variant(content.VariantFull); ok && full.Width > 0 && full.Height > 0 {
-				a.Width, a.Height = &full.Width, &full.Height
-			}
+			return m.URL
 		}
-		if m.URL != "" {
-			a.Url = &m.URL
-		}
-		if m.PreviewURL != "" {
-			a.PreviewUrl = &m.PreviewURL
-		}
+		a := newMediaAttachment(m.Media, url)
+		a.Description = nil
 		if m.Description != "" {
 			a.Description = &m.Description
-		}
-		if f := m.Media.Focus; f != nil {
-			a.Focus = &MediaFocus{X: float32(f.X), Y: float32(f.Y)}
 		}
 		out = append(out, a)
 	}

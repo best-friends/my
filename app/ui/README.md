@@ -19,6 +19,15 @@ Components use only the semantic tokens below as Tailwind utilities (`bg-surface
 or, where a value is computed, as `var(--color-*)` in React's `style` ([D8](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)).
 `theme.css` resets `--color-*`, so Tailwind's default palette (`bg-red-500`, `text-white`) produces no CSS.
 
+## App-wide providers
+
+The kit re-exports two React Aria providers that an app renders once at its root, so that the app needs no dependency on
+`react-aria-components` of its own:
+
+- `I18nProvider` with the app's locale: the components' built-in strings, number and date formats, and the direction of arrow keys.
+- `RouterProvider` with the app router's `navigate`: every `Link` (and menu item or tab) with a same-origin `href` navigates
+  through it instead of loading a new document. The kit itself knows no router.
+
 ## Colors
 
 Colors have two layers in [src/theme.css](src/theme.css):
