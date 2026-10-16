@@ -106,11 +106,14 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | T4 | 既定は統合テスト（本物の QueryClient とルーター + MSW）にする。純粋なロジックは単体テスト、主要な流れは 4 ロケールの E2E にする | レビュー |
 | T5 | `@my/ui` の部品は必ずストーリーを持つ。ストーリーはアクセシビリティ・見た目・RTL のテストの入力になる | レビュー、`knip`（使われないファイル・export・依存） |
 | T6 | 部品のテストは jsdom かブラウザモードで動かす。React Compiler の preset はクライアント向けの変換にだけ効くので、Vitest の `node` 環境では本番と違うコードをテストすることになる | Vitest の設定 |
+| T7 | 非同期の結果は Testing Library の `findBy` / `waitFor` で待つ。`vi.waitFor` は使わない。待ち時間の上限はテストごとに変えず、setup の `asyncUtilTimeout` と Vitest の `testTimeout` にまとめる（待ちは実時間なので、負荷の高い機械では既定の 1 秒・5 秒を超える）。React の描画の外で動くフォーカス（React Aria のフォーカスの復帰は `requestAnimationFrame`、ルート変更の見出しへのフォーカスはルーターの `onRendered`）は `waitFor` の中で `toHaveFocus()` を検証する | テストの `no-restricted-syntax`（`vi.waitFor`）、Vitest の設定、レビュー |
 
 ### テストの置き場所と道具
 
 - 部品のテストは対象の隣に `*.test.ts(x)` で置き、`make web-test` で動かす（`app/web/vitest.config.ts`、jsdom）。
   - `src/test/setup.ts` が jest-dom のマッチャーを読み込み、MSW のサーバーを起動する。どのハンドラにも合わない要求はテストを失敗させる。
+    `findBy` / `waitFor` の上限（`asyncUtilTimeout`）は 10 秒、1 つのテストの上限（`vitest.config.ts` の `testTimeout`）は 30 秒にする（T7）。
+    通るテストはこの上限まで待たない。上限は壊れたテストが止まるまでの時間だけを決める。
   - 既定のハンドラは `src/test/msw/handlers.ts` に、`api/openapi.yaml` の操作ごとに 1 つ置く。テストごとの差し替えは `server.use()` で行う。
   - 部品は `src/test/render.tsx` の `renderWithProviders`（ランタイム設定と i18n のプロバイダ）で描画する。`user-event` は描画の前に `setup()` する。
   - 統合テストは同じファイルの `renderApp` でアプリ全体（本物のルーターをメモリ上の履歴で、新しい QueryClient）を描画する。`path` で開くアドレス、`locale` でロケールを指定する。
@@ -118,7 +121,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - jsdom の `FormData` と `File` の本文は、MSW が相手にする Node.js の `fetch` で送れない。ファイルを送るテストは `src/test/multipart.ts` の `nodeUploadFile()` で
     Node.js の `File` を作り、そのテストの間だけ `FormData` を Node.js のものにする。
   - `@my/ui` の部品のテストも `app/ui/src` の部品の隣に置き、`make web-test` で動かす（`app/ui/vitest.config.ts` の `unit` プロジェクト、jsdom）。
-    `app/ui/test/setup.ts` が jest-dom のマッチャーを読み込む。キットは通信しないので MSW もプロバイダもなく、Testing Library の `render` で描画する。
+    `app/ui/test/setup.ts` が jest-dom のマッチャーを読み込み、`app/web` と同じ待ち時間の上限を設定する。キットは通信しないので MSW もプロバイダもなく、Testing Library の `render` で描画する。
     構造は `app/ui/test/aria-snapshot.ts` の `ariaSnapshot()`（Playwright の ARIA スナップショットと同じ形の、ロール・名前・説明・状態の木）で検査する。
 - E2E は `app/web/e2e/*.spec.ts` に置き、`make web-e2e` で動かす（`app/web/playwright.config.ts`、ビルドした `vite preview` が相手）。
   - `vite preview` と `e2e/server.ts` は、実行ごとに選んだ空きポートで待ち受ける（`E2E_PREVIEW_PORT` / `E2E_SERVER_PORT` で固定できる）。

@@ -69,6 +69,11 @@ export const testSyntax = [
     selector: "AssignmentExpression > MemberExpression.left[property.name='fetch']",
     message: "Do not replace fetch; mock the network with MSW (web-client.md T3).",
   },
+  {
+    // T7: vi.waitFor has a fixed 1 s limit and does not wrap act(); Testing Library's waitFor uses the timeout of the test setup.
+    selector: "CallExpression[callee.object.name='vi'][callee.property.name='waitFor']",
+    message: "Wait with findBy or Testing Library's waitFor, which use the timeout of the test setup (web-client.md T7).",
+  },
 ];
 
 /** no-restricted-imports `paths` for every client source file. */
