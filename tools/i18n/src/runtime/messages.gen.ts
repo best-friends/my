@@ -170,6 +170,8 @@ export interface MessageArgs {
   "server:errors.account_unavailable": {};
   /** The request is invalid. */
   "server:errors.bad_request": {};
+  /** You block this account. Unblock it first. */
+  "server:errors.blocking": {};
   /** The request conflicts with the current state of the resource. */
   "server:errors.conflict": {};
   /** You are not allowed to do this. */
@@ -194,6 +196,10 @@ export interface MessageArgs {
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
   "server:errors.rate_limited_detail": { seconds: number };
+  /** This is not available for accounts on other servers. */
+  "server:errors.remote_account": {};
+  /** You cannot do this to your own account. */
+  "server:errors.self_relationship": {};
   /** The post created with this Idempotency-Key has been deleted. */
   "server:errors.status.already_deleted": {};
   /** The post has no text. */

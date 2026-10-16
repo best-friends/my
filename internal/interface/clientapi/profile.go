@@ -27,13 +27,18 @@ type MediaFiles interface {
 	URL(v content.MediaVariant) string
 }
 
-// newCredentialAccount presents the viewer's own actor as the CredentialAccount schema.
+// newCredentialAccount presents the viewer's own actor as the CredentialAccount schema: the
+// account with its follow counts (newProfile), images, and the source of its profile.
 func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (CredentialAccount, error) {
-	base := s.newAccount(a)
+	base, err := s.newProfile(ctx, a)
+	if err != nil {
+		return CredentialAccount{}, err
+	}
 	out := CredentialAccount{
 		Id: base.Id, Username: base.Username, Acct: base.Acct, DisplayName: base.DisplayName, Note: base.Note,
-		Url: base.Url, Locked: base.Locked, Bot: base.Bot, CreatedAt: base.CreatedAt,
-		Fields: []AccountField{}, Source: AccountSource{Fields: []AccountFieldSource{}},
+		Url: base.Url, Locked: base.Locked, Bot: base.Bot, CreatedAt: base.CreatedAt, Fields: base.Fields,
+		FollowersCount: base.FollowersCount, FollowingCount: base.FollowingCount,
+		Source: AccountSource{Fields: []AccountFieldSource{}},
 	}
 	p := a.Profile
 	if p == nil {
@@ -41,7 +46,6 @@ func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (
 	}
 	out.Discoverable, out.Indexable = p.Discoverable, p.Indexable
 	for i, f := range p.Fields {
-		out.Fields = append(out.Fields, AccountField{Name: f.Name, Value: f.ValueHTML})
 		src := AccountFieldSource{Name: f.Name}
 		if p.Source != nil && i < len(p.Source.FieldValues) {
 			src.Value = p.Source.FieldValues[i]
@@ -51,7 +55,6 @@ func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (
 	if p.Source != nil {
 		out.Source.Note = p.Source.Note
 	}
-	var err error
 	if p.AvatarMediaID != "" {
 		out.Source.AvatarMediaId = &p.AvatarMediaID
 		if out.Avatar, err = s.imageURL(ctx, p.AvatarMediaID); err != nil {

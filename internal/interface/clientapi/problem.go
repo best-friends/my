@@ -88,6 +88,12 @@ func (s *Server) NewProblem(ctx context.Context, status int, typ, title, detail 
 	return p, ProblemResponseHeaders{ContentLanguage: &locale, CacheControl: &cache}
 }
 
+// invalidParameterResponse is invalidParameter as a default response (problem, statuses.go).
+func (s *Server) invalidParameterResponse(ctx context.Context, name string) problem {
+	body, headers := s.invalidParameter(ctx, name)
+	return problem{Body: body, Headers: headers, StatusCode: http.StatusBadRequest}
+}
+
 // writeProblem writes a problem document outside the strict handlers: for requests that the
 // generated code rejects, that authentication, authorization, or rate limiting refuse, and for
 // errors that handlers return. Headers already set on w (WWW-Authenticate, Retry-After) are

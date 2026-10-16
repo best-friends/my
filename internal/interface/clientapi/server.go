@@ -18,6 +18,9 @@ const BasePath = "/api/v1"
 type Options struct {
 	// Host is the domain that serves the instance.
 	Host string
+	// AccountDomain is the domain of local handles (@alice@AccountDomain) when it differs
+	// from Host; "" means Host.
+	AccountDomain string
 	// SoftwareVersion is the server version.
 	SoftwareVersion string
 	// SourceURL is where users get the server's source code (ADR-0011).
@@ -36,6 +39,8 @@ type Options struct {
 	Preferences UserPreferences
 	// Media presents the media files of profiles; nil presents no images.
 	Media MediaFiles
+	// Graph reads and changes follows, blocks, and mutes.
+	Graph Graph
 	// Notifications runs the use cases of the viewer's notifications.
 	Notifications Notifications
 	// Statuses posts, edits, and deletes statuses; StatusReader presents them; Interactions
