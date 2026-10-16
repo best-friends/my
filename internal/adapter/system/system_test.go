@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package system_test
+
+import (
+	"testing"
+	"time"
+
+	"github.com/best-friends/my/internal/adapter/system"
+	"github.com/best-friends/my/pkg/testkit"
+)
+
+func TestClockContract(t *testing.T) {
+	testkit.ClockContract(t, system.Clock{})
+}
+
+func TestClockTracksSystemTime(t *testing.T) {
+	before := time.Now().Add(-time.Millisecond)
+	now := system.Clock{}.Now()
+	after := time.Now()
+	if now.Before(before) || now.After(after) {
+		t.Errorf("Now() = %v, want between %v and %v", now, before, after)
+	}
+}
+
+func TestIDGeneratorContract(t *testing.T) {
+	ids := testkit.IDGeneratorContract(t, system.IDGenerator{})
+
+	// The contract already checks strict ordering; make sure that check covered IDs
+	// sharing a millisecond, which is where ordering relies on the sub-millisecond counter.
+	sameMilli := 0
+	for i := 1; i < len(ids); i++ {
+		prev, _ := testkit.UUIDv7Millis(ids[i-1])
+		cur, _ := testkit.UUIDv7Millis(ids[i])
+		if prev == cur {
+			sameMilli++
+		}
+	}
+	if sameMilli == 0 {
+		t.Fatal("no two consecutive IDs shared a millisecond; same-millisecond ordering was not exercised")
+	}
+}
+
+func TestIDGeneratorStampsCurrentTime(t *testing.T) {
+	before := time.Now().UnixMilli()
+	ms, ok := testkit.UUIDv7Millis(system.IDGenerator{}.NewID())
+	after := time.Now().UnixMilli()
+	if !ok {
+		t.Fatal("NewID() returned a non-UUID")
+	}
+	if ms < before || ms > after+1 {
+		t.Errorf("ID timestamp = %d, want between %d and %d", ms, before, after+1)
+	}
+}
