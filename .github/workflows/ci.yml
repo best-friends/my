@@ -76,3 +76,22 @@ jobs:
         run: make db-up
       - name: Apply the schema to an empty database and check for drift
         run: make db-check
+
+  docker-smoke:
+    # Build the images and run deploy/docker/compose.yaml end to end: schema apply, server start, admin creation,
+    # then WebFinger, Actor, and NodeInfo (scripts/docker-smoke.sh dumps the logs on failure and always tears down).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Smoke-test the Docker Compose setup
+        run: make docker-smoke
+      # The smoke test covers linux/amd64; also build both images for linux/arm64 (ADR-0010) under QEMU.
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+      - name: Build the images for linux/arm64
+        run: |
+          docker build --platform linux/arm64 --target schema .
+          docker build --platform linux/arm64 --target app .

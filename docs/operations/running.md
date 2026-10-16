@@ -12,6 +12,7 @@ my serve          # 設定の role に従って起動する（-config <file> で
 
 `my serve` は設定を検証してから DB・ジョブキュー・鍵管理のアダプタを組み立て、`listen` で HTTP を受け付ける。
 スキーマは適用しない。起動前に Atlas で適用する（`make db-apply`、[ADR-0023](../adr/0023-declarative-schema-management.md)）。
+Docker Compose の構成（`deploy/docker/compose.yaml`、手順は [README](../../README.md#クイックスタートdocker-compose)）では、一回限りの `schema` サービスが適用してからサーバーが起動する。
 スキーマが未適用でもプロセスは起動し、readiness が 503 を返す。
 
 | `role` | HTTP | ジョブワーカー |

@@ -3,7 +3,8 @@
 ActivityPub 互換のマイクロブログサーバー。Go 製。Google Cloud / AWS / セルフホスト（Docker, microk8s）で、
 できる限り低コストに運営できることを目指す OSS です。
 
-> **Status: v0 の開発中（M1: Walking Skeleton）。** まだ利用できる機能はありません。
+> **Status: v0 の開発中（M1: Walking Skeleton）。** 動くのは、管理者アカウントの作成と、他サーバーがアカウントを見つけるための
+> WebFinger・Actor・NodeInfo だけです。投稿やフォローはまだできません。
 > v0 の間は DB の作り直しを含む破壊的変更が頻繁に入ります（[ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)）。
 
 ## 目指すもの
@@ -13,6 +14,38 @@ ActivityPub 互換のマイクロブログサーバー。Go 製。Google Cloud /
 - Mastodon / Misskey / GoToSocial などと連合できる
 - 最初から多言語対応
 - Web（PWA）とモバイルアプリ
+
+## クイックスタート（Docker Compose）
+
+Docker と Docker Compose v2 で、SQLite の最小構成を起動します（[`deploy/docker/compose.yaml`](deploy/docker/compose.yaml)）。
+
+```sh
+cd deploy/docker
+cp .env.example .env
+# .env の MY_KEK に `openssl rand -base64 32` の出力を書く（DB とは別にバックアップする）
+docker compose up -d --build
+```
+
+- `schema` サービスが Atlas Community Edition で `schema/sqlite.sql` を名前付きボリュームの DB に適用して終了し、
+  成功した後にサーバー（`role=all`）が起動します。`up` のたびに適用し直すので、更新後も同じ手順で起動します。
+- サーバーは `127.0.0.1:8080` で待ち受けます（ポートは `.env` の `MY_HTTP_PORT`）。`curl localhost:8080/readyz` が
+  `{"status":"ok"}` を返せば準備完了です。
+- KEK は Docker secret として `/run/secrets/my_kek` に渡り、環境変数には出ません（[鍵暗号化鍵の管理](docs/operations/key-management.md)）。
+
+管理者を作り、WebFinger と Actor を確かめます。パスワードは標準入力の 1 行目から読みます。
+
+```sh
+docker compose exec -T my my admin create -username alice -email alice@example.com < password.txt
+curl 'http://localhost:8080/.well-known/webfinger?resource=acct:alice@localhost:8080'
+curl -H 'Accept: application/activity+json' http://localhost:8080/ap/actors/<WebFinger の self リンクの UUID>
+```
+
+- 公開するときは `.env` の `MY_HOST` を実際のドメインにし、TLS を終端するリバースプロキシ（Caddy など）を前に置きます。
+  `MY_HOST` は最初の起動で DB に記録され、後から変えられません。
+- `docker compose down` で止めます。`down -v` はデータのボリュームも消します。
+- CI は同じ手順を `scripts/docker-smoke.sh`（`make docker-smoke`）で毎回実行します。
+
+設定項目は [設定リファレンス](docs/reference/configuration.md)、運用は [サーバーの起動・停止](docs/operations/running.md) を参照してください。
 
 ## ドキュメント
 
