@@ -7,6 +7,23 @@ package clientapi
 // operationSecurity is the security of each operation of api/openapi.yaml, by the
 // http.ServeMux pattern that the generated code registers it with.
 var operationSecurity = map[string]operationAccess{
-	"GET /api/v1/accounts/verify_credentials": {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
-	"GET /api/v1/instance":                    {Operation: "getInstance", Anonymous: true},
+	"GET /api/v1/accounts/lookup":                      {Operation: "lookupAccount", Anonymous: true, Scopes: []string{"read:accounts"}},
+	"GET /api/v1/accounts/relationships":               {Operation: "getRelationships", Scopes: []string{"read:follows"}},
+	"GET /api/v1/accounts/verify_credentials":          {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
+	"GET /api/v1/accounts/{id}":                        {Operation: "getAccount", Anonymous: true, Scopes: []string{"read:accounts"}},
+	"GET /api/v1/accounts/{id}/followers":              {Operation: "listAccountFollowers", Anonymous: true, Scopes: []string{"read:accounts"}},
+	"GET /api/v1/accounts/{id}/following":              {Operation: "listAccountFollowing", Anonymous: true, Scopes: []string{"read:accounts"}},
+	"GET /api/v1/blocks":                               {Operation: "listBlocks", Scopes: []string{"read:blocks"}},
+	"GET /api/v1/follow_requests":                      {Operation: "listFollowRequests", Scopes: []string{"read:follows"}},
+	"GET /api/v1/instance":                             {Operation: "getInstance", Anonymous: true},
+	"GET /api/v1/mutes":                                {Operation: "listMutes", Scopes: []string{"read:mutes"}},
+	"POST /api/v1/accounts/{id}/block":                 {Operation: "blockAccount", Scopes: []string{"write:blocks"}},
+	"POST /api/v1/accounts/{id}/follow":                {Operation: "followAccount", Scopes: []string{"write:follows"}},
+	"POST /api/v1/accounts/{id}/mute":                  {Operation: "muteAccount", Scopes: []string{"write:mutes"}},
+	"POST /api/v1/accounts/{id}/remove_from_followers": {Operation: "removeAccountFromFollowers", Scopes: []string{"write:follows"}},
+	"POST /api/v1/accounts/{id}/unblock":               {Operation: "unblockAccount", Scopes: []string{"write:blocks"}},
+	"POST /api/v1/accounts/{id}/unfollow":              {Operation: "unfollowAccount", Scopes: []string{"write:follows"}},
+	"POST /api/v1/accounts/{id}/unmute":                {Operation: "unmuteAccount", Scopes: []string{"write:mutes"}},
+	"POST /api/v1/follow_requests/{id}/authorize":      {Operation: "acceptFollowRequest", Scopes: []string{"write:follows"}},
+	"POST /api/v1/follow_requests/{id}/reject":         {Operation: "rejectFollowRequest", Scopes: []string{"write:follows"}},
 }

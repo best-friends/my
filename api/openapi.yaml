@@ -76,6 +76,352 @@ paths:
                 $ref: "#/components/schemas/Account"
         default:
           $ref: "#/components/responses/Problem"
+  # --- Accounts and relationships (#108): accounts, follows, follow requests, blocks, mutes ---
+  /accounts/lookup:
+    get:
+      operationId: lookupAccount
+      summary: Look up an account by its handle
+      description: |
+        Resolves `username` (a local account) or `username@domain` among the accounts that the
+        instance knows, without fetching remote ones. A leading `@` is ignored. An account that
+        blocks the viewer, is deactivated, or is deleted is a 404, the same as an unknown one.
+      tags: [accounts]
+      security:
+        - {}
+        - oauth2: ["read:accounts"]
+      parameters:
+        - name: acct
+          in: query
+          required: true
+          description: The handle, `username` or `username@domain`.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 320
+      responses:
+        "200":
+          $ref: "#/components/responses/AccountProfile"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/relationships:
+    get:
+      operationId: getRelationships
+      summary: Get the viewer's relationships with accounts
+      description: |
+        Returns one relationship per requested account, in the order of the request. Accounts
+        that do not exist, are not active, or block the viewer are left out.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:follows"]
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: The account IDs, repeated (`?id=a&id=b`).
+          style: form
+          explode: true
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 40
+            items:
+              $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: The relationships.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}:
+    get:
+      operationId: getAccount
+      summary: Get an account
+      description: |
+        An account that blocks the viewer, is deactivated, or is deleted is a 404, the same as
+        an unknown one.
+      tags: [accounts]
+      security:
+        - {}
+        - oauth2: ["read:accounts"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AccountProfile"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/block:
+    post:
+      operationId: blockAccount
+      summary: Block an account
+      description: |
+        Ends the follows between the viewer and the account in both directions and keeps
+        either from following the other until the block is lifted (FR-303). Blocking an
+        account that the viewer already blocks changes nothing. Only local accounts can be
+        blocked.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:blocks"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/follow:
+    post:
+      operationId: followAccount
+      summary: Follow an account
+      description: |
+        Follows the account at once, or sends a follow request when the account is locked:
+        then `requested` is true until the account accepts it (FR-301, FR-302). Following an
+        account that the viewer already follows or has requested to follow changes only the
+        preferences in the body. Following an account that the viewer blocks is a 409
+        `/api/v1/problems/blocking`. Only local accounts can be followed.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:follows"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowAccountRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/followers:
+    get:
+      operationId: listAccountFollowers
+      summary: List the followers of an account
+      description: |
+        The accounts that actively follow the account, newest follow first. Followers that
+        block the viewer, are deactivated, or are deleted are left out, so a page may hold
+        fewer than `limit` accounts before the last.
+      tags: [accounts]
+      security:
+        - {}
+        - oauth2: ["read:accounts"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/AccountPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/following:
+    get:
+      operationId: listAccountFollowing
+      summary: List the accounts that an account follows
+      description: |
+        The accounts that the account actively follows, newest follow first, leaving out the
+        same accounts as `listAccountFollowers`.
+      tags: [accounts]
+      security:
+        - {}
+        - oauth2: ["read:accounts"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/AccountPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/mute:
+    post:
+      operationId: muteAccount
+      summary: Mute an account
+      description: |
+        Hides the account's posts, and unless `notifications` is false its notifications,
+        from the viewer (FR-303). Muting an account that the viewer already mutes replaces the
+        settings and the expiry.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:mutes"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MuteAccountRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/remove_from_followers:
+    post:
+      operationId: removeAccountFromFollowers
+      summary: Remove an account from the viewer's followers
+      description: |
+        Ends the account's active follow of the viewer. Without one it changes nothing; a
+        pending request is declined with `rejectFollowRequest` instead.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:follows"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/unblock:
+    post:
+      operationId: unblockAccount
+      summary: Unblock an account
+      description: The follows that the block ended stay ended. Without a block it changes nothing.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:blocks"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/unfollow:
+    post:
+      operationId: unfollowAccount
+      summary: Unfollow an account
+      description: Ends the follow or withdraws the follow request. Without one it changes nothing.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:follows"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /accounts/{id}/unmute:
+    post:
+      operationId: unmuteAccount
+      summary: Unmute an account
+      description: Without a mute it changes nothing.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:mutes"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /blocks:
+    get:
+      operationId: listBlocks
+      summary: List the accounts that the viewer blocks
+      description: Newest block first. Deactivated and deleted accounts are left out.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:blocks"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/AccountPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /follow_requests:
+    get:
+      operationId: listFollowRequests
+      summary: List the follow requests to the viewer
+      description: |
+        The accounts whose follow requests await the viewer's approval, newest first.
+        Deactivated and deleted accounts are left out.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:follows"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/AccountPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /follow_requests/{id}/authorize:
+    post:
+      operationId: acceptFollowRequest
+      summary: Accept a follow request
+      description: |
+        Makes the account's pending follow of the viewer active (FR-302). Accepting a follow
+        that is already active changes nothing; without a follow it is a 404.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:follows"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /follow_requests/{id}/reject:
+    post:
+      operationId: rejectFollowRequest
+      summary: Reject a follow request
+      description: Declines the account's pending follow request (FR-302); without one it is a 404.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:follows"]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Relationship"
+        default:
+          $ref: "#/components/responses/Problem"
+  /mutes:
+    get:
+      operationId: listMutes
+      summary: List the accounts that the viewer mutes
+      description: |
+        Mutes that have not expired, newest first. Deactivated and deleted accounts are left
+        out.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:mutes"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of mutes.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutePage"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- End of accounts and relationships (#108) ---
 components:
   securitySchemes:
     oauth2:
@@ -135,6 +481,14 @@ components:
         minimum: 1
         maximum: 40
         default: 20
+    # Accounts and relationships (#108).
+    AccountId:
+      name: id
+      in: path
+      required: true
+      description: The account ID.
+      schema:
+        $ref: "#/components/schemas/Id"
   responses:
     Problem:
       description: An error, as an RFC 9457 problem document.
@@ -162,6 +516,34 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
+    # Accounts and relationships (#108).
+    AccountPage:
+      description: A page of accounts.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AccountPage"
+    AccountProfile:
+      description: The account, with its follow counts.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Account"
+    Relationship:
+      description: The viewer's relationship with the account after the change.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Relationship"
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -194,6 +576,8 @@ components:
         - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
           use the app (registration pending or rejected, email unverified, or the account
           deactivated or deleted).
+        - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
+          from following it. Unblock it first.
       type: object
       required: [type, title, status]
       properties:
@@ -246,10 +630,11 @@ components:
           description: The maximum number of characters in the text of a post.
           type: integer
           minimum: 1
+    # Accounts and relationships (#108).
     Account:
-      description: An account, as clients show it.
+      description: An account, as clients show it (FR-006).
       type: object
-      required: [id, username, acct, display_name, note, url, locked, bot, created_at]
+      required: [id, username, acct, display_name, note, fields, url, locked, bot, created_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -279,3 +664,127 @@ components:
           description: When the account was created.
           type: string
           format: date-time
+        fields:
+          description: The profile's metadata fields, in their order; empty when there are none.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileField"
+        followers_count:
+          description: |
+            The number of accounts that actively follow the account, as far as the instance
+            knows. Present on the account's own endpoints (`getAccount`, `lookupAccount`,
+            `verifyAccountCredentials`) and left out where accounts are listed or embedded.
+          type: integer
+          minimum: 0
+        following_count:
+          description: The number of accounts that the account actively follows; present where `followers_count` is.
+          type: integer
+          minimum: 0
+    AccountPage:
+      description: A page of accounts.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [accounts]
+          properties:
+            accounts:
+              type: array
+              items:
+                $ref: "#/components/schemas/Account"
+    FollowAccountRequest:
+      description: The viewer's preferences of the follow; a preference left out keeps its value.
+      type: object
+      properties:
+        show_boosts:
+          description: Show the account's boosts in the home timeline. New follows show them.
+          type: boolean
+        notify:
+          description: Notify the viewer of the account's new posts. New follows do not.
+          type: boolean
+    MuteAccountRequest:
+      description: The settings of a mute.
+      type: object
+      properties:
+        notifications:
+          description: Also hide the account's notifications.
+          type: boolean
+          default: true
+        duration:
+          description: How long the mute lasts, in seconds; 0 mutes until unmuted.
+          type: integer
+          minimum: 0
+          maximum: 31536000
+          default: 0
+    MutePage:
+      description: A page of mutes.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [mutes]
+          properties:
+            mutes:
+              type: array
+              items:
+                $ref: "#/components/schemas/MutedAccount"
+    MutedAccount:
+      description: An account that the viewer mutes, with the mute's settings.
+      type: object
+      required: [account, notifications]
+      properties:
+        account:
+          $ref: "#/components/schemas/Account"
+        notifications:
+          description: Whether the mute also hides the account's notifications.
+          type: boolean
+        expires_at:
+          description: When the mute ends; left out for a mute until unmuted.
+          type: string
+          format: date-time
+    ProfileField:
+      description: One metadata field of a profile.
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          description: The field's name, as plain text.
+          type: string
+        value:
+          description: The field's value as sanitized HTML.
+          type: string
+    Relationship:
+      description: |
+        The viewer's relationship with an account. It never says whether the account blocks
+        the viewer: such an account is not found at all.
+      type: object
+      required: [id, following, requested, followed_by, requested_by, show_boosts, notify, blocking, muting, muting_notifications]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        following:
+          description: Whether the viewer actively follows the account.
+          type: boolean
+        requested:
+          description: Whether the viewer's follow request awaits the account's approval.
+          type: boolean
+        followed_by:
+          description: Whether the account actively follows the viewer.
+          type: boolean
+        requested_by:
+          description: Whether the account's follow request awaits the viewer's approval.
+          type: boolean
+        show_boosts:
+          description: Whether the viewer's follow shows the account's boosts in the home timeline (true without a follow).
+          type: boolean
+        notify:
+          description: Whether the viewer's follow notifies them of the account's new posts.
+          type: boolean
+        blocking:
+          description: Whether the viewer blocks the account.
+          type: boolean
+        muting:
+          description: Whether the viewer mutes the account (a mute that has not expired).
+          type: boolean
+        muting_notifications:
+          description: Whether the viewer's mute also hides the account's notifications.
+          type: boolean
+    # --- End of accounts and relationships (#108) ---

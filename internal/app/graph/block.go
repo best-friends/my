@@ -96,6 +96,12 @@ func (s *Service) Blocks(ctx context.Context, accountID string, p Page) ([]graph
 	return s.d.Repository.ListBlocking(ctx, accountID, p.Before, p.limit())
 }
 
+// IsBlocking reports whether blockerID blocks blockedID, for readers that hide an account
+// from the accounts it blocks.
+func (s *Service) IsBlocking(ctx context.Context, blockerID, blockedID string) (bool, error) {
+	return found(s.d.Repository.FindBlockEdge(ctx, blockerID, blockedID))
+}
+
 // checkNotBlocked fails with ErrBlocked when either account blocks the other.
 func (s *Service) checkNotBlocked(ctx context.Context, tx uow.Tx, a, b string) error {
 	for _, pair := range [][2]string{{a, b}, {b, a}} {

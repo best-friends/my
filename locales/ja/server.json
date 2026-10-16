@@ -331,6 +331,10 @@
     "defaultMessage": "リクエストが正しくありません。",
     "description": "API error message for HTTP 400 when no more specific message applies."
   },
+  "errors.blocking": {
+    "defaultMessage": "このアカウントをブロックしています。先にブロックを解除してください。",
+    "description": "API error title for HTTP 409 when the user tries to follow an account that they block."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "このアプリにはこの操作が許可されていません。",
     "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."
@@ -367,9 +371,21 @@
     "defaultMessage": "{seconds, plural, other {# 秒後にもう一度お試しください。}}",
     "description": "Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds."
   },
+  "errors.remote_account": {
+    "defaultMessage": "他のサーバーのアカウントにはこの操作を行えません。",
+    "description": "Detail of the HTTP 422 API error when a follow or block targets an account on another server, which the operation does not support."
+  },
+  "errors.self_relationship": {
+    "defaultMessage": "自分のアカウントにはこの操作を行えません。",
+    "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
+  },
+  "errors.unprocessable": {
+    "defaultMessage": "このリクエストは実行できません。",
+    "description": "API error title for HTTP 422 when the request is well-formed but cannot be carried out; the detail says why."
   },
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",

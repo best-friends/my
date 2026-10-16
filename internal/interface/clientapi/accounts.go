@@ -4,25 +4,41 @@ package clientapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/domain/account"
 )
 
-// Accounts reads accounts for the client API.
+// Accounts reads accounts for the client API. *appaccount.Service implements it.
 type Accounts interface {
 	// FindByID returns the actor with an account ID, failing with appaccount.ErrNotFound when
 	// there is none.
 	FindByID(ctx context.Context, id string) (appaccount.Actor, error)
+	// FindByHandle returns the actor with a handle (domain is account.LocalDomain for local
+	// accounts), failing with appaccount.ErrNotFound when there is none.
+	FindByHandle(ctx context.Context, username, domain string) (appaccount.Actor, error)
 }
 
 // cacheNoStore is the Cache-Control of responses that depend on the viewer (ADR-0016).
 const cacheNoStore = "no-store"
 
-// newAccount presents an actor as the Account schema.
+// cacheFor returns the Cache-Control of a GET that anonymous requests may make: shared caches
+// may store the anonymous answer, never one for a viewer, which blocks change.
+func cacheFor(v *Viewer) *string {
+	c := cachePublic
+	if v != nil {
+		c = cacheNoStore
+	}
+	return &c
+}
+
+// newAccount presents an actor as the Account schema, without the follow counts.
 func (s *Server) newAccount(a appaccount.Actor) Account {
-	out := Account{Id: a.Account.ID, CreatedAt: a.Account.CreatedAt, Url: a.Account.URI}
+	out := Account{Id: a.Account.ID, CreatedAt: a.Account.CreatedAt, Url: a.Account.URI, Fields: []ProfileField{}}
 	switch {
 	case a.Local != nil:
 		out.Username, out.Acct = a.Local.Username, a.Local.Username
@@ -36,8 +52,72 @@ func (s *Server) newAccount(a appaccount.Actor) Account {
 	}
 	if p := a.Profile; p != nil {
 		out.DisplayName, out.Note, out.Locked, out.Bot = p.DisplayName, p.NoteHTML, p.Locked, p.Bot
+		for _, f := range p.Fields {
+			out.Fields = append(out.Fields, ProfileField{Name: f.Name, Value: f.ValueHTML})
+		}
 	}
 	return out
+}
+
+// newProfile presents an actor as the Account schema with its follow counts, the answer of
+// the account's own endpoints.
+func (s *Server) newProfile(ctx context.Context, a appaccount.Actor) (Account, error) {
+	out := s.newAccount(a)
+	c, err := s.o.Graph.Counters(ctx, a.Account.ID)
+	if err != nil {
+		return Account{}, fmt.Errorf("clientapi: the follow counts of %s: %w", a.Account.ID, err)
+	}
+	followers, following := int(c.FollowersCount), int(c.FollowingCount)
+	out.FollowersCount, out.FollowingCount = &followers, &following
+	return out, nil
+}
+
+// presentable reports whether an account may be shown: it is a user's account (not the
+// instance actor) and active, and, when blockCheck is set, it does not block the viewer. An
+// account that is not presentable is answered as if it did not exist, so that a blocked
+// viewer cannot tell it apart from an unknown one.
+func (s *Server) presentable(ctx context.Context, a appaccount.Actor, viewer *Viewer, blockCheck bool) (bool, error) {
+	if a.Account.ActorType == account.ActorApplication || !a.Lifecycle.Active() {
+		return false, nil
+	}
+	if !blockCheck || viewer == nil || viewer.AccountID == a.Account.ID {
+		return true, nil
+	}
+	blocked, err := s.o.Graph.IsBlocking(ctx, a.Account.ID, viewer.AccountID)
+	return !blocked, err
+}
+
+// visibleAccount returns the account with an ID as the viewer may see it; ok is false when
+// there is none, it is not active, or it blocks the viewer (nil for an anonymous request).
+func (s *Server) visibleAccount(ctx context.Context, viewer *Viewer, id string) (appaccount.Actor, bool, error) {
+	return s.presentableByID(ctx, viewer, id, true)
+}
+
+// presentableByID returns the account with an ID; ok is false when there is none or it is not
+// presentable.
+func (s *Server) presentableByID(ctx context.Context, viewer *Viewer, id string, blockCheck bool) (a appaccount.Actor, ok bool, err error) {
+	a, err = s.o.Accounts.FindByID(ctx, id)
+	if errors.Is(err, appaccount.ErrNotFound) {
+		return appaccount.Actor{}, false, nil
+	}
+	if err != nil {
+		return appaccount.Actor{}, false, err
+	}
+	ok, err = s.presentable(ctx, a, viewer, blockCheck)
+	return a, ok, err
+}
+
+// viewerOf returns the Viewer of an operation that also serves anonymous requests, or nil.
+func viewerOf(ctx context.Context) *Viewer {
+	if v, ok := ViewerFrom(ctx); ok {
+		return &v
+	}
+	return nil
+}
+
+// notFound returns the 404 problem of an account that is not visible.
+func (s *Server) notFound(ctx context.Context) problemResponse {
+	return s.problem(ctx, http.StatusNotFound, ProblemTypeBlank, s.Localizer(ctx).ServerErrorsNotFound(), "")
 }
 
 // VerifyAccountCredentials serves GET /api/v1/accounts/verify_credentials: the viewer's own
@@ -51,9 +131,70 @@ func (s *Server) VerifyAccountCredentials(ctx context.Context, _ VerifyAccountCr
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: the viewer's account %s: %w", v.AccountID, err)
 	}
+	body, err := s.newProfile(ctx, a)
+	if err != nil {
+		return nil, err
+	}
 	cache := cacheNoStore
 	return VerifyAccountCredentials200JSONResponse{
-		Body:    s.newAccount(a),
+		Body:    body,
 		Headers: VerifyAccountCredentials200ResponseHeaders{CacheControl: &cache},
 	}, nil
+}
+
+// GetAccount serves GET /api/v1/accounts/{id}.
+func (s *Server) GetAccount(ctx context.Context, req GetAccountRequestObject) (GetAccountResponseObject, error) {
+	v := viewerOf(ctx)
+	a, ok, err := s.visibleAccount(ctx, v, req.Id)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return GetAccountdefaultApplicationProblemPlusJSONResponse(s.notFound(ctx)), nil
+	}
+	body, err := s.newProfile(ctx, a)
+	if err != nil {
+		return nil, err
+	}
+	return GetAccount200JSONResponse{AccountProfileJSONResponse{Body: body, Headers: AccountProfileResponseHeaders{CacheControl: cacheFor(v)}}}, nil
+}
+
+// LookupAccount serves GET /api/v1/accounts/lookup: an account by its handle.
+func (s *Server) LookupAccount(ctx context.Context, req LookupAccountRequestObject) (LookupAccountResponseObject, error) {
+	v := viewerOf(ctx)
+	username, domain, ok := s.parseAcct(req.Params.Acct)
+	if !ok {
+		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFound(ctx)), nil
+	}
+	a, err := s.o.Accounts.FindByHandle(ctx, username, domain)
+	if errors.Is(err, appaccount.ErrNotFound) {
+		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFound(ctx)), nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if ok, err = s.presentable(ctx, a, v, true); err != nil {
+		return nil, err
+	}
+	if !ok {
+		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFound(ctx)), nil
+	}
+	body, err := s.newProfile(ctx, a)
+	if err != nil {
+		return nil, err
+	}
+	return LookupAccount200JSONResponse{AccountProfileJSONResponse{Body: body, Headers: AccountProfileResponseHeaders{CacheControl: cacheFor(v)}}}, nil
+}
+
+// parseAcct splits a handle, "username" or "username@domain" with an optional leading "@",
+// into the username and the domain; the instance's own domains mean a local account.
+func (s *Server) parseAcct(acct string) (username, domain string, ok bool) {
+	username, domain, _ = strings.Cut(strings.TrimPrefix(acct, "@"), "@")
+	if username == "" || strings.Contains(domain, "@") {
+		return "", "", false
+	}
+	if strings.EqualFold(domain, s.o.Host) || (s.o.AccountDomain != "" && strings.EqualFold(domain, s.o.AccountDomain)) {
+		domain = account.LocalDomain
+	}
+	return username, domain, true
 }

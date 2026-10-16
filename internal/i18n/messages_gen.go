@@ -585,6 +585,13 @@ func (l *Localizer) ServerErrorsBadRequest() string {
 	return l.format("server:errors.bad_request", nil)
 }
 
+// ServerErrorsBlocking formats "server:errors.blocking". API error title for HTTP 409 when the user tries to follow an account that they block.
+//
+//	en: You block this account. Unblock it first.
+func (l *Localizer) ServerErrorsBlocking() string {
+	return l.format("server:errors.blocking", nil)
+}
+
 // ServerErrorsInsufficientScope formats "server:errors.insufficient_scope". API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs.
 //
 //	en: This app is not allowed to do this.
@@ -648,11 +655,32 @@ func (l *Localizer) ServerErrorsRateLimitedDetail(seconds int) string {
 	return l.format("server:errors.rate_limited_detail", map[string]any{"seconds": seconds})
 }
 
+// ServerErrorsRemoteAccount formats "server:errors.remote_account". Detail of the HTTP 422 API error when a follow or block targets an account on another server, which the operation does not support.
+//
+//	en: This is not available for accounts on other servers.
+func (l *Localizer) ServerErrorsRemoteAccount() string {
+	return l.format("server:errors.remote_account", nil)
+}
+
+// ServerErrorsSelfRelationship formats "server:errors.self_relationship". Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account.
+//
+//	en: You cannot do this to your own account.
+func (l *Localizer) ServerErrorsSelfRelationship() string {
+	return l.format("server:errors.self_relationship", nil)
+}
+
 // ServerErrorsUnauthenticated formats "server:errors.unauthenticated". API error title for HTTP 401 when the request carries no access token and the operation needs one.
 //
 //	en: Sign in to do this.
 func (l *Localizer) ServerErrorsUnauthenticated() string {
 	return l.format("server:errors.unauthenticated", nil)
+}
+
+// ServerErrorsUnprocessable formats "server:errors.unprocessable". API error title for HTTP 422 when the request is well-formed but cannot be carried out; the detail says why.
+//
+//	en: The request cannot be carried out.
+func (l *Localizer) ServerErrorsUnprocessable() string {
+	return l.format("server:errors.unprocessable", nil)
 }
 
 // ServerHealthUnavailable formats "server:health.unavailable". Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable.

@@ -18,6 +18,9 @@ const BasePath = "/api/v1"
 type Options struct {
 	// Host is the domain that serves the instance.
 	Host string
+	// AccountDomain is the domain of local handles (@alice@AccountDomain) when it differs
+	// from Host; "" means Host.
+	AccountDomain string
 	// Name is the display name of the instance.
 	Name string
 	// SoftwareVersion is the server version.
@@ -31,6 +34,8 @@ type Options struct {
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// Graph reads and changes follows, blocks, and mutes.
+	Graph Graph
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

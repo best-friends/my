@@ -170,6 +170,8 @@ export interface MessageArgs {
   "server:errors.account_unavailable": {};
   /** The request is invalid. */
   "server:errors.bad_request": {};
+  /** You block this account. Unblock it first. */
+  "server:errors.blocking": {};
   /** This app is not allowed to do this. */
   "server:errors.insufficient_scope": {};
   /** The access token needs the scope {scope}. */
@@ -188,8 +190,14 @@ export interface MessageArgs {
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
   "server:errors.rate_limited_detail": { seconds: number };
+  /** This is not available for accounts on other servers. */
+  "server:errors.remote_account": {};
+  /** You cannot do this to your own account. */
+  "server:errors.self_relationship": {};
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
+  /** The request cannot be carried out. */
+  "server:errors.unprocessable": {};
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
   /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */

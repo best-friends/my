@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ import (
 	appidentity "github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/domain/account"
+	"github.com/best-friends/my/internal/domain/graph"
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/clientapi"
@@ -61,6 +63,25 @@ func (f fakeAccounts) FindByID(_ context.Context, id string) (appaccount.Actor, 
 	return a, nil
 }
 
+func (f fakeAccounts) FindByHandle(_ context.Context, username, domain string) (appaccount.Actor, error) {
+	for _, a := range f {
+		if a.Local != nil && domain == account.LocalDomain && a.Local.Username == username {
+			return a, nil
+		}
+	}
+	return appaccount.Actor{}, appaccount.ErrNotFound
+}
+
+// fakeGraph answers the reads of the account endpoints: nobody blocks anybody, and the
+// counts are fixed. The other methods are not implemented.
+type fakeGraph struct{ clientapi.Graph }
+
+func (fakeGraph) IsBlocking(context.Context, string, string) (bool, error) { return false, nil }
+
+func (fakeGraph) Counters(_ context.Context, id string) (graph.Counters, error) {
+	return graph.Counters{AccountID: id, FollowersCount: 2, FollowingCount: 1}, nil
+}
+
 // authEnv is a Server with fake tokens, accounts, and a rate limiter on a stopped clock.
 type authEnv struct {
 	h     http.Handler
@@ -100,10 +121,12 @@ func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {
 		SourceURL: "https://git.example/my", MaxPostCharacters: 500,
 		Authenticator: e.auth,
 		Accounts: fakeAccounts{aliceAccountID: {
-			Account: account.Account{ID: aliceAccountID, URI: "https://social.example/ap/actors/" + aliceAccountID, CreatedAt: createdAt},
-			Local:   &account.LocalAccount{AccountID: aliceAccountID, UserID: "user-" + aliceAccountID, Username: "alice"},
-			Profile: &account.ProfileRevision{DisplayName: "Alice", NoteHTML: "<p>hi</p>", Locked: true},
+			Account:   account.Account{ID: aliceAccountID, URI: "https://social.example/ap/actors/" + aliceAccountID, CreatedAt: createdAt},
+			Local:     &account.LocalAccount{AccountID: aliceAccountID, UserID: "user-" + aliceAccountID, Username: "alice"},
+			Profile:   &account.ProfileRevision{DisplayName: "Alice", NoteHTML: "<p>hi</p>", Locked: true},
+			Lifecycle: account.InitialLifecycleState(aliceAccountID),
 		}},
+		Graph:       fakeGraph{},
 		RateLimiter: kernel.NewRateLimiter(testkit.NewKeyValueStore(e.clock), e.clock),
 		Locales: &i18n.Resolver{
 			Bundle: messages,
@@ -157,11 +180,13 @@ func TestVerifyAccountCredentials(t *testing.T) {
 		if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 			t.Fatal(err)
 		}
+		followers, following := 2, 1
 		want := clientapi.Account{
 			Id: aliceAccountID, Username: "alice", Acct: "alice", DisplayName: "Alice", Note: "<p>hi</p>",
-			Url: "https://social.example/@alice", Locked: true, CreatedAt: createdAt,
+			Fields: []clientapi.ProfileField{}, Url: "https://social.example/@alice", Locked: true, CreatedAt: createdAt,
+			FollowersCount: &followers, FollowingCount: &following,
 		}
-		if got != want {
+		if !reflect.DeepEqual(got, want) {
 			t.Errorf("%s: account = %+v, want %+v", token, got, want)
 		}
 		if cc := res.Header.Get("Cache-Control"); cc != "no-store" {

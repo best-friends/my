@@ -79,6 +79,28 @@ func (s *Server) NewProblem(ctx context.Context, status int, typ, title, detail 
 	return p, ProblemResponseHeaders{ContentLanguage: &locale, CacheControl: &cache}
 }
 
+// problemResponse has the fields of every operation's default response type
+// (<Operation>defaultApplicationProblemPlusJSONResponse), which it converts to:
+//
+//	return GetAccountdefaultApplicationProblemPlusJSONResponse(s.problem(ctx, ...)), nil
+type problemResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+// problem returns the default response of a problem, as NewProblem builds it.
+func (s *Server) problem(ctx context.Context, status int, typ, title, detail string) problemResponse {
+	body, headers := s.NewProblem(ctx, status, typ, title, detail)
+	return problemResponse{Body: body, Headers: headers, StatusCode: status}
+}
+
+// invalidParameter returns the 400 problem of a parameter whose value the handler rejects.
+func (s *Server) invalidParameter(ctx context.Context, name string) problemResponse {
+	l := s.Localizer(ctx)
+	return s.problem(ctx, http.StatusBadRequest, ProblemTypeBlank, l.ServerErrorsBadRequest(), l.ServerErrorsInvalidParameter(name))
+}
+
 // writeProblem writes a problem document outside the strict handlers: for requests that the
 // generated code rejects, that authentication, authorization, or rate limiting refuse, and for
 // errors that handlers return. Headers already set on w (WWW-Authenticate, Retry-After) are

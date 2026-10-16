@@ -331,6 +331,10 @@
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ıuʌɐʅıp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.blocking": {
+    "defaultMessage": "‮⅄on qʅoɔʞ ʇɥıs ɐɔɔonuʇ. ∩uqʅoɔʞ ıʇ ɟıɹsʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "‮⊥ɥıs ɐdd ıs uoʇ ɐʅʅoʍǝp ʇo po ʇɥıs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -367,8 +371,20 @@
     "defaultMessage": "‮{seconds,plural,one{⊥ɹʎ ɐƃɐıu ıu # sǝɔoup.} other{⊥ɹʎ ɐƃɐıu ıu # sǝɔoups.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.remote_account": {
+    "defaultMessage": "‮⊥ɥıs ıs uoʇ ɐʌɐıʅɐqʅǝ ɟoɹ ɐɔɔonuʇs ou oʇɥǝɹ sǝɹʌǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.self_relationship": {
+    "defaultMessage": "‮⅄on ɔɐuuoʇ po ʇɥıs ʇo ʎonɹ oʍu ɐɔɔonuʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "‮Sıƃu ıu ʇo po ʇɥıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unprocessable": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔɐuuoʇ qǝ ɔɐɹɹıǝp onʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "health.unavailable": {
