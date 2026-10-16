@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import { render, screen, waitFor } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
+import { useState } from "react";
+import type { Key } from "react-aria-components";
+import { describe, expect, it, vi } from "vitest";
+import { Select, SelectItem } from "./Select";
+
+const languages = [
+  { id: "en", name: "English" },
+  { id: "ja", name: "日本語" },
+  { id: "ar", name: "العربية" },
+];
+
+describe("Select", () => {
+  it("names the trigger by the label and the value, and links the description", () => {
+    render(
+      <Select label="Language" description="Used for new posts." placeholder="Choose a language">
+        <SelectItem id="en">English</SelectItem>
+      </Select>,
+    );
+    const trigger = screen.getByRole("button", { name: /Language/ });
+    expect(trigger).toHaveTextContent("Choose a language");
+    expect(trigger).toHaveAccessibleDescription("Used for new posts.");
+  });
+
+  it("opens with the keyboard, moves with the arrow keys and selects with Enter", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Select label="Language" items={languages} onChange={onChange}>
+        {(language) => <SelectItem id={language.id}>{language.name}</SelectItem>}
+      </Select>,
+    );
+    await user.tab();
+    await user.keyboard("{ArrowDown}");
+    const listbox = await screen.findByRole("listbox", { name: "Language" });
+    expect(listbox).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "English" })).toHaveFocus();
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(onChange).toHaveBeenCalledWith("ja");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Language/ })).toHaveTextContent("日本語");
+  });
+
+  it("is controlled with value and onChange", async () => {
+    const user = userEvent.setup();
+    function Controlled() {
+      const [value, setValue] = useState<Key | null>("ar");
+      return (
+        <>
+          <Select label="Language" value={value} onChange={setValue}>
+            <SelectItem id="en">English</SelectItem>
+            <SelectItem id="ar">العربية</SelectItem>
+          </Select>
+          <output>{String(value)}</output>
+        </>
+      );
+    }
+    render(<Controlled />);
+    await user.click(screen.getByRole("button", { name: /Language/ }));
+    await user.click(await screen.findByRole("option", { name: "English" }));
+    expect(screen.getByRole("status")).toHaveTextContent("en");
+  });
+
+  it("closes with Escape and returns focus to the trigger", async () => {
+    const user = userEvent.setup();
+    render(
+      <Select label="Language">
+        <SelectItem id="en">English</SelectItem>
+      </Select>,
+    );
+    const trigger = screen.getByRole("button", { name: /Language/ });
+    await user.click(trigger);
+    expect(await screen.findByRole("listbox")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    // React Aria restores focus in the next animation frame.
+    await waitFor(() => {
+      expect(trigger).toHaveFocus();
+    });
+  });
+
+  it("links the error message while invalid", () => {
+    render(
+      <Select label="Language" isInvalid errorMessage="Choose a language.">
+        <SelectItem id="en">English</SelectItem>
+      </Select>,
+    );
+    expect(screen.getByRole("button", { name: /Language/ })).toHaveAccessibleDescription("Choose a language.");
+  });
+});

@@ -20,15 +20,39 @@ import (
 	"github.com/best-friends/my/internal/interface/authpages"
 )
 
-// fakeIdentity signs alice@example.com in with "correct horse" and keeps the live tokens.
+// fakeIdentity signs alice@example.com in with "correct horse" and keeps the live tokens. Every
+// session belongs to the user "u1" unless SignUp made it; access holds each user's Access
+// (allowed when absent).
 type fakeIdentity struct {
 	live    map[string]bool
 	n       int
 	limited bool
 	last    appidentity.SignInInput
+
+	mode      identity.RegistrationMode
+	owner     map[string]string // token -> user ID
+	access    map[string]appidentity.Access
+	signUps   []appidentity.SignUpInput
+	signUpErr error
+	verified  map[string]bool // tokens redeemed by VerifyEmail
+	resent    int
+	resendErr error
 }
 
-func newFakeIdentity() *fakeIdentity { return &fakeIdentity{live: map[string]bool{}} }
+func newFakeIdentity() *fakeIdentity {
+	return &fakeIdentity{
+		live: map[string]bool{}, mode: identity.RegistrationOpen, owner: map[string]string{},
+		access: map[string]appidentity.Access{}, verified: map[string]bool{},
+	}
+}
+
+func (f *fakeIdentity) newToken(userID string) string {
+	f.n++
+	token := "my_ses_token" + strconv.Itoa(f.n)
+	f.live[token] = true
+	f.owner[token] = userID
+	return token
+}
 
 func (f *fakeIdentity) SignIn(_ context.Context, in appidentity.SignInInput) (appidentity.SignedIn, error) {
 	f.last = in
@@ -39,21 +63,64 @@ func (f *fakeIdentity) SignIn(_ context.Context, in appidentity.SignInInput) (ap
 		return appidentity.SignedIn{}, appidentity.ErrInvalidCredentials
 	}
 	delete(f.live, in.CurrentToken)
-	f.n++
-	token := "my_ses_token" + strconv.Itoa(f.n)
-	f.live[token] = true
-	return appidentity.SignedIn{Token: token, Session: identity.Session{ExpiresAt: time.Now().Add(time.Hour)}}, nil
+	token := f.newToken("u1")
+	return appidentity.SignedIn{Token: token, Session: identity.Session{UserID: "u1", ExpiresAt: time.Now().Add(time.Hour)}}, nil
 }
 
 func (f *fakeIdentity) Authenticate(_ context.Context, token string) (identity.Session, error) {
 	if !f.live[token] {
 		return identity.Session{}, appidentity.ErrInvalidSession
 	}
-	return identity.Session{ID: token}, nil
+	return identity.Session{ID: token, UserID: f.owner[token]}, nil
 }
 
 func (f *fakeIdentity) SignOut(_ context.Context, token string) error {
 	delete(f.live, token)
+	return nil
+}
+
+func (f *fakeIdentity) SignUp(_ context.Context, in appidentity.SignUpInput) (appidentity.SignedUp, error) {
+	f.signUps = append(f.signUps, in)
+	if f.signUpErr != nil {
+		return appidentity.SignedUp{}, f.signUpErr
+	}
+	userID := "new" + strconv.Itoa(len(f.signUps))
+	delete(f.live, in.CurrentToken)
+	token := f.newToken(userID)
+	f.access[userID] = appidentity.Access{
+		Registration: identity.RegistrationPending, Email: in.Email, EmailVerificationRequired: true,
+	}
+	return appidentity.SignedUp{
+		Registration: appidentity.Registration{User: identity.User{ID: userID}},
+		State:        identity.RegistrationPending,
+		Session:      appidentity.SignedIn{Token: token, Session: identity.Session{UserID: userID, ExpiresAt: time.Now().Add(time.Hour)}},
+	}, nil
+}
+
+func (f *fakeIdentity) RegistrationMode(context.Context) (identity.RegistrationMode, error) {
+	return f.mode, nil
+}
+
+func (f *fakeIdentity) UserAccess(_ context.Context, userID string) (appidentity.Access, error) {
+	if a, ok := f.access[userID]; ok {
+		return a, nil
+	}
+	return appidentity.Access{Registration: identity.RegistrationApproved, EmailVerified: true}, nil
+}
+
+func (f *fakeIdentity) VerifyEmail(_ context.Context, token string) (string, error) {
+	if token != "my_evt_good" || f.verified[token] {
+		return "", appidentity.ErrInvalidToken
+	}
+	f.verified[token] = true
+	return "u1", nil
+}
+
+func (f *fakeIdentity) ResendVerificationEmail(context.Context, string) error {
+	if f.resendErr != nil {
+		return f.resendErr
+	}
+	f.resent++
 	return nil
 }
 

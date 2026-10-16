@@ -106,15 +106,9 @@ func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) 
 	}
 
 	now := s.d.Clock.Now()
-	token, hash := NewToken(SessionTokenPrefix)
-	session := identity.Session{
-		ID:        s.d.IDs.NewID(),
-		UserID:    cred.cred.UserID,
-		TokenHash: hash,
-		UserAgent: truncate(in.UserAgent, identity.MaxUserAgentLength),
-		IP:        in.IP,
-		CreatedAt: now,
-		ExpiresAt: now.Add(s.sessionTTL()),
+	session, err := s.prepareSession(ctx, cred.cred.UserID, in.IP, in.UserAgent, in.CurrentToken, now)
+	if err != nil {
+		return SignedIn{}, err
 	}
 	var rehashed *identity.PasswordCredential
 	if cred.needsRehash {
@@ -122,38 +116,69 @@ func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) 
 		if err != nil {
 			return SignedIn{}, err
 		}
-		rehashed = &identity.PasswordCredential{ID: s.d.IDs.NewID(), UserID: session.UserID, Hash: h, SetAt: now}
-	}
-	var previous string
-	if in.CurrentToken != "" {
-		switch old, _, err := s.d.Repository.FindUnrevokedSession(ctx, HashToken(in.CurrentToken)); {
-		case err == nil:
-			previous = old.ID
-		case !errors.Is(err, ErrNotFound):
-			return SignedIn{}, err
-		}
+		rehashed = &identity.PasswordCredential{ID: s.d.IDs.NewID(), UserID: cred.cred.UserID, Hash: h, SetAt: now}
 	}
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if previous != "" {
-			rev := identity.SessionRevocation{SessionID: previous, Reason: identity.RevokedReplaced, RevokedAt: now}
-			if err := s.d.Repository.InsertSessionRevocation(ctx, tx, rev); err != nil {
-				return err
-			}
-		}
 		if rehashed != nil {
 			if err := s.d.Repository.InsertPasswordCredential(ctx, tx, *rehashed); err != nil {
 				return err
 			}
 		}
-		if err := s.d.Repository.InsertSession(ctx, tx, session); err != nil {
-			return err
-		}
-		return s.d.Repository.UpsertSessionActivity(ctx, tx, identity.SessionActivity{SessionID: session.ID, LastSeenAt: now})
+		return s.writeSession(ctx, tx, session)
 	})
 	if err != nil {
 		return SignedIn{}, err
 	}
-	return SignedIn{Token: token, Session: session}, nil
+	return session.signedIn(), nil
+}
+
+// newSession is a session prepared before its transaction: its token and row, and the
+// browser's earlier session that it replaces.
+type newSession struct {
+	token    string
+	session  identity.Session
+	previous string // ID of the session to revoke as replaced, or ""
+}
+
+func (n newSession) signedIn() SignedIn { return SignedIn{Token: n.token, Session: n.session} }
+
+// prepareSession returns a new session of userID with a new token. currentToken is the
+// session token the browser holds, if any; the new session replaces it.
+func (s *Service) prepareSession(ctx context.Context, userID, ip, userAgent, currentToken string, now time.Time) (newSession, error) {
+	token, hash := NewToken(SessionTokenPrefix)
+	n := newSession{token: token, session: identity.Session{
+		ID:        s.d.IDs.NewID(),
+		UserID:    userID,
+		TokenHash: hash,
+		UserAgent: truncate(userAgent, identity.MaxUserAgentLength),
+		IP:        ip,
+		CreatedAt: now,
+		ExpiresAt: now.Add(s.sessionTTL()),
+	}}
+	if currentToken != "" {
+		switch old, _, err := s.d.Repository.FindUnrevokedSession(ctx, HashToken(currentToken)); {
+		case err == nil:
+			n.previous = old.ID
+		case !errors.Is(err, ErrNotFound):
+			return newSession{}, err
+		}
+	}
+	return n, nil
+}
+
+// writeSession writes a prepared session, revoking the one it replaces.
+func (s *Service) writeSession(ctx context.Context, tx uow.Tx, n newSession) error {
+	now := n.session.CreatedAt
+	if n.previous != "" {
+		rev := identity.SessionRevocation{SessionID: n.previous, Reason: identity.RevokedReplaced, RevokedAt: now}
+		if err := s.d.Repository.InsertSessionRevocation(ctx, tx, rev); err != nil {
+			return err
+		}
+	}
+	if err := s.d.Repository.InsertSession(ctx, tx, n.session); err != nil {
+		return err
+	}
+	return s.d.Repository.UpsertSessionActivity(ctx, tx, identity.SessionActivity{SessionID: n.session.ID, LastSeenAt: now})
 }
 
 func (s *Service) sessionTTL() time.Duration {

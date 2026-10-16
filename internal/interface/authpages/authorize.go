@@ -115,6 +115,15 @@ func (h *Handler) handleAuthorization(w http.ResponseWriter, r *http.Request, re
 		h.internalError(w, r, err)
 		return
 	}
+	access, err := h.o.Identity.UserAccess(ctx, session.UserID)
+	if err != nil {
+		h.internalError(w, r, err)
+		return
+	}
+	if !access.Allowed() { // no tokens for an account that cannot be used yet
+		h.renderStatus(w, r, http.StatusForbidden, access, "", "")
+		return
+	}
 	switch {
 	case a.Client.FirstParty || decision == decisionApprove:
 		code, err := h.o.OAuth.IssueAuthorizationCode(ctx, a, session.UserID)

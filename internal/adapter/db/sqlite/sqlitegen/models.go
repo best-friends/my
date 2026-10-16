@@ -187,6 +187,15 @@ type InstanceTextRevision struct {
 	RevisedAt       int64
 }
 
+type Invite struct {
+	ID              string
+	Code            string
+	CreatedByUserID sql.NullString
+	MaxUses         sql.NullInt64
+	ExpiresAt       sql.NullInt64
+	CreatedAt       int64
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -294,6 +303,14 @@ type PasswordCredential struct {
 	UserID       string
 	PasswordHash string
 	SetAt        int64
+}
+
+type RegistrationApplication struct {
+	ID          string
+	UserID      string
+	Reason      sql.NullString
+	InviteID    sql.NullString
+	SubmittedAt int64
 }
 
 type Role struct {
@@ -413,4 +430,20 @@ type UserPreference struct {
 	DefaultPostLanguage     string
 	RequireMediaDescription int64
 	UpdatedAt               int64
+}
+
+type UserRegistrationState struct {
+	UserID string
+	State  string
+	Since  int64
+}
+
+type UserToken struct {
+	ID             string
+	UserID         string
+	Purpose        string
+	EmailAddressID sql.NullString
+	TokenHash      []byte
+	ExpiresAt      int64
+	IssuedAt       int64
 }

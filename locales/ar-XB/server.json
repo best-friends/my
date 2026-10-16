@@ -71,6 +71,10 @@
     "defaultMessage": "‮{minutes,plural,one{⊥oo ɯɐuʎ ɟɐıʅǝp sıƃu-ıu ɐʇʇǝɯdʇs. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝ.} other{⊥oo ɯɐuʎ ɟɐıʅǝp sıƃu-ıu ɐʇʇǝɯdʇs. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝs.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.sign_in.sign_up_link": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝ ɐu ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.sign_in.submit": {
     "defaultMessage": "‮Sıƃu ıu‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -83,12 +87,160 @@
     "defaultMessage": "‮Sıƃu onʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.sign_up.closed": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ıs uoʇ ɐɔɔǝdʇıuƃ uǝʍ ɐɔɔonuʇs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.email_hint": {
+    "defaultMessage": "‮⅄on sıƃu ıu ʍıʇɥ ʇɥıs ɐppɹǝss.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.email_invalid": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐu ǝɯɐıʅ ɐppɹǝss snɔɥ ɐs ɐʅıɔǝ@ǝxɐɯdʅǝ.ɔoɯ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.email_label": {
+    "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.email_taken": {
+    "defaultMessage": "‮⊥ɥıs ǝɯɐıʅ ɐppɹǝss ıs ɐʅɹǝɐpʎ ıu nsǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.error_summary": {
+    "defaultMessage": "‮⊥ɥǝ ɐɔɔonuʇ ʍɐs uoʇ ɔɹǝɐʇǝp. Ↄɥǝɔʞ ʇɥǝ ɟıǝʅps ɯɐɹʞǝp qǝʅoʍ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.invite_hint": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ɐɔɔǝdʇs uǝʍ ɐɔɔonuʇs qʎ ıuʌıʇɐʇıou ouʅʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.invite_invalid": {
+    "defaultMessage": "‮⊥ɥıs ıuʌıʇǝ ɔopǝ ıs uoʇ ʌɐʅıp. Iʇ ɯɐʎ ɥɐʌǝ ǝxdıɹǝp oɹ qǝǝu nsǝp nd.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.invite_label": {
+    "defaultMessage": "‮Iuʌıʇǝ ɔopǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.invite_required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʎonɹ ıuʌıʇǝ ɔopǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.password_hint": {
+    "defaultMessage": "‮{min, number} ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.password_invalid": {
+    "defaultMessage": "‮∩sǝ {min, number} ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.password_label": {
+    "defaultMessage": "‮Ԁɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.rate_limited": {
+    "defaultMessage": "‮{minutes,plural,one{⊥oo ɯɐuʎ sıƃu-nd ɐʇʇǝɯdʇs ɟɹoɯ ʎonɹ uǝʇʍoɹʞ. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝ.} other{⊥oo ɯɐuʎ sıƃu-nd ɐʇʇǝɯdʇs ɟɹoɯ ʎonɹ uǝʇʍoɹʞ. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.reason_hint": {
+    "defaultMessage": "‮∀ ɯopǝɹɐʇoɹ ɹǝʌıǝʍs uǝʍ ɐɔɔonuʇs qǝɟoɹǝ ʇɥǝʎ ɔɐu qǝ nsǝp. ∩d ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.reason_invalid": {
+    "defaultMessage": "‮Ӽǝǝd ıʇ ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.reason_label": {
+    "defaultMessage": "‮Mɥʎ po ʎon ʍɐuʇ ʇo ɾoıu? (odʇıouɐʅ)‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.submit": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝ ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.title": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝ ɐu ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.username_hint": {
+    "defaultMessage": "‮∩d ʇo {max, number} ʅǝʇʇǝɹs (ɐ–z), pıƃıʇs, ɐup nupǝɹsɔoɹǝs. Iʇ ɔɐuuoʇ qǝ ɔɥɐuƃǝp ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.username_invalid": {
+    "defaultMessage": "‮∩sǝ 1 ʇo {max, number} ʅǝʇʇǝɹs (ɐ–z), pıƃıʇs, ɐup nupǝɹsɔoɹǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.username_label": {
+    "defaultMessage": "‮∩sǝɹuɐɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_up.username_taken": {
+    "defaultMessage": "‮⊥ɥıs nsǝɹuɐɯǝ ıs ɐʅɹǝɐpʎ ʇɐʞǝu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.signed_in.continue": {
     "defaultMessage": "‮Ↄouʇıunǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.signed_in.title": {
     "defaultMessage": "‮⅄on ɐɹǝ sıƃuǝp ıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.pending": {
+    "defaultMessage": "‮⅄onɹ ɹǝƃısʇɹɐʇıou ıs ʍɐıʇıuƃ ɟoɹ ɐ ɯopǝɹɐʇoɹ's ɐddɹoʌɐʅ. ⅄on ɔɐu sıƃu ıu, qnʇ ʎon ɔɐu nsǝ ʇɥǝ ɐdd ouʅʎ ɐɟʇǝɹ ıʇ ıs ɐddɹoʌǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.rejected": {
+    "defaultMessage": "‮⅄onɹ ɹǝƃısʇɹɐʇıou ʍɐs uoʇ ɐddɹoʌǝp, so ʇɥıs ɐɔɔonuʇ ɔɐuuoʇ qǝ nsǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.resend_failed": {
+    "defaultMessage": "‮⊥ɥǝ ǝɯɐıʅ ɔonʅp uoʇ qǝ sǝuʇ. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.resend_rate_limited": {
+    "defaultMessage": "‮{minutes,plural,one{⅄on ɐsʞǝp ɟoɹ ʇɥǝ ʅıuʞ ʇoo ɯɐuʎ ʇıɯǝs. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝ.} other{⅄on ɐsʞǝp ɟoɹ ʇɥǝ ʅıuʞ ʇoo ɯɐuʎ ʇıɯǝs. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.resend_submit": {
+    "defaultMessage": "‮Sǝup ʇɥǝ ʅıuʞ ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.resent": {
+    "defaultMessage": "‮Mǝ sǝuʇ ɐ uǝʍ ʅıuʞ ʇo {email}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.title": {
+    "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ıs uoʇ ɹǝɐpʎ ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.verify_email": {
+    "defaultMessage": "‮Ↄouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss: odǝu ʇɥǝ ʅıuʞ ʍǝ sǝuʇ ʇo {email}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.verify_email.done": {
+    "defaultMessage": "‮⊥ɥɐuʞ ʎon. ⅄onɹ ǝɯɐıʅ ɐppɹǝss ıs ɔouɟıɹɯǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.verify_email.done_title": {
+    "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss ɔouɟıɹɯǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.verify_email.invalid": {
+    "defaultMessage": "‮⊥ɥıs ʅıuʞ ıs uoʇ ʌɐʅıp. Iʇ ɯɐʎ ɥɐʌǝ ǝxdıɹǝp oɹ qǝǝu nsǝp ɐʅɹǝɐpʎ. Sıƃu ıu ʇo ƃǝʇ ɐ uǝʍ ouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.verify_email.prompt": {
+    "defaultMessage": "‮Sǝʅǝɔʇ ʇɥǝ qnʇʇou qǝʅoʍ ʇo ɔouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.verify_email.submit": {
+    "defaultMessage": "‮Ↄouɟıɹɯ ǝɯɐıʅ ɐppɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.verify_email.title": {
+    "defaultMessage": "‮Ↄouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "config.errors": {
@@ -125,6 +277,14 @@
   },
   "health.unavailable": {
     "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ ıs uoʇ ɹǝɐpʎ ʇo ɐɔɔǝdʇ ɹǝbnǝsʇs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.verify_email.body": {
+    "defaultMessage": "‮Mǝʅɔoɯǝ ʇo {host}.\n\nOdǝu ʇɥıs ʅıuʞ ʇo ɔouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss:\n\n{url}\n\n{hours,plural,one{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹ.} other{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹs.}} Iɟ ʎon pıp uoʇ sıƃu nd ɐʇ {host}, ıƃuoɹǝ ʇɥıs ǝɯɐıʅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.verify_email.subject": {
+    "defaultMessage": "‮Ↄouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss ɟoɹ {host}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   }
 }

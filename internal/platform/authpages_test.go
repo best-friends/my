@@ -64,7 +64,13 @@ var csrfToken = regexp.MustCompile(`name="csrf_token" value="([^"]+)"`)
 // form fetches the sign-in screen and returns its form fields with the anti-forgery token.
 func (c *authClient) form(fields ...string) url.Values {
 	c.t.Helper()
-	_, body := c.do(http.MethodGet, authpages.PathSignIn, nil, nil)
+	return c.formAt(authpages.PathSignIn, fields...)
+}
+
+// formAt fetches the screen at path and returns its form fields with the anti-forgery token.
+func (c *authClient) formAt(path string, fields ...string) url.Values {
+	c.t.Helper()
+	_, body := c.do(http.MethodGet, path, nil, nil)
 	m := csrfToken.FindStringSubmatch(body)
 	if m == nil {
 		c.t.Fatalf("sign-in screen has no csrf_token: %s", body)

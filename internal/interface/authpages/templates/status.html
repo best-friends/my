@@ -1,0 +1,17 @@
+{{define "content"}}
+<h1>{{.L.ServerAuthStatusTitle}}</h1>
+{{if .Error}}<p role="alert">{{.Error}}</p>{{end}}
+{{if .Notice}}<p role="status">{{.Notice}}</p>{{end}}
+{{with .Status}}
+{{if .Rejected}}<p>{{$.L.ServerAuthStatusRejected}}</p>{{else if .Pending}}<p>{{$.L.ServerAuthStatusPending}}</p>{{end}}
+{{if .VerifyEmail}}<p>{{.VerifyEmail}}</p>
+<form method="post" action="/auth/verify_email/resend">
+<input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+<button type="submit">{{$.L.ServerAuthStatusResendSubmit}}</button>
+</form>{{end}}
+{{end}}
+<form method="post" action="/auth/sign_out">
+<input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+<button type="submit">{{.L.ServerAuthSignOutSubmit}}</button>
+</form>
+{{end}}

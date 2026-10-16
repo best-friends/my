@@ -220,6 +220,11 @@ export default defineConfig(
               from: { element: { type: "ui", fileInternalPath: "**/*.stories.tsx" } },
               allow: { to: { module: { origin: "external", source: ["@storybook/react-vite"] } } },
             },
+            // T5: component tests also import Testing Library and Vitest; components never do.
+            {
+              from: { element: { type: "ui", fileInternalPath: "**/*.test.{ts,tsx}" } },
+              allow: { to: { module: { origin: "external", source: ["@testing-library/react", "@testing-library/user-event", "vitest"] } } },
+            },
           ],
         },
       ],

@@ -1,20 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package authpages serves the server-rendered sign-in, sign-out, and OAuth authorization
-// (consent) screens (ADR-0030): plain HTML forms from html/template that work without
-// JavaScript, worded from the server message catalog and styled by one stylesheet that the web
-// client's build provides.
+// Package authpages serves the server-rendered sign-in, sign-out, registration, email
+// verification, and OAuth authorization (consent) screens (ADR-0030): plain HTML forms from
+// html/template that work without JavaScript, worded from the server message catalog and styled
+// by one stylesheet that the web client's build provides.
 //
-// A sign-in starts a browser session carried by the __Host-my_session cookie (Secure,
-// HttpOnly, SameSite=Lax, Path=/) with a new token every time (ADR-0019 §4). Every POST passes
-// net/http.CrossOriginProtection and must carry the anti-forgery token of the __Host-my_csrf
-// cookie in its csrf_token field, for browsers that send neither Sec-Fetch-Site nor Origin
-// (ADR-0019 §4). Failed sign-ins answer with one message whether or not the account exists.
+// A sign-in or sign-up starts a browser session carried by the __Host-my_session cookie
+// (Secure, HttpOnly, SameSite=Lax, Path=/) with a new token every time (ADR-0019 §4). Every POST
+// passes net/http.CrossOriginProtection and must carry the anti-forgery token of the
+// __Host-my_csrf cookie in its csrf_token field, for browsers that send neither Sec-Fetch-Site
+// nor Origin (ADR-0019 §4). Failed sign-ins answer with one message whether or not the account
+// exists.
+//
+// A signed-in user whose account cannot be used yet (a registration waiting for approval or
+// rejected, or an email address waiting for confirmation, identity.Access) sees a page that
+// says so instead of continuing to where they were going.
 //
 // The authorization endpoint (RFC 6749 §3.1) asks a signed-in user to consent to a third-party
 // client and answers the client by a 303 redirect to its registered redirect URI with the code
 // or the error, the state, and the issuer (RFC 9207). First-party clients skip the consent.
-// Without a session, it sends the browser to the sign-in form and back.
+// Without a session, it sends the browser to the sign-in form and back; a user whose account
+// cannot be used yet gets the status page and no code.
 package authpages
 
 import (
@@ -42,8 +48,14 @@ import (
 
 // Paths of the screens.
 const (
-	PathSignIn    = "/auth/sign_in"
-	PathSignOut   = "/auth/sign_out"
+	PathSignIn  = "/auth/sign_in"
+	PathSignOut = "/auth/sign_out"
+	PathSignUp  = "/auth/sign_up"
+	// PathVerifyEmail is the page that verification emails link to.
+	PathVerifyEmail = appidentity.PathVerifyEmail
+	// PathResendVerification sends a signed-in user a new verification email.
+	PathResendVerification = "/auth/verify_email/resend"
+	// PathAuthorize is the OAuth authorization endpoint.
 	PathAuthorize = "/oauth/authorize"
 )
 
@@ -65,8 +77,9 @@ func contentSecurityPolicy(formAction []string) string {
 		"; frame-ancestors 'none'; base-uri 'none'"
 }
 
-// maxFormBytes bounds a form body; the fields are an email address, a password, a token, and a path.
-const maxFormBytes = 16 << 10
+// maxFormBytes bounds a form body; the largest is the registration form, whose reason field
+// holds up to identity.MaxRegistrationReasonLength characters.
+const maxFormBytes = 32 << 10
 
 // maxReturnTo bounds the return_to path.
 const maxReturnTo = 2048
@@ -76,6 +89,11 @@ type Identity interface {
 	SignIn(ctx context.Context, in appidentity.SignInInput) (appidentity.SignedIn, error)
 	Authenticate(ctx context.Context, token string) (identity.Session, error)
 	SignOut(ctx context.Context, token string) error
+	SignUp(ctx context.Context, in appidentity.SignUpInput) (appidentity.SignedUp, error)
+	RegistrationMode(ctx context.Context) (identity.RegistrationMode, error)
+	UserAccess(ctx context.Context, userID string) (appidentity.Access, error)
+	VerifyEmail(ctx context.Context, token string) (string, error)
+	ResendVerificationEmail(ctx context.Context, userID string) error
 }
 
 // OAuth is what the authorization endpoint needs from the identity module; *identity.Service
@@ -116,10 +134,14 @@ var templateFS embed.FS
 
 // Page templates, each rendered inside templates/layout.html.
 const (
-	pageSignIn    = "sign_in"
-	pageSignedIn  = "signed_in"
-	pageError     = "error"
-	pageAuthorize = "authorize"
+	pageSignIn      = "sign_in"
+	pageSignedIn    = "signed_in"
+	pageError       = "error"
+	pageSignUp      = "sign_up"
+	pageStatus      = "status"
+	pageVerifyEmail = "verify_email"
+	pageVerified    = "verified"
+	pageAuthorize   = "authorize"
 )
 
 // New returns a Handler on o.
@@ -131,7 +153,7 @@ func New(o Options) *Handler {
 		o.Logger = slog.Default()
 	}
 	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
-	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageAuthorize} {
+	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize} {
 		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
 	h.cop.SetDenyHandler(http.HandlerFunc(h.crossOrigin))
@@ -148,6 +170,11 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathSignIn, http.HandlerFunc(h.signInPage))
 	r.Handle("POST "+PathSignIn, h.cop.Handler(http.HandlerFunc(h.signIn)))
 	r.Handle("POST "+PathSignOut, h.cop.Handler(http.HandlerFunc(h.signOut)))
+	r.Handle("GET "+PathSignUp, http.HandlerFunc(h.signUpPage))
+	r.Handle("POST "+PathSignUp, h.cop.Handler(http.HandlerFunc(h.signUp)))
+	r.Handle("GET "+PathVerifyEmail, http.HandlerFunc(h.verifyEmailPage))
+	r.Handle("POST "+PathVerifyEmail, h.cop.Handler(http.HandlerFunc(h.verifyEmail)))
+	r.Handle("POST "+PathResendVerification, h.cop.Handler(http.HandlerFunc(h.resendVerification)))
 	if h.o.OAuth != nil {
 		r.Handle("GET "+PathAuthorize, http.HandlerFunc(h.authorizePage))
 		r.Handle("POST "+PathAuthorize, h.cop.Handler(http.HandlerFunc(h.authorize)))
@@ -163,7 +190,18 @@ type page struct {
 	CSRFToken  string
 	ReturnTo   string
 	Email      string
-	Error      string
+	// Error is an alert about the whole form; Notice reports success.
+	Error  string
+	Notice string
+
+	// CanSignUp shows the link to the registration page.
+	CanSignUp bool
+	// SignUp is the registration form.
+	SignUp *signUpForm
+	// Status is the state of an account that cannot be used yet.
+	Status *statusView
+	// Token is the email verification token of the confirmation form.
+	Token string
 	// Consent is the authorization request on the consent page.
 	Consent *consent
 	// formAction lists origins the page's forms may be redirected to besides
@@ -205,17 +243,28 @@ func (h *Handler) crossOrigin(w http.ResponseWriter, r *http.Request) {
 	h.renderError(w, r, http.StatusForbidden, (*i18n.Localizer).ServerAuthCrossOrigin)
 }
 
-// signInPage shows the sign-in form, or the signed-in page when the browser has a session.
+// signInPage shows the sign-in form; when the browser has a session, it shows the signed-in
+// page, or the status page of an account that cannot be used yet.
 func (h *Handler) signInPage(w http.ResponseWriter, r *http.Request) {
 	returnTo := safeReturnTo(r.URL.Query().Get("return_to"))
-	if _, err := h.o.Identity.Authenticate(r.Context(), cookieValue(r, CookieSession)); err == nil {
+	session, err := h.o.Identity.Authenticate(r.Context(), cookieValue(r, CookieSession))
+	switch {
+	case err == nil:
+		access, err := h.o.Identity.UserAccess(r.Context(), session.UserID)
+		if err != nil {
+			h.internalError(w, r, err)
+			return
+		}
+		if !access.Allowed() {
+			h.renderStatus(w, r, http.StatusOK, access, "", "")
+			return
+		}
 		h.renderSignedIn(w, r, returnTo)
-		return
-	} else if !errors.Is(err, appidentity.ErrInvalidSession) {
+	case errors.Is(err, appidentity.ErrInvalidSession):
+		h.renderSignIn(w, r, http.StatusOK, returnTo, "", nil)
+	default:
 		h.internalError(w, r, err)
-		return
 	}
-	h.renderSignIn(w, r, http.StatusOK, returnTo, "", nil)
 }
 
 func (h *Handler) renderSignedIn(w http.ResponseWriter, r *http.Request, returnTo string) {
@@ -235,6 +284,11 @@ func (h *Handler) renderSignIn(w http.ResponseWriter, r *http.Request, status in
 	if message != nil {
 		p.Error = message(p.L)
 	}
+	mode, err := h.o.Identity.RegistrationMode(r.Context())
+	if err != nil {
+		h.o.Logger.WarnContext(r.Context(), "read the registration mode", slog.Any("error", err))
+	}
+	p.CanSignUp = err == nil && mode != identity.RegistrationClosed
 	h.render(w, r, status, pageSignIn, p)
 }
 
@@ -279,20 +333,33 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 		h.internalError(w, r, err)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     CookieSession,
-		Value:    signedIn.Token,
-		Path:     "/",
-		Expires:  signedIn.Session.ExpiresAt,
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-	})
-	if returnTo == "" {
+	setSessionCookie(w, signedIn)
+	access, err := h.o.Identity.UserAccess(r.Context(), signedIn.Session.UserID)
+	if err != nil {
+		h.internalError(w, r, err)
+		return
+	}
+	switch {
+	case !access.Allowed():
+		returnTo = PathSignIn // the page that says why the account cannot be used yet
+	case returnTo == "":
 		returnTo = "/"
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	http.Redirect(w, r, returnTo, http.StatusSeeOther) //nolint:gosec // G710: safeReturnTo admits only paths on this site
+}
+
+// setSessionCookie gives the browser the session of s.
+func setSessionCookie(w http.ResponseWriter, s appidentity.SignedIn) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     CookieSession,
+		Value:    s.Token,
+		Path:     "/",
+		Expires:  s.Session.ExpiresAt,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
 }
 
 // signOut ends the browser's session and returns to the sign-in form.

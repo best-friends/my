@@ -1,0 +1,44 @@
+{{define "content"}}
+<h1>{{.L.ServerAuthSignUpTitle}}</h1>
+{{with .SignUp}}{{if .Closed}}
+<p>{{$.L.ServerAuthSignUpClosed}}</p>
+<p><a href="/auth/sign_in">{{$.L.ServerAuthSignInTitle}}</a></p>
+{{else}}
+{{if $.Error}}<p id="sign-up-error" role="alert">{{$.Error}}</p>{{end}}
+<form method="post" action="/auth/sign_up">
+<input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+<div>
+<label for="sign-up-username">{{$.L.ServerAuthSignUpUsernameLabel}}</label>
+<p id="sign-up-username-hint">{{.UsernameHint}}</p>
+{{with .Errors.username}}<p id="sign-up-username-error">{{.}}</p>{{end}}
+<input id="sign-up-username" name="username" type="text" value="{{.Username}}" autocomplete="nickname" autocapitalize="none" spellcheck="false" required maxlength="{{.UsernameMax}}" aria-describedby="sign-up-username-hint{{if .Errors.username}} sign-up-username-error{{end}}"{{if .Errors.username}} aria-invalid="true"{{end}}>
+</div>
+<div>
+<label for="sign-up-email">{{$.L.ServerAuthSignUpEmailLabel}}</label>
+<p id="sign-up-email-hint">{{$.L.ServerAuthSignUpEmailHint}}</p>
+{{with .Errors.email}}<p id="sign-up-email-error">{{.}}</p>{{end}}
+<input id="sign-up-email" name="email" type="email" value="{{.Email}}" autocomplete="username" autocapitalize="none" spellcheck="false" required aria-describedby="sign-up-email-hint{{if .Errors.email}} sign-up-email-error{{end}}"{{if .Errors.email}} aria-invalid="true"{{end}}>
+</div>
+<div>
+<label for="sign-up-password">{{$.L.ServerAuthSignUpPasswordLabel}}</label>
+<p id="sign-up-password-hint">{{.PasswordHint}}</p>
+{{with .Errors.password}}<p id="sign-up-password-error">{{.}}</p>{{end}}
+<input id="sign-up-password" name="password" type="password" autocomplete="new-password" required minlength="{{.PasswordMin}}" maxlength="{{.PasswordMax}}" aria-describedby="sign-up-password-hint{{if .Errors.password}} sign-up-password-error{{end}}"{{if .Errors.password}} aria-invalid="true"{{end}}>
+</div>
+{{if .NeedInvite}}<div>
+<label for="sign-up-invite">{{$.L.ServerAuthSignUpInviteLabel}}</label>
+<p id="sign-up-invite-hint">{{$.L.ServerAuthSignUpInviteHint}}</p>
+{{with .Errors.invite_code}}<p id="sign-up-invite-error">{{.}}</p>{{end}}
+<input id="sign-up-invite" name="invite_code" type="text" value="{{.InviteCode}}" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-describedby="sign-up-invite-hint{{if .Errors.invite_code}} sign-up-invite-error{{end}}"{{if .Errors.invite_code}} aria-invalid="true"{{end}}>
+</div>{{end}}
+{{if .AskReason}}<div>
+<label for="sign-up-reason">{{$.L.ServerAuthSignUpReasonLabel}}</label>
+<p id="sign-up-reason-hint">{{.ReasonHint}}</p>
+{{with .Errors.reason}}<p id="sign-up-reason-error">{{.}}</p>{{end}}
+<textarea id="sign-up-reason" name="reason" rows="4" maxlength="{{.ReasonMax}}" dir="auto" aria-describedby="sign-up-reason-hint{{if .Errors.reason}} sign-up-reason-error{{end}}"{{if .Errors.reason}} aria-invalid="true"{{end}}>{{.Reason}}</textarea>
+</div>{{end}}
+<button type="submit">{{$.L.ServerAuthSignUpSubmit}}</button>
+</form>
+<p><a href="/auth/sign_in">{{$.L.ServerAuthSignInTitle}}</a></p>
+{{end}}{{end}}
+{{end}}

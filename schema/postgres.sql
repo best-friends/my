@@ -748,6 +748,97 @@ CREATE TABLE kv_entries (
 CREATE INDEX kv_entries_expires_at ON kv_entries (expires_at);
 
 -- ---------------------------------------------------------------------------------------------
+-- identity: registration, invites, email verification, and one-time tokens
+-- (data-model.md §4.1, FR-001, FR-002).
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: an email address was verified, at most once per address.
+CREATE TABLE user_email_verifications (
+  email_address_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  verified_at timestamptz NOT NULL
+);
+
+-- Resource: a sign-up from the registration page, one per user. reason is the applicant's
+-- answer in approval mode; invite_id is the invite it redeemed in invite mode.
+CREATE TABLE registration_applications (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  reason text,
+  invite_id text COLLATE "C",
+  submitted_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX registration_applications_user_id ON registration_applications (user_id);
+
+-- Event: an application was approved or rejected. decided_by_user_id is NULL for the system
+-- and for a decision from the CLI.
+CREATE TABLE registration_decisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  application_id text COLLATE "C" NOT NULL,
+  decision text NOT NULL CHECK (decision IN ('approved', 'rejected')),
+  decided_by text NOT NULL CHECK (decided_by IN ('moderator', 'system')),
+  decided_by_user_id text COLLATE "C",
+  note text,
+  decided_at timestamptz NOT NULL
+);
+CREATE INDEX registration_decisions_application_id_id ON registration_decisions (application_id, id DESC);
+
+-- Projection: the registration state of each user who signed up; users without a row (created
+-- with the CLI) are approved.
+CREATE TABLE user_registration_states (
+  user_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  state text NOT NULL CHECK (state IN ('pending', 'approved', 'rejected')),
+  since timestamptz NOT NULL
+);
+CREATE INDEX user_registration_states_state_since ON user_registration_states (state, since);
+
+-- Resource: an invite code. created_by_user_id is NULL for an invite from the CLI; max_uses
+-- and expires_at are NULL for no limit.
+CREATE TABLE invites (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  code text COLLATE "C" NOT NULL,
+  created_by_user_id text COLLATE "C",
+  max_uses integer,
+  expires_at timestamptz,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX invites_code ON invites (code);
+
+-- Event: one use of an invite. seq is 1 + the uses before it, so that the primary key keeps
+-- concurrent sign-ups from exceeding max_uses.
+CREATE TABLE invite_redemptions (
+  invite_id text COLLATE "C" NOT NULL,
+  seq integer NOT NULL,
+  user_id text COLLATE "C" NOT NULL,
+  redeemed_at timestamptz NOT NULL,
+  PRIMARY KEY (invite_id, seq)
+);
+
+-- Event: an invite was revoked. revoked_by_user_id is NULL for a revocation from the CLI.
+CREATE TABLE invite_revocations (
+  invite_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revoked_by_user_id text COLLATE "C",
+  revoked_at timestamptz NOT NULL
+);
+
+-- Resource: a one-time token sent to a user. token_hash is the SHA-256 digest of the token.
+CREATE TABLE user_tokens (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  purpose text NOT NULL CHECK (purpose IN ('email_verification', 'password_reset')),
+  email_address_id text COLLATE "C",
+  token_hash bytea NOT NULL,
+  expires_at timestamptz NOT NULL,
+  issued_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX user_tokens_token_hash ON user_tokens (token_hash);
+
+-- Event: a token was used; the primary key makes every token single-use.
+CREATE TABLE user_token_redemptions (
+  token_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  redeemed_at timestamptz NOT NULL
+);
+
+-- ---------------------------------------------------------------------------------------------
 -- content: boosts, favourites, bookmarks, and pins (data-model §4.4, FR-107, FR-113).
 -- Owned by internal/app/content.
 -- ---------------------------------------------------------------------------------------------

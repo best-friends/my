@@ -187,6 +187,15 @@ type InstanceTextRevision struct {
 	RevisedAt       time.Time
 }
 
+type Invite struct {
+	ID              string
+	Code            string
+	CreatedByUserID *string
+	MaxUses         *int32
+	ExpiresAt       *time.Time
+	CreatedAt       time.Time
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -294,6 +303,14 @@ type PasswordCredential struct {
 	UserID       string
 	PasswordHash string
 	SetAt        time.Time
+}
+
+type RegistrationApplication struct {
+	ID          string
+	UserID      string
+	Reason      *string
+	InviteID    *string
+	SubmittedAt time.Time
 }
 
 type Role struct {
@@ -413,4 +430,20 @@ type UserPreference struct {
 	DefaultPostLanguage     string
 	RequireMediaDescription bool
 	UpdatedAt               time.Time
+}
+
+type UserRegistrationState struct {
+	UserID string
+	State  string
+	Since  time.Time
+}
+
+type UserToken struct {
+	ID             string
+	UserID         string
+	Purpose        string
+	EmailAddressID *string
+	TokenHash      []byte
+	ExpiresAt      time.Time
+	IssuedAt       time.Time
 }

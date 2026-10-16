@@ -137,6 +137,18 @@ func TestAuthorizeSkipsConsentForFirstPartyClients(t *testing.T) {
 	}
 }
 
+func TestAuthorizeIssuesNoCodeToAccountsThatCannotBeUsedYet(t *testing.T) {
+	oauth := &fakeOAuth{}
+	id := newFakeIdentity()
+	b := signedIn(t, newOAuthServer(t, id, oauth))
+	id.access["u1"] = appidentity.Access{Registration: identity.RegistrationPending, EmailVerified: true}
+	w := b.do(http.MethodGet, authorizeQuery("web", webRedirect), nil, nil)
+	if w.Code != http.StatusForbidden || w.Header().Get("Location") != "" || len(oauth.issued) != 0 {
+		t.Fatalf("authorize for a pending registration = %d → %q, issued %d; want the 403 status page and no code",
+			w.Code, w.Header().Get("Location"), len(oauth.issued))
+	}
+}
+
 func TestAuthorizeRefusesUnverifiedRedirects(t *testing.T) {
 	b := signedIn(t, newOAuthServer(t, newFakeIdentity(), &fakeOAuth{}))
 	for _, target := range []string{

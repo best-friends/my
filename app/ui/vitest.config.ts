@@ -17,7 +17,20 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
-      projects: locales.flatMap((locale) =>
+      projects: [
+        // Component tests (src/**/*.test.tsx): Testing Library in jsdom, run by `make web-test`
+        // (`bun run test:unit`). Like app/web, they never use the `node` environment (web-client.md T6).
+        {
+          extends: true,
+          test: {
+            name: "unit",
+            environment: "jsdom",
+            include: ["src/**/*.test.{ts,tsx}"],
+            setupFiles: ["./test/setup.ts"],
+            restoreMocks: true,
+          },
+        },
+        ...locales.flatMap((locale) =>
         themes.map((theme) => ({
           extends: true,
           plugins: [storybookTest({ configDir: ".storybook", initialGlobals: { locale, theme } })],
@@ -32,7 +45,8 @@ export default mergeConfig(
             },
           },
         })),
-      ),
+        ),
+      ],
     },
   }),
 );

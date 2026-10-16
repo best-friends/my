@@ -12,6 +12,7 @@ import (
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/i18n"
 )
 
 // Deps are the ports and collaborators a Service uses.
@@ -36,6 +37,22 @@ type Deps struct {
 	// WebClient is the first-party web client of the authorization server; a zero value
 	// registers none.
 	WebClient WebClient
+
+	// RegistrationMode returns the instance's registration mode (the registration_mode
+	// setting). SignUp calls it once per sign-up, so a change applies to the next one. Nil
+	// means identity.RegistrationClosed.
+	RegistrationMode func(ctx context.Context) (identity.RegistrationMode, error)
+	// Mailer sends verification emails; nil sends none and issues no verification tokens.
+	Mailer kernel.Mailer
+	// RequireEmailVerification keeps users whose primary address is unverified from using
+	// the app (Access.Allowed). It is false when the mailer delivers no email (mail = none);
+	// then a moderator's approval stands in for verification and open mode waits for one
+	// (FR-002).
+	RequireEmailVerification bool
+	// Messages words the emails; nil means the embedded catalogs (i18n.Load).
+	Messages *i18n.Bundle
+	// BaseURL is the origin that links in emails point to, such as https://social.example.
+	BaseURL string
 }
 
 // Service runs the identity module's use cases.
@@ -95,8 +112,9 @@ type CreateAdminInput struct {
 	Password string
 }
 
-// CreateAdmin creates a user with a password, a primary email address, default preferences in the
-// instance's default locale, the local account it logs in as, and a grant of the built-in admin role from the CLI (no granting user), in one
+// CreateAdmin creates a user with a password, a primary email address (verified, since the
+// operator gave it), default preferences in the instance's default locale, the local account it
+// logs in as, and a grant of the built-in admin role from the CLI (no granting user), in one
 // transaction. It creates the built-in roles first if they are missing.
 //
 // It fails with account.ErrUsernameTaken or ErrEmailTaken when another user has the username or
@@ -138,6 +156,11 @@ func (s *Service) CreateAdmin(ctx context.Context, in CreateAdminInput) (Registr
 			return err
 		}
 		if err := s.d.Repository.InsertPrimaryEmail(ctx, tx, email); err != nil {
+			return err
+		}
+		// The operator gave the address on the command line; there is nobody to send a link to.
+		verified := identity.EmailVerification{EmailAddressID: email.ID, VerifiedAt: email.AddedAt}
+		if err := s.d.Repository.InsertEmailVerification(ctx, tx, verified); err != nil {
 			return err
 		}
 		return s.d.Repository.InsertRoleGrant(ctx, tx, identity.RoleGrant{

@@ -444,3 +444,13 @@ func (s *Service) PrivateKey(ctx context.Context, k account.Key) (crypto.Signer,
 	}
 	return signer, nil
 }
+
+// ValidateUsername checks a new local username (account.ValidateUsername), so that other
+// modules can reject one before doing expensive work.
+func ValidateUsername(username string) error { return account.ValidateUsername(username) }
+
+// LocalAccountOfUser returns the local account a user logs in as. It fails with ErrNotFound
+// when the user has none.
+func (s *Service) LocalAccountOfUser(ctx context.Context, userID string) (account.LocalAccount, error) {
+	return s.d.Repository.FindLocalAccountByUser(ctx, userID)
+}
