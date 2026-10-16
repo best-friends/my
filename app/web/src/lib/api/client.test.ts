@@ -7,7 +7,8 @@ import { apiBase, instanceFixture, oauthError, oauthPaths, problem, tokenRespons
 import { server } from "../../test/msw/server";
 import { Session } from "../auth/session";
 import { ApiError, NetworkError } from "../errors";
-import { createTranslate, loadI18n } from "../i18n";
+import { loadI18n } from "../i18n";
+import { AppLocale } from "../locale";
 import { createApi } from "./client";
 
 const apiOrigin = window.location.origin;
@@ -21,7 +22,7 @@ async function setUp(locale = "en") {
   const session = new Session({ apiOrigin });
   sessions.push(session);
   const i18n = await loadI18n(locale);
-  return { session, api: createApi({ apiOrigin, session, locale: i18n.locale, t: createTranslate(i18n) }) };
+  return { session, api: createApi({ apiOrigin, session, locale: new AppLocale(i18n) }) };
 }
 
 test("resumes the session before the first request and sends its token as a Bearer token", async () => {

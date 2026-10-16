@@ -7,6 +7,7 @@ import { Link } from "@my/ui";
 import { Outlet } from "@tanstack/react-router";
 import { useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
 import { Navigation } from "./Navigation";
 import { ServerInfo } from "./ServerInfo";
@@ -19,6 +20,8 @@ export function AppLayout() {
   const t = useT();
   const mainRef = useRef<HTMLElement>(null);
   useViewChange(mainRef);
+  // Every page is displayed in the signed-in user's locale and time zone.
+  useUserDisplaySettings();
   return (
     <div className="min-h-svh px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] md:grid md:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,1fr)_20rem]">
       {/* The first focusable element of the page; visible only while focused. */}

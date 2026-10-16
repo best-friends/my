@@ -7,11 +7,12 @@
 // - turns every response with an error status into an ApiError and every network failure into a
 //   NetworkError, with a localized message (errors.ts).
 //
-// The client sends the page's locale in Accept-Language, so that the server localizes its problems too.
+// The client sends the locale the app is displayed in as Accept-Language, so that the server localizes its
+// problems too; it reads the locale for every request, as the user can change it while the page is open.
 import createFetchClient, { type Client, type Middleware } from "openapi-fetch";
 import createQueryClient, { type OpenapiQueryClient } from "openapi-react-query";
 import type { Session } from "../auth/session";
-import type { Translate } from "../i18n";
+import type { AppLocale } from "../locale";
 import { apiErrorFromResponse, NetworkError } from "../errors";
 import type { paths } from "./schema.gen";
 
@@ -29,17 +30,15 @@ export type CreateApiOptions = {
   /** The origin of the client API (the runtime config's apiOrigin). */
   apiOrigin: string;
   session: Session;
-  /** The locale the page is rendered in, sent as Accept-Language. */
-  locale: string;
-  /** Formats the client's messages, for errors the server did not describe. */
-  t: Translate;
+  /** The locale the app is displayed in, sent as Accept-Language, and its messages for errors the server did not describe. */
+  locale: Pick<AppLocale, "locale" | "t">;
 };
 
-export function createApi({ apiOrigin, session, locale, t }: CreateApiOptions): Api {
-  const fetch = createFetchClient<paths>({ baseUrl: new URL(apiBasePath, apiOrigin).href, headers: { "Accept-Language": locale } });
+export function createApi({ apiOrigin, session, locale }: CreateApiOptions): Api {
+  const fetch = createFetchClient<paths>({ baseUrl: new URL(apiBasePath, apiOrigin).href });
   // onResponse runs in the reverse order of registration: the retry after a refresh comes first, and
   // only its final response becomes an error.
-  fetch.use(errorMiddleware(t), authMiddleware(session, t));
+  fetch.use(localeMiddleware(locale), errorMiddleware(locale), authMiddleware(session, locale));
   return { fetch, query: createQueryClient(fetch) };
 }
 
@@ -55,7 +54,7 @@ function bearerToken(request: Request): string | null {
  * a token, it refreshes the token once (the session serializes refreshes across tabs) and sends a copy of
  * the request with the new one; a second 401 stands.
  */
-function authMiddleware(session: Session, t: Translate): Middleware {
+function authMiddleware(session: Session, locale: Pick<AppLocale, "t">): Middleware {
   /** Unsent copies of the authenticated requests in flight, by request ID: a body can be read only once. */
   const copies = new Map<string, Request>();
   return {
@@ -78,7 +77,7 @@ function authMiddleware(session: Session, t: Translate): Middleware {
         return await options.fetch(copy);
       } catch (error) {
         // An error thrown here skips the onError of every middleware, so it is localized here.
-        throw new NetworkError(t("client:api.error.network"), { cause: error });
+        throw new NetworkError(locale.t("client:api.error.network"), { cause: error });
       }
     },
     onError({ id }) {
@@ -89,16 +88,26 @@ function authMiddleware(session: Session, t: Translate): Middleware {
 }
 
 /** Throws an ApiError for every response with an error status, and turns network failures into a NetworkError. */
-function errorMiddleware(t: Translate): Middleware {
+/** Sends the locale the app is displayed in at the time of the request. */
+function localeMiddleware(locale: Pick<AppLocale, "locale">): Middleware {
+  return {
+    onRequest({ request }) {
+      request.headers.set("Accept-Language", locale.locale);
+      return request;
+    },
+  };
+}
+
+function errorMiddleware(locale: Pick<AppLocale, "t">): Middleware {
   return {
     async onResponse({ response }) {
       if (response.ok) return undefined;
-      throw await apiErrorFromResponse(response, t);
+      throw await apiErrorFromResponse(response, locale.t);
     },
     onError({ error }) {
       // An aborted request (TanStack Query cancelling a query) stays an AbortError.
       if (error instanceof DOMException && error.name === "AbortError") return undefined;
-      return new NetworkError(t("client:api.error.network"), { cause: error });
+      return new NetworkError(locale.t("client:api.error.network"), { cause: error });
     },
   };
 }
