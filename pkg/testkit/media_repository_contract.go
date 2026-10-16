@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/blob"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/media"
@@ -52,6 +53,7 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"RecordsFailedProcessing", mediaRecordsFailures},
 		{"RetriesOnTransientErrors", mediaRetriesTransient},
 		{"KeepsTheFocusAsACurrentValue", mediaKeepsFocus},
+		{"ChecksProfileImages", mediaChecksProfileImages},
 		{"UpdatesOnlyOwnUnattachedUploads", mediaUpdates},
 		{"CleansUpOldUnattachedUploads", mediaCleansUp},
 		{"CleanupPagesPastReferencedUploads", mediaCleanupPages},
@@ -393,6 +395,26 @@ func mediaUpdates(t *testing.T, e *mediaEnv) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// mediaChecksProfileImages checks CheckProfileImage: only the owner's processed uploads are
+// usable as an avatar or header.
+func mediaChecksProfileImages(t *testing.T, e *mediaEnv) {
+	ctx := t.Context()
+	pending := e.upload(t, FixturePNG(4, 3, false))
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, pending.File.ID); !errors.Is(err, appaccount.ErrUnusableImage) {
+		t.Errorf("unprocessed upload = %v, want ErrUnusableImage", err)
+	}
+	e.process(t, pending.File.ID)
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, pending.File.ID); err != nil {
+		t.Errorf("processed upload = %v, want usable", err)
+	}
+	if err := e.service.CheckProfileImage(ctx, "someone-else", pending.File.ID); !errors.Is(err, appaccount.ErrUnusableImage) {
+		t.Errorf("another account's upload = %v, want ErrUnusableImage", err)
+	}
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, "0192f0c1-0000-7000-8000-00000000dead"); !errors.Is(err, appaccount.ErrUnusableImage) {
+		t.Errorf("unknown file = %v, want ErrUnusableImage", err)
 	}
 }
 

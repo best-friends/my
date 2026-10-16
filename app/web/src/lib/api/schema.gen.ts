@@ -39,6 +39,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/update_credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the authenticated user's profile
+         * @description Records a new revision of the profile. Properties left out of the request keep their
+         *     current values. The note and the field values are plain text that the server renders
+         *     to HTML like the text of a post (mentions, hashtags, and URLs become links). A 422
+         *     problem names the property that is invalid in `detail`.
+         */
+        patch: operations["updateAccountCredentials"];
+        trace?: never;
+    };
+    "/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated user's preferences */
+        get: operations["getPreferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the authenticated user's preferences
+         * @description Properties left out of the request keep their current values. Language tags are
+         *     canonicalized (`ja-jp` becomes `ja-JP`). A 422 problem names the property that is
+         *     invalid in `detail`.
+         */
+        patch: operations["updatePreferences"];
+        trace?: never;
+    };
     "/accounts/lookup": {
         parameters: {
             query?: never;
@@ -968,8 +1014,13 @@ export interface components {
         Instance: {
             /** @description The domain that serves the instance. */
             domain: string;
-            /** @description The display name of the instance. */
+            /** @description The display name of the instance; the domain when the instance has none. */
             name: string;
+            /** @description A one-paragraph summary of the instance, as plain text; omitted when there is none. */
+            short_description?: string;
+            /** @description The full description of the instance, as plain text; omitted when there is none. */
+            description?: string;
+            registrations: components["schemas"]["InstanceRegistrations"];
             /** @description The server version. */
             version: string;
             /**
@@ -979,9 +1030,18 @@ export interface components {
             source_url: string;
             limits: components["schemas"]["InstanceLimits"];
         };
+        /** @description How people sign up on the instance. */
+        InstanceRegistrations: {
+            /**
+             * @description Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
+             *     approval), `invite` (only with an invite), or `closed` (nobody).
+             * @enum {string}
+             */
+            mode: "open" | "approval" | "invite" | "closed";
+        };
         /** @description Limits that clients check before sending a request. */
         InstanceLimits: {
-            /** @description The maximum number of characters in the text of a post. */
+            /** @description The maximum number of characters in the text and content warning of a post. */
             max_post_characters: number;
         };
         /** @description An account, as clients show it (FR-006). */
@@ -1391,6 +1451,97 @@ export interface components {
          * @enum {string}
          */
         Visibility: "public" | "local" | "unlisted" | "private" | "direct";
+        /** @description A metadata field of a profile as the user typed it. */
+        AccountFieldSource: {
+            /** @description The label, at most 255 characters. */
+            name: string;
+            /** @description The value as plain text, at most 255 characters. */
+            value: string;
+        };
+        /** @description The profile as the user typed it, for editing. */
+        AccountSource: {
+            /** @description The profile text as plain text; empty when there is none. */
+            note: string;
+            /** @description The metadata fields as typed, in the order of the account's `fields`. */
+            fields: components["schemas"]["AccountFieldSource"][];
+            /** @description The media file of the avatar; omitted when there is none. */
+            avatar_media_id?: string;
+            /** @description The media file of the header image; omitted when there is none. */
+            header_media_id?: string;
+        };
+        /** @description The authenticated user's own account, with what only its owner sees. */
+        CredentialAccount: components["schemas"]["Account"] & {
+            /**
+             * Format: uri
+             * @description The URL of the avatar image; omitted when there is none.
+             */
+            avatar?: string;
+            /**
+             * Format: uri
+             * @description The URL of the header image; omitted when there is none.
+             */
+            header?: string;
+            /** @description Whether the account may be suggested to others and listed in directories. */
+            discoverable: boolean;
+            /** @description Whether the account's public posts may be indexed for search. */
+            indexable: boolean;
+            source: components["schemas"]["AccountSource"];
+        };
+        /** @description A change of the profile; properties left out keep their current values. */
+        UpdateCredentialsRequest: {
+            /** @description The display name, at most 30 characters; empty removes it. */
+            display_name?: string;
+            /** @description The profile text as plain text, at most 500 characters; empty removes it. */
+            note?: string;
+            /** @description The metadata fields, replacing the current ones; at most 4. */
+            fields?: components["schemas"]["AccountFieldSource"][];
+            /**
+             * @description The ID of a processed image that the user uploaded, to become the avatar; empty
+             *     removes the avatar.
+             */
+            avatar_media_id?: string;
+            /**
+             * @description The ID of a processed image that the user uploaded, to become the header image;
+             *     empty removes the header image.
+             */
+            header_media_id?: string;
+            /** @description Whether follow requests need the user's approval. */
+            locked?: boolean;
+            /** @description Whether the account is automated. */
+            bot?: boolean;
+            /** @description Whether the account may be suggested to others and listed in directories. */
+            discoverable?: boolean;
+            /** @description Whether the account's public posts may be indexed for search. */
+            indexable?: boolean;
+        };
+        /** @description The authenticated user's preferences. */
+        Preferences: {
+            /** @description The UI locale, a BCP 47 language tag. */
+            locale: string;
+            /** @description The time zone, an IANA name such as `Asia/Tokyo`. */
+            time_zone: string;
+            default_visibility: components["schemas"]["Visibility"];
+            /** @description The language of new posts that name none, a BCP 47 language tag; `und` when undetermined. */
+            default_post_language: string;
+            /** @description Whether clients ask for a description before posting media without one. */
+            require_media_description: boolean;
+            /** @description The languages that timelines show, sorted; empty shows every language. */
+            timeline_languages: string[];
+        };
+        /** @description A change of the preferences; properties left out keep their current values. */
+        UpdatePreferencesRequest: {
+            /** @description The UI locale, a BCP 47 language tag. */
+            locale?: string;
+            /** @description The time zone, an IANA name. */
+            time_zone?: string;
+            default_visibility?: components["schemas"]["Visibility"];
+            /** @description The language of new posts that name none; `und` for undetermined. */
+            default_post_language?: string;
+            /** @description Whether clients ask for a description before posting media without one. */
+            require_media_description?: boolean;
+            /** @description The languages that timelines show, at most 64; empty shows every language. */
+            timeline_languages?: string[];
+        };
     };
     responses: {
         /** @description A page of posts and boosts, newest first. */
@@ -1497,7 +1648,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The instance. */
+            /**
+             * @description The instance. Its texts are in the locale of the request (the user's locale,
+             *     then `Accept-Language`, then the instance's default locale), falling back along
+             *     the locale chain to the instance's default locale. Like every response of the
+             *     API, it varies with `Accept-Language`.
+             */
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControl"];
@@ -1519,14 +1675,88 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The account that the access token acts as. */
+            /** @description The account that the access token acts as, with the source of its profile. */
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Account"];
+                    "application/json": components["schemas"]["CredentialAccount"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateAccountCredentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description The account with its new profile. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialAccount"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The preferences. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updatePreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description The preferences after the change. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
                 };
             };
             default: components["responses"]["Problem"];

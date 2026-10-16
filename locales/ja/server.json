@@ -363,6 +363,10 @@
     "defaultMessage": "ログインの有効期限が切れたか、取り消されました。もう一度ログインしてください。",
     "description": "API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked."
   },
+  "errors.invalid_value": {
+    "defaultMessage": "{name} の値が正しくありません。",
+    "description": "Detail of an API error (HTTP 422) when a property of the request body has a value that the server rejects. {name} is the property name, e.g. time_zone (not translated)."
+  },
   "errors.media_attached": {
     "defaultMessage": "この添付ファイルは投稿に添付済みのため、変更できません。",
     "description": "API error title for HTTP 409 when the user tries to change the description or focal point of an uploaded media file that a post already attaches."
@@ -495,6 +499,14 @@
     "defaultMessage": "リアルタイム更新は現在利用できません。しばらくしてからやり直してください。",
     "description": "Title of the HTTP 503 API error when the server is shutting down and accepts no new real-time update streams."
   },
+  "errors.too_long": {
+    "defaultMessage": "{max, plural, other {{name} は # 文字以内にしてください。}}",
+    "description": "Detail of an API error (HTTP 422) when a text property of the request body is too long. {name} is the property name, e.g. display_name (not translated); {max} is the limit in characters."
+  },
+  "errors.too_many": {
+    "defaultMessage": "{max, plural, other {{name} は # 個までにしてください。}}",
+    "description": "Detail of an API error (HTTP 422) when a list property of the request body has too many items. {name} is the property name, e.g. fields (not translated); {max} is the limit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
@@ -502,6 +514,10 @@
   "errors.unprocessable": {
     "defaultMessage": "リクエストを処理できません。",
     "description": "API error title for HTTP 422; the detail says what is wrong with the request."
+  },
+  "errors.unusable_image": {
+    "defaultMessage": "{name} には、自分でアップロードして処理が終わった画像を指定してください。",
+    "description": "Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated)."
   },
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",

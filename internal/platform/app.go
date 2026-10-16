@@ -48,10 +48,6 @@ import (
 	"github.com/best-friends/my/internal/platform/config"
 )
 
-// defaultMaxPostCharacters is the post length limit that the client API reports until the
-// instance settings hold it (FR-101).
-const defaultMaxPostCharacters = 500
-
 // WebClientCallbackPath is the path on the web origin where the web client receives the
 // authorization response; its URL is the redirect URI of the first-party web client.
 const WebClientCallbackPath = "/login/callback"
@@ -260,6 +256,14 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	account.RegisterProjectors(a.Projectors, accounts)
 	a.Accounts = account.NewService(account.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: accounts, Clock: a.Clock, IDs: a.IDs, Sealer: a.Sealer, Host: cfg.Host,
+		// Profiles are rendered and their images checked by the content module, built below; the
+		// account module does not import it, since the content module imports the account module.
+		RenderProfileText: func(ctx context.Context, text string) (string, error) {
+			return a.Content.RenderProfileText(ctx, text)
+		},
+		CheckProfileImage: func(ctx context.Context, accountID, mediaID string) error {
+			return a.Media.CheckProfileImage(ctx, accountID, mediaID)
+		},
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{
@@ -365,18 +369,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	tokens.Register(a)
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
-	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
-		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		MaxPostCharacters: defaultMaxPostCharacters,
-		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
-		Media:         a.Media,
+		Host: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Preferences: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Notifications: a.Notifications,
 		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
 		Streams: a.Streams, HomeEntries: a.Timeline,
-		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
+		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }

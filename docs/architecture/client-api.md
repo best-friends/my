@@ -62,6 +62,8 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
   生成コードの外（認証・認可・レート制限、解釈できないリクエスト）で返す問題は `Server.writeProblem` が書き、`Cache-Control: no-store` を付けます。
   ローカライザは `Server.Localizer(ctx)` で取得します。
 - 生成コードが解釈できないリクエスト（パラメータの形式違いなど）は 400 になり、`detail` がパラメータ名を示します。
+  解釈できても本文の値をアプリケーション層が拒否した場合（長すぎる・多すぎる・不正な値）は 422（`about:blank`、`title` は `l.ServerErrorsUnprocessable()`）で、
+  `detail` がプロパティ名を示します（`l.ServerErrorsTooLong`・`ServerErrorsTooMany`・`ServerErrorsInvalidValue`）。
   ハンドラが `error` を返した場合は 500 で、内部の詳細は応答に含めずログに記録します。
 - どの操作にも一致しない `/api/v1` 以下のリクエストは、`platform` のフォールバックが 404 / 405 の問題を返します。
 
@@ -69,6 +71,9 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 
 - 匿名で取れる公開リソースの GET には `Cache-Control: public, max-age=60` を付けます（spec の `#/components/headers/CacheControl`）。
   利用者ごとに変わる応答には `private` か `no-store` を付けます。問題の応答は `no-store` です。
+  匿名でも使える操作にトークン付きで来た要求は利用者のロケールで答えるので、`public` の代わりに `private, max-age=60` を付けます。
+- `/api/v1` のすべての応答はローカライズされうるので、`Vary: Accept-Language` を付けます（`localize`）。
+  `Vary` は spec の応答ヘッダに書きません（生成コードが `Set` で上書きし、CORS の `Vary: Origin` を消すため）。
 - 匿名でも使える操作の応答はトークンの有無で変わるので、`guard` がすべての操作の応答に `Vary: Authorization` を付けます（匿名の応答をキャッシュがログイン中の要求に返さないため）。
 - ADR-0019 §9 のセキュリティヘッダは `platform` が全応答に付けます。
 - CORS は `platform` が `/api/v1` 以下に適用し、設定 `web_origin` のオリジンだけを `Access-Control-Allow-Origin` に返します。
@@ -95,8 +100,9 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 4. `internal/interface/clientapi` にメソッドを実装します。アプリケーション層（`internal/app/<module>`）のユースケースを呼び、
    ドメインの型を生成された応答型に詰め替えます。必要な依存は `clientapi.Options` に追加し、`platform.NewApp` で渡します。
    閲覧者は `requireViewer(ctx)`（トークン必須の操作）か `ViewerFrom(ctx)`（匿名も受け付ける操作）で取ります。スコープの検査はハンドラの前に済んでいます。
-   アカウントは `Server.newAccount` で `Account` に、投稿は `appcontent.Reader` が閲覧者に見せる形にした `StatusView` を `Server.newStatus` で `Status` に詰め替えます。
-   フォロー数を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います。
+   アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースと画像の URL を含む）に、
+   投稿は `appcontent.Reader` が閲覧者に見せる形にした `StatusView` を `Server.newStatus` で `Status` に詰め替えます。
+   フォロー数を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います（`newCredentialAccount` もこれに重ねます）。
    ID で指定されたアカウントは `Server.visibleAccount` で引き、見せられないアカウント（[visibility.md §6](visibility.md#6-アカウントの表示)）は存在しないものと同じ 404 にします。
 5. 新しい利用者向けの文言は `locales/en` と `locales/ja` の `server` 名前空間に追加し、`make i18n-gen` を実行します。
 6. テストは `apitest.Load(t).Serve(t, handler, req)` を通してリクエストを送ります。応答の状態コード・`Content-Type`・本文が spec と一致しない場合、テストが失敗します。

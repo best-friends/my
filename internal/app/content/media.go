@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/media"
@@ -363,6 +364,23 @@ func (s *MediaService) URL(v content.MediaVariant) string { return s.d.Blobs.Pub
 
 // ErrNotOwner reports a change to a media file of another account.
 var ErrNotOwner = errors.New("content: the media file belongs to another account")
+
+// CheckProfileImage reports whether accountID may use a media file as its avatar or header:
+// the account uploaded it and its processing succeeded. It implements the account module's
+// CheckProfileImage and fails with an error wrapping appaccount.ErrUnusableImage otherwise.
+func (s *MediaService) CheckProfileImage(ctx context.Context, accountID, mediaID string) error {
+	m, err := s.Media(ctx, mediaID)
+	if errors.Is(err, ErrNotFound) {
+		return fmt.Errorf("media %s: %w", mediaID, appaccount.ErrUnusableImage)
+	}
+	if err != nil {
+		return err
+	}
+	if m.Upload == nil || m.File.OwnerAccountID != accountID || !m.Ready() {
+		return fmt.Errorf("media %s: %w", mediaID, appaccount.ErrUnusableImage)
+	}
+	return nil
+}
 
 // SetFocus sets the focal point of a media file that accountID owns. It fails with
 // content.ErrInvalidFocus for a point outside the image, ErrNotFound for an unknown file, and

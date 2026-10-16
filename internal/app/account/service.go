@@ -27,7 +27,17 @@ type Deps struct {
 	Host string
 	// GenerateKey generates actor keys; nil means GenerateKey.
 	GenerateKey KeyGenerator
+	// RenderProfileText renders the typed note and field values of a local profile to HTML,
+	// as the text of a post is rendered (the content module); nil escapes the text.
+	RenderProfileText func(ctx context.Context, text string) (string, error)
+	// CheckProfileImage fails with an error wrapping ErrUnusableImage unless a media file is
+	// an image that the account uploaded and that was processed successfully (the content
+	// module); nil accepts no image.
+	CheckProfileImage func(ctx context.Context, accountID, mediaID string) error
 }
+
+// ErrUnusableImage reports an avatar or header that is not a processed image of the account.
+var ErrUnusableImage = errors.New("account: the media file is not a processed image of the account")
 
 // Service runs the account module's use cases.
 type Service struct {
@@ -97,6 +107,7 @@ func (s *Service) PrepareLocalAccount(ctx context.Context, in LocalAccountInput)
 			Seq:         1,
 			DisplayName: in.DisplayName,
 			RevisedAt:   now,
+			Source:      &account.ProfileSource{},
 		},
 		keys: keys,
 	}, nil
@@ -225,6 +236,8 @@ type ProfileInput struct {
 	HeaderMediaID string
 	// Fields are numbered by their order.
 	Fields []account.ProfileField
+	// Source is what the owner typed, nil for none; its FieldValues match Fields.
+	Source *account.ProfileSource
 }
 
 // IsMediaReferenced reports whether any profile revision, current or not, uses a media file as
@@ -248,6 +261,10 @@ func (s *Service) ReviseProfile(ctx context.Context, accountID string, in Profil
 		AvatarMediaID: in.AvatarMediaID,
 		HeaderMediaID: in.HeaderMediaID,
 		RevisedAt:     s.d.Clock.Now(),
+		Source:        in.Source,
+	}
+	if in.Source != nil && len(in.Source.FieldValues) != len(in.Fields) {
+		return account.ProfileRevision{}, fmt.Errorf("account: %d field sources for %d fields", len(in.Source.FieldValues), len(in.Fields))
 	}
 	for i, f := range in.Fields {
 		f.Position = i

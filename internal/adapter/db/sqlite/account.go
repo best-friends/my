@@ -4,7 +4,10 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
 	appaccount "github.com/best-friends/my/internal/app/account"
@@ -81,6 +84,25 @@ func (r *AccountRepository) InsertProfileRevision(ctx context.Context, tx uow.Tx
 		})
 		if err != nil {
 			return wrap(err, "insert profile field")
+		}
+	}
+	if rev.Source == nil {
+		return nil
+	}
+	if err := q.InsertProfileRevisionSource(ctx, sqlitegen.InsertProfileRevisionSourceParams{
+		RevisionID: rev.ID, NoteSource: rev.Source.Note,
+	}); err != nil {
+		return wrap(err, "insert profile revision source")
+	}
+	for i, v := range rev.Source.FieldValues {
+		if i >= len(rev.Fields) {
+			return fmt.Errorf("profile revision %s: %d field sources for %d fields", rev.ID, len(rev.Source.FieldValues), len(rev.Fields))
+		}
+		err := q.InsertProfileFieldSource(ctx, sqlitegen.InsertProfileFieldSourceParams{
+			RevisionID: rev.ID, Position: int64(rev.Fields[i].Position), ValueSource: v,
+		})
+		if err != nil {
+			return wrap(err, "insert profile field source")
 		}
 	}
 	return nil
@@ -423,6 +445,23 @@ func (r *AccountRepository) FindCurrentProfile(ctx context.Context, accountID st
 	}
 	for _, f := range fields {
 		rev.Fields = append(rev.Fields, account.ProfileField{Position: int(f.Position), Name: f.Name, ValueHTML: f.ValueHtml})
+	}
+	note, err := q.GetProfileRevisionSource(ctx, row.ID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return rev, nil
+	}
+	if err != nil {
+		return account.ProfileRevision{}, wrap(err, "get profile revision source")
+	}
+	sources, err := q.ListProfileFieldSources(ctx, row.ID)
+	if err != nil {
+		return account.ProfileRevision{}, wrap(err, "list profile field sources")
+	}
+	rev.Source = &account.ProfileSource{Note: note, FieldValues: make([]string, len(rev.Fields))}
+	for _, s := range sources {
+		if i := slices.IndexFunc(rev.Fields, func(f account.ProfileField) bool { return f.Position == int(s.Position) }); i >= 0 {
+			rev.Source.FieldValues[i] = s.ValueSource
+		}
 	}
 	return rev, nil
 }

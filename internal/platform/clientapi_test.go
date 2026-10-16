@@ -10,6 +10,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	appinstance "github.com/best-friends/my/internal/app/instance"
+	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/interface/clientapi/apitest"
 	"github.com/best-friends/my/internal/platform"
 )
@@ -18,13 +21,18 @@ const webOrigin = "http://localhost:5173"
 
 func newClientAPIHandler(t *testing.T) http.Handler {
 	t.Helper()
+	return newClientAPIApp(t).Handler()
+}
+
+func newClientAPIApp(t *testing.T) *platform.App {
+	t.Helper()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler), Version: "1.2.3"})
 	if err != nil {
 		t.Fatalf("NewApp: %v", err)
 	}
 	t.Cleanup(func() { _ = app.Close() })
-	return app.Handler()
+	return app
 }
 
 // TestClientAPI checks that the composition root serves the client API under /api/v1 with the
@@ -39,17 +47,13 @@ func TestClientAPI(t *testing.T) {
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("GET /api/v1/instance = %d", res.StatusCode)
 	}
-	var instance struct {
-		Domain, Version string
-		Limits          struct {
-			MaxPostCharacters int `json:"max_post_characters"`
-		}
-	}
-	if err := json.NewDecoder(res.Body).Decode(&instance); err != nil {
+	var info clientapi.Instance
+	if err := json.NewDecoder(res.Body).Decode(&info); err != nil {
 		t.Fatal(err)
 	}
-	if instance.Domain != "example.test" || instance.Version != "1.2.3" || instance.Limits.MaxPostCharacters != 500 {
-		t.Errorf("instance = %+v, want example.test, version 1.2.3, 500 characters", instance)
+	if info.Domain != "example.test" || info.Name != "example.test" || info.Version != "1.2.3" ||
+		info.Limits.MaxPostCharacters != 500 || info.Registrations.Mode != clientapi.InstanceRegistrationsModeApproval {
+		t.Errorf("instance = %+v, want example.test, version 1.2.3, the default settings", info)
 	}
 	for k, want := range map[string]string{
 		"Access-Control-Allow-Origin":   webOrigin,
@@ -127,5 +131,40 @@ func TestClientAPIFallbackProblems(t *testing.T) {
 		if got := res.Header.Get("Access-Control-Allow-Origin"); got != webOrigin {
 			t.Errorf("%s %s Access-Control-Allow-Origin = %q, want %q", tt.method, tt.path, got, webOrigin)
 		}
+	}
+}
+
+// TestClientAPIInstanceSettings checks that GET /api/v1/instance reports the instance settings
+// and the texts of the request's locale, read per request.
+func TestClientAPIInstanceSettings(t *testing.T) {
+	app := newClientAPIApp(t)
+	ctx := t.Context()
+	for key, value := range map[instance.SettingKey]string{
+		instance.SettingMaxStatusLength: "1000", instance.SettingRegistrationMode: "open",
+	} {
+		if _, err := app.Instance.SetSetting(ctx, appinstance.SetSettingInput{Key: key, Value: value}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, in := range []appinstance.SetTextInput{
+		{Key: instance.TextName, Locale: "en", Body: "Example"},
+		{Key: instance.TextName, Locale: "ja", Body: "例"},
+		{Key: instance.TextDescription, Locale: "en", Body: "About us"},
+	} {
+		if _, err := app.Instance.SetText(ctx, in); err != nil {
+			t.Fatal(err)
+		}
+	}
+	spec := apitest.Load(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/instance", nil)
+	req.Header.Set("Accept-Language", "ja")
+	res := spec.Serve(t, app.Handler(), req)
+	var got clientapi.Instance
+	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "例" || got.Description == nil || *got.Description != "About us" || got.ShortDescription != nil ||
+		got.Limits.MaxPostCharacters != 1000 || got.Registrations.Mode != clientapi.InstanceRegistrationsModeOpen {
+		t.Errorf("instance = %+v (description %v), want the stored settings and the ja name", got, got.Description)
 	}
 }

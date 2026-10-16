@@ -49,6 +49,7 @@ func PostingContract(t *testing.T, newHarness PostingFactory) {
 		run  func(t *testing.T, e *postingEnv)
 	}{
 		{"PostsAStatus", postingPosts},
+		{"RendersProfileText", postingRendersProfileText},
 		{"ReturnsTheSameStatusForAnIdempotencyKey", postingIdempotent},
 		{"AgreesOnConcurrentIdempotencyKeys", postingIdempotentConcurrent},
 		{"EnforcesMaxStatusLength", postingMaxLength},
@@ -213,6 +214,23 @@ func eventTypes(events []uow.Event) []string {
 		out = append(out, e.EventType())
 	}
 	return out
+}
+
+// postingRendersProfileText checks that profile text renders through the rules of posts.
+func postingRendersProfileText(t *testing.T, e *postingEnv) {
+	e.user(t, "Bob")
+	html, err := e.content.RenderProfileText(t.Context(), "hi @bob <b>\n\n#Go https://example.com")
+	if err != nil {
+		t.Fatalf("RenderProfileText = %v", err)
+	}
+	for _, want := range []string{
+		`<a href="https://` + contractHost + `/@Bob" class="u-url mention"`, "&lt;b&gt;", "</p><p>",
+		`class="mention hashtag"`, `<a href="https://example.com"`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("RenderProfileText = %s, want it to contain %s", html, want)
+		}
+	}
 }
 
 func postingPosts(t *testing.T, e *postingEnv) {
