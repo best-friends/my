@@ -143,4 +143,4 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 	cd tools/i18n && bun run src/check.ts
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES)
 	cd tools/i18n && bun test
-	cd tools/i18n && bun run tsc --noEmit -p .
+	cd tools/i18n && bun --bun run tsc --noEmit -p .

@@ -32,6 +32,7 @@ Values marked "not in v0" are decided in an ADR but not shipped in v0, and are r
 | [`kv`](#kv) | `MY_KV` | `db` | no | no |
 | [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
 | [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
+| [`kek_previous`](#kek_previous) | `MY_KEK_PREVIOUS` | none | no | yes |
 
 ## Settings
 
@@ -168,8 +169,16 @@ Key manager adapter that encrypts actor private keys (ADR-0019 §6).
 
 ### `kek`
 
-Key-encryption key for actor private keys: 32 random bytes in standard base64 (for example `openssl rand -base64 32`). Required when `key_manager = local`. Back it up separately from the database; losing it loses every actor key (ADR-0019 §6).
+Key-encryption key for actor private keys: 32 random bytes in standard base64 (for example `openssl rand -base64 32`). Required when `key_manager = local`. Back it up separately from the database; losing it loses every actor key (ADR-0019 §6, docs/operations/key-management.md).
 
 - Environment variable: `MY_KEK` or `MY_KEK_FILE`
 - Default: none
 - Required: when `key_manager = local`
+
+### `kek_previous`
+
+Previous key-encryption keys, comma-separated, each in the format of `kek`. They only decrypt; new secrets are always encrypted with `kek`. Set the replaced key here while rotating `kek` (docs/operations/key-management.md).
+
+- Environment variable: `MY_KEK_PREVIOUS` or `MY_KEK_PREVIOUS_FILE`
+- Default: none
+- Required: no

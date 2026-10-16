@@ -10,6 +10,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"slices"
 	"strings"
@@ -41,6 +42,32 @@ type Config struct {
 	KV            string
 	KeyManager    string
 	KEK           []byte
+	PreviousKEKs  [][]byte
+}
+
+// LogValue logs the configuration with its secrets redacted (ADR-0019 §6).
+func (c *Config) LogValue() slog.Value {
+	redact := func(set bool) string {
+		if set {
+			return "(redacted)"
+		}
+		return ""
+	}
+	return slog.GroupValue(
+		slog.String("host", c.Host),
+		slog.String("account_domain", c.AccountDomain),
+		slog.String("role", string(c.Role)),
+		slog.String("listen", c.Listen),
+		slog.String("db", c.DB),
+		slog.String("database_url", redact(c.DatabaseURL != "")),
+		slog.String("queue", c.Queue),
+		slog.String("blob", c.Blob),
+		slog.String("media", c.Media),
+		slog.String("kv", c.KV),
+		slog.String("key_manager", c.KeyManager),
+		slog.String("kek", redact(len(c.KEK) > 0)),
+		slog.Int("kek_previous", len(c.PreviousKEKs)),
+	)
 }
 
 // Origin describes where a resolved value came from.
