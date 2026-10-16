@@ -69,6 +69,29 @@ make api-lint        # spec を Redocly CLI で lint（使える 3.1 の部分�
 make api-check       # api-lint と、生成物が最新でなければ失敗する generate-check（make check に含まれる）
 ```
 
+## Web クライアント
+
+Web クライアント（`app/web`）は Vite でビルドし、`my serve` がバイナリに埋め込んだビルドと HTML の外枠を配ります
+（[ADR-0028](docs/adr/0028-html-shell-link-previews-and-pwa.md)。設計規約は [docs/architecture/web-client.md](docs/architecture/web-client.md)）。
+
+- `make web-build` は `app/web/dist` にビルドし、`internal/interface/web/dist` にコピーします。Go はそこを `//go:embed all:dist` で埋め込みます。
+  コミットするのはプレースホルダの `.gitkeep` だけなので、Go のビルドとテストに Bun は要りません（そのバイナリはスクリプトのない外枠を返します）。
+- `make build` は `make web-build` を先に実行し、Web クライアント入りの単一バイナリを作ります。Docker イメージも同じビルドを埋め込みます。
+
+開発中は、Vite の開発サーバーを立て、`my serve` にその origin を渡します。ブラウザは `my serve` を開きます。
+外枠・ランタイム設定・API・ActivityPub は本番と同じく Go が返し、スクリプトだけを Vite から HMR 付きで読み込みます。
+
+```sh
+make db-apply                                  # SQLite の my.db にスキーマを適用
+cd app/web && bun run dev                      # Vite の開発サーバー（http://localhost:5173 固定）
+MY_HOST=localhost:8080 MY_DATABASE_URL=my.db MY_KEK="$(openssl rand -base64 32)" \
+  go run ./cmd/my serve -dev-vite-origin http://localhost:5173   # 別の端末で。http://localhost:8080 を開く
+```
+
+- `-dev-vite-origin` を付けると、外枠はキャッシュされず（`no-store`）、CSP はその origin のスクリプト・WebSocket・Vite が差し込む `<style>` を許す開発用のものになります。
+  本番の CSP（nonce なしの `script-src 'self'`）での動作は、`make build` したバイナリで確認します。
+- ランタイム設定の `apiOrigin` は開発時だけ `http://{host}` になります。
+
 ## SQL とデータベースのテスト
 
 - クエリは方言ごとに `queries/<dialect>/*.sql` に書き、[sqlc](https://sqlc.dev/) で Go コードを生成します（[ADR-0003](docs/adr/0003-database-abstraction.md)）。

@@ -166,16 +166,21 @@ func (h *Handler) lookupUsername(r *http.Request, username string) (appaccount.A
 }
 
 // profilePage serves GET /@{username}. An ActivityPub request is redirected to the actor id
-// with 302 (ADR-0018), so that pasting a profile URL into a remote search finds the actor.
-// HTML is the web client's, which is not served yet.
+// with 302 (ADR-0018), so that pasting a profile URL into a remote search finds the actor;
+// any other request gets the HTML of the web client. Single-segment paths without "@" are
+// the web client's.
 func (h *Handler) profilePage(w http.ResponseWriter, r *http.Request) {
 	username, ok := cutAt(r.PathValue("name"))
 	if !ok {
-		h.notFound(w, r)
+		h.html(w, r)
 		return
 	}
 	w.Header().Add("Vary", "Accept")
-	if !parseAccept(r.Header.Get("Accept")).asksForActivityPub() || account.ValidateUsername(username) != nil {
+	if !AsksForActivityPub(r) {
+		h.html(w, r)
+		return
+	}
+	if account.ValidateUsername(username) != nil {
 		h.notFound(w, r)
 		return
 	}
@@ -189,6 +194,15 @@ func (h *Handler) profilePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	redirect(w, r, a.Account.URI, http.StatusFound)
+}
+
+// html serves the page of the web client, or 404 without one.
+func (h *Handler) html(w http.ResponseWriter, r *http.Request) {
+	if h.o.HTML == nil {
+		h.notFound(w, r)
+		return
+	}
+	h.o.HTML.ServeHTTP(w, r)
 }
 
 // cutAt returns the username of a profile page path segment "@username".

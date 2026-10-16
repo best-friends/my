@@ -13,6 +13,10 @@
 node_modules/
 dist/
 build/
+# The web build that internal/interface/web embeds; only the placeholder is committed.
+!/internal/interface/web/dist/
+/internal/interface/web/dist/*
+!/internal/interface/web/dist/.gitkeep
 bin/
 coverage/
 *.log

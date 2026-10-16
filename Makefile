@@ -40,7 +40,7 @@ adr-new: ## Create a new ADR: make adr-new TITLE="..." [SLUG=...]
 	@test -n "$(TITLE)" || { echo 'usage: make adr-new TITLE="..." [SLUG=kebab-slug]'; exit 2; }
 	scripts/adr-new.sh "$(TITLE)" $(SLUG)
 
-build: ## Build bin/my with the version from git (override: make build VERSION=v1.2.3)
+build: web-build ## Build bin/my, with the web client embedded, and the version from git (override: make build VERSION=v1.2.3)
 	CGO_ENABLED=0 go build -trimpath -ldflags "-X main.version=$(VERSION)" -o bin/my ./cmd/my
 
 .PHONY: config-docs
@@ -167,9 +167,13 @@ docker-build: ## Build the server image my:$(VERSION) for the local platform
 docker-smoke: ## Start deploy/docker/compose.yaml, create an admin, check WebFinger / Actor / NodeInfo, tear down
 	MY_VERSION=$(VERSION) scripts/docker-smoke.sh
 
-dockerfile-check: ## Fail if the Dockerfile's Go image differs from the Go version in .tool-versions
+dockerfile-check: ## Fail if the Dockerfile's Go, Node.js, or Bun image differs from the version in .tool-versions
 	@want="golang:$$(awk '$$1 == "golang" { print $$2 }' .tool-versions)-"; \
 		grep -q "^ARG GO_IMAGE=$$want" Dockerfile || { echo "Dockerfile: GO_IMAGE must start with $$want" >&2; exit 1; }
+	@want="node:$$(awk '$$1 == "nodejs" { print $$2 }' .tool-versions)-"; \
+		grep -q "^ARG NODE_IMAGE=$$want" Dockerfile || { echo "Dockerfile: NODE_IMAGE must start with $$want" >&2; exit 1; }
+	@want="oven/bun:$$(awk '$$1 == "bun" { print $$2 }' .tool-versions)-"; \
+		grep -q "^ARG BUN_IMAGE=$$want" Dockerfile || { echo "Dockerfile: BUN_IMAGE must start with $$want" >&2; exit 1; }
 
 i18n-install: ## Install the pinned i18n tool dependencies (tools/i18n/bun.lock)
 	cd tools/i18n && bun install --frozen-lockfile
@@ -190,14 +194,20 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 
 .PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-check
 
+# internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its
+# .gitkeep is committed, so Go builds and tests need no Bun; `make build` embeds the real build.
+WEB_EMBED_DIR := internal/interface/web/dist
+
 web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
 	cd app && bun install --frozen-lockfile
 
 web-typecheck: web-install ## Type-check every client package with tsc
 	cd app && bun run typecheck
 
-web-build: web-install ## Build app/web into app/web/dist (fails when React Compiler compiled nothing)
+web-build: web-install ## Build app/web into app/web/dist and copy it to internal/interface/web/dist for embedding (fails when React Compiler compiled nothing)
 	cd app && bun run build
+	find $(WEB_EMBED_DIR) -mindepth 1 ! -name .gitkeep -delete
+	cp -R app/web/dist/. $(WEB_EMBED_DIR)/
 
 web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules

@@ -167,6 +167,7 @@ internal/
     media/           # 公開メディア（Blob のキー media/...）の配信 /media/
     authpages/       # ログイン・ログアウトの画面（html/template、JavaScript なし。ADR-0030）
     admin/
+    web/             # Web クライアントの HTML の外枠・ビルド成果物（dist/ を埋め込む）・Web アプリマニフェスト（ADR-0028）
   adapter/
     db/{sqlite,libsql,postgres}/
     queue/{db,inline,sqs,cloudtasks}/

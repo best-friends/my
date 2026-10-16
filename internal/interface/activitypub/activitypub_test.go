@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/best-friends/my/internal/domain/account"
+	"github.com/best-friends/my/internal/interface/activitypub"
 )
 
 // TestGolden pins every document the endpoints serve (ADR-0015).
@@ -204,6 +205,42 @@ func TestProfilePageRedirectsActivityPub(t *testing.T) {
 			}
 			if got := rec.Header().Values("Vary"); !reflect.DeepEqual(got, []string{"Accept"}) {
 				t.Errorf("Vary = %q, want Accept", got)
+			}
+		})
+	}
+}
+
+// TestProfilePageServesHTML checks that requests that do not ask for ActivityPub get the web
+// client's HTML at profile pages and other single-segment paths, while ActivityPub requests
+// keep their redirects and 404s.
+func TestProfilePageServesHTML(t *testing.T) {
+	s := &server{mux: http.NewServeMux(), accounts: newAccounts(t)}
+	activitypub.New(activitypub.Options{
+		Host: host, Accounts: s.accounts, Problem: problem,
+		HTML: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("shell")) }),
+	}).Register(s.mux)
+	tests := []struct {
+		name, path, accept string
+		status             int
+		shell              bool
+		vary               []string
+	}{
+		{"browser", "/@alice", acceptBrowser, http.StatusOK, true, []string{"Accept"}},
+		{"wildcard", "/@alice", "*/*", http.StatusOK, true, []string{"Accept"}},
+		{"no Accept", "/@alice", "", http.StatusOK, true, []string{"Accept"}},
+		{"missing account", "/@nobody", acceptBrowser, http.StatusOK, true, []string{"Accept"}},
+		{"Mastodon", "/@alice", acceptMastodon, http.StatusFound, false, []string{"Accept"}},
+		{"Mastodon, missing account", "/@nobody", acceptMastodon, http.StatusNotFound, false, []string{"Accept"}},
+		{"SPA route", "/home", acceptBrowser, http.StatusOK, true, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := s.get(t, tt.path, tt.accept)
+			if rec.Code != tt.status || (rec.Body.String() == "shell") != tt.shell {
+				t.Fatalf("GET %s = %d %q, want %d (shell: %v)", tt.path, rec.Code, rec.Body, tt.status, tt.shell)
+			}
+			if got := rec.Header().Values("Vary"); !reflect.DeepEqual(got, tt.vary) {
+				t.Errorf("Vary = %q, want %q", got, tt.vary)
 			}
 		})
 	}

@@ -42,10 +42,19 @@ function reactCompilerCheck() {
 const compilerCheck = reactCompilerCheck();
 
 export default defineConfig({
-  // Go serves index.html and builds its <script> / <link> tags from the manifest (ADR-0028).
+  // Go serves the HTML and builds its <script> / <link> tags from the manifest (ADR-0028).
   base: "./",
-  build: { manifest: true },
+  build: {
+    manifest: true,
+    // Emit every asset as a file: the CSP of ADR-0019 §9 has no data: source.
+    assetsInlineLimit: 0,
+  },
   server: {
+    // `my serve -dev-vite-origin http://localhost:5173` loads the client from here (CONTRIBUTING.md),
+    // so the URLs of assets must point at this server, not at the page's origin.
+    port: 5173,
+    strictPort: true,
+    origin: "http://localhost:5173",
     // Catalogs are imported from locales/, outside the workspace root.
     fs: { allow: [searchForWorkspaceRoot(process.cwd()), localesDir] },
   },

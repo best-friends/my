@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-only
 # Smoke test of deploy/docker/compose.yaml: build the images, start the stack (schema apply, then the server),
-# wait for readiness, create an admin, and check WebFinger, the Actor, and NodeInfo.
+# wait for readiness, create an admin, and check WebFinger, the Actor, NodeInfo, and the embedded web client.
 # Prints the logs on failure and always removes the stack and its volume.
 # Usage: scripts/docker-smoke.sh   (needs docker with compose, curl, jq, openssl)
 set -euo pipefail
@@ -70,5 +70,14 @@ echo "$actor" | jq -e --arg id "$actor_id" '
 nodeinfo="$(curl -fsS "$base/nodeinfo/2.1")"
 echo "$nodeinfo" | jq -e --arg v "$MY_VERSION" '.version == "2.1" and .software.version == $v and .usage.users.total == 1' >/dev/null ||
 	fail "unexpected NodeInfo: $nodeinfo"
+
+# The image embeds the web client: the shell loads its entry module from /assets/ (ADR-0028).
+shell="$(curl -fsS -H 'Accept: text/html' "$base/@alice")"
+entry="$(echo "$shell" | grep -o '<script type="module" src="/assets/[^"]*"' | head -n 1 | sed 's/.*src="//; s/"$//' || true)"
+[[ -n "$entry" ]] || fail "the HTML shell loads no entry module from /assets/ (web client not embedded?): $shell"
+echo "$shell" | grep -q '<script type="application/json" id="config">' || fail "the HTML shell has no runtime config: $shell"
+curl -fsS -o /dev/null "$base$entry" || fail "the entry module $entry is not served"
+curl -fsS "$base/manifest.webmanifest" | jq -e --arg name "$MY_HOST" '.name == $name' >/dev/null ||
+	fail "unexpected Web App Manifest"
 
 echo "docker-smoke: ok ($actor_id)" >&2
