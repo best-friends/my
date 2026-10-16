@@ -182,6 +182,7 @@ linters:
           list-mode: lax
           files:
             - "**/internal/interface/**"
+            - "!$test"
           deny:
             - pkg: github.com/best-friends/my/internal/adapter
               desc: interface code reaches adapters only through application ports
@@ -189,6 +190,16 @@ linters:
               desc: only cmd imports the composition root
             - pkg: github.com/best-friends/my/pkg/testkit
               desc: testkit is for adapter contract tests
+        interface-tests:
+          # Tests may use pkg/testkit fakes (clock, IDs, fixtures); production interface code may not.
+          list-mode: lax
+          files:
+            - "**/internal/interface/**/*_test.go"
+          deny:
+            - pkg: github.com/best-friends/my/internal/adapter
+              desc: interface tests reach adapters only through application ports
+            - pkg: github.com/best-friends/my/internal/platform
+              desc: only cmd imports the composition root
         adapter:
           list-mode: lax
           files:
