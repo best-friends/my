@@ -76,10 +76,22 @@ export function AppI18nProvider({ i18n, timeZone, children }: AppI18nProviderPro
   );
 }
 
+/**
+ * Below md the toasts stand above the navigation's tab bar (routes/-layout/Navigation.tsx), whose links
+ * they would otherwise cover: its links are 4rem high, with a 1px border above and the safe-area inset
+ * below them. From md the navigation is a side rail and the toasts go back to the bottom edge.
+ */
+const toastRegionClassName =
+  "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] pb-4 md:bottom-0 md:pb-[max(--spacing(4),env(safe-area-inset-bottom))]";
+
 function Toasts({ children }: { children: ReactNode }) {
   const t = useT();
   return (
-    <ToastProvider regionLabel={t("client:shell.toast.region")} dismissLabel={t("client:shell.toast.dismiss")}>
+    <ToastProvider
+      regionLabel={t("client:shell.toast.region")}
+      dismissLabel={t("client:shell.toast.dismiss")}
+      regionClassName={toastRegionClassName}
+    >
       {children}
     </ToastProvider>
   );
