@@ -88,6 +88,8 @@ linters:
             - github.com/best-friends/my/internal/domain/content
             - github.com/best-friends/my/internal/app
             - github.com/best-friends/my/internal/i18n
+            # NFKC normalization of hashtags (data-model §4.4, tags.name_normalized): pure-Go Unicode data, not an external resource.
+            - golang.org/x/text/unicode/norm
         domain-graph:
           list-mode: strict
           files:
@@ -213,6 +215,22 @@ linters:
             - github.com/best-friends/my/internal/app/queue
             - github.com/best-friends/my/internal/app/kernel
             - github.com/best-friends/my/internal/app/uow
+        # app/blob (BlobStore) and app/media (MediaProcessor) hold ports shared by every module that
+        # keeps files and by their adapters; like kernel, they depend on nothing in the repository.
+        app-blob:
+          list-mode: strict
+          files:
+            - "**/internal/app/blob/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/app/blob
+        app-media:
+          list-mode: strict
+          files:
+            - "**/internal/app/media/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/app/media
         i18n:
           list-mode: strict
           files:

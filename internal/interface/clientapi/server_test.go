@@ -17,6 +17,11 @@ import (
 
 func newServer(t *testing.T) (*clientapi.Server, http.Handler) {
 	t.Helper()
+	return newServerWithLocales(t, func(b *i18n.Bundle) *i18n.Resolver { return &i18n.Resolver{Bundle: b} })
+}
+
+func newServerWithLocales(t *testing.T, locales func(*i18n.Bundle) *i18n.Resolver) (*clientapi.Server, http.Handler) {
+	t.Helper()
 	messages, err := i18n.Load()
 	if err != nil {
 		t.Fatal(err)
@@ -24,7 +29,7 @@ func newServer(t *testing.T) (*clientapi.Server, http.Handler) {
 	s := clientapi.New(clientapi.Options{
 		Host: "social.example", Name: "Example Social", SoftwareVersion: "1.2.3",
 		SourceURL: "https://git.example/my", MaxPostCharacters: 500,
-		Messages:  messages,
+		Locales:   locales(messages),
 		RequestID: func(context.Context) string { return "req-1" },
 		Logger:    slog.New(slog.DiscardHandler),
 	})
@@ -118,6 +123,47 @@ func TestProblemsAreLocalized(t *testing.T) {
 			}
 			if p.RequestId == nil || *p.RequestId != "req-1" {
 				t.Errorf("request_id = %v, want req-1", p.RequestId)
+			}
+		})
+	}
+}
+
+// viewerKey is the context key of a fake authenticated viewer: its saved locale.
+type viewerKey struct{}
+
+// TestProblemLocaleOrder checks that problem documents follow ADR-0009 §2: the
+// authenticated user's locale, then Accept-Language, then the instance default.
+func TestProblemLocaleOrder(t *testing.T) {
+	instanceDefault := "ja"
+	s, _ := newServerWithLocales(t, func(b *i18n.Bundle) *i18n.Resolver {
+		return &i18n.Resolver{
+			Bundle:          b,
+			UserLocale:      func(ctx context.Context) string { l, _ := ctx.Value(viewerKey{}).(string); return l },
+			InstanceDefault: func(context.Context) string { return instanceDefault },
+		}
+	})
+	tests := []struct {
+		name, viewer, acceptLanguage, instanceDefault, want string
+	}{
+		{name: "anonymous without accept-language", instanceDefault: "ja", want: "ja"},
+		{name: "default changed", instanceDefault: "en", want: "en"},
+		{name: "accept-language before the default", acceptLanguage: "en", instanceDefault: "ja", want: "en"},
+		{name: "user before accept-language", viewer: "ja", acceptLanguage: "en", instanceDefault: "en", want: "ja"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			instanceDefault = tt.instanceDefault
+			req := httptest.NewRequest(http.MethodGet, clientapi.BasePath+"/instance", nil)
+			if tt.acceptLanguage != "" {
+				req.Header.Set("Accept-Language", tt.acceptLanguage)
+			}
+			if tt.viewer != "" {
+				req = req.WithContext(context.WithValue(req.Context(), viewerKey{}, tt.viewer))
+			}
+			w := httptest.NewRecorder()
+			clientapi.RequestErrorHandler(s)(w, req, &clientapi.RequiredParamError{ParamName: "cursor"})
+			if got := w.Header().Get("Content-Language"); got != tt.want {
+				t.Errorf("Content-Language = %q, want %q", got, tt.want)
 			}
 		})
 	}

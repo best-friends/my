@@ -44,6 +44,11 @@ An instance setting that has never been set reads as its default, which is defin
 | [`queue`](#queue) | `MY_QUEUE` | `db` | no | no |
 | [`blob`](#blob) | `MY_BLOB` | `fs` | no | no |
 | [`media`](#media) | `MY_MEDIA` | `native` | no | no |
+| [`blob_fs_dir`](#blob_fs_dir) | `MY_BLOB_FS_DIR` | `blobs` | no | no |
+| [`media_max_image_bytes`](#media_max_image_bytes) | `MY_MEDIA_MAX_IMAGE_BYTES` | `16777216` | no | no |
+| [`media_max_image_side`](#media_max_image_side) | `MY_MEDIA_MAX_IMAGE_SIDE` | `8192` | no | no |
+| [`media_max_image_pixels`](#media_max_image_pixels) | `MY_MEDIA_MAX_IMAGE_PIXELS` | `33177600` | no | no |
+| [`media_unattached_ttl`](#media_unattached_ttl) | `MY_MEDIA_UNATTACHED_TTL` | `24h` | no | no |
 | [`kv`](#kv) | `MY_KV` | `db` | no | no |
 | [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
 | [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
@@ -175,6 +180,46 @@ Media processor adapter (ADR-0005).
 | `native` | yes | Pure Go image processing. |
 | `vips` | yes | libvips; needs a cgo build with the adapter's build tag. |
 | `none` | yes | No processing except EXIF removal. |
+
+### `blob_fs_dir`
+
+Directory of the `fs` blob store, relative to the working directory or absolute. It holds the uploads as received (private) and the processed media, which the server serves under `/media/`. Share it between the web and worker processes, and back it up with the database.
+
+- Environment variable: `MY_BLOB_FS_DIR`
+- Default: `blobs`
+- Required: no
+
+### `media_max_image_bytes`
+
+Largest accepted image upload in bytes (ADR-0019 §8).
+
+- Environment variable: `MY_MEDIA_MAX_IMAGE_BYTES`
+- Default: `16777216`
+- Required: no
+
+### `media_max_image_side`
+
+Largest accepted image width and height in pixels, read from the file's header before decoding (ADR-0019 §8).
+
+- Environment variable: `MY_MEDIA_MAX_IMAGE_SIDE`
+- Default: `8192`
+- Required: no
+
+### `media_max_image_pixels`
+
+Largest accepted image area (width × height, and for an animated GIF the frames together), read from the file's header before decoding (ADR-0019 §8). The default is 33 MP (7680 × 4320).
+
+- Environment variable: `MY_MEDIA_MAX_IMAGE_PIXELS`
+- Default: `33177600`
+- Required: no
+
+### `media_unattached_ttl`
+
+How long an upload may stay unattached to any post or profile before the hourly cleanup deletes it (FR-803), as a Go duration such as `24h`.
+
+- Environment variable: `MY_MEDIA_UNATTACHED_TTL`
+- Default: `24h`
+- Required: no
 
 ### `kv`
 

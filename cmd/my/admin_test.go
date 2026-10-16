@@ -35,6 +35,7 @@ func newAdminEnv(t *testing.T) string {
 	t.Setenv(config.EnvPrefix+"HOST", "social.example")
 	t.Setenv(config.EnvPrefix+"DB", "sqlite")
 	t.Setenv(config.EnvPrefix+"DATABASE_URL", path)
+	t.Setenv(config.EnvPrefix+"BLOB_FS_DIR", t.TempDir())
 	t.Setenv(config.EnvPrefix+"KEK", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32)))
 	return path
 }

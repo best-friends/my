@@ -120,5 +120,13 @@ Other unknown class names produce no CSS; catching those is the job of the Tailw
 
 ## Stories
 
+Every component has a story next to it (`src/<Component>.stories.tsx`, CSF 3). `make storybook` opens Storybook 10 on port 6006;
+its toolbar switches the locale (`lang` / `dir` on `<html>` and React Aria's `I18nProvider`) and the theme (`data-theme`).
 [src/Tokens.stories.tsx](src/Tokens.stories.tsx) shows the color pairs, the type scale in English, Japanese and Arabic, radius,
 shadow and the focus ring. [src/storybook.css](src/storybook.css) is the Storybook preview stylesheet.
+
+Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)). `make ui-test` runs each story in Chromium in
+`en` and `ar-XB`, light and dark; a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
+1024 px container widths. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
+them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
+The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).

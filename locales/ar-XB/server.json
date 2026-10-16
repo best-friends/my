@@ -240,7 +240,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.verify_email.body": {
-    "defaultMessage": "‮Mǝʅɔoɯǝ ʇo {host}.\n\nOdǝu ʇɥıs ʅıuʞ ʇo ɔouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss:\n\n{url}\n\n{hours,plural,one{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹ.} other{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹs.}} Iɟ ʎon pıp uoʇ sıƃu nd ɐʇ {host}, ıƃuoɹǝ ʇɥıs ǝɯɐıʅ.\n‬",
+    "defaultMessage": "‮Mǝʅɔoɯǝ ʇo {host}.\n\nOdǝu ʇɥıs ʅıuʞ ʇo ɔouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss:\n\n{url}\n\n{hours,plural,one{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹ.} other{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹs.}} Iɟ ʎon pıp uoʇ sıƃu nd ɐʇ {host}, ıƃuoɹǝ ʇɥıs ǝɯɐıʅ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.verify_email.subject": {

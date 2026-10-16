@@ -64,11 +64,6 @@ type AccountProfileField struct {
 	ValueHtml  string
 }
 
-type AccountProfileHead struct {
-	AccountID  string
-	RevisionID string
-}
-
 type AccountProfileRevision struct {
 	ID            string
 	AccountID     string
@@ -98,21 +93,41 @@ type BlockEdge struct {
 	BlockID          string
 }
 
-type BlockRetraction struct {
-	BlockID     string
+type Bookmark struct {
+	AccountID string
+	StatusID  string
+	CreatedAt time.Time
+	ID        string
+}
+
+type Boost struct {
+	ID               string
+	Uri              string
+	BoosterAccountID string
+	StatusID         string
+	Visibility       string
+	IsLocal          bool
+	BoostedAt        time.Time
+}
+
+type BoostEdge struct {
+	BoosterAccountID string
+	StatusID         string
+	BoostID          string
+}
+
+type BoostRetraction struct {
+	BoostID     string
+	Origin      string
 	RetractedAt time.Time
 }
 
-type DeadJob struct {
-	ID             string
-	Type           string
-	Payload        []byte
-	IdempotencyKey *string
-	OrderingKey    *string
-	Attempt        int32
-	LastError      string
-	CreatedAt      time.Time
-	FailedAt       time.Time
+type Favourite struct {
+	AccountID string
+	StatusID  string
+	Uri       string
+	CreatedAt time.Time
+	ID        string
 }
 
 type Follow struct {
@@ -121,13 +136,6 @@ type Follow struct {
 	FollowerAccountID string
 	FolloweeAccountID string
 	RequestedAt       time.Time
-}
-
-type FollowAcceptance struct {
-	FollowID    string
-	AcceptedBy  string
-	ActivityUri *string
-	AcceptedAt  time.Time
 }
 
 type FollowCounter struct {
@@ -148,19 +156,6 @@ type FollowPreference struct {
 	FollowID   string
 	ShowBoosts bool
 	Notify     bool
-}
-
-type FollowRejection struct {
-	FollowID    string
-	RejectedBy  string
-	ActivityUri *string
-	RejectedAt  time.Time
-}
-
-type FollowTermination struct {
-	FollowID     string
-	Reason       string
-	TerminatedAt time.Time
 }
 
 type InstanceSetting struct {
@@ -201,50 +196,11 @@ type Invite struct {
 	CreatedAt       time.Time
 }
 
-type InviteRedemption struct {
-	InviteID   string
-	Seq        int32
-	UserID     string
-	RedeemedAt time.Time
-}
-
-type InviteRevocation struct {
-	InviteID        string
-	RevokedByUserID *string
-	RevokedAt       time.Time
-}
-
-type Job struct {
-	ID             string
-	Type           string
-	Payload        []byte
-	IdempotencyKey *string
-	OrderingKey    *string
-	Attempt        int32
-	RunAt          time.Time
-	LockedBy       *string
-	LockedUntil    *time.Time
-	LastError      *string
-	CreatedAt      time.Time
-}
-
-type KvEntry struct {
-	Namespace string
-	Key       string
-	Value     []byte
-	ExpiresAt *time.Time
-}
-
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
 	Username           string
 	UsernameNormalized string
-}
-
-type LocalAccountPrivateKey struct {
-	AccountKeyID  string
-	PrivateKeyEnc []byte
 }
 
 type LocalStatus struct {
@@ -254,22 +210,47 @@ type LocalStatus struct {
 	IdempotencyKey  *string
 }
 
+type MediaFile struct {
+	ID             string
+	OwnerAccountID string
+	Origin         string
+	CreatedAt      time.Time
+}
+
+type MediaFocu struct {
+	MediaID string
+	FocusX  float64
+	FocusY  float64
+}
+
+type MediaProcessingResult struct {
+	ID          string
+	MediaID     string
+	Outcome     string
+	MediaType   string
+	Width       *int32
+	Height      *int32
+	DurationMs  *int32
+	Blurhash    *string
+	ProcessedAt time.Time
+}
+
+type MediaVariant struct {
+	ResultID    string
+	Kind        string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+	Width       int32
+	Height      int32
+}
+
 type Mute struct {
 	AccountID         string
 	TargetAccountID   string
 	HideNotifications bool
 	ExpiresAt         *time.Time
 	CreatedAt         time.Time
-}
-
-type OutboxEvent struct {
-	ID             string
-	JobType        string
-	Payload        []byte
-	IdempotencyKey *string
-	OrderingKey    *string
-	RunAt          time.Time
-	CreatedAt      time.Time
 }
 
 type PasswordCredential struct {
@@ -287,47 +268,11 @@ type RegistrationApplication struct {
 	SubmittedAt time.Time
 }
 
-type RegistrationDecision struct {
-	ID              string
-	ApplicationID   string
-	Decision        string
-	DecidedBy       string
-	DecidedByUserID *string
-	Note            *string
-	DecidedAt       time.Time
-}
-
 type Role struct {
 	ID        string
 	Key       string
 	Position  int32
 	CreatedAt time.Time
-}
-
-type RolePermission struct {
-	RoleID     string
-	Permission string
-}
-
-type Session struct {
-	ID        string
-	UserID    string
-	TokenHash []byte
-	UserAgent *string
-	Ip        *string
-	CreatedAt time.Time
-	ExpiresAt time.Time
-}
-
-type SessionActivity struct {
-	SessionID  string
-	LastSeenAt time.Time
-}
-
-type SessionRevocation struct {
-	SessionID string
-	Reason    string
-	RevokedAt time.Time
 }
 
 type Status struct {
@@ -370,6 +315,13 @@ type StatusMentionIndex struct {
 	StatusID  string
 }
 
+type StatusPin struct {
+	AccountID string
+	StatusID  string
+	CreatedAt time.Time
+	ID        string
+}
+
 type StatusReplyLink struct {
 	StatusID              string
 	ParentStatusID        string
@@ -399,25 +351,10 @@ type StatusRevisionBody struct {
 	ContentHtml string
 }
 
-type StatusRevisionEmoji struct {
-	RevisionID string
-	EmojiID    string
-}
-
-type StatusRevisionMention struct {
-	RevisionID string
-	AccountID  string
-}
-
 type StatusRevisionSource struct {
 	RevisionID   string
 	SourceText   string
 	SourceFormat string
-}
-
-type StatusRevisionTag struct {
-	RevisionID string
-	TagID      string
 }
 
 type Tag struct {
@@ -427,22 +364,16 @@ type Tag struct {
 	CreatedAt      time.Time
 }
 
+type UploadedMedium struct {
+	MediaID     string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+}
+
 type User struct {
 	ID        string
 	CreatedAt time.Time
-}
-
-type UserEmailAddress struct {
-	ID                string
-	UserID            string
-	Address           string
-	AddressNormalized string
-	AddedAt           time.Time
-}
-
-type UserEmailVerification struct {
-	EmailAddressID string
-	VerifiedAt     time.Time
 }
 
 type UserPreference struct {
@@ -455,41 +386,10 @@ type UserPreference struct {
 	UpdatedAt               time.Time
 }
 
-type UserPrimaryEmail struct {
-	UserID            string
-	EmailAddressID    string
-	AddressNormalized string
-}
-
 type UserRegistrationState struct {
 	UserID string
 	State  string
 	Since  time.Time
-}
-
-type UserRole struct {
-	UserID  string
-	RoleID  string
-	GrantID string
-}
-
-type UserRoleGrant struct {
-	ID              string
-	UserID          string
-	RoleID          string
-	GrantedByUserID *string
-	GrantedAt       time.Time
-}
-
-type UserRoleRevocation struct {
-	GrantID         string
-	RevokedByUserID *string
-	RevokedAt       time.Time
-}
-
-type UserTimelineLanguage struct {
-	UserID   string
-	Language string
 }
 
 type UserToken struct {
@@ -500,9 +400,4 @@ type UserToken struct {
 	TokenHash      []byte
 	ExpiresAt      time.Time
 	IssuedAt       time.Time
-}
-
-type UserTokenRedemption struct {
-	TokenID    string
-	RedeemedAt time.Time
 }

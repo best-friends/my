@@ -348,7 +348,8 @@ func (s *Service) sendVerification(ctx context.Context, to, locale, secret strin
 			return err
 		}
 	}
-	l := bundle.Localizer(bundle.Resolve(i18n.Preferences{User: locale}))
+	users := &i18n.Resolver{Bundle: bundle, UserLocale: func(context.Context) string { return locale }}
+	l := users.Localizer(ctx, "")
 	link := strings.TrimSuffix(s.d.BaseURL, "/") + PathVerifyEmail + "?token=" + url.QueryEscape(secret)
 	host := s.d.BaseURL
 	if u, err := url.Parse(s.d.BaseURL); err == nil && u.Host != "" {

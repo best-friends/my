@@ -240,7 +240,7 @@
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
   },
   "mail.verify_email.body": {
-    "defaultMessage": "{host} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。\n",
+    "defaultMessage": "{host} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。",
     "description": "Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
   },
   "mail.verify_email.subject": {

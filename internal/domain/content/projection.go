@@ -44,7 +44,8 @@ type Mention struct {
 
 // Counters are the counters of a status that is not deleted (the status_counters projection).
 // RepliesCount counts the known replies that are not deleted and whose visibility
-// CountsAsReply.
+// CountsAsReply, BoostsCount the boosts that are not retracted, and FavouritesCount the
+// favourites.
 type Counters struct {
 	StatusID        string
 	RepliesCount    int64

@@ -86,7 +86,8 @@ type Identity interface {
 // Options configure a Handler.
 type Options struct {
 	Identity Identity
-	Messages *i18n.Bundle
+	// Locales resolves the locale of the screens (ADR-0009 §2).
+	Locales *i18n.Resolver
 	// Stylesheet is the URL of the pages' stylesheet; empty means DefaultStylesheet.
 	Stylesheet string
 	// Logger logs unexpected errors; nil means slog.Default().
@@ -171,7 +172,7 @@ type page struct {
 }
 
 func (h *Handler) newPage(r *http.Request, title func(*i18n.Localizer) string) page {
-	l := h.o.Messages.Localizer(h.o.Messages.Resolve(i18n.Preferences{AcceptLanguage: r.Header.Get("Accept-Language")}))
+	l := h.o.Locales.RequestLocalizer(r)
 	return page{L: l, Lang: l.Locale(), Dir: l.Direction(), Title: title(l), Stylesheet: h.o.Stylesheet}
 }
 

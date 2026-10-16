@@ -124,7 +124,7 @@ export interface MessageArgs {
   "server:errors.not_found": {};
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
-  /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.  */
+  /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
   "server:mail.verify_email.body": { host: string; hours: number; url: string };
   /** Confirm your email address for {host} */
   "server:mail.verify_email.subject": { host: string };

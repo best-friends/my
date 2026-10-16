@@ -240,7 +240,7 @@
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
   },
   "mail.verify_email.body": {
-    "defaultMessage": "Welcome to {host}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.\n",
+    "defaultMessage": "Welcome to {host}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.",
     "description": "Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
   },
   "mail.verify_email.subject": {

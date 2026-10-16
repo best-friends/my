@@ -6,11 +6,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"net/mail"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // EnvPrefix is prepended to the upper-cased key to form a setting's environment variable.
@@ -170,6 +172,41 @@ var schema = []field{
 		set: func(c *Config, v string) { c.Media = v },
 	},
 	{
+		key:   "blob_fs_dir",
+		doc:   "Directory of the `fs` blob store, relative to the working directory or absolute. It holds the uploads as received (private) and the processed media, which the server serves under `/media/`. Share it between the web and worker processes, and back it up with the database.",
+		def:   "blobs",
+		check: checkNotBlank,
+		set:   func(c *Config, v string) { c.BlobFSDir = v },
+	},
+	{
+		key:   "media_max_image_bytes",
+		doc:   "Largest accepted image upload in bytes (ADR-0019 §8).",
+		def:   strconv.Itoa(16 << 20),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.MediaMaxImageBytes, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
+		key:   "media_max_image_side",
+		doc:   "Largest accepted image width and height in pixels, read from the file's header before decoding (ADR-0019 §8).",
+		def:   "8192",
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.MediaMaxImageSide, _ = strconv.Atoi(v) },
+	},
+	{
+		key:   "media_max_image_pixels",
+		doc:   "Largest accepted image area (width × height, and for an animated GIF the frames together), read from the file's header before decoding (ADR-0019 §8). The default is 33 MP (7680 × 4320).",
+		def:   strconv.Itoa(7680 * 4320),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.MediaMaxImagePixels, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
+		key:   "media_unattached_ttl",
+		doc:   "How long an upload may stay unattached to any post or profile before the hourly cleanup deletes it (FR-803), as a Go duration such as `24h`.",
+		def:   "24h",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.MediaUnattachedTTL, _ = time.ParseDuration(v) },
+	},
+	{
 		key: "kv",
 		doc: "Key-value store adapter for caches and rate limits (ADR-0003, ADR-0019 §5).",
 		def: "db",
@@ -294,6 +331,29 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 		issues = append(issues, Issue{Key: "queue", Message: fmt.Sprintf("inline runs jobs in the enqueuing process and requires role = all, not %s", vals["role"])})
 	}
 	return issues
+}
+
+func checkNotBlank(v string) error {
+	if strings.TrimSpace(v) == "" {
+		return errors.New("must not be blank")
+	}
+	return nil
+}
+
+func checkPositiveInt(v string) error {
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || n <= 0 || n > math.MaxInt32 {
+		return fmt.Errorf("must be a whole number from 1 to %d", math.MaxInt32)
+	}
+	return nil
+}
+
+func checkPositiveDuration(v string) error {
+	d, err := time.ParseDuration(v)
+	if err != nil || d <= 0 {
+		return errors.New("must be a positive Go duration, for example 24h or 90m")
+	}
+	return nil
 }
 
 // checkDomain accepts a lower-case DNS name with an optional port.

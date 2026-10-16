@@ -426,7 +426,7 @@ func (l *Localizer) ServerHealthUnavailable() string {
 
 // ServerMailVerifyEmailBody formats "server:mail.verify_email.body". Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works.
 //
-//	en: Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. 
+//	en: Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.
 func (l *Localizer) ServerMailVerifyEmailBody(host string, hours int, url string) string {
 	return l.format("server:mail.verify_email.body", map[string]any{"host": host, "hours": hours, "url": url})
 }

@@ -188,7 +188,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-build web-licenses web-tokens web-test web-e2e web-e2e-install web-check
+.PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-check
 
 web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
 	cd app && bun install --frozen-lockfile
@@ -201,6 +201,13 @@ web-build: web-install ## Build app/web into app/web/dist (fails when React Comp
 
 web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules
+
+web-lint: web-install ## Lint the client workspace: ESLint (app/eslint.config.js), its rule tests, knip, no 100vh in CSS
+	cd app && bun run lint
+	cd app && bun run lint:rules
+	cd app && bun run knip
+	@! grep -rn --include='*.css' '100vh' app/ui/src app/web/src \
+		|| { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
 
 web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors, motion only under motion-safe
 	cd app/ui && bun run check-tokens
@@ -217,4 +224,37 @@ web-e2e: web-build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for
 web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
 	cd app/web && bun run playwright install chromium
 
-web-check: web-typecheck web-build web-licenses web-tokens web-test ## Run every offline web client check
+web-check: web-typecheck web-lint web-build web-licenses web-tokens web-test playwright-image-check ## Run every offline web client check
+
+# --- @my/ui Storybook and story tests (ADR-0027) ----------------------------------------------
+# The story tests run every story in Chromium (Vitest browser mode, Playwright): axe must find no
+# violation and each story must match its screenshots at 3 container widths × light / dark × LTR / RTL.
+# They need a browser, so they are not part of `make check`; CI runs `make ui-test` in PLAYWRIGHT_IMAGE
+# on every PR. Baselines (app/ui/src/__screenshots__/) come only from that image: `make ui-snapshots-update`.
+
+# The official Playwright image every browser job runs in, pinned by digest. Its version must match the
+# playwright packages in app/; playwright-image-check also keeps the workflows on this exact reference.
+PLAYWRIGHT_IMAGE := mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+
+.PHONY: storybook storybook-build ui-test ui-test-install ui-test-docker ui-snapshots-update playwright-image-check
+
+storybook: web-install ## Start the @my/ui Storybook on http://localhost:6006
+	cd app/ui && bun run storybook
+
+storybook-build: web-install ## Build the static @my/ui Storybook into app/ui/storybook-static
+	cd app/ui && bun run build-storybook
+
+ui-test: web-install ## Run the @my/ui story tests (axe + screenshots) in Chromium; screenshots match only in PLAYWRIGHT_IMAGE
+	cd app/ui && bun run test
+
+ui-test-install: web-install ## Download the Chromium that ui-test uses (local runs only)
+	cd app/ui && bun run playwright install chromium
+
+ui-test-docker: ## Run the @my/ui story tests in PLAYWRIGHT_IMAGE, as CI does (needs docker)
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/ui-test-docker.sh
+
+ui-snapshots-update: ## Regenerate the @my/ui screenshot baselines in PLAYWRIGHT_IMAGE (needs docker); review and commit them
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/ui-test-docker.sh --update
+
+playwright-image-check: ## Fail if a workflow's Playwright image or a playwright package version differs from PLAYWRIGHT_IMAGE
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/playwright-image-check.sh
