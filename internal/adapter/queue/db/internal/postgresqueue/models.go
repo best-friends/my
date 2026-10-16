@@ -152,6 +152,20 @@ type User struct {
 	CreatedAt time.Time
 }
 
+type UserEmailAddress struct {
+	ID                string
+	UserID            string
+	Address           string
+	AddressNormalized string
+	AddedAt           time.Time
+}
+
+type UserPrimaryEmail struct {
+	UserID            string
+	EmailAddressID    string
+	AddressNormalized string
+}
+
 type UserRole struct {
 	UserID  string
 	RoleID  string

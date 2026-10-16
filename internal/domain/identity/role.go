@@ -35,6 +35,16 @@ type Role struct {
 	CreatedAt time.Time
 }
 
+// RoleGrant is a role granted to a user (data-model §4.1, user_role_grants).
+type RoleGrant struct {
+	ID     string
+	UserID string
+	RoleID string
+	// GrantedByUserID is the user who granted the role, or "" for a grant from the CLI.
+	GrantedByUserID string
+	GrantedAt       time.Time
+}
+
 // Keys of the built-in roles.
 const (
 	RoleAdmin     = "admin"

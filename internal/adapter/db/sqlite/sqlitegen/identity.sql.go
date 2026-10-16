@@ -9,6 +9,7 @@ package sqlitegen
 
 import (
 	"context"
+	"database/sql"
 )
 
 const getCurrentPasswordCredential = `-- name: GetCurrentPasswordCredential :one
@@ -55,6 +56,40 @@ func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
 	return i, err
 }
 
+const getUserIDByPrimaryEmail = `-- name: GetUserIDByPrimaryEmail :one
+SELECT user_id FROM user_primary_emails WHERE address_normalized = ?
+`
+
+func (q *Queries) GetUserIDByPrimaryEmail(ctx context.Context, addressNormalized string) (string, error) {
+	row := q.db.QueryRowContext(ctx, getUserIDByPrimaryEmail, addressNormalized)
+	var user_id string
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
+const insertEmailAddress = `-- name: InsertEmailAddress :exec
+INSERT INTO user_email_addresses (id, user_id, address, address_normalized, added_at) VALUES (?, ?, ?, ?, ?)
+`
+
+type InsertEmailAddressParams struct {
+	ID                string
+	UserID            string
+	Address           string
+	AddressNormalized string
+	AddedAt           int64
+}
+
+func (q *Queries) InsertEmailAddress(ctx context.Context, arg InsertEmailAddressParams) error {
+	_, err := q.db.ExecContext(ctx, insertEmailAddress,
+		arg.ID,
+		arg.UserID,
+		arg.Address,
+		arg.AddressNormalized,
+		arg.AddedAt,
+	)
+	return err
+}
+
 const insertPasswordCredential = `-- name: InsertPasswordCredential :exec
 INSERT INTO password_credentials (id, user_id, password_hash, set_at) VALUES (?, ?, ?, ?)
 `
@@ -73,6 +108,21 @@ func (q *Queries) InsertPasswordCredential(ctx context.Context, arg InsertPasswo
 		arg.PasswordHash,
 		arg.SetAt,
 	)
+	return err
+}
+
+const insertPrimaryEmail = `-- name: InsertPrimaryEmail :exec
+INSERT INTO user_primary_emails (user_id, email_address_id, address_normalized) VALUES (?, ?, ?)
+`
+
+type InsertPrimaryEmailParams struct {
+	UserID            string
+	EmailAddressID    string
+	AddressNormalized string
+}
+
+func (q *Queries) InsertPrimaryEmail(ctx context.Context, arg InsertPrimaryEmailParams) error {
+	_, err := q.db.ExecContext(ctx, insertPrimaryEmail, arg.UserID, arg.EmailAddressID, arg.AddressNormalized)
 	return err
 }
 
@@ -129,6 +179,44 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) error {
 	return err
 }
 
+const insertUserRole = `-- name: InsertUserRole :exec
+INSERT INTO user_roles (user_id, role_id, grant_id) VALUES (?, ?, ?)
+`
+
+type InsertUserRoleParams struct {
+	UserID  string
+	RoleID  string
+	GrantID string
+}
+
+func (q *Queries) InsertUserRole(ctx context.Context, arg InsertUserRoleParams) error {
+	_, err := q.db.ExecContext(ctx, insertUserRole, arg.UserID, arg.RoleID, arg.GrantID)
+	return err
+}
+
+const insertUserRoleGrant = `-- name: InsertUserRoleGrant :exec
+INSERT INTO user_role_grants (id, user_id, role_id, granted_by_user_id, granted_at) VALUES (?, ?, ?, ?, ?)
+`
+
+type InsertUserRoleGrantParams struct {
+	ID              string
+	UserID          string
+	RoleID          string
+	GrantedByUserID sql.NullString
+	GrantedAt       int64
+}
+
+func (q *Queries) InsertUserRoleGrant(ctx context.Context, arg InsertUserRoleGrantParams) error {
+	_, err := q.db.ExecContext(ctx, insertUserRoleGrant,
+		arg.ID,
+		arg.UserID,
+		arg.RoleID,
+		arg.GrantedByUserID,
+		arg.GrantedAt,
+	)
+	return err
+}
+
 const listRolePermissions = `-- name: ListRolePermissions :many
 SELECT permission FROM role_permissions WHERE role_id = ? ORDER BY permission
 `
@@ -146,6 +234,40 @@ func (q *Queries) ListRolePermissions(ctx context.Context, roleID string) ([]str
 			return nil, err
 		}
 		items = append(items, permission)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUserRoles = `-- name: ListUserRoles :many
+SELECT r.id, r.key, r.position, r.created_at FROM user_roles ur
+JOIN roles r ON r.id = ur.role_id
+WHERE ur.user_id = ? ORDER BY r.position DESC, r.key
+`
+
+func (q *Queries) ListUserRoles(ctx context.Context, userID string) ([]Role, error) {
+	rows, err := q.db.QueryContext(ctx, listUserRoles, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Role{}
+	for rows.Next() {
+		var i Role
+		if err := rows.Scan(
+			&i.ID,
+			&i.Key,
+			&i.Position,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
