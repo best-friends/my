@@ -51,6 +51,12 @@ type AccountLifecycleState struct {
 	DeletionDueAt *time.Time
 }
 
+type AccountPostCounter struct {
+	AccountID     string
+	StatusesCount int64
+	LastStatusAt  time.Time
+}
+
 type AccountProfileField struct {
 	RevisionID string
 	Position   int32
@@ -76,6 +82,25 @@ type AccountProfileRevision struct {
 	AvatarMediaID *string
 	HeaderMediaID *string
 	RevisedAt     time.Time
+}
+
+type Block struct {
+	ID               string
+	Uri              *string
+	BlockerAccountID string
+	BlockedAccountID string
+	CreatedAt        time.Time
+}
+
+type BlockEdge struct {
+	BlockerAccountID string
+	BlockedAccountID string
+	BlockID          string
+}
+
+type BlockRetraction struct {
+	BlockID     string
+	RetractedAt time.Time
 }
 
 type DeadJob struct {
@@ -138,6 +163,35 @@ type FollowTermination struct {
 	TerminatedAt time.Time
 }
 
+type InstanceSetting struct {
+	Key        string
+	RevisionID string
+	Value      string
+}
+
+type InstanceSettingRevision struct {
+	ID              string
+	Key             string
+	Value           string
+	RevisedByUserID *string
+	RevisedAt       time.Time
+}
+
+type InstanceText struct {
+	Key        string
+	Locale     string
+	RevisionID string
+}
+
+type InstanceTextRevision struct {
+	ID              string
+	Key             string
+	Locale          string
+	Body            string
+	RevisedByUserID *string
+	RevisedAt       time.Time
+}
+
 type Job struct {
 	ID             string
 	Type           string
@@ -162,6 +216,21 @@ type LocalAccount struct {
 type LocalAccountPrivateKey struct {
 	AccountKeyID  string
 	PrivateKeyEnc []byte
+}
+
+type LocalStatus struct {
+	StatusID        string
+	AuthorAccountID string
+	ClientID        *string
+	IdempotencyKey  *string
+}
+
+type Mute struct {
+	AccountID         string
+	TargetAccountID   string
+	HideNotifications bool
+	ExpiresAt         *time.Time
+	CreatedAt         time.Time
 }
 
 type OutboxEvent struct {
@@ -191,6 +260,103 @@ type Role struct {
 type RolePermission struct {
 	RoleID     string
 	Permission string
+}
+
+type Status struct {
+	ID              string
+	Uri             string
+	Url             *string
+	AuthorAccountID string
+	IsLocal         bool
+	Visibility      string
+	InReplyToUri    *string
+	ConversationUri *string
+	PublishedAt     time.Time
+}
+
+type StatusCounter struct {
+	StatusID        string
+	RepliesCount    int64
+	BoostsCount     int64
+	FavouritesCount int64
+}
+
+type StatusDeletion struct {
+	StatusID           string
+	Uri                string
+	AuthorAccountID    string
+	Origin             string
+	ModerationActionID *string
+	DeletedAt          time.Time
+}
+
+type StatusHead struct {
+	StatusID      string
+	RevisionID    string
+	Seq           int32
+	LastRevisedAt time.Time
+}
+
+type StatusMentionIndex struct {
+	AccountID string
+	StatusID  string
+}
+
+type StatusReplyLink struct {
+	StatusID              string
+	ParentStatusID        string
+	ParentAuthorAccountID string
+}
+
+type StatusRevision struct {
+	ID          string
+	StatusID    string
+	Seq         int32
+	SpoilerText string
+	Sensitive   bool
+	Language    string
+	RevisedAt   time.Time
+}
+
+type StatusRevisionAttachment struct {
+	RevisionID  string
+	Position    int32
+	MediaID     string
+	Description *string
+}
+
+type StatusRevisionBody struct {
+	RevisionID  string
+	Language    string
+	ContentHtml string
+}
+
+type StatusRevisionEmoji struct {
+	RevisionID string
+	EmojiID    string
+}
+
+type StatusRevisionMention struct {
+	RevisionID string
+	AccountID  string
+}
+
+type StatusRevisionSource struct {
+	RevisionID   string
+	SourceText   string
+	SourceFormat string
+}
+
+type StatusRevisionTag struct {
+	RevisionID string
+	TagID      string
+}
+
+type Tag struct {
+	ID             string
+	Name           string
+	NameNormalized string
+	CreatedAt      time.Time
 }
 
 type User struct {

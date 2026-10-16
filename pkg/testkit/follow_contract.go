@@ -69,12 +69,22 @@ type followEnv struct {
 	repo   appgraph.Repository
 	graph  *appgraph.Service
 	events *eventLog
+	// captured are the harness's projectors, for registering more event types to log.
+	captured *uow.Projectors
 }
 
 // eventLog records the graph events that commands emit (committed or not).
 type eventLog struct {
 	mu     sync.Mutex
 	events []uow.Event
+}
+
+// record is a projector that logs e.
+func (l *eventLog) record(_ context.Context, _ uow.Tx, e uow.Event) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.events = append(l.events, e)
+	return nil
 }
 
 func (l *eventLog) take() []uow.Event {
@@ -102,17 +112,13 @@ func newFollowEnv(t *testing.T, newHarness FollowFactory) *followEnv {
 		appgraph.EventFollowed, appgraph.EventFollowRequested, appgraph.EventFollowAccepted,
 		appgraph.EventFollowRejected, appgraph.EventFollowTerminated, appgraph.EventFollowPreferencesChanged,
 	} {
-		captured.Projectors.Register(typ, func(_ context.Context, _ uow.Tx, e uow.Event) error {
-			log.mu.Lock()
-			defer log.mu.Unlock()
-			log.events = append(log.events, e)
-			return nil
-		})
+		captured.Projectors.Register(typ, log.record)
 	}
 	return &followEnv{
 		accountEnv: ae,
 		repo:       fh.Graph,
 		events:     log,
+		captured:   captured.Projectors,
 		graph: appgraph.NewService(appgraph.Deps{
 			UnitOfWork: fh.UnitOfWork,
 			Repository: fh.Graph,

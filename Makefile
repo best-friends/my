@@ -187,7 +187,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-build web-licenses web-lint web-check
+.PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-check
 
 web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
 	cd app && bun install --frozen-lockfile
@@ -208,4 +208,7 @@ web-lint: web-install ## Lint the client workspace: ESLint (app/eslint.config.js
 	@! grep -rn --include='*.css' '100vh' app/ui/src app/web/src \
 		|| { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
 
-web-check: web-typecheck web-lint web-build web-licenses ## Run every offline web client check
+web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors, motion only under motion-safe
+	cd app/ui && bun run check-tokens
+
+web-check: web-typecheck web-lint web-build web-licenses web-tokens ## Run every offline web client check
