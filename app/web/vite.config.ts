@@ -6,41 +6,14 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import { defineConfig, type Plugin, searchForWorkspaceRoot } from "vite";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { reactCompilerCheck } from "./vite-plugins/react-compiler-check.ts";
 
 /** The shared message catalogs at the repository root (ADR-0009). */
 const localesDir = fileURLToPath(new URL("../../locales", import.meta.url));
 
-/**
- * Fails `vite build` when React Compiler compiled no component or hook, so a broken compiler
- * setup cannot ship silently (ADR-0025). Functions the compiler bails out on are reported as
- * warnings; the react-hooks lint rules are what reject them.
- */
-function reactCompilerCheck() {
-  let compiled = 0;
-  const problems: string[] = [];
-  const logger = {
-    logEvent(filename: string | null, event: { kind: string; fnName?: string | null; reason?: string }) {
-      if (event.kind === "CompileSuccess") compiled++;
-      else if (event.kind === "CompileError" || event.kind === "PipelineError") {
-        problems.push(`${filename ?? "<unknown>"}: React Compiler skipped ${event.fnName ?? "a function"}`);
-      }
-    },
-  };
-  const plugin: Plugin = {
-    name: "my:react-compiler-check",
-    apply: "build",
-    buildEnd(error) {
-      if (error) return;
-      for (const p of problems) this.warn(p);
-      if (compiled === 0) this.error("React Compiler compiled no function; check the babel preset in vite.config.ts");
-      this.info(`React Compiler compiled ${compiled} function(s)`);
-    },
-  };
-  return { logger, plugin };
-}
-
+/** Fails the build when React Compiler compiled nothing or skipped a function (web-client.md R4). */
 const compilerCheck = reactCompilerCheck();
 
 export default defineConfig({
@@ -78,7 +51,7 @@ export default defineConfig({
     // require this plugin before the React plugin.
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
-    babel({ presets: [reactCompilerPreset({ logger: compilerCheck.logger })] }),
+    babel({ presets: [compilerCheck.preset(reactCompilerPreset({ logger: compilerCheck.logger }))] }),
     compilerCheck.plugin,
     tailwindcss(),
     // The Service Worker (ADR-0028): sw/sw.ts with the precache manifest injected, built into dist/sw.js
