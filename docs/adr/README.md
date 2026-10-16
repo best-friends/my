@@ -18,7 +18,7 @@
 | [0004](0004-job-queue-abstraction.md) | ジョブキューとスケジューラの抽象化 | Proposed |
 | [0005](0005-blob-storage-and-media.md) | Blob ストレージとメディア処理 | Proposed |
 | [0006](0006-federation-protocol-scope.md) | 連合プロトコルの対応範囲 | Proposed |
-| [0007](0007-client-api.md) | クライアント API は Mastodon 互換を主とする | Proposed |
+| [0007](0007-client-api.md) | Mastodon Client API とは互換させず、独自のクライアント API を提供する | Accepted |
 | [0008](0008-web-and-mobile-clients.md) | Web クライアントとモバイルアプリ | Proposed |
 | [0009](0009-internationalization.md) | 国際化（i18n）と地域化（l10n） | Proposed |
 | [0010](0010-configuration-and-packaging.md) | 設定・パッケージング・デプロイテンプレート | Proposed |
@@ -27,5 +27,7 @@
 | [0013](0013-timeline-strategy.md) | タイムラインは fan-out-on-read を既定とする | Proposed |
 | [0014](0014-task-management-and-agent-workflow.md) | タスク管理とコーディングエージェントの作業フロー | Accepted |
 | [0015](0015-testing-strategy.md) | テスト戦略 | Proposed |
+| [0016](0016-client-api-style.md) | クライアント API の様式 | Proposed |
+| [0017](0017-visibility-local.md) | 公開範囲 `local`（サーバーローカル）を追加する | Accepted |
 | [0018](0018-federated-uris.md) | 連合 URI は ID ベースで `/ap/` 名前空間に置き、表示用 URL と分離する | Proposed |
 <!-- adr-index:end -->
