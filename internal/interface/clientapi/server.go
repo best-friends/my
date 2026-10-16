@@ -31,11 +31,16 @@ type Options struct {
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
-	// Timelines reads the timelines, and StatusViews the statuses they list.
-	Timelines   Timelines
-	StatusViews StatusViews
-	// Media reads the media attachments of statuses; nil shows them as unprocessed.
-	Media Media
+	// Notifications runs the use cases of the viewer's notifications.
+	Notifications Notifications
+	// Statuses posts, edits, and deletes statuses; StatusReader presents them; Interactions
+	// boosts, favourites, bookmarks, and pins them (the statuses operations).
+	Statuses     Statuses
+	StatusReader StatusReader
+	Interactions Interactions
+	// Timelines reads the timelines, and TimelineReader the statuses they list.
+	Timelines      Timelines
+	TimelineReader TimelineReader
 	// TimelineLanguages returns the languages that a user's timelines show, none for every
 	// language (FR-208); nil shows every language.
 	TimelineLanguages func(ctx context.Context, userID string) ([]string, error)

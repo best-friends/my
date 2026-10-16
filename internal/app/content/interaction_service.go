@@ -272,8 +272,15 @@ func (s *Interactions) visibleStatus(ctx context.Context, accountID, statusID st
 	if !viewer.Account.IsLocal() || !viewer.Lifecycle.Active() {
 		return content.Status{}, fmt.Errorf("account %s: %w", accountID, ErrActorUnavailable)
 	}
-	sv := statusVisibility{s.d.Statuses, s.d.Interactions, s.d.Accounts, s.d.Relationships, s.d.Restrictions}
-	return sv.visible(ctx, content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: accountID}, statusID)
+	st, _, err := s.audience().visibleStatus(ctx, content.Viewer{Kind: content.ViewerLocal, AccountID: accountID}, statusID)
+	return st, err
+}
+
+func (s *Interactions) audience() audience {
+	return audience{
+		statuses: s.d.Statuses, interactions: s.d.Interactions, accounts: s.d.Accounts,
+		relationships: s.d.Relationships, restrictions: s.d.Restrictions,
+	}
 }
 
 // ensureLive fails with ErrNotFound when the status was deleted after visibleStatus read it.

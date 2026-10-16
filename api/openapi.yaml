@@ -38,6 +38,10 @@ tags:
     description: Public information about the instance.
   - name: accounts
     description: Accounts and the authenticated user's own account.
+  - name: notifications
+    description: The authenticated user's notifications, their read marker, and dismissals.
+  - name: statuses
+    description: Posts, their threads and edit history, and boosts, favourites, bookmarks, and pins of them.
   - name: timelines
     description: The home, local, hashtag, and account timelines.
 paths:
@@ -78,6 +82,420 @@ paths:
                 $ref: "#/components/schemas/Account"
         default:
           $ref: "#/components/responses/Problem"
+  # --- notifications (#111) ---
+  /notifications:
+    get:
+      operationId: listNotifications
+      summary: List the authenticated user's notifications
+      description: |
+        The user's notifications, newest first. Dismissed notifications, notifications about
+        deleted posts, and notifications from accounts that the user blocks, is blocked by, or
+        mutes with notifications hidden are left out, also those that came before the block or
+        mute.
+      tags: [notifications]
+      security:
+        - oauth2: ["read:notifications"]
+      parameters:
+        - name: types
+          in: query
+          description: Keep only notifications of these types; omitted keeps every type.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            maxItems: 8
+            items:
+              $ref: "#/components/schemas/NotificationType"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of notifications.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /notifications/marker:
+    get:
+      operationId: getNotificationMarker
+      summary: Get the read marker and the unread count
+      tags: [notifications]
+      security:
+        - oauth2: ["read:notifications"]
+      responses:
+        "200":
+          description: The read marker.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationMarker"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateNotificationMarker
+      summary: Mark notifications read
+      description: |
+        Marks the notifications up to and including `last_read_id` as read. The marker only
+        moves forward: a `last_read_id` older than the current marker changes nothing, so
+        clients that report their positions concurrently never move it back. A
+        `last_read_id` that is not one of the user's notifications is a 404.
+      tags: [notifications]
+      security:
+        - oauth2: ["write:notifications"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationMarkerUpdate"
+      responses:
+        "200":
+          description: The read marker after the update.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationMarker"
+        default:
+          $ref: "#/components/responses/Problem"
+  /notifications/{id}/dismiss:
+    post:
+      operationId: dismissNotification
+      summary: Dismiss a notification
+      description: |
+        Removes the notification from the list and the unread count. Dismissing it again
+        changes nothing; a notification that is not the user's is a 404.
+      tags: [notifications]
+      security:
+        - oauth2: ["write:notifications"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the notification.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "204":
+          description: The notification is dismissed.
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end notifications ---
+  # --- statuses (#109) ---------------------------------------------------------------------
+  /bookmarks:
+    get:
+      operationId: listBookmarks
+      summary: List the posts the authenticated user bookmarked, newest bookmark first
+      tags: [statuses]
+      security:
+        - oauth2: ["read:bookmarks"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: |
+            A page of bookmarked posts. Posts that the user can no longer see are left out, so
+            a page may hold fewer posts than `limit` and still have a `next_cursor`.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses:
+    post:
+      operationId: createStatus
+      summary: Post a status
+      description: |
+        Posts a status as the authenticated user. Retrying with the same `Idempotency-Key`
+        returns the status posted with it. Attached media must be the user's own uploads that
+        finished processing (422 otherwise).
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStatusRequest"
+      responses:
+        "200":
+          description: The posted status.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    get:
+      operationId: getStatus
+      summary: Get a status
+      description: A status that the viewer may not see is a 404, the same as a missing one.
+      tags: [statuses]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      responses:
+        "200":
+          description: The status.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: editStatus
+      summary: Edit the authenticated user's status
+      description: |
+        Replaces the text, content warning, sensitivity, language, and media of a status; the
+        previous content stays in the edit history. The visibility and reply target never
+        change. Attached media must be the user's own uploads that finished processing (422
+        otherwise).
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditStatusRequest"
+      responses:
+        "200":
+          description: The edited status.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteStatus
+      summary: Delete the authenticated user's status
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      responses:
+        "204":
+          description: The status is deleted.
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/bookmark:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    post:
+      operationId: bookmarkStatus
+      summary: Bookmark a status
+      description: Bookmarking a status that is already bookmarked changes nothing.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:bookmarks"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: unbookmarkStatus
+      summary: Remove the bookmark of a status
+      description: Without a bookmark it changes nothing.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:bookmarks"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/boost:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    post:
+      operationId: boostStatus
+      summary: Boost a status
+      description: |
+        Boosting a status that is already boosted changes nothing. A status whose visibility
+        does not allow boosting is a 422.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: unboostStatus
+      summary: Retract the boost of a status
+      description: Without a boost it changes nothing.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/context:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    get:
+      operationId: getStatusContext
+      summary: Get the thread around a status
+      description: |
+        The ancestors and descendants of a status that the viewer may see. A status that the
+        viewer may not see is a 404, the same as a missing one.
+      tags: [statuses]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      responses:
+        "200":
+          description: The thread.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusContext"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/favourite:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    post:
+      operationId: favouriteStatus
+      summary: Favourite a status
+      description: Favouriting a status that is already favourited changes nothing.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:favourites"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: unfavouriteStatus
+      summary: Remove the favourite of a status
+      description: Without a favourite it changes nothing.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:favourites"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/history:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    get:
+      operationId: getStatusHistory
+      summary: Get the edit history of a status
+      description: |
+        Every revision of a status, oldest first; the last one is the current content. A
+        status that the viewer may not see is a 404, the same as a missing one.
+      tags: [statuses]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      responses:
+        "200":
+          description: The revisions.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusHistory"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/pin:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    post:
+      operationId: pinStatus
+      summary: Pin the authenticated user's status to the profile
+      description: |
+        Pinning a status that is already pinned changes nothing. Another account's status, a
+        direct status, or a pin beyond the limit is a 422.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: unpinStatus
+      summary: Unpin a status
+      description: Without a pin it changes nothing.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/source:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    get:
+      operationId: getStatusSource
+      summary: Get the source of the authenticated user's status, for editing it
+      description: Another account's status is a 404, the same as a missing one.
+      tags: [statuses]
+      security:
+        - oauth2: ["read:statuses"]
+      responses:
+        "200":
+          description: The source.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusSource"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of statuses (#109) --------------------------------------------------------------
   # Timelines (FR-201 to FR-204, FR-208) ------------------------------------------------------
   /accounts/{id}/statuses:
     get:
@@ -251,6 +669,26 @@ components:
         minimum: 1
         maximum: 40
         default: 20
+    # --- statuses (#109) ---
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: |
+        A key the client chooses per new status; a retry with the same key returns the status
+        posted with it instead of posting again.
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 256
+    StatusId:
+      name: id
+      in: path
+      description: The ID of the status.
+      required: true
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of statuses (#109) ---
   responses:
     StatusPage:
       description: A page of posts and boosts, newest first.
@@ -287,6 +725,17 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
+    # --- statuses (#109) ---
+    StatusAfterAction:
+      description: The status after the action, as the authenticated user sees it.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Status"
+    # --- end of statuses (#109) ---
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -404,7 +853,110 @@ components:
           description: When the account was created.
           type: string
           format: date-time
-    # Statuses: mirrors the schemas of #109 (Status adds `boost` for timelines) ------------
+    # --- notifications (#111) ---
+    Notification:
+      description: A notification of something that happened to the authenticated user.
+      type: object
+      required: [id, type, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        created_at:
+          description: When it happened.
+          type: string
+          format: date-time
+        account:
+          $ref: "#/components/schemas/Account"
+        status_id:
+          $ref: "#/components/schemas/Id"
+    NotificationMarker:
+      description: How far the authenticated user has read the notifications.
+      type: object
+      required: [unread_count]
+      properties:
+        last_read_id:
+          description: The newest notification read; omitted when the user has read none.
+          $ref: "#/components/schemas/Id"
+        unread_count:
+          description: The number of listed notifications newer than `last_read_id`.
+          type: integer
+          format: int64
+          minimum: 0
+    NotificationMarkerUpdate:
+      description: The new position of the read marker.
+      type: object
+      required: [last_read_id]
+      properties:
+        last_read_id:
+          $ref: "#/components/schemas/Id"
+    NotificationPage:
+      description: A page of notifications, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Notification"
+    NotificationType:
+      description: |
+        The kind of a notification. `account` is the account that acted: the follower
+        (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
+        (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
+        `status_id` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+        about. `moderation_notice` comes from the instance and has no `account`.
+      type: string
+      enum:
+        - follow
+        - follow_request
+        - follow_accepted
+        - mention
+        - boost
+        - favourite
+        - poll_closed
+        - moderation_notice
+    # --- end notifications ---
+    # --- statuses (#109): Status and MediaAttachment are shared with the other operations ---
+    CreateStatusRequest:
+      description: A new status.
+      type: object
+      required: [text, visibility]
+      properties:
+        text:
+          $ref: "#/components/schemas/StatusText"
+        spoiler_text:
+          $ref: "#/components/schemas/SpoilerText"
+        sensitive:
+          description: Whether the media are sensitive.
+          type: boolean
+        language:
+          $ref: "#/components/schemas/StatusLanguageInput"
+        visibility:
+          $ref: "#/components/schemas/Visibility"
+        in_reply_to_id:
+          $ref: "#/components/schemas/Id"
+        media:
+          $ref: "#/components/schemas/StatusMediaInput"
+    EditStatusRequest:
+      description: The new content of a status.
+      type: object
+      required: [text]
+      properties:
+        text:
+          $ref: "#/components/schemas/StatusText"
+        spoiler_text:
+          $ref: "#/components/schemas/SpoilerText"
+        sensitive:
+          description: Whether the media are sensitive.
+          type: boolean
+        language:
+          $ref: "#/components/schemas/StatusLanguageInput"
+        media:
+          $ref: "#/components/schemas/StatusMediaInput"
     MediaAttachment:
       description: |
         A media file. Statuses attach only files that finished processing; `url` and
@@ -457,6 +1009,9 @@ components:
           type: number
           minimum: -1
           maximum: 1
+    SpoilerText:
+      description: The content warning; omitted or empty for none. It counts toward `max_post_characters`.
+      type: string
     Status:
       description: |
         A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
@@ -565,6 +1120,76 @@ components:
         pinned:
           description: Whether the status is pinned to the author's profile; given only to the author.
           type: boolean
+    StatusContext:
+      description: The thread around a status.
+      type: object
+      required: [ancestors, descendants]
+      properties:
+        ancestors:
+          description: The statuses the status replies to, oldest first.
+          type: array
+          items:
+            $ref: "#/components/schemas/Status"
+        descendants:
+          description: The replies to the status and their replies, depth first in posting order.
+          type: array
+          items:
+            $ref: "#/components/schemas/Status"
+    StatusEdit:
+      description: One revision of a status.
+      type: object
+      required: [content, spoiler_text, sensitive, created_at, media_attachments]
+      properties:
+        content:
+          description: The text of the revision as sanitized HTML.
+          type: string
+        spoiler_text:
+          description: The content warning of the revision; empty when there is none.
+          type: string
+        sensitive:
+          description: Whether the media of the revision are sensitive.
+          type: boolean
+        created_at:
+          description: When the revision was made; the first one is when the status was posted.
+          type: string
+          format: date-time
+        media_attachments:
+          description: The media the revision attaches, in order.
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaAttachment"
+    StatusHistory:
+      description: The revisions of a status.
+      type: object
+      required: [items]
+      properties:
+        items:
+          description: The revisions, oldest first.
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusEdit"
+    StatusLanguageInput:
+      description: A BCP 47 language tag; omitted means the user's default post language.
+      type: string
+      minLength: 1
+      maxLength: 35
+    StatusMediaInput:
+      description: The media to attach, in order.
+      type: array
+      maxItems: 4
+      items:
+        $ref: "#/components/schemas/StatusMediaItem"
+    StatusMediaItem:
+      description: A media file to attach, with its alternative text.
+      type: object
+      required: [id]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        description:
+          description: The alternative text; omitted or empty for none.
+          type: string
+          maxLength: 1500
     StatusMention:
       description: An account that a status mentions.
       type: object
@@ -594,6 +1219,22 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/Status"
+    StatusSource:
+      description: What the author typed, for editing a status.
+      type: object
+      required: [id, text, spoiler_text, language]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        text:
+          description: The plain text.
+          type: string
+        spoiler_text:
+          description: The content warning; empty when there is none.
+          type: string
+        language:
+          description: The BCP 47 language tag; `und` when it is unknown.
+          type: string
     StatusTag:
       description: A hashtag of a status.
       type: object
@@ -606,6 +1247,10 @@ components:
           description: The hashtag's page.
           type: string
           format: uri
+    StatusText:
+      description: The plain text; the server links mentions, hashtags, and URLs.
+      type: string
+      minLength: 1
     Visibility:
       description: |
         Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
@@ -614,3 +1259,4 @@ components:
         accounts.
       type: string
       enum: [public, local, unlisted, private, direct]
+    # --- end of statuses (#109) ---

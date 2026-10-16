@@ -20,12 +20,10 @@ import (
 )
 
 const (
-	bobAccountID = "01890a5d-ac96-774b-bcce-b302099a8058"
-	postID       = "01890a5d-ac96-774b-bcce-b302099a8100"
-	parentID     = "01890a5d-ac96-774b-bcce-b302099a8101"
-	boostID      = "01890a5d-ac96-774b-bcce-b302099a8102"
-	mediaID      = "01890a5d-ac96-774b-bcce-b302099a8103"
-	tagID        = "01890a5d-ac96-774b-bcce-b302099a8104"
+	postID   = "01890a5d-ac96-774b-bcce-b302099a8100"
+	parentID = "01890a5d-ac96-774b-bcce-b302099a8101"
+	boostID  = "01890a5d-ac96-774b-bcce-b302099a8102"
+	tagID    = "01890a5d-ac96-774b-bcce-b302099a8104"
 )
 
 // timelineCall records a call of fakeTimelines.
@@ -70,16 +68,16 @@ type fakeViews struct {
 	boosts   map[string]content.Boost
 	tags     map[string]content.Tag
 	pinned   []string
-	viewers  []string
+	viewers  []appcontent.Viewer
 }
 
-func (f *fakeViews) Statuses(_ context.Context, viewer string, ids []string) ([]appcontent.StatusView, error) {
+func (f *fakeViews) Views(_ context.Context, viewer appcontent.Viewer, ids []string) ([]appcontent.StatusView, error) {
 	f.viewers = append(f.viewers, viewer)
 	var out []appcontent.StatusView
 	for _, id := range ids {
 		if v, ok := f.statuses[id]; ok {
-			if viewer == "" {
-				v.Viewer = nil
+			if viewer.Kind == appcontent.ViewerAnonymous {
+				v.Relation = nil
 			}
 			out = append(out, v)
 		}
@@ -105,28 +103,20 @@ func (f *fakeViews) Tag(_ context.Context, name string) (content.Tag, error) {
 	return t, nil
 }
 
-func (f *fakeViews) Pinned(context.Context, appcontent.Viewer, string) ([]string, error) {
-	return f.pinned, nil
+func (f *fakeViews) Pinned(ctx context.Context, viewer appcontent.Viewer, _ string) ([]appcontent.StatusView, error) {
+	return f.Views(ctx, viewer, f.pinned)
 }
 
-type fakeMedia struct{}
-
-func (fakeMedia) Media(_ context.Context, id string) (appcontent.Media, error) {
-	if id != mediaID {
-		return appcontent.Media{}, appcontent.ErrNotFound
+var (
+	aliceActor = appaccount.Actor{
+		Account: account.Account{ID: aliceAccountID, URI: "https://social.example/ap/actors/" + aliceAccountID, CreatedAt: createdAt},
+		Local:   &account.LocalAccount{AccountID: aliceAccountID, UserID: "user-" + aliceAccountID, Username: "alice"},
 	}
-	return appcontent.Media{
-		File: content.MediaFile{ID: id},
-		Result: &content.MediaProcessingResult{
-			MediaID: id, Outcome: content.MediaReady, MediaType: content.MediaTypeImage, Width: 640, Height: 480, Blurhash: "LEHV6n",
-			Variants: []content.MediaVariant{
-				{Kind: content.VariantFull, BlobKey: "full"}, {Kind: content.VariantThumbnail, BlobKey: "thumb"},
-			},
-		},
-	}, nil
-}
-
-func (fakeMedia) URL(v content.MediaVariant) string { return "https://media.example/" + v.BlobKey }
+	bobActor = appaccount.Actor{
+		Account: account.Account{ID: bobAccountID, URI: "https://social.example/ap/actors/" + bobAccountID, CreatedAt: createdAt},
+		Local:   &account.LocalAccount{AccountID: bobAccountID, UserID: "user-" + bobAccountID, Username: "bob"},
+	}
+)
 
 var publishedAt = time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)
 
@@ -153,24 +143,21 @@ func newTimelineEnv(t *testing.T) *timelineEnv {
 		}},
 		views: &fakeViews{
 			statuses: map[string]appcontent.StatusView{postID: {
-				Post: appcontent.Post{
-					Status: content.Status{
-						ID: postID, URI: "https://social.example/ap/statuses/" + postID, URL: "https://social.example/@alice/" + postID,
-						AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic,
-						InReplyToURI: "https://social.example/ap/statuses/" + parentID, PublishedAt: publishedAt,
-					},
-					Revision: content.Revision{
-						Seq: 2, SpoilerText: "cw", Sensitive: true, Language: "ja", RevisedAt: publishedAt.Add(time.Hour),
-						Bodies:              []content.Body{{Language: "en", ContentHTML: "<p>en</p>"}, {Language: "ja", ContentHTML: "<p>ja</p>"}},
-						Attachments:         []content.Attachment{{MediaID: mediaID, Description: "a cat"}, {Position: 1, MediaID: "missing"}},
-						MentionedAccountIDs: []string{bobAccountID, "unknown"},
-						TagIDs:              []string{tagID},
-					},
+				Status: content.Status{
+					ID: postID, URI: "https://social.example/ap/statuses/" + postID, URL: "https://social.example/@alice/" + postID,
+					AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic,
+					InReplyToURI: "https://social.example/ap/statuses/" + parentID, PublishedAt: publishedAt,
 				},
+				Revision: content.Revision{
+					Seq: 2, SpoilerText: "cw", Sensitive: true, Language: "ja", RevisedAt: publishedAt.Add(time.Hour),
+					Bodies: []content.Body{{Language: "ja", ContentHTML: "<p>ja</p>"}},
+				},
+				Author:    aliceActor,
+				InReplyTo: &content.Status{ID: parentID, AuthorAccountID: bobAccountID},
+				Mentions:  []appaccount.Actor{bobActor},
 				Counters:  content.Counters{StatusID: postID, RepliesCount: 1, BoostsCount: 2, FavouritesCount: 3},
 				Tags:      []content.Tag{{ID: tagID, Name: "Cats", NameNormalized: "cats"}},
-				InReplyTo: &content.ReplyLink{StatusID: postID, ParentStatusID: parentID, ParentAuthorAccountID: bobAccountID},
-				Viewer:    &appcontent.ViewerState{Favourited: true, Bookmarked: true},
+				Relation:  &appcontent.ViewerRelation{Favourited: true, Bookmarked: true, Author: true},
 			}},
 			boosts: map[string]content.Boost{boostID: {
 				ID: boostID, URI: "https://social.example/ap/boosts/" + boostID, BoosterAccountID: bobAccountID, StatusID: postID,
@@ -181,18 +168,14 @@ func newTimelineEnv(t *testing.T) *timelineEnv {
 		languages: []string{"ja"},
 	}
 	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
-		o.Timelines, o.StatusViews, o.Media = te.timelines, te.views, fakeMedia{}
+		o.Timelines, o.TimelineReader = te.timelines, te.views
 		o.TimelineLanguages = func(_ context.Context, userID string) ([]string, error) {
 			if userID != "user-"+aliceAccountID {
 				t.Errorf("TimelineLanguages(%q), want alice's user", userID)
 			}
 			return te.languages, nil
 		}
-		accounts := o.Accounts.(fakeAccounts)
-		accounts[bobAccountID] = appaccount.Actor{
-			Account: account.Account{ID: bobAccountID, URI: "https://social.example/ap/actors/" + bobAccountID, CreatedAt: createdAt},
-			Local:   &account.LocalAccount{AccountID: bobAccountID, UserID: "user-" + bobAccountID, Username: "bob"},
-		}
+		o.Accounts.(fakeAccounts)[bobAccountID] = bobActor
 	})
 	return te
 }
@@ -251,19 +234,6 @@ func TestHomeTimelineRendersPostsAndBoosts(t *testing.T) {
 	if got := post.Tags; len(got) != 1 || got[0].Name != "Cats" || got[0].Url != "https://social.example/tags/cats" {
 		t.Errorf("tags = %+v", got)
 	}
-	media := post.MediaAttachments
-	if len(media) != 2 {
-		t.Fatalf("media = %+v, want 2", media)
-	}
-	if m := media[0]; m.Type != clientapi.MediaAttachmentTypeImage || deref(m.Url) != "https://media.example/full" ||
-		deref(m.PreviewUrl) != "https://media.example/thumb" || deref(m.Description) != "a cat" || deref(m.Blurhash) != "LEHV6n" ||
-		deref(m.Width) != 640 || deref(m.Height) != 480 {
-		t.Errorf("media[0] = %+v", m)
-	}
-	if m := media[1]; m.Id != "missing" || m.Type != clientapi.MediaAttachmentTypeUnknown || m.Url != nil {
-		t.Errorf("media[1] = %+v, want an unknown file without a URL", m)
-	}
-
 	// A boost is the booster's, at the time of the boost, with the boosted post inside.
 	if boost.Id != boostID || boost.Account.Username != "bob" || !boost.CreatedAt.Equal(publishedAt.Add(2*time.Hour)) ||
 		boost.Content != "" || boost.Language != "ja" || len(boost.MediaAttachments)+len(boost.Mentions)+len(boost.Tags) != 0 || boost.Url != nil {
@@ -301,8 +271,8 @@ func TestLocalTimelineForVisitors(t *testing.T) {
 	if !slices.Contains(res.Header.Values("Vary"), "Authorization") {
 		t.Errorf("Vary = %q, want Authorization", res.Header.Values("Vary"))
 	}
-	if !slices.Equal(e.views.viewers, []string{""}) {
-		t.Errorf("views read for %q, want an anonymous viewer", e.views.viewers)
+	if !slices.Equal(e.views.viewers, []appcontent.Viewer{{Kind: appcontent.ViewerAnonymous}}) {
+		t.Errorf("views read for %+v, want an anonymous viewer", e.views.viewers)
 	}
 	for _, it := range page.Items {
 		if it.Favourited != nil || it.Boosted != nil || it.Bookmarked != nil || it.Pinned != nil {

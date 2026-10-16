@@ -11,6 +11,7 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	apptimeline "github.com/best-friends/my/internal/app/timeline"
+	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/domain/timeline"
 )
 
@@ -22,13 +23,100 @@ type Timelines interface {
 	Profile(ctx context.Context, viewer appcontent.Viewer, authorAccountID string, f apptimeline.ProfileFilter, q apptimeline.Query) (apptimeline.Page, error)
 }
 
-// contentViewer returns the viewer of the visibility policy for the request in ctx.
-func contentViewer(ctx context.Context) (appcontent.Viewer, *Viewer) {
+// TimelineReader reads the statuses that timelines list. *appcontent.Reader implements it.
+type TimelineReader interface {
+	// Views returns the statuses of ids that the viewer may see, in order.
+	Views(ctx context.Context, viewer appcontent.Viewer, ids []string) ([]appcontent.StatusView, error)
+	// Boosts returns the boosts of ids, in order, leaving out missing ones.
+	Boosts(ctx context.Context, ids []string) ([]content.Boost, error)
+	// Tag returns a hashtag by name, failing with appcontent.ErrNotFound when no status used it.
+	Tag(ctx context.Context, name string) (content.Tag, error)
+	// Pinned returns the statuses that accountID pins and the viewer may see, newest pin first.
+	Pinned(ctx context.Context, viewer appcontent.Viewer, accountID string) ([]appcontent.StatusView, error)
+}
+
+// timelineViewer returns the viewer of the request in ctx for the content module, and the
+// authenticated Viewer, nil for a visitor.
+func timelineViewer(ctx context.Context) (appcontent.Viewer, *Viewer) {
 	v, ok := ViewerFrom(ctx)
 	if !ok {
-		return appcontent.Viewer{Kind: appcontent.ViewerAnonymous}, nil
+		return contentViewer(ctx), nil
 	}
-	return appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: v.AccountID}, &v
+	return contentViewer(ctx), &v
+}
+
+// statusItem is one item of a page of statuses: a post (BoostID "") or a boost of StatusID.
+type statusItem struct {
+	StatusID string
+	BoostID  string
+}
+
+// statuses presents items in order as viewer sees them. An item whose status, boost, or
+// booster is gone or hidden (since the page was read) is left out.
+func (s *Server) statuses(ctx context.Context, viewer appcontent.Viewer, items []statusItem) ([]Status, error) {
+	var statusIDs, boostIDs []string
+	for _, it := range items {
+		statusIDs = append(statusIDs, it.StatusID)
+		if it.BoostID != "" {
+			boostIDs = append(boostIDs, it.BoostID)
+		}
+	}
+	views, err := s.o.TimelineReader.Views(ctx, viewer, statusIDs)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[string]Status, len(views))
+	for _, v := range views {
+		byID[v.Status.ID] = s.newStatus(v)
+	}
+	boosts := map[string]content.Boost{}
+	if len(boostIDs) > 0 {
+		bs, err := s.o.TimelineReader.Boosts(ctx, boostIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, b := range bs {
+			boosts[b.ID] = b
+		}
+	}
+	boosters := map[string]*Account{}
+	out := make([]Status, 0, len(items))
+	for _, it := range items {
+		st, ok := byID[it.StatusID]
+		if !ok {
+			continue
+		}
+		if it.BoostID == "" {
+			out = append(out, st)
+			continue
+		}
+		b, ok := boosts[it.BoostID]
+		if !ok {
+			continue
+		}
+		booster, ok := boosters[b.BoosterAccountID]
+		if !ok {
+			a, err := s.o.Accounts.FindByID(ctx, b.BoosterAccountID)
+			switch {
+			case err == nil:
+				acc := s.newAccount(a)
+				booster = &acc
+			case !errors.Is(err, appaccount.ErrNotFound):
+				return nil, err
+			}
+			boosters[b.BoosterAccountID] = booster
+		}
+		if booster == nil {
+			continue
+		}
+		boosted := st
+		out = append(out, Status{
+			Id: b.ID, Uri: b.URI, CreatedAt: b.BoostedAt, Account: *booster,
+			Visibility: st.Visibility, Language: st.Language, Boost: &boosted,
+			MediaAttachments: []MediaAttachment{}, Mentions: []StatusMention{}, Tags: []StatusTag{},
+		})
+	}
+	return out, nil
 }
 
 // timelineQuery is the query of a page; languages applies the viewer's timeline languages
@@ -54,12 +142,11 @@ func (s *Server) timelineQuery(ctx context.Context, v *Viewer, cursor *Cursor, l
 // statusPage presents a page of a timeline. An anonymous page is the same for every visitor,
 // so shared caches may keep it briefly (ADR-0016); a viewer's page is not stored.
 func (s *Server) statusPage(ctx context.Context, v *Viewer, items []statusItem, next string) (StatusPageJSONResponse, error) {
-	var viewerAccountID string
 	cache := cachePublic
 	if v != nil {
-		viewerAccountID, cache = v.AccountID, cacheNoStore
+		cache = cacheNoStore
 	}
-	statuses, err := s.newStatusRenderer(viewerAccountID).statuses(ctx, items)
+	statuses, err := s.statuses(ctx, contentViewer(ctx), items)
 	if err != nil {
 		return StatusPageJSONResponse{}, err
 	}
@@ -85,7 +172,7 @@ func entryItems(entries []apptimeline.Entry) []statusItem {
 
 // GetHomeTimeline serves GET /api/v1/timelines/home.
 func (s *Server) GetHomeTimeline(ctx context.Context, req GetHomeTimelineRequestObject) (GetHomeTimelineResponseObject, error) {
-	cv, v := contentViewer(ctx)
+	cv, v := timelineViewer(ctx)
 	if v == nil {
 		return nil, errNoViewer
 	}
@@ -104,7 +191,7 @@ func (s *Server) GetHomeTimeline(ctx context.Context, req GetHomeTimelineRequest
 // GetLocalTimeline serves GET /api/v1/timelines/local. Visitors who are not logged in see only
 // public posts; local posts need a logged-in viewer (ADR-0017).
 func (s *Server) GetLocalTimeline(ctx context.Context, req GetLocalTimelineRequestObject) (GetLocalTimelineResponseObject, error) {
-	cv, v := contentViewer(ctx)
+	cv, v := timelineViewer(ctx)
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
 		return nil, err
@@ -120,13 +207,13 @@ func (s *Server) GetLocalTimeline(ctx context.Context, req GetLocalTimelineReque
 // GetHashtagTimeline serves GET /api/v1/timelines/tag/{hashtag}. A hashtag that no status used
 // has an empty timeline.
 func (s *Server) GetHashtagTimeline(ctx context.Context, req GetHashtagTimelineRequestObject) (GetHashtagTimelineResponseObject, error) {
-	cv, v := contentViewer(ctx)
+	cv, v := timelineViewer(ctx)
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
 		return nil, err
 	}
 	var p apptimeline.Page
-	tag, err := s.o.StatusViews.Tag(ctx, req.Hashtag)
+	tag, err := s.o.TimelineReader.Tag(ctx, req.Hashtag)
 	switch {
 	case err == nil:
 		if p, err = s.o.Timelines.Hashtag(ctx, cv, tag.ID, q); err != nil {
@@ -143,7 +230,7 @@ func (s *Server) GetHashtagTimeline(ctx context.Context, req GetHashtagTimelineR
 // timeline, or its pinned statuses in one page. An unknown account is a 404. The viewer's
 // timeline languages do not apply: a profile shows the account in every language.
 func (s *Server) ListAccountStatuses(ctx context.Context, req ListAccountStatusesRequestObject) (ListAccountStatusesResponseObject, error) {
-	cv, v := contentViewer(ctx)
+	cv, v := timelineViewer(ctx)
 	if _, err := s.o.Accounts.FindByID(ctx, req.Id); errors.Is(err, appaccount.ErrNotFound) {
 		l := s.Localizer(ctx)
 		body, headers := s.NewProblem(ctx, http.StatusNotFound, ProblemTypeBlank, l.ServerErrorsNotFound(), "")
@@ -153,19 +240,22 @@ func (s *Server) ListAccountStatuses(ctx context.Context, req ListAccountStatuse
 	}
 	params := req.Params
 	if params.Pinned != nil && *params.Pinned {
-		var items []statusItem
+		cache := cachePublic
+		if v != nil {
+			cache = cacheNoStore
+		}
+		body := StatusPage{Items: []Status{}}
 		// Every pinned status fits in the first page, so a cursor asks for an empty one.
 		if params.Cursor == nil {
-			ids, err := s.o.StatusViews.Pinned(ctx, cv, req.Id)
+			views, err := s.o.TimelineReader.Pinned(ctx, cv, req.Id)
 			if err != nil {
 				return nil, err
 			}
-			for _, id := range ids {
-				items = append(items, statusItem{StatusID: id})
+			for _, view := range views {
+				body.Items = append(body.Items, s.newStatus(view))
 			}
 		}
-		res, err := s.statusPage(ctx, v, items, "")
-		return ListAccountStatuses200JSONResponse{res}, err
+		return ListAccountStatuses200JSONResponse{StatusPageJSONResponse{Body: body, Headers: StatusPageResponseHeaders{CacheControl: &cache}}}, nil
 	}
 	q, err := s.timelineQuery(ctx, v, params.Cursor, params.Limit, false)
 	if err != nil {

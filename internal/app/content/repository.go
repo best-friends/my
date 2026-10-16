@@ -122,9 +122,8 @@ type Repository interface {
 	FindDeletionByURI(ctx context.Context, uri string) (content.Deletion, error)
 	FindTagByName(ctx context.Context, nameNormalized string) (content.Tag, error)
 	FindTag(ctx context.Context, id string) (content.Tag, error)
-	// FindReplyLink returns the link from a reply to its parent, which a reply whose parent is
-	// unknown or deleted lacks.
-	FindReplyLink(ctx context.Context, statusID string) (content.ReplyLink, error)
+	// ListReplies returns the statuses that reply to uri and are not deleted, ordered by ID.
+	ListReplies(ctx context.Context, uri string) ([]content.Status, error)
 	FindCounters(ctx context.Context, statusID string) (content.Counters, error)
 	// FindPostCounter returns the post counter of an account; ErrNotFound means it has no
 	// statuses.

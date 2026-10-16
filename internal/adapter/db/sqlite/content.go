@@ -619,13 +619,17 @@ func (r *StatusRepository) FindTag(ctx context.Context, id string) (content.Tag,
 	return tagFrom(row), nil
 }
 
-// FindReplyLink implements content.Repository.
-func (r *StatusRepository) FindReplyLink(ctx context.Context, statusID string) (content.ReplyLink, error) {
-	row, err := r.db.reader().GetStatusReplyLink(ctx, statusID)
+// ListReplies implements content.Repository.
+func (r *StatusRepository) ListReplies(ctx context.Context, uri string) ([]content.Status, error) {
+	rows, err := r.db.reader().ListLiveRepliesTo(ctx, toNullString(uri))
 	if err != nil {
-		return content.ReplyLink{}, notFound(err, appcontent.ErrNotFound, "reply link of "+statusID)
+		return nil, wrap(err, "list replies")
 	}
-	return content.ReplyLink(row), nil
+	out := make([]content.Status, len(rows))
+	for i, row := range rows {
+		out[i] = statusFrom(row)
+	}
+	return out, nil
 }
 
 // FindCounters implements content.Repository.

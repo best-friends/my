@@ -46,6 +46,42 @@ func (e MediaAttachmentType) Valid() bool {
 	}
 }
 
+// Defines values for NotificationType.
+const (
+	NotificationTypeBoost            NotificationType = "boost"
+	NotificationTypeFavourite        NotificationType = "favourite"
+	NotificationTypeFollow           NotificationType = "follow"
+	NotificationTypeFollowAccepted   NotificationType = "follow_accepted"
+	NotificationTypeFollowRequest    NotificationType = "follow_request"
+	NotificationTypeMention          NotificationType = "mention"
+	NotificationTypeModerationNotice NotificationType = "moderation_notice"
+	NotificationTypePollClosed       NotificationType = "poll_closed"
+)
+
+// Valid indicates whether the value is a known member of the NotificationType enum.
+func (e NotificationType) Valid() bool {
+	switch e {
+	case NotificationTypeBoost:
+		return true
+	case NotificationTypeFavourite:
+		return true
+	case NotificationTypeFollow:
+		return true
+	case NotificationTypeFollowAccepted:
+		return true
+	case NotificationTypeFollowRequest:
+		return true
+	case NotificationTypeMention:
+		return true
+	case NotificationTypeModerationNotice:
+		return true
+	case NotificationTypePollClosed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Visibility.
 const (
 	VisibilityDirect   Visibility = "direct"
@@ -105,8 +141,55 @@ type Account struct {
 	Username string `json:"username"`
 }
 
+// CreateStatusRequest A new status.
+type CreateStatusRequest struct {
+	// InReplyToId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	InReplyToId *Id `json:"in_reply_to_id,omitempty"`
+
+	// Language A BCP 47 language tag; omitted means the user's default post language.
+	Language *StatusLanguageInput `json:"language,omitempty"`
+
+	// Media The media to attach, in order.
+	Media *StatusMediaInput `json:"media,omitempty"`
+
+	// Sensitive Whether the media are sensitive.
+	Sensitive *bool `json:"sensitive,omitempty"`
+
+	// SpoilerText The content warning; omitted or empty for none. It counts toward `max_post_characters`.
+	SpoilerText *SpoilerText `json:"spoiler_text,omitempty"`
+
+	// Text The plain text; the server links mentions, hashtags, and URLs.
+	Text StatusText `json:"text"`
+
+	// Visibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
+	// `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
+	// public timelines; `private` followers and mentioned accounts; `direct` mentioned
+	// accounts.
+	Visibility Visibility `json:"visibility"`
+}
+
 // Cursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 type Cursor = string
+
+// EditStatusRequest The new content of a status.
+type EditStatusRequest struct {
+	// Language A BCP 47 language tag; omitted means the user's default post language.
+	Language *StatusLanguageInput `json:"language,omitempty"`
+
+	// Media The media to attach, in order.
+	Media *StatusMediaInput `json:"media,omitempty"`
+
+	// Sensitive Whether the media are sensitive.
+	Sensitive *bool `json:"sensitive,omitempty"`
+
+	// SpoilerText The content warning; omitted or empty for none. It counts toward `max_post_characters`.
+	SpoilerText *SpoilerText `json:"spoiler_text,omitempty"`
+
+	// Text The plain text; the server links mentions, hashtags, and URLs.
+	Text StatusText `json:"text"`
+}
 
 // Id The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -182,6 +265,66 @@ type MediaFocus struct {
 	Y float32 `json:"y"`
 }
 
+// Notification A notification of something that happened to the authenticated user.
+type Notification struct {
+	// Account An account, as clients show it.
+	Account *Account `json:"account,omitempty"`
+
+	// CreatedAt When it happened.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// StatusId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	StatusId *Id `json:"status_id,omitempty"`
+
+	// Type The kind of a notification. `account` is the account that acted: the follower
+	// (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
+	// (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
+	// `status_id` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+	// about. `moderation_notice` comes from the instance and has no `account`.
+	Type NotificationType `json:"type"`
+}
+
+// NotificationMarker How far the authenticated user has read the notifications.
+type NotificationMarker struct {
+	// LastReadId The newest notification read; omitted when the user has read none.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	LastReadId *Id `json:"last_read_id,omitempty"`
+
+	// UnreadCount The number of listed notifications newer than `last_read_id`.
+	UnreadCount int64 `json:"unread_count"`
+}
+
+// NotificationMarkerUpdate The new position of the read marker.
+type NotificationMarkerUpdate struct {
+	// LastReadId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	LastReadId Id `json:"last_read_id"`
+}
+
+// NotificationPage A page of notifications, newest first.
+type NotificationPage struct {
+	Items []Notification `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// NotificationType The kind of a notification. `account` is the account that acted: the follower
+// (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
+// (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
+// `status_id` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+// about. `moderation_notice` comes from the instance and has no `account`.
+type NotificationType string
+
 // PageInfo The pagination of a collection page; collection responses embed it with allOf.
 type PageInfo struct {
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
@@ -216,6 +359,9 @@ type Problem struct {
 	// It is `about:blank` when the problem means no more than its HTTP status.
 	Type string `json:"type"`
 }
+
+// SpoilerText The content warning; omitted or empty for none. It counts toward `max_post_characters`.
+type SpoilerText = string
 
 // Status A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
 // describe the authenticated user's relation to it and are omitted for anonymous
@@ -317,6 +463,56 @@ type Status struct {
 	Visibility Visibility `json:"visibility"`
 }
 
+// StatusContext The thread around a status.
+type StatusContext struct {
+	// Ancestors The statuses the status replies to, oldest first.
+	Ancestors []Status `json:"ancestors"`
+
+	// Descendants The replies to the status and their replies, depth first in posting order.
+	Descendants []Status `json:"descendants"`
+}
+
+// StatusEdit One revision of a status.
+type StatusEdit struct {
+	// Content The text of the revision as sanitized HTML.
+	Content string `json:"content"`
+
+	// CreatedAt When the revision was made; the first one is when the status was posted.
+	CreatedAt time.Time `json:"created_at"`
+
+	// MediaAttachments The media the revision attaches, in order.
+	MediaAttachments []MediaAttachment `json:"media_attachments"`
+
+	// Sensitive Whether the media of the revision are sensitive.
+	Sensitive bool `json:"sensitive"`
+
+	// SpoilerText The content warning of the revision; empty when there is none.
+	SpoilerText string `json:"spoiler_text"`
+}
+
+// StatusHistory The revisions of a status.
+type StatusHistory struct {
+	// Items The revisions, oldest first.
+	Items []StatusEdit `json:"items"`
+}
+
+// StatusLanguageInput A BCP 47 language tag; omitted means the user's default post language.
+type StatusLanguageInput = string
+
+// StatusMediaInput The media to attach, in order.
+type StatusMediaInput = []StatusMediaItem
+
+// StatusMediaItem A media file to attach, with its alternative text.
+type StatusMediaItem struct {
+	// Description The alternative text; omitted or empty for none.
+	Description *string `json:"description,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+}
+
 // StatusMention An account that a status mentions.
 type StatusMention struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
@@ -343,6 +539,23 @@ type StatusPage struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
+// StatusSource What the author typed, for editing a status.
+type StatusSource struct {
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Language The BCP 47 language tag; `und` when it is unknown.
+	Language string `json:"language"`
+
+	// SpoilerText The content warning; empty when there is none.
+	SpoilerText string `json:"spoiler_text"`
+
+	// Text The plain text.
+	Text string `json:"text"`
+}
+
 // StatusTag A hashtag of a status.
 type StatusTag struct {
 	// Name The hashtag as written, without `#`.
@@ -352,14 +565,36 @@ type StatusTag struct {
 	Url string `json:"url"`
 }
 
+// StatusText The plain text; the server links mentions, hashtags, and URLs.
+type StatusText = string
+
 // Visibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
 // `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
 // public timelines; `private` followers and mentioned accounts; `direct` mentioned
 // accounts.
 type Visibility string
 
+// IdempotencyKey defines model for IdempotencyKey.
+type IdempotencyKey = string
+
 // Limit defines model for Limit.
 type Limit = int
+
+// StatusId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type StatusId = Id
+
+// StatusAfterAction A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
+// describe the authenticated user's relation to it and are omitted for anonymous
+// requests; `pinned` is only given to the author.
+//
+// In a timeline, a boost is a status of the booster with `boost` set to the boosted
+// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+// `visibility` and `language` are those of the boosted status, its `content`,
+// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
+// are zero.
+type StatusAfterAction = Status
 
 // ListAccountStatusesParams defines parameters for ListAccountStatuses.
 type ListAccountStatusesParams struct {
@@ -377,6 +612,34 @@ type ListAccountStatusesParams struct {
 
 	// Limit The maximum number of items in the page.
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListBookmarksParams defines parameters for ListBookmarks.
+type ListBookmarksParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListNotificationsParams defines parameters for ListNotifications.
+type ListNotificationsParams struct {
+	// Types Keep only notifications of these types; omitted keeps every type.
+	Types *[]NotificationType `form:"types,omitempty" json:"types,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateStatusParams defines parameters for CreateStatus.
+type CreateStatusParams struct {
+	// IdempotencyKey A key the client chooses per new status; a retry with the same key returns the status
+	// posted with it instead of posting again.
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
 // GetHomeTimelineParams defines parameters for GetHomeTimeline.
@@ -406,6 +669,15 @@ type GetHashtagTimelineParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// UpdateNotificationMarkerJSONRequestBody defines body for UpdateNotificationMarker for application/json ContentType.
+type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
+
+// CreateStatusJSONRequestBody defines body for CreateStatus for application/json ContentType.
+type CreateStatusJSONRequestBody = CreateStatusRequest
+
+// EditStatusJSONRequestBody defines body for EditStatus for application/json ContentType.
+type EditStatusJSONRequestBody = EditStatusRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// VerifyAccountCredentials Get the authenticated user's own account
@@ -414,9 +686,69 @@ type ServerInterface interface {
 	// ListAccountStatuses List the posts and boosts of an account
 	// (GET /accounts/{id}/statuses)
 	ListAccountStatuses(w http.ResponseWriter, r *http.Request, id Id, params ListAccountStatusesParams)
+	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
+	// (GET /bookmarks)
+	ListBookmarks(w http.ResponseWriter, r *http.Request, params ListBookmarksParams)
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(w http.ResponseWriter, r *http.Request)
+	// ListNotifications List the authenticated user's notifications
+	// (GET /notifications)
+	ListNotifications(w http.ResponseWriter, r *http.Request, params ListNotificationsParams)
+	// GetNotificationMarker Get the read marker and the unread count
+	// (GET /notifications/marker)
+	GetNotificationMarker(w http.ResponseWriter, r *http.Request)
+	// UpdateNotificationMarker Mark notifications read
+	// (PUT /notifications/marker)
+	UpdateNotificationMarker(w http.ResponseWriter, r *http.Request)
+	// DismissNotification Dismiss a notification
+	// (POST /notifications/{id}/dismiss)
+	DismissNotification(w http.ResponseWriter, r *http.Request, id Id)
+	// CreateStatus Post a status
+	// (POST /statuses)
+	CreateStatus(w http.ResponseWriter, r *http.Request, params CreateStatusParams)
+	// DeleteStatus Delete the authenticated user's status
+	// (DELETE /statuses/{id})
+	DeleteStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// GetStatus Get a status
+	// (GET /statuses/{id})
+	GetStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// EditStatus Edit the authenticated user's status
+	// (PUT /statuses/{id})
+	EditStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// UnbookmarkStatus Remove the bookmark of a status
+	// (DELETE /statuses/{id}/bookmark)
+	UnbookmarkStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// BookmarkStatus Bookmark a status
+	// (POST /statuses/{id}/bookmark)
+	BookmarkStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// UnboostStatus Retract the boost of a status
+	// (DELETE /statuses/{id}/boost)
+	UnboostStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// BoostStatus Boost a status
+	// (POST /statuses/{id}/boost)
+	BoostStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// GetStatusContext Get the thread around a status
+	// (GET /statuses/{id}/context)
+	GetStatusContext(w http.ResponseWriter, r *http.Request, id StatusId)
+	// UnfavouriteStatus Remove the favourite of a status
+	// (DELETE /statuses/{id}/favourite)
+	UnfavouriteStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// FavouriteStatus Favourite a status
+	// (POST /statuses/{id}/favourite)
+	FavouriteStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// GetStatusHistory Get the edit history of a status
+	// (GET /statuses/{id}/history)
+	GetStatusHistory(w http.ResponseWriter, r *http.Request, id StatusId)
+	// UnpinStatus Unpin a status
+	// (DELETE /statuses/{id}/pin)
+	UnpinStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// PinStatus Pin the authenticated user's status to the profile
+	// (POST /statuses/{id}/pin)
+	PinStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// GetStatusSource Get the source of the authenticated user's status, for editing it
+	// (GET /statuses/{id}/source)
+	GetStatusSource(w http.ResponseWriter, r *http.Request, id StatusId)
 	// GetHomeTimeline Get the home timeline
 	// (GET /timelines/home)
 	GetHomeTimeline(w http.ResponseWriter, r *http.Request, params GetHomeTimelineParams)
@@ -545,11 +877,575 @@ func (siw *ServerInterfaceWrapper) ListAccountStatuses(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// ListBookmarks operation middleware
+func (siw *ServerInterfaceWrapper) ListBookmarks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListBookmarksParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBookmarks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetInstance operation middleware
 func (siw *ServerInterfaceWrapper) GetInstance(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetInstance(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListNotifications operation middleware
+func (siw *ServerInterfaceWrapper) ListNotifications(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListNotificationsParams
+
+	// ------------- Optional query parameter "types" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "types", r.URL.Query(), &params.Types, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "types"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "types", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListNotifications(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNotificationMarker operation middleware
+func (siw *ServerInterfaceWrapper) GetNotificationMarker(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotificationMarker(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateNotificationMarker operation middleware
+func (siw *ServerInterfaceWrapper) UpdateNotificationMarker(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateNotificationMarker(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DismissNotification operation middleware
+func (siw *ServerInterfaceWrapper) DismissNotification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DismissNotification(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateStatus operation middleware
+func (siw *ServerInterfaceWrapper) CreateStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateStatusParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateStatus(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteStatus operation middleware
+func (siw *ServerInterfaceWrapper) DeleteStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EditStatus operation middleware
+func (siw *ServerInterfaceWrapper) EditStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EditStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnbookmarkStatus operation middleware
+func (siw *ServerInterfaceWrapper) UnbookmarkStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnbookmarkStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BookmarkStatus operation middleware
+func (siw *ServerInterfaceWrapper) BookmarkStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BookmarkStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnboostStatus operation middleware
+func (siw *ServerInterfaceWrapper) UnboostStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnboostStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BoostStatus operation middleware
+func (siw *ServerInterfaceWrapper) BoostStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BoostStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStatusContext operation middleware
+func (siw *ServerInterfaceWrapper) GetStatusContext(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStatusContext(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnfavouriteStatus operation middleware
+func (siw *ServerInterfaceWrapper) UnfavouriteStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnfavouriteStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// FavouriteStatus operation middleware
+func (siw *ServerInterfaceWrapper) FavouriteStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FavouriteStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStatusHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetStatusHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStatusHistory(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnpinStatus operation middleware
+func (siw *ServerInterfaceWrapper) UnpinStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnpinStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PinStatus operation middleware
+func (siw *ServerInterfaceWrapper) PinStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PinStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStatusSource operation middleware
+func (siw *ServerInterfaceWrapper) GetStatusSource(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStatusSource(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -828,6 +1724,26 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance", wrapper.GetInstance)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications", wrapper.ListNotifications)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications/marker", wrapper.GetNotificationMarker)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/notifications/marker", wrapper.UpdateNotificationMarker)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/notifications/{id}/dismiss", wrapper.DismissNotification)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/bookmarks", wrapper.ListBookmarks)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses", wrapper.CreateStatus)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}", wrapper.DeleteStatus)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}", wrapper.GetStatus)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/statuses/{id}", wrapper.EditStatus)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/bookmark", wrapper.UnbookmarkStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/bookmark", wrapper.BookmarkStatus)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/boost", wrapper.UnboostStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/boost", wrapper.BoostStatus)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/context", wrapper.GetStatusContext)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/favourite", wrapper.UnfavouriteStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/favourite", wrapper.FavouriteStatus)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/history", wrapper.GetStatusHistory)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.UnpinStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.PinStatus)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/source", wrapper.GetStatusSource)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}/statuses", wrapper.ListAccountStatuses)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/home", wrapper.GetHomeTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/local", wrapper.GetLocalTimeline)
@@ -846,6 +1762,15 @@ type ProblemApplicationProblemPlusJSONResponse struct {
 	Body Problem
 
 	Headers ProblemResponseHeaders
+}
+
+type StatusAfterActionResponseHeaders struct {
+	CacheControl *string
+}
+type StatusAfterActionJSONResponse struct {
+	Body Status
+
+	Headers StatusAfterActionResponseHeaders
 }
 
 type StatusPageResponseHeaders struct {
@@ -974,6 +1899,68 @@ func (response ListAccountStatusesdefaultApplicationProblemPlusJSONResponse) Vis
 	return err
 }
 
+type ListBookmarksRequestObject struct {
+	Params ListBookmarksParams
+}
+
+type ListBookmarksResponseObject interface {
+	VisitListBookmarksResponse(w http.ResponseWriter) error
+}
+
+type ListBookmarks200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListBookmarks200JSONResponse struct {
+	Body    StatusPage
+	Headers ListBookmarks200ResponseHeaders
+}
+
+func (response ListBookmarks200JSONResponse) VisitListBookmarksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListBookmarksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListBookmarksdefaultApplicationProblemPlusJSONResponse) VisitListBookmarksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetInstanceRequestObject struct {
 }
 
@@ -1012,6 +1999,1097 @@ type GetInstancedefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetInstancedefaultApplicationProblemPlusJSONResponse) VisitGetInstanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationsRequestObject struct {
+	Params ListNotificationsParams
+}
+
+type ListNotificationsResponseObject interface {
+	VisitListNotificationsResponse(w http.ResponseWriter) error
+}
+
+type ListNotifications200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListNotifications200JSONResponse struct {
+	Body    NotificationPage
+	Headers ListNotifications200ResponseHeaders
+}
+
+func (response ListNotifications200JSONResponse) VisitListNotificationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListNotificationsdefaultApplicationProblemPlusJSONResponse) VisitListNotificationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationMarkerRequestObject struct {
+}
+
+type GetNotificationMarkerResponseObject interface {
+	VisitGetNotificationMarkerResponse(w http.ResponseWriter) error
+}
+
+type GetNotificationMarker200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetNotificationMarker200JSONResponse struct {
+	Body    NotificationMarker
+	Headers GetNotificationMarker200ResponseHeaders
+}
+
+func (response GetNotificationMarker200JSONResponse) VisitGetNotificationMarkerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationMarkerdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetNotificationMarkerdefaultApplicationProblemPlusJSONResponse) VisitGetNotificationMarkerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateNotificationMarkerRequestObject struct {
+	Body *UpdateNotificationMarkerJSONRequestBody
+}
+
+type UpdateNotificationMarkerResponseObject interface {
+	VisitUpdateNotificationMarkerResponse(w http.ResponseWriter) error
+}
+
+type UpdateNotificationMarker200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdateNotificationMarker200JSONResponse struct {
+	Body    NotificationMarker
+	Headers UpdateNotificationMarker200ResponseHeaders
+}
+
+func (response UpdateNotificationMarker200JSONResponse) VisitUpdateNotificationMarkerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateNotificationMarkerdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateNotificationMarkerdefaultApplicationProblemPlusJSONResponse) VisitUpdateNotificationMarkerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DismissNotificationRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type DismissNotificationResponseObject interface {
+	VisitDismissNotificationResponse(w http.ResponseWriter) error
+}
+
+type DismissNotification204Response struct {
+}
+
+func (response DismissNotification204Response) VisitDismissNotificationResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DismissNotificationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DismissNotificationdefaultApplicationProblemPlusJSONResponse) VisitDismissNotificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStatusRequestObject struct {
+	Params CreateStatusParams
+	Body   *CreateStatusJSONRequestBody
+}
+
+type CreateStatusResponseObject interface {
+	VisitCreateStatusResponse(w http.ResponseWriter) error
+}
+
+type CreateStatus200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type CreateStatus200JSONResponse struct {
+	Body    Status
+	Headers CreateStatus200ResponseHeaders
+}
+
+func (response CreateStatus200JSONResponse) VisitCreateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateStatusdefaultApplicationProblemPlusJSONResponse) VisitCreateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type DeleteStatusResponseObject interface {
+	VisitDeleteStatusResponse(w http.ResponseWriter) error
+}
+
+type DeleteStatus204Response struct {
+}
+
+func (response DeleteStatus204Response) VisitDeleteStatusResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeleteStatusdefaultApplicationProblemPlusJSONResponse) VisitDeleteStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type GetStatusResponseObject interface {
+	VisitGetStatusResponse(w http.ResponseWriter) error
+}
+
+type GetStatus200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetStatus200JSONResponse struct {
+	Body    Status
+	Headers GetStatus200ResponseHeaders
+}
+
+func (response GetStatus200JSONResponse) VisitGetStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetStatusdefaultApplicationProblemPlusJSONResponse) VisitGetStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EditStatusRequestObject struct {
+	Id   StatusId `json:"id"`
+	Body *EditStatusJSONRequestBody
+}
+
+type EditStatusResponseObject interface {
+	VisitEditStatusResponse(w http.ResponseWriter) error
+}
+
+type EditStatus200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type EditStatus200JSONResponse struct {
+	Body    Status
+	Headers EditStatus200ResponseHeaders
+}
+
+func (response EditStatus200JSONResponse) VisitEditStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EditStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response EditStatusdefaultApplicationProblemPlusJSONResponse) VisitEditStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnbookmarkStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type UnbookmarkStatusResponseObject interface {
+	VisitUnbookmarkStatusResponse(w http.ResponseWriter) error
+}
+
+type UnbookmarkStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response UnbookmarkStatus200JSONResponse) VisitUnbookmarkStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnbookmarkStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UnbookmarkStatusdefaultApplicationProblemPlusJSONResponse) VisitUnbookmarkStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BookmarkStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type BookmarkStatusResponseObject interface {
+	VisitBookmarkStatusResponse(w http.ResponseWriter) error
+}
+
+type BookmarkStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response BookmarkStatus200JSONResponse) VisitBookmarkStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BookmarkStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response BookmarkStatusdefaultApplicationProblemPlusJSONResponse) VisitBookmarkStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnboostStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type UnboostStatusResponseObject interface {
+	VisitUnboostStatusResponse(w http.ResponseWriter) error
+}
+
+type UnboostStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response UnboostStatus200JSONResponse) VisitUnboostStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnboostStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UnboostStatusdefaultApplicationProblemPlusJSONResponse) VisitUnboostStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BoostStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type BoostStatusResponseObject interface {
+	VisitBoostStatusResponse(w http.ResponseWriter) error
+}
+
+type BoostStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response BoostStatus200JSONResponse) VisitBoostStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BoostStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response BoostStatusdefaultApplicationProblemPlusJSONResponse) VisitBoostStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStatusContextRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type GetStatusContextResponseObject interface {
+	VisitGetStatusContextResponse(w http.ResponseWriter) error
+}
+
+type GetStatusContext200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetStatusContext200JSONResponse struct {
+	Body    StatusContext
+	Headers GetStatusContext200ResponseHeaders
+}
+
+func (response GetStatusContext200JSONResponse) VisitGetStatusContextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStatusContextdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetStatusContextdefaultApplicationProblemPlusJSONResponse) VisitGetStatusContextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnfavouriteStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type UnfavouriteStatusResponseObject interface {
+	VisitUnfavouriteStatusResponse(w http.ResponseWriter) error
+}
+
+type UnfavouriteStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response UnfavouriteStatus200JSONResponse) VisitUnfavouriteStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnfavouriteStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UnfavouriteStatusdefaultApplicationProblemPlusJSONResponse) VisitUnfavouriteStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FavouriteStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type FavouriteStatusResponseObject interface {
+	VisitFavouriteStatusResponse(w http.ResponseWriter) error
+}
+
+type FavouriteStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response FavouriteStatus200JSONResponse) VisitFavouriteStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FavouriteStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response FavouriteStatusdefaultApplicationProblemPlusJSONResponse) VisitFavouriteStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStatusHistoryRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type GetStatusHistoryResponseObject interface {
+	VisitGetStatusHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetStatusHistory200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetStatusHistory200JSONResponse struct {
+	Body    StatusHistory
+	Headers GetStatusHistory200ResponseHeaders
+}
+
+func (response GetStatusHistory200JSONResponse) VisitGetStatusHistoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStatusHistorydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetStatusHistorydefaultApplicationProblemPlusJSONResponse) VisitGetStatusHistoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnpinStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type UnpinStatusResponseObject interface {
+	VisitUnpinStatusResponse(w http.ResponseWriter) error
+}
+
+type UnpinStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response UnpinStatus200JSONResponse) VisitUnpinStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnpinStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UnpinStatusdefaultApplicationProblemPlusJSONResponse) VisitUnpinStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PinStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type PinStatusResponseObject interface {
+	VisitPinStatusResponse(w http.ResponseWriter) error
+}
+
+type PinStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response PinStatus200JSONResponse) VisitPinStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PinStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response PinStatusdefaultApplicationProblemPlusJSONResponse) VisitPinStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStatusSourceRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type GetStatusSourceResponseObject interface {
+	VisitGetStatusSourceResponse(w http.ResponseWriter) error
+}
+
+type GetStatusSource200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetStatusSource200JSONResponse struct {
+	Body    StatusSource
+	Headers GetStatusSource200ResponseHeaders
+}
+
+func (response GetStatusSource200JSONResponse) VisitGetStatusSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStatusSourcedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetStatusSourcedefaultApplicationProblemPlusJSONResponse) VisitGetStatusSourceResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -1209,9 +3287,69 @@ type StrictServerInterface interface {
 	// ListAccountStatuses List the posts and boosts of an account
 	// (GET /accounts/{id}/statuses)
 	ListAccountStatuses(ctx context.Context, request ListAccountStatusesRequestObject) (ListAccountStatusesResponseObject, error)
+	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
+	// (GET /bookmarks)
+	ListBookmarks(ctx context.Context, request ListBookmarksRequestObject) (ListBookmarksResponseObject, error)
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(ctx context.Context, request GetInstanceRequestObject) (GetInstanceResponseObject, error)
+	// ListNotifications List the authenticated user's notifications
+	// (GET /notifications)
+	ListNotifications(ctx context.Context, request ListNotificationsRequestObject) (ListNotificationsResponseObject, error)
+	// GetNotificationMarker Get the read marker and the unread count
+	// (GET /notifications/marker)
+	GetNotificationMarker(ctx context.Context, request GetNotificationMarkerRequestObject) (GetNotificationMarkerResponseObject, error)
+	// UpdateNotificationMarker Mark notifications read
+	// (PUT /notifications/marker)
+	UpdateNotificationMarker(ctx context.Context, request UpdateNotificationMarkerRequestObject) (UpdateNotificationMarkerResponseObject, error)
+	// DismissNotification Dismiss a notification
+	// (POST /notifications/{id}/dismiss)
+	DismissNotification(ctx context.Context, request DismissNotificationRequestObject) (DismissNotificationResponseObject, error)
+	// CreateStatus Post a status
+	// (POST /statuses)
+	CreateStatus(ctx context.Context, request CreateStatusRequestObject) (CreateStatusResponseObject, error)
+	// DeleteStatus Delete the authenticated user's status
+	// (DELETE /statuses/{id})
+	DeleteStatus(ctx context.Context, request DeleteStatusRequestObject) (DeleteStatusResponseObject, error)
+	// GetStatus Get a status
+	// (GET /statuses/{id})
+	GetStatus(ctx context.Context, request GetStatusRequestObject) (GetStatusResponseObject, error)
+	// EditStatus Edit the authenticated user's status
+	// (PUT /statuses/{id})
+	EditStatus(ctx context.Context, request EditStatusRequestObject) (EditStatusResponseObject, error)
+	// UnbookmarkStatus Remove the bookmark of a status
+	// (DELETE /statuses/{id}/bookmark)
+	UnbookmarkStatus(ctx context.Context, request UnbookmarkStatusRequestObject) (UnbookmarkStatusResponseObject, error)
+	// BookmarkStatus Bookmark a status
+	// (POST /statuses/{id}/bookmark)
+	BookmarkStatus(ctx context.Context, request BookmarkStatusRequestObject) (BookmarkStatusResponseObject, error)
+	// UnboostStatus Retract the boost of a status
+	// (DELETE /statuses/{id}/boost)
+	UnboostStatus(ctx context.Context, request UnboostStatusRequestObject) (UnboostStatusResponseObject, error)
+	// BoostStatus Boost a status
+	// (POST /statuses/{id}/boost)
+	BoostStatus(ctx context.Context, request BoostStatusRequestObject) (BoostStatusResponseObject, error)
+	// GetStatusContext Get the thread around a status
+	// (GET /statuses/{id}/context)
+	GetStatusContext(ctx context.Context, request GetStatusContextRequestObject) (GetStatusContextResponseObject, error)
+	// UnfavouriteStatus Remove the favourite of a status
+	// (DELETE /statuses/{id}/favourite)
+	UnfavouriteStatus(ctx context.Context, request UnfavouriteStatusRequestObject) (UnfavouriteStatusResponseObject, error)
+	// FavouriteStatus Favourite a status
+	// (POST /statuses/{id}/favourite)
+	FavouriteStatus(ctx context.Context, request FavouriteStatusRequestObject) (FavouriteStatusResponseObject, error)
+	// GetStatusHistory Get the edit history of a status
+	// (GET /statuses/{id}/history)
+	GetStatusHistory(ctx context.Context, request GetStatusHistoryRequestObject) (GetStatusHistoryResponseObject, error)
+	// UnpinStatus Unpin a status
+	// (DELETE /statuses/{id}/pin)
+	UnpinStatus(ctx context.Context, request UnpinStatusRequestObject) (UnpinStatusResponseObject, error)
+	// PinStatus Pin the authenticated user's status to the profile
+	// (POST /statuses/{id}/pin)
+	PinStatus(ctx context.Context, request PinStatusRequestObject) (PinStatusResponseObject, error)
+	// GetStatusSource Get the source of the authenticated user's status, for editing it
+	// (GET /statuses/{id}/source)
+	GetStatusSource(ctx context.Context, request GetStatusSourceRequestObject) (GetStatusSourceResponseObject, error)
 	// GetHomeTimeline Get the home timeline
 	// (GET /timelines/home)
 	GetHomeTimeline(ctx context.Context, request GetHomeTimelineRequestObject) (GetHomeTimelineResponseObject, error)
@@ -1313,6 +3451,32 @@ func (sh *strictHandler) ListAccountStatuses(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// ListBookmarks operation middleware
+func (sh *strictHandler) ListBookmarks(w http.ResponseWriter, r *http.Request, params ListBookmarksParams) {
+	var request ListBookmarksRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListBookmarks(ctx, request.(ListBookmarksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListBookmarks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListBookmarksResponseObject); ok {
+		if err := validResponse.VisitListBookmarksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetInstance operation middleware
 func (sh *strictHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 	var request GetInstanceRequestObject
@@ -1330,6 +3494,517 @@ func (sh *strictHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetInstanceResponseObject); ok {
 		if err := validResponse.VisitGetInstanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListNotifications operation middleware
+func (sh *strictHandler) ListNotifications(w http.ResponseWriter, r *http.Request, params ListNotificationsParams) {
+	var request ListNotificationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListNotifications(ctx, request.(ListNotificationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListNotifications")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListNotificationsResponseObject); ok {
+		if err := validResponse.VisitListNotificationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotificationMarker operation middleware
+func (sh *strictHandler) GetNotificationMarker(w http.ResponseWriter, r *http.Request) {
+	var request GetNotificationMarkerRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotificationMarker(ctx, request.(GetNotificationMarkerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotificationMarker")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotificationMarkerResponseObject); ok {
+		if err := validResponse.VisitGetNotificationMarkerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateNotificationMarker operation middleware
+func (sh *strictHandler) UpdateNotificationMarker(w http.ResponseWriter, r *http.Request) {
+	var request UpdateNotificationMarkerRequestObject
+
+	var body UpdateNotificationMarkerJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateNotificationMarker(ctx, request.(UpdateNotificationMarkerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateNotificationMarker")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateNotificationMarkerResponseObject); ok {
+		if err := validResponse.VisitUpdateNotificationMarkerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DismissNotification operation middleware
+func (sh *strictHandler) DismissNotification(w http.ResponseWriter, r *http.Request, id Id) {
+	var request DismissNotificationRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DismissNotification(ctx, request.(DismissNotificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DismissNotification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DismissNotificationResponseObject); ok {
+		if err := validResponse.VisitDismissNotificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateStatus operation middleware
+func (sh *strictHandler) CreateStatus(w http.ResponseWriter, r *http.Request, params CreateStatusParams) {
+	var request CreateStatusRequestObject
+
+	request.Params = params
+
+	var body CreateStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateStatus(ctx, request.(CreateStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateStatusResponseObject); ok {
+		if err := validResponse.VisitCreateStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteStatus operation middleware
+func (sh *strictHandler) DeleteStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request DeleteStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteStatus(ctx, request.(DeleteStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteStatusResponseObject); ok {
+		if err := validResponse.VisitDeleteStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStatus operation middleware
+func (sh *strictHandler) GetStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request GetStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStatus(ctx, request.(GetStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStatusResponseObject); ok {
+		if err := validResponse.VisitGetStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EditStatus operation middleware
+func (sh *strictHandler) EditStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request EditStatusRequestObject
+
+	request.Id = id
+
+	var body EditStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EditStatus(ctx, request.(EditStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EditStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EditStatusResponseObject); ok {
+		if err := validResponse.VisitEditStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnbookmarkStatus operation middleware
+func (sh *strictHandler) UnbookmarkStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request UnbookmarkStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnbookmarkStatus(ctx, request.(UnbookmarkStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnbookmarkStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnbookmarkStatusResponseObject); ok {
+		if err := validResponse.VisitUnbookmarkStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BookmarkStatus operation middleware
+func (sh *strictHandler) BookmarkStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request BookmarkStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BookmarkStatus(ctx, request.(BookmarkStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BookmarkStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BookmarkStatusResponseObject); ok {
+		if err := validResponse.VisitBookmarkStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnboostStatus operation middleware
+func (sh *strictHandler) UnboostStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request UnboostStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnboostStatus(ctx, request.(UnboostStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnboostStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnboostStatusResponseObject); ok {
+		if err := validResponse.VisitUnboostStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BoostStatus operation middleware
+func (sh *strictHandler) BoostStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request BoostStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BoostStatus(ctx, request.(BoostStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BoostStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BoostStatusResponseObject); ok {
+		if err := validResponse.VisitBoostStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStatusContext operation middleware
+func (sh *strictHandler) GetStatusContext(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request GetStatusContextRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStatusContext(ctx, request.(GetStatusContextRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStatusContext")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStatusContextResponseObject); ok {
+		if err := validResponse.VisitGetStatusContextResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnfavouriteStatus operation middleware
+func (sh *strictHandler) UnfavouriteStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request UnfavouriteStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnfavouriteStatus(ctx, request.(UnfavouriteStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnfavouriteStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnfavouriteStatusResponseObject); ok {
+		if err := validResponse.VisitUnfavouriteStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// FavouriteStatus operation middleware
+func (sh *strictHandler) FavouriteStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request FavouriteStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.FavouriteStatus(ctx, request.(FavouriteStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "FavouriteStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(FavouriteStatusResponseObject); ok {
+		if err := validResponse.VisitFavouriteStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStatusHistory operation middleware
+func (sh *strictHandler) GetStatusHistory(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request GetStatusHistoryRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStatusHistory(ctx, request.(GetStatusHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStatusHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStatusHistoryResponseObject); ok {
+		if err := validResponse.VisitGetStatusHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnpinStatus operation middleware
+func (sh *strictHandler) UnpinStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request UnpinStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnpinStatus(ctx, request.(UnpinStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnpinStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnpinStatusResponseObject); ok {
+		if err := validResponse.VisitUnpinStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PinStatus operation middleware
+func (sh *strictHandler) PinStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request PinStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PinStatus(ctx, request.(PinStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PinStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PinStatusResponseObject); ok {
+		if err := validResponse.VisitPinStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStatusSource operation middleware
+func (sh *strictHandler) GetStatusSource(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request GetStatusSourceRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStatusSource(ctx, request.(GetStatusSourceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStatusSource")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStatusSourceResponseObject); ok {
+		if err := validResponse.VisitGetStatusSourceResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

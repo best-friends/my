@@ -344,7 +344,6 @@ func statusReportsMissing(t *testing.T, e *statusEnv) {
 		"FindDeletionByURI":               second(e.h.Statuses.FindDeletionByURI(ctx, "https://nowhere.example/")),
 		"FindTagByName":                   second(e.h.Statuses.FindTagByName(ctx, "nothing")),
 		"FindTag":                         second(e.h.Statuses.FindTag(ctx, missing)),
-		"FindReplyLink":                   second(e.h.Statuses.FindReplyLink(ctx, missing)),
 		"FindCounters":                    second(e.h.Statuses.FindCounters(ctx, missing)),
 		"FindPostCounter":                 second(e.h.Statuses.FindPostCounter(ctx, missing)),
 	} {
@@ -502,9 +501,6 @@ func statusLinksReplies(t *testing.T, e *statusEnv) {
 		if l.ParentStatusID != parent.ID || l.ParentAuthorAccountID != parentAuthor {
 			t.Errorf("link %+v does not point at the parent %s", l, parent.ID)
 		}
-		if got, err := e.h.Statuses.FindReplyLink(ctx, l.StatusID); err != nil || got != l {
-			t.Errorf("FindReplyLink(%s) = %+v, %v; want %+v", l.StatusID, got, err, l)
-		}
 	}
 	if c := e.counters(t, parent.ID); c.RepliesCount != 2 {
 		t.Errorf("replies count = %d, want 2 (private and direct replies are not counted)", c.RepliesCount)
@@ -512,6 +508,13 @@ func statusLinksReplies(t *testing.T, e *statusEnv) {
 
 	e.mustRemove(t, early)
 	e.mustRemove(t, hidden)
+	// ListReplies reads the live replies of a URI outside a transaction, ordered by ID.
+	if got, err := e.h.Statuses.ListReplies(ctx, parent.URI); err != nil || len(got) != 2 || got[0].ID != late.ID || got[1].ID != private.ID {
+		t.Errorf("ListReplies = %+v, %v; want the live replies %s, %s", got, err, late.ID, private.ID)
+	}
+	if got, err := e.h.Statuses.ListReplies(ctx, "https://nowhere.example/"); err != nil || len(got) != 0 {
+		t.Errorf("ListReplies(unknown) = %+v, %v; want none", got, err)
+	}
 	if c := e.counters(t, parent.ID); c.RepliesCount != 1 {
 		t.Errorf("replies count after deleting replies = %d, want 1", c.RepliesCount)
 	}

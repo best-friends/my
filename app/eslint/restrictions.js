@@ -41,6 +41,11 @@ export const syntax = [
     selector: "MemberExpression[object.name='React'][property.name=/^(useMemo|useCallback|memo)$/]",
     message: "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client.md R5).",
   },
+  {
+    // R4: React Compiler applies to every function; an opt-out needs a reason.
+    selector: String.raw`ExpressionStatement[directive=/^use no (memo|forget)$/]`,
+    message: "Do not opt out of React Compiler. If a library cannot be compiled, wrap it in one hook and disable this line with a reason (web-client.md R4).",
+  },
 ];
 
 /** Modules that may be mocked only through MSW (T3): the API client and feature API modules. */
