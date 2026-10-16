@@ -36,6 +36,7 @@ export const viewerFixture: Schemas["CredentialAccount"] = {
   discoverable: true,
   indexable: true,
   source: { note: "", fields: [] },
+  posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
 };
 
 /** An `Account` of another user, for the lists of accounts; `n` makes its ID unique. */
@@ -262,6 +263,7 @@ export const handlers = [
   ...statusHandlers,
   ...notificationHandlers(),
   ...streamingHandlers(),
+  ...accountHandlers(),
 ];
 
 // --- notifications (#132) -------------------------------------------------------------------------
@@ -419,5 +421,25 @@ function streamingHandlers() {
     http.get(`${apiBase}/streaming`, ({ request }) =>
       request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? eventStreamResponse().response : unauthenticated(request),
     ),
+  ];
+}
+
+// --- account lookups and relationships (the compose hints, #207) -----------------------------------
+
+/** An account of another server that the instance knows, which the viewer does not follow and is not followed by. */
+export const remoteAccountFixture: Schemas["Account"] = accountFixture(3, "Carol");
+
+/** GET /accounts/lookup knows the viewer and remoteAccountFixture; GET /accounts/relationships has none. */
+function accountHandlers() {
+  return [
+    http.get(`${apiBase}/accounts/lookup`, ({ request }) => {
+      const acct = (new URL(request.url).searchParams.get("acct") ?? "").replace(/^@/, "").toLowerCase();
+      const found = [viewerFixture, remoteAccountFixture].find((a) => a.acct === acct);
+      return found === undefined ? problem(404, "about:blank", "Not Found") : HttpResponse.json(found);
+    }),
+    http.get(`${apiBase}/accounts/relationships`, ({ request }) => {
+      if (request.headers.get("Authorization") !== `Bearer ${validAccessToken}`) return unauthenticated(request);
+      return HttpResponse.json(new URL(request.url).searchParams.getAll("id").map((id) => relationshipFixture(id)));
+    }),
   ];
 }

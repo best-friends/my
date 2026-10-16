@@ -100,7 +100,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 4. `internal/interface/clientapi` にメソッドを実装します。アプリケーション層（`internal/app/<module>`）のユースケースを呼び、
    ドメインの型を生成された応答型に詰め替えます。必要な依存は `clientapi.Options` に追加し、`platform.NewApp` で渡します。
    閲覧者は `requireViewer(ctx)`（トークン必須の操作）か `ViewerFrom(ctx)`（匿名も受け付ける操作）で取ります。スコープの検査はハンドラの前に済んでいます。
-   アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースと画像の URL を含む）に、
+   アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースと画像の URL、`Options.Posting` から読む投稿の制限 `posting` を含む）に、
    投稿は `appcontent.Reader` が閲覧者に見せる形にした `StatusView` を `Server.newStatus` で `Status` に詰め替えます。
    フォロー数を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います（`newCredentialAccount` もこれに重ねます）。
    ID で指定されたアカウントは `Server.visibleAccount` で引き、見せられないアカウント（[visibility.md §6](visibility.md#6-アカウントの表示)）は存在しないものと同じ 404 にします。

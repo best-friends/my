@@ -75,6 +75,10 @@
     "defaultMessage": "[Ŭƥŀǿǿȧȧḓīƞɠ…]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.mention.unreached": {
+    "defaultMessage": "[{count,plural,one{{accounts} īş ǿǿƞ ȧȧƞǿǿŧħḗḗř şḗḗřṽḗḗř ȧȧƞḓ ḓǿǿḗḗş ƞǿǿŧ ƒǿǿŀŀǿǿẇ ẏǿǿŭŭ, şǿǿ ŧħḗḗẏ ẇīŀŀ ƞǿǿŧ řḗḗƈḗḗīṽḗḗ ŧħīş ƥǿǿşŧ.} other{{accounts} ȧȧřḗḗ ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş ȧȧƞḓ ḓǿǿ ƞǿǿŧ ƒǿǿŀŀǿǿẇ ẏǿǿŭŭ, şǿǿ ŧħḗḗẏ ẇīŀŀ ƞǿǿŧ řḗḗƈḗḗīṽḗḗ ŧħīş ƥǿǿşŧ.}} “Ŧħīş şḗḗřṽḗḗř” ƥǿǿşŧş řḗḗȧȧƈħ ǿǿƞŀẏ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇḗḗřş ǿǿŭŭŧşīḓḗḗ ŧħīş şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.missing_description.add": {
     "defaultMessage": "[Ȧḓḓ ḓḗḗşƈřīƥŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -169,6 +173,10 @@
   },
   "compose.visibility.button": {
     "defaultMessage": "[Ṽīşīƀīŀīŧẏ: {visibility}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.ceiling": {
+    "defaultMessage": "[Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ƈȧȧƞ ƥǿǿşŧ ȧȧŧ ḿǿǿşŧ ȧȧş “{visibility}” řīɠħŧ ƞǿǿẇ. Ȧ ẇīḓḗḗř ƈħǿǿīƈḗḗ īş ƥǿǿşŧḗḗḓ ȧȧş “{visibility}”.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.visibility.direct": {
