@@ -59,5 +59,10 @@ export function timelineQueryOptions(api: Api, timeline: Timeline) {
     // A failed page is shown at once with a button to try again (the route's error for the first page,
     // the end of the feed for an older one), instead of after seconds of silent retries.
     retry: false,
+    // A refetch while the reader is in the timeline would insert new posts at its top (web-client.md
+    // Y7). The home timeline's news wait behind its "N new posts" button (newStatuses.ts); the timelines
+    // refetch when the reader opens them again.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
