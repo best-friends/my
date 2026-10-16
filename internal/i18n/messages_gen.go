@@ -592,6 +592,20 @@ func (l *Localizer) ServerErrorsBlocking() string {
 	return l.format("server:errors.blocking", nil)
 }
 
+// ServerErrorsConflict formats "server:errors.conflict". API error title for HTTP 409 when no more specific message applies.
+//
+//	en: The request conflicts with the current state of the resource.
+func (l *Localizer) ServerErrorsConflict() string {
+	return l.format("server:errors.conflict", nil)
+}
+
+// ServerErrorsForbidden formats "server:errors.forbidden". API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post.
+//
+//	en: You are not allowed to do this.
+func (l *Localizer) ServerErrorsForbidden() string {
+	return l.format("server:errors.forbidden", nil)
+}
+
 // ServerErrorsInsufficientScope formats "server:errors.insufficient_scope". API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs.
 //
 //	en: This app is not allowed to do this.
@@ -669,6 +683,111 @@ func (l *Localizer) ServerErrorsSelfRelationship() string {
 	return l.format("server:errors.self_relationship", nil)
 }
 
+// ServerErrorsStatusAlreadyDeleted formats "server:errors.status.already_deleted". Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated).
+//
+//	en: The post created with this Idempotency-Key has been deleted.
+func (l *Localizer) ServerErrorsStatusAlreadyDeleted() string {
+	return l.format("server:errors.status.already_deleted", nil)
+}
+
+// ServerErrorsStatusEmptyText formats "server:errors.status.empty_text". Detail of the HTTP 422 API error when a post's text is empty or only spaces.
+//
+//	en: The post has no text.
+func (l *Localizer) ServerErrorsStatusEmptyText() string {
+	return l.format("server:errors.status.empty_text", nil)
+}
+
+// ServerErrorsStatusInvalidLanguage formats "server:errors.status.invalid_language". Detail of the HTTP 422 API error when a post's language is not a well-formed BCP 47 tag such as en or ja.
+//
+//	en: The language is not a valid language tag.
+func (l *Localizer) ServerErrorsStatusInvalidLanguage() string {
+	return l.format("server:errors.status.invalid_language", nil)
+}
+
+// ServerErrorsStatusInvalidMediaDescription formats "server:errors.status.invalid_media_description". Detail of the HTTP 422 API error when the alternative text of an attached image is too long or invalid. {max} is the maximum number of characters.
+//
+//	en: {max, plural, one {An image description must be at most # character.} other {An image description must be at most # characters.}}
+func (l *Localizer) ServerErrorsStatusInvalidMediaDescription(max int) string {
+	return l.format("server:errors.status.invalid_media_description", map[string]any{"max": max})
+}
+
+// ServerErrorsStatusInvalidText formats "server:errors.status.invalid_text". Detail of the HTTP 422 API error when a post's text or content warning is not valid UTF-8 or contains a NUL character.
+//
+//	en: The text contains characters that cannot be posted.
+func (l *Localizer) ServerErrorsStatusInvalidText() string {
+	return l.format("server:errors.status.invalid_text", nil)
+}
+
+// ServerErrorsStatusMediaNotFound formats "server:errors.status.media_not_found". Detail of the HTTP 422 API error when a post attaches a media file that does not exist or that another account uploaded.
+//
+//	en: An attached file was not found among your uploads.
+func (l *Localizer) ServerErrorsStatusMediaNotFound() string {
+	return l.format("server:errors.status.media_not_found", nil)
+}
+
+// ServerErrorsStatusMediaNotReady formats "server:errors.status.media_not_ready". Detail of the HTTP 422 API error when a post attaches a media file whose processing has not finished or failed.
+//
+//	en: An attached file is still being processed or could not be processed.
+func (l *Localizer) ServerErrorsStatusMediaNotReady() string {
+	return l.format("server:errors.status.media_not_ready", nil)
+}
+
+// ServerErrorsStatusNotAuthor formats "server:errors.status.not_author". Detail of the HTTP 403 API error when a user tries to edit or delete another account's post.
+//
+//	en: Only the author can change this post.
+func (l *Localizer) ServerErrorsStatusNotAuthor() string {
+	return l.format("server:errors.status.not_author", nil)
+}
+
+// ServerErrorsStatusNotBoostable formats "server:errors.status.not_boostable". Detail of the HTTP 422 API error when the visibility of a post does not allow boosting it (followers-only or direct posts).
+//
+//	en: This post cannot be boosted.
+func (l *Localizer) ServerErrorsStatusNotBoostable() string {
+	return l.format("server:errors.status.not_boostable", nil)
+}
+
+// ServerErrorsStatusNotPinnable formats "server:errors.status.not_pinnable". Detail of the HTTP 422 API error when a user tries to pin another account's post or a direct post.
+//
+//	en: Only your own posts that are not direct can be pinned.
+func (l *Localizer) ServerErrorsStatusNotPinnable() string {
+	return l.format("server:errors.status.not_pinnable", nil)
+}
+
+// ServerErrorsStatusPinLimit formats "server:errors.status.pin_limit". Detail of the HTTP 422 API error when a user pins more posts than allowed. {max} is the maximum number of pinned posts.
+//
+//	en: {max, plural, one {You can pin at most # post.} other {You can pin at most # posts.}}
+func (l *Localizer) ServerErrorsStatusPinLimit(max int) string {
+	return l.format("server:errors.status.pin_limit", map[string]any{"max": max})
+}
+
+// ServerErrorsStatusPostingRestricted formats "server:errors.status.posting_restricted". Detail of the HTTP 403 API error when a moderator restricted the account from posting.
+//
+//	en: Your account may not post right now.
+func (l *Localizer) ServerErrorsStatusPostingRestricted() string {
+	return l.format("server:errors.status.posting_restricted", nil)
+}
+
+// ServerErrorsStatusReplyNotFound formats "server:errors.status.reply_not_found". Detail of the HTTP 422 API error when a reply targets a post that does not exist, was deleted, or that the user cannot see.
+//
+//	en: The post you are replying to was not found.
+func (l *Localizer) ServerErrorsStatusReplyNotFound() string {
+	return l.format("server:errors.status.reply_not_found", nil)
+}
+
+// ServerErrorsStatusTextTooLong formats "server:errors.status.text_too_long". Detail of the HTTP 422 API error when a post is longer than the instance allows. {max} is the maximum number of characters of the text and the content warning together.
+//
+//	en: {max, plural, one {The text and content warning must be at most # character.} other {The text and content warning must be at most # characters.}}
+func (l *Localizer) ServerErrorsStatusTextTooLong(max int) string {
+	return l.format("server:errors.status.text_too_long", map[string]any{"max": max})
+}
+
+// ServerErrorsStatusTooManyMedia formats "server:errors.status.too_many_media". Detail of the HTTP 422 API error when a post attaches too many media files or the same file twice. {max} is the maximum number of files.
+//
+//	en: {max, plural, one {A post can attach at most # distinct file.} other {A post can attach at most # distinct files.}}
+func (l *Localizer) ServerErrorsStatusTooManyMedia(max int) string {
+	return l.format("server:errors.status.too_many_media", map[string]any{"max": max})
+}
+
 // ServerErrorsUnauthenticated formats "server:errors.unauthenticated". API error title for HTTP 401 when the request carries no access token and the operation needs one.
 //
 //	en: Sign in to do this.
@@ -676,9 +795,9 @@ func (l *Localizer) ServerErrorsUnauthenticated() string {
 	return l.format("server:errors.unauthenticated", nil)
 }
 
-// ServerErrorsUnprocessable formats "server:errors.unprocessable". API error title for HTTP 422 when the request is well-formed but cannot be carried out; the detail says why.
+// ServerErrorsUnprocessable formats "server:errors.unprocessable". API error title for HTTP 422; the detail says what is wrong with the request.
 //
-//	en: The request cannot be carried out.
+//	en: The request cannot be processed.
 func (l *Localizer) ServerErrorsUnprocessable() string {
 	return l.format("server:errors.unprocessable", nil)
 }

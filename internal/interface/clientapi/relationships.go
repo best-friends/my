@@ -69,7 +69,7 @@ func relationshipResponse(r appgraph.Relationship) RelationshipJSONResponse {
 
 // graphProblem returns the problem that a graph use case's error means, and false for an
 // unexpected error.
-func (s *Server) graphProblem(ctx context.Context, err error) (problemResponse, bool) {
+func (s *Server) graphProblem(ctx context.Context, err error) (problem, bool) {
 	l := s.Localizer(ctx)
 	switch {
 	case errors.Is(err, graph.ErrSelfFollow), errors.Is(err, graph.ErrSelfBlock), errors.Is(err, graph.ErrSelfMute):
@@ -82,13 +82,13 @@ func (s *Server) graphProblem(ctx context.Context, err error) (problemResponse, 
 	case errors.Is(err, appgraph.ErrAccountUnavailable), errors.Is(err, appgraph.ErrNotFound):
 		return s.notFoundResponse(ctx), true
 	}
-	return problemResponse{}, false
+	return problem{}, false
 }
 
 // relate runs a graph use case of the viewer on the account with targetID, after checking that
 // the viewer may see the account. It returns either the resulting relationship or the problem
 // to answer with.
-func (s *Server) relate(ctx context.Context, targetID string, change func(v Viewer) (appgraph.Relationship, error)) (*RelationshipJSONResponse, *problemResponse, error) {
+func (s *Server) relate(ctx context.Context, targetID string, change func(v Viewer) (appgraph.Relationship, error)) (*RelationshipJSONResponse, *problem, error) {
 	v, err := requireViewer(ctx)
 	if err != nil {
 		return nil, nil, err

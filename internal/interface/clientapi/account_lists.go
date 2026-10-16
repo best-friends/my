@@ -22,7 +22,7 @@ import (
 type pageQuery struct {
 	before  string
 	limit   int
-	problem *problemResponse
+	problem *problem
 }
 
 func (s *Server) parsePage(ctx context.Context, cursor *Cursor, limit *Limit) pageQuery {
@@ -96,7 +96,7 @@ func (s *Server) edgePage(ctx context.Context, viewer *Viewer, edges []graph.Edg
 }
 
 // followList serves the followers or following list of the account with id.
-func (s *Server) followList(ctx context.Context, id string, cursor *Cursor, limit *Limit, followers bool) (*AccountPageJSONResponse, *problemResponse, error) {
+func (s *Server) followList(ctx context.Context, id string, cursor *Cursor, limit *Limit, followers bool) (*AccountPageJSONResponse, *problem, error) {
 	v := viewerOf(ctx)
 	q := s.parsePage(ctx, cursor, limit)
 	if q.problem != nil {

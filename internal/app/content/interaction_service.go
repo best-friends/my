@@ -272,59 +272,15 @@ func (s *Interactions) visibleStatus(ctx context.Context, accountID, statusID st
 	if !viewer.Account.IsLocal() || !viewer.Lifecycle.Active() {
 		return content.Status{}, fmt.Errorf("account %s: %w", accountID, ErrActorUnavailable)
 	}
-	hidden := fmt.Errorf("status %s: %w", statusID, ErrNotFound)
+	st, _, err := s.audience().visibleStatus(ctx, content.Viewer{Kind: content.ViewerLocal, AccountID: accountID}, statusID)
+	return st, err
+}
 
-	st, err := s.d.Statuses.FindStatus(ctx, statusID)
-	if err != nil {
-		return content.Status{}, err
+func (s *Interactions) audience() audience {
+	return audience{
+		statuses: s.d.Statuses, interactions: s.d.Interactions, accounts: s.d.Accounts,
+		relationships: s.d.Relationships, restrictions: s.d.Restrictions,
 	}
-	switch _, err := s.d.Statuses.FindDeletion(ctx, statusID); {
-	case err == nil:
-		return content.Status{}, hidden
-	case !errors.Is(err, ErrNotFound):
-		return content.Status{}, err
-	}
-
-	r, err := s.d.Restrictions.Restrictions(ctx, st.AuthorAccountID)
-	if err != nil {
-		return content.Status{}, err
-	}
-	restrictions := r.Author
-	author, err := s.d.Accounts.FindByID(ctx, st.AuthorAccountID)
-	switch {
-	case errors.Is(err, appaccount.ErrNotFound):
-		restrictions.ProfileView = true
-	case err != nil:
-		return content.Status{}, err
-	default:
-		// A suspended or deleted author is shown to no one else (data-model §5.1).
-		restrictions.ProfileView = restrictions.ProfileView || !author.Lifecycle.Active()
-	}
-
-	var rel content.Relation
-	if st.AuthorAccountID != accountID {
-		r, err := s.d.Relationships.Relationship(ctx, accountID, st.AuthorAccountID)
-		if err != nil {
-			return content.Status{}, err
-		}
-		rel.Blocking, rel.BlockedBy = r.Blocking, r.BlockedBy
-		switch {
-		case r.ActivelyFollowing():
-			rel.Follow = content.FollowActive
-		case r.RequestedFollow():
-			rel.Follow = content.FollowPending
-		}
-		if rel.Mentioned, err = s.d.Interactions.Mentioned(ctx, st.ID, accountID); err != nil {
-			return content.Status{}, err
-		}
-	}
-
-	facts := content.StatusFacts{AuthorAccountID: st.AuthorAccountID, AuthorIsLocal: st.IsLocal, Visibility: st.Visibility}
-	v := content.Viewer{Kind: content.ViewerLocal, AccountID: accountID}
-	if !content.CanView(content.ContextStatus, v, facts, restrictions, rel) {
-		return content.Status{}, hidden
-	}
-	return st, nil
 }
 
 // ensureLive fails with ErrNotFound when the status was deleted after visibleStatus read it.

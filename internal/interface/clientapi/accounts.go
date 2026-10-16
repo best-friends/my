@@ -116,9 +116,9 @@ func viewerOf(ctx context.Context) *Viewer {
 }
 
 // notFoundResponse is notFound as a default response, for an account that is not visible.
-func (s *Server) notFoundResponse(ctx context.Context) problemResponse {
+func (s *Server) notFoundResponse(ctx context.Context) problem {
 	body, headers := s.notFound(ctx)
-	return problemResponse{Body: body, Headers: headers, StatusCode: http.StatusNotFound}
+	return problem{Body: body, Headers: headers, StatusCode: http.StatusNotFound}
 }
 
 // VerifyAccountCredentials serves GET /api/v1/accounts/verify_credentials: the viewer's own

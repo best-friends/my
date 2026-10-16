@@ -38,6 +38,11 @@ type Options struct {
 	Graph Graph
 	// Notifications runs the use cases of the viewer's notifications.
 	Notifications Notifications
+	// Statuses posts, edits, and deletes statuses; StatusReader presents them; Interactions
+	// boosts, favourites, bookmarks, and pins them (the statuses operations).
+	Statuses     Statuses
+	StatusReader StatusReader
+	Interactions Interactions
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

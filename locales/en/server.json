@@ -335,6 +335,14 @@
     "defaultMessage": "You block this account. Unblock it first.",
     "description": "API error title for HTTP 409 when the user tries to follow an account that they block."
   },
+  "errors.conflict": {
+    "defaultMessage": "The request conflicts with the current state of the resource.",
+    "description": "API error title for HTTP 409 when no more specific message applies."
+  },
+  "errors.forbidden": {
+    "defaultMessage": "You are not allowed to do this.",
+    "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "This app is not allowed to do this.",
     "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."
@@ -379,13 +387,73 @@
     "defaultMessage": "You cannot do this to your own account.",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
   },
+  "errors.status.already_deleted": {
+    "defaultMessage": "The post created with this Idempotency-Key has been deleted.",
+    "description": "Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated)."
+  },
+  "errors.status.empty_text": {
+    "defaultMessage": "The post has no text.",
+    "description": "Detail of the HTTP 422 API error when a post's text is empty or only spaces."
+  },
+  "errors.status.invalid_language": {
+    "defaultMessage": "The language is not a valid language tag.",
+    "description": "Detail of the HTTP 422 API error when a post's language is not a well-formed BCP 47 tag such as en or ja."
+  },
+  "errors.status.invalid_media_description": {
+    "defaultMessage": "{max, plural, one {An image description must be at most # character.} other {An image description must be at most # characters.}}",
+    "description": "Detail of the HTTP 422 API error when the alternative text of an attached image is too long or invalid. {max} is the maximum number of characters."
+  },
+  "errors.status.invalid_text": {
+    "defaultMessage": "The text contains characters that cannot be posted.",
+    "description": "Detail of the HTTP 422 API error when a post's text or content warning is not valid UTF-8 or contains a NUL character."
+  },
+  "errors.status.media_not_found": {
+    "defaultMessage": "An attached file was not found among your uploads.",
+    "description": "Detail of the HTTP 422 API error when a post attaches a media file that does not exist or that another account uploaded."
+  },
+  "errors.status.media_not_ready": {
+    "defaultMessage": "An attached file is still being processed or could not be processed.",
+    "description": "Detail of the HTTP 422 API error when a post attaches a media file whose processing has not finished or failed."
+  },
+  "errors.status.not_author": {
+    "defaultMessage": "Only the author can change this post.",
+    "description": "Detail of the HTTP 403 API error when a user tries to edit or delete another account's post."
+  },
+  "errors.status.not_boostable": {
+    "defaultMessage": "This post cannot be boosted.",
+    "description": "Detail of the HTTP 422 API error when the visibility of a post does not allow boosting it (followers-only or direct posts)."
+  },
+  "errors.status.not_pinnable": {
+    "defaultMessage": "Only your own posts that are not direct can be pinned.",
+    "description": "Detail of the HTTP 422 API error when a user tries to pin another account's post or a direct post."
+  },
+  "errors.status.pin_limit": {
+    "defaultMessage": "{max, plural, one {You can pin at most # post.} other {You can pin at most # posts.}}",
+    "description": "Detail of the HTTP 422 API error when a user pins more posts than allowed. {max} is the maximum number of pinned posts."
+  },
+  "errors.status.posting_restricted": {
+    "defaultMessage": "Your account may not post right now.",
+    "description": "Detail of the HTTP 403 API error when a moderator restricted the account from posting."
+  },
+  "errors.status.reply_not_found": {
+    "defaultMessage": "The post you are replying to was not found.",
+    "description": "Detail of the HTTP 422 API error when a reply targets a post that does not exist, was deleted, or that the user cannot see."
+  },
+  "errors.status.text_too_long": {
+    "defaultMessage": "{max, plural, one {The text and content warning must be at most # character.} other {The text and content warning must be at most # characters.}}",
+    "description": "Detail of the HTTP 422 API error when a post is longer than the instance allows. {max} is the maximum number of characters of the text and the content warning together."
+  },
+  "errors.status.too_many_media": {
+    "defaultMessage": "{max, plural, one {A post can attach at most # distinct file.} other {A post can attach at most # distinct files.}}",
+    "description": "Detail of the HTTP 422 API error when a post attaches too many media files or the same file twice. {max} is the maximum number of files."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
   },
   "errors.unprocessable": {
-    "defaultMessage": "The request cannot be carried out.",
-    "description": "API error title for HTTP 422 when the request is well-formed but cannot be carried out; the detail says why."
+    "defaultMessage": "The request cannot be processed.",
+    "description": "API error title for HTTP 422; the detail says what is wrong with the request."
   },
   "health.unavailable": {
     "defaultMessage": "The server is not ready to accept requests.",

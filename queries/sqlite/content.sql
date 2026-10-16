@@ -41,6 +41,9 @@ ON CONFLICT (name_normalized) DO NOTHING;
 -- name: GetTagByName :one
 SELECT id, name, name_normalized, created_at FROM tags WHERE name_normalized = ?;
 
+-- name: GetTag :one
+SELECT id, name, name_normalized, created_at FROM tags WHERE id = ?;
+
 -- Projections, written by the content module's projectors.
 
 -- name: GetStatusHead :one
