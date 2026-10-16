@@ -195,6 +195,30 @@ func TestRuntimeConfigIsEscaped(t *testing.T) {
 	}
 }
 
+// TestShellAPIOrigin checks that the shell's client calls the API at the origin the server is served
+// at: the web origin when it is on the server's host, https://host otherwise.
+func TestShellAPIOrigin(t *testing.T) {
+	for _, c := range []struct{ host, webOrigin, want string }{
+		{"social.example", "", "https://social.example"},
+		{"social.example", "https://social.example", "https://social.example"},
+		{"localhost:8080", "http://localhost:8080", "http://localhost:8080"},
+		{"localhost:8080", "http://LOCALHOST:8080", "http://localhost:8080"},
+		// A client served from elsewhere says nothing about the server's scheme.
+		{"social.example", "http://localhost:5173", "https://social.example"},
+		{"localhost:8080", "http://localhost:5173", "https://localhost:8080"},
+	} {
+		_, mux := newHandler(t, web.Options{Host: c.host, WebOrigin: c.webOrigin})
+		if body := get(mux, "/", nil).Body.String(); !strings.Contains(body, `"apiOrigin":"`+c.want+`"`) {
+			t.Errorf("host %q, web origin %q: shell lacks apiOrigin %q:\n%s", c.host, c.webOrigin, c.want, body)
+		}
+	}
+	for _, bad := range []string{"localhost:8080", "ftp://localhost:8080", "http://"} {
+		if _, err := web.New(web.Options{Host: "localhost:8080", Build: fakeBuild(), WebOrigin: bad}); err == nil {
+			t.Errorf("New accepted the web origin %q", bad)
+		}
+	}
+}
+
 func TestShellLanguageAndDirection(t *testing.T) {
 	current := "ar"
 	_, mux := newHandler(t, web.Options{DefaultLocale: func(context.Context) string { return current }})

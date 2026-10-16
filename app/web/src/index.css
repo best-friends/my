@@ -8,6 +8,11 @@
 @source not "../../ui/src/**/*.stories.tsx";
 
 @layer base {
+  /* The rule React Aria's usePress would inject as an inline <style>, which the shell's CSP blocks
+     (src/lib/csp.ts): pressable elements react to taps without the double-tap-to-zoom delay. */
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
   /* Below md the navigation is a tab bar fixed to the bottom edge: scroll focused elements clear of it
      (web-client.md Y4). Its height is the min-h-16 of its links plus the safe-area inset. */
   :root {

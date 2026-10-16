@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute } from "@tanstack/react-router";
 import { AccountSection } from "../features/session";
+import { SettingsMenu } from "../features/settings";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** The settings: for now, the signed-in account and signing out. */
-export const Route = createFileRoute("/settings")({
+/** The settings: the links to their pages, and the signed-in account with signing out. */
+export const Route = createFileRoute("/settings/")({
   component: SettingsPage,
 });
 
@@ -14,6 +15,7 @@ function SettingsPage() {
   return (
     <>
       <PageHeading>{t("client:settings.title")}</PageHeading>
+      <SettingsMenu />
       <AccountSection />
     </>
   );

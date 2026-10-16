@@ -9,6 +9,7 @@ import {
   apiBase,
   eventStreamResponse,
   oauthPaths,
+  preferencesFixture,
   problem,
   resumableSession,
   statusPage,
@@ -173,6 +174,7 @@ describe("the event stream", () => {
       http.get(`${apiBase}/timelines/home`, () => HttpResponse.json(statusPage([timelineStatusFixture]))),
       http.get(`${apiBase}/accounts/verify_credentials`, () => HttpResponse.json(viewerFixture)),
       http.get(`${apiBase}/notifications/marker`, () => HttpResponse.json({ unread_count: 0 })),
+      http.get(`${apiBase}/preferences`, () => HttpResponse.json(preferencesFixture)),
       http.get(`${apiBase}/streaming`, ({ request }) => {
         const token = request.headers.get("Authorization");
         tokens.push(token ?? "");

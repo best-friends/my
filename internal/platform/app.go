@@ -410,7 +410,7 @@ func (a *App) setUpWeb(opts AppOptions) error {
 	}
 	h, err := web.New(web.Options{
 		Build: opts.WebBuild, DevViteOrigin: opts.DevViteOrigin,
-		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain,
+		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain, WebOrigin: a.Config.WebOrigin,
 		// The instance is named after its host until the instance settings hold a name.
 		InstanceName: a.Config.Host,
 		// The HTML is the same for every visitor, so only the instance default applies.

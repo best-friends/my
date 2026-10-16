@@ -210,8 +210,152 @@ export interface MessageArgs {
   "client:session.sign_out.failed": {};
   /** You are not signed in. */
   "client:session.signed_out": {};
+  /** Back to settings */
+  "client:settings.back": {};
+  /** You have not blocked anyone */
+  "client:settings.blocks.empty": {};
+  /** Accounts that cannot follow you or see your posts */
+  "client:settings.blocks.summary": {};
+  /** Blocked accounts */
+  "client:settings.blocks.title": {};
+  /** Unblock */
+  "client:settings.blocks.unblock": {};
+  /** You unblocked {name}. */
+  "client:settings.blocks.unblocked": { name: string };
+  /** You can still choose for each post. */
+  "client:settings.default_visibility.description": {};
+  /** Who sees your posts by default */
+  "client:settings.default_visibility.label": {};
+  /** Accept */
+  "client:settings.follow_requests.accept": {};
+  /** {name} now follows you. */
+  "client:settings.follow_requests.accepted": { name: string };
+  /** No follow requests */
+  "client:settings.follow_requests.empty": {};
+  /** Reject */
+  "client:settings.follow_requests.reject": {};
+  /** You rejected the follow request of {name}. */
+  "client:settings.follow_requests.rejected": { name: string };
+  /** People who asked to follow you */
+  "client:settings.follow_requests.summary": {};
+  /** Follow requests */
+  "client:settings.follow_requests.title": {};
+  /** {action}: {name} */
+  "client:settings.list.action": { action: string; name: string };
+  /** Show more */
+  "client:settings.list.more": {};
+  /** The app switches to it at once. */
+  "client:settings.locale.description": {};
+  /** Display language */
+  "client:settings.locale.label": {};
+  /** Settings pages */
+  "client:settings.menu.title": {};
+  /** You have not muted anyone */
+  "client:settings.mutes.empty": {};
+  /** Notifications hidden too */
+  "client:settings.mutes.notifications": {};
+  /** Accounts whose posts you do not see */
+  "client:settings.mutes.summary": {};
+  /** Muted accounts */
+  "client:settings.mutes.title": {};
+  /** Unmute */
+  "client:settings.mutes.unmute": {};
+  /** You unmuted {name}. */
+  "client:settings.mutes.unmuted": { name: string };
+  /** Until {date} */
+  "client:settings.mutes.until": { date: string };
+  /** Changes are saved as soon as you make them. */
+  "client:settings.preferences.autosave": {};
+  /** Language, time zone, who sees your posts by default, and the languages of your timelines */
+  "client:settings.preferences.summary": {};
+  /** Preferences */
+  "client:settings.preferences.title": {};
+  /** Avatar */
+  "client:settings.profile.avatar": {};
+  /** This is a bot */
+  "client:settings.profile.bot": {};
+  /** The account posts automatically, and others see that it may not be watched. */
+  "client:settings.profile.bot.description": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:settings.profile.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:settings.profile.characters_over": { count: number };
+  /** Display name */
+  "client:settings.profile.display_name": {};
+  /** Up to {max} characters. Leave it empty to show your username. */
+  "client:settings.profile.display_name.description": { max: string };
+  /** Field {number} */
+  "client:settings.profile.field": { number: string };
+  /** Label */
+  "client:settings.profile.field.name": {};
+  /** Give this field a label. */
+  "client:settings.profile.field.name_required": {};
+  /** Remove field {number} */
+  "client:settings.profile.field.remove": { number: string };
+  /** Content */
+  "client:settings.profile.field.value": {};
+  /** Fields */
+  "client:settings.profile.fields": {};
+  /** Add a field */
+  "client:settings.profile.fields.add": {};
+  /** Up to {max} pairs of a label and content, shown on your profile. Links in the content work. */
+  "client:settings.profile.fields.description": { max: string };
+  /** Header image */
+  "client:settings.profile.header": {};
+  /** Choose an image */
+  "client:settings.profile.image.choose": {};
+  /** The server could not process this image. Try another one. */
+  "client:settings.profile.image.failed": {};
+  /** Remove image */
+  "client:settings.profile.image.remove": {};
+  /** Approve followers */
+  "client:settings.profile.locked": {};
+  /** People must ask to follow you, and you choose whom to accept. */
+  "client:settings.profile.locked.description": {};
+  /** Bio */
+  "client:settings.profile.note": {};
+  /** Save profile */
+  "client:settings.profile.save": {};
+  /** Your profile has been saved. */
+  "client:settings.profile.saved": {};
+  /** Your name, bio, pictures and fields, and who may follow you */
+  "client:settings.profile.summary": {};
+  /** Profile */
+  "client:settings.profile.title": {};
+  /** Use at most {max} characters. */
+  "client:settings.profile.too_long": { max: string };
+  /** Saved */
+  "client:settings.saved": {};
+  /** Dates and times are shown in this time zone. */
+  "client:settings.time_zone.description": {};
+  /** Time zone */
+  "client:settings.time_zone.label": {};
+  /** Timelines show posts in the languages you check. Check none to see every language. */
+  "client:settings.timeline_languages.description": {};
+  /** Languages of your timelines */
+  "client:settings.timeline_languages.label": {};
   /** Settings */
   "client:settings.title": {};
+  /** Mentioned people */
+  "client:settings.visibility.direct": {};
+  /** Only the people you mention */
+  "client:settings.visibility.direct.description": {};
+  /** This server */
+  "client:settings.visibility.local": {};
+  /** People signed in to this server, and your followers */
+  "client:settings.visibility.local.description": {};
+  /** Followers */
+  "client:settings.visibility.private": {};
+  /** Your followers and the people you mention */
+  "client:settings.visibility.private.description": {};
+  /** Public */
+  "client:settings.visibility.public": {};
+  /** Everyone, and shown on public timelines */
+  "client:settings.visibility.public.description": {};
+  /** Unlisted */
+  "client:settings.visibility.unlisted": {};
+  /** Everyone, but kept off public timelines */
+  "client:settings.visibility.unlisted.description": {};
   /** Accounts here end with @{domain}. */
   "client:shell.about.domain": { domain: string };
   /** About this server */

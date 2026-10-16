@@ -90,7 +90,7 @@ MY_HOST=localhost:8080 MY_DATABASE_URL=my.db MY_KEK="$(openssl rand -base64 32)"
 
 - `-dev-vite-origin` を付けると、外枠はキャッシュされず（`no-store`）、CSP はその origin のスクリプト・WebSocket・Vite が差し込む `<style>` を許す開発用のものになります。
   本番の CSP（nonce なしの `script-src 'self'`）での動作は、`make build` したバイナリで確認します。
-- ランタイム設定の `apiOrigin` は開発時だけ `http://{host}` になります。
+- ランタイム設定の `apiOrigin` は、開発時と、`MY_WEB_ORIGIN` を `host` の `http` の origin（`http://localhost:8080` など）にしたときだけ `http://{host}` になります。
 
 ## SQL とデータベースのテスト
 
