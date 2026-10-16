@@ -1,0 +1,54 @@
+# golangci-lint v2 configuration. The golangci-lint version is pinned in .tool-versions.
+version: "2"
+
+run:
+  modules-download-mode: readonly
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - depguard
+    - errorlint
+    - gocritic
+    - gosec
+    - misspell
+    - nolintlint
+    - revive
+    - unconvert
+  settings:
+    depguard:
+      # Layer boundaries (e.g. core must not import cloud SDKs or drivers) are added in M1,
+      # once the directory layout is decided (ADR-0010).
+      rules:
+        main:
+          list-mode: lax
+          files:
+            - $all
+          deny:
+            - pkg: github.com/best-friends/my/spikes
+              desc: spike code is throwaway and must never be imported by product code
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - std-error-handling
+    paths:
+      # Throwaway spike code lives in its own modules and is never linted with the product.
+      - ^spikes/
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/best-friends/my
+  exclusions:
+    generated: lax
+    paths:
+      - ^spikes/
