@@ -331,6 +331,10 @@
     "defaultMessage": "The request is invalid.",
     "description": "API error message for HTTP 400 when no more specific message applies."
   },
+  "errors.blocking": {
+    "defaultMessage": "You block this account. Unblock it first.",
+    "description": "API error title for HTTP 409 when the user tries to follow an account that they block."
+  },
   "errors.conflict": {
     "defaultMessage": "The request conflicts with the current state of the resource.",
     "description": "API error title for HTTP 409 when no more specific message applies."
@@ -411,9 +415,17 @@
     "defaultMessage": "{seconds, plural, one {Try again in # second.} other {Try again in # seconds.}}",
     "description": "Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds."
   },
+  "errors.remote_account": {
+    "defaultMessage": "This is not available for accounts on other servers.",
+    "description": "Detail of the HTTP 422 API error when a follow or block targets an account on another server, which the operation does not support."
+  },
   "errors.request_too_large": {
     "defaultMessage": "The request is too large.",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
+  },
+  "errors.self_relationship": {
+    "defaultMessage": "You cannot do this to your own account.",
+    "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
   },
   "errors.status.already_deleted": {
     "defaultMessage": "The post created with this Idempotency-Key has been deleted.",

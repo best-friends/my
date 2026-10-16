@@ -331,6 +331,10 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş īƞṽȧȧŀīḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.blocking": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƀŀǿǿƈķ ŧħīş ȧȧƈƈǿǿŭŭƞŧ. Ŭƞƀŀǿǿƈķ īŧ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.conflict": {
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈǿǿƞƒŀīƈŧş ẇīŧħ ŧħḗḗ ƈŭŭřřḗḗƞŧ şŧȧȧŧḗḗ ǿǿƒ ŧħḗḗ řḗḗşǿǿŭŭřƈḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -411,8 +415,16 @@
     "defaultMessage": "[{seconds,plural,one{Ŧřẏ ȧȧɠȧȧīƞ īƞ # şḗḗƈǿǿƞḓ.} other{Ŧřẏ ȧȧɠȧȧīƞ īƞ # şḗḗƈǿǿƞḓş.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.remote_account": {
+    "defaultMessage": "[Ŧħīş īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ ƒǿǿř ȧȧƈƈǿǿŭŭƞŧş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.request_too_large": {
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.self_relationship": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ḓǿǿ ŧħīş ŧǿǿ ẏǿǿŭŭř ǿǿẇƞ ȧȧƈƈǿǿŭŭƞŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.status.already_deleted": {

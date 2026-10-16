@@ -43,7 +43,7 @@ func TestClientAPIMedia(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CreateAdmin(%s): %v", name, err)
 		}
-		users[name] = issueToken(t, app, r.User.ID, "").AccessToken
+		users[name] = issueTokens(t, app, r.User.ID, "").AccessToken
 	}
 	send := func(method, path, token, contentType string, body []byte) (*http.Response, clientapi.MediaAttachment) {
 		t.Helper()

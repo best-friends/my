@@ -22,9 +22,9 @@ import (
 	"github.com/best-friends/my/internal/platform"
 )
 
-// issueToken issues tokens of the web client with scope ("" for all of the client's) to a
-// user through the authorization code flow.
-func issueToken(t *testing.T, app *platform.App, userID, scope string) identity.IssuedTokens {
+// issueTokens runs the web client's authorization code flow for a user and returns the tokens
+// with scope ("" for every scope of the client).
+func issueTokens(t *testing.T, app *platform.App, userID, scope string) identity.IssuedTokens {
 	t.Helper()
 	ctx := t.Context()
 	verifier := strings.Repeat("v", 43)
@@ -71,7 +71,10 @@ func TestClientAPIAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateAdmin: %v", err)
 	}
-	issueFor := func(userID, scope string) identity.IssuedTokens { t.Helper(); return issueToken(t, app, userID, scope) }
+	issueFor := func(userID, scope string) identity.IssuedTokens {
+		t.Helper()
+		return issueTokens(t, app, userID, scope)
+	}
 	issue := func(scope string) identity.IssuedTokens { t.Helper(); return issueFor(alice.User.ID, scope) }
 	get := func(header map[string]string) (*http.Response, clientapi.Problem) {
 		t.Helper()
