@@ -438,7 +438,7 @@ CREATE INDEX block_edges_blocked_account_id ON block_edges (blocked_account_id);
 CREATE INDEX block_edges_blocker_block_id ON block_edges (blocker_account_id, block_id);
 
 -- Current value: an account's mute of another. A mute whose expires_at has passed no longer
--- applies; readers filter it out.
+-- applies; readers filter it out, and the hourly cleanup deletes it.
 CREATE TABLE mutes (
   account_id text COLLATE "C" NOT NULL,
   target_account_id text COLLATE "C" NOT NULL,
@@ -449,6 +449,8 @@ CREATE TABLE mutes (
   CHECK (expires_at IS NULL OR expires_at > created_at)
 );
 CREATE INDEX mutes_account_created_at_target ON mutes (account_id, created_at, target_account_id);
+-- The periodic cleanup deletes the expired mutes (FR-803).
+CREATE INDEX mutes_expires_at ON mutes (expires_at);
 
 -- ---------------------------------------------------------------------------------------------
 -- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).

@@ -60,6 +60,20 @@ ON CONFLICT (account_id, target_account_id) DO UPDATE SET
 -- name: DeleteMute :execrows
 DELETE FROM mutes WHERE account_id = $1 AND target_account_id = $2;
 
+-- DeleteExpiredMutes deletes at most batch_limit mutes that have expired at now, the earliest
+-- expired first, and returns them. The outer condition is checked again on each row it locks,
+-- so that a mute renewed meanwhile stays.
+-- name: DeleteExpiredMutes :many
+DELETE FROM mutes
+WHERE expires_at <= sqlc.arg(now)::timestamptz
+  AND (account_id, target_account_id) IN (
+    SELECT account_id, target_account_id FROM mutes
+    WHERE expires_at <= sqlc.arg(now)::timestamptz
+    ORDER BY expires_at
+    LIMIT sqlc.arg(batch_limit)::integer
+  )
+RETURNING account_id, target_account_id, hide_notifications, expires_at, created_at;
+
 -- GetActiveMute returns the mute unless it has expired at now.
 -- name: GetActiveMute :one
 SELECT account_id, target_account_id, hide_notifications, expires_at, created_at

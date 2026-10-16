@@ -53,6 +53,8 @@ type Repository interface {
 	UpsertMute(ctx context.Context, tx uow.Tx, m graph.Mute) error
 	// DeleteMute deletes accountID's mute of targetAccountID and reports whether there was one.
 	DeleteMute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string) (bool, error)
+	// DeleteExpiredMutes deletes at most limit mutes that have expired at now and returns them.
+	DeleteExpiredMutes(ctx context.Context, tx uow.Tx, now time.Time, limit int) ([]graph.Mute, error)
 	// Mute is FindMute inside tx.
 	Mute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string, now time.Time) (graph.Mute, error)
 

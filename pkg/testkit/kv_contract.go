@@ -20,8 +20,8 @@ type KeyValueStoreFactory func(t *testing.T, clock *Clock) kernel.KeyValueStore
 // copied, namespaces are separate, Set replaces the value and the expiry, Delete is idempotent,
 // entries expire after their TTL and never without one, IncrBy starts missing and expired
 // counters and keeps the expiry of live ones, concurrent IncrBy calls lose no increment,
-// DeleteExpired removes only expired entries, and a kernel.RateLimiter on the store enforces a
-// limit.
+// DeleteExpired removes only expired entries and at most its limit per call, and a
+// kernel.RateLimiter on the store enforces a limit.
 func KeyValueStoreContract(t *testing.T, newStore KeyValueStoreFactory) {
 	t.Helper()
 	cases := []struct {
@@ -181,18 +181,35 @@ func kvIncrementsConcurrently(t *testing.T, s kernel.KeyValueStore, _ *Clock) {
 func kvDeletesExpired(t *testing.T, s kernel.KeyValueStore, clock *Clock) {
 	kvSet(t, s, "ns", "a", "v", time.Second)
 	kvIncr(t, s, "other", "b", 1, time.Second)
+	kvSet(t, s, "ns", "c", "v", time.Second)
 	kvSet(t, s, "ns", "live", "v", time.Hour)
 	kvSet(t, s, "ns", "forever", "v", 0)
 	clock.Advance(time.Minute)
-	n, err := s.DeleteExpired(t.Context())
+	if n, err := s.DeleteExpired(t.Context(), 0); err != nil || n != 0 {
+		t.Fatalf("DeleteExpired(0) = %d, %v; want 0", n, err)
+	}
+	// A batch removes at most its limit, and the next batch continues.
+	n, err := s.DeleteExpired(t.Context(), 2)
 	if err != nil || n != 2 {
-		t.Fatalf("DeleteExpired = %d, %v; want 2", n, err)
+		t.Fatalf("DeleteExpired(2) = %d, %v; want 2", n, err)
+	}
+	n, err = s.DeleteExpired(t.Context(), 2)
+	if err != nil || n != 1 {
+		t.Fatalf("DeleteExpired(2) again = %d, %v; want the last 1", n, err)
 	}
 	kvWant(t, s, "ns", "live", "v")
 	kvWant(t, s, "ns", "forever", "v")
-	if n, err := s.DeleteExpired(t.Context()); err != nil || n != 0 {
-		t.Fatalf("DeleteExpired again = %d, %v; want 0", n, err)
+	if n, err := s.DeleteExpired(t.Context(), 100); err != nil || n != 0 {
+		t.Fatalf("DeleteExpired with none expired = %d, %v; want 0", n, err)
 	}
+	// An expired counter that IncrBy started again is live and stays.
+	kvIncr(t, s, "other", "b", 5, time.Second)
+	clock.Advance(time.Minute)
+	kvIncr(t, s, "other", "b", 7, time.Hour)
+	if n, err := s.DeleteExpired(t.Context(), 100); err != nil || n != 0 {
+		t.Fatalf("DeleteExpired after restarting a counter = %d, %v; want 0", n, err)
+	}
+	kvWant(t, s, "other", "b", "7")
 }
 
 func kvBacksARateLimiter(t *testing.T, s kernel.KeyValueStore, clock *Clock) {
