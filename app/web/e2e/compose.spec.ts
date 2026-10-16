@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The new-post form in every width × locale project (ADR-0027): a sheet below 1280 px, a side panel from
 // there (xl). `vite preview` has no API, so the spec answers the client API and the token refresh itself
-// (Playwright's request routing), as a signed-in session; the client calls the runtime config's apiOrigin,
-// which is another origin than the preview's, so the answers carry CORS headers. Names come from the
+// (Playwright's request routing), as a signed-in session. The client calls the runtime config's apiOrigin,
+// the origin of the page (fixtures.ts); the answers carry CORS headers all the same, as a separate API
+// origin needs them (ADR-0016). Names come from the
 // project's catalog, so the spec finds the same elements in every locale.
 import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
-
-/** The API origin of the runtime config in index.html. */
-const apiOrigin = "http://127.0.0.1:4173";
 
 type Catalog = Record<string, { defaultMessage: string }>;
 
@@ -41,6 +39,7 @@ type Posted = { body: Record<string, unknown>; idempotencyKey: string | undefine
 async function serveApi(page: Page): Promise<Posted[]> {
   const posted: Posted[] = [];
   const pageOrigin = new URL(test.info().project.use.baseURL ?? page.url()).origin;
+  const apiOrigin = pageOrigin;
   const cors = {
     "Access-Control-Allow-Origin": pageOrigin,
     "Access-Control-Allow-Credentials": "true",
@@ -52,6 +51,8 @@ async function serveApi(page: Page): Promise<Posted[]> {
   await page.route(`${apiOrigin}/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
+    // The page and its assets come from the same origin.
+    if (!path.startsWith("/api/") && !path.startsWith("/oauth/")) return route.fallback();
     if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     if (path === "/oauth/token/refresh") return json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow" });
     if (path === "/api/v1/accounts/verify_credentials") return json(route, { ...account, discoverable: true, indexable: true, source: { note: "", fields: [] } });
