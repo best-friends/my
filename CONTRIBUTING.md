@@ -12,6 +12,15 @@ asdf install   # or: mise install
 make check
 ```
 
+`make check` はネットワーク不要のチェック（Markdown lint、ADR 索引、Go の `go vet` / golangci-lint / テスト /
+`CGO_ENABLED=0` ビルド / 依存ライセンス検査）をすべて実行します。初回のみ Go モジュールとツールのダウンロードが必要です。
+
+- Go ツール（govulncheck, go-licenses）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
+- 脆弱性検査はネットワークが必要なため `make check` には含めず、`make go-vuln` で実行します（CI では毎回実行）。
+- 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`）に限ります。
+  増やす場合は PR で理由を説明してください。
+- `spikes/` 配下は独立したモジュールで、ルートの lint・テスト・ビルド対象外です。
+
 ## 進め方
 
 1. GitHub Issue を選ぶ（`agent:ready` は受け入れ基準が明確で着手可能なもの）。
