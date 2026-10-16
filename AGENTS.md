@@ -9,12 +9,15 @@ An ActivityPub-compatible microblog server written in Go, designed to run at nea
 or a self-hosted VM (Docker / microk8s), with swappable RDB / queue / storage adapters, its own client API (no Mastodon client API compatibility),
 a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OSS.
 
-## Current phase: M0 — Design & Harness
+## Current phase: M1 — Walking Skeleton
 
-- **No production code yet.** The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md), Accepted); the web client and Tauri UI are TypeScript with Bun.
-  Cloudflare Workers is **not** a target. Do not scaffold application code or pick libraries until the relevant ADR is *Accepted*
+- Goal: one process that starts, answers WebFinger and Actor requests, persists to SQLite, and threads every layer thinly,
+  so that Mastodon can find and display an account ([vision](docs/requirements/00-vision.md)).
+- The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md)); the web client and Tauri UI are TypeScript with Bun.
+  Cloudflare Workers is **not** a target.
+- The Go package layout follows [overview §6](docs/architecture/overview.md#6-リポジトリ構成); `cmd/my` is the single binary.
+  Build only what an issue asks for, and pick a library only when an Accepted ADR covers it
   (spikes may try libraries on their own `spike/*` branch).
-- Work in this phase is: refining requirements, drafting/refining ADRs, spikes, and harness/tooling.
 - Spike reports go in the spike issue as a comment and spike code stays on an unmerged `spike/<issue>-<slug>` branch;
   only the resulting ADR / doc updates are merged ([ADR-0022](docs/adr/0022-spike-outputs-outside-repository.md)).
 
@@ -64,10 +67,16 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
   (branches are deleted on merge). Before merge, link the PR instead.
 - Do not commit secrets, `.env` files, or credentials. Do not run destructive commands against remote resources.
 
-## Design rules that will apply once implementation starts
+## Design rules
 
 These come from Accepted ADRs and are binding.
 
+- Dependency direction ([ADR-0002](docs/adr/0002-modular-monolith-hexagonal.md)) is enforced by depguard rules in `.golangci.yml` (part of `make check`):
+  `internal/domain/<module>` imports only the standard library and its own module's domain;
+  `internal/app/<module>` adds its own module's domain and other modules' `internal/app` packages (the only cross-module path);
+  `internal/interface/*` and `internal/adapter/*` never import each other or `internal/platform`;
+  `internal/platform` and `cmd/` assemble everything, and nothing imports `cmd/`.
+  Never weaken a rule to make an import pass; restructure the code instead.
 - Core (domain + application) must not import cloud SDKs or drivers; those live in adapters and `cmd/` entrypoints.
 - Keep the server buildable with `CGO_ENABLED=0`; a cgo dependency needs an ADR.
 - Every external resource goes through a port; every adapter must pass that port's contract test suite.
@@ -90,7 +99,8 @@ These come from Accepted ADRs and are binding.
 | --- | --- |
 | `make check` | Every offline check CI runs: docs lint, ADR index check, and `make go-check` |
 | `make go-check` | `go mod tidy` check, `go vet`, `golangci-lint`, `go test`, `CGO_ENABLED=0 go build`, license check |
-| `make go-lint` / `go-test` / `go-build` | Run one Go step (`go-lint` uses `.golangci.yml`) |
+| `make go-lint` / `go-test` / `go-build` | Run one Go step (`go-lint` uses `.golangci.yml`, including the depguard architecture rules) |
+| `make build [VERSION=...]` | Build `bin/my` with the version stamped in (`git describe` by default) |
 | `make go-licenses` | Fail on Go dependency licenses incompatible with AGPL-3.0 (allowlist in `Makefile`) |
 | `make go-vuln` | govulncheck (needs network; run in CI, not part of `make check`) |
 | `make lint-shell` | shellcheck on `scripts/*.sh` |
@@ -100,4 +110,4 @@ These come from Accepted ADRs and are binding.
 
 Toolchain versions (Go, golangci-lint, Bun, shellcheck) are pinned in `.tool-versions` (asdf / mise).
 Go tools (govulncheck, go-licenses) are pinned with `tool` directives in `tools/go.mod` and run via
-`go tool -modfile=tools/go.mod <tool>`. Go steps skip with a message while the root module has no packages.
+`go tool -modfile=tools/go.mod <tool>`.
