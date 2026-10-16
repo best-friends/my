@@ -1,0 +1,34 @@
+{
+  "config.errors": {
+    "defaultMessage": "‮{count,plural,one{Ⅎonup # ɔouɟıƃnɹɐʇıou ǝɹɹoɹ.} other{Ⅎonup # ɔouɟıƃnɹɐʇıou ǝɹɹoɹs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "config.invalid": {
+    "defaultMessage": "‮⊥ɥǝ sǝʇʇıuƃ {name} ɥɐs ɐu ıuʌɐʅıp ʌɐʅnǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "config.missing": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnıɹǝp sǝʇʇıuƃ {name} ıs uoʇ sǝʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.bad_request": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ıuʌɐʅıp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.internal": {
+    "defaultMessage": "‮∀u nuǝxdǝɔʇǝp ǝɹɹoɹ oɔɔnɹɹǝp. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.method_not_allowed": {
+    "defaultMessage": "‮⊥ɥǝ {method} ɯǝʇɥop ıs uoʇ ɐʅʅoʍǝp ɟoɹ ʇɥıs ɹǝsonɹɔǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.not_found": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇǝp ɹǝsonɹɔǝ ʍɐs uoʇ ɟonup.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "health.unavailable": {
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ ıs uoʇ ɹǝɐpʎ ʇo ɐɔɔǝdʇ ɹǝbnǝsʇs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  }
+}

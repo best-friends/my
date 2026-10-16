@@ -1,0 +1,34 @@
+{
+  "config.errors": {
+    "defaultMessage": "[{count,plural,one{Ƒǿǿŭŭƞḓ # ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ḗḗřřǿǿř.} other{Ƒǿǿŭŭƞḓ # ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ḗḗřřǿǿřş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "config.invalid": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗŧŧīƞɠ {name} ħȧȧş ȧȧƞ īƞṽȧȧŀīḓ ṽȧȧŀŭŭḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "config.missing": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭīřḗḗḓ şḗḗŧŧīƞɠ {name} īş ƞǿǿŧ şḗḗŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.bad_request": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş īƞṽȧȧŀīḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.internal": {
+    "defaultMessage": "[Ȧƞ ŭŭƞḗḗẋƥḗḗƈŧḗḗḓ ḗḗřřǿǿř ǿǿƈƈŭŭřřḗḗḓ. Ƥŀḗḗȧȧşḗḗ ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.method_not_allowed": {
+    "defaultMessage": "[Ŧħḗḗ {method} ḿḗḗŧħǿǿḓ īş ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ƒǿǿř ŧħīş řḗḗşǿǿŭŭřƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.not_found": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧḗḗḓ řḗḗşǿǿŭŭřƈḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "health.unavailable": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř īş ƞǿǿŧ řḗḗȧȧḓẏ ŧǿǿ ȧȧƈƈḗḗƥŧ řḗḗɋŭŭḗḗşŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  }
+}
