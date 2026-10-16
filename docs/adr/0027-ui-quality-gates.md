@@ -1,6 +1,6 @@
 # ADR-0027: UI のアクセシビリティ・レスポンシブ・見た目の品質ゲート
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #87
@@ -11,7 +11,7 @@ Web クライアントは WCAG 2.2 AA を目標とする（NFR-A11Y-1）。RTL �
 自動検査（axe）で見つかる問題は件数で約 57% にとどまる（Deque の調査）。自動化の層を重ね、残りは手動の確認で補う必要がある。
 ADR-0015 は E2E を `en` / `ja` / `en-XA` / `ar-XB` で実行すると定めているが、部品単位の検査と画面幅の扱いを定めていない。
 
-## Decision（推奨案）
+## Decision
 
 ### 検査の層
 

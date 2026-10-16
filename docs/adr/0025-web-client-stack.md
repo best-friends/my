@@ -1,6 +1,6 @@
 # ADR-0025: Web クライアントの技術スタック
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #85
@@ -28,7 +28,7 @@ React は、ネット上のコードや一般的な知識に古い・誤った�
 - サーバー状態: TanStack Query / React 19 の `use` + Suspense だけ / SWR
 - テストランナー: Vitest / `bun test`
 
-## Decision（推奨案）
+## Decision
 
 | 領域 | 採用 |
 | --- | --- |

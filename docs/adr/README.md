@@ -36,10 +36,10 @@
 | [0022](0022-spike-outputs-outside-repository.md) | 調査（spike）の報告と試作コードはリポジトリに置かない | Accepted |
 | [0023](0023-declarative-schema-management.md) | DB スキーマは宣言的に管理し、Atlas（Community Edition）で適用する | Accepted |
 | [0024](0024-boy-scout-rule.md) | ボーイスカウトルールを採用し、担当外の壊れた箇所も放置しない | Accepted |
-| [0025](0025-web-client-stack.md) | Web クライアントの技術スタック | Proposed |
-| [0026](0026-client-workspace-and-component-architecture.md) | クライアントのワークスペース構成と、ロジックと UI の責務分離 | Proposed |
-| [0027](0027-ui-quality-gates.md) | UI のアクセシビリティ・レスポンシブ・見た目の品質ゲート | Proposed |
-| [0028](0028-html-shell-link-previews-and-pwa.md) | Go が HTML の外枠を返し、リンクプレビュー（OGP / X Card）と PWA を両立する | Proposed |
-| [0029](0029-api-code-generation.md) | クライアント API のコード生成 | Proposed |
-| [0030](0030-web-client-token-handling.md) | Web クライアントのトークンの扱いとログイン画面 | Proposed |
+| [0025](0025-web-client-stack.md) | Web クライアントの技術スタック | Accepted |
+| [0026](0026-client-workspace-and-component-architecture.md) | クライアントのワークスペース構成と、ロジックと UI の責務分離 | Accepted |
+| [0027](0027-ui-quality-gates.md) | UI のアクセシビリティ・レスポンシブ・見た目の品質ゲート | Accepted |
+| [0028](0028-html-shell-link-previews-and-pwa.md) | Go が HTML の外枠を返し、リンクプレビュー（OGP / X Card）と PWA を両立する | Accepted |
+| [0029](0029-api-code-generation.md) | クライアント API のコード生成 | Accepted |
+| [0030](0030-web-client-token-handling.md) | Web クライアントのトークンの扱いとログイン画面 | Accepted |
 <!-- adr-index:end -->

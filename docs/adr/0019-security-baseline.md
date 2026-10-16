@@ -124,11 +124,10 @@ ADR-0016（クライアント API の様式）・ADR-0017（公開範囲 `local`
 
 - クライアント API（`/api/v1/...`）は **`Authorization: Bearer` ヘッダでだけ認証** し、クッキーでは認証しない。ブラウザがクレデンシャルを自動送信しないので、API は CSRF の対象にならない。
   CORS は自前 Web クライアントのオリジン（設定値）だけを `Access-Control-Allow-Origin` に返し、`Access-Control-Allow-Credentials` は付けない。
-- クッキーを使うのはログイン・認可同意・アカウント設定などサーバーが返すフォームだけ。これらには Go 標準の
+- クッキーを使うのは、ログイン・認可同意・アカウント設定などサーバーが返すフォームと、[ADR-0030](0030-web-client-token-handling.md) のトークン更新（`POST /oauth/token/refresh`）だけ。これらには Go 標準の
   [`net/http.CrossOriginProtection`](https://pkg.go.dev/net/http#CrossOriginProtection)（Go 1.25 以降。`Sec-Fetch-Site` / `Origin` で非安全メソッドのクロスオリジン要求を拒否）を適用し、
   さらに `SameSite=Lax` で二重化する。Fetch Metadata を送らない古いブラウザ向けにはシンクロナイザートークンを併用する（出典: [OWASP CSRF Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)）。
-- Web クライアントでのトークン保管: アクセストークンはメモリ、リフレッシュトークンは IndexedDB に置く（PWA の再起動後もログインを保つため）。
-  XSS で盗まれるリスクは §2 のサニタイズと §9 の CSP で抑える。BFF（サーバーがトークンを持ち、ブラウザにはクッキーだけ渡す）方式は Tauri との共通化を崩すので採らない。
+- Web クライアントでのトークン保管は [ADR-0030](0030-web-client-token-handling.md) に従う（アクセストークンはメモリ、リフレッシュトークンは HttpOnly の `__Host-` Cookie）。
   Tauri ではリフレッシュトークンを OS のセキュアストレージ（Keychain / Keystore）に置く（要検証: #31 の spike で確認）。
 
 ### 5. レート制限（NFR-SEC-5）

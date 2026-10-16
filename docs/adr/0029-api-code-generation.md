@@ -1,6 +1,6 @@
 # ADR-0029: クライアント API のコード生成
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #89
@@ -14,7 +14,7 @@
 - Go: ogen（v1.24）/ oapi-codegen（v2.8、strict server）
 - TS: openapi-typescript + openapi-fetch（+ openapi-react-query）/ `@hey-api/openapi-ts` / orval
 
-## Decision（推奨案）
+## Decision
 
 - **Go: oapi-codegen の strict server**（`net/http`）。
   - OpenAPI 3.1 への対応範囲が ogen より広い。
