@@ -213,7 +213,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 		URL:             content.StatusURL(s.d.Host, author.Handle.Username, id),
 		AuthorAccountID: in.AuthorAccountID,
 		IsLocal:         true,
-		Visibility:      content.Narrower(in.Visibility, restrictions.VisibilityCeiling()),
+		Visibility:      content.EffectiveVisibility(in.Visibility, restrictions.Author),
 		PublishedAt:     now,
 	}
 	st.ConversationURI = st.URI
@@ -448,6 +448,17 @@ func (s *Service) ownStatus(ctx context.Context, accountID, statusID string) (co
 		return content.Status{}, fmt.Errorf("status %s: %w", statusID, ErrNotAuthor)
 	}
 	return st, nil
+}
+
+// PostingLimits returns what the account's current restrictions let it post: the visibility
+// ceiling that Create applies and the visibilities that a new status keeps as asked for
+// (data-model §5.4), so that a client can say so before posting.
+func (s *Service) PostingLimits(ctx context.Context, accountID string) (PostingLimits, error) {
+	r, err := s.d.Restrictions.Restrictions(ctx, accountID)
+	if err != nil {
+		return PostingLimits{}, err
+	}
+	return PostingLimits{VisibilityCeiling: r.VisibilityCeiling(), Visibilities: content.PostingVisibilities(r.Author)}, nil
 }
 
 func (s *Service) postingRestrictions(ctx context.Context, accountID string) (Restrictions, error) {

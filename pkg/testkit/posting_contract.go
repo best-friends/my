@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -450,7 +451,14 @@ func postingRejectsInvalid(t *testing.T, e *postingEnv) {
 func postingRestrictions(t *testing.T, e *postingEnv) {
 	ctx := t.Context()
 	alice := e.user(t, "alice")
+	if l, err := e.content.PostingLimits(ctx, alice); err != nil || l.VisibilityCeiling != content.VisibilityPublic || !slices.Equal(l.Visibilities, content.Visibilities()) {
+		t.Errorf("PostingLimits without restrictions = %+v, %v; want every visibility", l, err)
+	}
 	e.restrictions.set(alice, appcontent.Restrictions{Author: content.AuthorRestrictions{VisibilityCeilingPrivate: true}})
+	if l, err := e.content.PostingLimits(ctx, alice); err != nil || l.VisibilityCeiling != content.VisibilityPrivate ||
+		!slices.Equal(l.Visibilities, []content.Visibility{content.VisibilityPrivate, content.VisibilityDirect}) {
+		t.Errorf("PostingLimits under the ceiling = %+v, %v; want private and direct", l, err)
+	}
 	for _, tc := range []struct{ requested, want content.Visibility }{
 		{content.VisibilityPublic, content.VisibilityPrivate},
 		{content.VisibilityLocal, content.VisibilityPrivate},

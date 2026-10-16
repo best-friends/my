@@ -378,7 +378,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
-		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Preferences: a.Identity, Media: a.Media,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Notifications: a.Notifications,
 		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
