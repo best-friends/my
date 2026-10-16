@@ -22,6 +22,9 @@ type Fixtures = {
 /** Pseudo-locale and right-to-left languages the projects use; the rest are left to right. */
 const rtlLocales: ReadonlySet<string> = new Set(["ar-XB"]);
 
+/** The text direction of a project locale. */
+export const localeDir = (locale: string): "ltr" | "rtl" => (rtlLocales.has(locale) ? "rtl" : "ltr");
+
 export const test = base.extend<Fixtures>({
   makeAxeBuilder: async ({ page }, use) => {
     await use(() => new AxeBuilder({ page }).withTags([...axeTags]));
@@ -40,8 +43,7 @@ export const test = base.extend<Fixtures>({
           return;
         }
         const response = await route.fetch();
-        const dir = rtlLocales.has(lang) ? "rtl" : "ltr";
-        const body = (await response.text()).replace(/<html [^>]*>/, `<html lang="${lang}" dir="${dir}">`);
+        const body = (await response.text()).replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`);
         await route.fulfill({ response, body });
       });
       await use(lang);
