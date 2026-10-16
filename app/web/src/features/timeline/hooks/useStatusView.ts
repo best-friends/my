@@ -10,8 +10,11 @@ import type { MediaAttachment, Status } from "../api/timelines";
 export type StatusView = {
   /** The display name of the account that boosted the post, or null for a post of its own. */
   boostedBy: string | null;
-  /** The author's display name (the username when there is none) and full handle (`@alice@example.com`). */
-  author: { name: string; handle: string };
+  /**
+   * The author's display name (the username when there is none), full handle (`@alice@example.com`), and
+   * avatar URL (undefined when the account has none, and the avatar shows its fallback).
+   */
+  author: { name: string; handle: string; avatar: string | undefined };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
   time: { dateTime: string; relative: string; absolute: string };
   /** The body, as the server sanitized it. */
@@ -67,7 +70,11 @@ export function useStatusView(status: Status): StatusView {
   const writtenAt = Date.parse(post.created_at);
   return {
     boostedBy: status.boost === undefined ? null : status.account.display_name || status.account.username,
-    author: { name: post.account.display_name || post.account.username, handle: handleOf(post.account.acct, accountDomain) },
+    author: {
+      name: post.account.display_name || post.account.username,
+      handle: handleOf(post.account.acct, accountDomain),
+      avatar: post.account.avatar_url,
+    },
     time: {
       dateTime: post.created_at,
       relative: relativeTime(intl, writtenAt, now),

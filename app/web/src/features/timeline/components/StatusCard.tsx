@@ -37,7 +37,7 @@ export function StatusCard({ status }: StatusCardProps) {
           </>
         ),
       })}
-      avatar={<Avatar name={view.author.name} decorative />}
+      avatar={<Avatar src={view.author.avatar} name={view.author.name} decorative />}
       author={
         <>
           <span dir="auto" className="font-semibold">
