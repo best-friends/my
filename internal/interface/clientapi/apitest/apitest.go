@@ -13,6 +13,7 @@ package apitest
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -35,6 +36,9 @@ type Spec struct {
 }
 
 var load = sync.OnceValues(func() (*Spec, error) {
+	// The streaming endpoint's body is a text/event-stream, a string to the spec; tests check
+	// its events with ValidateSchema.
+	openapi3filter.RegisterBodyDecoder("text/event-stream", openapi3filter.PlainBodyDecoder)
 	doc, err := openapi3.NewLoader().LoadFromData(api.Spec)
 	if err != nil {
 		return nil, err
@@ -77,6 +81,25 @@ func (s *Spec) Serve(t testing.TB, h http.Handler, req *http.Request) *http.Resp
 	s.ValidateResponse(t, req, res.StatusCode, res.Header, body)
 	res.Body = io.NopCloser(bytes.NewReader(body))
 	return res
+}
+
+// ValidateSchema fails t when the JSON document data does not conform to the component schema
+// name (#/components/schemas/<name>), for payloads that no response body describes: the data
+// of the streaming endpoint's events.
+func (s *Spec) ValidateSchema(t testing.TB, name string, data []byte) {
+	t.Helper()
+	ref := s.doc.Components.Schemas[name]
+	if ref == nil || ref.Value == nil {
+		t.Fatalf("apitest: no schema %q in the spec", name)
+	}
+	var v any
+	if err := json.Unmarshal(data, &v); err != nil {
+		t.Errorf("apitest: %s: not JSON: %v\ndata: %s", name, err, data)
+		return
+	}
+	if err := ref.Value.VisitJSON(v, openapi3.MultiErrors()); err != nil {
+		t.Errorf("apitest: data does not conform to %s: %v\ndata: %s", name, err, data)
+	}
 }
 
 // ValidateRequest fails t when req does not conform to its operation in the spec.

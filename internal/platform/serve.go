@@ -62,6 +62,11 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 		ErrorLog:          slog.NewLogLogger(a.Logger.Handler(), slog.LevelWarn),
 		BaseContext:       func(net.Listener) context.Context { return hardCtx },
 	}
+	// Open streams never finish on their own: end them when the shutdown starts, so that it
+	// waits only for the other requests.
+	if a.Streams != nil {
+		srv.RegisterOnShutdown(a.Streams.Close)
+	}
 	if a.Config.Role != config.RoleWorker {
 		// The authorization server also registers the web client on its first request, so a
 		// schema applied after the start only delays this.

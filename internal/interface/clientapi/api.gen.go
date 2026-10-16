@@ -402,6 +402,8 @@ type PageInfo struct {
 //     deactivated or deleted).
 //   - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
 //     from following it. Unblock it first.
+//   - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
+//     (`GET /streaming`) open as the server allows. Close one first.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`

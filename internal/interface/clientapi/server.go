@@ -6,8 +6,10 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/i18n"
 )
 
@@ -49,6 +51,12 @@ type Options struct {
 	// TimelineLanguages returns the languages that a user's timelines show, none for every
 	// language (FR-208); nil shows every language.
 	TimelineLanguages func(ctx context.Context, userID string) ([]string, error)
+	// Streams opens the subscriptions of the streaming endpoint; nil answers it with 503.
+	// HomeEntries tells the streams whether a home timeline lists a new entry; nil streams no
+	// home timeline entries. StreamHeartbeat overrides DefaultStreamHeartbeat when positive.
+	Streams         stream.Subscriber
+	HomeEntries     HomeEntries
+	StreamHeartbeat time.Duration
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when
@@ -103,8 +111,8 @@ type Router interface {
 	Handle(pattern string, h http.Handler)
 }
 
-// Register registers every operation of the spec on r under BasePath, behind authentication
-// and rate limiting, with the security of each operation enforced (auth.go). Requests that
+// Register registers every operation of the spec on r under BasePath, the generated ones and
+// the hand-written streaming endpoint (streaming.go), behind authentication and rate limiting, with the security of each operation enforced (auth.go). Requests that
 // match no operation are left to r, which answers them with its own 404 or 405 problem.
 func (s *Server) Register(r Router) {
 	strict := NewStrictHandlerWithOptions(s, nil, StrictHTTPServerOptions{
@@ -117,6 +125,7 @@ func (s *Server) Register(r Router) {
 		Middlewares:      []MiddlewareFunc{s.localize},
 		ErrorHandlerFunc: s.requestError,
 	})
+	s.registerStreaming(r)
 }
 
 // routerMux adapts a Router to the ServeMux that the generated code registers on, wrapping

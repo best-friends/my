@@ -447,6 +447,14 @@
     "defaultMessage": "{max, plural, other {1 件の投稿に添付できるファイルは重複なしで # 個までです。}}",
     "description": "Detail of the HTTP 422 API error when a post attaches too many media files or the same file twice. {max} is the maximum number of files."
   },
+  "errors.streaming.too_many": {
+    "defaultMessage": "開いているストリームが多すぎます。どれかを閉じてからやり直してください。",
+    "description": "Detail of the HTTP 429 API error when the user already has as many real-time update streams (open tabs or devices) as the server allows."
+  },
+  "errors.streaming.unavailable": {
+    "defaultMessage": "リアルタイム更新は現在利用できません。しばらくしてからやり直してください。",
+    "description": "Title of the HTTP 503 API error when the server is shutting down and accepts no new real-time update streams."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."

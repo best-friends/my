@@ -228,6 +228,10 @@ export interface MessageArgs {
   "server:errors.status.text_too_long": { max: number };
   /** {max, plural, one {A post can attach at most # distinct file.} other {A post can attach at most # distinct files.}} */
   "server:errors.status.too_many_media": { max: number };
+  /** You have too many streams open. Close one and try again. */
+  "server:errors.streaming.too_many": {};
+  /** Real-time updates are unavailable right now. Try again later. */
+  "server:errors.streaming.unavailable": {};
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
   /** The request cannot be processed. */

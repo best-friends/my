@@ -447,6 +447,14 @@
     "defaultMessage": "{max, plural, one {A post can attach at most # distinct file.} other {A post can attach at most # distinct files.}}",
     "description": "Detail of the HTTP 422 API error when a post attaches too many media files or the same file twice. {max} is the maximum number of files."
   },
+  "errors.streaming.too_many": {
+    "defaultMessage": "You have too many streams open. Close one and try again.",
+    "description": "Detail of the HTTP 429 API error when the user already has as many real-time update streams (open tabs or devices) as the server allows."
+  },
+  "errors.streaming.unavailable": {
+    "defaultMessage": "Real-time updates are unavailable right now. Try again later.",
+    "description": "Title of the HTTP 503 API error when the server is shutting down and accepts no new real-time update streams."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
