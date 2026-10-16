@@ -262,6 +262,46 @@ export interface MessageArgs {
   "client:shell.update.apply": {};
   /** A new version of the app is available. */
   "client:shell.update.available": {};
+  /** #{tag} */
+  "client:tag.title": { tag: string };
+  /** {name} boosted */
+  "client:timeline.boosted_by": { name: string };
+  /** Show content */
+  "client:timeline.content_warning.toggle": {};
+  /** Browse the local timeline */
+  "client:timeline.empty.home.action": {};
+  /** Your posts and the posts of the people you follow appear here. */
+  "client:timeline.empty.home.description": {};
+  /** Your home timeline is empty */
+  "client:timeline.empty.home.heading": {};
+  /** Public posts of the people on this server appear here. */
+  "client:timeline.empty.local.description": {};
+  /** No posts yet */
+  "client:timeline.empty.local.heading": {};
+  /** Public posts with #{tag} appear here. */
+  "client:timeline.empty.tag.description": { tag: string };
+  /** No posts with #{tag} */
+  "client:timeline.empty.tag.heading": { tag: string };
+  /** In the timeline, Page Down and Page Up move between posts. */
+  "client:timeline.keyboard_hint": {};
+  /** Load more posts */
+  "client:timeline.load_more": {};
+  /** Could not load more posts: {reason} */
+  "client:timeline.load_more.failed": { reason: string };
+  /** Loading posts */
+  "client:timeline.loading": {};
+  /** No description */
+  "client:timeline.media.no_description": {};
+  /** Show sensitive media */
+  "client:timeline.media.reveal": {};
+  /** Try again */
+  "client:timeline.retry": {};
+  /** Sign in */
+  "client:timeline.signed_out.action": {};
+  /** Sign in to read the posts of the people you follow. */
+  "client:timeline.signed_out.description": {};
+  /** You are not signed in */
+  "client:timeline.signed_out.heading": {};
   /** Allow */
   "server:auth.authorize.approve": {};
   /** Deny */
