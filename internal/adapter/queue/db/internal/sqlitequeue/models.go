@@ -84,6 +84,25 @@ type AccountProfileRevision struct {
 	RevisedAt     int64
 }
 
+type Block struct {
+	ID               string
+	Uri              sql.NullString
+	BlockerAccountID string
+	BlockedAccountID string
+	CreatedAt        int64
+}
+
+type BlockEdge struct {
+	BlockerAccountID string
+	BlockedAccountID string
+	BlockID          string
+}
+
+type BlockRetraction struct {
+	BlockID     string
+	RetractedAt int64
+}
+
 type Bookmark struct {
 	AccountID string
 	StatusID  string
@@ -224,6 +243,13 @@ type Job struct {
 	CreatedAt      int64
 }
 
+type KvEntry struct {
+	Namespace string
+	Key       string
+	Value     []byte
+	ExpiresAt sql.NullInt64
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -241,6 +267,14 @@ type LocalStatus struct {
 	AuthorAccountID string
 	ClientID        sql.NullString
 	IdempotencyKey  sql.NullString
+}
+
+type Mute struct {
+	AccountID         string
+	TargetAccountID   string
+	HideNotifications int64
+	ExpiresAt         sql.NullInt64
+	CreatedAt         int64
 }
 
 type OutboxEvent struct {
@@ -270,6 +304,27 @@ type Role struct {
 type RolePermission struct {
 	RoleID     string
 	Permission string
+}
+
+type Session struct {
+	ID        string
+	UserID    string
+	TokenHash []byte
+	UserAgent sql.NullString
+	Ip        sql.NullString
+	CreatedAt int64
+	ExpiresAt int64
+}
+
+type SessionActivity struct {
+	SessionID  string
+	LastSeenAt int64
+}
+
+type SessionRevocation struct {
+	SessionID string
+	Reason    string
+	RevokedAt int64
 }
 
 type Status struct {
