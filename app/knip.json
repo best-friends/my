@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["eslint/*.test.js"],
+      "project": ["*.js", "eslint/**/*.js"],
+      "tailwind": false
+    },
+    "ui": {
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "web": {
+      "project": ["src/**/*.{ts,tsx,css}"]
+    }
+  }
+}

@@ -187,7 +187,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-build web-licenses web-check
+.PHONY: web-install web-typecheck web-build web-licenses web-lint web-check
 
 web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
 	cd app && bun install --frozen-lockfile
@@ -201,4 +201,11 @@ web-build: web-install ## Build app/web into app/web/dist (fails when React Comp
 web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules
 
-web-check: web-typecheck web-build web-licenses ## Run every offline web client check
+web-lint: web-install ## Lint the client workspace: ESLint (app/eslint.config.js), its rule tests, knip, no 100vh in CSS
+	cd app && bun run lint
+	cd app && bun run lint:rules
+	cd app && bun run knip
+	@! grep -rn --include='*.css' '100vh' app/ui/src app/web/src \
+		|| { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
+
+web-check: web-typecheck web-lint web-build web-licenses ## Run every offline web client check
