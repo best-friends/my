@@ -17,7 +17,9 @@
 | Google Cloud Tasks | push（HTTP ターゲット） | 30 日 | タスク名で重複排除（削除後最大 24 時間）、レート制御（キューあたり最大 500 件/秒）、タスク最大 1 MiB、dispatch deadline 15 秒〜30 分 |
 | Google Pub/Sub | push / pull | — | 遅延配信なし（要検証: 本調査の対象外） |
 
-SQS と Cloud Tasks の値は 2026-10-16 に公式ドキュメントで確認した（#18。出典は [deployment-targets.md](../architecture/deployment-targets.md)）。
+料金は Cloud Tasks が月 100 万オペレーションまで無料（以降 $0.40 / 100 万）、SQS が月 100 万リクエストまで無料。配送のリトライも 1 オペレーション / 1 リクエストとして数える。
+
+SQS と Cloud Tasks の値は 2026-10-16 時点の公式ドキュメントによる（出典は [deployment-targets.md](../architecture/deployment-targets.md)）。
 
 ## Decision Drivers
 
@@ -72,6 +74,5 @@ Redis / NATS / RabbitMQ 等はコミュニティアダプタとして受け入�
 
 ## Open Questions / 要検証
 
-- [x] #18 各サービスの遅延上限・メッセージサイズ上限・料金の確認（2026-10-16。Cloud Tasks は月 100 万オペレーション無料・以降 $0.40/100 万、SQS は月 100 万リクエスト無料。配送リトライも 1 オペレーション / 1 リクエストとして数える）
-- [ ] Cloud Tasks の HTTP ターゲット認証（OIDC トークン）と Cloud Run の組み合わせ（公式ドキュメント上は、ID トークンを付与しサービスアカウントに Cloud Run Invoker ロールを与える構成で可能と確認済み。実機での疎通は未確認）
+- [ ] Cloud Tasks の HTTP ターゲット認証（OIDC トークン）と Cloud Run の実機での疎通。公式ドキュメント上は、ID トークンを付与し、サービスアカウントに Cloud Run Invoker ロールを与える構成で可能
 - [ ] SQLite DB キューで web と worker を同一プロセスにした時のロック競合

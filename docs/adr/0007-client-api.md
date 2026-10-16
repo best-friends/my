@@ -7,7 +7,7 @@
 
 ## Context
 
-当初は Mastodon Client API に互換させ、既存クライアント（Ivory, Tusky, Elk, Phanpy など）を使えるようにする案を推奨していた。
+Mastodon Client API に互換させれば、既存クライアント（Ivory, Tusky, Elk, Phanpy など）を使える。
 しかし互換のためには Mastodon 固有のデータ表現・ページング・エンティティ構造への変換（Glue コード）が大量に必要になり、
 本プロジェクト独自の機能（例: 公開範囲 `local`、[ADR-0017](0017-visibility-local.md)）とも衝突する。
 

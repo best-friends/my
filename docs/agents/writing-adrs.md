@@ -23,7 +23,8 @@ The script picks the next number, fills in the date and `Status: Proposed`, and 
 
 ## Revising
 
-- Proposed ADRs: edit freely in a PR; summarize what changed in the PR description.
+- Proposed ADRs: edit freely in a PR, but write only the current proposal. Never add "previously proposed" notes or changelog sections; summarize what changed in the PR description ([ADR-0021](../adr/0021-documents-describe-present-state.md)).
+- When an Open Question is resolved, write the answer into Decision / Consequences in the present tense and delete the item. Do not leave `[x]` items.
 - Accepted ADRs: do not change the decision. Write a new ADR that supersedes it and set the old one's status to
   `Superseded by ADR-XXXX` in the same PR (the status change is still approved by the human decider via PR review).
 

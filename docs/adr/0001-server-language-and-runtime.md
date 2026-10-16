@@ -55,6 +55,8 @@
 
 ## Consequences
 
+- 連合の署名ライブラリと自前実装の範囲は ADR-0006、SQL ツールとドライバ（いずれも cgo 不要）は ADR-0003 に定める。
+
 - 対応ターゲットは **Google Cloud / AWS / Self-hosted（Docker, microk8s）の 3 系統** になる。
   Cloudflare Workers・D1・Cloudflare Queues 向けのアダプタとエントリポイントは v0 では作らない。
 - D1 が対象外になったため、DB で対話的トランザクションを使えないという制約は緩和できる（ADR-0003 で再検討）。
@@ -64,6 +66,4 @@
 
 ## Open Questions / 要検証
 
-- [ ] #15 Go の ActivityPub / HTTP Signatures ライブラリ（go-ap、RFC 9421 / draft-cavage 実装）の評価と、自前実装の範囲
-- [ ] #17 SQLite（cgo なしドライバ）/ libSQL / PostgreSQL を 1 つのリポジトリ層から扱えるか
 - [ ] Self-hosted のアイドル時メモリの実測（M1）
