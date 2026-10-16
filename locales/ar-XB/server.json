@@ -1,4 +1,44 @@
 {
+  "auth.authorize.approve": {
+    "defaultMessage": "‮∀ʅʅoʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.deny": {
+    "defaultMessage": "‮ᗡǝuʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.invalid": {
+    "defaultMessage": "‮⊥ɥıs ɐddʅıɔɐʇıou's ɐnʇɥoɹızɐʇıou ɹǝbnǝsʇ ıs ıuʌɐʅıp. Ↄouʇɐɔʇ ʇɥǝ ɐddʅıɔɐʇıou's pǝʌǝʅodǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.lead": {
+    "defaultMessage": "‮{app} ʍɐuʇs ʇo nsǝ ʎonɹ ɐɔɔonuʇ ʍıʇɥ ʇɥǝsǝ dǝɹɯıssıous:‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.redirect_notice": {
+    "defaultMessage": "‮∀ɟʇǝɹ ʎon ɔɥoosǝ, ʎon ʍıʅʅ qǝ sǝuʇ qɐɔʞ ʇo {host}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.follow": {
+    "defaultMessage": "‮Ⅎoʅʅoʍ, qʅoɔʞ, ɐup ɯnʇǝ ɐɔɔonuʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.push": {
+    "defaultMessage": "‮ᴚǝɔǝıʌǝ dnsɥ uoʇıɟıɔɐʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.read": {
+    "defaultMessage": "‮ᴚǝɐp ʎonɹ ɐɔɔonuʇ, dosʇs, ɐup ʇıɯǝʅıuǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.write": {
+    "defaultMessage": "‮Ԁosʇ ɐup ɔɥɐuƃǝ ʇɥıuƃs ɟoɹ ʎon‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.title": {
+    "defaultMessage": "‮∀nʇɥoɹızǝ {app}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.cross_origin": {
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ʍɐs ɹǝɟnsǝp qǝɔɐnsǝ ıʇ ɔɐɯǝ ɟɹoɯ ɐuoʇɥǝɹ sıʇǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -654,6 +654,79 @@ CREATE TABLE session_activity (
 ) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
+-- identity: OAuth 2.0 authorization server (data-model.md §4.1, ADR-0019 §4, ADR-0030).
+-- Every client_id column except oauth_clients.client_id refers to oauth_clients.id.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a registered client. client_secret_hash is NULL for public clients.
+CREATE TABLE oauth_clients (
+  id TEXT NOT NULL PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  client_secret_hash BLOB,
+  name TEXT NOT NULL,
+  website TEXT,
+  scope TEXT NOT NULL,
+  is_first_party INTEGER NOT NULL CHECK (is_first_party IN (0, 1)),
+  owner_user_id TEXT,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX oauth_clients_client_id ON oauth_clients (client_id);
+
+-- Current value: the redirect URIs a client may use, matched exactly.
+CREATE TABLE oauth_client_redirect_uris (
+  client_id TEXT NOT NULL,
+  redirect_uri TEXT NOT NULL,
+  PRIMARY KEY (client_id, redirect_uri)
+) STRICT;
+
+-- Resource: an authorization code, keyed by its SHA-256 digest.
+CREATE TABLE oauth_authorization_codes (
+  code_hash BLOB NOT NULL PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  redirect_uri TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  code_challenge TEXT NOT NULL,
+  issued_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+) STRICT;
+
+-- Event: a code was exchanged; the primary key makes it one-time. token_id is the first token
+-- of the family it started.
+CREATE TABLE oauth_authorization_code_redemptions (
+  code_hash BLOB NOT NULL PRIMARY KEY,
+  token_id TEXT NOT NULL,
+  redeemed_at INTEGER NOT NULL
+) STRICT;
+
+-- Resource: an access token with its refresh token. A rotation issues a new row in the same
+-- family (family_id is the id of the family's first row).
+CREATE TABLE oauth_access_tokens (
+  id TEXT NOT NULL PRIMARY KEY,
+  family_id TEXT NOT NULL,
+  client_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  access_token_hash BLOB NOT NULL,
+  refresh_token_hash BLOB,
+  scope TEXT NOT NULL,
+  rotated_from_token_id TEXT,
+  issued_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL,
+  refresh_expires_at INTEGER,
+  CONSTRAINT oauth_access_tokens_refresh_pair CHECK ((refresh_token_hash IS NULL) = (refresh_expires_at IS NULL))
+) STRICT;
+CREATE UNIQUE INDEX oauth_access_tokens_access_token_hash ON oauth_access_tokens (access_token_hash);
+CREATE UNIQUE INDEX oauth_access_tokens_refresh_token_hash ON oauth_access_tokens (refresh_token_hash);
+CREATE INDEX oauth_access_tokens_family_id ON oauth_access_tokens (family_id);
+
+-- Event: a token row (its access and refresh token) stopped working.
+CREATE TABLE oauth_token_revocations (
+  token_id TEXT NOT NULL PRIMARY KEY,
+  reason TEXT NOT NULL CHECK (reason IN ('user', 'rotation', 'refresh_reuse', 'code_reuse', 'password_changed', 'moderation')),
+  revoked_at INTEGER NOT NULL
+) STRICT;
+
+-- ---------------------------------------------------------------------------------------------
 -- 基盤: key-value store (data-model.md §4.10). Owned by internal/adapter/kv/db.
 -- ---------------------------------------------------------------------------------------------
 

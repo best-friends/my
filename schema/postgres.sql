@@ -661,6 +661,79 @@ CREATE TABLE session_activity (
 );
 
 -- ---------------------------------------------------------------------------------------------
+-- identity: OAuth 2.0 authorization server (data-model.md §4.1, ADR-0019 §4, ADR-0030).
+-- Every client_id column except oauth_clients.client_id refers to oauth_clients.id.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a registered client. client_secret_hash is NULL for public clients.
+CREATE TABLE oauth_clients (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  client_id text COLLATE "C" NOT NULL,
+  client_secret_hash bytea,
+  name text NOT NULL,
+  website text,
+  scope text NOT NULL,
+  is_first_party boolean NOT NULL,
+  owner_user_id text COLLATE "C",
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX oauth_clients_client_id ON oauth_clients (client_id);
+
+-- Current value: the redirect URIs a client may use, matched exactly.
+CREATE TABLE oauth_client_redirect_uris (
+  client_id text COLLATE "C" NOT NULL,
+  redirect_uri text NOT NULL,
+  PRIMARY KEY (client_id, redirect_uri)
+);
+
+-- Resource: an authorization code, keyed by its SHA-256 digest.
+CREATE TABLE oauth_authorization_codes (
+  code_hash bytea NOT NULL PRIMARY KEY,
+  client_id text COLLATE "C" NOT NULL,
+  user_id text COLLATE "C" NOT NULL,
+  redirect_uri text NOT NULL,
+  scope text NOT NULL,
+  code_challenge text NOT NULL,
+  issued_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+
+-- Event: a code was exchanged; the primary key makes it one-time. token_id is the first token
+-- of the family it started.
+CREATE TABLE oauth_authorization_code_redemptions (
+  code_hash bytea NOT NULL PRIMARY KEY,
+  token_id text COLLATE "C" NOT NULL,
+  redeemed_at timestamptz NOT NULL
+);
+
+-- Resource: an access token with its refresh token. A rotation issues a new row in the same
+-- family (family_id is the id of the family's first row).
+CREATE TABLE oauth_access_tokens (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  family_id text COLLATE "C" NOT NULL,
+  client_id text COLLATE "C" NOT NULL,
+  user_id text COLLATE "C" NOT NULL,
+  access_token_hash bytea NOT NULL,
+  refresh_token_hash bytea,
+  scope text NOT NULL,
+  rotated_from_token_id text COLLATE "C",
+  issued_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL,
+  refresh_expires_at timestamptz,
+  CONSTRAINT oauth_access_tokens_refresh_pair CHECK ((refresh_token_hash IS NULL) = (refresh_expires_at IS NULL))
+);
+CREATE UNIQUE INDEX oauth_access_tokens_access_token_hash ON oauth_access_tokens (access_token_hash);
+CREATE UNIQUE INDEX oauth_access_tokens_refresh_token_hash ON oauth_access_tokens (refresh_token_hash);
+CREATE INDEX oauth_access_tokens_family_id ON oauth_access_tokens (family_id);
+
+-- Event: a token row (its access and refresh token) stopped working.
+CREATE TABLE oauth_token_revocations (
+  token_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  reason text NOT NULL CHECK (reason IN ('user', 'rotation', 'refresh_reuse', 'code_reuse', 'password_changed', 'moderation')),
+  revoked_at timestamptz NOT NULL
+);
+
+-- ---------------------------------------------------------------------------------------------
 -- 基盤: key-value store (data-model.md §4.10). Owned by internal/adapter/kv/db.
 -- ---------------------------------------------------------------------------------------------
 

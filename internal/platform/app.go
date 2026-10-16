@@ -42,6 +42,7 @@ import (
 	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	mediahttp "github.com/best-friends/my/internal/interface/media"
+	"github.com/best-friends/my/internal/interface/oauth"
 	"github.com/best-friends/my/internal/interface/web"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -49,6 +50,10 @@ import (
 // defaultMaxPostCharacters is the post length limit that the client API reports until the
 // instance settings hold it (FR-101).
 const defaultMaxPostCharacters = 500
+
+// WebClientCallbackPath is the path on the web origin where the web client receives the
+// authorization response; its URL is the redirect URI of the first-party web client.
+const WebClientCallbackPath = "/login/callback"
 
 // App is the assembled application: the adapters chosen by the configuration and the
 // application services built on them. NewApp builds it with plain constructor calls; there is
@@ -263,6 +268,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// never configuration (docs/reference/configuration.md); they are read per registration so
 		// changes apply at once.
 		DefaultLocale: a.Instance.DefaultLocale,
+		WebClient: identity.WebClient{
+			ClientID: identity.DefaultWebClientID, Name: cfg.Host, RedirectURIs: []string{cfg.WebOrigin + WebClientCallbackPath},
+		},
 		RegistrationMode: func(ctx context.Context) (domainidentity.RegistrationMode, error) {
 			mode, err := a.Instance.RegistrationMode(ctx)
 			return domainidentity.RegistrationMode(mode), err
@@ -312,8 +320,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}).Register(a)
 	// The sign-in screens share the web client's built CSS (ADR-0030).
 	authpages.New(authpages.Options{
-		Identity: a.Identity, Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
+		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
+		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
 	}).Register(a)
+	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
+	if err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	tokens.Register(a)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
 		return nil, err

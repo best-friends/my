@@ -4,6 +4,26 @@
 export interface MessageArgs {
   /** The web client is under construction. */
   "client:app.placeholder": {};
+  /** Allow */
+  "server:auth.authorize.approve": {};
+  /** Deny */
+  "server:auth.authorize.deny": {};
+  /** This application's authorization request is invalid. Contact the application's developer. */
+  "server:auth.authorize.invalid": {};
+  /** {app} wants to use your account with these permissions: */
+  "server:auth.authorize.lead": { app: string };
+  /** After you choose, you will be sent back to {host}. */
+  "server:auth.authorize.redirect_notice": { host: string };
+  /** Follow, block, and mute accounts */
+  "server:auth.authorize.scope.follow": {};
+  /** Receive push notifications */
+  "server:auth.authorize.scope.push": {};
+  /** Read your account, posts, and timelines */
+  "server:auth.authorize.scope.read": {};
+  /** Post and change things for you */
+  "server:auth.authorize.scope.write": {};
+  /** Authorize {app} */
+  "server:auth.authorize.title": { app: string };
   /** The request was refused because it came from another site. */
   "server:auth.cross_origin": {};
   /** Something went wrong */

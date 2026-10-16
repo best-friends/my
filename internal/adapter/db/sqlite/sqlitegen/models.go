@@ -309,6 +309,35 @@ type NotificationReadMarker struct {
 	LastReadID string
 }
 
+type OauthAuthorizationCode struct {
+	CodeHash      []byte
+	ClientID      string
+	UserID        string
+	RedirectUri   string
+	Scope         string
+	CodeChallenge string
+	IssuedAt      int64
+	ExpiresAt     int64
+}
+
+type OauthAuthorizationCodeRedemption struct {
+	CodeHash   []byte
+	TokenID    string
+	RedeemedAt int64
+}
+
+type OauthClient struct {
+	ID               string
+	ClientID         string
+	ClientSecretHash []byte
+	Name             string
+	Website          sql.NullString
+	Scope            string
+	IsFirstParty     int64
+	OwnerUserID      sql.NullString
+	CreatedAt        int64
+}
+
 type PasswordCredential struct {
 	ID           string
 	UserID       string
