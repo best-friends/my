@@ -288,6 +288,19 @@ func (s *Service) Relationship(ctx context.Context, accountID, targetID string) 
 	return out, nil
 }
 
+// IsFollowing reports whether followerID actively follows followeeID; a pending follow
+// request does not count.
+func (s *Service) IsFollowing(ctx context.Context, followerID, followeeID string) (bool, error) {
+	edge, err := s.d.Repository.FindEdge(ctx, followerID, followeeID)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return edge.State == graph.StateActive, nil
+}
+
 // Page selects a page of a list ordered newest first.
 type Page struct {
 	// Before is the follow ID of the last edge of the previous page; "" starts at the newest.

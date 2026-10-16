@@ -184,6 +184,18 @@ func TestFollowRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestPostingContract(t *testing.T) {
+	testkit.PostingContract(t, func(t *testing.T, opts uow.Options) testkit.PostingHarness {
+		db := newTestDB(t, opts)
+		return testkit.PostingHarness{
+			AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+			Graph:          db.GraphRepository(),
+			Instance:       db.InstanceRepository(),
+			Statuses:       db.StatusRepository(),
+		}
+	})
+}
+
 func TestPreferencesRepositoryContract(t *testing.T) {
 	testkit.PreferencesRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.AccountHarness {
 		db := newTestDB(t, opts)
