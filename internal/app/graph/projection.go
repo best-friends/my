@@ -13,13 +13,18 @@ import (
 	"github.com/best-friends/my/internal/domain/graph"
 )
 
-// errEdgeExists reports that a concurrent transaction created the pair's edge first. It is
-// retryable: the next attempt sees that edge and treats the follow as already made.
-var errEdgeExists = errors.New("graph: the pair already has a live follow")
+var (
+	// errEdgeExists reports that a concurrent transaction created the pair's edge first. It is
+	// retryable: the next attempt sees that edge and treats the follow as already made.
+	errEdgeExists = errors.New("graph: the pair already has a live follow")
+	// errBlockEdgeExists is errEdgeExists for block_edges.
+	errBlockEdgeExists = errors.New("graph: the pair already has a block in force")
+)
 
-// RegisterProjectors registers the graph module's synchronous follow projectors (data-model §9):
-// follow_edges and follow_counters from follows and their events. Each projector applies the
-// same rule as RebuildProjections, so updating incrementally and rebuilding agree.
+// RegisterProjectors registers the graph module's synchronous projectors (data-model §9):
+// follow_edges and follow_counters from follows and their events, and block_edges from blocks
+// and their retractions. Each projector applies the same rule as RebuildProjections, so
+// updating incrementally and rebuilding agree.
 func RegisterProjectors(r *uow.Projectors, repo Repository) {
 	r.Register(EventFollowed, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(Followed)
@@ -53,6 +58,20 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 		}
 		return countFollow(ctx, tx, repo, f, -1)
 	})
+	r.Register(EventBlocked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		inserted, err := repo.InsertBlockEdge(ctx, tx, graph.EdgeOf(e.(Blocked).Block))
+		if err != nil {
+			return err
+		}
+		if !inserted {
+			return uow.MarkRetryable(errBlockEdgeExists)
+		}
+		return nil
+	})
+	r.Register(EventUnblocked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		b := e.(Unblocked).Block
+		return repo.DeleteBlockEdge(ctx, tx, b.BlockerAccountID, b.BlockedAccountID, b.ID)
+	})
 }
 
 func insertEdge(ctx context.Context, tx uow.Tx, repo Repository, e graph.Edge) error {
@@ -74,8 +93,8 @@ func countFollow(ctx context.Context, tx uow.Tx, repo Repository, f graph.Follow
 	return repo.AddCounters(ctx, tx, f.FolloweeAccountID, delta, 0)
 }
 
-// RebuildProjections empties follow_edges and follow_counters and derives them again from the
-// follows and their events (data-model §9), in one transaction.
+// RebuildProjections empties follow_edges, follow_counters, and block_edges and derives them
+// again from the follows, the blocks, and their events (data-model §9), in one transaction.
 func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) error {
 	err := u.Tx(ctx, func(tx uow.Tx) error {
 		if err := repo.DeleteAllEdges(ctx, tx); err != nil {
@@ -109,10 +128,34 @@ func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) 
 				return err
 			}
 		}
-		return nil
+		return rebuildBlockEdges(ctx, tx, repo)
 	})
 	if err != nil {
-		return fmt.Errorf("rebuild follow_edges and follow_counters: %w", err)
+		return fmt.Errorf("rebuild follow_edges, follow_counters, and block_edges: %w", err)
+	}
+	return nil
+}
+
+func rebuildBlockEdges(ctx context.Context, tx uow.Tx, repo Repository) error {
+	if err := repo.DeleteAllBlockEdges(ctx, tx); err != nil {
+		return err
+	}
+	histories, err := repo.ListBlockHistories(ctx, tx)
+	if err != nil {
+		return err
+	}
+	for _, h := range histories {
+		e, ok := h.Edge()
+		if !ok {
+			continue
+		}
+		inserted, err := repo.InsertBlockEdge(ctx, tx, e)
+		if err != nil {
+			return err
+		}
+		if !inserted {
+			return fmt.Errorf("graph: blocks %s and another block are both in force", e.BlockID)
+		}
 	}
 	return nil
 }

@@ -191,7 +191,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-build web-licenses web-check
+.PHONY: web-install web-typecheck web-build web-licenses web-tokens web-check
 
 # internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its
 # .gitkeep is committed, so Go builds and tests need no Bun; `make build` embeds the real build.
@@ -211,4 +211,7 @@ web-build: web-install ## Build app/web into app/web/dist and copy it to interna
 web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules
 
-web-check: web-typecheck web-build web-licenses ## Run every offline web client check
+web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors, motion only under motion-safe
+	cd app/ui && bun run check-tokens
+
+web-check: web-typecheck web-build web-licenses web-tokens ## Run every offline web client check

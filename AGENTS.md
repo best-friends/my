@@ -103,7 +103,7 @@ These come from Accepted ADRs and are binding.
 
 | Command | Purpose |
 | --- | --- |
-| `make check` | Every offline check CI runs: docs lint, ADR index check, `make go-check`, `make i18n-check`, the Dockerfile Go version check, `make api-check` and `make web-check` |
+| `make check` | Every offline check CI runs: docs lint, ADR index check, `make go-check`, `make i18n-check`, the Dockerfile image version check (Go, Node.js, Bun), `make api-check` and `make web-check` |
 | `make go-check` | `go mod tidy` check, `go vet`, `golangci-lint`, `go test`, `CGO_ENABLED=0 go build`, license check |
 | `make go-lint` / `go-test` / `go-build` | Run one Go step (`go-lint` uses `.golangci.yml`, including the depguard architecture rules) |
 | `make build [VERSION=...]` | Build `bin/my` with the web client embedded (`make web-build` first) and the version stamped in (`git describe` by default) |
@@ -123,7 +123,7 @@ These come from Accepted ADRs and are binding.
 | `make docker-smoke` | Build and start `deploy/docker/compose.yaml`, create an admin, check WebFinger / Actor / NodeInfo, tear down (CI job `docker-smoke`) |
 | `make i18n-gen` | Regenerate pseudo-locales, Go / TS typed accessors, and parity fixtures from `locales/` (commit the result) |
 | `make i18n-check` | Catalog lint (ICU syntax, placeholders, plural categories, shared subset), stale generated files, npm licenses, TS runtime tests |
-| `make web-check` | Client workspace `app/`: `web-typecheck` (tsc), `web-build` (Vite; fails when React Compiler compiled nothing; copies the build to `internal/interface/web/dist` for embedding), `web-licenses` (npm licenses) |
+| `make web-check` | Client workspace `app/`: `web-typecheck` (tsc), `web-build` (Vite; fails when React Compiler compiled nothing; copies the build to `internal/interface/web/dist` for embedding), `web-licenses` (npm licenses), `web-tokens` (design token contrast and color / motion usage, [app/ui/README.md](app/ui/README.md)) |
 | `make web-install` | Install the client workspace dependencies from `app/bun.lock` |
 
 Toolchain versions (Go, golangci-lint, Bun, shellcheck, Node.js) are pinned in `.tool-versions` (asdf / mise).

@@ -22,6 +22,7 @@ import (
 	_ "modernc.org/sqlite" // registers the "sqlite" driver for applying the schema
 
 	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/platform"
 	"github.com/best-friends/my/internal/platform/config"
 	"github.com/best-friends/my/schema"
@@ -383,4 +384,22 @@ func TestShutdownTimeout(t *testing.T) {
 		t.Fatal("Serve did not return after the shutdown timeout")
 	}
 	s.done <- nil // for the cleanup
+}
+
+// TestConfigAndInstanceSettingsShareNoKey enforces the precedence rule between the deployment
+// configuration and the instance settings in the database: a key lives in exactly one of them,
+// so neither overrides the other (docs/reference/configuration.md).
+func TestConfigAndInstanceSettingsShareNoKey(t *testing.T) {
+	db := map[string]bool{}
+	for _, d := range instance.Definitions() {
+		db[string(d.Key)] = true
+	}
+	for _, d := range instance.TextDefinitions() {
+		db[string(d.Key)] = true
+	}
+	for _, k := range config.Keys() {
+		if db[k] {
+			t.Errorf("%q is both a configuration key and an instance setting or text key", k)
+		}
+	}
 }
