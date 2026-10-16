@@ -2,16 +2,30 @@
 import { Avatar, ContentWarning, Link, MediaGrid, PostCard, PostContent } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
-import type { Status } from "../api/timelines";
+import type { Status } from "../api/status";
 import { useStatusView } from "../hooks/useStatusView";
+import { BoostIcon } from "./icons";
+import { StatusActions } from "./StatusActions";
 
-export type StatusCardProps = { status: Status };
+export type StatusCardProps = {
+  status: Status;
+  /**
+   * `focused` for the post a thread page is about: its full date and time instead of the relative one, and
+   * no link to the page it is on. `compact` (the default) for timelines and the rest of a thread.
+   */
+  variant?: "compact" | "focused";
+  /** Called after the viewer deleted the post. */
+  onDeleted?: () => void;
+};
 
 /** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
 const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
 
-/** One status of a timeline: the hook's view of it placed into the slots of PostCard. */
-export function StatusCard({ status }: StatusCardProps) {
+/**
+ * One status: the hook's view of it placed into the slots of PostCard, with the action bar. Its names link
+ * to the profiles and its time to the post's page (FR-113).
+ */
+export function StatusCard({ status, variant = "compact", onDeleted }: StatusCardProps) {
   const t = useT();
   const intl = useIntl();
   const view = useStatusView(status);
@@ -25,7 +39,17 @@ export function StatusCard({ status }: StatusCardProps) {
         revealLabel={t("client:timeline.media.reveal")}
       />
     ) : undefined;
-  const body = <PostContent html={view.html} lang={view.lang} />;
+  const body = <PostContent html={view.html} lang={view.lang} {...(variant === "focused" && { className: "text-lg" })} />;
+  const time =
+    variant === "focused" ? (
+      <time dateTime={view.time.dateTime}>{view.time.absolute}</time>
+    ) : (
+      <Link href={view.path} className="text-fg-muted">
+        <time dateTime={view.time.dateTime} title={view.time.absolute}>
+          {view.time.relative}
+        </time>
+      </Link>
+    );
 
   return (
     <PostCard
@@ -68,11 +92,7 @@ export function StatusCard({ status }: StatusCardProps) {
           </>
         </Link>
       }
-      time={
-        <time dateTime={view.time.dateTime} title={view.time.absolute}>
-          {view.time.relative}
-        </time>
-      }
+      time={time}
       content={
         view.contentWarning === null ? (
           body
@@ -84,14 +104,7 @@ export function StatusCard({ status }: StatusCardProps) {
         )
       }
       {...(view.contentWarning === null && media !== undefined && { media })}
+      actions={<StatusActions status={status} {...(onDeleted !== undefined && { onDeleted })} />}
     />
-  );
-}
-
-function BoostIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3" />
-    </svg>
   );
 }

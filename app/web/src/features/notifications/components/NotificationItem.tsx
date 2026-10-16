@@ -4,6 +4,7 @@
 // out, so the article is named by the sentence and the time and described by the post.
 import { Avatar, ContentWarning, Link, PostCard, PostContent, serverSanitizedHtml, VisuallyHidden } from "@my/ui";
 import { type Translate, useT } from "../../../lib/i18n";
+import { statusPath } from "../../status";
 import type { Notification, NotificationAccount, NotificationStatus } from "../api/notifications";
 
 /**
@@ -88,11 +89,10 @@ function NotificationPostView({ status }: { status: NotificationStatus }) {
           {body}
         </ContentWarning>
       )}
-      {status.url !== undefined && (
-        <Link href={status.url} variant="standalone" className="self-start text-sm">
-          {t("client:notifications.post.open")}
-        </Link>
-      )}
+      {/* The post's page in the app, with its thread and the actions on it (FR-113). */}
+      <Link href={statusPath(status)} variant="standalone" className="self-start text-sm">
+        {t("client:notifications.post.open")}
+      </Link>
     </div>
   );
 }
