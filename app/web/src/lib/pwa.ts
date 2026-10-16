@@ -92,7 +92,7 @@ const clearTimeoutMs = 3000;
 
 /**
  * Deletes every cache of the origin, the precache included, so that nothing stays on the device after
- * sign-out (ADR-0028). The worker deletes its media cache with its expiration metadata; the page then
+ * sign-out (ADR-0028); lib/auth/userData calls it when the session ends. The worker deletes its media cache with its expiration metadata; the page then
  * deletes whatever is left, which also covers a page without a controlling worker. The app keeps working
  * online; it works offline again once a new version of the worker precaches the build.
  */

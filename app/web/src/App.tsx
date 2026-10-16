@@ -1,24 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The app's providers, outermost first: the runtime config, i18n (react-intl and React Aria's locale),
-// the TanStack Query cache, the live regions and toasts of @my/ui (with the prompt for a new version of the
-// app), React Aria's router binding, and the router with every page.
+// the TanStack Query cache, the session and the API client, the live regions and toasts of @my/ui (with the
+// prompt for a new version of the app), React Aria's router binding, and the router with every page.
 import { AnnouncerProvider, Center, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, ToastProvider } from "@my/ui";
-import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { type AnyRouter, RouterProvider } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { SessionProvider } from "./lib/auth/SessionProvider";
 import { ConfigProvider, type RuntimeConfig } from "./lib/config";
 import { type I18n, MessagesProvider, useT } from "./lib/i18n";
+import type { AppServices } from "./lib/services";
 import { UpdatePrompt } from "./UpdatePrompt";
 
-export type AppProps = {
+export type AppProps = AppServices & {
   config: RuntimeConfig;
   i18n: I18n;
-  queryClient: QueryClient;
   /** The app router (createAppRouter); tests may pass a router over routes of their own. */
   router: AnyRouter;
 };
 
-export function App({ config, i18n, queryClient, router }: AppProps) {
+export function App({ config, i18n, queryClient, api, session, leaveApp, router }: AppProps) {
   /**
    * Every @my/ui Link (and Menu item, Tab) with a same-origin href navigates through the router instead
    * of loading a new document. An in-page target (the skip link's "#main") gets focus instead, as the
@@ -35,14 +36,16 @@ export function App({ config, i18n, queryClient, router }: AppProps) {
     <ConfigProvider config={config}>
       <AppI18nProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
-          <AnnouncerProvider>
-            <Toasts>
-              <UpdatePrompt />
-              <AriaRouterProvider navigate={navigate}>
-                <RouterProvider router={router} />
-              </AriaRouterProvider>
-            </Toasts>
-          </AnnouncerProvider>
+          <SessionProvider session={session} api={api} leaveApp={leaveApp}>
+            <AnnouncerProvider>
+              <Toasts>
+                <UpdatePrompt />
+                <AriaRouterProvider navigate={navigate}>
+                  <RouterProvider router={router} />
+                </AriaRouterProvider>
+              </Toasts>
+            </AnnouncerProvider>
+          </SessionProvider>
         </QueryClientProvider>
       </AppI18nProvider>
     </ConfigProvider>

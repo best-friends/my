@@ -26,6 +26,7 @@ func runServe(args []string, stderr io.Writer) int {
 	sfs.Usage = func() { serveUsage(stderr) }
 	file := sfs.String("config", "", "TOML config file (default: $"+config.EnvConfigFile+")")
 	devVite := sfs.String("dev-vite-origin", "", "development only: load the web client from the Vite dev server at this origin")
+	pseudo := sfs.Bool("pseudo-locales", false, "development and tests only: make the pseudo-locales en-XA and ar-XB selectable")
 	if err := sfs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
@@ -48,7 +49,9 @@ func runServe(args []string, stderr io.Writer) int {
 
 	v := resolveVersion(version, debug.ReadBuildInfo)
 	logger.InfoContext(ctx, "starting", slog.String("version", v), slog.Any("config", cfg))
-	app, err := platform.NewApp(ctx, cfg, platform.AppOptions{Logger: logger, Version: v, DevViteOrigin: *devVite})
+	app, err := platform.NewApp(ctx, cfg, platform.AppOptions{
+		Logger: logger, Version: v, DevViteOrigin: *devVite, PseudoLocales: *pseudo,
+	})
 	if err != nil {
 		logger.ErrorContext(ctx, "start failed", slog.Any("error", err))
 		return 1
@@ -62,12 +65,16 @@ func runServe(args []string, stderr io.Writer) int {
 }
 
 func serveUsage(w io.Writer) {
-	_, _ = fmt.Fprint(w, `Usage: my serve [-config <file>] [-dev-vite-origin <origin>]
+	_, _ = fmt.Fprint(w, `Usage: my serve [-config <file>] [-dev-vite-origin <origin>] [-pseudo-locales]
 
 Runs the server in the role set by role (MY_ROLE): web, worker, or all.
 Stops gracefully on SIGTERM or SIGINT, waiting for in-flight requests and jobs.
 
 -dev-vite-origin (development only) makes the web client's HTML load the client from a
 Vite dev server, such as http://localhost:5173, instead of the build embedded in the binary.
+
+-pseudo-locales (development and tests only) makes the pseudo-locales en-XA (longer, accented
+text) and ar-XB (right-to-left) selectable through Accept-Language.
+The E2E of the server-rendered pages uses it.
 `)
 }

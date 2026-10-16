@@ -1,10 +1,50 @@
 {
+  "api.error.network": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗȧȧƈħ ŧħḗḗ şḗḗřṽḗḗř. Ƈħḗḗƈķ ẏǿǿŭŭř ƈǿǿƞƞḗḗƈŧīǿǿƞ ȧȧƞḓ ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "api.error.status": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ħȧȧƞḓŀḗḗ ŧħḗḗ řḗḗɋŭŭḗḗşŧ (ḗḗřřǿǿř {status}). Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "home.title": {
     "defaultMessage": "[Ħǿǿḿḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "local.title": {
     "defaultMessage": "[Ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "login.body": {
+    "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ {instance} ŧǿǿ ƥǿǿşŧ, ƒǿǿŀŀǿǿẇ ƥḗḗǿǿƥŀḗḗ ȧȧƞḓ řḗḗȧȧḓ ẏǿǿŭŭř ħǿǿḿḗḗ ŧīḿḗḗŀīƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "login.failed.denied": {
+    "defaultMessage": "[Ŧħḗḗ şīɠƞ-īƞ ẇȧȧş ƈȧȧƞƈḗḗŀŀḗḗḓ ǿǿƞ ŧħḗḗ şḗḗřṽḗḗř'ş şƈřḗḗḗḗƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "login.failed.invalid_state": {
+    "defaultMessage": "[Ŧħīş şīɠƞ-īƞ ẇȧȧş ƞǿǿŧ şŧȧȧřŧḗḗḓ īƞ ŧħīş ŧȧȧƀ, ǿǿř īŧ ħȧȧş ȧȧŀřḗḗȧȧḓẏ ƀḗḗḗḗƞ ƈǿǿḿƥŀḗḗŧḗḗḓ. Şŧȧȧřŧ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "login.failed.rejected": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ḓīḓ ƞǿǿŧ ȧȧƈƈḗḗƥŧ ŧħḗḗ şīɠƞ-īƞ. Şŧȧȧřŧ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "login.failed.retry": {
+    "defaultMessage": "[Şīɠƞ īƞ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "login.failed.title": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "login.submit": {
+    "defaultMessage": "[Ƈǿǿƞŧīƞŭŭḗḗ ŧǿǿ şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "login.title": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.title": {
@@ -17,6 +57,26 @@
   },
   "profile.title": {
     "defaultMessage": "[Ƥřǿǿƒīŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "session.account.title": {
+    "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "session.sign_in": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "session.sign_out": {
+    "defaultMessage": "[Şīɠƞ ǿǿŭŭŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "session.sign_out.failed": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ şīɠƞḗḗḓ ǿǿŭŭŧ ħḗḗřḗḗ, ƀŭŭŧ ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ řḗḗȧȧƈħḗḗḓ. Ẏǿǿŭŭř şḗḗşşīǿǿƞ ḿȧȧẏ řḗḗşŭŭḿḗḗ ẇħḗḗƞ ẏǿǿŭŭ řḗḗŀǿǿȧȧḓ ŧħḗḗ ƥȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "session.signed_out": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ şīɠƞḗḗḓ īƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.title": {

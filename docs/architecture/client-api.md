@@ -17,7 +17,8 @@
 | `internal/interface/clientapi/*.go` | 生成された `StrictServerInterface` の実装。アプリケーション層のユースケースを呼ぶ |
 | `internal/interface/clientapi/streaming.go` | 手書きの `GET /streaming`（SSE、§5） |
 | `internal/interface/clientapi/apitest` | ハンドラの応答を spec と照合するテストヘルパー |
-| `scripts/generate.sh` | 生成スクリプト（`make generate` / `make generate-check`） |
+| `app/web/src/lib/api/schema.gen.ts` | 生成物。Web クライアントの型（openapi-typescript）。手で編集しない |
+| `scripts/generate.sh` | 生成スクリプト（`make generate` / `make generate-check`）。TS の型の生成に `app/web` の依存を使うので、先に `make web-install` を実行する（Makefile の依存で自動） |
 
 列挙型の定数は `<型名><値>`（`StatusVisibilityPublic`）の名前で生成します（`oapi-codegen.yaml` の `always-prefix-enum-values`）。別の列挙型を足しても名前が衝突・変化しません。
 
@@ -94,7 +95,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 1. `api/openapi.yaml` に操作を書きます。`operationId`、`summary`、`tags`、成功時の応答と `default: {$ref: "#/components/responses/Problem"}` を必ず書きます。
    `security` は §4.2 の 3 つの形のどれかで書き、アクセストークンを受け付ける操作は必要なスコープを必ず挙げます（挙げないと `make generate` が失敗します）。
 2. `make api-lint` で spec を検査します。
-3. `make generate` で `internal/interface/clientapi/api.gen.go` と `security.gen.go` を再生成します。`StrictServerInterface` に新しいメソッドが増え、未実装のためビルドが失敗します。
+3. `make generate` で `internal/interface/clientapi/api.gen.go`・`security.gen.go` と Web クライアントの `app/web/src/lib/api/schema.gen.ts` を再生成します。`StrictServerInterface` に新しいメソッドが増え、未実装のためビルドが失敗します。
    main を取り込んだあとも、生成物は手でマージせず `make generate` で作り直します。
 4. `internal/interface/clientapi` にメソッドを実装します。アプリケーション層（`internal/app/<module>`）のユースケースを呼び、
    ドメインの型を生成された応答型に詰め替えます。必要な依存は `clientapi.Options` に追加し、`platform.NewApp` で渡します。

@@ -123,3 +123,4 @@ ADR を `Accepted` にするのはメンテナです。
 
 利用者向けの文言は `locales/<locale>/<namespace>.json`（FormatJS JSON 形式）に追加し、`en` と `ja` を同時に更新します（[ADR-0009](docs/adr/0009-internationalization.md)）。
 編集したら `make i18n-gen` で疑似ロケール（`en-XA` / `ar-XB`）と型付きアクセサを再生成してコミットします。
+サーバーが描画する画面を疑似ロケールで見るときは `my serve -pseudo-locales` で起動し、ブラウザの言語を `en-XA` / `ar-XB` にします（このフラグがなければ選べません）。

@@ -1,4 +1,12 @@
 {
+  "api.error.network": {
+    "defaultMessage": "サーバーに接続できませんでした。接続を確かめて、もう一度試してください。",
+    "description": "Error message when a request to the server got no answer (offline, or the server is down)."
+  },
+  "api.error.status": {
+    "defaultMessage": "サーバーが要求を処理できませんでした（エラー {status}）。しばらくしてから試してください。",
+    "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
+  },
   "home.title": {
     "defaultMessage": "ホーム",
     "description": "Heading and document title of the home timeline page."
@@ -6,6 +14,38 @@
   "local.title": {
     "defaultMessage": "ローカルタイムライン",
     "description": "Heading and document title of the page with the public posts of this server's accounts."
+  },
+  "login.body": {
+    "defaultMessage": "{instance} にログインすると、投稿したり、ほかの人をフォローしたり、ホームタイムラインを読んだりできます。",
+    "description": "Text on the sign-in page. {instance} is the name of this server."
+  },
+  "login.failed.denied": {
+    "defaultMessage": "サーバーの画面でログインが取り消されました。",
+    "description": "Why signing in failed: the user declined on the server's authorization screen."
+  },
+  "login.failed.invalid_state": {
+    "defaultMessage": "このログインはこのタブで始めたものではないか、すでに完了しています。もう一度始めてください。",
+    "description": "Why signing in failed: the answer from the server does not belong to a sign-in that this browser tab started."
+  },
+  "login.failed.rejected": {
+    "defaultMessage": "サーバーがログインを受け付けませんでした。もう一度始めてください。",
+    "description": "Why signing in failed: the server refused to finish it (for example, it took too long)."
+  },
+  "login.failed.retry": {
+    "defaultMessage": "もう一度ログインする",
+    "description": "Link from the failed sign-in page back to the sign-in page."
+  },
+  "login.failed.title": {
+    "defaultMessage": "ログインできませんでした",
+    "description": "Heading and document title of the page shown when signing in failed on the way back from the server's sign-in screen."
+  },
+  "login.submit": {
+    "defaultMessage": "ログインに進む",
+    "description": "Button on the sign-in page that opens the server's sign-in screen."
+  },
+  "login.title": {
+    "defaultMessage": "ログイン",
+    "description": "Heading and document title of the page that starts signing in."
   },
   "notifications.title": {
     "defaultMessage": "通知",
@@ -18,6 +58,26 @@
   "profile.title": {
     "defaultMessage": "プロフィール",
     "description": "Heading and document title of the signed-in user's own profile page."
+  },
+  "session.account.title": {
+    "defaultMessage": "アカウント",
+    "description": "Heading of the section of the settings page about the signed-in account."
+  },
+  "session.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Link in the account section of the settings page that opens the sign-in page."
+  },
+  "session.sign_out": {
+    "defaultMessage": "ログアウト",
+    "description": "Button that signs the user out of the app in every tab."
+  },
+  "session.sign_out.failed": {
+    "defaultMessage": "この画面からはログアウトしましたが、サーバーに接続できませんでした。ページを再読み込みするとログインした状態に戻ることがあります。",
+    "description": "Notice after signing out when the server could not be told; the browser may still hold the session."
+  },
+  "session.signed_out": {
+    "defaultMessage": "ログインしていません。",
+    "description": "Text in the account section of the settings page when nobody is signed in."
   },
   "settings.title": {
     "defaultMessage": "設定",

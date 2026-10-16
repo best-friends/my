@@ -7,7 +7,7 @@
 // The locale is the server's: `my serve` writes the instance's default locale into <html lang> of the
 // shell (ADR-0028). A user's own choice of locale replaces it once accounts have one.
 import type { ReactNode } from "react";
-import { IntlProvider, useIntl } from "react-intl";
+import { createIntl, IntlProvider, useIntl } from "react-intl";
 import type { MessageArgs, MessageKey } from "../../../../tools/i18n/src/runtime/messages.gen";
 
 /** The IDs of the client's messages; other namespaces are formatted by the server. */
@@ -118,12 +118,16 @@ export type MessagesProviderProps = { i18n: I18n; children: ReactNode };
  * locale), which gets `i18n.locale` as it is: React Aria reads the direction from it, ar-XB included.
  */
 export function MessagesProvider({ i18n, children }: MessagesProviderProps) {
-  const formattingLocale = pseudoLocales.has(i18n.locale) ? sourceLocale : i18n.locale;
   return (
-    <IntlProvider locale={formattingLocale} defaultLocale={sourceLocale} messages={i18n.messages}>
+    <IntlProvider locale={formattingLocale(i18n.locale)} defaultLocale={sourceLocale} messages={i18n.messages}>
       {children}
     </IntlProvider>
   );
+}
+
+/** The locale whose CLDR rules format messages of `locale`. */
+function formattingLocale(locale: string): string {
+  return pseudoLocales.has(locale) ? sourceLocale : locale;
 }
 
 type MessageValues<K extends ClientMessageKey> = keyof MessageArgs[K] extends never ? [] : [values: MessageArgs[K]];
@@ -134,5 +138,14 @@ export type Translate = <K extends ClientMessageKey>(id: K, ...values: MessageVa
 /** Returns `t` for the current locale. */
 export function useT(): Translate {
   const intl = useIntl();
+  return (id, ...[values]) => intl.formatMessage({ id }, values);
+}
+
+/**
+ * Returns `t` for `i18n` outside React, for code that runs before or beside the providers (the API
+ * client's localized errors). Components use `useT()`.
+ */
+export function createTranslate(i18n: I18n): Translate {
+  const intl = createIntl({ locale: formattingLocale(i18n.locale), defaultLocale: sourceLocale, messages: i18n.messages });
   return (id, ...[values]) => intl.formatMessage({ id }, values);
 }

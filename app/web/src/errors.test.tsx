@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Integration tests of the error boundaries (web-client.md E1): the app's layout, error components and
 // router options over a route tree of the test's own, with a page whose loader fails.
-import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, createRoute, createRouter, type RouterHistory } from "@tanstack/react-router";
 import { act, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
@@ -41,8 +40,7 @@ function routerWithBrokenPage(failures: number) {
     component: SettingsPage,
   });
   const routeTree = rootRoute.addChildren([indexRoute, brokenRoute]);
-  return ({ queryClient, history }: { queryClient: QueryClient; history: RouterHistory }) =>
-    createRouter({ ...routerOptions, routeTree, context: { queryClient }, history });
+  return ({ history, ...context }: RouterContext & { history: RouterHistory }) => createRouter({ ...routerOptions, routeTree, context, history });
 }
 
 test("a page that fails shows the error inside the layout, focused and titled, and recovers on retry", async () => {
