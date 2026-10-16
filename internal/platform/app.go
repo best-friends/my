@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
+	"slices"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
@@ -24,6 +26,7 @@ import (
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/internal/interface/web"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -65,6 +68,8 @@ type App struct {
 	ready  func(ctx context.Context) error
 	closer func() error
 	routes []route
+	// page serves the web client's HTML at the GET paths that no route serves.
+	page http.Handler
 }
 
 type route struct {
@@ -78,6 +83,11 @@ type AppOptions struct {
 	Logger *slog.Logger
 	// Version is the server version that NodeInfo reports; the default is "dev".
 	Version string
+	// WebBuild is the build of the web client; the default is the one embedded in the binary.
+	WebBuild fs.FS
+	// DevViteOrigin, when set, makes the web client's shell load the client from a Vite dev
+	// server at this origin (`my serve -dev-vite-origin`). Development only.
+	DevViteOrigin string
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -101,6 +111,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Handlers:   &queue.JobHandlerRegistry{},
 	}
 
+	if err := a.setUpWeb(opts); err != nil {
+		return nil, err
+	}
 	if a.KeyManager, err = newKeyManager(cfg); err != nil {
 		return nil, err
 	}
@@ -174,7 +187,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
+		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
@@ -183,6 +196,39 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Messages:          a.Messages, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
+}
+
+// setUpWeb builds the web client's handler (ADR-0028), registers its assets and manifest, and
+// sets a.page, which serves its HTML to the requests that do not ask for ActivityPub.
+func (a *App) setUpWeb(opts AppOptions) error {
+	if opts.WebBuild == nil {
+		opts.WebBuild = web.Embedded()
+	}
+	h, err := web.New(web.Options{
+		Build: opts.WebBuild, DevViteOrigin: opts.DevViteOrigin,
+		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain,
+		// The instance is named after its host, and uses the source locale, until the instance
+		// settings hold a name and a default locale.
+		InstanceName: a.Config.Host, Locale: i18n.SourceLocale,
+		NotFound: func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:   a.Logger,
+	})
+	if err != nil {
+		return err
+	}
+	h.Register(a)
+	a.page = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The same URL may be an ActivityPub document, so every answer depends on Accept.
+		if !slices.Contains(w.Header().Values("Vary"), "Accept") {
+			w.Header().Add("Vary", "Accept")
+		}
+		if activitypub.AsksForActivityPub(r) {
+			a.writeStatusProblem(w, r, http.StatusNotFound)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+	return nil
 }
 
 func (a *App) setDBQueue(q *queuedb.Queue) {

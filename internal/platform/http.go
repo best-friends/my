@@ -31,18 +31,21 @@ const readinessTimeout = 3 * time.Second
 
 // Handler returns the HTTP handler of the App: the routes of its role behind the middleware
 // that every response passes (request ID, access log, security headers, panic recovery, and
-// the CORS of the client API).
+// the CORS of the client API). GET requests that no route serves get the web client's HTML
+// (the SPA routes) unless they ask for ActivityPub.
 // The worker role serves only the health checks, for the platform's probes.
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET "+PathLiveness, a.liveness)
 	mux.HandleFunc("GET "+PathReadiness, a.readiness)
+	var page http.Handler
 	if a.Config.Role != config.RoleWorker {
 		for _, r := range a.routes {
 			mux.Handle(r.pattern, r.handler)
 		}
+		page = a.page
 	}
-	h := a.problemFallback(mux)
+	h := a.problemFallback(mux, page)
 	h = clientAPICORS(a.Config.WebOrigin, h)
 	h = a.recoverPanics(h)
 	h = securityHeaders(h)
@@ -119,8 +122,8 @@ func (a *App) writeStatusProblem(w http.ResponseWriter, r *http.Request, status 
 }
 
 // problemFallback serves mux, replacing its plain-text 404 and 405 responses with problem
-// documents.
-func (a *App) problemFallback(mux *http.ServeMux) http.Handler {
+// documents, or the 404 of a GET request with page when there is one.
+func (a *App) problemFallback(mux *http.ServeMux, page http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h, pattern := mux.Handler(r)
 		if pattern != "" {
@@ -132,6 +135,10 @@ func (a *App) problemFallback(mux *http.ServeMux) http.Handler {
 		l := a.localizer(r)
 		switch rec.status {
 		case http.StatusNotFound:
+			if page != nil && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+				page.ServeHTTP(w, r)
+				return
+			}
 			a.writeProblem(w, r, l, http.StatusNotFound, l.ServerErrorsNotFound())
 		case http.StatusMethodNotAllowed:
 			w.Header().Set("Allow", rec.header.Get("Allow"))

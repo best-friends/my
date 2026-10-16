@@ -6,10 +6,29 @@
 #   docker build -t my .                       # the server (default target "app")
 #   docker build -t my-schema --target schema . # Atlas Community Edition + schema/*.sql (ADR-0023)
 #
-# Base images are pinned by tag and multi-arch index digest. The Go tag must match .tool-versions.
+# Base images are pinned by tag and multi-arch index digest. The Go, Node.js, and Bun tags must match .tool-versions.
 
 ARG GO_IMAGE=golang:1.27.2-trixie@sha256:47667934874913a449b96faa7ef4777fa285d9ec29126ee80ed61c45b7cccf0e
+ARG NODE_IMAGE=node:24.21.0-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66
+ARG BUN_IMAGE=oven/bun:1.4.3-slim@sha256:14a223fa35747ec728bce300ef85888bc5f7958164d15bbba6a54b22b52a3288
 ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
+
+FROM ${BUN_IMAGE} AS bun
+
+# The web client (app/web), built as `make web-build` does: Bun installs the packages and runs the
+# script, Vite runs on Node.js (ADR-0025). The output is the same for every platform, so it is built
+# once on the build host's platform.
+FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS web
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
+WORKDIR /src
+COPY app/package.json app/bun.lock app/bunfig.toml app/
+COPY app/ui/package.json app/ui/
+COPY app/web/package.json app/web/
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    cd app && bun install --frozen-lockfile
+COPY locales/ locales/
+COPY app/ app/
+RUN cd app && bun run build
 
 # Cross-compiles on the build host's platform; Go needs no emulation for the target architecture.
 FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS build
@@ -22,7 +41,9 @@ RUN --mount=type=bind,source=go.mod,target=go.mod \
     --mount=type=bind,source=go.sum,target=go.sum \
     --mount=type=cache,target=/go/pkg/mod \
     go mod download
+# internal/interface/web embeds the web build from its dist/ (ADR-0028).
 RUN --mount=type=bind,target=. \
+    --mount=type=bind,from=web,source=/src/app/web/dist,target=internal/interface/web/dist \
     --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/my ./cmd/my \

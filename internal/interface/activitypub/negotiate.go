@@ -4,6 +4,7 @@ package activitypub
 
 import (
 	"mime"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -88,4 +89,11 @@ func (p preference) prefersHTML() bool { return p.htmlQ() > p.apQ() }
 // and ranks it at least as high as HTML. Wildcards alone ask for HTML.
 func (p preference) asksForActivityPub() bool {
 	return p.apSet && p.ap > 0 && p.ap >= p.htmlQ()
+}
+
+// AsksForActivityPub reports whether r names an ActivityPub media type in its Accept header
+// and ranks it at least as high as HTML. Browsers, which send wildcards, ask for HTML. Pages
+// that have no ActivityPub representation answer such requests with 404 instead of HTML.
+func AsksForActivityPub(r *http.Request) bool {
+	return parseAccept(r.Header.Get("Accept")).asksForActivityPub()
 }

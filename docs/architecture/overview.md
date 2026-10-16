@@ -159,6 +159,7 @@ internal/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
     admin/
+    web/             # Web クライアントの HTML の外枠・ビルド成果物（dist/ を埋め込む）・Web アプリマニフェスト（ADR-0028）
   adapter/
     db/{sqlite,libsql,postgres}/
     queue/{db,inline,sqs,cloudtasks}/

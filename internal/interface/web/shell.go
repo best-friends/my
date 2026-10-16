@@ -1,0 +1,160 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package web
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"html/template"
+	"net/url"
+	"strings"
+
+	"github.com/best-friends/my/internal/i18n"
+)
+
+// runtimeConfig is the per-instance configuration of the web client, in the shell's JSON data
+// block. The build is the same for every instance and holds none of it (ADR-0028).
+type runtimeConfig struct {
+	// APIOrigin is the origin of the client API (ADR-0016).
+	APIOrigin string `json:"apiOrigin"`
+	// InstanceName is the instance's display name.
+	InstanceName string `json:"instanceName"`
+	// AccountDomain is the domain of local handles (@alice@{accountDomain}).
+	AccountDomain string `json:"accountDomain"`
+	// DefaultLocale is the instance's default locale.
+	DefaultLocale string `json:"defaultLocale"`
+}
+
+type shellData struct {
+	Lang, Dir, Title, ThemeColor string
+	HasIcon                      bool
+	// ViteClient is the Vite client script of a dev server, empty in production.
+	ViteClient string
+	Entry      entryTags
+	// Config is a struct, not a string: html/template encodes it as JSON in the data block and
+	// escapes what could end the script element.
+	Config runtimeConfig
+}
+
+// shellTemplate is the generic shell of the SPA. html/template escapes every value for its
+// context; nothing is marked as safe HTML.
+var shellTemplate = template.Must(template.New("shell").Parse(`<!doctype html>
+<html lang="{{.Lang}}" dir="{{.Dir}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{.Title}}</title>
+<meta name="theme-color" content="{{.ThemeColor}}">
+<link rel="manifest" href="` + PathWebManifest + `">
+{{- if .HasIcon}}
+<link rel="icon" href="/` + iconPath + `" type="image/svg+xml">
+{{- end}}
+{{- range .Entry.Stylesheet}}
+<link rel="stylesheet" href="{{.}}">
+{{- end}}
+{{- range .Entry.Preload}}
+<link rel="modulepreload" href="{{.}}">
+{{- end}}
+<script type="application/json" id="config">{{.Config}}</script>
+{{- if .ViteClient}}
+<script type="module" src="{{.ViteClient}}"></script>
+{{- end}}
+{{- if .Entry.Script}}
+<script type="module" src="{{.Entry.Script}}"></script>
+{{- end}}
+</head>
+<body>
+<div id="root"></div>
+</body>
+</html>
+`))
+
+func renderShell(d shellData) (document, error) {
+	var buf bytes.Buffer
+	if err := shellTemplate.Execute(&buf, d); err != nil {
+		return document{}, fmt.Errorf("web: render the shell: %w", err)
+	}
+	return document{body: buf.Bytes(), etag: etag(buf.Bytes()), contentType: "text/html; charset=utf-8"}, nil
+}
+
+// contentSecurityPolicy is the policy of the web client's documents (ADR-0019 §9). It has no
+// nonce, so that the shell can be cached (ADR-0028). The client API and media are on the
+// server's own origin.
+const contentSecurityPolicy = "default-src 'none'; " +
+	"script-src 'self'; " +
+	"style-src 'self'; " +
+	"img-src 'self' blob:; " +
+	"media-src 'self' blob:; " +
+	"font-src 'self'; " +
+	"connect-src 'self'; " +
+	"manifest-src 'self'; " +
+	"worker-src 'self'; " +
+	"form-action 'self'; " +
+	"frame-ancestors 'none'; " +
+	"base-uri 'none'; " +
+	"object-src 'none'; " +
+	"require-trusted-types-for 'script'; " +
+	"upgrade-insecure-requests"
+
+// devContentSecurityPolicy relaxes the policy for a Vite dev server at origin: its scripts and
+// files, its hot module replacement WebSocket, and the <style> elements its client injects.
+// Trusted Types and the upgrade to HTTPS are left out, since the dev server's client and the
+// plain-HTTP setup do not satisfy them.
+func devContentSecurityPolicy(origin *url.URL) string {
+	o := origin.Scheme + "://" + origin.Host
+	ws := strings.Replace(o, "http", "ws", 1)
+	return "default-src 'none'; " +
+		"script-src 'self' " + o + "; " +
+		"style-src 'self' 'unsafe-inline' " + o + "; " +
+		"img-src 'self' blob: " + o + "; " +
+		"media-src 'self' blob: " + o + "; " +
+		"font-src 'self' " + o + "; " +
+		"connect-src 'self' " + o + " " + ws + "; " +
+		"manifest-src 'self'; " +
+		"worker-src 'self'; " +
+		"form-action 'self'; " +
+		"frame-ancestors 'none'; " +
+		"base-uri 'none'; " +
+		"object-src 'none'"
+}
+
+// webManifest is the Web App Manifest (https://www.w3.org/TR/appmanifest/).
+type webManifest struct {
+	ID              string         `json:"id"`
+	Name            string         `json:"name"`
+	ShortName       string         `json:"short_name"`
+	StartURL        string         `json:"start_url"`
+	Scope           string         `json:"scope"`
+	Display         string         `json:"display"`
+	Lang            string         `json:"lang"`
+	Dir             string         `json:"dir"`
+	ThemeColor      string         `json:"theme_color"`
+	BackgroundColor string         `json:"background_color"`
+	Icons           []manifestIcon `json:"icons"`
+}
+
+type manifestIcon struct {
+	Src     string `json:"src"`
+	Sizes   string `json:"sizes"`
+	Type    string `json:"type"`
+	Purpose string `json:"purpose"`
+}
+
+// renderWebManifest generates the manifest from the instance settings in o.
+func renderWebManifest(o *Options, hasIcon bool) (document, error) {
+	m := webManifest{
+		ID: "/", Name: o.InstanceName, ShortName: o.InstanceName, StartURL: "/", Scope: "/", Display: "standalone",
+		Lang: o.Locale, Dir: i18n.Direction(o.Locale), ThemeColor: o.ThemeColor, BackgroundColor: o.BackgroundColor,
+		Icons: []manifestIcon{},
+	}
+	if hasIcon {
+		m.Icons = append(m.Icons, manifestIcon{Src: "/" + iconPath, Sizes: "any", Type: "image/svg+xml", Purpose: "any"})
+	}
+	body, err := json.Marshal(m)
+	if err != nil {
+		return document{}, fmt.Errorf("web: render the manifest: %w", err)
+	}
+	body = append(body, '\n')
+	return document{body: body, etag: etag(body), contentType: "application/manifest+json"}, nil
+}
