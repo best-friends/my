@@ -1,11 +1,16 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
-<!-- The entry of the Vite build only: `my serve` returns its own HTML shell with the tags from the build manifest (ADR-0028). -->
-<html lang="en">
+<!-- The entry of the Vite build, and the page `vite preview` serves to the E2E tests. `my serve` returns its own
+     HTML shell instead, with the tags from the build manifest and the instance's lang, dir and runtime config (ADR-0028);
+     the config below stands in for it here. -->
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>my</title>
+    <script type="application/json" id="config">
+      {"apiOrigin":"http://127.0.0.1:4173","instanceName":"my example","accountDomain":"my.example","defaultLocale":"en"}
+    </script>
   </head>
   <body>
     <div id="root"></div>

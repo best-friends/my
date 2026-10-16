@@ -1,13 +1,78 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { screen } from "@testing-library/react";
-import { expect, test } from "vitest";
-import { App } from "./App";
-import { messages } from "./lib/i18n";
-import { renderWithProviders } from "./test/render";
+// Integration tests of the app shell (web-client.md T4): the real router, providers and layout.
+import { screen, within } from "@testing-library/react";
+import { describe, expect, test } from "vitest";
+import { renderApp } from "./test/render";
 
-test("the placeholder page shows its heading as the only level-one heading", () => {
-  renderWithProviders(<App />);
+describe("app shell", () => {
+  test("opens at the home page with the navigation and one level-one heading in the main landmark", async () => {
+    await renderApp();
 
-  expect(screen.getByRole("main")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(messages["client:app.placeholder"] ?? "");
+    const heading = await screen.findByRole("heading", { level: 1, name: "Home" });
+    expect(within(screen.getByRole("main")).getAllByRole("heading", { level: 1 })).toEqual([heading]);
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(within(nav).getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Local" })).not.toHaveAttribute("aria-current");
+  });
+
+  test("names the document after the first page without moving focus to it", async () => {
+    await renderApp();
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "Home" });
+    expect(document.title).toBe("Home – my example");
+    expect(heading).not.toHaveFocus();
+  });
+
+  test("moves focus to the new page's heading and renames the document on navigation", async () => {
+    const { user } = await renderApp();
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    await user.click(within(nav).getByRole("link", { name: "Local" }));
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "Local timeline" });
+    expect(heading).toHaveFocus();
+    expect(document.title).toBe("Local timeline – my example");
+    expect(within(nav).getByRole("link", { name: "Local" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
+  });
+
+  test("navigates from the keyboard", async () => {
+    const { user } = await renderApp({ path: "/local" });
+    await screen.findByRole("heading", { level: 1, name: "Local timeline" });
+
+    within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Settings" }).focus();
+    await user.keyboard("{Enter}");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toHaveFocus();
+    expect(document.title).toBe("Settings – my example");
+  });
+
+  test("the skip link moves focus to the main landmark", async () => {
+    const { user } = await renderApp();
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+
+    await user.tab();
+    const skip = screen.getByRole("link", { name: "Skip to main content" });
+    expect(skip).toHaveFocus();
+    await user.keyboard("{Enter}");
+
+    expect(screen.getByRole("main")).toHaveFocus();
+  });
+
+  test("shows a not-found page inside the layout for an unknown address", async () => {
+    await renderApp({ path: "/no-such-page" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Page not found" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go to the home timeline" })).toHaveAttribute("href", "/");
+    expect(document.title).toBe("Page not found – my example");
+  });
+
+  test("renders in the locale it is given, falling back to the closest catalog", async () => {
+    await renderApp({ locale: "ja-JP" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "ホーム" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "メイン" })).toBeInTheDocument();
+  });
 });

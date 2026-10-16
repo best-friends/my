@@ -4,6 +4,7 @@
 import { fileURLToPath } from "node:url";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig, type Plugin, searchForWorkspaceRoot } from "vite";
 
@@ -59,6 +60,10 @@ export default defineConfig({
     fs: { allow: [searchForWorkspaceRoot(process.cwd()), localesDir] },
   },
   plugins: [
+    // File-based routes from src/routes; the generated src/routeTree.gen.ts is committed so that tsc
+    // runs before a build. Each route's components go into their own chunk. TanStack Router's docs
+    // require this plugin before the React plugin.
+    tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
     babel({ presets: [reactCompilerPreset({ logger: compilerCheck.logger })] }),
     compilerCheck.plugin,

@@ -1,6 +1,110 @@
 {
-  "app.placeholder": {
-    "defaultMessage": "[Ŧħḗḗ ẇḗḗƀ ƈŀīḗḗƞŧ īş ŭŭƞḓḗḗř ƈǿǿƞşŧřŭŭƈŧīǿǿƞ.]",
+  "home.title": {
+    "defaultMessage": "[Ħǿǿḿḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "local.title": {
+    "defaultMessage": "[Ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.title": {
+    "defaultMessage": "[Ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "page.not_built": {
+    "defaultMessage": "[Ŧħīş şƈřḗḗḗḗƞ īş ƞǿǿŧ řḗḗȧȧḓẏ ẏḗḗŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.title": {
+    "defaultMessage": "[Ƥřǿǿƒīŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.title": {
+    "defaultMessage": "[Şḗḗŧŧīƞɠş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.about.domain": {
+    "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧş ħḗḗřḗḗ ḗḗƞḓ ẇīŧħ @{domain}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.about.title": {
+    "defaultMessage": "[Ȧƀǿǿŭŭŧ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.document_title": {
+    "defaultMessage": "[{page} – {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.body": {
+    "defaultMessage": "[Ŧħīş ƥȧȧɠḗḗ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ şħǿǿẇƞ. Ŧřẏ ȧȧɠȧȧīƞ, ǿǿř ƈǿǿḿḗḗ ƀȧȧƈķ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.retry": {
+    "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.title": {
+    "defaultMessage": "[Şǿǿḿḗḗŧħīƞɠ ẇḗḗƞŧ ẇřǿǿƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.loading": {
+    "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.home": {
+    "defaultMessage": "[Ħǿǿḿḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.label": {
+    "defaultMessage": "[Ḿȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.local": {
+    "defaultMessage": "[Ŀǿǿƈȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.notifications": {
+    "defaultMessage": "[Ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.profile": {
+    "defaultMessage": "[Ƥřǿǿƒīŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.settings": {
+    "defaultMessage": "[Şḗḗŧŧīƞɠş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.not_found.body": {
+    "defaultMessage": "[Ŧħḗḗřḗḗ īş ƞǿǿ ƥȧȧɠḗḗ ȧȧŧ ŧħīş ȧȧḓḓřḗḗşş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.not_found.home": {
+    "defaultMessage": "[Ɠǿǿ ŧǿǿ ŧħḗḗ ħǿǿḿḗḗ ŧīḿḗḗŀīƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.not_found.title": {
+    "defaultMessage": "[Ƥȧȧɠḗḗ ƞǿǿŧ ƒǿǿŭŭƞḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.skip_to_main": {
+    "defaultMessage": "[Şķīƥ ŧǿǿ ḿȧȧīƞ ƈǿǿƞŧḗḗƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.startup_error.body": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř şḗḗƞŧ şḗḗŧŧīƞɠş ŧħḗḗ ȧȧƥƥ ƈȧȧƞƞǿǿŧ řḗḗȧȧḓ. Řḗḗŀǿǿȧȧḓ ŧħḗḗ ƥȧȧɠḗḗ; īƒ ŧħīş ķḗḗḗḗƥş ħȧȧƥƥḗḗƞīƞɠ, ŧḗḗŀŀ ŧħḗḗ şḗḗřṽḗḗř'ş ȧȧḓḿīƞīşŧřȧȧŧǿǿř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.startup_error.title": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƥƥ ƈǿǿŭŭŀḓ ƞǿǿŧ şŧȧȧřŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.toast.dismiss": {
+    "defaultMessage": "[Ḓīşḿīşş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.toast.region": {
+    "defaultMessage": "[Ḿḗḗşşȧȧɠḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   }
 }

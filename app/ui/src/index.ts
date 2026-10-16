@@ -4,6 +4,12 @@
 // and their Tailwind entry scans it with @source.
 export { Center, type CenterProps } from "./Center";
 
+// The app-wide settings of the kit's components, which an app renders once at its root, so that it needs
+// no direct dependency on react-aria-components:
+// - I18nProvider: the locale (built-in strings, number and date formats, and the direction of arrow keys);
+// - RouterProvider: the app router's navigate for every Link, Menu item or Tab with an href.
+export { I18nProvider, type I18nProviderProps, RouterProvider } from "react-aria-components";
+
 // Form controls.
 export { Button, type ButtonProps } from "./Button";
 export { Checkbox, type CheckboxProps } from "./Checkbox";

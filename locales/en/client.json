@@ -1,6 +1,110 @@
 {
-  "app.placeholder": {
-    "defaultMessage": "The web client is under construction.",
-    "description": "Heading of the placeholder page the web client shows until its screens exist."
+  "home.title": {
+    "defaultMessage": "Home",
+    "description": "Heading and document title of the home timeline page."
+  },
+  "local.title": {
+    "defaultMessage": "Local timeline",
+    "description": "Heading and document title of the page with the public posts of this server's accounts."
+  },
+  "notifications.title": {
+    "defaultMessage": "Notifications",
+    "description": "Heading and document title of the notifications page."
+  },
+  "page.not_built": {
+    "defaultMessage": "This screen is not ready yet.",
+    "description": "Text below the heading of a page whose screen the web client does not have yet."
+  },
+  "profile.title": {
+    "defaultMessage": "Profile",
+    "description": "Heading and document title of the signed-in user's own profile page."
+  },
+  "settings.title": {
+    "defaultMessage": "Settings",
+    "description": "Heading and document title of the settings page."
+  },
+  "shell.about.domain": {
+    "defaultMessage": "Accounts here end with @{domain}.",
+    "description": "In the side column about this server: the domain of the handles of local accounts, for example 'Accounts here end with @example.com.'."
+  },
+  "shell.about.title": {
+    "defaultMessage": "About this server",
+    "description": "Heading of the side column, shown on wide screens, that tells about the server the user is on."
+  },
+  "shell.document_title": {
+    "defaultMessage": "{page} – {instance}",
+    "description": "The browser tab title: the heading of the current page, then the server's name."
+  },
+  "shell.error.body": {
+    "defaultMessage": "This page could not be shown. Try again, or come back later.",
+    "description": "Text on the page shown when a screen failed to load or broke."
+  },
+  "shell.error.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that loads the failed page again."
+  },
+  "shell.error.title": {
+    "defaultMessage": "Something went wrong",
+    "description": "Heading of the page shown when a screen failed to load or broke."
+  },
+  "shell.loading": {
+    "defaultMessage": "Loading",
+    "description": "Accessible name of the progress indicator shown while a page loads."
+  },
+  "shell.nav.home": {
+    "defaultMessage": "Home",
+    "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.nav.label": {
+    "defaultMessage": "Main",
+    "description": "Accessible name of the main navigation (the tab bar on phones, the side rail on larger screens)."
+  },
+  "shell.nav.local": {
+    "defaultMessage": "Local",
+    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.nav.notifications": {
+    "defaultMessage": "Notifications",
+    "description": "Navigation item that opens the notifications. Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.nav.profile": {
+    "defaultMessage": "Profile",
+    "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.nav.settings": {
+    "defaultMessage": "Settings",
+    "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.not_found.body": {
+    "defaultMessage": "There is no page at this address.",
+    "description": "Text on the page shown for an address that the web client has no page for."
+  },
+  "shell.not_found.home": {
+    "defaultMessage": "Go to the home timeline",
+    "description": "Link on the not-found page back to the home timeline."
+  },
+  "shell.not_found.title": {
+    "defaultMessage": "Page not found",
+    "description": "Heading of the page shown for an address that the web client has no page for."
+  },
+  "shell.skip_to_main": {
+    "defaultMessage": "Skip to main content",
+    "description": "Link at the very start of every page, visible when focused, that moves keyboard focus past the navigation."
+  },
+  "shell.startup_error.body": {
+    "defaultMessage": "The server sent settings the app cannot read. Reload the page; if this keeps happening, tell the server's administrator.",
+    "description": "Text shown instead of the app when its runtime configuration from the server is missing or invalid."
+  },
+  "shell.startup_error.title": {
+    "defaultMessage": "The app could not start",
+    "description": "Heading shown instead of the app when its runtime configuration from the server is missing or invalid."
+  },
+  "shell.toast.dismiss": {
+    "defaultMessage": "Dismiss",
+    "description": "Accessible name of the × button that closes a toast message."
+  },
+  "shell.toast.region": {
+    "defaultMessage": "Messages",
+    "description": "Accessible name of the area where short status messages (toasts) appear, such as 'Post published'."
   }
 }
