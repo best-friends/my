@@ -1,4 +1,12 @@
 {
+  "api.error.network": {
+    "defaultMessage": "Could not reach the server. Check your connection and try again.",
+    "description": "Error message when a request to the server got no answer (offline, or the server is down)."
+  },
+  "api.error.status": {
+    "defaultMessage": "The server could not handle the request (error {status}). Try again later.",
+    "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
+  },
   "home.title": {
     "defaultMessage": "Home",
     "description": "Heading and document title of the home timeline page."
@@ -6,6 +14,38 @@
   "local.title": {
     "defaultMessage": "Local timeline",
     "description": "Heading and document title of the page with the public posts of this server's accounts."
+  },
+  "login.body": {
+    "defaultMessage": "Sign in to {instance} to post, follow people and read your home timeline.",
+    "description": "Text on the sign-in page. {instance} is the name of this server."
+  },
+  "login.failed.denied": {
+    "defaultMessage": "The sign-in was cancelled on the server's screen.",
+    "description": "Why signing in failed: the user declined on the server's authorization screen."
+  },
+  "login.failed.invalid_state": {
+    "defaultMessage": "This sign-in was not started in this tab, or it has already been completed. Start again.",
+    "description": "Why signing in failed: the answer from the server does not belong to a sign-in that this browser tab started."
+  },
+  "login.failed.rejected": {
+    "defaultMessage": "The server did not accept the sign-in. Start again.",
+    "description": "Why signing in failed: the server refused to finish it (for example, it took too long)."
+  },
+  "login.failed.retry": {
+    "defaultMessage": "Sign in again",
+    "description": "Link from the failed sign-in page back to the sign-in page."
+  },
+  "login.failed.title": {
+    "defaultMessage": "Could not sign in",
+    "description": "Heading and document title of the page shown when signing in failed on the way back from the server's sign-in screen."
+  },
+  "login.submit": {
+    "defaultMessage": "Continue to sign in",
+    "description": "Button on the sign-in page that opens the server's sign-in screen."
+  },
+  "login.title": {
+    "defaultMessage": "Sign in",
+    "description": "Heading and document title of the page that starts signing in."
   },
   "notifications.title": {
     "defaultMessage": "Notifications",
@@ -18,6 +58,26 @@
   "profile.title": {
     "defaultMessage": "Profile",
     "description": "Heading and document title of the signed-in user's own profile page."
+  },
+  "session.account.title": {
+    "defaultMessage": "Account",
+    "description": "Heading of the section of the settings page about the signed-in account."
+  },
+  "session.sign_in": {
+    "defaultMessage": "Sign in",
+    "description": "Link in the account section of the settings page that opens the sign-in page."
+  },
+  "session.sign_out": {
+    "defaultMessage": "Sign out",
+    "description": "Button that signs the user out of the app in every tab."
+  },
+  "session.sign_out.failed": {
+    "defaultMessage": "You are signed out here, but the server could not be reached. Your session may resume when you reload the page.",
+    "description": "Notice after signing out when the server could not be told; the browser may still hold the session."
+  },
+  "session.signed_out": {
+    "defaultMessage": "You are not signed in.",
+    "description": "Text in the account section of the settings page when nobody is signed in."
   },
   "settings.title": {
     "defaultMessage": "Settings",

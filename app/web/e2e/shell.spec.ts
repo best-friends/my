@@ -41,6 +41,26 @@ for (const path of pages) {
   });
 }
 
+// The sign-in page is outside the navigation; vite preview has no OAuth endpoints, so no session resumes.
+test.describe("page /login", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
+  test("has no axe violations", async ({ makeAxeBuilder }) => {
+    await expectNoAxeViolations(makeAxeBuilder);
+  });
+
+  test("does not scroll horizontally", async ({ page }) => {
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("offers the one button to the server's sign-in screen", async ({ page }) => {
+    await expect(page.getByRole("main").getByRole("button")).toHaveCount(1);
+  });
+});
+
 test.describe("layout", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");

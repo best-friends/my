@@ -3,8 +3,8 @@
 // TanStack Router Vite plugin. Navigations commit inside React's startTransition (the router's
 // Transitioner), so the current page stays on screen while the next one loads (web-client.md E4); the
 // pending component appears only when a load takes longer than defaultPendingMs.
-import type { QueryClient } from "@tanstack/react-query";
 import { createRouter, type RouterHistory } from "@tanstack/react-router";
+import type { RouterContext } from "./lib/query";
 import { routeTree } from "./routeTree.gen";
 import { RouteError, RoutePending } from "./routes/-layout/RouteStates";
 
@@ -21,17 +21,16 @@ export const routerOptions = {
   scrollRestoration: true,
 } as const;
 
-export type AppRouterOptions = {
-  queryClient: QueryClient;
+export type AppRouterOptions = RouterContext & {
   /** The browser's history by default; tests pass a memory history. */
   history?: RouterHistory;
 };
 
-export function createAppRouter({ queryClient, history }: AppRouterOptions) {
+export function createAppRouter({ queryClient, api, session, history }: AppRouterOptions) {
   return createRouter({
     ...routerOptions,
     routeTree,
-    context: { queryClient },
+    context: { queryClient, api, session },
     ...(history === undefined ? {} : { history }),
   });
 }
