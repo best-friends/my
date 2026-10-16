@@ -5,6 +5,10 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
 
+// jsdom has no layout and does not implement scrolling; the Feed's virtualizer scrolls the window when
+// articles are measured. A no-op keeps jsdom from logging "Not implemented" for every test.
+window.scrollTo = () => undefined;
+
 afterEach(() => {
   cleanup();
 });
