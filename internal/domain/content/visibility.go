@@ -87,3 +87,16 @@ func (r AuthorRestrictions) VisibilityCeiling() Visibility {
 func EffectiveVisibility(original Visibility, author AuthorRestrictions) Visibility {
 	return Narrower(original, author.VisibilityCeiling())
 }
+
+// PostingVisibilities returns the visibilities that a new status of the author keeps as asked for,
+// from the widest audience to the narrowest: those that EffectiveVisibility leaves unchanged.
+// Clients offer these and say that any other one becomes the ceiling (data-model §5.4).
+func PostingVisibilities(author AuthorRestrictions) []Visibility {
+	var out []Visibility
+	for _, v := range Visibilities() {
+		if EffectiveVisibility(v, author) == v {
+			out = append(out, v)
+		}
+	}
+	return out
+}

@@ -16,7 +16,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | R1 | コンポーネントとフックは純粋にする。レンダリング中に副作用・変更・`Date.now()` / `Math.random()` を書かない | `react-hooks/purity`、`react-hooks/globals` |
 | R2 | props・state・フックに渡した値・JSX に渡した値を変更しない（`push` / `sort` ではなく `toSorted` / スプレッド） | `react-hooks/immutability`（代入を検出する。`push` / `sort` などのメソッド呼び出しはレビュー） |
 | R3 | フックはコンポーネントか `use*` 関数のトップレベルでだけ呼ぶ | `react-hooks/rules-of-hooks` |
-| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint で失敗させる。コンパイラから外す（`"use no memo"`）のは、コンパイルできないライブラリを包む 1 つのフックだけにし、理由を書く（`@my/ui` の `Feed` が TanStack Virtual の仮想化を読むフック） | `eslint-plugin-react-hooks` の `recommended-latest`（`react-hooks/incompatible-library`・`react-hooks/unsupported-syntax` も error）、`vite build`（コンパイラが 1 つも関数を変換しないと失敗）、`no-restricted-syntax`（`"use no memo"` / `"use no forget"`。必要なときは理由付きの無効化コメント） |
+| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint とビルドで失敗させる。コンパイラから外す（`"use no memo"`）のは、コンパイルできないライブラリを包む 1 つのフックだけにし、理由を書く（`@my/ui` の `Feed` が TanStack Virtual の仮想化を読むフック） | `eslint-plugin-react-hooks` の `recommended-latest`（`react-hooks/incompatible-library`・`react-hooks/unsupported-syntax` も error）、`vite build`（`app/web/vite-plugins/react-compiler-check.ts`。コンパイラが関数を 1 つでも諦めると、場所と理由を出して失敗する。`"use no memo"` で外した関数は除く。1 つも関数を変換しなくても失敗）、`no-restricted-syntax`（`"use no memo"` / `"use no forget"`。必要なときは理由付きの無効化コメント。API クライアントのフック `api.query.useQuery` / `api.query.useMutation` の呼び出し、§10） |
 | R5 | `useMemo` / `useCallback` / `memo` は書かない。必要なとき（Effect の依存に安定した参照が要るなど）は理由をコメントに書く | `no-restricted-imports`・`no-restricted-syntax`（`useMemo` / `useCallback` / `memo` の使用。必要なときは理由付きの無効化コメント）、`react-hooks/use-memo` |
 | R6 | 他の値から計算できるものは state にせず、レンダリング中に計算する | `react-hooks/set-state-in-effect`、`react-hooks/no-deriving-state-in-effects` |
 | R7 | 利用者の操作で起きる処理（送信・通知・計測）はイベントハンドラに書く。Effect に書かない | レビュー |
@@ -215,7 +215,7 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
 - **クライアント**（`lib/api/client.ts`）: openapi-fetch のクライアントと、その上の openapi-react-query のクライアントを 1 つずつ作る（`Api` の `fetch` と `query`）。
   機能は `features/<x>/api` で `api.query.queryOptions(...)` から `queryOptions` を作る。キーは `[method, path, params]` になる。
   書き込みは、`features/<x>/api` が `api.fetch` で作る `mutationKey` / `mutationFn` を TanStack Query の `useMutation` に渡す。
-  `api.query.useMutation` はオブジェクトから読むフックなので、React Compiler がそのフックごと最適化を諦める（R4、react.dev の Don't dynamically use Hooks）。
+  openapi-react-query のフック（`api.query.useQuery` / `api.query.useMutation` など）は呼ばない（`no-restricted-syntax`）。オブジェクトから読むフックは描画ごとに同じ関数だと示せないので、React Compiler が呼んだフックごと最適化を諦め、`vite build` が失敗する（R4、[Don't dynamically use Hooks](https://react.dev/reference/rules/react-calls-components-and-hooks#dont-dynamically-use-hooks)）。
   ページを `next_cursor` でたどる一覧（タイムライン）は、openapi-react-query に無限クエリの `queryOptions` がないので、TanStack Query の `infiniteQueryOptions` で `api.fetch` を呼んで作る。
   キーは同じ形の末尾に `"pages"` を足したもの（`["get", "/timelines/local", "pages"]`）にし、同じ操作の普通のクエリと重ならないようにする（`features/timeline/api`）。
   - 表示のロケール（§9）を要求ごとに `Accept-Language` で送り、サーバーが problem の `title` / `detail` をそのロケールで返すようにする。
@@ -281,7 +281,11 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   リロードやタブの異常終了で失わないように、アカウントごとのキー（`my:user:compose:<アカウント ID>`）で sessionStorage に保存する。このタブだけのもので、タブを閉じるかセッションが終わると消える（§10）。
   アップロードの途中のファイルは保存しない（再開できない）。アップロード済みの画像は ID と説明を保存し、リロード後はサーバーのサムネイルを表示する。
 - **既定値**: 公開範囲と言語は、利用者が選ぶまで `GET /preferences` の既定値に従う（state にコピーせず、表示のたびに求める）。返信の公開範囲の既定は、既定値と返信先のうち狭いほう（ADR-0017。`local` への返信は `local`）。
-  公開範囲は 5 段階を説明付きのラジオグループ（ポップオーバーの中）で選ぶ。サーバーが制限で公開範囲を狭めたとき（data-model.md §5.4）は、投稿の後に結果の公開範囲をトーストで知らせる。API は投稿の前に上限を返さない。
+  公開範囲は 5 段階を説明付きのラジオグループ（ポップオーバーの中）で選ぶ。
+  制限で公開範囲に上限があるとき（data-model.md §5.4）は、閲覧者の `CredentialAccount` の `posting`（サーバーがドメインの規則から求めたもの）の `visibilities` にない選択肢を無効にし、ラジオグループの説明で上限を示す。
+  上限より広い選択（制限の前に選んだもの、既定値）は、上限（`visibility_ceiling`）として表示して送る。上限は投稿の間にも変わり得るので、結果の公開範囲が送ったものより狭いときは、投稿の後にトーストで知らせる。
+  `local` の投稿がほかのサーバーのアカウントにメンションするときは警告する（ADR-0017）。本文が 400 ms 変わらなくなってから、ドメイン付きのメンションを `GET /accounts/lookup` で引き、
+  見つかったほかのサーバーのアカウント（`acct` にドメインがある）を `GET /accounts/relationships` で調べ、閲覧者をフォローしていない相手に投稿が届かないことを本文の下に示す。サーバーが知らないアカウントは、サーバーも解決しないので示さない。
   言語の選択肢の名前は `Intl.DisplayNames` で表示中のロケールにする（カタログに言語名を持たない）。
 - **文字数**: `GET /instance` の `limits.max_post_characters` から CW の文字数を引いたものを本文の上限にし、`TextArea` の文字数カウンタで示す。数え方はサーバーと同じコードポイント。上限を超えると送信できない。
 - **画像**: 1 投稿 4 枚まで、JPEG・PNG・GIF・WebP。選んだファイルは `prepareImage` が `createImageBitmap`（EXIF の向きを適用）と `OffscreenCanvas` で 3840 × 2160 ピクセルの面積以内に縮め、描き直して EXIF などのメタデータを捨ててから送る。
