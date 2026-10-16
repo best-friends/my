@@ -64,7 +64,7 @@ What this process runs.
 | --- | --- | --- |
 | `all` | yes | HTTP server and job worker in one process. |
 | `web` | yes | HTTP server only. |
-| `worker` | yes | Job worker only. |
+| `worker` | yes | Job worker only; the HTTP server answers only the health checks (docs/operations/running.md). |
 
 ### `listen`
 

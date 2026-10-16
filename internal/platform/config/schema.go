@@ -78,7 +78,7 @@ var schema = []field{
 		choices: []choice{
 			{value: string(RoleAll), inV0: true, doc: "HTTP server and job worker in one process."},
 			{value: string(RoleWeb), inV0: true, doc: "HTTP server only."},
-			{value: string(RoleWorker), inV0: true, doc: "Job worker only."},
+			{value: string(RoleWorker), inV0: true, doc: "Job worker only; the HTTP server answers only the health checks (docs/operations/running.md)."},
 		},
 		set: func(c *Config, v string) { c.Role = Role(v) },
 	},
