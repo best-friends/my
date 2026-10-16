@@ -13,9 +13,11 @@ type Fixtures = {
   makeAxeBuilder: () => AxeBuilder;
   /**
    * Serves the HTML documents of `vite preview` (the client) with the project's locale in
-   * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028), and with
-   * the preview's origin as the API origin of the runtime config and the build's files linked from the root;
-   * `vite preview` serves index.html as it is.
+   * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028);
+   * `vite preview` serves index.html as it is. The runtime config's `apiOrigin` becomes the preview's own
+   * origin, which the run picks (server-origin.ts), so that the client's API and OAuth requests stay on it,
+   * where specs can answer them with `page.route`. The build's asset links are relative (Vite's base "./"); they
+   * become links from the root, as `my serve` writes them, which pages below the root (/settings/profile) need.
    * Pages of a real `my serve` are left alone.
    */
   shellLocale: string;
@@ -45,9 +47,6 @@ export const test = base.extend<Fixtures>({
           return;
         }
         const response = await route.fetch();
-        // index.html's runtime config names a fixed port; the API is on the origin of this run's preview. The
-        // build's tags are relative (Vite's base "./"); `my serve` writes them from the root, which pages below
-        // the root (/settings/profile) need.
         const body = (await response.text())
           .replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`)
           .replace(/"apiOrigin":"[^"]*"/, `"apiOrigin":"${previewOrigin}"`)

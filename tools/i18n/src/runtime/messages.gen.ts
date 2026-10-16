@@ -26,8 +26,64 @@ export interface MessageArgs {
   "client:login.submit": {};
   /** Sign in */
   "client:login.title": {};
+  /** No notifications yet */
+  "client:notifications.empty.all": {};
+  /** When someone follows you, mentions you or reacts to your posts, it shows up here. */
+  "client:notifications.empty.description": {};
+  /** No notifications of this type */
+  "client:notifications.empty.filtered": {};
+  /** All */
+  "client:notifications.filter.all": {};
+  /** Boosts */
+  "client:notifications.filter.boosts": {};
+  /** Favourites */
+  "client:notifications.filter.favourites": {};
+  /** Follows */
+  "client:notifications.filter.follows": {};
+  /** Notification types */
+  "client:notifications.filter.label": {};
+  /** Mentions */
+  "client:notifications.filter.mentions": {};
+  /** Load more notifications */
+  "client:notifications.load_more": {};
+  /** Loading notifications */
+  "client:notifications.loading": {};
+  /** This post could not be loaded. */
+  "client:notifications.post.error": {};
+  /** Open post */
+  "client:notifications.post.open": {};
+  /** Show content */
+  "client:notifications.post.show": {};
+  /** Try again */
+  "client:notifications.retry": {};
+  /** Sign in */
+  "client:notifications.sign_in": {};
+  /** Sign in to see your notifications. */
+  "client:notifications.signed_out": {};
+  /** {time, date, medium} {time, time, short} */
+  "client:notifications.time": { time: Date | number };
   /** Notifications */
   "client:notifications.title": {};
+  /** {name} boosted your post */
+  "client:notifications.type.boost": { name: string };
+  /** {name} favourited your post */
+  "client:notifications.type.favourite": { name: string };
+  /** {name} followed you */
+  "client:notifications.type.follow": { name: string };
+  /** {name} accepted your follow request */
+  "client:notifications.type.follow_accepted": { name: string };
+  /** {name} requested to follow you */
+  "client:notifications.type.follow_request": { name: string };
+  /** {name} mentioned you */
+  "client:notifications.type.mention": { name: string };
+  /** The moderators of this server sent you a notice */
+  "client:notifications.type.moderation_notice": {};
+  /** A poll you took part in has ended */
+  "client:notifications.type.poll_closed": {};
+  /** Unread: */
+  "client:notifications.unread": {};
+  /** {count, plural, one {# unread} other {# unread}} */
+  "client:notifications.unread_count": { count: number };
   /** This screen is not ready yet. */
   "client:page.not_built": {};
   /** Profile */
@@ -210,6 +266,8 @@ export interface MessageArgs {
   "client:shell.nav.local": {};
   /** Notifications */
   "client:shell.nav.notifications": {};
+  /** Notifications, {count, plural, one {# unread} other {# unread}} */
+  "client:shell.nav.notifications_unread": { count: number };
   /** Profile */
   "client:shell.nav.profile": {};
   /** Settings */

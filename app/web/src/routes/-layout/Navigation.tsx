@@ -2,9 +2,14 @@
 // The main navigation, one landmark for every width (web-client.md D1, D2): a tab bar on the bottom edge
 // of phones, a side rail of icons with short labels on tablets (md), and a sidebar with full labels on
 // desktops (lg). The link to the current section has aria-current="page".
-import { Link } from "@my/ui";
+//
+// The notifications item shows the number of unread notifications as a badge on the icon's corner. The
+// badge's digits are hidden from assistive technology; the link is named with the count instead
+// ("Notifications, 3 unread"), a name that starts with the visible label (WCAG 2.5.3).
+import { Badge, Link } from "@my/ui";
 import { useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { useUnreadNotificationCount } from "../../features/notifications";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { HomeIcon, LocalIcon, NotificationsIcon, ProfileIcon, SettingsIcon } from "./icons";
 
@@ -30,27 +35,39 @@ function inSection(pathname: string, to: NavigationItem["to"]): boolean {
 export function Navigation() {
   const t = useT();
   const pathname = useLocation({ select: (location) => location.pathname });
+  const unread = useUnreadNotificationCount();
   return (
     <nav
       aria-label={t("client:shell.nav.label")}
       className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface-raised px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:h-svh md:border-t-0 md:border-e md:bg-surface md:px-0 md:pb-0"
     >
       <ul className="grid grid-cols-5 md:flex md:flex-col md:gap-1 md:p-2 lg:w-60">
-        {items.map((item) => (
-          <li key={item.to} className="min-w-0">
-            <Link
-              href={item.to}
-              aria-current={inSection(pathname, item.to) ? "page" : undefined}
-              variant="standalone"
-              className="group flex min-h-16 flex-col justify-center gap-1 px-1 text-xs font-normal text-fg-muted no-underline data-hovered:bg-surface-sunken data-hovered:no-underline pointer-coarse:min-h-16 aria-[current=page]:font-semibold aria-[current=page]:text-accent md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base"
-            >
-              <span className="rounded-full px-4 py-0.5 group-aria-[current=page]:bg-accent group-aria-[current=page]:text-accent-fg lg:px-1">
-                {item.icon}
-              </span>
-              <span className="max-w-full truncate lg:whitespace-normal">{t(item.label)}</span>
-            </Link>
-          </li>
-        ))}
+        {items.map((item) => {
+          const badge = item.to === "/notifications" && unread > 0;
+          return (
+            <li key={item.to} className="min-w-0">
+              <Link
+                href={item.to}
+                {...(badge ? { "aria-label": t("client:shell.nav.notifications_unread", { count: unread }) } : {})}
+                aria-current={inSection(pathname, item.to) ? "page" : undefined}
+                variant="standalone"
+                className="group flex min-h-16 flex-col justify-center gap-1 px-1 text-xs font-normal text-fg-muted no-underline data-hovered:bg-surface-sunken data-hovered:no-underline pointer-coarse:min-h-16 aria-[current=page]:font-semibold aria-[current=page]:text-accent md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base"
+              >
+                <span className="relative rounded-full px-4 py-0.5 group-aria-[current=page]:bg-accent group-aria-[current=page]:text-accent-fg lg:px-1">
+                  {item.icon}
+                  {badge && (
+                    <Badge
+                      count={unread}
+                      label={t("client:notifications.unread_count", { count: unread })}
+                      className="absolute -top-1.5 -inset-e-1 ring-2 ring-surface-raised md:ring-surface"
+                    />
+                  )}
+                </span>
+                <span className="max-w-full truncate lg:whitespace-normal">{t(item.label)}</span>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
