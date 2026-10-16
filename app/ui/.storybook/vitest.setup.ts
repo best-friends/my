@@ -38,7 +38,14 @@ afterEach(async (context) => {
   const { locale, theme } = story.globals;
   await emulateReducedMotion(true);
   try {
-    const running = frame.getAnimations({ subtree: true }).map(describeAnimation);
+    // Transitions already in flight (such as the color change when the preview applies the theme)
+    // run to their end even after the media change, so wait for them; none can start under reduce.
+    const inFlight = frame.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSTransition);
+    await Promise.allSettled(inFlight.map((transition) => transition.finished));
+    const running = frame
+      .getAnimations({ subtree: true })
+      .filter((animation) => animation.playState === "running")
+      .map(describeAnimation);
     expect(running, `story ${story.id} still animates with prefers-reduced-motion: reduce`).toEqual([]);
     for (const width of widths) {
       frame.style.inlineSize = `${width}px`;
