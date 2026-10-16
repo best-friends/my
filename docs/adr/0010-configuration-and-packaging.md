@@ -1,6 +1,6 @@
 # ADR-0010: 設定・パッケージング・デプロイテンプレート
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #11
@@ -9,7 +9,7 @@
 
 利用者が自由にカスタマイズでき（G3）、3 系統のターゲットに配れる（G2, NFR-DIST-2）必要がある。
 
-## Decision（推奨案）
+## Decision
 
 ### 設定
 
@@ -20,7 +20,8 @@
 
 ### パッケージング
 
-- モノレポ。Go は単一モジュール（`cmd/`, `internal/`, `pkg/testkit`）、Web / Tauri は `web/` `mobile/` に Bun ワークスペースとして置く（レイアウトは [overview](../architecture/overview.md#6-リポジトリ構成)）。
+- モノレポ。Go は単一モジュール（`cmd/`, `internal/`, `pkg/testkit`）とする。クライアントアプリは `app/` の下に 1 アプリ 1 ディレクトリで置く（`app/web`、`app/mobile`）。
+  `app/*` を Bun ワークスペースのメンバーにし、クライアントのツールチェーン（依存・lint・テスト）をサーバーの Go と分けて扱う（レイアウトは [overview](../architecture/overview.md#6-リポジトリ構成)）。
 - アダプタはパッケージ単位に分け、ビルドタグで除外できるようにする（NFR-PORT-4）。
 - エントリポイント: `cmd/my`（単一バイナリ: `serve` / `worker` / `cli`。Self-hosted・Cloud Run・コンテナ）、`cmd/my-lambda`（AWS Lambda。Lambda Web Adapter で `cmd/my` を流用できるなら不要）。
 - コンテナイメージ: multi-arch（amd64 / arm64）、非 root、distroless 系。GHCR に公開。

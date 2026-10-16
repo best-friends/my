@@ -149,8 +149,9 @@ api/                 # openapi.yaml（クライアント API の正）
 schema/              # sqlite.sql, postgres.sql（v0 はマイグレーションなし）
 queries/             # sqlc 用クエリ（方言別）
 locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有）
-web/                 # Web クライアント（TypeScript + Bun）
-mobile/              # Tauri 2
+app/                 # クライアントアプリ（Bun ワークスペース。1 アプリ 1 ディレクトリ）
+  web/               # Web クライアント（PWA、TypeScript）
+  mobile/            # モバイルアプリ（Tauri 2）
 deploy/
   docker/ k8s/ gcp/ aws/
 docs/
