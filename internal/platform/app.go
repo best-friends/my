@@ -18,6 +18,7 @@ import (
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
 	"github.com/best-friends/my/internal/app/account"
+	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/instance"
@@ -70,6 +71,7 @@ type App struct {
 	// the deployment configuration. They never share a key (docs/reference/configuration.md).
 	Instance *instance.Service
 	Graph    *graph.Service
+	Content  *content.Service
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -122,6 +124,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		accounts   account.Repository
 		instances  instance.Repository
 		follows    graph.Repository
+		statuses   content.Repository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -132,7 +135,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows = d.GraphRepository()
+		follows, statuses = d.GraphRepository(), d.StatusRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -146,7 +149,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows = d.GraphRepository()
+		follows, statuses = d.GraphRepository(), d.StatusRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -202,6 +205,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Graph = graph.NewService(graph.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	content.RegisterProjectors(a.Projectors, statuses)
+	a.Content = content.NewService(content.Deps{
+		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
+		// No moderation restrictions exist yet; posting still goes through the policy port.
+		Restrictions:    content.NoRestrictions{},
+		MaxStatusLength: a.Instance.MaxStatusLength,
+		DefaultLanguage: a.defaultPostLanguage,
+		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
+	})
 
 	if opts.Version == "" {
 		opts.Version = "dev"
@@ -218,6 +230,19 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Messages:          a.Messages, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
+}
+
+// defaultPostLanguage returns the default post language of a user's preferences, or "" for a
+// user without preferences.
+func (a *App) defaultPostLanguage(ctx context.Context, userID string) (string, error) {
+	p, err := a.Identity.Preferences(ctx, userID)
+	if errors.Is(err, identity.ErrNotFound) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return p.DefaultPostLanguage, nil
 }
 
 func (a *App) setDBQueue(q *queuedb.Queue) {

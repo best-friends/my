@@ -11,39 +11,6 @@ import (
 	"github.com/best-friends/my/internal/domain/content"
 )
 
-// Event types of the content module's statuses, for uow.Projectors.
-const (
-	EventStatusCreated = "content.status_created"
-	EventStatusRevised = "content.status_revised"
-	EventStatusDeleted = "content.status_deleted"
-)
-
-// StatusCreated is emitted when a status and its first revision are inserted.
-type StatusCreated struct {
-	Status   content.Status
-	Revision content.Revision
-}
-
-// EventType implements uow.Event.
-func (StatusCreated) EventType() string { return EventStatusCreated }
-
-// StatusRevised is emitted when a later revision of a status is inserted.
-type StatusRevised struct {
-	Revision content.Revision
-}
-
-// EventType implements uow.Event.
-func (StatusRevised) EventType() string { return EventStatusRevised }
-
-// StatusDeleted is emitted when the deletion of a status is inserted.
-type StatusDeleted struct {
-	Deletion content.Deletion
-	Status   content.Status
-}
-
-// EventType implements uow.Event.
-func (StatusDeleted) EventType() string { return EventStatusDeleted }
-
 // RegisterProjectors registers the synchronous projectors of the content module's statuses
 // (data-model §9). Every status projection covers only statuses that are not deleted:
 //   - status_heads points at the revision with the highest Seq;

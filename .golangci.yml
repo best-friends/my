@@ -88,6 +88,8 @@ linters:
             - github.com/best-friends/my/internal/domain/content
             - github.com/best-friends/my/internal/app
             - github.com/best-friends/my/internal/i18n
+            # NFKC normalization of hashtags (data-model §4.4, tags.name_normalized): pure-Go Unicode data, not an external resource.
+            - golang.org/x/text/unicode/norm
         domain-graph:
           list-mode: strict
           files:

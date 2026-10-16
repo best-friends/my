@@ -82,6 +82,18 @@ func TestFollowRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestPostingContract(t *testing.T) {
+	testkit.PostingContract(t, func(t *testing.T, opts uow.Options) testkit.PostingHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.PostingHarness{
+			AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+			Graph:          db.GraphRepository(),
+			Instance:       db.InstanceRepository(),
+			Statuses:       db.StatusRepository(),
+		}
+	})
+}
+
 func TestBlockRepositoryContract(t *testing.T) {
 	testkit.BlockRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FollowHarness {
 		db, _ := newTestDB(t, "", opts)
