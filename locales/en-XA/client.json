@@ -106,5 +106,13 @@
   "shell.toast.region": {
     "defaultMessage": "[Ḿḗḗşşȧȧɠḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.update.apply": {
+    "defaultMessage": "[Ŭƥḓȧȧŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.update.available": {
+    "defaultMessage": "[Ȧ ƞḗḗẇ ṽḗḗřşīǿǿƞ ǿǿƒ ŧħḗḗ ȧȧƥƥ īş ȧȧṽȧȧīŀȧȧƀŀḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
   }
 }

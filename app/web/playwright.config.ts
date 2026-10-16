@@ -50,6 +50,9 @@ export default defineConfig({
   use: {
     baseURL: externalBaseURL ?? `http://127.0.0.1:${port}`,
     trace: "retain-on-failure",
+    // A Service Worker answers navigations before page.route() sees them, which would bypass the locale
+    // fixture (e2e/fixtures.ts). Only e2e/pwa.spec.ts, which tests the worker, allows it.
+    serviceWorkers: "block",
   },
   projects,
   webServer: [

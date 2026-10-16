@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The app's providers, outermost first: the runtime config, i18n (react-intl and React Aria's locale),
-// the TanStack Query cache, the live regions and toasts of @my/ui, React Aria's router binding, and the
-// router with every page.
+// the TanStack Query cache, the live regions and toasts of @my/ui (with the prompt for a new version of the
+// app), React Aria's router binding, and the router with every page.
 import { AnnouncerProvider, Center, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, ToastProvider } from "@my/ui";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { type AnyRouter, RouterProvider } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ConfigProvider, type RuntimeConfig } from "./lib/config";
 import { type I18n, MessagesProvider, useT } from "./lib/i18n";
+import { UpdatePrompt } from "./UpdatePrompt";
 
 export type AppProps = {
   config: RuntimeConfig;
@@ -36,6 +37,7 @@ export function App({ config, i18n, queryClient, router }: AppProps) {
         <QueryClientProvider client={queryClient}>
           <AnnouncerProvider>
             <Toasts>
+              <UpdatePrompt />
               <AriaRouterProvider navigate={navigate}>
                 <RouterProvider router={router} />
               </AriaRouterProvider>
