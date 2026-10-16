@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The queries and mutations of the notifications feature (web-client.md S1, FR-205): the list, filtered
-// by type and loaded a page at a time; the read marker with the unread count; and the posts that
-// notifications are about. Keys follow openapi-react-query's `[method, path, init]`, so a prefix such as
+// by type and loaded a page at a time, with the posts that notifications are about embedded; and the read
+// marker with the unread count. Keys follow openapi-react-query's `[method, path, init]`, so a prefix such as
 // `["get", "/notifications"]` matches every filter of the list.
 import { infiniteQueryOptions } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -62,9 +62,4 @@ export async function updateNotificationMarker(api: Api, lastReadId: string): Pr
   const { data, error } = await api.fetch.PUT("/notifications/marker", { body: { last_read_id: lastReadId } });
   if (data === undefined) throw new ApiError(error);
   return data;
-}
-
-/** A post that a notification is about (GET /statuses/{id}). */
-export function statusQueryOptions(api: Api, id: string) {
-  return api.query.queryOptions("get", "/statuses/{id}", { params: { path: { id } } });
 }

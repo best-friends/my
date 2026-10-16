@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appnotification "github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/domain/notification"
 )
@@ -84,43 +85,63 @@ func (s *Server) ListNotifications(ctx context.Context, req ListNotificationsReq
 		next := ns[limit-1].ID
 		page.NextCursor = &next
 	}
-	accounts := map[string]*Account{}
-	for _, n := range ns {
-		item, err := s.newNotification(ctx, n, accounts)
-		if err != nil {
-			return nil, err
-		}
-		page.Items = append(page.Items, item)
+	items, err := s.newNotifications(ctx, v.AccountID, ns)
+	if err != nil {
+		return nil, err
 	}
+	page.Items = append(page.Items, items...)
 	cache := cacheNoStore
 	return ListNotifications200JSONResponse{Body: page, Headers: ListNotifications200ResponseHeaders{CacheControl: &cache}}, nil
 }
 
-// newNotification presents n as the Notification schema. accounts caches the source accounts of
-// one page by ID; a source account that no longer exists is left out.
-func (s *Server) newNotification(ctx context.Context, n notification.Notification, accounts map[string]*Account) (Notification, error) {
-	out := Notification{Id: n.ID, Type: NotificationType(n.Type), CreatedAt: n.CreatedAt}
-	if n.StatusID != "" {
-		id := n.StatusID
-		out.StatusId = &id
-	}
-	if n.SourceAccountID == "" {
-		return out, nil
-	}
-	a, ok := accounts[n.SourceAccountID]
-	if !ok {
-		actor, err := s.o.Accounts.FindByID(ctx, n.SourceAccountID)
-		switch {
-		case errors.Is(err, appaccount.ErrNotFound):
-		case err != nil:
-			return Notification{}, fmt.Errorf("clientapi: the source account %s of notification %s: %w", n.SourceAccountID, n.ID, err)
-		default:
-			acc := s.newAccount(actor)
-			a = &acc
+// newNotifications presents accountID's notifications ns, in order, as the Notification schema.
+// The posts that they are about are read together through the content module, which applies the
+// visibility policy: a post that the user may not see is left out of its notification. The source
+// accounts are read once each; a source account that no longer exists is left out.
+func (s *Server) newNotifications(ctx context.Context, accountID string, ns []notification.Notification) ([]Notification, error) {
+	var statusIDs []string
+	seen := map[string]bool{}
+	for _, n := range ns {
+		if n.StatusID != "" && !seen[n.StatusID] {
+			seen[n.StatusID] = true
+			statusIDs = append(statusIDs, n.StatusID)
 		}
-		accounts[n.SourceAccountID] = a
 	}
-	out.Account = a
+	statuses := map[string]Status{}
+	if len(statusIDs) > 0 {
+		views, err := s.o.TimelineReader.Views(ctx, appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: accountID}, statusIDs)
+		if err != nil {
+			return nil, fmt.Errorf("clientapi: the statuses of the notifications of %s: %w", accountID, err)
+		}
+		for _, v := range views {
+			statuses[v.Status.ID] = s.newStatus(v)
+		}
+	}
+	accounts := map[string]*Account{}
+	out := make([]Notification, 0, len(ns))
+	for _, n := range ns {
+		item := Notification{Id: n.ID, Type: NotificationType(n.Type), CreatedAt: n.CreatedAt}
+		if st, ok := statuses[n.StatusID]; ok {
+			item.Status = &st
+		}
+		if n.SourceAccountID != "" {
+			a, ok := accounts[n.SourceAccountID]
+			if !ok {
+				actor, err := s.o.Accounts.FindByID(ctx, n.SourceAccountID)
+				switch {
+				case errors.Is(err, appaccount.ErrNotFound):
+				case err != nil:
+					return nil, fmt.Errorf("clientapi: the source account %s of notification %s: %w", n.SourceAccountID, n.ID, err)
+				default:
+					acc := s.newAccount(actor)
+					a = &acc
+				}
+				accounts[n.SourceAccountID] = a
+			}
+			item.Account = a
+		}
+		out = append(out, item)
+	}
 	return out, nil
 }
 

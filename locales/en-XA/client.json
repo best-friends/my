@@ -91,10 +91,6 @@
     "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "notifications.post.error": {
-    "defaultMessage": "[Ŧħīş ƥǿǿşŧ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ŀǿǿȧȧḓḗḗḓ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "notifications.post.open": {
     "defaultMessage": "[Ǿƥḗḗƞ ƥǿǿşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."

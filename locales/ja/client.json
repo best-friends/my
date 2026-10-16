@@ -91,10 +91,6 @@
     "defaultMessage": "通知を読み込み中",
     "description": "Accessible name of the progress indicator while notifications load."
   },
-  "notifications.post.error": {
-    "defaultMessage": "この投稿を読み込めませんでした。",
-    "description": "Shown in a notification in place of the post it is about, when the post could not be loaded."
-  },
   "notifications.post.open": {
     "defaultMessage": "投稿を開く",
     "description": "Link in a notification that opens the post it is about."

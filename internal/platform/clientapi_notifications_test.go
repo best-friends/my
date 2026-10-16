@@ -125,10 +125,10 @@ func TestClientAPINotifications(t *testing.T) {
 		t.Fatalf("notifications = %+v, want two on one page", page)
 	}
 	fav, follow := page.Items[0], page.Items[1]
-	if fav.Type != "favourite" || fav.StatusId == nil || *fav.StatusId != p.Status.ID || fav.Account == nil || fav.Account.Username != "bob" {
+	if fav.Type != "favourite" || fav.Status == nil || fav.Status.Id != p.Status.ID || fav.Account == nil || fav.Account.Username != "bob" {
 		t.Errorf("favourite = %+v", fav)
 	}
-	if follow.Type != "follow" || follow.StatusId != nil || follow.Account == nil || follow.Account.Id != bob.AccountID {
+	if follow.Type != "follow" || follow.Status != nil || follow.Account == nil || follow.Account.Id != bob.AccountID {
 		t.Errorf("follow = %+v", follow)
 	}
 	if page := list("/api/v1/notifications?limit=1"); len(page.Items) != 1 || page.NextCursor == nil {

@@ -48,8 +48,6 @@ export interface MessageArgs {
   "client:notifications.load_more": {};
   /** Loading notifications */
   "client:notifications.loading": {};
-  /** This post could not be loaded. */
-  "client:notifications.post.error": {};
   /** Open post */
   "client:notifications.post.open": {};
   /** Show content */
