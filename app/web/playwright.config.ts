@@ -4,7 +4,8 @@
 // runs: every locale at the narrowest and widest width. The client's tests run against `vite preview` of
 // the built app (`make web-e2e` builds it first), or against E2E_BASE_URL when it is set. The tests of the
 // server-rendered pages (e2e/auth-pages.spec.ts) run against a real `my serve` on SQLite that
-// e2e/server.ts starts from bin/my, or against E2E_SERVER_URL when it is set.
+// e2e/server.ts starts from bin/my with the pseudo-locales enabled, or against E2E_SERVER_URL when it is
+// set (a server started with `my serve -pseudo-locales`).
 import { defineConfig, devices, type Project } from "@playwright/test";
 import { previewOrigin, previewPort, serverPort } from "./e2e/server-origin.ts";
 

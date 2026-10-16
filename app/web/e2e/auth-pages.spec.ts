@@ -6,7 +6,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { axeTags, expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { axeTags, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
 import { admin, serverURL, thirdPartyClient } from "./server-origin.ts";
 
 test.use({ baseURL: serverURL });
@@ -16,10 +16,15 @@ const passwordField = (page: Page, autocomplete: "current-password" | "new-passw
   page.locator(`input[type="password"][autocomplete="${autocomplete}"]`);
 const submitButton = (page: Page) => page.locator('main button[type="submit"]').first();
 
-/** Asserts what every server-rendered page shares: a language and direction, a main landmark with one h1. */
+/**
+ * Asserts what every server-rendered page shares: the project's locale and its direction (the server
+ * resolves Accept-Language, and `my serve -pseudo-locales` makes en-XA and ar-XB selectable), and a main
+ * landmark with one h1.
+ */
 async function expectPageBasics(page: Page): Promise<void> {
-  await expect(page.locator("html")).toHaveAttribute("lang", /^[a-z]{2,3}(?:-[A-Za-z0-9]+)*$/);
-  await expect(page.locator("html")).toHaveAttribute("dir", /^(?:ltr|rtl)$/);
+  const locale = test.info().project.use.locale ?? "en";
+  await expect(page.locator("html")).toHaveAttribute("lang", locale);
+  await expect(page.locator("html")).toHaveAttribute("dir", localeDir(locale));
   await expect(page.locator("main h1")).toHaveCount(1);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
 }

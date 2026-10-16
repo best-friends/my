@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Starts the real server for the E2E of the server-rendered pages (ADR-0030): a fresh SQLite database
 // in a temporary directory with schema/sqlite.sql applied, the admin and the third-party OAuth client of
-// e2e/server-origin.ts, then `my serve` until Playwright stops it. Playwright runs it as a webServer
+// e2e/server-origin.ts, then `my serve -pseudo-locales` (so that the en-XA and ar-XB projects get their
+// locale) until Playwright stops it. Playwright runs it as a webServer
 // with Node.js (`node e2e/server.ts`), from the binary `make build` writes (override with E2E_MY_BIN).
 import { execFileSync, spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -55,7 +56,7 @@ seed
   .run(id, thirdPartyClient.redirectURI);
 seed.close();
 
-const server = spawn(bin, ["serve"], { env, stdio: "inherit" });
+const server = spawn(bin, ["serve", "-pseudo-locales"], { env, stdio: "inherit" });
 const stop = () => {
   server.kill("SIGTERM");
 };

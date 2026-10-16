@@ -151,6 +151,9 @@ type AppOptions struct {
 	// DevViteOrigin, when set, makes the web client's shell load the client from a Vite dev
 	// server at this origin (`my serve -dev-vite-origin`). Development only.
 	DevViteOrigin string
+	// PseudoLocales makes the pseudo-locales en-XA and ar-XB selectable on every surface
+	// (`my serve -pseudo-locales`), for the E2E of the server-rendered pages. Development and tests only.
+	PseudoLocales bool
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -160,7 +163,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if opts.Logger == nil {
 		opts.Logger = slog.Default()
 	}
-	messages, err := i18n.Load()
+	var i18nOpts []i18n.Option
+	if opts.PseudoLocales {
+		i18nOpts = append(i18nOpts, i18n.WithPseudoLocales())
+	}
+	messages, err := i18n.Load(i18nOpts...)
 	if err != nil {
 		return nil, err
 	}
