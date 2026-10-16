@@ -48,6 +48,7 @@ type Repository interface {
 	FindRole(ctx context.Context, key string) (identity.Role, []identity.Permission, error)
 
 	PreferencesRepository
+	OAuthRepository
 	RegistrationRepository
 
 	InsertSession(ctx context.Context, tx uow.Tx, s identity.Session) error

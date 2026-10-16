@@ -654,6 +654,79 @@ CREATE TABLE session_activity (
 ) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
+-- identity: OAuth 2.0 authorization server (data-model.md §4.1, ADR-0019 §4, ADR-0030).
+-- Every client_id column except oauth_clients.client_id refers to oauth_clients.id.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a registered client. client_secret_hash is NULL for public clients.
+CREATE TABLE oauth_clients (
+  id TEXT NOT NULL PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  client_secret_hash BLOB,
+  name TEXT NOT NULL,
+  website TEXT,
+  scope TEXT NOT NULL,
+  is_first_party INTEGER NOT NULL CHECK (is_first_party IN (0, 1)),
+  owner_user_id TEXT,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX oauth_clients_client_id ON oauth_clients (client_id);
+
+-- Current value: the redirect URIs a client may use, matched exactly.
+CREATE TABLE oauth_client_redirect_uris (
+  client_id TEXT NOT NULL,
+  redirect_uri TEXT NOT NULL,
+  PRIMARY KEY (client_id, redirect_uri)
+) STRICT;
+
+-- Resource: an authorization code, keyed by its SHA-256 digest.
+CREATE TABLE oauth_authorization_codes (
+  code_hash BLOB NOT NULL PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  redirect_uri TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  code_challenge TEXT NOT NULL,
+  issued_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+) STRICT;
+
+-- Event: a code was exchanged; the primary key makes it one-time. token_id is the first token
+-- of the family it started.
+CREATE TABLE oauth_authorization_code_redemptions (
+  code_hash BLOB NOT NULL PRIMARY KEY,
+  token_id TEXT NOT NULL,
+  redeemed_at INTEGER NOT NULL
+) STRICT;
+
+-- Resource: an access token with its refresh token. A rotation issues a new row in the same
+-- family (family_id is the id of the family's first row).
+CREATE TABLE oauth_access_tokens (
+  id TEXT NOT NULL PRIMARY KEY,
+  family_id TEXT NOT NULL,
+  client_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  access_token_hash BLOB NOT NULL,
+  refresh_token_hash BLOB,
+  scope TEXT NOT NULL,
+  rotated_from_token_id TEXT,
+  issued_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL,
+  refresh_expires_at INTEGER,
+  CONSTRAINT oauth_access_tokens_refresh_pair CHECK ((refresh_token_hash IS NULL) = (refresh_expires_at IS NULL))
+) STRICT;
+CREATE UNIQUE INDEX oauth_access_tokens_access_token_hash ON oauth_access_tokens (access_token_hash);
+CREATE UNIQUE INDEX oauth_access_tokens_refresh_token_hash ON oauth_access_tokens (refresh_token_hash);
+CREATE INDEX oauth_access_tokens_family_id ON oauth_access_tokens (family_id);
+
+-- Event: a token row (its access and refresh token) stopped working.
+CREATE TABLE oauth_token_revocations (
+  token_id TEXT NOT NULL PRIMARY KEY,
+  reason TEXT NOT NULL CHECK (reason IN ('user', 'rotation', 'refresh_reuse', 'code_reuse', 'password_changed', 'moderation')),
+  revoked_at INTEGER NOT NULL
+) STRICT;
+
+-- ---------------------------------------------------------------------------------------------
 -- 基盤: key-value store (data-model.md §4.10). Owned by internal/adapter/kv/db.
 -- ---------------------------------------------------------------------------------------------
 
@@ -831,6 +904,88 @@ CREATE TABLE status_pins (
 ) STRICT;
 CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot);
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
+
+-- ---------------------------------------------------------------------------------------------
+-- timeline: feeds (data-model §4.6, §6, ADR-0013). Owned by internal/app/timeline, whose
+-- synchronous projectors derive every table from the events of content and graph (and of
+-- moderation for the restrictions); the timeline queries read only these tables.
+-- ---------------------------------------------------------------------------------------------
+
+-- Projection: one entry per status (kind post, id = status ID) and per live boost (kind boost,
+-- id = boost ID) of a status that is not deleted. author_* is the poster or the booster,
+-- original_author_* the author of the status; a domain is '' for a local account.
+CREATE TABLE feed_entries (
+  id TEXT NOT NULL PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('post', 'boost')),
+  status_id TEXT NOT NULL,
+  author_account_id TEXT NOT NULL,
+  author_domain TEXT NOT NULL,
+  original_author_account_id TEXT NOT NULL,
+  original_author_domain TEXT NOT NULL,
+  visibility TEXT NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  is_local INTEGER NOT NULL CHECK (is_local IN (0, 1)),
+  language TEXT NOT NULL,
+  revision_seq INTEGER NOT NULL CHECK (revision_seq >= 1)
+) STRICT;
+CREATE INDEX feed_entries_author_account_id_id ON feed_entries (author_account_id, id);
+CREATE INDEX feed_entries_status_id ON feed_entries (status_id);
+CREATE INDEX feed_entries_local ON feed_entries (id) WHERE is_local = 1 AND kind = 'post' AND visibility IN ('public', 'local');
+CREATE INDEX feed_entries_public ON feed_entries (id) WHERE kind = 'post' AND visibility = 'public';
+
+-- Projection: the recipients (current mentions) of a direct post.
+CREATE TABLE feed_direct_recipients (
+  entry_id TEXT NOT NULL,
+  recipient_account_id TEXT NOT NULL,
+  PRIMARY KEY (recipient_account_id, entry_id)
+) STRICT;
+CREATE INDEX feed_direct_recipients_entry_id ON feed_direct_recipients (entry_id);
+
+-- Projection: the current hashtags of a post, with its immutable author and visibility.
+CREATE TABLE feed_tag_entries (
+  tag_id TEXT NOT NULL,
+  entry_id TEXT NOT NULL,
+  author_account_id TEXT NOT NULL,
+  visibility TEXT NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  is_local INTEGER NOT NULL CHECK (is_local IN (0, 1)),
+  PRIMARY KEY (tag_id, entry_id)
+) STRICT;
+CREATE INDEX feed_tag_entries_entry_id ON feed_tag_entries (entry_id);
+
+-- Projection: the active follows, with the follower's show_boosts preference.
+CREATE TABLE feed_follow_edges (
+  follower_account_id TEXT NOT NULL,
+  followee_account_id TEXT NOT NULL,
+  show_boosts INTEGER NOT NULL CHECK (show_boosts IN (0, 1)),
+  PRIMARY KEY (follower_account_id, followee_account_id)
+) STRICT;
+
+-- Projection: the accounts whose entries a viewer does not see: those the viewer blocks, those
+-- that block the viewer, and those the viewer mutes (until expires_at; NULL never expires).
+CREATE TABLE feed_exclusions (
+  viewer_account_id TEXT NOT NULL,
+  target_account_id TEXT NOT NULL,
+  reason TEXT NOT NULL CHECK (reason IN ('block', 'blocked_by', 'mute')),
+  expires_at INTEGER,
+  PRIMARY KEY (viewer_account_id, target_account_id, reason)
+) STRICT;
+
+-- Projection: the moderation restrictions of accounts that bear on timelines, until
+-- effective_until (NULL: until lifted).
+CREATE TABLE feed_author_restrictions (
+  account_id TEXT NOT NULL,
+  restriction TEXT NOT NULL CHECK (restriction IN ('profile_view', 'visibility_ceiling_private', 'public_discovery')),
+  effective_until INTEGER,
+  PRIMARY KEY (account_id, restriction)
+) STRICT;
+
+-- Projection: the moderation restrictions of domains (and their subdomains) that bear on
+-- timelines.
+CREATE TABLE feed_domain_restrictions (
+  domain TEXT NOT NULL,
+  restriction TEXT NOT NULL CHECK (restriction IN ('profile_view', 'visibility_ceiling_private', 'public_discovery')),
+  effective_until INTEGER,
+  PRIMARY KEY (domain, restriction)
+) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
 -- notification: notifications, their dismissals, and read markers (data-model §4.7, FR-205).

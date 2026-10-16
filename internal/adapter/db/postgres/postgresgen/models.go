@@ -130,6 +130,46 @@ type Favourite struct {
 	ID        string
 }
 
+type FeedDirectRecipient struct {
+	EntryID            string
+	RecipientAccountID string
+}
+
+type FeedEntry struct {
+	ID                      string
+	Kind                    string
+	StatusID                string
+	AuthorAccountID         string
+	AuthorDomain            string
+	OriginalAuthorAccountID string
+	OriginalAuthorDomain    string
+	Visibility              string
+	IsLocal                 bool
+	Language                string
+	RevisionSeq             int32
+}
+
+type FeedExclusion struct {
+	ViewerAccountID string
+	TargetAccountID string
+	Reason          string
+	ExpiresAt       *time.Time
+}
+
+type FeedFollowEdge struct {
+	FollowerAccountID string
+	FolloweeAccountID string
+	ShowBoosts        bool
+}
+
+type FeedTagEntry struct {
+	TagID           string
+	EntryID         string
+	AuthorAccountID string
+	Visibility      string
+	IsLocal         bool
+}
+
 type Follow struct {
 	ID                string
 	Uri               string
@@ -267,6 +307,35 @@ type Notification struct {
 type NotificationReadMarker struct {
 	AccountID  string
 	LastReadID string
+}
+
+type OauthAuthorizationCode struct {
+	CodeHash      []byte
+	ClientID      string
+	UserID        string
+	RedirectUri   string
+	Scope         string
+	CodeChallenge string
+	IssuedAt      time.Time
+	ExpiresAt     time.Time
+}
+
+type OauthAuthorizationCodeRedemption struct {
+	CodeHash   []byte
+	TokenID    string
+	RedeemedAt time.Time
+}
+
+type OauthClient struct {
+	ID               string
+	ClientID         string
+	ClientSecretHash []byte
+	Name             string
+	Website          *string
+	Scope            string
+	IsFirstParty     bool
+	OwnerUserID      *string
+	CreatedAt        time.Time
 }
 
 type PasswordCredential struct {

@@ -34,6 +34,7 @@ import (
 	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/i18n"
@@ -41,6 +42,7 @@ import (
 	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	mediahttp "github.com/best-friends/my/internal/interface/media"
+	"github.com/best-friends/my/internal/interface/oauth"
 	"github.com/best-friends/my/internal/interface/web"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -48,6 +50,10 @@ import (
 // defaultMaxPostCharacters is the post length limit that the client API reports until the
 // instance settings hold it (FR-101).
 const defaultMaxPostCharacters = 500
+
+// WebClientCallbackPath is the path on the web origin where the web client receives the
+// authorization response; its URL is the redirect URI of the first-party web client.
+const WebClientCallbackPath = "/login/callback"
 
 // App is the assembled application: the adapters chosen by the configuration and the
 // application services built on them. NewApp builds it with plain constructor calls; there is
@@ -92,6 +98,9 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
+	Timeline *timeline.Service
+
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
 	Notifications *notification.Service
@@ -170,6 +179,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows      graph.Repository
 		statuses     content.Repository
 		interactions content.InteractionRepository
+		feeds        timeline.Repository
 		notifs       notification.Repository
 		medias       content.MediaRepository
 	)
@@ -183,7 +193,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
-		interactions = d.InteractionRepository()
+		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
@@ -199,7 +209,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
-		interactions = d.InteractionRepository()
+		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
@@ -258,6 +268,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// never configuration (docs/reference/configuration.md); they are read per registration so
 		// changes apply at once.
 		DefaultLocale: a.Instance.DefaultLocale,
+		WebClient: identity.WebClient{
+			ClientID: identity.DefaultWebClientID, Name: cfg.Host, RedirectURIs: []string{cfg.WebOrigin + WebClientCallbackPath},
+		},
 		RegistrationMode: func(ctx context.Context) (domainidentity.RegistrationMode, error) {
 			mode, err := a.Instance.RegistrationMode(ctx)
 			return domainidentity.RegistrationMode(mode), err
@@ -288,6 +301,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
 		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	// After the content and graph projectors, which reject the commands that must not reach
+	// the timelines (data-model §4.6).
+	timeline.RegisterProjectors(a.Projectors, feeds)
+	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
 	// After the graph and content projectors, whose events these projectors turn into notifications.
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
 		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
@@ -316,8 +333,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}).Register(a)
 	// The sign-in screens share the web client's built CSS (ADR-0030).
 	authpages.New(authpages.Options{
-		Identity: a.Identity, Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
+		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
+		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
 	}).Register(a)
+	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
+	if err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	tokens.Register(a)
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{

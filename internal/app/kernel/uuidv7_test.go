@@ -48,6 +48,22 @@ func TestUUIDv7FloorBoundsGeneratedIDs(t *testing.T) {
 	}
 }
 
+func TestUUIDv7Time(t *testing.T) {
+	at := time.UnixMilli(0x0123_4567_89ab).UTC()
+	if got, ok := kernel.UUIDv7Time(kernel.UUIDv7Floor(at)); !ok || !got.Equal(at) {
+		t.Errorf("UUIDv7Time(floor of %v) = %v, %v; want %v, true", at, got, ok, at)
+	}
+	now := kernel.Normalize(time.Now())
+	if got, ok := kernel.UUIDv7Time(uuid.NewV7().String()); !ok || got.Before(now) || got.Sub(now) > time.Second {
+		t.Errorf("UUIDv7Time(new UUIDv7) = %v, %v; want about %v", got, ok, now)
+	}
+	for _, id := range []string{"", "not a uuid", uuid.NewV4().String()} {
+		if _, ok := kernel.UUIDv7Time(id); ok {
+			t.Errorf("UUIDv7Time(%q) succeeded, want false", id)
+		}
+	}
+}
+
 func TestNormalize(t *testing.T) {
 	jst := time.FixedZone("JST", 9*60*60)
 	in := time.Date(2026, 10, 16, 9, 0, 0, 123_456_789, jst)

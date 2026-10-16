@@ -81,3 +81,29 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    不正なリクエストを送るテストもそのまま使えます（`Serve` はリクエストを照合しません。照合するときは `ValidateRequest`）。
    正常系に加えて、問題の応答（`Accept-Language` によるローカライズを含む）を検査します。
 7. `make check` を実行します。生成物の差分検査（`generate-check`）と spec の lint（`api-lint`）が含まれます。
+
+## 4. 認可（OAuth 2.0）
+
+クライアントは OAuth 2.0 Authorization Code + PKCE でアクセストークンを得て、`/api/v1` に `Authorization: Bearer` で送ります（[ADR-0019 §4](../adr/0019-security-baseline.md)、[ADR-0030](../adr/0030-web-client-token-handling.md)）。
+認可サーバーのエンドポイントは `/api/v1` の外にあり、OpenAPI の spec には含めません。
+
+| エンドポイント | 実装 | 役割 |
+| --- | --- | --- |
+| `GET` / `POST /oauth/authorize` | `internal/interface/authpages` | 認可エンドポイント。ログインしていなければログイン画面を経由して戻る。サードパーティのクライアントには同意画面を出し、ファーストパーティは省略する |
+| `POST /oauth/token` | `internal/interface/oauth` | `authorization_code` と `refresh_token` のグラント。Cookie は読まない |
+| `POST /oauth/token/refresh` | `internal/interface/oauth` | Web クライアント専用。`__Host-my_rt` Cookie だけを読み、新しいアクセストークンだけを返す |
+| `POST /oauth/revoke` | `internal/interface/oauth` | トークンの失効（RFC 7009）。トークンの系列全体を失効させる |
+
+- PKCE は `S256` だけを受け付けます。`redirect_uri` は認可リクエストで必須で、登録済みの値と完全一致で照合します。
+- 認可応答は `303` のリダイレクトで、`code`（または `error`）・`state`・`iss`（RFC 9207）を付けます。
+- トークンには種別プレフィックス（アクセストークン `my_at_`、リフレッシュトークン `my_rt_`、認可コード `my_ac_`）が付きます。
+  期限は認可コード 60 秒、アクセストークン 1 時間、リフレッシュトークン 30 日です。
+- スコープは `read`・`write`・`follow`・`push` です。認可リクエストで省くと、クライアントに許されたスコープ全体になります。
+- ファーストパーティの Web クライアントは起動時に登録されます。`client_id` は `my-web`、リダイレクト URI は `<web_origin>/login/callback` です。
+  - `POST /oauth/token` での認可コードの交換では、リフレッシュトークンを本文ではなく `__Host-my_rt` Cookie（`HttpOnly`、`Secure`、`SameSite=Strict`、`Path=/`）で返します。
+    この交換は `net/http.CrossOriginProtection` を通る要求だけを受け付けます。
+  - `refresh_token` グラントは使えません。`POST /oauth/token/refresh` に `X-My-Token-Refresh: 1` ヘッダを付けて呼びます。応答のたびに Cookie はローテーションされます。
+    使用済みのリフレッシュトークンを送ると系列全体が失効するので、同時に複数の更新を送らないようにします（タブ間で更新を 1 つにまとめる）。
+  - `POST /oauth/revoke` で失効させると、Cookie も削除されます。
+- `web_origin` がサーバーのオリジンと異なる場合、これらのエンドポイントは `web_origin` にだけ資格情報付きの CORS を許可します。
+- `/api/v1` の認証は `identity.Service.AuthenticateAccessToken` でアクセストークンを照合します。
