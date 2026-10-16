@@ -13,6 +13,6 @@
 | ターゲット (target) | 実行環境の組み合わせ（GCP / AWS / Self-hosted） |
 | エントリポイント (entrypoint) | ターゲットごとの起動コード（HTTP ハンドラ・キューコンシューマ・cron のバインド） |
 | コントラクトテスト | 1 つのポートに対し、全アダプタが共通で通すべきテストスイート |
-| Visibility | 投稿の公開範囲: `public` / `unlisted` / `private` / `direct` |
+| Visibility | 投稿の公開範囲: `public` / `local` / `unlisted` / `private` / `direct`。`local` はローカルタイムラインに載るが外部へはフォロワーにだけ届く |
 | double-knocking | 署名方式を RFC 9421 で試し、失敗時に draft-cavage で再試行する手法 |
 | ADR | Architecture Decision Record。`docs/adr/` に置く設計判断の記録 |

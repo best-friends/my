@@ -1,40 +1,32 @@
-# ADR-0007: クライアント API は Mastodon 互換を主とする
+# ADR-0007: Mastodon Client API とは互換させず、独自のクライアント API を提供する
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #9
 
 ## Context
 
-自前の Web / モバイルクライアントを作るが、v0 の時点でモバイルアプリを完成させるのは負荷が高い。
-Mastodon Client API に互換させれば、既存のクライアント（Ivory, Ice Cubes, Tusky, Moshidon, Elk, Phanpy など）をすぐに使える。
+当初は Mastodon Client API に互換させ、既存クライアント（Ivory, Tusky, Elk, Phanpy など）を使えるようにする案を推奨していた。
+しかし互換のためには Mastodon 固有のデータ表現・ページング・エンティティ構造への変換（Glue コード）が大量に必要になり、
+本プロジェクト独自の機能（例: 公開範囲 `local`、[ADR-0017](0017-visibility-local.md)）とも衝突する。
 
 ## Considered Options
 
-1. **Mastodon Client API 互換（サブセット）+ 名前空間を分けた拡張 API**
-2. 独自 API（OpenAPI）のみ
-3. GraphQL
+1. Mastodon Client API 互換（サブセット）+ 名前空間を分けた拡張 API
+2. **独自のクライアント API のみ**
 
-## Decision（推奨案）
+## Decision
 
-1 を採用する。
+**2 を採用する。Mastodon Client API（Streaming API、アプリ登録 API を含む）とは一切互換させない。**
 
-- v0 の対象エンドポイントは `docs/api/mastodon-compat.md`（M2 で作成）に一覧化し、実装状況を表で管理する。
-  優先順: OAuth / apps → accounts（verify_credentials, lookup, statuses, follow 系）→ statuses → timelines → notifications → media → instance → search。
-- 認可は OAuth 2.0 Authorization Code + PKCE。スコープは Mastodon 互換（`read`, `write`, `follow`, `push` と細分化スコープ）。
-- 自前クライアントも同じ API を使う。Mastodon に存在しない機能は `/api/x/v1/...`（名称は実装時に確定）で提供し、
-  Mastodon 互換レスポンスには拡張フィールドを足さない（既存クライアントの互換性を守る）。
-- 型とテスト: コミュニティ管理の Mastodon OpenAPI 定義を参照し、レスポンススキーマの検証テストを自動生成する（ライセンス確認の上）。
-- エラーメッセージは `Accept-Language` でローカライズ（FR-503）。
+- 自前の Web クライアント（PWA）とモバイルアプリが唯一の公式クライアントで、API は自前クライアントの要件に合わせて設計する。
+- API の様式（REST + OpenAPI / RPC / GraphQL など）は [ADR-0016](0016-client-api-style.md) で決める。
+- 認可は OAuth 2.0（Authorization Code + PKCE）を使う。将来サードパーティクライアントを受け入れられるようにするため。
+- **連合（ActivityPub / S2S）は従来どおり Mastodon などと相互運用する**（[ADR-0006](0006-federation-protocol-scope.md)）。この決定はクライアント API にだけ適用される。
 
 ## Consequences
 
-- 既存エコシステムのおかげで、v0 ではモバイル体験を既存アプリで代替できる。
-- Mastodon API の仕様（ID の文字列扱い、ページングの Link ヘッダ等）に引きずられる。
-- Streaming API は v0 では C。
-
-## Open Questions / 要検証
-
-- [ ] Mastodon OpenAPI 定義のライセンスと網羅度
-- [ ] #19 主要クライアントが要求する最小エンドポイント集合の調査（起動時に叩く API）
+- 変換層が無くなり、ドメインモデルをそのまま API に出せる。独自機能を自由に追加できる。
+- 既存の Mastodon アプリは使えないため、v0 では **自前クライアントが必須** になる。モバイル体験は PWA が担う（ADR-0008）。
+- サードパーティクライアントのエコシステムはゼロから。将来に備え、API スキーマと認可フローを公開できる品質で保つ。

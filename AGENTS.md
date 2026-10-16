@@ -6,7 +6,7 @@ Human contributors should read [CONTRIBUTING.md](CONTRIBUTING.md); the rules are
 ## Project in one paragraph
 
 An ActivityPub-compatible microblog server written in Go, designed to run at near-zero cost on Google Cloud, AWS,
-or a self-hosted VM (Docker / microk8s), with swappable RDB / queue / storage adapters, Mastodon-compatible client API,
+or a self-hosted VM (Docker / microk8s), with swappable RDB / queue / storage adapters, its own client API (no Mastodon client API compatibility),
 a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OSS.
 
 ## Current phase: M0 — Design & Harness
@@ -47,7 +47,8 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 - Do not rewrite the body of an Accepted ADR; supersede it with a new ADR instead (typo fixes are fine).
 - After adding/renaming an ADR, run `make adr-index`.
 - v0 allows breaking changes everywhere ([ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)) — no migrations, no compat shims.
-  Exception: ActivityPub / Mastodon API wire formats and federated URIs must stay spec-compliant.
+  Exception: ActivityPub wire formats and federated URIs must stay spec-compliant.
+- Do not add Mastodon *client* API compatibility code ([ADR-0007](docs/adr/0007-client-api.md)). Federation with Mastodon servers is still required.
 - Language: design docs (ADR, requirements) in Japanese during v0; code, identifiers, code comments, commit messages, and PR titles in English.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`; `!` for breaking).
 - License is AGPL-3.0-only ([ADR-0011](docs/adr/0011-license.md)). New source files start with `SPDX-License-Identifier: AGPL-3.0-only`;
@@ -65,6 +66,7 @@ These come from Proposed ADRs and will be confirmed when they are accepted; foll
 - Job handlers must be idempotent; delivery is at-least-once ([ADR-0004](docs/adr/0004-job-queue-abstraction.md)).
 - All outbound HTTP goes through the SSRF-guarded `HttpClient` port.
 - Visibility checks go through the single domain policy function; never re-implement them in API or federation code.
+  Levels are `public` / `local` / `unlisted` / `private` / `direct`; `local` is never federated beyond the author's followers ([ADR-0017](docs/adr/0017-visibility-local.md)).
 - **i18n**: never hard-code user-facing strings or date/number formats. Add ICU messages to `locales/en` *and* `locales/ja`;
   use CSS logical properties; render user content with `dir="auto"` ([ADR-0009](docs/adr/0009-internationalization.md)).
 

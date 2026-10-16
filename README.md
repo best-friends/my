@@ -10,7 +10,7 @@ ActivityPub 互換のマイクロブログサーバー。Go 製。Google Cloud /
 
 - 月額ほぼ $0〜$5 から運営できる（scale-to-zero、常駐ミドルウェア不要）
 - RDB・キュー・ストレージ・実行環境を設定で切り替えられる
-- Mastodon / Misskey / GoToSocial などと連合でき、既存の Mastodon クライアントアプリも使える
+- Mastodon / Misskey / GoToSocial などと連合できる
 - 最初から多言語対応
 - Web（PWA）とモバイルアプリ
 
