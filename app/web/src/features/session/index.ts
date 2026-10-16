@@ -4,3 +4,4 @@
 export { AccountSection } from "./components/AccountSection";
 export { SignInFailure } from "./components/SignInFailure";
 export { SignInPanel } from "./components/SignInPanel";
+export { useViewer } from "./hooks/useViewer";

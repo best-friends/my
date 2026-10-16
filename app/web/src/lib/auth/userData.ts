@@ -1,19 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the app forgets when the user changes (a sign-in, or the end of a session): every cached query, and
 // the Cache Storage that the Service Worker keeps responses in. Only the precache of the app's own build
-// stays, as it holds no user data.
+// stays, as it holds no user data. When a session ends, the tab's sessionStorage entries under
+// `userStoragePrefix` (what a user typed, such as the draft of a post) go too, so that the next person at a
+// shared computer does not find them; a sign-in keeps them, as each is stored under its account's ID.
 import type { QueryClient } from "@tanstack/react-query";
 import type { Session } from "./session";
 
 /** The prefix of Workbox's precache, which holds only the files of the build. */
 const precachePrefix = "workbox-precache";
 
+/** The prefix of the sessionStorage keys that hold a user's own input; they are dropped when the session ends. */
+export const userStoragePrefix = "my:user:";
+
 /** Drops the user's cached data whenever the user of `session` changes; returns the unsubscribe function. */
 export function forgetUserDataOnUserChange(session: Session, queryClient: QueryClient): () => void {
-  return session.onUserChange(() => {
+  return session.onUserChange((status) => {
     queryClient.removeQueries();
     void clearCacheStorage();
+    if (status === "signed-out") clearUserStorage();
   });
+}
+
+function clearUserStorage(): void {
+  try {
+    const keys = Array.from({ length: sessionStorage.length }, (_, i) => sessionStorage.key(i));
+    for (const key of keys) if (key?.startsWith(userStoragePrefix) === true) sessionStorage.removeItem(key);
+  } catch {
+    // No storage (a sandboxed frame): nothing was saved.
+  }
 }
 
 async function clearCacheStorage(): Promise<void> {

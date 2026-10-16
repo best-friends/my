@@ -35,6 +35,90 @@ export const viewerFixture: Schemas["Account"] = {
   created_at: "2026-10-01T00:00:00Z",
 };
 
+// --- statuses, media and preferences (the compose feature, #129) ---
+
+/** The signed-in user's `Preferences` for GET /preferences (operationId getPreferences). */
+export const preferencesFixture: Schemas["Preferences"] = {
+  locale: "en",
+  time_zone: "UTC",
+  default_visibility: "public",
+  default_post_language: "en",
+  require_media_description: false,
+  timeline_languages: [],
+};
+
+/** A `Status` by the viewer, with `overrides`. */
+export function statusFixture(overrides: Partial<Schemas["Status"]> = {}): Schemas["Status"] {
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000000a1",
+    uri: "https://my.example/users/alice/statuses/0192f0c4-7a8e-7000-8000-0000000000a1",
+    account: viewerFixture,
+    content: "<p>Hello</p>",
+    spoiler_text: "",
+    sensitive: false,
+    visibility: "public",
+    language: "en",
+    created_at: "2026-10-16T00:00:00Z",
+    media_attachments: [],
+    mentions: [],
+    tags: [],
+    replies_count: 0,
+    boosts_count: 0,
+    favourites_count: 0,
+    ...overrides,
+  };
+}
+
+/**
+ * A `MediaAttachment` with `id` in `state`; a ready one has its renditions and blurhash, as GET /media/{id}
+ * answers once the server has processed the file.
+ */
+function mediaFixture(id: string, state: Schemas["MediaAttachment"]["state"] = "ready", description?: string): Schemas["MediaAttachment"] {
+  const variant = (size: string) => ({ url: `https://my.example/media/${id}/${size}.jpg`, content_type: "image/jpeg", width: 640, height: 360, size: 1000 });
+  return {
+    id,
+    type: "image",
+    state,
+    meta: { width: 640, height: 360, focus: { x: 0, y: 0 } },
+    ...(state === "ready" ? { blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj", variants: { full: variant("full"), thumbnail: variant("thumbnail") } } : {}),
+    ...(description === undefined ? {} : { description }),
+  };
+}
+
+/** The ID the default POST /media handler gives an upload. */
+export const uploadedMediaId = "0192f0c4-7a8e-7000-8000-0000000000b1";
+
+const statusHandlers = [
+  http.get(`${apiBase}/preferences`, ({ request }) =>
+    request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(preferencesFixture) : unauthenticated(request),
+  ),
+  // Posts the status as the viewer, as the server would render it.
+  http.post(`${apiBase}/statuses`, async ({ request }) => {
+    if (request.headers.get("Authorization") !== `Bearer ${validAccessToken}`) return unauthenticated(request);
+    const body = (await request.json()) as Schemas["CreateStatusRequest"];
+    return HttpResponse.json(
+      statusFixture({
+        content: `<p>${body.text}</p>`,
+        spoiler_text: body.spoiler_text ?? "",
+        sensitive: body.sensitive ?? false,
+        visibility: body.visibility,
+        language: body.language ?? preferencesFixture.default_post_language,
+        ...(body.in_reply_to_id === undefined ? {} : { in_reply_to_id: body.in_reply_to_id }),
+        media_attachments: (body.media ?? []).map((m) => mediaFixture(m.id, "ready", m.description)),
+      }),
+    );
+  }),
+  http.get(`${apiBase}/statuses/:id`, ({ params }) => HttpResponse.json(statusFixture({ id: String(params["id"]) }))),
+  // Accepts the upload; it is processed by the time the client asks again.
+  http.post(`${apiBase}/media`, () => HttpResponse.json(mediaFixture(uploadedMediaId, "processing"), { status: 202 })),
+  http.get(`${apiBase}/media/:id`, ({ params }) => HttpResponse.json(mediaFixture(String(params["id"])))),
+  http.patch(`${apiBase}/media/:id`, async ({ params, request }) =>
+    HttpResponse.json(mediaFixture(String(params["id"]), "ready", ((await request.json()) as Schemas["MediaUpdate"]).description)),
+  ),
+];
+
+// --- end of statuses, media and preferences ---
+
 /** An RFC 9457 problem response, as the client API writes it. */
 export function problem(status: number, type: string, title: string, init: { headers?: Record<string, string> } = {}) {
   const body: Schemas["Problem"] = { type, title, status };
@@ -78,4 +162,5 @@ export const handlers = [
   http.post(oauthPaths.refresh, () => oauthError("invalid_grant")),
   http.post(oauthPaths.token, () => oauthError("invalid_grant")),
   http.post(oauthPaths.revoke, () => new HttpResponse(null, { status: 200 })),
+  ...statusHandlers,
 ];

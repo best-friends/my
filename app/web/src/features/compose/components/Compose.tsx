@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Where the new-post form lives (the issue's "sheet on mobile, side panel on desktop"). The app shell
+// decides which by the viewport (web-client.md D2) and passes it to ComposeProvider; ComposeEntry then
+// renders the panel or the button that opens the sheet. Only one form is ever on the page.
+import { Button, Sheet } from "@my/ui";
+import { type ReactNode, useId } from "react";
+import { useT } from "../../../lib/i18n";
+import { type ComposeLayout, ComposeContext, type ComposeController, useComposeContext, useComposeController } from "../hooks/useCompose";
+import { ComposeForm } from "./ComposeForm";
+
+export type ComposeProviderProps = { layout: ComposeLayout; children: ReactNode };
+
+/** Shares the draft of the signed-in viewer with the form and with the reply buttons of other features. */
+export function ComposeProvider({ layout, children }: ComposeProviderProps) {
+  const controller = useComposeController(layout);
+  return <ComposeContext value={controller}>{children}</ComposeContext>;
+}
+
+/** The form's place in the layout: the side panel, or the button that opens the sheet. Nothing while signed out. */
+export function ComposeEntry() {
+  const controller = useComposeContext();
+  if (controller === null) return null;
+  return controller.layout === "panel" ? <ComposePanel controller={controller} /> : <ComposeSheet controller={controller} />;
+}
+
+function ComposePanel({ controller }: { controller: ComposeController }) {
+  const t = useT();
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <h2 id={headingId} className="text-lg font-semibold">
+        {t("client:compose.title")}
+      </h2>
+      <ComposeForm controller={controller} labelledBy={headingId} />
+    </section>
+  );
+}
+
+/**
+ * A button (the shell floats it above the tab bar) that opens the form in a sheet (a modal dialog: WAI-ARIA APG dialog
+ * pattern). Closing the sheet keeps the draft.
+ */
+function ComposeSheet({ controller }: { controller: ComposeController }) {
+  const t = useT();
+  const headingId = useId();
+  return (
+    <>
+      <Button
+        variant="primary"
+        onPress={() => {
+          controller.setSheetOpen(true);
+        }}
+        className="min-h-12 rounded-full px-5 shadow-lg"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 fill-none stroke-current stroke-2">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        {t("client:compose.open")}
+      </Button>
+      <Sheet
+        title={<span id={headingId}>{t("client:compose.title")}</span>}
+        closeLabel={t("client:compose.close")}
+        isOpen={controller.isSheetOpen}
+        onOpenChange={controller.setSheetOpen}
+      >
+        <ComposeForm controller={controller} labelledBy={headingId} autoFocus />
+      </Sheet>
+    </>
+  );
+}

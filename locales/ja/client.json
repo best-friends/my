@@ -7,6 +7,234 @@
     "defaultMessage": "サーバーが要求を処理できませんでした（エラー {status}）。しばらくしてから試してください。",
     "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
   },
+  "compose.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the × button that closes the new-post sheet. The draft is kept."
+  },
+  "compose.failed": {
+    "defaultMessage": "投稿できませんでした: {reason}",
+    "description": "Error after publishing a post failed. The draft is kept. {reason} is the error message."
+  },
+  "compose.language.label": {
+    "defaultMessage": "言語",
+    "description": "Label of the choice of the language a post is written in."
+  },
+  "compose.language.und": {
+    "defaultMessage": "指定しない",
+    "description": "Choice of post language when the user does not say which language the post is in."
+  },
+  "compose.media.add": {
+    "defaultMessage": "画像を追加",
+    "description": "Button that opens the file picker to attach images to a post."
+  },
+  "compose.media.description.hint": {
+    "defaultMessage": "画像を見られない人のために、画像の内容を書いてください。",
+    "description": "Help text under the alternative text field of an attached image."
+  },
+  "compose.media.description.label": {
+    "defaultMessage": "画像 {position} の説明",
+    "description": "Label of the alternative text field of an attached image. {position} is its number in the post, from 1."
+  },
+  "compose.media.description.required": {
+    "defaultMessage": "画像を見られない人のために、画像の内容を書いてください。設定で、すべての画像に説明を付けるようにしています。",
+    "description": "Help text under the alternative text field of an attached image when the user's settings ask for a description of every image."
+  },
+  "compose.media.failed": {
+    "defaultMessage": "添付できませんでした: {reason}",
+    "description": "State of an attached image whose upload failed. {reason} is the error message."
+  },
+  "compose.media.failed_processing": {
+    "defaultMessage": "サーバーがこの画像を処理できませんでした。",
+    "description": "Why an attached image failed: the server could not process it."
+  },
+  "compose.media.hint": {
+    "defaultMessage": "{max, plural, other {# 枚}}まで（JPEG・PNG・GIF・WebP）。位置情報などのメタデータは、送る前に取り除きます。",
+    "description": "Help text next to the button that attaches images. {max} is the most images a post can have."
+  },
+  "compose.media.list": {
+    "defaultMessage": "添付した画像",
+    "description": "Accessible name of the list of images attached to the post being written."
+  },
+  "compose.media.processing": {
+    "defaultMessage": "処理中…",
+    "description": "State of an attached image while the server prepares it."
+  },
+  "compose.media.remove": {
+    "defaultMessage": "画像 {position} を外す",
+    "description": "Button that removes an attached image from the post. {position} is its number in the post, from 1."
+  },
+  "compose.media.too_many": {
+    "defaultMessage": "画像は {max, plural, other {# 枚}}までです。残りは追加しませんでした。",
+    "description": "Notice when the user picked more images than a post can have. {max} is the most images a post can have."
+  },
+  "compose.media.unsupported": {
+    "defaultMessage": "{name} は JPEG・PNG・GIF・WebP の画像ではありません。",
+    "description": "Notice when a picked file is not an image type the server accepts. {name} is the file name."
+  },
+  "compose.media.uploading": {
+    "defaultMessage": "アップロード中…",
+    "description": "State of an attached image while it is being sent to the server."
+  },
+  "compose.missing_description.add": {
+    "defaultMessage": "説明を書く",
+    "description": "Button of the confirmation that goes back to the form to describe the images."
+  },
+  "compose.missing_description.body": {
+    "defaultMessage": "説明のない画像が {count, plural, other {# 枚}}あります。画像を見られない人には、何が写っているか伝わりません。",
+    "description": "Text of the confirmation about images without a description. {count} is how many images have none."
+  },
+  "compose.missing_description.post": {
+    "defaultMessage": "このまま投稿する",
+    "description": "Button of the confirmation that posts without the descriptions."
+  },
+  "compose.missing_description.title": {
+    "defaultMessage": "画像の説明なしで投稿しますか？",
+    "description": "Title of the confirmation shown when attached images have no description and the user's settings ask for one."
+  },
+  "compose.open": {
+    "defaultMessage": "投稿を書く",
+    "description": "Floating button on phones and tablets that opens the form for a new post."
+  },
+  "compose.outbox.discard": {
+    "defaultMessage": "破棄する",
+    "description": "Button that throws away a post that could not be sent."
+  },
+  "compose.outbox.edit": {
+    "defaultMessage": "編集する",
+    "description": "Button that puts a post that could not be sent back into the form."
+  },
+  "compose.outbox.failed": {
+    "defaultMessage": "送信できませんでした: {reason}",
+    "description": "State of a post that could not be sent. {reason} is the error message."
+  },
+  "compose.outbox.label": {
+    "defaultMessage": "送信中の投稿",
+    "description": "Accessible name of the list of posts that are being sent or could not be sent."
+  },
+  "compose.outbox.retry": {
+    "defaultMessage": "もう一度送る",
+    "description": "Button that sends a post that could not be sent again."
+  },
+  "compose.outbox.sending": {
+    "defaultMessage": "送信中…",
+    "description": "State of a post that is being sent."
+  },
+  "compose.outbox.unsent": {
+    "defaultMessage": "まだ送信していません。",
+    "description": "State of a post whose sending was interrupted (for example by reloading the page)."
+  },
+  "compose.over": {
+    "defaultMessage": "{count, plural, other {# 文字}}多すぎます",
+    "description": "Counter under a text field when the text is longer than allowed. {count} is how many characters are over."
+  },
+  "compose.posted": {
+    "defaultMessage": "投稿しました。",
+    "description": "Notice after a post was published."
+  },
+  "compose.remaining": {
+    "defaultMessage": "残り {count, plural, other {# 文字}}",
+    "description": "Counter under a text field: how many more characters fit. {count} is a number."
+  },
+  "compose.reply.cancel": {
+    "defaultMessage": "返信をやめる",
+    "description": "Button that turns the reply being written into a normal post."
+  },
+  "compose.reply.label": {
+    "defaultMessage": "{name} さんへの返信",
+    "description": "Above the new-post form: the post being replied to. {name} is the author's display name or handle."
+  },
+  "compose.reply.unavailable": {
+    "defaultMessage": "返信先の投稿を表示できません。",
+    "description": "Shown instead of the post being replied to when it could not be loaded."
+  },
+  "compose.sensitive": {
+    "defaultMessage": "画像を、読む人が表示するまで隠す",
+    "description": "Checkbox that marks the attached images as sensitive."
+  },
+  "compose.submit": {
+    "defaultMessage": "投稿する",
+    "description": "Button that publishes the new post."
+  },
+  "compose.submit.reply": {
+    "defaultMessage": "返信する",
+    "description": "Button that publishes the reply being written."
+  },
+  "compose.text.label": {
+    "defaultMessage": "投稿の本文",
+    "description": "Label of the text area where the user writes the text of a post."
+  },
+  "compose.title": {
+    "defaultMessage": "新しい投稿",
+    "description": "Heading of the form that writes a new post (the side panel on wide screens, the sheet on phones)."
+  },
+  "compose.visibility.button": {
+    "defaultMessage": "公開範囲: {visibility}",
+    "description": "Button that opens the choice of who can see the post. {visibility} is the current choice, for example 'Public'."
+  },
+  "compose.visibility.direct": {
+    "defaultMessage": "メンションした人",
+    "description": "Visibility of a post: only the mentioned people."
+  },
+  "compose.visibility.direct.description": {
+    "defaultMessage": "メンションした人だけ。",
+    "description": "Explanation of the 'Mentioned people' visibility."
+  },
+  "compose.visibility.done": {
+    "defaultMessage": "完了",
+    "description": "Button that closes the list of visibility choices."
+  },
+  "compose.visibility.limited": {
+    "defaultMessage": "公開範囲「{visibility}」で投稿しました。あなたのアカウントは、いまはこれより広く投稿できません。",
+    "description": "Notice after posting when the server narrowed the chosen visibility because of a restriction on the account. {visibility} is the visibility the post got, for example 'Followers'."
+  },
+  "compose.visibility.local": {
+    "defaultMessage": "このサーバー",
+    "description": "Visibility of a post: signed-in people of this server and the author's followers. Not the same as 'local only' in other software: followers on other servers receive it."
+  },
+  "compose.visibility.local.description": {
+    "defaultMessage": "このサーバーにログインしている人と、ほかのサーバーのあなたのフォロワー。このサーバーのローカルタイムラインに載ります。",
+    "description": "Explanation of the 'This server' visibility (ADR-0017)."
+  },
+  "compose.visibility.private": {
+    "defaultMessage": "フォロワー",
+    "description": "Visibility of a post: the author's followers and the mentioned people."
+  },
+  "compose.visibility.private.description": {
+    "defaultMessage": "あなたのフォロワーと、メンションした人だけ。",
+    "description": "Explanation of the 'Followers' visibility."
+  },
+  "compose.visibility.public": {
+    "defaultMessage": "公開",
+    "description": "Visibility of a post: everyone, and listed on the public timelines."
+  },
+  "compose.visibility.public.description": {
+    "defaultMessage": "このサーバーとほかのサーバーのだれでも。公開タイムラインに載ります。",
+    "description": "Explanation of the 'Public' visibility."
+  },
+  "compose.visibility.title": {
+    "defaultMessage": "この投稿を見られる人",
+    "description": "Label of the list of visibility choices for a post."
+  },
+  "compose.visibility.unlisted": {
+    "defaultMessage": "未収載",
+    "description": "Visibility of a post: everyone, but kept off the public timelines."
+  },
+  "compose.visibility.unlisted.description": {
+    "defaultMessage": "リンクを知っているだれでも。公開タイムラインには載りません。",
+    "description": "Explanation of the 'Unlisted' visibility."
+  },
+  "compose.warning.description": {
+    "defaultMessage": "読む人はまずこの文を見て、投稿を表示するかを選びます。",
+    "description": "Help text under the content warning field."
+  },
+  "compose.warning.label": {
+    "defaultMessage": "注意書き",
+    "description": "Label of the field with the content warning text of a post."
+  },
+  "compose.warning.toggle": {
+    "defaultMessage": "注意書き（CW）を付ける",
+    "description": "Checkbox that adds a content warning: a short text shown instead of the post until the reader opens it."
+  },
   "home.title": {
     "defaultMessage": "ホーム",
     "description": "Heading and document title of the home timeline page."
