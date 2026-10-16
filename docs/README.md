@@ -14,6 +14,10 @@
 - [デプロイターゲットと低コスト構成](architecture/deployment-targets.md)
 - [ADR 一覧](adr/README.md)
 
+## リファレンス
+
+- [設定リファレンス](reference/configuration.md)（設定スキーマから生成）
+
 ## 開発プロセス
 
 - [コントリビュートの手引き](../CONTRIBUTING.md)

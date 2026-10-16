@@ -1,0 +1,175 @@
+<!-- Code generated from internal/platform/config/schema.go by "make config-docs". DO NOT EDIT. -->
+
+# Configuration reference
+
+The server reads each setting from these sources, highest precedence first (ADR-0010):
+
+1. The environment variable `MY_<KEY>` (the key in upper case).
+2. The TOML file named by `MY_CONFIG` (or `my config check -config <path>`), with the keys below at the top level.
+3. The default.
+
+Secrets are read only from the environment: either the variable itself or `<NAME>_FILE`, the path of a file that holds the value
+(trailing newlines are removed), for Docker and Kubernetes secrets (ADR-0019 §6). Setting a secret in the TOML file is an error.
+
+Adapters are always selected by an explicit key; nothing is inferred from a URL scheme.
+Values marked "not in v0" are decided in an ADR but not shipped in v0, and are rejected.
+
+`my config check` validates the configuration and lists every problem at once; the server refuses to start on any of them.
+
+## Summary
+
+| Key | Environment variable | Default | Required | Secret |
+| --- | --- | --- | --- | --- |
+| [`host`](#host) | `MY_HOST` | none | yes | no |
+| [`account_domain`](#account_domain) | `MY_ACCOUNT_DOMAIN` | value of `host` | no | no |
+| [`role`](#role) | `MY_ROLE` | `all` | no | no |
+| [`listen`](#listen) | `MY_LISTEN` | `:8080` | no | no |
+| [`db`](#db) | `MY_DB` | `sqlite` | no | no |
+| [`database_url`](#database_url) | `MY_DATABASE_URL` | none | yes | yes |
+| [`queue`](#queue) | `MY_QUEUE` | `db` | no | no |
+| [`blob`](#blob) | `MY_BLOB` | `fs` | no | no |
+| [`media`](#media) | `MY_MEDIA` | `native` | no | no |
+| [`kv`](#kv) | `MY_KV` | `db` | no | no |
+| [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
+| [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
+
+## Settings
+
+### `host`
+
+Domain that serves the instance. Every ActivityPub `id` is under `https://{host}/` (ADR-0018). A port is allowed for local development. Recorded in the database on first start and must not change afterwards.
+
+- Environment variable: `MY_HOST`
+- Default: none
+- Required: yes
+
+### `account_domain`
+
+Domain of user handles (`@alice@{account_domain}`). Defaults to `host`. When it differs, `account_domain` must redirect `/.well-known/webfinger`, `/.well-known/host-meta`, and `/.well-known/nodeinfo` to `host` (ADR-0018). Recorded in the database on first start and must not change afterwards.
+
+- Environment variable: `MY_ACCOUNT_DOMAIN`
+- Default: value of `host`
+- Required: no
+
+### `role`
+
+What this process runs.
+
+- Environment variable: `MY_ROLE`
+- Default: `all`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `all` | yes | HTTP server and job worker in one process. |
+| `web` | yes | HTTP server only. |
+| `worker` | yes | Job worker only. |
+
+### `listen`
+
+TCP address the HTTP server listens on, as `host:port`.
+
+- Environment variable: `MY_LISTEN`
+- Default: `:8080`
+- Required: no
+
+### `db`
+
+Database adapter (ADR-0003). The adapter is never inferred from `database_url`.
+
+- Environment variable: `MY_DB`
+- Default: `sqlite`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `sqlite` | yes | Local SQLite file (`modernc.org/sqlite`). |
+| `libsql` | yes | libSQL / Turso. |
+| `postgres` | yes | PostgreSQL and compatible services (`pgx/v5`). |
+
+### `database_url`
+
+Connection string passed to the `db` adapter, in that adapter's format.
+
+- Environment variable: `MY_DATABASE_URL` or `MY_DATABASE_URL_FILE`
+- Default: none
+- Required: yes
+
+### `queue`
+
+Job queue adapter (ADR-0004).
+
+- Environment variable: `MY_QUEUE`
+- Default: `db`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `db` | yes | Queue table in the database. |
+| `inline` | yes | Runs jobs synchronously in the enqueuing process; for tests and development. Requires `role = all`. |
+| `sqs` | yes | Amazon SQS. |
+| `cloudtasks` | yes | Google Cloud Tasks. |
+
+### `blob`
+
+Blob storage adapter for media (ADR-0005).
+
+- Environment variable: `MY_BLOB`
+- Default: `fs`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `fs` | yes | Local file system. |
+| `s3` | yes | S3-compatible API (AWS S3, Cloudflare R2, GCS XML API, MinIO). |
+| `gcs` | not in v0 | Native Google Cloud Storage API. |
+
+### `media`
+
+Media processor adapter (ADR-0005).
+
+- Environment variable: `MY_MEDIA`
+- Default: `native`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `native` | yes | Pure Go image processing. |
+| `vips` | yes | libvips; needs a cgo build with the adapter's build tag. |
+| `none` | yes | No processing except EXIF removal. |
+
+### `kv`
+
+Key-value store adapter for caches and rate limits (ADR-0003, ADR-0019 §5).
+
+- Environment variable: `MY_KV`
+- Default: `db`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `db` | yes | Table in the database. |
+| `memory` | yes | In-process memory; limits are per process. |
+| `redis` | not in v0 | Redis. |
+
+### `key_manager`
+
+Key manager adapter that encrypts actor private keys (ADR-0019 §6).
+
+- Environment variable: `MY_KEY_MANAGER`
+- Default: `local`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `local` | yes | Uses the key-encryption key from `kek`. |
+| `gcpkms` | not in v0 | Google Cloud KMS. |
+| `awskms` | not in v0 | AWS KMS. |
+
+### `kek`
+
+Key-encryption key for actor private keys: 32 random bytes in standard base64 (for example `openssl rand -base64 32`). Required when `key_manager = local`. Back it up separately from the database; losing it loses every actor key (ADR-0019 §6).
+
+- Environment variable: `MY_KEK` or `MY_KEK_FILE`
+- Default: none
+- Required: when `key_manager = local`

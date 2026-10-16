@@ -101,6 +101,7 @@ These come from Accepted ADRs and are binding.
 | `make go-check` | `go mod tidy` check, `go vet`, `golangci-lint`, `go test`, `CGO_ENABLED=0 go build`, license check |
 | `make go-lint` / `go-test` / `go-build` | Run one Go step (`go-lint` uses `.golangci.yml`, including the depguard architecture rules) |
 | `make build [VERSION=...]` | Build `bin/my` with the version stamped in (`git describe` by default) |
+| `make config-docs` | Regenerate [docs/reference/configuration.md](docs/reference/configuration.md) from the config schema (`go-test` fails when it is stale) |
 | `make go-licenses` | Fail on Go dependency licenses incompatible with AGPL-3.0 (allowlist in `Makefile`) |
 | `make go-vuln` | govulncheck (needs network; run in CI, not part of `make check`) |
 | `make lint-shell` | shellcheck on `scripts/*.sh` |

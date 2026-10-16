@@ -1,0 +1,278 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package config
+
+import (
+	"encoding/base64"
+	"errors"
+	"io/fs"
+	"reflect"
+	"slices"
+	"strings"
+	"testing"
+)
+
+var testKEK = base64.StdEncoding.EncodeToString(make([]byte, kekSize))
+
+// minimal is the smallest valid environment.
+func minimal() map[string]string {
+	return map[string]string{
+		"MY_HOST":         "social.example.org",
+		"MY_DATABASE_URL": "file:my.db",
+		"MY_KEK":          testKEK,
+	}
+}
+
+func with(base map[string]string, kv ...string) map[string]string {
+	for i := 0; i+1 < len(kv); i += 2 {
+		if kv[i+1] == unset {
+			delete(base, kv[i])
+			continue
+		}
+		base[kv[i]] = kv[i+1]
+	}
+	return base
+}
+
+const unset = "\x00"
+
+func source(env map[string]string, files map[string]string) Source {
+	return Source{
+		LookupEnv: func(k string) (string, bool) { v, ok := env[k]; return v, ok },
+		ReadFile: func(p string) ([]byte, error) {
+			if s, ok := files[p]; ok {
+				return []byte(s), nil
+			}
+			return nil, &fs.PathError{Op: "open", Path: p, Err: fs.ErrNotExist}
+		},
+	}
+}
+
+func TestLoadValid(t *testing.T) {
+	kek := make([]byte, kekSize)
+	tests := []struct {
+		name  string
+		env   map[string]string
+		files map[string]string
+		want  Config
+	}{
+		{
+			name: "defaults",
+			env:  minimal(),
+			want: Config{
+				Host: "social.example.org", AccountDomain: "social.example.org", Role: RoleAll, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				KeyManager: "local", KEK: kek,
+			},
+		},
+		{
+			name: "file overrides defaults and env overrides file",
+			env:  with(minimal(), "MY_CONFIG", "my.toml", "MY_QUEUE", "sqs"),
+			files: map[string]string{"my.toml": `
+account_domain = "example.org"
+role = "web"
+queue = "db"
+db = "postgres"
+listen = "127.0.0.1:9000"
+`},
+			want: Config{
+				Host: "social.example.org", AccountDomain: "example.org", Role: RoleWeb, Listen: "127.0.0.1:9000",
+				DB: "postgres", DatabaseURL: "file:my.db", Queue: "sqs", Blob: "fs", Media: "native", KV: "db",
+				KeyManager: "local", KEK: kek,
+			},
+		},
+		{
+			name:  "secrets from _FILE",
+			env:   with(minimal(), "MY_DATABASE_URL", unset, "MY_DATABASE_URL_FILE", "/mnt/db-url", "MY_KEK", unset, "MY_KEK_FILE", "/mnt/kek"),
+			files: map[string]string{"/mnt/db-url": "postgres://db/my\n", "/mnt/kek": testKEK + "\n"},
+			want: Config{
+				Host: "social.example.org", AccountDomain: "social.example.org", Role: RoleAll, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "postgres://db/my", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				KeyManager: "local", KEK: kek,
+			},
+		},
+		{
+			name: "host with port",
+			env:  with(minimal(), "MY_HOST", "localhost:3000"),
+			want: Config{
+				Host: "localhost:3000", AccountDomain: "localhost:3000", Role: RoleAll, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				KeyManager: "local", KEK: kek,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _, err := Load(source(tt.env, tt.files))
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+			if !reflect.DeepEqual(*got, tt.want) {
+				t.Errorf("Load() =\n%+v\nwant\n%+v", *got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoadInvalid(t *testing.T) {
+	tests := []struct {
+		name  string
+		env   map[string]string
+		files map[string]string
+		file  string
+		want  []string // every issue, in order
+	}{
+		{
+			name: "all required missing",
+			env:  map[string]string{},
+			want: []string{
+				"host (MY_HOST): required",
+				"database_url (MY_DATABASE_URL): required",
+				"kek (MY_KEK): required when key_manager is local",
+			},
+		},
+		{
+			name: "invalid values are all listed",
+			env: with(minimal(),
+				"MY_HOST", "https://Social.example.org/",
+				"MY_ACCOUNT_DOMAIN", "10.0.0.1",
+				"MY_ROLE", "both",
+				"MY_LISTEN", "8080",
+				"MY_DB", "mysql",
+				"MY_KEK", "c2hvcnQ=",
+			),
+			want: []string{
+				"host (MY_HOST): must be a domain name with an optional :port, without scheme or path",
+				"account_domain (MY_ACCOUNT_DOMAIN): must be a domain name, not an IP address",
+				`role (MY_ROLE): unknown value "both"; want one of all, web, worker`,
+				"listen (MY_LISTEN): must be host:port, for example :8080 or 127.0.0.1:8080",
+				`db (MY_DB): unknown value "mysql"; want one of sqlite, libsql, postgres`,
+				"kek (MY_KEK): must decode to 32 bytes, got 5",
+			},
+		},
+		{
+			name: "upper case host and bad port",
+			env:  with(minimal(), "MY_HOST", "Social.example.org", "MY_ACCOUNT_DOMAIN", "example.org:99999"),
+			want: []string{
+				"host (MY_HOST): must be lower case",
+				`account_domain (MY_ACCOUNT_DOMAIN): port "99999" must be a number from 1 to 65535`,
+			},
+		},
+		{
+			name: "adapters outside v0",
+			env:  with(minimal(), "MY_BLOB", "gcs", "MY_KV", "redis", "MY_KEY_MANAGER", "awskms", "MY_KEK", unset),
+			want: []string{
+				`blob (MY_BLOB): "gcs" is not available in v0; want one of fs, s3`,
+				`kv (MY_KV): "redis" is not available in v0; want one of db, memory`,
+				`key_manager (MY_KEY_MANAGER): "awskms" is not available in v0; want one of local`,
+			},
+		},
+		{
+			name: "inline queue with a split role",
+			env:  with(minimal(), "MY_QUEUE", "inline", "MY_ROLE", "worker"),
+			want: []string{"queue (MY_QUEUE): inline runs jobs in the enqueuing process and requires role = all, not worker"},
+		},
+		{
+			name: "secret sources",
+			env:  with(minimal(), "MY_DATABASE_URL_FILE", "/x", "MY_KEK", unset, "MY_KEK_FILE", "/missing"),
+			want: []string{
+				"database_url (MY_DATABASE_URL): set only one of MY_DATABASE_URL and MY_DATABASE_URL_FILE",
+				"kek (MY_KEK): MY_KEK_FILE: open /missing: file does not exist",
+			},
+		},
+		{
+			name: "file problems",
+			env:  minimal(),
+			file: "my.toml",
+			files: map[string]string{"my.toml": `
+hots = "typo.example"
+role = 1
+kek = "nope"
+`},
+			want: []string{
+				`config file my.toml: unknown key "hots"`,
+				"role (MY_ROLE): must be a string in the config file, got int64",
+				"kek (MY_KEK): is a secret; set MY_KEK or MY_KEK_FILE instead of the config file",
+			},
+		},
+		{
+			name: "file not found",
+			env:  with(minimal(), "MY_CONFIG", "nope.toml"),
+			want: []string{"config file: open nope.toml: file does not exist"},
+		},
+		{
+			name:  "file syntax error",
+			env:   minimal(),
+			file:  "bad.toml",
+			files: map[string]string{"bad.toml": "role = "},
+			want:  []string{"config file bad.toml: toml: "},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src := source(tt.env, tt.files)
+			src.File = tt.file
+			cfg, _, err := Load(src)
+			if cfg != nil {
+				t.Errorf("Load() config = %+v, want nil", cfg)
+			}
+			var ve *ValidationError
+			if !errors.As(err, &ve) {
+				t.Fatalf("Load() error = %v, want *ValidationError", err)
+			}
+			got := make([]string, len(ve.Issues))
+			for i, is := range ve.Issues {
+				got[i] = is.String()
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("issues =\n%s\nwant\n%s", strings.Join(got, "\n"), strings.Join(tt.want, "\n"))
+			}
+			for i := range got {
+				if !strings.HasPrefix(got[i], tt.want[i]) {
+					t.Errorf("issue %d = %q, want prefix %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestLoadSettingsRedactSecrets(t *testing.T) {
+	_, settings, err := Load(source(minimal(), nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys := make([]string, len(settings))
+	for i, s := range settings {
+		keys[i] = s.Key
+		if s.Secret && s.Value != "(redacted)" {
+			t.Errorf("%s = %q, want redacted", s.Key, s.Value)
+		}
+	}
+	for i := range schema {
+		if !slices.Contains(keys, schema[i].key) {
+			t.Errorf("settings miss %s", schema[i].key)
+		}
+	}
+}
+
+func TestSchemaWellFormed(t *testing.T) {
+	seen := map[string]bool{}
+	for i := range schema {
+		f := &schema[i]
+		if seen[f.key] {
+			t.Errorf("duplicate key %s", f.key)
+		}
+		seen[f.key] = true
+		if f.doc == "" || f.set == nil {
+			t.Errorf("%s: doc and set are required", f.key)
+		}
+		if f.def != "" {
+			if err := validate(f, f.def); err != nil {
+				t.Errorf("%s: default %q is invalid: %v", f.key, f.def, err)
+			}
+		}
+		if f.secret && f.def != "" {
+			t.Errorf("%s: secrets have no default", f.key)
+		}
+	}
+}
