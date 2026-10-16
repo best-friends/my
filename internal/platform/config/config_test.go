@@ -66,7 +66,7 @@ func TestLoadValid(t *testing.T) {
 			name: "defaults",
 			env:  minimal(),
 			want: Config{
-				Host: "social.example.org", AccountDomain: "social.example.org", Role: RoleAll, Listen: ":8080",
+				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				KeyManager: "local", KEK: kek,
 			},
@@ -76,13 +76,14 @@ func TestLoadValid(t *testing.T) {
 			env:  with(minimal(), "MY_CONFIG", "my.toml", "MY_QUEUE", "sqs"),
 			files: map[string]string{"my.toml": `
 account_domain = "example.org"
+source_url = "https://git.example.org/fork/my"
 role = "web"
 queue = "db"
 db = "postgres"
 listen = "127.0.0.1:9000"
 `},
 			want: Config{
-				Host: "social.example.org", AccountDomain: "example.org", Role: RoleWeb, Listen: "127.0.0.1:9000",
+				Host: "social.example.org", AccountDomain: "example.org", SourceURL: "https://git.example.org/fork/my", Role: RoleWeb, Listen: "127.0.0.1:9000",
 				DB: "postgres", DatabaseURL: "file:my.db", Queue: "sqs", Blob: "fs", Media: "native", KV: "db",
 				KeyManager: "local", KEK: kek,
 			},
@@ -92,7 +93,7 @@ listen = "127.0.0.1:9000"
 			env:   with(minimal(), "MY_DATABASE_URL", unset, "MY_DATABASE_URL_FILE", "/mnt/db-url", "MY_KEK", unset, "MY_KEK_FILE", "/mnt/kek"),
 			files: map[string]string{"/mnt/db-url": "postgres://db/my\n", "/mnt/kek": testKEK + "\n"},
 			want: Config{
-				Host: "social.example.org", AccountDomain: "social.example.org", Role: RoleAll, Listen: ":8080",
+				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "postgres://db/my", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				KeyManager: "local", KEK: kek,
 			},
@@ -101,7 +102,7 @@ listen = "127.0.0.1:9000"
 			name: "previous KEKs",
 			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+", "+testKEK2),
 			want: Config{
-				Host: "social.example.org", AccountDomain: "social.example.org", Role: RoleAll, Listen: ":8080",
+				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				KeyManager: "local", KEK: kek,
 				PreviousKEKs: [][]byte{bytes.Repeat([]byte{1}, kekSize), bytes.Repeat([]byte{2}, kekSize)},
@@ -111,7 +112,7 @@ listen = "127.0.0.1:9000"
 			name: "host with port",
 			env:  with(minimal(), "MY_HOST", "localhost:3000"),
 			want: Config{
-				Host: "localhost:3000", AccountDomain: "localhost:3000", Role: RoleAll, Listen: ":8080",
+				Host: "localhost:3000", AccountDomain: "localhost:3000", SourceURL: DefaultSourceURL, Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				KeyManager: "local", KEK: kek,
 			},
@@ -152,6 +153,7 @@ func TestLoadInvalid(t *testing.T) {
 			env: with(minimal(),
 				"MY_HOST", "https://Social.example.org/",
 				"MY_ACCOUNT_DOMAIN", "10.0.0.1",
+				"MY_SOURCE_URL", "http://example.org/my",
 				"MY_ROLE", "both",
 				"MY_LISTEN", "8080",
 				"MY_DB", "mysql",
@@ -160,6 +162,7 @@ func TestLoadInvalid(t *testing.T) {
 			want: []string{
 				"host (MY_HOST): must be a domain name with an optional :port, without scheme or path",
 				"account_domain (MY_ACCOUNT_DOMAIN): must be a domain name, not an IP address",
+				"source_url (MY_SOURCE_URL): must be an absolute https URL without user info or fragment",
 				`role (MY_ROLE): unknown value "both"; want one of all, web, worker`,
 				"listen (MY_LISTEN): must be host:port, for example :8080 or 127.0.0.1:8080",
 				`db (MY_DB): unknown value "mysql"; want one of sqlite, libsql, postgres`,

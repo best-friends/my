@@ -22,6 +22,7 @@ Values marked "not in v0" are decided in an ADR but not shipped in v0, and are r
 | --- | --- | --- | --- | --- |
 | [`host`](#host) | `MY_HOST` | none | yes | no |
 | [`account_domain`](#account_domain) | `MY_ACCOUNT_DOMAIN` | value of `host` | no | no |
+| [`source_url`](#source_url) | `MY_SOURCE_URL` | `https://github.com/best-friends/my` | no | no |
 | [`role`](#role) | `MY_ROLE` | `all` | no | no |
 | [`listen`](#listen) | `MY_LISTEN` | `:8080` | no | no |
 | [`db`](#db) | `MY_DB` | `sqlite` | no | no |
@@ -50,6 +51,14 @@ Domain of user handles (`@alice@{account_domain}`). Defaults to `host`. When it 
 
 - Environment variable: `MY_ACCOUNT_DOMAIN`
 - Default: value of `host`
+- Required: no
+
+### `source_url`
+
+Where users get the source code of the running server, as an `https` URL. NodeInfo publishes it as `software.repository` (AGPL-3.0 section 13, ADR-0011); point it at your own repository when you run a modified version.
+
+- Environment variable: `MY_SOURCE_URL`
+- Default: `https://github.com/best-friends/my`
 - Required: no
 
 ### `role`
