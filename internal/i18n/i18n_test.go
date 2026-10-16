@@ -3,6 +3,7 @@
 package i18n
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -51,32 +52,6 @@ func TestLocales(t *testing.T) {
 	}
 	if got, want := load(t, WithPseudoLocales()).Locales(), []string{"ar-XB", "en", "en-XA", "ja"}; !slices.Equal(got, want) {
 		t.Errorf("Locales() with pseudo-locales = %v, want %v", got, want)
-	}
-}
-
-func TestResolve(t *testing.T) {
-	b := load(t)
-	tests := []struct {
-		name string
-		p    Preferences
-		want string
-	}{
-		{"nothing", Preferences{}, "en"},
-		{"user setting wins", Preferences{User: "ja", AcceptLanguage: "en", InstanceDefault: "en"}, "ja"},
-		{"accept-language", Preferences{AcceptLanguage: "fr;q=0.9, ja-JP;q=0.8, en;q=0.1"}, "ja"},
-		{"accept-language before instance default", Preferences{AcceptLanguage: "en-GB", InstanceDefault: "ja"}, "en"},
-		{"unsupported accept-language uses instance default", Preferences{AcceptLanguage: "fr, de", InstanceDefault: "ja"}, "ja"},
-		{"unsupported user setting is skipped", Preferences{User: "zh-Hant-TW", InstanceDefault: "ja"}, "ja"},
-		{"malformed values are skipped", Preferences{User: "!!", AcceptLanguage: "*, ja_jp", InstanceDefault: "en"}, "ja"},
-		{"pseudo-locales are not selectable by default", Preferences{User: "en-XA", InstanceDefault: "ja"}, "en"},
-	}
-	for _, tt := range tests {
-		if got := b.Resolve(tt.p); got != tt.want {
-			t.Errorf("%s: Resolve(%+v) = %q, want %q", tt.name, tt.p, got, tt.want)
-		}
-	}
-	if got := load(t, WithPseudoLocales()).Resolve(Preferences{AcceptLanguage: "ar-XB"}); got != "ar-XB" {
-		t.Errorf("Resolve(ar-XB) with pseudo-locales = %q", got)
 	}
 }
 
@@ -180,13 +155,14 @@ func TestFormatFallsBack(t *testing.T) {
 	}
 }
 
-func ExampleBundle_Resolve() {
+func ExampleResolver_Locale() {
 	b, err := Load()
 	if err != nil {
 		panic(err)
 	}
+	r := &Resolver{Bundle: b, InstanceDefault: func(context.Context) string { return "en" }}
 	for _, header := range []string{"ja-JP,ja;q=0.9,en;q=0.8", "fr-CA, de;q=0.5"} {
-		l := b.Localizer(b.Resolve(Preferences{AcceptLanguage: header, InstanceDefault: "en"}))
+		l := r.Localizer(context.Background(), header)
 		fmt.Println(l.Locale(), l.Direction(), strings.TrimSpace(l.ServerConfigErrors(2)))
 	}
 	// Output:

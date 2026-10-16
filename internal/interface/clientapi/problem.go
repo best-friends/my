@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sync"
 
 	"github.com/best-friends/my/internal/i18n"
 )
@@ -18,33 +19,45 @@ const ContentTypeProblem = "application/problem+json"
 // ProblemTypeBlank is the problem type of problems that mean no more than their HTTP status.
 const ProblemTypeBlank = "about:blank"
 
-type localizerKey struct{}
+type localeKey struct{}
 
-// localize stores the localizer of the request's Accept-Language in its context, where the
-// strict handlers, which see only the context, find it with Localizer.
+// requestLocale is the locale of one request. It is resolved on first use, so that a
+// request whose response is not localized never reads the instance default, and so that a
+// request authenticated before its first localized message gets its user's locale.
+type requestLocale struct {
+	acceptLanguage string
+	once           sync.Once
+	l              *i18n.Localizer
+}
+
+// localize stores the request's Accept-Language in its context, where the strict handlers,
+// which see only the context, find the request's localizer with Localizer.
 func (s *Server) localize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), localizerKey{}, s.localizer(r))
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(withLocale(r)))
 	})
 }
 
-func (s *Server) localizer(r *http.Request) *i18n.Localizer {
-	if l, ok := r.Context().Value(localizerKey{}).(*i18n.Localizer); ok {
-		return l
+// withLocale returns the context of r with its requestLocale.
+func withLocale(r *http.Request) context.Context {
+	if _, ok := r.Context().Value(localeKey{}).(*requestLocale); ok {
+		return r.Context()
 	}
-	b := s.o.Messages
-	return b.Localizer(b.Resolve(i18n.Preferences{AcceptLanguage: r.Header.Get("Accept-Language")}))
+	return context.WithValue(r.Context(), localeKey{}, &requestLocale{acceptLanguage: r.Header.Get("Accept-Language")})
 }
 
-// Localizer returns the localizer of the request that ctx belongs to, for the messages of
-// problem documents that a handler returns.
+func (s *Server) localizer(r *http.Request) *i18n.Localizer { return s.Localizer(withLocale(r)) }
+
+// Localizer returns the localizer of the request that ctx belongs to (ADR-0009 §2), for the
+// messages of problem documents that a handler returns. Outside a request it resolves
+// without Accept-Language.
 func (s *Server) Localizer(ctx context.Context) *i18n.Localizer {
-	if l, ok := ctx.Value(localizerKey{}).(*i18n.Localizer); ok {
-		return l
+	rl, ok := ctx.Value(localeKey{}).(*requestLocale)
+	if !ok {
+		return s.o.Locales.Localizer(ctx, "")
 	}
-	b := s.o.Messages
-	return b.Localizer(b.Resolve(i18n.Preferences{}))
+	rl.once.Do(func() { rl.l = s.o.Locales.Localizer(ctx, rl.acceptLanguage) })
+	return rl.l
 }
 
 // NewProblem returns a problem document of status with the localized title and optional
@@ -68,8 +81,7 @@ func (s *Server) NewProblem(ctx context.Context, status int, typ, title, detail 
 // writeProblem writes a problem document outside the strict handlers: for requests that the
 // generated code rejects and for errors that handlers return. Problems are never cached.
 func (s *Server) writeProblem(w http.ResponseWriter, r *http.Request, status int, title, detail string) {
-	ctx := context.WithValue(r.Context(), localizerKey{}, s.localizer(r))
-	p, headers := s.NewProblem(ctx, status, ProblemTypeBlank, title, detail)
+	p, headers := s.NewProblem(withLocale(r), status, ProblemTypeBlank, title, detail)
 	body, err := json.Marshal(p)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
