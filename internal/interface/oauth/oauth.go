@@ -213,7 +213,8 @@ func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 // revoke serves the revocation endpoint (RFC 7009). It answers 200 for unknown tokens too.
-// A revocation by the web client also deletes its refresh token cookie.
+// A revocation by the web client also deletes its refresh token cookie; the identity module
+// ends the session of the authorization screens that the token family came from.
 func (h *Handler) revoke(w http.ResponseWriter, r *http.Request) {
 	form, creds, basic, ok := h.parse(w, r)
 	if !ok {

@@ -2,9 +2,15 @@
 // Runs before every Vitest file (vitest.config.ts): jest-dom matchers, DOM cleanup and the MSW server.
 // The network is mocked only through MSW (web-client.md T3); a request that no handler matches fails the test.
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 import { server } from "./msw/server";
+
+// findBy and waitFor give up after this long (web-client.md T7). The wait is wall-clock time, which a busy
+// machine stretches: Testing Library's 1 s default timed out in `make check` while Go and PostgreSQL ran
+// alongside. A test that passes never waits this long; the limit only bounds how long a broken one hangs.
+// testTimeout in vitest.config.ts leaves room for several such waits.
+configure({ asyncUtilTimeout: 10_000 });
 
 beforeAll(() => {
   server.listen({ onUnhandledFrame: "error" });

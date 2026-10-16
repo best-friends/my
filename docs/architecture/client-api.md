@@ -134,7 +134,8 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
     この交換は `net/http.CrossOriginProtection` を通る要求だけを受け付けます。
   - `refresh_token` グラントは使えません。`POST /oauth/token/refresh` に `X-My-Token-Refresh: 1` ヘッダを付けて呼びます。応答のたびに Cookie はローテーションされます。
     使用済みのリフレッシュトークンを送ると系列全体が失効するので、同時に複数の更新を送らないようにします（タブ間で更新を 1 つにまとめる）。
-  - `POST /oauth/revoke` で失効させると、Cookie も削除されます。
+  - `POST /oauth/revoke` で失効させると、Cookie も削除されます。Web クライアントの失効はログアウトなので、その系列の認可コードを発行した
+    認可サーバーの画面のセッション（`__Host-my_session`）も `logout` で失効させます。Cookie ではなく、認可コードに記録したセッションから辿ります。
 - `web_origin` がサーバーのオリジンと異なる場合、これらのエンドポイントは `web_origin` にだけ資格情報付きの CORS を許可します。
 
 ### 4.1 スコープ

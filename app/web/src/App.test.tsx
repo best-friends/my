@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Integration tests of the app shell (web-client.md T4): the real router, providers and layout.
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { renderApp } from "./test/render";
 
@@ -31,7 +31,10 @@ describe("app shell", () => {
     await user.click(within(nav).getByRole("link", { name: "Local" }));
 
     const heading = await screen.findByRole("heading", { level: 1, name: "Local timeline" });
-    expect(heading).toHaveFocus();
+    // Focus moves when the router reports the page rendered, after the heading is in the document.
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
     expect(document.title).toBe("Local timeline – my example");
     expect(within(nav).getByRole("link", { name: "Local" })).toHaveAttribute("aria-current", "page");
     expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
@@ -44,7 +47,10 @@ describe("app shell", () => {
     within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Settings" }).focus();
     await user.keyboard("{Enter}");
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toHaveFocus();
+    const heading = await screen.findByRole("heading", { level: 1, name: "Settings" });
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
     expect(document.title).toBe("Settings – my example");
   });
 

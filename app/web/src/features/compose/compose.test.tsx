@@ -5,7 +5,7 @@
 // browser APIs and check what the client did with them.
 import { Button } from "@my/ui";
 import { createMemoryHistory, createRootRouteWithContext, createRouter, Outlet } from "@tanstack/react-router";
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RouterContext } from "../../lib/query";
@@ -92,7 +92,7 @@ describe("the new-post form", () => {
     );
     await user.click(within(choices).getByRole("radio", { name: "Followers" }));
     await user.click(screen.getByRole("button", { name: "Done" }));
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(within(sheet).getByRole("button", { name: "Visibility: Followers" })).toHaveFocus();
     });
 
@@ -269,7 +269,7 @@ describe("hints before posting", () => {
     await user.click(screen.getByRole("button", { name: "Done" }));
     await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "Hi @carol@remote.example");
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(asked).toBe(true);
     });
     expect(within(sheet).queryByText(/does not follow you/)).not.toBeInTheDocument();
@@ -351,7 +351,7 @@ describe("images", () => {
     expect(description).toHaveAccessibleDescription(/Describe the image for people who cannot see it\./);
     expect(within(sheet).getByRole("button", { name: "Post" })).toBeDisabled();
     // 6000 × 4000 is more than 3840 × 2160 pixels of area: scaled to fit, with the aspect ratio kept.
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(uploads).toHaveLength(1);
     });
     expect(drawn).toEqual([{ width: 3527, height: 2351 }]);
@@ -363,9 +363,9 @@ describe("images", () => {
     await user.click(within(sheet).getByRole("checkbox", { name: "Hide the images until readers show them" }));
     // The upload was processing; the poll finds it ready.
     const post = within(sheet).getByRole("button", { name: "Post" });
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(post).toBeEnabled();
-    }, { timeout: 3000 });
+    });
     await user.click(post);
 
     expect(await findToast("Posted.")).toBeInTheDocument();
@@ -390,15 +390,15 @@ describe("images", () => {
     const description = await within(sheet).findByRole("textbox", { name: "Description of image 1" });
     expect(description).toHaveAccessibleDescription(/Your settings ask for a description of every image\./);
     const post = within(sheet).getByRole("button", { name: "Post" });
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(post).toBeEnabled();
-    }, { timeout: 3000 });
+    });
 
     await user.click(post);
     const question = await screen.findByRole("alertdialog", { name: "Post without image descriptions?" });
     expect(within(question).getByText(/1 image has no description\./)).toBeInTheDocument();
     await user.click(within(question).getByRole("button", { name: "Add descriptions" }));
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(description).toHaveFocus();
     });
     expect(sent).toHaveLength(0);

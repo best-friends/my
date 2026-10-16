@@ -112,6 +112,9 @@ type OAuthRepository interface {
 	InsertTokenRevocation(ctx context.Context, tx uow.Tx, r identity.TokenRevocation) (bool, error)
 	// RevokeTokenFamily revokes every token of a family that has no revocation yet.
 	RevokeTokenFamily(ctx context.Context, tx uow.Tx, familyID string, reason identity.TokenRevocationReason, at time.Time) error
+	// RevokeSessionOfTokenFamily revokes the browser session that authorized the code a family
+	// started from, unless the session has a revocation already or the code had no session.
+	RevokeSessionOfTokenFamily(ctx context.Context, tx uow.Tx, familyID string, reason identity.RevocationReason, at time.Time) error
 
 	// FindOAuthClient returns the client with the public client_id and its redirect URIs,
 	// sorted.
@@ -187,6 +190,9 @@ type Authorization struct {
 	Scope         identity.Scope
 	State         string
 	CodeChallenge string
+	// SessionID is the browser session in which the user authorizes the client, recorded with
+	// the code so that the web client's sign-out can end it (RevokeToken); "" for none.
+	SessionID string
 }
 
 // maxStateLength bounds the state the server echoes back.
@@ -242,7 +248,7 @@ func (s *Service) IssueAuthorizationCode(ctx context.Context, a Authorization, u
 	code, hash := NewToken(AuthorizationCodePrefix)
 	c := identity.AuthorizationCode{
 		CodeHash: hash, ClientID: a.Client.ID, UserID: userID, RedirectURI: a.RedirectURI, Scope: a.Scope,
-		CodeChallenge: a.CodeChallenge, IssuedAt: now, ExpiresAt: now.Add(AuthorizationCodeTTL),
+		CodeChallenge: a.CodeChallenge, SessionID: a.SessionID, IssuedAt: now, ExpiresAt: now.Add(AuthorizationCodeTTL),
 	}
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.d.Repository.InsertAuthorizationCode(ctx, tx, c) })
 	if err != nil {
@@ -488,6 +494,10 @@ type RevokeRequest struct {
 // RevokeToken revokes an access token or a refresh token of the client and the whole family it
 // belongs to, so that neither the access token nor the refresh token of the grant keeps
 // working. An unknown token, or one of another client, is ignored (RFC 7009 §2.2).
+//
+// A revocation by the web client is its sign-out, so it also ends the browser session of the
+// authorization screens in which the user authorized the family's code (as a logout).
+// Otherwise the next sign-in on a shared device would pass without the password.
 func (s *Service) RevokeToken(ctx context.Context, in RevokeRequest) error {
 	client, err := s.authenticateClient(ctx, in.ClientCredentials)
 	if err != nil {
@@ -515,8 +525,15 @@ func (s *Service) RevokeToken(ctx context.Context, in RevokeRequest) error {
 			return nil
 		}
 		now := s.d.Clock.Now()
+		web := client.ClientID == s.d.WebClient.ClientID
 		return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-			return s.d.Repository.RevokeTokenFamily(ctx, tx, tok.FamilyID, identity.TokenRevokedUser, now)
+			if err := s.d.Repository.RevokeTokenFamily(ctx, tx, tok.FamilyID, identity.TokenRevokedUser, now); err != nil {
+				return err
+			}
+			if !web {
+				return nil
+			}
+			return s.d.Repository.RevokeSessionOfTokenFamily(ctx, tx, tok.FamilyID, identity.RevokedLogout, now)
 		})
 	}
 	return nil

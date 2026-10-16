@@ -66,6 +66,7 @@ ruleTester.run("no-restricted-syntax (tests)", core.get("no-restricted-syntax"),
   valid: [
     { code: "vi.mock('./useClock');", options: testSyntax },
     { code: "vi.spyOn(console, 'error');", options: testSyntax },
+    { code: "waitFor(() => expect(a).toBe(1));", options: testSyntax },
   ],
   invalid: [
     // T3
@@ -75,6 +76,8 @@ ruleTester.run("no-restricted-syntax (tests)", core.get("no-restricted-syntax"),
     { ...fails("vi.spyOn(globalThis, 'fetch');"), options: testSyntax },
     { ...fails("vi.stubGlobal('fetch', vi.fn());"), options: testSyntax },
     { ...fails("globalThis.fetch = vi.fn();"), options: testSyntax },
+    // T7
+    { ...fails("vi.waitFor(() => expect(a).toBe(1));"), options: testSyntax },
   ],
 });
 

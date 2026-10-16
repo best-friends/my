@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The settings pages through the whole app (web-client.md T4): a signed-in session from the default
 // handlers, MSW playing the server with the state each test needs, and the user's own interactions.
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import type { Preferences, PreferencesChange, ProfileChange } from "./api/me";
 import { accountFixture, apiBase, mediaFixture, preferencesFixture, problem, relationshipFixture, signedInHandler, viewerFixture } from "../../test/msw/handlers";
 import { server } from "../../test/msw/server";
@@ -53,7 +53,7 @@ describe("preferences", () => {
     expect(prefs.changes).toEqual([{ locale: "ja" }]);
     expect(screen.getByRole("button", { name: /表示言語/ })).toHaveTextContent("日本語");
     // The server's localized data is fetched again in the new locale.
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(prefs.languages.at(-1)).toBe("ja");
     });
   });
@@ -77,7 +77,7 @@ describe("preferences", () => {
     await user.click(within(languages).getByRole("checkbox", { name: "Japanese" }));
     await user.click(within(languages).getByRole("checkbox", { name: "German" }));
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(prefs.changes).toEqual([{ default_visibility: "private" }, { timeline_languages: ["ja"] }, { timeline_languages: ["de", "ja"] }]);
     });
     expect(within(languages).getByRole("checkbox", { name: "German" })).toBeChecked();
@@ -100,7 +100,7 @@ describe("preferences", () => {
     await user.click(await screen.findByRole("option", { name: "Asia/Tokyo" }));
 
     const timeZone = screen.getByRole("button", { name: /Time zone/ });
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(timeZone).toHaveAccessibleDescription(expect.stringContaining("time_zone is not a valid value.") as string);
     });
     expect(timeZone).toHaveTextContent("UTC");
@@ -233,7 +233,7 @@ describe("blocks, mutes and follow requests", () => {
 
     await user.click(screen.getByRole("button", { name: "Unblock: Bob" }));
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(screen.queryByText("Bob")).not.toBeInTheDocument();
     });
     expect(screen.getByRole("button", { name: "Unblock: Carol" })).toHaveFocus();

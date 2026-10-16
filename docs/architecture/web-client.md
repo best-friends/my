@@ -106,11 +106,14 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | T4 | 既定は統合テスト（本物の QueryClient とルーター + MSW）にする。純粋なロジックは単体テスト、主要な流れは 4 ロケールの E2E にする | レビュー |
 | T5 | `@my/ui` の部品は必ずストーリーを持つ。ストーリーはアクセシビリティ・見た目・RTL のテストの入力になる | レビュー、`knip`（使われないファイル・export・依存） |
 | T6 | 部品のテストは jsdom かブラウザモードで動かす。React Compiler の preset はクライアント向けの変換にだけ効くので、Vitest の `node` 環境では本番と違うコードをテストすることになる | Vitest の設定 |
+| T7 | 非同期の結果は Testing Library の `findBy` / `waitFor` で待つ。`vi.waitFor` は使わない。待ち時間の上限はテストごとに変えず、setup の `asyncUtilTimeout` と Vitest の `testTimeout` にまとめる（待ちは実時間なので、負荷の高い機械では既定の 1 秒・5 秒を超える）。React の描画の外で動くフォーカス（React Aria のフォーカスの復帰は `requestAnimationFrame`、ルート変更の見出しへのフォーカスはルーターの `onRendered`）は `waitFor` の中で `toHaveFocus()` を検証する | テストの `no-restricted-syntax`（`vi.waitFor`）、Vitest の設定、レビュー |
 
 ### テストの置き場所と道具
 
 - 部品のテストは対象の隣に `*.test.ts(x)` で置き、`make web-test` で動かす（`app/web/vitest.config.ts`、jsdom）。
   - `src/test/setup.ts` が jest-dom のマッチャーを読み込み、MSW のサーバーを起動する。どのハンドラにも合わない要求はテストを失敗させる。
+    `findBy` / `waitFor` の上限（`asyncUtilTimeout`）は 10 秒、1 つのテストの上限（`vitest.config.ts` の `testTimeout`）は 30 秒にする（T7）。
+    通るテストはこの上限まで待たない。上限は壊れたテストが止まるまでの時間だけを決める。
   - 既定のハンドラは `src/test/msw/handlers.ts` に、`api/openapi.yaml` の操作ごとに 1 つ置く。テストごとの差し替えは `server.use()` で行う。
   - 部品は `src/test/render.tsx` の `renderWithProviders`（ランタイム設定と i18n のプロバイダ）で描画する。`user-event` は描画の前に `setup()` する。
   - 統合テストは同じファイルの `renderApp` でアプリ全体（本物のルーターをメモリ上の履歴で、新しい QueryClient）を描画する。`path` で開くアドレス、`locale` でロケールを指定する。
@@ -118,7 +121,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - jsdom の `FormData` と `File` の本文は、MSW が相手にする Node.js の `fetch` で送れない。ファイルを送るテストは `src/test/multipart.ts` の `nodeUploadFile()` で
     Node.js の `File` を作り、そのテストの間だけ `FormData` を Node.js のものにする。
   - `@my/ui` の部品のテストも `app/ui/src` の部品の隣に置き、`make web-test` で動かす（`app/ui/vitest.config.ts` の `unit` プロジェクト、jsdom）。
-    `app/ui/test/setup.ts` が jest-dom のマッチャーを読み込む。キットは通信しないので MSW もプロバイダもなく、Testing Library の `render` で描画する。
+    `app/ui/test/setup.ts` が jest-dom のマッチャーを読み込み、`app/web` と同じ待ち時間の上限を設定する。キットは通信しないので MSW もプロバイダもなく、Testing Library の `render` で描画する。
     構造は `app/ui/test/aria-snapshot.ts` の `ariaSnapshot()`（Playwright の ARIA スナップショットと同じ形の、ロール・名前・説明・状態の木）で検査する。
 - E2E は `app/web/e2e/*.spec.ts` に置き、`make web-e2e` で動かす（`app/web/playwright.config.ts`、ビルドした `vite preview` が相手）。
   - `vite preview` と `e2e/server.ts` は、実行ごとに選んだ空きポートで待ち受ける（`E2E_PREVIEW_PORT` / `E2E_SERVER_PORT` で固定できる）。
@@ -240,8 +243,6 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   - コールバック（`/login/callback`、`routes/login_.callback.tsx`）は `beforeLoad` で `state` を照合し、コードを交換してから、戻り先に `replace` で遷移する。コードは履歴にもアドレスバーにも残らない。
     失敗（拒否・`state` の不一致・交換の失敗・通信の失敗）は、そのルートの `errorComponent` が理由とやり直しのリンクを出す。
   - 戻り先（`return_to`）は、1 つの `/` で始まるパスだけを受け付ける（`//example.com` や `javascript:` は捨てる）。
-- **ログアウト**（設定画面の「ログアウト」）: アクセストークンを `POST /oauth/revoke` で失効させ（サーバーはトークン系列ごと失効させ、Cookie を消す）、メモリのトークンを消して他のタブに伝え、`/login` を開く。
-  サーバーに届かなかったときも、このタブはログアウトし、セッションが残り得ることをトーストで知らせる。認可サーバーの画面のセッション（`/auth/sign_in` の Cookie）は終わらない。
 - **リアルタイム更新**（`lib/sse`、S10、FR-207）: レイアウトの `useLiveUpdates`（`routes/-layout`）が、サインイン中だけ `lib/sse` の `useEventStream` で `GET /streaming` を 1 本開く。
   `EventSource` はヘッダを送れないので、API クライアントの `fetch`（`parseAs: "stream"`）で読む。トークンの付与と 401 のあとの 1 度の更新は、ほかの要求と同じミドルウェアが行う。
   本文は `lib/sse/parse.ts` が HTML Standard の手順で解釈する（`id` と `retry` は使わない）。
@@ -251,6 +252,9 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
     待つ投稿が読み込み済みの投稿とつながらないとき（再接続で 1 ページ分の新着が見つかった、または 200 件を超えた）は、押したときに最初のページだけを取り直す。
     タイムラインは、ウィンドウのフォーカスやオンライン復帰では取り直さない（取り直すと先頭に投稿が差し込まれる）。
   - `notification` は読み取り位置（`/notifications/marker`）の未読数を 1 つ増やし、通知の一覧を古いことにする。表示中の一覧は変わらない。
+- **ログアウト**（設定画面の「ログアウト」）: アクセストークンを `POST /oauth/revoke` で失効させ（サーバーはトークン系列ごと失効させ、Cookie を消し、その系列を認可した認可サーバーの画面のセッションも終わらせる）、メモリのトークンを消して他のタブに伝え、`/login` を開く。
+  サーバーに届かなかったときも、このタブはログアウトし、セッションが残り得ることをトーストで知らせる。
+  画面のセッションが終わるので、続けて「ログインに進む」を押すとパスワードを聞かれる（共用端末で次の人がそのままログインできない）。
 - **サインインが要る画面**: ルートの `beforeLoad` に `lib/auth/requireSignIn.ts` の `requireSignIn` を置く。セッションの再開を待ち、サインインしていなければ、戻り先をその画面にして `/login` に送る（TanStack Router の Authenticated Routes）。
   画面を守るのは API で、これはサインインを先に促すだけである。
 - **テスト**: `src/test/msw/handlers.ts` が OAuth のエンドポイント（既定ではリフレッシュ Cookie がない状態）と、API の操作（Bearer が必要）の既定のハンドラを持つ。
