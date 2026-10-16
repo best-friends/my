@@ -155,12 +155,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Accounts = account.NewService(account.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: accounts, Clock: a.Clock, IDs: a.IDs, Sealer: a.Sealer, Host: cfg.Host,
 	})
+	instance.RegisterProjectors(a.Projectors, instances)
+	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
+		// The default locale is an instance setting in the database, never configuration
+		// (docs/reference/configuration.md); it is read per registration so changes apply at once.
+		DefaultLocale: a.Instance.DefaultLocale,
 	})
-	instance.RegisterProjectors(a.Projectors, instances)
-	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
 
 	if opts.Version == "" {
 		opts.Version = "dev"

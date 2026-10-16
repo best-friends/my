@@ -10,6 +10,10 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+
+	// Embed the IANA time zone database so that time zone preferences validate and convert the
+	// same on every host, including images without /usr/share/zoneinfo (about 450 KB).
+	_ "time/tzdata"
 )
 
 // version is the release version, set at build time with

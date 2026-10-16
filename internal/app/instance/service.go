@@ -44,6 +44,15 @@ func (s *Service) Settings(ctx context.Context) (instance.Settings, error) {
 	return instance.NewSettings(cur), nil
 }
 
+// DefaultLocale returns the current value of the default_locale setting.
+func (s *Service) DefaultLocale(ctx context.Context) (string, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return "", err
+	}
+	return settings.DefaultLocale(), nil
+}
+
 // SetSettingInput describes a change of a setting.
 type SetSettingInput struct {
 	Key   instance.SettingKey

@@ -255,6 +255,13 @@ flowchart LR
 | `user_preferences` | `user_id`（PK）, `locale`（`lang`）, `time_zone`（IANA 名）, `default_visibility`（`enum(public, local, unlisted, private, direct)`）, `default_post_language`（`lang`）, `require_media_description`（`bool`）, `updated_at` | |
 | `user_timeline_languages` | `user_id`, `language`（`lang`） | PK `(user_id, language)`。行が無ければすべての言語を表示（FR-208） |
 
+- 登録時に既定値の行を作ります。`locale` は登録時に指定されたロケール、無ければインスタンスの既定（`default_locale`）、それも無ければ `en` です。
+  `time_zone` は `UTC`、`default_visibility` は `public`、`default_post_language` は `und`（クライアントに任せる）、`require_media_description` は偽です。
+- `lang` の値は BCP 47 として検証し、正規形（`ja-JP`、`zh-Hant-TW`、`iw` → `he`）で保存します。未知のサブタグ、言語を明示しないタグ（`und-JP`、私用の `x-…`）は拒否します。
+  `locale` は `und` も拒否します。
+- `time_zone` は IANA タイムゾーンデータベースにある名前だけを受け付けます（`Local` や `+09:00` は不可）。サーバーのバイナリはデータベースを埋め込む（Go の `time/tzdata`）ので、検証結果はホストに依存しません。
+- `user_timeline_languages` は 1 回の設定で全体を置き換えます（重複を除き、上限 64 件）。
+
 #### データエクスポート
 
 | テーブル | 分類 | カラム |
@@ -639,10 +646,11 @@ flowchart LR
 - **投稿時**: 要求された公開範囲を上限で切り詰めます。`public` / `local` / `unlisted` は `private` になり、`private` / `direct` はそのままです。切り詰めた結果を `statuses.visibility`（不変）に記録します。
 - **過去の投稿**: `statuses.visibility` は書き換えません。`canView` が「実効公開範囲 = min(元の公開範囲, 上限)」で判定するので、このサーバー上ではサイレンス中は過去の投稿もフォロワー限定として扱われ、解除すれば元に戻ります。
 - **連合**: 公開として配送済みの過去の投稿を、連合先から取り消すことはできません（ActivityPub の制約）。サイレンス後の新しい投稿は `private` として配送されます。
+- 実効公開範囲は `content.EffectiveVisibility` が求めます。`canView` の判定表は [公開範囲の閲覧判定](visibility.md) にあります。
 
 ## 6. タイムラインのクエリ
 
-v0 は fan-out-on-read（ADR-0013）です。`timeline` モジュールの投影だけを読みます。返す直前にドメインの `canView` を再適用します（多重防御、NFR-SEC-4）。以下は方言に依存しない概略です。
+v0 は fan-out-on-read（ADR-0013）です。`timeline` モジュールの投影だけを読みます。返す直前にドメインの `canView`（[公開範囲の閲覧判定](visibility.md)）を再適用します（多重防御、NFR-SEC-4）。以下は方言に依存しない概略です。
 
 ### 6.1 ホーム（FR-201）
 
@@ -711,8 +719,9 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 1. 投稿のトランザクションで、`outbound_activities`（`Create`）と `outbox_events`（`FanOutDelivery`）を記録します。
 2. `FanOutDelivery` ジョブが宛先を一定件数ずつ算出し、`deliveries` に挿入します（`ON CONFLICT DO NOTHING`）。続けて `DeliverActivity` ジョブを投入し、カーソルを進めます。
 3. `DeliverActivity` の結果は `delivery_attempts` に記録し、同期 projector が `instance_health` を更新します。
-4. オブジェクト IRI への署名付き GET は、`canView` で判定します（ADR-0017, ADR-0018）。
-   - `local` / `private` は「署名者のドメインに作者の `active` なフォロワーがいる」場合だけ返し、それ以外は 404 にします。
+4. 配送先の算出とオブジェクト IRI への GET は、`canView` で判定します（ADR-0017, ADR-0018、[公開範囲の閲覧判定](visibility.md)）。
+   - `public` / `unlisted` は署名がなくても返します。
+   - `local` は「署名者のドメインに作者の `active` なフォロワーがいる」場合だけ返します。`private` はそれに加えて署名者のドメインにメンション先がいる場合も、`direct` はメンション先がいる場合だけ返します。それ以外は 404 にします。
    - 作者に `profile_view` の制限があれば 404 にします。
 
 ## 8. 削除と消去

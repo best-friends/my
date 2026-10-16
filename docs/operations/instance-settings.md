@@ -31,7 +31,7 @@
 | --- | --- | --- | --- |
 | `registration_mode` | `open` / `approval` / `invite` / `closed` | `approval` | 登録モード（FR-001） |
 | `max_status_length` | 整数 1〜100000 | `500` | 投稿の文字数上限（FR-101） |
-| `default_locale` | BCP 47 言語タグ | `en` | 既定のロケール。利用者の希望に合うカタログが無いときと、インスタンスの文章がその言語に無いときに使う（ADR-0009） |
+| `default_locale` | BCP 47 言語タグ | `en` | 既定のロケール。新しい利用者の UI ロケールの初期値、利用者の希望に合うカタログが無いとき、インスタンスの文章がその言語に無いときに使う（ADR-0009） |
 | `local_timeline_enabled` | `true` / `false` | `true` | ローカルタイムラインを提供するか（FR-202） |
 | `federated_timeline_enabled` | `true` / `false` | `true` | 連合タイムラインを提供するか（FR-202） |
 

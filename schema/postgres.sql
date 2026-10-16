@@ -252,6 +252,29 @@ CREATE TABLE dead_jobs (
 CREATE INDEX dead_jobs_failed_at ON dead_jobs (failed_at);
 
 -- ---------------------------------------------------------------------------------------------
+-- identity: user preferences (data-model.md §4.1, FR-007, FR-208).
+-- ---------------------------------------------------------------------------------------------
+
+-- Current value: a user's settings. locale and default_post_language are canonical BCP 47
+-- tags; time_zone is an IANA name.
+CREATE TABLE user_preferences (
+  user_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  locale text NOT NULL,
+  time_zone text NOT NULL,
+  default_visibility text NOT NULL CHECK (default_visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  default_post_language text NOT NULL,
+  require_media_description boolean NOT NULL,
+  updated_at timestamptz NOT NULL
+);
+
+-- Current value: the languages a user's timelines show; no rows show every language.
+CREATE TABLE user_timeline_languages (
+  user_id text COLLATE "C" NOT NULL,
+  language text NOT NULL,
+  PRIMARY KEY (user_id, language)
+);
+
+-- ---------------------------------------------------------------------------------------------
 -- instance: settings and texts (data-model §4.9). Owned by internal/app/instance.
 -- Keys are defined in internal/domain/instance; add a key there and to its CHECK here together.
 -- key and locale use COLLATE "C" so that listings sort as in SQLite.

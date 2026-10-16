@@ -6,6 +6,9 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/best-friends/my/internal/adapter/db/sqlite"
+	"github.com/best-friends/my/internal/app/uow"
 )
 
 func runInstanceCmd(t *testing.T, stdin string, args ...string) (code int, stdout, stderr string) {
@@ -88,5 +91,40 @@ func TestInstanceRejectsBadInput(t *testing.T) {
 		if code != tc.code || !strings.Contains(stderr, tc.want) {
 			t.Errorf("my instance %q = %d, %q; want %d and %q", tc.args, code, stderr, tc.code, tc.want)
 		}
+	}
+}
+
+// TestNewUsersGetTheInstanceDefaultLocale checks the composition root: identity reads the
+// default_locale instance setting from the database for each registration.
+func TestNewUsersGetTheInstanceDefaultLocale(t *testing.T) {
+	path := newAdminEnv(t)
+	create := func(name string) string {
+		t.Helper()
+		code, _, stderr := runAdminCreate(t, adminPassword+"\n", "-username", name, "-email", name+"@example.com")
+		if code != 0 {
+			t.Fatalf("admin create %s: exit code %d, stderr %q", name, code, stderr)
+		}
+		db, err := sqlite.Open(t.Context(), path, uow.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = db.Close() }()
+		repo := db.IdentityRepository()
+		userID, err := repo.FindUserIDByEmail(t.Context(), name+"@example.com")
+		if err != nil {
+			t.Fatal(err)
+		}
+		prefs, err := repo.FindPreferences(t.Context(), userID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return prefs.Locale
+	}
+	if got := create("before"); got != "en" {
+		t.Errorf("locale with default_locale unset = %q, want en", got)
+	}
+	mustInstance(t, "", "set", "default_locale", "ja_jp")
+	if got := create("after"); got != "ja-JP" {
+		t.Errorf("locale after setting default_locale = %q, want ja-JP", got)
 	}
 }
