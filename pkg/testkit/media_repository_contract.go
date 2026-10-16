@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/blob"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/media"
@@ -37,7 +38,8 @@ type MediaFactory func(t *testing.T, opts uow.Options) MediaHarness
 // use cases that drive it: uploads stored with the detected type and their processing job
 // enqueued, rejected uploads leaving nothing behind, idempotent processing that records one
 // result with its variants and deletes the file as received, failures recorded as results,
-// focal points as current values, and the cleanup of old unattached uploads that keeps attached
+// focal points and descriptions as current values that only the uploader reads and changes
+// until a status attaches the file, and the cleanup of old unattached uploads that keeps attached
 // and referenced ones.
 func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 	t.Helper()
@@ -51,6 +53,8 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"RecordsFailedProcessing", mediaRecordsFailures},
 		{"RetriesOnTransientErrors", mediaRetriesTransient},
 		{"KeepsTheFocusAsACurrentValue", mediaKeepsFocus},
+		{"ChecksProfileImages", mediaChecksProfileImages},
+		{"UpdatesOnlyOwnUnattachedUploads", mediaUpdates},
 		{"CleansUpOldUnattachedUploads", mediaCleansUp},
 		{"CleanupPagesPastReferencedUploads", mediaCleanupPages},
 	}
@@ -315,6 +319,105 @@ func mediaKeepsFocus(t *testing.T, e *mediaEnv) {
 	}
 }
 
+func ptr[T any](v T) *T { return &v }
+
+func mediaUpdates(t *testing.T, e *mediaEnv) {
+	e.clock.Advance(time.Millisecond)
+	m, err := e.service.Upload(t.Context(), appcontent.UploadInput{OwnerAccountID: mediaOwner, Content: bytes.NewReader(FixturePNG(4, 3, false)), Description: "a cat"})
+	if err != nil {
+		t.Fatalf("Upload with a description: %v", err)
+	}
+	if m.Description != "a cat" {
+		t.Errorf("Description after upload = %q", m.Description)
+	}
+	id := m.File.ID
+	if got, err := e.service.OwnMedia(t.Context(), mediaOwner, id); err != nil || got.File.ID != id || got.Description != "a cat" {
+		t.Errorf("OwnMedia = %+v, %v", got, err)
+	}
+	if _, err := e.service.OwnMedia(t.Context(), "someone-else", id); !errors.Is(err, appcontent.ErrNotFound) {
+		t.Errorf("OwnMedia of another account: %v, want ErrNotFound", err)
+	}
+
+	// Only the given fields change.
+	got, err := e.service.Update(t.Context(), mediaOwner, appcontent.MediaUpdate{MediaID: id, Focus: &content.MediaFocus{X: 0.5, Y: -0.5}})
+	if err != nil || got.Description != "a cat" || got.Focus == nil || *got.Focus != (content.MediaFocus{MediaID: id, X: 0.5, Y: -0.5}) {
+		t.Errorf("Update focus = %+v, %v", got, err)
+	}
+	got, err = e.service.Update(t.Context(), mediaOwner, appcontent.MediaUpdate{MediaID: id, Description: ptr("a black cat")})
+	if err != nil || got.Description != "a black cat" || got.Focus == nil || got.Focus.X != 0.5 {
+		t.Errorf("Update description = %+v, %v", got, err)
+	}
+	got, err = e.service.Update(t.Context(), mediaOwner, appcontent.MediaUpdate{MediaID: id, Description: ptr("")})
+	if err != nil || got.Description != "" {
+		t.Errorf("removing the description = %+v, %v", got, err)
+	}
+	if _, err := e.h.Media.FindDescription(t.Context(), id); !errors.Is(err, appcontent.ErrNotFound) {
+		t.Errorf("a removed description is still stored: %v", err)
+	}
+
+	long := strings.Repeat("あ", content.MaxMediaDescriptionLength+1)
+	for name, tc := range map[string]struct {
+		account string
+		u       appcontent.MediaUpdate
+		want    error
+	}{
+		"too long":      {mediaOwner, appcontent.MediaUpdate{MediaID: id, Description: &long}, content.ErrDescriptionTooLong},
+		"bad focus":     {mediaOwner, appcontent.MediaUpdate{MediaID: id, Focus: &content.MediaFocus{X: 2}}, content.ErrInvalidFocus},
+		"other account": {"someone-else", appcontent.MediaUpdate{MediaID: id, Description: ptr("mine")}, appcontent.ErrNotFound},
+		"unknown":       {mediaOwner, appcontent.MediaUpdate{MediaID: "0192f0c1-0000-7000-8000-00000000dead", Description: ptr("x")}, appcontent.ErrNotFound},
+	} {
+		if _, err := e.service.Update(t.Context(), tc.account, tc.u); !errors.Is(err, tc.want) {
+			t.Errorf("%s: Update = %v, want %v", name, err, tc.want)
+		}
+	}
+	if _, err := e.service.Upload(t.Context(), appcontent.UploadInput{OwnerAccountID: mediaOwner, Content: bytes.NewReader(FixturePNG(4, 3, false)), Description: long}); !errors.Is(err, content.ErrDescriptionTooLong) {
+		t.Errorf("Upload with a long description = %v", err)
+	}
+	if got := e.media(t, id); got.Description != "" || got.Focus.X != 0.5 {
+		t.Errorf("rejected updates changed the file: %+v", got)
+	}
+	// Exactly the maximum is accepted.
+	if _, err := e.service.Update(t.Context(), mediaOwner, appcontent.MediaUpdate{MediaID: id, Description: ptr(long[len("あ"):])}); err != nil {
+		t.Errorf("a description of the maximum length: %v", err)
+	}
+
+	// Once a status attaches the file, it no longer changes on its own.
+	e.attach(t, id)
+	if _, err := e.service.Update(t.Context(), mediaOwner, appcontent.MediaUpdate{MediaID: id, Description: ptr("changed")}); !errors.Is(err, appcontent.ErrMediaAttached) {
+		t.Errorf("Update of an attached file = %v, want ErrMediaAttached", err)
+	}
+	err = e.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		attached, err := e.h.Media.IsAttached(t.Context(), tx, id)
+		if err == nil && !attached {
+			t.Error("IsAttached = false for an attached file")
+		}
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// mediaChecksProfileImages checks CheckProfileImage: only the owner's processed uploads are
+// usable as an avatar or header.
+func mediaChecksProfileImages(t *testing.T, e *mediaEnv) {
+	ctx := t.Context()
+	pending := e.upload(t, FixturePNG(4, 3, false))
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, pending.File.ID); !errors.Is(err, appaccount.ErrUnusableImage) {
+		t.Errorf("unprocessed upload = %v, want ErrUnusableImage", err)
+	}
+	e.process(t, pending.File.ID)
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, pending.File.ID); err != nil {
+		t.Errorf("processed upload = %v, want usable", err)
+	}
+	if err := e.service.CheckProfileImage(ctx, "someone-else", pending.File.ID); !errors.Is(err, appaccount.ErrUnusableImage) {
+		t.Errorf("another account's upload = %v, want ErrUnusableImage", err)
+	}
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, "0192f0c1-0000-7000-8000-00000000dead"); !errors.Is(err, appaccount.ErrUnusableImage) {
+		t.Errorf("unknown file = %v, want ErrUnusableImage", err)
+	}
+}
+
 // attach inserts a local status whose first revision attaches mediaID.
 func (e *mediaEnv) attach(t *testing.T, mediaID string) {
 	t.Helper()
@@ -346,6 +449,9 @@ func (e *mediaEnv) attach(t *testing.T, mediaID string) {
 func mediaCleansUp(t *testing.T, e *mediaEnv) {
 	unattached := e.upload(t, FixturePNG(4, 3, false))
 	e.process(t, unattached.File.ID)
+	if _, err := e.service.Update(t.Context(), mediaOwner, appcontent.MediaUpdate{MediaID: unattached.File.ID, Description: ptr("a cat")}); err != nil {
+		t.Fatal(err)
+	}
 	if err := e.service.SetFocus(t.Context(), mediaOwner, content.MediaFocus{MediaID: unattached.File.ID, X: 0.1}); err != nil {
 		t.Fatal(err)
 	}
@@ -373,6 +479,9 @@ func mediaCleansUp(t *testing.T, e *mediaEnv) {
 		}
 		if _, err := e.h.Media.FindFocus(t.Context(), gone.File.ID); !errors.Is(err, appcontent.ErrNotFound) {
 			t.Errorf("deleted upload kept its focus: %v", err)
+		}
+		if _, err := e.h.Media.FindDescription(t.Context(), gone.File.ID); !errors.Is(err, appcontent.ErrNotFound) {
+			t.Errorf("deleted upload kept its description: %v", err)
 		}
 		if rs, err := e.h.Media.ListProcessingResults(t.Context(), gone.File.ID); err != nil || len(rs) != 0 {
 			t.Errorf("deleted upload kept %d results (%v)", len(rs), err)

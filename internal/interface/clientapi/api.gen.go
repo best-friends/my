@@ -14,11 +14,58 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"time"
 
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for InstanceRegistrationsMode.
+const (
+	InstanceRegistrationsModeApproval InstanceRegistrationsMode = "approval"
+	InstanceRegistrationsModeClosed   InstanceRegistrationsMode = "closed"
+	InstanceRegistrationsModeInvite   InstanceRegistrationsMode = "invite"
+	InstanceRegistrationsModeOpen     InstanceRegistrationsMode = "open"
+)
+
+// Valid indicates whether the value is a known member of the InstanceRegistrationsMode enum.
+func (e InstanceRegistrationsMode) Valid() bool {
+	switch e {
+	case InstanceRegistrationsModeApproval:
+		return true
+	case InstanceRegistrationsModeClosed:
+		return true
+	case InstanceRegistrationsModeInvite:
+		return true
+	case InstanceRegistrationsModeOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MediaAttachmentState.
+const (
+	MediaAttachmentStateFailed     MediaAttachmentState = "failed"
+	MediaAttachmentStateProcessing MediaAttachmentState = "processing"
+	MediaAttachmentStateReady      MediaAttachmentState = "ready"
+)
+
+// Valid indicates whether the value is a known member of the MediaAttachmentState enum.
+func (e MediaAttachmentState) Valid() bool {
+	switch e {
+	case MediaAttachmentStateFailed:
+		return true
+	case MediaAttachmentStateProcessing:
+		return true
+	case MediaAttachmentStateReady:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for MediaAttachmentType.
 const (
@@ -153,12 +200,36 @@ type Account struct {
 	Username string `json:"username"`
 }
 
+// AccountFieldSource A metadata field of a profile as the user typed it.
+type AccountFieldSource struct {
+	// Name The label, at most 255 characters.
+	Name string `json:"name"`
+
+	// Value The value as plain text, at most 255 characters.
+	Value string `json:"value"`
+}
+
 // AccountPage A page of accounts.
 type AccountPage struct {
 	Accounts []Account `json:"accounts"`
 
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AccountSource The profile as the user typed it, for editing.
+type AccountSource struct {
+	// AvatarMediaId The media file of the avatar; omitted when there is none.
+	AvatarMediaId *string `json:"avatar_media_id,omitempty"`
+
+	// Fields The metadata fields as typed, in the order of the account's `fields`.
+	Fields []AccountFieldSource `json:"fields"`
+
+	// HeaderMediaId The media file of the header image; omitted when there is none.
+	HeaderMediaId *string `json:"header_media_id,omitempty"`
+
+	// Note The profile text as plain text; empty when there is none.
+	Note string `json:"note"`
 }
 
 // CreateStatusRequest A new status.
@@ -188,6 +259,64 @@ type CreateStatusRequest struct {
 	// public timelines; `private` followers and mentioned accounts; `direct` mentioned
 	// accounts.
 	Visibility Visibility `json:"visibility"`
+}
+
+// CredentialAccount The authenticated user's own account, with what only its owner sees.
+type CredentialAccount struct {
+	// Acct The username for local accounts, `username@domain` for remote ones.
+	Acct string `json:"acct"`
+
+	// Avatar The URL of the avatar image; omitted when there is none.
+	Avatar *string `json:"avatar,omitempty"`
+
+	// Bot Whether the account is automated.
+	Bot bool `json:"bot"`
+
+	// CreatedAt When the account was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Discoverable Whether the account may be suggested to others and listed in directories.
+	Discoverable bool `json:"discoverable"`
+
+	// DisplayName The display name; empty when the account has none.
+	DisplayName string `json:"display_name"`
+
+	// Fields The profile's metadata fields, in their order; empty when there are none.
+	Fields []ProfileField `json:"fields"`
+
+	// FollowersCount The number of accounts that actively follow the account, as far as the instance
+	// knows. Present on the account's own endpoints (`getAccount`, `lookupAccount`,
+	// `verifyAccountCredentials`) and left out where accounts are listed or embedded.
+	FollowersCount *int `json:"followers_count,omitempty"`
+
+	// FollowingCount The number of accounts that the account actively follows; present where `followers_count` is.
+	FollowingCount *int `json:"following_count,omitempty"`
+
+	// Header The URL of the header image; omitted when there is none.
+	Header *string `json:"header,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Indexable Whether the account's public posts may be indexed for search.
+	Indexable bool `json:"indexable"`
+
+	// Locked Whether follow requests need the account's approval.
+	Locked bool `json:"locked"`
+
+	// Note The profile text as sanitized HTML; empty when there is none.
+	Note string `json:"note"`
+
+	// Source The profile as the user typed it, for editing.
+	Source AccountSource `json:"source"`
+
+	// Url The account's profile page.
+	Url string `json:"url"`
+
+	// Username The username, without the domain.
+	Username string `json:"username"`
 }
 
 // Cursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
@@ -227,14 +356,23 @@ type Id = string
 
 // Instance Public information about the instance.
 type Instance struct {
+	// Description The full description of the instance, as plain text; omitted when there is none.
+	Description *string `json:"description,omitempty"`
+
 	// Domain The domain that serves the instance.
 	Domain string `json:"domain"`
 
 	// Limits Limits that clients check before sending a request.
 	Limits InstanceLimits `json:"limits"`
 
-	// Name The display name of the instance.
+	// Name The display name of the instance; the domain when the instance has none.
 	Name string `json:"name"`
+
+	// Registrations How people sign up on the instance.
+	Registrations InstanceRegistrations `json:"registrations"`
+
+	// ShortDescription A one-paragraph summary of the instance, as plain text; omitted when there is none.
+	ShortDescription *string `json:"short_description,omitempty"`
 
 	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13).
 	SourceUrl string `json:"source_url"`
@@ -245,53 +383,122 @@ type Instance struct {
 
 // InstanceLimits Limits that clients check before sending a request.
 type InstanceLimits struct {
-	// MaxPostCharacters The maximum number of characters in the text of a post.
+	// MaxPostCharacters The maximum number of characters in the text and content warning of a post.
 	MaxPostCharacters int `json:"max_post_characters"`
 }
 
-// MediaAttachment A media file. Statuses attach only files that finished processing; `url` and
-// `preview_url` are omitted while a file is not ready.
+// InstanceRegistrations How people sign up on the instance.
+type InstanceRegistrations struct {
+	// Mode Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
+	// approval), `invite` (only with an invite), or `closed` (nobody).
+	Mode InstanceRegistrationsMode `json:"mode"`
+}
+
+// InstanceRegistrationsMode Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
+// approval), `invite` (only with an invite), or `closed` (nobody).
+type InstanceRegistrationsMode string
+
+// MediaAttachment A media file, as an upload of the user (the media operations) or as an attachment of
+// a status (`Status.media_attachments`). `variants` and `blurhash` are present once the
+// file is `ready`; statuses attach only ready files. In a status, `description` is the
+// status revision's own copy of the alternative text.
 type MediaAttachment struct {
-	// Blurhash A BlurHash of the image, shown while it loads.
+	// Blurhash The blurhash (https://blurha.sh) of the image, to show while it loads.
 	Blurhash *string `json:"blurhash,omitempty"`
 
-	// Description The alternative text; omitted when there is none.
+	// Description The alternative text; absent when there is none.
 	Description *string `json:"description,omitempty"`
-
-	// Focus The focal point that crops keep in view; omitted for the center.
-	Focus *MediaFocus `json:"focus,omitempty"`
-
-	// Height The height of `url` in pixels.
-	Height *int `json:"height,omitempty"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
 
-	// PreviewUrl A smaller rendition for previews.
-	PreviewUrl *string `json:"preview_url,omitempty"`
+	// Meta What the server knows about the media file.
+	Meta MediaMeta `json:"meta"`
 
-	// Type The kind of media; `unknown` until processing finishes, or when it failed.
+	// State The processing state: `processing` until the server has re-encoded the file,
+	// then `ready`, or `failed` when the content could not be processed.
+	State MediaAttachmentState `json:"state"`
+
+	// Type The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
 	Type MediaAttachmentType `json:"type"`
 
-	// Url The processed file, without metadata.
-	Url *string `json:"url,omitempty"`
+	// Variants The renditions of a ready media file.
+	Variants *MediaVariants `json:"variants,omitempty"`
+}
 
-	// Width The width of `url` in pixels.
+// MediaAttachmentState The processing state: `processing` until the server has re-encoded the file,
+// then `ready`, or `failed` when the content could not be processed.
+type MediaAttachmentState string
+
+// MediaAttachmentType The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+type MediaAttachmentType string
+
+// MediaFocus The focal point that previews keep in view when they crop the image, from -1.0 (left,
+// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+type MediaFocus struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+// MediaMeta What the server knows about the media file.
+type MediaMeta struct {
+	// Focus The focal point that previews keep in view when they crop the image, from -1.0 (left,
+	// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+	Focus MediaFocus `json:"focus"`
+
+	// Height The height of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+	Height *int `json:"height,omitempty"`
+
+	// Width The width of the original image in pixels, after its EXIF orientation; absent until the file is ready.
 	Width *int `json:"width,omitempty"`
 }
 
-// MediaAttachmentType The kind of media; `unknown` until processing finishes, or when it failed.
-type MediaAttachmentType string
+// MediaUpdate The changes to a media file; a property left out keeps its value.
+type MediaUpdate struct {
+	// Description The alternative text; an empty string removes it.
+	Description *string `json:"description,omitempty"`
 
-// MediaFocus The focal point that crops keep in view; omitted for the center.
-type MediaFocus struct {
-	// X From -1 (left edge) to 1 (right edge).
-	X float32 `json:"x"`
+	// Focus The focal point that previews keep in view when they crop the image, from -1.0 (left,
+	// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+	Focus *MediaFocus `json:"focus,omitempty"`
+}
 
-	// Y From -1 (bottom edge) to 1 (top edge).
-	Y float32 `json:"y"`
+// MediaUpload An upload of a media file.
+type MediaUpload struct {
+	// Description The alternative text.
+	Description *string `json:"description,omitempty"`
+
+	// File The file. Its declared type, if any, must match its content.
+	File openapi_types.File `json:"file"`
+}
+
+// MediaVariant A rendition of a media file, without metadata.
+type MediaVariant struct {
+	// ContentType The media type of the rendition.
+	ContentType string `json:"content_type"`
+
+	// Height The height in pixels.
+	Height int `json:"height"`
+
+	// Size The size of the file in bytes.
+	Size int64 `json:"size"`
+
+	// Url Where the rendition is served.
+	Url string `json:"url"`
+
+	// Width The width in pixels.
+	Width int `json:"width"`
+}
+
+// MediaVariants The renditions of a ready media file.
+type MediaVariants struct {
+	// Full The file itself, scaled down to at most 3840 × 2160 pixels of area.
+	Full MediaVariant `json:"full"`
+
+	// Thumbnail The preview, at most 640 × 360 pixels of area.
+	Thumbnail MediaVariant `json:"thumbnail"`
 }
 
 // MuteAccountRequest The settings of a mute.
@@ -389,6 +596,30 @@ type PageInfo struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
+// Preferences The authenticated user's preferences.
+type Preferences struct {
+	// DefaultPostLanguage The language of new posts that name none, a BCP 47 language tag; `und` when undetermined.
+	DefaultPostLanguage string `json:"default_post_language"`
+
+	// DefaultVisibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
+	// `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
+	// public timelines; `private` followers and mentioned accounts; `direct` mentioned
+	// accounts.
+	DefaultVisibility Visibility `json:"default_visibility"`
+
+	// Locale The UI locale, a BCP 47 language tag.
+	Locale string `json:"locale"`
+
+	// RequireMediaDescription Whether clients ask for a description before posting media without one.
+	RequireMediaDescription bool `json:"require_media_description"`
+
+	// TimeZone The time zone, an IANA name such as `Asia/Tokyo`.
+	TimeZone string `json:"time_zone"`
+
+	// TimelineLanguages The languages that timelines show, sorted; empty shows every language.
+	TimelineLanguages []string `json:"timeline_languages"`
+}
+
 // Problem An RFC 9457 problem document. Besides `about:blank`, `type` is one of
 //
 //   - `/api/v1/problems/unauthenticated` (401): the operation needs an access token and
@@ -402,6 +633,18 @@ type PageInfo struct {
 //     deactivated or deleted).
 //   - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
 //     from following it. Unblock it first.
+//   - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
+//     instance accepts.
+//   - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
+//     accepted format, or its declared type does not match its content.
+//   - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
+//     many pixels or frames.
+//   - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
+//     of its format.
+//   - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
+//     no longer be changed on its own.
+//   - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
+//     (`GET /streaming`) open as the server allows. Close one first.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -673,6 +916,62 @@ type StatusTag struct {
 // StatusText The plain text; the server links mentions, hashtags, and URLs.
 type StatusText = string
 
+// UpdateCredentialsRequest A change of the profile; properties left out keep their current values.
+type UpdateCredentialsRequest struct {
+	// AvatarMediaId The ID of a processed image that the user uploaded, to become the avatar; empty
+	// removes the avatar.
+	AvatarMediaId *string `json:"avatar_media_id,omitempty"`
+
+	// Bot Whether the account is automated.
+	Bot *bool `json:"bot,omitempty"`
+
+	// Discoverable Whether the account may be suggested to others and listed in directories.
+	Discoverable *bool `json:"discoverable,omitempty"`
+
+	// DisplayName The display name, at most 30 characters; empty removes it.
+	DisplayName *string `json:"display_name,omitempty"`
+
+	// Fields The metadata fields, replacing the current ones; at most 4.
+	Fields *[]AccountFieldSource `json:"fields,omitempty"`
+
+	// HeaderMediaId The ID of a processed image that the user uploaded, to become the header image;
+	// empty removes the header image.
+	HeaderMediaId *string `json:"header_media_id,omitempty"`
+
+	// Indexable Whether the account's public posts may be indexed for search.
+	Indexable *bool `json:"indexable,omitempty"`
+
+	// Locked Whether follow requests need the user's approval.
+	Locked *bool `json:"locked,omitempty"`
+
+	// Note The profile text as plain text, at most 500 characters; empty removes it.
+	Note *string `json:"note,omitempty"`
+}
+
+// UpdatePreferencesRequest A change of the preferences; properties left out keep their current values.
+type UpdatePreferencesRequest struct {
+	// DefaultPostLanguage The language of new posts that name none; `und` for undetermined.
+	DefaultPostLanguage *string `json:"default_post_language,omitempty"`
+
+	// DefaultVisibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
+	// `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
+	// public timelines; `private` followers and mentioned accounts; `direct` mentioned
+	// accounts.
+	DefaultVisibility *Visibility `json:"default_visibility,omitempty"`
+
+	// Locale The UI locale, a BCP 47 language tag.
+	Locale *string `json:"locale,omitempty"`
+
+	// RequireMediaDescription Whether clients ask for a description before posting media without one.
+	RequireMediaDescription *bool `json:"require_media_description,omitempty"`
+
+	// TimeZone The time zone, an IANA name.
+	TimeZone *string `json:"time_zone,omitempty"`
+
+	// TimelineLanguages The languages that timelines show, at most 64; empty shows every language.
+	TimelineLanguages *[]string `json:"timeline_languages,omitempty"`
+}
+
 // Visibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
 // `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
 // public timelines; `private` followers and mentioned accounts; `direct` mentioned
@@ -839,14 +1138,26 @@ type GetHashtagTimelineParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// UpdateAccountCredentialsJSONRequestBody defines body for UpdateAccountCredentials for application/json ContentType.
+type UpdateAccountCredentialsJSONRequestBody = UpdateCredentialsRequest
+
 // FollowAccountJSONRequestBody defines body for FollowAccount for application/json ContentType.
 type FollowAccountJSONRequestBody = FollowAccountRequest
 
 // MuteAccountJSONRequestBody defines body for MuteAccount for application/json ContentType.
 type MuteAccountJSONRequestBody = MuteAccountRequest
 
+// UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
+type UploadMediaMultipartRequestBody = MediaUpload
+
+// UpdateMediaJSONRequestBody defines body for UpdateMedia for application/json ContentType.
+type UpdateMediaJSONRequestBody = MediaUpdate
+
 // UpdateNotificationMarkerJSONRequestBody defines body for UpdateNotificationMarker for application/json ContentType.
 type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
+
+// UpdatePreferencesJSONRequestBody defines body for UpdatePreferences for application/json ContentType.
+type UpdatePreferencesJSONRequestBody = UpdatePreferencesRequest
 
 // CreateStatusJSONRequestBody defines body for CreateStatus for application/json ContentType.
 type CreateStatusJSONRequestBody = CreateStatusRequest
@@ -862,6 +1173,9 @@ type ServerInterface interface {
 	// GetRelationships Get the viewer's relationships with accounts
 	// (GET /accounts/relationships)
 	GetRelationships(w http.ResponseWriter, r *http.Request, params GetRelationshipsParams)
+	// UpdateAccountCredentials Change the authenticated user's profile
+	// (PATCH /accounts/update_credentials)
+	UpdateAccountCredentials(w http.ResponseWriter, r *http.Request)
 	// VerifyAccountCredentials Get the authenticated user's own account
 	// (GET /accounts/verify_credentials)
 	VerifyAccountCredentials(w http.ResponseWriter, r *http.Request)
@@ -916,6 +1230,15 @@ type ServerInterface interface {
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(w http.ResponseWriter, r *http.Request)
+	// UploadMedia Upload a media file
+	// (POST /media)
+	UploadMedia(w http.ResponseWriter, r *http.Request)
+	// GetMedia Get a media file that the user uploaded
+	// (GET /media/{id})
+	GetMedia(w http.ResponseWriter, r *http.Request, id Id)
+	// UpdateMedia Change the description or focal point of a media file
+	// (PATCH /media/{id})
+	UpdateMedia(w http.ResponseWriter, r *http.Request, id Id)
 	// ListMutes List the accounts that the viewer mutes
 	// (GET /mutes)
 	ListMutes(w http.ResponseWriter, r *http.Request, params ListMutesParams)
@@ -931,6 +1254,12 @@ type ServerInterface interface {
 	// DismissNotification Dismiss a notification
 	// (POST /notifications/{id}/dismiss)
 	DismissNotification(w http.ResponseWriter, r *http.Request, id Id)
+	// GetPreferences Get the authenticated user's preferences
+	// (GET /preferences)
+	GetPreferences(w http.ResponseWriter, r *http.Request)
+	// UpdatePreferences Change the authenticated user's preferences
+	// (PATCH /preferences)
+	UpdatePreferences(w http.ResponseWriter, r *http.Request)
 	// CreateStatus Post a status
 	// (POST /statuses)
 	CreateStatus(w http.ResponseWriter, r *http.Request, params CreateStatusParams)
@@ -1053,6 +1382,20 @@ func (siw *ServerInterfaceWrapper) GetRelationships(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetRelationships(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAccountCredentials operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAccountCredentials(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAccountCredentials(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1692,6 +2035,72 @@ func (siw *ServerInterfaceWrapper) GetInstance(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// UploadMedia operation middleware
+func (siw *ServerInterfaceWrapper) UploadMedia(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UploadMedia(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMedia operation middleware
+func (siw *ServerInterfaceWrapper) GetMedia(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMedia(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateMedia operation middleware
+func (siw *ServerInterfaceWrapper) UpdateMedia(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateMedia(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListMutes operation middleware
 func (siw *ServerInterfaceWrapper) ListMutes(w http.ResponseWriter, r *http.Request) {
 
@@ -1842,6 +2251,34 @@ func (siw *ServerInterfaceWrapper) DismissNotification(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DismissNotification(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPreferences operation middleware
+func (siw *ServerInterfaceWrapper) GetPreferences(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPreferences(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdatePreferences operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePreferences(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdatePreferences(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2525,6 +2962,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance", wrapper.GetInstance)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/preferences", wrapper.UpdatePreferences)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/lookup", wrapper.LookupAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/relationships", wrapper.GetRelationships)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}", wrapper.GetAccount)
@@ -2542,6 +2982,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/follow_requests/{id}/authorize", wrapper.AcceptFollowRequest)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/follow_requests/{id}/reject", wrapper.RejectFollowRequest)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/mutes", wrapper.ListMutes)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/media", wrapper.UploadMedia)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/media/{id}", wrapper.GetMedia)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/media/{id}", wrapper.UpdateMedia)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications", wrapper.ListNotifications)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications/marker", wrapper.GetNotificationMarker)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/notifications/marker", wrapper.UpdateNotificationMarker)
@@ -2744,6 +3187,68 @@ func (response GetRelationshipsdefaultApplicationProblemPlusJSONResponse) VisitG
 	return err
 }
 
+type UpdateAccountCredentialsRequestObject struct {
+	Body *UpdateAccountCredentialsJSONRequestBody
+}
+
+type UpdateAccountCredentialsResponseObject interface {
+	VisitUpdateAccountCredentialsResponse(w http.ResponseWriter) error
+}
+
+type UpdateAccountCredentials200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdateAccountCredentials200JSONResponse struct {
+	Body    CredentialAccount
+	Headers UpdateAccountCredentials200ResponseHeaders
+}
+
+func (response UpdateAccountCredentials200JSONResponse) VisitUpdateAccountCredentialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAccountCredentialsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateAccountCredentialsdefaultApplicationProblemPlusJSONResponse) VisitUpdateAccountCredentialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type VerifyAccountCredentialsRequestObject struct {
 }
 
@@ -2756,7 +3261,7 @@ type VerifyAccountCredentials200ResponseHeaders struct {
 }
 
 type VerifyAccountCredentials200JSONResponse struct {
-	Body    Account
+	Body    CredentialAccount
 	Headers VerifyAccountCredentials200ResponseHeaders
 }
 
@@ -3758,6 +4263,193 @@ func (response GetInstancedefaultApplicationProblemPlusJSONResponse) VisitGetIns
 	return err
 }
 
+type UploadMediaRequestObject struct {
+	Body *multipart.Reader
+}
+
+type UploadMediaResponseObject interface {
+	VisitUploadMediaResponse(w http.ResponseWriter) error
+}
+
+type UploadMedia202ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UploadMedia202JSONResponse struct {
+	Body    MediaAttachment
+	Headers UploadMedia202ResponseHeaders
+}
+
+func (response UploadMedia202JSONResponse) VisitUploadMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadMediadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UploadMediadefaultApplicationProblemPlusJSONResponse) VisitUploadMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMediaRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetMediaResponseObject interface {
+	VisitGetMediaResponse(w http.ResponseWriter) error
+}
+
+type GetMedia200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetMedia200JSONResponse struct {
+	Body    MediaAttachment
+	Headers GetMedia200ResponseHeaders
+}
+
+func (response GetMedia200JSONResponse) VisitGetMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMediadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetMediadefaultApplicationProblemPlusJSONResponse) VisitGetMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMediaRequestObject struct {
+	Id   Id `json:"id"`
+	Body *UpdateMediaJSONRequestBody
+}
+
+type UpdateMediaResponseObject interface {
+	VisitUpdateMediaResponse(w http.ResponseWriter) error
+}
+
+type UpdateMedia200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdateMedia200JSONResponse struct {
+	Body    MediaAttachment
+	Headers UpdateMedia200ResponseHeaders
+}
+
+func (response UpdateMedia200JSONResponse) VisitUpdateMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMediadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateMediadefaultApplicationProblemPlusJSONResponse) VisitUpdateMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListMutesRequestObject struct {
 	Params ListMutesParams
 }
@@ -4028,6 +4720,129 @@ type DismissNotificationdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response DismissNotificationdefaultApplicationProblemPlusJSONResponse) VisitDismissNotificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPreferencesRequestObject struct {
+}
+
+type GetPreferencesResponseObject interface {
+	VisitGetPreferencesResponse(w http.ResponseWriter) error
+}
+
+type GetPreferences200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetPreferences200JSONResponse struct {
+	Body    Preferences
+	Headers GetPreferences200ResponseHeaders
+}
+
+func (response GetPreferences200JSONResponse) VisitGetPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPreferencesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetPreferencesdefaultApplicationProblemPlusJSONResponse) VisitGetPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePreferencesRequestObject struct {
+	Body *UpdatePreferencesJSONRequestBody
+}
+
+type UpdatePreferencesResponseObject interface {
+	VisitUpdatePreferencesResponse(w http.ResponseWriter) error
+}
+
+type UpdatePreferences200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdatePreferences200JSONResponse struct {
+	Body    Preferences
+	Headers UpdatePreferences200ResponseHeaders
+}
+
+func (response UpdatePreferences200JSONResponse) VisitUpdatePreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePreferencesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdatePreferencesdefaultApplicationProblemPlusJSONResponse) VisitUpdatePreferencesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -5085,6 +5900,9 @@ type StrictServerInterface interface {
 	// GetRelationships Get the viewer's relationships with accounts
 	// (GET /accounts/relationships)
 	GetRelationships(ctx context.Context, request GetRelationshipsRequestObject) (GetRelationshipsResponseObject, error)
+	// UpdateAccountCredentials Change the authenticated user's profile
+	// (PATCH /accounts/update_credentials)
+	UpdateAccountCredentials(ctx context.Context, request UpdateAccountCredentialsRequestObject) (UpdateAccountCredentialsResponseObject, error)
 	// VerifyAccountCredentials Get the authenticated user's own account
 	// (GET /accounts/verify_credentials)
 	VerifyAccountCredentials(ctx context.Context, request VerifyAccountCredentialsRequestObject) (VerifyAccountCredentialsResponseObject, error)
@@ -5139,6 +5957,15 @@ type StrictServerInterface interface {
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(ctx context.Context, request GetInstanceRequestObject) (GetInstanceResponseObject, error)
+	// UploadMedia Upload a media file
+	// (POST /media)
+	UploadMedia(ctx context.Context, request UploadMediaRequestObject) (UploadMediaResponseObject, error)
+	// GetMedia Get a media file that the user uploaded
+	// (GET /media/{id})
+	GetMedia(ctx context.Context, request GetMediaRequestObject) (GetMediaResponseObject, error)
+	// UpdateMedia Change the description or focal point of a media file
+	// (PATCH /media/{id})
+	UpdateMedia(ctx context.Context, request UpdateMediaRequestObject) (UpdateMediaResponseObject, error)
 	// ListMutes List the accounts that the viewer mutes
 	// (GET /mutes)
 	ListMutes(ctx context.Context, request ListMutesRequestObject) (ListMutesResponseObject, error)
@@ -5154,6 +5981,12 @@ type StrictServerInterface interface {
 	// DismissNotification Dismiss a notification
 	// (POST /notifications/{id}/dismiss)
 	DismissNotification(ctx context.Context, request DismissNotificationRequestObject) (DismissNotificationResponseObject, error)
+	// GetPreferences Get the authenticated user's preferences
+	// (GET /preferences)
+	GetPreferences(ctx context.Context, request GetPreferencesRequestObject) (GetPreferencesResponseObject, error)
+	// UpdatePreferences Change the authenticated user's preferences
+	// (PATCH /preferences)
+	UpdatePreferences(ctx context.Context, request UpdatePreferencesRequestObject) (UpdatePreferencesResponseObject, error)
 	// CreateStatus Post a status
 	// (POST /statuses)
 	CreateStatus(ctx context.Context, request CreateStatusRequestObject) (CreateStatusResponseObject, error)
@@ -5294,6 +6127,37 @@ func (sh *strictHandler) GetRelationships(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetRelationshipsResponseObject); ok {
 		if err := validResponse.VisitGetRelationshipsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateAccountCredentials operation middleware
+func (sh *strictHandler) UpdateAccountCredentials(w http.ResponseWriter, r *http.Request) {
+	var request UpdateAccountCredentialsRequestObject
+
+	var body UpdateAccountCredentialsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAccountCredentials(ctx, request.(UpdateAccountCredentialsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAccountCredentials")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateAccountCredentialsResponseObject); ok {
+		if err := validResponse.VisitUpdateAccountCredentialsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -5788,6 +6652,96 @@ func (sh *strictHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UploadMedia operation middleware
+func (sh *strictHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
+	var request UploadMediaRequestObject
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UploadMedia(ctx, request.(UploadMediaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UploadMedia")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UploadMediaResponseObject); ok {
+		if err := validResponse.VisitUploadMediaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMedia operation middleware
+func (sh *strictHandler) GetMedia(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetMediaRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMedia(ctx, request.(GetMediaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMedia")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMediaResponseObject); ok {
+		if err := validResponse.VisitGetMediaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateMedia operation middleware
+func (sh *strictHandler) UpdateMedia(w http.ResponseWriter, r *http.Request, id Id) {
+	var request UpdateMediaRequestObject
+
+	request.Id = id
+
+	var body UpdateMediaJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateMedia(ctx, request.(UpdateMediaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateMedia")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateMediaResponseObject); ok {
+		if err := validResponse.VisitUpdateMediaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListMutes operation middleware
 func (sh *strictHandler) ListMutes(w http.ResponseWriter, r *http.Request, params ListMutesParams) {
 	var request ListMutesRequestObject
@@ -5914,6 +6868,61 @@ func (sh *strictHandler) DismissNotification(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DismissNotificationResponseObject); ok {
 		if err := validResponse.VisitDismissNotificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPreferences operation middleware
+func (sh *strictHandler) GetPreferences(w http.ResponseWriter, r *http.Request) {
+	var request GetPreferencesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPreferences(ctx, request.(GetPreferencesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPreferences")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPreferencesResponseObject); ok {
+		if err := validResponse.VisitGetPreferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePreferences operation middleware
+func (sh *strictHandler) UpdatePreferences(w http.ResponseWriter, r *http.Request) {
+	var request UpdatePreferencesRequestObject
+
+	var body UpdatePreferencesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePreferences(ctx, request.(UpdatePreferencesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePreferences")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdatePreferencesResponseObject); ok {
+		if err := validResponse.VisitUpdatePreferencesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

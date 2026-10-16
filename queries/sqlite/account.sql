@@ -130,3 +130,15 @@ SELECT EXISTS (
   SELECT 1 FROM account_profile_revisions
   WHERE avatar_media_id = sqlc.arg(media_id) OR header_media_id = sqlc.arg(media_id)
 );
+
+-- name: InsertProfileRevisionSource :exec
+INSERT INTO account_profile_revision_sources (revision_id, note_source) VALUES (?, ?);
+
+-- name: InsertProfileFieldSource :exec
+INSERT INTO account_profile_field_sources (revision_id, position, value_source) VALUES (?, ?, ?);
+
+-- name: GetProfileRevisionSource :one
+SELECT note_source FROM account_profile_revision_sources WHERE revision_id = ?;
+
+-- name: ListProfileFieldSources :many
+SELECT position, value_source FROM account_profile_field_sources WHERE revision_id = ? ORDER BY position;

@@ -242,6 +242,26 @@ export interface MessageArgs {
   "server:errors.invalid_parameter": { name: string };
   /** Your sign-in has expired or was revoked. Sign in again. */
   "server:errors.invalid_token": {};
+  /** The value of {name} is invalid. */
+  "server:errors.invalid_value": { name: string };
+  /** This media is attached to a post and can no longer be changed. */
+  "server:errors.media_attached": {};
+  /** Edit the post to change its description. */
+  "server:errors.media_attached_detail": {};
+  /** The file could not be read as an image. */
+  "server:errors.media_corrupt": {};
+  /** The description is too long. */
+  "server:errors.media_description_too_long": {};
+  /** {max, plural, one {A description can have at most # character.} other {A description can have at most # characters.}} */
+  "server:errors.media_description_too_long_detail": { max: number };
+  /** The image is too large in width, height, or number of frames. */
+  "server:errors.media_dimensions": {};
+  /** The focal point must be between -1.0 and 1.0 on each axis. */
+  "server:errors.media_invalid_focus": {};
+  /** The file is too large. */
+  "server:errors.media_too_large": {};
+  /** This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image. */
+  "server:errors.media_unsupported_format": {};
   /** The {method} method is not allowed for this resource. */
   "server:errors.method_not_allowed": { method: string };
   /** The requested resource was not found. */
@@ -252,6 +272,8 @@ export interface MessageArgs {
   "server:errors.rate_limited_detail": { seconds: number };
   /** This is not available for accounts on other servers. */
   "server:errors.remote_account": {};
+  /** The request is too large. */
+  "server:errors.request_too_large": {};
   /** You cannot do this to your own account. */
   "server:errors.self_relationship": {};
   /** The post created with this Idempotency-Key has been deleted. */
@@ -284,10 +306,20 @@ export interface MessageArgs {
   "server:errors.status.text_too_long": { max: number };
   /** {max, plural, one {A post can attach at most # distinct file.} other {A post can attach at most # distinct files.}} */
   "server:errors.status.too_many_media": { max: number };
+  /** You have too many streams open. Close one and try again. */
+  "server:errors.streaming.too_many": {};
+  /** Real-time updates are unavailable right now. Try again later. */
+  "server:errors.streaming.unavailable": {};
+  /** {max, plural, one {{name} can be at most # character long.} other {{name} can be at most # characters long.}} */
+  "server:errors.too_long": { max: number; name: string };
+  /** {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}} */
+  "server:errors.too_many": { max: number; name: string };
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
   /** The request cannot be processed. */
   "server:errors.unprocessable": {};
+  /** {name} must be an image that you uploaded and that has finished processing. */
+  "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
   /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */

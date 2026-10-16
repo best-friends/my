@@ -148,8 +148,11 @@ func sampleView(viewer appcontent.Viewer) appcontent.StatusView {
 			Media: appcontent.Media{
 				File: content.MediaFile{ID: "01890a5d-ac96-774b-bcce-b302099a9100"},
 				Result: &content.MediaProcessingResult{
-					Outcome: content.MediaReady, MediaType: content.MediaTypeImage, Blurhash: "LEHV6nWB2yk8",
-					Variants: []content.MediaVariant{{Kind: content.VariantFull, Width: 640, Height: 480}},
+					Outcome: content.MediaReady, MediaType: content.MediaTypeImage, Blurhash: "LEHV6nWB2yk8", Width: 640, Height: 480,
+					Variants: []content.MediaVariant{
+						{Kind: content.VariantFull, ContentType: "image/jpeg", FileSize: 2048, Width: 640, Height: 480},
+						{Kind: content.VariantThumbnail, ContentType: "image/jpeg", FileSize: 512, Width: 415, Height: 311},
+					},
 				},
 				Focus: &content.MediaFocus{X: 0.5, Y: -0.25},
 			},
@@ -204,8 +207,10 @@ func TestGetStatus(t *testing.T) {
 	if s.Favourited != nil || s.Boosted != nil || s.Bookmarked != nil || s.Pinned != nil {
 		t.Errorf("an anonymous status has the viewer's relation: %+v", s)
 	}
-	if len(s.MediaAttachments) != 1 || s.MediaAttachments[0].Type != clientapi.MediaAttachmentTypeImage || *s.MediaAttachments[0].Width != 640 ||
-		*s.MediaAttachments[0].Description != "a cat" || s.MediaAttachments[0].Focus.Y != -0.25 {
+	if len(s.MediaAttachments) != 1 || s.MediaAttachments[0].Type != clientapi.MediaAttachmentTypeImage || s.MediaAttachments[0].Meta.Width == nil || *s.MediaAttachments[0].Meta.Width != 640 ||
+		*s.MediaAttachments[0].Description != "a cat" || s.MediaAttachments[0].Meta.Focus.Y != -0.25 || s.MediaAttachments[0].Variants == nil ||
+		s.MediaAttachments[0].Variants.Full.Url != "https://social.example/media/full.webp" ||
+		s.MediaAttachments[0].Variants.Thumbnail.Url != "https://social.example/media/thumbnail.webp" {
 		t.Errorf("media = %+v", s.MediaAttachments)
 	}
 	if len(s.Tags) != 1 || s.Tags[0].Url != "https://social.example/tags/golang" || len(s.Mentions) != 1 || s.Mentions[0].Acct != "alice" {

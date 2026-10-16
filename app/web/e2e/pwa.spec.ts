@@ -17,12 +17,9 @@ test.beforeEach(({ browserName }, testInfo) => {
 /**
  * Opens `path` and waits until the Service Worker controls the page (it claims the page when it activates).
  * The page's CSP requires Trusted Types, so the wait is a promise in the page rather than waitForFunction,
- * whose polling compiles a function from a string. The locale fixture's route is removed first: a request
- * the worker leaves to the network would otherwise be fetched by Playwright, outside the browser's
- * offline emulation.
+ * whose polling compiles a function from a string.
  */
 async function openControlled(page: Page, path = "/"): Promise<void> {
-  await page.unrouteAll({ behavior: "ignoreErrors" });
   await page.goto(path);
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;

@@ -641,6 +641,76 @@ func (l *Localizer) ServerErrorsInvalidToken() string {
 	return l.format("server:errors.invalid_token", nil)
 }
 
+// ServerErrorsInvalidValue formats "server:errors.invalid_value". Detail of an API error (HTTP 422) when a property of the request body has a value that the server rejects. {name} is the property name, e.g. time_zone (not translated).
+//
+//	en: The value of {name} is invalid.
+func (l *Localizer) ServerErrorsInvalidValue(name string) string {
+	return l.format("server:errors.invalid_value", map[string]any{"name": name})
+}
+
+// ServerErrorsMediaAttached formats "server:errors.media_attached". API error title for HTTP 409 when the user tries to change the description or focal point of an uploaded media file that a post already attaches.
+//
+//	en: This media is attached to a post and can no longer be changed.
+func (l *Localizer) ServerErrorsMediaAttached() string {
+	return l.format("server:errors.media_attached", nil)
+}
+
+// ServerErrorsMediaAttachedDetail formats "server:errors.media_attached_detail". Detail of the HTTP 409 media-attached API error.
+//
+//	en: Edit the post to change its description.
+func (l *Localizer) ServerErrorsMediaAttachedDetail() string {
+	return l.format("server:errors.media_attached_detail", nil)
+}
+
+// ServerErrorsMediaCorrupt formats "server:errors.media_corrupt". API error title for HTTP 422 when an uploaded file has the signature of an image format but does not decode.
+//
+//	en: The file could not be read as an image.
+func (l *Localizer) ServerErrorsMediaCorrupt() string {
+	return l.format("server:errors.media_corrupt", nil)
+}
+
+// ServerErrorsMediaDescriptionTooLong formats "server:errors.media_description_too_long". API error title for HTTP 422 when the description (alternative text) of a media file is longer than allowed.
+//
+//	en: The description is too long.
+func (l *Localizer) ServerErrorsMediaDescriptionTooLong() string {
+	return l.format("server:errors.media_description_too_long", nil)
+}
+
+// ServerErrorsMediaDescriptionTooLongDetail formats "server:errors.media_description_too_long_detail". Detail of the HTTP 422 API error for a description that is too long. {max} is the maximum number of characters.
+//
+//	en: {max, plural, one {A description can have at most # character.} other {A description can have at most # characters.}}
+func (l *Localizer) ServerErrorsMediaDescriptionTooLongDetail(max int) string {
+	return l.format("server:errors.media_description_too_long_detail", map[string]any{"max": max})
+}
+
+// ServerErrorsMediaDimensions formats "server:errors.media_dimensions". API error title for HTTP 422 when an uploaded image is too wide or tall, or has too many pixels or animation frames.
+//
+//	en: The image is too large in width, height, or number of frames.
+func (l *Localizer) ServerErrorsMediaDimensions() string {
+	return l.format("server:errors.media_dimensions", nil)
+}
+
+// ServerErrorsMediaInvalidFocus formats "server:errors.media_invalid_focus". API error title for HTTP 422 when the focal point of a media file is outside the image.
+//
+//	en: The focal point must be between -1.0 and 1.0 on each axis.
+func (l *Localizer) ServerErrorsMediaInvalidFocus() string {
+	return l.format("server:errors.media_invalid_focus", nil)
+}
+
+// ServerErrorsMediaTooLarge formats "server:errors.media_too_large". API error title for HTTP 413 when an uploaded media file is larger than the server accepts.
+//
+//	en: The file is too large.
+func (l *Localizer) ServerErrorsMediaTooLarge() string {
+	return l.format("server:errors.media_too_large", nil)
+}
+
+// ServerErrorsMediaUnsupportedFormat formats "server:errors.media_unsupported_format". API error title for HTTP 415 when an uploaded file is not an accepted image format, or its declared type does not match its content. JPEG, PNG, GIF, WebP are format names (not translated).
+//
+//	en: This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image.
+func (l *Localizer) ServerErrorsMediaUnsupportedFormat() string {
+	return l.format("server:errors.media_unsupported_format", nil)
+}
+
 // ServerErrorsMethodNotAllowed formats "server:errors.method_not_allowed". API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated).
 //
 //	en: The {method} method is not allowed for this resource.
@@ -674,6 +744,13 @@ func (l *Localizer) ServerErrorsRateLimitedDetail(seconds int) string {
 //	en: This is not available for accounts on other servers.
 func (l *Localizer) ServerErrorsRemoteAccount() string {
 	return l.format("server:errors.remote_account", nil)
+}
+
+// ServerErrorsRequestTooLarge formats "server:errors.request_too_large". API error title for HTTP 413 when a request body is larger than the server accepts.
+//
+//	en: The request is too large.
+func (l *Localizer) ServerErrorsRequestTooLarge() string {
+	return l.format("server:errors.request_too_large", nil)
 }
 
 // ServerErrorsSelfRelationship formats "server:errors.self_relationship". Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account.
@@ -788,6 +865,34 @@ func (l *Localizer) ServerErrorsStatusTooManyMedia(max int) string {
 	return l.format("server:errors.status.too_many_media", map[string]any{"max": max})
 }
 
+// ServerErrorsStreamingTooMany formats "server:errors.streaming.too_many". Detail of the HTTP 429 API error when the user already has as many real-time update streams (open tabs or devices) as the server allows.
+//
+//	en: You have too many streams open. Close one and try again.
+func (l *Localizer) ServerErrorsStreamingTooMany() string {
+	return l.format("server:errors.streaming.too_many", nil)
+}
+
+// ServerErrorsStreamingUnavailable formats "server:errors.streaming.unavailable". Title of the HTTP 503 API error when the server is shutting down and accepts no new real-time update streams.
+//
+//	en: Real-time updates are unavailable right now. Try again later.
+func (l *Localizer) ServerErrorsStreamingUnavailable() string {
+	return l.format("server:errors.streaming.unavailable", nil)
+}
+
+// ServerErrorsTooLong formats "server:errors.too_long". Detail of an API error (HTTP 422) when a text property of the request body is too long. {name} is the property name, e.g. display_name (not translated); {max} is the limit in characters.
+//
+//	en: {max, plural, one {{name} can be at most # character long.} other {{name} can be at most # characters long.}}
+func (l *Localizer) ServerErrorsTooLong(max int, name string) string {
+	return l.format("server:errors.too_long", map[string]any{"max": max, "name": name})
+}
+
+// ServerErrorsTooMany formats "server:errors.too_many". Detail of an API error (HTTP 422) when a list property of the request body has too many items. {name} is the property name, e.g. fields (not translated); {max} is the limit.
+//
+//	en: {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}}
+func (l *Localizer) ServerErrorsTooMany(max int, name string) string {
+	return l.format("server:errors.too_many", map[string]any{"max": max, "name": name})
+}
+
 // ServerErrorsUnauthenticated formats "server:errors.unauthenticated". API error title for HTTP 401 when the request carries no access token and the operation needs one.
 //
 //	en: Sign in to do this.
@@ -800,6 +905,13 @@ func (l *Localizer) ServerErrorsUnauthenticated() string {
 //	en: The request cannot be processed.
 func (l *Localizer) ServerErrorsUnprocessable() string {
 	return l.format("server:errors.unprocessable", nil)
+}
+
+// ServerErrorsUnusableImage formats "server:errors.unusable_image". Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated).
+//
+//	en: {name} must be an image that you uploaded and that has finished processing.
+func (l *Localizer) ServerErrorsUnusableImage(name string) string {
+	return l.format("server:errors.unusable_image", map[string]any{"name": name})
 }
 
 // ServerHealthUnavailable formats "server:health.unavailable". Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable.

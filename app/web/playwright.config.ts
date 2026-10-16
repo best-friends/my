@@ -6,7 +6,7 @@
 // server-rendered pages (e2e/auth-pages.spec.ts) run against a real `my serve` on SQLite that
 // e2e/server.ts starts from bin/my, or against E2E_SERVER_URL when it is set.
 import { defineConfig, devices, type Project } from "@playwright/test";
-import { serverPort } from "./e2e/server-origin.ts";
+import { previewOrigin, previewPort, serverPort } from "./e2e/server-origin.ts";
 
 /** Viewport widths in CSS px (ADR-0027). */
 const widths = [320, 390, 768, 1024, 1440] as const;
@@ -17,7 +17,7 @@ const prWidths: ReadonlySet<number> = new Set([320, 1440]);
 
 const fullMatrix = process.env["E2E_MATRIX"] === "full";
 const ci = process.env["CI"] !== undefined;
-const port = 4173;
+const port = previewPort;
 const externalBaseURL = process.env["E2E_BASE_URL"];
 const externalServer = process.env["E2E_SERVER_URL"] !== undefined;
 
@@ -48,7 +48,7 @@ export default defineConfig({
   ...(ci ? { workers: 2 } : {}),
   reporter: ci ? [["github"], ["html", { open: "never" }]] : [["list"]],
   use: {
-    baseURL: externalBaseURL ?? `http://127.0.0.1:${port}`,
+    baseURL: externalBaseURL ?? previewOrigin,
     trace: "retain-on-failure",
     // A Service Worker answers navigations before page.route() sees them, which would bypass the locale
     // fixture (e2e/fixtures.ts). Only e2e/pwa.spec.ts, which tests the worker, allows it.

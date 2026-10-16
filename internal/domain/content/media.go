@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"time"
+	"unicode/utf8"
 )
 
 // MediaOrigin tells where a media file comes from (media_files.origin).
@@ -123,6 +124,29 @@ func (f MediaFocus) Validate() error {
 		if math.IsNaN(v) || v < -1 || v > 1 {
 			return fmt.Errorf("%w: (%v, %v)", ErrInvalidFocus, f.X, f.Y)
 		}
+	}
+	return nil
+}
+
+// MaxMediaDescriptionLength is the most characters (Unicode code points) of a media file's
+// description.
+const MaxMediaDescriptionLength = 1500
+
+// ErrDescriptionTooLong reports a media description longer than MaxMediaDescriptionLength.
+var ErrDescriptionTooLong = errors.New("content: the media description is too long")
+
+// MediaDescription is the description (alternative text) of an upload that the uploader sets
+// before a post attaches it; the post copies it into its revision's attachment. Text is never
+// empty: removing the description deletes it.
+type MediaDescription struct {
+	MediaID string
+	Text    string
+}
+
+// ValidateMediaDescription checks the length of a media description.
+func ValidateMediaDescription(text string) error {
+	if n := utf8.RuneCountInString(text); n > MaxMediaDescriptionLength {
+		return fmt.Errorf("%w: %d characters", ErrDescriptionTooLong, n)
 	}
 	return nil
 }

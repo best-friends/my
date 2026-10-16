@@ -363,6 +363,46 @@
     "defaultMessage": "ログインの有効期限が切れたか、取り消されました。もう一度ログインしてください。",
     "description": "API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked."
   },
+  "errors.invalid_value": {
+    "defaultMessage": "{name} の値が正しくありません。",
+    "description": "Detail of an API error (HTTP 422) when a property of the request body has a value that the server rejects. {name} is the property name, e.g. time_zone (not translated)."
+  },
+  "errors.media_attached": {
+    "defaultMessage": "この添付ファイルは投稿に添付済みのため、変更できません。",
+    "description": "API error title for HTTP 409 when the user tries to change the description or focal point of an uploaded media file that a post already attaches."
+  },
+  "errors.media_attached_detail": {
+    "defaultMessage": "説明を変えるには投稿を編集してください。",
+    "description": "Detail of the HTTP 409 media-attached API error."
+  },
+  "errors.media_corrupt": {
+    "defaultMessage": "ファイルを画像として読み込めませんでした。",
+    "description": "API error title for HTTP 422 when an uploaded file has the signature of an image format but does not decode."
+  },
+  "errors.media_description_too_long": {
+    "defaultMessage": "説明が長すぎます。",
+    "description": "API error title for HTTP 422 when the description (alternative text) of a media file is longer than allowed."
+  },
+  "errors.media_description_too_long_detail": {
+    "defaultMessage": "{max, plural, other {説明は # 文字までです。}}",
+    "description": "Detail of the HTTP 422 API error for a description that is too long. {max} is the maximum number of characters."
+  },
+  "errors.media_dimensions": {
+    "defaultMessage": "画像の幅・高さ・フレーム数が上限を超えています。",
+    "description": "API error title for HTTP 422 when an uploaded image is too wide or tall, or has too many pixels or animation frames."
+  },
+  "errors.media_invalid_focus": {
+    "defaultMessage": "焦点は各軸とも -1.0 から 1.0 の範囲で指定してください。",
+    "description": "API error title for HTTP 422 when the focal point of a media file is outside the image."
+  },
+  "errors.media_too_large": {
+    "defaultMessage": "ファイルが大きすぎます。",
+    "description": "API error title for HTTP 413 when an uploaded media file is larger than the server accepts."
+  },
+  "errors.media_unsupported_format": {
+    "defaultMessage": "このファイル形式には対応していません。JPEG・PNG・GIF・WebP の画像をアップロードしてください。",
+    "description": "API error title for HTTP 415 when an uploaded file is not an accepted image format, or its declared type does not match its content. JPEG, PNG, GIF, WebP are format names (not translated)."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "このリソースでは {method} メソッドを使用できません。",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
@@ -382,6 +422,10 @@
   "errors.remote_account": {
     "defaultMessage": "他のサーバーのアカウントにはこの操作を行えません。",
     "description": "Detail of the HTTP 422 API error when a follow or block targets an account on another server, which the operation does not support."
+  },
+  "errors.request_too_large": {
+    "defaultMessage": "リクエストが大きすぎます。",
+    "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",
@@ -447,6 +491,22 @@
     "defaultMessage": "{max, plural, other {1 件の投稿に添付できるファイルは重複なしで # 個までです。}}",
     "description": "Detail of the HTTP 422 API error when a post attaches too many media files or the same file twice. {max} is the maximum number of files."
   },
+  "errors.streaming.too_many": {
+    "defaultMessage": "開いているストリームが多すぎます。どれかを閉じてからやり直してください。",
+    "description": "Detail of the HTTP 429 API error when the user already has as many real-time update streams (open tabs or devices) as the server allows."
+  },
+  "errors.streaming.unavailable": {
+    "defaultMessage": "リアルタイム更新は現在利用できません。しばらくしてからやり直してください。",
+    "description": "Title of the HTTP 503 API error when the server is shutting down and accepts no new real-time update streams."
+  },
+  "errors.too_long": {
+    "defaultMessage": "{max, plural, other {{name} は # 文字以内にしてください。}}",
+    "description": "Detail of an API error (HTTP 422) when a text property of the request body is too long. {name} is the property name, e.g. display_name (not translated); {max} is the limit in characters."
+  },
+  "errors.too_many": {
+    "defaultMessage": "{max, plural, other {{name} は # 個までにしてください。}}",
+    "description": "Detail of an API error (HTTP 422) when a list property of the request body has too many items. {name} is the property name, e.g. fields (not translated); {max} is the limit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
@@ -454,6 +514,10 @@
   "errors.unprocessable": {
     "defaultMessage": "リクエストを処理できません。",
     "description": "API error title for HTTP 422; the detail says what is wrong with the request."
+  },
+  "errors.unusable_image": {
+    "defaultMessage": "{name} には、自分でアップロードして処理が終わった画像を指定してください。",
+    "description": "Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated)."
   },
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",

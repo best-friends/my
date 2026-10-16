@@ -75,10 +75,10 @@ func (sqliteStore) incr(ctx context.Context, tx uow.Tx, namespace, key string, i
 	return q.IncrEntry(ctx, sqlitekv.IncrEntryParams{Namespace: namespace, Key: key, Initial: initial, ExpiresAt: nullMillis(expiresAt)})
 }
 
-func (sqliteStore) deleteExpired(ctx context.Context, tx uow.Tx, now time.Time) (int64, error) {
+func (sqliteStore) deleteExpired(ctx context.Context, tx uow.Tx, now time.Time, limit int) (int64, error) {
 	q, err := sqliteQueries(tx)
 	if err != nil {
 		return 0, err
 	}
-	return q.DeleteExpiredEntries(ctx, millis(now))
+	return q.DeleteExpiredEntries(ctx, sqlitekv.DeleteExpiredEntriesParams{Now: millis(now), BatchLimit: int64(limit)})
 }

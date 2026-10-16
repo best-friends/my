@@ -16,9 +16,9 @@ import (
 
 // PreferencesRepositoryContract verifies the user preferences of a database adapter's identity
 // repository (data-model §4.1) through the identity use cases: the defaults written on
-// registration, replacing preferences and timeline languages with canonical tags, rejecting
-// invalid language tags, time zones, and visibilities without writing anything, and reporting
-// users without preferences. It uses the same harness as AccountRepositoryContract.
+// registration, replacing preferences and timeline languages with canonical tags, partial
+// updates, rejecting invalid language tags, time zones, and visibilities without writing
+// anything, and reporting users without preferences. It uses the same harness as AccountRepositoryContract.
 func PreferencesRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
 	cases := []struct {
@@ -31,6 +31,7 @@ func PreferencesRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RejectsInvalidPreferences", preferencesRejectInvalid},
 		{"SetsTimelineLanguages", preferencesSetTimelineLanguages},
 		{"RejectsInvalidTimelineLanguages", preferencesRejectTimelineLanguages},
+		{"UpdatesPreferencesPartially", preferencesUpdatePartially},
 		{"ReportsMissingPreferences", preferencesReportMissing},
 	}
 	for _, tc := range cases {
@@ -288,5 +289,63 @@ func preferencesReportMissing(t *testing.T, e *accountEnv) {
 	}
 	if _, err := e.identity.SetTimelineLanguages(ctx, missing, []string{"en"}); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("SetTimelineLanguages(missing) = %v, want ErrNotFound", err)
+	}
+}
+
+// preferencesUpdatePartially checks UpdatePreferences: the given preferences change, the rest
+// keep their values, and an invalid value names its preference and changes nothing.
+func preferencesUpdatePartially(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	reg := e.register(t, "alice")
+	tz, vis, langs := "Asia/Tokyo", identity.VisibilityPrivate, []string{"ja-jp", "en", "ja-JP"}
+	e.clock.Advance(time.Minute)
+	got, err := e.identity.UpdatePreferences(ctx, reg.User.ID, appidentity.PreferencesUpdate{
+		TimeZone: &tz, DefaultVisibility: &vis, TimelineLanguages: &langs,
+	})
+	if err != nil {
+		t.Fatalf("UpdatePreferences = %v", err)
+	}
+	want := defaultPreferencesOf(reg.User.ID, "en", e.clock.Now())
+	want.TimeZone, want.DefaultVisibility, want.TimelineLanguages = tz, vis, []string{"en", "ja-JP"}
+	checkPreferences(t, got, want)
+	checkPreferences(t, e.preferences(t, reg.User.ID), want)
+
+	// Leaving the timeline languages out keeps them.
+	locale, yes := "ja", true
+	e.clock.Advance(time.Minute)
+	if got, err = e.identity.UpdatePreferences(ctx, reg.User.ID, appidentity.PreferencesUpdate{
+		Locale: &locale, RequireMediaDescription: &yes,
+	}); err != nil {
+		t.Fatalf("UpdatePreferences(locale) = %v", err)
+	}
+	want.Locale, want.RequireMediaDescription, want.UpdatedAt = "ja", true, e.clock.Now()
+	checkPreferences(t, got, want)
+	checkPreferences(t, e.preferences(t, reg.User.ID), want)
+
+	bad, badVis, tooMany := "nope/nope", identity.Visibility("everyone"), make([]string, identity.MaxTimelineLanguageCount+1)
+	for i := range tooMany {
+		tooMany[i] = "en"
+	}
+	for _, tc := range []struct {
+		in   appidentity.PreferencesUpdate
+		pref string
+		err  error
+	}{
+		{appidentity.PreferencesUpdate{TimeZone: &bad}, "time_zone", identity.ErrInvalidTimeZone},
+		{appidentity.PreferencesUpdate{Locale: &bad}, "locale", identity.ErrInvalidLanguageTag},
+		{appidentity.PreferencesUpdate{DefaultPostLanguage: &bad}, "default_post_language", identity.ErrInvalidLanguageTag},
+		{appidentity.PreferencesUpdate{DefaultVisibility: &badVis}, "default_visibility", identity.ErrInvalidVisibility},
+		{appidentity.PreferencesUpdate{TimeZone: &tz, TimelineLanguages: &tooMany}, "timeline_languages", identity.ErrTooManyLanguages},
+	} {
+		_, err := e.identity.UpdatePreferences(ctx, reg.User.ID, tc.in)
+		var pe *appidentity.PreferenceError
+		if !errors.As(err, &pe) || pe.Preference != tc.pref || !errors.Is(err, tc.err) {
+			t.Errorf("UpdatePreferences(%s) = %v, want a PreferenceError of %s wrapping %v", tc.pref, err, tc.pref, tc.err)
+		}
+	}
+	checkPreferences(t, e.preferences(t, reg.User.ID), want)
+
+	if _, err := e.identity.UpdatePreferences(ctx, e.ids.NewID(), appidentity.PreferencesUpdate{}); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("UpdatePreferences(missing) = %v, want ErrNotFound", err)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sync"
 
 	"github.com/best-friends/my/internal/i18n"
@@ -31,11 +32,19 @@ type requestLocale struct {
 }
 
 // localize stores the request's Accept-Language in its context, where the strict handlers,
-// which see only the context, find the request's localizer with Localizer.
+// which see only the context, find the request's localizer with Localizer. Every response may
+// be localized (problems, instance texts), so every response varies with Accept-Language.
 func (s *Server) localize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		varyAcceptLanguage(w.Header())
 		next.ServeHTTP(w, r.WithContext(withLocale(r)))
 	})
+}
+
+func varyAcceptLanguage(h http.Header) {
+	if !slices.Contains(h.Values("Vary"), "Accept-Language") {
+		h.Add("Vary", "Accept-Language")
+	}
 }
 
 // withLocale returns the context of r with its requestLocale.
@@ -100,7 +109,7 @@ func (s *Server) writeProblem(w http.ResponseWriter, r *http.Request, status int
 	h.Set("Content-Type", ContentTypeProblem)
 	h.Set("Content-Language", *headers.ContentLanguage)
 	h.Set("Cache-Control", "no-store")
-	h.Add("Vary", "Accept-Language")
+	varyAcceptLanguage(h)
 	w.WriteHeader(status)
 	_, _ = w.Write(append(body, '\n'))
 }
@@ -136,6 +145,10 @@ func parameterName(err error) string {
 // requestError answers a request that the generated code cannot parse with a 400 problem;
 // the detail names the parameter when the error is about one.
 func (s *Server) requestError(w http.ResponseWriter, r *http.Request, err error) {
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+		s.writeTooLarge(w, r, r.Pattern)
+		return
+	}
 	l := s.localizer(r)
 	var detail string
 	if name := parameterName(err); name != "" {

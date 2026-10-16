@@ -34,6 +34,7 @@ import (
 	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
@@ -46,10 +47,6 @@ import (
 	"github.com/best-friends/my/internal/interface/web"
 	"github.com/best-friends/my/internal/platform/config"
 )
-
-// defaultMaxPostCharacters is the post length limit that the client API reports until the
-// instance settings hold it (FR-101).
-const defaultMaxPostCharacters = 500
 
 // WebClientCallbackPath is the path on the web origin where the web client receives the
 // authorization response; its URL is the redirect URI of the first-party web client.
@@ -106,6 +103,10 @@ type App struct {
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
 	Notifications *notification.Service
+	// Streams is the in-process broker of the streaming endpoint (FR-207): the timeline and
+	// notification commit hooks publish to it, and each open stream subscribes. It reaches only
+	// the streams of this process (docs/architecture/overview.md §4.4).
+	Streams *stream.Hub
 
 	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
 	Blobs          blob.Store
@@ -239,6 +240,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if a.Runner == nil {
 		a.Runner = queue.NewPullRunner(a.source, a.Handlers, runnerOpts)
 	}
+	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
 	switch cfg.KV {
 	case "db":
 		// Set with the database above.
@@ -249,10 +251,19 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
 	}
 	a.RateLimiter = kernel.NewRateLimiter(a.KV, a.Clock)
+	a.registerKVCleanup()
 
 	account.RegisterProjectors(a.Projectors, accounts)
 	a.Accounts = account.NewService(account.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: accounts, Clock: a.Clock, IDs: a.IDs, Sealer: a.Sealer, Host: cfg.Host,
+		// Profiles are rendered and their images checked by the content module, built below; the
+		// account module does not import it, since the content module imports the account module.
+		RenderProfileText: func(ctx context.Context, text string) (string, error) {
+			return a.Content.RenderProfileText(ctx, text)
+		},
+		CheckProfileImage: func(ctx context.Context, accountID, mediaID string) error {
+			return a.Media.CheckProfileImage(ctx, accountID, mediaID)
+		},
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{
@@ -291,6 +302,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Graph = graph.NewService(graph.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	a.Graph.RegisterJobs(a.Handlers, a.Scheduler)
 	content.RegisterProjectors(a.Projectors, statuses)
 	a.Content = content.NewService(content.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
@@ -317,6 +329,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
 	})
 	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
+	a.Streams = stream.NewHub(stream.HubOptions{})
+	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
+	notification.RegisterCommitHooks(a.Projectors, a.Streams)
 
 	if opts.Version == "" {
 		opts.Version = "dev"
@@ -354,16 +369,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	tokens.Register(a)
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
-	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
-		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		MaxPostCharacters: defaultMaxPostCharacters,
-		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
+		Host: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Preferences: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Notifications: a.Notifications,
 		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
-		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
+		Streams: a.Streams, HomeEntries: a.Timeline,
+		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }
@@ -439,7 +453,6 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 	default:
 		return fmt.Errorf("media %q is not implemented yet", cfg.Media)
 	}
-	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
 	a.Media = content.NewMediaService(content.MediaDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Blobs: a.Blobs, Processor: a.MediaProcessor,
 		Outbox: a.Outbox, Jobs: a.Jobs, Clock: a.Clock, IDs: a.IDs,
@@ -545,6 +558,9 @@ func (a *App) Handle(pattern string, h http.Handler) {
 
 // Close releases the database connections.
 func (a *App) Close() error {
+	if a.Streams != nil {
+		a.Streams.Close()
+	}
 	if a.closeBlobs != nil {
 		_ = a.closeBlobs()
 	}

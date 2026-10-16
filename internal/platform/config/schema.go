@@ -304,7 +304,7 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 	var issues []Issue
 	if vals["key_manager"] == "local" {
 		if !present["kek"] {
-			issues = append(issues, Issue{Key: "kek", Message: "required when key_manager is local"})
+			issues = append(issues, Issue{Key: "kek", Missing: true, Message: "required when key_manager is local"})
 		}
 	}
 	if prev, ok := vals["kek_previous"]; ok {
@@ -322,10 +322,10 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 		}
 	}
 	if mail, ok := vals["mail"]; ok && mail != "none" && !present["mail_from"] {
-		issues = append(issues, Issue{Key: "mail_from", Message: "required when mail is not none"})
+		issues = append(issues, Issue{Key: "mail_from", Missing: true, Message: "required when mail is not none"})
 	}
 	if vals["mail"] == "smtp" && !present["smtp_host"] {
-		issues = append(issues, Issue{Key: "smtp_host", Message: "required when mail is smtp"})
+		issues = append(issues, Issue{Key: "smtp_host", Missing: true, Message: "required when mail is smtp"})
 	}
 	if vals["queue"] == "inline" && vals["role"] != "" && vals["role"] != string(RoleAll) {
 		issues = append(issues, Issue{Key: "queue", Message: fmt.Sprintf("inline runs jobs in the enqueuing process and requires role = all, not %s", vals["role"])})

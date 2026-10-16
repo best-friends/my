@@ -38,12 +38,18 @@ tags:
     description: Public information about the instance.
   - name: accounts
     description: Accounts and the authenticated user's own account.
+  - name: media
+    description: Media files that the user uploads to attach to posts.
+  - name: preferences
+    description: The authenticated user's preferences.
   - name: notifications
     description: The authenticated user's notifications, their read marker, and dismissals.
   - name: statuses
     description: Posts, their threads and edit history, and boosts, favourites, bookmarks, and pins of them.
   - name: timelines
     description: The home, local, hashtag, and account timelines.
+  - name: streaming
+    description: Real-time updates of the home timeline and the notifications.
 paths:
   /instance:
     get:
@@ -53,7 +59,11 @@ paths:
       security: []
       responses:
         "200":
-          description: The instance.
+          description: |
+            The instance. Its texts are in the locale of the request (the user's locale,
+            then `Accept-Language`, then the instance's default locale), falling back along
+            the locale chain to the instance's default locale. Like every response of the
+            API, it varies with `Accept-Language`.
           headers:
             Cache-Control:
               $ref: "#/components/headers/CacheControl"
@@ -72,16 +82,95 @@ paths:
         - oauth2: ["read:accounts"]
       responses:
         "200":
-          description: The account that the access token acts as.
+          description: The account that the access token acts as, with the source of its profile.
           headers:
             Cache-Control:
               $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Account"
+                $ref: "#/components/schemas/CredentialAccount"
         default:
           $ref: "#/components/responses/Problem"
+  # --- The user's own profile and preferences (#113) ---
+  /accounts/update_credentials:
+    patch:
+      operationId: updateAccountCredentials
+      summary: Change the authenticated user's profile
+      description: |
+        Records a new revision of the profile. Properties left out of the request keep their
+        current values. The note and the field values are plain text that the server renders
+        to HTML like the text of a post (mentions, hashtags, and URLs become links). A 422
+        problem names the property that is invalid in `detail`.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCredentialsRequest"
+      responses:
+        "200":
+          description: The account with its new profile.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialAccount"
+        default:
+          $ref: "#/components/responses/Problem"
+  /preferences:
+    get:
+      operationId: getPreferences
+      summary: Get the authenticated user's preferences
+      tags: [preferences]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The preferences.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updatePreferences
+      summary: Change the authenticated user's preferences
+      description: |
+        Properties left out of the request keep their current values. Language tags are
+        canonicalized (`ja-jp` becomes `ja-JP`). A 422 problem names the property that is
+        invalid in `detail`.
+      tags: [preferences]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreferencesRequest"
+      responses:
+        "200":
+          description: The preferences after the change.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end profile and preferences ---
   # --- Accounts and relationships (#108): accounts, follows, follow requests, blocks, mutes ---
   /accounts/lookup:
     get:
@@ -428,6 +517,102 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- End of accounts and relationships (#108) ---
+  # --- media (#112) ---------------------------------------------------------------------
+  /media:
+    post:
+      operationId: uploadMedia
+      summary: Upload a media file
+      description: |
+        Uploads an image to attach to a post. The server checks the format from the content
+        (JPEG, PNG, GIF, or WebP; the declared type must match it) and the size and dimension
+        limits before it accepts the file, then processes it in the background: it removes the
+        metadata (such as the location) by re-encoding the image, and makes a thumbnail and a
+        blurhash. The answer is 202 with the file in its current `state`, usually `processing`;
+        poll `getMedia` until it is `ready` or `failed`.
+
+        A body larger than the size limit is refused with a 413 before it is read. Uploads
+        count against a limit per account besides the API-wide one. Only the uploader can
+        read and change the file.
+      tags: [media]
+      security:
+        - oauth2: ["write:media"]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MediaUpload"
+      responses:
+        "202":
+          description: The file is accepted and being processed.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAttachment"
+        default:
+          $ref: "#/components/responses/Problem"
+  /media/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the media file.
+        schema:
+          $ref: "#/components/schemas/Id"
+    get:
+      operationId: getMedia
+      summary: Get a media file that the user uploaded
+      description: |
+        Returns a media file of the authenticated user with its processing state. A file of
+        another account is a 404: other accounts see a file only as an attachment of a post.
+      tags: [media]
+      security:
+        - oauth2: ["write:media"]
+      responses:
+        "200":
+          description: The media file.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAttachment"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateMedia
+      summary: Change the description or focal point of a media file
+      description: |
+        Changes the description (alternative text) or the focal point of a media file of the
+        authenticated user that no post attaches yet; a property left out keeps its value. A
+        post copies the description when it attaches the file, so a file that a post attaches
+        is a 409 `media-attached`: edit the post instead. A file of another account is a 404.
+      tags: [media]
+      security:
+        - oauth2: ["write:media"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaUpdate"
+      responses:
+        "200":
+          description: The changed media file.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAttachment"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of media ------------------------------------------------------------------------
   # --- notifications (#111) ---
   /notifications:
     get:
@@ -956,6 +1141,49 @@ paths:
           $ref: "#/components/responses/StatusPage"
         default:
           $ref: "#/components/responses/Problem"
+  # --- streaming (#116) ---
+  /streaming:
+    get:
+      operationId: streamEvents
+      summary: Stream real-time updates
+      description: |
+        A Server-Sent Events stream (`text/event-stream`) of the authenticated user's new home
+        timeline entries and notifications, from the moment it opens. Read it with `fetch` and
+        send the access token in `Authorization`, like every other operation (`EventSource`
+        cannot send it).
+
+        Events:
+
+        - `update`: a new post or boost in the home timeline, as it would appear there (the
+          viewer's follows, timeline languages, blocks, and mutes apply). `data` is a `Status`.
+        - `notification`: a new notification. `data` is a `Notification`.
+
+        A comment line (`: heartbeat`) arrives every 30 seconds. The server ends the stream when
+        the access token stops being valid, when the client does not keep up, and when it shuts
+        down; nothing is replayed, so after reconnecting read the home timeline and the
+        notifications again for what was missed. A user may hold a limited number of streams
+        open at once; past it the answer is 429 with type
+        `/api/v1/problems/too-many-streams`.
+
+        Each server process delivers only the updates that it produced itself, so a deployment
+        that runs several web processes, or separate web and worker processes, misses updates
+        on some streams.
+      tags: [streaming]
+      security:
+        - oauth2: ["read:statuses", "read:notifications"]
+      responses:
+        "200":
+          description: The event stream. It stays open until the client or the server ends it.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of streaming (#116) ---
 components:
   securitySchemes:
     oauth2:
@@ -1152,6 +1380,18 @@ components:
           deactivated or deleted).
         - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
           from following it. Unblock it first.
+        - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
+          instance accepts.
+        - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
+          accepted format, or its declared type does not match its content.
+        - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
+          many pixels or frames.
+        - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
+          of its format.
+        - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
+          no longer be changed on its own.
+        - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
+          (`GET /streaming`) open as the server allows. Close one first.
       type: object
       required: [type, title, status]
       properties:
@@ -1178,14 +1418,22 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, limits]
+      required: [domain, name, version, source_url, registrations, limits]
       properties:
         domain:
           description: The domain that serves the instance.
           type: string
         name:
-          description: The display name of the instance.
+          description: The display name of the instance; the domain when the instance has none.
           type: string
+        short_description:
+          description: A one-paragraph summary of the instance, as plain text; omitted when there is none.
+          type: string
+        description:
+          description: The full description of the instance, as plain text; omitted when there is none.
+          type: string
+        registrations:
+          $ref: "#/components/schemas/InstanceRegistrations"
         version:
           description: The server version.
           type: string
@@ -1195,13 +1443,24 @@ components:
           format: uri
         limits:
           $ref: "#/components/schemas/InstanceLimits"
+    InstanceRegistrations:
+      description: How people sign up on the instance.
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          description: |
+            Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
+            approval), `invite` (only with an invite), or `closed` (nobody).
+          type: string
+          enum: [open, approval, invite, closed]
     InstanceLimits:
       description: Limits that clients check before sending a request.
       type: object
       required: [max_post_characters]
       properties:
         max_post_characters:
-          description: The maximum number of characters in the text of a post.
+          description: The maximum number of characters in the text and content warning of a post.
           type: integer
           minimum: 1
     # Accounts and relationships (#108).
@@ -1362,6 +1621,131 @@ components:
           description: Whether the viewer's mute also hides the account's notifications.
           type: boolean
     # --- End of accounts and relationships (#108) ---
+    # --- media (#112) -------------------------------------------------------------------
+    MediaAttachment:
+      description: |
+        A media file, as an upload of the user (the media operations) or as an attachment of
+        a status (`Status.media_attachments`). `variants` and `blurhash` are present once the
+        file is `ready`; statuses attach only ready files. In a status, `description` is the
+        status revision's own copy of the alternative text.
+      type: object
+      required: [id, type, state, meta]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        type:
+          description: The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+          type: string
+          enum: [image, gifv, video, audio, unknown]
+        state:
+          description: |
+            The processing state: `processing` until the server has re-encoded the file,
+            then `ready`, or `failed` when the content could not be processed.
+          type: string
+          enum: [processing, ready, failed]
+        description:
+          description: The alternative text; absent when there is none.
+          type: string
+          maxLength: 1500
+        blurhash:
+          description: The blurhash (https://blurha.sh) of the image, to show while it loads.
+          type: string
+        meta:
+          $ref: "#/components/schemas/MediaMeta"
+        variants:
+          $ref: "#/components/schemas/MediaVariants"
+    MediaFocus:
+      description: |
+        The focal point that previews keep in view when they crop the image, from -1.0 (left,
+        bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+      type: object
+      required: [x, y]
+      properties:
+        x:
+          type: number
+          format: double
+          minimum: -1
+          maximum: 1
+        y:
+          type: number
+          format: double
+          minimum: -1
+          maximum: 1
+    MediaMeta:
+      description: What the server knows about the media file.
+      type: object
+      required: [focus]
+      properties:
+        width:
+          description: The width of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+          type: integer
+          minimum: 1
+        height:
+          description: The height of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+          type: integer
+          minimum: 1
+        focus:
+          $ref: "#/components/schemas/MediaFocus"
+    MediaUpdate:
+      description: The changes to a media file; a property left out keeps its value.
+      type: object
+      properties:
+        description:
+          description: The alternative text; an empty string removes it.
+          type: string
+          maxLength: 1500
+        focus:
+          $ref: "#/components/schemas/MediaFocus"
+    MediaUpload:
+      description: An upload of a media file.
+      type: object
+      required: [file]
+      properties:
+        file:
+          description: The file. Its declared type, if any, must match its content.
+          type: string
+          format: binary
+        description:
+          description: The alternative text.
+          type: string
+          maxLength: 1500
+    MediaVariant:
+      description: A rendition of a media file, without metadata.
+      type: object
+      required: [url, content_type, width, height, size]
+      properties:
+        url:
+          description: Where the rendition is served.
+          type: string
+          format: uri
+        content_type:
+          description: The media type of the rendition.
+          type: string
+        width:
+          description: The width in pixels.
+          type: integer
+          minimum: 1
+        height:
+          description: The height in pixels.
+          type: integer
+          minimum: 1
+        size:
+          description: The size of the file in bytes.
+          type: integer
+          format: int64
+          minimum: 1
+    MediaVariants:
+      description: The renditions of a ready media file.
+      type: object
+      required: [full, thumbnail]
+      properties:
+        full:
+          description: The file itself, scaled down to at most 3840 × 2160 pixels of area.
+          $ref: "#/components/schemas/MediaVariant"
+        thumbnail:
+          description: The preview, at most 640 × 360 pixels of area.
+          $ref: "#/components/schemas/MediaVariant"
+    # --- end of media --------------------------------------------------------------------
     # --- notifications (#111) ---
     Notification:
       description: A notification of something that happened to the authenticated user.
@@ -1429,7 +1813,7 @@ components:
         - poll_closed
         - moderation_notice
     # --- end notifications ---
-    # --- statuses (#109): Status and MediaAttachment are shared with the other operations ---
+    # --- statuses (#109): Status is shared with the other operations; MediaAttachment is in the media section ---
     CreateStatusRequest:
       description: A new status.
       type: object
@@ -1466,58 +1850,6 @@ components:
           $ref: "#/components/schemas/StatusLanguageInput"
         media:
           $ref: "#/components/schemas/StatusMediaInput"
-    MediaAttachment:
-      description: |
-        A media file. Statuses attach only files that finished processing; `url` and
-        `preview_url` are omitted while a file is not ready.
-      type: object
-      required: [id, type]
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        type:
-          description: The kind of media; `unknown` until processing finishes, or when it failed.
-          type: string
-          enum: [image, gifv, video, audio, unknown]
-        url:
-          description: The processed file, without metadata.
-          type: string
-          format: uri
-        preview_url:
-          description: A smaller rendition for previews.
-          type: string
-          format: uri
-        description:
-          description: The alternative text; omitted when there is none.
-          type: string
-        blurhash:
-          description: A BlurHash of the image, shown while it loads.
-          type: string
-        width:
-          description: The width of `url` in pixels.
-          type: integer
-          minimum: 1
-        height:
-          description: The height of `url` in pixels.
-          type: integer
-          minimum: 1
-        focus:
-          $ref: "#/components/schemas/MediaFocus"
-    MediaFocus:
-      description: The focal point that crops keep in view; omitted for the center.
-      type: object
-      required: [x, y]
-      properties:
-        x:
-          description: From -1 (left edge) to 1 (right edge).
-          type: number
-          minimum: -1
-          maximum: 1
-        y:
-          description: From -1 (bottom edge) to 1 (top edge).
-          type: number
-          minimum: -1
-          maximum: 1
     SpoilerText:
       description: The content warning; omitted or empty for none. It counts toward `max_post_characters`.
       type: string
@@ -1769,3 +2101,143 @@ components:
       type: string
       enum: [public, local, unlisted, private, direct]
     # --- end of statuses (#109) ---
+    # --- The user's own profile and preferences (#113) ---
+    AccountFieldSource:
+      description: A metadata field of a profile as the user typed it.
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          description: The label, at most 255 characters.
+          type: string
+        value:
+          description: The value as plain text, at most 255 characters.
+          type: string
+    AccountSource:
+      description: The profile as the user typed it, for editing.
+      type: object
+      required: [note, fields]
+      properties:
+        note:
+          description: The profile text as plain text; empty when there is none.
+          type: string
+        fields:
+          description: The metadata fields as typed, in the order of the account's `fields`.
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountFieldSource"
+        avatar_media_id:
+          description: The media file of the avatar; omitted when there is none.
+          type: string
+        header_media_id:
+          description: The media file of the header image; omitted when there is none.
+          type: string
+    CredentialAccount:
+      description: The authenticated user's own account, with what only its owner sees.
+      allOf:
+        - $ref: "#/components/schemas/Account"
+        - type: object
+          required: [discoverable, indexable, source]
+          properties:
+            avatar:
+              description: The URL of the avatar image; omitted when there is none.
+              type: string
+              format: uri
+            header:
+              description: The URL of the header image; omitted when there is none.
+              type: string
+              format: uri
+            discoverable:
+              description: Whether the account may be suggested to others and listed in directories.
+              type: boolean
+            indexable:
+              description: Whether the account's public posts may be indexed for search.
+              type: boolean
+            source:
+              $ref: "#/components/schemas/AccountSource"
+    UpdateCredentialsRequest:
+      description: A change of the profile; properties left out keep their current values.
+      type: object
+      properties:
+        display_name:
+          description: The display name, at most 30 characters; empty removes it.
+          type: string
+        note:
+          description: The profile text as plain text, at most 500 characters; empty removes it.
+          type: string
+        fields:
+          description: The metadata fields, replacing the current ones; at most 4.
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountFieldSource"
+        avatar_media_id:
+          description: |
+            The ID of a processed image that the user uploaded, to become the avatar; empty
+            removes the avatar.
+          type: string
+        header_media_id:
+          description: |
+            The ID of a processed image that the user uploaded, to become the header image;
+            empty removes the header image.
+          type: string
+        locked:
+          description: Whether follow requests need the user's approval.
+          type: boolean
+        bot:
+          description: Whether the account is automated.
+          type: boolean
+        discoverable:
+          description: Whether the account may be suggested to others and listed in directories.
+          type: boolean
+        indexable:
+          description: Whether the account's public posts may be indexed for search.
+          type: boolean
+    Preferences:
+      description: The authenticated user's preferences.
+      type: object
+      required: [locale, time_zone, default_visibility, default_post_language, require_media_description, timeline_languages]
+      properties:
+        locale:
+          description: The UI locale, a BCP 47 language tag.
+          type: string
+        time_zone:
+          description: The time zone, an IANA name such as `Asia/Tokyo`.
+          type: string
+        default_visibility:
+          $ref: "#/components/schemas/Visibility"
+        default_post_language:
+          description: The language of new posts that name none, a BCP 47 language tag; `und` when undetermined.
+          type: string
+        require_media_description:
+          description: Whether clients ask for a description before posting media without one.
+          type: boolean
+        timeline_languages:
+          description: The languages that timelines show, sorted; empty shows every language.
+          type: array
+          items:
+            type: string
+    UpdatePreferencesRequest:
+      description: A change of the preferences; properties left out keep their current values.
+      type: object
+      properties:
+        locale:
+          description: The UI locale, a BCP 47 language tag.
+          type: string
+        time_zone:
+          description: The time zone, an IANA name.
+          type: string
+        default_visibility:
+          $ref: "#/components/schemas/Visibility"
+        default_post_language:
+          description: The language of new posts that name none; `und` for undetermined.
+          type: string
+        require_media_description:
+          description: Whether clients ask for a description before posting media without one.
+          type: boolean
+        timeline_languages:
+          description: The languages that timelines show, at most 64; empty shows every language.
+          type: array
+          maxItems: 64
+          items:
+            type: string
+    # --- end profile and preferences ---

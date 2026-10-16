@@ -6,8 +6,10 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/i18n"
 )
 
@@ -21,19 +23,25 @@ type Options struct {
 	// AccountDomain is the domain of local handles (@alice@AccountDomain) when it differs
 	// from Host; "" means Host.
 	AccountDomain string
-	// Name is the display name of the instance.
-	Name string
 	// SoftwareVersion is the server version.
 	SoftwareVersion string
 	// SourceURL is where users get the server's source code (ADR-0011).
 	SourceURL string
-	// MaxPostCharacters is the maximum number of characters in the text of a post.
-	MaxPostCharacters int
+	// Instance reads the instance settings and texts; nil reads every setting as its default
+	// and no text.
+	Instance InstanceInfo
 
 	// Authenticator authenticates bearer access tokens; nil accepts none.
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// Profiles changes the viewer's profile.
+	Profiles Profiles
+	// Preferences reads and changes the viewer's preferences.
+	Preferences UserPreferences
+	// Media runs the media use cases and presents profile images; nil serves no media
+	// operation (they fail with 500) and presents no images.
+	Media MediaFiles
 	// Graph reads and changes follows, blocks, and mutes.
 	Graph Graph
 	// Notifications runs the use cases of the viewer's notifications.
@@ -49,6 +57,12 @@ type Options struct {
 	// TimelineLanguages returns the languages that a user's timelines show, none for every
 	// language (FR-208); nil shows every language.
 	TimelineLanguages func(ctx context.Context, userID string) ([]string, error)
+	// Streams opens the subscriptions of the streaming endpoint; nil answers it with 503.
+	// HomeEntries tells the streams whether a home timeline lists a new entry; nil streams no
+	// home timeline entries. StreamHeartbeat overrides DefaultStreamHeartbeat when positive.
+	Streams         stream.Subscriber
+	HomeEntries     HomeEntries
+	StreamHeartbeat time.Duration
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when
@@ -103,8 +117,8 @@ type Router interface {
 	Handle(pattern string, h http.Handler)
 }
 
-// Register registers every operation of the spec on r under BasePath, behind authentication
-// and rate limiting, with the security of each operation enforced (auth.go). Requests that
+// Register registers every operation of the spec on r under BasePath, the generated ones and
+// the hand-written streaming endpoint (streaming.go), behind authentication and rate limiting, with the security of each operation enforced (auth.go). Requests that
 // match no operation are left to r, which answers them with its own 404 or 405 problem.
 func (s *Server) Register(r Router) {
 	strict := NewStrictHandlerWithOptions(s, nil, StrictHTTPServerOptions{
@@ -117,6 +131,7 @@ func (s *Server) Register(r Router) {
 		Middlewares:      []MiddlewareFunc{s.localize},
 		ErrorHandlerFunc: s.requestError,
 	})
+	s.registerStreaming(r)
 }
 
 // routerMux adapts a Router to the ServeMux that the generated code registers on, wrapping
@@ -133,23 +148,4 @@ func (m routerMux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.
 // ServeHTTP is never called: the Router serves the registered handlers.
 func (routerMux) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
-}
-
-// cachePublic is the Cache-Control of anonymous public GETs, which shared caches may store
-// (ADR-0016).
-const cachePublic = "public, max-age=60"
-
-// GetInstance serves GET /api/v1/instance.
-func (s *Server) GetInstance(context.Context, GetInstanceRequestObject) (GetInstanceResponseObject, error) {
-	cache := cachePublic
-	return GetInstance200JSONResponse{
-		Body: Instance{
-			Domain:    s.o.Host,
-			Name:      s.o.Name,
-			Version:   s.o.SoftwareVersion,
-			SourceUrl: s.o.SourceURL,
-			Limits:    InstanceLimits{MaxPostCharacters: s.o.MaxPostCharacters},
-		},
-		Headers: GetInstance200ResponseHeaders{CacheControl: &cache},
-	}, nil
 }

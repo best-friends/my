@@ -36,6 +36,53 @@ func (q *Queries) DeleteBlockEdge(ctx context.Context, arg DeleteBlockEdgeParams
 	return err
 }
 
+const deleteExpiredMutes = `-- name: DeleteExpiredMutes :many
+DELETE FROM mutes
+WHERE rowid IN (
+  SELECT m.rowid FROM mutes AS m
+  WHERE m.expires_at <= CAST(?1 AS INTEGER)
+  ORDER BY m.expires_at
+  LIMIT ?2
+)
+RETURNING account_id, target_account_id, hide_notifications, expires_at, created_at
+`
+
+type DeleteExpiredMutesParams struct {
+	Now        int64
+	BatchLimit int64
+}
+
+// DeleteExpiredMutes deletes at most batch_limit mutes that have expired at now, the earliest
+// expired first, and returns them.
+func (q *Queries) DeleteExpiredMutes(ctx context.Context, arg DeleteExpiredMutesParams) ([]Mute, error) {
+	rows, err := q.db.QueryContext(ctx, deleteExpiredMutes, arg.Now, arg.BatchLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Mute{}
+	for rows.Next() {
+		var i Mute
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.TargetAccountID,
+			&i.HideNotifications,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteMute = `-- name: DeleteMute :execrows
 DELETE FROM mutes WHERE account_id = ? AND target_account_id = ?
 `

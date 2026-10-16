@@ -2,6 +2,12 @@
 // Where the E2E reach the real server (`my serve`, started by e2e/server.ts), shared by the Playwright
 // config and the specs of the server-rendered pages.
 
+/** The port of `vite preview`, which serves the built client unless E2E_BASE_URL points elsewhere. */
+export const previewPort = 4173;
+
+/** The origin of `vite preview`. */
+export const previewOrigin = `http://127.0.0.1:${String(previewPort)}`;
+
 /** The port e2e/server.ts listens on; E2E_SERVER_PORT moves it, for runs side by side on one machine. */
 export const serverPort = Number(process.env["E2E_SERVER_PORT"] ?? "4180");
 

@@ -1,0 +1,127 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package clientapi_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"reflect"
+	"testing"
+
+	appidentity "github.com/best-friends/my/internal/app/identity"
+	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/interface/clientapi"
+)
+
+// fakePreferences holds the preferences of one user and applies updates without validating
+// them, unless err is set.
+type fakePreferences struct {
+	userID string
+	p      appidentity.UserPreferences
+	err    error
+}
+
+func (f *fakePreferences) Preferences(_ context.Context, userID string) (appidentity.UserPreferences, error) {
+	if userID != f.userID {
+		return appidentity.UserPreferences{}, appidentity.ErrNotFound
+	}
+	return f.p, nil
+}
+
+func (f *fakePreferences) UpdatePreferences(ctx context.Context, userID string, in appidentity.PreferencesUpdate) (appidentity.UserPreferences, error) {
+	if f.err != nil {
+		return appidentity.UserPreferences{}, f.err
+	}
+	p, err := f.Preferences(ctx, userID)
+	if err != nil {
+		return p, err
+	}
+	if in.Locale != nil {
+		p.Locale = *in.Locale
+	}
+	if in.DefaultVisibility != nil {
+		p.DefaultVisibility = *in.DefaultVisibility
+	}
+	if in.TimelineLanguages != nil {
+		p.TimelineLanguages = *in.TimelineLanguages
+	}
+	f.p = p
+	return p, nil
+}
+
+func newPreferencesEnv(t *testing.T) (*authEnv, *fakePreferences) {
+	t.Helper()
+	prefs := &fakePreferences{userID: "user-" + aliceAccountID, p: appidentity.UserPreferences{
+		Preferences: identity.Preferences{
+			UserID: "user-" + aliceAccountID, Locale: "ja", TimeZone: "Asia/Tokyo",
+			DefaultVisibility: identity.Visibility("unlisted"), DefaultPostLanguage: "ja",
+		},
+	}}
+	return newAuthEnv(t, func(o *clientapi.Options) { o.Preferences = prefs }), prefs
+}
+
+func TestGetPreferences(t *testing.T) {
+	e, _ := newPreferencesEnv(t)
+	res := e.get(t, "/preferences", map[string]string{"Authorization": "Bearer read-accounts"})
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.StatusCode)
+	}
+	var got clientapi.Preferences
+	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	want := clientapi.Preferences{
+		Locale: "ja", TimeZone: "Asia/Tokyo", DefaultVisibility: clientapi.VisibilityUnlisted, DefaultPostLanguage: "ja",
+		TimelineLanguages: []string{},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("preferences = %+v, want %+v", got, want)
+	}
+	if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", cc)
+	}
+	if res := e.get(t, "/preferences", map[string]string{"Authorization": "Bearer write"}); res.StatusCode != http.StatusForbidden {
+		t.Errorf("write token = %d, want 403", res.StatusCode)
+	}
+}
+
+func TestUpdatePreferences(t *testing.T) {
+	e, prefs := newPreferencesEnv(t)
+	res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","timeline_languages":["en","ja"]}`)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.StatusCode)
+	}
+	var got clientapi.Preferences
+	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.DefaultVisibility != clientapi.VisibilityLocal || !reflect.DeepEqual(got.TimelineLanguages, []string{"en", "ja"}) || got.Locale != "ja" {
+		t.Errorf("preferences = %+v, want the change applied to the rest", got)
+	}
+	if prefs.p.DefaultVisibility != "local" {
+		t.Errorf("stored visibility = %q", prefs.p.DefaultVisibility)
+	}
+	if res := e.sendJSON(t, http.MethodPatch, "/preferences", "read", `{}`); res.StatusCode != http.StatusForbidden {
+		t.Errorf("read token = %d, want 403", res.StatusCode)
+	}
+
+	for _, tt := range []struct {
+		err        error
+		wantDetail string
+	}{
+		{&appidentity.PreferenceError{Preference: "time_zone", Err: identity.ErrInvalidTimeZone}, "time_zone の値が正しくありません。"},
+		{&appidentity.PreferenceError{Preference: "timeline_languages", Err: fmt.Errorf("%w: at most 64", identity.ErrTooManyLanguages)},
+			"timeline_languages は 64 個までにしてください。"},
+	} {
+		prefs.err = tt.err
+		res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"time_zone":"Mars/Olympus"}`)
+		if res.StatusCode != http.StatusUnprocessableEntity {
+			t.Fatalf("%v: status = %d, want 422", tt.err, res.StatusCode)
+		}
+		if p := decodeProblem(t, res); p.Detail == nil || *p.Detail != tt.wantDetail {
+			t.Errorf("%v: problem = %+v (detail %v), want %q", tt.err, p, p.Detail, tt.wantDetail)
+		}
+	}
+}

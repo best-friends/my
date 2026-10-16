@@ -363,6 +363,46 @@
     "defaultMessage": "‮⅄onɹ sıƃu-ıu ɥɐs ǝxdıɹǝp oɹ ʍɐs ɹǝʌoʞǝp. Sıƃu ıu ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.invalid_value": {
+    "defaultMessage": "‮⊥ɥǝ ʌɐʅnǝ oɟ {name} ıs ıuʌɐʅıp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_attached": {
+    "defaultMessage": "‮⊥ɥıs ɯǝpıɐ ıs ɐʇʇɐɔɥǝp ʇo ɐ dosʇ ɐup ɔɐu uo ʅouƃǝɹ qǝ ɔɥɐuƃǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_attached_detail": {
+    "defaultMessage": "‮Ǝpıʇ ʇɥǝ dosʇ ʇo ɔɥɐuƃǝ ıʇs pǝsɔɹıdʇıou.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_corrupt": {
+    "defaultMessage": "‮⊥ɥǝ ɟıʅǝ ɔonʅp uoʇ qǝ ɹǝɐp ɐs ɐu ıɯɐƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_description_too_long": {
+    "defaultMessage": "‮⊥ɥǝ pǝsɔɹıdʇıou ıs ʇoo ʅouƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_description_too_long_detail": {
+    "defaultMessage": "‮{max,plural,one{∀ pǝsɔɹıdʇıou ɔɐu ɥɐʌǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹ.} other{∀ pǝsɔɹıdʇıou ɔɐu ɥɐʌǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_dimensions": {
+    "defaultMessage": "‮⊥ɥǝ ıɯɐƃǝ ıs ʇoo ʅɐɹƃǝ ıu ʍıpʇɥ, ɥǝıƃɥʇ, oɹ unɯqǝɹ oɟ ɟɹɐɯǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_invalid_focus": {
+    "defaultMessage": "‮⊥ɥǝ ɟoɔɐʅ doıuʇ ɯnsʇ qǝ qǝʇʍǝǝu -1.0 ɐup 1.0 ou ǝɐɔɥ ɐxıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_too_large": {
+    "defaultMessage": "‮⊥ɥǝ ɟıʅǝ ıs ʇoo ʅɐɹƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_unsupported_format": {
+    "defaultMessage": "‮⊥ɥıs ɟıʅǝ ɟoɹɯɐʇ ıs uoʇ snddoɹʇǝp. ∩dʅoɐp ɐ ſԀƎ⅁, ԀN⅁, ⅁IℲ, oɹ MǝqԀ ıɯɐƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "‮⊥ɥǝ {method} ɯǝʇɥop ıs uoʇ ɐʅʅoʍǝp ɟoɹ ʇɥıs ɹǝsonɹɔǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -381,6 +421,10 @@
   },
   "errors.remote_account": {
     "defaultMessage": "‮⊥ɥıs ıs uoʇ ɐʌɐıʅɐqʅǝ ɟoɹ ɐɔɔonuʇs ou oʇɥǝɹ sǝɹʌǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.request_too_large": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ʇoo ʅɐɹƃǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.self_relationship": {
@@ -447,12 +491,32 @@
     "defaultMessage": "‮{max,plural,one{∀ dosʇ ɔɐu ɐʇʇɐɔɥ ɐʇ ɯosʇ # pısʇıuɔʇ ɟıʅǝ.} other{∀ dosʇ ɔɐu ɐʇʇɐɔɥ ɐʇ ɯosʇ # pısʇıuɔʇ ɟıʅǝs.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.streaming.too_many": {
+    "defaultMessage": "‮⅄on ɥɐʌǝ ʇoo ɯɐuʎ sʇɹǝɐɯs odǝu. Ↄʅosǝ ouǝ ɐup ʇɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.streaming.unavailable": {
+    "defaultMessage": "‮ᴚǝɐʅ-ʇıɯǝ ndpɐʇǝs ɐɹǝ nuɐʌɐıʅɐqʅǝ ɹıƃɥʇ uoʍ. ⊥ɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.too_long": {
+    "defaultMessage": "‮{max,plural,one{{name} ɔɐu qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹ ʅouƃ.} other{{name} ɔɐu qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹs ʅouƃ.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.too_many": {
+    "defaultMessage": "‮{max,plural,one{{name} ɔɐu ɥɐʌǝ ɐʇ ɯosʇ # ıʇǝɯ.} other{{name} ɔɐu ɥɐʌǝ ɐʇ ɯosʇ # ıʇǝɯs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "‮Sıƃu ıu ʇo po ʇɥıs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.unprocessable": {
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔɐuuoʇ qǝ dɹoɔǝssǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unusable_image": {
+    "defaultMessage": "‮{name} ɯnsʇ qǝ ɐu ıɯɐƃǝ ʇɥɐʇ ʎon ndʅoɐpǝp ɐup ʇɥɐʇ ɥɐs ɟıuısɥǝp dɹoɔǝssıuƃ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "health.unavailable": {
