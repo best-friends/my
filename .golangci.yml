@@ -8,6 +8,7 @@ run:
 linters:
   default: standard
   enable:
+    - depguard
     - errorlint
     - gocritic
     - gosec
@@ -16,6 +17,189 @@ linters:
     - revive
     - unconvert
   settings:
+    # Architecture boundaries (ADR-0002, docs/architecture/overview.md §2 and §6).
+    # A file matched by several rules must satisfy all of them.
+    # - domain/<module>: standard library and its own module's domain only.
+    # - app/<module>: standard library, its own module's domain, and any module's app package
+    #   (the public API through which modules reach each other).
+    # - interface/*, adapter/*, pkg/testkit: anything except the layers listed under deny.
+    # - platform and cmd: anything (composition root). Nothing imports cmd.
+    # Third-party packages for domain/app must be added to the allow list explicitly.
+    depguard:
+      rules:
+        no-cmd:
+          list-mode: lax
+          files:
+            - $all
+          deny:
+            - pkg: github.com/best-friends/my/cmd
+              desc: entrypoints are leaves; move shared code into internal/platform
+        domain-identity:
+          list-mode: strict
+          files:
+            - "**/internal/domain/identity/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/identity
+        app-identity:
+          list-mode: strict
+          files:
+            - "**/internal/app/identity/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/identity
+            - github.com/best-friends/my/internal/app
+        domain-account:
+          list-mode: strict
+          files:
+            - "**/internal/domain/account/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/account
+        app-account:
+          list-mode: strict
+          files:
+            - "**/internal/app/account/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/account
+            - github.com/best-friends/my/internal/app
+        domain-content:
+          list-mode: strict
+          files:
+            - "**/internal/domain/content/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/content
+        app-content:
+          list-mode: strict
+          files:
+            - "**/internal/app/content/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/content
+            - github.com/best-friends/my/internal/app
+        domain-graph:
+          list-mode: strict
+          files:
+            - "**/internal/domain/graph/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/graph
+        app-graph:
+          list-mode: strict
+          files:
+            - "**/internal/app/graph/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/graph
+            - github.com/best-friends/my/internal/app
+        domain-timeline:
+          list-mode: strict
+          files:
+            - "**/internal/domain/timeline/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/timeline
+        app-timeline:
+          list-mode: strict
+          files:
+            - "**/internal/app/timeline/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/timeline
+            - github.com/best-friends/my/internal/app
+        domain-notification:
+          list-mode: strict
+          files:
+            - "**/internal/domain/notification/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/notification
+        app-notification:
+          list-mode: strict
+          files:
+            - "**/internal/app/notification/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/notification
+            - github.com/best-friends/my/internal/app
+        domain-federation:
+          list-mode: strict
+          files:
+            - "**/internal/domain/federation/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/federation
+        app-federation:
+          list-mode: strict
+          files:
+            - "**/internal/app/federation/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/federation
+            - github.com/best-friends/my/internal/app
+        domain-moderation:
+          list-mode: strict
+          files:
+            - "**/internal/domain/moderation/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/moderation
+        app-moderation:
+          list-mode: strict
+          files:
+            - "**/internal/app/moderation/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/moderation
+            - github.com/best-friends/my/internal/app
+        domain-instance:
+          list-mode: strict
+          files:
+            - "**/internal/domain/instance/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/instance
+        app-instance:
+          list-mode: strict
+          files:
+            - "**/internal/app/instance/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/instance
+            - github.com/best-friends/my/internal/app
+        interface:
+          list-mode: lax
+          files:
+            - "**/internal/interface/**"
+          deny:
+            - pkg: github.com/best-friends/my/internal/adapter
+              desc: interface code reaches adapters only through application ports
+            - pkg: github.com/best-friends/my/internal/platform
+              desc: only cmd imports the composition root
+            - pkg: github.com/best-friends/my/pkg/testkit
+              desc: testkit is for adapter contract tests
+        adapter:
+          list-mode: lax
+          files:
+            - "**/internal/adapter/**"
+          deny:
+            - pkg: github.com/best-friends/my/internal/interface
+              desc: adapters implement application ports and never call inbound interfaces
+            - pkg: github.com/best-friends/my/internal/platform
+              desc: only cmd imports the composition root
+        testkit:
+          list-mode: lax
+          files:
+            - "**/pkg/testkit/**"
+          deny:
+            - pkg: github.com/best-friends/my/internal/interface
+              desc: testkit depends only on application ports and domain types
+            - pkg: github.com/best-friends/my/internal/adapter
+              desc: testkit depends only on application ports and domain types
+            - pkg: github.com/best-friends/my/internal/platform
+              desc: testkit depends only on application ports and domain types
     nolintlint:
       require-explanation: true
       require-specific: true

@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+// Command my is the single server binary. It dispatches to subcommands; `my version` prints the build version.
+package main
+
+import (
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"runtime/debug"
+)
+
+// version is the release version, set at build time with
+// -ldflags "-X main.version=<version>". When it is empty, the module version
+// recorded by the Go toolchain is used, falling back to "dev".
+var version string
+
+func main() {
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+// run executes the subcommand named by args[0] and returns the process exit code.
+func run(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("my", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	fs.Usage = func() { usage(stderr) }
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
+		return 2
+	}
+
+	switch cmd := fs.Arg(0); cmd {
+	case "version":
+		vfs := flag.NewFlagSet("my version", flag.ContinueOnError)
+		vfs.SetOutput(stderr)
+		if err := vfs.Parse(fs.Args()[1:]); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return 0
+			}
+			return 2
+		}
+		if vfs.NArg() > 0 {
+			_, _ = fmt.Fprintf(stderr, "my version: unexpected argument %q\n", vfs.Arg(0))
+			return 2
+		}
+		_, _ = fmt.Fprintf(stdout, "my %s\n", resolveVersion(version, debug.ReadBuildInfo))
+		return 0
+	case "":
+		usage(stderr)
+		return 2
+	default:
+		_, _ = fmt.Fprintf(stderr, "my: unknown command %q\n\n", cmd)
+		usage(stderr)
+		return 2
+	}
+}
+
+func usage(w io.Writer) {
+	_, _ = fmt.Fprint(w, `Usage: my <command>
+
+Commands:
+  version   Print the version
+`)
+}
+
+// resolveVersion returns the injected version, else the module version from
+// the build info (set by `go install module@version`), else "dev".
+func resolveVersion(injected string, readBuildInfo func() (*debug.BuildInfo, bool)) string {
+	if injected != "" {
+		return injected
+	}
+	if info, ok := readBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return "dev"
+}

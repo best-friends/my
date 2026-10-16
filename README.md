@@ -3,7 +3,7 @@
 ActivityPub 互換のマイクロブログサーバー。Go 製。Google Cloud / AWS / セルフホスト（Docker, microk8s）で、
 できる限り低コストに運営できることを目指す OSS です。
 
-> **Status: v0 の設計中（M0: Design & Harness）。** まだ動くコードはありません。
+> **Status: v0 の開発中（M1: Walking Skeleton）。** まだ利用できる機能はありません。
 > v0 の間は DB の作り直しを含む破壊的変更が頻繁に入ります（[ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)）。
 
 ## 目指すもの

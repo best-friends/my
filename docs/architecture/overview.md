@@ -64,6 +64,18 @@ Remote servers ──AP──►│                               │
 - モジュール間はアプリケーション層の公開 API（ユースケース / イベント）経由でのみ参照する。テーブルの直接参照は禁止。
 - インターフェイス層（Client API / AP）はアプリケーション層のユースケースを呼ぶだけで、ドメインロジックを持たない。
 - **公開範囲の判定（`canView(viewer, status)`）はドメイン層の 1 箇所に集約**（NFR-SEC-4）。公開範囲は `public` / `local` / `unlisted` / `private` / `direct`（[ADR-0017](../adr/0017-visibility-local.md)）。
+- import の方向は golangci-lint の depguard（`.golangci.yml`）で `make check` と CI が検査する。§6 の各ディレクトリについて:
+
+  | パッケージ | import してよいもの |
+  | --- | --- |
+  | `internal/domain/<module>` | 標準ライブラリと自モジュールの `domain` だけ |
+  | `internal/app/<module>` | 標準ライブラリ、自モジュールの `domain`、各モジュールの `app`（モジュール間の唯一の経路） |
+  | `internal/interface/*` | `app` と `domain`（`adapter` と `platform` は不可） |
+  | `internal/adapter/*` | `app` のポートと `domain`（`interface` と `platform` は不可） |
+  | `pkg/testkit` | `app` と `domain`（`interface` / `adapter` / `platform` は不可） |
+  | `internal/platform`, `cmd/*` | すべて（composition root）。`cmd/` はどこからも import しない |
+
+  `domain` と `app` で外部ライブラリを使うときは、`.golangci.yml` の allow に明示的に追加する。
 
 ## 3. ポート一覧
 
