@@ -113,7 +113,7 @@ func TestVerifyAccountCredentialsHasTheSource(t *testing.T) {
 	avatar, mediaID, followers, following := "https://social.example/media/"+avatarID+"/full.png", avatarID, 2, 1
 	want := clientapi.CredentialAccount{
 		Id: aliceAccountID, Username: "alice", Acct: "alice", DisplayName: "Alice", Note: "<p>hi</p>",
-		Url: "https://social.example/@alice", Locked: true, Discoverable: true, CreatedAt: createdAt, Avatar: &avatar,
+		Url: "https://social.example/@alice", Locked: true, Discoverable: true, CreatedAt: createdAt, AvatarUrl: &avatar,
 		FollowersCount: &followers, FollowingCount: &following,
 		Fields: []clientapi.ProfileField{{Name: "web", Value: `<p><a href="https://alice.example">alice.example</a></p>`}},
 		Source: clientapi.AccountSource{

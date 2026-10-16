@@ -54,8 +54,8 @@ export function useProfileForm() {
   const [nextFieldKey, setNextFieldKey] = useState(account.source.fields.length);
   const [locked, setLocked] = useState(account.locked);
   const [bot, setBot] = useState(account.bot);
-  const avatar = useImageControl(account.avatar, "thumbnail");
-  const header = useImageControl(account.header, "full");
+  const avatar = useImageControl(account.avatar_url, "thumbnail");
+  const header = useImageControl(account.header_url, "full");
 
   const save = useMutation({
     ...updateProfileMutation(api),
@@ -110,7 +110,7 @@ export function useProfileForm() {
 }
 
 /** The state of one image of the profile, and its upload. */
-function useImageControl(savedUrl: CredentialAccount["avatar"], rendition: "thumbnail" | "full") {
+function useImageControl(savedUrl: CredentialAccount["avatar_url"], rendition: "thumbnail" | "full") {
   const api = useApi();
   const t = useT();
   const [image, setImage] = useState<ImageChange>({ kind: "keep" });

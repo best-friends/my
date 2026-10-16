@@ -207,6 +207,30 @@ func (r *MediaRepository) ListProcessingResults(ctx context.Context, mediaID str
 	return results, nil
 }
 
+// ListReadyVariants implements content.MediaRepository.
+func (r *MediaRepository) ListReadyVariants(ctx context.Context, ids []string, kind content.MediaVariantKind) ([]appcontent.FileVariant, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	rows, err := r.db.reader().ListReadyMediaVariants(ctx, postgresgen.ListReadyMediaVariantsParams{Ids: ids, Kind: string(kind)})
+	if err != nil {
+		return nil, wrap(err, "list ready media variants")
+	}
+	out := make([]appcontent.FileVariant, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, appcontent.FileVariant{
+			File: content.MediaFile{
+				ID: row.ID, OwnerAccountID: row.OwnerAccountID, Origin: content.MediaOrigin(row.Origin), CreatedAt: utc(row.CreatedAt),
+			},
+			Variant: content.MediaVariant{
+				ResultID: row.ResultID, Kind: content.MediaVariantKind(row.Kind), BlobKey: row.BlobKey, ContentType: row.ContentType,
+				FileSize: row.FileSize, Width: int(row.Width), Height: int(row.Height),
+			},
+		})
+	}
+	return out, nil
+}
+
 // FindFocus implements content.MediaRepository.
 func (r *MediaRepository) FindFocus(ctx context.Context, mediaID string) (content.MediaFocus, error) {
 	row, err := r.db.reader().GetMediaFocus(ctx, mediaID)

@@ -130,6 +130,20 @@ describe("a status card", () => {
     expect(article).toHaveAccessibleDescription("Post 1");
   });
 
+  test("shows the author's avatar, and the first letter of the name without one", async () => {
+    const pictured = status(1, { account: { ...timelineStatusFixture.account, avatar_url: "https://my.example/media/avatar/full.png" } });
+    const plain = status(2);
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([pictured, plain]))));
+    await renderApp({ path: "/local" });
+
+    const [withAvatar, withoutAvatar] = await screen.findAllByRole("article");
+    if (withAvatar === undefined || withoutAvatar === undefined) throw new Error("want two articles");
+    // The avatar is decorative (alt=""): the name is next to it.
+    expect(within(withAvatar).getByRole("presentation")).toHaveAttribute("src", "https://my.example/media/avatar/full.png");
+    expect(within(withoutAvatar).queryByRole("presentation")).not.toBeInTheDocument();
+    expect(within(withoutAvatar).getByText("B")).toBeInTheDocument();
+  });
+
   test("hides a post behind its content warning, and its sensitive media behind their own toggle", async () => {
     const warned = status(1, {
       spoiler_text: "Cake",

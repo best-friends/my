@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/domain/account"
 )
 
@@ -36,8 +37,52 @@ func cacheFor(v *Viewer) *string {
 	return &c
 }
 
-// newAccount presents an actor as the Account schema, without the follow counts.
-func (s *Server) newAccount(a appaccount.Actor) Account {
+// profileImages are the URLs of the avatars and headers of the accounts of one response, read
+// together by Server.profileImages; a nil value has none.
+type profileImages map[appcontent.ImageRef]string
+
+// url returns the URL of an account's image, or nil when it has none to show.
+func (p profileImages) url(accountID, mediaID string) *string {
+	if mediaID == "" {
+		return nil
+	}
+	if u, ok := p[appcontent.ImageRef{AccountID: accountID, MediaID: mediaID}]; ok {
+		return &u
+	}
+	return nil
+}
+
+// profileImages reads the avatars and headers of actors with one call of the media use cases,
+// so that a response presents a page of accounts without a lookup per account.
+func (s *Server) profileImages(ctx context.Context, actors ...appaccount.Actor) (profileImages, error) {
+	if s.o.Media == nil {
+		return nil, nil
+	}
+	var refs []appcontent.ImageRef
+	for _, a := range actors {
+		p := a.Profile
+		if p == nil {
+			continue
+		}
+		for _, id := range []string{p.AvatarMediaID, p.HeaderMediaID} {
+			if id != "" {
+				refs = append(refs, appcontent.ImageRef{AccountID: a.Account.ID, MediaID: id})
+			}
+		}
+	}
+	if len(refs) == 0 {
+		return nil, nil
+	}
+	urls, err := s.o.Media.ImageURLs(ctx, refs)
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: the profile images: %w", err)
+	}
+	return urls, nil
+}
+
+// newAccount presents an actor as the Account schema, without the follow counts. imgs holds the
+// actor's images (Server.profileImages).
+func (s *Server) newAccount(a appaccount.Actor, imgs profileImages) Account {
 	out := Account{Id: a.Account.ID, CreatedAt: a.Account.CreatedAt, Url: a.Account.URI, Fields: []ProfileField{}}
 	switch {
 	case a.Local != nil:
@@ -55,14 +100,32 @@ func (s *Server) newAccount(a appaccount.Actor) Account {
 		for _, f := range p.Fields {
 			out.Fields = append(out.Fields, ProfileField{Name: f.Name, Value: f.ValueHTML})
 		}
+		out.AvatarUrl, out.HeaderUrl = imgs.url(a.Account.ID, p.AvatarMediaID), imgs.url(a.Account.ID, p.HeaderMediaID)
 	}
 	return out
+}
+
+// newAccounts presents actors in order as the Account schema, reading their images together.
+func (s *Server) newAccounts(ctx context.Context, actors []appaccount.Actor) ([]Account, error) {
+	imgs, err := s.profileImages(ctx, actors...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Account, 0, len(actors))
+	for _, a := range actors {
+		out = append(out, s.newAccount(a, imgs))
+	}
+	return out, nil
 }
 
 // newProfile presents an actor as the Account schema with its follow counts, the answer of
 // the account's own endpoints.
 func (s *Server) newProfile(ctx context.Context, a appaccount.Actor) (Account, error) {
-	out := s.newAccount(a)
+	imgs, err := s.profileImages(ctx, a)
+	if err != nil {
+		return Account{}, err
+	}
+	out := s.newAccount(a, imgs)
 	c, err := s.o.Graph.Counters(ctx, a.Account.ID)
 	if err != nil {
 		return Account{}, fmt.Errorf("clientapi: the follow counts of %s: %w", a.Account.ID, err)

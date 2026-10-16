@@ -1072,6 +1072,17 @@ export interface components {
             /** @description The profile's metadata fields, in their order; empty when there are none. */
             fields: components["schemas"]["ProfileField"][];
             /**
+             * Format: uri
+             * @description The URL of the avatar image; omitted when the account has none, or its image is not
+             *     processed yet or could not be processed. Clients show a placeholder instead.
+             */
+            avatar_url?: string;
+            /**
+             * Format: uri
+             * @description The URL of the header image; omitted when there is none, as `avatar_url` is.
+             */
+            header_url?: string;
+            /**
              * @description The number of accounts that actively follow the account, as far as the instance
              *     knows. Present on the account's own endpoints (`getAccount`, `lookupAccount`,
              *     `verifyAccountCredentials`) and left out where accounts are listed or embedded.
@@ -1475,16 +1486,6 @@ export interface components {
         };
         /** @description The authenticated user's own account, with what only its owner sees. */
         CredentialAccount: components["schemas"]["Account"] & {
-            /**
-             * Format: uri
-             * @description The URL of the avatar image; omitted when there is none.
-             */
-            avatar?: string;
-            /**
-             * Format: uri
-             * @description The URL of the header image; omitted when there is none.
-             */
-            header?: string;
             /** @description Whether the account may be suggested to others and listed in directories. */
             discoverable: boolean;
             /** @description Whether the account's public posts may be indexed for search. */

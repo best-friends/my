@@ -134,7 +134,7 @@ function AccountRow({ account, details, children }: AccountRowProps) {
   return (
     <div className="flex flex-col gap-3 @md:flex-row @md:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Avatar name={name} decorative />
+        <Avatar src={account.avatar_url} name={name} decorative />
         <p className="flex min-w-0 flex-col">
           {/* The user's own text, in any language (web-client.md Y10). */}
           <span dir="auto" className="truncate font-semibold">

@@ -24,6 +24,8 @@ const account: Status["account"] = {
 
 /** A picture as a data URL, so that no request leaves the page. */
 const picture = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#4f6d8f"/></svg>')}`;
+/** An avatar, also a data URL. */
+const avatar = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#8f4f6d"/></svg>')}`;
 
 function status(n: number, overrides: Partial<Status> = {}): Status {
   return {
@@ -57,7 +59,7 @@ function firstPage(): StatusPage {
       status(2, { account: { ...account, username: "carol", acct: "carol", display_name: "Carol" }, content: "", boost: status(20) }),
       status(3, { spoiler_text: "Food", sensitive: true, media_attachments: [media("m1", "A cake")] }),
       status(4, { media_attachments: [media("m2", "A blue square"), media("m3", undefined)] }),
-      status(5),
+      status(5, { account: { ...account, avatar_url: avatar } }),
     ],
     next_cursor: "page-2",
   };
@@ -155,6 +157,16 @@ test.describe("the local timeline", () => {
             - time
           - paragraph
     `);
+  });
+
+  test("shows the author's avatar, and the first letter of the name without one", async ({ page }) => {
+    const articles = page.getByRole("feed").getByRole("article");
+    // The avatar is decorative (alt=""), named by the author's name next to it.
+    const image = articles.nth(4).getByRole("presentation");
+    await expect(image).toHaveAttribute("src", avatar);
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(articles.nth(0).getByRole("presentation")).toHaveCount(0);
+    await expect(articles.nth(0).getByText("B", { exact: true })).toBeVisible();
   });
 
   test("loads the next page at the end, and then knows its size", async ({ page }) => {
