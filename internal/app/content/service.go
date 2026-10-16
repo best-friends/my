@@ -54,6 +54,19 @@ var (
 	ErrInvalidMediaDescription = errors.New("content: the media description is not valid")
 )
 
+// TextTooLongError is the ErrTextTooLong of one post, with the limit in effect.
+type TextTooLongError struct {
+	// Length is the CountCharacters of the post, Max the max_status_length setting.
+	Length, Max int
+}
+
+func (e *TextTooLongError) Error() string {
+	return fmt.Sprintf("%v: %d characters, at most %d", ErrTextTooLong, e.Length, e.Max)
+}
+
+// Unwrap returns ErrTextTooLong.
+func (e *TextTooLongError) Unwrap() error { return ErrTextTooLong }
+
 // Limits of the media attached to a local status (FR-105).
 const (
 	// MaxAttachments is the number of media files one status may attach.
@@ -480,7 +493,7 @@ func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in T
 		return preparedText{}, err
 	}
 	if n := CountCharacters(in.Text, in.SpoilerText); n > limit {
-		return preparedText{}, fmt.Errorf("%w: %d characters, at most %d", ErrTextTooLong, n, limit)
+		return preparedText{}, &TextTooLongError{Length: n, Max: limit}
 	}
 	language, err := s.language(ctx, author, in.Language)
 	if err != nil {

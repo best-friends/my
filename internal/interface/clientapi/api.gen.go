@@ -21,25 +21,25 @@ import (
 
 // Defines values for MediaAttachmentType.
 const (
-	Audio   MediaAttachmentType = "audio"
-	Gifv    MediaAttachmentType = "gifv"
-	Image   MediaAttachmentType = "image"
-	Unknown MediaAttachmentType = "unknown"
-	Video   MediaAttachmentType = "video"
+	MediaAttachmentTypeAudio   MediaAttachmentType = "audio"
+	MediaAttachmentTypeGifv    MediaAttachmentType = "gifv"
+	MediaAttachmentTypeImage   MediaAttachmentType = "image"
+	MediaAttachmentTypeUnknown MediaAttachmentType = "unknown"
+	MediaAttachmentTypeVideo   MediaAttachmentType = "video"
 )
 
 // Valid indicates whether the value is a known member of the MediaAttachmentType enum.
 func (e MediaAttachmentType) Valid() bool {
 	switch e {
-	case Audio:
+	case MediaAttachmentTypeAudio:
 		return true
-	case Gifv:
+	case MediaAttachmentTypeGifv:
 		return true
-	case Image:
+	case MediaAttachmentTypeImage:
 		return true
-	case Unknown:
+	case MediaAttachmentTypeUnknown:
 		return true
-	case Video:
+	case MediaAttachmentTypeVideo:
 		return true
 	default:
 		return false
@@ -48,25 +48,25 @@ func (e MediaAttachmentType) Valid() bool {
 
 // Defines values for Visibility.
 const (
-	Direct   Visibility = "direct"
-	Local    Visibility = "local"
-	Private  Visibility = "private"
-	Public   Visibility = "public"
-	Unlisted Visibility = "unlisted"
+	VisibilityDirect   Visibility = "direct"
+	VisibilityLocal    Visibility = "local"
+	VisibilityPrivate  Visibility = "private"
+	VisibilityPublic   Visibility = "public"
+	VisibilityUnlisted Visibility = "unlisted"
 )
 
 // Valid indicates whether the value is a known member of the Visibility enum.
 func (e Visibility) Valid() bool {
 	switch e {
-	case Direct:
+	case VisibilityDirect:
 		return true
-	case Local:
+	case VisibilityLocal:
 		return true
-	case Private:
+	case VisibilityPrivate:
 		return true
-	case Public:
+	case VisibilityPublic:
 		return true
-	case Unlisted:
+	case VisibilityUnlisted:
 		return true
 	default:
 		return false

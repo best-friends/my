@@ -98,6 +98,8 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// Statuses presents statuses, their threads and history, and bookmarks to a viewer.
+	Statuses *content.Reader
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
 
@@ -319,6 +321,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	a.Statuses = content.NewReader(content.ReaderDeps{
+		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
+		Restrictions: content.NoRestrictions{}, Media: a.Media,
+	})
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
 		Repository: statuses, Accounts: a.Accounts, Restrictions: content.NoRestrictions{}, Media: a.Media,
@@ -349,6 +355,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
 		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
+		Statuses: a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
 		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
