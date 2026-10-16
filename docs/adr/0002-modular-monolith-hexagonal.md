@@ -26,7 +26,7 @@ RDB・キュー・ストレージ・実行環境を利用者が差し替えら�
 
 3 を採用する。
 
-- 層: `domain`（純粋）→ `application`（ユースケース・ポート定義）→ `interface`（Mastodon API / ActivityPub / Admin）/ `adapters`（ポート実装）→ `entrypoints`（ターゲット別の組み立て）。
+- 層: `domain`（純粋）→ `application`（ユースケース・ポート定義）→ `interface`（Client API / ActivityPub / Admin）/ `adapters`（ポート実装）→ `entrypoints`（ターゲット別の組み立て）。
 - モジュール（`identity` `account` `content` `graph` `timeline` `notification` `federation` `moderation` `instance`）は
   アプリケーション層の公開 API 経由でのみ相互参照する。DB テーブルの所有者はモジュール単位で決める。
 - 依存性注入はコンストラクタ / ファクトリ関数で明示的に行い、DI コンテナは使わない。組み立ては entrypoint の 1 箇所（composition root）。

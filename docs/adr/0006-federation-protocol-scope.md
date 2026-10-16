@@ -32,6 +32,7 @@ Mastodon 4.x、Misskey、GoToSocial、Akkoma（Pleroma 系）。余力があれ�
 - Inbox は署名検証まで同期、処理は非同期（NFR-PERF-4）。
 - **HttpClient ポートに SSRF ガード** を組み込み、すべての外部取得を通す（NFR-SEC-1）。
 - 受信した HTML は許可リストでサニタイズ（NFR-SEC-2）。
+- 公開範囲 `local` の配送先・オブジェクト取得の制限は [ADR-0017](0017-visibility-local.md) に従う。
 - 配送はドメイン単位に shared inbox へ集約。連続失敗ドメインはサーキットブレーカーで一時停止し、`InstanceHealth` に記録。
 - 互換性のためのテストは「実サーバーから採取した JSON フィクスチャ」を `testkit` に蓄積して回帰テストにする。
   実サーバーとのライブ相互運用テスト（docker compose で Mastodon / GoToSocial を起動）は nightly ジョブとする。

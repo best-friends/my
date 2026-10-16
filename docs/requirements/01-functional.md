@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | FR-001 | 登録モード: `open` / `approval`（承認制）/ `invite`（招待制）/ `closed`（運営者のみ）をインスタンス設定で切り替えられる | M |
 | FR-002 | メールアドレス + パスワードでの登録・ログイン（メール検証あり。Mailer 未設定時は運営者承認で代替） | M |
-| FR-003 | OAuth 2.0（Authorization Code + PKCE）でクライアントアプリを認可できる（Mastodon 互換のアプリ登録を含む） | M |
+| FR-003 | OAuth 2.0（Authorization Code + PKCE）で自前クライアントを認可できる（将来のサードパーティにも開ける設計） | M |
 | FR-004 | パスキー（WebAuthn）ログイン | C |
 | FR-005 | TOTP 二要素認証 | S |
 | FR-006 | プロフィール: 表示名・自己紹介・アバター・ヘッダー・プロフィール補足情報（key-value）・鍵アカウント・bot フラグ | M |
@@ -21,7 +21,7 @@
 | ID | 要件 | 優先度 |
 | --- | --- | --- |
 | FR-101 | テキスト投稿（文字数上限はインスタンス設定、既定 500） | M |
-| FR-102 | 公開範囲: `public` / `unlisted` / `private`（フォロワー限定）/ `direct` | M |
+| FR-102 | 公開範囲: `public` / `local`（ローカルタイムラインに載るが外部へはフォロワーにだけ届く。[ADR-0017](../adr/0017-visibility-local.md)）/ `unlisted` / `private`（フォロワー限定）/ `direct` | M |
 | FR-103 | メンション・ハッシュタグ・URL の自動リンク | M |
 | FR-104 | Content Warning（CW）とセンシティブフラグ | M |
 | FR-105 | 画像の添付（最大 4 枚、代替テキスト必須化オプション）。動画・音声は S | M |
@@ -45,7 +45,7 @@
 | FR-204 | プロフィール（ユーザー別）タイムライン | M |
 | FR-205 | 通知: フォロー・フォローリクエスト・メンション・ブースト・お気に入り | M |
 | FR-206 | Web Push 通知 | S |
-| FR-207 | ストリーミング（Mastodon Streaming API 互換、SSE / WebSocket） | C |
+| FR-207 | リアルタイム更新（SSE。[ADR-0016](../adr/0016-client-api-style.md)） | S |
 | FR-208 | 言語によるタイムラインのフィルタ | S |
 | FR-209 | リスト・キーワードフィルタ | W |
 
@@ -78,9 +78,9 @@
 
 | ID | 要件 | 優先度 |
 | --- | --- | --- |
-| FR-501 | Mastodon Client API のサブセット（v0 対象エンドポイント一覧は別途定義）を実装し、既存アプリ（Ivory, Tusky, Elk, Phanpy など）から利用できる | M |
-| FR-502 | 自前クライアント向けの拡張 API は名前空間を分けて提供する | S |
-| FR-503 | API レスポンスのエラーメッセージは `Accept-Language` に応じてローカライズする | S |
+| FR-501 | 独自のクライアント API（スキーマから Go サーバーと TS クライアントを生成。[ADR-0007](../adr/0007-client-api.md), [ADR-0016](../adr/0016-client-api-style.md)） | M |
+| FR-502 | Mastodon Client API 互換は提供しない | — |
+| FR-503 | API のエラーメッセージは `Accept-Language` に応じてローカライズする | S |
 
 ## クライアント
 
