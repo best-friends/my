@@ -1,0 +1,34 @@
+{
+  "greeting": {
+    "defaultMessage": "こんにちは、{name}さん！",
+    "description": "Shown at the top of the home timeline. name = display name."
+  },
+  "notifications.unread": {
+    "defaultMessage": "{count, plural, =0 {未読の通知はありません} other {未読の通知が#件あります}}",
+    "description": "Badge tooltip on the notifications tab."
+  },
+  "post.boosted_own": {
+    "defaultMessage": "{gender, select, other {{name}さんが自分の投稿をブーストしました}}",
+    "description": "Notification line. gender comes from the account's pronoun setting."
+  },
+  "follow.rank": {
+    "defaultMessage": "あなたは{rank, selectordinal, other {#番目}}のフォロワーです",
+    "description": "Shown after following an account."
+  },
+  "profile.followers": {
+    "defaultMessage": "フォロワー {count, number} 人",
+    "description": "Follower counter on a profile header."
+  },
+  "post.favourited_by": {
+    "defaultMessage": "{count, plural, offset:1 =0 {まだお気に入りされていません} =1 {{name}さんがお気に入りしました} other {{name}さんほか#人がお気に入りしました}}",
+    "description": "name = most recent favouriter; count = total favourites including them."
+  },
+  "post.reply_summary": {
+    "defaultMessage": "{visibility, select, public {{count, plural, other {公開返信 #件}}} other {{count, plural, other {返信 #件}}}}",
+    "description": "Nested select + plural."
+  },
+  "compose.hint": {
+    "defaultMessage": "{name}さんの番です。波かっこそのものは '{'braces'}' と入力します。",
+    "description": "Apostrophe escaping test (ICU DOUBLE_OPTIONAL)."
+  }
+}
