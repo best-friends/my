@@ -5,20 +5,9 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
 import type { Status } from "./api/timelines";
-import {
-  apiBase,
-  eventStreamResponse,
-  oauthPaths,
-  preferencesFixture,
-  problem,
-  resumableSession,
-  statusPage,
-  streamingServer,
-  type TestEventStream,
-  timelineStatusFixture,
-  tokenResponse,
-  viewerFixture,
-} from "../../test/msw/handlers";
+import { apiBase, oauthPaths, problem, resumableSession, tokenResponse } from "../../test/msw/http";
+import { eventStreamResponse, streamingServer, type TestEventStream } from "../../test/msw/streaming";
+import { preferencesFixture, statusPage, timelineStatusFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 

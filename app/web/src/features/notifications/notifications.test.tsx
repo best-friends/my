@@ -4,7 +4,9 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
-import { apiBase, notificationsFixture, otherAccountFixture, problem, resumableSession, statusFixture } from "../../test/msw/handlers";
+import { apiBase, problem, resumableSession } from "../../test/msw/http";
+import { notificationsFixture } from "./test/handlers";
+import { otherAccountFixture, statusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Notification, NotificationMarker, NotificationType } from "./api/notifications";

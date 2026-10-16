@@ -5,16 +5,8 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
-import {
-  apiBase,
-  otherAccountFixture,
-  problem,
-  relationshipFixture,
-  resumableSession,
-  statusPage,
-  timelineStatusFixture,
-  viewerFixture,
-} from "../../test/msw/handlers";
+import { apiBase, problem, resumableSession } from "../../test/msw/http";
+import { otherAccountFixture, relationshipFixture, statusPage, timelineStatusFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Relationship } from "./api/accounts";

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { http, HttpResponse } from "msw";
 import { expect, test } from "vitest";
-import { apiBase, instanceFixture } from "./handlers";
-import { server } from "./server";
+import { instanceFixture } from "../fixtures";
+import { apiBase } from "./http";
+import { defaultHandlers, server } from "./server";
 
 const instanceURL = new URL(`${apiBase}/instance`, window.location.href);
 
@@ -26,4 +27,10 @@ test("a test overrides a handler with server.use", async () => {
   const response = await fetch(instanceURL);
 
   expect(response.status).toBe(503);
+});
+
+test("each operation has one default handler, so the order of the modules in handlers.ts does not matter", () => {
+  const routes = defaultHandlers.map((handler) => `${String(handler.info.method)} ${String(handler.info.path)}`);
+
+  expect(routes.filter((route, i) => routes.indexOf(route) !== i)).toEqual([]);
 });

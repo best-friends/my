@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from "vitest";
-import { statusFixture, statusPage, viewerStatusFixture } from "../../../test/msw/handlers";
+import { statusFixture, statusPage, viewerStatusFixture } from "../../../test/fixtures";
 import { forPost, updateStatuses, withRelation, withRelationFrom } from "./cache";
 
 const post = statusFixture("0192f0c4-7a8e-7000-8000-0000000000c1");

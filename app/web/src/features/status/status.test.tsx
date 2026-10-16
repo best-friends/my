@@ -4,17 +4,8 @@
 import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import {
-  apiBase,
-  oauthPaths,
-  problem,
-  statusFixture,
-  statusPage,
-  timelineStatusFixture,
-  tokenResponse,
-  viewerFixture,
-  viewerStatusFixture,
-} from "../../test/msw/handlers";
+import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
+import { statusFixture, statusPage, timelineStatusFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Status } from "./api/status";

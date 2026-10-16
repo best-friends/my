@@ -1,0 +1,154 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// The fixtures that more than one feature's tests and MSW handlers use: the instance, the accounts and the
+// posts. They take their types from the TypeScript types generated from api/openapi.yaml (web-client.md S9);
+// API types are never written by hand here. A fixture that only one feature uses lives in that feature's
+// test/handlers.ts.
+import type { components } from "../lib/api/schema.gen";
+
+/** The schemas of api/openapi.yaml, for the fixtures and the MSW handlers of the features. */
+export type Schemas = components["schemas"];
+
+/** A valid `Instance` for GET /instance (operationId getInstance). */
+export const instanceFixture: Schemas["Instance"] = {
+  domain: "my.example",
+  name: "my example",
+  version: "0.0.0-test",
+  source_url: "https://github.com/best-friends/my",
+  registrations: { mode: "approval" },
+  limits: { max_post_characters: 500 },
+};
+
+/** The signed-in user's `CredentialAccount` for GET /accounts/verify_credentials (operationId verifyAccountCredentials). */
+export const viewerFixture: Schemas["CredentialAccount"] = {
+  id: "0192f0c4-7a8e-7000-8000-000000000001",
+  username: "alice",
+  acct: "alice",
+  display_name: "Alice",
+  note: "",
+  fields: [],
+  url: "https://my.example/@alice",
+  locked: false,
+  bot: false,
+  created_at: "2026-10-01T00:00:00Z",
+  discoverable: true,
+  indexable: true,
+  source: { note: "", fields: [] },
+  posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
+};
+
+/**
+ * An `Account` of another user named `name` on `domain` (another server by default); `n` makes its ID
+ * unique. An account of this instance has its username as its acct.
+ */
+export function accountFixture(n: number, name: string, domain = "remote.example"): Schemas["Account"] {
+  const username = name.toLowerCase();
+  return {
+    id: `0192f0c4-7a8e-7000-8000-${String(n).padStart(12, "0")}`,
+    username,
+    acct: domain === instanceFixture.domain ? username : `${username}@${domain}`,
+    display_name: name,
+    note: "",
+    fields: [],
+    url: `https://${domain}/@${username}`,
+    locked: false,
+    bot: false,
+    created_at: "2026-10-01T00:00:00Z",
+  };
+}
+
+/** Bob, another local account: the author of the posts of the timelines and notifications. */
+export const otherAccountFixture: Schemas["Account"] = accountFixture(2, "Bob", instanceFixture.domain);
+
+/** An account of another server that the instance knows, which the viewer does not follow and is not followed by. */
+export const remoteAccountFixture: Schemas["Account"] = accountFixture(3, "Carol");
+
+/** The `Relationship` with account `id` when the viewer has none, or with `overrides`. */
+export function relationshipFixture(id: string, overrides: Partial<Schemas["Relationship"]> = {}): Schemas["Relationship"] {
+  return {
+    id,
+    following: false,
+    requested: false,
+    followed_by: false,
+    requested_by: false,
+    show_boosts: true,
+    notify: false,
+    blocking: false,
+    muting: false,
+    muting_notifications: false,
+    ...overrides,
+  };
+}
+
+/** The signed-in user's `Preferences` for GET /preferences (operationId getPreferences). */
+export const preferencesFixture: Schemas["Preferences"] = {
+  locale: "en",
+  time_zone: "UTC",
+  default_visibility: "public",
+  default_post_language: "en",
+  require_media_description: false,
+  timeline_languages: [],
+};
+
+/**
+ * A `MediaAttachment` with `id` in `state`; a ready one has its renditions and blurhash, as GET /media/{id}
+ * answers once the server has processed the file.
+ */
+export function mediaFixture(id: string, state: Schemas["MediaAttachment"]["state"] = "ready", description?: string): Schemas["MediaAttachment"] {
+  const variant = (size: string) => ({ url: `https://my.example/media/${id}/${size}.jpg`, content_type: "image/jpeg", width: 640, height: 360, size: 1000 });
+  return {
+    id,
+    type: "image",
+    state,
+    meta: { width: 640, height: 360, focus: { x: 0, y: 0 } },
+    ...(state === "ready" ? { blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj", variants: { full: variant("full"), thumbnail: variant("thumbnail") } } : {}),
+    ...(description === undefined ? {} : { description }),
+  };
+}
+
+/** A public English `Status` `id` by `account` with no media, mentions, tags or counts, with `overrides`. */
+function postFixture(account: Schemas["Account"], id: string, overrides: Partial<Schemas["Status"]>): Schemas["Status"] {
+  return {
+    id,
+    uri: `https://my.example/users/${account.username}/statuses/${id}`,
+    account,
+    content: "",
+    spoiler_text: "",
+    sensitive: false,
+    visibility: "public",
+    language: "en",
+    created_at: "2026-10-16T09:00:00Z",
+    media_attachments: [],
+    mentions: [],
+    tags: [],
+    replies_count: 0,
+    boosts_count: 0,
+    favourites_count: 0,
+    ...overrides,
+  };
+}
+
+/** A `Status` by the viewer, with `overrides`. */
+export function viewerStatusFixture(overrides: Partial<Schemas["Status"]> = {}): Schemas["Status"] {
+  return postFixture(viewerFixture, "0192f0c4-7a8e-7000-8000-0000000000a1", { content: "<p>Hello</p>", created_at: "2026-10-16T00:00:00Z", ...overrides });
+}
+
+/** A post by Bob that mentions Alice. */
+export function statusFixture(id: string): Schemas["Status"] {
+  return postFixture(otherAccountFixture, id, {
+    url: `https://my.example/@bob/${id}`,
+    content: '<p><a href="https://my.example/@alice">@alice</a> hello</p>',
+    mentions: [{ id: viewerFixture.id, username: "alice", acct: "alice", url: viewerFixture.url }],
+  });
+}
+
+/** A local post of another account, for the timelines. */
+export const timelineStatusFixture: Schemas["Status"] = postFixture(otherAccountFixture, "0192f0c4-7a8e-7000-8000-0000000000a1", {
+  uri: "https://my.example/ap/statuses/0192f0c4-7a8e-7000-8000-0000000000a1",
+  url: "https://my.example/@bob/0192f0c4-7a8e-7000-8000-0000000000a1",
+  content: "<p>Hello from the local timeline!</p>",
+});
+
+/** A page of a timeline with the given statuses and, when there are older ones, the cursor to them. */
+export function statusPage(items: Schemas["Status"][], nextCursor?: string): Schemas["StatusPage"] {
+  return nextCursor === undefined ? { items } : { items, next_cursor: nextCursor };
+}

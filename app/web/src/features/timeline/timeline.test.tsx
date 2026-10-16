@@ -5,7 +5,8 @@ import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Status } from "./api/timelines";
-import { apiBase, oauthPaths, problem, timelineStatusFixture, statusPage, tokenResponse } from "../../test/msw/handlers";
+import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
+import { statusPage, timelineStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 

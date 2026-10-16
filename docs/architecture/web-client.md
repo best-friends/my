@@ -47,7 +47,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| A1 | 依存の向きは `routes → features → (@my/ui, lib)` だけにする | `boundaries/dependencies`（要素は `shell`（`web/src` 直下）・`route`・`feature`・`lib`・`ui`、テストだけが import できる `test`（`web/src/test`））、`boundaries/no-unknown-files` |
+| A1 | 依存の向きは `routes → features → (@my/ui, lib)` だけにする | `boundaries/dependencies`（要素は `shell`（`web/src` 直下）・`route`・`feature`・`lib`・`ui`、テストだけが import できる `test`（`web/src/test`）と `feature-test`（`web/src/features/*/test`））、`boundaries/no-unknown-files` |
 | A2 | `@my/ui` は React・React Aria Components・Tailwind のユーティリティと、ドメインを持たない振る舞いのライブラリ（許可リストは ADR-0031）にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`@tanstack/react-virtual`・`tailwind-variants`・`tailwind-merge` だけ）、パッケージの依存関係（Bun の isolated linker） |
 | A3 | 機能は、ほかの機能を `index.ts` 経由でだけ使う | `boundaries/dependencies`（ほかの `feature` は `index.ts` だけ） |
 | A4 | 機能のロジックは `features/<x>/hooks` のカスタムフックに置く。フックは JSX を返さない。機能の部品はフックの戻り値を `@my/ui` に渡すだけにする | レビュー |
@@ -114,7 +114,16 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - `src/test/setup.ts` が jest-dom のマッチャーを読み込み、MSW のサーバーを起動する。どのハンドラにも合わない要求はテストを失敗させる。
     `findBy` / `waitFor` の上限（`asyncUtilTimeout`）は 10 秒、1 つのテストの上限（`vitest.config.ts` の `testTimeout`）は 30 秒にする（T7）。
     通るテストはこの上限まで待たない。上限は壊れたテストが止まるまでの時間だけを決める。
-  - 既定のハンドラは `src/test/msw/handlers.ts` に、`api/openapi.yaml` の操作ごとに 1 つ置く。テストごとの差し替えは `server.use()` で行う。
+  - 既定のハンドラは `api/openapi.yaml` の操作ごとに 1 つ置き、その操作を使う機能が持つ。テストごとの差し替えは `server.use()` で行う。
+    - 機能のハンドラは `features/<x>/test/handlers.ts` に置き、`handlers` として export する。その機能のテストだけが使うフィクスチャも同じファイルに置く。
+    - 複数の機能が使うフィクスチャ（インスタンス・アカウント・投稿・関係・設定・メディア・タイムラインのページ）は `src/test/fixtures.ts` に 1 つずつ置き、機能のファイルで作り直さない。
+      API の型は生成された型（`Schemas`）から取る（S9）。
+    - ハンドラが共有する部品（`apiBase`・`problem()`・アクセストークンの検査 `withViewer()`・OAuth の応答・`signedInHandler`）と、インスタンスと OAuth のエンドポイントの既定のハンドラは `src/test/msw/http.ts`、
+      `GET /streaming` は `src/test/msw/streaming.ts` に置く。
+    - `src/test/msw/handlers.ts` はこれらのモジュールを 1 行ずつ `export * as` で束ねるだけにし、`src/test/msw/server.ts` がその全部の `handlers` で MSW のサーバーを作る。
+      機能を足すときに共有ファイルで変えるのは、`handlers.ts` への 1 行だけである。
+      1 つの操作に既定のハンドラは 1 つなので、束ねる順番は結果を変えない（`handlers.test.ts` が重複を検査する）。
+    - `features/<x>/test` は `boundaries` の要素 `feature-test` で、`src/test` と同じ機能のテストからだけ import できる。`src/test` を import できる。
   - 部品は `src/test/render.tsx` の `renderWithProviders`（ランタイム設定と i18n のプロバイダ）で描画する。`user-event` は描画の前に `setup()` する。
   - 統合テストは同じファイルの `renderApp` でアプリ全体（本物のルーターをメモリ上の履歴で、新しい QueryClient）を描画する。`path` で開くアドレス、`locale` でロケールを指定する。
     サインインした状態は `server.use(signedInHandler)`（リフレッシュがハンドラの受け付けるアクセストークンを返す）で作る。
@@ -273,7 +282,7 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   画面のセッションが終わるので、続けて「ログインに進む」を押すとパスワードを聞かれる（共用端末で次の人がそのままログインできない）。
 - **サインインが要る画面**: ルートの `beforeLoad` に `lib/auth/requireSignIn.ts` の `requireSignIn` を置く。セッションの再開を待ち、サインインしていなければ、戻り先をその画面にして `/login` に送る（TanStack Router の Authenticated Routes）。
   画面を守るのは API で、これはサインインを先に促すだけである。
-- **テスト**: `src/test/msw/handlers.ts` が OAuth のエンドポイント（既定ではリフレッシュ Cookie がない状態）と、API の操作（Bearer が必要）の既定のハンドラを持つ。
+- **テスト**: `src/test/msw/http.ts` が OAuth のエンドポイント（既定ではリフレッシュ Cookie がない状態）の既定のハンドラを持ち、API の操作の既定のハンドラ（Bearer が必要）は機能ごとに置く（§7）。
   `renderApp` は main.tsx と同じくセッションを再開し、ページの外への遷移（認可画面）を `leftTo` に記録する（jsdom は別の文書を読み込めない）。
   `GET /streaming` の既定のハンドラは、何も送らずにすぐ終わるストリームを返す（MSW は Node.js の `fetch` をソケットで横取りするので、テストの終わりに中止された流れ続ける応答があると、後のテストの要求が本物のネットワークに出ることがある）。イベントを送るテストは `streamingServer()` の `current().send()` / `close()` を使う。
   jsdom には Web Locks がないので、タブ間の直列化のテストは `src/test/locks.ts` の代わりの実装を 2 つの `Session` に共有させる。BroadcastChannel は Node.js のものを使う。
