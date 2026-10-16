@@ -698,7 +698,8 @@ CREATE TABLE oauth_client_redirect_uris (
   PRIMARY KEY (client_id, redirect_uri)
 );
 
--- Resource: an authorization code, keyed by its SHA-256 digest.
+-- Resource: an authorization code, keyed by its SHA-256 digest. session_id is the browser session
+-- that authorized it (NULL when it was issued outside one).
 CREATE TABLE oauth_authorization_codes (
   code_hash bytea NOT NULL PRIMARY KEY,
   client_id text COLLATE "C" NOT NULL,
@@ -706,6 +707,7 @@ CREATE TABLE oauth_authorization_codes (
   redirect_uri text NOT NULL,
   scope text NOT NULL,
   code_challenge text NOT NULL,
+  session_id text COLLATE "C",
   issued_at timestamptz NOT NULL,
   expires_at timestamptz NOT NULL
 );
@@ -717,6 +719,7 @@ CREATE TABLE oauth_authorization_code_redemptions (
   token_id text COLLATE "C" NOT NULL,
   redeemed_at timestamptz NOT NULL
 );
+CREATE UNIQUE INDEX oauth_authorization_code_redemptions_token_id ON oauth_authorization_code_redemptions (token_id);
 
 -- Resource: an access token with its refresh token. A rotation issues a new row in the same
 -- family (family_id is the id of the family's first row).
