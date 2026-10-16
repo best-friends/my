@@ -121,7 +121,7 @@ type App struct {
 	routes     []route
 	// page serves the web client's HTML at the GET paths that no route serves.
 	page http.Handler
-	// webStylesheet is the URL of the web client's built CSS, empty without a build.
+	// webStylesheet is the URL of the server-rendered pages' stylesheet from the web build, empty without one.
 	webStylesheet string
 }
 
@@ -318,7 +318,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	// The sign-in screens share the web client's built CSS (ADR-0030).
+	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,

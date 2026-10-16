@@ -96,8 +96,6 @@ type Handler struct {
 	localized sync.Map // locale -> *localizedDocuments
 	// files are the servable files of the build, by path, with their ETags.
 	files map[string]string
-	// stylesheet is the URL of the entry's first stylesheet, empty without one.
-	stylesheet string
 }
 
 // localizedDocuments are the documents that depend on the default locale.
@@ -173,9 +171,6 @@ func New(o Options) (*Handler, error) {
 		h.csp = contentSecurityPolicy
 	}
 
-	if len(tags.Stylesheet) > 0 {
-		h.stylesheet = tags.Stylesheet[0]
-	}
 	h.tags, h.apiOrigin = tags, apiOrigin
 	// Render once now, so that a template or encoding error fails the start.
 	if _, err := h.render(i18n.SourceLocale); err != nil {
@@ -388,6 +383,7 @@ func addVary(h http.Header, value string) {
 	}
 }
 
-// Stylesheet returns the URL of the client's built CSS, for server-rendered pages that share
-// it (ADR-0030), or "" when the build has none (no build, or a Vite dev server).
-func (h *Handler) Stylesheet() string { return h.stylesheet }
+// Stylesheet returns the URL of the stylesheet that the build makes for the server-rendered
+// pages from the client's design tokens (app/web/src/server-pages.css, ADR-0030), or "" when the
+// build has none (no build, or a Vite dev server).
+func (h *Handler) Stylesheet() string { return h.tags.ServerPages }

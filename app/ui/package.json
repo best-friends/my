@@ -11,7 +11,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p scripts/tsconfig.json",
-    "check-tokens": "bun run scripts/check-tokens.ts src/storybook.css ../web/src/index.css",
+    "check-tokens": "bun run scripts/check-tokens.ts src/storybook.css ../web/src/index.css ../web/src/server-pages.css",
     "storybook": "storybook dev --port 6006 --no-open",
     "build-storybook": "storybook build",
     "test": "vitest run",
