@@ -572,6 +572,66 @@ CREATE TABLE instance_texts (
 );
 
 -- ---------------------------------------------------------------------------------------------
+-- content: media files (data-model §4.4, ADR-0005, ADR-0019 §8). Owned by internal/app/content.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a media file, uploaded by a local account or fetched from a remote server.
+CREATE TABLE media_files (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  owner_account_id text COLLATE "C" NOT NULL,
+  origin text NOT NULL CHECK (origin IN ('upload', 'remote')),
+  created_at timestamptz NOT NULL
+);
+CREATE INDEX media_files_owner_account_id_id ON media_files (owner_account_id, id);
+
+-- Resource (subtype): an upload as received. content_type is detected from the content. The
+-- blob under blob_key is private and is deleted once processing has a result.
+CREATE TABLE uploaded_media (
+  media_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  blob_key text NOT NULL,
+  content_type text NOT NULL,
+  file_size bigint NOT NULL CHECK (file_size >= 0)
+);
+
+-- Event: one processing of a media file. The newest row of a file is its current state.
+CREATE TABLE media_processing_results (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  media_id text COLLATE "C" NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('ready', 'failed')),
+  media_type text NOT NULL CHECK (media_type IN ('image', 'gifv', 'video', 'audio', 'unknown')),
+  width integer,
+  height integer,
+  duration_ms integer,
+  blurhash text,
+  processed_at timestamptz NOT NULL
+);
+CREATE INDEX media_processing_results_media_id_id ON media_processing_results (media_id, id DESC);
+
+-- Event (child of a result): a processed rendition in blob storage, under the public prefix.
+CREATE TABLE media_variants (
+  result_id text COLLATE "C" NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('full', 'thumbnail')),
+  blob_key text NOT NULL,
+  content_type text NOT NULL,
+  file_size bigint NOT NULL CHECK (file_size >= 0),
+  width integer NOT NULL,
+  height integer NOT NULL,
+  PRIMARY KEY (result_id, kind)
+);
+
+-- Current value: the focal point of a media file. No row means the center.
+CREATE TABLE media_focus (
+  media_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  focus_x double precision NOT NULL CHECK (focus_x BETWEEN -1.0 AND 1.0),
+  focus_y double precision NOT NULL CHECK (focus_y BETWEEN -1.0 AND 1.0)
+);
+
+-- The cleanup of unattached uploads (FR-803) looks up the references to a media file.
+CREATE INDEX status_revision_attachments_media_id ON status_revision_attachments (media_id);
+CREATE INDEX account_profile_revisions_avatar_media_id ON account_profile_revisions (avatar_media_id);
+CREATE INDEX account_profile_revisions_header_media_id ON account_profile_revisions (header_media_id);
+
+-- ---------------------------------------------------------------------------------------------
 -- identity: browser sessions of the server-rendered screens (data-model.md §4.1, ADR-0019 §4).
 -- ---------------------------------------------------------------------------------------------
 
@@ -613,6 +673,97 @@ CREATE TABLE kv_entries (
   PRIMARY KEY (namespace, key)
 );
 CREATE INDEX kv_entries_expires_at ON kv_entries (expires_at);
+
+-- ---------------------------------------------------------------------------------------------
+-- identity: registration, invites, email verification, and one-time tokens
+-- (data-model.md §4.1, FR-001, FR-002).
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: an email address was verified, at most once per address.
+CREATE TABLE user_email_verifications (
+  email_address_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  verified_at timestamptz NOT NULL
+);
+
+-- Resource: a sign-up from the registration page, one per user. reason is the applicant's
+-- answer in approval mode; invite_id is the invite it redeemed in invite mode.
+CREATE TABLE registration_applications (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  reason text,
+  invite_id text COLLATE "C",
+  submitted_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX registration_applications_user_id ON registration_applications (user_id);
+
+-- Event: an application was approved or rejected. decided_by_user_id is NULL for the system
+-- and for a decision from the CLI.
+CREATE TABLE registration_decisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  application_id text COLLATE "C" NOT NULL,
+  decision text NOT NULL CHECK (decision IN ('approved', 'rejected')),
+  decided_by text NOT NULL CHECK (decided_by IN ('moderator', 'system')),
+  decided_by_user_id text COLLATE "C",
+  note text,
+  decided_at timestamptz NOT NULL
+);
+CREATE INDEX registration_decisions_application_id_id ON registration_decisions (application_id, id DESC);
+
+-- Projection: the registration state of each user who signed up; users without a row (created
+-- with the CLI) are approved.
+CREATE TABLE user_registration_states (
+  user_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  state text NOT NULL CHECK (state IN ('pending', 'approved', 'rejected')),
+  since timestamptz NOT NULL
+);
+CREATE INDEX user_registration_states_state_since ON user_registration_states (state, since);
+
+-- Resource: an invite code. created_by_user_id is NULL for an invite from the CLI; max_uses
+-- and expires_at are NULL for no limit.
+CREATE TABLE invites (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  code text COLLATE "C" NOT NULL,
+  created_by_user_id text COLLATE "C",
+  max_uses integer,
+  expires_at timestamptz,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX invites_code ON invites (code);
+
+-- Event: one use of an invite. seq is 1 + the uses before it, so that the primary key keeps
+-- concurrent sign-ups from exceeding max_uses.
+CREATE TABLE invite_redemptions (
+  invite_id text COLLATE "C" NOT NULL,
+  seq integer NOT NULL,
+  user_id text COLLATE "C" NOT NULL,
+  redeemed_at timestamptz NOT NULL,
+  PRIMARY KEY (invite_id, seq)
+);
+
+-- Event: an invite was revoked. revoked_by_user_id is NULL for a revocation from the CLI.
+CREATE TABLE invite_revocations (
+  invite_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revoked_by_user_id text COLLATE "C",
+  revoked_at timestamptz NOT NULL
+);
+
+-- Resource: a one-time token sent to a user. token_hash is the SHA-256 digest of the token.
+CREATE TABLE user_tokens (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  purpose text NOT NULL CHECK (purpose IN ('email_verification', 'password_reset')),
+  email_address_id text COLLATE "C",
+  token_hash bytea NOT NULL,
+  expires_at timestamptz NOT NULL,
+  issued_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX user_tokens_token_hash ON user_tokens (token_hash);
+
+-- Event: a token was used; the primary key makes every token single-use.
+CREATE TABLE user_token_redemptions (
+  token_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  redeemed_at timestamptz NOT NULL
+);
 
 -- ---------------------------------------------------------------------------------------------
 -- content: boosts, favourites, bookmarks, and pins (data-model §4.4, FR-107, FR-113).
@@ -674,12 +825,53 @@ CREATE TABLE bookmarks (
 );
 CREATE INDEX bookmarks_account_id_id ON bookmarks (account_id, id);
 
--- Current value: a status its author pinned to the profile (the Featured collection).
+-- Current value: a status its author pinned to the profile (the Featured collection). Each pin
+-- holds one of the account's slots 1..5 (content.MaxPins), so the unique slot index caps the pins
+-- of an account even under concurrent inserts.
 CREATE TABLE status_pins (
   account_id text COLLATE "C" NOT NULL,
   status_id text COLLATE "C" NOT NULL,
+  slot integer NOT NULL CHECK (slot BETWEEN 1 AND 5),
   created_at timestamptz NOT NULL,
   id text COLLATE "C" NOT NULL,
   PRIMARY KEY (account_id, status_id)
 );
+CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot);
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
+
+-- ---------------------------------------------------------------------------------------------
+-- notification: notifications, their dismissals, and read markers (data-model §4.7, FR-205).
+-- Owned by internal/app/notification.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: something happened to a local account. dedupe_key makes generating it again from the
+-- same domain event, or from an action the source repeats, insert nothing.
+CREATE TABLE notifications (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  recipient_account_id text COLLATE "C" NOT NULL,
+  type text NOT NULL CHECK (type IN (
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice'
+  )),
+  source_account_id text COLLATE "C",
+  status_id text COLLATE "C",
+  moderation_action_id text COLLATE "C",
+  dedupe_key text NOT NULL,
+  created_at timestamptz NOT NULL,
+  -- nobody is notified of their own actions.
+  CONSTRAINT notifications_self_check CHECK (source_account_id IS NULL OR source_account_id <> recipient_account_id)
+);
+CREATE UNIQUE INDEX notifications_recipient_account_id_dedupe_key ON notifications (recipient_account_id, dedupe_key);
+CREATE INDEX notifications_recipient_account_id_id ON notifications (recipient_account_id, id);
+CREATE INDEX notifications_recipient_account_id_type_id ON notifications (recipient_account_id, type, id);
+
+-- Event: the recipient dismissed a notification. A notification is dismissed at most once.
+CREATE TABLE notification_dismissals (
+  notification_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  dismissed_at timestamptz NOT NULL
+);
+
+-- Current value: the newest notification an account has read; greater IDs are unread.
+CREATE TABLE notification_read_markers (
+  account_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  last_read_id text COLLATE "C" NOT NULL
+);

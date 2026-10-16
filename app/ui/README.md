@@ -118,6 +118,37 @@ for example `motion-safe:transition-colors`; `make web-tokens` fails on `transit
 
 Other unknown class names produce no CSS; catching those is the job of the Tailwind lint rules ([D9](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)).
 
+## Form controls
+
+[src/index.ts](src/index.ts) exports these wrappers of React Aria Components (RAC). Each takes RAC's props, is controlled or
+uncontrolled as RAC is (`value` / `onChange` or `defaultValue`; `isSelected` / `defaultSelected` for toggles), and receives every
+string through props or children.
+
+| Component | Wraps | Variants and extras |
+| --- | --- | --- |
+| `Button` | `Button` | `variant`: `primary` / `secondary` (default) / `ghost` / `danger`; `size`: `sm` / `md` (default); `isPending` |
+| `Link` | `Link` | `variant`: `inline` (default, underlined in running text) / `standalone` |
+| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder` |
+| `TextArea` | `TextField` + `TextArea` | as `TextField`, plus `rows` and the character count below |
+| `Checkbox` | `CheckboxField` + `CheckboxButton` | children as the label, `description`, `errorMessage`, `isIndeterminate` |
+| `Switch` | `SwitchField` + `SwitchButton` | children as the label, `description`, `errorMessage` |
+| `RadioGroup`, `Radio` | `RadioGroup`, `RadioField` + `RadioButton` | `orientation`: `vertical` (default) / `horizontal`; a `description` per `Radio` |
+| `Select`, `SelectItem` | `Select` + `Popover` + `ListBox`, `ListBoxItem` | `items` with a render function, or `SelectItem` children; single selection |
+
+- Each component has one `tailwind-variants` recipe; its variant props are typed from the recipe (`VariantProps`).
+  `className` (a string or RAC's function of the render props) is merged into the root with `tailwind-merge`, so a later class wins.
+- RAC links the label, the description and the error message to the control (`aria-labelledby` / `aria-describedby`).
+  The error message shows while the field is invalid: `isInvalid`, a failing `validate`, or a native constraint (`isRequired`).
+- States are styled from RAC's `data-*` attributes (`data-hovered:`, `data-pressed:`, `data-selected:`, `data-invalid:`).
+  Keyboard focus shows `focus-ring`; text inputs show it on any focus. Controls are at least 24 px tall and 44 px under `pointer-coarse:`.
+- `TextArea` with `characterLimit` and `formatRemaining` (the count message for a remaining count, negative when over) shows a count
+  after the control, as the [GOV.UK character count](https://design-system.service.gov.uk/components/character-count/) does:
+  - the count is counted in Unicode code points, like the server ([data-model.md](../../docs/architecture/data-model.md));
+  - the visible count is linked to the text area with `aria-describedby` and hidden from the reading order, so it is read with the field;
+  - a visually hidden `role="status"` region announces it when typing pauses for a second, and at once when the remaining count
+    reaches 50, 20 or 0 ([ADR-0027](../../docs/adr/0027-ui-quality-gates.md));
+  - longer text is kept, not cut off: the count turns `danger` and the field becomes invalid.
+
 ## Overlays and announcements
 
 The overlay components wrap React Aria Components, which handle focus, Esc and the reading direction
@@ -140,6 +171,12 @@ stay exposed while a modal hides the rest of the page. The kit has its own regio
 `UNSTABLE_` and its live announcer is internal to react-aria. A toast without an action closes after `defaultTimeout` (5 s), but not
 while the pointer is over the toasts or focus is in them; a toast with an action stays until it is dismissed.
 
+## Component tests
+
+Each component has Testing Library tests next to it (`src/<Component>.test.tsx`) that find elements by role and drive them with
+`user-event`: keyboard operation and the label / description / error association. They run in jsdom in the `unit` project of
+[vitest.config.ts](vitest.config.ts) (`bun run test:unit`), which `make web-test` (part of `make check`) runs.
+
 ## Stories
 
 Every component has a story next to it (`src/<Component>.stories.tsx`, CSF 3). `make storybook` opens Storybook 10 on port 6006;
@@ -151,7 +188,8 @@ Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)).
 `en` and `ar-XB`, light and dark; a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
 1024 px container widths. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
 them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
-A story's `play` function is the component's behaviour test (focus trap and return, Esc, arrow keys in RTL, announcements that keep
-focus); it runs before axe and the screenshots, in all four projects. Overlays portal into the story frame, which has layout
+A story's `play` function also tests behaviour in the real browser (focus trap and return, Esc, arrow keys in RTL, announcements that
+keep focus); it runs before axe and the screenshots, in all four projects. The overlay components' jsdom tests cover the same
+behaviour in `make check`. Overlays portal into the story frame, which has layout
 containment, so a modal covers the frame and appears in its screenshots.
 The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).

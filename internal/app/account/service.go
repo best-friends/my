@@ -227,6 +227,13 @@ type ProfileInput struct {
 	Fields []account.ProfileField
 }
 
+// IsMediaReferenced reports whether any profile revision, current or not, uses a media file as
+// its avatar or header. It implements content.MediaReferrer, so that the cleanup of unattached
+// uploads keeps profile images.
+func (s *Service) IsMediaReferenced(ctx context.Context, mediaID string) (bool, error) {
+	return s.d.Repository.IsMediaReferenced(ctx, mediaID)
+}
+
 // ReviseProfile records a new revision of an account's profile and makes it current.
 func (s *Service) ReviseProfile(ctx context.Context, accountID string, in ProfileInput) (account.ProfileRevision, error) {
 	base := account.ProfileRevision{
@@ -322,6 +329,19 @@ func (s *Service) FindByID(ctx context.Context, id string) (Actor, error) {
 		return Actor{}, err
 	}
 	return s.actor(ctx, a)
+}
+
+// IsLocal reports, inside tx, whether an account exists and is local. Projectors of other
+// modules call it in the transaction of the event they project.
+func (s *Service) IsLocal(ctx context.Context, tx uow.Tx, id string) (bool, error) {
+	a, err := s.d.Repository.Account(ctx, tx, id)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return a.IsLocal(), nil
 }
 
 // FindByHandle returns the actor with a handle. username compares case-insensitively; domain is
@@ -423,4 +443,14 @@ func (s *Service) PrivateKey(ctx context.Context, k account.Key) (crypto.Signer,
 		return nil, err
 	}
 	return signer, nil
+}
+
+// ValidateUsername checks a new local username (account.ValidateUsername), so that other
+// modules can reject one before doing expensive work.
+func ValidateUsername(username string) error { return account.ValidateUsername(username) }
+
+// LocalAccountOfUser returns the local account a user logs in as. It fails with ErrNotFound
+// when the user has none.
+func (s *Service) LocalAccountOfUser(ctx context.Context, userID string) (account.LocalAccount, error) {
+	return s.d.Repository.FindLocalAccountByUser(ctx, userID)
 }

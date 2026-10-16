@@ -69,7 +69,9 @@ func loadConfig(t *testing.T, env map[string]string) *config.Config {
 	t.Helper()
 	kek := make([]byte, 32)
 	_, _ = rand.Read(kek)
-	full := map[string]string{"MY_HOST": "example.test", "MY_KEK": base64.StdEncoding.EncodeToString(kek)}
+	full := map[string]string{
+		"MY_HOST": "example.test", "MY_KEK": base64.StdEncoding.EncodeToString(kek), "MY_BLOB_FS_DIR": t.TempDir(),
+	}
 	for k, v := range env {
 		full[k] = v
 	}
@@ -211,7 +213,7 @@ func TestServeSQLite(t *testing.T) {
 	})
 
 	t.Run("not found is a localized problem", func(t *testing.T) {
-		resp, body := s.do(t, http.MethodGet, "/nope", map[string]string{"Accept-Language": "ja-JP,en;q=0.5"})
+		resp, body := s.do(t, http.MethodGet, "/ap/nope", map[string]string{"Accept-Language": "ja-JP,en;q=0.5"})
 		if resp.StatusCode != http.StatusNotFound {
 			t.Fatalf("status = %d, want 404", resp.StatusCode)
 		}
@@ -219,7 +221,7 @@ func TestServeSQLite(t *testing.T) {
 		if resp.Header.Get("Content-Language") != "ja" || p.Title == "" || p.Title == "The requested resource was not found." {
 			t.Errorf("Content-Language = %q, title = %q; want a Japanese title", resp.Header.Get("Content-Language"), p.Title)
 		}
-		resp, body = s.do(t, http.MethodGet, "/nope", nil)
+		resp, body = s.do(t, http.MethodGet, "/ap/nope", nil)
 		if p := decodeProblem(t, resp, body); p.Title != "The requested resource was not found." || resp.Header.Get("Content-Language") != "en" {
 			t.Errorf("default title = %q (%s), want the English message", p.Title, resp.Header.Get("Content-Language"))
 		}

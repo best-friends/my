@@ -2,12 +2,13 @@
 
 // Package kernel holds the ports and helpers shared by every module's application layer:
 // the Clock and IDGenerator ports and UUIDv7 helpers, the KeyManager port with the Sealer
-// that encrypts secrets for storage (ADR-0019 §6), and the KeyValueStore port with the
-// RateLimiter built on it (ADR-0019 §5).
+// that encrypts secrets for storage (ADR-0019 §6), the KeyValueStore port with the
+// RateLimiter built on it (ADR-0019 §5), and the Mailer port.
 // Use cases obtain time and IDs only through these ports and pass plain values
 // (time.Time, ID strings) to the domain, so that tests stay deterministic (ADR-0015).
 // The production Clock and IDGenerator live in internal/adapter/system, the KeyManager adapters
-// in internal/adapter/keymanager, and the KeyValueStore adapters in internal/adapter/kv;
+// in internal/adapter/keymanager, the KeyValueStore adapters in internal/adapter/kv, and the
+// Mailer adapters in internal/adapter/mail;
 // contract tests and deterministic fakes live in pkg/testkit.
 package kernel
 

@@ -6,10 +6,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"net"
+	"net/mail"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // EnvPrefix is prepended to the upper-cased key to form a setting's environment variable.
@@ -169,6 +172,41 @@ var schema = []field{
 		set: func(c *Config, v string) { c.Media = v },
 	},
 	{
+		key:   "blob_fs_dir",
+		doc:   "Directory of the `fs` blob store, relative to the working directory or absolute. It holds the uploads as received (private) and the processed media, which the server serves under `/media/`. Share it between the web and worker processes, and back it up with the database.",
+		def:   "blobs",
+		check: checkNotBlank,
+		set:   func(c *Config, v string) { c.BlobFSDir = v },
+	},
+	{
+		key:   "media_max_image_bytes",
+		doc:   "Largest accepted image upload in bytes (ADR-0019 §8).",
+		def:   strconv.Itoa(16 << 20),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.MediaMaxImageBytes, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
+		key:   "media_max_image_side",
+		doc:   "Largest accepted image width and height in pixels, read from the file's header before decoding (ADR-0019 §8).",
+		def:   "8192",
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.MediaMaxImageSide, _ = strconv.Atoi(v) },
+	},
+	{
+		key:   "media_max_image_pixels",
+		doc:   "Largest accepted image area (width × height, and for an animated GIF the frames together), read from the file's header before decoding (ADR-0019 §8). The default is 33 MP (7680 × 4320).",
+		def:   strconv.Itoa(7680 * 4320),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.MediaMaxImagePixels, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
+		key:   "media_unattached_ttl",
+		doc:   "How long an upload may stay unattached to any post or profile before the hourly cleanup deletes it (FR-803), as a Go duration such as `24h`.",
+		def:   "24h",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.MediaUnattachedTTL, _ = time.ParseDuration(v) },
+	},
+	{
 		key: "kv",
 		doc: "Key-value store adapter for caches and rate limits (ADR-0003, ADR-0019 §5).",
 		def: "db",
@@ -212,6 +250,51 @@ var schema = []field{
 			}
 		},
 	},
+	{
+		key: "mail",
+		doc: "Mailer adapter for verification emails (FR-002). With `none`, no email reaches users, so an unverified address does not keep a user out and sign-ups in the `open` registration mode wait for a moderator's approval instead.",
+		def: "none",
+		choices: []choice{
+			{value: "none", inV0: true, doc: "Logs each message, including its links, instead of sending it; for development and instances without email."},
+			{value: "smtp", inV0: true, doc: "SMTP submission with mandatory STARTTLS (`smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`)."},
+			{value: "ses", doc: "Amazon SES."},
+		},
+		set: func(c *Config, v string) { c.Mail = v },
+	},
+	{
+		key:          "mail_from",
+		doc:          "Sender address of emails, as a bare address such as `noreply@social.example`.",
+		requiredWhen: "when `mail` is not `none`",
+		check:        checkBareAddress,
+		set:          func(c *Config, v string) { c.MailFrom = v },
+	},
+	{
+		key:          "smtp_host",
+		doc:          "Host name of the SMTP server. The server must offer STARTTLS with a certificate valid for this name; the connection is refused otherwise.",
+		requiredWhen: "when `mail = smtp`",
+		check:        checkHostName,
+		set:          func(c *Config, v string) { c.SMTPHost = v },
+	},
+	{
+		key:   "smtp_port",
+		doc:   "TCP port of the SMTP server (submission).",
+		def:   "587",
+		check: checkPort,
+		set: func(c *Config, v string) {
+			c.SMTPPort, _ = strconv.Atoi(v) // validated by checkPort
+		},
+	},
+	{
+		key: "smtp_username",
+		doc: "User name for SMTP AUTH PLAIN, sent only after STARTTLS. Leave it empty for a server that needs no authentication.",
+		set: func(c *Config, v string) { c.SMTPUsername = v },
+	},
+	{
+		key:    "smtp_password",
+		doc:    "Password for SMTP AUTH PLAIN.",
+		secret: true,
+		set:    func(c *Config, v string) { c.SMTPPassword = v },
+	},
 }
 
 // crossChecks rejects missing conditional settings and contradictory combinations.
@@ -238,10 +321,39 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 			seen[k] = true
 		}
 	}
+	if mail, ok := vals["mail"]; ok && mail != "none" && !present["mail_from"] {
+		issues = append(issues, Issue{Key: "mail_from", Message: "required when mail is not none"})
+	}
+	if vals["mail"] == "smtp" && !present["smtp_host"] {
+		issues = append(issues, Issue{Key: "smtp_host", Message: "required when mail is smtp"})
+	}
 	if vals["queue"] == "inline" && vals["role"] != "" && vals["role"] != string(RoleAll) {
 		issues = append(issues, Issue{Key: "queue", Message: fmt.Sprintf("inline runs jobs in the enqueuing process and requires role = all, not %s", vals["role"])})
 	}
 	return issues
+}
+
+func checkNotBlank(v string) error {
+	if strings.TrimSpace(v) == "" {
+		return errors.New("must not be blank")
+	}
+	return nil
+}
+
+func checkPositiveInt(v string) error {
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || n <= 0 || n > math.MaxInt32 {
+		return fmt.Errorf("must be a whole number from 1 to %d", math.MaxInt32)
+	}
+	return nil
+}
+
+func checkPositiveDuration(v string) error {
+	d, err := time.ParseDuration(v)
+	if err != nil || d <= 0 {
+		return errors.New("must be a positive Go duration, for example 24h or 90m")
+	}
+	return nil
 }
 
 // checkDomain accepts a lower-case DNS name with an optional port.
@@ -333,6 +445,34 @@ func checkKEK(v string) error {
 	}
 	if len(b) != kekSize {
 		return fmt.Errorf("must decode to %d bytes, got %d", kekSize, len(b))
+	}
+	return nil
+}
+
+// checkBareAddress accepts an email address without a display name or angle brackets.
+func checkBareAddress(v string) error {
+	a, err := mail.ParseAddress(v)
+	if err != nil || a.Name != "" || a.Address != v {
+		return errors.New("must be a bare email address such as noreply@example.com")
+	}
+	return nil
+}
+
+// checkHostName accepts a lower-case DNS name or an IP address, without a port.
+func checkHostName(v string) error {
+	if net.ParseIP(v) != nil {
+		return nil
+	}
+	if v != strings.ToLower(v) {
+		return errors.New("must be lower case")
+	}
+	if len(v) > 253 {
+		return errors.New("must be at most 253 characters")
+	}
+	for label := range strings.SplitSeq(v, ".") {
+		if !validLabel(label) {
+			return errors.New("must be a host name or an IP address, without scheme or port")
+		}
 	}
 	return nil
 }

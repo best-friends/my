@@ -6,29 +6,42 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
+	"slices"
 
+	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
 	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
+	mailnone "github.com/best-friends/my/internal/adapter/mail/none"
+	mailsmtp "github.com/best-friends/my/internal/adapter/mail/smtp"
+	"github.com/best-friends/my/internal/adapter/media/native"
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
 	"github.com/best-friends/my/internal/app/account"
+	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/media"
+	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
+	domainidentity "github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
 	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	mediahttp "github.com/best-friends/my/internal/interface/media"
+	"github.com/best-friends/my/internal/interface/web"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -67,6 +80,8 @@ type App struct {
 	// KV is the key-value store that cfg.KV selects; RateLimiter keeps its counters there.
 	KV          kernel.KeyValueStore
 	RateLimiter *kernel.RateLimiter
+	// Mailer is the mail adapter that cfg.Mail selects.
+	Mailer kernel.Mailer
 
 	Accounts *account.Service
 	Identity *identity.Service
@@ -77,12 +92,28 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// Notifications lists a local account's notifications, which projectors create from the
+	// graph and content events, with its read marker and dismissals (FR-205).
+	Notifications *notification.Service
+
+	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
+	Blobs          blob.Store
+	MediaProcessor media.Processor
+	Media          *content.MediaService
+	// Scheduler enqueues the periodic jobs for the worker role.
+	Scheduler *queue.Scheduler
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
 	ready  func(ctx context.Context) error
 	closer func() error
-	routes []route
+	// closeBlobs releases the blob store.
+	closeBlobs func() error
+	routes     []route
+	// page serves the web client's HTML at the GET paths that no route serves.
+	page http.Handler
+	// webStylesheet is the URL of the web client's built CSS, empty without a build.
+	webStylesheet string
 }
 
 type route struct {
@@ -96,6 +127,11 @@ type AppOptions struct {
 	Logger *slog.Logger
 	// Version is the server version that NodeInfo reports; the default is "dev".
 	Version string
+	// WebBuild is the build of the web client; the default is the one embedded in the binary.
+	WebBuild fs.FS
+	// DevViteOrigin, when set, makes the web client's shell load the client from a Vite dev
+	// server at this origin (`my serve -dev-vite-origin`). Development only.
+	DevViteOrigin string
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -119,6 +155,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Handlers:   &queue.JobHandlerRegistry{},
 	}
 
+	if err := a.setUpWeb(opts); err != nil {
+		return nil, err
+	}
 	if a.KeyManager, err = newKeyManager(cfg); err != nil {
 		return nil, err
 	}
@@ -131,6 +170,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows      graph.Repository
 		statuses     content.Repository
 		interactions content.InteractionRepository
+		notifs       notification.Repository
+		medias       content.MediaRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -141,8 +182,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows, statuses = d.GraphRepository(), d.StatusRepository()
+		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions = d.InteractionRepository()
+		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -156,8 +198,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows, statuses = d.GraphRepository(), d.StatusRepository()
+		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions = d.InteractionRepository()
+		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -201,15 +244,29 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
+	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	// The user step joins once API requests are authenticated (#107).
 	a.Locales = &i18n.Resolver{Bundle: a.Messages, InstanceDefault: a.instanceDefaultLocale}
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
 		RateLimiter: a.RateLimiter,
-		// The default locale is an instance setting in the database, never configuration
-		// (docs/reference/configuration.md); it is read per registration so changes apply at once.
+		// The default locale and the registration mode are instance settings in the database,
+		// never configuration (docs/reference/configuration.md); they are read per registration so
+		// changes apply at once.
 		DefaultLocale: a.Instance.DefaultLocale,
+		RegistrationMode: func(ctx context.Context) (domainidentity.RegistrationMode, error) {
+			mode, err := a.Instance.RegistrationMode(ctx)
+			return domainidentity.RegistrationMode(mode), err
+		},
+		Mailer: a.Mailer,
+		// mail = none delivers nothing, so a moderator's approval stands in for verification (FR-002).
+		RequireEmailVerification: cfg.Mail != "none",
+		Messages:                 a.Messages,
+		BaseURL:                  "https://" + cfg.Host,
 	})
 	graph.RegisterProjectors(a.Projectors, follows)
 	a.Graph = graph.NewService(graph.Deps{
@@ -231,15 +288,28 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
 		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	// After the graph and content projectors, whose events these projectors turn into notifications.
+	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
+		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
+	})
+	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
 
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
+		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	authpages.New(authpages.Options{Identity: a.Identity, Locales: a.Locales, Logger: a.Logger}).Register(a)
+	// The sign-in screens share the web client's built CSS (ADR-0030).
+	authpages.New(authpages.Options{
+		Identity: a.Identity, Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
+	}).Register(a)
+	if err := a.setMedia(cfg, medias); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
@@ -247,6 +317,76 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
+}
+
+// setUpWeb builds the web client's handler (ADR-0028), registers its assets and manifest, and
+// sets a.page, which serves its HTML to the requests that do not ask for ActivityPub.
+func (a *App) setUpWeb(opts AppOptions) error {
+	if opts.WebBuild == nil {
+		opts.WebBuild = web.Embedded()
+	}
+	h, err := web.New(web.Options{
+		Build: opts.WebBuild, DevViteOrigin: opts.DevViteOrigin,
+		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain,
+		// The instance is named after its host until the instance settings hold a name.
+		InstanceName: a.Config.Host,
+		// The HTML is the same for every visitor, so only the instance default applies.
+		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
+		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:        a.Logger,
+	})
+	if err != nil {
+		return err
+	}
+	h.Register(a)
+	a.webStylesheet = h.Stylesheet()
+	a.page = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The same URL may be an ActivityPub document, so every answer depends on Accept.
+		if !slices.Contains(w.Header().Values("Vary"), "Accept") {
+			w.Header().Add("Vary", "Accept")
+		}
+		if activitypub.AsksForActivityPub(r) {
+			a.writeStatusProblem(w, r, http.StatusNotFound)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+	return nil
+}
+
+// setMedia builds the blob store, the media processor, and the media use cases, and registers
+// their jobs and schedules.
+func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
+	switch cfg.Blob {
+	case "fs":
+		store, err := blobfs.New(blobfs.Options{Dir: cfg.BlobFSDir, BaseURL: "https://" + cfg.Host})
+		if err != nil {
+			return err
+		}
+		a.Blobs, a.closeBlobs = store, store.Close
+	default:
+		return fmt.Errorf("blob %q is not implemented yet", cfg.Blob)
+	}
+	switch cfg.Media {
+	case "native":
+		a.MediaProcessor = native.New(native.Options{})
+	default:
+		return fmt.Errorf("media %q is not implemented yet", cfg.Media)
+	}
+	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
+	a.Media = content.NewMediaService(content.MediaDeps{
+		UnitOfWork: a.UnitOfWork, Repository: repo, Blobs: a.Blobs, Processor: a.MediaProcessor,
+		Outbox: a.Outbox, Jobs: a.Jobs, Clock: a.Clock, IDs: a.IDs,
+		Limits: media.Limits{
+			MaxBytes: cfg.MediaMaxImageBytes, MaxSide: cfg.MediaMaxImageSide, MaxPixels: cfg.MediaMaxImagePixels,
+		},
+		UnattachedTTL: cfg.MediaUnattachedTTL,
+		// Avatars and headers refer to media files from the account module.
+		Referrers: []content.MediaReferrer{a.Accounts},
+		Logger:    a.Logger,
+	})
+	a.Media.RegisterJobs(a.Handlers, a.Scheduler)
+	return nil
 }
 
 // defaultPostLanguage returns the default post language of a user's preferences, or "" for a
@@ -264,6 +404,28 @@ func (a *App) defaultPostLanguage(ctx context.Context, userID string) (string, e
 
 func (a *App) setDBQueue(q *queuedb.Queue) {
 	a.Jobs, a.Outbox, a.DeadJobs, a.source = q, q, q, q
+}
+
+func newMailer(cfg *config.Config, logger *slog.Logger) (kernel.Mailer, error) {
+	switch cfg.Mail {
+	case "", "none":
+		return mailnone.New(logger), nil
+	case "smtp":
+		return mailsmtp.New(mailsmtp.Options{
+			Host: cfg.SMTPHost, Port: cfg.SMTPPort, Username: cfg.SMTPUsername, Password: cfg.SMTPPassword,
+			From: cfg.MailFrom, HelloName: hostOnly(cfg.Host),
+		})
+	default:
+		return nil, fmt.Errorf("mail %q is not implemented yet", cfg.Mail)
+	}
+}
+
+// hostOnly returns host without a port.
+func hostOnly(host string) string {
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		return h
+	}
+	return host
 }
 
 func newKeyManager(cfg *config.Config) (kernel.KeyManager, error) {
@@ -292,6 +454,9 @@ func (a *App) Handle(pattern string, h http.Handler) {
 
 // Close releases the database connections.
 func (a *App) Close() error {
+	if a.closeBlobs != nil {
+		_ = a.closeBlobs()
+	}
 	if a.closer == nil {
 		return nil
 	}

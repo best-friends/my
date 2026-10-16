@@ -59,6 +59,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runAdmin(fs.Args()[1:], os.Stdin, stdout, stderr)
 	case "instance":
 		return runInstance(fs.Args()[1:], os.Stdin, stdout, stderr)
+	case "invite":
+		return runInvite(fs.Args()[1:], stdout, stderr)
+	case "registration":
+		return runRegistration(fs.Args()[1:], stdout, stderr)
 	case "serve":
 		return runServe(fs.Args()[1:], stderr)
 	case "":
@@ -78,6 +82,9 @@ Commands:
   admin     Create an administrator (my admin create)
   config    Check the configuration (my config check)
   instance  Read and change the instance settings (my instance list|get|set|history)
+  invite    Manage invite codes (my invite create|list|revoke)
+  registration
+            Review sign-ups (my registration list|approve|reject)
   serve     Run the server (role web, worker, or all)
   version   Print the version
 `)

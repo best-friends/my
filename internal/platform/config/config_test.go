@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -68,7 +69,8 @@ func TestLoadValid(t *testing.T) {
 			want: Config{
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
-				KeyManager: "local", KEK: kek,
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
 			},
 		},
 		{
@@ -86,7 +88,8 @@ listen = "127.0.0.1:9000"
 			want: Config{
 				Host: "social.example.org", AccountDomain: "example.org", SourceURL: "https://git.example.org/fork/my", WebOrigin: "http://localhost:5173", Role: RoleWeb, Listen: "127.0.0.1:9000",
 				DB: "postgres", DatabaseURL: "file:my.db", Queue: "sqs", Blob: "fs", Media: "native", KV: "db",
-				KeyManager: "local", KEK: kek,
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
 			},
 		},
 		{
@@ -96,7 +99,8 @@ listen = "127.0.0.1:9000"
 			want: Config{
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "postgres://db/my", Queue: "db", Blob: "fs", Media: "native", KV: "db",
-				KeyManager: "local", KEK: kek,
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
 			},
 		},
 		{
@@ -105,8 +109,21 @@ listen = "127.0.0.1:9000"
 			want: Config{
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
-				KeyManager: "local", KEK: kek,
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
 				PreviousKEKs: [][]byte{bytes.Repeat([]byte{1}, kekSize), bytes.Repeat([]byte{2}, kekSize)},
+			},
+		},
+		{
+			name: "smtp mailer",
+			env: with(minimal(), "MY_MAIL", "smtp", "MY_MAIL_FROM", "noreply@social.example.org", "MY_SMTP_HOST", "smtp.example.org",
+				"MY_SMTP_PORT", "2525", "MY_SMTP_USERNAME", "mailer", "MY_SMTP_PASSWORD", "hunter3"),
+			want: Config{
+				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "smtp", MailFrom: "noreply@social.example.org", SMTPHost: "smtp.example.org",
+				SMTPPort: 2525, SMTPUsername: "mailer", SMTPPassword: "hunter3",
 			},
 		},
 		{
@@ -115,7 +132,8 @@ listen = "127.0.0.1:9000"
 			want: Config{
 				Host: "localhost:3000", AccountDomain: "localhost:3000", SourceURL: DefaultSourceURL, WebOrigin: "https://localhost:3000", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
-				KeyManager: "local", KEK: kek,
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
 			},
 		},
 	}
@@ -190,6 +208,15 @@ func TestLoadInvalid(t *testing.T) {
 			},
 		},
 		{
+			name: "media limits",
+			env:  with(minimal(), "MY_MEDIA_MAX_IMAGE_BYTES", "0", "MY_MEDIA_MAX_IMAGE_SIDE", "big", "MY_MEDIA_UNATTACHED_TTL", "1 day"),
+			want: []string{
+				"media_max_image_bytes (MY_MEDIA_MAX_IMAGE_BYTES): must be a whole number from 1 to 2147483647",
+				"media_max_image_side (MY_MEDIA_MAX_IMAGE_SIDE): must be a whole number from 1 to 2147483647",
+				"media_unattached_ttl (MY_MEDIA_UNATTACHED_TTL): must be a positive Go duration, for example 24h or 90m",
+			},
+		},
+		{
 			name: "malformed previous KEK",
 			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+",c2hvcnQ="),
 			want: []string{"kek_previous (MY_KEK_PREVIOUS): key #2 must decode to 32 bytes, got 5"},
@@ -203,6 +230,23 @@ func TestLoadInvalid(t *testing.T) {
 			name: "previous KEK given twice",
 			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+", "+testKEK1),
 			want: []string{"kek_previous (MY_KEK_PREVIOUS): must not repeat a key or contain the current kek"},
+		},
+		{
+			name: "smtp without a sender or a host",
+			env:  with(minimal(), "MY_MAIL", "smtp"),
+			want: []string{
+				"mail_from (MY_MAIL_FROM): required when mail is not none",
+				"smtp_host (MY_SMTP_HOST): required when mail is smtp",
+			},
+		},
+		{
+			name: "malformed mail settings",
+			env:  with(minimal(), "MY_MAIL", "smtp", "MY_MAIL_FROM", "My <noreply@example.org>", "MY_SMTP_HOST", "smtp.example.org:587", "MY_SMTP_PORT", "0"),
+			want: []string{
+				"mail_from (MY_MAIL_FROM): must be a bare email address such as noreply@example.com",
+				"smtp_host (MY_SMTP_HOST): must be a host name or an IP address, without scheme or port",
+				`smtp_port (MY_SMTP_PORT): port "0" must be a number from 1 to 65535`,
+			},
 		},
 		{
 			name: "inline queue with a split role",
@@ -274,7 +318,7 @@ kek = "nope"
 }
 
 func TestLoadSettingsRedactSecrets(t *testing.T) {
-	_, settings, err := Load(source(with(minimal(), "MY_KEK_PREVIOUS", testKEK1), nil))
+	_, settings, err := Load(source(with(minimal(), "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3"), nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,14 +359,14 @@ func TestSchemaWellFormed(t *testing.T) {
 }
 
 func TestConfigLogValueRedactsSecrets(t *testing.T) {
-	cfg, _, err := Load(source(with(minimal(), "MY_DATABASE_URL", "postgres://user:hunter2@db/my", "MY_KEK_PREVIOUS", testKEK1), nil))
+	cfg, _, err := Load(source(with(minimal(), "MY_DATABASE_URL", "postgres://user:hunter2@db/my", "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3"), nil))
 	if err != nil {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
 	slog.New(slog.NewTextHandler(&buf, nil)).Info("config", "config", cfg)
 	out := buf.String()
-	for _, secret := range []string{"hunter2", string(cfg.KEK), string(cfg.PreviousKEKs[0]), testKEK, testKEK1} {
+	for _, secret := range []string{"hunter2", "hunter3", string(cfg.KEK), string(cfg.PreviousKEKs[0]), testKEK, testKEK1} {
 		if strings.Contains(out, secret) {
 			t.Errorf("log output %q contains secret %q", out, secret)
 		}

@@ -14,6 +14,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -34,18 +35,32 @@ type Config struct {
 	AccountDomain string
 	SourceURL     string
 	// WebOrigin is the origin of the web client that the client API allows by CORS.
-	WebOrigin    string
-	Role         Role
-	Listen       string
-	DB           string
-	DatabaseURL  string
-	Queue        string
-	Blob         string
-	Media        string
-	KV           string
-	KeyManager   string
-	KEK          []byte
-	PreviousKEKs [][]byte
+	WebOrigin   string
+	Role        Role
+	Listen      string
+	DB          string
+	DatabaseURL string
+	Queue       string
+	Blob        string
+	Media       string
+	// BlobFSDir is the directory of the fs blob store.
+	BlobFSDir string
+	// Limits of image uploads and how long an upload may stay unattached.
+	MediaMaxImageBytes  int64
+	MediaMaxImageSide   int
+	MediaMaxImagePixels int64
+	MediaUnattachedTTL  time.Duration
+	KV                  string
+	KeyManager          string
+	KEK                 []byte
+	PreviousKEKs        [][]byte
+	// Mail is the Mailer adapter; MailFrom and the SMTP fields configure it.
+	Mail         string
+	MailFrom     string
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUsername string
+	SMTPPassword string
 }
 
 // LogValue logs the configuration with its secrets redacted (ADR-0019 §6).
@@ -68,10 +83,21 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("queue", c.Queue),
 		slog.String("blob", c.Blob),
 		slog.String("media", c.Media),
+		slog.String("blob_fs_dir", c.BlobFSDir),
+		slog.Int64("media_max_image_bytes", c.MediaMaxImageBytes),
+		slog.Int("media_max_image_side", c.MediaMaxImageSide),
+		slog.Int64("media_max_image_pixels", c.MediaMaxImagePixels),
+		slog.Duration("media_unattached_ttl", c.MediaUnattachedTTL),
 		slog.String("kv", c.KV),
 		slog.String("key_manager", c.KeyManager),
 		slog.String("kek", redact(len(c.KEK) > 0)),
 		slog.Int("kek_previous", len(c.PreviousKEKs)),
+		slog.String("mail", c.Mail),
+		slog.String("mail_from", c.MailFrom),
+		slog.String("smtp_host", c.SMTPHost),
+		slog.Int("smtp_port", c.SMTPPort),
+		slog.String("smtp_username", c.SMTPUsername),
+		slog.String("smtp_password", redact(c.SMTPPassword != "")),
 	)
 }
 

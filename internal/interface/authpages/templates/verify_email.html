@@ -1,0 +1,9 @@
+{{define "content"}}
+<h1>{{.L.ServerAuthVerifyEmailTitle}}</h1>
+<p>{{.L.ServerAuthVerifyEmailPrompt}}</p>
+<form method="post" action="/auth/verify_email">
+<input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+<input type="hidden" name="token" value="{{.Token}}">
+<button type="submit">{{.L.ServerAuthVerifyEmailSubmit}}</button>
+</form>
+{{end}}
