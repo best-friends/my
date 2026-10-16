@@ -90,7 +90,7 @@ Where users get the source code of the running server, as an `https` URL. NodeIn
 
 ### `web_origin`
 
-Origin (`scheme://host[:port]`) of the web client. The client API allows only this origin by CORS (ADR-0019 §4). Set it when the web client is served from another origin, for example a development server at `http://localhost:5173`.
+Origin (`scheme://host[:port]`) of the web client. The client API allows only this origin by CORS (ADR-0019 §4). Set it when the web client is served from another origin, for example a development server at `http://localhost:5173`. An origin on `host` is where the server itself serves the web client, and the client served there calls the API at it: set `http://localhost:8080` to run the server over plain HTTP on localhost.
 
 - Environment variable: `MY_WEB_ORIGIN`
 - Default: `https://{host}`

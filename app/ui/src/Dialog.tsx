@@ -30,7 +30,9 @@ const modal = tv({
       "-me-2 -mt-1 grid size-9 shrink-0 place-items-center rounded-md text-fg-muted outline-none",
       "data-hovered:bg-surface-sunken data-hovered:text-fg data-focus-visible:focus-ring pointer-coarse:size-11",
     ],
-    body: "min-h-0 overflow-y-auto px-4 pb-4",
+    // React Aria cannot set overscroll-behavior on iOS WebKit under the shell's CSP, so each overlay's
+    // scrollable surface sets it, and its scroll never chains to the page (web-client.md §9).
+    body: "min-h-0 overflow-y-auto overscroll-contain px-4 pb-4",
   },
   variants: {
     placement: {

@@ -1247,7 +1247,11 @@ export interface components {
              */
             created_at: string;
             account?: components["schemas"]["Account"];
-            status_id?: components["schemas"]["Id"];
+            /**
+             * @description The post that the notification is about, as the user sees it; omitted when the user
+             *     may not see it.
+             */
+            status?: components["schemas"]["Status"];
         };
         /** @description How far the authenticated user has read the notifications. */
         NotificationMarker: {
@@ -1271,7 +1275,7 @@ export interface components {
          * @description The kind of a notification. `account` is the account that acted: the follower
          *     (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
          *     (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-         *     `status_id` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+         *     `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
          *     about. `moderation_notice` comes from the instance and has no `account`.
          * @enum {string}
          */

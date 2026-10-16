@@ -543,15 +543,14 @@ type Notification struct {
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
 
-	// StatusId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	StatusId *Id `json:"status_id,omitempty"`
+	// Status The post that the notification is about, as the user sees it; omitted when the user
+	// may not see it.
+	Status *Status `json:"status,omitempty"`
 
 	// Type The kind of a notification. `account` is the account that acted: the follower
 	// (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
 	// (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-	// `status_id` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+	// `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
 	// about. `moderation_notice` comes from the instance and has no `account`.
 	Type NotificationType `json:"type"`
 }
@@ -586,7 +585,7 @@ type NotificationPage struct {
 // NotificationType The kind of a notification. `account` is the account that acted: the follower
 // (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
 // (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-// `status_id` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+// `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
 // about. `moderation_notice` comes from the instance and has no `account`.
 type NotificationType string
 
