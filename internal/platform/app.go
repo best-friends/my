@@ -109,6 +109,9 @@ type App struct {
 	Blobs          blob.Store
 	MediaProcessor media.Processor
 	Media          *content.MediaService
+	// Previews reads profiles and statuses as an anonymous visitor sees them, for the link
+	// previews of the web client's profile and post pages (ADR-0028).
+	Previews *content.Previews
 	// Scheduler enqueues the periodic jobs for the worker role.
 	Scheduler *queue.Scheduler
 
@@ -164,9 +167,6 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Handlers:   &queue.JobHandlerRegistry{},
 	}
 
-	if err := a.setUpWeb(opts); err != nil {
-		return nil, err
-	}
 	if a.KeyManager, err = newKeyManager(cfg); err != nil {
 		return nil, err
 	}
@@ -314,6 +314,19 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
+	if err := a.setMedia(cfg, medias); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	// Link previews read statuses and their images, so the web client comes after media.
+	a.Previews = content.NewPreviews(content.PreviewDeps{
+		Repository: statuses, Accounts: a.Accounts, Restrictions: content.NoRestrictions{}, Media: a.Media,
+		DefaultLanguage: a.defaultPostLanguage,
+	})
+	if err := a.setUpWeb(opts); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
@@ -329,10 +342,6 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, err
 	}
 	tokens.Register(a)
-	if err := a.setMedia(cfg, medias); err != nil {
-		_ = a.Close()
-		return nil, err
-	}
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
@@ -357,8 +366,10 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		InstanceName: a.Config.Host,
 		// The HTML is the same for every visitor, so only the instance default applies.
 		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
-		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
-		Logger:        a.Logger,
+		// Profile and post pages carry link previews of what an anonymous visitor may see.
+		Previews: a.Previews, Messages: a.Messages,
+		NotFound: func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:   a.Logger,
 	})
 	if err != nil {
 		return err

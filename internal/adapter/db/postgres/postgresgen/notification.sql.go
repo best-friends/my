@@ -38,20 +38,40 @@ SELECT COUNT(*) FROM notifications n
 WHERE n.recipient_account_id = $1
   AND n.id > $2::text
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
+  AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
+    WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
+      AND (x.expires_at IS NULL OR x.expires_at > $3::timestamptz))
+  AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id)
 `
 
 type CountNotificationsAfterParams struct {
 	RecipientAccountID string
 	After              string
+	Now                time.Time
 }
 
-// CountNotificationsAfter counts the notifications of a recipient after the ID after that are
-// not dismissed; an empty after counts them all.
+// CountNotificationsAfter counts the notifications of a recipient after the ID after that
+// ListNotifications would return; an empty after counts them all.
 func (q *Queries) CountNotificationsAfter(ctx context.Context, arg CountNotificationsAfterParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countNotificationsAfter, arg.RecipientAccountID, arg.After)
+	row := q.db.QueryRow(ctx, countNotificationsAfter, arg.RecipientAccountID, arg.After, arg.Now)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const deleteNotificationExclusion = `-- name: DeleteNotificationExclusion :exec
+DELETE FROM notification_exclusions WHERE viewer_account_id = $1 AND target_account_id = $2 AND reason = $3
+`
+
+type DeleteNotificationExclusionParams struct {
+	ViewerAccountID string
+	TargetAccountID string
+	Reason          string
+}
+
+func (q *Queries) DeleteNotificationExclusion(ctx context.Context, arg DeleteNotificationExclusionParams) error {
+	_, err := q.db.Exec(ctx, deleteNotificationExclusion, arg.ViewerAccountID, arg.TargetAccountID, arg.Reason)
+	return err
 }
 
 const getNotification = `-- name: GetNotification :one
@@ -128,6 +148,19 @@ func (q *Queries) InsertNotification(ctx context.Context, arg InsertNotification
 	return result.RowsAffected(), nil
 }
 
+const insertNotificationDeletedStatus = `-- name: InsertNotificationDeletedStatus :exec
+
+INSERT INTO notification_deleted_statuses (status_id) VALUES ($1)
+ON CONFLICT (status_id) DO NOTHING
+`
+
+// Deleted statuses (projection of content.status_deleted).
+// InsertNotificationDeletedStatus inserts nothing when the status is already recorded.
+func (q *Queries) InsertNotificationDeletedStatus(ctx context.Context, statusID string) error {
+	_, err := q.db.Exec(ctx, insertNotificationDeletedStatus, statusID)
+	return err
+}
+
 const insertNotificationDismissal = `-- name: InsertNotificationDismissal :execrows
 INSERT INTO notification_dismissals (notification_id, dismissed_at) VALUES ($1, $2)
 ON CONFLICT (notification_id) DO NOTHING
@@ -154,8 +187,12 @@ WHERE n.recipient_account_id = $1
   AND ($2::text = '' OR n.id < $2::text)
   AND ($3::boolean OR n.type = ANY($4::text[]))
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
+  AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
+    WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
+      AND (x.expires_at IS NULL OR x.expires_at > $5::timestamptz))
+  AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id)
 ORDER BY n.id DESC
-LIMIT $5
+LIMIT $6
 `
 
 type ListNotificationsParams struct {
@@ -163,17 +200,20 @@ type ListNotificationsParams struct {
 	Before             string
 	AllTypes           bool
 	Types              []string
+	Now                time.Time
 	PageLimit          int32
 }
 
-// ListNotifications pages the notifications of a recipient that are not dismissed, newest
-// first; an empty before starts at the newest. With all_types false only the listed types count.
+// ListNotifications pages the notifications of a recipient that are not dismissed, whose
+// source no exclusion in force at now hides, and whose status is not deleted, newest first; an empty before starts at the
+// newest. With all_types false only the listed types count.
 func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]Notification, error) {
 	rows, err := q.db.Query(ctx, listNotifications,
 		arg.RecipientAccountID,
 		arg.Before,
 		arg.AllTypes,
 		arg.Types,
+		arg.Now,
 		arg.PageLimit,
 	)
 	if err != nil {
@@ -201,4 +241,29 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 		return nil, err
 	}
 	return items, nil
+}
+
+const upsertNotificationExclusion = `-- name: UpsertNotificationExclusion :exec
+
+INSERT INTO notification_exclusions (viewer_account_id, target_account_id, reason, expires_at) VALUES ($1, $2, $3, $4)
+ON CONFLICT (viewer_account_id, target_account_id, reason) DO UPDATE SET expires_at = excluded.expires_at
+`
+
+type UpsertNotificationExclusionParams struct {
+	ViewerAccountID string
+	TargetAccountID string
+	Reason          string
+	ExpiresAt       *time.Time
+}
+
+// Exclusions (projection of the graph events).
+// UpsertNotificationExclusion replaces the expiry of an existing exclusion.
+func (q *Queries) UpsertNotificationExclusion(ctx context.Context, arg UpsertNotificationExclusionParams) error {
+	_, err := q.db.Exec(ctx, upsertNotificationExclusion,
+		arg.ViewerAccountID,
+		arg.TargetAccountID,
+		arg.Reason,
+		arg.ExpiresAt,
+	)
+	return err
 }

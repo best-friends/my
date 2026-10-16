@@ -2,7 +2,8 @@
 // The Storybook preview of @my/ui (ADR-0027): the token stylesheet, the locale and theme toolbars,
 // and the accessibility gate that fails a story test on any axe violation.
 import type { Decorator, Preview } from "@storybook/react-vite";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { UNSAFE_PortalProvider } from "react-aria";
 import { I18nProvider } from "react-aria-components";
 import "../src/storybook.css";
 
@@ -35,9 +36,13 @@ type PreviewRootProps = { locale: Locale; theme: Theme; children: ReactNode };
  * Applies the globals the way the app does: lang, dir and data-theme on <html> (app/ui/README.md) and
  * the React Aria locale. The frame is a size container, so components answer to its width
  * (web-client.md D2); the visual tests set its inline size.
+ * Overlays (dialogs, popovers, toasts) are portalled into the frame instead of <body>, so its screenshots
+ * show them. Layout containment makes the frame the containing block of fixed-position descendants too,
+ * so a modal covers the frame rather than the page.
  */
 function PreviewRoot({ locale, theme, children }: PreviewRootProps) {
   const { dir } = locales[locale];
+  const [frame, setFrame] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     const root = document.documentElement;
     root.lang = locale;
@@ -46,8 +51,9 @@ function PreviewRoot({ locale, theme, children }: PreviewRootProps) {
   }, [locale, dir, theme]);
   return (
     <I18nProvider locale={locale}>
-      <div className="@container" data-story-frame="">
-        {children}
+      <div ref={setFrame} className="contain-layout @container" data-story-frame="">
+        {/* The story renders once the frame exists, so an overlay that starts open already has its container. */}
+        {frame !== null && <UNSAFE_PortalProvider getContainer={() => frame}>{children}</UNSAFE_PortalProvider>}
       </div>
     </I18nProvider>
   );

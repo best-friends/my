@@ -1,0 +1,243 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Toasts: short, visible notes about something that just happened (posted, copied, failed), stacked at
+// the bottom edge. A toast never takes focus. It is announced through the Announcer's live regions
+// (web-client.md Y7), so the visible list itself is not a live region and nothing is read twice.
+// The list is a labelled region landmark, so keyboard and screen reader users can reach a toast's action.
+//
+// React Aria Components' Toast is still UNSTABLE_ (react-aria-components 1.21), so the kit keeps its own
+// small queue. Auto-dismiss pauses while the pointer is over the toasts or focus is in them (WCAG 2.2.1),
+// and a toast with an action stays until it is dismissed unless it sets a timeout.
+import { createContext, type ReactNode, use, useEffect, useRef, useState } from "react";
+import { Button } from "react-aria-components";
+import { tv } from "tailwind-variants";
+import { useAnnouncer } from "./Announcer";
+import { CloseIcon } from "./CloseIcon";
+
+export type ToastTone = "neutral" | "success" | "danger";
+
+export type ToastOptions = {
+  /** The message, already translated. */
+  message: string;
+  /** `danger` is announced assertively; the others politely. */
+  tone?: ToastTone;
+  /** One follow-up action, such as "Undo" or "View". Pressing it also dismisses the toast. */
+  action?: { label: string; onAction: () => void };
+  /** Milliseconds before the toast closes by itself; `null` keeps it until dismissed. */
+  timeout?: number | null;
+};
+
+export type ToastApi = {
+  /** Shows and announces a toast and returns its id. */
+  show: (options: ToastOptions) => number;
+  dismiss: (id: number) => void;
+};
+
+const ToastContext = createContext<ToastApi | null>(null);
+
+type QueuedToast = ToastOptions & { id: number };
+
+/** A timeout that can pause and resume, for auto-dismiss. It lives outside rendering, so it may read the clock. */
+class PausableTimer {
+  #handle: ReturnType<typeof setTimeout> | null = null;
+  #remaining: number;
+  #startedAt = 0;
+  readonly #onDone: () => void;
+
+  constructor(duration: number, onDone: () => void) {
+    this.#remaining = duration;
+    this.#onDone = onDone;
+  }
+
+  resume() {
+    if (this.#handle !== null) return;
+    this.#startedAt = Date.now();
+    this.#handle = setTimeout(this.#onDone, this.#remaining);
+  }
+
+  pause() {
+    if (this.#handle === null) return;
+    clearTimeout(this.#handle);
+    this.#handle = null;
+    this.#remaining = Math.max(0, this.#remaining - (Date.now() - this.#startedAt));
+  }
+}
+
+const toast = tv({
+  slots: {
+    region: [
+      "pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4",
+      "pb-[max(--spacing(4),env(safe-area-inset-bottom))]",
+    ],
+    item: [
+      "pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-lg border border-s-4 border-border bg-surface-raised",
+      "py-2 ps-4 pe-2 text-sm text-fg shadow-lg",
+    ],
+    message: "flex-1 py-1",
+    action: [
+      "shrink-0 rounded-md px-2 py-1 font-semibold text-accent outline-none data-focus-visible:focus-ring data-hovered:text-accent-hover",
+      "pointer-coarse:min-h-11",
+    ],
+    dismiss: [
+      "grid size-8 shrink-0 place-items-center rounded-md text-fg-muted outline-none data-focus-visible:focus-ring",
+      "data-hovered:bg-surface-sunken data-hovered:text-fg pointer-coarse:size-11",
+    ],
+  },
+  variants: {
+    tone: {
+      neutral: { item: "border-s-border-strong" },
+      success: { item: "border-s-success" },
+      danger: { item: "border-s-danger" },
+    },
+  },
+});
+
+export type ToastProviderProps = {
+  children: ReactNode;
+  /** The accessible name of the toast region, such as "Notifications". */
+  regionLabel: string;
+  /** The accessible name of each toast's × button, such as "Dismiss". */
+  dismissLabel: string;
+  /** The timeout of a toast without an action, in ms. */
+  defaultTimeout?: number;
+};
+
+/**
+ * Renders the toasts and gives `useToast()` to its children. Mount it once, inside the AnnouncerProvider.
+ */
+export function ToastProvider({ children, regionLabel, dismissLabel, defaultTimeout = 5000 }: ToastProviderProps) {
+  const announce = useAnnouncer();
+  const [toasts, setToasts] = useState<readonly QueuedToast[]>([]);
+  const nextIdRef = useRef(0);
+  const timersRef = useRef(new Map<number, PausableTimer>());
+  const regionRef = useRef<HTMLElement>(null);
+  /** Pointer over the region, focus in it: either pauses every timer. */
+  const holdRef = useRef({ hovered: false, focused: false });
+  /** Where focus came from when it entered the region, to return it when the last toast closes. */
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      for (const timer of timers.values()) timer.pause();
+      timers.clear();
+    };
+  }, []);
+
+  const isHeld = () => holdRef.current.hovered || holdRef.current.focused;
+
+  const pause = () => {
+    for (const timer of timersRef.current.values()) timer.pause();
+  };
+
+  const resume = () => {
+    if (isHeld()) return;
+    for (const timer of timersRef.current.values()) timer.resume();
+  };
+
+  function dismiss(id: number) {
+    timersRef.current.get(id)?.pause();
+    timersRef.current.delete(id);
+
+    // Removing the focused toast would drop focus to <body>; move it to a neighbour or back where it came from.
+    const items = [...(regionRef.current?.querySelectorAll<HTMLElement>("[data-toast-id]") ?? [])];
+    const index = items.findIndex((item) => item.dataset["toastId"] === String(id));
+    const current = items[index];
+    if (current?.contains(document.activeElement) === true) {
+      const neighbour = items[index + 1] ?? items[index - 1];
+      if (neighbour !== undefined) neighbour.querySelector<HTMLElement>("button")?.focus();
+      else if (returnFocusRef.current?.isConnected === true) returnFocusRef.current.focus();
+    }
+    if (items.length <= 1) {
+      // The region unmounts with its last toast, so it fires no leave or blur events.
+      holdRef.current = { hovered: false, focused: false };
+      returnFocusRef.current = null;
+    }
+    setToasts((list) => list.filter((t) => t.id !== id));
+  }
+
+  const show = (options: ToastOptions) => {
+    const id = nextIdRef.current++;
+    setToasts((list) => [...list, { ...options, id }]);
+    announce(options.message, options.tone === "danger" ? "assertive" : "polite");
+    const timeout = options.timeout === undefined ? (options.action === undefined ? defaultTimeout : null) : options.timeout;
+    if (timeout !== null) {
+      const timer = new PausableTimer(timeout, () => {
+        dismiss(id);
+      });
+      timersRef.current.set(id, timer);
+      if (!isHeld()) timer.resume();
+    }
+    return id;
+  };
+
+  const styles = toast();
+  return (
+    <ToastContext value={{ show, dismiss }}>
+      {children}
+      {toasts.length > 0 && (
+        <section
+          ref={regionRef}
+          aria-label={regionLabel}
+          // Stays reachable while a modal hides the rest of the page (React Aria's ariaHideOutside).
+          data-react-aria-top-layer="true"
+          className={styles.region()}
+          onPointerEnter={() => {
+            holdRef.current.hovered = true;
+            pause();
+          }}
+          onPointerLeave={() => {
+            holdRef.current.hovered = false;
+            resume();
+          }}
+          onFocus={(event) => {
+            if (!holdRef.current.focused && event.relatedTarget instanceof HTMLElement && !event.currentTarget.contains(event.relatedTarget)) {
+              returnFocusRef.current = event.relatedTarget;
+            }
+            holdRef.current.focused = true;
+            pause();
+          }}
+          onBlur={(event) => {
+            if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+            holdRef.current.focused = false;
+            resume();
+          }}
+        >
+          <ol className="contents">
+            {toasts.map((t) => (
+              <li key={t.id} data-toast-id={t.id} className={styles.item({ tone: t.tone ?? "neutral" })}>
+                <p className={styles.message()}>{t.message}</p>
+                {t.action !== undefined && (
+                  <Button
+                    className={styles.action()}
+                    onPress={() => {
+                      t.action?.onAction();
+                      dismiss(t.id);
+                    }}
+                  >
+                    {t.action.label}
+                  </Button>
+                )}
+                <Button
+                  aria-label={dismissLabel}
+                  className={styles.dismiss()}
+                  onPress={() => {
+                    dismiss(t.id);
+                  }}
+                >
+                  <CloseIcon />
+                </Button>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+    </ToastContext>
+  );
+}
+
+/** Returns `{ show, dismiss }`. Call them from event handlers and mutation callbacks. */
+export function useToast(): ToastApi {
+  const api = use(ToastContext);
+  if (api === null) throw new Error("useToast needs a <ToastProvider> above it");
+  return api;
+}

@@ -51,7 +51,8 @@ type Repository interface {
 	// Block returns a block by ID.
 	Block(ctx context.Context, tx uow.Tx, id string) (graph.Block, error)
 	UpsertMute(ctx context.Context, tx uow.Tx, m graph.Mute) error
-	DeleteMute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string) error
+	// DeleteMute deletes accountID's mute of targetAccountID and reports whether there was one.
+	DeleteMute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string) (bool, error)
 	// Mute is FindMute inside tx.
 	Mute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string, now time.Time) (graph.Mute, error)
 

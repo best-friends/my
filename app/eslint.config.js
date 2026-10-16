@@ -104,6 +104,9 @@ export default defineConfig(
       "react-hooks/no-deriving-state-in-effects": "error",
       // A8: only PostContent may render sanitized HTML (re-enabled below).
       "@eslint-react/dom-no-dangerously-set-innerhtml": "error",
+      // R4, R5: React Compiler memoizes a context value built during render; this rule asks for the useMemo /
+      // useCallback that R5 forbids.
+      "@eslint-react/no-unstable-context-value": "off",
       // A7
       "@typescript-eslint/no-restricted-types": [
         "error",
@@ -215,10 +218,10 @@ export default defineConfig(
                 },
               },
             },
-            // T5: stories also import the Storybook types; components never do.
+            // T5: stories also import the Storybook types and, for their play functions, storybook (storybook/test); components never do.
             {
               from: { element: { type: "ui", fileInternalPath: "**/*.stories.tsx" } },
-              allow: { to: { module: { origin: "external", source: ["@storybook/react-vite"] } } },
+              allow: { to: { module: { origin: "external", source: ["@storybook/react-vite", "storybook"] } } },
             },
             // T5: component tests also import Testing Library and Vitest; components never do.
             {
