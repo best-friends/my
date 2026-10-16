@@ -74,6 +74,8 @@ type Repository interface {
 	// Lookups.
 
 	FindAccount(ctx context.Context, id string) (account.Account, error)
+	// Account is FindAccount inside tx.
+	Account(ctx context.Context, tx uow.Tx, id string) (account.Account, error)
 	// FindInstanceActor returns the local Application actor.
 	FindInstanceActor(ctx context.Context) (account.Account, error)
 	FindLocalAccount(ctx context.Context, accountID string) (account.LocalAccount, error)

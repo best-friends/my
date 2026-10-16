@@ -1,0 +1,130 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package notification
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/notification"
+)
+
+// Deps are the ports a Service uses.
+type Deps struct {
+	UnitOfWork uow.UnitOfWork
+	Repository Repository
+	Clock      kernel.Clock
+}
+
+// Service runs the notification module's use cases of a local account's own notifications
+// (FR-205): listing them, the read marker and unread count, and dismissing them. The projectors
+// that create notifications are registered with RegisterProjectors.
+type Service struct {
+	d Deps
+}
+
+// NewService returns a Service on d.
+func NewService(d Deps) *Service { return &Service{d: d} }
+
+// Page sizes of the notification list.
+const (
+	DefaultPageLimit = 40
+	MaxPageLimit     = 80
+)
+
+// Query selects a page of an account's notifications, newest first.
+type Query struct {
+	// Types keeps only notifications of these types; empty keeps every type.
+	Types []notification.Type
+	// Before is the ID of the last notification of the previous page; "" starts at the newest.
+	Before string
+	// Limit is the page size; zero or less means DefaultPageLimit, and it is capped at MaxPageLimit.
+	Limit int
+}
+
+func (q Query) limit() int {
+	switch {
+	case q.Limit <= 0:
+		return DefaultPageLimit
+	case q.Limit > MaxPageLimit:
+		return MaxPageLimit
+	}
+	return q.Limit
+}
+
+// List returns accountID's notifications that are not dismissed, newest first. An unknown type
+// in q.Types fails with notification.ErrInvalidType.
+func (s *Service) List(ctx context.Context, accountID string, q Query) ([]notification.Notification, error) {
+	for _, t := range q.Types {
+		if !t.Valid() {
+			return nil, fmt.Errorf("type %q: %w", t, notification.ErrInvalidType)
+		}
+	}
+	return s.d.Repository.ListNotifications(ctx, accountID, q.Types, q.Before, q.limit())
+}
+
+// ReadMarker returns accountID's read marker; an account that has read nothing has a marker
+// with an empty LastReadID.
+func (s *Service) ReadMarker(ctx context.Context, accountID string) (notification.ReadMarker, error) {
+	m, err := s.d.Repository.FindReadMarker(ctx, accountID)
+	if errors.Is(err, ErrNotFound) {
+		return notification.ReadMarker{AccountID: accountID}, nil
+	}
+	return m, err
+}
+
+// UnreadCount returns the number of accountID's notifications that are not dismissed and are
+// newer than its read marker.
+func (s *Service) UnreadCount(ctx context.Context, accountID string) (int64, error) {
+	m, err := s.ReadMarker(ctx, accountID)
+	if err != nil {
+		return 0, err
+	}
+	return s.d.Repository.CountNotificationsAfter(ctx, accountID, m.LastReadID)
+}
+
+// MarkRead marks accountID's notifications up to and including lastReadID as read, and
+// returns the marker. The marker only moves forward: marking an older notification changes
+// nothing, so clients that report their positions concurrently never move it back.
+// lastReadID must be one of the account's notifications (ErrNotFound otherwise).
+func (s *Service) MarkRead(ctx context.Context, accountID, lastReadID string) (notification.ReadMarker, error) {
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if _, err := s.own(ctx, tx, accountID, lastReadID); err != nil {
+			return err
+		}
+		_, err := s.d.Repository.AdvanceReadMarker(ctx, tx, notification.ReadMarker{AccountID: accountID, LastReadID: lastReadID})
+		return err
+	})
+	if err != nil {
+		return notification.ReadMarker{}, err
+	}
+	return s.ReadMarker(ctx, accountID)
+}
+
+// Dismiss dismisses one of accountID's notifications: it leaves the list and the unread count.
+// Dismissing it again changes nothing; a notification of another account fails with ErrNotFound.
+func (s *Service) Dismiss(ctx context.Context, accountID, notificationID string) error {
+	d := notification.Dismissal{NotificationID: notificationID, DismissedAt: s.d.Clock.Now()}
+	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if _, err := s.own(ctx, tx, accountID, notificationID); err != nil {
+			return err
+		}
+		_, err := s.d.Repository.InsertDismissal(ctx, tx, d)
+		return err
+	})
+}
+
+// own returns the notification id when it belongs to accountID.
+func (s *Service) own(ctx context.Context, tx uow.Tx, accountID, id string) (notification.Notification, error) {
+	n, err := s.d.Repository.Notification(ctx, tx, id)
+	if err != nil {
+		return notification.Notification{}, err
+	}
+	if n.RecipientAccountID != accountID {
+		return notification.Notification{}, fmt.Errorf("notification %s of %s: %w", id, accountID, ErrNotFound)
+	}
+	return n, nil
+}

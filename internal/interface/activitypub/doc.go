@@ -11,6 +11,6 @@
 //
 // Actor documents name the inbox and the shared inbox, which are not served yet. The outbox,
 // followers, following, featured, and featured-tags collections are served, and are empty
-// until posts and follows exist. Profile pages (/@alice) answer only ActivityPub requests,
-// which they redirect to the actor; the web client will serve their HTML.
+// until posts and follows exist. Profile pages (/@alice) redirect ActivityPub requests to the
+// actor and pass every other request to the web client's HTML handler (Options.HTML).
 package activitypub

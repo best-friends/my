@@ -253,6 +253,22 @@ type Mute struct {
 	CreatedAt         time.Time
 }
 
+type Notification struct {
+	ID                 string
+	RecipientAccountID string
+	Type               string
+	SourceAccountID    *string
+	StatusID           *string
+	ModerationActionID *string
+	DedupeKey          string
+	CreatedAt          time.Time
+}
+
+type NotificationReadMarker struct {
+	AccountID  string
+	LastReadID string
+}
+
 type PasswordCredential struct {
 	ID           string
 	UserID       string
@@ -318,6 +334,7 @@ type StatusMentionIndex struct {
 type StatusPin struct {
 	AccountID string
 	StatusID  string
+	Slot      int32
 	CreatedAt time.Time
 	ID        string
 }

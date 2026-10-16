@@ -6,9 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
+	"slices"
 
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
@@ -30,6 +32,7 @@ import (
 	"github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/media"
+	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
@@ -38,6 +41,7 @@ import (
 	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	mediahttp "github.com/best-friends/my/internal/interface/media"
+	"github.com/best-friends/my/internal/interface/web"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -88,6 +92,9 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// Notifications lists a local account's notifications, which projectors create from the
+	// graph and content events, with its read marker and dismissals (FR-205).
+	Notifications *notification.Service
 
 	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
 	Blobs          blob.Store
@@ -103,6 +110,10 @@ type App struct {
 	// closeBlobs releases the blob store.
 	closeBlobs func() error
 	routes     []route
+	// page serves the web client's HTML at the GET paths that no route serves.
+	page http.Handler
+	// webStylesheet is the URL of the web client's built CSS, empty without a build.
+	webStylesheet string
 }
 
 type route struct {
@@ -116,6 +127,11 @@ type AppOptions struct {
 	Logger *slog.Logger
 	// Version is the server version that NodeInfo reports; the default is "dev".
 	Version string
+	// WebBuild is the build of the web client; the default is the one embedded in the binary.
+	WebBuild fs.FS
+	// DevViteOrigin, when set, makes the web client's shell load the client from a Vite dev
+	// server at this origin (`my serve -dev-vite-origin`). Development only.
+	DevViteOrigin string
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -139,6 +155,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Handlers:   &queue.JobHandlerRegistry{},
 	}
 
+	if err := a.setUpWeb(opts); err != nil {
+		return nil, err
+	}
 	if a.KeyManager, err = newKeyManager(cfg); err != nil {
 		return nil, err
 	}
@@ -151,6 +170,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows      graph.Repository
 		statuses     content.Repository
 		interactions content.InteractionRepository
+		notifs       notification.Repository
 		medias       content.MediaRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
@@ -164,6 +184,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions = d.InteractionRepository()
+		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -179,6 +200,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions = d.InteractionRepository()
+		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -266,15 +288,23 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
 		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	// After the graph and content projectors, whose events these projectors turn into notifications.
+	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
+		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
+	})
+	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
 
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
+		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	authpages.New(authpages.Options{Identity: a.Identity, Locales: a.Locales, Logger: a.Logger}).Register(a)
+	// The sign-in screens share the web client's built CSS (ADR-0030).
+	authpages.New(authpages.Options{
+		Identity: a.Identity, Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
+	}).Register(a)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -287,6 +317,41 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
+}
+
+// setUpWeb builds the web client's handler (ADR-0028), registers its assets and manifest, and
+// sets a.page, which serves its HTML to the requests that do not ask for ActivityPub.
+func (a *App) setUpWeb(opts AppOptions) error {
+	if opts.WebBuild == nil {
+		opts.WebBuild = web.Embedded()
+	}
+	h, err := web.New(web.Options{
+		Build: opts.WebBuild, DevViteOrigin: opts.DevViteOrigin,
+		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain,
+		// The instance is named after its host until the instance settings hold a name.
+		InstanceName: a.Config.Host,
+		// The HTML is the same for every visitor, so only the instance default applies.
+		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
+		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:        a.Logger,
+	})
+	if err != nil {
+		return err
+	}
+	h.Register(a)
+	a.webStylesheet = h.Stylesheet()
+	a.page = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The same URL may be an ActivityPub document, so every answer depends on Accept.
+		if !slices.Contains(w.Header().Values("Vary"), "Accept") {
+			w.Header().Add("Vary", "Accept")
+		}
+		if activitypub.AsksForActivityPub(r) {
+			a.writeStatusProblem(w, r, http.StatusNotFound)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+	return nil
 }
 
 // setMedia builds the blob store, the media processor, and the media use cases, and registers

@@ -240,12 +240,22 @@ func (r *InteractionRepository) InsertPin(ctx context.Context, tx uow.Tx, p cont
 		return false, err
 	}
 	n, err := q.InsertStatusPin(ctx, sqlitegen.InsertStatusPinParams{
-		AccountID: p.AccountID, StatusID: p.StatusID, CreatedAt: toMillis(p.CreatedAt), ID: p.ID,
+		AccountID: p.AccountID, StatusID: p.StatusID, CreatedAt: toMillis(p.CreatedAt), ID: p.ID, MaxSlot: content.MaxPins,
 	})
 	if err != nil {
 		return false, wrap(err, "insert status pin")
 	}
 	return n == 1, nil
+}
+
+// HasPin implements content.InteractionRepository.
+func (r *InteractionRepository) HasPin(ctx context.Context, tx uow.Tx, accountID, statusID string) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	ok, err := q.StatusPinExists(ctx, sqlitegen.StatusPinExistsParams{AccountID: accountID, StatusID: statusID})
+	return ok, wrap(err, "check status pin")
 }
 
 // DeletePin implements content.InteractionRepository.
