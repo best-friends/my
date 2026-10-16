@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The one audited component that renders HTML (web-client.md A8). ESLint allows dangerouslySetInnerHTML
 // in this file only (app/eslint.config.js). The server sanitizes every post body to its allowlist
-// before it reaches the client; this component trusts that and adds nothing of its own.
+// before it reaches the client; this component trusts that and adds nothing of its own. The app's
+// Content-Security-Policy requires Trusted Types (`require-trusted-types-for 'script'`, ADR-0019 §9), under
+// which the browser refuses a plain string as innerHTML, so the HTML goes in as a TrustedHTML made by the
+// one policy below, the only place that turns a string into TrustedHTML.
 import type { ComponentPropsWithRef } from "react";
 import { tv } from "tailwind-variants";
 
@@ -20,6 +23,32 @@ export type SanitizedHtml = string & { readonly [sanitizedHtmlBrand]: true };
  */
 export function serverSanitizedHtml(html: string): SanitizedHtml {
   return html as SanitizedHtml;
+}
+
+/** The part of the Trusted Types API (https://developer.mozilla.org/docs/Web/API/Trusted_Types_API) used here. */
+type TrustedTypePolicyFactory = {
+  createPolicy: (name: string, rules: { createHTML: (html: string) => string }) => TrustedTypePolicy;
+};
+type TrustedTypePolicy = { createHTML: (html: string) => unknown };
+
+/** The policy of each Trusted Types factory, made on first use. */
+const policies = new WeakMap<TrustedTypePolicyFactory, TrustedTypePolicy>();
+
+/**
+ * The HTML as a TrustedHTML where the browser has Trusted Types, and as it is elsewhere. The policy
+ * passes the HTML through unchanged: only `SanitizedHtml`, which the server sanitized, reaches it.
+ */
+function trustedHtml(html: SanitizedHtml): string {
+  const factory = (globalThis as { trustedTypes?: TrustedTypePolicyFactory }).trustedTypes;
+  if (factory === undefined) return html;
+  let policy = policies.get(factory);
+  if (policy === undefined) {
+    policy = factory.createPolicy("my-server-sanitized-html", { createHTML: (input) => input });
+    policies.set(factory, policy);
+  }
+  // React assigns the value of __html to innerHTML as it is, and innerHTML accepts the TrustedHTML in
+  // place of the string its DOM type names.
+  return policy.createHTML(html) as string;
 }
 
 const postContent = tv({
@@ -47,5 +76,5 @@ export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "
  * PostCard by it.
  */
 export function PostContent({ html, lang, className, ...props }: PostContentProps) {
-  return <div {...props} dir="auto" lang={lang} className={postContent({ className })} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div {...props} dir="auto" lang={lang} className={postContent({ className })} dangerouslySetInnerHTML={{ __html: trustedHtml(html) }} />;
 }
