@@ -34,3 +34,7 @@ coverage/
 test-results/
 playwright-report/
 blob-report/
+
+# Storybook build and Vitest browser-mode attachments (app/ui)
+storybook-static/
+.vitest/
