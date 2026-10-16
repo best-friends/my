@@ -6,13 +6,13 @@
 -- name: InsertFeedEntry :execrows
 INSERT INTO feed_entries (
   id, kind, status_id, author_account_id, author_domain, original_author_account_id,
-  original_author_domain, visibility, is_local, language, revision_seq
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  original_author_domain, visibility, is_local, language, revision_seq, is_reply
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (id) DO NOTHING;
 
 -- name: GetFeedEntry :one
 SELECT id, kind, status_id, author_account_id, author_domain, original_author_account_id,
-  original_author_domain, visibility, is_local, language, revision_seq
+  original_author_domain, visibility, is_local, language, revision_seq, is_reply
 FROM feed_entries WHERE id = ?;
 
 -- UpdateFeedEntriesRevision moves the entries of a status (the post and its boosts) to a
@@ -90,7 +90,7 @@ DELETE FROM feed_exclusions;
 
 -- name: ListAllFeedEntries :many
 SELECT id, kind, status_id, author_account_id, author_domain, original_author_account_id,
-  original_author_domain, visibility, is_local, language, revision_seq
+  original_author_domain, visibility, is_local, language, revision_seq, is_reply
 FROM feed_entries ORDER BY id;
 
 -- name: ListAllFeedDirectRecipients :many
@@ -120,7 +120,7 @@ ORDER BY viewer_account_id, target_account_id, reason;
 -- boosts, within the read window (id >= window_floor).
 -- name: ListHomeEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
-  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.author_account_id IN (
     SELECT f.followee_account_id FROM feed_follow_edges f WHERE f.follower_account_id = sqlc.arg(viewer)
@@ -157,7 +157,7 @@ LIMIT sqlc.arg(page_limit);
 -- authors kept from discovery and those the viewer ('' for none) blocks, is blocked by, or mutes.
 -- name: ListLocalEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
-  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.is_local = 1 AND e.kind = 'post' AND e.visibility IN ('public', 'local')
   AND (CAST(sqlc.arg(include_local) AS INTEGER) = 1 OR e.visibility = 'public')
@@ -180,7 +180,7 @@ LIMIT sqlc.arg(page_limit);
 -- author's domain.
 -- name: ListTagEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
-  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_tag_entries t
 JOIN feed_entries e ON e.id = t.entry_id
 WHERE t.tag_id = sqlc.arg(tag_id) AND t.visibility IN ('public', 'local')
@@ -208,10 +208,11 @@ LIMIT sqlc.arg(page_limit);
 -- boosts of each visibility whose include_* flag is 1, and, when include_direct is 1, the
 -- direct posts addressed to the viewer (all of them when the viewer is the author). Boosts of
 -- statuses whose author the viewer excludes, or whose author or domain is hidden from
--- profiles, are left out.
+-- profiles, are left out. exclude_replies leaves out the posts that reply to a status, and
+-- exclude_boosts the boosts.
 -- name: ListProfileEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
-  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.author_account_id = sqlc.arg(author)
   AND (CAST(sqlc.arg(before) AS TEXT) = '' OR e.id < CAST(sqlc.arg(before) AS TEXT))
@@ -238,6 +239,8 @@ WHERE e.author_account_id = sqlc.arg(author)
         AND (dr.domain = e.original_author_domain
           OR substr(e.original_author_domain, -(length(dr.domain) + 1)) = '.' || dr.domain))))
   AND (CAST(sqlc.arg(all_languages) AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(sqlc.arg(languages) AS TEXT))))
+  AND (CAST(sqlc.arg(exclude_replies) AS INTEGER) = 0 OR e.is_reply = 0)
+  AND (CAST(sqlc.arg(exclude_boosts) AS INTEGER) = 0 OR e.kind = 'post')
 ORDER BY e.id DESC
 LIMIT sqlc.arg(page_limit);
 

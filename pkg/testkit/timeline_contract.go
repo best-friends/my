@@ -4,6 +4,7 @@ package testkit
 
 import (
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"reflect"
 	"slices"
@@ -56,6 +57,7 @@ func TimelineContract(t *testing.T, newHarness TimelineFactory) {
 		{"LocalTimeline", timelineLocal},
 		{"HashtagTimeline", timelineHashtag},
 		{"ProfileTimeline", timelineProfile},
+		{"ProfileLeavesOutRepliesAndBoosts", timelineProfileFilters},
 		{"FiltersLanguages", timelineLanguages},
 		{"PagesByKeyset", timelinePaging},
 		{"ForgetsDeletedStatuses", timelineDeletes},
@@ -125,12 +127,15 @@ type postOpts struct {
 	mentions []string
 	tags     []string
 	language string
+	// inReplyTo is the URI of the status replied to, "" for none.
+	inReplyTo string
 }
 
 // post creates a status of author, remote when the author is, and returns it.
 func (e *timelineEnv) post(t *testing.T, author string, v content.Visibility, o postOpts) content.Status {
 	t.Helper()
 	s := e.newStatus(author, v)
+	s.InReplyToURI = o.inReplyTo
 	if !e.actors.local(author) {
 		s.IsLocal = false
 		s.URI = "https://" + timelineRemoteDomain + "/statuses/" + s.ID
@@ -499,7 +504,7 @@ func timelineProfile(t *testing.T, e *timelineEnv) {
 	boost := e.boost(t, author, other)
 	profile := func(viewer appcontent.Viewer, want ...string) {
 		t.Helper()
-		p, err := e.svc.Profile(t.Context(), viewer, author, apptimeline.Query{Limit: apptimeline.MaxLimit})
+		p, err := e.svc.Profile(t.Context(), viewer, author, apptimeline.ProfileFilter{}, apptimeline.Query{Limit: apptimeline.MaxLimit})
 		expectPage(t, "Profile", p, err, want...)
 	}
 	profile(viewerOf(author), pub.ID, loc.ID, unl.ID, prv.ID, dir.ID, boost.ID)
@@ -524,6 +529,23 @@ func timelineProfile(t *testing.T, e *timelineEnv) {
 	e.restrict(t, author, timeline.RestrictProfileView)
 	profile(viewerOf(follower))
 	profile(viewerOf(author), pub.ID, loc.ID, unl.ID, prv.ID, dir.ID, boost.ID)
+}
+
+func timelineProfileFilters(t *testing.T, e *timelineEnv) {
+	author, other := e.account(true), e.account(true)
+	first := e.public(t, other)
+	pub := e.public(t, author)
+	reply := e.post(t, author, content.VisibilityPublic, postOpts{inReplyTo: first.URI})
+	boost := e.boost(t, author, first)
+	profile := func(f apptimeline.ProfileFilter, want ...string) {
+		t.Helper()
+		p, err := e.svc.Profile(t.Context(), anonymous, author, f, apptimeline.Query{Limit: apptimeline.MaxLimit})
+		expectPage(t, fmt.Sprintf("Profile(%+v)", f), p, err, want...)
+	}
+	profile(apptimeline.ProfileFilter{}, pub.ID, reply.ID, boost.ID)
+	profile(apptimeline.ProfileFilter{ExcludeReplies: true}, pub.ID, boost.ID)
+	profile(apptimeline.ProfileFilter{ExcludeBoosts: true}, pub.ID, reply.ID)
+	profile(apptimeline.ProfileFilter{ExcludeReplies: true, ExcludeBoosts: true}, pub.ID)
 }
 
 func timelineLanguages(t *testing.T, e *timelineEnv) {
@@ -635,7 +657,11 @@ func timelineProjectionEqualsRebuild(t *testing.T, e *timelineEnv) {
 			if !e.actors.local(author) && v == content.VisibilityLocal {
 				v = content.VisibilityPublic
 			}
-			live = append(live, e.post(t, author, v, postOpts{mentions: subset(locals), tags: subset(tags), language: pick([]string{"en", "ja", "und"})}))
+			o := postOpts{mentions: subset(locals), tags: subset(tags), language: pick([]string{"en", "ja", "und"})}
+			if len(live) > 0 && rng.IntN(2) == 0 {
+				o.inReplyTo = live[rng.IntN(len(live))].URI
+			}
+			live = append(live, e.post(t, author, v, o))
 		case 3:
 			if len(live) > 0 {
 				s := live[rng.IntN(len(live))]

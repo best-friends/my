@@ -45,6 +45,12 @@ type Options struct {
 	Statuses     Statuses
 	StatusReader StatusReader
 	Interactions Interactions
+	// Timelines reads the timelines, and TimelineReader the statuses they list.
+	Timelines      Timelines
+	TimelineReader TimelineReader
+	// TimelineLanguages returns the languages that a user's timelines show, none for every
+	// language (FR-208); nil shows every language.
+	TimelineLanguages func(ctx context.Context, userID string) ([]string, error)
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

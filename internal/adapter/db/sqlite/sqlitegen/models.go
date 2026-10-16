@@ -147,6 +147,7 @@ type FeedEntry struct {
 	IsLocal                 int64
 	Language                string
 	RevisionSeq             int64
+	IsReply                 int64
 }
 
 type FeedExclusion struct {

@@ -45,6 +45,7 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 			AuthorAccountID: s.AuthorAccountID, AuthorDomain: domain,
 			OriginalAuthorAccountID: s.AuthorAccountID, OriginalAuthorDomain: domain,
 			Visibility: s.Visibility, IsLocal: s.IsLocal, Language: language(rev.Language), RevisionSeq: rev.Seq,
+			IsReply: s.InReplyToURI != "",
 		}
 		if err := insertEntry(ctx, tx, repo, entry); err != nil {
 			return err
