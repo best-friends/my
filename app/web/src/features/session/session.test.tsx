@@ -3,7 +3,7 @@
 // redirect with PKCE, the callback, an API call whose token has to be refreshed, and the sign-out. MSW
 // models the server's OAuth endpoints, with the refresh token cookie as a variable (the browser's cookie
 // jar is not part of jsdom's fetch).
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { apiBase, oauthError, oauthPaths, problem, tokenResponse, viewerFixture } from "../../test/msw/handlers";
@@ -93,7 +93,7 @@ describe("signing in and out", () => {
     const view = await renderApp({ path: "/login?return_to=/settings" });
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
     await view.user.click(screen.getByRole("button", { name: "Continue to sign in" }));
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(view.leftTo).toHaveLength(1);
     });
     const authorizeURL = view.leftTo[0] ?? new URL(origin);
@@ -131,7 +131,7 @@ describe("signing in and out", () => {
     expect(session.status).toBe("signed-out");
     // No query keeps the account (an observer that was still mounted may leave an empty, disabled one).
     expect(queryClient.getQueryCache().getAll().map((query) => query.state.data)).not.toContainEqual(expect.anything());
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect([...cacheNames]).toEqual([]);
     });
 
@@ -169,7 +169,7 @@ describe("a callback that is not for this tab's sign-in", () => {
     const oauth = oauthServer();
     const view = await renderApp({ path: "/login" });
     await view.user.click(await screen.findByRole("button", { name: "Continue to sign in" }));
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(view.leftTo).toHaveLength(1);
     });
     const state = view.leftTo[0]?.searchParams.get("state") ?? "";

@@ -28,6 +28,8 @@ export default mergeConfig(
             include: ["src/**/*.test.{ts,tsx}"],
             setupFiles: ["./test/setup.ts"],
             restoreMocks: true,
+            // Room for several waits of asyncUtilTimeout (test/setup.ts) on a loaded machine (web-client.md T7).
+            testTimeout: 30_000,
           },
         },
         ...locales.flatMap((locale) =>

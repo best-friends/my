@@ -3,7 +3,8 @@
 // BroadcastChannel act as two tabs of the origin. The refresh endpoint is modelled like the server's:
 // it rotates the refresh token, and a refresh token used by two requests at once revokes the family.
 import { delay, http, HttpResponse } from "msw";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, test } from "vitest";
 import { oauthError, oauthPaths, tokenResponse } from "../../test/msw/handlers";
 import { server } from "../../test/msw/server";
 import { createLockManager } from "../../test/locks";
@@ -59,7 +60,7 @@ describe("refreshing in two tabs", () => {
     expect(tokenA).not.toBeNull();
     expect(tokenB).not.toBeNull();
     // Whichever refreshed last, its token reaches the other tab.
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(a.accessToken).toBe(b.accessToken);
     });
     expect([a.status, b.status]).toEqual(["signed-in", "signed-in"]);
@@ -69,7 +70,7 @@ describe("refreshing in two tabs", () => {
     const seen = refreshEndpoint();
     const [a, b] = [openTab(), openTab()];
     await a.refresh(null);
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(b.accessToken).toBe("access-1");
     });
 
@@ -103,7 +104,7 @@ describe("the end of a session", () => {
     refreshEndpoint();
     const [a, b] = [openTab(), openTab()];
     await a.refresh(null);
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(b.status).toBe("signed-in");
     });
 
@@ -111,7 +112,7 @@ describe("the end of a session", () => {
     expect(await a.refresh("access-1")).toBeNull();
 
     expect(a.status).toBe("signed-out");
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(b.status).toBe("signed-out");
     });
     expect(b.accessToken).toBeNull();
@@ -128,7 +129,7 @@ describe("the end of a session", () => {
     );
     const [a, b] = [openTab(), openTab()];
     await a.refresh(null);
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(b.status).toBe("signed-in");
     });
     const changes: string[] = [];
@@ -138,7 +139,7 @@ describe("the end of a session", () => {
 
     expect(revoked.map((form) => Object.fromEntries(form))).toEqual([{ token: "access-1", token_type_hint: "access_token", client_id: "my-web" }]);
     expect(a.accessToken).toBeNull();
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(b.status).toBe("signed-out");
     });
     expect(b.accessToken).toBeNull();
