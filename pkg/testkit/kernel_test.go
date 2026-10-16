@@ -17,6 +17,10 @@ func TestClockContract(t *testing.T) {
 	testkit.ClockContract(t, testkit.NewClock(start))
 }
 
+func TestKeyManagerContract(t *testing.T) {
+	testkit.KeyManagerContract(t, testkit.NewKeyManager("test"))
+}
+
 func TestClockStandsStillUntilMoved(t *testing.T) {
 	jst := time.FixedZone("JST", 9*60*60)
 	c := testkit.NewClock(start.In(jst).Add(123_456 * time.Nanosecond))
