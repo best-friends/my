@@ -16,9 +16,7 @@ type Fixtures = {
    * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028);
    * `vite preview` serves index.html as it is. The runtime config's `apiOrigin` becomes the preview's own
    * origin, which the run picks (server-origin.ts), so that the client's API and OAuth requests stay on it,
-   * where specs can answer them with `page.route`. The build's asset links are relative (Vite's base "./"); they
-   * become links from the root, as `my serve` writes them, which pages below the root (/settings/profile) need.
-   * Pages of a real `my serve` are left alone.
+   * where specs can answer them with `page.route`. Pages of a real `my serve` are left alone.
    */
   shellLocale: string;
 };
@@ -47,10 +45,14 @@ export const test = base.extend<Fixtures>({
           return;
         }
         const response = await route.fetch();
+        // The build's index.html links its entry relative to itself (base "./"), which resolves under
+        // the path of a nested page (/tags/cats). `my serve` never sends that file: it writes the shell's
+        // tags from the build manifest as root paths (e2e/deep-links.spec.ts checks it), so only here
+        // are the links made root-relative.
         const body = (await response.text())
           .replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`)
           .replace(/"apiOrigin":"[^"]*"/, `"apiOrigin":"${previewOrigin}"`)
-          .replaceAll('="./assets/', '="/assets/');
+          .replaceAll(/(src|href)="\.\//g, '$1="/');
         await route.fulfill({ response, body });
       });
       await use(lang);

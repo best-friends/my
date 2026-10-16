@@ -578,5 +578,85 @@
   "shell.update.available": {
     "defaultMessage": "A new version of the app is available.",
     "description": "Message shown when a new version of the web app has been downloaded and waits until the user applies it."
+  },
+  "tag.title": {
+    "defaultMessage": "#{tag}",
+    "description": "Heading and document title of the page with the posts of one hashtag. {tag} is the hashtag without the #, for example 'cats'."
+  },
+  "timeline.boosted_by": {
+    "defaultMessage": "{name} boosted",
+    "description": "Line above a post in a timeline that someone else shared (boosted). {name} is the display name of the account that boosted it."
+  },
+  "timeline.content_warning.toggle": {
+    "defaultMessage": "Show content",
+    "description": "Button next to a post's content warning that shows or hides the post behind it. The same text is used while the post is shown."
+  },
+  "timeline.empty.home.action": {
+    "defaultMessage": "Browse the local timeline",
+    "description": "Link from the empty home timeline to the local timeline, where the user can find people to follow."
+  },
+  "timeline.empty.home.description": {
+    "defaultMessage": "Your posts and the posts of the people you follow appear here.",
+    "description": "Text under the heading of the empty home timeline."
+  },
+  "timeline.empty.home.heading": {
+    "defaultMessage": "Your home timeline is empty",
+    "description": "Heading shown instead of posts when the home timeline has none."
+  },
+  "timeline.empty.local.description": {
+    "defaultMessage": "Public posts of the people on this server appear here.",
+    "description": "Text under the heading of the empty local timeline."
+  },
+  "timeline.empty.local.heading": {
+    "defaultMessage": "No posts yet",
+    "description": "Heading shown instead of posts when the local timeline has none."
+  },
+  "timeline.empty.tag.description": {
+    "defaultMessage": "Public posts with #{tag} appear here.",
+    "description": "Text under the heading of an empty hashtag timeline. {tag} is the hashtag without the #."
+  },
+  "timeline.empty.tag.heading": {
+    "defaultMessage": "No posts with #{tag}",
+    "description": "Heading shown instead of posts when no post has the hashtag. {tag} is the hashtag without the #."
+  },
+  "timeline.keyboard_hint": {
+    "defaultMessage": "In the timeline, Page Down and Page Up move between posts.",
+    "description": "Hint for screen reader users before a timeline, about the keys that move from post to post."
+  },
+  "timeline.load_more": {
+    "defaultMessage": "Load more posts",
+    "description": "Button at the end of a timeline that loads older posts."
+  },
+  "timeline.load_more.failed": {
+    "defaultMessage": "Could not load more posts: {reason}",
+    "description": "Message, read out and shown at the end of a timeline, when older posts failed to load. {reason} is the error message, a full sentence."
+  },
+  "timeline.loading": {
+    "defaultMessage": "Loading posts",
+    "description": "Accessible name of the progress indicator while posts of a timeline load."
+  },
+  "timeline.media.no_description": {
+    "defaultMessage": "No description",
+    "description": "Badge on a picture of a post whose author gave no description (alternative text); screen readers read it as the picture's name."
+  },
+  "timeline.media.reveal": {
+    "defaultMessage": "Show sensitive media",
+    "description": "Toggle button over the pictures of a post that the author marked sensitive; it shows or hides them."
+  },
+  "timeline.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button at the end of a timeline that tries again to load older posts after a failure."
+  },
+  "timeline.signed_out.action": {
+    "defaultMessage": "Sign in",
+    "description": "Link on the home page, when nobody is signed in, that opens the sign-in page."
+  },
+  "timeline.signed_out.description": {
+    "defaultMessage": "Sign in to read the posts of the people you follow.",
+    "description": "Text on the home page when nobody is signed in."
+  },
+  "timeline.signed_out.heading": {
+    "defaultMessage": "You are not signed in",
+    "description": "Heading on the home page when nobody is signed in, shown instead of the home timeline."
   }
 }

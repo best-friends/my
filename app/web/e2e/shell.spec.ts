@@ -5,7 +5,7 @@
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 
 /** Every page of the shell, in the order of the navigation. */
-const pages = ["/", "/local", "/notifications", "/profile", "/settings"] as const;
+const pages = ["/home", "/local", "/notifications", "/profile", "/settings"] as const;
 
 /** The instance name in index.html's runtime config. */
 const instanceName = "my example";
@@ -63,7 +63,7 @@ test.describe("page /login", () => {
 
 test.describe("layout", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/home");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
@@ -113,7 +113,7 @@ test.describe("layout", () => {
 
 test.describe("navigation", () => {
   test("moves focus to the new page's heading and retitles the document", async ({ page, hasTouch }) => {
-    await page.goto("/");
+    await page.goto("/home");
     const firstHeading = await page.getByRole("heading", { level: 1 }).textContent();
     await expect(page.getByRole("heading", { level: 1 })).not.toBeFocused();
 
@@ -130,7 +130,7 @@ test.describe("navigation", () => {
   });
 
   test("works from the keyboard, and back and forward keep focus on the page's heading", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/home");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     // The skip link comes first and moves focus to the main landmark.
@@ -145,7 +145,7 @@ test.describe("navigation", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
 
     await page.goBack();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/home$/);
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
     await expect(page.getByRole("navigation").getByRole("link").nth(0)).toHaveAttribute("aria-current", "page");
   });
@@ -155,6 +155,6 @@ test("an unknown address shows the not-found page inside the layout", async ({ p
   await page.goto("/no-such-page");
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("navigation")).toBeVisible();
-  await expect(page.getByRole("main").getByRole("link")).toHaveAttribute("href", "/");
+  await expect(page.getByRole("main").getByRole("link")).toHaveAttribute("href", "/home");
   await expectNoAxeViolations(makeAxeBuilder);
 });

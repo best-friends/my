@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as LocalRouteImport } from './routes/local'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -21,10 +22,16 @@ import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.fo
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
+import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocalRoute = LocalRouteImport.update({
@@ -82,9 +89,15 @@ const SettingsProfileRoute = SettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TagsTagRoute = TagsTagRouteImport.update({
+  id: '/tags/$tag',
+  path: '/tags/$tag',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
@@ -95,10 +108,12 @@ export interface FileRoutesByFullPath {
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/tags/$tag': typeof TagsTagRoute
   '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
@@ -109,11 +124,13 @@ export interface FileRoutesByTo {
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/tags/$tag': typeof TagsTagRoute
   '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
@@ -124,12 +141,14 @@ export interface FileRoutesById {
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/tags/$tag': typeof TagsTagRoute
   '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/home'
     | '/local'
     | '/login'
     | '/notifications'
@@ -140,10 +159,12 @@ export interface FileRouteTypes {
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/tags/$tag'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/home'
     | '/local'
     | '/login'
     | '/notifications'
@@ -154,10 +175,12 @@ export interface FileRouteTypes {
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/tags/$tag'
     | '/settings'
   id:
     | '__root__'
     | '/'
+    | '/home'
     | '/local'
     | '/login'
     | '/notifications'
@@ -168,11 +191,13 @@ export interface FileRouteTypes {
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/tags/$tag'
     | '/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HomeRoute: typeof HomeRoute
   LocalRoute: typeof LocalRoute
   LoginRoute: typeof LoginRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -183,6 +208,7 @@ export interface RootRouteChildren {
   SettingsMutesRoute: typeof SettingsMutesRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  TagsTagRoute: typeof TagsTagRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
@@ -193,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/local': {
@@ -272,11 +305,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tags/$tag': {
+      id: '/tags/$tag'
+      path: '/tags/$tag'
+      fullPath: '/tags/$tag'
+      preLoaderRoute: typeof TagsTagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HomeRoute: HomeRoute,
   LocalRoute: LocalRoute,
   LoginRoute: LoginRoute,
   NotificationsRoute: NotificationsRoute,
@@ -287,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsMutesRoute: SettingsMutesRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  TagsTagRoute: TagsTagRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }
 export const routeTree = rootRouteImport
