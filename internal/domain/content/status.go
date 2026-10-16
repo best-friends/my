@@ -4,18 +4,6 @@ package content
 
 import "time"
 
-// Visibility is who may see a status (ADR-0017). It is fixed when the status is created.
-type Visibility string
-
-// Visibilities (data-model §4.4, statuses.visibility).
-const (
-	VisibilityPublic   Visibility = "public"
-	VisibilityLocal    Visibility = "local"
-	VisibilityUnlisted Visibility = "unlisted"
-	VisibilityPrivate  Visibility = "private"
-	VisibilityDirect   Visibility = "direct"
-)
-
 // CountsAsReply reports whether a reply of visibility v counts toward its parent's replies
 // count. Followers-only and direct replies do not, so that the count does not reveal them.
 func (v Visibility) CountsAsReply() bool {
