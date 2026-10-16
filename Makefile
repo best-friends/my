@@ -214,6 +214,7 @@ web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of e
 
 web-test: web-install ## Run the client component tests with Vitest (jsdom + MSW)
 	cd app/web && bun run test
+	cd app/ui && bun run test:unit
 
 # Playwright runs against `vite preview` of the fresh build. E2E_MATRIX=full runs every width × locale
 # project (nightly); the default is the per-PR subset (app/web/playwright.config.ts). CI runs it in the
