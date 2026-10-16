@@ -215,10 +215,10 @@ export default defineConfig(
                 },
               },
             },
-            // T5: stories also import the Storybook types; components never do.
+            // T5: stories also import the Storybook types and, for play functions (Y2), storybook/test; components never do.
             {
               from: { element: { type: "ui", fileInternalPath: "**/*.stories.tsx" } },
-              allow: { to: { module: { origin: "external", source: ["@storybook/react-vite"] } } },
+              allow: { to: { module: { origin: "external", source: ["@storybook/react-vite", "storybook"] } } },
             },
           ],
         },

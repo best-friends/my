@@ -125,6 +125,8 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
     - プロジェクトは方向 × テーマの 4 つ（`en` / `ar-XB` × ライト / ダーク）。すべてのストーリーを 4 つすべてで動かす。
     - axe の違反が 1 つでもあれば失敗する（`parameters.a11y.test: 'error'`、Y1 のタグ）。
     - 描画と axe のあと、ストーリーの枠（コンテナクエリの基準）を幅 320 / 640 / 1024 px にして `toMatchScreenshot` で比較する（`.storybook/vitest.setup.ts`）。
+    - スクリーンショットは `prefers-reduced-motion: reduce` を模擬して撮る。その状態で枠の中に動いているアニメーションが 1 つでもあれば失敗する（D6）。ストーリーの描画と `play` 関数は模擬なしで動く。
+    - `play` 関数（`storybook/test`）で、部品をロールとアクセシブルネームで探して検査する（Y2）。
   - 基準画像は `app/ui/src/__screenshots__/` にあり、固定した Playwright のイメージ（`Makefile` の `PLAYWRIGHT_IMAGE`）の中でだけ作る。
     手元の OS のフォントや描画では一致しないので、手元で作った画像はコミットしない。
     - 見た目を変えたら `make ui-snapshots-update`（Docker でそのイメージを使う）で作り直し、差分の画像を確かめてからコミットする。
