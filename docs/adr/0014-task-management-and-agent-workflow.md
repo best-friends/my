@@ -17,7 +17,7 @@
 | 種類 | 用途 | テンプレート |
 | --- | --- | --- |
 | `type:adr` | 設計判断の議論・決定依頼。結論は ADR ファイルに反映 | ADR |
-| `type:spike` | 調査・検証（タイムボックス付き）。成果物はレポート（Issue コメント or `docs/spikes/`）と使い捨てコード | Spike |
+| `type:spike` | 調査・検証（タイムボックス付き）。成果物は報告と試作コード（置き場所は [ADR-0022](0022-spike-outputs-outside-repository.md)） | Spike |
 | `type:task` | 実装・ドキュメント・設定の作業 | Task |
 | `type:epic` | 複数 Task をまとめる親 Issue（sub-issues を使う） | — |
 | `type:bug` | 不具合 | Bug |

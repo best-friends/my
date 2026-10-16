@@ -27,7 +27,7 @@ Mastodon 4.x、Misskey、GoToSocial、Akkoma（Pleroma 系）。余力があれ�
 
 ### 実装方針
 
-- ライブラリ（Go）は次の構成とする（根拠は [調査報告](../spikes/15-go-activitypub.md)）。
+- ライブラリ（Go）は次の構成とする（根拠は [#15 の調査報告](https://github.com/best-friends/my/issues/15#issuecomment-6209363986)）。
   - 署名: RFC 9421 は `github.com/dadrus/httpsig`（MIT）、draft-cavage-12 は `code.superseriousbusiness.org/httpsig`（BSD-3-Clause、go-fed/httpsig の GoToSocial フォーク）。どちらも cgo は不要。
   - 語彙（AS2 / Mastodon 拡張）は自前の型で持つ。`go-ap/activitypub` は未知のプロパティを捨て、タグ付きリリースもないため、コアの型にはしない（受信パースの補助に使うかは実装時に判断）。`go-ap/client` / `go-ap/auth` は依存が重く、go-ap 系の抽象に結合しているため採用しない。
   - ライブラリが担うのは署名ベースの組み立て・暗号処理・`Content-Digest` の検証まで。受け入れポリシー（必須ヘッダ / コンポーネント、時間窓、`Digest` の検証、鍵の所有者と `actor` の一致）、鍵の解決、送信側の double-knocking、配送、Mastodon 拡張の解釈は自前で書く。ライブラリはアダプタ境界の内側に閉じ込める。

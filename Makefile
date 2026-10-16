@@ -6,7 +6,7 @@ MARKDOWNLINT := bunx --bun markdownlint-cli2@0.23.2
 # Go tools (govulncheck, go-licenses) are pinned with `tool` directives in tools/go.mod,
 # kept apart from the product module so their dependencies never affect ours.
 GO_TOOL := go tool -modfile=tools/go.mod
-# Packages of the root module. Nested modules (spikes/*, tools/) are excluded by `./...`.
+# Packages of the root module. The nested tools/ module is excluded by `./...`.
 GO_PKGS = $(shell go list ./... 2>/dev/null)
 # Licenses compatible with AGPL-3.0-only (ADR-0011). Anything else, including unknown, fails.
 GO_ALLOWED_LICENSES := 0BSD,AGPL-3.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,BSL-1.0,CC0-1.0,ISC,MIT,MPL-2.0,Unlicense,Zlib

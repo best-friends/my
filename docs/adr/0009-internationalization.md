@@ -18,7 +18,7 @@ i18n の対象は UI 文字列だけでなく、サーバー生成文言（メ�
 - 配置: リポジトリ直下 `locales/<BCP47>/<namespace>.json`。**ソースロケールは `en`**（翻訳者人口のため）、`ja` はメンテナが同時に更新する。
 - キーは意味ベース（`timeline.empty.home`）。文字列の連結・断片の組み合わせは禁止し、1 文 = 1 メッセージ。
 - サーバー（Go）・Web・モバイル（TS）で **同一カタログファイルを共有** する（namespace でサーバー専用 / クライアント専用を分ける）。カタログは FormatJS の JSON 形式（`{"key": {"defaultMessage", "description"}}`）。
-- ライブラリ（根拠は [調査報告](../spikes/20-i18n-libraries.md)）:
+- ライブラリ（根拠は [#20 の調査報告](https://github.com/best-friends/my/issues/20#issuecomment-6209364734)）:
   - Go: `github.com/kaptinlin/messageformat-go/mf1`（MIT）を自前パッケージの裏に隠して使う。FormatJS と、共有カタログ 96/96 件・CLDR 12 ロケール 132/132 件で出力が一致する。カタログはバイナリに `embed` する。
   - TS: FormatJS の `intl-messageformat`（BSD-3-Clause）。メッセージはビルド時に AST へコンパイルし、ランタイムは 2.6 KiB（gzip）。`eval` を使わないので Tauri の CSP と両立する。
   - 出力の一致テストと CLDR の差分テストを CI に常設し、ライブラリをフォーク / 自前実装に切り替えられるようにする。
