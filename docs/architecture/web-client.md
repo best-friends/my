@@ -195,6 +195,8 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   機能は API の型を自分の `features/<x>/api` から export して使う（`lib/api` を直接 import できるのは `features/*/api` と `lib/` だけ。S1）。
 - **クライアント**（`lib/api/client.ts`）: openapi-fetch のクライアントと、その上の openapi-react-query のクライアントを 1 つずつ作る（`Api` の `fetch` と `query`）。
   機能は `features/<x>/api` で `api.query.queryOptions(...)` から `queryOptions` を作る。キーは `[method, path, params]` になる。
+  ページを `next_cursor` でたどる一覧（タイムライン）は、openapi-react-query に無限クエリの `queryOptions` がないので、TanStack Query の `infiniteQueryOptions` で `api.fetch` を呼んで作る。
+  キーは同じ形の末尾に `"pages"` を足したもの（`["get", "/timelines/local", "pages"]`）にし、同じ操作の普通のクエリと重ならないようにする（`features/timeline/api`）。
   - ページのロケールを `Accept-Language` で送り、サーバーが problem の `title` / `detail` をそのロケールで返すようにする。
   - ミドルウェアが、セッションのアクセストークンを `Authorization: Bearer` で付ける。最初の要求は、起動時のセッションの再開（`session.restore()`）を待ってから送る。
   - トークンを付けた要求が 401 になったら、トークンを 1 度だけ更新し、要求の写しを新しいトークンで送り直す。2 度目の 401 はそのまま失敗にする。

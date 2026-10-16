@@ -65,7 +65,7 @@ describe("app shell", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Page not found" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Go to the home timeline" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Go to the home timeline" })).toHaveAttribute("href", "/home");
     expect(document.title).toBe("Page not found – my example");
   });
 

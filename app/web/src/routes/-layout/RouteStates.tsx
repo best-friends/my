@@ -63,7 +63,7 @@ export function NotFound() {
       <PageHeading>{t("client:shell.not_found.title")}</PageHeading>
       <p>{t("client:shell.not_found.body")}</p>
       <p>
-        <Link href="/" variant="standalone">
+        <Link href="/home" variant="standalone">
           {t("client:shell.not_found.home")}
         </Link>
       </p>
