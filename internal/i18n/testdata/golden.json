@@ -1,0 +1,673 @@
+{
+  "catalog": {
+    "en": [
+      "Found 0 configuration errors.",
+      "Found 1 configuration error.",
+      "Found 2 configuration errors.",
+      "Found 1,234 configuration errors.",
+      "The setting MY_DB has an invalid value.",
+      "The required setting MY_DATABASE_URL is not set.",
+      "The request is invalid.",
+      "An unexpected error occurred. Please try again later.",
+      "The DELETE method is not allowed for this resource.",
+      "The requested resource was not found.",
+      "The server is not ready to accept requests."
+    ],
+    "ja": [
+      "設定エラーが0件あります。",
+      "設定エラーが1件あります。",
+      "設定エラーが2件あります。",
+      "設定エラーが1,234件あります。",
+      "設定 MY_DB の値が正しくありません。",
+      "必須の設定 MY_DATABASE_URL が設定されていません。",
+      "リクエストが正しくありません。",
+      "予期しないエラーが発生しました。しばらくしてからもう一度お試しください。",
+      "このリソースでは DELETE メソッドを使用できません。",
+      "指定されたリソースが見つかりません。",
+      "サーバーはまだリクエストを受け付けられる状態ではありません。"
+    ],
+    "en-XA": [
+      "[Ƒǿǿŭŭƞḓ 0 ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ḗḗřřǿǿřş.]",
+      "[Ƒǿǿŭŭƞḓ 1 ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ḗḗřřǿǿř.]",
+      "[Ƒǿǿŭŭƞḓ 2 ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ḗḗřřǿǿřş.]",
+      "[Ƒǿǿŭŭƞḓ 1,234 ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ḗḗřřǿǿřş.]",
+      "[Ŧħḗḗ şḗḗŧŧīƞɠ MY_DB ħȧȧş ȧȧƞ īƞṽȧȧŀīḓ ṽȧȧŀŭŭḗḗ.]",
+      "[Ŧħḗḗ řḗḗɋŭŭīřḗḗḓ şḗḗŧŧīƞɠ MY_DATABASE_URL īş ƞǿǿŧ şḗḗŧ.]",
+      "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş īƞṽȧȧŀīḓ.]",
+      "[Ȧƞ ŭŭƞḗḗẋƥḗḗƈŧḗḗḓ ḗḗřřǿǿř ǿǿƈƈŭŭřřḗḗḓ. Ƥŀḗḗȧȧşḗḗ ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+      "[Ŧħḗḗ DELETE ḿḗḗŧħǿǿḓ īş ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ƒǿǿř ŧħīş řḗḗşǿǿŭŭřƈḗḗ.]",
+      "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧḗḗḓ řḗḗşǿǿŭŭřƈḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ.]",
+      "[Ŧħḗḗ şḗḗřṽḗḗř īş ƞǿǿŧ řḗḗȧȧḓẏ ŧǿǿ ȧȧƈƈḗḗƥŧ řḗḗɋŭŭḗḗşŧş.]"
+    ],
+    "ar-XB": [
+      "‮Ⅎonup 0 ɔouɟıƃnɹɐʇıou ǝɹɹoɹs.‬",
+      "‮Ⅎonup 1 ɔouɟıƃnɹɐʇıou ǝɹɹoɹ.‬",
+      "‮Ⅎonup 2 ɔouɟıƃnɹɐʇıou ǝɹɹoɹs.‬",
+      "‮Ⅎonup 1,234 ɔouɟıƃnɹɐʇıou ǝɹɹoɹs.‬",
+      "‮⊥ɥǝ sǝʇʇıuƃ MY_DB ɥɐs ɐu ıuʌɐʅıp ʌɐʅnǝ.‬",
+      "‮⊥ɥǝ ɹǝbnıɹǝp sǝʇʇıuƃ MY_DATABASE_URL ıs uoʇ sǝʇ.‬",
+      "‮⊥ɥǝ ɹǝbnǝsʇ ıs ıuʌɐʅıp.‬",
+      "‮∀u nuǝxdǝɔʇǝp ǝɹɹoɹ oɔɔnɹɹǝp. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
+      "‮⊥ɥǝ DELETE ɯǝʇɥop ıs uoʇ ɐʅʅoʍǝp ɟoɹ ʇɥıs ɹǝsonɹɔǝ.‬",
+      "‮⊥ɥǝ ɹǝbnǝsʇǝp ɹǝsonɹɔǝ ʍɐs uoʇ ɟonup.‬",
+      "‮⊥ɥǝ sǝɹʌǝɹ ıs uoʇ ɹǝɐpʎ ʇo ɐɔɔǝdʇ ɹǝbnǝsʇs.‬"
+    ]
+  },
+  "syntax": [
+    "She replied",
+    "They replied",
+    "Nobody",
+    "Alice and 1 other",
+    "Alice and 1,234 others",
+    "You are the 22nd follower",
+    "You are the 113th follower",
+    "3 replies",
+    "1,234.5 items, 1,235 rounded, 25% done",
+    "It's Alice's turn. Type {braces} to insert literal braces.",
+    "1,234件の1,234.5",
+    "1 000 000 d’abonnés",
+    "11 كثير"
+  ],
+  "cldr": [
+    {
+      "locale": "en",
+      "message": "{n, plural, one {one:#} other {other:#}} | {n, selectordinal, one {one:#} two {two:#} few {few:#} other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "other:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | one:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "other:2 | two:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "other:3 | few:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | one:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | two:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | one:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "other:1,000,000 | other:1,000,000 | 1,000,000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1.5 | other:1.5 | 1.5"
+        }
+      ]
+    },
+    {
+      "locale": "ja",
+      "message": "{n, plural, other {other:#}} | {n, selectordinal, other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "other:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "other:1 | other:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "other:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "other:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "other:1,000,000 | other:1,000,000 | 1,000,000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1.5 | other:1.5 | 1.5"
+        }
+      ]
+    },
+    {
+      "locale": "fr",
+      "message": "{n, plural, one {one:#} many {many:#} other {other:#}} | {n, selectordinal, one {one:#} other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "one:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | one:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "other:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "other:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "many:1 000 000 | other:1 000 000 | 1 000 000"
+        },
+        {
+          "n": 1.5,
+          "want": "one:1,5 | other:1,5 | 1,5"
+        }
+      ]
+    },
+    {
+      "locale": "pt-PT",
+      "message": "{n, plural, one {one:#} many {many:#} other {other:#}} | {n, selectordinal, other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "other:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | other:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "other:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "other:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "many:1 000 000 | other:1 000 000 | 1 000 000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1,5 | other:1,5 | 1,5"
+        }
+      ]
+    },
+    {
+      "locale": "ru",
+      "message": "{n, plural, one {one:#} few {few:#} many {many:#} other {other:#}} | {n, selectordinal, other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "many:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | other:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "few:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "few:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "many:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "many:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "one:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "few:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "one:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "many:1 000 000 | other:1 000 000 | 1 000 000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1,5 | other:1,5 | 1,5"
+        }
+      ]
+    },
+    {
+      "locale": "pl",
+      "message": "{n, plural, one {one:#} few {few:#} many {many:#} other {other:#}} | {n, selectordinal, other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "many:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | other:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "few:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "few:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "many:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "many:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "many:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "few:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "many:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "many:1 000 000 | other:1 000 000 | 1 000 000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1,5 | other:1,5 | 1,5"
+        }
+      ]
+    },
+    {
+      "locale": "cy",
+      "message": "{n, plural, zero {zero:#} one {one:#} two {two:#} few {few:#} many {many:#} other {other:#}} | {n, selectordinal, zero {zero:#} one {one:#} two {two:#} few {few:#} many {many:#} other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "zero:0 | zero:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | one:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "two:2 | two:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "few:3 | few:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | many:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "other:1,000,000 | other:1,000,000 | 1,000,000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1.5 | other:1.5 | 1.5"
+        }
+      ]
+    },
+    {
+      "locale": "ar",
+      "message": "{n, plural, zero {zero:#} one {one:#} two {two:#} few {few:#} many {many:#} other {other:#}} | {n, selectordinal, other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "zero:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | other:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "two:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "few:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "few:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "many:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "many:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "many:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "other:1,000,000 | other:1,000,000 | 1,000,000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1.5 | other:1.5 | 1.5"
+        }
+      ]
+    },
+    {
+      "locale": "he",
+      "message": "{n, plural, one {one:#} two {two:#} other {other:#}} | {n, selectordinal, other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "other:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | other:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "two:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "other:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "other:1,000,000 | other:1,000,000 | 1,000,000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1.5 | other:1.5 | 1.5"
+        }
+      ]
+    },
+    {
+      "locale": "zh-Hant",
+      "message": "{n, plural, other {other:#}} | {n, selectordinal, other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "other:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "other:1 | other:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "other:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "other:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "other:1,000,000 | other:1,000,000 | 1,000,000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1.5 | other:1.5 | 1.5"
+        }
+      ]
+    },
+    {
+      "locale": "de",
+      "message": "{n, plural, one {one:#} other {other:#}} | {n, selectordinal, other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "other:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | other:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "other:2 | other:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "other:3 | other:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "other:1.000.000 | other:1.000.000 | 1.000.000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1,5 | other:1,5 | 1,5"
+        }
+      ]
+    },
+    {
+      "locale": "hi",
+      "message": "{n, plural, one {one:#} other {other:#}} | {n, selectordinal, one {one:#} two {two:#} few {few:#} many {many:#} other {other:#}} | {n, number}",
+      "outputs": [
+        {
+          "n": 0,
+          "want": "one:0 | other:0 | 0"
+        },
+        {
+          "n": 1,
+          "want": "one:1 | one:1 | 1"
+        },
+        {
+          "n": 2,
+          "want": "other:2 | two:2 | 2"
+        },
+        {
+          "n": 3,
+          "want": "other:3 | two:3 | 3"
+        },
+        {
+          "n": 5,
+          "want": "other:5 | other:5 | 5"
+        },
+        {
+          "n": 11,
+          "want": "other:11 | other:11 | 11"
+        },
+        {
+          "n": 21,
+          "want": "other:21 | other:21 | 21"
+        },
+        {
+          "n": 22,
+          "want": "other:22 | other:22 | 22"
+        },
+        {
+          "n": 101,
+          "want": "other:101 | other:101 | 101"
+        },
+        {
+          "n": 1000000,
+          "want": "other:10,00,000 | other:10,00,000 | 10,00,000"
+        },
+        {
+          "n": 1.5,
+          "want": "other:1.5 | other:1.5 | 1.5"
+        }
+      ]
+    }
+  ]
+}

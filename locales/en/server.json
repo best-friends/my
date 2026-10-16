@@ -1,0 +1,34 @@
+{
+  "config.errors": {
+    "defaultMessage": "{count, plural, one {Found # configuration error.} other {Found # configuration errors.}}",
+    "description": "Summary printed before the list of configuration problems when the server refuses to start."
+  },
+  "config.invalid": {
+    "defaultMessage": "The setting {name} has an invalid value.",
+    "description": "A configuration value failed validation at startup. {name} is the environment variable or config file key, e.g. MY_DB."
+  },
+  "config.missing": {
+    "defaultMessage": "The required setting {name} is not set.",
+    "description": "A required configuration value is absent at startup. {name} is the environment variable or config file key, e.g. MY_DATABASE_URL."
+  },
+  "errors.bad_request": {
+    "defaultMessage": "The request is invalid.",
+    "description": "API error message for HTTP 400 when no more specific message applies."
+  },
+  "errors.internal": {
+    "defaultMessage": "An unexpected error occurred. Please try again later.",
+    "description": "API error message for HTTP 500. Must not reveal internal details."
+  },
+  "errors.method_not_allowed": {
+    "defaultMessage": "The {method} method is not allowed for this resource.",
+    "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
+  },
+  "errors.not_found": {
+    "defaultMessage": "The requested resource was not found.",
+    "description": "API error message for HTTP 404."
+  },
+  "health.unavailable": {
+    "defaultMessage": "The server is not ready to accept requests.",
+    "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  }
+}
