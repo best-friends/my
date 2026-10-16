@@ -501,7 +501,35 @@ func (r *StatusRepository) FindLocalStatusByIdempotencyKey(ctx context.Context, 
 
 // FindRevision implements content.Repository.
 func (r *StatusRepository) FindRevision(ctx context.Context, id string) (content.Revision, error) {
-	q := r.db.reader()
+	return findRevision(ctx, r.db.reader(), id)
+}
+
+// ListCurrentPosts implements content.Repository.
+func (r *StatusRepository) ListCurrentPosts(ctx context.Context, tx uow.Tx) ([]appcontent.Post, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListLiveStatusHeads(ctx)
+	if err != nil {
+		return nil, wrap(err, "list live status heads")
+	}
+	out := make([]appcontent.Post, len(rows))
+	for i, row := range rows {
+		out[i].Status = statusFrom(postgresgen.Status{
+			ID: row.ID, Uri: row.Uri, Url: row.Url, AuthorAccountID: row.AuthorAccountID, IsLocal: row.IsLocal,
+			Visibility: row.Visibility, InReplyToUri: row.InReplyToUri, ConversationUri: row.ConversationUri,
+			PublishedAt: row.PublishedAt,
+		})
+		if out[i].Revision, err = findRevision(ctx, q, row.RevisionID); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// findRevision returns a revision with its children.
+func findRevision(ctx context.Context, q *postgresgen.Queries, id string) (content.Revision, error) {
 	row, err := q.GetStatusRevision(ctx, id)
 	if err != nil {
 		return content.Revision{}, notFound(err, appcontent.ErrNotFound, "status revision "+id)

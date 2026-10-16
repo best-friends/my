@@ -154,7 +154,10 @@ func (s *Service) Mute(ctx context.Context, accountID, targetID string, in MuteI
 		return Relationship{}, err
 	}
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		return s.d.Repository.UpsertMute(ctx, tx, m)
+		if err := s.d.Repository.UpsertMute(ctx, tx, m); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, Muted{Mute: m})
 	})
 	if err != nil {
 		return Relationship{}, err
@@ -165,7 +168,10 @@ func (s *Service) Mute(ctx context.Context, accountID, targetID string, in MuteI
 // Unmute removes accountID's mute of targetID. Without a mute it changes nothing.
 func (s *Service) Unmute(ctx context.Context, accountID, targetID string) (Relationship, error) {
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		return s.d.Repository.DeleteMute(ctx, tx, accountID, targetID)
+		if err := s.d.Repository.DeleteMute(ctx, tx, accountID, targetID); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, Unmuted{AccountID: accountID, TargetAccountID: targetID})
 	})
 	if err != nil {
 		return Relationship{}, err

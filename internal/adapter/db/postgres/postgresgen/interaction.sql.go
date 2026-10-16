@@ -551,6 +551,45 @@ func (q *Queries) ListFavourites(ctx context.Context, arg ListFavouritesParams) 
 	return items, nil
 }
 
+const listLiveBoosts = `-- name: ListLiveBoosts :many
+
+SELECT b.id, b.uri, b.booster_account_id, b.status_id, b.visibility, b.is_local, b.boosted_at
+FROM boosts b
+JOIN boost_edges e ON e.boost_id = b.id
+ORDER BY b.id
+`
+
+// Sources of other modules' projections.
+// ListLiveBoosts returns the boosts that boost_edges holds (not retracted, of a status that is
+// not deleted), ordered by ID.
+func (q *Queries) ListLiveBoosts(ctx context.Context) ([]Boost, error) {
+	rows, err := q.db.Query(ctx, listLiveBoosts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Boost{}
+	for rows.Next() {
+		var i Boost
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uri,
+			&i.BoosterAccountID,
+			&i.StatusID,
+			&i.Visibility,
+			&i.IsLocal,
+			&i.BoostedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStatusPins = `-- name: ListStatusPins :many
 SELECT account_id, status_id, created_at, id FROM status_pins WHERE account_id = $1 ORDER BY id DESC
 `

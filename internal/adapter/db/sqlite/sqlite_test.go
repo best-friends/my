@@ -79,6 +79,16 @@ func TestInteractionRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestTimelineContract(t *testing.T) {
+	testkit.TimelineContract(t, func(t *testing.T, opts uow.Options) testkit.TimelineHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.TimelineHarness{
+			UnitOfWork: db, Statuses: db.StatusRepository(), Interactions: db.InteractionRepository(),
+			Graph: db.GraphRepository(), Timeline: db.TimelineRepository(),
+		}
+	})
+}
+
 func TestFollowRepositoryContract(t *testing.T) {
 	testkit.FollowRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FollowHarness {
 		db, _ := newTestDB(t, "", opts)

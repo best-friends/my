@@ -683,3 +683,85 @@ CREATE TABLE status_pins (
   PRIMARY KEY (account_id, status_id)
 );
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
+
+-- ---------------------------------------------------------------------------------------------
+-- timeline: feeds (data-model §4.6, §6, ADR-0013). Owned by internal/app/timeline, whose
+-- synchronous projectors derive every table from the events of content and graph (and of
+-- moderation for the restrictions); the timeline queries read only these tables.
+-- ---------------------------------------------------------------------------------------------
+
+-- Projection: one entry per status (kind post, id = status ID) and per live boost (kind boost,
+-- id = boost ID) of a status that is not deleted. author_* is the poster or the booster,
+-- original_author_* the author of the status; a domain is '' for a local account.
+CREATE TABLE feed_entries (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  kind text NOT NULL CHECK (kind IN ('post', 'boost')),
+  status_id text COLLATE "C" NOT NULL,
+  author_account_id text COLLATE "C" NOT NULL,
+  author_domain text NOT NULL,
+  original_author_account_id text COLLATE "C" NOT NULL,
+  original_author_domain text NOT NULL,
+  visibility text NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  is_local boolean NOT NULL,
+  language text NOT NULL,
+  revision_seq integer NOT NULL CHECK (revision_seq >= 1)
+);
+CREATE INDEX feed_entries_author_account_id_id ON feed_entries (author_account_id, id);
+CREATE INDEX feed_entries_status_id ON feed_entries (status_id);
+CREATE INDEX feed_entries_local ON feed_entries (id) WHERE is_local AND kind = 'post' AND visibility IN ('public', 'local');
+CREATE INDEX feed_entries_public ON feed_entries (id) WHERE kind = 'post' AND visibility = 'public';
+
+-- Projection: the recipients (current mentions) of a direct post.
+CREATE TABLE feed_direct_recipients (
+  entry_id text COLLATE "C" NOT NULL,
+  recipient_account_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (recipient_account_id, entry_id)
+);
+CREATE INDEX feed_direct_recipients_entry_id ON feed_direct_recipients (entry_id);
+
+-- Projection: the current hashtags of a post, with its immutable author and visibility.
+CREATE TABLE feed_tag_entries (
+  tag_id text COLLATE "C" NOT NULL,
+  entry_id text COLLATE "C" NOT NULL,
+  author_account_id text COLLATE "C" NOT NULL,
+  visibility text NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  is_local boolean NOT NULL,
+  PRIMARY KEY (tag_id, entry_id)
+);
+CREATE INDEX feed_tag_entries_entry_id ON feed_tag_entries (entry_id);
+
+-- Projection: the active follows, with the follower's show_boosts preference.
+CREATE TABLE feed_follow_edges (
+  follower_account_id text COLLATE "C" NOT NULL,
+  followee_account_id text COLLATE "C" NOT NULL,
+  show_boosts boolean NOT NULL,
+  PRIMARY KEY (follower_account_id, followee_account_id)
+);
+
+-- Projection: the accounts whose entries a viewer does not see: those the viewer blocks, those
+-- that block the viewer, and those the viewer mutes (until expires_at; NULL never expires).
+CREATE TABLE feed_exclusions (
+  viewer_account_id text COLLATE "C" NOT NULL,
+  target_account_id text COLLATE "C" NOT NULL,
+  reason text NOT NULL CHECK (reason IN ('block', 'blocked_by', 'mute')),
+  expires_at timestamptz,
+  PRIMARY KEY (viewer_account_id, target_account_id, reason)
+);
+
+-- Projection: the moderation restrictions of accounts that bear on timelines, until
+-- effective_until (NULL: until lifted).
+CREATE TABLE feed_author_restrictions (
+  account_id text COLLATE "C" NOT NULL,
+  restriction text NOT NULL CHECK (restriction IN ('profile_view', 'visibility_ceiling_private', 'public_discovery')),
+  effective_until timestamptz,
+  PRIMARY KEY (account_id, restriction)
+);
+
+-- Projection: the moderation restrictions of domains (and their subdomains) that bear on
+-- timelines.
+CREATE TABLE feed_domain_restrictions (
+  domain text NOT NULL,
+  restriction text NOT NULL CHECK (restriction IN ('profile_view', 'visibility_ceiling_private', 'public_discovery')),
+  effective_until timestamptz,
+  PRIMARY KEY (domain, restriction)
+);

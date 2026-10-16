@@ -108,3 +108,13 @@ SELECT account_id, status_id, created_at, id FROM status_pins WHERE account_id =
 
 -- name: ListStatusPins :many
 SELECT account_id, status_id, created_at, id FROM status_pins WHERE account_id = ? ORDER BY id DESC;
+
+-- Sources of other modules' projections.
+
+-- ListLiveBoosts returns the boosts that boost_edges holds (not retracted, of a status that is
+-- not deleted), ordered by ID.
+-- name: ListLiveBoosts :many
+SELECT b.id, b.uri, b.booster_account_id, b.status_id, b.visibility, b.is_local, b.boosted_at
+FROM boosts b
+JOIN boost_edges e ON e.boost_id = b.id
+ORDER BY b.id;

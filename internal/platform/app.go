@@ -24,6 +24,7 @@ import (
 	"github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
@@ -77,6 +78,8 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
+	Timeline *timeline.Service
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -131,6 +134,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows      graph.Repository
 		statuses     content.Repository
 		interactions content.InteractionRepository
+		feeds        timeline.Repository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -142,7 +146,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses = d.GraphRepository(), d.StatusRepository()
-		interactions = d.InteractionRepository()
+		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -157,7 +161,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses = d.GraphRepository(), d.StatusRepository()
-		interactions = d.InteractionRepository()
+		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -231,6 +235,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
 		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	// After the content and graph projectors, which reject the commands that must not reach
+	// the timelines (data-model §4.6).
+	timeline.RegisterProjectors(a.Projectors, feeds)
+	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
 
 	if opts.Version == "" {
 		opts.Version = "dev"
