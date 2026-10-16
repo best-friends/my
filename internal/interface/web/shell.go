@@ -28,7 +28,7 @@ type runtimeConfig struct {
 
 type shellData struct {
 	Lang, Dir, Title, ThemeColor string
-	HasIcon                      bool
+	HasIcon, HasAppleTouchIcon   bool
 	// ViteClient is the Vite client script of a dev server, empty in production.
 	ViteClient string
 	Entry      entryTags
@@ -91,6 +91,9 @@ const shellSource = `<!doctype html>
 {{- if .HasIcon}}
 <link rel="icon" href="/` + iconPath + `" type="image/svg+xml">
 {{- end}}
+{{- if .HasAppleTouchIcon}}
+<link rel="apple-touch-icon" href="/` + appleTouchIconPath + `">
+{{- end}}
 {{- range .Entry.Stylesheet}}
 <link rel="stylesheet" href="{{.}}">
 {{- end}}
@@ -138,6 +141,11 @@ const contentSecurityPolicy = "default-src 'none'; " +
 	"require-trusted-types-for 'script'; " +
 	"upgrade-insecure-requests"
 
+// serviceWorkerContentSecurityPolicy is the policy of the Service Worker (sw.js), which applies to the
+// worker itself: it only fetches from its own origin (the build, the shell, public media, the pages
+// it passes through) and loads no other script.
+const serviceWorkerContentSecurityPolicy = "default-src 'none'; connect-src 'self'"
+
 // devContentSecurityPolicy relaxes the policy for a Vite dev server at origin: its scripts and
 // files, its hot module replacement WebSocket, and the <style> elements its client injects.
 // Trusted Types and the upgrade to HTTPS are left out, since the dev server's client and the
@@ -183,14 +191,11 @@ type manifestIcon struct {
 }
 
 // renderWebManifest generates the manifest from the instance settings in o.
-func renderWebManifest(o *Options, locale string, hasIcon bool) (document, error) {
+func renderWebManifest(o *Options, locale string, icons []manifestIcon) (document, error) {
 	m := webManifest{
 		ID: "/", Name: o.InstanceName, ShortName: o.InstanceName, StartURL: "/", Scope: "/", Display: "standalone",
 		Lang: locale, Dir: i18n.Direction(locale), ThemeColor: o.ThemeColor, BackgroundColor: o.BackgroundColor,
-		Icons: []manifestIcon{},
-	}
-	if hasIcon {
-		m.Icons = append(m.Icons, manifestIcon{Src: "/" + iconPath, Sizes: "any", Type: "image/svg+xml", Purpose: "any"})
+		Icons: icons,
 	}
 	body, err := json.Marshal(m)
 	if err != nil {

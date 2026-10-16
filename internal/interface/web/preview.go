@@ -321,7 +321,7 @@ func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMe
 	locale := h.instanceLocale(ctx)
 	d, err := renderShell(shellData{
 		Lang: lang, Dir: i18n.Direction(lang), Title: meta.Title, ThemeColor: h.o.ThemeColor,
-		HasIcon: h.hasIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
+		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
 		Config:  h.runtimeConfig(locale),
 		Preview: &meta,
 	})

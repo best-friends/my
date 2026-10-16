@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -37,6 +38,10 @@ func fakeBuild() fstest.MapFS {
 		"assets/server-pages-FFFF.css": {Data: []byte("main{}")},
 		"icon.svg":                     {Data: []byte("<svg xmlns='http://www.w3.org/2000/svg'/>")},
 		"sw.js":                        {Data: []byte("self.addEventListener('fetch', () => {})")},
+		// The PNG icons except icon-512.png, which the manifest then leaves out.
+		"icon-192.png":          {Data: []byte("png 192")},
+		"icon-maskable-512.png": {Data: []byte("png maskable")},
+		"apple-touch-icon.png":  {Data: []byte("png apple")},
 	}
 }
 
@@ -84,6 +89,7 @@ func TestShellLoadsTheBuildFromTheManifest(t *testing.T) {
 		`<title>Example Social</title>`,
 		`<link rel="manifest" href="/manifest.webmanifest">`,
 		`<link rel="icon" href="/icon.svg" type="image/svg+xml">`,
+		`<link rel="apple-touch-icon" href="/apple-touch-icon.png">`,
 		`<link rel="stylesheet" href="/assets/index-CCCC.css">` + "\n" + `<link rel="stylesheet" href="/assets/shared-DDDD.css">`,
 		`<link rel="modulepreload" href="/assets/shared-BBBB.js">`,
 		`<script type="module" src="/assets/index-AAAA.js"></script>`,
@@ -253,6 +259,10 @@ func TestStaticFiles(t *testing.T) {
 			t.Errorf("conditional GET %s = %d, want 304", tt.path, rec.Code)
 		}
 	}
+	// The Service Worker runs under its own response's policy, which must let it fetch from the origin.
+	if csp := get(mux, "/sw.js", nil).Header().Get("Content-Security-Policy"); csp != "default-src 'none'; connect-src 'self'" {
+		t.Errorf("sw.js Content-Security-Policy = %q, want fetches from the origin only", csp)
+	}
 	for _, p := range []string{"/assets/missing.js", "/assets/", "/assets/.vite/manifest.json"} {
 		if rec := get(mux, p, nil); rec.Code != http.StatusNotFound {
 			t.Errorf("GET %s = %d, want 404", p, rec.Code)
@@ -282,7 +292,7 @@ func TestWebManifest(t *testing.T) {
 		Scope                        string
 		ThemeColor                   string `json:"theme_color"`
 		BackgroundColor              string `json:"background_color"`
-		Icons                        []struct{ Src, Sizes, Type string }
+		Icons                        []struct{ Src, Sizes, Type, Purpose string }
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &m); err != nil {
 		t.Fatal(err)
@@ -292,8 +302,14 @@ func TestWebManifest(t *testing.T) {
 		m.ThemeColor != web.DefaultThemeColor || m.BackgroundColor != web.DefaultBackgroundColor {
 		t.Errorf("manifest = %+v", m)
 	}
-	if len(m.Icons) != 1 || m.Icons[0].Src != "/icon.svg" || m.Icons[0].Type != "image/svg+xml" {
-		t.Errorf("icons = %+v, want the SVG icon of the build", m.Icons)
+	type icon = struct{ Src, Sizes, Type, Purpose string }
+	want := []icon{
+		{"/icon.svg", "any", "image/svg+xml", "any"},
+		{"/icon-192.png", "192x192", "image/png", "any"},
+		{"/icon-maskable-512.png", "512x512", "image/png", "maskable"},
+	}
+	if !slices.Equal(m.Icons, want) {
+		t.Errorf("icons = %+v, want the icons the build has: %+v", m.Icons, want)
 	}
 }
 

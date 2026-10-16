@@ -144,6 +144,10 @@ export interface MessageArgs {
   "client:shell.toast.dismiss": {};
   /** Messages */
   "client:shell.toast.region": {};
+  /** Update */
+  "client:shell.update.apply": {};
+  /** A new version of the app is available. */
+  "client:shell.update.available": {};
   /** Allow */
   "server:auth.authorize.approve": {};
   /** Deny */

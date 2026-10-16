@@ -60,9 +60,9 @@ function oauthServer() {
   };
 }
 
-/** A Cache Storage with a runtime cache of API responses and Workbox's precache of the build. */
+/** A Cache Storage with a runtime cache of media and the Service Worker's precache of the build. */
 function stubCacheStorage() {
-  const names = new Set(["api-responses", "workbox-precache-v2-https://my.example/"]);
+  const names = new Set(["my-media", "my-precache-v2-https://my.example/"]);
   const storage = {
     keys: vi.fn(() => Promise.resolve([...names])),
     delete: vi.fn((name: string) => Promise.resolve(names.delete(name))),
@@ -132,7 +132,7 @@ describe("signing in and out", () => {
     // No query keeps the account (an observer that was still mounted may leave an empty, disabled one).
     expect(queryClient.getQueryCache().getAll().map((query) => query.state.data)).not.toContainEqual(expect.anything());
     await vi.waitFor(() => {
-      expect([...cacheNames]).toEqual(["workbox-precache-v2-https://my.example/"]);
+      expect([...cacheNames]).toEqual([]);
     });
 
     // No token was ever written where a script could read it later.
