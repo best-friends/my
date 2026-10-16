@@ -18,6 +18,10 @@
 
 - [設定リファレンス](reference/configuration.md)（設定スキーマから生成）
 
+## 運用
+
+- [鍵暗号化鍵（KEK）の管理](operations/key-management.md)
+
 ## 開発プロセス
 
 - [コントリビュートの手引き](../CONTRIBUTING.md)

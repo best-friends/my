@@ -169,7 +169,7 @@ linters:
             - $gostd
             - github.com/best-friends/my/internal/domain/instance
             - github.com/best-friends/my/internal/app
-        # app/kernel holds the ports and helpers shared by every module (Clock, IDGenerator);
+        # app/kernel holds the ports and helpers shared by every module (Clock, IDGenerator, KeyManager);
         # it depends on nothing in the repository so that any module can import it.
         app-kernel:
           list-mode: strict

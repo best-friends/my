@@ -165,12 +165,24 @@ var schema = []field{
 	},
 	{
 		key:          "kek",
-		doc:          "Key-encryption key for actor private keys: 32 random bytes in standard base64 (for example `openssl rand -base64 32`). Required when `key_manager = local`. Back it up separately from the database; losing it loses every actor key (ADR-0019 §6).",
+		doc:          "Key-encryption key for actor private keys: 32 random bytes in standard base64 (for example `openssl rand -base64 32`). Required when `key_manager = local`. Back it up separately from the database; losing it loses every actor key (ADR-0019 §6, docs/operations/key-management.md).",
 		secret:       true,
 		requiredWhen: "when `key_manager = local`",
 		check:        checkKEK,
 		set: func(c *Config, v string) {
 			c.KEK, _ = base64.StdEncoding.DecodeString(v) // validated by checkKEK
+		},
+	},
+	{
+		key:    "kek_previous",
+		doc:    "Previous key-encryption keys, comma-separated, each in the format of `kek`. They only decrypt; new secrets are always encrypted with `kek`. Set the replaced key here while rotating `kek` (docs/operations/key-management.md).",
+		secret: true,
+		check:  checkPreviousKEKs,
+		set: func(c *Config, v string) {
+			for k := range strings.SplitSeq(v, ",") {
+				b, _ := base64.StdEncoding.DecodeString(strings.TrimSpace(k)) // validated by checkPreviousKEKs
+				c.PreviousKEKs = append(c.PreviousKEKs, b)
+			}
 		},
 	},
 }
@@ -183,6 +195,20 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 	if vals["key_manager"] == "local" {
 		if !present["kek"] {
 			issues = append(issues, Issue{Key: "kek", Message: "required when key_manager is local"})
+		}
+	}
+	if prev, ok := vals["kek_previous"]; ok {
+		seen := map[string]bool{}
+		if kek, ok := vals["kek"]; ok {
+			seen[kek] = true
+		}
+		for k := range strings.SplitSeq(prev, ",") {
+			k = strings.TrimSpace(k)
+			if seen[k] {
+				issues = append(issues, Issue{Key: "kek_previous", Message: "must not repeat a key or contain the current kek"})
+				break
+			}
+			seen[k] = true
 		}
 	}
 	if vals["queue"] == "inline" && vals["role"] != "" && vals["role"] != string(RoleAll) {
@@ -260,6 +286,15 @@ func checkKEK(v string) error {
 	}
 	if len(b) != kekSize {
 		return fmt.Errorf("must decode to %d bytes, got %d", kekSize, len(b))
+	}
+	return nil
+}
+
+func checkPreviousKEKs(v string) error {
+	for i, k := range strings.Split(v, ",") {
+		if err := checkKEK(strings.TrimSpace(k)); err != nil {
+			return fmt.Errorf("key #%d %w", i+1, err)
+		}
 	}
 	return nil
 }

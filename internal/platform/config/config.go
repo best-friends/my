@@ -41,6 +41,7 @@ type Config struct {
 	KV            string
 	KeyManager    string
 	KEK           []byte
+	PreviousKEKs  [][]byte
 }
 
 // Origin describes where a resolved value came from.
