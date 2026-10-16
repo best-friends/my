@@ -71,7 +71,7 @@ Remote servers ──AP──►│                               │
   | `internal/domain/<module>` | 標準ライブラリと自モジュールの `domain` だけ |
   | `internal/app/<module>` | 標準ライブラリ、自モジュールの `domain`、各モジュールの `app`（モジュール間の唯一の経路） |
   | `internal/app/kernel` | 標準ライブラリだけ（全モジュール共通のポート） |
-  | `internal/interface/*` | `app` と `domain`（`adapter` と `platform` は不可） |
+  | `internal/interface/*` | `app` と `domain`（`adapter` / `platform` / `pkg/testkit` は不可） |
   | `internal/adapter/*` | `app` のポートと `domain`（`interface` と `platform` は不可） |
   | `pkg/testkit` | `app` と `domain`（`interface` / `adapter` / `platform` は不可） |
   | `internal/platform`, `cmd/*` | すべて（composition root）。`cmd/` はどこからも import しない |
