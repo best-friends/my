@@ -322,6 +322,7 @@ type OauthAuthorizationCode struct {
 	RedirectUri   string
 	Scope         string
 	CodeChallenge string
+	SessionID     *string
 	IssuedAt      time.Time
 	ExpiresAt     time.Time
 }

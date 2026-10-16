@@ -66,11 +66,19 @@ func webAuthorizationRequest() appidentity.AuthorizationRequest {
 // code validates req and issues a code of it to the user.
 func (e *accountEnv) code(t *testing.T, req appidentity.AuthorizationRequest, userID string) string {
 	t.Helper()
+	return e.codeInSession(t, req, identity.Session{UserID: userID})
+}
+
+// codeInSession validates req and issues a code of it to the user of a browser session; a
+// session without an ID issues the code outside one.
+func (e *accountEnv) codeInSession(t *testing.T, req appidentity.AuthorizationRequest, session identity.Session) string {
+	t.Helper()
 	a, err := e.identity.ValidateAuthorization(t.Context(), req)
 	if err != nil {
 		t.Fatalf("ValidateAuthorization = %v", err)
 	}
-	code, err := e.identity.IssueAuthorizationCode(t.Context(), a, userID)
+	a.SessionID = session.ID
+	code, err := e.identity.IssueAuthorizationCode(t.Context(), a, session.UserID)
 	if err != nil {
 		t.Fatalf("IssueAuthorizationCode = %v", err)
 	}
@@ -438,6 +446,72 @@ func oauthRevokesTokens(t *testing.T, e *accountEnv) {
 		t.Fatalf("RevokeToken(refresh) = %v", err)
 	}
 	e.wantAccess(t, other.AccessToken, false, "the access token of a family revoked by its refresh token")
+}
+
+func oauthWebSignOutEndsTheBrowserSession(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	e.sessionUser(t)
+	e.thirdPartyApp(t)
+	exchange := func(req appidentity.AuthorizationRequest, creds appidentity.ClientCredentials, session identity.Session) appidentity.IssuedTokens {
+		t.Helper()
+		got, err := e.identity.ExchangeAuthorizationCode(ctx, appidentity.CodeExchange{
+			ClientCredentials: creds, Code: e.codeInSession(t, req, session), RedirectURI: req.RedirectURI, CodeVerifier: contractCodeVerifier,
+		})
+		if err != nil {
+			t.Fatalf("ExchangeAuthorizationCode(%s) = %v", creds.ClientID, err)
+		}
+		return got
+	}
+	appRequest := appidentity.AuthorizationRequest{
+		ResponseType: "code", ClientID: contractAppClientID, RedirectURI: contractAppRedirect,
+		CodeChallenge: identity.S256Challenge(contractCodeVerifier), CodeChallengeMethod: "S256",
+	}
+
+	// Revoking a third-party client's token leaves the browser session alone.
+	browser := e.signIn(t, appidentity.SignInInput{})
+	app := exchange(appRequest, appCreds, browser.Session)
+	if err := e.identity.RevokeToken(ctx, appidentity.RevokeRequest{ClientCredentials: appCreds, Token: app.AccessToken}); err != nil {
+		t.Fatalf("RevokeToken(app) = %v", err)
+	}
+	if _, err := e.identity.Authenticate(ctx, browser.Token); err != nil {
+		t.Fatalf("Authenticate after the app's revocation = %v, want the session to stay", err)
+	}
+
+	// The web client's sign-out, even with a token rotated since, ends the session that
+	// authorized it and no other.
+	other := e.signIn(t, appidentity.SignInInput{})
+	web := exchange(webAuthorizationRequest(), webCreds, browser.Session)
+	exchange(webAuthorizationRequest(), webCreds, other.Session)
+	rotated, err := e.identity.RefreshWebClient(ctx, web.RefreshToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 2 { // revoking twice is harmless
+		if err := e.identity.RevokeToken(ctx, appidentity.RevokeRequest{ClientCredentials: webCreds, Token: rotated.AccessToken}); err != nil {
+			t.Fatalf("RevokeToken(web) = %v", err)
+		}
+	}
+	e.wantInvalidSession(t, browser.Token, "the session of a signed-out web client")
+	if _, err := e.identity.Authenticate(ctx, other.Token); err != nil {
+		t.Errorf("Authenticate(another browser) = %v, want its session to stay", err)
+	}
+
+	// A session that ended before the sign-out, and a code issued outside a session, are fine.
+	signedOut := e.signIn(t, appidentity.SignInInput{})
+	late := exchange(webAuthorizationRequest(), webCreds, signedOut.Session)
+	if err := e.identity.SignOut(ctx, signedOut.Token); err != nil {
+		t.Fatal(err)
+	}
+	outside := exchange(webAuthorizationRequest(), webCreds, identity.Session{UserID: signedOut.Session.UserID})
+	for _, tok := range []string{late.AccessToken, outside.AccessToken} {
+		if err := e.identity.RevokeToken(ctx, appidentity.RevokeRequest{ClientCredentials: webCreds, Token: tok}); err != nil {
+			t.Errorf("RevokeToken = %v", err)
+		}
+		e.wantAccess(t, tok, false, "a revoked token")
+	}
+	if _, err := e.identity.Authenticate(ctx, other.Token); err != nil {
+		t.Errorf("Authenticate(another browser) after the other sign-outs = %v, want its session to stay", err)
+	}
 }
 
 // webTokensFor exchanges a code of the web client for tokens of an existing user.

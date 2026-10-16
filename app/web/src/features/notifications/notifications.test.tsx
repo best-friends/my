@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The notifications page and the unread badge through the whole app (web-client.md T4): the real router
 // and QueryClient, with MSW as the server (FR-205).
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { apiBase, notificationsFixture, otherAccountFixture, problem, resumableSession, statusFixture } from "../../test/msw/handlers";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -77,10 +77,10 @@ describe("the notifications page", () => {
     expect(within(articles[0] ?? feed).getByRole("link", { name: "Open post" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
 
     // Showing the list moved the marker to the newest notification, once, and the badge went away.
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(marker.updates).toEqual([notificationsFixture[0]?.id]);
     });
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(notificationsLink()).toHaveAccessibleName("Notifications");
     });
     expect(articles[0]).toHaveAccessibleName(/^Unread: /);
@@ -134,7 +134,7 @@ describe("the notifications page", () => {
 
     await user.click(within(tabs).getByRole("tab", { name: "Mentions" }));
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(router.state.location.search).toEqual({ filter: "mentions" });
     });
     expect(await screen.findByRole("article", { name: /\u2068Bob\u2069 mentioned you/ })).toBeInTheDocument();

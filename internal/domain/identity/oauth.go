@@ -48,8 +48,11 @@ type AuthorizationCode struct {
 	Scope       Scope
 	// CodeChallenge is the S256 PKCE challenge (RFC 7636 §4.2).
 	CodeChallenge string
-	IssuedAt      time.Time
-	ExpiresAt     time.Time
+	// SessionID is the browser session in which the user authorized the client; "" when the
+	// code was issued outside one.
+	SessionID string
+	IssuedAt  time.Time
+	ExpiresAt time.Time
 }
 
 // Expired reports whether the code has expired at now.
