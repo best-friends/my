@@ -3,6 +3,7 @@
 // @playwright/test, so every spec gets the same axe configuration.
 import AxeBuilder from "@axe-core/playwright";
 import { test as base, expect, type Page } from "@playwright/test";
+import { previewOrigin } from "./server-origin.ts";
 
 /** The axe rule tags for WCAG 2.2 AA (ADR-0027, web-client.md Y1). */
 export const axeTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] as const;
@@ -11,7 +12,7 @@ type Fixtures = {
   /** Returns an AxeBuilder for the page, limited to `axeTags`; chain `.include()` / `.exclude()` to scope it. */
   makeAxeBuilder: () => AxeBuilder;
   /**
-   * Serves the HTML documents of the client (`baseURL`, `vite preview`) with the project's locale in
+   * Serves the HTML documents of `vite preview` (the client) with the project's locale in
    * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028);
    * `vite preview` serves index.html as it is. Pages of a real `my serve` are left alone.
    */
@@ -26,10 +27,14 @@ export const test = base.extend<Fixtures>({
     await use(() => new AxeBuilder({ page }).withTags([...axeTags]));
   },
   shellLocale: [
-    async ({ page, locale, baseURL }, use) => {
+    async ({ page, locale }, use) => {
       const lang = locale ?? "en";
-      const origin = new URL(baseURL ?? "http://127.0.0.1").origin;
-      await page.route((url) => url.origin === origin, async (route) => {
+      // A real server (E2E_BASE_URL, or the `my serve` of the server-rendered pages) writes lang and dir itself.
+      if (process.env["E2E_BASE_URL"] !== undefined) {
+        await use(lang);
+        return;
+      }
+      await page.route((url) => url.origin === previewOrigin, async (route) => {
         if (route.request().resourceType() !== "document") {
           await route.fallback();
           return;
