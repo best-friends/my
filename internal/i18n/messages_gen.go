@@ -4,6 +4,97 @@
 
 package i18n
 
+// ServerAuthCrossOrigin formats "server:auth.cross_origin". Body of the page shown (HTTP 403) when a sign-in or sign-out form was submitted from another origin.
+//
+//	en: The request was refused because it came from another site.
+func (l *Localizer) ServerAuthCrossOrigin() string {
+	return l.format("server:auth.cross_origin", nil)
+}
+
+// ServerAuthErrorTitle formats "server:auth.error.title". Title and heading of the sign-in screens' error pages.
+//
+//	en: Something went wrong
+func (l *Localizer) ServerAuthErrorTitle() string {
+	return l.format("server:auth.error.title", nil)
+}
+
+// ServerAuthFormExpired formats "server:auth.form_expired". Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared.
+//
+//	en: This form has expired. Please try again.
+func (l *Localizer) ServerAuthFormExpired() string {
+	return l.format("server:auth.form_expired", nil)
+}
+
+// ServerAuthSignInEmailLabel formats "server:auth.sign_in.email_label". Label of the email address field on the sign-in form.
+//
+//	en: Email address
+func (l *Localizer) ServerAuthSignInEmailLabel() string {
+	return l.format("server:auth.sign_in.email_label", nil)
+}
+
+// ServerAuthSignInFailed formats "server:auth.sign_in.failed". Error after a failed sign-in. Must not say which of the two was wrong, so that it does not reveal whether an account exists.
+//
+//	en: The email address or password is incorrect.
+func (l *Localizer) ServerAuthSignInFailed() string {
+	return l.format("server:auth.sign_in.failed", nil)
+}
+
+// ServerAuthSignInMissing formats "server:auth.sign_in.missing". Error when the sign-in form was submitted with an empty field.
+//
+//	en: Enter your email address and password.
+func (l *Localizer) ServerAuthSignInMissing() string {
+	return l.format("server:auth.sign_in.missing", nil)
+}
+
+// ServerAuthSignInPasswordLabel formats "server:auth.sign_in.password_label". Label of the password field on the sign-in form.
+//
+//	en: Password
+func (l *Localizer) ServerAuthSignInPasswordLabel() string {
+	return l.format("server:auth.sign_in.password_label", nil)
+}
+
+// ServerAuthSignInRateLimited formats "server:auth.sign_in.rate_limited". Error (HTTP 429) after too many failed sign-ins from the same network or for the same email address. {minutes} is the wait, rounded up to whole minutes.
+//
+//	en: {minutes, plural, one {Too many failed sign-in attempts. Try again in # minute.} other {Too many failed sign-in attempts. Try again in # minutes.}}
+func (l *Localizer) ServerAuthSignInRateLimited(minutes int) string {
+	return l.format("server:auth.sign_in.rate_limited", map[string]any{"minutes": minutes})
+}
+
+// ServerAuthSignInSubmit formats "server:auth.sign_in.submit". Button that submits the sign-in form.
+//
+//	en: Sign in
+func (l *Localizer) ServerAuthSignInSubmit() string {
+	return l.format("server:auth.sign_in.submit", nil)
+}
+
+// ServerAuthSignInTitle formats "server:auth.sign_in.title". Title and heading of the sign-in page.
+//
+//	en: Sign in
+func (l *Localizer) ServerAuthSignInTitle() string {
+	return l.format("server:auth.sign_in.title", nil)
+}
+
+// ServerAuthSignOutSubmit formats "server:auth.sign_out.submit". Button that ends the current browser session.
+//
+//	en: Sign out
+func (l *Localizer) ServerAuthSignOutSubmit() string {
+	return l.format("server:auth.sign_out.submit", nil)
+}
+
+// ServerAuthSignedInContinue formats "server:auth.signed_in.continue". Link on the signed-in page back to where the user was going.
+//
+//	en: Continue
+func (l *Localizer) ServerAuthSignedInContinue() string {
+	return l.format("server:auth.signed_in.continue", nil)
+}
+
+// ServerAuthSignedInTitle formats "server:auth.signed_in.title". Title and heading of the page shown when a signed-in user opens the sign-in page.
+//
+//	en: You are signed in
+func (l *Localizer) ServerAuthSignedInTitle() string {
+	return l.format("server:auth.signed_in.title", nil)
+}
+
 // ServerConfigErrors formats "server:config.errors". Summary printed before the list of configuration problems when the server refuses to start.
 //
 //	en: {count, plural, one {Found # configuration error.} other {Found # configuration errors.}}

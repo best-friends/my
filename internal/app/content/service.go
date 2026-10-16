@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/content"
@@ -53,19 +54,19 @@ type Accounts interface {
 	FindByHandle(ctx context.Context, username, domain string) (appaccount.Actor, error)
 }
 
-// Follows is the part of the graph module's public API that the content module reads: whether
-// an account actively follows another. *appgraph.Service implements it.
-type Follows interface {
-	IsFollowing(ctx context.Context, followerID, followeeID string) (bool, error)
+// Relationships is the part of the graph module's public API that the content module reads:
+// the follows and blocks between two accounts. *appgraph.Service implements it.
+type Relationships interface {
+	Relationship(ctx context.Context, accountID, targetID string) (appgraph.Relationship, error)
 }
 
 // Deps are the ports and settings a Service uses.
 type Deps struct {
-	UnitOfWork   uow.UnitOfWork
-	Repository   Repository
-	Accounts     Accounts
-	Follows      Follows
-	Restrictions RestrictionPolicy
+	UnitOfWork    uow.UnitOfWork
+	Repository    Repository
+	Accounts      Accounts
+	Relationships Relationships
+	Restrictions  RestrictionPolicy
 	// MaxStatusLength returns the current max_status_length instance setting (FR-101); it is
 	// read per command, so that changes apply at once.
 	MaxStatusLength func(ctx context.Context) (int, error)
@@ -250,13 +251,14 @@ func (s *Service) replyTarget(ctx context.Context, authorID, statusID string) (c
 	}
 	rel := content.Relation{Mentioned: slices.Contains(rev.MentionedAccountIDs, authorID)}
 	if parent.AuthorAccountID != authorID {
-		following, err := s.d.Follows.IsFollowing(ctx, authorID, parent.AuthorAccountID)
+		r, err := s.d.Relationships.Relationship(ctx, authorID, parent.AuthorAccountID)
 		if err != nil {
 			return content.Status{}, err
 		}
-		if following {
+		if r.ActivelyFollowing() {
 			rel.Follow = content.FollowActive
 		}
+		rel.Blocking, rel.BlockedBy = r.Blocking, r.BlockedBy
 	}
 	viewer := content.Viewer{Kind: content.ViewerLocal, AccountID: authorID}
 	facts := content.StatusFacts{AuthorAccountID: parent.AuthorAccountID, AuthorIsLocal: parent.IsLocal, Visibility: parent.Visibility}

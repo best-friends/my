@@ -5,6 +5,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/graph"
@@ -14,12 +15,14 @@ var (
 	// ErrNotFound reports that no row matches a lookup, or that a command finds no follow or
 	// follow request to act on.
 	ErrNotFound = errors.New("graph: not found")
-	// ErrAlreadyRecorded reports a second acceptance, rejection, or termination of one follow.
-	ErrAlreadyRecorded = errors.New("graph: the follow already has this event")
+	// ErrAlreadyRecorded reports a second acceptance, rejection, or termination of one follow, or
+	// a second retraction of one block.
+	ErrAlreadyRecorded = errors.New("graph: the follow or block already has this event")
 )
 
-// Repository is the persistence port of the graph module's follows (data-model §4.5). The
-// database adapters implement it and pass testkit.FollowRepositoryContract.
+// Repository is the persistence port of the graph module: follows, blocks, and mutes
+// (data-model §4.5). The database adapters implement it and pass testkit.FollowRepositoryContract
+// and testkit.BlockRepositoryContract.
 //
 // Methods that take a uow.Tx run inside that transaction; the others read committed data outside
 // any transaction. Lookups that find nothing return an error wrapping ErrNotFound.
@@ -37,6 +40,18 @@ type Repository interface {
 	Follow(ctx context.Context, tx uow.Tx, id string) (graph.Follow, error)
 	// Preferences returns the preferences of a follow.
 	Preferences(ctx context.Context, tx uow.Tx, followID string) (graph.Preferences, error)
+	// LockPair serializes the transactions that follow or block between accountA and accountB
+	// (in either order) until tx ends, so that a follow and a block of one pair never both
+	// commit having missed each other. Adapters whose write transactions already serialize may
+	// do nothing.
+	LockPair(ctx context.Context, tx uow.Tx, accountA, accountB string) error
+	InsertBlock(ctx context.Context, tx uow.Tx, b graph.Block) error
+	// InsertBlockRetraction fails with ErrAlreadyRecorded when the block is already retracted.
+	InsertBlockRetraction(ctx context.Context, tx uow.Tx, r graph.BlockRetraction) error
+	// Block returns a block by ID.
+	Block(ctx context.Context, tx uow.Tx, id string) (graph.Block, error)
+	UpsertMute(ctx context.Context, tx uow.Tx, m graph.Mute) error
+	DeleteMute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string) error
 
 	// Projections, written only by this module's projectors and rebuild.
 
@@ -54,12 +69,21 @@ type Repository interface {
 	AddCounters(ctx context.Context, tx uow.Tx, accountID string, followersDelta, followingDelta int64) error
 	UpsertCounters(ctx context.Context, tx uow.Tx, c graph.Counters) error
 	DeleteAllCounters(ctx context.Context, tx uow.Tx) error
+	// BlockEdge returns the edge from blocker to blocked.
+	BlockEdge(ctx context.Context, tx uow.Tx, blockerAccountID, blockedAccountID string) (graph.BlockEdge, error)
+	// InsertBlockEdge inserts an edge and reports false, writing nothing, when the pair already has one.
+	InsertBlockEdge(ctx context.Context, tx uow.Tx, e graph.BlockEdge) (bool, error)
+	// DeleteBlockEdge deletes the pair's edge when it belongs to blockID.
+	DeleteBlockEdge(ctx context.Context, tx uow.Tx, blockerAccountID, blockedAccountID, blockID string) error
+	DeleteAllBlockEdges(ctx context.Context, tx uow.Tx) error
 
 	// Projection sources, in a stable order, for rebuilding the projections.
 
 	// ListHistories returns every follow with its acceptance, rejection, and termination,
 	// ordered by follow ID.
 	ListHistories(ctx context.Context, tx uow.Tx) ([]graph.History, error)
+	// ListBlockHistories returns every block with its retraction, ordered by block ID.
+	ListBlockHistories(ctx context.Context, tx uow.Tx) ([]graph.BlockHistory, error)
 
 	// Projection contents, for verifying the projections.
 
@@ -67,6 +91,8 @@ type Repository interface {
 	ListEdges(ctx context.Context) ([]graph.Edge, error)
 	// ListCounters returns every counters row, ordered by account ID.
 	ListCounters(ctx context.Context) ([]graph.Counters, error)
+	// ListBlockEdges returns every block edge, ordered by blocker and blocked account.
+	ListBlockEdges(ctx context.Context) ([]graph.BlockEdge, error)
 
 	// Lookups.
 
@@ -79,4 +105,27 @@ type Repository interface {
 	ListFollowers(ctx context.Context, followeeAccountID string, state graph.State, before string, limit int) ([]graph.Edge, error)
 	// ListFollowing is ListFollowers for the edges out of followerAccountID.
 	ListFollowing(ctx context.Context, followerAccountID string, state graph.State, before string, limit int) ([]graph.Edge, error)
+	FindBlockEdge(ctx context.Context, blockerAccountID, blockedAccountID string) (graph.BlockEdge, error)
+	// ListBlocking returns the block edges out of blockerAccountID, newest block first, starting
+	// after the block ID before ("" for the newest) and returning at most limit edges.
+	ListBlocking(ctx context.Context, blockerAccountID, before string, limit int) ([]graph.BlockEdge, error)
+	// FindMute returns accountID's mute of targetAccountID; ErrNotFound means none, or one that
+	// has expired at now.
+	FindMute(ctx context.Context, accountID, targetAccountID string, now time.Time) (graph.Mute, error)
+	// ListMutes returns accountID's mutes that have not expired at now, newest first by creation
+	// and then target account ID, starting after before (the zero cursor for the newest) and
+	// returning at most limit mutes.
+	ListMutes(ctx context.Context, accountID string, now time.Time, before MuteCursor, limit int) ([]graph.Mute, error)
+}
+
+// MuteCursor is the position of a mute in a list of mutes: its creation and target account.
+// The zero cursor is the start of the list.
+type MuteCursor struct {
+	CreatedAt       time.Time
+	TargetAccountID string
+}
+
+// MuteCursorOf returns the position of m, to continue a list after it.
+func MuteCursorOf(m graph.Mute) MuteCursor {
+	return MuteCursor{CreatedAt: m.CreatedAt, TargetAccountID: m.TargetAccountID}
 }

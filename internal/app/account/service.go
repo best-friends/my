@@ -380,6 +380,21 @@ func (s *Service) actor(ctx context.Context, a account.Account) (Actor, error) {
 	return out, nil
 }
 
+// UserLifecycle returns the lifecycle state of the local account a user logs in as, for
+// sign-in (an account without lifecycle events is active). It fails with ErrNotFound when the
+// user has no local account.
+func (s *Service) UserLifecycle(ctx context.Context, userID string) (account.LifecycleState, error) {
+	la, err := s.d.Repository.FindLocalAccountByUser(ctx, userID)
+	if err != nil {
+		return account.LifecycleState{}, err
+	}
+	st, err := s.d.Repository.FindLifecycleState(ctx, la.AccountID)
+	if errors.Is(err, ErrNotFound) {
+		return account.InitialLifecycleState(la.AccountID), nil
+	}
+	return st, err
+}
+
 // CountLocalUsers returns the number of local accounts of users that are not deleted, for
 // NodeInfo's usage statistics. The instance actor is not counted.
 func (s *Service) CountLocalUsers(ctx context.Context) (int, error) {

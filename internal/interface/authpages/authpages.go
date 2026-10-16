@@ -1,0 +1,343 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+// Package authpages serves the server-rendered sign-in and sign-out screens (ADR-0030): plain
+// HTML forms from html/template that work without JavaScript, worded from the server message
+// catalog and styled by one stylesheet that the web client's build provides.
+//
+// A sign-in starts a browser session carried by the __Host-my_session cookie (Secure,
+// HttpOnly, SameSite=Lax, Path=/) with a new token every time (ADR-0019 §4). Every POST passes
+// net/http.CrossOriginProtection and must carry the anti-forgery token of the __Host-my_csrf
+// cookie in its csrf_token field, for browsers that send neither Sec-Fetch-Site nor Origin
+// (ADR-0019 §4). Failed sign-ins answer with one message whether or not the account exists.
+package authpages
+
+import (
+	"context"
+	"crypto/rand"
+	"crypto/subtle"
+	"embed"
+	"encoding/base64"
+	"errors"
+	"html/template"
+	"log/slog"
+	"math"
+	"net"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+
+	appidentity "github.com/best-friends/my/internal/app/identity"
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/i18n"
+)
+
+// Paths of the screens.
+const (
+	PathSignIn  = "/auth/sign_in"
+	PathSignOut = "/auth/sign_out"
+)
+
+// Cookie names. The __Host- prefix makes browsers accept the cookies only when Secure, without
+// a Domain, and with Path=/, so that no other host can set or overwrite them.
+const (
+	CookieSession = "__Host-my_session"
+	CookieCSRF    = "__Host-my_csrf"
+)
+
+// DefaultStylesheet is the URL of the stylesheet that the pages link to.
+const DefaultStylesheet = "/assets/server-pages.css"
+
+// contentSecurityPolicy allows the pages nothing but their own stylesheet, images, and forms.
+const contentSecurityPolicy = "default-src 'none'; style-src 'self'; img-src 'self'; form-action 'self'; " +
+	"frame-ancestors 'none'; base-uri 'none'"
+
+// maxFormBytes bounds a form body; the fields are an email address, a password, a token, and a path.
+const maxFormBytes = 16 << 10
+
+// maxReturnTo bounds the return_to path.
+const maxReturnTo = 2048
+
+// Identity is what the screens need from the identity module; *identity.Service implements it.
+type Identity interface {
+	SignIn(ctx context.Context, in appidentity.SignInInput) (appidentity.SignedIn, error)
+	Authenticate(ctx context.Context, token string) (identity.Session, error)
+	SignOut(ctx context.Context, token string) error
+}
+
+// Options configure a Handler.
+type Options struct {
+	Identity Identity
+	Messages *i18n.Bundle
+	// Stylesheet is the URL of the pages' stylesheet; empty means DefaultStylesheet.
+	Stylesheet string
+	// Logger logs unexpected errors; nil means slog.Default().
+	Logger *slog.Logger
+}
+
+// Handler serves the screens.
+type Handler struct {
+	o     Options
+	pages map[string]*template.Template
+	cop   *http.CrossOriginProtection
+}
+
+//go:embed templates/*.html
+var templateFS embed.FS
+
+// Page templates, each rendered inside templates/layout.html.
+const (
+	pageSignIn   = "sign_in"
+	pageSignedIn = "signed_in"
+	pageError    = "error"
+)
+
+// New returns a Handler on o.
+func New(o Options) *Handler {
+	if o.Stylesheet == "" {
+		o.Stylesheet = DefaultStylesheet
+	}
+	if o.Logger == nil {
+		o.Logger = slog.Default()
+	}
+	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
+	for _, name := range []string{pageSignIn, pageSignedIn, pageError} {
+		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
+	}
+	h.cop.SetDenyHandler(http.HandlerFunc(h.crossOrigin))
+	return h
+}
+
+// Router registers handlers for http.ServeMux patterns.
+type Router interface {
+	Handle(pattern string, h http.Handler)
+}
+
+// Register registers the screens on r.
+func (h *Handler) Register(r Router) {
+	r.Handle("GET "+PathSignIn, http.HandlerFunc(h.signInPage))
+	r.Handle("POST "+PathSignIn, h.cop.Handler(http.HandlerFunc(h.signIn)))
+	r.Handle("POST "+PathSignOut, h.cop.Handler(http.HandlerFunc(h.signOut)))
+}
+
+// page is the data of a template.
+type page struct {
+	L          *i18n.Localizer
+	Lang, Dir  string
+	Title      string
+	Stylesheet string
+	CSRFToken  string
+	ReturnTo   string
+	Email      string
+	Error      string
+}
+
+func (h *Handler) newPage(r *http.Request, title func(*i18n.Localizer) string) page {
+	l := h.o.Messages.Localizer(h.o.Messages.Resolve(i18n.Preferences{AcceptLanguage: r.Header.Get("Accept-Language")}))
+	return page{L: l, Lang: l.Locale(), Dir: l.Direction(), Title: title(l), Stylesheet: h.o.Stylesheet}
+}
+
+func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, name string, p page) {
+	hd := w.Header()
+	hd.Set("Content-Type", "text/html; charset=utf-8")
+	hd.Set("Content-Language", p.Lang)
+	hd.Set("Content-Security-Policy", contentSecurityPolicy)
+	hd.Set("Cache-Control", "no-store")
+	hd.Add("Vary", "Accept-Language, Cookie")
+	w.WriteHeader(status)
+	if err := h.pages[name].ExecuteTemplate(w, "layout", p); err != nil {
+		h.o.Logger.ErrorContext(r.Context(), "render auth page", slog.String("page", name), slog.Any("error", err))
+	}
+}
+
+func (h *Handler) renderError(w http.ResponseWriter, r *http.Request, status int, message func(*i18n.Localizer) string) {
+	p := h.newPage(r, (*i18n.Localizer).ServerAuthErrorTitle)
+	p.Error = message(p.L)
+	h.render(w, r, status, pageError, p)
+}
+
+func (h *Handler) internalError(w http.ResponseWriter, r *http.Request, err error) {
+	h.o.Logger.ErrorContext(r.Context(), "auth page failed", slog.Any("error", err))
+	h.renderError(w, r, http.StatusInternalServerError, (*i18n.Localizer).ServerErrorsInternal)
+}
+
+// crossOrigin answers a POST that CrossOriginProtection rejected.
+func (h *Handler) crossOrigin(w http.ResponseWriter, r *http.Request) {
+	h.renderError(w, r, http.StatusForbidden, (*i18n.Localizer).ServerAuthCrossOrigin)
+}
+
+// signInPage shows the sign-in form, or the signed-in page when the browser has a session.
+func (h *Handler) signInPage(w http.ResponseWriter, r *http.Request) {
+	returnTo := safeReturnTo(r.URL.Query().Get("return_to"))
+	if _, err := h.o.Identity.Authenticate(r.Context(), cookieValue(r, CookieSession)); err == nil {
+		h.renderSignedIn(w, r, returnTo)
+		return
+	} else if !errors.Is(err, appidentity.ErrInvalidSession) {
+		h.internalError(w, r, err)
+		return
+	}
+	h.renderSignIn(w, r, http.StatusOK, returnTo, "", nil)
+}
+
+func (h *Handler) renderSignedIn(w http.ResponseWriter, r *http.Request, returnTo string) {
+	p := h.newPage(r, (*i18n.Localizer).ServerAuthSignedInTitle)
+	p.CSRFToken = h.csrfToken(w, r)
+	p.ReturnTo = returnTo
+	if p.ReturnTo == "" {
+		p.ReturnTo = "/"
+	}
+	h.render(w, r, http.StatusOK, pageSignedIn, p)
+}
+
+func (h *Handler) renderSignIn(w http.ResponseWriter, r *http.Request, status int, returnTo, email string, message func(*i18n.Localizer) string) {
+	p := h.newPage(r, (*i18n.Localizer).ServerAuthSignInTitle)
+	p.CSRFToken = h.csrfToken(w, r)
+	p.ReturnTo, p.Email = returnTo, email
+	if message != nil {
+		p.Error = message(p.L)
+	}
+	h.render(w, r, status, pageSignIn, p)
+}
+
+// signIn handles the sign-in form.
+func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
+	if err := r.ParseForm(); err != nil {
+		h.renderError(w, r, http.StatusBadRequest, (*i18n.Localizer).ServerErrorsBadRequest)
+		return
+	}
+	returnTo := safeReturnTo(r.PostForm.Get("return_to"))
+	email := strings.TrimSpace(r.PostForm.Get("email"))
+	if !h.validCSRF(r) {
+		h.renderSignIn(w, r, http.StatusForbidden, returnTo, email, (*i18n.Localizer).ServerAuthFormExpired)
+		return
+	}
+	password := r.PostForm.Get("password")
+	if email == "" || password == "" {
+		h.renderSignIn(w, r, http.StatusUnprocessableEntity, returnTo, email, (*i18n.Localizer).ServerAuthSignInMissing)
+		return
+	}
+	signedIn, err := h.o.Identity.SignIn(r.Context(), appidentity.SignInInput{
+		Email:        email,
+		Password:     password,
+		IP:           clientIP(r),
+		UserAgent:    r.UserAgent(),
+		CurrentToken: cookieValue(r, CookieSession),
+	})
+	var limited *kernel.RateLimitedError
+	switch {
+	case errors.As(err, &limited):
+		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(limited.RetryAfter.Seconds()))))
+		minutes := int(math.Ceil(limited.RetryAfter.Minutes()))
+		h.renderSignIn(w, r, http.StatusTooManyRequests, returnTo, email, func(l *i18n.Localizer) string {
+			return l.ServerAuthSignInRateLimited(minutes)
+		})
+		return
+	case errors.Is(err, appidentity.ErrInvalidCredentials):
+		h.renderSignIn(w, r, http.StatusUnprocessableEntity, returnTo, email, (*i18n.Localizer).ServerAuthSignInFailed)
+		return
+	case err != nil:
+		h.internalError(w, r, err)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     CookieSession,
+		Value:    signedIn.Token,
+		Path:     "/",
+		Expires:  signedIn.Session.ExpiresAt,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	if returnTo == "" {
+		returnTo = "/"
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	http.Redirect(w, r, returnTo, http.StatusSeeOther) //nolint:gosec // G710: safeReturnTo admits only paths on this site
+}
+
+// signOut ends the browser's session and returns to the sign-in form.
+func (h *Handler) signOut(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
+	if err := r.ParseForm(); err != nil {
+		h.renderError(w, r, http.StatusBadRequest, (*i18n.Localizer).ServerErrorsBadRequest)
+		return
+	}
+	if !h.validCSRF(r) {
+		h.renderError(w, r, http.StatusForbidden, (*i18n.Localizer).ServerAuthFormExpired)
+		return
+	}
+	if err := h.o.Identity.SignOut(r.Context(), cookieValue(r, CookieSession)); err != nil {
+		h.internalError(w, r, err)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name: CookieSession, Value: "", Path: "/", MaxAge: -1, Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode,
+	})
+	w.Header().Set("Cache-Control", "no-store")
+	http.Redirect(w, r, PathSignIn, http.StatusSeeOther)
+}
+
+// csrfToken returns the browser's anti-forgery token, issuing a new one in the CSRF cookie when
+// the browser has none (the double-submit pattern; the __Host- prefix keeps other hosts from
+// planting the cookie).
+func (h *Handler) csrfToken(w http.ResponseWriter, r *http.Request) string {
+	if t := cookieValue(r, CookieCSRF); validTokenSyntax(t) {
+		return t
+	}
+	b := make([]byte, 32)
+	_, _ = rand.Read(b) // crypto/rand.Read never returns an error
+	t := base64.RawURLEncoding.EncodeToString(b)
+	http.SetCookie(w, &http.Cookie{
+		Name: CookieCSRF, Value: t, Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode,
+	})
+	return t
+}
+
+// validCSRF reports whether the form's csrf_token matches the CSRF cookie.
+func (h *Handler) validCSRF(r *http.Request) bool {
+	cookie := cookieValue(r, CookieCSRF)
+	form := r.PostForm.Get("csrf_token")
+	return validTokenSyntax(cookie) && subtle.ConstantTimeCompare([]byte(cookie), []byte(form)) == 1
+}
+
+// validTokenSyntax accepts what csrfToken issues: 43 characters of unpadded base64url.
+func validTokenSyntax(t string) bool {
+	if len(t) != 43 {
+		return false
+	}
+	_, err := base64.RawURLEncoding.DecodeString(t)
+	return err == nil
+}
+
+func cookieValue(r *http.Request, name string) string {
+	c, err := r.Cookie(name)
+	if err != nil {
+		return ""
+	}
+	return c.Value
+}
+
+// clientIP returns the address of the connection's peer. Forwarding headers are not trusted:
+// reading them needs the trusted proxy setting of ADR-0019 §5.
+func clientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
+// safeReturnTo returns s when it is a path on this site to go back to after signing in, and ""
+// otherwise, so that the form cannot be turned into an open redirect.
+func safeReturnTo(s string) string {
+	if s == "" || len(s) > maxReturnTo || s[0] != '/' || strings.HasPrefix(s, "//") || strings.ContainsAny(s, "\\\x00\r\n\t") {
+		return ""
+	}
+	u, err := url.Parse(s)
+	if err != nil || u.Scheme != "" || u.Host != "" || u.User != nil {
+		return ""
+	}
+	return s
+}

@@ -12,6 +12,8 @@ import (
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
+	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
+	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
@@ -25,6 +27,7 @@ import (
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
+	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -57,6 +60,10 @@ type App struct {
 	Handlers *queue.JobHandlerRegistry
 	// Runner runs the jobs of the queue for the worker role.
 	Runner *queue.PullRunner
+
+	// KV is the key-value store that cfg.KV selects; RateLimiter keeps its counters there.
+	KV          kernel.KeyValueStore
+	RateLimiter *kernel.RateLimiter
 
 	Accounts *account.Service
 	Identity *identity.Service
@@ -132,6 +139,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
+		if cfg.KV == "db" {
+			a.KV = kvdb.NewSQLite(d, a.Clock)
+		}
 	case "postgres":
 		d, err := postgres.Open(ctx, cfg.DatabaseURL, uow.Options{Projectors: a.Projectors})
 		if err != nil {
@@ -142,6 +152,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows, statuses = d.GraphRepository(), d.StatusRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
+		}
+		if cfg.KV == "db" {
+			a.KV = kvdb.NewPostgres(d, a.Clock)
 		}
 	default:
 		return nil, fmt.Errorf("db %q is not implemented yet", cfg.DB)
@@ -163,6 +176,16 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if a.Runner == nil {
 		a.Runner = queue.NewPullRunner(a.source, a.Handlers, runnerOpts)
 	}
+	switch cfg.KV {
+	case "db":
+		// Set with the database above.
+	case "memory":
+		a.KV = kvmemory.New(a.Clock)
+	default:
+		_ = a.Close()
+		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
+	}
+	a.RateLimiter = kernel.NewRateLimiter(a.KV, a.Clock)
 
 	account.RegisterProjectors(a.Projectors, accounts)
 	a.Accounts = account.NewService(account.Deps{
@@ -173,6 +196,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
+		RateLimiter: a.RateLimiter,
 		// The default locale is an instance setting in the database, never configuration
 		// (docs/reference/configuration.md); it is read per registration so changes apply at once.
 		DefaultLocale: a.Instance.DefaultLocale,
@@ -183,7 +207,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	content.RegisterProjectors(a.Projectors, statuses)
 	a.Content = content.NewService(content.Deps{
-		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Follows: a.Graph,
+		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
 		// No moderation restrictions exist yet; posting still goes through the policy port.
 		Restrictions:    content.NoRestrictions{},
 		MaxStatusLength: a.Instance.MaxStatusLength,
@@ -198,6 +222,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
+	authpages.New(authpages.Options{Identity: a.Identity, Messages: a.Messages, Logger: a.Logger}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,

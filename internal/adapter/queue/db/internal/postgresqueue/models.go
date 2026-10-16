@@ -86,6 +86,25 @@ type AccountProfileRevision struct {
 	RevisedAt     time.Time
 }
 
+type Block struct {
+	ID               string
+	Uri              *string
+	BlockerAccountID string
+	BlockedAccountID string
+	CreatedAt        time.Time
+}
+
+type BlockEdge struct {
+	BlockerAccountID string
+	BlockedAccountID string
+	BlockID          string
+}
+
+type BlockRetraction struct {
+	BlockID     string
+	RetractedAt time.Time
+}
+
 type DeadJob struct {
 	ID             string
 	Type           string
@@ -189,6 +208,13 @@ type Job struct {
 	CreatedAt      time.Time
 }
 
+type KvEntry struct {
+	Namespace string
+	Key       string
+	Value     []byte
+	ExpiresAt pgtype.Timestamptz
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -206,6 +232,14 @@ type LocalStatus struct {
 	AuthorAccountID string
 	ClientID        *string
 	IdempotencyKey  *string
+}
+
+type Mute struct {
+	AccountID         string
+	TargetAccountID   string
+	HideNotifications bool
+	ExpiresAt         pgtype.Timestamptz
+	CreatedAt         time.Time
 }
 
 type OutboxEvent struct {
@@ -235,6 +269,27 @@ type Role struct {
 type RolePermission struct {
 	RoleID     string
 	Permission string
+}
+
+type Session struct {
+	ID        string
+	UserID    string
+	TokenHash []byte
+	UserAgent *string
+	Ip        *string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+}
+
+type SessionActivity struct {
+	SessionID  string
+	LastSeenAt time.Time
+}
+
+type SessionRevocation struct {
+	SessionID string
+	Reason    string
+	RevokedAt time.Time
 }
 
 type Status struct {

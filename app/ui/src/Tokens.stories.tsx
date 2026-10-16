@@ -1,0 +1,107 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// The design token sheet for Storybook (CSF 3). It needs no Storybook import, so it type-checks
+// before Storybook is set up (#120); the meta then gains `satisfies Meta`.
+// Swatches read the semantic colors with var() (theme.css emits them all) instead of building
+// class names, which web-client.md D9 forbids.
+import { colorPairs, decorativeColors, surfaces } from "./tokens";
+
+export default {
+  title: "Foundations/Tokens",
+  parameters: { layout: "padded" },
+};
+
+function ColorPairs() {
+  return (
+    <ul className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
+      {colorPairs.map(({ fg, bg, use }) => (
+        <li
+          key={`${fg}/${bg}`}
+          className="flex items-center gap-3 rounded-md border border-border p-3"
+          style={{ backgroundColor: `var(--color-${bg})`, color: `var(--color-${fg})` }}
+        >
+          {use === "text" ? (
+            <span className="text-lg font-semibold">Aa あ ع</span>
+          ) : (
+            <span className="size-6 rounded-sm border-2" style={{ borderColor: `var(--color-${fg})` }} />
+          )}
+          <code className="font-mono text-sm">
+            {fg} on {bg}
+          </code>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export const Colors = { render: () => <ColorPairs /> };
+
+function DecorativeColors() {
+  return (
+    <ul className="flex flex-wrap gap-4">
+      {decorativeColors.map((name) => (
+        <li key={name} className="flex flex-col items-center gap-1">
+          <span className="size-16 rounded-md border border-border" style={{ backgroundColor: `var(--color-${name})` }} />
+          <code className="font-mono text-sm text-fg-muted">{name}</code>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export const Decorative = { render: () => <DecorativeColors /> };
+
+/** One line per script the font stack covers; lang and dir pick the right glyphs and direction. */
+const typeSamples = [
+  { lang: "en", dir: "ltr", text: "The quick brown fox jumps over the lazy dog." },
+  { lang: "ja", dir: "ltr", text: "いろはにほへと ちりぬるを 色は匂へど散りぬるを" },
+  { lang: "ar", dir: "rtl", text: "نص حكيم له سر قاطع وذو شأن عظيم" },
+] as const;
+
+function TypeScale() {
+  return (
+    <div className="flex flex-col gap-6">
+      {(["text-3xl", "text-2xl", "text-xl", "text-lg", "text-base", "text-sm", "text-xs"] as const).map((size) => (
+        <section key={size} className="flex flex-col gap-1">
+          <code className="font-mono text-xs text-fg-muted">{size}</code>
+          {typeSamples.map(({ lang, dir, text }) => (
+            <p key={lang} lang={lang} dir={dir} className={size}>
+              {text}
+            </p>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+export const Typography = { render: () => <TypeScale /> };
+
+function Shapes() {
+  return (
+    <div className="flex flex-col gap-6">
+      <ul className="flex flex-wrap gap-4">
+        {(
+          [
+            ["rounded-sm shadow-sm", "flex size-24 items-end rounded-sm bg-surface-raised p-2 shadow-sm"],
+            ["rounded-md shadow-md", "flex size-24 items-end rounded-md bg-surface-raised p-2 shadow-md"],
+            ["rounded-lg shadow-lg", "flex size-24 items-end rounded-lg bg-surface-raised p-2 shadow-lg"],
+            ["rounded-xl shadow-lg", "flex size-24 items-end rounded-xl bg-surface-raised p-2 shadow-lg"],
+          ] as const
+        ).map(([name, classes]) => (
+          <li key={name} className={classes}>
+            <code className="font-mono text-xs">{name}</code>
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-4">
+        {surfaces.map((name) => (
+          <div key={name} className="focus-ring rounded-md border border-border-strong p-3" style={{ backgroundColor: `var(--color-${name})` }}>
+            <code className="font-mono text-sm">focus-ring on {name}</code>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export const ShapesAndFocus = { name: "Radius, shadow and focus", render: () => <Shapes /> };

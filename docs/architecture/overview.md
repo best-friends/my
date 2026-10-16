@@ -152,12 +152,13 @@ cmd/
 internal/
   domain/<module>/   # 純粋なドメイン（identity, account, content, graph, ...）
   app/<module>/      # ユースケースとポート定義
-  app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator / KeyManager）、UUIDv7 ヘルパー、Sealer
+  app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator / KeyManager / KeyValueStore）、UUIDv7 ヘルパー、Sealer、RateLimiter
   app/uow/           # UnitOfWork ポート、トランザクションのリトライ、同期 projector の登録先
   app/queue/         # ジョブキューのポート、ハンドラの登録先、リトライ方針、pull runner
   interface/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
+    authpages/       # ログイン・ログアウトの画面（html/template、JavaScript なし。ADR-0030）
     admin/
   adapter/
     db/{sqlite,libsql,postgres}/

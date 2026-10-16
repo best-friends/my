@@ -132,7 +132,7 @@ func newPostingEnv(t *testing.T, newHarness PostingFactory) *postingEnv {
 		UnitOfWork:      ph.UnitOfWork,
 		Repository:      ph.Statuses,
 		Accounts:        ae.accounts,
-		Follows:         e.graph,
+		Relationships:   e.graph,
 		Restrictions:    e.restrictions,
 		MaxStatusLength: e.instance.MaxStatusLength,
 		DefaultLanguage: func(_ context.Context, userID string) (string, error) { return e.languages[userID], nil },
@@ -493,6 +493,12 @@ func postingReplies(t *testing.T, e *postingEnv) {
 	}
 	if err := replyTo(carol, direct.Status.ID); err != nil {
 		t.Errorf("mentioned account's reply to a direct status = %v", err)
+	}
+	if _, err := e.graph.Block(ctx, alice, carol); err != nil {
+		t.Fatalf("Block = %v", err)
+	}
+	if err := replyTo(carol, root.Status.ID); !errors.Is(err, appcontent.ErrReplyTargetNotFound) {
+		t.Errorf("reply to a public status of a blocking author = %v, want ErrReplyTargetNotFound", err)
 	}
 	if _, err := e.content.Delete(ctx, alice, root.Status.ID); err != nil {
 		t.Fatalf("Delete = %v", err)

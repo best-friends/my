@@ -408,6 +408,48 @@ CREATE TABLE follow_counters (
   following_count bigint NOT NULL CHECK (following_count >= 0)
 );
 
+-- graph: blocks and mutes (data-model §4.5) -------------------------------------------------
+
+-- Resource: one block. Blocking again after a retraction inserts a new row. uri is NULL only for
+-- a received Block without an id.
+CREATE TABLE blocks (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  uri text,
+  blocker_account_id text COLLATE "C" NOT NULL,
+  blocked_account_id text COLLATE "C" NOT NULL,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX blocks_uri ON blocks (uri);
+
+-- Event: a block was lifted.
+CREATE TABLE block_retractions (
+  block_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  retracted_at timestamptz NOT NULL
+);
+
+-- Projection: the block in force of each pair (without a retraction).
+CREATE TABLE block_edges (
+  blocker_account_id text COLLATE "C" NOT NULL,
+  blocked_account_id text COLLATE "C" NOT NULL,
+  block_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (blocker_account_id, blocked_account_id)
+);
+CREATE INDEX block_edges_blocked_account_id ON block_edges (blocked_account_id);
+CREATE INDEX block_edges_blocker_block_id ON block_edges (blocker_account_id, block_id);
+
+-- Current value: an account's mute of another. A mute whose expires_at has passed no longer
+-- applies; readers filter it out.
+CREATE TABLE mutes (
+  account_id text COLLATE "C" NOT NULL,
+  target_account_id text COLLATE "C" NOT NULL,
+  hide_notifications boolean NOT NULL,
+  expires_at timestamptz,
+  created_at timestamptz NOT NULL,
+  PRIMARY KEY (account_id, target_account_id),
+  CHECK (expires_at IS NULL OR expires_at > created_at)
+);
+CREATE INDEX mutes_account_created_at_target ON mutes (account_id, created_at, target_account_id);
+
 -- ---------------------------------------------------------------------------------------------
 -- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).
 -- Owned by internal/adapter/queue/db.
@@ -528,3 +570,46 @@ CREATE TABLE instance_texts (
   revision_id text COLLATE "C" NOT NULL,
   PRIMARY KEY (key, locale)
 );
+
+-- ---------------------------------------------------------------------------------------------
+-- identity: browser sessions of the server-rendered screens (data-model.md §4.1, ADR-0019 §4).
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a sign-in. token_hash is the SHA-256 digest of the session cookie's value.
+CREATE TABLE sessions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  token_hash bytea NOT NULL,
+  user_agent text,
+  ip text,
+  created_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX sessions_token_hash ON sessions (token_hash);
+
+-- Event: a session ended before it expired.
+CREATE TABLE session_revocations (
+  session_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  reason text NOT NULL CHECK (reason IN ('logout', 'replaced', 'password_changed', 'moderation', 'expired_cleanup')),
+  revoked_at timestamptz NOT NULL
+);
+
+-- Current value: when a session was last used, updated at most once per interval.
+CREATE TABLE session_activity (
+  session_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  last_seen_at timestamptz NOT NULL
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- 基盤: key-value store (data-model.md §4.10). Owned by internal/adapter/kv/db.
+-- ---------------------------------------------------------------------------------------------
+
+-- Entries of the KeyValueStore port. expires_at is NULL for entries that never expire.
+CREATE TABLE kv_entries (
+  namespace text NOT NULL,
+  key text NOT NULL,
+  value bytea NOT NULL,
+  expires_at timestamptz,
+  PRIMARY KEY (namespace, key)
+);
+CREATE INDEX kv_entries_expires_at ON kv_entries (expires_at);
