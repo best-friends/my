@@ -11,7 +11,7 @@
 ただし方言を増やすほどテスト・保守コストが増える。
 
 当初は Cloudflare D1（対話的トランザクション非対応）を対象に含めていたが、ADR-0001 で Cloudflare Workers を対象外としたため D1 も対象外になった。
-残る候補のうち Aurora DSQL は楽観的同時実行制御（コミット時の競合でエラー）とトランザクションあたりの行数制限を持つ（要検証）。
+残る候補のうち Aurora DSQL は楽観的同時実行制御（コミット時の競合で SQLSTATE 40001）、分離レベル Repeatable Read 固定、トランザクションあたり 3,000 行・10 MiB・5 分の上限、DDL と DML の分離を持つ。外部キーとシーケンス（`CACHE` は 1 か 65536 以上）はサポートされている（2026-10-16 に AWS 公式ドキュメントで確認、#18。詳細と出典は [deployment-targets.md](../architecture/deployment-targets.md)）。
 
 ## Decision Drivers
 
@@ -43,7 +43,8 @@ MySQL 系（MySQL、TiDB Serverless、PlanetScale 等）は v0 では対象外�
 - アプリケーション層は **集約単位のリポジトリポート** と **`UnitOfWork`（`Tx(ctx, func(tx) error) error`）** にのみ依存する。
 - トランザクションは β（短い対話的トランザクションを許容）とする。ただし:
   - **トランザクション内で外部 I/O（HTTP・キュー投入・Blob 操作）をしない**。キュー投入は Transactional Outbox 経由（ADR-0004）。
-  - 直列化失敗・競合エラーは `UnitOfWork` が有限回リトライする（DSQL / PG の serializable 対策）。そのためトランザクション関数は再実行可能に書く。
+  - 直列化失敗・競合エラー（SQLSTATE 40001）は `UnitOfWork` が有限回リトライする（DSQL の OCC 競合 / PG の serializable 対策）。そのためトランザクション関数は再実行可能に書く。
+  - 1 トランザクションで変更する行数は DSQL の上限（3,000 行）を超えないようにし、一括処理はジョブに分割する。
   - ジョブは at-least-once なので、書き込みは引き続き一意制約 + upsert（`INSERT ... ON CONFLICT`）・冪等キーで重複に強くする。
   - カウンタ（フォロワー数・お気に入り数など）は加算 SQL（`SET n = n + 1`）を使い、定期ジョブで再集計して補正する。
 - SQL の扱い（Go）: 第一候補は **sqlc を方言ごとに生成**（`queries/sqlite/*.sql`, `queries/postgres/*.sql`）し、
@@ -78,5 +79,6 @@ MySQL 系（MySQL、TiDB Serverless、PlanetScale 等）は v0 では対象外�
 
 - [ ] #17 Spike: sqlc（比較: bob）で SQLite / PostgreSQL のリポジトリ実装と UnitOfWork を作り、同一コントラクトテストを通す。cgo 不要の SQLite ドライバを選ぶ
 - [ ] libSQL / Turso の Go クライアントの成熟度（cgo 要否、リモート接続でのトランザクション）
-- [ ] Aurora DSQL のコントラクトテスト通過可否（外部キー・シーケンス・DDL・トランザクション行数の制約）
+- [x] #18 Aurora DSQL の制約の確認（2026-10-16）: 外部キー・シーケンスは可。トランザクション 3,000 行 / 10 MiB / 5 分、1 トランザクション 1 DDL・DDL と DML 分離、Repeatable Read 固定、一時テーブル・PL/pgSQL・`TRUNCATE` 不可
+- [ ] Aurora DSQL のコントラクトテスト通過可否（上記制約下での実測。`SKIP LOCKED` の可否は公式ドキュメントで未確認のため要検証。ホットなカウンタ行の OCC 競合率）
 - [ ] 時刻の保存形式の確定
