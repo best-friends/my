@@ -8,6 +8,7 @@ import { Outlet } from "@tanstack/react-router";
 import { useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { ComposeEntry, ComposeProvider } from "../../features/compose";
+import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
 import { Navigation } from "./Navigation";
 import { ServerInfo } from "./ServerInfo";
@@ -24,6 +25,8 @@ export function AppLayout() {
   const t = useT();
   const mainRef = useRef<HTMLElement>(null);
   useViewChange(mainRef);
+  // Every page is displayed in the signed-in user's locale and time zone.
+  useUserDisplaySettings();
   const wide = useMediaQuery(wideQuery);
   return (
     <ComposeProvider layout={wide ? "panel" : "sheet"}>

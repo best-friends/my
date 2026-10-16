@@ -1,0 +1,328 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// The settings pages through the whole app (web-client.md T4): a signed-in session from the default
+// handlers, MSW playing the server with the state each test needs, and the user's own interactions.
+import { screen, within } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import type { Preferences, PreferencesChange, ProfileChange } from "./api/me";
+import { accountFixture, apiBase, mediaFixture, preferencesFixture, problem, relationshipFixture, signedInHandler, viewerFixture } from "../../test/msw/handlers";
+import { server } from "../../test/msw/server";
+import { nodeUploadFile } from "../../test/multipart";
+import { renderApp } from "../../test/render";
+
+beforeEach(() => {
+  server.use(signedInHandler);
+  // The tests share one document; a locale change sets its lang and dir.
+  document.documentElement.lang = "en";
+  document.documentElement.dir = "ltr";
+});
+
+/** The server's preferences of the viewer, which PATCH changes, with the requests it received. */
+function preferencesServer(initial: Partial<Preferences> = {}) {
+  let preferences: Preferences = { ...preferencesFixture, ...initial };
+  const changes: PreferencesChange[] = [];
+  const languages: (string | null)[] = [];
+  server.use(
+    http.get(`${apiBase}/preferences`, ({ request }) => {
+      languages.push(request.headers.get("Accept-Language"));
+      return HttpResponse.json(preferences);
+    }),
+    http.patch(`${apiBase}/preferences`, async ({ request }) => {
+      const change = (await request.json()) as PreferencesChange;
+      changes.push(change);
+      preferences = { ...preferences, ...change };
+      return HttpResponse.json(preferences);
+    }),
+  );
+  return { changes, languages, get current() { return preferences; } };
+}
+
+describe("preferences", () => {
+  test("switching the display language saves it and displays the app in it at once", async () => {
+    const prefs = preferencesServer();
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    expect(await screen.findByRole("heading", { level: 1, name: "Preferences" })).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute("lang", "en");
+
+    await user.click(screen.getByRole("button", { name: /Display language/ }));
+    await user.click(await screen.findByRole("option", { name: "日本語" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "表示と投稿" })).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute("lang", "ja");
+    expect(document.documentElement).toHaveAttribute("dir", "ltr");
+    expect(prefs.changes).toEqual([{ locale: "ja" }]);
+    expect(screen.getByRole("button", { name: /表示言語/ })).toHaveTextContent("日本語");
+    // The server's localized data is fetched again in the new locale.
+    await vi.waitFor(() => {
+      expect(prefs.languages.at(-1)).toBe("ja");
+    });
+  });
+
+  test("the app starts in the signed-in user's locale", async () => {
+    preferencesServer({ locale: "ja-JP" });
+    await renderApp({ path: "/settings" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "設定" })).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute("lang", "ja");
+  });
+
+  test("the default visibility and the timeline languages are saved as they change", async () => {
+    const prefs = preferencesServer();
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    const visibility = await screen.findByRole("radiogroup", { name: "Who sees your posts by default" });
+
+    await user.click(within(visibility).getByRole("radio", { name: "Followers" }));
+    expect(await within(visibility).findByRole("radio", { name: "Followers" })).toBeChecked();
+    const languages = screen.getByRole("group", { name: "Languages of your timelines" });
+    await user.click(within(languages).getByRole("checkbox", { name: "Japanese" }));
+    await user.click(within(languages).getByRole("checkbox", { name: "German" }));
+
+    await vi.waitFor(() => {
+      expect(prefs.changes).toEqual([{ default_visibility: "private" }, { timeline_languages: ["ja"] }, { timeline_languages: ["de", "ja"] }]);
+    });
+    expect(within(languages).getByRole("checkbox", { name: "German" })).toBeChecked();
+    expect((await screen.findAllByText("Saved")).length).toBeGreaterThan(0);
+  });
+
+  test("a change the server refuses is reported on its field", async () => {
+    preferencesServer();
+    server.use(
+      http.patch(`${apiBase}/preferences`, () =>
+        HttpResponse.json(
+          { type: "about:blank", title: "Unprocessable", status: 422, detail: "time_zone is not a valid value." },
+          { status: 422, headers: { "Content-Type": "application/problem+json" } },
+        ),
+      ),
+    );
+    const { user } = await renderApp({ path: "/settings/preferences" });
+
+    await user.click(await screen.findByRole("button", { name: /Time zone/ }));
+    await user.click(await screen.findByRole("option", { name: "Asia/Tokyo" }));
+
+    const timeZone = screen.getByRole("button", { name: /Time zone/ });
+    await vi.waitFor(() => {
+      expect(timeZone).toHaveAccessibleDescription(expect.stringContaining("time_zone is not a valid value.") as string);
+    });
+    expect(timeZone).toHaveTextContent("UTC");
+  });
+});
+
+describe("profile", () => {
+  /** The server's update_credentials operation, with the changes it received. */
+  function profileServer() {
+    const changes: ProfileChange[] = [];
+    server.use(
+      http.patch(`${apiBase}/accounts/update_credentials`, async ({ request }) => {
+        const change = (await request.json()) as ProfileChange;
+        changes.push(change);
+        return HttpResponse.json({ ...viewerFixture, display_name: change.display_name ?? viewerFixture.display_name, locked: change.locked ?? false });
+      }),
+    );
+    return changes;
+  }
+
+  test("a value over its limit is reported on its field, which gets focus, and nothing is sent", async () => {
+    const changes = profileServer();
+    const { user } = await renderApp({ path: "/settings/profile" });
+    const displayName = await screen.findByRole("textbox", { name: "Display name" });
+
+    await user.clear(displayName);
+    await user.type(displayName, "a".repeat(31));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(displayName).toHaveFocus();
+    expect(displayName).toHaveAttribute("aria-invalid", "true");
+    expect(displayName).toHaveAccessibleDescription(expect.stringContaining("Use at most 30 characters.") as string);
+    expect(changes).toEqual([]);
+  });
+
+  test("a field with content needs a label", async () => {
+    profileServer();
+    const { user } = await renderApp({ path: "/settings/profile" });
+    await user.click(await screen.findByRole("button", { name: "Add a field" }));
+    const field = screen.getByRole("group", { name: "Field 1" });
+
+    await user.type(within(field).getByRole("textbox", { name: "Content" }), "https://example.com");
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    const label = within(field).getByRole("textbox", { name: "Label" });
+    expect(label).toHaveFocus();
+    expect(label).toHaveAccessibleDescription("Give this field a label.");
+  });
+
+  test("saves the profile with a new avatar, a field and approval of followers", async () => {
+    const changes = profileServer();
+    const uploads: string[] = [];
+    server.use(
+      http.post(`${apiBase}/media`, async ({ request }) => {
+        // The raw multipart body: undici's parser cannot make its File objects under jsdom.
+        const body = await request.text();
+        uploads.push(/name="file"; filename="([^"]*)"/.exec(body)?.[1] ?? "");
+        return HttpResponse.json(mediaFixture("0192f0c4-7a8e-7000-8000-00000000bbbb", "ready"), { status: 202 });
+      }),
+    );
+    const { user } = await renderApp({ path: "/settings/profile" });
+    const displayName = await screen.findByRole("textbox", { name: "Display name" });
+
+    await user.clear(displayName);
+    await user.type(displayName, "Alice in Chains");
+    await user.type(screen.getByRole("textbox", { name: "Bio" }), "Hello");
+    await user.click(screen.getByRole("button", { name: "Add a field" }));
+    const field = screen.getByRole("group", { name: "Field 1" });
+    await user.type(within(field).getByRole("textbox", { name: "Label" }), "Site");
+    await user.type(within(field).getByRole("textbox", { name: "Content" }), "https://alice.example");
+    await user.click(screen.getByRole("checkbox", { name: "Approve followers" }));
+    const avatar = screen.getByRole("region", { name: "Avatar" });
+    // FileTrigger's input is hidden; user-event uploads through it as the file picker would.
+    // eslint-disable-next-line testing-library/no-node-access -- the hidden file input has no role.
+    const input = avatar.querySelector<HTMLInputElement>('input[type="file"]');
+    if (input === null) throw new Error("no file input");
+    await user.upload(input, nodeUploadFile("png", "me.png", "image/png"));
+    expect(await within(avatar).findByRole("button", { name: "Remove image" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect((await screen.findAllByText("Your profile has been saved.")).length).toBeGreaterThan(0);
+    expect(uploads).toEqual(["me.png"]);
+    expect(changes).toEqual([
+      {
+        display_name: "Alice in Chains",
+        note: "Hello",
+        fields: [{ name: "Site", value: "https://alice.example" }],
+        locked: true,
+        bot: false,
+        avatar_media_id: "0192f0c4-7a8e-7000-8000-00000000bbbb",
+      },
+    ]);
+  });
+
+  test("a save the server refuses says why", async () => {
+    server.use(
+      http.patch(`${apiBase}/accounts/update_credentials`, () =>
+        HttpResponse.json(
+          { type: "about:blank", title: "Unprocessable", status: 422, detail: "fields is not a valid value." },
+          { status: 422, headers: { "Content-Type": "application/problem+json" } },
+        ),
+      ),
+    );
+    const { user } = await renderApp({ path: "/settings/profile" });
+
+    await user.click(await screen.findByRole("button", { name: "Save profile" }));
+
+    expect(await screen.findByText("fields is not a valid value.")).toHaveAttribute("role", "alert");
+  });
+});
+
+describe("blocks, mutes and follow requests", () => {
+  const bob = accountFixture(2, "Bob");
+  const carol = accountFixture(3, "Carol");
+
+  test("unblocking takes the account off the list and keeps focus in the list", async () => {
+    let blocked = [bob, carol];
+    const unblocked: string[] = [];
+    server.use(
+      http.get(`${apiBase}/blocks`, () => HttpResponse.json({ accounts: blocked })),
+      http.post(`${apiBase}/accounts/:id/unblock`, ({ params }) => {
+        const id = String(params["id"]);
+        unblocked.push(id);
+        blocked = blocked.filter((account) => account.id !== id);
+        return HttpResponse.json(relationshipFixture(id));
+      }),
+    );
+    const { user } = await renderApp({ path: "/settings/blocks" });
+    expect(await screen.findByText("@bob@remote.example")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Unblock: Bob" }));
+
+    await vi.waitFor(() => {
+      expect(screen.queryByText("Bob")).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: "Unblock: Carol" })).toHaveFocus();
+    expect(unblocked).toEqual([bob.id]);
+    expect(await screen.findByText("You unblocked Bob.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Unblock: Carol" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "You have not blocked anyone" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
+  });
+
+  test("lists mutes with when they end, and loads more pages", async () => {
+    server.use(
+      http.get(`${apiBase}/mutes`, ({ request }) =>
+        new URL(request.url).searchParams.get("cursor") === "next"
+          ? HttpResponse.json({ mutes: [{ account: carol, notifications: false }] })
+          : HttpResponse.json({ mutes: [{ account: bob, notifications: true, expires_at: "2026-11-01T09:30:00Z" }], next_cursor: "next" }),
+      ),
+    );
+    const { user } = await renderApp({ path: "/settings/mutes" });
+
+    expect(await screen.findByText("Bob")).toBeInTheDocument();
+    expect(screen.getByText(/^Until Nov 1, 2026/)).toBeInTheDocument();
+    expect(screen.getByText("Notifications hidden too")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+    expect(await screen.findByText("Carol")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unmute: Carol" })).toBeInTheDocument();
+  });
+
+  test("accepting and rejecting follow requests", async () => {
+    const answered: string[] = [];
+    server.use(
+      http.get(`${apiBase}/follow_requests`, () => HttpResponse.json({ accounts: [bob, carol] })),
+      http.post(`${apiBase}/follow_requests/:id/authorize`, ({ params }) => {
+        answered.push(`accept ${String(params["id"])}`);
+        return HttpResponse.json({ ...relationshipFixture(String(params["id"])), followed_by: true });
+      }),
+      http.post(`${apiBase}/follow_requests/:id/reject`, ({ params }) => {
+        answered.push(`reject ${String(params["id"])}`);
+        return HttpResponse.json(relationshipFixture(String(params["id"])));
+      }),
+    );
+    const { user } = await renderApp({ path: "/settings/follow-requests" });
+
+    await user.click(await screen.findByRole("button", { name: "Accept: Bob" }));
+    expect(await screen.findByText("Bob now follows you.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accept: Carol" })).toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Reject: Carol" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "No follow requests" })).toBeInTheDocument();
+    expect(answered).toEqual([`accept ${bob.id}`, `reject ${carol.id}`]);
+  });
+
+  test("a failed action keeps the account and says why", async () => {
+    server.use(
+      http.get(`${apiBase}/blocks`, () => HttpResponse.json({ accounts: [bob] })),
+      http.post(`${apiBase}/accounts/:id/unblock`, () => problem(404, "about:blank", "Not found")),
+    );
+    const { user } = await renderApp({ path: "/settings/blocks" });
+
+    await user.click(await screen.findByRole("button", { name: "Unblock: Bob" }));
+
+    expect(await screen.findByText("Not found")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unblock: Bob" })).toBeInTheDocument();
+  });
+});
+
+describe("signed out", () => {
+  test("a settings page sends the browser to sign in first, and back afterwards", async () => {
+    server.resetHandlers();
+    const { router } = await renderApp({ path: "/settings/blocks" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
+    expect(router.state.location.search).toEqual({ return_to: "/settings/blocks" });
+  });
+
+  test("the settings page lists the settings pages", async () => {
+    server.resetHandlers();
+    await renderApp({ path: "/settings" });
+
+    const menu = await screen.findByRole("region", { name: "Settings pages" });
+    expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/settings/profile",
+      "/settings/preferences",
+      "/settings/follow-requests",
+      "/settings/blocks",
+      "/settings/mutes",
+    ]);
+    expect(within(menu).getByRole("link", { name: "Blocked accounts" })).toHaveAccessibleDescription("Accounts that cannot follow you or see your posts");
+  });
+});
