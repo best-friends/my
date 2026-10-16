@@ -115,7 +115,9 @@ func (f *fakeStatuses) Favourite(_ context.Context, a, id string) (content.Favou
 func (f *fakeStatuses) Unfavourite(_ context.Context, a, id string) error {
 	return f.do("unfavourite", a, id)
 }
-func (f *fakeStatuses) Bookmark(_ context.Context, a, id string) error { return f.do("bookmark", a, id) }
+func (f *fakeStatuses) Bookmark(_ context.Context, a, id string) error {
+	return f.do("bookmark", a, id)
+}
 func (f *fakeStatuses) Unbookmark(_ context.Context, a, id string) error {
 	return f.do("unbookmark", a, id)
 }
@@ -414,8 +416,10 @@ func TestInteractionsReturnTheStatus(t *testing.T) {
 
 func TestPostLimit(t *testing.T) {
 	f := &fakeStatuses{
-		create: func(appcontent.CreateInput) (appcontent.Post, error) { return appcontent.Post{Status: content.Status{ID: statusID}}, nil },
-		view:   func(v appcontent.Viewer, _ string) (appcontent.StatusView, error) { return sampleView(v), nil },
+		create: func(appcontent.CreateInput) (appcontent.Post, error) {
+			return appcontent.Post{Status: content.Status{ID: statusID}}, nil
+		},
+		view: func(v appcontent.Viewer, _ string) (appcontent.StatusView, error) { return sampleView(v), nil },
 	}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Statuses, o.StatusReader, o.Interactions = f, f, f
