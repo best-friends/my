@@ -1,0 +1,36 @@
+name: Spike
+description: Time-boxed investigation to answer a question before deciding or implementing
+title: "[Spike] "
+labels: ["type:spike"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question / 明らかにしたいこと
+    validations:
+      required: true
+  - type: textarea
+    id: method
+    attributes:
+      label: Method / 方法
+      description: What to build or measure. Throwaway code goes under spikes/<issue>-<slug>/.
+  - type: input
+    id: timebox
+    attributes:
+      label: Timebox
+      placeholder: "e.g. 1 day of agent work"
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Expected output / 成果物
+      value: |
+        - [ ] Findings report (issue comment or docs/spikes/)
+        - [ ] Recommendation reflected in the related ADR
+    validations:
+      required: true
+  - type: input
+    id: adrs
+    attributes:
+      label: Related ADRs

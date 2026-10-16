@@ -1,0 +1,39 @@
+name: Task
+description: Implementation, documentation, or tooling work with clear acceptance criteria
+title: "[Task] "
+labels: ["type:task"]
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: Background / 背景
+      description: Why this is needed. Link requirement IDs (FR-xxx / NFR-xxx).
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope / やること
+      description: What to change. Also list what is explicitly out of scope.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria / 受け入れ基準
+      description: Verifiable checklist. An agent must be able to judge each item objectively.
+      value: |
+        - [ ]
+        - [ ] `make check` passes
+    validations:
+      required: true
+  - type: input
+    id: adrs
+    attributes:
+      label: Related ADRs
+      placeholder: "ADR-0003, ADR-0004"
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes for implementers / 補足
+      description: Hints, pitfalls, files to look at, dependencies on other issues.
