@@ -151,6 +151,11 @@ export function useT(): Translate {
   return (id, ...[values]) => intl.formatMessage({ id }, values);
 }
 
+/** Returns the locale that formats values (numbers, language names) on the page. */
+export function useLocale(): string {
+  return useIntl().locale;
+}
+
 /**
  * Returns `t` for `i18n` outside React, for code that runs before or beside the providers (the API
  * client's localized errors). Components use `useT()`.

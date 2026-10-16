@@ -7,6 +7,234 @@
     "defaultMessage": "The server could not handle the request (error {status}). Try again later.",
     "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
   },
+  "compose.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the × button that closes the new-post sheet. The draft is kept."
+  },
+  "compose.failed": {
+    "defaultMessage": "Could not post: {reason}",
+    "description": "Error after publishing a post failed. The draft is kept. {reason} is the error message."
+  },
+  "compose.language.label": {
+    "defaultMessage": "Language",
+    "description": "Label of the choice of the language a post is written in."
+  },
+  "compose.language.und": {
+    "defaultMessage": "Not specified",
+    "description": "Choice of post language when the user does not say which language the post is in."
+  },
+  "compose.media.add": {
+    "defaultMessage": "Add images",
+    "description": "Button that opens the file picker to attach images to a post."
+  },
+  "compose.media.description.hint": {
+    "defaultMessage": "Describe the image for people who cannot see it.",
+    "description": "Help text under the alternative text field of an attached image."
+  },
+  "compose.media.description.label": {
+    "defaultMessage": "Description of image {position}",
+    "description": "Label of the alternative text field of an attached image. {position} is its number in the post, from 1."
+  },
+  "compose.media.description.required": {
+    "defaultMessage": "Describe the image for people who cannot see it. Your settings ask for a description of every image.",
+    "description": "Help text under the alternative text field of an attached image when the user's settings ask for a description of every image."
+  },
+  "compose.media.failed": {
+    "defaultMessage": "Could not attach: {reason}",
+    "description": "State of an attached image whose upload failed. {reason} is the error message."
+  },
+  "compose.media.failed_processing": {
+    "defaultMessage": "The server could not process this image.",
+    "description": "Why an attached image failed: the server could not process it."
+  },
+  "compose.media.hint": {
+    "defaultMessage": "Up to {max, plural, other {# images}}: JPEG, PNG, GIF or WebP. Location and other metadata are removed before upload.",
+    "description": "Help text next to the button that attaches images. {max} is the most images a post can have."
+  },
+  "compose.media.list": {
+    "defaultMessage": "Attached images",
+    "description": "Accessible name of the list of images attached to the post being written."
+  },
+  "compose.media.processing": {
+    "defaultMessage": "Processing…",
+    "description": "State of an attached image while the server prepares it."
+  },
+  "compose.media.remove": {
+    "defaultMessage": "Remove image {position}",
+    "description": "Button that removes an attached image from the post. {position} is its number in the post, from 1."
+  },
+  "compose.media.too_many": {
+    "defaultMessage": "A post can have at most {max, plural, other {# images}}. The rest were not added.",
+    "description": "Notice when the user picked more images than a post can have. {max} is the most images a post can have."
+  },
+  "compose.media.unsupported": {
+    "defaultMessage": "{name} is not a JPEG, PNG, GIF or WebP image.",
+    "description": "Notice when a picked file is not an image type the server accepts. {name} is the file name."
+  },
+  "compose.media.uploading": {
+    "defaultMessage": "Uploading…",
+    "description": "State of an attached image while it is being sent to the server."
+  },
+  "compose.missing_description.add": {
+    "defaultMessage": "Add descriptions",
+    "description": "Button of the confirmation that goes back to the form to describe the images."
+  },
+  "compose.missing_description.body": {
+    "defaultMessage": "{count, plural, one {# image has no description.} other {# images have no description.}} People who cannot see the images will not know what they show.",
+    "description": "Text of the confirmation about images without a description. {count} is how many images have none."
+  },
+  "compose.missing_description.post": {
+    "defaultMessage": "Post anyway",
+    "description": "Button of the confirmation that posts without the descriptions."
+  },
+  "compose.missing_description.title": {
+    "defaultMessage": "Post without image descriptions?",
+    "description": "Title of the confirmation shown when attached images have no description and the user's settings ask for one."
+  },
+  "compose.open": {
+    "defaultMessage": "Write a post",
+    "description": "Floating button on phones and tablets that opens the form for a new post."
+  },
+  "compose.outbox.discard": {
+    "defaultMessage": "Discard",
+    "description": "Button that throws away a post that could not be sent."
+  },
+  "compose.outbox.edit": {
+    "defaultMessage": "Edit",
+    "description": "Button that puts a post that could not be sent back into the form."
+  },
+  "compose.outbox.failed": {
+    "defaultMessage": "Not sent: {reason}",
+    "description": "State of a post that could not be sent. {reason} is the error message."
+  },
+  "compose.outbox.label": {
+    "defaultMessage": "Posts being sent",
+    "description": "Accessible name of the list of posts that are being sent or could not be sent."
+  },
+  "compose.outbox.retry": {
+    "defaultMessage": "Send again",
+    "description": "Button that sends a post that could not be sent again."
+  },
+  "compose.outbox.sending": {
+    "defaultMessage": "Sending…",
+    "description": "State of a post that is being sent."
+  },
+  "compose.outbox.unsent": {
+    "defaultMessage": "Not sent yet.",
+    "description": "State of a post whose sending was interrupted (for example by reloading the page)."
+  },
+  "compose.over": {
+    "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
+    "description": "Counter under a text field when the text is longer than allowed. {count} is how many characters are over."
+  },
+  "compose.posted": {
+    "defaultMessage": "Posted.",
+    "description": "Notice after a post was published."
+  },
+  "compose.remaining": {
+    "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
+    "description": "Counter under a text field: how many more characters fit. {count} is a number."
+  },
+  "compose.reply.cancel": {
+    "defaultMessage": "Cancel reply",
+    "description": "Button that turns the reply being written into a normal post."
+  },
+  "compose.reply.label": {
+    "defaultMessage": "Replying to {name}",
+    "description": "Above the new-post form: the post being replied to. {name} is the author's display name or handle."
+  },
+  "compose.reply.unavailable": {
+    "defaultMessage": "The post you are replying to cannot be shown.",
+    "description": "Shown instead of the post being replied to when it could not be loaded."
+  },
+  "compose.sensitive": {
+    "defaultMessage": "Hide the images until readers show them",
+    "description": "Checkbox that marks the attached images as sensitive."
+  },
+  "compose.submit": {
+    "defaultMessage": "Post",
+    "description": "Button that publishes the new post."
+  },
+  "compose.submit.reply": {
+    "defaultMessage": "Reply",
+    "description": "Button that publishes the reply being written."
+  },
+  "compose.text.label": {
+    "defaultMessage": "Your post",
+    "description": "Label of the text area where the user writes the text of a post."
+  },
+  "compose.title": {
+    "defaultMessage": "New post",
+    "description": "Heading of the form that writes a new post (the side panel on wide screens, the sheet on phones)."
+  },
+  "compose.visibility.button": {
+    "defaultMessage": "Visibility: {visibility}",
+    "description": "Button that opens the choice of who can see the post. {visibility} is the current choice, for example 'Public'."
+  },
+  "compose.visibility.direct": {
+    "defaultMessage": "Mentioned people",
+    "description": "Visibility of a post: only the mentioned people."
+  },
+  "compose.visibility.direct.description": {
+    "defaultMessage": "Only the people you mention.",
+    "description": "Explanation of the 'Mentioned people' visibility."
+  },
+  "compose.visibility.done": {
+    "defaultMessage": "Done",
+    "description": "Button that closes the list of visibility choices."
+  },
+  "compose.visibility.limited": {
+    "defaultMessage": "Posted with the visibility “{visibility}”: your account cannot post more widely right now.",
+    "description": "Notice after posting when the server narrowed the chosen visibility because of a restriction on the account. {visibility} is the visibility the post got, for example 'Followers'."
+  },
+  "compose.visibility.local": {
+    "defaultMessage": "This server",
+    "description": "Visibility of a post: signed-in people of this server and the author's followers. Not the same as 'local only' in other software: followers on other servers receive it."
+  },
+  "compose.visibility.local.description": {
+    "defaultMessage": "People signed in here, and your followers on other servers. Shown on this server's local timeline.",
+    "description": "Explanation of the 'This server' visibility (ADR-0017)."
+  },
+  "compose.visibility.private": {
+    "defaultMessage": "Followers",
+    "description": "Visibility of a post: the author's followers and the mentioned people."
+  },
+  "compose.visibility.private.description": {
+    "defaultMessage": "Only your followers and the people you mention.",
+    "description": "Explanation of the 'Followers' visibility."
+  },
+  "compose.visibility.public": {
+    "defaultMessage": "Public",
+    "description": "Visibility of a post: everyone, and listed on the public timelines."
+  },
+  "compose.visibility.public.description": {
+    "defaultMessage": "Anyone, here and on other servers. Shown on the public timelines.",
+    "description": "Explanation of the 'Public' visibility."
+  },
+  "compose.visibility.title": {
+    "defaultMessage": "Who can see this post?",
+    "description": "Label of the list of visibility choices for a post."
+  },
+  "compose.visibility.unlisted": {
+    "defaultMessage": "Unlisted",
+    "description": "Visibility of a post: everyone, but kept off the public timelines."
+  },
+  "compose.visibility.unlisted.description": {
+    "defaultMessage": "Anyone with the link, but not shown on the public timelines.",
+    "description": "Explanation of the 'Unlisted' visibility."
+  },
+  "compose.warning.description": {
+    "defaultMessage": "Readers see this first and choose whether to show the post.",
+    "description": "Help text under the content warning field."
+  },
+  "compose.warning.label": {
+    "defaultMessage": "Content warning",
+    "description": "Label of the field with the content warning text of a post."
+  },
+  "compose.warning.toggle": {
+    "defaultMessage": "Add a content warning",
+    "description": "Checkbox that adds a content warning: a short text shown instead of the post until the reader opens it."
+  },
   "home.title": {
     "defaultMessage": "Home",
     "description": "Heading and document title of the home timeline page."

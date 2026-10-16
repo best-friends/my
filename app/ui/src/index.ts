@@ -10,14 +10,12 @@ export { Center, type CenterProps } from "./Center";
 // - RouterProvider: the app router's navigate for every Link, Menu item or Tab with an href.
 export { I18nProvider, type I18nProviderProps, RouterProvider } from "react-aria-components";
 
-// FileTrigger opens the browser's file picker from the pressable child it wraps (a Button), with a hidden
-// file input; it renders nothing of its own to style.
-export { FileTrigger, type FileTriggerProps } from "react-aria-components";
-
 // Form controls.
 export { Button, type ButtonProps } from "./Button";
 export { Checkbox, type CheckboxProps } from "./Checkbox";
 export type { FieldErrorMessage, FieldTextProps } from "./Field";
+// The hidden file input behind a Button child (React Aria FileTrigger): it has no look of its own.
+export { FileTrigger, type FileTriggerProps } from "react-aria-components";
 export { Link, type LinkProps } from "./Link";
 export { Radio, RadioGroup, type RadioGroupProps, type RadioProps } from "./RadioGroup";
 export { Select, SelectItem, type SelectItemProps, type SelectProps } from "./Select";

@@ -7,14 +7,19 @@ import { Link } from "@my/ui";
 import { Outlet } from "@tanstack/react-router";
 import { useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { ComposeEntry, ComposeProvider } from "../../features/compose";
 import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
 import { Navigation } from "./Navigation";
 import { ServerInfo } from "./ServerInfo";
+import { useMediaQuery } from "./useMediaQuery";
 import { useViewChange } from "./useViewChange";
 
 /** The id of the main landmark, the target of the skip link. */
 const mainId = "main";
+
+/** The `xl` breakpoint of Tailwind (80rem), from which the new-post form is a side panel instead of a sheet. */
+const wideQuery = "(min-width: 80rem)";
 
 export function AppLayout() {
   const t = useT();
@@ -22,8 +27,10 @@ export function AppLayout() {
   useViewChange(mainRef);
   // Every page is displayed in the signed-in user's locale and time zone.
   useUserDisplaySettings();
+  const wide = useMediaQuery(wideQuery);
   return (
-    <div className="min-h-svh px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] md:grid md:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,1fr)_20rem]">
+    <ComposeProvider layout={wide ? "panel" : "sheet"}>
+    <div className="min-h-svh px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] md:grid md:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,1fr)_24rem]">
       {/* The first focusable element of the page; visible only while focused. */}
       <Link
         href={`#${mainId}`}
@@ -41,10 +48,23 @@ export function AppLayout() {
       >
         <Outlet />
       </main>
-      {/* An independent section: if it breaks, the page goes on without it (web-client.md E1). */}
-      <ErrorBoundary fallback={null}>
-        <ServerInfo />
-      </ErrorBoundary>
+      {wide ? (
+        <div className="sticky top-0 flex h-svh flex-col gap-6 overflow-y-auto border-s border-border p-6">
+          {/* Independent sections: if one breaks, the page goes on without it (web-client.md E1). */}
+          <ErrorBoundary fallback={null}>
+            <ComposeEntry />
+          </ErrorBoundary>
+          <ErrorBoundary fallback={null}>
+            <ServerInfo />
+          </ErrorBoundary>
+        </div>
+      ) : (
+        // Above the tab bar on phones, in the corner from md; it is empty while signed out.
+        <div className="fixed inset-e-[max(1rem,env(safe-area-inset-right))] bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 md:bottom-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <ComposeEntry />
+        </div>
+      )}
     </div>
+    </ComposeProvider>
   );
 }

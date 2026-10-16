@@ -55,12 +55,14 @@ export function accountFixture(n: number, name: string): Schemas["Account"] {
   };
 }
 
+// --- statuses, media and preferences (the compose feature, #129) ---
+
 /** The signed-in user's `Preferences` for GET /preferences (operationId getPreferences). */
 export const preferencesFixture: Schemas["Preferences"] = {
   locale: "en",
   time_zone: "UTC",
   default_visibility: "public",
-  default_post_language: "und",
+  default_post_language: "en",
   require_media_description: false,
   timeline_languages: [],
 };
@@ -81,23 +83,76 @@ export function relationshipFixture(id: string): Schemas["Relationship"] {
   };
 }
 
-/** An uploaded image `MediaAttachment` in `state`, with its renditions once it is ready. */
-export function mediaFixture(id: string, state: Schemas["MediaAttachment"]["state"]): Schemas["MediaAttachment"] {
-  const variant = (name: string): Schemas["MediaVariant"] => ({
-    url: `https://my.example/media/${id}/${name}.webp`,
-    content_type: "image/webp",
-    width: 400,
-    height: 400,
-    size: 1000,
-  });
+/** A `Status` by the viewer, with `overrides`. */
+export function viewerStatusFixture(overrides: Partial<Schemas["Status"]> = {}): Schemas["Status"] {
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000000a1",
+    uri: "https://my.example/users/alice/statuses/0192f0c4-7a8e-7000-8000-0000000000a1",
+    account: viewerFixture,
+    content: "<p>Hello</p>",
+    spoiler_text: "",
+    sensitive: false,
+    visibility: "public",
+    language: "en",
+    created_at: "2026-10-16T00:00:00Z",
+    media_attachments: [],
+    mentions: [],
+    tags: [],
+    replies_count: 0,
+    boosts_count: 0,
+    favourites_count: 0,
+    ...overrides,
+  };
+}
+
+/**
+ * A `MediaAttachment` with `id` in `state`; a ready one has its renditions and blurhash, as GET /media/{id}
+ * answers once the server has processed the file.
+ */
+export function mediaFixture(id: string, state: Schemas["MediaAttachment"]["state"] = "ready", description?: string): Schemas["MediaAttachment"] {
+  const variant = (size: string) => ({ url: `https://my.example/media/${id}/${size}.jpg`, content_type: "image/jpeg", width: 640, height: 360, size: 1000 });
   return {
     id,
     type: "image",
     state,
-    meta: { focus: { x: 0, y: 0 }, ...(state === "ready" ? { width: 400, height: 400 } : {}) },
-    ...(state === "ready" ? { variants: { full: variant("full"), thumbnail: variant("thumbnail") } } : {}),
+    meta: { width: 640, height: 360, focus: { x: 0, y: 0 } },
+    ...(state === "ready" ? { blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj", variants: { full: variant("full"), thumbnail: variant("thumbnail") } } : {}),
+    ...(description === undefined ? {} : { description }),
   };
 }
+
+/** The ID the default POST /media handler gives an upload. */
+export const uploadedMediaId = "0192f0c4-7a8e-7000-8000-0000000000b1";
+
+const statusHandlers = [
+  http.get(`${apiBase}/preferences`, ({ request }) =>
+    request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(preferencesFixture) : unauthenticated(request),
+  ),
+  // Posts the status as the viewer, as the server would render it.
+  http.post(`${apiBase}/statuses`, async ({ request }) => {
+    if (request.headers.get("Authorization") !== `Bearer ${validAccessToken}`) return unauthenticated(request);
+    const body = (await request.json()) as Schemas["CreateStatusRequest"];
+    return HttpResponse.json(
+      viewerStatusFixture({
+        content: `<p>${body.text}</p>`,
+        spoiler_text: body.spoiler_text ?? "",
+        sensitive: body.sensitive ?? false,
+        visibility: body.visibility,
+        language: body.language ?? preferencesFixture.default_post_language,
+        ...(body.in_reply_to_id === undefined ? {} : { in_reply_to_id: body.in_reply_to_id }),
+        media_attachments: (body.media ?? []).map((m) => mediaFixture(m.id, "ready", m.description)),
+      }),
+    );
+  }),
+  // Accepts the upload; it is processed by the time the client asks again.
+  http.post(`${apiBase}/media`, () => HttpResponse.json(mediaFixture(uploadedMediaId, "processing"), { status: 202 })),
+  http.get(`${apiBase}/media/:id`, ({ params }) => HttpResponse.json(mediaFixture(String(params["id"])))),
+  http.patch(`${apiBase}/media/:id`, async ({ params, request }) =>
+    HttpResponse.json(mediaFixture(String(params["id"]), "ready", ((await request.json()) as Schemas["MediaUpdate"]).description)),
+  ),
+];
+
+// --- end of statuses, media and preferences ---
 
 /** A local post of another account, for the timelines. */
 export const timelineStatusFixture: Schemas["Status"] = {
@@ -171,9 +226,8 @@ export const handlers = [
   http.get(`${apiBase}/accounts/verify_credentials`, ({ request }) =>
     request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(viewerFixture) : unauthenticated(request),
   ),
-  // The user's own profile and preferences (operationIds updateAccountCredentials, getPreferences, updatePreferences).
+  // The user's own profile and preferences (operationIds updateAccountCredentials, updatePreferences; getPreferences is with the compose handlers).
   http.patch(`${apiBase}/accounts/update_credentials`, ({ request }) => withViewer(request, () => HttpResponse.json(viewerFixture))),
-  http.get(`${apiBase}/preferences`, ({ request }) => withViewer(request, () => HttpResponse.json(preferencesFixture))),
   http.patch(`${apiBase}/preferences`, async ({ request }) => {
     const change = (await request.clone().json()) as Schemas["UpdatePreferencesRequest"];
     return withViewer(request, () => HttpResponse.json({ ...preferencesFixture, ...change }));
@@ -195,11 +249,6 @@ export const handlers = [
   http.post(`${apiBase}/follow_requests/:id/reject`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(relationshipFixture(String(params["id"])))),
   ),
-  // Media (operationIds uploadMedia, getMedia): an upload is ready at once.
-  http.post(`${apiBase}/media`, ({ request }) =>
-    withViewer(request, () => HttpResponse.json(mediaFixture("0192f0c4-7a8e-7000-8000-00000000aaaa", "ready"), { status: 202 })),
-  ),
-  http.get(`${apiBase}/media/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(mediaFixture(String(params["id"]), "ready")))),
   // Timelines (#128): one page each; the home timeline needs a token.
   http.get(`${apiBase}/timelines/home`, ({ request }) =>
     request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(statusPage([timelineStatusFixture])) : unauthenticated(request),
@@ -210,6 +259,7 @@ export const handlers = [
   http.post(oauthPaths.refresh, () => oauthError("invalid_grant")),
   http.post(oauthPaths.token, () => oauthError("invalid_grant")),
   http.post(oauthPaths.revoke, () => new HttpResponse(null, { status: 200 })),
+  ...statusHandlers,
   ...notificationHandlers(),
 ];
 
