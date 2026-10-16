@@ -606,3 +606,73 @@ CREATE TABLE kv_entries (
   PRIMARY KEY (namespace, key)
 ) STRICT;
 CREATE INDEX kv_entries_expires_at ON kv_entries (expires_at);
+
+-- ---------------------------------------------------------------------------------------------
+-- content: boosts, favourites, bookmarks, and pins (data-model §4.4, FR-107, FR-113).
+-- Owned by internal/app/content.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a boost (Announce) of a status. visibility copies the status's and never changes;
+-- a boost of a local status stays on this instance (ADR-0017).
+CREATE TABLE boosts (
+  id TEXT NOT NULL PRIMARY KEY,
+  uri TEXT NOT NULL,
+  booster_account_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  visibility TEXT NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  is_local INTEGER NOT NULL CHECK (is_local IN (0, 1)),
+  boosted_at INTEGER NOT NULL,
+  -- only local accounts boost local statuses, and such boosts never federate (ADR-0017).
+  CHECK (visibility <> 'local' OR is_local = 1)
+) STRICT;
+CREATE UNIQUE INDEX boosts_uri ON boosts (uri);
+CREATE INDEX boosts_status_id ON boosts (status_id);
+
+-- Event: a boost was retracted (Undo Announce). A boost is retracted at most once.
+CREATE TABLE boost_retractions (
+  boost_id TEXT NOT NULL PRIMARY KEY,
+  origin TEXT NOT NULL CHECK (origin IN ('booster', 'status_deleted', 'moderation', 'remote')),
+  retracted_at INTEGER NOT NULL
+) STRICT;
+
+-- Projection: the live boost of each pair, not retracted, of a status that is not deleted.
+CREATE TABLE boost_edges (
+  booster_account_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  boost_id TEXT NOT NULL,
+  PRIMARY KEY (booster_account_id, status_id)
+) STRICT;
+CREATE INDEX boost_edges_status_id ON boost_edges (status_id);
+
+-- Current value: an account's favourite (Like) of a status.
+CREATE TABLE favourites (
+  account_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  uri TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  id TEXT NOT NULL,
+  PRIMARY KEY (account_id, status_id)
+) STRICT;
+CREATE UNIQUE INDEX favourites_uri ON favourites (uri);
+CREATE INDEX favourites_account_id_id ON favourites (account_id, id);
+CREATE INDEX favourites_status_id_id ON favourites (status_id, id);
+
+-- Current value: an account's private bookmark of a status.
+CREATE TABLE bookmarks (
+  account_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  id TEXT NOT NULL,
+  PRIMARY KEY (account_id, status_id)
+) STRICT;
+CREATE INDEX bookmarks_account_id_id ON bookmarks (account_id, id);
+
+-- Current value: a status its author pinned to the profile (the Featured collection).
+CREATE TABLE status_pins (
+  account_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  id TEXT NOT NULL,
+  PRIMARY KEY (account_id, status_id)
+) STRICT;
+CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);

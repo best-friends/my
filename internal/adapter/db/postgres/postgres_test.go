@@ -174,6 +174,13 @@ func TestStatusRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestInteractionRepositoryContract(t *testing.T) {
+	testkit.InteractionRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.InteractionHarness {
+		db := newTestDB(t, opts)
+		return testkit.InteractionHarness{UnitOfWork: db, Statuses: db.StatusRepository(), Interactions: db.InteractionRepository()}
+	})
+}
+
 func TestFollowRepositoryContract(t *testing.T) {
 	testkit.FollowRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FollowHarness {
 		db := newTestDB(t, opts)

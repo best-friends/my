@@ -173,7 +173,9 @@ SELECT s.id,
   (SELECT COUNT(*) FROM statuses c
     WHERE c.in_reply_to_uri = s.uri AND c.visibility IN ('public', 'local', 'unlisted')
       AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = c.id)),
-  0, 0
+  (SELECT COUNT(*) FROM boosts b
+    WHERE b.status_id = s.id AND NOT EXISTS (SELECT 1 FROM boost_retractions r WHERE r.boost_id = b.id)),
+  (SELECT COUNT(*) FROM favourites f WHERE f.status_id = s.id)
 FROM statuses s
 WHERE NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id);
 

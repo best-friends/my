@@ -16,8 +16,8 @@ import (
 //   - status_heads points at the revision with the highest Seq;
 //   - status_mention_index holds the mentions of that revision;
 //   - status_reply_links links a reply to its parent once both are known;
-//   - status_counters counts the replies whose visibility CountsAsReply (boosts and favourites
-//     are counted by the modules' later projectors);
+//   - status_counters counts the replies whose visibility CountsAsReply (the boosts and
+//     favourites are counted by RegisterInteractionProjectors);
 //   - account_post_counters counts each account's statuses and their latest PublishedAt.
 //
 // The rebuild queries of the Repository state the same rules in SQL; the property test in

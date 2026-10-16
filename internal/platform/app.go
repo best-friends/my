@@ -75,6 +75,8 @@ type App struct {
 	Instance *instance.Service
 	Graph    *graph.Service
 	Content  *content.Service
+	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
+	Interactions *content.Interactions
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -123,11 +125,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Sealer = kernel.NewSealer(a.KeyManager)
 
 	var (
-		identities identity.Repository
-		accounts   account.Repository
-		instances  instance.Repository
-		follows    graph.Repository
-		statuses   content.Repository
+		identities   identity.Repository
+		accounts     account.Repository
+		instances    instance.Repository
+		follows      graph.Repository
+		statuses     content.Repository
+		interactions content.InteractionRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -139,6 +142,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses = d.GraphRepository(), d.StatusRepository()
+		interactions = d.InteractionRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -153,6 +157,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses = d.GraphRepository(), d.StatusRepository()
+		interactions = d.InteractionRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -218,6 +223,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		MaxStatusLength: a.Instance.MaxStatusLength,
 		DefaultLanguage: a.defaultPostLanguage,
 		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
+	})
+	// After RegisterProjectors, which creates the counters that these projectors update.
+	content.RegisterInteractionProjectors(a.Projectors, interactions)
+	a.Interactions = content.NewInteractions(content.InteractionDeps{
+		UnitOfWork: a.UnitOfWork, Statuses: statuses, Interactions: interactions,
+		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
+		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
 
 	if opts.Version == "" {
