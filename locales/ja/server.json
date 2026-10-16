@@ -31,9 +31,77 @@
     "defaultMessage": "アカウント・投稿・タイムラインの読み取り",
     "description": "Permission (OAuth scope read) listed on the authorization page."
   },
+  "auth.authorize.scope.read_accounts": {
+    "defaultMessage": "アカウントとプロフィールの読み取り",
+    "description": "Permission (OAuth scope read:accounts) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_blocks": {
+    "defaultMessage": "ブロックしているアカウントの読み取り",
+    "description": "Permission (OAuth scope read:blocks) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_bookmarks": {
+    "defaultMessage": "ブックマークの読み取り",
+    "description": "Permission (OAuth scope read:bookmarks) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_favourites": {
+    "defaultMessage": "お気に入りの読み取り",
+    "description": "Permission (OAuth scope read:favourites) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_follows": {
+    "defaultMessage": "フォローとフォローリクエストの読み取り",
+    "description": "Permission (OAuth scope read:follows) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_mutes": {
+    "defaultMessage": "ミュートしているアカウントの読み取り",
+    "description": "Permission (OAuth scope read:mutes) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_notifications": {
+    "defaultMessage": "通知の読み取り",
+    "description": "Permission (OAuth scope read:notifications) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_statuses": {
+    "defaultMessage": "投稿とタイムラインの読み取り",
+    "description": "Permission (OAuth scope read:statuses) listed on the authorization page."
+  },
   "auth.authorize.scope.write": {
     "defaultMessage": "あなたに代わっての投稿と変更",
     "description": "Permission (OAuth scope write) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_accounts": {
+    "defaultMessage": "プロフィールと設定の変更",
+    "description": "Permission (OAuth scope write:accounts) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_blocks": {
+    "defaultMessage": "アカウントのブロックと解除",
+    "description": "Permission (OAuth scope write:blocks) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_bookmarks": {
+    "defaultMessage": "ブックマークの追加と削除",
+    "description": "Permission (OAuth scope write:bookmarks) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_favourites": {
+    "defaultMessage": "お気に入りの追加と削除",
+    "description": "Permission (OAuth scope write:favourites) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_follows": {
+    "defaultMessage": "アカウントのフォローと解除、フォローリクエストへの応答",
+    "description": "Permission (OAuth scope write:follows) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_media": {
+    "defaultMessage": "画像のアップロードと説明の編集",
+    "description": "Permission (OAuth scope write:media) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_mutes": {
+    "defaultMessage": "アカウントのミュートと解除",
+    "description": "Permission (OAuth scope write:mutes) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_notifications": {
+    "defaultMessage": "通知の既読化と消去",
+    "description": "Permission (OAuth scope write:notifications) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_statuses": {
+    "defaultMessage": "投稿の作成・編集・削除・ブースト・ピン留め",
+    "description": "Permission (OAuth scope write:statuses) listed on the authorization page."
   },
   "auth.authorize.title": {
     "defaultMessage": "{app} を認可",
@@ -255,9 +323,21 @@
     "defaultMessage": "必須の設定 {name} が設定されていません。",
     "description": "A required configuration value is absent at startup. {name} is the environment variable or config file key, e.g. MY_DATABASE_URL."
   },
+  "errors.account_unavailable": {
+    "defaultMessage": "現在、あなたのアカウントはアプリを使えません。",
+    "description": "API error title for HTTP 403 when the access token is valid but its user cannot use the app: the registration is pending or rejected, the email address is unconfirmed, or the account is deactivated or deleted."
+  },
   "errors.bad_request": {
     "defaultMessage": "リクエストが正しくありません。",
     "description": "API error message for HTTP 400 when no more specific message applies."
+  },
+  "errors.insufficient_scope": {
+    "defaultMessage": "このアプリにはこの操作が許可されていません。",
+    "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."
+  },
+  "errors.insufficient_scope_detail": {
+    "defaultMessage": "アクセストークンにスコープ {scope} が必要です。",
+    "description": "Detail of the HTTP 403 insufficient-scope API error. {scope} is the missing OAuth scope, e.g. read:accounts (not translated)."
   },
   "errors.internal": {
     "defaultMessage": "予期しないエラーが発生しました。しばらくしてからもう一度お試しください。",
@@ -267,6 +347,10 @@
     "defaultMessage": "パラメーター {name} の値が正しくありません。",
     "description": "Detail of an API error (HTTP 400) when a path, query, or header parameter cannot be parsed. {name} is the parameter name, e.g. limit (not translated)."
   },
+  "errors.invalid_token": {
+    "defaultMessage": "ログインの有効期限が切れたか、取り消されました。もう一度ログインしてください。",
+    "description": "API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "このリソースでは {method} メソッドを使用できません。",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
@@ -274,6 +358,18 @@
   "errors.not_found": {
     "defaultMessage": "指定されたリソースが見つかりません。",
     "description": "API error message for HTTP 404."
+  },
+  "errors.rate_limited": {
+    "defaultMessage": "リクエストが多すぎます。",
+    "description": "API error title for HTTP 429 when a client sent more requests than the rate limit allows."
+  },
+  "errors.rate_limited_detail": {
+    "defaultMessage": "{seconds, plural, other {# 秒後にもう一度お試しください。}}",
+    "description": "Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds."
+  },
+  "errors.unauthenticated": {
+    "defaultMessage": "この操作にはログインが必要です。",
+    "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
   },
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",

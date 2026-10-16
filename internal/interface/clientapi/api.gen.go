@@ -13,7 +13,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
+
+// Account An account, as clients show it.
+type Account struct {
+	// Acct The username for local accounts, `username@domain` for remote ones.
+	Acct string `json:"acct"`
+
+	// Bot Whether the account is automated.
+	Bot bool `json:"bot"`
+
+	// CreatedAt When the account was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// DisplayName The display name; empty when the account has none.
+	DisplayName string `json:"display_name"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Locked Whether follow requests need the account's approval.
+	Locked bool `json:"locked"`
+
+	// Note The profile text as sanitized HTML; empty when there is none.
+	Note string `json:"note"`
+
+	// Url The account's profile page.
+	Url string `json:"url"`
+
+	// Username The username, without the domain.
+	Username string `json:"username"`
+}
 
 // Cursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 type Cursor = string
@@ -53,7 +86,17 @@ type PageInfo struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
-// Problem An RFC 9457 problem document.
+// Problem An RFC 9457 problem document. Besides `about:blank`, `type` is one of
+//
+//   - `/api/v1/problems/unauthenticated` (401): the operation needs an access token and
+//     the request has none.
+//   - `/api/v1/problems/invalid-token` (401): the access token is malformed, unknown,
+//     expired, or revoked. Refresh it or sign in again.
+//   - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
+//     `WWW-Authenticate` names.
+//   - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
+//     use the app (registration pending or rejected, email unverified, or the account
+//     deactivated or deleted).
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -77,6 +120,9 @@ type Limit = int
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// VerifyAccountCredentials Get the authenticated user's own account
+	// (GET /accounts/verify_credentials)
+	VerifyAccountCredentials(w http.ResponseWriter, r *http.Request)
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(w http.ResponseWriter, r *http.Request)
@@ -90,6 +136,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// VerifyAccountCredentials operation middleware
+func (siw *ServerInterfaceWrapper) VerifyAccountCredentials(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyAccountCredentials(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetInstance operation middleware
 func (siw *ServerInterfaceWrapper) GetInstance(w http.ResponseWriter, r *http.Request) {
@@ -226,17 +286,82 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance", wrapper.GetInstance)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
 
 	return m
 }
 
 type ProblemResponseHeaders struct {
+	CacheControl    *string
 	ContentLanguage *string
+	RetryAfter      *int
+	WWWAuthenticate *string
 }
 type ProblemApplicationProblemPlusJSONResponse struct {
 	Body Problem
 
 	Headers ProblemResponseHeaders
+}
+
+type VerifyAccountCredentialsRequestObject struct {
+}
+
+type VerifyAccountCredentialsResponseObject interface {
+	VisitVerifyAccountCredentialsResponse(w http.ResponseWriter) error
+}
+
+type VerifyAccountCredentials200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type VerifyAccountCredentials200JSONResponse struct {
+	Body    Account
+	Headers VerifyAccountCredentials200ResponseHeaders
+}
+
+func (response VerifyAccountCredentials200JSONResponse) VisitVerifyAccountCredentialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyAccountCredentialsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response VerifyAccountCredentialsdefaultApplicationProblemPlusJSONResponse) VisitVerifyAccountCredentialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type GetInstanceRequestObject struct {
@@ -283,8 +408,17 @@ func (response GetInstancedefaultApplicationProblemPlusJSONResponse) VisitGetIns
 		return err
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
 	if response.Headers.ContentLanguage != nil {
 		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
 	}
 	w.WriteHeader(response.StatusCode)
 	_, err := buf.WriteTo(w)
@@ -293,6 +427,9 @@ func (response GetInstancedefaultApplicationProblemPlusJSONResponse) VisitGetIns
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// VerifyAccountCredentials Get the authenticated user's own account
+	// (GET /accounts/verify_credentials)
+	VerifyAccountCredentials(ctx context.Context, request VerifyAccountCredentialsRequestObject) (VerifyAccountCredentialsResponseObject, error)
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(ctx context.Context, request GetInstanceRequestObject) (GetInstanceResponseObject, error)
@@ -335,6 +472,30 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// VerifyAccountCredentials operation middleware
+func (sh *strictHandler) VerifyAccountCredentials(w http.ResponseWriter, r *http.Request) {
+	var request VerifyAccountCredentialsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyAccountCredentials(ctx, request.(VerifyAccountCredentialsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyAccountCredentials")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyAccountCredentialsResponseObject); ok {
+		if err := validResponse.VisitVerifyAccountCredentialsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetInstance operation middleware
