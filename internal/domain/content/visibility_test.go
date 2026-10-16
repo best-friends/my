@@ -4,6 +4,7 @@ package content_test
 
 import (
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/best-friends/my/internal/domain/content"
@@ -49,5 +50,16 @@ func TestEffectiveVisibility(t *testing.T) {
 	}
 	if got := content.Narrower(content.VisibilityPublic, "bogus"); got.Valid() {
 		t.Errorf("Narrower(public, bogus) = %s, want an invalid value", got)
+	}
+}
+
+func TestPostingVisibilities(t *testing.T) {
+	if got := content.PostingVisibilities(content.AuthorRestrictions{}); !slices.Equal(got, content.Visibilities()) {
+		t.Errorf("PostingVisibilities(none) = %v, want every visibility", got)
+	}
+	silenced := content.AuthorRestrictions{VisibilityCeilingPrivate: true}
+	want := []content.Visibility{content.VisibilityPrivate, content.VisibilityDirect}
+	if got := content.PostingVisibilities(silenced); !slices.Equal(got, want) {
+		t.Errorf("PostingVisibilities(silenced) = %v, want %v", got, want)
 	}
 }

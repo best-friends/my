@@ -75,6 +75,10 @@
     "defaultMessage": "‮∩dʅoɐpıuƃ…‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.mention.unreached": {
+    "defaultMessage": "‮{count,plural,one{{accounts} ıs ou ɐuoʇɥǝɹ sǝɹʌǝɹ ɐup poǝs uoʇ ɟoʅʅoʍ ʎon, so ʇɥǝʎ ʍıʅʅ uoʇ ɹǝɔǝıʌǝ ʇɥıs dosʇ.} other{{accounts} ɐɹǝ ou oʇɥǝɹ sǝɹʌǝɹs ɐup po uoʇ ɟoʅʅoʍ ʎon, so ʇɥǝʎ ʍıʅʅ uoʇ ɹǝɔǝıʌǝ ʇɥıs dosʇ.}} “⊥ɥıs sǝɹʌǝɹ” dosʇs ɹǝɐɔɥ ouʅʎ ʎonɹ ɟoʅʅoʍǝɹs onʇsıpǝ ʇɥıs sǝɹʌǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.missing_description.add": {
     "defaultMessage": "‮∀pp pǝsɔɹıdʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -169,6 +173,10 @@
   },
   "compose.visibility.button": {
     "defaultMessage": "‮Ʌısıqıʅıʇʎ: {visibility}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.visibility.ceiling": {
+    "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ɔɐu dosʇ ɐʇ ɯosʇ ɐs “{visibility}” ɹıƃɥʇ uoʍ. ∀ ʍıpǝɹ ɔɥoıɔǝ ıs dosʇǝp ɐs “{visibility}”.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.visibility.direct": {

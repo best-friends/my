@@ -10,7 +10,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: "jsdom",
-      include: ["src/**/*.test.{ts,tsx}", "sw/**/*.test.ts"],
+      include: ["src/**/*.test.{ts,tsx}", "sw/**/*.test.ts", "vite-plugins/**/*.test.ts"],
       setupFiles: ["./src/test/setup.ts"],
       restoreMocks: true,
       unstubGlobals: true,
