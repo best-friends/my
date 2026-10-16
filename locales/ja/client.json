@@ -75,6 +75,10 @@
     "defaultMessage": "アップロード中…",
     "description": "State of an attached image while it is being sent to the server."
   },
+  "compose.mention.unreached": {
+    "defaultMessage": "{count, plural, other {{accounts} はほかのサーバーのアカウントで、あなたをフォローしていないため、この投稿は届きません。}}公開範囲「このサーバー」の投稿は、ほかのサーバーではあなたのフォロワーにだけ届きます。",
+    "description": "Warning under a post with the visibility 'This server' that mentions accounts of other servers that do not follow the author (ADR-0017). {accounts} is the list of their handles, for example '@carol@remote.example and @dave@other.example'; {count} is how many there are."
+  },
   "compose.missing_description.add": {
     "defaultMessage": "説明を書く",
     "description": "Button of the confirmation that goes back to the form to describe the images."
@@ -170,6 +174,10 @@
   "compose.visibility.button": {
     "defaultMessage": "公開範囲: {visibility}",
     "description": "Button that opens the choice of who can see the post. {visibility} is the current choice, for example 'Public'."
+  },
+  "compose.visibility.ceiling": {
+    "defaultMessage": "あなたのアカウントは、いまは「{visibility}」より広く投稿できません。より広い公開範囲を選ぶと「{visibility}」で投稿されます。",
+    "description": "Hint in the choice of visibility while a restriction on the account narrows what it can post. {visibility} is the widest visibility it can use, for example 'Followers'."
   },
   "compose.visibility.direct": {
     "defaultMessage": "メンションした人",

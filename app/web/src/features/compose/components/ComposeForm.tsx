@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Button, Checkbox, Dialog, FileTrigger, Select, SelectItem, Spinner, TextArea, TextField } from "@my/ui";
 import type { SubmitEvent } from "react";
-import { useT } from "../../../lib/i18n";
+import { useLocale, useT } from "../../../lib/i18n";
 import { acceptedImageTypes, maxAttachments } from "../hooks/policy";
 import { type ComposeController, composeTextId } from "../hooks/useCompose";
 import { type ReadyComposeForm, useComposeForm } from "../hooks/useComposeForm";
@@ -44,6 +44,7 @@ type ReadyFormProps = { form: ReadyComposeForm; labelledBy: string; autoFocus: b
 
 function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
   const t = useT();
+  const locale = useLocale();
   const formatRemaining = useFormatRemaining();
   const { draft, attachments } = form;
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
@@ -117,6 +118,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
         <div className="flex flex-col gap-3 @sm:flex-row @sm:flex-wrap @sm:items-end">
           <VisibilityPicker
             value={form.visibility}
+            limits={form.limits}
             onChange={(visibility) => {
               form.edit({ visibility });
             }}
@@ -137,6 +139,14 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
             )}
           </Select>
         </div>
+        {form.unreachedMentions.length > 0 && (
+          <p className="text-sm text-warning">
+            {t("client:compose.mention.unreached", {
+              count: form.unreachedMentions.length,
+              accounts: new Intl.ListFormat(locale, { type: "conjunction" }).format(form.unreachedMentions.map((acct) => `@${acct}`)),
+            })}
+          </p>
+        )}
         {form.error !== null && <p className="text-danger">{form.error}</p>}
         <Button type="submit" variant="primary" className="self-end" isDisabled={!form.canSubmit}>
           {t(form.replyTo.status === "none" ? "client:compose.submit" : "client:compose.submit.reply")}

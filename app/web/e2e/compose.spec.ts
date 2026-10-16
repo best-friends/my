@@ -55,7 +55,13 @@ async function serveApi(page: Page): Promise<Posted[]> {
     if (!path.startsWith("/api/") && !path.startsWith("/oauth/")) return route.fallback();
     if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     if (path === "/oauth/token/refresh") return json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow" });
-    if (path === "/api/v1/accounts/verify_credentials") return json(route, { ...account, discoverable: true, indexable: true, source: { note: "", fields: [] } });
+    if (path === "/api/v1/accounts/verify_credentials") return json(route, {
+        ...account,
+        discoverable: true,
+        indexable: true,
+        source: { note: "", fields: [] },
+        posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
+      });
     if (path === "/api/v1/instance") {
       return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 } });
     }

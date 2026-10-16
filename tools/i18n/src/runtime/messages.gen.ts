@@ -40,6 +40,8 @@ export interface MessageArgs {
   "client:compose.media.unsupported": { name: string };
   /** Uploading… */
   "client:compose.media.uploading": {};
+  /** {count, plural, one {{accounts} is on another server and does not follow you, so they will not receive this post.} other {{accounts} are on other servers and do not follow you, so they will not receive this post.}} “This server” posts reach only your followers outside this server. */
+  "client:compose.mention.unreached": { accounts: string; count: number };
   /** Add descriptions */
   "client:compose.missing_description.add": {};
   /** {count, plural, one {# image has no description.} other {# images have no description.}} People who cannot see the images will not know what they show. */
@@ -88,6 +90,8 @@ export interface MessageArgs {
   "client:compose.title": {};
   /** Visibility: {visibility} */
   "client:compose.visibility.button": { visibility: string };
+  /** Your account can post at most as “{visibility}” right now. A wider choice is posted as “{visibility}”. */
+  "client:compose.visibility.ceiling": { visibility: string };
   /** Mentioned people */
   "client:compose.visibility.direct": {};
   /** Only the people you mention. */

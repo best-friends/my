@@ -75,6 +75,10 @@
     "defaultMessage": "Uploading…",
     "description": "State of an attached image while it is being sent to the server."
   },
+  "compose.mention.unreached": {
+    "defaultMessage": "{count, plural, one {{accounts} is on another server and does not follow you, so they will not receive this post.} other {{accounts} are on other servers and do not follow you, so they will not receive this post.}} “This server” posts reach only your followers outside this server.",
+    "description": "Warning under a post with the visibility 'This server' that mentions accounts of other servers that do not follow the author (ADR-0017). {accounts} is the list of their handles, for example '@carol@remote.example and @dave@other.example'; {count} is how many there are."
+  },
   "compose.missing_description.add": {
     "defaultMessage": "Add descriptions",
     "description": "Button of the confirmation that goes back to the form to describe the images."
@@ -170,6 +174,10 @@
   "compose.visibility.button": {
     "defaultMessage": "Visibility: {visibility}",
     "description": "Button that opens the choice of who can see the post. {visibility} is the current choice, for example 'Public'."
+  },
+  "compose.visibility.ceiling": {
+    "defaultMessage": "Your account can post at most as “{visibility}” right now. A wider choice is posted as “{visibility}”.",
+    "description": "Hint in the choice of visibility while a restriction on the account narrows what it can post. {visibility} is the widest visibility it can use, for example 'Followers'."
   },
   "compose.visibility.direct": {
     "defaultMessage": "Mentioned people",

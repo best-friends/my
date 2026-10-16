@@ -35,6 +35,15 @@ export const viewerFixture: Schemas["Account"] = {
   created_at: "2026-10-01T00:00:00Z",
 };
 
+/** The signed-in user's own `CredentialAccount` that GET /accounts/verify_credentials answers: unrestricted. */
+export const credentialAccountFixture: Schemas["CredentialAccount"] = {
+  ...viewerFixture,
+  discoverable: false,
+  indexable: false,
+  source: { note: "", fields: [] },
+  posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
+};
+
 // --- statuses, media and preferences (the compose feature, #129) ---
 
 /** The signed-in user's `Preferences` for GET /preferences (operationId getPreferences). */
@@ -180,7 +189,7 @@ export function oauthError(error: string, status = 400) {
 export const handlers = [
   http.get(`${apiBase}/instance`, () => HttpResponse.json(instanceFixture)),
   http.get(`${apiBase}/accounts/verify_credentials`, ({ request }) =>
-    request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(viewerFixture) : unauthenticated(request),
+    request.headers.get("Authorization") === `Bearer ${validAccessToken}` ? HttpResponse.json(credentialAccountFixture) : unauthenticated(request),
   ),
   // Timelines (#128): one page each; the home timeline needs a token.
   http.get(`${apiBase}/timelines/home`, ({ request }) =>
@@ -194,6 +203,7 @@ export const handlers = [
   http.post(oauthPaths.revoke, () => new HttpResponse(null, { status: 200 })),
   ...statusHandlers,
   ...notificationHandlers(),
+  ...accountHandlers(),
 ];
 
 // --- notifications (#132) -------------------------------------------------------------------------
@@ -276,5 +286,49 @@ function notificationHandlers() {
       return HttpResponse.json(body);
     }),
     http.post(`${apiBase}/notifications/:id/dismiss`, ({ request }) => (authorized(request) ? new HttpResponse(null, { status: 204 }) : unauthenticated(request))),
+  ];
+}
+
+// --- account lookups and relationships (the compose hints, #207) -----------------------------------
+
+/** An account of another server that the instance knows, which the viewer does not follow and is not followed by. */
+export const remoteAccountFixture: Schemas["Account"] = {
+  ...viewerFixture,
+  id: "0192f0c4-7a8e-7000-8000-000000000003",
+  username: "carol",
+  acct: "carol@remote.example",
+  display_name: "Carol",
+  url: "https://remote.example/@carol",
+};
+
+/** The viewer's relationship with the account `id`: none. */
+export function relationshipFixture(id: string, overrides: Partial<Schemas["Relationship"]> = {}): Schemas["Relationship"] {
+  return {
+    id,
+    following: false,
+    requested: false,
+    followed_by: false,
+    requested_by: false,
+    show_boosts: true,
+    notify: false,
+    blocking: false,
+    muting: false,
+    muting_notifications: false,
+    ...overrides,
+  };
+}
+
+/** GET /accounts/lookup knows the viewer and remoteAccountFixture; GET /accounts/relationships has none. */
+function accountHandlers() {
+  return [
+    http.get(`${apiBase}/accounts/lookup`, ({ request }) => {
+      const acct = (new URL(request.url).searchParams.get("acct") ?? "").replace(/^@/, "").toLowerCase();
+      const found = [viewerFixture, remoteAccountFixture].find((a) => a.acct === acct);
+      return found === undefined ? problem(404, "about:blank", "Not Found") : HttpResponse.json(found);
+    }),
+    http.get(`${apiBase}/accounts/relationships`, ({ request }) => {
+      if (request.headers.get("Authorization") !== `Bearer ${validAccessToken}`) return unauthenticated(request);
+      return HttpResponse.json(new URL(request.url).searchParams.getAll("id").map((id) => relationshipFixture(id)));
+    }),
   ];
 }
