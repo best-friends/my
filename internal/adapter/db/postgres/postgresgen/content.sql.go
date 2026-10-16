@@ -743,6 +743,62 @@ func (q *Queries) ListLiveRepliesTo(ctx context.Context, inReplyToUri *string) (
 	return items, nil
 }
 
+const listLiveStatusHeads = `-- name: ListLiveStatusHeads :many
+
+SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
+  s.conversation_uri, s.published_at, h.revision_id
+FROM statuses s
+JOIN status_heads h ON h.status_id = s.id
+ORDER BY s.id
+`
+
+type ListLiveStatusHeadsRow struct {
+	ID              string
+	Uri             string
+	Url             *string
+	AuthorAccountID string
+	IsLocal         bool
+	Visibility      string
+	InReplyToUri    *string
+	ConversationUri *string
+	PublishedAt     time.Time
+	RevisionID      string
+}
+
+// Sources of other modules' projections.
+// ListLiveStatusHeads returns every status that is not deleted (each has a head) with the ID of
+// its current revision, ordered by ID.
+func (q *Queries) ListLiveStatusHeads(ctx context.Context) ([]ListLiveStatusHeadsRow, error) {
+	rows, err := q.db.Query(ctx, listLiveStatusHeads)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLiveStatusHeadsRow{}
+	for rows.Next() {
+		var i ListLiveStatusHeadsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uri,
+			&i.Url,
+			&i.AuthorAccountID,
+			&i.IsLocal,
+			&i.Visibility,
+			&i.InReplyToUri,
+			&i.ConversationUri,
+			&i.PublishedAt,
+			&i.RevisionID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStatusCounters = `-- name: ListStatusCounters :many
 SELECT status_id, replies_count, boosts_count, favourites_count FROM status_counters ORDER BY status_id
 `

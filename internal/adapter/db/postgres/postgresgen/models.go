@@ -130,6 +130,46 @@ type Favourite struct {
 	ID        string
 }
 
+type FeedDirectRecipient struct {
+	EntryID            string
+	RecipientAccountID string
+}
+
+type FeedEntry struct {
+	ID                      string
+	Kind                    string
+	StatusID                string
+	AuthorAccountID         string
+	AuthorDomain            string
+	OriginalAuthorAccountID string
+	OriginalAuthorDomain    string
+	Visibility              string
+	IsLocal                 bool
+	Language                string
+	RevisionSeq             int32
+}
+
+type FeedExclusion struct {
+	ViewerAccountID string
+	TargetAccountID string
+	Reason          string
+	ExpiresAt       *time.Time
+}
+
+type FeedFollowEdge struct {
+	FollowerAccountID string
+	FolloweeAccountID string
+	ShowBoosts        bool
+}
+
+type FeedTagEntry struct {
+	TagID           string
+	EntryID         string
+	AuthorAccountID string
+	Visibility      string
+	IsLocal         bool
+}
+
 type Follow struct {
 	ID                string
 	Uri               string

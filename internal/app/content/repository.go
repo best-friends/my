@@ -96,6 +96,12 @@ type Repository interface {
 	ListCounters(ctx context.Context) ([]content.Counters, error)
 	ListPostCounters(ctx context.Context) ([]content.PostCounter, error)
 
+	// Sources of other modules' projections (ReplayEvents).
+
+	// ListCurrentPosts returns every status that is not deleted with its current revision and
+	// the revision's children, ordered by status ID.
+	ListCurrentPosts(ctx context.Context, tx uow.Tx) ([]Post, error)
+
 	// Lookups.
 
 	FindStatus(ctx context.Context, id string) (content.Status, error)

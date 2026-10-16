@@ -34,6 +34,7 @@ import (
 	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/i18n"
@@ -92,6 +93,9 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
+	Timeline *timeline.Service
+
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
 	Notifications *notification.Service
@@ -170,6 +174,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows      graph.Repository
 		statuses     content.Repository
 		interactions content.InteractionRepository
+		feeds        timeline.Repository
 		notifs       notification.Repository
 		medias       content.MediaRepository
 	)
@@ -183,7 +188,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
-		interactions = d.InteractionRepository()
+		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
@@ -199,7 +204,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
-		interactions = d.InteractionRepository()
+		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
@@ -288,6 +293,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
 		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	// After the content and graph projectors, which reject the commands that must not reach
+	// the timelines (data-model §4.6).
+	timeline.RegisterProjectors(a.Projectors, feeds)
+	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
 	// After the graph and content projectors, whose events these projectors turn into notifications.
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
 		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,

@@ -86,7 +86,8 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 | お気に入り / 取り消し | `favourites`（現在値） | `status_counters`, `notifications`（お気に入りだけ） | `Like` / `Undo Like` の配送（リモートの投稿だけ） |
 | ブックマーク・ピン留め / 取り消し | `bookmarks` / `status_pins`（現在値） | なし | なし |
 | フォロー | `follows`（＋自動承認なら `follow_acceptances`） | `follow_edges`, `feed_follow_edges`, `follow_counters`, `notifications` | `Follow` / `Accept` の配送 |
-| ブロック | `blocks`（＋両方向のフォローの `follow_terminations`） | `block_edges`, `follow_edges`, `feed_follow_edges`, `follow_counters` | `Block` の配送 |
+| ブロック | `blocks`（＋両方向のフォローの `follow_terminations`） | `block_edges`, `follow_edges`, `feed_follow_edges`, `feed_exclusions`, `follow_counters` | `Block` の配送 |
+| ミュート / 解除 | `mutes`（現在値） | `feed_exclusions` | なし |
 | 処分 | `moderation_actions`（＋`moderation_action_statuses`） | `account_restrictions`, `feed_author_restrictions` | 通知・投稿の削除やセンシティブ化（大量なら非同期） |
 | Inbox 処理 | `received_activities` と対象のリソース / イベント | 対象に応じて | 対象に応じて |
 
@@ -556,9 +557,9 @@ flowchart LR
 - `follow_edges` の行があるペアへのフォローは何もしません。同時に 2 つのフォローが作られた場合は、投影の主キーで後の方を再実行させ、既存のフォローを返します。
 - リモートへのフォローは、`Accept` を受け取ったら `follow_acceptances` を記録し、投影を `active` にします。
 
-フォローとブロックのコマンドは、記録したイベントに応じて次のドメインイベントを発行します（`tx.Emit`、§2.1）。
-フォローのコマンドは 1 つ、ブロックは終了したフォローごとの `graph.follow_terminated` と `graph.blocked` を発行します。
-購読する projector はイベントの内容（`follows` の行と、承認・拒否・終了の行、設定、`blocks` の行と取り消しの行）だけで投影を更新します。
+フォロー・ブロック・ミュートのコマンドは、記録したイベントや現在値に応じて次のドメインイベントを発行します（`tx.Emit`、§2.1）。
+フォローとミュートのコマンドは 1 つ、ブロックは終了したフォローごとの `graph.follow_terminated` と `graph.blocked` を発行します。
+購読する projector はイベントの内容（`follows` の行と、承認・拒否・終了の行、設定、`blocks` の行と取り消しの行、ミュートの値）だけで投影を更新します。
 
 | ドメインイベント | 発行するとき | `graph` の投影 | 想定する購読者 |
 | --- | --- | --- | --- |
@@ -568,8 +569,10 @@ flowchart LR
 | `graph.follow_rejected` | フォローリクエストの拒否 | `follow_edges` から削除 | — |
 | `graph.follow_terminated` | フォロー解除・申請の取り下げ・フォロワーの削除など（終了前の状態を載せる） | `follow_edges` から削除、`active` だったら `follow_counters` 減算 | `feed_follow_edges` |
 | `graph.follow_preferences_changed` | フォローごとの設定の変更 | — | `feed_follow_edges`（`show_boosts`） |
-| `graph.blocked` | ブロック（終了したフォローごとの `graph.follow_terminated`（`reason = blocked`）の後に発行する） | `block_edges` に追加 | 通知・タイムラインの絞り込み、`Block` の配送 |
-| `graph.unblocked` | ブロックの解除 | `block_edges` から削除 | `Undo Block` の配送 |
+| `graph.blocked` | ブロック（終了したフォローごとの `graph.follow_terminated`（`reason = blocked`）の後に発行する） | `block_edges` に追加 | 通知・`feed_exclusions`（両方向）、`Block` の配送 |
+| `graph.unblocked` | ブロックの解除 | `block_edges` から削除 | `feed_exclusions`、`Undo Block` の配送 |
+| `graph.muted` | ミュート（設定・期限の置き換えを含む） | — | `feed_exclusions`（期限つき） |
+| `graph.unmuted` | ミュートの解除（ミュートが無くても発行する） | — | `feed_exclusions` |
 
 #### ブロック・ミュート
 
@@ -590,24 +593,29 @@ flowchart LR
 - ブロックの対象はローカルのアカウントだけです（存在すれば有効でなくてもよい）。リモートとのブロックは連合（`federation`）から記録します。
 - ミュートは本人だけに効き、履歴にも意味がないので現在値です（ADR-0020 規約 5）。ミュートし直すと設定・期限・`created_at` を置き換えます。
 - 期限付きのミュートは、読み取り時に `expires_at > 現在時刻` で絞り込むので、期限が来た時点で書き込み無しに無効になります。期限切れの行は、ミュートし直すか解除するまで残ります。
-- ミュートの対象はリモートのアカウントでもかまいません。ミュートは読み取り時の絞り込みにだけ使い、ドメインイベントを発行しません。
+- ミュートの対象はリモートのアカウントでもかまいません。`graph` 自身はミュートを読み取り時に `expires_at` で絞り込み、他のモジュールの投影（`feed_exclusions`）のために `graph.muted` / `graph.unmuted` を発行します。
 
 ### 4.6 timeline
 
-`timeline` モジュールは **自前の投影だけ** を読みます（ADR-0002 の例外は不要）。どれも `content` / `graph` / `moderation` / `account` のイベントを購読する同期 projector が更新します（§2.1）。
+`timeline` モジュールは **自前の投影だけ** を読みます（ADR-0002 の例外は不要）。どれも `content` / `graph`（制限は `moderation`）のイベントを購読する同期 projector が更新します（§2.1）。
 
 | テーブル | カラム | 制約 / 用途 | 元になるイベント |
 | --- | --- | --- | --- |
-| `feed_entries` | `id`（= 投稿の `status_id` またはブーストの `boost_id`）, `author_account_id`（投稿者またはブーストした人）, `status_id`, `original_author_account_id`（元投稿の作者。投稿なら `author_account_id` と同じ）, `kind`（`enum(post, boost)`）, `visibility`, `is_local`, `reply_parent_author_account_id`（NULL 可）, `language`（`lang`） | PK `(id)`。インデックス `(author_account_id, id)`、部分インデックス `(id) WHERE is_local AND kind = 'post' AND visibility IN ('public','local')`（ローカル）、`(id) WHERE kind = 'post' AND visibility = 'public'`（連合） | 投稿・版（言語）・削除・ブースト・ブースト取り消し |
-| `feed_direct_recipients` | `entry_id`, `recipient_account_id` | PK `(recipient_account_id, entry_id)`。`direct` 投稿の宛先（現在版のメンション） | 投稿・版 |
-| `feed_tag_entries` | `tag_id`, `entry_id`, `author_account_id`, `visibility`, `is_local` | PK `(tag_id, entry_id)`。現在版のタグ。公開範囲は不変なので非正規化してよい（FR-203） | 投稿・版・削除 |
-| `feed_follow_edges` | `follower_account_id`, `followee_account_id`, `show_boosts` | PK `(follower_account_id, followee_account_id)`。`active` のフォローだけ | フォローの承認・終了、フォローごとの設定 |
-| `feed_exclusions` | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可） | PK `(viewer_account_id, target_account_id, reason)` | ブロック・ミュート |
-| `feed_author_restrictions` | `account_id`, `restriction`, `effective_until`（NULL 可） | PK `(account_id, restriction)`（複数の処分の和集合をまとめ、最も遅い期限を持つ） | 制限・ライフサイクル（凍結・削除済みは `profile_view` として表す） |
-| `feed_domain_restrictions` | `domain`, `restriction`, `effective_until`（NULL 可） | PK `(domain, restriction)` | ドメイン単位の制限 |
+| `feed_entries` | `id`（= 投稿の `status_id` またはブーストの `boost_id`）, `kind`（`enum(post, boost)`）, `status_id`, `author_account_id`（投稿者またはブーストした人）, `author_domain`, `original_author_account_id`（元投稿の作者。投稿なら `author_account_id` と同じ）, `original_author_domain`, `visibility`, `is_local`（投稿者またはブーストした人がローカルか）, `language`（`lang`。現在版の言語）, `revision_seq`（`int`。現在版の `seq`） | PK `(id)`。インデックス `(author_account_id, id)`、`(status_id)`（版・削除での更新）、部分インデックス `(id) WHERE is_local AND kind = 'post' AND visibility IN ('public','local')`（ローカル）、`(id) WHERE kind = 'post' AND visibility = 'public'`（連合） | 投稿・版（言語）・削除・ブースト・ブースト取り消し |
+| `feed_direct_recipients` | `entry_id`, `recipient_account_id` | PK `(recipient_account_id, entry_id)`、インデックス `(entry_id)`。`direct` 投稿の宛先（現在版のメンション） | 投稿・版・削除 |
+| `feed_tag_entries` | `tag_id`, `entry_id`, `author_account_id`, `visibility`, `is_local` | PK `(tag_id, entry_id)`、インデックス `(entry_id)`。現在版のタグ。公開範囲は不変なので非正規化してよい（FR-203） | 投稿・版・削除 |
+| `feed_follow_edges` | `follower_account_id`, `followee_account_id`, `show_boosts` | PK `(follower_account_id, followee_account_id)`。`active` のフォローだけ | フォロー（自動承認）・承認・終了、フォローごとの設定 |
+| `feed_exclusions` | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可。ミュートの期限） | PK `(viewer_account_id, target_account_id, reason)` | ブロック（両方向の 2 行）・ブロックの解除・ミュート・ミュートの解除 |
+| `feed_author_restrictions` | `account_id`, `restriction`（`enum(profile_view, visibility_ceiling_private, public_discovery)`）, `effective_until`（NULL 可） | PK `(account_id, restriction)`（複数の処分の和集合をまとめ、最も遅い期限を持つ） | 制限・ライフサイクル（凍結・削除済みは `profile_view` として表す） |
+| `feed_domain_restrictions` | `domain`, `restriction`（同上）, `effective_until`（NULL 可） | PK `(domain, restriction)`。サブドメインにも効く | ドメイン単位の制限 |
 
+- ドメイン（`author_domain` / `original_author_domain`）はローカルなら `''`、リモートなら投稿・ブーストの URI のホストです。ドメイン単位の制限の照合に使います。
+- ブーストの行は、元投稿の行から作者・ドメイン・言語・版を写します。元投稿の版が進むと、元投稿とそのブーストの行の `language` と `revision_seq` をまとめて更新します（`revision_seq` 以下の版は無視します）。
+- 削除された投稿の行は、投稿・そのブースト・宛先・タグをまとめて消します。削除された投稿への遅れた版やブーストは反映しません。
+- `feed_entries` の挿入は、同じ `id` があれば失敗させます（投稿とブーストの ID は一度しか挿入されないので、projector の二重登録を検出できます）。
 - `feed_entries` は元の公開範囲を持ちます。サイレンスによる上限（§5.4）は、読み取り時に `feed_author_restrictions` と合成して適用します。
   データを書き換えないので、解除すれば元に戻ります。
+- `feed_author_restrictions` / `feed_domain_restrictions` は、`moderation` の投影ができるまで行を持ちません。テーブルと読み取り時の絞り込みは先に用意しています。
 - 将来 fan-out-on-write に切り替える場合も、`home_feed`（閲覧者 × エントリ）をこのモジュールの投影として追加するだけで済みます（ADR-0013）。
 
 ### 4.7 notification
@@ -636,7 +644,7 @@ flowchart LR
   - 受け取るのはローカルのアカウントだけです（リモートの人には相手のサーバーが通知します）。自分の操作は通知しません（CHECK `source_account_id <> recipient_account_id`）。
   - どちらかがもう一方をブロックしているとき、または受け取る人が相手を `hide_notifications` 付きで（期限切れでなく）ミュートしているときは作りません。
   - 受け取る人がローカルかどうか（`account` の `IsLocal`）とブロック・ミュート（`graph` の `HidesNotifications`）は、他モジュールのテーブルを直接読まず、そのモジュールのアプリケーション層の公開 API をイベントのトランザクションの中で呼んで調べます。
-    ミュートはイベントを発行せず、ブロックの有無はイベントに載らない事実なので、§2.1 の「イベントの内容だけで更新する」の例外です。作成時に判定するので、後からのミュート・ブロックは作成済みの通知を隠しません。
+    通知のイベントの時点で有効なミュートとブロックの有無はそのイベントに載らない事実なので、§2.1 の「イベントの内容だけで更新する」の例外です。作成時に判定するので、後からのミュート・ブロックは作成済みの通知を隠しません。
 - 一覧は、消していない通知を `id` のキーセットで新しい順に引きます。種類の絞り込み（複数可）は `(recipient_account_id, type, id)` を使います。
 - 既読位置は前にだけ進みます（`last_read_id` より古い通知を指定しても変わりません）。同時に既読位置を送る複数の端末が位置を戻さないためです。指定できるのは自分の通知だけです。
 - 未読数は、消していない通知のうち `id > last_read_id` のものの件数です。既読位置が無ければすべてが未読です。
@@ -774,7 +782,15 @@ flowchart LR
 
 ## 6. タイムラインのクエリ
 
-v0 は fan-out-on-read（ADR-0013）です。`timeline` モジュールの投影だけを読みます。返す直前にドメインの `canView`（[公開範囲の閲覧判定](visibility.md)）を再適用します（多重防御、NFR-SEC-4）。以下は方言に依存しない概略です。
+v0 は fan-out-on-read（ADR-0013）です。`timeline` モジュールの投影だけを読みます。返す直前にドメインの `canView`（[公開範囲の閲覧判定](visibility.md)）を再適用します（多重防御、NFR-SEC-4）。以下は方言に依存しない概略で、実際のクエリは `queries/<dialect>/timeline.sql` です。
+
+共通の規則:
+
+- ページングは `id` のキーセット（§1.3）で、`:limit + 1` 件を読んで次のページの有無を決めます。次のページのカーソルは、`canView` で除いた行も含めて読んだ最後の行の `id` です（除いた結果、ページが `:limit` 件より少なくなることがあります）。
+- 期限つきの除外・制限は、`expires_at` / `effective_until` が NULL か `:now` より後のものだけが効きます。
+- ドメイン単位の制限は、そのドメインとサブドメイン（`author_domain = d.domain` または `author_domain` が `'.' || d.domain` で終わる）に効きます。
+- **言語フィルタ（FR-208）**: 言語の一覧を渡すと `language IN (:languages)` に加えて `language = 'und'`（不明）も通します。空なら絞り込みません。一覧は呼び出し側が `identity` の `user_timeline_languages` から渡します（`timeline` は `identity` のテーブルを読みません）。
+- `canView` の再適用: 投稿は投稿として、ブーストは「ブーストした人の、元投稿と同じ公開範囲の投稿」として文脈ごとに判定し、さらに元投稿を単体の取得として判定します。閲覧者との関係（承認済みのフォロー・ブロック・宛先か）と作者の制限は、ページの行について `feed_*` からまとめて読みます。ミュートは `canView` の外の絞り込みですが、同じ段階でも除きます。
 
 ### 6.1 ホーム（FR-201）
 
@@ -785,8 +801,8 @@ WHERE e.author_account_id IN (
         SELECT followee_account_id FROM feed_follow_edges WHERE follower_account_id = :viewer
         UNION ALL SELECT :viewer)
   AND e.id < :cursor
-  AND e.id >= :window_floor                       -- uuidv7_floor(now - N days)
-  AND (e.kind = 'post' OR EXISTS (SELECT 1 FROM feed_follow_edges f
+  AND e.id >= :window_floor                       -- uuidv7_floor(基準時刻 - 読み取り窓)
+  AND (e.kind = 'post' OR e.author_account_id = :viewer OR EXISTS (SELECT 1 FROM feed_follow_edges f
          WHERE f.follower_account_id = :viewer AND f.followee_account_id = e.author_account_id AND f.show_boosts))
   AND (e.visibility <> 'direct' OR e.author_account_id = :viewer
        OR EXISTS (SELECT 1 FROM feed_direct_recipients d
@@ -799,14 +815,18 @@ WHERE e.author_account_id IN (
          WHERE r.account_id IN (e.author_account_id, e.original_author_account_id)
            AND r.restriction = 'profile_view'
            AND (r.effective_until IS NULL OR r.effective_until > :now))
+  AND NOT EXISTS (/* feed_domain_restrictions の profile_view を author_domain と original_author_domain に */)
+  AND /* 言語フィルタ */
 ORDER BY e.id DESC
 LIMIT :limit + 1
 ```
 
 - 使うインデックス: `feed_entries (author_account_id, id)`、`feed_follow_edges (follower_account_id, followee_account_id)`、`feed_exclusions` の PK。
-- フォローしている相手の投稿は、`public` / `local` / `unlisted` / `private` のどれでも表示できます（閲覧者はフォロワーかつローカル）。
+- フォローしている相手の投稿は、`public` / `local` / `unlisted` / `private` のどれでも表示できます（閲覧者はフォロワーかつローカル）。自分の投稿とブーストも表示します。
 - ブーストは、ブーストした人と元投稿の作者（`original_author_account_id`）の両方について、ブロック・ミュート・制限で除外します。
 - フォローしていない相手からの `direct` 投稿（自分宛て）は、ホームではなく会話一覧で `feed_direct_recipients (recipient_account_id, entry_id)` から読みます。
+- **読み取り窓**: `:window_floor` は「基準時刻 − 窓」の UUIDv7 の下限です（§1.3）。基準時刻は現在時刻で、カーソルがあればカーソルの `id` の時刻です。
+  窓の既定値は 7 日（`timeline.HomeWindow`）です。ページが埋まらなければ、窓を 4 倍（`timeline.HomeWindowGrowth`）に広げて読み直すことを 3 回（`timeline.HomeWindowWidenings`）まで行い、それでも埋まらなければ下限なしで読みます。
 
 ### 6.2 ローカル / 連合（FR-202）
 
@@ -819,16 +839,22 @@ WHERE e.is_local AND e.kind = 'post'
         WHERE r.account_id = e.author_account_id
           AND r.restriction IN ('public_discovery', 'visibility_ceiling_private', 'profile_view')
           AND (r.effective_until IS NULL OR r.effective_until > :now))
+  AND NOT EXISTS (SELECT 1 FROM feed_exclusions x  -- 閲覧者のブロック・ミュート（未ログインなら無し）
+        WHERE x.viewer_account_id = :viewer AND x.target_account_id = e.author_account_id
+          AND (x.expires_at IS NULL OR x.expires_at > :now))
+  AND /* 言語フィルタ */
 ORDER BY e.id DESC LIMIT :limit + 1;
 ```
 
-- 連合タイムラインは `kind = 'post' AND visibility = 'public'` の部分インデックスを使い、`feed_domain_restrictions`（`public_discovery`・`profile_view`）も除外します。
-- 閲覧者のブロック・ミュートは `feed_exclusions` で除外します。
+- 連合タイムラインは `kind = 'post' AND visibility = 'public'` の部分インデックスを使い、`feed_domain_restrictions`（`public_discovery`・`visibility_ceiling_private`・`profile_view`）も除外します。
 
 ### 6.3 ハッシュタグ・プロフィール・スレッド
 
-- **ハッシュタグ（FR-203）**: `feed_tag_entries (tag_id, entry_id)` を `visibility IN ('public','local')`（未ログインは `public`）で絞ります。作者の `public_discovery` などの制限は `feed_author_restrictions` / `feed_domain_restrictions` で除外します。
-- **プロフィール（FR-204）**: `feed_entries (author_account_id, id)` を使います。閲覧者と作者の関係（本人 / フォロワー / ローカルログイン / 未ログイン）と作者の制限から、許される公開範囲の集合を求めて `IN (…)` に入れます。
+- **ハッシュタグ（FR-203）**: `feed_tag_entries (tag_id, entry_id)` を `visibility IN ('public','local')`（未ログインは `public`）で絞り、言語のために `feed_entries` と結合します。
+  作者の `public_discovery`・`visibility_ceiling_private`・`profile_view` は `feed_author_restrictions` と `feed_domain_restrictions`（作者のドメイン）で、閲覧者のブロック・ミュートは `feed_exclusions` で除外します。
+- **プロフィール（FR-204）**: `feed_entries (author_account_id, id)` を使い、作者の投稿とブーストを読みます。
+  許される公開範囲の集合は、閲覧者と作者の関係（本人・承認済みフォロワー・ブロック）と作者の制限を `canView`（`ContextProfile`）に公開範囲ごとに与えて求め、`IN (…)` に入れます。
+  `direct` は本人なら全部、それ以外は自分宛てのもの（`feed_direct_recipients`）だけです。ブーストは、元投稿の作者を閲覧者が除外している・元投稿の作者やそのドメインに `profile_view` があるものを除きます。
 - **スレッド（FR-106）**: `statuses (conversation_uri, id)` で一括取得し、行ごとに `canView` を適用します。親子関係は `status_reply_links` を使います。
 
 ## 7. 公開範囲と配送
@@ -871,12 +897,16 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `account_handles` / `remote_account_heads` / `account_profile_heads` | `local_accounts`, `remote_account_snapshots`, `account_profile_revisions` | 同期 |
 | `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses`、`status_deletions` | 同期 |
 | `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
-| `feed_*` | 上記の投影の元になるイベント | 同期 |
+| `feed_*` | `content` と `graph` の `ReplayEvents` が現在の状態から再生するイベント（下記） | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 | `instance_health` | `delivery_attempts` | 同期（間引き） |
 
 - CLI: `my projection rebuild <name>` で投影を空にしてイベントから作り直し、`my projection verify <name>` で作り直した結果と現在の投影を比較します。
 - コントラクトテスト: 各 projector に「イベント列を与えて投影を作る」テストと、「インクリメンタル更新の結果 = 一括再構築の結果」の性質テストを書きます。
+- 他のモジュールのイベントから作る投影（`feed_*`）は、元のモジュールのテーブルを読まずに再構築します。
+  `content.ReplayEvents` は削除されていない投稿ごとに現在版つきの `content.status_created` を、有効なブーストごとに `content.boosted` を、
+  `graph.ReplayEvents` は有効なフォローごとに `graph.followed`（承認待ちなら `graph.follow_requested`）を、有効なブロックごとに `graph.blocked` を、ミュートごとに `graph.muted` を、
+  再構築のトランザクションの中で発行します。`timeline.RebuildProjections` は `feed_*`（制限の 2 表を除く）を空にして、これらに自分の projector を適用します。
 
 ## 10. 機能要件とテーブルの対応
 
@@ -929,6 +959,6 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 - [ ] ADR-0020（モデリング方針）の決定
 - [ ] 同一モジュール内の外部キーを方言別スキーマに付けるか（Aurora DSQL は対応済み、#18）
 - [ ] PostgreSQL で `id` を `uuid` 型にするか（#17 は `COLLATE "C"` の `text` か `uuid` のどちらかを推奨）
-- [ ] ホームタイムラインの読み取り窓 `N` 日の既定値（ADR-0013 の計測で決める）
+- [ ] ホームタイムラインの読み取り窓の既定値 7 日と広げ方の見直し（ADR-0013 の計測で決める）
 - [ ] 古いリモート投稿の消去条件（ローカルからの参照がある投稿を残すか）
 - [ ] 書き込み行数の増加（イベント + 投影）が従量課金 DB のコストに与える影響の計測（M2）
