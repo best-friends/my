@@ -115,9 +115,10 @@ func viewerOf(ctx context.Context) *Viewer {
 	return nil
 }
 
-// notFound returns the 404 problem of an account that is not visible.
-func (s *Server) notFound(ctx context.Context) problemResponse {
-	return s.problem(ctx, http.StatusNotFound, ProblemTypeBlank, s.Localizer(ctx).ServerErrorsNotFound(), "")
+// notFoundResponse is notFound as a default response, for an account that is not visible.
+func (s *Server) notFoundResponse(ctx context.Context) problemResponse {
+	body, headers := s.notFound(ctx)
+	return problemResponse{Body: body, Headers: headers, StatusCode: http.StatusNotFound}
 }
 
 // VerifyAccountCredentials serves GET /api/v1/accounts/verify_credentials: the viewer's own
@@ -150,7 +151,7 @@ func (s *Server) GetAccount(ctx context.Context, req GetAccountRequestObject) (G
 		return nil, err
 	}
 	if !ok {
-		return GetAccountdefaultApplicationProblemPlusJSONResponse(s.notFound(ctx)), nil
+		return GetAccountdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	}
 	body, err := s.newProfile(ctx, a)
 	if err != nil {
@@ -164,11 +165,11 @@ func (s *Server) LookupAccount(ctx context.Context, req LookupAccountRequestObje
 	v := viewerOf(ctx)
 	username, domain, ok := s.parseAcct(req.Params.Acct)
 	if !ok {
-		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFound(ctx)), nil
+		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	}
 	a, err := s.o.Accounts.FindByHandle(ctx, username, domain)
 	if errors.Is(err, appaccount.ErrNotFound) {
-		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFound(ctx)), nil
+		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	}
 	if err != nil {
 		return nil, err
@@ -177,7 +178,7 @@ func (s *Server) LookupAccount(ctx context.Context, req LookupAccountRequestObje
 		return nil, err
 	}
 	if !ok {
-		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFound(ctx)), nil
+		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	}
 	body, err := s.newProfile(ctx, a)
 	if err != nil {

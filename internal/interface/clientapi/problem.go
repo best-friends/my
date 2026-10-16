@@ -95,10 +95,10 @@ func (s *Server) problem(ctx context.Context, status int, typ, title, detail str
 	return problemResponse{Body: body, Headers: headers, StatusCode: status}
 }
 
-// invalidParameter returns the 400 problem of a parameter whose value the handler rejects.
-func (s *Server) invalidParameter(ctx context.Context, name string) problemResponse {
-	l := s.Localizer(ctx)
-	return s.problem(ctx, http.StatusBadRequest, ProblemTypeBlank, l.ServerErrorsBadRequest(), l.ServerErrorsInvalidParameter(name))
+// invalidParameterResponse is invalidParameter as a default response.
+func (s *Server) invalidParameterResponse(ctx context.Context, name string) problemResponse {
+	body, headers := s.invalidParameter(ctx, name)
+	return problemResponse{Body: body, Headers: headers, StatusCode: http.StatusBadRequest}
 }
 
 // writeProblem writes a problem document outside the strict handlers: for requests that the

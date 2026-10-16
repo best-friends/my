@@ -38,6 +38,8 @@ tags:
     description: Public information about the instance.
   - name: accounts
     description: Accounts and the authenticated user's own account.
+  - name: notifications
+    description: The authenticated user's notifications, their read marker, and dismissals.
 paths:
   /instance:
     get:
@@ -422,6 +424,116 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- End of accounts and relationships (#108) ---
+  # --- notifications (#111) ---
+  /notifications:
+    get:
+      operationId: listNotifications
+      summary: List the authenticated user's notifications
+      description: |
+        The user's notifications, newest first. Dismissed notifications, notifications about
+        deleted posts, and notifications from accounts that the user blocks, is blocked by, or
+        mutes with notifications hidden are left out, also those that came before the block or
+        mute.
+      tags: [notifications]
+      security:
+        - oauth2: ["read:notifications"]
+      parameters:
+        - name: types
+          in: query
+          description: Keep only notifications of these types; omitted keeps every type.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            maxItems: 8
+            items:
+              $ref: "#/components/schemas/NotificationType"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of notifications.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /notifications/marker:
+    get:
+      operationId: getNotificationMarker
+      summary: Get the read marker and the unread count
+      tags: [notifications]
+      security:
+        - oauth2: ["read:notifications"]
+      responses:
+        "200":
+          description: The read marker.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationMarker"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateNotificationMarker
+      summary: Mark notifications read
+      description: |
+        Marks the notifications up to and including `last_read_id` as read. The marker only
+        moves forward: a `last_read_id` older than the current marker changes nothing, so
+        clients that report their positions concurrently never move it back. A
+        `last_read_id` that is not one of the user's notifications is a 404.
+      tags: [notifications]
+      security:
+        - oauth2: ["write:notifications"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationMarkerUpdate"
+      responses:
+        "200":
+          description: The read marker after the update.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationMarker"
+        default:
+          $ref: "#/components/responses/Problem"
+  /notifications/{id}/dismiss:
+    post:
+      operationId: dismissNotification
+      summary: Dismiss a notification
+      description: |
+        Removes the notification from the list and the unread count. Dismissing it again
+        changes nothing; a notification that is not the user's is a 404.
+      tags: [notifications]
+      security:
+        - oauth2: ["write:notifications"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the notification.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "204":
+          description: The notification is dismissed.
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end notifications ---
 components:
   securitySchemes:
     oauth2:
@@ -788,3 +900,70 @@ components:
           description: Whether the viewer's mute also hides the account's notifications.
           type: boolean
     # --- End of accounts and relationships (#108) ---
+    # --- notifications (#111) ---
+    Notification:
+      description: A notification of something that happened to the authenticated user.
+      type: object
+      required: [id, type, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        created_at:
+          description: When it happened.
+          type: string
+          format: date-time
+        account:
+          $ref: "#/components/schemas/Account"
+        status_id:
+          $ref: "#/components/schemas/Id"
+    NotificationMarker:
+      description: How far the authenticated user has read the notifications.
+      type: object
+      required: [unread_count]
+      properties:
+        last_read_id:
+          description: The newest notification read; omitted when the user has read none.
+          $ref: "#/components/schemas/Id"
+        unread_count:
+          description: The number of listed notifications newer than `last_read_id`.
+          type: integer
+          format: int64
+          minimum: 0
+    NotificationMarkerUpdate:
+      description: The new position of the read marker.
+      type: object
+      required: [last_read_id]
+      properties:
+        last_read_id:
+          $ref: "#/components/schemas/Id"
+    NotificationPage:
+      description: A page of notifications, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Notification"
+    NotificationType:
+      description: |
+        The kind of a notification. `account` is the account that acted: the follower
+        (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
+        (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
+        `status_id` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+        about. `moderation_notice` comes from the instance and has no `account`.
+      type: string
+      enum:
+        - follow
+        - follow_request
+        - follow_accepted
+        - mention
+        - boost
+        - favourite
+        - poll_closed
+        - moderation_notice
+    # --- end notifications ---

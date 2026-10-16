@@ -17,12 +17,6 @@ import (
 // block list, and the creation time and target of a mute. A page asks the graph module for one
 // item more than its limit, so that the last page has no next_cursor.
 
-// defaultPageLimit is the default of the Limit parameter.
-const defaultPageLimit = 20
-
-// maxPageLimit is the maximum of the Limit parameter.
-const maxPageLimit = 40
-
 // pageQuery is the parsed Cursor and Limit of a list request; problem is set when either is
 // invalid.
 type pageQuery struct {
@@ -32,18 +26,16 @@ type pageQuery struct {
 }
 
 func (s *Server) parsePage(ctx context.Context, cursor *Cursor, limit *Limit) pageQuery {
-	q := pageQuery{limit: defaultPageLimit}
-	if limit != nil {
-		if *limit < 1 || *limit > maxPageLimit {
-			p := s.invalidParameter(ctx, "limit")
-			return pageQuery{problem: &p}
-		}
-		q.limit = *limit
+	n, ok := pageLimit(limit)
+	if !ok {
+		p := s.invalidParameterResponse(ctx, "limit")
+		return pageQuery{problem: &p}
 	}
+	q := pageQuery{limit: n}
 	if cursor != nil {
 		b, err := base64.RawURLEncoding.DecodeString(*cursor)
 		if err != nil || len(b) == 0 {
-			p := s.invalidParameter(ctx, "cursor")
+			p := s.invalidParameterResponse(ctx, "cursor")
 			return pageQuery{problem: &p}
 		}
 		q.before = string(b)
@@ -115,7 +107,7 @@ func (s *Server) followList(ctx context.Context, id string, cursor *Cursor, limi
 		return nil, nil, err
 	}
 	if !ok {
-		p := s.notFound(ctx)
+		p := s.notFoundResponse(ctx)
 		return nil, &p, nil
 	}
 	list := s.o.Graph.Following
@@ -247,7 +239,7 @@ func (s *Server) ListMutes(ctx context.Context, req ListMutesRequestObject) (Lis
 	if q.before != "" {
 		var ok bool
 		if before, ok = decodeMuteCursor(q.before); !ok {
-			return ListMutesdefaultApplicationProblemPlusJSONResponse(s.invalidParameter(ctx, "cursor")), nil
+			return ListMutesdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "cursor")), nil
 		}
 	}
 	mutes, err := s.o.Graph.Mutes(ctx, v.AccountID, appgraph.MutePage{Before: before, Limit: q.limit + 1})

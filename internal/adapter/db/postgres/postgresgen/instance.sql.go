@@ -107,6 +107,24 @@ func (q *Queries) InsertInstanceTextRevision(ctx context.Context, arg InsertInst
 	return err
 }
 
+const isInstanceSettingValueUsed = `-- name: IsInstanceSettingValueUsed :one
+SELECT EXISTS (SELECT 1 FROM instance_setting_revisions WHERE key = $1 AND value = $2)
+`
+
+type IsInstanceSettingValueUsedParams struct {
+	Key   string
+	Value string
+}
+
+// Whether any revision of a setting, current or not, has a value; the content module's media
+// cleanup keeps the media files that a media setting refers to.
+func (q *Queries) IsInstanceSettingValueUsed(ctx context.Context, arg IsInstanceSettingValueUsedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isInstanceSettingValueUsed, arg.Key, arg.Value)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listAllCurrentInstanceTexts = `-- name: ListAllCurrentInstanceTexts :many
 SELECT t.key, t.locale, t.revision_id, r.body, r.revised_at
 FROM instance_texts t JOIN instance_text_revisions r ON r.id = t.revision_id

@@ -34,8 +34,11 @@
 | `default_locale` | BCP 47 言語タグ | `en` | 既定のロケール。新しい利用者の UI ロケールの初期値、利用者の希望に合うカタログが無いとき、インスタンスの文章がその言語に無いときに使う（ADR-0009） |
 | `local_timeline_enabled` | `true` / `false` | `true` | ローカルタイムラインを提供するか（FR-202） |
 | `federated_timeline_enabled` | `true` / `false` | `true` | 連合タイムラインを提供するか（FR-202） |
+| `preview_image` | メディア ID（空 = 未設定） | 空 | 画像のない投稿・プロフィールのリンクプレビュー画像（`og:image`）。未設定なら同梱の既定画像（[リンクプレビュー](link-previews.md)） |
 
-- 値は保存前に正規形にします（`TRUE` → `true`、`0750` → `750`、`ja_jp` → `ja-JP`）。不正な値は何も書き込まずに拒否します。
+- 値は保存前に正規形にします（`TRUE` → `true`、`0750` → `750`、`ja_jp` → `ja-JP`、メディア ID は小文字）。不正な値は何も書き込まずに拒否します。
+- `preview_image` は、存在する画像のメディア（処理中を含む）だけを受け付けます。処理が終わるまでと、処理に失敗した画像の代わりには既定画像が出ます。
+  どの版でも一度設定したメディアは、未添付アップロードの消去（FR-803）で消えません。
 
 ### 文章（ロケール別）
 
@@ -46,6 +49,7 @@
 | `description` | 20000 文字 | 説明 |
 | `terms` | 100000 文字 | 利用規約 |
 | `privacy_policy` | 100000 文字 | プライバシーポリシー |
+| `preview_image_alt` | 1500 文字 | `preview_image` の画像の代替テキスト（`og:image:alt`）。無ければ「〇〇のイメージ画像」 |
 
 - 文章はロケールごとに持ちます。読むときは、読み手のロケールのフォールバックチェーン → `default_locale` のチェーン → `en` の順に探します
   （例: `ja-JP` → `ja` → 既定のロケール → `en`）。
@@ -64,9 +68,15 @@ my instance get -locale ja-JP name                    # フォールバックチ
 my instance set -locale ja name ""                    # ja の名前を消す
 my instance history registration_mode                 # 変更履歴（新しい順、-limit で件数）
 my instance history -locale ja description
+my instance set -owner admin preview_image ./preview.png   # 画像を admin のメディアとしてアップロードし、プレビュー画像にする
+my instance set preview_image 0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f   # アップロード済みのメディア ID を指定
+my instance set -locale ja preview_image_alt "青い鳥のマスコット"
+my instance set preview_image ""                      # 同梱の既定画像に戻す
 ```
 
 - フラグはキーと値より前に書きます。
+- `-owner <ユーザー名>` を付けると、`preview_image` の値を画像ファイルのパスとして読み、そのローカルアカウントのメディアとしてアップロードします。
+  画像はワーカーが処理してから使われます（[メディア](../architecture/data-model.md#44-content)）。推奨は 1200×630 の横長の画像です。
 - 変更は 1 回のトランザクションで版（`instance_*_revisions`）を記録し、現在値（`instance_settings` / `instance_texts`）を更新します。
   CLI からの変更は変更者なし（履歴の `BY` が `cli`）として残ります。
 - 同じ値を設定し直しても版は増えます。

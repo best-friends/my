@@ -17,6 +17,8 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/follow_requests":                      {Operation: "listFollowRequests", Scopes: []string{"read:follows"}},
 	"GET /api/v1/instance":                             {Operation: "getInstance", Anonymous: true},
 	"GET /api/v1/mutes":                                {Operation: "listMutes", Scopes: []string{"read:mutes"}},
+	"GET /api/v1/notifications":                        {Operation: "listNotifications", Scopes: []string{"read:notifications"}},
+	"GET /api/v1/notifications/marker":                 {Operation: "getNotificationMarker", Scopes: []string{"read:notifications"}},
 	"POST /api/v1/accounts/{id}/block":                 {Operation: "blockAccount", Scopes: []string{"write:blocks"}},
 	"POST /api/v1/accounts/{id}/follow":                {Operation: "followAccount", Scopes: []string{"write:follows"}},
 	"POST /api/v1/accounts/{id}/mute":                  {Operation: "muteAccount", Scopes: []string{"write:mutes"}},
@@ -26,4 +28,6 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/accounts/{id}/unmute":                {Operation: "unmuteAccount", Scopes: []string{"write:mutes"}},
 	"POST /api/v1/follow_requests/{id}/authorize":      {Operation: "acceptFollowRequest", Scopes: []string{"write:follows"}},
 	"POST /api/v1/follow_requests/{id}/reject":         {Operation: "rejectFollowRequest", Scopes: []string{"write:follows"}},
+	"POST /api/v1/notifications/{id}/dismiss":          {Operation: "dismissNotification", Scopes: []string{"write:notifications"}},
+	"PUT /api/v1/notifications/marker":                 {Operation: "updateNotificationMarker", Scopes: []string{"write:notifications"}},
 }

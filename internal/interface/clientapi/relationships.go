@@ -80,7 +80,7 @@ func (s *Server) graphProblem(ctx context.Context, err error) (problemResponse, 
 		// The target does not block the viewer (relate checked it), so the viewer blocks the target.
 		return s.problem(ctx, http.StatusConflict, ProblemTypeBlocking, l.ServerErrorsBlocking(), ""), true
 	case errors.Is(err, appgraph.ErrAccountUnavailable), errors.Is(err, appgraph.ErrNotFound):
-		return s.notFound(ctx), true
+		return s.notFoundResponse(ctx), true
 	}
 	return problemResponse{}, false
 }
@@ -98,7 +98,7 @@ func (s *Server) relate(ctx context.Context, targetID string, change func(v View
 		return nil, nil, err
 	}
 	if !ok {
-		p := s.notFound(ctx)
+		p := s.notFoundResponse(ctx)
 		return nil, &p, nil
 	}
 	r, err := change(v)
@@ -119,7 +119,7 @@ func (s *Server) GetRelationships(ctx context.Context, req GetRelationshipsReque
 		return nil, err
 	}
 	if len(req.Params.Id) > 40 {
-		return GetRelationshipsdefaultApplicationProblemPlusJSONResponse(s.invalidParameter(ctx, "id")), nil
+		return GetRelationshipsdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "id")), nil
 	}
 	out := []Relationship{}
 	var seen []string
@@ -263,7 +263,7 @@ func (s *Server) MuteAccount(ctx context.Context, req MuteAccountRequestObject) 
 		}
 		if b.Duration != nil {
 			if *b.Duration < 0 || *b.Duration > maxMuteSeconds {
-				return MuteAccountdefaultApplicationProblemPlusJSONResponse(s.invalidParameter(ctx, "duration")), nil
+				return MuteAccountdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "duration")), nil
 			}
 			in.Duration = time.Duration(*b.Duration) * time.Second
 		}

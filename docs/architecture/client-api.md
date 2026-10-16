@@ -33,10 +33,11 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 
 - ID は UUIDv7 の文字列で、`#/components/schemas/Id` を参照します（`x-go-type: string` により Go では `string`）。
 - 一覧はキーセットページングです。クエリで `#/components/parameters/Cursor` と `#/components/parameters/Limit` を受け、
-  応答は `allOf` で `#/components/schemas/PageInfo` を含めて `next_cursor` を返します。最後のページでは `next_cursor` を省きます。
+  応答は `allOf` で `#/components/schemas/PageInfo` を含めて `next_cursor` を返し、要素の配列は `items` に入れます。最後のページでは `next_cursor` を省きます。
 - カーソルは不透明な文字列です。クライアントは解釈せずにそのまま返します。
-  サーバーはページの最後の項目の位置（フォロー ID など）を base64url にしたものを使い、`limit` より 1 件多く読んで次のページがあるときだけ `next_cursor` を返します。
-- 生成コードは `minimum` / `maximum` などのスキーマの制約を検査しないので、`limit` やカーソル・本文の値の範囲はハンドラが検査し、外れたら 400 にします（`Server.parsePage`、`Server.invalidParameter`）。
+  ハンドラは `limit` より 1 件多く読み、次のページがあるときだけ `next_cursor` を返します。
+  アカウントの一覧のカーソルは、ページの最後の項目の位置（フォロー ID・ブロック ID・ミュートの作成時刻と対象）を base64url にしたものです（`Server.parsePage`）。
+- 生成コードは `minimum` / `maximum` などのスキーマの制約を検査しないので、`limit` やカーソル・本文の値の範囲はハンドラが検査し、外れたら 400 にします（`pageLimit`、`Server.invalidParameter`）。
 - 見せられない項目（[visibility.md §6](visibility.md#6-アカウントの表示)）を省く一覧では、最後でないページでも `limit` より少ないことがあります。
 
 ### 2.3 エラー

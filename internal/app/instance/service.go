@@ -20,6 +20,16 @@ type Deps struct {
 	Repository Repository
 	Clock      kernel.Clock
 	IDs        kernel.IDGenerator
+	// Media checks the media files that media settings (preview_image) refer to; nil checks
+	// only the shape of their IDs.
+	Media MediaFiles
+}
+
+// MediaFiles checks media files for the media settings. The content module implements it.
+type MediaFiles interface {
+	// CheckImage fails when mediaID names no media file that is, or is being processed into,
+	// a still image.
+	CheckImage(ctx context.Context, mediaID string) error
 }
 
 // Service runs the instance module's use cases for settings and texts.
@@ -97,6 +107,11 @@ func (s *Service) SetSetting(ctx context.Context, in SetSettingInput) (instance.
 	if err != nil {
 		return instance.SettingRevision{}, err
 	}
+	if def.Kind == instance.KindMedia && value != "" && s.d.Media != nil {
+		if err := s.d.Media.CheckImage(ctx, value); err != nil {
+			return instance.SettingRevision{}, fmt.Errorf("setting %s: media %s: %w: %w", in.Key, value, instance.ErrInvalidValue, err)
+		}
+	}
 	rev := instance.SettingRevision{
 		ID: s.d.IDs.NewID(), Key: in.Key, Value: value, RevisedByUserID: in.RevisedByUserID, RevisedAt: s.d.Clock.Now(),
 	}
@@ -110,6 +125,22 @@ func (s *Service) SetSetting(ctx context.Context, in SetSettingInput) (instance.
 		return instance.SettingRevision{}, err
 	}
 	return rev, nil
+}
+
+// IsMediaReferenced reports whether any revision of a media setting, current or not, refers
+// to a media file. It implements content.MediaReferrer, so that the cleanup of unattached
+// uploads keeps the instance's images and a setting can go back to an earlier revision.
+func (s *Service) IsMediaReferenced(ctx context.Context, mediaID string) (bool, error) {
+	if mediaID == "" {
+		return false, nil // the cleared value
+	}
+	for _, key := range instance.MediaKeys() {
+		used, err := s.d.Repository.IsSettingValueUsed(ctx, key, mediaID)
+		if err != nil || used {
+			return used, err
+		}
+	}
+	return false, nil
 }
 
 // SettingHistory returns the revisions of a setting, newest first, at most limit of them.
@@ -182,6 +213,34 @@ func (s *Service) Text(ctx context.Context, key instance.TextKey, locale string)
 	}
 	t, ok := instance.PickText(texts, TextFallbackChain(locale, settings.DefaultLocale()))
 	return t, ok, nil
+}
+
+// PreviewImage is the instance's link preview image (ADR-0028).
+type PreviewImage struct {
+	// MediaID is the preview_image setting, "" when unset.
+	MediaID string
+	// Alt is the preview_image_alt text, "" when no locale of the chain has it.
+	Alt string
+}
+
+// PreviewImage returns the preview_image setting with its alt text for a reader of locale.
+func (s *Service) PreviewImage(ctx context.Context, locale string) (PreviewImage, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return PreviewImage{}, err
+	}
+	out := PreviewImage{MediaID: settings.PreviewImageMediaID()}
+	if out.MediaID == "" {
+		return out, nil
+	}
+	t, ok, err := s.Text(ctx, instance.TextPreviewImageAlt, locale)
+	if err != nil {
+		return PreviewImage{}, err
+	}
+	if ok {
+		out.Alt = t.Body
+	}
+	return out, nil
 }
 
 // TextFallbackChain returns the locales consulted for an instance text read in locale, most

@@ -188,7 +188,11 @@ func (h *Handler) renderProfile(ctx context.Context, p appcontent.ProfilePreview
 	if prof := p.Actor.Profile; prof != nil {
 		meta.Description = description(plainText(prof.NoteHTML))
 	}
-	meta.Image = h.profileImage(lang, p, nil)
+	img, err := h.profileImage(ctx, lang, p, nil)
+	if err != nil {
+		return document{}, err
+	}
+	meta.Image = img
 	meta.Card = card(meta.Image)
 	version = append(version, "profile", imageVersion(meta.Image))
 	return h.renderPreview(ctx, lang, meta, version)
@@ -210,7 +214,11 @@ func (h *Handler) renderStatus(ctx context.Context, s appcontent.StatusPreview) 
 	} else {
 		meta.Description = description(plainText(bodyHTML(rev)))
 	}
-	meta.Image = h.profileImage(lang, s.Author, s.Image)
+	img, err := h.profileImage(ctx, lang, s.Author, s.Image)
+	if err != nil {
+		return document{}, err
+	}
+	meta.Image = img
 	meta.Card = card(meta.Image)
 	// An unlisted post is for anyone with the link, not for search engines (ADR-0028).
 	meta.NoIndex = s.Visibility == content.VisibilityUnlisted
@@ -244,21 +252,33 @@ func displayName(p appcontent.ProfilePreview) string {
 }
 
 // profileImage chooses the preview image (ADR-0028): the first attached image, then the
-// profile's header image or avatar, then the instance's default image.
-func (h *Handler) profileImage(lang string, p appcontent.ProfilePreview, attached *appcontent.PreviewImage) *Image {
+// profile's header image or avatar, then the instance's preview image, which is the built-in
+// image when the instance has none.
+func (h *Handler) profileImage(ctx context.Context, lang string, p appcontent.ProfilePreview, attached *appcontent.PreviewImage) (*Image, error) {
 	name, l := displayName(p), h.o.Messages.Localizer(lang)
 	switch {
 	case attached != nil:
-		return previewImage(attached, attached.Alt)
+		return previewImage(attached, attached.Alt), nil
 	case p.Header != nil:
-		return previewImage(p.Header, l.ServerPreviewHeaderAlt(name))
+		return previewImage(p.Header, l.ServerPreviewHeaderAlt(name)), nil
 	case p.Avatar != nil:
-		return previewImage(p.Avatar, l.ServerPreviewAvatarAlt(name))
-	case h.o.DefaultImage != nil && h.o.DefaultImage.URL != "":
-		img := *h.o.DefaultImage
-		return &img
+		return previewImage(p.Avatar, l.ServerPreviewAvatarAlt(name)), nil
 	}
-	return nil
+	if h.o.DefaultImage == nil {
+		return h.builtInImage(l.ServerPreviewBuiltinImageAlt()), nil
+	}
+	img, err := h.o.DefaultImage(ctx, lang)
+	if err != nil {
+		return nil, err
+	}
+	if img == nil || img.URL == "" {
+		return h.builtInImage(l.ServerPreviewBuiltinImageAlt()), nil
+	}
+	out := *img
+	if out.Alt == "" {
+		out.Alt = l.ServerPreviewDefaultImageAlt(h.o.InstanceName)
+	}
+	return &out, nil
 }
 
 func previewImage(p *appcontent.PreviewImage, alt string) *Image {

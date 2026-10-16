@@ -36,6 +36,8 @@ type Options struct {
 	Accounts Accounts
 	// Graph reads and changes follows, blocks, and mutes.
 	Graph Graph
+	// Notifications runs the use cases of the viewer's notifications.
+	Notifications Notifications
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

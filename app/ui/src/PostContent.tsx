@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// The one audited component that renders HTML (web-client.md A8). ESLint allows dangerouslySetInnerHTML
+// in this file only (app/eslint.config.js). The server sanitizes every post body to its allowlist
+// before it reaches the client; this component trusts that and adds nothing of its own.
+import type { ComponentPropsWithRef } from "react";
+import { tv } from "tailwind-variants";
+
+declare const sanitizedHtmlBrand: unique symbol;
+
+/**
+ * HTML that the server has already sanitized, such as the rendered body of a post in an API response.
+ * A plain `string` is not assignable to it, so HTML from anywhere else (user input, a URL, a template)
+ * cannot reach `PostContent` by accident: it has to pass through `serverSanitizedHtml`.
+ */
+export type SanitizedHtml = string & { readonly [sanitizedHtmlBrand]: true };
+
+/**
+ * Marks a string as server-sanitized HTML. Call it only on a field the server documents as sanitized
+ * HTML, at the place the API response is read; never on text the client built or received from elsewhere.
+ */
+export function serverSanitizedHtml(html: string): SanitizedHtml {
+  return html as SanitizedHtml;
+}
+
+const postContent = tv({
+  // Long URLs and words wrap anywhere, so no post scrolls sideways at 320 px (web-client.md D3).
+  base: [
+    "text-base wrap-anywhere text-fg",
+    "[&_a]:text-accent [&_a]:underline [&_a:hover]:text-accent-hover",
+    "[&_blockquote]:border-s-4 [&_blockquote]:border-border [&_blockquote]:ps-3 [&_blockquote]:text-fg-muted",
+    "[&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:font-mono",
+    "[&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6",
+    "[&>*+*]:mt-2",
+  ],
+});
+
+export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "dangerouslySetInnerHTML" | "dir"> & {
+  /** The post body as the server rendered and sanitized it. */
+  html: SanitizedHtml;
+  /** The language of the post, when the server knows it (a BCP 47 tag). */
+  lang?: string | undefined;
+};
+
+/**
+ * The body of a post: server-sanitized HTML in a block whose direction follows its own text (`dir="auto"`)
+ * and whose `lang` is the post's language when known (web-client.md Y10). Give it an `id` to describe a
+ * PostCard by it.
+ */
+export function PostContent({ html, lang, className, ...props }: PostContentProps) {
+  return <div {...props} dir="auto" lang={lang} className={postContent({ className })} dangerouslySetInnerHTML={{ __html: html }} />;
+}
