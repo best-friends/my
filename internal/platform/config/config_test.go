@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io/fs"
+	"log/slog"
 	"reflect"
 	"slices"
 	"strings"
@@ -303,6 +304,26 @@ func TestSchemaWellFormed(t *testing.T) {
 		}
 		if f.secret && f.def != "" {
 			t.Errorf("%s: secrets have no default", f.key)
+		}
+	}
+}
+
+func TestConfigLogValueRedactsSecrets(t *testing.T) {
+	cfg, _, err := Load(source(with(minimal(), "MY_DATABASE_URL", "postgres://user:hunter2@db/my", "MY_KEK_PREVIOUS", testKEK1), nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	slog.New(slog.NewTextHandler(&buf, nil)).Info("config", "config", cfg)
+	out := buf.String()
+	for _, secret := range []string{"hunter2", string(cfg.KEK), string(cfg.PreviousKEKs[0]), testKEK, testKEK1} {
+		if strings.Contains(out, secret) {
+			t.Errorf("log output %q contains secret %q", out, secret)
+		}
+	}
+	for _, want := range []string{"config.host=social.example.org", "config.database_url=(redacted)", "config.kek=(redacted)", "config.kek_previous=1"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("log output %q does not contain %q", out, want)
 		}
 	}
 }
