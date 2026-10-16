@@ -21,10 +21,21 @@ type Profiles interface {
 	UpdateProfile(ctx context.Context, accountID string, in appaccount.ProfileUpdate) (appaccount.Actor, error)
 }
 
+// PostingPolicy reads what an account's restrictions let it post. *appcontent.Service
+// implements it.
+type PostingPolicy interface {
+	PostingLimits(ctx context.Context, accountID string) (appcontent.PostingLimits, error)
+}
+
 // newCredentialAccount presents the viewer's own actor as the CredentialAccount schema: the
-// account with its follow counts (newProfile), images, and the source of its profile.
+// account with its follow counts (newProfile), images, the source of its profile, and its
+// posting limits.
 func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (CredentialAccount, error) {
 	base, err := s.newProfile(ctx, a)
+	if err != nil {
+		return CredentialAccount{}, err
+	}
+	posting, err := s.postingLimits(ctx, a.Account.ID)
 	if err != nil {
 		return CredentialAccount{}, err
 	}
@@ -32,7 +43,7 @@ func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (
 		Id: base.Id, Username: base.Username, Acct: base.Acct, DisplayName: base.DisplayName, Note: base.Note,
 		Url: base.Url, Locked: base.Locked, Bot: base.Bot, CreatedAt: base.CreatedAt, Fields: base.Fields,
 		FollowersCount: base.FollowersCount, FollowingCount: base.FollowingCount,
-		Source: AccountSource{Fields: []AccountFieldSource{}},
+		Source: AccountSource{Fields: []AccountFieldSource{}}, Posting: posting,
 	}
 	p := a.Profile
 	if p == nil {
@@ -60,6 +71,24 @@ func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (
 		if out.Header, err = s.imageURL(ctx, a.Account.ID, p.HeaderMediaID); err != nil {
 			return CredentialAccount{}, err
 		}
+	}
+	return out, nil
+}
+
+// postingLimits presents the posting limits of accountID; without Options.Posting the account
+// is unrestricted.
+func (s *Server) postingLimits(ctx context.Context, accountID string) (PostingLimits, error) {
+	none := content.AuthorRestrictions{}
+	l := appcontent.PostingLimits{VisibilityCeiling: none.VisibilityCeiling(), Visibilities: content.PostingVisibilities(none)}
+	if s.o.Posting != nil {
+		var err error
+		if l, err = s.o.Posting.PostingLimits(ctx, accountID); err != nil {
+			return PostingLimits{}, fmt.Errorf("clientapi: posting limits of %s: %w", accountID, err)
+		}
+	}
+	out := PostingLimits{VisibilityCeiling: Visibility(l.VisibilityCeiling), Visibilities: make([]Visibility, 0, len(l.Visibilities))}
+	for _, v := range l.Visibilities {
+		out.Visibilities = append(out.Visibilities, Visibility(v))
 	}
 	return out, nil
 }

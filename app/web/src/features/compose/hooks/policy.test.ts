@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from "vitest";
 import { viewerStatusFixture, viewerFixture } from "../../../test/msw/handlers";
+import type { PostingLimits } from "../api/compose";
 import { fitWithin } from "./prepareImage";
-import { countCharacters, defaultVisibility, narrower, replyMentions } from "./policy";
+import { countCharacters, defaultVisibility, domainMentions, narrower, postedVisibility, replyMentions } from "./policy";
 
 describe("narrower", () => {
   test.each([
@@ -44,6 +45,32 @@ describe("replyMentions", () => {
 
   test("is empty for a reply to the viewer's own post that mentions nobody else", () => {
     expect(replyMentions(viewerStatusFixture(), viewerFixture.id)).toBe("");
+  });
+});
+
+describe("postedVisibility", () => {
+  const silenced: PostingLimits = { visibility_ceiling: "private", visibilities: ["private", "direct"] };
+
+  test("keeps a choice that the posting limits keep", () => {
+    expect(postedVisibility("direct", silenced)).toBe("direct");
+    expect(postedVisibility("public", undefined)).toBe("public");
+  });
+
+  test("is the ceiling for a wider choice", () => {
+    expect(postedVisibility("local", silenced)).toBe("private");
+  });
+});
+
+describe("domainMentions", () => {
+  test("finds the mentions with a domain, lowercase and once each", () => {
+    expect(domainMentions("Hi @Carol@Remote.Example, @bob and @carol@remote.example. Also @dave@other.example.")).toEqual([
+      "carol@remote.example",
+      "dave@other.example",
+    ]);
+  });
+
+  test("skips e-mail addresses and URLs, as the server does", () => {
+    expect(domainMentions("mail me@my.example or see https://remote.example/@carol@remote.example")).toEqual([]);
   });
 });
 
