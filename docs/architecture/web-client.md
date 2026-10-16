@@ -69,7 +69,7 @@ Web クライアント（`app/web`）と共有 UI キット（`app/ui`）を書�
 | --- | --- | --- |
 | Y1 | すべてのストーリーと E2E の画面で、axe の違反（`wcag2a` / `wcag2aa` / `wcag21a` / `wcag21aa` / `wcag22aa`）がない | Storybook（`a11y.test: 'error'`）、Playwright |
 | Y2 | 操作できる要素はすべてロールとアクセシブルネームを持つ。テストは `getByRole` / `getByLabelText` で探し、テスト ID は最後の手段にする | `eslint-plugin-testing-library` |
-| Y3 | コントラストは AA（文字 4.5:1、UI 3:1）をライト / ダークの両方で満たす | 実ブラウザの axe |
+| Y3 | コントラストは AA（文字 4.5:1、UI 3:1）をライト / ダークの両方で満たす | `make web-tokens`（トークンの組）、実ブラウザの axe |
 | Y4 | フォーカスできる要素はすべて `focus-visible` のリングを持つ。固定ヘッダでフォーカスを隠さない（`scroll-padding`） | 見た目のスナップショット、レビュー |
 | Y5 | ルートが変わったら、新しい画面の `h1`（`tabindex="-1"`）にフォーカスを移し、`document.title` を更新する | Playwright |
 | Y6 | タイムラインは feed パターンにする（`role="feed"`、`<article>`、`aria-posinset` / `aria-setsize`、`aria-busy` を必ず戻す、Page Down / Page Up） | ARIA スナップショット、キーボードのテスト |
@@ -87,9 +87,9 @@ Web クライアント（`app/web`）と共有 UI キット（`app/ui`）を書�
 | D3 | 320 px のどのロケールでも横スクロールが出ない | Playwright（`scrollWidth <= clientWidth`） |
 | D4 | タップ領域は 24 × 24 px 以上、主要な操作は `pointer-coarse:` で 44 px 以上にする | axe `target-size`、レビュー |
 | D5 | `100vh` を使わない（`svh` / `dvh`）。端に固定する要素には `env(safe-area-inset-*)` を足す | lint（grep） |
-| D6 | アニメーションは `motion-safe:` の下に置く | lint、レビュー |
+| D6 | アニメーションは `motion-safe:` の下に置く | `make web-tokens`、レビュー |
 | D7 | 方向は論理プロパティのユーティリティで書く。`ml-` / `mr-` / `pl-` / `pr-` / `left-` / `right-` / `text-left` / `text-right` / `rounded-l` / `rounded-r` / `border-l` / `border-r` を使わない（方向のあるアイコンの反転だけ `rtl:` / `ltr:` で許可） | lint |
-| D8 | 色は意味のトークン（`--color-surface`、`--color-fg-muted` など）だけを使う。生のパレットや任意の色を部品に書かない（`--color-*: initial` で未定義の色をビルドエラーにする） | Tailwind の設定 |
+| D8 | 色は `@my/ui/theme.css` の意味のトークン（`--color-surface`、`--color-fg-muted` など）だけを使う。生のパレット（`--palette-*`）や任意の色を部品に書かない（`--color-*: initial` で Tailwind の既定の色を消す）。トークンの一覧・コントラストの組・ライト / ダークの切り替えは [app/ui/README.md](../../app/ui/README.md) にある | Tailwind の設定、`make web-tokens` |
 | D9 | 部品の見た目の違いは `tailwind-variants` の 1 部品 1 レシピで定義する。クラス名を動的に組み立てない。`className` は `tailwind-merge` で root / スロットにだけ合成する | `eslint-plugin-better-tailwindcss`、レビュー |
 | D10 | CSP を壊さない。`setAttribute('style')` や `cssText` を使わない（React の `style={}` は可） | lint |
 
