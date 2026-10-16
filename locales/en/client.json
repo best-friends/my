@@ -47,9 +47,121 @@
     "defaultMessage": "Sign in",
     "description": "Heading and document title of the page that starts signing in."
   },
+  "notifications.empty.all": {
+    "defaultMessage": "No notifications yet",
+    "description": "Heading shown on the notifications page when the user has no notifications."
+  },
+  "notifications.empty.description": {
+    "defaultMessage": "When someone follows you, mentions you or reacts to your posts, it shows up here.",
+    "description": "Text under the heading of an empty notifications page."
+  },
+  "notifications.empty.filtered": {
+    "defaultMessage": "No notifications of this type",
+    "description": "Heading shown on the notifications page when no notification matches the selected type filter."
+  },
+  "notifications.filter.all": {
+    "defaultMessage": "All",
+    "description": "Tab on the notifications page that shows notifications of every type."
+  },
+  "notifications.filter.boosts": {
+    "defaultMessage": "Boosts",
+    "description": "Tab on the notifications page that shows only boosts of the user's posts."
+  },
+  "notifications.filter.favourites": {
+    "defaultMessage": "Favourites",
+    "description": "Tab on the notifications page that shows only favourites of the user's posts."
+  },
+  "notifications.filter.follows": {
+    "defaultMessage": "Follows",
+    "description": "Tab on the notifications page that shows only new followers, follow requests and accepted follow requests."
+  },
+  "notifications.filter.label": {
+    "defaultMessage": "Notification types",
+    "description": "Accessible name of the tab list that filters the notifications by type."
+  },
+  "notifications.filter.mentions": {
+    "defaultMessage": "Mentions",
+    "description": "Tab on the notifications page that shows only posts that mention the user."
+  },
+  "notifications.load_more": {
+    "defaultMessage": "Load more notifications",
+    "description": "Button at the end of the notifications that loads older ones."
+  },
+  "notifications.loading": {
+    "defaultMessage": "Loading notifications",
+    "description": "Accessible name of the progress indicator while notifications load."
+  },
+  "notifications.post.error": {
+    "defaultMessage": "This post could not be loaded.",
+    "description": "Shown in a notification in place of the post it is about, when the post could not be loaded."
+  },
+  "notifications.post.open": {
+    "defaultMessage": "Open post",
+    "description": "Link in a notification that opens the post it is about."
+  },
+  "notifications.post.show": {
+    "defaultMessage": "Show content",
+    "description": "Button that shows a post hidden behind its author's content warning, in a notification."
+  },
+  "notifications.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that loads the notifications again after they failed to load."
+  },
+  "notifications.sign_in": {
+    "defaultMessage": "Sign in",
+    "description": "Link on the notifications page, when nobody is signed in, that opens the sign-in page."
+  },
+  "notifications.signed_out": {
+    "defaultMessage": "Sign in to see your notifications.",
+    "description": "Text on the notifications page when nobody is signed in."
+  },
+  "notifications.time": {
+    "defaultMessage": "{time, date, medium} {time, time, short}",
+    "description": "When a notification happened: its date and time, for example 'Oct 16, 2026 9:41 AM'. {time} is that moment."
+  },
   "notifications.title": {
     "defaultMessage": "Notifications",
     "description": "Heading and document title of the notifications page."
+  },
+  "notifications.type.boost": {
+    "defaultMessage": "{name} boosted your post",
+    "description": "Notification sentence. {name} is the display name of the account that boosted the user's post."
+  },
+  "notifications.type.favourite": {
+    "defaultMessage": "{name} favourited your post",
+    "description": "Notification sentence. {name} is the display name of the account that favourited the user's post."
+  },
+  "notifications.type.follow": {
+    "defaultMessage": "{name} followed you",
+    "description": "Notification sentence. {name} is the display name of the new follower."
+  },
+  "notifications.type.follow_accepted": {
+    "defaultMessage": "{name} accepted your follow request",
+    "description": "Notification sentence. {name} is the display name of the account that accepted the user's follow request."
+  },
+  "notifications.type.follow_request": {
+    "defaultMessage": "{name} requested to follow you",
+    "description": "Notification sentence. {name} is the display name of the account that asked to follow the user."
+  },
+  "notifications.type.mention": {
+    "defaultMessage": "{name} mentioned you",
+    "description": "Notification sentence. {name} is the display name of the author of a post that mentions the user."
+  },
+  "notifications.type.moderation_notice": {
+    "defaultMessage": "The moderators of this server sent you a notice",
+    "description": "Notification sentence: a notice to the user from the moderators of the server."
+  },
+  "notifications.type.poll_closed": {
+    "defaultMessage": "A poll you took part in has ended",
+    "description": "Notification sentence: a poll that the user created or voted in has closed."
+  },
+  "notifications.unread": {
+    "defaultMessage": "Unread:",
+    "description": "Read by screen readers before the sentence of a notification that was new when the page opened."
+  },
+  "notifications.unread_count": {
+    "defaultMessage": "{count, plural, one {# unread} other {# unread}}",
+    "description": "The number of unread notifications on the badge of the navigation item, for example '3 unread'."
   },
   "page.not_built": {
     "defaultMessage": "This screen is not ready yet.",
@@ -126,6 +238,10 @@
   "shell.nav.notifications": {
     "defaultMessage": "Notifications",
     "description": "Navigation item that opens the notifications. Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.nav.notifications_unread": {
+    "defaultMessage": "Notifications, {count, plural, one {# unread} other {# unread}}",
+    "description": "Accessible name of the navigation item that opens the notifications while some are unread. Start it with the text of shell.nav.notifications, which is shown. {count} is the number of unread notifications."
   },
   "shell.nav.profile": {
     "defaultMessage": "Profile",
