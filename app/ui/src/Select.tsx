@@ -25,7 +25,8 @@ const select = tv({
     ],
     value: "truncate data-placeholder:text-fg-muted",
     chevron: "size-4 shrink-0 fill-none stroke-current stroke-2 text-fg-muted",
-    popover: "min-w-(--trigger-width) overflow-auto rounded-md border border-border bg-surface-raised p-1 shadow-md",
+    // overscroll-contain keeps the scroll from chaining to the page on iOS WebKit (web-client.md §9).
+    popover: "min-w-(--trigger-width) overflow-auto overscroll-contain rounded-md border border-border bg-surface-raised p-1 shadow-md",
     listBox: "outline-hidden",
   },
 });
