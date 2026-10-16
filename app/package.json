@@ -6,6 +6,28 @@
   "workspaces": ["ui", "web"],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
-    "build": "bun run --filter @my/web build"
+    "build": "bun run --filter @my/web build",
+    "lint": "eslint --max-warnings 0 .",
+    "lint:rules": "bun test ./eslint/",
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "@eslint-community/eslint-plugin-eslint-comments": "4.8.1",
+    "@eslint-react/eslint-plugin": "5.23.3",
+    "@eslint/js": "10.0.1",
+    "@tanstack/eslint-plugin-query": "5.104.1",
+    "@tanstack/eslint-plugin-router": "1.162.0",
+    "eslint": "10.11.0",
+    "eslint-import-resolver-typescript": "4.4.5",
+    "eslint-plugin-better-tailwindcss": "4.7.0",
+    "eslint-plugin-boundaries": "7.2.0",
+    "eslint-plugin-formatjs": "8.1.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-testing-library": "7.16.2",
+    "globals": "17.13.0",
+    "knip": "6.39.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0"
   }
 }
