@@ -1,0 +1,33 @@
+# Writing ADRs (playbook)
+
+Policy: [ADR-0000](../adr/0000-record-architecture-decisions.md). Template: [template.md](../adr/template.md).
+
+## Creating
+
+```sh
+make adr-new TITLE="RDB の抽象化と対応方言" SLUG=database-abstraction
+```
+
+The script picks the next number, fills in the date and `Status: Proposed`, and updates the index.
+
+## Quality bar
+
+- **Context** cites requirement IDs and states why the decision is needed now.
+- **Decision Drivers** are ranked; the decision must be explainable from them.
+- At least two **Considered Options**, described fairly — including the strongest case for the one not chosen.
+- **Decision** for a Proposed ADR is phrased as a recommendation ("推奨案") and states what would overturn it.
+- **Consequences** list the bad parts too, and follow-up work that should become issues.
+- Facts about third-party services (prices, limits, feature support) are marked **要検証** unless verified against official docs,
+  with the date and source of verification when they are.
+- Keep it short. Long research goes into a spike report and is linked.
+
+## Revising
+
+- Proposed ADRs: edit freely in a PR; summarize what changed in the PR description.
+- Accepted ADRs: do not change the decision. Write a new ADR that supersedes it and set the old one's status to
+  `Superseded by ADR-XXXX` in the same PR (the status change is still approved by the human decider via PR review).
+
+## Asking for a decision
+
+Open (or update) the `type:adr` issue for the ADR, summarize the options and recommendation in 5 lines or less,
+add `status:needs-decision`, and link the PR.

@@ -1,0 +1,29 @@
+name: ADR / Decision request
+description: Discuss and decide an architecture decision recorded in docs/adr
+title: "[ADR] "
+labels: ["type:adr", "status:needs-decision"]
+body:
+  - type: input
+    id: adr
+    attributes:
+      label: ADR file
+      placeholder: docs/adr/NNNN-title.md
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question to decide / 決めること
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options and recommendation / 選択肢と推奨
+      description: Keep it to ~5 lines; details live in the ADR.
+    validations:
+      required: true
+  - type: textarea
+    id: blocking
+    attributes:
+      label: Blocked work / この決定を待っている作業
