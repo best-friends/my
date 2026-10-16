@@ -20,6 +20,7 @@
 
 ## 運用
 
+- [管理者の作成](operations/admin-cli.md)
 - [鍵暗号化鍵（KEK）の管理](operations/key-management.md)
 - [サーバーの起動・停止とヘルスチェック](operations/running.md)
 

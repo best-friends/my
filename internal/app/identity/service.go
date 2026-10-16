@@ -52,8 +52,93 @@ type Registration struct {
 //
 // Hashing the password and generating the account's keys happen before the transaction.
 func (s *Service) RegisterLocalUser(ctx context.Context, in RegisterInput) (Registration, error) {
-	if err := identity.ValidatePassword(in.Password); err != nil {
+	p, err := s.prepareUser(ctx, in)
+	if err != nil {
 		return Registration{}, err
+	}
+	if err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.writeUser(ctx, tx, p) }); err != nil {
+		return Registration{}, err
+	}
+	return p.registration(), nil
+}
+
+// CreateAdminInput describes a new administrator.
+type CreateAdminInput struct {
+	Username string
+	Email    string
+	Password string
+}
+
+// CreateAdmin creates a user with a password, a primary email address, the local account it logs
+// in as, and a grant of the built-in admin role from the CLI (no granting user), in one
+// transaction. It creates the built-in roles first if they are missing.
+//
+// It fails with account.ErrUsernameTaken or ErrEmailTaken when another user has the username or
+// email address, and with errors wrapping identity.ErrInvalidPassword, identity.ErrInvalidEmail,
+// or account.ErrInvalidUsername for invalid input. A failure writes nothing, so running it again
+// is safe; it never changes an existing user.
+func (s *Service) CreateAdmin(ctx context.Context, in CreateAdminInput) (Registration, error) {
+	if err := identity.ValidateEmail(in.Email); err != nil {
+		return Registration{}, err
+	}
+	p, err := s.prepareUser(ctx, RegisterInput{Username: in.Username, Password: in.Password})
+	if err != nil {
+		return Registration{}, err
+	}
+	email := identity.EmailAddress{
+		ID:                s.d.IDs.NewID(),
+		UserID:            p.user.ID,
+		Address:           in.Email,
+		AddressNormalized: identity.NormalizeEmail(in.Email),
+		AddedAt:           p.user.CreatedAt,
+	}
+	roles := s.builtinRoles()
+	grantID := s.d.IDs.NewID()
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		var admin identity.Role
+		for _, r := range roles {
+			stored, err := s.d.Repository.EnsureRole(ctx, tx, r.role, r.perms)
+			if err != nil {
+				return err
+			}
+			if stored.Key == identity.RoleAdmin {
+				admin = stored
+			}
+		}
+		if err := s.writeUser(ctx, tx, p); err != nil {
+			return err
+		}
+		if err := s.d.Repository.InsertEmailAddress(ctx, tx, email); err != nil {
+			return err
+		}
+		if err := s.d.Repository.InsertPrimaryEmail(ctx, tx, email); err != nil {
+			return err
+		}
+		return s.d.Repository.InsertRoleGrant(ctx, tx, identity.RoleGrant{
+			ID: grantID, UserID: p.user.ID, RoleID: admin.ID, GrantedAt: p.user.CreatedAt,
+		})
+	})
+	if err != nil {
+		return Registration{}, err
+	}
+	return p.registration(), nil
+}
+
+// preparedUser is a new user with everything slow (hashing, key generation) done, ready to be
+// written by writeUser; a retried transaction writes the same values.
+type preparedUser struct {
+	user identity.User
+	cred identity.PasswordCredential
+	acct *account.PreparedLocalAccount
+}
+
+func (p *preparedUser) registration() Registration {
+	return Registration{User: p.user, AccountID: p.acct.Account.ID}
+}
+
+func (s *Service) prepareUser(ctx context.Context, in RegisterInput) (*preparedUser, error) {
+	if err := identity.ValidatePassword(in.Password); err != nil {
+		return nil, err
 	}
 	now := s.d.Clock.Now()
 	user := identity.User{ID: s.d.IDs.NewID(), CreatedAt: now}
@@ -63,40 +148,52 @@ func (s *Service) RegisterLocalUser(ctx context.Context, in RegisterInput) (Regi
 		DisplayName: in.DisplayName,
 	})
 	if err != nil {
-		return Registration{}, err
+		return nil, err
 	}
 	hash, err := s.d.Passwords.Hash(ctx, in.Password)
 	if err != nil {
-		return Registration{}, err
+		return nil, err
 	}
 	cred := identity.PasswordCredential{ID: s.d.IDs.NewID(), UserID: user.ID, Hash: hash, SetAt: now}
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := s.d.Repository.InsertUser(ctx, tx, user); err != nil {
-			return err
-		}
-		if err := s.d.Repository.InsertPasswordCredential(ctx, tx, cred); err != nil {
-			return err
-		}
-		return s.d.Accounts.WriteLocalAccount(ctx, tx, acct)
-	})
-	if err != nil {
-		return Registration{}, err
+	return &preparedUser{user: user, cred: cred, acct: acct}, nil
+}
+
+func (s *Service) writeUser(ctx context.Context, tx uow.Tx, p *preparedUser) error {
+	if err := s.d.Repository.InsertUser(ctx, tx, p.user); err != nil {
+		return err
 	}
-	return Registration{User: user, AccountID: acct.Account.ID}, nil
+	if err := s.d.Repository.InsertPasswordCredential(ctx, tx, p.cred); err != nil {
+		return err
+	}
+	return s.d.Accounts.WriteLocalAccount(ctx, tx, p.acct)
+}
+
+type roleToEnsure struct {
+	role  identity.Role
+	perms []identity.Permission
+}
+
+// builtinRoles returns the built-in roles with fresh IDs, for EnsureRole.
+func (s *Service) builtinRoles() []roleToEnsure {
+	now := s.d.Clock.Now()
+	builtins := identity.BuiltinRoles()
+	out := make([]roleToEnsure, len(builtins))
+	for i, b := range builtins {
+		out[i] = roleToEnsure{
+			role:  identity.Role{ID: s.d.IDs.NewID(), Key: b.Key, Position: b.Position, CreatedAt: now},
+			perms: b.Permissions,
+		}
+	}
+	return out
 }
 
 // EnsureBuiltinRoles creates the built-in roles (admin and moderator) with their permissions,
 // or adds the permissions they lack. It is safe to run on every start.
 func (s *Service) EnsureBuiltinRoles(ctx context.Context) error {
-	builtins := identity.BuiltinRoles()
-	now := s.d.Clock.Now()
-	roles := make([]identity.Role, len(builtins))
-	for i, b := range builtins {
-		roles[i] = identity.Role{ID: s.d.IDs.NewID(), Key: b.Key, Position: b.Position, CreatedAt: now}
-	}
+	roles := s.builtinRoles()
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		for i, b := range builtins {
-			if _, err := s.d.Repository.EnsureRole(ctx, tx, roles[i], b.Permissions); err != nil {
+		for _, r := range roles {
+			if _, err := s.d.Repository.EnsureRole(ctx, tx, r.role, r.perms); err != nil {
 				return err
 			}
 		}
