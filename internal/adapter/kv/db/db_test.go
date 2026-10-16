@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres"
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgrestest"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	"github.com/best-friends/my/internal/app/kernel"
@@ -15,8 +14,6 @@ import (
 	"github.com/best-friends/my/pkg/testkit"
 	"github.com/best-friends/my/schema"
 )
-
-func TestMain(m *testing.M) { postgrestest.Main(m) }
 
 func TestSQLiteKeyValueStoreContract(t *testing.T) {
 	testkit.KeyValueStoreContract(t, func(t *testing.T, clock *testkit.Clock) kernel.KeyValueStore {
@@ -42,7 +39,7 @@ func TestSQLiteKeyValueStoreContract(t *testing.T) {
 
 func TestPostgresKeyValueStoreContract(t *testing.T) {
 	testkit.KeyValueStoreContract(t, func(t *testing.T, clock *testkit.Clock) kernel.KeyValueStore {
-		d, err := postgres.Open(t.Context(), postgrestest.NewDatabase(t), uow.Options{})
+		d, err := postgres.Open(t.Context(), newDatabase(t), uow.Options{})
 		if err != nil {
 			t.Fatalf("Open: %v", err)
 		}

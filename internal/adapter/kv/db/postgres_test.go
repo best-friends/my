@@ -1,14 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package postgrestest finds or starts the PostgreSQL server for the tests of adapters that keep
-// their tables in the PostgreSQL database (internal/adapter/queue/db, internal/adapter/kv/db),
-// and creates a fresh database with the product schema for each test.
-//
-// The environment variables are those of the tests of internal/adapter/db/postgres:
-// TEST_POSTGRES_URL (an existing server whose user may create databases; otherwise a
-// testcontainers-go container), TEST_POSTGRES_REQUIRED (fail instead of skip without a server;
-// CI sets it), and TEST_POSTGRES_IMAGE (the container image).
-package postgrestest
+package db_test
 
 import (
 	"context"
@@ -39,8 +31,11 @@ var (
 	skipReason string
 )
 
-// Main runs the tests of m against the test server: call it from TestMain.
-func Main(m *testing.M) {
+// TestMain finds or starts the PostgreSQL server for the tests, with the same environment
+// variables as the tests of internal/adapter/db/postgres: TEST_POSTGRES_URL (an existing server
+// whose user may create databases; otherwise a testcontainers-go container), TEST_POSTGRES_REQUIRED
+// (fail instead of skip without a server; CI sets it), and TEST_POSTGRES_IMAGE.
+func TestMain(m *testing.M) {
 	code, cleanup := setUp()
 	if code == 0 {
 		code = m.Run()
@@ -88,10 +83,10 @@ func setUp() (code int, cleanup func()) {
 	return 0, cleanup
 }
 
-// NewDatabase creates a new database on the test server, applies the bootstrap SQL and the
+// newDatabase creates a new database on the test server, applies the bootstrap SQL and the
 // product schema (see package schema for why executing the files matches an Atlas apply), and
 // returns its URL. It skips t when no server is available and drops the database when t ends.
-func NewDatabase(t *testing.T) string {
+func newDatabase(t *testing.T) string {
 	t.Helper()
 	if serverURL == "" {
 		t.Skip(skipReason)
