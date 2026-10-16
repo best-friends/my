@@ -178,6 +178,15 @@ linters:
           allow:
             - $gostd
             - github.com/best-friends/my/internal/app/kernel
+        # app/uow holds the UnitOfWork port, its retry loop, and the synchronous projector registry
+        # shared by every module and database adapter; like kernel, it depends on nothing in the repository.
+        app-uow:
+          list-mode: strict
+          files:
+            - "**/internal/app/uow/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/app/uow
         interface:
           list-mode: lax
           files:

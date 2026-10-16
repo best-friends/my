@@ -1,0 +1,161 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+// Package sqlite implements the persistence ports on a local SQLite file with modernc.org/sqlite,
+// which needs no cgo (ADR-0003).
+//
+// Every connection uses WAL journaling and a busy timeout, and every transaction starts with
+// BEGIN IMMEDIATE, so that writers queue on the database lock instead of failing when a read
+// transaction upgrades to a write.
+package sqlite
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"net/url"
+	"strings"
+
+	msqlite "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
+
+	"github.com/best-friends/my/internal/app/uow"
+)
+
+// DefaultBusyTimeoutMillis is how long a connection waits for the database lock before a
+// statement fails with SQLITE_BUSY, unless the DSN sets busy_timeout.
+const DefaultBusyTimeoutMillis = 5000
+
+// DB is a SQLite database. It implements uow.UnitOfWork.
+type DB struct {
+	db   *sql.DB
+	opts uow.Options
+}
+
+var _ uow.UnitOfWork = (*DB)(nil)
+
+// Open opens the SQLite database named by dsn, which is a file path or a "file:" URI with
+// query parameters (the database_url setting for db = "sqlite"). The file is created if it does
+// not exist. Open sets the parameters the adapter relies on: _txlock=immediate, and the pragmas
+// journal_mode(wal), synchronous(normal), foreign_keys(1), and busy_timeout unless dsn sets
+// them. In-memory databases are rejected: each connection would see its own database.
+//
+// Open does not apply the schema; Atlas does (ADR-0023).
+func Open(ctx context.Context, dsn string, opts uow.Options) (*DB, error) {
+	name, err := normalizeDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("sqlite", name)
+	if err != nil {
+		return nil, fmt.Errorf("sqlite: open: %w", err)
+	}
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("sqlite: open: %w", err)
+	}
+	return &DB{db: db, opts: opts}, nil
+}
+
+// normalizeDSN turns a path or file: URI into a file: URI with the required parameters.
+func normalizeDSN(dsn string) (string, error) {
+	path, rawQuery, _ := strings.Cut(strings.TrimPrefix(dsn, "file:"), "?")
+	if path == "" {
+		return "", errors.New("sqlite: database_url names no file")
+	}
+	q, err := url.ParseQuery(rawQuery)
+	if err != nil {
+		return "", fmt.Errorf("sqlite: database_url: %w", err)
+	}
+	if path == ":memory:" || q.Get("mode") == "memory" {
+		return "", errors.New("sqlite: in-memory databases are not supported; use a file")
+	}
+	set := map[string]bool{}
+	for _, p := range q["_pragma"] {
+		name, _, _ := strings.Cut(p, "(")
+		set[strings.ToLower(strings.TrimSpace(name))] = true
+	}
+	// busy_timeout first: the driver applies pragmas in order, and later ones may wait on the lock.
+	for _, p := range []struct{ name, value string }{
+		{"busy_timeout", fmt.Sprint(DefaultBusyTimeoutMillis)},
+		{"journal_mode", "wal"},
+		{"synchronous", "normal"},
+		{"foreign_keys", "1"},
+	} {
+		if !set[p.name] {
+			q.Add("_pragma", p.name+"("+p.value+")")
+		}
+	}
+	q.Set("_txlock", "immediate")
+	return "file:" + path + "?" + q.Encode(), nil
+}
+
+// Close closes the database.
+func (d *DB) Close() error { return d.db.Close() }
+
+// Tx implements uow.UnitOfWork.
+func (d *DB) Tx(ctx context.Context, fn func(tx uow.Tx) error) error {
+	return uow.Retry(ctx, d.opts.Retry, func() error {
+		err := d.attempt(ctx, fn)
+		if isRetryable(err) {
+			return uow.MarkRetryable(err)
+		}
+		return err
+	})
+}
+
+func (d *DB) attempt(ctx context.Context, fn func(tx uow.Tx) error) (err error) {
+	sqlTx, err := d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("sqlite: begin: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = sqlTx.Rollback()
+		}
+	}()
+	if err := fn(&Tx{tx: sqlTx, projectors: d.opts.Projectors}); err != nil {
+		return err
+	}
+	if err := sqlTx.Commit(); err != nil {
+		return fmt.Errorf("sqlite: commit: %w", err)
+	}
+	committed = true
+	return nil
+}
+
+// isRetryable reports whether err is a lock timeout that a new transaction may get past.
+func isRetryable(err error) bool {
+	var e *msqlite.Error
+	if !errors.As(err, &e) {
+		return false
+	}
+	switch e.Code() & 0xff { // primary result code
+	case sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED:
+		return true
+	}
+	return false
+}
+
+// Tx is a SQLite transaction. It implements uow.Tx.
+type Tx struct {
+	tx         *sql.Tx
+	projectors *uow.Projectors
+}
+
+var _ uow.Tx = (*Tx)(nil)
+
+// Emit implements uow.Tx.
+func (t *Tx) Emit(ctx context.Context, e uow.Event) error {
+	return t.projectors.Project(ctx, t, e)
+}
+
+// txOf recovers the SQLite transaction behind tx, for repositories of this adapter.
+func txOf(tx uow.Tx) (*sql.Tx, error) {
+	t, ok := tx.(*Tx)
+	if !ok {
+		return nil, fmt.Errorf("sqlite: transaction %T does not belong to this adapter", tx)
+	}
+	return t.tx, nil
+}

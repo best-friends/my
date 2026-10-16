@@ -19,6 +19,10 @@ env:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      # The PostgreSQL adapter tests start postgres with testcontainers-go on the runner's Docker.
+      # Make them fail instead of skipping when that is impossible, so CI always runs them.
+      TEST_POSTGRES_REQUIRED: "1"
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2

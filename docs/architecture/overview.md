@@ -71,6 +71,7 @@ Remote servers ──AP──►│                               │
   | `internal/domain/<module>` | 標準ライブラリと自モジュールの `domain` だけ |
   | `internal/app/<module>` | 標準ライブラリ、自モジュールの `domain`、各モジュールの `app`（モジュール間の唯一の経路） |
   | `internal/app/kernel` | 標準ライブラリだけ（全モジュール共通のポート） |
+  | `internal/app/uow` | 標準ライブラリだけ（`UnitOfWork` ポート・リトライ・同期 projector の登録先） |
   | `internal/interface/*` | `app` と `domain`（`adapter` / `platform` は不可。`pkg/testkit` はテストからだけ可） |
   | `internal/adapter/*` | `app` のポートと `domain`（`interface` と `platform` は不可） |
   | `pkg/testkit` | `app` と `domain`（`interface` / `adapter` / `platform` は不可） |
@@ -82,10 +83,12 @@ Remote servers ──AP──►│                               │
 
 各ポートは、それを使うモジュールの `internal/app/<module>` に Go のインターフェイスとして定義する（§6）。
 全モジュールが使う `Clock` / `IdGenerator`（Go 名 `IDGenerator`）は `internal/app/kernel` に置き、ドメインには `time.Time` と ID 文字列を値で渡す。
+`UnitOfWork` も全モジュールと全 DB アダプタが共有するので `internal/app/uow` に置く。リポジトリポートは各モジュールの `app` に置き、
+DB アダプタの実装は受け取った `uow.Tx` から自分のトランザクションを取り出す。
 
 | ポート | 役割 | 既定アダプタ（self-hosted） | 関連 ADR |
 | --- | --- | --- | --- |
-| `Repositories` / `UnitOfWork` | 永続化。書き込みは **短く再実行可能なトランザクション** 単位 | sqlite | [0003](../adr/0003-database-abstraction.md) |
+| `Repositories` / `UnitOfWork` | 永続化。書き込みは **短く再実行可能なトランザクション** 単位 | sqlite / postgres | [0003](../adr/0003-database-abstraction.md) |
 | `JobQueue` | ジョブ投入（遅延・冪等キー付き） | db | [0004](../adr/0004-job-queue-abstraction.md) |
 | `JobRunner` | ジョブ実行（pull ループ or push 受信） | db（pull） | [0004](../adr/0004-job-queue-abstraction.md) |
 | `Scheduler` | 定期実行のトリガー | in-process cron | [0004](../adr/0004-job-queue-abstraction.md) |
@@ -105,7 +108,7 @@ Remote servers ──AP──►│                               │
 
 1. Client API の投稿作成 → `PostStatus` ユースケース
 2. ドメインで検証（文字数・公開範囲・メンション解決）→ `Status` を生成
-3. **1 回のトランザクション** で `statuses` + 付随行 + `outbox_events`（配送予定）を書き込む（Transactional Outbox）
+3. **1 回のトランザクション**（`UnitOfWork.Tx`）で `statuses` + 付随行 + `outbox_events`（配送予定）を書き込む（Transactional Outbox）
 4. `JobQueue.enqueue(FanOutDelivery{statusId})`（失敗しても outbox から再投入できる）
 5. ワーカー: 公開範囲に応じて宛先 inbox を算出し（`local` はリモートフォロワーのみ）、**shared inbox 単位** に `DeliverActivity{inbox, activityId}` を投入
 6. `DeliverActivity` が署名付き POST。失敗時はバックオフで再投入、ドメインが連続失敗したら一時停止
@@ -146,6 +149,7 @@ internal/
   domain/<module>/   # 純粋なドメイン（identity, account, content, graph, ...）
   app/<module>/      # ユースケースとポート定義
   app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator）と UUIDv7 ヘルパー
+  app/uow/           # UnitOfWork ポート、トランザクションのリトライ、同期 projector の登録先
   interface/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
@@ -163,7 +167,7 @@ pkg/
   testkit/           # コントラクトテスト・フィクスチャ・決定的なフェイク（独自アダプタ作者向けに公開）
 api/                 # openapi.yaml（クライアント API の正）
 schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用）と準備 SQL postgres.bootstrap.sql（ADR-0023）
-queries/             # sqlc 用クエリ（方言別）
+queries/             # sqlc 用クエリ（方言別。設定は sqlc.yaml、生成先は internal/adapter/db/<dialect>/）
 locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有）
 app/                 # クライアントアプリ（Bun ワークスペース。1 アプリ 1 ディレクトリ）
   web/               # Web クライアント（PWA、TypeScript）
