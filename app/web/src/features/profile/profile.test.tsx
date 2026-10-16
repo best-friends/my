@@ -1,0 +1,311 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// The profile pages through the whole app (web-client.md T4): the real router and QueryClient, with MSW as
+// the server (FR-204, FR-301 to FR-303). Each state of the viewer's relationship with the account shows its
+// own buttons; the changes go to the server and the page shows the relationship the server returns.
+import { screen, waitFor, within } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { describe, expect, test } from "vitest";
+import {
+  apiBase,
+  otherAccountFixture,
+  problem,
+  relationshipFixture,
+  resumableSession,
+  statusPage,
+  timelineStatusFixture,
+  viewerFixture,
+} from "../../test/msw/handlers";
+import { server } from "../../test/msw/server";
+import { renderApp } from "../../test/render";
+import type { Relationship } from "./api/accounts";
+
+const bob = { ...otherAccountFixture, followers_count: 12, following_count: 1 };
+
+/** Bob's profile, with the viewer's relationship with him; returns the changes the server received. */
+function bobServer(relationship: Partial<Relationship> = {}, account: Partial<typeof bob> = {}) {
+  const changes: string[] = [];
+  server.use(
+    http.get(`${apiBase}/accounts/lookup`, ({ request }) =>
+      new URL(request.url).searchParams.get("acct") === "bob" ? HttpResponse.json({ ...bob, ...account }) : problem(404, "about:blank", "Not Found"),
+    ),
+    http.get(`${apiBase}/accounts/relationships`, () => HttpResponse.json([relationshipFixture(bob.id, relationship)])),
+    http.post(`${apiBase}/accounts/:id/:action`, ({ params }) => {
+      const action = String(params["action"]);
+      changes.push(action);
+      const after: Partial<Relationship> =
+        action === "follow"
+          ? account.locked === true
+            ? { requested: true }
+            : { following: true }
+          : action === "block"
+            ? { blocking: true }
+            : action === "mute"
+              ? { muting: true, muting_notifications: true }
+              : {};
+      return HttpResponse.json(relationshipFixture(String(params["id"]), after));
+    }),
+  );
+  return { changes };
+}
+
+/** The page's main region, where the profile is. */
+function main() {
+  return screen.getByRole("main");
+}
+
+describe("a profile", () => {
+  test("shows the account's header, its counts and its posts", async () => {
+    bobServer({}, { note: "<p>I bake bread.</p>", fields: [{ name: "Site", value: '<a href="https://bob.example">bob.example</a>' }] });
+    await renderApp({ path: "/@bob" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Bob" })).toBeInTheDocument();
+    // The name is the user's text in any script (web-client.md Y10).
+    expect(within(screen.getByRole("heading", { level: 1 })).getByText("Bob")).toHaveAttribute("dir", "auto");
+    // The first is the header's; the posts below show it too.
+    expect(within(main()).getAllByText("@bob@my.example")[0]).toHaveAttribute("dir", "ltr");
+    expect(within(main()).getByText("I bake bread.")).toBeInTheDocument();
+    expect(within(main()).getByRole("term")).toHaveTextContent("Site");
+    expect(within(main()).getByRole("definition")).toHaveTextContent("bob.example");
+    expect(within(main()).getByText("Joined on October 1, 2026")).toBeInTheDocument();
+    expect(within(main()).getByRole("link", { name: "12 followers" })).toHaveAttribute("href", "/@bob/followers");
+    expect(within(main()).getByRole("link", { name: "1 following" })).toHaveAttribute("href", "/@bob/following");
+
+    expect(screen.getByRole("tab", { name: "Posts", selected: true })).toBeInTheDocument();
+    const feed = screen.getByRole("feed", { name: "Posts" });
+    expect(within(feed).getByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
+  });
+
+  test("offers to sign in to follow while signed out", async () => {
+    bobServer();
+    await renderApp({ path: "/@bob" });
+
+    const signIn = await within(await screen.findByRole("main")).findByRole("link", { name: "Sign in to follow" });
+    expect(signIn).toHaveAttribute("href", "/login?return_to=%2F%40bob");
+    expect(screen.queryByRole("button", { name: "Follow" })).not.toBeInTheDocument();
+  });
+
+  test("is not found for a handle that names no account", async () => {
+    await renderApp({ path: "/@nobody" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Account not found" })).toBeInTheDocument();
+  });
+
+  test("shows the viewer's own profile with a link to edit it, and marks it in the navigation", async () => {
+    server.use(resumableSession());
+    await renderApp({ path: "/@alice" });
+
+    expect(await within(await screen.findByRole("main")).findByRole("link", { name: "Edit profile" })).toHaveAttribute("href", "/settings");
+    expect(screen.queryByRole("button", { name: "Follow" })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Profile" })).toHaveAttribute("aria-current", "page");
+  });
+
+  test("opens from the navigation's Profile at the viewer's own address", async () => {
+    server.use(resumableSession());
+    const { router } = await renderApp({ path: "/profile" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: viewerFixture.display_name })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/@alice");
+  });
+
+  test("switches between its tabs, keeping the tab in the address", async () => {
+    const queries: string[] = [];
+    server.use(
+      http.get(`${apiBase}/accounts/:id/statuses`, ({ request }) => {
+        queries.push(new URL(request.url).searchParams.toString());
+        return HttpResponse.json(statusPage([timelineStatusFixture]));
+      }),
+    );
+    bobServer();
+    const { user, router } = await renderApp({ path: "/@bob" });
+
+    await screen.findByRole("feed", { name: "Posts" });
+    await user.click(screen.getByRole("tab", { name: "Posts and replies" }));
+
+    expect(await screen.findByRole("feed", { name: "Posts and replies" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Posts and replies", selected: true })).toBeInTheDocument();
+    expect(router.state.location.search).toEqual({ tab: "replies" });
+
+    await user.click(screen.getByRole("tab", { name: "Without boosts" }));
+    expect(await screen.findByRole("feed", { name: "Without boosts" })).toBeInTheDocument();
+    expect(queries).toEqual(["exclude_replies=true", "", "exclude_replies=true&exclude_boosts=true"]);
+  });
+});
+
+describe("the follow button", () => {
+  test("follows an account without a relationship", async () => {
+    server.use(resumableSession());
+    const { changes } = bobServer();
+    const { user } = await renderApp({ path: "/@bob" });
+
+    await user.click(await screen.findByRole("button", { name: "Follow" }));
+
+    expect(await screen.findByRole("button", { name: "Following" })).toBeInTheDocument();
+    expect(changes).toEqual(["follow"]);
+    expect(await screen.findByText(/^You follow ⁨Bob⁩ now\.$/)).toBeInTheDocument();
+  });
+
+  test("sends a follow request to an account that approves its followers", async () => {
+    server.use(resumableSession());
+    const { changes } = bobServer({}, { locked: true });
+    const { user } = await renderApp({ path: "/@bob" });
+
+    expect(await within(await screen.findByRole("main")).findByText("Approves followers")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Request to follow" }));
+
+    expect(await screen.findByRole("button", { name: "Requested" })).toBeInTheDocument();
+    expect(changes).toEqual(["follow"]);
+  });
+
+  test("offers to follow back an account that follows the viewer", async () => {
+    server.use(resumableSession());
+    bobServer({ followed_by: true });
+    await renderApp({ path: "/@bob" });
+
+    expect(await screen.findByRole("button", { name: "Follow back" })).toBeInTheDocument();
+    expect(within(main()).getByText("Follows you")).toBeInTheDocument();
+  });
+
+  test("asks before unfollowing, and changes nothing when cancelled", async () => {
+    server.use(resumableSession());
+    const { changes } = bobServer({ following: true });
+    const { user } = await renderApp({ path: "/@bob" });
+
+    const following = await screen.findByRole("button", { name: "Following" });
+    await user.click(following);
+    const dialog = await screen.findByRole("alertdialog", { name: "Unfollow ⁨Bob⁩?" });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    // React Aria restores the focus to the trigger once the dialog has gone.
+    await waitFor(() => {
+      expect(following).toHaveFocus();
+    });
+    expect(changes).toEqual([]);
+
+    await user.click(following);
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Unfollow" }));
+
+    expect(await screen.findByRole("button", { name: "Follow" })).toBeInTheDocument();
+    expect(changes).toEqual(["unfollow"]);
+  });
+
+  test("withdraws a pending follow request after asking", async () => {
+    server.use(resumableSession());
+    const { changes } = bobServer({ requested: true });
+    const { user } = await renderApp({ path: "/@bob" });
+
+    await user.click(await screen.findByRole("button", { name: "Requested" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Withdraw your follow request to ⁨Bob⁩?" });
+    await user.click(within(dialog).getByRole("button", { name: "Withdraw request" }));
+
+    expect(await screen.findByRole("button", { name: "Follow" })).toBeInTheDocument();
+    expect(changes).toEqual(["unfollow"]);
+  });
+
+  test("shows a block, and unblocks after asking", async () => {
+    server.use(resumableSession());
+    const { changes } = bobServer({ blocking: true });
+    const { user } = await renderApp({ path: "/@bob" });
+
+    await user.click(await screen.findByRole("button", { name: "Blocked" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Unblock ⁨Bob⁩?" });
+    await user.click(within(dialog).getByRole("button", { name: "Unblock" }));
+
+    expect(await screen.findByRole("button", { name: "Follow" })).toBeInTheDocument();
+    expect(changes).toEqual(["unblock"]);
+  });
+
+  test("keeps the relationship and says why when a change fails", async () => {
+    server.use(resumableSession());
+    bobServer();
+    server.use(http.post(`${apiBase}/accounts/:id/follow`, () => problem(503, "about:blank", "Service Unavailable")));
+    const { user } = await renderApp({ path: "/@bob" });
+
+    await user.click(await screen.findByRole("button", { name: "Follow" }));
+
+    expect(await screen.findAllByText("The change did not go through: Service Unavailable")).not.toHaveLength(0);
+    expect(screen.getByRole("button", { name: "Follow" })).toBeInTheDocument();
+  });
+});
+
+describe("the menu of a profile", () => {
+  test("mutes and unmutes the account", async () => {
+    server.use(resumableSession());
+    const { changes } = bobServer();
+    const { user } = await renderApp({ path: "/@bob" });
+
+    await user.click(await screen.findByRole("button", { name: "More actions for ⁨Bob⁩" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Mute" }));
+
+    expect(await within(main()).findByText("Muted")).toBeInTheDocument();
+    expect(changes).toEqual(["mute"]);
+    await user.click(screen.getByRole("button", { name: "More actions for ⁨Bob⁩" }));
+    expect(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Unmute" })).toBeInTheDocument();
+  });
+
+  test("blocks the account after asking", async () => {
+    server.use(resumableSession());
+    const { changes } = bobServer({ following: true });
+    const { user } = await renderApp({ path: "/@bob" });
+
+    await user.click(await screen.findByRole("button", { name: "More actions for ⁨Bob⁩" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Block" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Block ⁨Bob⁩?" });
+    await user.click(within(dialog).getByRole("button", { name: "Block" }));
+
+    expect(await screen.findByRole("button", { name: "Blocked" })).toBeInTheDocument();
+    expect(changes).toEqual(["block"]);
+    // The menu's item is gone with the menu, so the focus goes back to the menu button.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "More actions for ⁨Bob⁩" })).toHaveFocus();
+    });
+  });
+});
+
+describe("the follow lists", () => {
+  test("list an account's followers, linked to their profiles, and load the next page", async () => {
+    const cursors: (string | null)[] = [];
+    bobServer();
+    server.use(
+      http.get(`${apiBase}/accounts/:id/followers`, ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get("cursor");
+        cursors.push(cursor);
+        return HttpResponse.json(
+          cursor === null
+            ? { accounts: [viewerFixture], next_cursor: "page-2" }
+            : { accounts: [{ ...viewerFixture, id: "0192f0c4-7a8e-7000-8000-000000000003", username: "carol", acct: "carol@remote.example", display_name: "" }] },
+        );
+      }),
+    );
+    const { user } = await renderApp({ path: "/@bob/followers" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Followers of ⁨Bob⁩" })).toBeInTheDocument();
+    expect(within(main()).getByRole("link", { name: "Alice @alice@my.example" })).toHaveAttribute("href", "/@alice");
+    expect(within(main()).getByRole("link", { name: "Back to the profile of ⁨Bob⁩" })).toHaveAttribute("href", "/@bob");
+
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+
+    expect(await within(main()).findByRole("link", { name: "carol @carol@remote.example" })).toHaveAttribute("href", "/@carol@remote.example");
+    expect(cursors).toEqual([null, "page-2"]);
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+  });
+
+  test("say so when an account follows nobody", async () => {
+    bobServer();
+    server.use(http.get(`${apiBase}/accounts/:id/following`, () => HttpResponse.json({ accounts: [] })));
+    await renderApp({ path: "/@bob/following" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Accounts ⁨Bob⁩ follows" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Not following anyone yet" })).toBeInTheDocument();
+  });
+});
+
+describe("a timeline's post", () => {
+  test("links its author's name and picture to the author's profile", async () => {
+    await renderApp({ path: "/local" });
+
+    const article = await screen.findByRole("article");
+    const links = within(article).getAllByRole("link", { name: /^Bob/ });
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/@bob", "/@bob"]);
+  });
+});

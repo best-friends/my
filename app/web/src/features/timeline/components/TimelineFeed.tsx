@@ -75,5 +75,8 @@ function TimelineEmpty({ timeline }: { timeline: Timeline }) {
           description={t("client:timeline.empty.tag.description", { tag: timeline.tag })}
         />
       );
+    case "account":
+      // A profile's timeline sits under the level-two heading of its tab.
+      return <EmptyState headingLevel={3} heading={t("client:timeline.empty.account.heading")} />;
   }
 }

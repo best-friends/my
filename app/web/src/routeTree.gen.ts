@@ -10,18 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AtChar123acctChar125RouteImport } from './routes/@{$acct}'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LocalRouteImport } from './routes/local'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
+import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AtChar123acctChar125Route = AtChar123acctChar125RouteImport.update({
+  id: '/@{$acct}',
+  path: '/@{$acct}',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -54,6 +62,18 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtChar123acctChar125FollowersRoute =
+  AtChar123acctChar125FollowersRouteImport.update({
+    id: '/@{$acct}_/followers',
+    path: '/@{$acct}/followers',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AtChar123acctChar125FollowingRoute =
+  AtChar123acctChar125FollowingRouteImport.update({
+    id: '/@{$acct}_/following',
+    path: '/@{$acct}/following',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
   id: '/login_/callback',
   path: '/login/callback',
@@ -67,35 +87,44 @@ const TagsTagRoute = TagsTagRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/@{$acct}': typeof AtChar123acctChar125Route
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
+  '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/login/callback': typeof LoginCallbackRoute
   '/tags/$tag': typeof TagsTagRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/@{$acct}': typeof AtChar123acctChar125Route
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
+  '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/login/callback': typeof LoginCallbackRoute
   '/tags/$tag': typeof TagsTagRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/@{$acct}': typeof AtChar123acctChar125Route
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
+  '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/tags/$tag': typeof TagsTagRoute
 }
@@ -103,46 +132,58 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/@{$acct}'
     | '/home'
     | '/local'
     | '/login'
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/@{$acct}/followers'
+    | '/@{$acct}/following'
     | '/login/callback'
     | '/tags/$tag'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/@{$acct}'
     | '/home'
     | '/local'
     | '/login'
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/@{$acct}/followers'
+    | '/@{$acct}/following'
     | '/login/callback'
     | '/tags/$tag'
   id:
     | '__root__'
     | '/'
+    | '/@{$acct}'
     | '/home'
     | '/local'
     | '/login'
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/@{$acct}_/followers'
+    | '/@{$acct}_/following'
     | '/login_/callback'
     | '/tags/$tag'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AtChar123acctChar125Route: typeof AtChar123acctChar125Route
   HomeRoute: typeof HomeRoute
   LocalRoute: typeof LocalRoute
   LoginRoute: typeof LoginRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
+  AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
+  AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   TagsTagRoute: typeof TagsTagRoute
 }
@@ -154,6 +195,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/@{$acct}': {
+      id: '/@{$acct}'
+      path: '/@{$acct}'
+      fullPath: '/@{$acct}'
+      preLoaderRoute: typeof AtChar123acctChar125RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -198,6 +246,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/followers': {
+      id: '/@{$acct}_/followers'
+      path: '/@{$acct}/followers'
+      fullPath: '/@{$acct}/followers'
+      preLoaderRoute: typeof AtChar123acctChar125FollowersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/@{$acct}_/following': {
+      id: '/@{$acct}_/following'
+      path: '/@{$acct}/following'
+      fullPath: '/@{$acct}/following'
+      preLoaderRoute: typeof AtChar123acctChar125FollowingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login_/callback': {
       id: '/login_/callback'
       path: '/login/callback'
@@ -217,12 +279,15 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AtChar123acctChar125Route: AtChar123acctChar125Route,
   HomeRoute: HomeRoute,
   LocalRoute: LocalRoute,
   LoginRoute: LoginRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
+  AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
+  AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   TagsTagRoute: TagsTagRoute,
 }
