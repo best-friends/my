@@ -13,8 +13,10 @@ type Fixtures = {
   makeAxeBuilder: () => AxeBuilder;
   /**
    * Serves the HTML documents of `vite preview` (the client) with the project's locale in
-   * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028);
-   * `vite preview` serves index.html as it is. Pages of a real `my serve` are left alone.
+   * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028), and with
+   * the preview's origin as the API origin of the runtime config and the build's files linked from the root;
+   * `vite preview` serves index.html as it is.
+   * Pages of a real `my serve` are left alone.
    */
   shellLocale: string;
 };
@@ -43,7 +45,13 @@ export const test = base.extend<Fixtures>({
           return;
         }
         const response = await route.fetch();
-        const body = (await response.text()).replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`);
+        // index.html's runtime config names a fixed port; the API is on the origin of this run's preview. The
+        // build's tags are relative (Vite's base "./"); `my serve` writes them from the root, which pages below
+        // the root (/settings/profile) need.
+        const body = (await response.text())
+          .replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`)
+          .replace(/"apiOrigin":"[^"]*"/, `"apiOrigin":"${previewOrigin}"`)
+          .replaceAll('="./assets/', '="/assets/');
         await route.fulfill({ response, body });
       });
       await use(lang);
