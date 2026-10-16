@@ -96,7 +96,7 @@ func newInteractionEnv(t *testing.T, newHarness InteractionFactory) *interaction
 	}
 	e.svc = appcontent.NewInteractions(appcontent.InteractionDeps{
 		UnitOfWork: h.UnitOfWork, Statuses: h.Statuses, Interactions: h.Interactions,
-		Accounts: e.actors, Relations: e.relations, Clock: clock, IDs: ids, Host: contractHost,
+		Accounts: e.actors, Relationships: e.relations, Clock: clock, IDs: ids, Host: contractHost,
 	})
 	return e
 }
@@ -158,6 +158,10 @@ func (s *stubActors) local(id string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.actors[id].Account.IsLocal()
+}
+
+func (s *stubActors) FindByHandle(context.Context, string, string) (appaccount.Actor, error) {
+	return appaccount.Actor{}, appaccount.ErrNotFound
 }
 
 func (s *stubActors) FindByID(_ context.Context, id string) (appaccount.Actor, error) {

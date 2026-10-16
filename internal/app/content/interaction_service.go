@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
-	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/content"
@@ -19,27 +18,15 @@ import (
 // federation module.
 var ErrActorUnavailable = errors.New("content: the acting account does not exist, is not local, or is not active")
 
-// ActorLookup is the part of the account module's public API that the interactions read: the
-// acting account and the status's author with their lifecycle states.
-// *appaccount.Service implements it.
-type ActorLookup interface {
-	FindByID(ctx context.Context, id string) (appaccount.Actor, error)
-}
-
-// RelationLookup is the part of the graph module's public API that the interactions read: the
-// follow relationship from the acting account to the status's author. *appgraph.Service
-// implements it.
-type RelationLookup interface {
-	Relationship(ctx context.Context, accountID, targetID string) (appgraph.Relationship, error)
-}
-
 // InteractionDeps are the ports and settings an Interactions service uses.
 type InteractionDeps struct {
-	UnitOfWork   uow.UnitOfWork
-	Statuses     Repository
-	Interactions InteractionRepository
-	Accounts     ActorLookup
-	Relations    RelationLookup
+	UnitOfWork    uow.UnitOfWork
+	Statuses      Repository
+	Interactions  InteractionRepository
+	Accounts      Accounts
+	Relationships Relationships
+	// Restrictions are the authors' moderation restrictions; nil means NoRestrictions.
+	Restrictions RestrictionPolicy
 	Clock        kernel.Clock
 	IDs          kernel.IDGenerator
 	// Host is the serving domain of the Announce and Like activity URIs (ADR-0018).
@@ -60,7 +47,12 @@ type Interactions struct {
 }
 
 // NewInteractions returns an Interactions service on d.
-func NewInteractions(d InteractionDeps) *Interactions { return &Interactions{d: d} }
+func NewInteractions(d InteractionDeps) *Interactions {
+	if d.Restrictions == nil {
+		d.Restrictions = NoRestrictions{}
+	}
+	return &Interactions{d: d}
+}
 
 // Boost makes accountID boost statusID and returns the live boost. Boosting a status that the
 // account already boosts returns the existing boost. The boost copies the status's visibility;
@@ -284,7 +276,11 @@ func (s *Interactions) visibleStatus(ctx context.Context, accountID, statusID st
 		return content.Status{}, err
 	}
 
-	var restrictions content.AuthorRestrictions
+	r, err := s.d.Restrictions.Restrictions(ctx, st.AuthorAccountID)
+	if err != nil {
+		return content.Status{}, err
+	}
+	restrictions := r.Author
 	author, err := s.d.Accounts.FindByID(ctx, st.AuthorAccountID)
 	switch {
 	case errors.Is(err, appaccount.ErrNotFound):
@@ -293,18 +289,18 @@ func (s *Interactions) visibleStatus(ctx context.Context, accountID, statusID st
 		return content.Status{}, err
 	default:
 		// A suspended or deleted author is shown to no one else (data-model §5.1).
-		restrictions.ProfileView = !author.Lifecycle.Active()
+		restrictions.ProfileView = restrictions.ProfileView || !author.Lifecycle.Active()
 	}
 
 	var rel content.Relation
 	if st.AuthorAccountID != accountID {
-		r, err := s.d.Relations.Relationship(ctx, accountID, st.AuthorAccountID)
+		r, err := s.d.Relationships.Relationship(ctx, accountID, st.AuthorAccountID)
 		if err != nil {
 			return content.Status{}, err
 		}
 		rel.Blocking, rel.BlockedBy = r.Blocking, r.BlockedBy
 		switch {
-		case r.Follows():
+		case r.ActivelyFollowing():
 			rel.Follow = content.FollowActive
 		case r.RequestedFollow():
 			rel.Follow = content.FollowPending
@@ -332,4 +328,10 @@ func (s *Interactions) ensureLive(ctx context.Context, tx uow.Tx, statusID strin
 		return fmt.Errorf("status %s: %w", statusID, ErrNotFound)
 	}
 	return nil
+}
+
+// Counters returns the replies, boosts, and favourites counts of a status that is not deleted;
+// a deleted or missing status fails with ErrNotFound.
+func (s *Interactions) Counters(ctx context.Context, statusID string) (content.Counters, error) {
+	return s.d.Statuses.FindCounters(ctx, statusID)
 }
