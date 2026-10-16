@@ -16,10 +16,15 @@ import { Route as LocalRouteImport } from './routes/local'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
+import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
+import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
+import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
+import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 
 const IndexRoute = IndexRouteImport.update({
@@ -57,11 +62,6 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AtChar123acctChar125FollowersRoute =
   AtChar123acctChar125FollowersRouteImport.update({
     id: '/@{$acct}_/followers',
@@ -79,6 +79,36 @@ const LoginCallbackRoute = LoginCallbackRouteImport.update({
   path: '/login/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
+  id: '/settings/blocks',
+  path: '/settings/blocks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsFollowRequestsRoute = SettingsFollowRequestsRouteImport.update({
+  id: '/settings/follow-requests',
+  path: '/settings/follow-requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsMutesRoute = SettingsMutesRouteImport.update({
+  id: '/settings/mutes',
+  path: '/settings/mutes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsPreferencesRoute = SettingsPreferencesRouteImport.update({
+  id: '/settings/preferences',
+  path: '/settings/preferences',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsProfileRoute = SettingsProfileRouteImport.update({
+  id: '/settings/profile',
+  path: '/settings/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TagsTagRoute = TagsTagRouteImport.update({
   id: '/tags/$tag',
   path: '/tags/$tag',
@@ -93,11 +123,16 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
-  '/settings': typeof SettingsRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/mutes': typeof SettingsMutesRoute
+  '/settings/preferences': typeof SettingsPreferencesRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -107,11 +142,16 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
-  '/settings': typeof SettingsRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/mutes': typeof SettingsMutesRoute
+  '/settings/preferences': typeof SettingsPreferencesRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,11 +162,16 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
-  '/settings': typeof SettingsRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
   '/login_/callback': typeof LoginCallbackRoute
+  '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/mutes': typeof SettingsMutesRoute
+  '/settings/preferences': typeof SettingsPreferencesRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,11 +183,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/notifications'
     | '/profile'
-    | '/settings'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/login/callback'
+    | '/settings/blocks'
+    | '/settings/follow-requests'
+    | '/settings/mutes'
+    | '/settings/preferences'
+    | '/settings/profile'
     | '/tags/$tag'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -152,11 +202,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/notifications'
     | '/profile'
-    | '/settings'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/login/callback'
+    | '/settings/blocks'
+    | '/settings/follow-requests'
+    | '/settings/mutes'
+    | '/settings/preferences'
+    | '/settings/profile'
     | '/tags/$tag'
+    | '/settings'
   id:
     | '__root__'
     | '/'
@@ -166,11 +221,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/notifications'
     | '/profile'
-    | '/settings'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
     | '/login_/callback'
+    | '/settings/blocks'
+    | '/settings/follow-requests'
+    | '/settings/mutes'
+    | '/settings/preferences'
+    | '/settings/profile'
     | '/tags/$tag'
+    | '/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -181,11 +241,16 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
-  SettingsRoute: typeof SettingsRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
+  SettingsBlocksRoute: typeof SettingsBlocksRoute
+  SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
+  SettingsMutesRoute: typeof SettingsMutesRoute
+  SettingsPreferencesRoute: typeof SettingsPreferencesRoute
+  SettingsProfileRoute: typeof SettingsProfileRoute
   TagsTagRoute: typeof TagsTagRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -239,13 +304,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/@{$acct}_/followers': {
       id: '/@{$acct}_/followers'
       path: '/@{$acct}/followers'
@@ -267,6 +325,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/blocks': {
+      id: '/settings/blocks'
+      path: '/settings/blocks'
+      fullPath: '/settings/blocks'
+      preLoaderRoute: typeof SettingsBlocksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/follow-requests': {
+      id: '/settings/follow-requests'
+      path: '/settings/follow-requests'
+      fullPath: '/settings/follow-requests'
+      preLoaderRoute: typeof SettingsFollowRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/mutes': {
+      id: '/settings/mutes'
+      path: '/settings/mutes'
+      fullPath: '/settings/mutes'
+      preLoaderRoute: typeof SettingsMutesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/preferences': {
+      id: '/settings/preferences'
+      path: '/settings/preferences'
+      fullPath: '/settings/preferences'
+      preLoaderRoute: typeof SettingsPreferencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/profile': {
+      id: '/settings/profile'
+      path: '/settings/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tags/$tag': {
       id: '/tags/$tag'
       path: '/tags/$tag'
@@ -285,11 +385,16 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
-  SettingsRoute: SettingsRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
   LoginCallbackRoute: LoginCallbackRoute,
+  SettingsBlocksRoute: SettingsBlocksRoute,
+  SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
+  SettingsMutesRoute: SettingsMutesRoute,
+  SettingsPreferencesRoute: SettingsPreferencesRoute,
+  SettingsProfileRoute: SettingsProfileRoute,
   TagsTagRoute: TagsTagRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

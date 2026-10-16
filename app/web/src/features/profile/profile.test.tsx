@@ -94,7 +94,7 @@ describe("a profile", () => {
     server.use(resumableSession());
     await renderApp({ path: "/@alice" });
 
-    expect(await within(await screen.findByRole("main")).findByRole("link", { name: "Edit profile" })).toHaveAttribute("href", "/settings");
+    expect(await within(await screen.findByRole("main")).findByRole("link", { name: "Edit profile" })).toHaveAttribute("href", "/settings/profile");
     expect(screen.queryByRole("button", { name: "Follow" })).not.toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Profile" })).toHaveAttribute("aria-current", "page");
   });

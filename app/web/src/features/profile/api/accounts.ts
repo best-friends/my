@@ -101,4 +101,7 @@ export function storeRelationship(queryClient: QueryClient, api: Api, relationsh
   void queryClient.invalidateQueries({ queryKey: ["get", "/accounts/{id}/followers"] });
   void queryClient.invalidateQueries({ queryKey: ["get", "/accounts/{id}/following"] });
   void queryClient.invalidateQueries({ queryKey: ["get", "/timelines/home"] });
+  // The settings list the accounts that the viewer blocks and mutes.
+  void queryClient.invalidateQueries({ queryKey: ["get", "/blocks"] });
+  void queryClient.invalidateQueries({ queryKey: ["get", "/mutes"] });
 }

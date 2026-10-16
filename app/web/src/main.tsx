@@ -56,7 +56,7 @@ if (config === undefined) {
   const router = createAppRouter(services);
   root.render(
     <StrictMode>
-      <App config={config} i18n={i18n} {...services} router={router} />
+      <App config={config} {...services} router={router} />
     </StrictMode>,
   );
 }

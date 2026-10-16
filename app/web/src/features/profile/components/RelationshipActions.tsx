@@ -31,7 +31,7 @@ export function RelationshipActions({ account, name, state }: RelationshipAction
       );
     case "self":
       return (
-        <Link href="/settings" variant="standalone">
+        <Link href="/settings/profile" variant="standalone">
           {t("client:profile.edit")}
         </Link>
       );
