@@ -51,7 +51,7 @@ export function NotificationItem({ notification, isUnread }: NotificationItemPro
   const { account } = notification;
   return (
     <PostCard
-      avatar={account === undefined ? undefined : <Avatar name={account.display_name || account.username} decorative />}
+      avatar={account === undefined ? undefined : <Avatar src={account.avatar_url} name={account.display_name || account.username} decorative />}
       author={
         <p className="flex items-baseline gap-2">
           {isUnread && (

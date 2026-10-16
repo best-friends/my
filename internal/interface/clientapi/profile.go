@@ -28,7 +28,7 @@ type PostingPolicy interface {
 }
 
 // newCredentialAccount presents the viewer's own actor as the CredentialAccount schema: the
-// account with its follow counts (newProfile), images, the source of its profile, and its
+// account with its follow counts and images (newProfile), the source of its profile, and its
 // posting limits.
 func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (CredentialAccount, error) {
 	base, err := s.newProfile(ctx, a)
@@ -42,6 +42,7 @@ func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (
 	out := CredentialAccount{
 		Id: base.Id, Username: base.Username, Acct: base.Acct, DisplayName: base.DisplayName, Note: base.Note,
 		Url: base.Url, Locked: base.Locked, Bot: base.Bot, CreatedAt: base.CreatedAt, Fields: base.Fields,
+		AvatarUrl: base.AvatarUrl, HeaderUrl: base.HeaderUrl,
 		FollowersCount: base.FollowersCount, FollowingCount: base.FollowingCount,
 		Source: AccountSource{Fields: []AccountFieldSource{}}, Posting: posting,
 	}
@@ -62,15 +63,9 @@ func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (
 	}
 	if p.AvatarMediaID != "" {
 		out.Source.AvatarMediaId = &p.AvatarMediaID
-		if out.Avatar, err = s.imageURL(ctx, a.Account.ID, p.AvatarMediaID); err != nil {
-			return CredentialAccount{}, err
-		}
 	}
 	if p.HeaderMediaID != "" {
 		out.Source.HeaderMediaId = &p.HeaderMediaID
-		if out.Header, err = s.imageURL(ctx, a.Account.ID, p.HeaderMediaID); err != nil {
-			return CredentialAccount{}, err
-		}
 	}
 	return out, nil
 }
@@ -91,30 +86,6 @@ func (s *Server) postingLimits(ctx context.Context, accountID string) (PostingLi
 		out.Visibilities = append(out.Visibilities, Visibility(v))
 	}
 	return out, nil
-}
-
-// imageURL returns the URL of the full variant of a processed image that accountID uploaded,
-// or nil when there is none to show.
-func (s *Server) imageURL(ctx context.Context, accountID, mediaID string) (*string, error) {
-	if s.o.Media == nil {
-		return nil, nil
-	}
-	m, err := s.o.Media.OwnMedia(ctx, accountID, mediaID)
-	if errors.Is(err, appcontent.ErrNotFound) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("clientapi: media %s: %w", mediaID, err)
-	}
-	if !m.Ready() {
-		return nil, nil
-	}
-	v, ok := m.Result.Variant(content.VariantFull)
-	if !ok {
-		return nil, nil
-	}
-	u := s.o.Media.URL(v)
-	return &u, nil
 }
 
 // UpdateAccountCredentials serves PATCH /api/v1/accounts/update_credentials: a new revision of

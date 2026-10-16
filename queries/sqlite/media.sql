@@ -77,3 +77,17 @@ SELECT media_id, description FROM media_descriptions WHERE media_id = ?;
 
 -- name: IsMediaAttached :one
 SELECT EXISTS (SELECT 1 FROM status_revision_attachments WHERE media_id = ?);
+
+-- ListReadyMediaVariants returns one variant kind of the current (newest) processing result of
+-- each listed media file, with the file, for the files whose current result is ready. The list
+-- is a JSON array of strings, read with json_each (see timeline.sql).
+-- name: ListReadyMediaVariants :many
+SELECT m.id, m.owner_account_id, m.origin, m.created_at,
+  v.result_id, v.kind, v.blob_key, v.content_type, v.file_size, v.width, v.height
+FROM media_files m
+JOIN media_processing_results r ON r.id = (
+  SELECT c.id FROM media_processing_results c WHERE c.media_id = m.id ORDER BY c.id DESC LIMIT 1)
+JOIN media_variants v ON v.result_id = r.id
+WHERE m.id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)))
+  AND r.outcome = 'ready' AND v.kind = CAST(sqlc.arg(kind) AS TEXT)
+ORDER BY m.id;

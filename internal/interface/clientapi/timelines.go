@@ -65,11 +65,10 @@ func (s *Server) statuses(ctx context.Context, viewer appcontent.Viewer, items [
 	if err != nil {
 		return nil, err
 	}
-	byID := make(map[string]Status, len(views))
-	for _, v := range views {
-		byID[v.Status.ID] = s.newStatus(v)
-	}
 	boosts := map[string]content.Boost{}
+	// The boosters, read once each; nil for one that no longer exists.
+	boosters := map[string]*appaccount.Actor{}
+	var found []appaccount.Actor
 	if len(boostIDs) > 0 {
 		bs, err := s.o.TimelineReader.Boosts(ctx, boostIDs)
 		if err != nil {
@@ -77,9 +76,29 @@ func (s *Server) statuses(ctx context.Context, viewer appcontent.Viewer, items [
 		}
 		for _, b := range bs {
 			boosts[b.ID] = b
+			if _, ok := boosters[b.BoosterAccountID]; ok {
+				continue
+			}
+			a, err := s.o.Accounts.FindByID(ctx, b.BoosterAccountID)
+			switch {
+			case err == nil:
+				boosters[b.BoosterAccountID] = &a
+				found = append(found, a)
+			case errors.Is(err, appaccount.ErrNotFound):
+				boosters[b.BoosterAccountID] = nil
+			default:
+				return nil, err
+			}
 		}
 	}
-	boosters := map[string]*Account{}
+	imgs, err := s.statusImages(ctx, views, found...)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[string]Status, len(views))
+	for _, v := range views {
+		byID[v.Status.ID] = s.newStatus(v, imgs)
+	}
 	out := make([]Status, 0, len(items))
 	for _, it := range items {
 		st, ok := byID[it.StatusID]
@@ -94,24 +113,13 @@ func (s *Server) statuses(ctx context.Context, viewer appcontent.Viewer, items [
 		if !ok {
 			continue
 		}
-		booster, ok := boosters[b.BoosterAccountID]
-		if !ok {
-			a, err := s.o.Accounts.FindByID(ctx, b.BoosterAccountID)
-			switch {
-			case err == nil:
-				acc := s.newAccount(a)
-				booster = &acc
-			case !errors.Is(err, appaccount.ErrNotFound):
-				return nil, err
-			}
-			boosters[b.BoosterAccountID] = booster
-		}
+		booster := boosters[b.BoosterAccountID]
 		if booster == nil {
 			continue
 		}
 		boosted := st
 		out = append(out, Status{
-			Id: b.ID, Uri: b.URI, CreatedAt: b.BoostedAt, Account: *booster,
+			Id: b.ID, Uri: b.URI, CreatedAt: b.BoostedAt, Account: s.newAccount(*booster, imgs),
 			Visibility: st.Visibility, Language: st.Language, Boost: &boosted,
 			MediaAttachments: []MediaAttachment{}, Mentions: []StatusMention{}, Tags: []StatusTag{},
 		})
@@ -263,8 +271,8 @@ func (s *Server) ListAccountStatuses(ctx context.Context, req ListAccountStatuse
 			if err != nil {
 				return nil, err
 			}
-			for _, view := range views {
-				body.Items = append(body.Items, s.newStatus(view))
+			if body.Items, err = s.presentStatuses(ctx, views); err != nil {
+				return nil, err
 			}
 		}
 		return ListAccountStatuses200JSONResponse{StatusPageJSONResponse{Body: body, Headers: StatusPageResponseHeaders{CacheControl: &cache}}}, nil

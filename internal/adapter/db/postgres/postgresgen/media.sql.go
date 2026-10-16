@@ -321,6 +321,71 @@ func (q *Queries) ListMediaVariantsOf(ctx context.Context, mediaID string) ([]Me
 	return items, nil
 }
 
+const listReadyMediaVariants = `-- name: ListReadyMediaVariants :many
+SELECT m.id, m.owner_account_id, m.origin, m.created_at,
+  v.result_id, v.kind, v.blob_key, v.content_type, v.file_size, v.width, v.height
+FROM media_files m
+JOIN media_processing_results r ON r.id = (
+  SELECT c.id FROM media_processing_results c WHERE c.media_id = m.id ORDER BY c.id DESC LIMIT 1)
+JOIN media_variants v ON v.result_id = r.id
+WHERE m.id = ANY($1::text[])
+  AND r.outcome = 'ready' AND v.kind = $2::text
+ORDER BY m.id
+`
+
+type ListReadyMediaVariantsParams struct {
+	Ids  []string
+	Kind string
+}
+
+type ListReadyMediaVariantsRow struct {
+	ID             string
+	OwnerAccountID string
+	Origin         string
+	CreatedAt      time.Time
+	ResultID       string
+	Kind           string
+	BlobKey        string
+	ContentType    string
+	FileSize       int64
+	Width          int32
+	Height         int32
+}
+
+// ListReadyMediaVariants returns one variant kind of the current (newest) processing result of
+// each listed media file, with the file, for the files whose current result is ready.
+func (q *Queries) ListReadyMediaVariants(ctx context.Context, arg ListReadyMediaVariantsParams) ([]ListReadyMediaVariantsRow, error) {
+	rows, err := q.db.Query(ctx, listReadyMediaVariants, arg.Ids, arg.Kind)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListReadyMediaVariantsRow{}
+	for rows.Next() {
+		var i ListReadyMediaVariantsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerAccountID,
+			&i.Origin,
+			&i.CreatedAt,
+			&i.ResultID,
+			&i.Kind,
+			&i.BlobKey,
+			&i.ContentType,
+			&i.FileSize,
+			&i.Width,
+			&i.Height,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUnattachedUploads = `-- name: ListUnattachedUploads :many
 SELECT m.id FROM media_files m
 WHERE m.origin = 'upload' AND m.id > $1 AND m.id < $2

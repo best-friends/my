@@ -12,10 +12,10 @@ export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
   boostedBy: { name: string; href: string } | null;
   /**
-   * The author's display name (the username when there is none), full handle (`@alice@example.com`) and
-   * profile page.
+   * The author's display name (the username when there is none), full handle (`@alice@example.com`),
+   * profile page, and avatar URL (undefined when the account has none, and the avatar shows its fallback).
    */
-  author: { name: string; handle: string; href: string };
+  author: { name: string; handle: string; href: string; avatar: string | undefined };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
   time: { dateTime: string; relative: string; absolute: string };
   /** The web client's address of the post (the boosted post for a boost), which its time links to. */
@@ -78,6 +78,7 @@ export function useStatusView(status: Status): StatusView {
       name: post.account.display_name || post.account.username,
       handle: handleOf(post.account.acct, accountDomain),
       href: profilePath(post.account.acct),
+      avatar: post.account.avatar_url,
     },
     time: {
       dateTime: post.created_at,

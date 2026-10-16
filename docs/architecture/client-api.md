@@ -100,8 +100,10 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 4. `internal/interface/clientapi` にメソッドを実装します。アプリケーション層（`internal/app/<module>`）のユースケースを呼び、
    ドメインの型を生成された応答型に詰め替えます。必要な依存は `clientapi.Options` に追加し、`platform.NewApp` で渡します。
    閲覧者は `requireViewer(ctx)`（トークン必須の操作）か `ViewerFrom(ctx)`（匿名も受け付ける操作）で取ります。スコープの検査はハンドラの前に済んでいます。
-   アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースと画像の URL、`Options.Posting` から読む投稿の制限 `posting` を含む）に、
+   アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースと、`Options.Posting` から読む投稿の制限 `posting` を含む）に、
    投稿は `appcontent.Reader` が閲覧者に見せる形にした `StatusView` を `Server.newStatus` で `Status` に詰め替えます。
+   `Account` のアバター・ヘッダーの URL（`avatar_url` / `header_url`）は、応答に含めるアカウントの分を `Server.profileImages`（投稿なら著者を加える `Server.statusImages`）で
+   1 回にまとめて読み、`newAccount` と `newStatus` に渡します。アカウントごとに読まない（N+1 にしない）ため、一覧は `Server.newAccounts` や `Server.presentStatuses` を使います。
    フォロー数を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います（`newCredentialAccount` もこれに重ねます）。
    ID で指定されたアカウントは `Server.visibleAccount` で引き、見せられないアカウント（[visibility.md §6](visibility.md#6-アカウントの表示)）は存在しないものと同じ 404 にします。
 5. 新しい利用者向けの文言は `locales/en` と `locales/ja` の `server` 名前空間に追加し、`make i18n-gen` を実行します。
@@ -202,7 +204,7 @@ strict server は SSE を返せないので、`oapi-codegen.yaml` の `exclude-o
 - イベントは `update`（`data` は `Status`）と `notification`（`data` は `Notification`）です。`id` は付けず、`Last-Event-ID` での再開はしません。
   切れたら再接続し、ホームと通知を読み直します。
 - 接続の流れは [overview §4.4](overview.md#44-リアルタイム更新sse) のとおりです。ハンドラは `stream.Subscriber` で購読し、知らせを受けるたびにユースケース
-  （`HomeEntries.HomeEntry`、`Notifications.List`）で閲覧者に見せる形に読み直して、`Server.statuses` と `Server.newNotification` で詰め替えます。
+  （`HomeEntries.HomeEntry`、`Notifications.List`）で閲覧者に見せる形に読み直して、`Server.statuses` と `Server.newNotifications` で詰め替えます。
 - 開くと `: connected` を、その後 30 秒ごと（`Options.StreamHeartbeat`）に `: heartbeat` のコメント行を送ります。ハートビートのたびにアクセストークンを照合し直し、無効なら閉じます。
 - 接続数の上限は、アカウントごとに 8、プロセス全体で 1,000 です（`stream.HubOptions`）。アカウントの上限を超えると 429（`/api/v1/problems/too-many-streams`）、
   シャットダウン中は 503 です。

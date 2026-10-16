@@ -77,7 +77,7 @@ export function StatusCard({ status, variant = "compact", onDeleted }: StatusCar
         // React Aria's Link cannot leave the tab order, so the picture is a link of its own to the same
         // profile as the name, and named by it.
         <Link href={view.author.href} aria-label={view.author.name} className="block rounded-full">
-          <Avatar name={view.author.name} decorative />
+          <Avatar src={view.author.avatar} name={view.author.name} decorative />
         </Link>
       }
       author={
