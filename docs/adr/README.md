@@ -27,4 +27,5 @@
 | [0013](0013-timeline-strategy.md) | タイムラインは fan-out-on-read を既定とする | Proposed |
 | [0014](0014-task-management-and-agent-workflow.md) | タスク管理とコーディングエージェントの作業フロー | Accepted |
 | [0015](0015-testing-strategy.md) | テスト戦略 | Proposed |
+| [0018](0018-federated-uris.md) | 連合 URI は ID ベースで `/ap/` 名前空間に置き、表示用 URL と分離する | Proposed |
 <!-- adr-index:end -->
