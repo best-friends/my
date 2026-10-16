@@ -22,8 +22,8 @@ const tests = ["**/*.test.{ts,tsx}"];
 const stories = ["**/*.stories.{ts,tsx}"];
 /** Components: Tailwind rules for D2 apply here (the app shell may use viewport breakpoints). */
 const components = ["ui/src/**/*.tsx", "web/src/features/**/*.tsx"];
-/** Where the API client and fetch may be used (S1). */
-const apiAllowed = ["web/src/features/*/api/**", "web/src/lib/**"];
+/** Where the API client and fetch may be used (S1); src/test holds the MSW setup and its own tests. */
+const apiAllowed = ["web/src/features/*/api/**", "web/src/lib/**", "web/src/test/**"];
 
 /** Rules @eslint-react duplicates from eslint-plugin-react-hooks; the react-hooks/* IDs are canonical. */
 const eslintReactHookDuplicates = Object.fromEntries(
