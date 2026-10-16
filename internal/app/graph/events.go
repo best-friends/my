@@ -23,7 +23,8 @@ import "github.com/best-friends/my/internal/domain/graph"
 //   - EventBlocked: an account blocked another.
 //   - EventUnblocked: a block was lifted.
 //   - EventMuted: an account muted another, or replaced the settings and expiry of a mute.
-//   - EventUnmuted: an account removed its mute of another (not emitted without a mute).
+//   - EventUnmuted: an account removed its mute of another, or the cleanup deleted an expired
+//     mute (not emitted without a mute).
 const (
 	EventFollowed                 = "graph.followed"
 	EventFollowRequested          = "graph.follow_requested"
@@ -45,7 +46,8 @@ type Muted struct {
 // EventType implements uow.Event.
 func (Muted) EventType() string { return EventMuted }
 
-// Unmuted is emitted when an account removes its mute of a target.
+// Unmuted is emitted when an account removes its mute of a target, or when the cleanup deletes
+// an expired mute.
 type Unmuted struct {
 	AccountID       string
 	TargetAccountID string

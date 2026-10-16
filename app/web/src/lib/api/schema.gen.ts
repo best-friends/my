@@ -399,6 +399,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a media file
+         * @description Uploads an image to attach to a post. The server checks the format from the content
+         *     (JPEG, PNG, GIF, or WebP; the declared type must match it) and the size and dimension
+         *     limits before it accepts the file, then processes it in the background: it removes the
+         *     metadata (such as the location) by re-encoding the image, and makes a thumbnail and a
+         *     blurhash. The answer is 202 with the file in its current `state`, usually `processing`;
+         *     poll `getMedia` until it is `ready` or `failed`.
+         *
+         *     A body larger than the size limit is refused with a 413 before it is read. Uploads
+         *     count against a limit per account besides the API-wide one. Only the uploader can
+         *     read and change the file.
+         */
+        post: operations["uploadMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the media file. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a media file that the user uploaded
+         * @description Returns a media file of the authenticated user with its processing state. A file of
+         *     another account is a 404: other accounts see a file only as an attachment of a post.
+         */
+        get: operations["getMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the description or focal point of a media file
+         * @description Changes the description (alternative text) or the focal point of a media file of the
+         *     authenticated user that no post attaches yet; a property left out keeps its value. A
+         *     post copies the description when it attaches the file, so a file that a post attaches
+         *     is a 409 `media-attached`: edit the post instead. A file of another account is a 404.
+         */
+        patch: operations["updateMedia"];
+        trace?: never;
+    };
     "/notifications": {
         parameters: {
             query?: never;
@@ -805,6 +865,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/streaming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream real-time updates
+         * @description A Server-Sent Events stream (`text/event-stream`) of the authenticated user's new home
+         *     timeline entries and notifications, from the moment it opens. Read it with `fetch` and
+         *     send the access token in `Authorization`, like every other operation (`EventSource`
+         *     cannot send it).
+         *
+         *     Events:
+         *
+         *     - `update`: a new post or boost in the home timeline, as it would appear there (the
+         *       viewer's follows, timeline languages, blocks, and mutes apply). `data` is a `Status`.
+         *     - `notification`: a new notification. `data` is a `Notification`.
+         *
+         *     A comment line (`: heartbeat`) arrives every 30 seconds. The server ends the stream when
+         *     the access token stops being valid, when the client does not keep up, and when it shuts
+         *     down; nothing is replayed, so after reconnecting read the home timeline and the
+         *     notifications again for what was missed. A user may hold a limited number of streams
+         *     open at once; past it the answer is 429 with type
+         *     `/api/v1/problems/too-many-streams`.
+         *
+         *     Each server process delivers only the updates that it produced itself, so a deployment
+         *     that runs several web processes, or separate web and worker processes, misses updates
+         *     on some streams.
+         */
+        get: operations["streamEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -835,6 +935,18 @@ export interface components {
          *       deactivated or deleted).
          *     - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
          *       from following it. Unblock it first.
+         *     - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
+         *       instance accepts.
+         *     - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
+         *       accepted format, or its declared type does not match its content.
+         *     - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
+         *       many pixels or frames.
+         *     - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
+         *       of its format.
+         *     - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
+         *       no longer be changed on its own.
+         *     - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
+         *       (`GET /streaming`) open as the server allows. Close one first.
          */
         Problem: {
             /**
@@ -979,6 +1091,92 @@ export interface components {
             /** @description Whether the viewer's mute also hides the account's notifications. */
             muting_notifications: boolean;
         };
+        /**
+         * @description A media file, as an upload of the user (the media operations) or as an attachment of
+         *     a status (`Status.media_attachments`). `variants` and `blurhash` are present once the
+         *     file is `ready`; statuses attach only ready files. In a status, `description` is the
+         *     status revision's own copy of the alternative text.
+         */
+        MediaAttachment: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+             * @enum {string}
+             */
+            type: "image" | "gifv" | "video" | "audio" | "unknown";
+            /**
+             * @description The processing state: `processing` until the server has re-encoded the file,
+             *     then `ready`, or `failed` when the content could not be processed.
+             * @enum {string}
+             */
+            state: "processing" | "ready" | "failed";
+            /** @description The alternative text; absent when there is none. */
+            description?: string;
+            /** @description The blurhash (https://blurha.sh) of the image, to show while it loads. */
+            blurhash?: string;
+            meta: components["schemas"]["MediaMeta"];
+            variants?: components["schemas"]["MediaVariants"];
+        };
+        /**
+         * @description The focal point that previews keep in view when they crop the image, from -1.0 (left,
+         *     bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+         */
+        MediaFocus: {
+            /** Format: double */
+            x: number;
+            /** Format: double */
+            y: number;
+        };
+        /** @description What the server knows about the media file. */
+        MediaMeta: {
+            /** @description The width of the original image in pixels, after its EXIF orientation; absent until the file is ready. */
+            width?: number;
+            /** @description The height of the original image in pixels, after its EXIF orientation; absent until the file is ready. */
+            height?: number;
+            focus: components["schemas"]["MediaFocus"];
+        };
+        /** @description The changes to a media file; a property left out keeps its value. */
+        MediaUpdate: {
+            /** @description The alternative text; an empty string removes it. */
+            description?: string;
+            focus?: components["schemas"]["MediaFocus"];
+        };
+        /** @description An upload of a media file. */
+        MediaUpload: {
+            /**
+             * Format: binary
+             * @description The file. Its declared type, if any, must match its content.
+             */
+            file: string;
+            /** @description The alternative text. */
+            description?: string;
+        };
+        /** @description A rendition of a media file, without metadata. */
+        MediaVariant: {
+            /**
+             * Format: uri
+             * @description Where the rendition is served.
+             */
+            url: string;
+            /** @description The media type of the rendition. */
+            content_type: string;
+            /** @description The width in pixels. */
+            width: number;
+            /** @description The height in pixels. */
+            height: number;
+            /**
+             * Format: int64
+             * @description The size of the file in bytes.
+             */
+            size: number;
+        };
+        /** @description The renditions of a ready media file. */
+        MediaVariants: {
+            /** @description The file itself, scaled down to at most 3840 × 2160 pixels of area. */
+            full: components["schemas"]["MediaVariant"];
+            /** @description The preview, at most 640 × 360 pixels of area. */
+            thumbnail: components["schemas"]["MediaVariant"];
+        };
         /** @description A notification of something that happened to the authenticated user. */
         Notification: {
             id: components["schemas"]["Id"];
@@ -1037,44 +1235,6 @@ export interface components {
             sensitive?: boolean;
             language?: components["schemas"]["StatusLanguageInput"];
             media?: components["schemas"]["StatusMediaInput"];
-        };
-        /**
-         * @description A media file. Statuses attach only files that finished processing; `url` and
-         *     `preview_url` are omitted while a file is not ready.
-         */
-        MediaAttachment: {
-            id: components["schemas"]["Id"];
-            /**
-             * @description The kind of media; `unknown` until processing finishes, or when it failed.
-             * @enum {string}
-             */
-            type: "image" | "gifv" | "video" | "audio" | "unknown";
-            /**
-             * Format: uri
-             * @description The processed file, without metadata.
-             */
-            url?: string;
-            /**
-             * Format: uri
-             * @description A smaller rendition for previews.
-             */
-            preview_url?: string;
-            /** @description The alternative text; omitted when there is none. */
-            description?: string;
-            /** @description A BlurHash of the image, shown while it loads. */
-            blurhash?: string;
-            /** @description The width of `url` in pixels. */
-            width?: number;
-            /** @description The height of `url` in pixels. */
-            height?: number;
-            focus?: components["schemas"]["MediaFocus"];
-        };
-        /** @description The focal point that crops keep in view; omitted for the center. */
-        MediaFocus: {
-            /** @description From -1 (left edge) to 1 (right edge). */
-            x: number;
-            /** @description From -1 (bottom edge) to 1 (top edge). */
-            y: number;
         };
         /** @description The content warning; omitted or empty for none. It counts toward `max_post_characters`. */
         SpoilerText: string;
@@ -1686,6 +1846,86 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    uploadMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["MediaUpload"];
+            };
+        };
+        responses: {
+            /** @description The file is accepted and being processed. */
+            202: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAttachment"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the media file. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The media file. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAttachment"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the media file. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaUpdate"];
+            };
+        };
+        responses: {
+            /** @description The changed media file. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAttachment"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     listNotifications: {
         parameters: {
             query?: {
@@ -2207,6 +2447,28 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["StatusPage"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    streamEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The event stream. It stays open until the client or the server ends it. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

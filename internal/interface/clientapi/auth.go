@@ -27,6 +27,8 @@ import (
 //  3. Authorization checks the operation's security from security.gen.go, which `make generate`
 //     derives from the security requirements of api/openapi.yaml: 401 without a token when the
 //     operation needs one, 403 insufficient_scope when the token does not grant every scope.
+//  4. The request body is bounded (limitBody in media.go): a declared length over the
+//     operation's limit is a 413 before any of the body is read.
 
 // Problem types of authentication and authorization; api/openapi.yaml documents them.
 const (
@@ -144,7 +146,7 @@ func (s *Server) guard(pattern string, next http.Handler) http.Handler {
 			r = r.WithContext(WithViewer(r.Context(), *v))
 			ok = s.limit(w, r, policyAccount, s.o.AccountLimit, v.AccountID)
 		}
-		if ok && s.authorize(w, r, a, v) {
+		if ok && s.authorize(w, r, a, v) && s.limitBody(w, r, pattern) {
 			next.ServeHTTP(w, r)
 		}
 	})

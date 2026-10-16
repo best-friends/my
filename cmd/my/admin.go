@@ -59,7 +59,7 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 	cfg, _, err := config.Load(config.Source{File: *file})
 	if err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
+		printLoadError(stderr, err)
 		return 1
 	}
 	password, err := readPassword(stdin, stderr)

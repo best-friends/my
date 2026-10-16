@@ -123,18 +123,34 @@ type Setting struct {
 
 // Issue is one validation problem.
 type Issue struct {
-	Key     string
+	// Key is the setting the problem is about, or "" for a problem with the config file itself.
+	Key string
+	// Missing reports that the setting Key is required but not set; otherwise an issue
+	// with a Key is about a value that is set but invalid.
+	Missing bool
+	// Message is the technical detail in English; it may be empty for a Missing issue.
 	Message string
+}
+
+// Env returns the environment variable of the setting Key, or "" when there is none.
+func (i Issue) Env() string {
+	for k := range schema {
+		if schema[k].key == i.Key {
+			return schema[k].env()
+		}
+	}
+	return ""
 }
 
 func (i Issue) String() string {
 	if i.Key == "" {
 		return i.Message
 	}
-	for k := range schema {
-		if schema[k].key == i.Key {
-			return fmt.Sprintf("%s (%s): %s", i.Key, schema[k].env(), i.Message)
-		}
+	if i.Missing && i.Message == "" {
+		i.Message = "required"
+	}
+	if env := i.Env(); env != "" {
+		return fmt.Sprintf("%s (%s): %s", i.Key, env, i.Message)
 	}
 	return fmt.Sprintf("%s: %s", i.Key, i.Message)
 }
@@ -210,7 +226,7 @@ func Load(src Source) (*Config, []Setting, error) {
 		}
 		if v == "" {
 			if f.required {
-				issues = append(issues, Issue{Key: f.key, Message: "required"})
+				issues = append(issues, Issue{Key: f.key, Missing: true})
 			}
 			continue
 		}

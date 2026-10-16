@@ -197,7 +197,7 @@ func TestStatusesThroughTheAPI(t *testing.T) {
 		"text": "root #Thread", "visibility": "public", "spoiler_text": "cw",
 		"media": []map[string]any{{"id": pending, "description": "a picture"}},
 	})
-	if len(root.MediaAttachments) != 1 || root.MediaAttachments[0].Url == nil || *root.MediaAttachments[0].Description != "a picture" ||
+	if len(root.MediaAttachments) != 1 || root.MediaAttachments[0].Variants == nil || root.MediaAttachments[0].State != "ready" || *root.MediaAttachments[0].Description != "a picture" ||
 		root.MediaAttachments[0].Type != clientapi.MediaAttachmentTypeImage || len(root.Tags) != 1 || root.Tags[0].Name != "Thread" {
 		t.Errorf("root = %+v", root)
 	}

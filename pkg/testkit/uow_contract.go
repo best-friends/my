@@ -41,8 +41,9 @@ func (probeEvent) EventType() string { return "testkit.probe_inserted" }
 // UnitOfWorkContract verifies that the UnitOfWork built by newHarness satisfies the uow
 // contract: commit on success; rollback on error and panic; bounded retries of ErrRetryable
 // failures in fresh transactions; no retry of other errors; respect for context cancellation;
-// isolation of uncommitted writes; concurrent writers; and synchronous projectors running in
-// the same transaction as the command that emits their event.
+// isolation of uncommitted writes; concurrent writers; synchronous projectors running in
+// the same transaction as the command that emits their event; and commit hooks running once,
+// after the commit, for the events of the attempt that committed.
 func UnitOfWorkContract(t *testing.T, newHarness UnitOfWorkFactory) {
 	t.Helper()
 	cases := []struct {
@@ -60,6 +61,9 @@ func UnitOfWorkContract(t *testing.T, newHarness UnitOfWorkFactory) {
 		{"SerializesConcurrentWriters", uowConcurrentWriters},
 		{"RunsProjectorsInTheSameTransaction", uowRunsProjectors},
 		{"RollsBackWhenAProjectorFails", uowRollsBackOnProjectorError},
+		{"RunsCommitHooksAfterTheCommit", uowRunsCommitHooks},
+		{"RunsNoCommitHooksOnRollback", uowRunsNoCommitHooksOnRollback},
+		{"RunsCommitHooksOnlyForTheCommittedAttempt", uowRunsCommitHooksOnce},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newHarness) })
@@ -321,4 +325,97 @@ func uowRollsBackOnProjectorError(t *testing.T, newHarness UnitOfWorkFactory) {
 		t.Fatalf("Tx = %v, want %v", err, boom)
 	}
 	wantKeys(t, h)
+}
+
+// hookInto registers a commit hook that records the key of every probe event with the
+// committed keys it sees.
+func hookInto(t *testing.T, h UnitOfWorkHarness, r *uow.Projectors) *[]string {
+	t.Helper()
+	var seen []string
+	r.OnCommit(probeEvent{}.EventType(), func(ctx context.Context, e uow.Event) {
+		keys, err := h.Keys(ctx)
+		if err != nil {
+			t.Errorf("Keys in a commit hook: %v", err)
+		}
+		slices.Sort(keys)
+		seen = append(seen, fmt.Sprintf("%s%q", e.(probeEvent).key, keys))
+	})
+	return &seen
+}
+
+func uowRunsCommitHooks(t *testing.T, newHarness UnitOfWorkFactory) {
+	var projectors uow.Projectors
+	h := newHarness(t, uow.Options{Retry: fastRetry, Projectors: &projectors})
+	seen := hookInto(t, h, &projectors)
+
+	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		for _, key := range []string{"a", "b"} {
+			if err := h.Insert(t.Context(), tx, key); err != nil {
+				return err
+			}
+			if err := tx.Emit(t.Context(), probeEvent{key: key}); err != nil {
+				return err
+			}
+			if len(*seen) > 0 {
+				t.Errorf("a commit hook ran inside the transaction: %q", *seen)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Tx = %v", err)
+	}
+	// Each hook sees the whole commit, in the order the events were emitted.
+	want := []string{`a["a" "b"]`, `b["a" "b"]`}
+	if !slices.Equal(*seen, want) {
+		t.Errorf("commit hooks saw %q, want %q", *seen, want)
+	}
+}
+
+func uowRunsNoCommitHooksOnRollback(t *testing.T, newHarness UnitOfWorkFactory) {
+	var projectors uow.Projectors
+	h := newHarness(t, uow.Options{Retry: fastRetry, Projectors: &projectors})
+	seen := hookInto(t, h, &projectors)
+	boom := errors.New("command failed")
+
+	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		if err := tx.Emit(t.Context(), probeEvent{key: "a"}); err != nil {
+			return err
+		}
+		return boom
+	})
+	if !errors.Is(err, boom) {
+		t.Fatalf("Tx = %v, want %v", err, boom)
+	}
+	if len(*seen) > 0 {
+		t.Errorf("commit hooks ran after a rollback: %q", *seen)
+	}
+}
+
+func uowRunsCommitHooksOnce(t *testing.T, newHarness UnitOfWorkFactory) {
+	var projectors uow.Projectors
+	h := newHarness(t, uow.Options{Retry: fastRetry, Projectors: &projectors})
+	seen := hookInto(t, h, &projectors)
+
+	attempts := 0
+	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		attempts++
+		key := fmt.Sprintf("attempt-%d", attempts)
+		if err := h.Insert(t.Context(), tx, key); err != nil {
+			return err
+		}
+		if err := tx.Emit(t.Context(), probeEvent{key: key}); err != nil {
+			return err
+		}
+		if attempts < 2 {
+			return uow.MarkRetryable(errors.New("conflict"))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Tx = %v", err)
+	}
+	if want := []string{`attempt-2["attempt-2"]`}; !slices.Equal(*seen, want) {
+		t.Errorf("commit hooks saw %q, want %q", *seen, want)
+	}
 }

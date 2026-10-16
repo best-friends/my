@@ -107,13 +107,15 @@ func (d *DB) attempt(ctx context.Context, fn func(tx uow.Tx) error) error {
 			_ = pgTx.Rollback(context.WithoutCancel(ctx))
 		}
 	}()
-	if err := fn(&Tx{tx: pgTx, projectors: d.opts.Projectors}); err != nil {
+	tx := &Tx{tx: pgTx, projectors: d.opts.Projectors}
+	if err := fn(tx); err != nil {
 		return err
 	}
 	if err := pgTx.Commit(ctx); err != nil {
 		return fmt.Errorf("postgres: commit: %w", err)
 	}
 	committed = true
+	d.opts.Projectors.Committed(ctx, tx.events)
 	return nil
 }
 
@@ -127,12 +129,15 @@ func isRetryable(err error) bool {
 type Tx struct {
 	tx         pgx.Tx
 	projectors *uow.Projectors
+	// events are the events emitted so far, for the commit hooks.
+	events []uow.Event
 }
 
 var _ uow.Tx = (*Tx)(nil)
 
 // Emit implements uow.Tx.
 func (t *Tx) Emit(ctx context.Context, e uow.Event) error {
+	t.events = append(t.events, e)
 	return t.projectors.Project(ctx, t, e)
 }
 

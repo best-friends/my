@@ -71,6 +71,9 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 - 1 つのコマンドは、**1 つのモジュールのリソース / イベント** を書き込みます。加えて、そのイベントを購読する **同期 projector**（自分の投影を更新）と `outbox_events` を、同じトランザクションで書きます。
 - projector は購読するイベントの内容だけで投影を更新し、他モジュールのテーブルを読みません。必要な値はイベントに載せます。
 - 同期 projector は起動時に `uow.Projectors` へイベント種別ごとに登録します。コマンドがトランザクション関数の中で `tx.Emit(ctx, event)` を呼ぶと、登録順に同じトランザクションで実行され、projector の失敗はコマンドごとロールバックします。
+- コミットフック（`uow.Projectors.OnCommit`）は、コミットしたトランザクションが `tx.Emit` で発行したイベントを、コミットの後にトランザクションの外で受け取ります。
+  ロールバックした試行・再実行で捨てた試行のイベントは届きません。フックはプロセス内の通知（リアルタイム更新、[overview §4.4](overview.md#44-リアルタイム更新sse)）だけに使い、失わせてはいけない処理は outbox のジョブにします。
+  投影の再構築（§9）は `tx.Emit` を通らないので、フックを起こしません。
 - 件数が利用者数・フォロワー数に比例する処理は、非同期 projector またはカーソル付きのジョブで、一定件数ずつ行います。
   - 該当するのは、配送先の展開・消去・アカウント単位の制限の全投稿への反映などです。
 - 時刻と ID はトランザクション関数の外で一度だけ生成して渡します（再実行で値が変わらないように）。
@@ -167,7 +170,7 @@ flowchart LR
 | `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `account_lifecycle_events` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts` | `account_restrictions`, `domain_restrictions`, `report_states` |
-| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `status_deletions`, `boosts`, `boost_retractions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `account_post_counters`, `poll_tallies`, `custom_emoji_settings`, `media_focus`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins` |
+| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `status_deletions`, `boosts`, `boost_retractions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `account_post_counters`, `poll_tallies`, `custom_emoji_settings`, `media_focus`, `media_descriptions`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins` |
 | `graph` | `follows`, `follow_acceptances`, `follow_rejections`, `follow_terminations`, `blocks`, `block_retractions` | `follow_edges`, `block_edges`, `follow_counters`, `follow_preferences`, `mutes`, `account_domain_mutes` |
 | `timeline` | なし | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_author_restrictions`, `feed_domain_restrictions` |
 | `notification` | `notifications`, `notification_dismissals` | `notification_read_markers`, `push_subscriptions`, `push_subscription_alerts` |
@@ -502,6 +505,7 @@ flowchart LR
 | `media_processing_results` | イベント | `id`, `media_id`, `outcome`（`enum(ready, failed)`）, `media_type`（`enum(image, gifv, video, audio, unknown)`）, `width` / `height` / `duration_ms`（NULL 可）, `blurhash`（NULL 可）, `processed_at` | インデックス `(media_id, id DESC)`。最新行が現在の処理結果 |
 | `media_variants` | イベント（結果の子） | `result_id`, `kind`（`enum(full, thumbnail)`）, `blob_key`, `content_type`, `file_size`（`bigint`）, `width` / `height`（`int`） | PK `(result_id, kind)` |
 | `media_focus` | 現在値 | `media_id`（PK）, `focus_x` / `focus_y`（`real`、-1.0〜1.0） | 行がなければ中央 |
+| `media_descriptions` | 現在値 | `media_id`（PK）, `description`（`text`、空でない、1,500 文字まで） | 行がなければ説明なし。投稿が添付するときに `status_revision_attachments.description` へ写す |
 | `remote_media_cache` | 現在値（キャッシュ） | `url`（PK）, `blob_key`, `content_type`, `file_size`, `fetched_at`, `expires_at`, `last_accessed_at` | FR-409, NFR-COST-4。インデックス `(expires_at)`, `(last_accessed_at)` |
 
 - アップロードは同期で受け付けます。形式は中身から判定し（申告された `Content-Type` とファイル名は信用しない）、サイズと寸法の上限は全体をデコードする前にヘッダで検査します（ADR-0019 §8）。
@@ -509,6 +513,8 @@ flowchart LR
 - 処理はジョブ `media.process` が非同期に行います。再エンコードでメタデータ（EXIF の位置情報など）を落とした `media_variants` を公開のキー（`media/<id>/full.<ext>`, `media/<id>/thumbnail.<ext>`）に書き、結果を記録してから受け取ったままのファイルを Blob から削除します（位置情報を残さない）。
   ジョブは冪等です。結果のあるファイルは受け取ったままのファイルの削除だけを繰り返し、消去済みのファイルは何もしません。処理できない中身は `outcome = failed`（版なし）の結果として記録します。
 - `width` / `height` は EXIF の向きを適用した元画像の寸法です。`media_variants` の寸法は各版の実寸です。
+- 未添付のアップロードを読めるのも、説明（`media_descriptions`）と焦点（`media_focus`）を変えられるのも、アップロードした本人だけです。
+  版が添付したあとは説明を版の `status_revision_attachments.description` で持つので、ファイル単体の説明・焦点は変えられません（投稿を編集して直す）。
 - 未添付のアップロード（どの版からも参照されず、`account_profile_revisions` のアバター・ヘッダーにも使われていない `media_files`）は、
   作成から `media_unattached_ttl`（既定 24 時間）後に、1 時間ごとの消去ジョブ `media.cleanup` が行と Blob ごと削除します（FR-803）。
   アバター・ヘッダーの参照は `account` モジュール、インスタンスのプレビュー画像（`preview_image`、§4.9）の参照は `instance` モジュールの公開 API で問い合わせます。削除は同じトランザクションで添付の有無を再検査します。
@@ -579,7 +585,7 @@ flowchart LR
 | `graph.blocked` | ブロック（終了したフォローごとの `graph.follow_terminated`（`reason = blocked`）の後に発行する） | `block_edges` に追加 | `feed_exclusions`・`notification_exclusions`（両方向）、`Block` の配送 |
 | `graph.unblocked` | ブロックの解除 | `block_edges` から削除 | `feed_exclusions`・`notification_exclusions`、`Undo Block` の配送 |
 | `graph.muted` | ミュート（設定・期限の置き換えを含む。置き換えた後のミュートを載せる） | — | `feed_exclusions`（期限つき）、`notification_exclusions`（`hide_notifications` 付きのときだけ） |
-| `graph.unmuted` | ミュートの解除（ミュートが無ければ発行しない） | — | `feed_exclusions`、`notification_exclusions` |
+| `graph.unmuted` | ミュートの解除と、期限切れのミュートの削除（ミュートが無ければ発行しない） | — | `feed_exclusions`、`notification_exclusions` |
 
 #### ブロック・ミュート
 
@@ -588,7 +594,7 @@ flowchart LR
 | `blocks` | リソース | `id`, `uri`（`Block` の IRI。ローカルのブロックは `https://{host}/ap/activities/{id}`、ADR-0018。`id` の無い `Block` を受信したときだけ NULL）, `blocker_account_id`, `blocked_account_id`, `created_at` | 一意 `(uri)`。ブロックし直すと新しい行になる（過去のブロックが残る） |
 | `block_retractions` | イベント | `block_id`（PK）, `retracted_at` | |
 | `block_edges` | 投影 | `blocker_account_id`, `blocked_account_id`, `block_id` | PK `(blocker_account_id, blocked_account_id)`。インデックス `(blocked_account_id)`、`(blocker_account_id, block_id)`（ブロック中の一覧。`block_id` のキーセットで新しい順に引く）。取り消しで行を消す |
-| `mutes` | 現在値 | `account_id`, `target_account_id`, `hide_notifications`（`bool`）, `expires_at`（NULL 可。NULL は解除まで）, `created_at` | PK `(account_id, target_account_id)`。`expires_at > created_at`。インデックス `(account_id, created_at, target_account_id)`（ミュート中の一覧。`(created_at, target_account_id)` のキーセットで新しい順に引く） |
+| `mutes` | 現在値 | `account_id`, `target_account_id`, `hide_notifications`（`bool`）, `expires_at`（NULL 可。NULL は解除まで）, `created_at` | PK `(account_id, target_account_id)`。`expires_at > created_at`。インデックス `(account_id, created_at, target_account_id)`（ミュート中の一覧。`(created_at, target_account_id)` のキーセットで新しい順に引く）、`(expires_at)`（期限切れの削除） |
 | `account_domain_mutes` | 現在値 | `account_id`, `domain`, `created_at` | PK `(account_id, domain)`（FR-304、C） |
 
 - ブロックは連合（`Block` / `Undo Block`）やフォロー関係の終了と連動し、嫌がらせの調査にも使うので、イベントとして持ちます。
@@ -599,7 +605,8 @@ flowchart LR
   これが無いと、同時に走ったフォローとブロックが互いを見落とし、ブロック中のフォローが残ります。
 - ブロックの対象はローカルのアカウントだけです（存在すれば有効でなくてもよい）。リモートとのブロックは連合（`federation`）から記録します。
 - ミュートは本人だけに効き、履歴にも意味がないので現在値です（ADR-0020 規約 5）。ミュートし直すと設定・期限・`created_at` を置き換えます。
-- 期限付きのミュートは、読み取り時に `expires_at > 現在時刻` で絞り込むので、期限が来た時点で書き込み無しに無効になります。期限切れの行は、ミュートし直すか解除するまで残ります。
+- 期限付きのミュートは、読み取り時に `expires_at > 現在時刻` で絞り込むので、期限が来た時点で書き込み無しに無効になります。
+  期限切れの行は、1 時間ごとの消去ジョブ `graph.cleanup_mutes` が、1 トランザクションあたり件数を区切って削除し、削除した行ごとに `graph.unmuted` を発行します（FR-803）。
 - ミュートの対象はリモートのアカウントでもかまいません。`graph` 自身はミュートを読み取り時に `expires_at` で絞り込み、他のモジュールの投影（`feed_exclusions`、`notification_exclusions`）のために `graph.muted` / `graph.unmuted` を発行します。
 
 ### 4.6 timeline
@@ -721,7 +728,8 @@ flowchart LR
 - `outbox_events` は投入先のキューに渡す値（`run_at` を含む）をすべて持ち、リレーがそのまま `JobQueue.Enqueue` に渡します。
 - `jobs` は未完了のジョブだけを持ちます。完了したジョブは削除し、恒久的に失敗したジョブは `dead_jobs` に移します。
   そのため `jobs (idempotency_key)` の一意制約は「未完了のジョブの間での一意」を表します。
-- `kv_entries` は `KeyValueStore` ポートの値です。`expires_at` を過ぎた行は無いものとして扱い、`DeleteExpired` が物理削除します。
+- `kv_entries` は `KeyValueStore` ポートの値です。`expires_at` を過ぎた行は無いものとして扱い、1 時間ごとの消去ジョブ `kv.cleanup` が `DeleteExpired` で物理削除します。
+  `DeleteExpired` は 1 回（1 トランザクション）で消す件数に上限を取り、ジョブは上限の回数まで繰り返して、残りを次の回に回します（FR-803）。
   カウンタ（`IncrBy`、レート制限）は値を 10 進の文字列で持ち、1 文の upsert で加算します。
 - `locked_by` と `locked_until` はワーカーのリース（ADR-0004）で、取得時に両方を設定し、結果の記録時に両方を NULL に戻します（`CHECK` で同時性を保証）。
   リースが切れた（`locked_until <= now`）ジョブは他のワーカーが取り直します。結果の記録は `(id, locked_by, attempt)` が一致するときだけ有効です。
@@ -943,7 +951,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-007 言語・タイムゾーン | M | `user_preferences` |
 | FR-008 アカウント削除・エクスポート | S | `account_lifecycle_events`, `data_exports`, `data_export_results` |
 | FR-101〜104 投稿・公開範囲・メンション・タグ・CW | M | `statuses`, `status_revisions` と子テーブル, `status_mention_index`, `feed_tag_entries` |
-| FR-105 画像添付・代替テキスト | M | `media_files`, `uploaded_media`, `media_processing_results`, `media_variants`, `media_focus`, `status_revision_attachments` |
+| FR-105 画像添付・代替テキスト | M | `media_files`, `uploaded_media`, `media_processing_results`, `media_variants`, `media_focus`, `media_descriptions`, `status_revision_attachments` |
 | FR-106 返信・スレッド | M | `statuses.in_reply_to_uri` / `conversation_uri`, `status_reply_links` |
 | FR-107 ブースト・お気に入り | M | `boosts`, `boost_retractions`, `boost_edges`, `favourites`, `status_counters` |
 | FR-108 削除 | M | `status_deletions`, `deliveries` |

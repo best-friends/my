@@ -64,3 +64,16 @@ WHERE m.origin = 'upload' AND m.id > sqlc.arg(after_id) AND m.id < sqlc.arg(befo
   AND NOT EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = m.id)
 ORDER BY m.id
 LIMIT sqlc.arg(row_limit);
+
+-- name: UpsertMediaDescription :exec
+INSERT INTO media_descriptions (media_id, description) VALUES (?, ?)
+ON CONFLICT (media_id) DO UPDATE SET description = excluded.description;
+
+-- name: DeleteMediaDescription :exec
+DELETE FROM media_descriptions WHERE media_id = ?;
+
+-- name: GetMediaDescription :one
+SELECT media_id, description FROM media_descriptions WHERE media_id = ?;
+
+-- name: IsMediaAttached :one
+SELECT EXISTS (SELECT 1 FROM status_revision_attachments WHERE media_id = ?);

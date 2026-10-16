@@ -215,6 +215,16 @@ linters:
             - github.com/best-friends/my/internal/app/queue
             - github.com/best-friends/my/internal/app/kernel
             - github.com/best-friends/my/internal/app/uow
+        # app/stream holds the ports of the real-time updates (Publisher / Subscriber) and the
+        # in-process broker shared by the modules that publish and the streaming endpoint; like
+        # uow, it depends on nothing in the repository.
+        app-stream:
+          list-mode: strict
+          files:
+            - "**/internal/app/stream/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/app/stream
         # app/blob (BlobStore) and app/media (MediaProcessor) hold ports shared by every module that
         # keeps files and by their adapters; like kernel, they depend on nothing in the repository.
         app-blob:

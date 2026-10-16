@@ -10,11 +10,12 @@
 | `api/openapi.yaml` | API の正。OpenAPI 3.1 の単一ファイル |
 | `api/redocly.yaml` | スキーマの lint 設定（Redocly CLI）。推奨ルールと、使える 3.1 の部分集合・命名規約を強制する独自ルール |
 | `api/api.go` | `openapi.yaml` を埋め込む Go パッケージ（`api.Spec`）。テストの照合ヘルパーが読む |
-| `internal/interface/clientapi/oapi-codegen.yaml` | oapi-codegen の設定（strict server、`net/http`） |
+| `internal/interface/clientapi/oapi-codegen.yaml` | oapi-codegen の設定（strict server、`net/http`。`streamEvents` は生成から除く） |
 | `internal/interface/clientapi/api.gen.go` | 生成物。手で編集しない |
 | `internal/interface/clientapi/security.gen.go` | 生成物。spec の `security` から作る操作ごとの認証・スコープの表（`internal/securitygen`）。手で編集しない |
 | `internal/interface/clientapi/auth.go`, `ratelimit.go` | 認証・認可・レート制限（§4.2） |
 | `internal/interface/clientapi/*.go` | 生成された `StrictServerInterface` の実装。アプリケーション層のユースケースを呼ぶ |
+| `internal/interface/clientapi/streaming.go` | 手書きの `GET /streaming`（SSE、§5） |
 | `internal/interface/clientapi/apitest` | ハンドラの応答を spec と照合するテストヘルパー |
 | `app/web/src/lib/api/schema.gen.ts` | 生成物。Web クライアントの型（openapi-typescript）。手で編集しない |
 | `scripts/generate.sh` | 生成スクリプト（`make generate` / `make generate-check`）。TS の型の生成に `app/web` の依存を使うので、先に `make web-install` を実行する（Makefile の依存で自動） |
@@ -155,6 +156,9 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    クライアント IP は接続元です（信頼するプロキシの設定はまだなく、転送ヘッダは読みません）。
 4. **認可**: `security.gen.go` の操作の表を引き、トークンが要る操作に閲覧者がなければ 401、スコープが足りなければ 403 にします。
    表にない操作は `Register` が起動時に panic するので、検査されないまま公開されることはありません。
+5. **本文の上限**: リクエスト本文は 1 MiB まで、`uploadMedia` だけはアップロードの上限（`media_max_image_bytes`）に 64 KiB を足した大きさまでです。
+   `Content-Length` が上限を超える要求は本文を読まずに 413 にし、長さのない要求は `http.MaxBytesReader` で上限で打ち切ります（413）。
+   `uploadMedia` の 413 は `/api/v1/problems/media-too-large`、ほかは `about:blank` です。
 
 `security` の書き方は 3 つです（`internal/securitygen` がこれ以外を拒否します）。
 
@@ -180,3 +184,22 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 
 操作ごとの制限（投稿 300 / 3 時間、アップロード 30 / 30 分など ADR-0019 §5 の表）は、ハンドラが `Server.LimitProblem(ctx, limit, v.AccountID)` を呼び、
 超過なら返された 429 の問題（`Retry-After` 付き）を `default` 応答で返します。制限は `kernel.Limit` の変数として `clientapi` に置きます。
+
+## 5. ストリーミング
+
+`GET /api/v1/streaming`（`streamEvents`）は Server-Sent Events のストリームで、閲覧者のホームの新着と新しい通知を送ります（FR-207）。
+strict server は SSE を返せないので、`oapi-codegen.yaml` の `exclude-operation-ids` で生成から除き、`streaming.go` に手で書きます（ADR-0029）。
+それでも spec には `text/event-stream` の操作として書き、`security.gen.go` の表と `guard`（認証・レート制限・スコープ `read:statuses` と `read:notifications`）を通します。
+
+- クライアントは `fetch` のストリームで読み、`Authorization: Bearer` を送ります（`EventSource` はヘッダを送れません）。
+- イベントは `update`（`data` は `Status`）と `notification`（`data` は `Notification`）です。`id` は付けず、`Last-Event-ID` での再開はしません。
+  切れたら再接続し、ホームと通知を読み直します。
+- 接続の流れは [overview §4.4](overview.md#44-リアルタイム更新sse) のとおりです。ハンドラは `stream.Subscriber` で購読し、知らせを受けるたびにユースケース
+  （`HomeEntries.HomeEntry`、`Notifications.List`）で閲覧者に見せる形に読み直して、`Server.statuses` と `Server.newNotification` で詰め替えます。
+- 開くと `: connected` を、その後 30 秒ごと（`Options.StreamHeartbeat`）に `: heartbeat` のコメント行を送ります。ハートビートのたびにアクセストークンを照合し直し、無効なら閉じます。
+- 接続数の上限は、アカウントごとに 8、プロセス全体で 1,000 です（`stream.HubOptions`）。アカウントの上限を超えると 429（`/api/v1/problems/too-many-streams`）、
+  シャットダウン中は 503 です。
+- 後始末: クライアントの切断・書き込みのタイムアウト（10 秒）・購読の終了で、ハンドラは戻って購読を閉じます。
+  読みきれずにバッファ（64 件）が溢れた購読はブローカーが閉じます。サーバーの読み取りタイムアウトは接続ごとに外し、
+  シャットダウンの開始時に `Hub.Close` がすべての購読を閉じるので、グレースフルシャットダウンはストリームを待ちません。
+- テストは、実際の HTTP サーバーでストリームを読み、状態と見出しを `apitest.Spec.ValidateResponse` で、各イベントの `data` を `ValidateSchema` で spec と照合します。

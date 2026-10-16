@@ -34,6 +34,7 @@ import (
 	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
@@ -106,6 +107,10 @@ type App struct {
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
 	Notifications *notification.Service
+	// Streams is the in-process broker of the streaming endpoint (FR-207): the timeline and
+	// notification commit hooks publish to it, and each open stream subscribes. It reaches only
+	// the streams of this process (docs/architecture/overview.md §4.4).
+	Streams *stream.Hub
 
 	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
 	Blobs          blob.Store
@@ -239,6 +244,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if a.Runner == nil {
 		a.Runner = queue.NewPullRunner(a.source, a.Handlers, runnerOpts)
 	}
+	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
 	switch cfg.KV {
 	case "db":
 		// Set with the database above.
@@ -249,6 +255,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
 	}
 	a.RateLimiter = kernel.NewRateLimiter(a.KV, a.Clock)
+	a.registerKVCleanup()
 
 	account.RegisterProjectors(a.Projectors, accounts)
 	a.Accounts = account.NewService(account.Deps{
@@ -291,6 +298,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Graph = graph.NewService(graph.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	a.Graph.RegisterJobs(a.Handlers, a.Scheduler)
 	content.RegisterProjectors(a.Projectors, statuses)
 	a.Content = content.NewService(content.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
@@ -317,6 +325,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
 	})
 	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
+	a.Streams = stream.NewHub(stream.HubOptions{})
+	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
+	notification.RegisterCommitHooks(a.Projectors, a.Streams)
 
 	if opts.Version == "" {
 		opts.Version = "dev"
@@ -359,10 +370,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
 		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
+		Media:         a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Notifications: a.Notifications,
 		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
+		Streams: a.Streams, HomeEntries: a.Timeline,
 		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
@@ -439,7 +452,6 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 	default:
 		return fmt.Errorf("media %q is not implemented yet", cfg.Media)
 	}
-	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
 	a.Media = content.NewMediaService(content.MediaDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Blobs: a.Blobs, Processor: a.MediaProcessor,
 		Outbox: a.Outbox, Jobs: a.Jobs, Clock: a.Clock, IDs: a.IDs,
@@ -545,6 +557,9 @@ func (a *App) Handle(pattern string, h http.Handler) {
 
 // Close releases the database connections.
 func (a *App) Close() error {
+	if a.Streams != nil {
+		a.Streams.Close()
+	}
 	if a.closeBlobs != nil {
 		_ = a.closeBlobs()
 	}

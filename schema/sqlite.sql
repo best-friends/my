@@ -433,7 +433,7 @@ CREATE INDEX block_edges_blocked_account_id ON block_edges (blocked_account_id);
 CREATE INDEX block_edges_blocker_block_id ON block_edges (blocker_account_id, block_id);
 
 -- Current value: an account's mute of another. A mute whose expires_at has passed no longer
--- applies; readers filter it out.
+-- applies; readers filter it out, and the hourly cleanup deletes it.
 CREATE TABLE mutes (
   account_id TEXT NOT NULL,
   target_account_id TEXT NOT NULL,
@@ -444,6 +444,8 @@ CREATE TABLE mutes (
   CHECK (expires_at IS NULL OR expires_at > created_at)
 ) STRICT;
 CREATE INDEX mutes_account_created_at_target ON mutes (account_id, created_at, target_account_id);
+-- The periodic cleanup deletes the expired mutes (FR-803).
+CREATE INDEX mutes_expires_at ON mutes (expires_at);
 
 -- ---------------------------------------------------------------------------------------------
 -- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).
@@ -620,6 +622,13 @@ CREATE TABLE media_focus (
   media_id TEXT NOT NULL PRIMARY KEY,
   focus_x REAL NOT NULL CHECK (focus_x BETWEEN -1.0 AND 1.0),
   focus_y REAL NOT NULL CHECK (focus_y BETWEEN -1.0 AND 1.0)
+) STRICT;
+
+-- Current value: the description that the uploader set on an upload, which a post copies into
+-- its attachment (client API #112). No row means none.
+CREATE TABLE media_descriptions (
+  media_id TEXT NOT NULL PRIMARY KEY,
+  description TEXT NOT NULL CHECK (description <> '')
 ) STRICT;
 
 -- The cleanup of unattached uploads (FR-803) looks up the references to a media file.

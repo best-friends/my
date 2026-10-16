@@ -211,6 +211,27 @@ func (r *GraphRepository) DeleteMute(ctx context.Context, tx uow.Tx, accountID, 
 	return rows == 1, nil
 }
 
+// DeleteExpiredMutes implements graph.Repository.
+func (r *GraphRepository) DeleteExpiredMutes(ctx context.Context, tx uow.Tx, now time.Time, limit int) ([]graph.Mute, error) {
+	n, err := toInt32(limit, "batch limit")
+	if err != nil {
+		return nil, err
+	}
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.DeleteExpiredMutes(ctx, postgresgen.DeleteExpiredMutesParams{Now: now, BatchLimit: n})
+	if err != nil {
+		return nil, wrap(err, "delete expired mutes")
+	}
+	out := make([]graph.Mute, len(rows))
+	for i, row := range rows {
+		out[i] = muteFrom(row)
+	}
+	return out, nil
+}
+
 func muteFrom(row postgresgen.Mute) graph.Mute {
 	return graph.Mute{
 		AccountID: row.AccountID, TargetAccountID: row.TargetAccountID, HideNotifications: row.HideNotifications,

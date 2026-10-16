@@ -17,7 +17,8 @@ var ErrKeyNotFound = errors.New("kernel: key not found")
 //
 // An entry with a TTL expires that long after it was written; a TTL <= 0 means it never
 // expires. Expired entries behave as absent: Get reports ErrKeyNotFound for them and IncrBy
-// starts them again. DeleteExpired removes them physically.
+// starts them again. DeleteExpired removes them physically, a bounded batch at a time, so that
+// one call stays a short transaction on a large store.
 //
 // The production adapters live in internal/adapter/kv; their shared contract test suite is
 // testkit.KeyValueStoreContract in pkg/testkit.
@@ -33,6 +34,7 @@ type KeyValueStore interface {
 	// Counters are stored as their decimal representation, which is what Get returns for them;
 	// IncrBy on an entry written by Set with anything else is undefined.
 	IncrBy(ctx context.Context, namespace, key string, n int64, ttl time.Duration) (int64, error)
-	// DeleteExpired removes every expired entry and returns how many it removed.
-	DeleteExpired(ctx context.Context) (int64, error)
+	// DeleteExpired removes at most limit expired entries and returns how many it removed;
+	// fewer than limit means none are left. A limit <= 0 removes nothing.
+	DeleteExpired(ctx context.Context, limit int) (int64, error)
 }
