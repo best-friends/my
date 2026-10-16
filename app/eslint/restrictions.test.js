@@ -11,7 +11,6 @@ import * as restrict from "./restrictions.js";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
-RuleTester.itOnly = it.only;
 
 const ruleTester = new RuleTester({
   languageOptions: {
