@@ -123,9 +123,12 @@ These come from Accepted ADRs and are binding.
 | `make docker-smoke` | Build and start `deploy/docker/compose.yaml`, create an admin, check WebFinger / Actor / NodeInfo, tear down (CI job `docker-smoke`) |
 | `make i18n-gen` | Regenerate pseudo-locales, Go / TS typed accessors, and parity fixtures from `locales/` (commit the result) |
 | `make i18n-check` | Catalog lint (ICU syntax, placeholders, plural categories, shared subset), stale generated files, npm licenses, TS runtime tests |
-| `make web-check` | Client workspace `app/`: `web-typecheck` (tsc), `web-build` (Vite; fails when React Compiler compiled nothing), `web-licenses` (npm licenses), `web-tokens` (design token contrast and color / motion usage, [app/ui/README.md](app/ui/README.md)), `web-test` (Vitest in jsdom with Testing Library and MSW) |
+| `make web-check` | Client workspace `app/`: `web-typecheck` (tsc), `web-build` (Vite; fails when React Compiler compiled nothing), `web-licenses` (npm licenses), `web-tokens` (design token contrast and color / motion usage, [app/ui/README.md](app/ui/README.md)), `web-test` (Vitest in jsdom with Testing Library and MSW), `playwright-image-check` (every Playwright image and package version equals `PLAYWRIGHT_IMAGE`) |
 | `make web-e2e` [`E2E_MATRIX=full`] | Build `app/web` and run the Playwright E2E (axe, horizontal scroll, ARIA snapshots) against `vite preview`: the per-PR subset of the width × locale matrix, or all of it (CI job `web-e2e`; nightly runs `full`). `make web-e2e-install` downloads the browser for local runs |
 | `make web-install` | Install the client workspace dependencies from `app/bun.lock` |
+| `make storybook` / `storybook-build` | Start / build the `@my/ui` Storybook (locale and theme toolbars) |
+| `make ui-test` | Run every `@my/ui` story in Chromium: axe violations and screenshots at 3 container widths × light / dark × LTR / RTL. Needs a browser, so not in `make check`; CI job `ui-test` runs it in the pinned Playwright image (`PLAYWRIGHT_IMAGE` in the `Makefile`). Screenshots match only there: use `make ui-test-docker` locally |
+| `make ui-snapshots-update` | Regenerate the `@my/ui` screenshot baselines in the pinned Playwright image (Docker); never commit screenshots made outside it |
 
 Toolchain versions (Go, golangci-lint, Bun, shellcheck, Node.js) are pinned in `.tool-versions` (asdf / mise).
 Atlas Community Edition is pinned and checksum-verified in `scripts/install-atlas.sh` (`make atlas` installs `bin/atlas`).
