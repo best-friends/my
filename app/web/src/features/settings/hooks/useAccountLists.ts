@@ -3,12 +3,12 @@
 // account that an action takes off a list leaves the cached pages at once, and the caller moves focus to the
 // next row, so that it is not lost with the removed row.
 import { useAnnouncer } from "@my/ui";
-import { type InfiniteData, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { type InfiniteData, useMutation, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { credentialsQueryOptions } from "../api/me";
-import { type Account, blocksQueryOptions, followRequestsQueryOptions, type MutedAccount, mutesQueryOptions } from "../api/relationships";
+import { type Account, accountActionMutation, blocksQueryOptions, followRequestsQueryOptions, type MutedAccount, mutesQueryOptions } from "../api/relationships";
 
 /** What a list screen needs from its list: the items so far, and loading more. */
 export type AccountList<T> = {
@@ -84,14 +84,14 @@ export function useBlocks(): { list: AccountList<Account>; unblock: AccountActio
   const queryClient = useQueryClient();
   const options = blocksQueryOptions(api);
   const query = useSuspenseInfiniteQuery(options);
-  const unblock = api.query.useMutation("post", "/accounts/{id}/unblock");
+  const unblock = useMutation(accountActionMutation(api, "/accounts/{id}/unblock"));
   return {
     list: toList(query, (page) => page.accounts),
     unblock: useListAction({
       mutate: (id, callbacks) => {
-        unblock.mutate({ params: { path: { id } } }, callbacks);
+        unblock.mutate(id, callbacks);
       },
-      pendingId: unblock.isPending ? unblock.variables.params.path.id : undefined,
+      pendingId: unblock.isPending ? unblock.variables : undefined,
       remove: (id) => {
         queryClient.setQueryData(options.queryKey, (data) =>
           data && { ...data, pages: data.pages.map((page) => ({ ...page, accounts: page.accounts.filter((account) => account.id !== id) })) },
@@ -109,14 +109,14 @@ export function useMutes(): { list: AccountList<MutedAccount>; unmute: AccountAc
   const queryClient = useQueryClient();
   const options = mutesQueryOptions(api);
   const query = useSuspenseInfiniteQuery(options);
-  const unmute = api.query.useMutation("post", "/accounts/{id}/unmute");
+  const unmute = useMutation(accountActionMutation(api, "/accounts/{id}/unmute"));
   return {
     list: toList(query, (page) => page.mutes),
     unmute: useListAction({
       mutate: (id, callbacks) => {
-        unmute.mutate({ params: { path: { id } } }, callbacks);
+        unmute.mutate(id, callbacks);
       },
-      pendingId: unmute.isPending ? unmute.variables.params.path.id : undefined,
+      pendingId: unmute.isPending ? unmute.variables : undefined,
       remove: (id) => {
         queryClient.setQueryData(options.queryKey, (data) =>
           data && { ...data, pages: data.pages.map((page) => ({ ...page, mutes: page.mutes.filter((mute) => mute.account.id !== id) })) },
@@ -134,11 +134,12 @@ export function useFollowRequests(): { list: AccountList<Account>; accept: Accou
   const queryClient = useQueryClient();
   const options = followRequestsQueryOptions(api);
   const query = useSuspenseInfiniteQuery(options);
-  const accept = api.query.useMutation("post", "/follow_requests/{id}/authorize", {
+  const accept = useMutation({
+    ...accountActionMutation(api, "/follow_requests/{id}/authorize"),
     // The viewer has one more follower.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: credentialsQueryOptions(api).queryKey }),
   });
-  const reject = api.query.useMutation("post", "/follow_requests/{id}/reject");
+  const reject = useMutation(accountActionMutation(api, "/follow_requests/{id}/reject"));
   const remove = (id: string) => {
     queryClient.setQueryData(options.queryKey, (data) =>
       data && { ...data, pages: data.pages.map((page) => ({ ...page, accounts: page.accounts.filter((account) => account.id !== id) })) },
@@ -148,17 +149,17 @@ export function useFollowRequests(): { list: AccountList<Account>; accept: Accou
     list: toList(query, (page) => page.accounts),
     accept: useListAction({
       mutate: (id, callbacks) => {
-        accept.mutate({ params: { path: { id } } }, callbacks);
+        accept.mutate(id, callbacks);
       },
-      pendingId: accept.isPending ? accept.variables.params.path.id : undefined,
+      pendingId: accept.isPending ? accept.variables : undefined,
       remove,
       done: (name) => t("client:settings.follow_requests.accepted", { name }),
     }),
     reject: useListAction({
       mutate: (id, callbacks) => {
-        reject.mutate({ params: { path: { id } } }, callbacks);
+        reject.mutate(id, callbacks);
       },
-      pendingId: reject.isPending ? reject.variables.params.path.id : undefined,
+      pendingId: reject.isPending ? reject.variables : undefined,
       remove,
       done: (name) => t("client:settings.follow_requests.rejected", { name }),
     }),

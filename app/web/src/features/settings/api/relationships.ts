@@ -63,6 +63,25 @@ export function followRequestsQueryOptions(api: Api) {
   });
 }
 
+/** The actions on one account of the lists, each on the account's ID. */
+type AccountActionPath = "/accounts/{id}/unblock" | "/accounts/{id}/unmute" | "/follow_requests/{id}/authorize" | "/follow_requests/{id}/reject";
+
+/**
+ * An action on the account with the given ID (POST `path`), as the options of TanStack Query's useMutation
+ * (updatePreferencesMutation in me.ts says why not the client's own).
+ */
+export function accountActionMutation(api: Api, path: AccountActionPath) {
+  return {
+    mutationKey: ["post", path] as const,
+    mutationFn: async (id: string) => {
+      const { data, error } = await api.fetch.POST(path, { params: { path: { id } } });
+      // The middleware throws an ApiError for every error status, so this is only for the types.
+      if (data === undefined) throw new Error(error.title);
+      return data;
+    },
+  };
+}
+
 function pageQuery(cursor: string | undefined): { limit: number; cursor?: string } {
   return cursor === undefined ? { limit: pageSize } : { limit: pageSize, cursor };
 }

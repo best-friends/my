@@ -5,7 +5,7 @@ import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { type CredentialAccount, credentialsQueryOptions, type ProfileChange } from "../api/me";
+import { type CredentialAccount, credentialsQueryOptions, type ProfileChange, updateProfileMutation } from "../api/me";
 import { type MediaAttachment, MediaProcessingError, uploadImage } from "../api/media";
 
 /** The limits of a profile (UpdateCredentialsRequest in api/openapi.yaml), counted in code points as the server does. */
@@ -57,7 +57,8 @@ export function useProfileForm() {
   const avatar = useImageControl(account.avatar, "thumbnail");
   const header = useImageControl(account.header, "full");
 
-  const save = api.query.useMutation("patch", "/accounts/update_credentials", {
+  const save = useMutation({
+    ...updateProfileMutation(api),
     onSuccess: (saved) => {
       queryClient.setQueryData(credentialsQueryOptions(api).queryKey, saved);
       toast.show({ message: t("client:settings.profile.saved"), tone: "success" });
@@ -99,7 +100,7 @@ export function useProfileForm() {
     header: header.control,
     submit: (event: SyntheticEvent<HTMLFormElement>) => {
       event.preventDefault();
-      save.mutate({ body: change() });
+      save.mutate(change());
     },
     isSaving: save.isPending,
     isBusy: save.isPending || avatar.control.isUploading || header.control.isUploading,

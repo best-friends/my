@@ -21,3 +21,33 @@ export function preferencesQueryOptions(api: Api) {
 export function credentialsQueryOptions(api: Api) {
   return api.query.queryOptions("get", "/accounts/verify_credentials");
 }
+
+/**
+ * Saves a change of the preferences (PATCH /preferences), as the options of TanStack Query's useMutation.
+ * The client's own useMutation is a hook read from an object, which React Compiler cannot compile around
+ * (react.dev, "Don't dynamically use Hooks").
+ */
+export function updatePreferencesMutation(api: Api) {
+  return {
+    mutationKey: ["patch", "/preferences"] as const,
+    mutationFn: async (change: PreferencesChange): Promise<Preferences> => {
+      const { data, error } = await api.fetch.PATCH("/preferences", { body: change });
+      // The middleware throws an ApiError for every error status, so this is only for the types.
+      if (data === undefined) throw new Error(error.title);
+      return data;
+    },
+  };
+}
+
+/** Saves a change of the profile (PATCH /accounts/update_credentials), as the options of useMutation. */
+export function updateProfileMutation(api: Api) {
+  return {
+    mutationKey: ["patch", "/accounts/update_credentials"] as const,
+    mutationFn: async (change: ProfileChange): Promise<CredentialAccount> => {
+      const { data, error } = await api.fetch.PATCH("/accounts/update_credentials", { body: change });
+      // The middleware throws an ApiError for every error status, so this is only for the types.
+      if (data === undefined) throw new Error(error.title);
+      return data;
+    },
+  };
+}

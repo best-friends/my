@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useAnnouncer } from "@my/ui";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { type Preferences, preferencesQueryOptions } from "../api/me";
+import { type Preferences, preferencesQueryOptions, updatePreferencesMutation } from "../api/me";
 
 /** The preferences that the settings page changes, by their API name. */
 type PreferenceKey = "locale" | "time_zone" | "default_visibility" | "timeline_languages";
@@ -47,17 +47,18 @@ function usePreferenceControl<K extends PreferenceKey>(key: K, saved: Preference
   const queryClient = useQueryClient();
   const announce = useAnnouncer();
   const t = useT();
-  const mutation = api.query.useMutation("patch", "/preferences", {
+  const mutation = useMutation({
+    ...updatePreferencesMutation(api),
     onSuccess: (preferences) => {
       queryClient.setQueryData(preferencesQueryOptions(api).queryKey, preferences);
       announce(t("client:settings.saved"));
     },
   });
-  const pending = mutation.isPending ? mutation.variables.body[key] : undefined;
+  const pending = mutation.isPending ? mutation.variables[key] : undefined;
   return {
     value: (pending ?? saved) as Preferences[K],
     onChange: (value) => {
-      mutation.mutate({ body: { [key]: value } });
+      mutation.mutate({ [key]: value });
     },
     isPending: mutation.isPending,
     error: mutation.isError ? errorMessage(mutation.error) : undefined,
