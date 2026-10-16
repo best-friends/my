@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Playwright E2E for the web client (ADR-0015, ADR-0027). Every test runs in one project per
+// viewport width × locale. E2E_MATRIX=full runs all of them (nightly); otherwise only the per-PR subset
+// runs: every locale at the narrowest and widest width. Tests run against `vite preview` of the built
+// app (`make web-e2e` builds it first), or against E2E_BASE_URL when it is set.
+import { defineConfig, devices, type Project } from "@playwright/test";
+
+/** Viewport widths in CSS px (ADR-0027). */
+const widths = [320, 390, 768, 1024, 1440] as const;
+/** The source locale, Japanese and the two pseudo-locales (ADR-0009, ADR-0015). */
+const locales = ["en", "ja", "en-XA", "ar-XB"] as const;
+/** Widths every PR runs: 320 px is where horizontal scrolling appears first (web-client.md D3). */
+const prWidths: ReadonlySet<number> = new Set([320, 1440]);
+
+const fullMatrix = process.env["E2E_MATRIX"] === "full";
+const ci = process.env["CI"] !== undefined;
+const port = 4173;
+const externalBaseURL = process.env["E2E_BASE_URL"];
+
+const projects: Project[] = widths
+  .filter((width) => fullMatrix || prWidths.has(width))
+  .flatMap((width) =>
+    locales.map((locale) => {
+      // Widths below the tablet breakpoint emulate a phone: touch, a coarse pointer and the mobile viewport.
+      const phone = width < 768;
+      return {
+        name: `${locale}-${width}`,
+        use: {
+          ...devices["Desktop Chrome"],
+          viewport: { width, height: phone ? 800 : 900 },
+          isMobile: phone,
+          hasTouch: phone,
+          locale,
+        },
+      };
+    }),
+  );
+
+export default defineConfig({
+  testDir: "./e2e",
+  fullyParallel: true,
+  forbidOnly: ci,
+  retries: ci ? 1 : 0,
+  ...(ci ? { workers: 2 } : {}),
+  reporter: ci ? [["github"], ["html", { open: "never" }]] : [["list"]],
+  use: {
+    baseURL: externalBaseURL ?? `http://127.0.0.1:${port}`,
+    trace: "retain-on-failure",
+  },
+  projects,
+  ...(externalBaseURL === undefined
+    ? {
+        webServer: {
+          command: `bun run preview --host 127.0.0.1 --port ${port} --strictPort`,
+          url: `http://127.0.0.1:${port}`,
+          reuseExistingServer: !ci,
+        },
+      }
+    : {}),
+});
