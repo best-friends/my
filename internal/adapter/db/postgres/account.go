@@ -451,3 +451,12 @@ func (r *AccountRepository) FindSealedPrivateKey(ctx context.Context, accountKey
 	}
 	return sealed, nil
 }
+
+// CountLocalAccounts implements account.Repository.
+func (r *AccountRepository) CountLocalAccounts(ctx context.Context) (int, error) {
+	n, err := r.db.reader().CountLocalAccounts(ctx)
+	if err != nil {
+		return 0, wrap(err, "count local accounts")
+	}
+	return int(n), nil
+}
