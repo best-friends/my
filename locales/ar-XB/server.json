@@ -1,4 +1,56 @@
 {
+  "auth.cross_origin": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ʍɐs ɹǝɟnsǝp qǝɔɐnsǝ ıʇ ɔɐɯǝ ɟɹoɯ ɐuoʇɥǝɹ sıʇǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.error.title": {
+    "defaultMessage": "‮Soɯǝʇɥıuƃ ʍǝuʇ ʍɹouƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.form_expired": {
+    "defaultMessage": "‮⊥ɥıs ɟoɹɯ ɥɐs ǝxdıɹǝp. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.email_label": {
+    "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.failed": {
+    "defaultMessage": "‮⊥ɥǝ ǝɯɐıʅ ɐppɹǝss oɹ dɐssʍoɹp ıs ıuɔoɹɹǝɔʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.missing": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʎonɹ ǝɯɐıʅ ɐppɹǝss ɐup dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.password_label": {
+    "defaultMessage": "‮Ԁɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.rate_limited": {
+    "defaultMessage": "‮{minutes,plural,one{⊥oo ɯɐuʎ ɟɐıʅǝp sıƃu-ıu ɐʇʇǝɯdʇs. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝ.} other{⊥oo ɯɐuʎ ɟɐıʅǝp sıƃu-ıu ɐʇʇǝɯdʇs. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.submit": {
+    "defaultMessage": "‮Sıƃu ıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.title": {
+    "defaultMessage": "‮Sıƃu ıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_out.submit": {
+    "defaultMessage": "‮Sıƃu onʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.signed_in.continue": {
+    "defaultMessage": "‮Ↄouʇıunǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.signed_in.title": {
+    "defaultMessage": "‮⅄on ɐɹǝ sıƃuǝp ıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "config.errors": {
     "defaultMessage": "‮{count,plural,one{Ⅎonup # ɔouɟıƃnɹɐʇıou ǝɹɹoɹ.} other{Ⅎonup # ɔouɟıƃnɹɐʇıou ǝɹɹoɹs.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."

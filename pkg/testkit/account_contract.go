@@ -38,8 +38,10 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // adapter through the use cases that drive them: registering a local user with sealed RSA and
 // Ed25519 keys, rejecting a taken username, creating the instance actor exactly once, lookups by
 // handle and ID, profile revisions, lifecycle events, the built-in roles, creating an admin with
-// an email address and a role grant while rejecting a taken username or email, and the property that
-// the account module's synchronous projections equal a rebuild from their events.
+// an email address and a role grant while rejecting a taken username or email, signing in and out
+// with browser sessions (new tokens on every sign-in, expiry, activity, the same error for an
+// unknown address and a wrong password, rate-limited failures, rehashing weaker passwords), and the
+// property that the account module's synchronous projections equal a rebuild from their events.
 func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
 	cases := []struct {
@@ -57,6 +59,12 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"EnsuresBuiltinRoles", accountEnsuresBuiltinRoles},
 		{"CreatesAnAdmin", accountCreatesAdmin},
 		{"RejectsATakenAdminUsernameOrEmail", accountRejectsTakenAdmin},
+		{"SignsInAndOut", sessionSignsInAndOut},
+		{"ReplacesTheSessionOnSignIn", sessionReplacedOnSignIn},
+		{"ExpiresSessions", sessionExpires},
+		{"RejectsWrongCredentialsAlike", sessionRejectsWrongCredentials},
+		{"RateLimitsFailedSignIns", sessionRateLimitsFailures},
+		{"RehashesWeakerPasswordsOnSignIn", sessionRehashes},
 		{"IncrementalProjectionEqualsRebuild", accountProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
@@ -71,6 +79,8 @@ type accountEnv struct {
 	accounts *appaccount.Service
 	identity *appidentity.Service
 	hasher   *appidentity.PasswordHasher
+	ids      kernel.IDGenerator
+	limiter  *kernel.RateLimiter
 }
 
 const contractHost = "social.example"
@@ -94,21 +104,29 @@ func newAccountEnv(t *testing.T, newHarness AccountFactory) *accountEnv {
 		Host:        contractHost,
 		GenerateKey: cachedKey,
 	})
-	hasher := appidentity.NewPasswordHasher(cheapArgon2, 0)
-	return &accountEnv{
+	e := &accountEnv{
 		h:        h,
 		clock:    clock,
 		accounts: accounts,
-		hasher:   hasher,
-		identity: appidentity.NewService(appidentity.Deps{
-			UnitOfWork: h.UnitOfWork,
-			Repository: h.Identity,
-			Clock:      clock,
-			IDs:        ids,
-			Passwords:  hasher,
-			Accounts:   accounts,
-		}),
+		hasher:   appidentity.NewPasswordHasher(cheapArgon2, 0),
+		ids:      ids,
+		limiter:  kernel.NewRateLimiter(NewKeyValueStore(clock), clock),
 	}
+	e.identity = e.newIdentity(e.hasher)
+	return e
+}
+
+// newIdentity returns an identity service on the env's harness that hashes with hasher.
+func (e *accountEnv) newIdentity(hasher *appidentity.PasswordHasher) *appidentity.Service {
+	return appidentity.NewService(appidentity.Deps{
+		UnitOfWork:  e.h.UnitOfWork,
+		Repository:  e.h.Identity,
+		Clock:       e.clock,
+		IDs:         e.ids,
+		Passwords:   hasher,
+		Accounts:    e.accounts,
+		RateLimiter: e.limiter,
+	})
 }
 
 // cachedKey generates one key per algorithm per process: RSA generation is slow, and the

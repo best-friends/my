@@ -4,6 +4,8 @@ package identity
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/kernel"
@@ -20,11 +22,19 @@ type Deps struct {
 	Passwords  *PasswordHasher
 	// Accounts creates the local account a new user logs in as.
 	Accounts *account.Service
+	// RateLimiter limits failed sign-ins (LoginIPLimit, LoginAccountLimit); SignIn needs it.
+	RateLimiter *kernel.RateLimiter
+	// SessionTTL is the lifetime of a session; zero means DefaultSessionTTL.
+	SessionTTL time.Duration
 }
 
 // Service runs the identity module's use cases.
 type Service struct {
 	d Deps
+
+	// dummy is the hash that SignIn verifies against for unknown users, made on first use.
+	dummyMu sync.Mutex
+	dummy   string
 }
 
 // NewService returns a Service on d.

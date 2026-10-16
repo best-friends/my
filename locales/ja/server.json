@@ -1,4 +1,56 @@
 {
+  "auth.cross_origin": {
+    "defaultMessage": "別のサイトから送信されたため、リクエストを受け付けませんでした。",
+    "description": "Body of the page shown (HTTP 403) when a sign-in or sign-out form was submitted from another origin."
+  },
+  "auth.error.title": {
+    "defaultMessage": "問題が発生しました",
+    "description": "Title and heading of the sign-in screens' error pages."
+  },
+  "auth.form_expired": {
+    "defaultMessage": "フォームの有効期限が切れました。もう一度お試しください。",
+    "description": "Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared."
+  },
+  "auth.sign_in.email_label": {
+    "defaultMessage": "メールアドレス",
+    "description": "Label of the email address field on the sign-in form."
+  },
+  "auth.sign_in.failed": {
+    "defaultMessage": "メールアドレスまたはパスワードが正しくありません。",
+    "description": "Error after a failed sign-in. Must not say which of the two was wrong, so that it does not reveal whether an account exists."
+  },
+  "auth.sign_in.missing": {
+    "defaultMessage": "メールアドレスとパスワードを入力してください。",
+    "description": "Error when the sign-in form was submitted with an empty field."
+  },
+  "auth.sign_in.password_label": {
+    "defaultMessage": "パスワード",
+    "description": "Label of the password field on the sign-in form."
+  },
+  "auth.sign_in.rate_limited": {
+    "defaultMessage": "{minutes, plural, other {ログインの失敗が多すぎます。#分後にもう一度お試しください。}}",
+    "description": "Error (HTTP 429) after too many failed sign-ins from the same network or for the same email address. {minutes} is the wait, rounded up to whole minutes."
+  },
+  "auth.sign_in.submit": {
+    "defaultMessage": "ログイン",
+    "description": "Button that submits the sign-in form."
+  },
+  "auth.sign_in.title": {
+    "defaultMessage": "ログイン",
+    "description": "Title and heading of the sign-in page."
+  },
+  "auth.sign_out.submit": {
+    "defaultMessage": "ログアウト",
+    "description": "Button that ends the current browser session."
+  },
+  "auth.signed_in.continue": {
+    "defaultMessage": "続ける",
+    "description": "Link on the signed-in page back to where the user was going."
+  },
+  "auth.signed_in.title": {
+    "defaultMessage": "ログインしています",
+    "description": "Title and heading of the page shown when a signed-in user opens the sign-in page."
+  },
   "config.errors": {
     "defaultMessage": "{count, plural, other {設定エラーが#件あります。}}",
     "description": "Summary printed before the list of configuration problems when the server refuses to start."

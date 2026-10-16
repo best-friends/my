@@ -1,4 +1,56 @@
 {
+  "auth.cross_origin": {
+    "defaultMessage": "The request was refused because it came from another site.",
+    "description": "Body of the page shown (HTTP 403) when a sign-in or sign-out form was submitted from another origin."
+  },
+  "auth.error.title": {
+    "defaultMessage": "Something went wrong",
+    "description": "Title and heading of the sign-in screens' error pages."
+  },
+  "auth.form_expired": {
+    "defaultMessage": "This form has expired. Please try again.",
+    "description": "Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared."
+  },
+  "auth.sign_in.email_label": {
+    "defaultMessage": "Email address",
+    "description": "Label of the email address field on the sign-in form."
+  },
+  "auth.sign_in.failed": {
+    "defaultMessage": "The email address or password is incorrect.",
+    "description": "Error after a failed sign-in. Must not say which of the two was wrong, so that it does not reveal whether an account exists."
+  },
+  "auth.sign_in.missing": {
+    "defaultMessage": "Enter your email address and password.",
+    "description": "Error when the sign-in form was submitted with an empty field."
+  },
+  "auth.sign_in.password_label": {
+    "defaultMessage": "Password",
+    "description": "Label of the password field on the sign-in form."
+  },
+  "auth.sign_in.rate_limited": {
+    "defaultMessage": "{minutes, plural, one {Too many failed sign-in attempts. Try again in # minute.} other {Too many failed sign-in attempts. Try again in # minutes.}}",
+    "description": "Error (HTTP 429) after too many failed sign-ins from the same network or for the same email address. {minutes} is the wait, rounded up to whole minutes."
+  },
+  "auth.sign_in.submit": {
+    "defaultMessage": "Sign in",
+    "description": "Button that submits the sign-in form."
+  },
+  "auth.sign_in.title": {
+    "defaultMessage": "Sign in",
+    "description": "Title and heading of the sign-in page."
+  },
+  "auth.sign_out.submit": {
+    "defaultMessage": "Sign out",
+    "description": "Button that ends the current browser session."
+  },
+  "auth.signed_in.continue": {
+    "defaultMessage": "Continue",
+    "description": "Link on the signed-in page back to where the user was going."
+  },
+  "auth.signed_in.title": {
+    "defaultMessage": "You are signed in",
+    "description": "Title and heading of the page shown when a signed-in user opens the sign-in page."
+  },
   "config.errors": {
     "defaultMessage": "{count, plural, one {Found # configuration error.} other {Found # configuration errors.}}",
     "description": "Summary printed before the list of configuration problems when the server refuses to start."

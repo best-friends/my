@@ -45,4 +45,14 @@ type Repository interface {
 	FindCurrentPasswordCredential(ctx context.Context, userID string) (identity.PasswordCredential, error)
 	// FindRole returns a role by key with its permissions, sorted.
 	FindRole(ctx context.Context, key string) (identity.Role, []identity.Permission, error)
+
+	InsertSession(ctx context.Context, tx uow.Tx, s identity.Session) error
+	// InsertSessionRevocation records that a session ended; it does nothing when the session
+	// already has a revocation, so that revoking twice keeps the first reason.
+	InsertSessionRevocation(ctx context.Context, tx uow.Tx, r identity.SessionRevocation) error
+	UpsertSessionActivity(ctx context.Context, tx uow.Tx, a identity.SessionActivity) error
+	// FindUnrevokedSession returns the session whose token hashes to tokenHash, unless it has
+	// a revocation, with its activity (a zero LastSeenAt when it has none). Expiry is the
+	// caller's to check.
+	FindUnrevokedSession(ctx context.Context, tokenHash []byte) (identity.Session, identity.SessionActivity, error)
 }
