@@ -1,22 +1,9 @@
-# 論理データモデル（v0 第 2 版）
+# 論理データモデル（v0）
 
 > 方言に依存しない **論理スキーマ** です。方言別の `schema/<dialect>.sql` はこの文書に従って書き、乖離は CI で検査します（[ADR-0003](../adr/0003-database-abstraction.md)）。
 > モデリングの規約は [ADR-0020](../adr/0020-data-modeling-principles.md)（リソース・イベント・投影の分離と、状態の直交分解）です。この文書はその適用結果です。
 > 前提にしている ADR: [ADR-0002](../adr/0002-modular-monolith-hexagonal.md)、[ADR-0003](../adr/0003-database-abstraction.md)、[ADR-0004](../adr/0004-job-queue-abstraction.md)、[ADR-0007](../adr/0007-client-api.md)、[ADR-0013](../adr/0013-timeline-strategy.md)、[ADR-0017](../adr/0017-visibility-local.md)、[ADR-0018](../adr/0018-federated-uris.md)。
 > v0 はマイグレーションを持たず作り直す前提です（[ADR-0012](../adr/0012-v0-breaking-change-policy.md)）。
-
-## 0. 初版からの主な変更
-
-| 初版の問題 | 第 2 版 |
-| --- | --- |
-| `accounts.suspended_at` / `silenced_at`、`users.disabled_at` / `approved_at` など、状態を NULL 許容の時刻カラムで表していた | 状態を **直交する軸**（登録審査・メール確認・ライフサイクル・モデレーション上の制限・権限）に分け、軸ごとにイベントと投影を持つ（§5） |
-| 処分の種類・理由・期限・処分者・解除を持てなかった | **処分**（`moderation_actions`、不変）と **制限**（`account_restrictions`、導出した投影）に分離。サイレンス・投稿禁止・ログイン停止・凍結・BAN などを enum の追加だけで拡張できる（§4.3, §5.2） |
-| `accounts` にローカル / リモート・プロフィール・取得メタデータ・状態が同居 | `accounts`（識別）＋部分型 `local_accounts` / `remote_accounts`、プロフィールは版（`account_profile_revisions`）、取得結果はスナップショット（`remote_account_snapshots`） |
-| `statuses` に投稿とブーストが NULL カラム＋CHECK で同居し、本文の現在値と編集履歴が二重管理 | 投稿（`statuses`、不変）と版（`status_revisions`）、ブースト（`boosts`）を分離。現在版は投影 `status_heads` |
-| `follow_requests` → `follows` の行移動で承認を表していた | フォロー（`follows`、不変）＋承認・拒否・終了のイベント＋投影 `follow_edges` |
-| プロフィール補足情報・`contentMap`・投票の選択肢・リダイレクト URI・ルールの翻訳を JSON に入れていた | すべて子テーブルに正規化。JSON は受信文書の原本など「解釈しない文書」だけ |
-| タイムラインが他モジュールのテーブルを直接 JOIN（ADR-0002 の例外） | `timeline` モジュールが自前の投影（`feed_entries` など）を持つ。例外は不要（§4.6） |
-| 汎用の `audit_logs`（JSON） | モデレーションの処分イベントそのものが監査記録。設定は版を持つので履歴が残る |
 
 ## 1. 共通規約
 
@@ -507,7 +494,7 @@ flowchart LR
 | `notification_dismissals` | イベント | `notification_id`（PK）, `dismissed_at` | |
 | `notification_read_markers` | 現在値 | `account_id`（PK）, `last_read_id` | 未読数は `id > last_read_id` で数える |
 | `push_subscriptions` | 現在値 | `id`, `user_id`, `oauth_token_id`, `endpoint`, `key_p256dh`, `key_auth`, `created_at`, `updated_at` | 一意 `(endpoint)`（FR-206） |
-| `push_subscription_alerts` | 現在値 | `subscription_id`, `notification_type` | PK `(subscription_id, notification_type)`。初版の JSON を正規化 |
+| `push_subscription_alerts` | 現在値 | `subscription_id`, `notification_type` | PK `(subscription_id, notification_type)` |
 
 - 処分の通知（`notify_target`）は `moderation_notice` として届きます。本人は処分の種類・公開理由・期限を見られ、異議申し立て（S/C）に進めます。
 
@@ -524,7 +511,7 @@ flowchart LR
 | `instance_nodeinfo_observations` | イベント | `id`, `domain`, `software_name`, `software_version`, `observed_at` | インデックス `(domain, id DESC)` |
 | `instance_health` | 投影 | `domain`（PK）, `shared_inbox_url`（NULL 可）, `consecutive_failures`, `last_success_at` / `last_failure_at`（NULL 可）, `unavailable_until`（NULL 可） | `delivery_attempts` から更新。成功時の更新は間引く |
 
-- **配送先の記録** は `deliveries` が兼ねます。初版の `status_delivery_targets` は廃止しました。
+- **配送先の記録** は `deliveries` が兼ねます。
   - 投稿の `Update` / `Delete` は、その投稿の `Create` の `outbound_activities` に紐づく `deliveries` の inbox に送ります（§7）。
 
 ### 4.9 instance
@@ -537,7 +524,7 @@ flowchart LR
 | `instance_texts` | 投影 | `key`, `locale`, `revision_id` | PK `(key, locale)`。表示はロケールのフォールバックチェーン（ADR-0009）で選ぶ |
 | `instance_rules` | リソース | `id`, `created_at` | ルールの識別子。通報が引用する（`report_rule_citations`） |
 | `instance_rule_revisions` | イベント（版） | `id`, `rule_id`, `position`, `revised_by_user_id`, `revised_at` | インデックス `(rule_id, id DESC)` |
-| `instance_rule_texts` | イベント（版の子） | `rule_revision_id`, `locale`, `text`, `hint`（NULL 可） | PK `(rule_revision_id, locale)`。初版の `translations` JSON を正規化 |
+| `instance_rule_texts` | イベント（版の子） | `rule_revision_id`, `locale`, `text`, `hint`（NULL 可） | PK `(rule_revision_id, locale)` |
 | `instance_rule_retirements` | イベント | `rule_id`（PK）, `retired_by_user_id`, `retired_at` | 廃止したルールも通報からは参照できる |
 | `instance_rule_heads` | 投影 | `rule_id`（PK）, `revision_id`, `position` | 有効なルールだけ。インデックス `(position)` |
 
