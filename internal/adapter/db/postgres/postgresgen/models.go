@@ -244,6 +244,22 @@ type Mute struct {
 	CreatedAt         time.Time
 }
 
+type Notification struct {
+	ID                 string
+	RecipientAccountID string
+	Type               string
+	SourceAccountID    *string
+	StatusID           *string
+	ModerationActionID *string
+	DedupeKey          string
+	CreatedAt          time.Time
+}
+
+type NotificationReadMarker struct {
+	AccountID  string
+	LastReadID string
+}
+
 type OauthAuthorizationCode struct {
 	CodeHash      []byte
 	ClientID      string

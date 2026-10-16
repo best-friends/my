@@ -214,9 +214,22 @@ func muteFrom(row postgresgen.Mute) graph.Mute {
 	}
 }
 
+// Mute implements graph.Repository.
+func (r *GraphRepository) Mute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string, now time.Time) (graph.Mute, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return graph.Mute{}, err
+	}
+	return activeMute(ctx, q, accountID, targetAccountID, now)
+}
+
 // FindMute implements graph.Repository.
 func (r *GraphRepository) FindMute(ctx context.Context, accountID, targetAccountID string, now time.Time) (graph.Mute, error) {
-	row, err := r.db.reader().GetActiveMute(ctx, postgresgen.GetActiveMuteParams{
+	return activeMute(ctx, r.db.reader(), accountID, targetAccountID, now)
+}
+
+func activeMute(ctx context.Context, q *postgresgen.Queries, accountID, targetAccountID string, now time.Time) (graph.Mute, error) {
+	row, err := q.GetActiveMute(ctx, postgresgen.GetActiveMuteParams{
 		AccountID: accountID, TargetAccountID: targetAccountID, Now: now,
 	})
 	if err != nil {

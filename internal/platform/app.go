@@ -29,6 +29,7 @@ import (
 	"github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/media"
+	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/i18n"
@@ -90,6 +91,9 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// Notifications lists a local account's notifications, which projectors create from the
+	// graph and content events, with its read marker and dismissals (FR-205).
+	Notifications *notification.Service
 
 	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
 	Blobs          blob.Store
@@ -165,6 +169,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows      graph.Repository
 		statuses     content.Repository
 		interactions content.InteractionRepository
+		notifs       notification.Repository
 		medias       content.MediaRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
@@ -178,6 +183,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions = d.InteractionRepository()
+		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -193,6 +199,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions = d.InteractionRepository()
+		notifs = d.NotificationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -269,6 +276,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
 		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
+	// After the graph and content projectors, whose events these projectors turn into notifications.
+	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
+		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
+	})
+	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
 
 	if opts.Version == "" {
 		opts.Version = "dev"
