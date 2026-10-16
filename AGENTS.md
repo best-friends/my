@@ -72,9 +72,17 @@ These come from Proposed ADRs and will be confirmed when they are accepted; foll
 
 | Command | Purpose |
 | --- | --- |
-| `make check` | Everything CI runs locally (currently docs lint + ADR index check) |
+| `make check` | Every offline check CI runs: docs lint, ADR index check, and `make go-check` |
+| `make go-check` | `go mod tidy` check, `go vet`, `golangci-lint`, `go test`, `CGO_ENABLED=0 go build`, license check |
+| `make go-lint` / `go-test` / `go-build` | Run one Go step (`go-lint` uses `.golangci.yml`) |
+| `make go-licenses` | Fail on Go dependency licenses incompatible with AGPL-3.0 (allowlist in `Makefile`) |
+| `make go-vuln` | govulncheck (needs network; run in CI, not part of `make check`) |
+| `make lint-shell` | shellcheck on `scripts/*.sh` |
 | `make adr-new TITLE="..." [SLUG=...]` | Create a new Proposed ADR (pass `SLUG` when the title is not ASCII) |
 | `make adr-index` | Regenerate the ADR table in `docs/adr/README.md` |
 | `make lint-docs` | markdownlint on all Markdown files |
 
-Toolchain versions are pinned in `.tool-versions` (asdf / mise).
+Toolchain versions (Go, golangci-lint, Bun, shellcheck) are pinned in `.tool-versions` (asdf / mise).
+Go tools (govulncheck, go-licenses) are pinned with `tool` directives in `tools/go.mod` and run via
+`go tool -modfile=tools/go.mod <tool>`. Go steps skip with a message while the root module has no packages.
+Spikes under `spikes/` are separate modules and are excluded from root Go checks.
