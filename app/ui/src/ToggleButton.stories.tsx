@@ -47,6 +47,8 @@ export const Default: Story = {
     await userEvent.click(button);
     await expect(button).toHaveAttribute("aria-pressed", "true");
     await expect(args.onChange).toHaveBeenCalledWith(true);
+    // The screenshot follows the play function: leave no hover state behind, which would make it vary.
+    await userEvent.unhover(button);
     await userEvent.keyboard(" ");
     await expect(button).toHaveAttribute("aria-pressed", "false");
   },
