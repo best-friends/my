@@ -10,8 +10,10 @@ import (
 	"testing"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	appidentity "github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/identity"
 )
 
@@ -224,5 +226,30 @@ func sessionRehashes(t *testing.T, e *accountEnv) {
 	}
 	if ok, rehash, err := hasher.Verify(ctx, sessionPassword, after.Hash); !ok || rehash || err != nil {
 		t.Errorf("new hash Verify = %v, %v, %v; want true, false, nil", ok, rehash, err)
+	}
+}
+
+func sessionRejectsInactiveAccounts(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	reg := e.sessionUser(t)
+	_, wrongErr := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: "wrong password"})
+	for _, kind := range []account.LifecycleKind{account.LifecycleDeactivated, account.LifecycleReactivated} {
+		e.clock.Advance(time.Second)
+		if _, err := e.accounts.RecordLifecycleEvent(ctx, appaccount.LifecycleInput{
+			AccountID: reg.AccountID, Kind: kind, InitiatedBy: account.InitiatedBySelf,
+		}); err != nil {
+			t.Fatalf("RecordLifecycleEvent(%s) = %v", kind, err)
+		}
+		_, err := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: sessionPassword})
+		if kind == account.LifecycleReactivated {
+			if err != nil {
+				t.Fatalf("SignIn after reactivation = %v", err)
+			}
+			continue
+		}
+		// The right password of an inactive account fails exactly like a wrong one.
+		if !errors.Is(err, appidentity.ErrInvalidCredentials) || err.Error() != wrongErr.Error() {
+			t.Fatalf("SignIn to a deactivated account = %v, want the wrong-password error %v", err, wrongErr)
+		}
 	}
 }

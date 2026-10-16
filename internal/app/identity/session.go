@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/identity"
@@ -77,8 +78,8 @@ type SignedIn struct {
 // SignIn checks an email address and password and starts a new session with a new token, so
 // that a token planted before the sign-in is never promoted (session fixation, ADR-0019 §4).
 //
-// It fails with ErrInvalidCredentials for an unknown address or a wrong password, after the
-// same amount of password hashing in both cases, and with a *kernel.RateLimitedError when too
+// It fails with ErrInvalidCredentials for an unknown address, a wrong password, or a user whose
+// local account is not active (data-model §5.1), after the same amount of password hashing, and with a *kernel.RateLimitedError when too
 // many attempts failed from the client's IP address or for the email address (ADR-0019 §5).
 func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) {
 	if s.d.RateLimiter == nil {
@@ -91,6 +92,9 @@ func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) 
 		return SignedIn{}, err
 	}
 	cred, err := s.verifyPassword(ctx, accountKey, in.Password)
+	if err == nil {
+		err = s.checkActive(ctx, cred.cred.UserID)
+	}
 	if errors.Is(err, ErrInvalidCredentials) {
 		if rerr := s.recordLoginFailure(ctx, ipKey, accountKey); rerr != nil {
 			return SignedIn{}, rerr
@@ -229,6 +233,23 @@ func (s *Service) verifyPassword(ctx context.Context, normalizedEmail, password 
 		return verifiedPassword{}, ErrInvalidCredentials
 	}
 	return verifiedPassword{cred: cred, needsRehash: rehash}, nil
+}
+
+// checkActive fails with ErrInvalidCredentials unless the user's local account is active, so
+// that a deactivated, deleted, or deletion-scheduled account cannot sign in and the response
+// does not tell that the password was right.
+func (s *Service) checkActive(ctx context.Context, userID string) error {
+	st, err := s.d.Accounts.UserLifecycle(ctx, userID)
+	if errors.Is(err, account.ErrNotFound) {
+		return ErrInvalidCredentials
+	}
+	if err != nil {
+		return err
+	}
+	if !st.Active() {
+		return ErrInvalidCredentials
+	}
+	return nil
 }
 
 // dummyHash returns a hash of a random password with the current parameters, made once.

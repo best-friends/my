@@ -40,7 +40,7 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // handle and ID, profile revisions, lifecycle events, the built-in roles, creating an admin with
 // an email address and a role grant while rejecting a taken username or email, signing in and out
 // with browser sessions (new tokens on every sign-in, expiry, activity, the same error for an
-// unknown address and a wrong password, rate-limited failures, rehashing weaker passwords), and the
+// unknown address, a wrong password, and an inactive account, rate-limited failures, rehashing weaker passwords), and the
 // property that the account module's synchronous projections equal a rebuild from their events.
 func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
@@ -65,6 +65,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RejectsWrongCredentialsAlike", sessionRejectsWrongCredentials},
 		{"RateLimitsFailedSignIns", sessionRateLimitsFailures},
 		{"RehashesWeakerPasswordsOnSignIn", sessionRehashes},
+		{"RejectsSignInToInactiveAccounts", sessionRejectsInactiveAccounts},
 		{"IncrementalProjectionEqualsRebuild", accountProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
