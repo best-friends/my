@@ -40,6 +40,10 @@ type Options struct {
 
 	// Host is the serving domain of the instance (ADR-0018).
 	Host string
+	// WebOrigin is the configured origin of the web client (web_origin). When it is on Host, the
+	// server serves the client there, so the shell's client calls the API at it too: plain
+	// http://localhost:8080 in a local run. Otherwise, and when empty, the API is at https://Host.
+	WebOrigin string
 	// AccountDomain is the domain of handles; empty means Host.
 	AccountDomain string
 	// InstanceName is the name the shell and the Web App Manifest show.
@@ -187,7 +191,10 @@ func New(o Options) (*Handler, error) {
 	}
 
 	var tags entryTags
-	apiOrigin := "https://" + o.Host
+	apiOrigin, err := serverOrigin(o.Host, o.WebOrigin)
+	if err != nil {
+		return nil, err
+	}
 	if o.DevViteOrigin != "" {
 		dev, err := devOrigin(o.DevViteOrigin)
 		if err != nil {
@@ -220,6 +227,22 @@ func New(o Options) (*Handler, error) {
 		return nil, err
 	}
 	return h, nil
+}
+
+// serverOrigin returns the origin at which the server serves the shell and the client API: webOrigin
+// when it is on host, https://host otherwise. An origin on another host is a client served elsewhere
+// (a development server, say), which says nothing about the server's own scheme.
+func serverOrigin(host, webOrigin string) (string, error) {
+	if webOrigin != "" {
+		u, err := url.Parse(webOrigin)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return "", fmt.Errorf("web: web origin %q is not an http(s) origin", webOrigin)
+		}
+		if strings.EqualFold(u.Host, host) {
+			return u.Scheme + "://" + host, nil
+		}
+	}
+	return "https://" + host, nil
 }
 
 // instanceLocale returns the instance's current default locale.
