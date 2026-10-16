@@ -641,6 +641,69 @@ func (l *Localizer) ServerErrorsInvalidToken() string {
 	return l.format("server:errors.invalid_token", nil)
 }
 
+// ServerErrorsMediaAttached formats "server:errors.media_attached". API error title for HTTP 409 when the user tries to change the description or focal point of an uploaded media file that a post already attaches.
+//
+//	en: This media is attached to a post and can no longer be changed.
+func (l *Localizer) ServerErrorsMediaAttached() string {
+	return l.format("server:errors.media_attached", nil)
+}
+
+// ServerErrorsMediaAttachedDetail formats "server:errors.media_attached_detail". Detail of the HTTP 409 media-attached API error.
+//
+//	en: Edit the post to change its description.
+func (l *Localizer) ServerErrorsMediaAttachedDetail() string {
+	return l.format("server:errors.media_attached_detail", nil)
+}
+
+// ServerErrorsMediaCorrupt formats "server:errors.media_corrupt". API error title for HTTP 422 when an uploaded file has the signature of an image format but does not decode.
+//
+//	en: The file could not be read as an image.
+func (l *Localizer) ServerErrorsMediaCorrupt() string {
+	return l.format("server:errors.media_corrupt", nil)
+}
+
+// ServerErrorsMediaDescriptionTooLong formats "server:errors.media_description_too_long". API error title for HTTP 422 when the description (alternative text) of a media file is longer than allowed.
+//
+//	en: The description is too long.
+func (l *Localizer) ServerErrorsMediaDescriptionTooLong() string {
+	return l.format("server:errors.media_description_too_long", nil)
+}
+
+// ServerErrorsMediaDescriptionTooLongDetail formats "server:errors.media_description_too_long_detail". Detail of the HTTP 422 API error for a description that is too long. {max} is the maximum number of characters.
+//
+//	en: {max, plural, one {A description can have at most # character.} other {A description can have at most # characters.}}
+func (l *Localizer) ServerErrorsMediaDescriptionTooLongDetail(max int) string {
+	return l.format("server:errors.media_description_too_long_detail", map[string]any{"max": max})
+}
+
+// ServerErrorsMediaDimensions formats "server:errors.media_dimensions". API error title for HTTP 422 when an uploaded image is too wide or tall, or has too many pixels or animation frames.
+//
+//	en: The image is too large in width, height, or number of frames.
+func (l *Localizer) ServerErrorsMediaDimensions() string {
+	return l.format("server:errors.media_dimensions", nil)
+}
+
+// ServerErrorsMediaInvalidFocus formats "server:errors.media_invalid_focus". API error title for HTTP 422 when the focal point of a media file is outside the image.
+//
+//	en: The focal point must be between -1.0 and 1.0 on each axis.
+func (l *Localizer) ServerErrorsMediaInvalidFocus() string {
+	return l.format("server:errors.media_invalid_focus", nil)
+}
+
+// ServerErrorsMediaTooLarge formats "server:errors.media_too_large". API error title for HTTP 413 when an uploaded media file is larger than the server accepts.
+//
+//	en: The file is too large.
+func (l *Localizer) ServerErrorsMediaTooLarge() string {
+	return l.format("server:errors.media_too_large", nil)
+}
+
+// ServerErrorsMediaUnsupportedFormat formats "server:errors.media_unsupported_format". API error title for HTTP 415 when an uploaded file is not an accepted image format, or its declared type does not match its content. JPEG, PNG, GIF, WebP are format names (not translated).
+//
+//	en: This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image.
+func (l *Localizer) ServerErrorsMediaUnsupportedFormat() string {
+	return l.format("server:errors.media_unsupported_format", nil)
+}
+
 // ServerErrorsMethodNotAllowed formats "server:errors.method_not_allowed". API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated).
 //
 //	en: The {method} method is not allowed for this resource.
@@ -674,6 +737,13 @@ func (l *Localizer) ServerErrorsRateLimitedDetail(seconds int) string {
 //	en: This is not available for accounts on other servers.
 func (l *Localizer) ServerErrorsRemoteAccount() string {
 	return l.format("server:errors.remote_account", nil)
+}
+
+// ServerErrorsRequestTooLarge formats "server:errors.request_too_large". API error title for HTTP 413 when a request body is larger than the server accepts.
+//
+//	en: The request is too large.
+func (l *Localizer) ServerErrorsRequestTooLarge() string {
+	return l.format("server:errors.request_too_large", nil)
 }
 
 // ServerErrorsSelfRelationship formats "server:errors.self_relationship". Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account.

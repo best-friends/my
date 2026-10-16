@@ -136,6 +136,10 @@ func parameterName(err error) string {
 // requestError answers a request that the generated code cannot parse with a 400 problem;
 // the detail names the parameter when the error is about one.
 func (s *Server) requestError(w http.ResponseWriter, r *http.Request, err error) {
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+		s.writeTooLarge(w, r, r.Pattern)
+		return
+	}
 	l := s.localizer(r)
 	var detail string
 	if name := parameterName(err); name != "" {
