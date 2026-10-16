@@ -65,3 +65,31 @@ sql:
         overrides:
           - db_type: timestamptz
             go_type: time.Time
+  - name: sqlite-kv
+    engine: sqlite
+    schema: schema/sqlite.sql
+    queries: queries/sqlite/kv
+    gen:
+      go:
+        package: sqlitekv
+        out: internal/adapter/kv/db/internal/sqlitekv
+        emit_empty_slices: true
+  - name: postgres-kv
+    engine: postgresql
+    schema: schema/postgres.sql
+    queries: queries/postgres/kv
+    gen:
+      go:
+        package: postgreskv
+        out: internal/adapter/kv/db/internal/postgreskv
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              type: time.Time
+              pointer: true
