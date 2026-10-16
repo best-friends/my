@@ -64,11 +64,6 @@ type AccountProfileField struct {
 	ValueHtml  string
 }
 
-type AccountProfileHead struct {
-	AccountID  string
-	RevisionID string
-}
-
 type AccountProfileRevision struct {
 	ID            string
 	AccountID     string
@@ -98,36 +93,12 @@ type BlockEdge struct {
 	BlockID          string
 }
 
-type BlockRetraction struct {
-	BlockID     string
-	RetractedAt int64
-}
-
-type DeadJob struct {
-	ID             string
-	Type           string
-	Payload        string
-	IdempotencyKey sql.NullString
-	OrderingKey    sql.NullString
-	Attempt        int64
-	LastError      string
-	CreatedAt      int64
-	FailedAt       int64
-}
-
 type Follow struct {
 	ID                string
 	Uri               string
 	FollowerAccountID string
 	FolloweeAccountID string
 	RequestedAt       int64
-}
-
-type FollowAcceptance struct {
-	FollowID    string
-	AcceptedBy  string
-	ActivityUri sql.NullString
-	AcceptedAt  int64
 }
 
 type FollowCounter struct {
@@ -148,19 +119,6 @@ type FollowPreference struct {
 	FollowID   string
 	ShowBoosts int64
 	Notify     int64
-}
-
-type FollowRejection struct {
-	FollowID    string
-	RejectedBy  string
-	ActivityUri sql.NullString
-	RejectedAt  int64
-}
-
-type FollowTermination struct {
-	FollowID     string
-	Reason       string
-	TerminatedAt int64
 }
 
 type InstanceSetting struct {
@@ -192,37 +150,11 @@ type InstanceTextRevision struct {
 	RevisedAt       int64
 }
 
-type Job struct {
-	ID             string
-	Type           string
-	Payload        string
-	IdempotencyKey sql.NullString
-	OrderingKey    sql.NullString
-	Attempt        int64
-	RunAt          int64
-	LockedBy       sql.NullString
-	LockedUntil    sql.NullInt64
-	LastError      sql.NullString
-	CreatedAt      int64
-}
-
-type KvEntry struct {
-	Namespace string
-	Key       string
-	Value     []byte
-	ExpiresAt sql.NullInt64
-}
-
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
 	Username           string
 	UsernameNormalized string
-}
-
-type LocalAccountPrivateKey struct {
-	AccountKeyID  string
-	PrivateKeyEnc []byte
 }
 
 type LocalStatus struct {
@@ -240,16 +172,6 @@ type Mute struct {
 	CreatedAt         int64
 }
 
-type OutboxEvent struct {
-	ID             string
-	JobType        string
-	Payload        string
-	IdempotencyKey sql.NullString
-	OrderingKey    sql.NullString
-	RunAt          int64
-	CreatedAt      int64
-}
-
 type PasswordCredential struct {
 	ID           string
 	UserID       string
@@ -262,32 +184,6 @@ type Role struct {
 	Key       string
 	Position  int64
 	CreatedAt int64
-}
-
-type RolePermission struct {
-	RoleID     string
-	Permission string
-}
-
-type Session struct {
-	ID        string
-	UserID    string
-	TokenHash []byte
-	UserAgent sql.NullString
-	Ip        sql.NullString
-	CreatedAt int64
-	ExpiresAt int64
-}
-
-type SessionActivity struct {
-	SessionID  string
-	LastSeenAt int64
-}
-
-type SessionRevocation struct {
-	SessionID string
-	Reason    string
-	RevokedAt int64
 }
 
 type Status struct {
@@ -359,25 +255,10 @@ type StatusRevisionBody struct {
 	ContentHtml string
 }
 
-type StatusRevisionEmoji struct {
-	RevisionID string
-	EmojiID    string
-}
-
-type StatusRevisionMention struct {
-	RevisionID string
-	AccountID  string
-}
-
 type StatusRevisionSource struct {
 	RevisionID   string
 	SourceText   string
 	SourceFormat string
-}
-
-type StatusRevisionTag struct {
-	RevisionID string
-	TagID      string
 }
 
 type Tag struct {
@@ -392,14 +273,6 @@ type User struct {
 	CreatedAt int64
 }
 
-type UserEmailAddress struct {
-	ID                string
-	UserID            string
-	Address           string
-	AddressNormalized string
-	AddedAt           int64
-}
-
 type UserPreference struct {
 	UserID                  string
 	Locale                  string
@@ -408,35 +281,4 @@ type UserPreference struct {
 	DefaultPostLanguage     string
 	RequireMediaDescription int64
 	UpdatedAt               int64
-}
-
-type UserPrimaryEmail struct {
-	UserID            string
-	EmailAddressID    string
-	AddressNormalized string
-}
-
-type UserRole struct {
-	UserID  string
-	RoleID  string
-	GrantID string
-}
-
-type UserRoleGrant struct {
-	ID              string
-	UserID          string
-	RoleID          string
-	GrantedByUserID sql.NullString
-	GrantedAt       int64
-}
-
-type UserRoleRevocation struct {
-	GrantID         string
-	RevokedByUserID sql.NullString
-	RevokedAt       int64
-}
-
-type UserTimelineLanguage struct {
-	UserID   string
-	Language string
 }
