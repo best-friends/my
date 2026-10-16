@@ -40,8 +40,10 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // handle and ID, profile revisions, lifecycle events, the built-in roles, creating an admin with
 // an email address and a role grant while rejecting a taken username or email, signing in and out
 // with browser sessions (new tokens on every sign-in, expiry, activity, the same error for an
-// unknown address, a wrong password, and an inactive account, rate-limited failures, rehashing weaker passwords), and the
-// property that the account module's synchronous projections equal a rebuild from their events.
+// unknown address, a wrong password, and an inactive account, rate-limited failures, rehashing weaker passwords), the OAuth 2.0
+// authorization server (registering the web client, exact redirect URIs, PKCE S256 only,
+// one-time codes, refresh token rotation that revokes the whole family on reuse, revocation),
+// and the property that the account module's synchronous projections equal a rebuild from their events.
 func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
 	cases := []struct {
@@ -66,6 +68,14 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RateLimitsFailedSignIns", sessionRateLimitsFailures},
 		{"RehashesWeakerPasswordsOnSignIn", sessionRehashes},
 		{"RejectsSignInToInactiveAccounts", sessionRejectsInactiveAccounts},
+		{"RegistersTheWebClient", oauthRegistersTheWebClient},
+		{"ValidatesAuthorizationRequests", oauthValidatesAuthorizationRequests},
+		{"ExchangesCodesWithPKCE", oauthExchangesCodesWithPKCE},
+		{"AuthorizationCodesWorkOnce", oauthCodesWorkOnce},
+		{"RotatesRefreshTokensAndRevokesReusedFamilies", oauthRotatesRefreshTokens},
+		{"ExpiresRefreshTokens", oauthRefreshTokensExpire},
+		{"RefreshesThirdPartyTokens", oauthRefreshesThirdPartyTokens},
+		{"RevokesTokens", oauthRevokesTokens},
 		{"IncrementalProjectionEqualsRebuild", accountProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
@@ -119,15 +129,24 @@ func newAccountEnv(t *testing.T, newHarness AccountFactory) *accountEnv {
 
 // newIdentity returns an identity service on the env's harness that hashes with hasher.
 func (e *accountEnv) newIdentity(hasher *appidentity.PasswordHasher) *appidentity.Service {
-	return appidentity.NewService(appidentity.Deps{
+	return e.newIdentityWith(func(d *appidentity.Deps) { d.Passwords = hasher })
+}
+
+// newIdentityWith returns an identity service on the env's harness with the deps that change
+// sets.
+func (e *accountEnv) newIdentityWith(change func(*appidentity.Deps)) *appidentity.Service {
+	d := appidentity.Deps{
 		UnitOfWork:  e.h.UnitOfWork,
 		Repository:  e.h.Identity,
 		Clock:       e.clock,
 		IDs:         e.ids,
-		Passwords:   hasher,
+		Passwords:   e.hasher,
 		Accounts:    e.accounts,
 		RateLimiter: e.limiter,
-	})
+		WebClient:   contractWebClient,
+	}
+	change(&d)
+	return appidentity.NewService(d)
 }
 
 // cachedKey generates one key per algorithm per process: RSA generation is slow, and the

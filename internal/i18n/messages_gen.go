@@ -4,6 +4,76 @@
 
 package i18n
 
+// ServerAuthAuthorizeApprove formats "server:auth.authorize.approve". Button on the authorization (consent) page that lets the application use the account.
+//
+//	en: Allow
+func (l *Localizer) ServerAuthAuthorizeApprove() string {
+	return l.format("server:auth.authorize.approve", nil)
+}
+
+// ServerAuthAuthorizeDeny formats "server:auth.authorize.deny". Button on the authorization (consent) page that refuses the application.
+//
+//	en: Deny
+func (l *Localizer) ServerAuthAuthorizeDeny() string {
+	return l.format("server:auth.authorize.deny", nil)
+}
+
+// ServerAuthAuthorizeInvalid formats "server:auth.authorize.invalid". Error page (HTTP 400) when an application opened the authorization page with an unknown client or an unregistered redirect address.
+//
+//	en: This application's authorization request is invalid. Contact the application's developer.
+func (l *Localizer) ServerAuthAuthorizeInvalid() string {
+	return l.format("server:auth.authorize.invalid", nil)
+}
+
+// ServerAuthAuthorizeLead formats "server:auth.authorize.lead". Introduces the list of permissions on the authorization (consent) page. {app} is the application's name.
+//
+//	en: {app} wants to use your account with these permissions:
+func (l *Localizer) ServerAuthAuthorizeLead(app string) string {
+	return l.format("server:auth.authorize.lead", map[string]any{"app": app})
+}
+
+// ServerAuthAuthorizeRedirectNotice formats "server:auth.authorize.redirect_notice". Note under the permissions on the authorization (consent) page. {host} is the host name the application receives the answer at.
+//
+//	en: After you choose, you will be sent back to {host}.
+func (l *Localizer) ServerAuthAuthorizeRedirectNotice(host string) string {
+	return l.format("server:auth.authorize.redirect_notice", map[string]any{"host": host})
+}
+
+// ServerAuthAuthorizeScopeFollow formats "server:auth.authorize.scope.follow". Permission (OAuth scope follow) listed on the authorization page.
+//
+//	en: Follow, block, and mute accounts
+func (l *Localizer) ServerAuthAuthorizeScopeFollow() string {
+	return l.format("server:auth.authorize.scope.follow", nil)
+}
+
+// ServerAuthAuthorizeScopePush formats "server:auth.authorize.scope.push". Permission (OAuth scope push) listed on the authorization page.
+//
+//	en: Receive push notifications
+func (l *Localizer) ServerAuthAuthorizeScopePush() string {
+	return l.format("server:auth.authorize.scope.push", nil)
+}
+
+// ServerAuthAuthorizeScopeRead formats "server:auth.authorize.scope.read". Permission (OAuth scope read) listed on the authorization page.
+//
+//	en: Read your account, posts, and timelines
+func (l *Localizer) ServerAuthAuthorizeScopeRead() string {
+	return l.format("server:auth.authorize.scope.read", nil)
+}
+
+// ServerAuthAuthorizeScopeWrite formats "server:auth.authorize.scope.write". Permission (OAuth scope write) listed on the authorization page.
+//
+//	en: Post and change things for you
+func (l *Localizer) ServerAuthAuthorizeScopeWrite() string {
+	return l.format("server:auth.authorize.scope.write", nil)
+}
+
+// ServerAuthAuthorizeTitle formats "server:auth.authorize.title". Title and heading of the authorization (consent) page. {app} is the name of the application asking for access.
+//
+//	en: Authorize {app}
+func (l *Localizer) ServerAuthAuthorizeTitle(app string) string {
+	return l.format("server:auth.authorize.title", map[string]any{"app": app})
+}
+
 // ServerAuthCrossOrigin formats "server:auth.cross_origin". Body of the page shown (HTTP 403) when a sign-in or sign-out form was submitted from another origin.
 //
 //	en: The request was refused because it came from another site.

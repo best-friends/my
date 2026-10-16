@@ -62,6 +62,13 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 		ErrorLog:          slog.NewLogLogger(a.Logger.Handler(), slog.LevelWarn),
 		BaseContext:       func(net.Listener) context.Context { return hardCtx },
 	}
+	if a.Config.Role != config.RoleWorker {
+		// The authorization server also registers the web client on its first request, so a
+		// schema applied after the start only delays this.
+		if err := a.Identity.EnsureWebClient(ctx); err != nil {
+			a.Logger.WarnContext(ctx, "web client not registered yet", slog.Any("error", err))
+		}
+	}
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- srv.Serve(ln) }()
 

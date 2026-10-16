@@ -28,12 +28,17 @@ import (
 	"github.com/best-friends/my/internal/interface/activitypub"
 	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/internal/interface/oauth"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
 // defaultMaxPostCharacters is the post length limit that the client API reports until the
 // instance settings hold it (FR-101).
 const defaultMaxPostCharacters = 500
+
+// WebClientCallbackPath is the path on the web origin where the web client receives the
+// authorization response; its URL is the redirect URI of the first-party web client.
+const WebClientCallbackPath = "/login/callback"
 
 // App is the assembled application: the adapters chosen by the configuration and the
 // application services built on them. NewApp builds it with plain constructor calls; there is
@@ -197,6 +202,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The default locale is an instance setting in the database, never configuration
 		// (docs/reference/configuration.md); it is read per registration so changes apply at once.
 		DefaultLocale: a.Instance.DefaultLocale,
+		WebClient: identity.WebClient{
+			ClientID: identity.DefaultWebClientID, Name: cfg.Host, RedirectURIs: []string{cfg.WebOrigin + WebClientCallbackPath},
+		},
 	})
 	graph.RegisterProjectors(a.Projectors, follows)
 	a.Graph = graph.NewService(graph.Deps{
@@ -210,7 +218,16 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	authpages.New(authpages.Options{Identity: a.Identity, Messages: a.Messages, Logger: a.Logger}).Register(a)
+	authpages.New(authpages.Options{
+		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
+		Messages: a.Messages, Logger: a.Logger,
+	}).Register(a)
+	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
+	if err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	tokens.Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,

@@ -242,15 +242,22 @@ flowchart LR
 | `session_revocations` | イベント | `session_id`（PK）, `reason`（`enum(logout, replaced, password_changed, moderation, expired_cleanup)`）, `revoked_at` | 有効なセッション = 失効イベントが無く `expires_at` を過ぎていないもの。`replaced` は同じブラウザでのログインし直し |
 | `session_activity` | 現在値 | `session_id`（PK）, `last_seen_at` | ログイン時に作り、以後の更新は 1 時間に 1 回に間引く |
 | `oauth_clients` | リソース | `id`, `client_id`, `client_secret_hash`（NULL 可 = 公開クライアント）, `name`, `website`（NULL 可）, `scope`, `is_first_party`, `owner_user_id`（NULL 可）, `created_at` | 一意 `(client_id)` |
-| `oauth_client_redirect_uris` | リソース | `client_id`, `redirect_uri` | PK `(client_id, redirect_uri)`。完全一致で照合する |
+| `oauth_client_redirect_uris` | 現在値 | `client_id`, `redirect_uri` | PK `(client_id, redirect_uri)`。完全一致で照合する |
 | `oauth_authorization_codes` | リソース | `code_hash`（PK）, `client_id`, `user_id`, `redirect_uri`, `scope`, `code_challenge`, `issued_at`, `expires_at` | |
-| `oauth_authorization_code_redemptions` | イベント | `code_hash`（PK）, `redeemed_at` | |
-| `oauth_access_tokens` | リソース | `id`, `client_id`, `user_id`, `access_token_hash`, `refresh_token_hash`（NULL 可）, `scope`, `rotated_from_token_id`（NULL 可）, `issued_at`, `expires_at` | 一意 `(access_token_hash)`, `(refresh_token_hash)` |
-| `oauth_token_revocations` | イベント | `token_id`（PK）, `reason`（`enum(user, rotation, password_changed, moderation)`）, `revoked_at` | |
+| `oauth_authorization_code_redemptions` | イベント | `code_hash`（PK）, `token_id`, `redeemed_at` | `token_id` は交換で発行した系列の最初のトークン |
+| `oauth_access_tokens` | リソース | `id`, `family_id`, `client_id`, `user_id`, `access_token_hash`, `refresh_token_hash`（NULL 可）, `scope`, `rotated_from_token_id`（NULL 可）, `issued_at`, `expires_at`, `refresh_expires_at`（NULL 可） | 一意 `(access_token_hash)`, `(refresh_token_hash)`。インデックス `(family_id)`。`refresh_token_hash` と `refresh_expires_at` は同時に NULL |
+| `oauth_token_revocations` | イベント | `token_id`（PK）, `reason`（`enum(user, rotation, refresh_reuse, code_reuse, password_changed, moderation)`）, `revoked_at` | |
 
 - セッションは、サーバーが返す画面（ログイン・登録・認可同意）の Cookie `__Host-my_session` です（ADR-0019 §4、ADR-0030）。
   ログインのたびに新しいトークンを発行し、ブラウザが持っていた古いセッションは `replaced` で失効させます。
 - `scope` は RFC 6749 の scope 文字列（空白区切り・ソート済みの正規形）です。照合は文字列全体で行い、個々のスコープの検索には使わないため、1 カラムで持ちます。
+- `oauth_clients` 以外のテーブルの `client_id` は `oauth_clients.id` を指します。クライアントが送る公開の識別子は `oauth_clients.client_id` です。
+- ファーストパーティの Web クライアント（`client_id` は `my-web`）は起動時に冪等に登録します。リダイレクト URI は設定 `web_origin` から導くので、`oauth_client_redirect_uris` は起動のたびに設定値へ置き換える【現在値】です。
+- 認可コード・アクセストークン・リフレッシュトークンは、DB には SHA-256 ハッシュだけを保存します（ADR-0019 §4）。認可コードの 1 回性は `oauth_authorization_code_redemptions` の PK で保証します。
+- `oauth_access_tokens` の 1 行は 1 回の発行（アクセストークンと、あればリフレッシュトークン）です。`expires_at` はアクセストークンの、`refresh_expires_at` はリフレッシュトークンの期限です。
+  - リフレッシュのたびに同じ系列（`family_id` = 系列の最初の行の `id`）に新しい行を作り、古い行を `rotation` で失効させます。失効イベントは行のアクセストークンとリフレッシュトークンの両方を無効にします。
+  - 失効済みの行のリフレッシュトークンが再び使われたら、系列の全行を `refresh_reuse` で失効させます（RFC 9700 §4.14.2）。使用済みの認可コードが再び使われたら、そのコードで始まった系列を `code_reuse` で失効させます（RFC 6749 §4.1.2）。
+  - 有効なアクセストークン = 失効イベントが無く `expires_at` を過ぎていない行です。トークンの失効（RFC 7009）は系列全体を `user` で失効させます。
 
 #### 利用者設定【現在値】
 

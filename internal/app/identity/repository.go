@@ -47,6 +47,7 @@ type Repository interface {
 	FindRole(ctx context.Context, key string) (identity.Role, []identity.Permission, error)
 
 	PreferencesRepository
+	OAuthRepository
 
 	InsertSession(ctx context.Context, tx uow.Tx, s identity.Session) error
 	// InsertSessionRevocation records that a session ended; it does nothing when the session

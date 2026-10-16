@@ -5,6 +5,7 @@ package identity
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/best-friends/my/internal/app/account"
@@ -32,6 +33,9 @@ type Deps struct {
 	RateLimiter *kernel.RateLimiter
 	// SessionTTL is the lifetime of a session; zero means DefaultSessionTTL.
 	SessionTTL time.Duration
+	// WebClient is the first-party web client of the authorization server; a zero value
+	// registers none.
+	WebClient WebClient
 }
 
 // Service runs the identity module's use cases.
@@ -41,6 +45,9 @@ type Service struct {
 	// dummy is the hash that SignIn verifies against for unknown users, made on first use.
 	dummyMu sync.Mutex
 	dummy   string
+
+	// webClientReady is set once EnsureWebClient has succeeded.
+	webClientReady atomic.Bool
 }
 
 // NewService returns a Service on d.

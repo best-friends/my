@@ -1,4 +1,44 @@
 {
+  "auth.authorize.approve": {
+    "defaultMessage": "[Ȧŀŀǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.deny": {
+    "defaultMessage": "[Ḓḗḗƞẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.invalid": {
+    "defaultMessage": "[Ŧħīş ȧȧƥƥŀīƈȧȧŧīǿǿƞ'ş ȧȧŭŭŧħǿǿřīẑȧȧŧīǿǿƞ řḗḗɋŭŭḗḗşŧ īş īƞṽȧȧŀīḓ. Ƈǿǿƞŧȧȧƈŧ ŧħḗḗ ȧȧƥƥŀīƈȧȧŧīǿǿƞ'ş ḓḗḗṽḗḗŀǿǿƥḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.lead": {
+    "defaultMessage": "[{app} ẇȧȧƞŧş ŧǿǿ ŭŭşḗḗ ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ẇīŧħ ŧħḗḗşḗḗ ƥḗḗřḿīşşīǿǿƞş:]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.redirect_notice": {
+    "defaultMessage": "[Ȧƒŧḗḗř ẏǿǿŭŭ ƈħǿǿǿǿşḗḗ, ẏǿǿŭŭ ẇīŀŀ ƀḗḗ şḗḗƞŧ ƀȧȧƈķ ŧǿǿ {host}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.follow": {
+    "defaultMessage": "[Ƒǿǿŀŀǿǿẇ, ƀŀǿǿƈķ, ȧȧƞḓ ḿŭŭŧḗḗ ȧȧƈƈǿǿŭŭƞŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.push": {
+    "defaultMessage": "[Řḗḗƈḗḗīṽḗḗ ƥŭŭşħ ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.read": {
+    "defaultMessage": "[Řḗḗȧȧḓ ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ, ƥǿǿşŧş, ȧȧƞḓ ŧīḿḗḗŀīƞḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.write": {
+    "defaultMessage": "[Ƥǿǿşŧ ȧȧƞḓ ƈħȧȧƞɠḗḗ ŧħīƞɠş ƒǿǿř ẏǿǿŭŭ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.title": {
+    "defaultMessage": "[Ȧŭŭŧħǿǿřīẑḗḗ {app}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.cross_origin": {
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ẇȧȧş řḗḗƒŭŭşḗḗḓ ƀḗḗƈȧȧŭŭşḗḗ īŧ ƈȧȧḿḗḗ ƒřǿǿḿ ȧȧƞǿǿŧħḗḗř şīŧḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."

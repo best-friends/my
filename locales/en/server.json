@@ -1,4 +1,44 @@
 {
+  "auth.authorize.approve": {
+    "defaultMessage": "Allow",
+    "description": "Button on the authorization (consent) page that lets the application use the account."
+  },
+  "auth.authorize.deny": {
+    "defaultMessage": "Deny",
+    "description": "Button on the authorization (consent) page that refuses the application."
+  },
+  "auth.authorize.invalid": {
+    "defaultMessage": "This application's authorization request is invalid. Contact the application's developer.",
+    "description": "Error page (HTTP 400) when an application opened the authorization page with an unknown client or an unregistered redirect address."
+  },
+  "auth.authorize.lead": {
+    "defaultMessage": "{app} wants to use your account with these permissions:",
+    "description": "Introduces the list of permissions on the authorization (consent) page. {app} is the application's name."
+  },
+  "auth.authorize.redirect_notice": {
+    "defaultMessage": "After you choose, you will be sent back to {host}.",
+    "description": "Note under the permissions on the authorization (consent) page. {host} is the host name the application receives the answer at."
+  },
+  "auth.authorize.scope.follow": {
+    "defaultMessage": "Follow, block, and mute accounts",
+    "description": "Permission (OAuth scope follow) listed on the authorization page."
+  },
+  "auth.authorize.scope.push": {
+    "defaultMessage": "Receive push notifications",
+    "description": "Permission (OAuth scope push) listed on the authorization page."
+  },
+  "auth.authorize.scope.read": {
+    "defaultMessage": "Read your account, posts, and timelines",
+    "description": "Permission (OAuth scope read) listed on the authorization page."
+  },
+  "auth.authorize.scope.write": {
+    "defaultMessage": "Post and change things for you",
+    "description": "Permission (OAuth scope write) listed on the authorization page."
+  },
+  "auth.authorize.title": {
+    "defaultMessage": "Authorize {app}",
+    "description": "Title and heading of the authorization (consent) page. {app} is the name of the application asking for access."
+  },
   "auth.cross_origin": {
     "defaultMessage": "The request was refused because it came from another site.",
     "description": "Body of the page shown (HTTP 403) when a sign-in or sign-out form was submitted from another origin."

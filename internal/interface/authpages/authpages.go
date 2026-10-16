@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package authpages serves the server-rendered sign-in and sign-out screens (ADR-0030): plain
-// HTML forms from html/template that work without JavaScript, worded from the server message
-// catalog and styled by one stylesheet that the web client's build provides.
+// Package authpages serves the server-rendered sign-in, sign-out, and OAuth authorization
+// (consent) screens (ADR-0030): plain HTML forms from html/template that work without
+// JavaScript, worded from the server message catalog and styled by one stylesheet that the web
+// client's build provides.
 //
 // A sign-in starts a browser session carried by the __Host-my_session cookie (Secure,
 // HttpOnly, SameSite=Lax, Path=/) with a new token every time (ADR-0019 §4). Every POST passes
 // net/http.CrossOriginProtection and must carry the anti-forgery token of the __Host-my_csrf
 // cookie in its csrf_token field, for browsers that send neither Sec-Fetch-Site nor Origin
 // (ADR-0019 §4). Failed sign-ins answer with one message whether or not the account exists.
+//
+// The authorization endpoint (RFC 6749 §3.1) asks a signed-in user to consent to a third-party
+// client and answers the client by a 303 redirect to its registered redirect URI with the code
+// or the error, the state, and the issuer (RFC 9207). First-party clients skip the consent.
+// Without a session, it sends the browser to the sign-in form and back.
 package authpages
 
 import (
@@ -24,6 +30,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -35,8 +42,9 @@ import (
 
 // Paths of the screens.
 const (
-	PathSignIn  = "/auth/sign_in"
-	PathSignOut = "/auth/sign_out"
+	PathSignIn    = "/auth/sign_in"
+	PathSignOut   = "/auth/sign_out"
+	PathAuthorize = "/oauth/authorize"
 )
 
 // Cookie names. The __Host- prefix makes browsers accept the cookies only when Secure, without
@@ -50,8 +58,12 @@ const (
 const DefaultStylesheet = "/assets/server-pages.css"
 
 // contentSecurityPolicy allows the pages nothing but their own stylesheet, images, and forms.
-const contentSecurityPolicy = "default-src 'none'; style-src 'self'; img-src 'self'; form-action 'self'; " +
-	"frame-ancestors 'none'; base-uri 'none'"
+// Browsers check form-action on the redirects that follow a form, so it lists the origins a
+// form may end up at: this site, Options.FormActionOrigins, and the consent page's redirect URI.
+func contentSecurityPolicy(formAction []string) string {
+	return "default-src 'none'; style-src 'self'; img-src 'self'; form-action " + strings.Join(append([]string{"'self'"}, formAction...), " ") +
+		"; frame-ancestors 'none'; base-uri 'none'"
+}
 
 // maxFormBytes bounds a form body; the fields are an email address, a password, a token, and a path.
 const maxFormBytes = 16 << 10
@@ -66,10 +78,25 @@ type Identity interface {
 	SignOut(ctx context.Context, token string) error
 }
 
+// OAuth is what the authorization endpoint needs from the identity module; *identity.Service
+// implements it.
+type OAuth interface {
+	ValidateAuthorization(ctx context.Context, req appidentity.AuthorizationRequest) (appidentity.Authorization, error)
+	IssueAuthorizationCode(ctx context.Context, a appidentity.Authorization, userID string) (string, error)
+}
+
 // Options configure a Handler.
 type Options struct {
 	Identity Identity
-	Messages *i18n.Bundle
+	// OAuth serves the authorization endpoint; nil leaves it out.
+	OAuth OAuth
+	// Issuer is the authorization server's identifier, sent as the iss parameter of the
+	// authorization response (RFC 9207), e.g. https://social.example.
+	Issuer string
+	// FormActionOrigins are the origins besides this site that a sign-in may be redirected to,
+	// such as the web client's origin for its callback.
+	FormActionOrigins []string
+	Messages          *i18n.Bundle
 	// Stylesheet is the URL of the pages' stylesheet; empty means DefaultStylesheet.
 	Stylesheet string
 	// Logger logs unexpected errors; nil means slog.Default().
@@ -88,9 +115,10 @@ var templateFS embed.FS
 
 // Page templates, each rendered inside templates/layout.html.
 const (
-	pageSignIn   = "sign_in"
-	pageSignedIn = "signed_in"
-	pageError    = "error"
+	pageSignIn    = "sign_in"
+	pageSignedIn  = "signed_in"
+	pageError     = "error"
+	pageAuthorize = "authorize"
 )
 
 // New returns a Handler on o.
@@ -102,7 +130,7 @@ func New(o Options) *Handler {
 		o.Logger = slog.Default()
 	}
 	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
-	for _, name := range []string{pageSignIn, pageSignedIn, pageError} {
+	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageAuthorize} {
 		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
 	h.cop.SetDenyHandler(http.HandlerFunc(h.crossOrigin))
@@ -119,6 +147,10 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathSignIn, http.HandlerFunc(h.signInPage))
 	r.Handle("POST "+PathSignIn, h.cop.Handler(http.HandlerFunc(h.signIn)))
 	r.Handle("POST "+PathSignOut, h.cop.Handler(http.HandlerFunc(h.signOut)))
+	if h.o.OAuth != nil {
+		r.Handle("GET "+PathAuthorize, http.HandlerFunc(h.authorizePage))
+		r.Handle("POST "+PathAuthorize, h.cop.Handler(http.HandlerFunc(h.authorize)))
+	}
 }
 
 // page is the data of a template.
@@ -131,6 +163,11 @@ type page struct {
 	ReturnTo   string
 	Email      string
 	Error      string
+	// Consent is the authorization request on the consent page.
+	Consent *consent
+	// formAction lists origins the page's forms may be redirected to besides
+	// Options.FormActionOrigins.
+	formAction []string
 }
 
 func (h *Handler) newPage(r *http.Request, title func(*i18n.Localizer) string) page {
@@ -142,7 +179,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 	hd := w.Header()
 	hd.Set("Content-Type", "text/html; charset=utf-8")
 	hd.Set("Content-Language", p.Lang)
-	hd.Set("Content-Security-Policy", contentSecurityPolicy)
+	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...)))
 	hd.Set("Cache-Control", "no-store")
 	hd.Add("Vary", "Accept-Language, Cookie")
 	w.WriteHeader(status)

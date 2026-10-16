@@ -1,4 +1,44 @@
 {
+  "auth.authorize.approve": {
+    "defaultMessage": "許可する",
+    "description": "Button on the authorization (consent) page that lets the application use the account."
+  },
+  "auth.authorize.deny": {
+    "defaultMessage": "拒否する",
+    "description": "Button on the authorization (consent) page that refuses the application."
+  },
+  "auth.authorize.invalid": {
+    "defaultMessage": "このアプリの認可リクエストは正しくありません。アプリの開発者に問い合わせてください。",
+    "description": "Error page (HTTP 400) when an application opened the authorization page with an unknown client or an unregistered redirect address."
+  },
+  "auth.authorize.lead": {
+    "defaultMessage": "{app} が次の権限であなたのアカウントを使おうとしています。",
+    "description": "Introduces the list of permissions on the authorization (consent) page. {app} is the application's name."
+  },
+  "auth.authorize.redirect_notice": {
+    "defaultMessage": "選ぶと {host} に戻ります。",
+    "description": "Note under the permissions on the authorization (consent) page. {host} is the host name the application receives the answer at."
+  },
+  "auth.authorize.scope.follow": {
+    "defaultMessage": "アカウントのフォロー・ブロック・ミュート",
+    "description": "Permission (OAuth scope follow) listed on the authorization page."
+  },
+  "auth.authorize.scope.push": {
+    "defaultMessage": "プッシュ通知の受信",
+    "description": "Permission (OAuth scope push) listed on the authorization page."
+  },
+  "auth.authorize.scope.read": {
+    "defaultMessage": "アカウント・投稿・タイムラインの読み取り",
+    "description": "Permission (OAuth scope read) listed on the authorization page."
+  },
+  "auth.authorize.scope.write": {
+    "defaultMessage": "あなたに代わっての投稿と変更",
+    "description": "Permission (OAuth scope write) listed on the authorization page."
+  },
+  "auth.authorize.title": {
+    "defaultMessage": "{app} を認可",
+    "description": "Title and heading of the authorization (consent) page. {app} is the name of the application asking for access."
+  },
   "auth.cross_origin": {
     "defaultMessage": "別のサイトから送信されたため、リクエストを受け付けませんでした。",
     "description": "Body of the page shown (HTTP 403) when a sign-in or sign-out form was submitted from another origin."

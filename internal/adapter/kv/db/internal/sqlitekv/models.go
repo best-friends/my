@@ -240,6 +240,60 @@ type Mute struct {
 	CreatedAt         int64
 }
 
+type OauthAccessToken struct {
+	ID                 string
+	FamilyID           string
+	ClientID           string
+	UserID             string
+	AccessTokenHash    []byte
+	RefreshTokenHash   []byte
+	Scope              string
+	RotatedFromTokenID sql.NullString
+	IssuedAt           int64
+	ExpiresAt          int64
+	RefreshExpiresAt   sql.NullInt64
+}
+
+type OauthAuthorizationCode struct {
+	CodeHash      []byte
+	ClientID      string
+	UserID        string
+	RedirectUri   string
+	Scope         string
+	CodeChallenge string
+	IssuedAt      int64
+	ExpiresAt     int64
+}
+
+type OauthAuthorizationCodeRedemption struct {
+	CodeHash   []byte
+	TokenID    string
+	RedeemedAt int64
+}
+
+type OauthClient struct {
+	ID               string
+	ClientID         string
+	ClientSecretHash []byte
+	Name             string
+	Website          sql.NullString
+	Scope            string
+	IsFirstParty     int64
+	OwnerUserID      sql.NullString
+	CreatedAt        int64
+}
+
+type OauthClientRedirectUri struct {
+	ClientID    string
+	RedirectUri string
+}
+
+type OauthTokenRevocation struct {
+	TokenID   string
+	Reason    string
+	RevokedAt int64
+}
+
 type OutboxEvent struct {
 	ID             string
 	JobType        string
