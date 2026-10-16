@@ -1,6 +1,6 @@
 # ADR-0016: クライアント API の様式
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #32
@@ -24,7 +24,7 @@
 2. Connect RPC（Protocol Buffers）: connect-go / connect-es。型の一貫性が強く、ストリーミングも標準。GET キャッシュは限定的
 3. GraphQL（gqlgen）: クライアント主導の取得。キャッシュと N+1・認可の扱いが重い
 
-## Decision（推奨案）
+## Decision
 
 **1. REST + OpenAPI 3.1 をスキーマファーストで採用する。**
 

@@ -1,6 +1,6 @@
 # ADR-0005: Blob ストレージとメディア処理
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #7
@@ -10,7 +10,7 @@
 Fediverse サーバーの運営コストで最も膨らみやすいのが **リモートメディアのキャッシュ**（ストレージと転送量）。
 また画像のリサイズ・サムネイル生成は CPU とメモリを使い、libvips 等のネイティブライブラリは cgo を要求する（ADR-0001 の静的ビルド方針と衝突）。
 
-## Decision（推奨案）
+## Decision
 
 ### BlobStore ポート
 

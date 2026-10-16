@@ -1,6 +1,6 @@
 # ADR-0008: Web クライアントとモバイルアプリ
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #10
@@ -17,7 +17,7 @@ Web と、Tauri 2 もしくはネイティブのモバイルアプリを提供�
 | ネイティブ（Swift / Kotlin） | 最高の UX・OS 統合 | 2 コードベース + Web で 3 重実装、i18n カタログの共有に変換が必要 |
 | React Native / Expo | 単一コードベースでネイティブ UI、Push が成熟 | Web UI とは別実装になりやすい |
 
-## Decision（推奨案）
+## Decision
 
 - **Web クライアント**: TypeScript の SPA を PWA として提供（ツールチェーンは Bun。サーバーは Go なので、API の型は OpenAPI 等から生成する）（インストール可能、Web Push、iOS はホーム画面追加で Push 可）。
   静的アセットとしてビルドし、各ターゲットの CDN / 静的配信（Cloud Storage + CDN、S3 + CloudFront、Go バイナリへの `embed` 同梱）から配る。

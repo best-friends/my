@@ -1,6 +1,6 @@
 # ADR-0006: 連合プロトコルの対応範囲
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #8
@@ -9,7 +9,7 @@
 
 「ActivityPub 互換」の実態は仕様書よりも Mastodon をはじめとする主要実装との相互運用性で決まる（G4）。
 
-## Decision（推奨案）
+## Decision
 
 ### 対応する仕様・拡張（v0）
 

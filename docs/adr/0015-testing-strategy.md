@@ -1,6 +1,6 @@
 # ADR-0015: テスト戦略
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #14
@@ -10,7 +10,7 @@
 エージェントが自律的に作業するには、変更の正しさを機械的に判定できる必要がある（NFR-DEV-1, 2）。
 加えて、アダプタの差し替え可能性（NFR-PORT-3）と連合互換性（G4）を継続的に保証したい。
 
-## Decision（推奨案）
+## Decision
 
 | レベル | 対象 | 実行環境 | 実行タイミング |
 | --- | --- | --- | --- |
