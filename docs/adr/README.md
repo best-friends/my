@@ -43,4 +43,8 @@
 | [0029](0029-api-code-generation.md) | クライアント API のコード生成 | Accepted |
 | [0030](0030-web-client-token-handling.md) | Web クライアントのトークンの扱いとログイン画面 | Accepted |
 | [0031](0031-ui-kit-behavior-dependencies.md) | 共有 UI キットは、ドメインを持たない振る舞いのライブラリにも依存してよい | Accepted |
+| [0032](0032-http-signature-profile.md) | HTTP 署名の受信・送信プロファイル | Proposed |
+| [0033](0033-inbox-processing-model.md) | Inbox の受信処理モデル（同期・非同期の境界、重複排除、順序） | Proposed |
+| [0034](0034-remote-content-scope-and-retention.md) | リモートコンテンツの取り込み範囲・リフレッシュ・保持 | Proposed |
+| [0035](0035-local-visibility-mention-tags.md) | 公開範囲 local の投稿は、フォロワーでないリモートのメンション先を tag に入れない | Proposed |
 <!-- adr-index:end -->
