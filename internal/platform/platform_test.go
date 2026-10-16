@@ -69,7 +69,9 @@ func loadConfig(t *testing.T, env map[string]string) *config.Config {
 	t.Helper()
 	kek := make([]byte, 32)
 	_, _ = rand.Read(kek)
-	full := map[string]string{"MY_HOST": "example.test", "MY_KEK": base64.StdEncoding.EncodeToString(kek)}
+	full := map[string]string{
+		"MY_HOST": "example.test", "MY_KEK": base64.StdEncoding.EncodeToString(kek), "MY_BLOB_FS_DIR": t.TempDir(),
+	}
 	for k, v := range env {
 		full[k] = v
 	}

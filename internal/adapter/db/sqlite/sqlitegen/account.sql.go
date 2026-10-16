@@ -404,6 +404,22 @@ func (q *Queries) InsertProfileRevision(ctx context.Context, arg InsertProfileRe
 	return err
 }
 
+const isMediaReferencedByProfiles = `-- name: IsMediaReferencedByProfiles :one
+SELECT EXISTS (
+  SELECT 1 FROM account_profile_revisions
+  WHERE avatar_media_id = ?1 OR header_media_id = ?1
+)
+`
+
+// Whether any profile revision uses a media file as its avatar or header; the content module's
+// cleanup keeps such files.
+func (q *Queries) IsMediaReferencedByProfiles(ctx context.Context, mediaID sql.NullString) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isMediaReferencedByProfiles, mediaID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listAccountHandles = `-- name: ListAccountHandles :many
 SELECT account_id, username, username_normalized, domain FROM account_handles ORDER BY account_id
 `

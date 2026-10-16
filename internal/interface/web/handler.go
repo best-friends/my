@@ -70,7 +70,8 @@ const (
 
 // reservedPrefixes are the paths of the server's other endpoints. The SPA has no routes under
 // them, so a request there that no endpoint serves is the server's 404, never the shell.
-var reservedPrefixes = []string{"/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media"}
+// /uploads is the blob prefix of media as received, which is never served (it may carry EXIF).
+var reservedPrefixes = []string{"/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads"}
 
 // Cache-Control values (ADR-0028).
 const (

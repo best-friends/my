@@ -227,6 +227,13 @@ type ProfileInput struct {
 	Fields []account.ProfileField
 }
 
+// IsMediaReferenced reports whether any profile revision, current or not, uses a media file as
+// its avatar or header. It implements content.MediaReferrer, so that the cleanup of unattached
+// uploads keeps profile images.
+func (s *Service) IsMediaReferenced(ctx context.Context, mediaID string) (bool, error) {
+	return s.d.Repository.IsMediaReferenced(ctx, mediaID)
+}
+
 // ReviseProfile records a new revision of an account's profile and makes it current.
 func (s *Service) ReviseProfile(ctx context.Context, accountID string, in ProfileInput) (account.ProfileRevision, error) {
 	base := account.ProfileRevision{

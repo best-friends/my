@@ -72,7 +72,7 @@ func TestWebClient(t *testing.T) {
 		{"ActivityPub", http.MethodGet, "/ap/nope/x/y", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
 		{"NodeInfo", http.MethodGet, "/nodeinfo", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
 		{"well-known", http.MethodGet, "/.well-known/nope", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
-		{"media", http.MethodGet, "/media/a/b.png", acceptBrowser, http.StatusNotFound, problem, []string{"Accept", "Accept-Language"}},
+		{"media", http.MethodGet, "/media/a/b.png", acceptBrowser, http.StatusNotFound, problem, []string{"Accept-Language"}},
 		{"POST", http.MethodPost, "/settings/profile", acceptBrowser, http.StatusNotFound, problem, []string{"Accept-Language"}},
 	}
 	for _, tt := range tests {

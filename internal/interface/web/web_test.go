@@ -194,7 +194,7 @@ func TestReservedPathsAreNotTheShell(t *testing.T) {
 		notFound = append(notFound, r.URL.Path)
 		w.WriteHeader(http.StatusNotFound)
 	}})
-	reserved := []string{"/api", "/api/v1/nope", "/oauth/authorize", "/auth/login", "/.well-known/nope", "/nodeinfo", "/nodeinfo/2.0", "/ap/nope", "/media/x.png"}
+	reserved := []string{"/api", "/api/v1/nope", "/oauth/authorize", "/auth/login", "/.well-known/nope", "/nodeinfo", "/nodeinfo/2.0", "/ap/nope", "/media/x.png", "/uploads/x"}
 	for _, p := range reserved {
 		if rec := get(mux, p, nil); rec.Code != http.StatusNotFound {
 			t.Errorf("GET %s = %d, want 404", p, rec.Code)
