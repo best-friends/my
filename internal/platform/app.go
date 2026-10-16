@@ -98,6 +98,8 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// Statuses presents statuses, their threads and history, and bookmarks to a viewer.
+	Statuses *content.Reader
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
 
@@ -124,7 +126,7 @@ type App struct {
 	routes     []route
 	// page serves the web client's HTML at the GET paths that no route serves.
 	page http.Handler
-	// webStylesheet is the URL of the web client's built CSS, empty without a build.
+	// webStylesheet is the URL of the server-rendered pages' stylesheet from the web build, empty without one.
 	webStylesheet string
 }
 
@@ -294,6 +296,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
 		// No moderation restrictions exist yet; posting still goes through the policy port.
 		Restrictions:    content.NoRestrictions{},
+		Media:           medias,
 		MaxStatusLength: a.Instance.MaxStatusLength,
 		DefaultLanguage: a.defaultPostLanguage,
 		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
@@ -322,6 +325,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	a.Statuses = content.NewReader(content.ReaderDeps{
+		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
+		Restrictions: content.NoRestrictions{}, Media: a.Media,
+	})
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
 		Repository: statuses, Accounts: a.Accounts, Restrictions: content.NoRestrictions{}, Media: a.Media,
@@ -335,7 +342,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
-	// The sign-in screens share the web client's built CSS (ADR-0030).
+	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
@@ -353,7 +360,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		MaxPostCharacters: defaultMaxPostCharacters,
 		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
 		Notifications: a.Notifications,
-		Locales:       a.Locales, RequestID: RequestID, Logger: a.Logger,
+		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
+		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }

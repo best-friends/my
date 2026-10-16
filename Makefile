@@ -226,10 +226,11 @@ web-test: web-install ## Run the client component tests with Vitest (jsdom + MSW
 	cd app/web && bun run test
 	cd app/ui && bun run test:unit
 
-# Playwright runs against `vite preview` of the fresh build. E2E_MATRIX=full runs every width × locale
-# project (nightly); the default is the per-PR subset (app/web/playwright.config.ts). CI runs it in the
-# pinned Playwright image; locally, install the browser once with `make web-e2e-install`.
-web-e2e: web-build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for the whole matrix)
+# Playwright runs against `vite preview` of the fresh build, and the server-rendered pages against
+# `my serve` on SQLite from the fresh bin/my (app/web/e2e/server.ts). E2E_MATRIX=full runs every width ×
+# locale project (nightly); the default is the per-PR subset (app/web/playwright.config.ts). CI runs it in
+# the pinned Playwright image; locally, install the browser once with `make web-e2e-install`.
+web-e2e: build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for the whole matrix)
 	cd app/web && bun run e2e
 
 web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
@@ -237,7 +238,7 @@ web-e2e-install: web-install ## Download the Playwright browser that web-e2e use
 
 web-routes-check: web-build ## Fail when the committed app/web/src/routeTree.gen.ts differs from the one the build generates
 	@git diff --exit-code --quiet -- app/web/src/routeTree.gen.ts \
-		|| { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client.md §8)' >&2; exit 1; }
+		|| { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client.md §9)' >&2; exit 1; }
 
 web-check: web-typecheck web-lint web-build web-routes-check web-licenses web-tokens web-test playwright-image-check ## Run every offline web client check
 

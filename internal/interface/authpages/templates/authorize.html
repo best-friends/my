@@ -1,11 +1,11 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
 <p>{{.L.ServerAuthAuthorizeLead .Consent.ClientName}}</p>
-<ul>
+<ul class="scopes">
 {{range .Consent.Scopes}}<li>{{.}}</li>
 {{end}}</ul>
-<p>{{.L.ServerAuthAuthorizeRedirectNotice .Consent.RedirectHost}}</p>
-<form method="post" action="/oauth/authorize">
+<p class="hint">{{.L.ServerAuthAuthorizeRedirectNotice .Consent.RedirectHost}}</p>
+<form class="form" method="post" action="/oauth/authorize">
 <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
 <input type="hidden" name="response_type" value="{{.Consent.ResponseType}}">
 <input type="hidden" name="client_id" value="{{.Consent.ClientID}}">
@@ -14,7 +14,9 @@
 {{if .Consent.State}}<input type="hidden" name="state" value="{{.Consent.State}}">{{end}}
 <input type="hidden" name="code_challenge" value="{{.Consent.CodeChallenge}}">
 <input type="hidden" name="code_challenge_method" value="{{.Consent.CodeChallengeMethod}}">
-<button type="submit" name="decision" value="approve">{{.L.ServerAuthAuthorizeApprove}}</button>
-<button type="submit" name="decision" value="deny">{{.L.ServerAuthAuthorizeDeny}}</button>
+<div class="actions">
+<button class="button" type="submit" name="decision" value="approve">{{.L.ServerAuthAuthorizeApprove}}</button>
+<button class="button button-secondary" type="submit" name="decision" value="deny">{{.L.ServerAuthAuthorizeDeny}}</button>
+</div>
 </form>
 {{end}}
