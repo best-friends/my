@@ -57,23 +57,13 @@ func (f *fakeProfiles) UpdateProfile(_ context.Context, _ string, in appaccount.
 	return a, nil
 }
 
-// fakeMedia knows one processed image.
-type fakeMedia struct{}
-
-func (fakeMedia) Media(_ context.Context, id string) (appcontent.Media, error) {
-	if id != avatarID {
-		return appcontent.Media{}, appcontent.ErrNotFound
-	}
-	return appcontent.Media{
-		File: content.MediaFile{ID: id, OwnerAccountID: aliceAccountID},
-		Result: &content.MediaProcessingResult{
-			Outcome:  content.MediaReady,
-			Variants: []content.MediaVariant{{Kind: content.VariantFull, BlobKey: "media/" + id + ".webp"}},
-		},
-	}, nil
+// profileMedia returns a fakeMedia holding avatarID, a processed image that alice uploaded.
+func profileMedia() *fakeMedia {
+	f := newFakeMedia()
+	f.files[avatarID] = appcontent.Media{File: content.MediaFile{ID: avatarID, OwnerAccountID: aliceAccountID, Origin: content.MediaOriginUpload}}
+	f.process(avatarID, content.MediaReady)
+	return f
 }
-
-func (fakeMedia) URL(v content.MediaVariant) string { return "https://files.example/" + v.BlobKey }
 
 // sendJSON sends a request with a JSON body, which must conform to the spec unless it contains
 // "invalid-on-purpose".
@@ -109,7 +99,7 @@ func TestVerifyAccountCredentialsHasTheSource(t *testing.T) {
 		alice := o.Accounts.(fakeAccounts)[aliceAccountID]
 		alice.Profile = aliceProfile()
 		o.Accounts = fakeAccounts{aliceAccountID: alice}
-		o.Media = fakeMedia{}
+		o.Media = profileMedia()
 	})
 	res := e.get(t, "/accounts/verify_credentials", map[string]string{"Authorization": "Bearer read"})
 	if res.StatusCode != http.StatusOK {
@@ -119,7 +109,7 @@ func TestVerifyAccountCredentialsHasTheSource(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
-	avatar, mediaID, followers, following := "https://files.example/media/"+avatarID+".webp", avatarID, 2, 1
+	avatar, mediaID, followers, following := "https://social.example/media/"+avatarID+"/full.png", avatarID, 2, 1
 	want := clientapi.CredentialAccount{
 		Id: aliceAccountID, Username: "alice", Acct: "alice", DisplayName: "Alice", Note: "<p>hi</p>",
 		Url: "https://social.example/@alice", Locked: true, Discoverable: true, CreatedAt: createdAt, Avatar: &avatar,
@@ -141,7 +131,7 @@ func TestUpdateAccountCredentials(t *testing.T) {
 		alice.Profile = aliceProfile()
 		profiles.actor = alice
 		o.Profiles = profiles
-		o.Media = fakeMedia{}
+		o.Media = profileMedia()
 	})
 	res := e.sendJSON(t, http.MethodPatch, "/accounts/update_credentials", "write",
 		`{"display_name":"Alice A.","note":"hello","fields":[{"name":"pronouns","value":"she/her"}],"bot":true}`)

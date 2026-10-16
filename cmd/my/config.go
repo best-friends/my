@@ -48,7 +48,7 @@ func runConfig(args []string, stdout, stderr io.Writer) int {
 	}
 	_ = tw.Flush()
 	if err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
+		printLoadError(stderr, err)
 		return 1
 	}
 	_, _ = fmt.Fprintln(stdout, "configuration OK")

@@ -32,7 +32,7 @@ type store interface {
 	set(ctx context.Context, tx uow.Tx, namespace, key string, value []byte, expiresAt *time.Time) error
 	del(ctx context.Context, tx uow.Tx, namespace, key string) error
 	incr(ctx context.Context, tx uow.Tx, namespace, key string, initial []byte, expiresAt *time.Time, now time.Time) ([]byte, error)
-	deleteExpired(ctx context.Context, tx uow.Tx, now time.Time) (int64, error)
+	deleteExpired(ctx context.Context, tx uow.Tx, now time.Time, limit int) (int64, error)
 }
 
 // Store is the database key-value store.
@@ -130,12 +130,15 @@ func (s *Store) IncrBy(ctx context.Context, namespace, key string, n int64, ttl 
 }
 
 // DeleteExpired implements kernel.KeyValueStore.
-func (s *Store) DeleteExpired(ctx context.Context) (int64, error) {
+func (s *Store) DeleteExpired(ctx context.Context, limit int) (int64, error) {
+	if limit <= 0 {
+		return 0, nil
+	}
 	now := s.clock.Now()
 	var n int64
 	err := s.db.Tx(ctx, func(tx uow.Tx) error {
 		var err error
-		n, err = s.st.deleteExpired(ctx, tx, now)
+		n, err = s.st.deleteExpired(ctx, tx, now, limit)
 		return err
 	})
 	if err != nil {

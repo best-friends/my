@@ -25,5 +25,15 @@ ON CONFLICT (namespace, key) DO UPDATE SET
     ELSE kv_entries.expires_at END
 RETURNING value;
 
+-- DeleteExpiredEntries removes at most @batch_limit expired entries, the earliest expired first.
+-- The outer condition is checked again on each row it locks, so that an entry that IncrEntry
+-- renewed meanwhile stays.
 -- name: DeleteExpiredEntries :execrows
-DELETE FROM kv_entries WHERE expires_at <= @now::timestamptz;
+DELETE FROM kv_entries
+WHERE expires_at <= @now::timestamptz
+  AND (namespace, key) IN (
+    SELECT namespace, key FROM kv_entries
+    WHERE expires_at <= @now::timestamptz
+    ORDER BY expires_at
+    LIMIT @batch_limit::integer
+  );

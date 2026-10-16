@@ -21,12 +21,6 @@ type Profiles interface {
 	UpdateProfile(ctx context.Context, accountID string, in appaccount.ProfileUpdate) (appaccount.Actor, error)
 }
 
-// MediaFiles reads media files for presenting them. *appcontent.MediaService implements it.
-type MediaFiles interface {
-	Media(ctx context.Context, id string) (appcontent.Media, error)
-	URL(v content.MediaVariant) string
-}
-
 // newCredentialAccount presents the viewer's own actor as the CredentialAccount schema: the
 // account with its follow counts (newProfile), images, and the source of its profile.
 func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (CredentialAccount, error) {
@@ -57,26 +51,26 @@ func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (
 	}
 	if p.AvatarMediaID != "" {
 		out.Source.AvatarMediaId = &p.AvatarMediaID
-		if out.Avatar, err = s.imageURL(ctx, p.AvatarMediaID); err != nil {
+		if out.Avatar, err = s.imageURL(ctx, a.Account.ID, p.AvatarMediaID); err != nil {
 			return CredentialAccount{}, err
 		}
 	}
 	if p.HeaderMediaID != "" {
 		out.Source.HeaderMediaId = &p.HeaderMediaID
-		if out.Header, err = s.imageURL(ctx, p.HeaderMediaID); err != nil {
+		if out.Header, err = s.imageURL(ctx, a.Account.ID, p.HeaderMediaID); err != nil {
 			return CredentialAccount{}, err
 		}
 	}
 	return out, nil
 }
 
-// imageURL returns the URL of the full variant of a processed image, or nil when there is
-// none to show.
-func (s *Server) imageURL(ctx context.Context, mediaID string) (*string, error) {
+// imageURL returns the URL of the full variant of a processed image that accountID uploaded,
+// or nil when there is none to show.
+func (s *Server) imageURL(ctx context.Context, accountID, mediaID string) (*string, error) {
 	if s.o.Media == nil {
 		return nil, nil
 	}
-	m, err := s.o.Media.Media(ctx, mediaID)
+	m, err := s.o.Media.OwnMedia(ctx, accountID, mediaID)
 	if errors.Is(err, appcontent.ErrNotFound) {
 		return nil, nil
 	}

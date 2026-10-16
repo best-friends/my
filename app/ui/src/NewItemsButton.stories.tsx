@@ -17,8 +17,13 @@ type Story = StoryObj<typeof meta>;
 export const Waiting: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await expect(canvas.getByRole("status")).toHaveTextContent("3 new posts");
-    await userEvent.click(canvas.getByRole("button", { name: "3 new posts" }));
+    const button = canvas.getByRole("button", { name: "3 new posts" });
+    await userEvent.click(button);
     await expect(args.onPress).toHaveBeenCalledOnce();
+    // Leave no hover or focus state in the screenshot: the hover would otherwise end at an arbitrary
+    // point while the screenshots are taken, when Chromium moves the real pointer after a resize.
+    await userEvent.unhover(button);
+    button.blur();
   },
 };
 

@@ -14,10 +14,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"time"
 
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for InstanceRegistrationsMode.
@@ -38,6 +40,27 @@ func (e InstanceRegistrationsMode) Valid() bool {
 	case InstanceRegistrationsModeInvite:
 		return true
 	case InstanceRegistrationsModeOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MediaAttachmentState.
+const (
+	MediaAttachmentStateFailed     MediaAttachmentState = "failed"
+	MediaAttachmentStateProcessing MediaAttachmentState = "processing"
+	MediaAttachmentStateReady      MediaAttachmentState = "ready"
+)
+
+// Valid indicates whether the value is a known member of the MediaAttachmentState enum.
+func (e MediaAttachmentState) Valid() bool {
+	switch e {
+	case MediaAttachmentStateFailed:
+		return true
+	case MediaAttachmentStateProcessing:
+		return true
+	case MediaAttachmentStateReady:
 		return true
 	default:
 		return false
@@ -375,49 +398,107 @@ type InstanceRegistrations struct {
 // approval), `invite` (only with an invite), or `closed` (nobody).
 type InstanceRegistrationsMode string
 
-// MediaAttachment A media file. Statuses attach only files that finished processing; `url` and
-// `preview_url` are omitted while a file is not ready.
+// MediaAttachment A media file, as an upload of the user (the media operations) or as an attachment of
+// a status (`Status.media_attachments`). `variants` and `blurhash` are present once the
+// file is `ready`; statuses attach only ready files. In a status, `description` is the
+// status revision's own copy of the alternative text.
 type MediaAttachment struct {
-	// Blurhash A BlurHash of the image, shown while it loads.
+	// Blurhash The blurhash (https://blurha.sh) of the image, to show while it loads.
 	Blurhash *string `json:"blurhash,omitempty"`
 
-	// Description The alternative text; omitted when there is none.
+	// Description The alternative text; absent when there is none.
 	Description *string `json:"description,omitempty"`
-
-	// Focus The focal point that crops keep in view; omitted for the center.
-	Focus *MediaFocus `json:"focus,omitempty"`
-
-	// Height The height of `url` in pixels.
-	Height *int `json:"height,omitempty"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
 
-	// PreviewUrl A smaller rendition for previews.
-	PreviewUrl *string `json:"preview_url,omitempty"`
+	// Meta What the server knows about the media file.
+	Meta MediaMeta `json:"meta"`
 
-	// Type The kind of media; `unknown` until processing finishes, or when it failed.
+	// State The processing state: `processing` until the server has re-encoded the file,
+	// then `ready`, or `failed` when the content could not be processed.
+	State MediaAttachmentState `json:"state"`
+
+	// Type The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
 	Type MediaAttachmentType `json:"type"`
 
-	// Url The processed file, without metadata.
-	Url *string `json:"url,omitempty"`
+	// Variants The renditions of a ready media file.
+	Variants *MediaVariants `json:"variants,omitempty"`
+}
 
-	// Width The width of `url` in pixels.
+// MediaAttachmentState The processing state: `processing` until the server has re-encoded the file,
+// then `ready`, or `failed` when the content could not be processed.
+type MediaAttachmentState string
+
+// MediaAttachmentType The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+type MediaAttachmentType string
+
+// MediaFocus The focal point that previews keep in view when they crop the image, from -1.0 (left,
+// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+type MediaFocus struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+// MediaMeta What the server knows about the media file.
+type MediaMeta struct {
+	// Focus The focal point that previews keep in view when they crop the image, from -1.0 (left,
+	// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+	Focus MediaFocus `json:"focus"`
+
+	// Height The height of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+	Height *int `json:"height,omitempty"`
+
+	// Width The width of the original image in pixels, after its EXIF orientation; absent until the file is ready.
 	Width *int `json:"width,omitempty"`
 }
 
-// MediaAttachmentType The kind of media; `unknown` until processing finishes, or when it failed.
-type MediaAttachmentType string
+// MediaUpdate The changes to a media file; a property left out keeps its value.
+type MediaUpdate struct {
+	// Description The alternative text; an empty string removes it.
+	Description *string `json:"description,omitempty"`
 
-// MediaFocus The focal point that crops keep in view; omitted for the center.
-type MediaFocus struct {
-	// X From -1 (left edge) to 1 (right edge).
-	X float32 `json:"x"`
+	// Focus The focal point that previews keep in view when they crop the image, from -1.0 (left,
+	// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+	Focus *MediaFocus `json:"focus,omitempty"`
+}
 
-	// Y From -1 (bottom edge) to 1 (top edge).
-	Y float32 `json:"y"`
+// MediaUpload An upload of a media file.
+type MediaUpload struct {
+	// Description The alternative text.
+	Description *string `json:"description,omitempty"`
+
+	// File The file. Its declared type, if any, must match its content.
+	File openapi_types.File `json:"file"`
+}
+
+// MediaVariant A rendition of a media file, without metadata.
+type MediaVariant struct {
+	// ContentType The media type of the rendition.
+	ContentType string `json:"content_type"`
+
+	// Height The height in pixels.
+	Height int `json:"height"`
+
+	// Size The size of the file in bytes.
+	Size int64 `json:"size"`
+
+	// Url Where the rendition is served.
+	Url string `json:"url"`
+
+	// Width The width in pixels.
+	Width int `json:"width"`
+}
+
+// MediaVariants The renditions of a ready media file.
+type MediaVariants struct {
+	// Full The file itself, scaled down to at most 3840 × 2160 pixels of area.
+	Full MediaVariant `json:"full"`
+
+	// Thumbnail The preview, at most 640 × 360 pixels of area.
+	Thumbnail MediaVariant `json:"thumbnail"`
 }
 
 // MuteAccountRequest The settings of a mute.
@@ -552,6 +633,16 @@ type Preferences struct {
 //     deactivated or deleted).
 //   - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
 //     from following it. Unblock it first.
+//   - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
+//     instance accepts.
+//   - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
+//     accepted format, or its declared type does not match its content.
+//   - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
+//     many pixels or frames.
+//   - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
+//     of its format.
+//   - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
+//     no longer be changed on its own.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -1054,6 +1145,12 @@ type FollowAccountJSONRequestBody = FollowAccountRequest
 // MuteAccountJSONRequestBody defines body for MuteAccount for application/json ContentType.
 type MuteAccountJSONRequestBody = MuteAccountRequest
 
+// UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
+type UploadMediaMultipartRequestBody = MediaUpload
+
+// UpdateMediaJSONRequestBody defines body for UpdateMedia for application/json ContentType.
+type UpdateMediaJSONRequestBody = MediaUpdate
+
 // UpdateNotificationMarkerJSONRequestBody defines body for UpdateNotificationMarker for application/json ContentType.
 type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
 
@@ -1131,6 +1228,15 @@ type ServerInterface interface {
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(w http.ResponseWriter, r *http.Request)
+	// UploadMedia Upload a media file
+	// (POST /media)
+	UploadMedia(w http.ResponseWriter, r *http.Request)
+	// GetMedia Get a media file that the user uploaded
+	// (GET /media/{id})
+	GetMedia(w http.ResponseWriter, r *http.Request, id Id)
+	// UpdateMedia Change the description or focal point of a media file
+	// (PATCH /media/{id})
+	UpdateMedia(w http.ResponseWriter, r *http.Request, id Id)
 	// ListMutes List the accounts that the viewer mutes
 	// (GET /mutes)
 	ListMutes(w http.ResponseWriter, r *http.Request, params ListMutesParams)
@@ -1918,6 +2024,72 @@ func (siw *ServerInterfaceWrapper) GetInstance(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetInstance(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UploadMedia operation middleware
+func (siw *ServerInterfaceWrapper) UploadMedia(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UploadMedia(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMedia operation middleware
+func (siw *ServerInterfaceWrapper) GetMedia(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMedia(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateMedia operation middleware
+func (siw *ServerInterfaceWrapper) UpdateMedia(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateMedia(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2808,6 +2980,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/follow_requests/{id}/authorize", wrapper.AcceptFollowRequest)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/follow_requests/{id}/reject", wrapper.RejectFollowRequest)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/mutes", wrapper.ListMutes)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/media", wrapper.UploadMedia)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/media/{id}", wrapper.GetMedia)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/media/{id}", wrapper.UpdateMedia)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications", wrapper.ListNotifications)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications/marker", wrapper.GetNotificationMarker)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/notifications/marker", wrapper.UpdateNotificationMarker)
@@ -4063,6 +4238,193 @@ type GetInstancedefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetInstancedefaultApplicationProblemPlusJSONResponse) VisitGetInstanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadMediaRequestObject struct {
+	Body *multipart.Reader
+}
+
+type UploadMediaResponseObject interface {
+	VisitUploadMediaResponse(w http.ResponseWriter) error
+}
+
+type UploadMedia202ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UploadMedia202JSONResponse struct {
+	Body    MediaAttachment
+	Headers UploadMedia202ResponseHeaders
+}
+
+func (response UploadMedia202JSONResponse) VisitUploadMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadMediadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UploadMediadefaultApplicationProblemPlusJSONResponse) VisitUploadMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMediaRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetMediaResponseObject interface {
+	VisitGetMediaResponse(w http.ResponseWriter) error
+}
+
+type GetMedia200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetMedia200JSONResponse struct {
+	Body    MediaAttachment
+	Headers GetMedia200ResponseHeaders
+}
+
+func (response GetMedia200JSONResponse) VisitGetMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMediadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetMediadefaultApplicationProblemPlusJSONResponse) VisitGetMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMediaRequestObject struct {
+	Id   Id `json:"id"`
+	Body *UpdateMediaJSONRequestBody
+}
+
+type UpdateMediaResponseObject interface {
+	VisitUpdateMediaResponse(w http.ResponseWriter) error
+}
+
+type UpdateMedia200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdateMedia200JSONResponse struct {
+	Body    MediaAttachment
+	Headers UpdateMedia200ResponseHeaders
+}
+
+func (response UpdateMedia200JSONResponse) VisitUpdateMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMediadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateMediadefaultApplicationProblemPlusJSONResponse) VisitUpdateMediaResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -5593,6 +5955,15 @@ type StrictServerInterface interface {
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(ctx context.Context, request GetInstanceRequestObject) (GetInstanceResponseObject, error)
+	// UploadMedia Upload a media file
+	// (POST /media)
+	UploadMedia(ctx context.Context, request UploadMediaRequestObject) (UploadMediaResponseObject, error)
+	// GetMedia Get a media file that the user uploaded
+	// (GET /media/{id})
+	GetMedia(ctx context.Context, request GetMediaRequestObject) (GetMediaResponseObject, error)
+	// UpdateMedia Change the description or focal point of a media file
+	// (PATCH /media/{id})
+	UpdateMedia(ctx context.Context, request UpdateMediaRequestObject) (UpdateMediaResponseObject, error)
 	// ListMutes List the accounts that the viewer mutes
 	// (GET /mutes)
 	ListMutes(ctx context.Context, request ListMutesRequestObject) (ListMutesResponseObject, error)
@@ -6272,6 +6643,96 @@ func (sh *strictHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetInstanceResponseObject); ok {
 		if err := validResponse.VisitGetInstanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UploadMedia operation middleware
+func (sh *strictHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
+	var request UploadMediaRequestObject
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UploadMedia(ctx, request.(UploadMediaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UploadMedia")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UploadMediaResponseObject); ok {
+		if err := validResponse.VisitUploadMediaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMedia operation middleware
+func (sh *strictHandler) GetMedia(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetMediaRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMedia(ctx, request.(GetMediaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMedia")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMediaResponseObject); ok {
+		if err := validResponse.VisitGetMediaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateMedia operation middleware
+func (sh *strictHandler) UpdateMedia(w http.ResponseWriter, r *http.Request, id Id) {
+	var request UpdateMediaRequestObject
+
+	request.Id = id
+
+	var body UpdateMediaJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateMedia(ctx, request.(UpdateMediaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateMedia")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateMediaResponseObject); ok {
+		if err := validResponse.VisitUpdateMediaResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

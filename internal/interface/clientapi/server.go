@@ -37,7 +37,8 @@ type Options struct {
 	Profiles Profiles
 	// Preferences reads and changes the viewer's preferences.
 	Preferences UserPreferences
-	// Media presents the media files of profiles; nil presents no images.
+	// Media runs the media use cases and presents profile images; nil serves no media
+	// operation (they fail with 500) and presents no images.
 	Media MediaFiles
 	// Graph reads and changes follows, blocks, and mutes.
 	Graph Graph

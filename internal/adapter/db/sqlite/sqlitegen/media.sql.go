@@ -12,6 +12,15 @@ import (
 	"database/sql"
 )
 
+const deleteMediaDescription = `-- name: DeleteMediaDescription :exec
+DELETE FROM media_descriptions WHERE media_id = ?
+`
+
+func (q *Queries) DeleteMediaDescription(ctx context.Context, mediaID string) error {
+	_, err := q.db.ExecContext(ctx, deleteMediaDescription, mediaID)
+	return err
+}
+
 const deleteMediaFocus = `-- name: DeleteMediaFocus :exec
 DELETE FROM media_focus WHERE media_id = ?
 `
@@ -60,6 +69,17 @@ DELETE FROM uploaded_media WHERE media_id = ?
 func (q *Queries) DeleteUploadedMedia(ctx context.Context, mediaID string) error {
 	_, err := q.db.ExecContext(ctx, deleteUploadedMedia, mediaID)
 	return err
+}
+
+const getMediaDescription = `-- name: GetMediaDescription :one
+SELECT media_id, description FROM media_descriptions WHERE media_id = ?
+`
+
+func (q *Queries) GetMediaDescription(ctx context.Context, mediaID string) (MediaDescription, error) {
+	row := q.db.QueryRowContext(ctx, getMediaDescription, mediaID)
+	var i MediaDescription
+	err := row.Scan(&i.MediaID, &i.Description)
+	return i, err
 }
 
 const getMediaFile = `-- name: GetMediaFile :one
@@ -221,6 +241,17 @@ func (q *Queries) InsertUploadedMedia(ctx context.Context, arg InsertUploadedMed
 	return err
 }
 
+const isMediaAttached = `-- name: IsMediaAttached :one
+SELECT EXISTS (SELECT 1 FROM status_revision_attachments WHERE media_id = ?)
+`
+
+func (q *Queries) IsMediaAttached(ctx context.Context, mediaID string) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isMediaAttached, mediaID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listMediaProcessingResults = `-- name: ListMediaProcessingResults :many
 SELECT id, media_id, outcome, media_type, width, height, duration_ms, blurhash, processed_at
 FROM media_processing_results WHERE media_id = ? ORDER BY id
@@ -332,6 +363,21 @@ func (q *Queries) ListUnattachedUploads(ctx context.Context, arg ListUnattachedU
 		return nil, err
 	}
 	return items, nil
+}
+
+const upsertMediaDescription = `-- name: UpsertMediaDescription :exec
+INSERT INTO media_descriptions (media_id, description) VALUES (?, ?)
+ON CONFLICT (media_id) DO UPDATE SET description = excluded.description
+`
+
+type UpsertMediaDescriptionParams struct {
+	MediaID     string
+	Description string
+}
+
+func (q *Queries) UpsertMediaDescription(ctx context.Context, arg UpsertMediaDescriptionParams) error {
+	_, err := q.db.ExecContext(ctx, upsertMediaDescription, arg.MediaID, arg.Description)
+	return err
 }
 
 const upsertMediaFocus = `-- name: UpsertMediaFocus :exec

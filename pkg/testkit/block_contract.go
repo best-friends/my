@@ -24,7 +24,8 @@ import (
 // blocking again as a new block that keeps the earlier one on record, paging blocks, rejecting
 // invalid blocks, recording each retraction once, concurrent follows and blocks of one pair,
 // the emitted domain events, muting with and without expiry (an expired mute no longer applies
-// on read), paging mutes, rejecting invalid mutes, and the property that follow_edges,
+// on read), paging mutes, rejecting invalid mutes, deleting expired mutes with an Unmuted each,
+// and the property that follow_edges,
 // follow_counters, and block_edges equal a rebuild from the follows, the blocks, and their events.
 func BlockRepositoryContract(t *testing.T, newHarness FollowFactory) {
 	t.Helper()
@@ -43,6 +44,7 @@ func BlockRepositoryContract(t *testing.T, newHarness FollowFactory) {
 		{"MutesUntilUnmutedOrExpired", muteExpires},
 		{"PagesMutes", mutePages},
 		{"RejectsInvalidMutes", muteRejectsInvalid},
+		{"DeletesExpiredMutes", muteDeletesExpired},
 		{"IncrementalProjectionEqualsRebuild", blockProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
@@ -464,6 +466,53 @@ func muteExpires(t *testing.T, e *followEnv) {
 	}
 	checkMute(t, e, alice, carol, true, false)
 	checkRelationship(t, e, alice, bob, graph.StateActive, graph.StateNone)
+}
+
+func muteDeletesExpired(t *testing.T, e *followEnv) {
+	ctx := t.Context()
+	alice, bob, carol, dave := e.user(t, "alice", false), e.user(t, "bob", false), e.user(t, "carol", false), e.user(t, "dave", false)
+	for target, d := range map[string]time.Duration{bob: time.Hour, carol: 0, dave: time.Hour} {
+		if _, err := e.graph.Mute(ctx, alice, target, appgraph.MuteInput{Duration: d}); err != nil {
+			t.Fatalf("Mute = %v", err)
+		}
+	}
+	if n, err := e.graph.DeleteExpiredMutes(ctx); err != nil || n != 0 {
+		t.Fatalf("DeleteExpiredMutes before expiry = %d, %v; want 0", n, err)
+	}
+	e.clock.Advance(time.Hour)
+	// dave's mute is renewed after it expired, so only bob's is deleted.
+	if _, err := e.graph.Mute(ctx, alice, dave, appgraph.MuteInput{Duration: time.Hour}); err != nil {
+		t.Fatalf("Mute(dave) again = %v", err)
+	}
+	e.events.take()
+	if n, err := e.graph.DeleteExpiredMutes(ctx); err != nil || n != 1 {
+		t.Fatalf("DeleteExpiredMutes = %d, %v; want 1", n, err)
+	}
+	want := []uow.Event{appgraph.Unmuted{AccountID: alice, TargetAccountID: bob}}
+	if got := e.events.take(); !reflect.DeepEqual(got, want) {
+		t.Errorf("events of DeleteExpiredMutes = %+v, want %+v", got, want)
+	}
+	var mutes []graph.Mute
+	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		mutes, err = e.repo.ListAllMutes(ctx, tx)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("ListAllMutes = %v", err)
+	}
+	got := map[string]bool{}
+	for _, m := range mutes {
+		got[m.TargetAccountID] = true
+	}
+	if !reflect.DeepEqual(got, map[string]bool{carol: true, dave: true}) {
+		t.Errorf("mutes after the cleanup = %+v, want carol's and dave's", mutes)
+	}
+	if n, err := e.graph.DeleteExpiredMutes(ctx); err != nil || n != 0 {
+		t.Errorf("DeleteExpiredMutes again = %d, %v; want 0", n, err)
+	}
+	checkMute(t, e, alice, carol, true, false)
+	checkMute(t, e, alice, dave, true, false)
 }
 
 func mutePages(t *testing.T, e *followEnv) {

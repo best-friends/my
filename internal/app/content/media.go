@@ -120,12 +120,18 @@ type UploadInput struct {
 	// DeclaredContentType is the media type the client sent, or "". It is never trusted: an
 	// upload whose content is of another type fails with ErrContentTypeMismatch.
 	DeclaredContentType string
+	// Description is the alternative text, or "" for none.
+	Description string
 }
 
 // Upload checks and stores an upload and enqueues its processing. It fails with an error
 // wrapping media.ErrUnsupportedFormat, media.ErrTooLarge, media.ErrDimensions,
-// media.ErrCorrupt, or ErrContentTypeMismatch for content it does not accept.
+// media.ErrCorrupt, or ErrContentTypeMismatch for content it does not accept, and with
+// content.ErrDescriptionTooLong for a description that is too long.
 func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error) {
+	if err := content.ValidateMediaDescription(in.Description); err != nil {
+		return Media{}, err
+	}
 	data, err := io.ReadAll(io.LimitReader(in.Content, s.d.Limits.MaxBytes+1))
 	if err != nil {
 		return Media{}, fmt.Errorf("content: read upload: %w", err)
@@ -151,6 +157,11 @@ func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error
 		}
 		if err := s.d.Repository.InsertUploadedMedia(ctx, tx, up); err != nil {
 			return err
+		}
+		if in.Description != "" {
+			if err := s.d.Repository.UpsertDescription(ctx, tx, content.MediaDescription{MediaID: file.ID, Text: in.Description}); err != nil {
+				return err
+			}
 		}
 		if s.d.Outbox != nil {
 			return s.d.Outbox.EnqueueTx(ctx, tx, job)
@@ -213,6 +224,9 @@ type Media struct {
 	Result *content.MediaProcessingResult
 	// Focus is the focal point, nil when none is set (the center).
 	Focus *content.MediaFocus
+	// Description is the alternative text that the uploader set, or "". An attachment of a
+	// status revision has its own copy.
+	Description string
 }
 
 // Ready reports whether the file was processed successfully and can be shown.
@@ -240,7 +254,88 @@ func (s *MediaService) Media(ctx context.Context, id string) (Media, error) {
 	} else if !errors.Is(err, ErrNotFound) {
 		return Media{}, err
 	}
+	if d, err := s.d.Repository.FindDescription(ctx, id); err == nil {
+		m.Description = d.Text
+	} else if !errors.Is(err, ErrNotFound) {
+		return Media{}, err
+	}
 	return m, nil
+}
+
+// OwnMedia returns a media file of accountID with its current state. A file of another
+// account fails with ErrNotFound like an unknown one, so that nobody learns of the uploads of
+// others: other accounts see a file only as an attachment of a status they may see.
+func (s *MediaService) OwnMedia(ctx context.Context, accountID, id string) (Media, error) {
+	m, err := s.Media(ctx, id)
+	if err != nil {
+		return Media{}, err
+	}
+	if m.File.OwnerAccountID != accountID {
+		return Media{}, fmt.Errorf("%w: media file %s of another account", ErrNotFound, id)
+	}
+	return m, nil
+}
+
+// ErrMediaAttached reports a change to a media file that a status revision attaches: the
+// revision has its own copy of the description, so the file can no longer change on its own.
+var ErrMediaAttached = errors.New("content: the media file is attached to a status")
+
+// MediaUpdate changes a media file; nil fields keep their value.
+type MediaUpdate struct {
+	MediaID string
+	// Description is the new alternative text; "" removes it.
+	Description *string
+	// Focus is the new focal point; its MediaID is ignored.
+	Focus *content.MediaFocus
+}
+
+// Update changes the description or focal point of an unattached media file of accountID and
+// returns the file. It fails with content.ErrDescriptionTooLong or content.ErrInvalidFocus for
+// invalid values, ErrNotFound for an unknown file or one of another account, and
+// ErrMediaAttached for a file that a status revision attaches.
+func (s *MediaService) Update(ctx context.Context, accountID string, u MediaUpdate) (Media, error) {
+	if u.Description != nil {
+		if err := content.ValidateMediaDescription(*u.Description); err != nil {
+			return Media{}, err
+		}
+	}
+	var focus content.MediaFocus
+	if u.Focus != nil {
+		focus = content.MediaFocus{MediaID: u.MediaID, X: u.Focus.X, Y: u.Focus.Y}
+		if err := focus.Validate(); err != nil {
+			return Media{}, err
+		}
+	}
+	if _, err := s.OwnMedia(ctx, accountID, u.MediaID); err != nil {
+		return Media{}, err
+	}
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if attached, err := s.d.Repository.IsAttached(ctx, tx, u.MediaID); err != nil || attached {
+			if err == nil {
+				err = ErrMediaAttached
+			}
+			return err
+		}
+		switch {
+		case u.Description == nil:
+		case *u.Description == "":
+			if err := s.d.Repository.DeleteDescription(ctx, tx, u.MediaID); err != nil {
+				return err
+			}
+		default:
+			if err := s.d.Repository.UpsertDescription(ctx, tx, content.MediaDescription{MediaID: u.MediaID, Text: *u.Description}); err != nil {
+				return err
+			}
+		}
+		if u.Focus != nil {
+			return s.d.Repository.UpsertFocus(ctx, tx, focus)
+		}
+		return nil
+	})
+	if err != nil {
+		return Media{}, err
+	}
+	return s.Media(ctx, u.MediaID)
 }
 
 // ErrNotAnImage reports a media file that is not a still image, or whose processing failed.

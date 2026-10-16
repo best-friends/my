@@ -251,6 +251,11 @@ type LocalStatus struct {
 	IdempotencyKey  sql.NullString
 }
 
+type MediaDescription struct {
+	MediaID     string
+	Description string
+}
+
 type MediaFile struct {
 	ID             string
 	OwnerAccountID string

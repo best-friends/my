@@ -5,6 +5,7 @@ package db
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -62,10 +63,14 @@ func (postgresStore) incr(ctx context.Context, tx uow.Tx, namespace, key string,
 	return q.IncrEntry(ctx, postgreskv.IncrEntryParams{Namespace: namespace, Key: key, Initial: initial, ExpiresAt: expiresAt, Now: now})
 }
 
-func (postgresStore) deleteExpired(ctx context.Context, tx uow.Tx, now time.Time) (int64, error) {
+func (postgresStore) deleteExpired(ctx context.Context, tx uow.Tx, now time.Time, limit int) (int64, error) {
 	q, err := postgresQueries(tx)
 	if err != nil {
 		return 0, err
 	}
-	return q.DeleteExpiredEntries(ctx, now)
+	n := int32(math.MaxInt32)
+	if limit >= math.MinInt32 && limit < math.MaxInt32 {
+		n = int32(limit)
+	}
+	return q.DeleteExpiredEntries(ctx, postgreskv.DeleteExpiredEntriesParams{Now: now, BatchLimit: n})
 }
