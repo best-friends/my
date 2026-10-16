@@ -206,6 +206,13 @@ type Job struct {
 	CreatedAt      int64
 }
 
+type KvEntry struct {
+	Namespace string
+	Key       string
+	Value     []byte
+	ExpiresAt sql.NullInt64
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -260,6 +267,27 @@ type Role struct {
 type RolePermission struct {
 	RoleID     string
 	Permission string
+}
+
+type Session struct {
+	ID        string
+	UserID    string
+	TokenHash []byte
+	UserAgent sql.NullString
+	Ip        sql.NullString
+	CreatedAt int64
+	ExpiresAt int64
+}
+
+type SessionActivity struct {
+	SessionID  string
+	LastSeenAt int64
+}
+
+type SessionRevocation struct {
+	SessionID string
+	Reason    string
+	RevokedAt int64
 }
 
 type Status struct {
