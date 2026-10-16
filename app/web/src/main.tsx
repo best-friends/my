@@ -4,18 +4,40 @@
 import "@vitejs/plugin-react/preamble";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { IntlProvider } from "react-intl";
-import { App } from "./App";
-import { locale, messages } from "./lib/i18n";
+import { App, StartupError } from "./App";
+import { readRuntimeConfig, type RuntimeConfig } from "./lib/config";
+import { applyDocumentLocale, loadI18n } from "./lib/i18n";
+import { createQueryClient } from "./lib/query";
+import { createAppRouter } from "./router";
 import "./index.css";
 
 const container = document.getElementById("root");
-if (container === null) throw new Error("index.html has no #root element");
+if (container === null) throw new Error("the shell has no #root element");
+const root = createRoot(container);
 
-createRoot(container).render(
-  <StrictMode>
-    <IntlProvider locale={locale} defaultLocale="en" messages={messages}>
-      <App />
-    </IntlProvider>
-  </StrictMode>,
-);
+// The server writes the locale into <html lang>; the page is rendered in the closest supported one.
+const i18n = await loadI18n(document.documentElement.lang);
+applyDocumentLocale(document, i18n.locale);
+
+let config: RuntimeConfig | undefined;
+try {
+  config = readRuntimeConfig(document);
+} catch (error) {
+  console.error(error);
+}
+
+if (config === undefined) {
+  root.render(
+    <StrictMode>
+      <StartupError i18n={i18n} />
+    </StrictMode>,
+  );
+} else {
+  const queryClient = createQueryClient();
+  const router = createAppRouter({ queryClient });
+  root.render(
+    <StrictMode>
+      <App config={config} i18n={i18n} queryClient={queryClient} router={router} />
+    </StrictMode>,
+  );
+}

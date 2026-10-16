@@ -192,7 +192,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-check
+.PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-routes-check web-check
 
 # internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its
 # .gitkeep is committed, so Go builds and tests need no Bun; `make build` embeds the real build.
@@ -236,7 +236,11 @@ web-e2e: build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for the
 web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
 	cd app/web && bun run playwright install chromium
 
-web-check: web-typecheck web-lint web-build web-licenses web-tokens web-test playwright-image-check ## Run every offline web client check
+web-routes-check: web-build ## Fail when the committed app/web/src/routeTree.gen.ts differs from the one the build generates
+	@git diff --exit-code --quiet -- app/web/src/routeTree.gen.ts \
+		|| { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client.md §9)' >&2; exit 1; }
+
+web-check: web-typecheck web-lint web-build web-routes-check web-licenses web-tokens web-test playwright-image-check ## Run every offline web client check
 
 # --- @my/ui Storybook and story tests (ADR-0027) ----------------------------------------------
 # The story tests run every story in Chromium (Vitest browser mode, Playwright): axe must find no

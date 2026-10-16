@@ -6,3 +6,16 @@
 /* @my/ui ships source only, so scan it for the utilities its components use (ADR-0026). */
 @source "../../ui/src";
 @source not "../../ui/src/**/*.stories.tsx";
+
+@layer base {
+  /* Below md the navigation is a tab bar fixed to the bottom edge: scroll focused elements clear of it
+     (web-client.md Y4). Its height is the min-h-16 of its links plus the safe-area inset. */
+  :root {
+    scroll-padding-block-end: calc(4rem + env(safe-area-inset-bottom));
+  }
+  @variant md {
+    :root {
+      scroll-padding-block-end: 0;
+    }
+  }
+}
