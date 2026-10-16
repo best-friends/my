@@ -44,6 +44,8 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 
 ## Hard rules
 
+- **Boy scout rule** ([ADR-0024](docs/adr/0024-boy-scout-rule.md)): never ignore something broken because it is outside your issue.
+  Fix small things in a separate commit and list them in the PR; file an issue for anything larger and link it.
 - **Never change an ADR's status to `Accepted`/`Rejected` on your own judgment.** Only the human decider decides. You may record a decision
   the decider has explicitly stated (quote it in the PR description). You may create and edit *Proposed* ADRs.
 - Do not rewrite the body of an Accepted ADR; supersede it with a new ADR instead (typo fixes are fine).
