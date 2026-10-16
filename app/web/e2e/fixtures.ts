@@ -44,7 +44,9 @@ export const test = base.extend<Fixtures>({
         }
         const response = await route.fetch();
         // The build's index.html links its entry relative to itself (base "./"), which resolves under
-        // the path of a nested page (/tags/cats); `my serve` writes root-relative links from the manifest.
+        // the path of a nested page (/tags/cats). `my serve` never sends that file: it writes the shell's
+        // tags from the build manifest as root paths (e2e/deep-links.spec.ts checks it), so only here
+        // are the links made root-relative.
         const body = (await response.text())
           .replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`)
           .replaceAll(/(src|href)="\.\//g, '$1="/');
