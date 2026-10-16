@@ -323,6 +323,19 @@ func accountFrom(row sqlitegen.Account) account.Account {
 	}
 }
 
+// Account implements account.Repository.
+func (r *AccountRepository) Account(ctx context.Context, tx uow.Tx, id string) (account.Account, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return account.Account{}, err
+	}
+	row, err := q.GetAccount(ctx, id)
+	if err != nil {
+		return account.Account{}, notFound(err, appaccount.ErrNotFound, "account "+id)
+	}
+	return accountFrom(row), nil
+}
+
 // FindAccount implements account.Repository.
 func (r *AccountRepository) FindAccount(ctx context.Context, id string) (account.Account, error) {
 	row, err := r.db.reader().GetAccount(ctx, id)
@@ -446,6 +459,12 @@ func (r *AccountRepository) FindSealedPrivateKey(ctx context.Context, accountKey
 		return nil, notFound(err, appaccount.ErrNotFound, "private key of "+accountKeyID)
 	}
 	return sealed, nil
+}
+
+// IsMediaReferenced implements account.Repository.
+func (r *AccountRepository) IsMediaReferenced(ctx context.Context, mediaID string) (bool, error) {
+	ok, err := r.db.reader().IsMediaReferencedByProfiles(ctx, toNullString(mediaID))
+	return ok, wrap(err, "look up profile media")
 }
 
 // CountLocalAccounts implements account.Repository.

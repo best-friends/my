@@ -52,6 +52,8 @@ type Repository interface {
 	Block(ctx context.Context, tx uow.Tx, id string) (graph.Block, error)
 	UpsertMute(ctx context.Context, tx uow.Tx, m graph.Mute) error
 	DeleteMute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string) error
+	// Mute is FindMute inside tx.
+	Mute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string, now time.Time) (graph.Mute, error)
 
 	// Projections, written only by this module's projectors and rebuild.
 

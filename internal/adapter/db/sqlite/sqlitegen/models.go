@@ -241,12 +241,63 @@ type LocalStatus struct {
 	IdempotencyKey  sql.NullString
 }
 
+type MediaFile struct {
+	ID             string
+	OwnerAccountID string
+	Origin         string
+	CreatedAt      int64
+}
+
+type MediaFocu struct {
+	MediaID string
+	FocusX  float64
+	FocusY  float64
+}
+
+type MediaProcessingResult struct {
+	ID          string
+	MediaID     string
+	Outcome     string
+	MediaType   string
+	Width       sql.NullInt64
+	Height      sql.NullInt64
+	DurationMs  sql.NullInt64
+	Blurhash    sql.NullString
+	ProcessedAt int64
+}
+
+type MediaVariant struct {
+	ResultID    string
+	Kind        string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+	Width       int64
+	Height      int64
+}
+
 type Mute struct {
 	AccountID         string
 	TargetAccountID   string
 	HideNotifications int64
 	ExpiresAt         sql.NullInt64
 	CreatedAt         int64
+}
+
+type Notification struct {
+	ID                 string
+	RecipientAccountID string
+	Type               string
+	SourceAccountID    sql.NullString
+	StatusID           sql.NullString
+	ModerationActionID sql.NullString
+	DedupeKey          string
+	CreatedAt          int64
+}
+
+type NotificationReadMarker struct {
+	AccountID  string
+	LastReadID string
 }
 
 type PasswordCredential struct {
@@ -306,6 +357,7 @@ type StatusMentionIndex struct {
 type StatusPin struct {
 	AccountID string
 	StatusID  string
+	Slot      int64
 	CreatedAt int64
 	ID        string
 }
@@ -350,6 +402,13 @@ type Tag struct {
 	Name           string
 	NameNormalized string
 	CreatedAt      int64
+}
+
+type UploadedMedium struct {
+	MediaID     string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
 }
 
 type User struct {

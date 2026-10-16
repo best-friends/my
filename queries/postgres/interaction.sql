@@ -94,8 +94,19 @@ WHERE account_id = sqlc.arg(account_id) AND (sqlc.arg(before)::text = '' OR id <
 ORDER BY id DESC LIMIT sqlc.arg(page_limit);
 
 -- name: InsertStatusPin :execrows
-INSERT INTO status_pins (account_id, status_id, created_at, id) VALUES ($1, $2, $3, $4)
-ON CONFLICT (account_id, status_id) DO NOTHING;
+-- InsertStatusPin stores a pin in the lowest slot up to max_slot that the account leaves free.
+-- It inserts nothing when the account already pins the status, when no slot is free, or when a
+-- concurrent transaction takes the slot first.
+INSERT INTO status_pins (account_id, status_id, slot, created_at, id)
+SELECT sqlc.arg(account_id)::text, sqlc.arg(status_id)::text, c.slot, sqlc.arg(created_at)::timestamptz, sqlc.arg(id)::text
+FROM (SELECT 1 AS slot UNION ALL SELECT p.slot + 1 FROM status_pins p WHERE p.account_id = sqlc.arg(account_id)::text) c
+WHERE c.slot <= sqlc.arg(max_slot)::integer
+  AND NOT EXISTS (SELECT 1 FROM status_pins u WHERE u.account_id = sqlc.arg(account_id)::text AND u.slot = c.slot)
+ORDER BY c.slot LIMIT 1
+ON CONFLICT DO NOTHING;
+
+-- name: StatusPinExists :one
+SELECT EXISTS (SELECT 1 FROM status_pins WHERE account_id = $1 AND status_id = $2);
 
 -- name: DeleteStatusPin :execrows
 DELETE FROM status_pins WHERE account_id = $1 AND status_id = $2;
@@ -104,10 +115,10 @@ DELETE FROM status_pins WHERE account_id = $1 AND status_id = $2;
 SELECT COUNT(*) FROM status_pins WHERE account_id = $1;
 
 -- name: GetStatusPin :one
-SELECT account_id, status_id, created_at, id FROM status_pins WHERE account_id = $1 AND status_id = $2;
+SELECT account_id, status_id, slot, created_at, id FROM status_pins WHERE account_id = $1 AND status_id = $2;
 
 -- name: ListStatusPins :many
-SELECT account_id, status_id, created_at, id FROM status_pins WHERE account_id = $1 ORDER BY id DESC;
+SELECT account_id, status_id, slot, created_at, id FROM status_pins WHERE account_id = $1 ORDER BY id DESC;
 
 -- Sources of other modules' projections.
 

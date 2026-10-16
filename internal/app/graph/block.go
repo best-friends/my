@@ -192,3 +192,25 @@ type MutePage struct {
 func (s *Service) Mutes(ctx context.Context, accountID string, p MutePage) ([]graph.Mute, error) {
 	return s.d.Repository.ListMutes(ctx, accountID, s.d.Clock.Now(), p.Before, Page{Limit: p.Limit}.limit())
 }
+
+// HidesNotifications reports, inside tx, whether recipientID is not to be notified of what
+// sourceID does: either account blocks the other, or recipientID mutes sourceID with
+// HideNotifications and the mute has not expired. The notification module's projectors call it
+// in the transaction of the event they project, so that it sees that transaction's writes.
+func (s *Service) HidesNotifications(ctx context.Context, tx uow.Tx, recipientID, sourceID string) (bool, error) {
+	err := s.checkNotBlocked(ctx, tx, recipientID, sourceID)
+	if errors.Is(err, ErrBlocked) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	m, err := s.d.Repository.Mute(ctx, tx, recipientID, sourceID, s.d.Clock.Now())
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return m.HideNotifications, nil
+}

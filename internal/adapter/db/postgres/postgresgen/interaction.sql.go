@@ -286,7 +286,7 @@ func (q *Queries) GetFavourite(ctx context.Context, arg GetFavouriteParams) (Fav
 }
 
 const getStatusPin = `-- name: GetStatusPin :one
-SELECT account_id, status_id, created_at, id FROM status_pins WHERE account_id = $1 AND status_id = $2
+SELECT account_id, status_id, slot, created_at, id FROM status_pins WHERE account_id = $1 AND status_id = $2
 `
 
 type GetStatusPinParams struct {
@@ -300,6 +300,7 @@ func (q *Queries) GetStatusPin(ctx context.Context, arg GetStatusPinParams) (Sta
 	err := row.Scan(
 		&i.AccountID,
 		&i.StatusID,
+		&i.Slot,
 		&i.CreatedAt,
 		&i.ID,
 	)
@@ -428,8 +429,13 @@ func (q *Queries) InsertFavourite(ctx context.Context, arg InsertFavouriteParams
 }
 
 const insertStatusPin = `-- name: InsertStatusPin :execrows
-INSERT INTO status_pins (account_id, status_id, created_at, id) VALUES ($1, $2, $3, $4)
-ON CONFLICT (account_id, status_id) DO NOTHING
+INSERT INTO status_pins (account_id, status_id, slot, created_at, id)
+SELECT $1::text, $2::text, c.slot, $3::timestamptz, $4::text
+FROM (SELECT 1 AS slot UNION ALL SELECT p.slot + 1 FROM status_pins p WHERE p.account_id = $1::text) c
+WHERE c.slot <= $5::integer
+  AND NOT EXISTS (SELECT 1 FROM status_pins u WHERE u.account_id = $1::text AND u.slot = c.slot)
+ORDER BY c.slot LIMIT 1
+ON CONFLICT DO NOTHING
 `
 
 type InsertStatusPinParams struct {
@@ -437,14 +443,19 @@ type InsertStatusPinParams struct {
 	StatusID  string
 	CreatedAt time.Time
 	ID        string
+	MaxSlot   int32
 }
 
+// InsertStatusPin stores a pin in the lowest slot up to max_slot that the account leaves free.
+// It inserts nothing when the account already pins the status, when no slot is free, or when a
+// concurrent transaction takes the slot first.
 func (q *Queries) InsertStatusPin(ctx context.Context, arg InsertStatusPinParams) (int64, error) {
 	result, err := q.db.Exec(ctx, insertStatusPin,
 		arg.AccountID,
 		arg.StatusID,
 		arg.CreatedAt,
 		arg.ID,
+		arg.MaxSlot,
 	)
 	if err != nil {
 		return 0, err
@@ -591,7 +602,7 @@ func (q *Queries) ListLiveBoosts(ctx context.Context) ([]Boost, error) {
 }
 
 const listStatusPins = `-- name: ListStatusPins :many
-SELECT account_id, status_id, created_at, id FROM status_pins WHERE account_id = $1 ORDER BY id DESC
+SELECT account_id, status_id, slot, created_at, id FROM status_pins WHERE account_id = $1 ORDER BY id DESC
 `
 
 func (q *Queries) ListStatusPins(ctx context.Context, accountID string) ([]StatusPin, error) {
@@ -606,6 +617,7 @@ func (q *Queries) ListStatusPins(ctx context.Context, accountID string) ([]Statu
 		if err := rows.Scan(
 			&i.AccountID,
 			&i.StatusID,
+			&i.Slot,
 			&i.CreatedAt,
 			&i.ID,
 		); err != nil {
@@ -632,4 +644,20 @@ WHERE NOT EXISTS (SELECT 1 FROM boost_retractions r WHERE r.boost_id = b.id)
 func (q *Queries) RebuildBoostEdges(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, rebuildBoostEdges)
 	return err
+}
+
+const statusPinExists = `-- name: StatusPinExists :one
+SELECT EXISTS (SELECT 1 FROM status_pins WHERE account_id = $1 AND status_id = $2)
+`
+
+type StatusPinExistsParams struct {
+	AccountID string
+	StatusID  string
+}
+
+func (q *Queries) StatusPinExists(ctx context.Context, arg StatusPinExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, statusPinExists, arg.AccountID, arg.StatusID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

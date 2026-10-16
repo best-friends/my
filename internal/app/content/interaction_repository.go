@@ -81,8 +81,14 @@ type InteractionRepository interface {
 	DeleteFavourite(ctx context.Context, tx uow.Tx, accountID, statusID string) (content.Favourite, bool, error)
 	InsertBookmark(ctx context.Context, tx uow.Tx, b content.Bookmark) (bool, error)
 	DeleteBookmark(ctx context.Context, tx uow.Tx, accountID, statusID string) (bool, error)
+	// InsertPin stores p in the lowest of the account's slots 1 to content.MaxPins that is free;
+	// the unique slot per account keeps concurrent pins within the limit. It stores nothing and
+	// returns false when the account already pins the status, when every slot is taken, or when
+	// a concurrent transaction takes the free slot first.
 	InsertPin(ctx context.Context, tx uow.Tx, p content.Pin) (bool, error)
 	DeletePin(ctx context.Context, tx uow.Tx, accountID, statusID string) (bool, error)
+	// HasPin reports whether an account pins a status.
+	HasPin(ctx context.Context, tx uow.Tx, accountID, statusID string) (bool, error)
 	// CountPins returns the number of statuses an account pins.
 	CountPins(ctx context.Context, tx uow.Tx, accountID string) (int64, error)
 

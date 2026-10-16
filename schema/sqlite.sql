@@ -565,6 +565,66 @@ CREATE TABLE instance_texts (
 ) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
+-- content: media files (data-model §4.4, ADR-0005, ADR-0019 §8). Owned by internal/app/content.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a media file, uploaded by a local account or fetched from a remote server.
+CREATE TABLE media_files (
+  id TEXT NOT NULL PRIMARY KEY,
+  owner_account_id TEXT NOT NULL,
+  origin TEXT NOT NULL CHECK (origin IN ('upload', 'remote')),
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX media_files_owner_account_id_id ON media_files (owner_account_id, id);
+
+-- Resource (subtype): an upload as received. content_type is detected from the content. The
+-- blob under blob_key is private and is deleted once processing has a result.
+CREATE TABLE uploaded_media (
+  media_id TEXT NOT NULL PRIMARY KEY,
+  blob_key TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL CHECK (file_size >= 0)
+) STRICT;
+
+-- Event: one processing of a media file. The newest row of a file is its current state.
+CREATE TABLE media_processing_results (
+  id TEXT NOT NULL PRIMARY KEY,
+  media_id TEXT NOT NULL,
+  outcome TEXT NOT NULL CHECK (outcome IN ('ready', 'failed')),
+  media_type TEXT NOT NULL CHECK (media_type IN ('image', 'gifv', 'video', 'audio', 'unknown')),
+  width INTEGER,
+  height INTEGER,
+  duration_ms INTEGER,
+  blurhash TEXT,
+  processed_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX media_processing_results_media_id_id ON media_processing_results (media_id, id DESC);
+
+-- Event (child of a result): a processed rendition in blob storage, under the public prefix.
+CREATE TABLE media_variants (
+  result_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('full', 'thumbnail')),
+  blob_key TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL CHECK (file_size >= 0),
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  PRIMARY KEY (result_id, kind)
+) STRICT;
+
+-- Current value: the focal point of a media file. No row means the center.
+CREATE TABLE media_focus (
+  media_id TEXT NOT NULL PRIMARY KEY,
+  focus_x REAL NOT NULL CHECK (focus_x BETWEEN -1.0 AND 1.0),
+  focus_y REAL NOT NULL CHECK (focus_y BETWEEN -1.0 AND 1.0)
+) STRICT;
+
+-- The cleanup of unattached uploads (FR-803) looks up the references to a media file.
+CREATE INDEX status_revision_attachments_media_id ON status_revision_attachments (media_id);
+CREATE INDEX account_profile_revisions_avatar_media_id ON account_profile_revisions (avatar_media_id);
+CREATE INDEX account_profile_revisions_header_media_id ON account_profile_revisions (header_media_id);
+
+-- ---------------------------------------------------------------------------------------------
 -- identity: browser sessions of the server-rendered screens (data-model.md §4.1, ADR-0019 §4).
 -- ---------------------------------------------------------------------------------------------
 
@@ -667,14 +727,18 @@ CREATE TABLE bookmarks (
 ) STRICT;
 CREATE INDEX bookmarks_account_id_id ON bookmarks (account_id, id);
 
--- Current value: a status its author pinned to the profile (the Featured collection).
+-- Current value: a status its author pinned to the profile (the Featured collection). Each pin
+-- holds one of the account's slots 1..5 (content.MaxPins), so the unique slot index caps the pins
+-- of an account even under concurrent inserts.
 CREATE TABLE status_pins (
   account_id TEXT NOT NULL,
   status_id TEXT NOT NULL,
+  slot INTEGER NOT NULL CHECK (slot BETWEEN 1 AND 5),
   created_at INTEGER NOT NULL,
   id TEXT NOT NULL,
   PRIMARY KEY (account_id, status_id)
 ) STRICT;
+CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot);
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
 
 -- ---------------------------------------------------------------------------------------------
@@ -757,4 +821,41 @@ CREATE TABLE feed_domain_restrictions (
   restriction TEXT NOT NULL CHECK (restriction IN ('profile_view', 'visibility_ceiling_private', 'public_discovery')),
   effective_until INTEGER,
   PRIMARY KEY (domain, restriction)
+) STRICT;
+
+-- ---------------------------------------------------------------------------------------------
+-- notification: notifications, their dismissals, and read markers (data-model §4.7, FR-205).
+-- Owned by internal/app/notification.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: something happened to a local account. dedupe_key makes generating it again from the
+-- same domain event, or from an action the source repeats, insert nothing.
+CREATE TABLE notifications (
+  id TEXT NOT NULL PRIMARY KEY,
+  recipient_account_id TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN (
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice'
+  )),
+  source_account_id TEXT,
+  status_id TEXT,
+  moderation_action_id TEXT,
+  dedupe_key TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  -- nobody is notified of their own actions.
+  CHECK (source_account_id IS NULL OR source_account_id <> recipient_account_id)
+) STRICT;
+CREATE UNIQUE INDEX notifications_recipient_account_id_dedupe_key ON notifications (recipient_account_id, dedupe_key);
+CREATE INDEX notifications_recipient_account_id_id ON notifications (recipient_account_id, id);
+CREATE INDEX notifications_recipient_account_id_type_id ON notifications (recipient_account_id, type, id);
+
+-- Event: the recipient dismissed a notification. A notification is dismissed at most once.
+CREATE TABLE notification_dismissals (
+  notification_id TEXT NOT NULL PRIMARY KEY,
+  dismissed_at INTEGER NOT NULL
+) STRICT;
+
+-- Current value: the newest notification an account has read; greater IDs are unread.
+CREATE TABLE notification_read_markers (
+  account_id TEXT NOT NULL PRIMARY KEY,
+  last_read_id TEXT NOT NULL
 ) STRICT;

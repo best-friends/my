@@ -1,0 +1,102 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package web
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
+	"path"
+	"slices"
+)
+
+// Paths inside the build.
+const (
+	// manifestPath is the Vite build manifest (build.manifest: true).
+	manifestPath = ".vite/manifest.json"
+	// entryKey is the manifest key of the SPA's entry: the HTML input of the Vite build.
+	entryKey = "index.html"
+	// assetsDir holds the content-hashed files of the build (Vite's build.assetsDir).
+	assetsDir = "assets"
+	// iconPath is the instance-independent app icon (app/web/public/icon.svg).
+	iconPath = "icon.svg"
+)
+
+// chunk is one entry of the Vite build manifest
+// (https://vite.dev/guide/backend-integration.html).
+type chunk struct {
+	File    string   `json:"file"`
+	IsEntry bool     `json:"isEntry"`
+	Imports []string `json:"imports"`
+	CSS     []string `json:"css"`
+}
+
+// entryTags are the URLs the shell loads to start the SPA.
+type entryTags struct {
+	Script     string   // the entry module
+	Stylesheet []string // CSS of the entry and of every chunk it imports statically
+	Preload    []string // chunks the entry imports statically, for <link rel="modulepreload">
+}
+
+// errNoBuild means the build has no Vite manifest: app/web was not built into dist/.
+var errNoBuild = errors.New("web: the build has no " + manifestPath + "; run make web-build")
+
+// readEntry builds the tags of the SPA entry from the build manifest, following Vite's
+// backend integration guide: the entry's file, the CSS of the entry and of its static
+// imports, and the static imports as module preloads, each once and in import order.
+// URLs are absolute paths, since the shell is served at every SPA route.
+func readEntry(build fs.FS) (entryTags, error) {
+	data, err := fs.ReadFile(build, manifestPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return entryTags{}, errNoBuild
+	}
+	if err != nil {
+		return entryTags{}, fmt.Errorf("web: read %s: %w", manifestPath, err)
+	}
+	var manifest map[string]chunk
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return entryTags{}, fmt.Errorf("web: parse %s: %w", manifestPath, err)
+	}
+	entry, ok := manifest[entryKey]
+	if !ok || !entry.IsEntry || entry.File == "" {
+		return entryTags{}, fmt.Errorf("web: %s has no entry %q", manifestPath, entryKey)
+	}
+
+	tags := entryTags{Script: fileURL(entry.File)}
+	addCSS := func(c chunk) {
+		for _, css := range c.CSS {
+			if u := fileURL(css); !slices.Contains(tags.Stylesheet, u) {
+				tags.Stylesheet = append(tags.Stylesheet, u)
+			}
+		}
+	}
+	addCSS(entry)
+	seen := map[string]bool{entryKey: true}
+	var visit func(keys []string) error
+	visit = func(keys []string) error {
+		for _, key := range keys {
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			c, ok := manifest[key]
+			if !ok {
+				return fmt.Errorf("web: %s imports the missing chunk %q", manifestPath, key)
+			}
+			tags.Preload = append(tags.Preload, fileURL(c.File))
+			addCSS(c)
+			if err := visit(c.Imports); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if err := visit(entry.Imports); err != nil {
+		return entryTags{}, err
+	}
+	return tags, nil
+}
+
+// fileURL is the absolute URL path of a file of the build.
+func fileURL(file string) string { return path.Join("/", file) }

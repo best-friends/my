@@ -65,6 +65,13 @@ func TestAccountRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestMediaRepositoryContract(t *testing.T) {
+	testkit.MediaRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.MediaHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.MediaHarness{UnitOfWork: db, Media: db.MediaRepository(), Statuses: db.StatusRepository()}
+	})
+}
+
 func TestStatusRepositoryContract(t *testing.T) {
 	testkit.StatusRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.StatusHarness {
 		db, _ := newTestDB(t, "", opts)
@@ -85,6 +92,19 @@ func TestTimelineContract(t *testing.T) {
 		return testkit.TimelineHarness{
 			UnitOfWork: db, Statuses: db.StatusRepository(), Interactions: db.InteractionRepository(),
 			Graph: db.GraphRepository(), Timeline: db.TimelineRepository(),
+		}
+	})
+}
+
+func TestNotificationContract(t *testing.T) {
+	testkit.NotificationContract(t, func(t *testing.T, opts uow.Options) testkit.NotificationHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.NotificationHarness{
+			AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+			Graph:          db.GraphRepository(),
+			Statuses:       db.StatusRepository(),
+			Interactions:   db.InteractionRepository(),
+			Notifications:  db.NotificationRepository(),
 		}
 	})
 }

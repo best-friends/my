@@ -38,6 +38,9 @@ type Options struct {
 	SourceURL string
 
 	Accounts Accounts
+	// HTML serves the web client's page for profile pages (/@alice) and other single-segment
+	// paths when the request does not ask for ActivityPub; nil answers 404.
+	HTML http.Handler
 	// Problem writes error responses; nil writes a plain-text body.
 	Problem ProblemWriter
 	// Logger logs unexpected errors; nil means slog.Default().
@@ -90,8 +93,8 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+actorsPrefix+"{id}", http.HandlerFunc(h.actor))
 	r.Handle("GET "+actorsPrefix+"{id}/{collection}", http.HandlerFunc(h.collection))
 	// A wildcard cannot share a path segment with "@", so every single-segment GET that no
-	// more specific pattern serves comes here; profilePage answers 404 for those that are not
-	// profile pages. Static files of the web client need a more specific pattern.
+	// more specific pattern serves comes here; profilePage passes those that are not profile
+	// pages to the HTML handler.
 	r.Handle("GET /{name}", http.HandlerFunc(h.profilePage))
 }
 

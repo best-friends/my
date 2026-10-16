@@ -26,7 +26,7 @@ func TestDefaultLocaleAppliesWithoutRestart(t *testing.T) {
 	h := app.Handler()
 
 	paths := map[string]string{
-		"platform problem":   "/nope",
+		"platform problem":   "/ap/nope",
 		"client API problem": "/api/v1/nope",
 		"sign-in screen":     authpages.PathSignIn,
 	}

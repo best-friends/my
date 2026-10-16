@@ -13,6 +13,10 @@
 node_modules/
 dist/
 build/
+# The web build that internal/interface/web embeds; only the placeholder is committed.
+!/internal/interface/web/dist/
+/internal/interface/web/dist/*
+!/internal/interface/web/dist/.gitkeep
 bin/
 coverage/
 *.log
@@ -22,6 +26,8 @@ coverage/
 *.sqlite3
 *.db
 .wrangler/
+# The default blob_fs_dir of a server run from the repository root.
+/blobs/
 
 # Claude Code local settings
 .claude/settings.local.json
@@ -30,3 +36,7 @@ coverage/
 test-results/
 playwright-report/
 blob-report/
+
+# Storybook build and Vitest browser-mode attachments (app/ui)
+storybook-static/
+.vitest/

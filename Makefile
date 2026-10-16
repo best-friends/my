@@ -40,7 +40,7 @@ adr-new: ## Create a new ADR: make adr-new TITLE="..." [SLUG=...]
 	@test -n "$(TITLE)" || { echo 'usage: make adr-new TITLE="..." [SLUG=kebab-slug]'; exit 2; }
 	scripts/adr-new.sh "$(TITLE)" $(SLUG)
 
-build: ## Build bin/my with the version from git (override: make build VERSION=v1.2.3)
+build: web-build ## Build bin/my, with the web client embedded, and the version from git (override: make build VERSION=v1.2.3)
 	CGO_ENABLED=0 go build -trimpath -ldflags "-X main.version=$(VERSION)" -o bin/my ./cmd/my
 
 .PHONY: config-docs
@@ -167,9 +167,13 @@ docker-build: ## Build the server image my:$(VERSION) for the local platform
 docker-smoke: ## Start deploy/docker/compose.yaml, create an admin, check WebFinger / Actor / NodeInfo, tear down
 	MY_VERSION=$(VERSION) scripts/docker-smoke.sh
 
-dockerfile-check: ## Fail if the Dockerfile's Go image differs from the Go version in .tool-versions
+dockerfile-check: ## Fail if the Dockerfile's Go, Node.js, or Bun image differs from the version in .tool-versions
 	@want="golang:$$(awk '$$1 == "golang" { print $$2 }' .tool-versions)-"; \
 		grep -q "^ARG GO_IMAGE=$$want" Dockerfile || { echo "Dockerfile: GO_IMAGE must start with $$want" >&2; exit 1; }
+	@want="node:$$(awk '$$1 == "nodejs" { print $$2 }' .tool-versions)-"; \
+		grep -q "^ARG NODE_IMAGE=$$want" Dockerfile || { echo "Dockerfile: NODE_IMAGE must start with $$want" >&2; exit 1; }
+	@want="oven/bun:$$(awk '$$1 == "bun" { print $$2 }' .tool-versions)-"; \
+		grep -q "^ARG BUN_IMAGE=$$want" Dockerfile || { echo "Dockerfile: BUN_IMAGE must start with $$want" >&2; exit 1; }
 
 i18n-install: ## Install the pinned i18n tool dependencies (tools/i18n/bun.lock)
 	cd tools/i18n && bun install --frozen-lockfile
@@ -190,14 +194,20 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 
 .PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-check
 
+# internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its
+# .gitkeep is committed, so Go builds and tests need no Bun; `make build` embeds the real build.
+WEB_EMBED_DIR := internal/interface/web/dist
+
 web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
 	cd app && bun install --frozen-lockfile
 
 web-typecheck: web-install ## Type-check every client package with tsc
 	cd app && bun run typecheck
 
-web-build: web-install ## Build app/web into app/web/dist (fails when React Compiler compiled nothing)
+web-build: web-install ## Build app/web into app/web/dist and copy it to internal/interface/web/dist for embedding (fails when React Compiler compiled nothing)
 	cd app && bun run build
+	find $(WEB_EMBED_DIR) -mindepth 1 ! -name .gitkeep -delete
+	cp -R app/web/dist/. $(WEB_EMBED_DIR)/
 
 web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules
@@ -224,4 +234,37 @@ web-e2e: web-build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for
 web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
 	cd app/web && bun run playwright install chromium
 
-web-check: web-typecheck web-lint web-build web-licenses web-tokens web-test ## Run every offline web client check
+web-check: web-typecheck web-lint web-build web-licenses web-tokens web-test playwright-image-check ## Run every offline web client check
+
+# --- @my/ui Storybook and story tests (ADR-0027) ----------------------------------------------
+# The story tests run every story in Chromium (Vitest browser mode, Playwright): axe must find no
+# violation and each story must match its screenshots at 3 container widths × light / dark × LTR / RTL.
+# They need a browser, so they are not part of `make check`; CI runs `make ui-test` in PLAYWRIGHT_IMAGE
+# on every PR. Baselines (app/ui/src/__screenshots__/) come only from that image: `make ui-snapshots-update`.
+
+# The official Playwright image every browser job runs in, pinned by digest. Its version must match the
+# playwright packages in app/; playwright-image-check also keeps the workflows on this exact reference.
+PLAYWRIGHT_IMAGE := mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+
+.PHONY: storybook storybook-build ui-test ui-test-install ui-test-docker ui-snapshots-update playwright-image-check
+
+storybook: web-install ## Start the @my/ui Storybook on http://localhost:6006
+	cd app/ui && bun run storybook
+
+storybook-build: web-install ## Build the static @my/ui Storybook into app/ui/storybook-static
+	cd app/ui && bun run build-storybook
+
+ui-test: web-install ## Run the @my/ui story tests (axe + screenshots) in Chromium; screenshots match only in PLAYWRIGHT_IMAGE
+	cd app/ui && bun run test
+
+ui-test-install: web-install ## Download the Chromium that ui-test uses (local runs only)
+	cd app/ui && bun run playwright install chromium
+
+ui-test-docker: ## Run the @my/ui story tests in PLAYWRIGHT_IMAGE, as CI does (needs docker)
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/ui-test-docker.sh
+
+ui-snapshots-update: ## Regenerate the @my/ui screenshot baselines in PLAYWRIGHT_IMAGE (needs docker); review and commit them
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/ui-test-docker.sh --update
+
+playwright-image-check: ## Fail if a workflow's Playwright image or a playwright package version differs from PLAYWRIGHT_IMAGE
+	PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/playwright-image-check.sh
