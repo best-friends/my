@@ -43,6 +43,13 @@ jobs:
           path: ~/.bun/install/cache
           key: bun-e2e-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}
           restore-keys: bun-e2e-${{ runner.os }}-
+      # `make web-e2e` builds bin/my, which e2e/server.ts starts for the server-rendered pages.
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: .tool-versions
+          cache-dependency-path: |
+            go.mod
+            go.sum
       - name: make web-e2e
         run: make web-e2e
       - name: Upload the Playwright report
