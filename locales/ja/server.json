@@ -331,6 +331,14 @@
     "defaultMessage": "リクエストが正しくありません。",
     "description": "API error message for HTTP 400 when no more specific message applies."
   },
+  "errors.conflict": {
+    "defaultMessage": "このリクエストはリソースの現在の状態と矛盾しています。",
+    "description": "API error title for HTTP 409 when no more specific message applies."
+  },
+  "errors.forbidden": {
+    "defaultMessage": "この操作は許可されていません。",
+    "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "このアプリにはこの操作が許可されていません。",
     "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."
@@ -407,9 +415,73 @@
     "defaultMessage": "リクエストが大きすぎます。",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
+  "errors.status.already_deleted": {
+    "defaultMessage": "この Idempotency-Key で作成された投稿は削除されています。",
+    "description": "Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated)."
+  },
+  "errors.status.empty_text": {
+    "defaultMessage": "投稿の本文がありません。",
+    "description": "Detail of the HTTP 422 API error when a post's text is empty or only spaces."
+  },
+  "errors.status.invalid_language": {
+    "defaultMessage": "言語が正しい言語タグではありません。",
+    "description": "Detail of the HTTP 422 API error when a post's language is not a well-formed BCP 47 tag such as en or ja."
+  },
+  "errors.status.invalid_media_description": {
+    "defaultMessage": "{max, plural, other {画像の説明は # 文字以内にしてください。}}",
+    "description": "Detail of the HTTP 422 API error when the alternative text of an attached image is too long or invalid. {max} is the maximum number of characters."
+  },
+  "errors.status.invalid_text": {
+    "defaultMessage": "本文に投稿できない文字が含まれています。",
+    "description": "Detail of the HTTP 422 API error when a post's text or content warning is not valid UTF-8 or contains a NUL character."
+  },
+  "errors.status.media_not_found": {
+    "defaultMessage": "添付したファイルがあなたのアップロードの中に見つかりません。",
+    "description": "Detail of the HTTP 422 API error when a post attaches a media file that does not exist or that another account uploaded."
+  },
+  "errors.status.media_not_ready": {
+    "defaultMessage": "添付したファイルは処理中か、処理できませんでした。",
+    "description": "Detail of the HTTP 422 API error when a post attaches a media file whose processing has not finished or failed."
+  },
+  "errors.status.not_author": {
+    "defaultMessage": "この投稿を変更できるのは投稿者だけです。",
+    "description": "Detail of the HTTP 403 API error when a user tries to edit or delete another account's post."
+  },
+  "errors.status.not_boostable": {
+    "defaultMessage": "この投稿はブーストできません。",
+    "description": "Detail of the HTTP 422 API error when the visibility of a post does not allow boosting it (followers-only or direct posts)."
+  },
+  "errors.status.not_pinnable": {
+    "defaultMessage": "固定できるのは、ダイレクト以外の自分の投稿だけです。",
+    "description": "Detail of the HTTP 422 API error when a user tries to pin another account's post or a direct post."
+  },
+  "errors.status.pin_limit": {
+    "defaultMessage": "{max, plural, other {固定できる投稿は # 件までです。}}",
+    "description": "Detail of the HTTP 422 API error when a user pins more posts than allowed. {max} is the maximum number of pinned posts."
+  },
+  "errors.status.posting_restricted": {
+    "defaultMessage": "現在、あなたのアカウントは投稿できません。",
+    "description": "Detail of the HTTP 403 API error when a moderator restricted the account from posting."
+  },
+  "errors.status.reply_not_found": {
+    "defaultMessage": "返信先の投稿が見つかりません。",
+    "description": "Detail of the HTTP 422 API error when a reply targets a post that does not exist, was deleted, or that the user cannot see."
+  },
+  "errors.status.text_too_long": {
+    "defaultMessage": "{max, plural, other {本文と注意書きは合わせて # 文字以内にしてください。}}",
+    "description": "Detail of the HTTP 422 API error when a post is longer than the instance allows. {max} is the maximum number of characters of the text and the content warning together."
+  },
+  "errors.status.too_many_media": {
+    "defaultMessage": "{max, plural, other {1 件の投稿に添付できるファイルは重複なしで # 個までです。}}",
+    "description": "Detail of the HTTP 422 API error when a post attaches too many media files or the same file twice. {max} is the maximum number of files."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
+  },
+  "errors.unprocessable": {
+    "defaultMessage": "リクエストを処理できません。",
+    "description": "API error title for HTTP 422; the detail says what is wrong with the request."
   },
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",

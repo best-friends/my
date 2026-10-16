@@ -94,21 +94,14 @@ func (s *Server) writeTooLarge(w http.ResponseWriter, r *http.Request, pattern s
 	s.writeProblem(w, r, http.StatusRequestEntityTooLarge, ProblemTypeBlank, l.ServerErrorsRequestTooLarge(), "")
 }
 
-// problem is a problem document that a handler returns as its operation's default response.
-type problem struct {
-	body    Problem
-	headers ProblemResponseHeaders
-	status  int
-}
-
-func (s *Server) problem(ctx context.Context, status int, typ, title, detail string) *problem {
-	body, headers := s.NewProblem(ctx, status, typ, title, detail)
-	return &problem{body: body, headers: headers, status: status}
-}
-
-// mediaProblem returns the problem of an error of the media use cases, or nil for an
+// mediaProblem returns the problem of an error of the media use cases, or false for an
 // unexpected error.
-func (s *Server) mediaProblem(ctx context.Context, err error) *problem {
+func (s *Server) mediaProblem(ctx context.Context, err error) (problem, bool) {
+	p := s.mediaProblemOf(ctx, err)
+	return p, p.StatusCode != 0
+}
+
+func (s *Server) mediaProblemOf(ctx context.Context, err error) problem {
 	l := s.Localizer(ctx)
 	switch {
 	case errors.Is(err, media.ErrTooLarge):
@@ -129,15 +122,16 @@ func (s *Server) mediaProblem(ctx context.Context, err error) *problem {
 	case errors.Is(err, appcontent.ErrNotFound):
 		return s.problem(ctx, http.StatusNotFound, ProblemTypeBlank, l.ServerErrorsNotFound(), "")
 	}
-	return nil
+	return problem{}
 }
 
 // errNoMedia reports a Server without MediaFiles serving a media operation.
 var errNoMedia = errors.New("clientapi: no media files configured")
 
 // newMediaAttachment presents a media file as the MediaAttachment schema, with the
-// description that the uploader set.
-func (s *Server) newMediaAttachment(m appcontent.Media) MediaAttachment {
+// description that the uploader set, and the variants served at url. Statuses present their
+// attachments with it too, replacing the description with the revision's copy.
+func newMediaAttachment(m appcontent.Media, url func(content.MediaVariant) string) MediaAttachment {
 	out := MediaAttachment{Id: m.File.ID, State: MediaAttachmentState("processing"), Type: MediaAttachmentType(content.MediaTypeUnknown)}
 	if m.Upload != nil && strings.HasPrefix(m.Upload.ContentType, "image/") {
 		out.Type = MediaAttachmentType(content.MediaTypeImage)
@@ -167,13 +161,13 @@ func (s *Server) newMediaAttachment(m appcontent.Media) MediaAttachment {
 	full, okFull := r.Variant(content.VariantFull)
 	thumb, okThumb := r.Variant(content.VariantThumbnail)
 	if okFull && okThumb {
-		out.Variants = &MediaVariants{Full: s.newMediaVariant(full), Thumbnail: s.newMediaVariant(thumb)}
+		out.Variants = &MediaVariants{Full: newMediaVariant(full, url), Thumbnail: newMediaVariant(thumb, url)}
 	}
 	return out
 }
 
-func (s *Server) newMediaVariant(v content.MediaVariant) MediaVariant {
-	return MediaVariant{Url: s.o.Media.URL(v), ContentType: v.ContentType, Width: v.Width, Height: v.Height, Size: v.FileSize}
+func newMediaVariant(v content.MediaVariant, url func(content.MediaVariant) string) MediaVariant {
+	return MediaVariant{Url: url(v), ContentType: v.ContentType, Width: v.Width, Height: v.Height, Size: v.FileSize}
 }
 
 // UploadMedia serves POST /api/v1/media: it reads the multipart body part by part, never more
@@ -187,40 +181,37 @@ func (s *Server) UploadMedia(ctx context.Context, req UploadMediaRequestObject) 
 	if s.o.Media == nil {
 		return nil, errNoMedia
 	}
-	fail := func(p *problem) (UploadMediaResponseObject, error) {
-		return UploadMediadefaultApplicationProblemPlusJSONResponse{Body: p.body, Headers: p.headers, StatusCode: p.status}, nil
-	}
 	if p, h, limited := s.LimitProblem(ctx, UploadLimit, v.AccountID); limited {
-		return fail(&problem{body: p, headers: h, status: http.StatusTooManyRequests})
+		return UploadMediadefaultApplicationProblemPlusJSONResponse{Body: p, Headers: h, StatusCode: http.StatusTooManyRequests}, nil
 	}
-	in, p := s.readUpload(ctx, req.Body, v.AccountID)
-	if p != nil {
-		return fail(p)
+	in, p, ok := s.readUpload(ctx, req.Body, v.AccountID)
+	if !ok {
+		return UploadMediadefaultApplicationProblemPlusJSONResponse(p), nil
 	}
 	m, err := s.o.Media.Upload(ctx, in)
 	if err != nil {
-		if p := s.mediaProblem(ctx, err); p != nil {
-			return fail(p)
+		if p, ok := s.mediaProblem(ctx, err); ok {
+			return UploadMediadefaultApplicationProblemPlusJSONResponse(p), nil
 		}
 		return nil, err
 	}
 	cache := cacheNoStore
-	return UploadMedia202JSONResponse{Body: s.newMediaAttachment(m), Headers: UploadMedia202ResponseHeaders{CacheControl: &cache}}, nil
+	return UploadMedia202JSONResponse{Body: newMediaAttachment(m, s.o.Media.URL), Headers: UploadMedia202ResponseHeaders{CacheControl: &cache}}, nil
 }
 
 // readUpload reads the parts of an upload: the file and an optional description. Other parts
 // are skipped.
-func (s *Server) readUpload(ctx context.Context, body *multipart.Reader, accountID string) (appcontent.UploadInput, *problem) {
+func (s *Server) readUpload(ctx context.Context, body *multipart.Reader, accountID string) (appcontent.UploadInput, problem, bool) {
 	l := s.Localizer(ctx)
 	maxBytes := s.o.Media.Limits().MaxBytes
 	in := appcontent.UploadInput{OwnerAccountID: accountID}
 	var file []byte
-	badPart := func(name string) *problem {
+	badPart := func(name string) problem {
 		return s.problem(ctx, http.StatusBadRequest, ProblemTypeBlank, l.ServerErrorsBadRequest(), l.ServerErrorsInvalidParameter(name))
 	}
-	readErr := func(err error, name string) *problem {
+	readErr := func(err error, name string) problem {
 		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-			return s.mediaProblem(ctx, media.ErrTooLarge)
+			return s.mediaProblemOf(ctx, media.ErrTooLarge)
 		}
 		return badPart(name)
 	}
@@ -230,37 +221,37 @@ func (s *Server) readUpload(ctx context.Context, body *multipart.Reader, account
 			break
 		}
 		if err != nil {
-			return in, readErr(err, "file")
+			return in, readErr(err, "file"), false
 		}
 		switch part.FormName() {
 		case "file":
 			if file != nil {
-				return in, badPart("file")
+				return in, badPart("file"), false
 			}
 			data, err := io.ReadAll(io.LimitReader(part, maxBytes+1))
 			if err != nil {
-				return in, readErr(err, "file")
+				return in, readErr(err, "file"), false
 			}
 			if int64(len(data)) > maxBytes {
-				return in, s.mediaProblem(ctx, media.ErrTooLarge)
+				return in, s.mediaProblemOf(ctx, media.ErrTooLarge), false
 			}
 			file, in.DeclaredContentType = data, part.Header.Get("Content-Type")
 		case "description":
 			data, err := io.ReadAll(io.LimitReader(part, maxDescriptionBytes+1))
 			if err != nil {
-				return in, readErr(err, "description")
+				return in, readErr(err, "description"), false
 			}
 			if len(data) > maxDescriptionBytes {
-				return in, s.mediaProblem(ctx, fmt.Errorf("%w: %d bytes", content.ErrDescriptionTooLong, len(data)))
+				return in, s.mediaProblemOf(ctx, fmt.Errorf("%w: %d bytes", content.ErrDescriptionTooLong, len(data))), false
 			}
 			in.Description = string(data)
 		}
 	}
 	if file == nil {
-		return in, badPart("file")
+		return in, badPart("file"), false
 	}
 	in.Content = bytes.NewReader(file)
-	return in, nil
+	return in, problem{}, true
 }
 
 // GetMedia serves GET /api/v1/media/{id}: a media file of the viewer with its state.
@@ -274,13 +265,13 @@ func (s *Server) GetMedia(ctx context.Context, req GetMediaRequestObject) (GetMe
 	}
 	m, err := s.o.Media.OwnMedia(ctx, v.AccountID, req.Id)
 	if err != nil {
-		if p := s.mediaProblem(ctx, err); p != nil {
-			return GetMediadefaultApplicationProblemPlusJSONResponse{Body: p.body, Headers: p.headers, StatusCode: p.status}, nil
+		if p, ok := s.mediaProblem(ctx, err); ok {
+			return GetMediadefaultApplicationProblemPlusJSONResponse(p), nil
 		}
 		return nil, err
 	}
 	cache := cacheNoStore
-	return GetMedia200JSONResponse{Body: s.newMediaAttachment(m), Headers: GetMedia200ResponseHeaders{CacheControl: &cache}}, nil
+	return GetMedia200JSONResponse{Body: newMediaAttachment(m, s.o.Media.URL), Headers: GetMedia200ResponseHeaders{CacheControl: &cache}}, nil
 }
 
 // UpdateMedia serves PATCH /api/v1/media/{id}: it changes the description or focal point of
@@ -299,11 +290,11 @@ func (s *Server) UpdateMedia(ctx context.Context, req UpdateMediaRequestObject) 
 	}
 	m, err := s.o.Media.Update(ctx, v.AccountID, u)
 	if err != nil {
-		if p := s.mediaProblem(ctx, err); p != nil {
-			return UpdateMediadefaultApplicationProblemPlusJSONResponse{Body: p.body, Headers: p.headers, StatusCode: p.status}, nil
+		if p, ok := s.mediaProblem(ctx, err); ok {
+			return UpdateMediadefaultApplicationProblemPlusJSONResponse(p), nil
 		}
 		return nil, err
 	}
 	cache := cacheNoStore
-	return UpdateMedia200JSONResponse{Body: s.newMediaAttachment(m), Headers: UpdateMedia200ResponseHeaders{CacheControl: &cache}}, nil
+	return UpdateMedia200JSONResponse{Body: newMediaAttachment(m, s.o.Media.URL), Headers: UpdateMedia200ResponseHeaders{CacheControl: &cache}}, nil
 }

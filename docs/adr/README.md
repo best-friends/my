@@ -42,4 +42,5 @@
 | [0028](0028-html-shell-link-previews-and-pwa.md) | Go が HTML の外枠を返し、リンクプレビュー（OGP / X Card）と PWA を両立する | Accepted |
 | [0029](0029-api-code-generation.md) | クライアント API のコード生成 | Accepted |
 | [0030](0030-web-client-token-handling.md) | Web クライアントのトークンの扱いとログイン画面 | Accepted |
+| [0031](0031-ui-kit-behavior-dependencies.md) | 共有 UI キットは、ドメインを持たない振る舞いのライブラリにも依存してよい | Proposed |
 <!-- adr-index:end -->

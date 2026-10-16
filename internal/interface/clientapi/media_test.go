@@ -5,7 +5,6 @@ package clientapi_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -24,11 +23,8 @@ import (
 	"github.com/best-friends/my/pkg/testkit"
 )
 
-const (
-	bobAccountID = "01890a5d-ac96-774b-bcce-b302099a8058"
-	// testMaxBytes is the upload limit of fakeMedia.
-	testMaxBytes = 4096
-)
+// testMaxBytes is the upload limit of fakeMedia. bobAccountID is in notifications_test.go.
+const testMaxBytes = 4096
 
 // fakeMedia is a MediaFiles that keeps media files in memory. Upload rejects content as the
 // real service does: by its sniffed format, its declared type, and its size; content
@@ -205,15 +201,6 @@ func (e *mediaEnv) upload(t *testing.T, token string, parts ...part) *http.Respo
 	t.Helper()
 	body, contentType := multipartBody(t, parts...)
 	return e.send(t, http.MethodPost, "/media", token, contentType, body)
-}
-
-func decode[T any](t *testing.T, res *http.Response) T {
-	t.Helper()
-	var v T
-	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	return v
 }
 
 func wantProblem(t *testing.T, res *http.Response, status int, typ string) clientapi.Problem {

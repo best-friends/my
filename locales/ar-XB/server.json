@@ -331,6 +331,14 @@
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ıuʌɐʅıp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.conflict": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔouɟʅıɔʇs ʍıʇɥ ʇɥǝ ɔnɹɹǝuʇ sʇɐʇǝ oɟ ʇɥǝ ɹǝsonɹɔǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.forbidden": {
+    "defaultMessage": "‮⅄on ɐɹǝ uoʇ ɐʅʅoʍǝp ʇo po ʇɥıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "‮⊥ɥıs ɐdd ıs uoʇ ɐʅʅoʍǝp ʇo po ʇɥıs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -407,8 +415,72 @@
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ʇoo ʅɐɹƃǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.status.already_deleted": {
+    "defaultMessage": "‮⊥ɥǝ dosʇ ɔɹǝɐʇǝp ʍıʇɥ ʇɥıs Ipǝɯdoʇǝuɔʎ-Ӽǝʎ ɥɐs qǝǝu pǝʅǝʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.empty_text": {
+    "defaultMessage": "‮⊥ɥǝ dosʇ ɥɐs uo ʇǝxʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.invalid_language": {
+    "defaultMessage": "‮⊥ɥǝ ʅɐuƃnɐƃǝ ıs uoʇ ɐ ʌɐʅıp ʅɐuƃnɐƃǝ ʇɐƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.invalid_media_description": {
+    "defaultMessage": "‮{max,plural,one{∀u ıɯɐƃǝ pǝsɔɹıdʇıou ɯnsʇ qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹ.} other{∀u ıɯɐƃǝ pǝsɔɹıdʇıou ɯnsʇ qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.invalid_text": {
+    "defaultMessage": "‮⊥ɥǝ ʇǝxʇ ɔouʇɐıus ɔɥɐɹɐɔʇǝɹs ʇɥɐʇ ɔɐuuoʇ qǝ dosʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.media_not_found": {
+    "defaultMessage": "‮∀u ɐʇʇɐɔɥǝp ɟıʅǝ ʍɐs uoʇ ɟonup ɐɯouƃ ʎonɹ ndʅoɐps.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.media_not_ready": {
+    "defaultMessage": "‮∀u ɐʇʇɐɔɥǝp ɟıʅǝ ıs sʇıʅʅ qǝıuƃ dɹoɔǝssǝp oɹ ɔonʅp uoʇ qǝ dɹoɔǝssǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.not_author": {
+    "defaultMessage": "‮Ouʅʎ ʇɥǝ ɐnʇɥoɹ ɔɐu ɔɥɐuƃǝ ʇɥıs dosʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.not_boostable": {
+    "defaultMessage": "‮⊥ɥıs dosʇ ɔɐuuoʇ qǝ qoosʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.not_pinnable": {
+    "defaultMessage": "‮Ouʅʎ ʎonɹ oʍu dosʇs ʇɥɐʇ ɐɹǝ uoʇ pıɹǝɔʇ ɔɐu qǝ dıuuǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.pin_limit": {
+    "defaultMessage": "‮{max,plural,one{⅄on ɔɐu dıu ɐʇ ɯosʇ # dosʇ.} other{⅄on ɔɐu dıu ɐʇ ɯosʇ # dosʇs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.posting_restricted": {
+    "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ɯɐʎ uoʇ dosʇ ɹıƃɥʇ uoʍ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.reply_not_found": {
+    "defaultMessage": "‮⊥ɥǝ dosʇ ʎon ɐɹǝ ɹǝdʅʎıuƃ ʇo ʍɐs uoʇ ɟonup.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.text_too_long": {
+    "defaultMessage": "‮{max,plural,one{⊥ɥǝ ʇǝxʇ ɐup ɔouʇǝuʇ ʍɐɹuıuƃ ɯnsʇ qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹ.} other{⊥ɥǝ ʇǝxʇ ɐup ɔouʇǝuʇ ʍɐɹuıuƃ ɯnsʇ qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.too_many_media": {
+    "defaultMessage": "‮{max,plural,one{∀ dosʇ ɔɐu ɐʇʇɐɔɥ ɐʇ ɯosʇ # pısʇıuɔʇ ɟıʅǝ.} other{∀ dosʇ ɔɐu ɐʇʇɐɔɥ ɐʇ ɯosʇ # pısʇıuɔʇ ɟıʅǝs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "‮Sıƃu ıu ʇo po ʇɥıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unprocessable": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔɐuuoʇ qǝ dɹoɔǝssǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "health.unavailable": {

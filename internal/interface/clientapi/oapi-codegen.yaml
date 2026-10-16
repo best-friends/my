@@ -9,3 +9,7 @@ generate:
   strict-server: true
 output-options:
   skip-prune: true
+# Enum constants carry their type's name (VisibilityPublic, MediaAttachmentTypeImage), so that
+# enums with the same values never collide in the package.
+compatibility:
+  always-prefix-enum-values: true
