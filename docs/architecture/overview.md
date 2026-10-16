@@ -56,7 +56,7 @@ Remote servers ──AP──►│                               │
 | `federation` | AP の受信・配送・Actor/Object 取得、署名、ドメイン状態 | RemoteObjectCache, DeliveryAttempt, InstanceHealth |
 | `moderation` | 通報・ドメインブロック・凍結・監査ログ | Report, DomainBlock, AuditLog |
 | `instance` | インスタンス設定・規約・ルール・NodeInfo | InstanceSettings |
-| `i18n` | ロケール解決・メッセージカタログ・整形 | （横断） |
+| `i18n` | ロケール解決・メッセージカタログ・整形 | （横断。`internal/i18n` の 1 パッケージで、`domain` / `app` の層を持たない） |
 
 ### 依存ルール
 
@@ -69,8 +69,9 @@ Remote servers ──AP──►│                               │
   | パッケージ | import してよいもの |
   | --- | --- |
   | `internal/domain/<module>` | 標準ライブラリと自モジュールの `domain` だけ |
-  | `internal/app/<module>` | 標準ライブラリ、自モジュールの `domain`、各モジュールの `app`（モジュール間の唯一の経路） |
+  | `internal/app/<module>` | 標準ライブラリ、自モジュールの `domain`、各モジュールの `app`（モジュール間の唯一の経路）、`internal/i18n` |
   | `internal/app/kernel` | 標準ライブラリだけ（全モジュール共通のポート） |
+  | `internal/i18n` | 標準ライブラリ、`locales`（埋め込みカタログ）、MessageFormat エンジンだけ（`app` と `interface` から使う末端のライブラリ） |
   | `internal/interface/*` | `app` と `domain`（`adapter` / `platform` は不可。`pkg/testkit` はテストからだけ可） |
   | `internal/adapter/*` | `app` のポートと `domain`（`interface` と `platform` は不可） |
   | `pkg/testkit` | `app` と `domain`（`interface` / `adapter` / `platform` は不可） |
@@ -159,12 +160,14 @@ internal/
     mail/{none,smtp,ses}/
     system/          # Clock / IDGenerator の本番実装（システム時計・UUIDv7）
   platform/          # 設定、composition root、ログ、HTTP サーバー
+  i18n/              # メッセージ整形・ロケール解決（型付きアクセサは tools/i18n が生成）
 pkg/
   testkit/           # コントラクトテスト・フィクスチャ・決定的なフェイク（独自アダプタ作者向けに公開）
 api/                 # openapi.yaml（クライアント API の正）
 schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用）と準備 SQL postgres.bootstrap.sql（ADR-0023）
 queries/             # sqlc 用クエリ（方言別）
-locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有）
+locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有。en-XA / ar-XB は生成物）
+tools/               # 開発ツール（Go ツールの go.mod、i18n の生成器・検査を持つ Bun パッケージ tools/i18n）
 app/                 # クライアントアプリ（Bun ワークスペース。1 アプリ 1 ディレクトリ）
   web/               # Web クライアント（PWA、TypeScript）
   mobile/            # モバイルアプリ（Tauri 2）
