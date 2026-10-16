@@ -248,6 +248,29 @@ CREATE TABLE dead_jobs (
 CREATE INDEX dead_jobs_failed_at ON dead_jobs (failed_at);
 
 -- ---------------------------------------------------------------------------------------------
+-- identity: user preferences (data-model.md §4.1, FR-007, FR-208).
+-- ---------------------------------------------------------------------------------------------
+
+-- Current value: a user's settings. locale and default_post_language are canonical BCP 47
+-- tags; time_zone is an IANA name; require_media_description is 0/1.
+CREATE TABLE user_preferences (
+  user_id TEXT NOT NULL PRIMARY KEY,
+  locale TEXT NOT NULL,
+  time_zone TEXT NOT NULL,
+  default_visibility TEXT NOT NULL CHECK (default_visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  default_post_language TEXT NOT NULL,
+  require_media_description INTEGER NOT NULL CHECK (require_media_description IN (0, 1)),
+  updated_at INTEGER NOT NULL
+) STRICT;
+
+-- Current value: the languages a user's timelines show; no rows show every language.
+CREATE TABLE user_timeline_languages (
+  user_id TEXT NOT NULL,
+  language TEXT NOT NULL,
+  PRIMARY KEY (user_id, language)
+) STRICT;
+
+-- ---------------------------------------------------------------------------------------------
 -- identity: browser sessions of the server-rendered screens (data-model.md §4.1, ADR-0019 §4).
 -- ---------------------------------------------------------------------------------------------
 

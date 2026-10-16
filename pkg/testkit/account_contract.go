@@ -76,10 +76,10 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 type accountEnv struct {
 	h        AccountHarness
 	clock    *Clock
+	ids      *IDGenerator
 	accounts *appaccount.Service
 	identity *appidentity.Service
 	hasher   *appidentity.PasswordHasher
-	ids      kernel.IDGenerator
 	limiter  *kernel.RateLimiter
 }
 
@@ -107,9 +107,9 @@ func newAccountEnv(t *testing.T, newHarness AccountFactory) *accountEnv {
 	e := &accountEnv{
 		h:        h,
 		clock:    clock,
+		ids:      ids,
 		accounts: accounts,
 		hasher:   appidentity.NewPasswordHasher(cheapArgon2, 0),
-		ids:      ids,
 		limiter:  kernel.NewRateLimiter(NewKeyValueStore(clock), clock),
 	}
 	e.identity = e.newIdentity(e.hasher)

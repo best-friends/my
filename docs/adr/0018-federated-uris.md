@@ -15,8 +15,8 @@ v0 でも連合 URI だけは安易に変えないとしている。M1 で Actor
 
 - FR-401（WebFinger / host-meta）、FR-403（Actor と各コレクション）、FR-305（`@user@host` / URL 指定での解決）、FR-006（プロフィール）
 - [ADR-0006](0006-federation-protocol-scope.md): Mastodon / Misskey / GoToSocial / Akkoma との相互運用
-- [ADR-0017](0017-visibility-local.md)（PR #33 で起票中）: 公開範囲 `local` を追加。オブジェクト URI への GET は署名者のアクセス権を確かめ、権限が無ければ 404 を返す
-- [ADR-0007](0007-client-api.md)（PR #33 で起票中）: Mastodon Client API とは互換させない。このため、HTML 側の URL を Mastodon に合わせる必要はない
+- [ADR-0017](0017-visibility-local.md): 公開範囲 `local` を追加。オブジェクト URI への GET は署名者のアクセス権を確かめ、権限が無ければ 404 を返す
+- [ADR-0007](0007-client-api.md): Mastodon Client API とは互換させない。このため、HTML 側の URL を Mastodon に合わせる必要はない
 - [ADR-0003](0003-database-abstraction.md) / overview: ID は UUIDv7（36 文字の文字列）
 - NFR-SEC-4（公開範囲の判定はドメイン層の単一の関数で行う）、NFR-COST（CDN で配信コストを抑える）
 

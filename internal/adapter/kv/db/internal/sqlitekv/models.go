@@ -186,6 +186,16 @@ type UserEmailAddress struct {
 	AddedAt           int64
 }
 
+type UserPreference struct {
+	UserID                  string
+	Locale                  string
+	TimeZone                string
+	DefaultVisibility       string
+	DefaultPostLanguage     string
+	RequireMediaDescription int64
+	UpdatedAt               int64
+}
+
 type UserPrimaryEmail struct {
 	UserID            string
 	EmailAddressID    string
@@ -210,4 +220,9 @@ type UserRoleRevocation struct {
 	GrantID         string
 	RevokedByUserID sql.NullString
 	RevokedAt       int64
+}
+
+type UserTimelineLanguage struct {
+	UserID   string
+	Language string
 }

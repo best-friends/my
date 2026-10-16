@@ -46,6 +46,8 @@ type Repository interface {
 	// FindRole returns a role by key with its permissions, sorted.
 	FindRole(ctx context.Context, key string) (identity.Role, []identity.Permission, error)
 
+	PreferencesRepository
+
 	InsertSession(ctx context.Context, tx uow.Tx, s identity.Session) error
 	// InsertSessionRevocation records that a session ended; it does nothing when the session
 	// already has a revocation, so that revoking twice keeps the first reason.
