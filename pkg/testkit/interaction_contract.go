@@ -84,7 +84,7 @@ func newInteractionEnv(t *testing.T, newHarness InteractionFactory) *interaction
 		statusEnv: &statusEnv{h: StatusHarness{UnitOfWork: h.UnitOfWork, Statuses: h.Statuses}, clock: clock, ids: ids},
 		h:         h,
 		actors:    &stubActors{actors: map[string]appaccount.Actor{}},
-		relations: &stubRelations{follows: map[[2]string]graph.State{}},
+		relations: &stubRelations{follows: map[[2]string]graph.State{}, blocks: map[[2]string]bool{}},
 	}
 	for _, typ := range []string{appcontent.EventBoosted, appcontent.EventBoostRetracted, appcontent.EventFavourited, appcontent.EventUnfavourited} {
 		projectors.Register(typ, func(_ context.Context, _ uow.Tx, ev uow.Event) error {
@@ -173,6 +173,13 @@ func (s *stubActors) FindByID(_ context.Context, id string) (appaccount.Actor, e
 type stubRelations struct {
 	mu      sync.Mutex
 	follows map[[2]string]graph.State
+	blocks  map[[2]string]bool
+}
+
+func (s *stubRelations) block(blocker, blocked string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.blocks[[2]string{blocker, blocked}] = true
 }
 
 func (s *stubRelations) set(follower, followee string, state graph.State) {
@@ -193,6 +200,7 @@ func (s *stubRelations) Relationship(_ context.Context, accountID, targetID stri
 	return appgraph.Relationship{
 		AccountID: accountID, TargetAccountID: targetID,
 		Following: state(accountID, targetID), FollowedBy: state(targetID, accountID),
+		Blocking: s.blocks[[2]string{accountID, targetID}], BlockedBy: s.blocks[[2]string{targetID, accountID}],
 	}, nil
 }
 
@@ -480,7 +488,11 @@ func interactionBookmarksAndPins(t *testing.T, e *interactionEnv) {
 func interactionChecksVisibility(t *testing.T, e *interactionEnv) {
 	ctx := t.Context()
 	author, stranger, follower, pending, mentioned := e.localAccount(), e.localAccount(), e.localAccount(), e.localAccount(), e.localAccount()
+	blocker, blocked := e.localAccount(), e.localAccount()
 	e.follow(follower, author, graph.StateActive)
+	e.follow(blocker, author, graph.StateActive)
+	e.relations.block(blocker, author)
+	e.relations.block(author, blocked)
 	e.follow(pending, author, graph.StatePending)
 	remote := e.account(false, account.StateActive)
 	inactive := e.account(true, account.StateDeactivated)
@@ -515,6 +527,8 @@ func interactionChecksVisibility(t *testing.T, e *interactionEnv) {
 		{"a follower on a direct status", follower, direct, appcontent.ErrNotFound, nil},
 		{"a mentioned account on a direct status", mentioned, direct, nil, content.ErrNotBoostable},
 		{"a stranger on a public status", stranger, public, nil, nil},
+		{"a follower who blocks the author", blocker, public, appcontent.ErrNotFound, nil},
+		{"an account the author blocks", blocked, public, appcontent.ErrNotFound, nil},
 		{"anyone on a status of a deleted author", stranger, byGone, appcontent.ErrNotFound, nil},
 		{"anyone on a deleted status", stranger, deleted, appcontent.ErrNotFound, nil},
 		{"a remote account", remote, public, appcontent.ErrActorUnavailable, nil},

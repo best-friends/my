@@ -296,13 +296,13 @@ func (s *Interactions) visibleStatus(ctx context.Context, accountID, statusID st
 		restrictions.ProfileView = !author.Lifecycle.Active()
 	}
 
-	// The graph module reports follows only; blocks join the relation with #96.
 	var rel content.Relation
 	if st.AuthorAccountID != accountID {
 		r, err := s.d.Relations.Relationship(ctx, accountID, st.AuthorAccountID)
 		if err != nil {
 			return content.Status{}, err
 		}
+		rel.Blocking, rel.BlockedBy = r.Blocking, r.BlockedBy
 		switch {
 		case r.Follows():
 			rel.Follow = content.FollowActive
