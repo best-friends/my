@@ -86,6 +86,8 @@ Remote servers ──AP──►│                               │
 全モジュールが使う `Clock` / `IdGenerator`（Go 名 `IDGenerator`）と `KeyManager` は `internal/app/kernel` に置き、ドメインには `time.Time` と ID 文字列を値で渡す。
 `UnitOfWork` も全モジュールと全 DB アダプタが共有するので `internal/app/uow` に置く。リポジトリポートは各モジュールの `app` に置き、
 DB アダプタの実装は受け取った `uow.Tx` から自分のトランザクションを取り出す。
+ジョブキューのポート（`JobQueue` / `Outbox` / `JobHandlerRegistry` / `JobRunner`）も全モジュールと全キューアダプタが共有するので `internal/app/queue` に置く。
+ここにはリトライ方針（指数バックオフ + ジッタ）と、キューアダプタの `queue.Source` を駆動する pull runner も置く。
 
 | ポート | 役割 | 既定アダプタ（self-hosted） | 関連 ADR |
 | --- | --- | --- | --- |
@@ -152,6 +154,7 @@ internal/
   app/<module>/      # ユースケースとポート定義
   app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator / KeyManager）、UUIDv7 ヘルパー、Sealer
   app/uow/           # UnitOfWork ポート、トランザクションのリトライ、同期 projector の登録先
+  app/queue/         # ジョブキューのポート、ハンドラの登録先、リトライ方針、pull runner
   interface/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
@@ -171,7 +174,7 @@ pkg/
   testkit/           # コントラクトテスト・フィクスチャ・決定的なフェイク（独自アダプタ作者向けに公開）
 api/                 # openapi.yaml（クライアント API の正）
 schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用）と準備 SQL postgres.bootstrap.sql（ADR-0023）
-queries/             # sqlc 用クエリ（方言別。設定は sqlc.yaml、生成先は internal/adapter/db/<dialect>/）
+queries/             # sqlc 用クエリ（方言別。設定は sqlc.yaml、生成先は internal/adapter/db/<dialect>/。queue/ は internal/adapter/queue/db 用）
 locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有。en-XA / ar-XB は生成物）
 tools/               # 開発ツール（Go ツールの go.mod、i18n の生成器・検査を持つ Bun パッケージ tools/i18n）
 app/                 # クライアントアプリ（Bun ワークスペース。1 アプリ 1 ディレクトリ）

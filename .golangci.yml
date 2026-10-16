@@ -198,6 +198,17 @@ linters:
           allow:
             - $gostd
             - github.com/best-friends/my/internal/app/uow
+        # app/queue holds the job queue ports, the handler registry, the retry policy, and the pull
+        # runner shared by every module and queue adapter; it depends only on kernel and uow.
+        app-queue:
+          list-mode: strict
+          files:
+            - "**/internal/app/queue/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/app/queue
+            - github.com/best-friends/my/internal/app/kernel
+            - github.com/best-friends/my/internal/app/uow
         i18n:
           list-mode: strict
           files:

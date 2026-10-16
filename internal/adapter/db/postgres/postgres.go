@@ -111,3 +111,8 @@ func txOf(tx uow.Tx) (pgx.Tx, error) {
 	}
 	return t.tx, nil
 }
+
+// PgxTx returns the pgx transaction behind tx, for the adapters of other ports that keep
+// their tables in this database (the database job queue, internal/adapter/queue/db).
+// It fails for a Tx of another adapter.
+func PgxTx(tx uow.Tx) (pgx.Tx, error) { return txOf(tx) }

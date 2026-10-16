@@ -8,6 +8,12 @@
 # internal/adapter/db/<dialect>/<dialect>gen. sqlc rejects an entry without queries, so each
 # dialect's product entry is added together with its first query.
 #
+# The queue entries generate the queries of the database job queue (internal/adapter/queue/db)
+# from queries/<dialect>/queue/*.sql into internal/adapter/queue/db/internal/<dialect>queue.
+#
+# Keep query files ASCII-only: the sqlite engine misplaces sqlc.arg / @name rewrites that
+# follow a multi-byte character and rejects the query.
+#
 # The contract entries generate the probe-table queries of the UnitOfWork contract tests.
 # They read the product schema plus a test-only probe schema.
 version: "2"
@@ -35,6 +41,29 @@ sql:
         out: internal/adapter/db/postgres/internal/contract/contractdb
         sql_package: pgx/v5
         emit_empty_slices: true
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time
+  - name: sqlite-queue
+    engine: sqlite
+    schema: schema/sqlite.sql
+    queries: queries/sqlite/queue
+    gen:
+      go:
+        package: sqlitequeue
+        out: internal/adapter/queue/db/internal/sqlitequeue
+        emit_empty_slices: true
+  - name: postgres-queue
+    engine: postgresql
+    schema: schema/postgres.sql
+    queries: queries/postgres/queue
+    gen:
+      go:
+        package: postgresqueue
+        out: internal/adapter/queue/db/internal/postgresqueue
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
         overrides:
           - db_type: timestamptz
             go_type: time.Time
