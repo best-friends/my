@@ -353,9 +353,9 @@ function notificationHandlers() {
 type RelationFlag = "boosted" | "favourited" | "bookmarked";
 
 /**
- * The thread around any post (GET /statuses/{id}/context): no ancestors and no replies; and the actions on
- * any post (boost, favourite, bookmark and their removal; delete). An action answers Bob's post as
- * `statusFixture` with the viewer's relation set as asked.
+ * Any post (GET /statuses/{id}), as Bob's post `statusFixture`; the thread around it
+ * (GET /statuses/{id}/context): no ancestors and no replies; and the actions on it (boost, favourite,
+ * bookmark and their removal; delete). An action answers the post with the viewer's relation set as asked.
  */
 function statusActionHandlers() {
   const authorized = (request: Request) => request.headers.get("Authorization") === `Bearer ${validAccessToken}`;
@@ -367,6 +367,7 @@ function statusActionHandlers() {
     );
   const context: Schemas["StatusContext"] = { ancestors: [], descendants: [] };
   return [
+    http.get(`${apiBase}/statuses/:id`, ({ params }) => HttpResponse.json(statusFixture(String(params["id"])))),
     http.get(`${apiBase}/statuses/:id/context`, () => HttpResponse.json(context)),
     ...relation("boost", "boosted"),
     ...relation("favourite", "favourited"),
