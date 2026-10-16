@@ -90,6 +90,54 @@ type DeadJob struct {
 	FailedAt       int64
 }
 
+type Follow struct {
+	ID                string
+	Uri               string
+	FollowerAccountID string
+	FolloweeAccountID string
+	RequestedAt       int64
+}
+
+type FollowAcceptance struct {
+	FollowID    string
+	AcceptedBy  string
+	ActivityUri sql.NullString
+	AcceptedAt  int64
+}
+
+type FollowCounter struct {
+	AccountID      string
+	FollowersCount int64
+	FollowingCount int64
+}
+
+type FollowEdge struct {
+	FollowerAccountID string
+	FolloweeAccountID string
+	FollowID          string
+	State             string
+	Since             int64
+}
+
+type FollowPreference struct {
+	FollowID   string
+	ShowBoosts int64
+	Notify     int64
+}
+
+type FollowRejection struct {
+	FollowID    string
+	RejectedBy  string
+	ActivityUri sql.NullString
+	RejectedAt  int64
+}
+
+type FollowTermination struct {
+	FollowID     string
+	Reason       string
+	TerminatedAt int64
+}
+
 type Job struct {
 	ID             string
 	Type           string
@@ -158,6 +206,16 @@ type UserEmailAddress struct {
 	AddedAt           int64
 }
 
+type UserPreference struct {
+	UserID                  string
+	Locale                  string
+	TimeZone                string
+	DefaultVisibility       string
+	DefaultPostLanguage     string
+	RequireMediaDescription int64
+	UpdatedAt               int64
+}
+
 type UserPrimaryEmail struct {
 	UserID            string
 	EmailAddressID    string
@@ -182,4 +240,9 @@ type UserRoleRevocation struct {
 	GrantID         string
 	RevokedByUserID sql.NullString
 	RevokedAt       int64
+}
+
+type UserTimelineLanguage struct {
+	UserID   string
+	Language string
 }

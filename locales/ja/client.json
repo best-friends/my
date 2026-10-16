@@ -1,0 +1,6 @@
+{
+  "app.placeholder": {
+    "defaultMessage": "Web クライアントは準備中です。",
+    "description": "Heading of the placeholder page the web client shows until its screens exist."
+  }
+}

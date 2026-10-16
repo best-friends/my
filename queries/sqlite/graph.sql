@@ -1,0 +1,108 @@
+-- SPDX-License-Identifier: AGPL-3.0-only
+
+-- name: InsertFollow :exec
+INSERT INTO follows (id, uri, follower_account_id, followee_account_id, requested_at) VALUES (?, ?, ?, ?, ?);
+
+-- name: InsertFollowAcceptance :exec
+INSERT INTO follow_acceptances (follow_id, accepted_by, activity_uri, accepted_at) VALUES (?, ?, ?, ?);
+
+-- name: InsertFollowRejection :exec
+INSERT INTO follow_rejections (follow_id, rejected_by, activity_uri, rejected_at) VALUES (?, ?, ?, ?);
+
+-- name: InsertFollowTermination :exec
+INSERT INTO follow_terminations (follow_id, reason, terminated_at) VALUES (?, ?, ?);
+
+-- name: UpsertFollowPreferences :exec
+INSERT INTO follow_preferences (follow_id, show_boosts, notify) VALUES (?, ?, ?)
+ON CONFLICT (follow_id) DO UPDATE SET show_boosts = excluded.show_boosts, notify = excluded.notify;
+
+-- name: GetFollow :one
+SELECT id, uri, follower_account_id, followee_account_id, requested_at FROM follows WHERE id = ?;
+
+-- name: GetFollowPreferences :one
+SELECT follow_id, show_boosts, notify FROM follow_preferences WHERE follow_id = ?;
+
+-- name: GetFollowEdge :one
+SELECT follower_account_id, followee_account_id, follow_id, state, since
+FROM follow_edges WHERE follower_account_id = ? AND followee_account_id = ?;
+
+-- InsertFollowEdge inserts nothing when the pair already has an edge.
+-- name: InsertFollowEdge :execrows
+INSERT INTO follow_edges (follower_account_id, followee_account_id, follow_id, state, since) VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (follower_account_id, followee_account_id) DO NOTHING;
+
+-- name: UpdateFollowEdge :exec
+UPDATE follow_edges SET state = ?, since = ?
+WHERE follower_account_id = ? AND followee_account_id = ? AND follow_id = ?;
+
+-- name: DeleteFollowEdge :exec
+DELETE FROM follow_edges WHERE follower_account_id = ? AND followee_account_id = ? AND follow_id = ?;
+
+-- name: DeleteAllFollowEdges :exec
+DELETE FROM follow_edges;
+
+-- AddToFollowCounters adds to an existing row; a new row goes through AddFollowCounters, whose
+-- values must satisfy the CHECK constraints before ON CONFLICT applies.
+-- name: AddToFollowCounters :execrows
+UPDATE follow_counters SET followers_count = followers_count + ?2, following_count = following_count + ?3
+WHERE account_id = ?1;
+
+-- name: AddFollowCounters :exec
+INSERT INTO follow_counters (account_id, followers_count, following_count) VALUES (?, ?, ?)
+ON CONFLICT (account_id) DO UPDATE SET
+  followers_count = follow_counters.followers_count + excluded.followers_count,
+  following_count = follow_counters.following_count + excluded.following_count;
+
+-- name: DeleteZeroFollowCounters :exec
+DELETE FROM follow_counters WHERE account_id = ? AND followers_count = 0 AND following_count = 0;
+
+-- name: UpsertFollowCounters :exec
+INSERT INTO follow_counters (account_id, followers_count, following_count) VALUES (?, ?, ?)
+ON CONFLICT (account_id) DO UPDATE SET
+  followers_count = excluded.followers_count,
+  following_count = excluded.following_count;
+
+-- name: DeleteAllFollowCounters :exec
+DELETE FROM follow_counters;
+
+-- name: ListFollowHistories :many
+SELECT
+  f.id, f.uri, f.follower_account_id, f.followee_account_id, f.requested_at,
+  a.accepted_by, a.activity_uri AS acceptance_activity_uri, a.accepted_at,
+  r.rejected_by, r.activity_uri AS rejection_activity_uri, r.rejected_at,
+  t.reason AS termination_reason, t.terminated_at
+FROM follows f
+LEFT JOIN follow_acceptances a ON a.follow_id = f.id
+LEFT JOIN follow_rejections r ON r.follow_id = f.id
+LEFT JOIN follow_terminations t ON t.follow_id = f.id
+ORDER BY f.id;
+
+-- name: ListFollowEdges :many
+SELECT follower_account_id, followee_account_id, follow_id, state, since
+FROM follow_edges ORDER BY follower_account_id, followee_account_id;
+
+-- name: ListFollowCounters :many
+SELECT account_id, followers_count, following_count FROM follow_counters ORDER BY account_id;
+
+-- name: GetFollowCounters :one
+SELECT account_id, followers_count, following_count FROM follow_counters WHERE account_id = ?;
+
+-- ListFollowersPage pages the edges into an account in one state, newest follow first; an empty
+-- before starts at the newest.
+-- name: ListFollowersPage :many
+SELECT follower_account_id, followee_account_id, follow_id, state, since
+FROM follow_edges
+WHERE followee_account_id = sqlc.arg(account_id) AND state = sqlc.arg(state)
+  AND (CAST(sqlc.arg(before) AS TEXT) = '' OR follow_id < CAST(sqlc.arg(before) AS TEXT))
+ORDER BY follow_id DESC
+LIMIT sqlc.arg(page_limit);
+
+-- ListFollowingPage pages the edges out of an account in one state, newest follow first; an
+-- empty before starts at the newest.
+-- name: ListFollowingPage :many
+SELECT follower_account_id, followee_account_id, follow_id, state, since
+FROM follow_edges
+WHERE follower_account_id = sqlc.arg(account_id) AND state = sqlc.arg(state)
+  AND (CAST(sqlc.arg(before) AS TEXT) = '' OR follow_id < CAST(sqlc.arg(before) AS TEXT))
+ORDER BY follow_id DESC
+LIMIT sqlc.arg(page_limit);

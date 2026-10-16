@@ -195,6 +195,68 @@ CREATE TABLE account_lifecycle_states (
 ) STRICT;
 CREATE INDEX account_lifecycle_states_state_deletion_due_at ON account_lifecycle_states (state, deletion_due_at);
 
+-- graph: follows (data-model §4.5) ------------------------------------------------------------
+
+-- Resource: one follow relationship. Following again after a rejection or termination inserts a
+-- new row, so earlier relationships stay on record.
+CREATE TABLE follows (
+  id TEXT NOT NULL PRIMARY KEY,
+  uri TEXT NOT NULL,
+  follower_account_id TEXT NOT NULL,
+  followee_account_id TEXT NOT NULL,
+  requested_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX follows_uri ON follows (uri);
+
+-- Event: a follow became active.
+CREATE TABLE follow_acceptances (
+  follow_id TEXT NOT NULL PRIMARY KEY,
+  accepted_by TEXT NOT NULL CHECK (accepted_by IN ('auto', 'followee', 'remote')),
+  activity_uri TEXT,
+  accepted_at INTEGER NOT NULL
+) STRICT;
+
+-- Event: a pending follow was declined.
+CREATE TABLE follow_rejections (
+  follow_id TEXT NOT NULL PRIMARY KEY,
+  rejected_by TEXT NOT NULL CHECK (rejected_by IN ('followee', 'remote', 'system')),
+  activity_uri TEXT,
+  rejected_at INTEGER NOT NULL
+) STRICT;
+
+-- Event: a pending or active follow ended.
+CREATE TABLE follow_terminations (
+  follow_id TEXT NOT NULL PRIMARY KEY,
+  reason TEXT NOT NULL CHECK (reason IN ('unfollowed', 'removed_by_followee', 'blocked', 'account_deleted', 'moderation')),
+  terminated_at INTEGER NOT NULL
+) STRICT;
+
+-- Projection: the live follow of each pair (neither rejected nor terminated).
+CREATE TABLE follow_edges (
+  follower_account_id TEXT NOT NULL,
+  followee_account_id TEXT NOT NULL,
+  follow_id TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('pending', 'active')),
+  since INTEGER NOT NULL,
+  PRIMARY KEY (follower_account_id, followee_account_id)
+) STRICT;
+CREATE INDEX follow_edges_followee_state_follow_id ON follow_edges (followee_account_id, state, follow_id);
+CREATE INDEX follow_edges_follower_state_follow_id ON follow_edges (follower_account_id, state, follow_id);
+
+-- Current value: the follower's settings of a follow.
+CREATE TABLE follow_preferences (
+  follow_id TEXT NOT NULL PRIMARY KEY,
+  show_boosts INTEGER NOT NULL CHECK (show_boosts IN (0, 1)),
+  notify INTEGER NOT NULL CHECK (notify IN (0, 1))
+) STRICT;
+
+-- Projection: the numbers of active follows into and out of an account. No row means zero.
+CREATE TABLE follow_counters (
+  account_id TEXT NOT NULL PRIMARY KEY,
+  followers_count INTEGER NOT NULL CHECK (followers_count >= 0),
+  following_count INTEGER NOT NULL CHECK (following_count >= 0)
+) STRICT;
+
 -- Tables follow docs/architecture/data-model.md, mapping logical types per its §1.2.
 
 -- ---------------------------------------------------------------------------------------------
@@ -246,3 +308,26 @@ CREATE TABLE dead_jobs (
   failed_at INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX dead_jobs_failed_at ON dead_jobs (failed_at);
+
+-- ---------------------------------------------------------------------------------------------
+-- identity: user preferences (data-model.md §4.1, FR-007, FR-208).
+-- ---------------------------------------------------------------------------------------------
+
+-- Current value: a user's settings. locale and default_post_language are canonical BCP 47
+-- tags; time_zone is an IANA name; require_media_description is 0/1.
+CREATE TABLE user_preferences (
+  user_id TEXT NOT NULL PRIMARY KEY,
+  locale TEXT NOT NULL,
+  time_zone TEXT NOT NULL,
+  default_visibility TEXT NOT NULL CHECK (default_visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  default_post_language TEXT NOT NULL,
+  require_media_description INTEGER NOT NULL CHECK (require_media_description IN (0, 1)),
+  updated_at INTEGER NOT NULL
+) STRICT;
+
+-- Current value: the languages a user's timelines show; no rows show every language.
+CREATE TABLE user_timeline_languages (
+  user_id TEXT NOT NULL,
+  language TEXT NOT NULL,
+  PRIMARY KEY (user_id, language)
+) STRICT;
