@@ -79,6 +79,19 @@ func TestLifecycleApply(t *testing.T) {
 	}
 }
 
+func TestLifecycleActive(t *testing.T) {
+	for state, want := range map[account.LifecycleStateName]bool{
+		account.StateActive: true, account.StateDeactivated: false, account.StateDeletionScheduled: false, account.StateDeleted: false,
+	} {
+		if got := (account.LifecycleState{State: state}).Active(); got != want {
+			t.Errorf("%s: Active() = %v, want %v", state, got, want)
+		}
+	}
+	if !account.InitialLifecycleState("a").Active() {
+		t.Error("a new account is not active")
+	}
+}
+
 func TestProfileSupersedes(t *testing.T) {
 	if !(account.ProfileRevision{ID: "r1", Seq: 1}).Supersedes(account.ProfileHead{}) {
 		t.Error("a first revision does not supersede an empty head")

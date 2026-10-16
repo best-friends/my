@@ -12,6 +12,19 @@ import (
 	"time"
 )
 
+const countLocalAccounts = `-- name: CountLocalAccounts :one
+SELECT COUNT(*) FROM local_accounts la
+LEFT JOIN account_lifecycle_states s ON s.account_id = la.account_id
+WHERE s.state IS NULL OR s.state <> 'deleted'
+`
+
+func (q *Queries) CountLocalAccounts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countLocalAccounts)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteAllAccountHandles = `-- name: DeleteAllAccountHandles :exec
 DELETE FROM account_handles
 `

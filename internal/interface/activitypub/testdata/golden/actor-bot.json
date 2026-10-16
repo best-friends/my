@@ -1,0 +1,50 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "PropertyValue": "schema:PropertyValue",
+      "discoverable": "toot:discoverable",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "featuredTags": {
+        "@id": "toot:featuredTags",
+        "@type": "@id"
+      },
+      "indexable": "toot:indexable",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "schema": "http://schema.org#",
+      "toot": "http://joinmastodon.org/ns#",
+      "value": "schema:value"
+    }
+  ],
+  "id": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70",
+  "type": "Service",
+  "following": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70/following",
+  "followers": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70/followers",
+  "inbox": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70/inbox",
+  "outbox": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70/outbox",
+  "featured": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70/featured",
+  "featuredTags": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70/featured-tags",
+  "preferredUsername": "Botty",
+  "name": "Botty",
+  "summary": "",
+  "url": "https://social.example.org/@Botty",
+  "manuallyApprovesFollowers": true,
+  "discoverable": false,
+  "indexable": true,
+  "published": "2026-10-16T12:00:00Z",
+  "publicKey": {
+    "id": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70#main-key",
+    "owner": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e70",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "tag": [],
+  "attachment": [],
+  "endpoints": {
+    "sharedInbox": "https://social.example.org/ap/inbox"
+  }
+}
+

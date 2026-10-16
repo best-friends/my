@@ -99,6 +99,23 @@ func (a *App) writeProblem(w http.ResponseWriter, r *http.Request, l *i18n.Local
 	_, _ = w.Write(append(body, '\n'))
 }
 
+// writeStatusProblem writes the problem document of an HTTP status, for handlers outside this
+// package (activitypub.ProblemWriter), so that their errors look like every other error of
+// the server.
+func (a *App) writeStatusProblem(w http.ResponseWriter, r *http.Request, status int) {
+	l := a.localizer(r)
+	var title string
+	switch status {
+	case http.StatusBadRequest:
+		title = l.ServerErrorsBadRequest()
+	case http.StatusNotFound:
+		title = l.ServerErrorsNotFound()
+	default:
+		status, title = http.StatusInternalServerError, l.ServerErrorsInternal()
+	}
+	a.writeProblem(w, r, l, status, title)
+}
+
 // problemFallback serves mux, replacing its plain-text 404 and 405 responses with problem
 // documents.
 func (a *App) problemFallback(mux *http.ServeMux) http.Handler {

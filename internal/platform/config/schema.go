@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -16,6 +17,9 @@ const EnvPrefix = "MY_"
 
 // EnvConfigFile names the environment variable that points at the optional TOML file.
 const EnvConfigFile = EnvPrefix + "CONFIG"
+
+// DefaultSourceURL is the repository of the unmodified server, the default of source_url.
+const DefaultSourceURL = "https://github.com/best-friends/my"
 
 // kekSize is the length in bytes of the AES-256 key-encryption key (ADR-0019 §6).
 const kekSize = 32
@@ -70,6 +74,13 @@ var schema = []field{
 		doc:    "Domain of user handles (`@alice@{account_domain}`). Defaults to `host`. When it differs, `account_domain` must redirect `/.well-known/webfinger`, `/.well-known/host-meta`, and `/.well-known/nodeinfo` to `host` (ADR-0018). Recorded in the database on first start and must not change afterwards.",
 		check:  checkDomain,
 		set:    func(c *Config, v string) { c.AccountDomain = v },
+	},
+	{
+		key:   "source_url",
+		doc:   "Where users get the source code of the running server, as an `https` URL. NodeInfo publishes it as `software.repository` (AGPL-3.0 section 13, ADR-0011); point it at your own repository when you run a modified version.",
+		def:   DefaultSourceURL,
+		check: checkSourceURL,
+		set:   func(c *Config, v string) { c.SourceURL = v },
 	},
 	{
 		key: "role",
@@ -261,6 +272,14 @@ func validLabel(l string) bool {
 		}
 	}
 	return true
+}
+
+func checkSourceURL(v string) error {
+	u, err := url.Parse(v)
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
+		return errors.New("must be an absolute https URL without user info or fragment")
+	}
+	return nil
 }
 
 func checkListen(v string) error {

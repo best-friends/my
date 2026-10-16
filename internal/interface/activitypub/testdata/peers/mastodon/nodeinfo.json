@@ -1,0 +1,29 @@
+{
+  "version": "2.0",
+  "software": {
+    "name": "mastodon",
+    "version": "4.8.0"
+  },
+  "protocols": [
+    "activitypub"
+  ],
+  "services": {
+    "outbound": [],
+    "inbound": []
+  },
+  "usage": {
+    "users": {
+      "total": 1200,
+      "activeMonth": 300,
+      "activeHalfyear": 600
+    },
+    "localPosts": 45000
+  },
+  "openRegistrations": true,
+  "metadata": {
+    "nodeName": "Example",
+    "nodeDescription": "",
+    "optInServerDirectory": false,
+    "optInServerRecommendation": false
+  }
+}

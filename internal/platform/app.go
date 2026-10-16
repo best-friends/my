@@ -21,6 +21,7 @@ import (
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/i18n"
+	"github.com/best-friends/my/internal/interface/activitypub"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -68,6 +69,8 @@ type route struct {
 type AppOptions struct {
 	// Logger is the process logger; the default is slog.Default().
 	Logger *slog.Logger
+	// Version is the server version that NodeInfo reports; the default is "dev".
+	Version string
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -151,6 +154,14 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
 	})
+
+	if opts.Version == "" {
+		opts.Version = "dev"
+	}
+	activitypub.New(activitypub.Options{
+		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
+		Accounts: a.Accounts, Problem: a.writeStatusProblem, Logger: a.Logger,
+	}).Register(a)
 	return a, nil
 }
 

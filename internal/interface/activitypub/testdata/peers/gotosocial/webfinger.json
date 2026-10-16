@@ -1,0 +1,19 @@
+{
+  "subject": "acct:alice@gts.example",
+  "aliases": [
+    "https://social.gts.example/users/alice",
+    "https://social.gts.example/@alice"
+  ],
+  "links": [
+    {
+      "rel": "http://webfinger.net/rel/profile-page",
+      "type": "text/html",
+      "href": "https://social.gts.example/@alice"
+    },
+    {
+      "rel": "self",
+      "type": "application/activity+json",
+      "href": "https://social.gts.example/users/alice"
+    }
+  ]
+}

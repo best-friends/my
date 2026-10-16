@@ -1,0 +1,48 @@
+{
+  "@context": [
+    "https://w3id.org/security/v1",
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "discoverable": "toot:discoverable",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "toot": "http://joinmastodon.org/ns#",
+      "PropertyValue": "schema:PropertyValue",
+      "schema": "http://schema.org#",
+      "value": "schema:value"
+    }
+  ],
+  "attachment": [
+    {
+      "name": "Website",
+      "type": "PropertyValue",
+      "value": "<a href=\"https://example.org\" rel=\"nofollow noreferrer noopener me\" target=\"_blank\">example.org</a>"
+    }
+  ],
+  "discoverable": true,
+  "endpoints": {
+    "sharedInbox": "https://social.gts.example/sharedInbox"
+  },
+  "featured": "https://social.gts.example/users/alice/collections/featured",
+  "followers": "https://social.gts.example/users/alice/followers",
+  "following": "https://social.gts.example/users/alice/following",
+  "id": "https://social.gts.example/users/alice",
+  "inbox": "https://social.gts.example/users/alice/inbox",
+  "manuallyApprovesFollowers": false,
+  "name": "Alice",
+  "outbox": "https://social.gts.example/users/alice/outbox",
+  "preferredUsername": "alice",
+  "publicKey": {
+    "id": "https://social.gts.example/users/alice/main-key",
+    "owner": "https://social.gts.example/users/alice",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "published": "2024-05-09T00:00:00Z",
+  "summary": "<p>Hello</p>",
+  "tag": [],
+  "type": "Person",
+  "url": "https://social.gts.example/@alice"
+}

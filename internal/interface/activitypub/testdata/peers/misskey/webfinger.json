@@ -1,0 +1,19 @@
+{
+  "subject": "acct:alice@misskey.example",
+  "links": [
+    {
+      "rel": "self",
+      "type": "application/activity+json",
+      "href": "https://misskey.example/users/9xyzabc123"
+    },
+    {
+      "rel": "http://webfinger.net/rel/profile-page",
+      "type": "text/html",
+      "href": "https://misskey.example/@alice"
+    },
+    {
+      "rel": "http://ostatus.org/schema/1.0/subscribe",
+      "template": "https://misskey.example/authorize-follow?acct={uri}"
+    }
+  ]
+}

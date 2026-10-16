@@ -32,6 +32,7 @@ const (
 type Config struct {
 	Host          string
 	AccountDomain string
+	SourceURL     string
 	Role          Role
 	Listen        string
 	DB            string
@@ -56,6 +57,7 @@ func (c *Config) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("host", c.Host),
 		slog.String("account_domain", c.AccountDomain),
+		slog.String("source_url", c.SourceURL),
 		slog.String("role", string(c.Role)),
 		slog.String("listen", c.Listen),
 		slog.String("db", c.DB),

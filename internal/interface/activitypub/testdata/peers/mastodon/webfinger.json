@@ -1,0 +1,36 @@
+{
+  "subject": "acct:alice@mastodon.example",
+  "aliases": [
+    "https://mastodon.example/@alice",
+    "https://mastodon.example/users/alice"
+  ],
+  "links": [
+    {
+      "rel": "http://webfinger.net/rel/profile-page",
+      "type": "text/html",
+      "href": "https://mastodon.example/@alice"
+    },
+    {
+      "rel": "self",
+      "type": "application/activity+json",
+      "href": "https://mastodon.example/users/alice"
+    },
+    {
+      "rel": "http://ostatus.org/schema/1.0/subscribe",
+      "template": "https://mastodon.example/authorize_interaction?uri={uri}"
+    },
+    {
+      "rel": "https://w3id.org/fep/3b86/Create",
+      "template": "https://mastodon.example/share?text={content}"
+    },
+    {
+      "rel": "https://w3id.org/fep/3b86/Object",
+      "template": "https://mastodon.example/authorize_interaction?uri={object}"
+    },
+    {
+      "rel": "http://webfinger.net/rel/avatar",
+      "type": "image/png",
+      "href": "https://files.mastodon.example/avatar.png"
+    }
+  ]
+}

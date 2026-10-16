@@ -380,6 +380,12 @@ func (s *Service) actor(ctx context.Context, a account.Account) (Actor, error) {
 	return out, nil
 }
 
+// CountLocalUsers returns the number of local accounts of users that are not deleted, for
+// NodeInfo's usage statistics. The instance actor is not counted.
+func (s *Service) CountLocalUsers(ctx context.Context) (int, error) {
+	return s.d.Repository.CountLocalAccounts(ctx)
+}
+
 // PrivateKey opens the sealed private key of a local actor's key.
 func (s *Service) PrivateKey(ctx context.Context, k account.Key) (crypto.Signer, error) {
 	sealed, err := s.d.Repository.FindSealedPrivateKey(ctx, k.ID)

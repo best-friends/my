@@ -114,3 +114,8 @@ WHERE account_id = $1 ORDER BY id;
 
 -- name: GetLocalAccountPrivateKey :one
 SELECT private_key_enc FROM local_account_private_keys WHERE account_key_id = $1;
+
+-- name: CountLocalAccounts :one
+SELECT COUNT(*) FROM local_accounts la
+LEFT JOIN account_lifecycle_states s ON s.account_id = la.account_id
+WHERE s.state IS NULL OR s.state <> 'deleted';

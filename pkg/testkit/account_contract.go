@@ -53,6 +53,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"ReportsMissingAccounts", accountReportsMissing},
 		{"RevisesProfiles", accountRevisesProfiles},
 		{"RecordsLifecycleEvents", accountRecordsLifecycle},
+		{"CountsLocalUsers", accountCountsLocalUsers},
 		{"EnsuresBuiltinRoles", accountEnsuresBuiltinRoles},
 		{"CreatesAnAdmin", accountCreatesAdmin},
 		{"RejectsATakenAdminUsernameOrEmail", accountRejectsTakenAdmin},
@@ -412,6 +413,34 @@ func accountRecordsLifecycle(t *testing.T, e *accountEnv) {
 		AccountID: reg.AccountID, Kind: account.LifecycleDeletionScheduled, InitiatedBy: account.InitiatedBySelf,
 	}); err == nil {
 		t.Error("RecordLifecycleEvent(deletion_scheduled) without a due time succeeded")
+	}
+}
+
+func accountCountsLocalUsers(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	count := func() int {
+		t.Helper()
+		n, err := e.accounts.CountLocalUsers(ctx)
+		if err != nil {
+			t.Fatalf("CountLocalUsers = %v", err)
+		}
+		return n
+	}
+	if n := count(); n != 0 {
+		t.Errorf("CountLocalUsers on an empty database = %d, want 0", n)
+	}
+	if _, err := e.accounts.EnsureInstanceActor(ctx); err != nil {
+		t.Fatalf("EnsureInstanceActor = %v", err)
+	}
+	gone := e.register(t, "gone")
+	e.register(t, "kept")
+	if _, err := e.accounts.RecordLifecycleEvent(ctx, appaccount.LifecycleInput{
+		AccountID: gone.AccountID, Kind: account.LifecycleDeleted, InitiatedBy: account.InitiatedBySelf,
+	}); err != nil {
+		t.Fatalf("RecordLifecycleEvent(deleted) = %v", err)
+	}
+	if n := count(); n != 1 {
+		t.Errorf("CountLocalUsers = %d, want 1 (the instance actor and deleted accounts are not counted)", n)
 	}
 }
 

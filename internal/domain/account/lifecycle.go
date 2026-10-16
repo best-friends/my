@@ -60,6 +60,10 @@ type LifecycleState struct {
 	DeletionDueAt *time.Time // set only in StateDeletionScheduled
 }
 
+// Active reports whether the account is active. Deactivated accounts and accounts that are
+// scheduled for deletion or deleted are presented to no one.
+func (s LifecycleState) Active() bool { return s.State == StateActive }
+
 // InitialLifecycleState is the state of an account before its first lifecycle event.
 func InitialLifecycleState(accountID string) LifecycleState {
 	return LifecycleState{AccountID: accountID, State: StateActive}

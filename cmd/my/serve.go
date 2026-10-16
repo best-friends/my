@@ -45,8 +45,9 @@ func runServe(args []string, stderr io.Writer) int {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer stop()
 
-	logger.InfoContext(ctx, "starting", slog.String("version", resolveVersion(version, debug.ReadBuildInfo)), slog.Any("config", cfg))
-	app, err := platform.NewApp(ctx, cfg, platform.AppOptions{Logger: logger})
+	v := resolveVersion(version, debug.ReadBuildInfo)
+	logger.InfoContext(ctx, "starting", slog.String("version", v), slog.Any("config", cfg))
+	app, err := platform.NewApp(ctx, cfg, platform.AppOptions{Logger: logger, Version: v})
 	if err != nil {
 		logger.ErrorContext(ctx, "start failed", slog.Any("error", err))
 		return 1
