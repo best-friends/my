@@ -74,6 +74,8 @@ type Repository interface {
 	// Lookups.
 
 	FindAccount(ctx context.Context, id string) (account.Account, error)
+	// Account is FindAccount inside tx.
+	Account(ctx context.Context, tx uow.Tx, id string) (account.Account, error)
 	// FindInstanceActor returns the local Application actor.
 	FindInstanceActor(ctx context.Context) (account.Account, error)
 	FindLocalAccount(ctx context.Context, accountID string) (account.LocalAccount, error)
@@ -91,6 +93,9 @@ type Repository interface {
 	ListKeys(ctx context.Context, accountID string) ([]account.Key, error)
 	// FindSealedPrivateKey returns the sealed private key of a local actor's key.
 	FindSealedPrivateKey(ctx context.Context, accountKeyID string) ([]byte, error)
+	// IsMediaReferenced reports whether any profile revision uses a media file as its avatar
+	// or header.
+	IsMediaReferenced(ctx context.Context, mediaID string) (bool, error)
 	// CountLocalAccounts counts the local accounts of users (not the instance actor) that are
 	// not deleted.
 	CountLocalAccounts(ctx context.Context) (int, error)

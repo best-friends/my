@@ -187,6 +187,15 @@ type InstanceTextRevision struct {
 	RevisedAt       int64
 }
 
+type Invite struct {
+	ID              string
+	Code            string
+	CreatedByUserID sql.NullString
+	MaxUses         sql.NullInt64
+	ExpiresAt       sql.NullInt64
+	CreatedAt       int64
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -201,6 +210,41 @@ type LocalStatus struct {
 	IdempotencyKey  sql.NullString
 }
 
+type MediaFile struct {
+	ID             string
+	OwnerAccountID string
+	Origin         string
+	CreatedAt      int64
+}
+
+type MediaFocu struct {
+	MediaID string
+	FocusX  float64
+	FocusY  float64
+}
+
+type MediaProcessingResult struct {
+	ID          string
+	MediaID     string
+	Outcome     string
+	MediaType   string
+	Width       sql.NullInt64
+	Height      sql.NullInt64
+	DurationMs  sql.NullInt64
+	Blurhash    sql.NullString
+	ProcessedAt int64
+}
+
+type MediaVariant struct {
+	ResultID    string
+	Kind        string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+	Width       int64
+	Height      int64
+}
+
 type Mute struct {
 	AccountID         string
 	TargetAccountID   string
@@ -209,11 +253,35 @@ type Mute struct {
 	CreatedAt         int64
 }
 
+type Notification struct {
+	ID                 string
+	RecipientAccountID string
+	Type               string
+	SourceAccountID    sql.NullString
+	StatusID           sql.NullString
+	ModerationActionID sql.NullString
+	DedupeKey          string
+	CreatedAt          int64
+}
+
+type NotificationReadMarker struct {
+	AccountID  string
+	LastReadID string
+}
+
 type PasswordCredential struct {
 	ID           string
 	UserID       string
 	PasswordHash string
 	SetAt        int64
+}
+
+type RegistrationApplication struct {
+	ID          string
+	UserID      string
+	Reason      sql.NullString
+	InviteID    sql.NullString
+	SubmittedAt int64
 }
 
 type Role struct {
@@ -266,6 +334,7 @@ type StatusMentionIndex struct {
 type StatusPin struct {
 	AccountID string
 	StatusID  string
+	Slot      int64
 	CreatedAt int64
 	ID        string
 }
@@ -312,6 +381,13 @@ type Tag struct {
 	CreatedAt      int64
 }
 
+type UploadedMedium struct {
+	MediaID     string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+}
+
 type User struct {
 	ID        string
 	CreatedAt int64
@@ -325,4 +401,20 @@ type UserPreference struct {
 	DefaultPostLanguage     string
 	RequireMediaDescription int64
 	UpdatedAt               int64
+}
+
+type UserRegistrationState struct {
+	UserID string
+	State  string
+	Since  int64
+}
+
+type UserToken struct {
+	ID             string
+	UserID         string
+	Purpose        string
+	EmailAddressID sql.NullString
+	TokenHash      []byte
+	ExpiresAt      int64
+	IssuedAt       int64
 }

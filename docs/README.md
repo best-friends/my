@@ -24,6 +24,7 @@
 
 - [管理者の作成](operations/admin-cli.md)
 - [インスタンス設定](operations/instance-settings.md)
+- [利用者登録（登録モード・招待・承認・メール確認）](operations/registration.md)
 - [鍵暗号化鍵（KEK）の管理](operations/key-management.md)
 - [サーバーの起動・停止とヘルスチェック](operations/running.md)
 

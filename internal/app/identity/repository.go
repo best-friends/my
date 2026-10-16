@@ -17,7 +17,8 @@ var ErrNotFound = errors.New("identity: not found")
 var ErrEmailTaken = errors.New("identity: email address is taken")
 
 // Repository is the persistence port of the identity module (data-model §4.1). The database
-// adapters implement it and pass testkit.AccountRepositoryContract.
+// adapters implement it and pass testkit.AccountRepositoryContract, testkit.PreferencesRepositoryContract,
+// and testkit.RegistrationRepositoryContract.
 //
 // Methods that take a uow.Tx run inside that transaction; the others read committed data outside
 // any transaction. Lookups that find nothing return an error wrapping ErrNotFound.
@@ -47,6 +48,7 @@ type Repository interface {
 	FindRole(ctx context.Context, key string) (identity.Role, []identity.Permission, error)
 
 	PreferencesRepository
+	RegistrationRepository
 
 	InsertSession(ctx context.Context, tx uow.Tx, s identity.Session) error
 	// InsertSessionRevocation records that a session ended; it does nothing when the session

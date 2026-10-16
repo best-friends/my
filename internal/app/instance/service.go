@@ -53,6 +53,15 @@ func (s *Service) DefaultLocale(ctx context.Context) (string, error) {
 	return settings.DefaultLocale(), nil
 }
 
+// RegistrationMode returns the current value of the registration_mode setting.
+func (s *Service) RegistrationMode(ctx context.Context) (instance.RegistrationMode, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return "", err
+	}
+	return settings.RegistrationMode(), nil
+}
+
 // MaxStatusLength returns the current value of the max_status_length setting (FR-101).
 func (s *Service) MaxStatusLength(ctx context.Context) (int, error) {
 	settings, err := s.Settings(ctx)

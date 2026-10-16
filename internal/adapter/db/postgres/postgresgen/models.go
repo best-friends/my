@@ -187,6 +187,15 @@ type InstanceTextRevision struct {
 	RevisedAt       time.Time
 }
 
+type Invite struct {
+	ID              string
+	Code            string
+	CreatedByUserID *string
+	MaxUses         *int32
+	ExpiresAt       *time.Time
+	CreatedAt       time.Time
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string
@@ -201,6 +210,41 @@ type LocalStatus struct {
 	IdempotencyKey  *string
 }
 
+type MediaFile struct {
+	ID             string
+	OwnerAccountID string
+	Origin         string
+	CreatedAt      time.Time
+}
+
+type MediaFocu struct {
+	MediaID string
+	FocusX  float64
+	FocusY  float64
+}
+
+type MediaProcessingResult struct {
+	ID          string
+	MediaID     string
+	Outcome     string
+	MediaType   string
+	Width       *int32
+	Height      *int32
+	DurationMs  *int32
+	Blurhash    *string
+	ProcessedAt time.Time
+}
+
+type MediaVariant struct {
+	ResultID    string
+	Kind        string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+	Width       int32
+	Height      int32
+}
+
 type Mute struct {
 	AccountID         string
 	TargetAccountID   string
@@ -209,11 +253,35 @@ type Mute struct {
 	CreatedAt         time.Time
 }
 
+type Notification struct {
+	ID                 string
+	RecipientAccountID string
+	Type               string
+	SourceAccountID    *string
+	StatusID           *string
+	ModerationActionID *string
+	DedupeKey          string
+	CreatedAt          time.Time
+}
+
+type NotificationReadMarker struct {
+	AccountID  string
+	LastReadID string
+}
+
 type PasswordCredential struct {
 	ID           string
 	UserID       string
 	PasswordHash string
 	SetAt        time.Time
+}
+
+type RegistrationApplication struct {
+	ID          string
+	UserID      string
+	Reason      *string
+	InviteID    *string
+	SubmittedAt time.Time
 }
 
 type Role struct {
@@ -266,6 +334,7 @@ type StatusMentionIndex struct {
 type StatusPin struct {
 	AccountID string
 	StatusID  string
+	Slot      int32
 	CreatedAt time.Time
 	ID        string
 }
@@ -312,6 +381,13 @@ type Tag struct {
 	CreatedAt      time.Time
 }
 
+type UploadedMedium struct {
+	MediaID     string
+	BlobKey     string
+	ContentType string
+	FileSize    int64
+}
+
 type User struct {
 	ID        string
 	CreatedAt time.Time
@@ -325,4 +401,20 @@ type UserPreference struct {
 	DefaultPostLanguage     string
 	RequireMediaDescription bool
 	UpdatedAt               time.Time
+}
+
+type UserRegistrationState struct {
+	UserID string
+	State  string
+	Since  time.Time
+}
+
+type UserToken struct {
+	ID             string
+	UserID         string
+	Purpose        string
+	EmailAddressID *string
+	TokenHash      []byte
+	ExpiresAt      time.Time
+	IssuedAt       time.Time
 }

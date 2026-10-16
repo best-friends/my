@@ -225,19 +225,28 @@ func (s *Interactions) Pin(ctx context.Context, accountID, statusID string) erro
 		if err := s.ensureLive(ctx, tx, st.ID); err != nil {
 			return err
 		}
-		inserted, err := repo.InsertPin(ctx, tx, p)
-		if err != nil || !inserted {
-			return err
+		// A round that inserts nothing although the status is not pinned and a slot is free lost
+		// that slot to a concurrent pin, which has committed by then; each later round sees it.
+		// Only concurrent unpins that keep freeing slots exhaust the rounds; then the transaction
+		// runs again.
+		for range content.MaxPins {
+			inserted, err := repo.InsertPin(ctx, tx, p)
+			if err != nil || inserted {
+				return err
+			}
+			pinned, err := repo.HasPin(ctx, tx, accountID, st.ID)
+			if err != nil || pinned {
+				return err
+			}
+			n, err := repo.CountPins(ctx, tx, accountID)
+			if err != nil {
+				return err
+			}
+			if n >= content.MaxPins {
+				return fmt.Errorf("pin %s: %w", statusID, content.ErrPinLimit)
+			}
 		}
-		// Counting after the insert keeps a repeated pin at the limit from failing.
-		n, err := repo.CountPins(ctx, tx, accountID)
-		if err != nil {
-			return err
-		}
-		if n > content.MaxPins {
-			return fmt.Errorf("pin %s: %w", statusID, content.ErrPinLimit)
-		}
-		return nil
+		return uow.MarkRetryable(fmt.Errorf("pin %s: free slots taken concurrently", statusID))
 	})
 }
 

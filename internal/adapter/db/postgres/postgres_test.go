@@ -167,6 +167,13 @@ func TestAccountRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestMediaRepositoryContract(t *testing.T) {
+	testkit.MediaRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.MediaHarness {
+		db := newTestDB(t, opts)
+		return testkit.MediaHarness{UnitOfWork: db, Media: db.MediaRepository(), Statuses: db.StatusRepository()}
+	})
+}
+
 func TestStatusRepositoryContract(t *testing.T) {
 	testkit.StatusRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.StatusHarness {
 		db := newTestDB(t, opts)
@@ -178,6 +185,19 @@ func TestInteractionRepositoryContract(t *testing.T) {
 	testkit.InteractionRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.InteractionHarness {
 		db := newTestDB(t, opts)
 		return testkit.InteractionHarness{UnitOfWork: db, Statuses: db.StatusRepository(), Interactions: db.InteractionRepository()}
+	})
+}
+
+func TestNotificationContract(t *testing.T) {
+	testkit.NotificationContract(t, func(t *testing.T, opts uow.Options) testkit.NotificationHarness {
+		db := newTestDB(t, opts)
+		return testkit.NotificationHarness{
+			AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+			Graph:          db.GraphRepository(),
+			Statuses:       db.StatusRepository(),
+			Interactions:   db.InteractionRepository(),
+			Notifications:  db.NotificationRepository(),
+		}
 	})
 }
 
@@ -215,6 +235,13 @@ func TestBlockRepositoryContract(t *testing.T) {
 
 func TestPreferencesRepositoryContract(t *testing.T) {
 	testkit.PreferencesRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.AccountHarness {
+		db := newTestDB(t, opts)
+		return testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()}
+	})
+}
+
+func TestRegistrationRepositoryContract(t *testing.T) {
+	testkit.RegistrationRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.AccountHarness {
 		db := newTestDB(t, opts)
 		return testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()}
 	})

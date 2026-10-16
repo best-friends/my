@@ -44,10 +44,21 @@ An instance setting that has never been set reads as its default, which is defin
 | [`queue`](#queue) | `MY_QUEUE` | `db` | no | no |
 | [`blob`](#blob) | `MY_BLOB` | `fs` | no | no |
 | [`media`](#media) | `MY_MEDIA` | `native` | no | no |
+| [`blob_fs_dir`](#blob_fs_dir) | `MY_BLOB_FS_DIR` | `blobs` | no | no |
+| [`media_max_image_bytes`](#media_max_image_bytes) | `MY_MEDIA_MAX_IMAGE_BYTES` | `16777216` | no | no |
+| [`media_max_image_side`](#media_max_image_side) | `MY_MEDIA_MAX_IMAGE_SIDE` | `8192` | no | no |
+| [`media_max_image_pixels`](#media_max_image_pixels) | `MY_MEDIA_MAX_IMAGE_PIXELS` | `33177600` | no | no |
+| [`media_unattached_ttl`](#media_unattached_ttl) | `MY_MEDIA_UNATTACHED_TTL` | `24h` | no | no |
 | [`kv`](#kv) | `MY_KV` | `db` | no | no |
 | [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
 | [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
 | [`kek_previous`](#kek_previous) | `MY_KEK_PREVIOUS` | none | no | yes |
+| [`mail`](#mail) | `MY_MAIL` | `none` | no | no |
+| [`mail_from`](#mail_from) | `MY_MAIL_FROM` | none | when `mail` is not `none` | no |
+| [`smtp_host`](#smtp_host) | `MY_SMTP_HOST` | none | when `mail = smtp` | no |
+| [`smtp_port`](#smtp_port) | `MY_SMTP_PORT` | `587` | no | no |
+| [`smtp_username`](#smtp_username) | `MY_SMTP_USERNAME` | none | no | no |
+| [`smtp_password`](#smtp_password) | `MY_SMTP_PASSWORD` | none | no | yes |
 
 ## Settings
 
@@ -170,6 +181,46 @@ Media processor adapter (ADR-0005).
 | `vips` | yes | libvips; needs a cgo build with the adapter's build tag. |
 | `none` | yes | No processing except EXIF removal. |
 
+### `blob_fs_dir`
+
+Directory of the `fs` blob store, relative to the working directory or absolute. It holds the uploads as received (private) and the processed media, which the server serves under `/media/`. Share it between the web and worker processes, and back it up with the database.
+
+- Environment variable: `MY_BLOB_FS_DIR`
+- Default: `blobs`
+- Required: no
+
+### `media_max_image_bytes`
+
+Largest accepted image upload in bytes (ADR-0019 §8).
+
+- Environment variable: `MY_MEDIA_MAX_IMAGE_BYTES`
+- Default: `16777216`
+- Required: no
+
+### `media_max_image_side`
+
+Largest accepted image width and height in pixels, read from the file's header before decoding (ADR-0019 §8).
+
+- Environment variable: `MY_MEDIA_MAX_IMAGE_SIDE`
+- Default: `8192`
+- Required: no
+
+### `media_max_image_pixels`
+
+Largest accepted image area (width × height, and for an animated GIF the frames together), read from the file's header before decoding (ADR-0019 §8). The default is 33 MP (7680 × 4320).
+
+- Environment variable: `MY_MEDIA_MAX_IMAGE_PIXELS`
+- Default: `33177600`
+- Required: no
+
+### `media_unattached_ttl`
+
+How long an upload may stay unattached to any post or profile before the hourly cleanup deletes it (FR-803), as a Go duration such as `24h`.
+
+- Environment variable: `MY_MEDIA_UNATTACHED_TTL`
+- Default: `24h`
+- Required: no
+
 ### `kv`
 
 Key-value store adapter for caches and rate limits (ADR-0003, ADR-0019 §5).
@@ -211,5 +262,59 @@ Key-encryption key for actor private keys: 32 random bytes in standard base64 (f
 Previous key-encryption keys, comma-separated, each in the format of `kek`. They only decrypt; new secrets are always encrypted with `kek`. Set the replaced key here while rotating `kek` (docs/operations/key-management.md).
 
 - Environment variable: `MY_KEK_PREVIOUS` or `MY_KEK_PREVIOUS_FILE`
+- Default: none
+- Required: no
+
+### `mail`
+
+Mailer adapter for verification emails (FR-002). With `none`, no email reaches users, so an unverified address does not keep a user out and sign-ups in the `open` registration mode wait for a moderator's approval instead.
+
+- Environment variable: `MY_MAIL`
+- Default: `none`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `none` | yes | Logs each message, including its links, instead of sending it; for development and instances without email. |
+| `smtp` | yes | SMTP submission with mandatory STARTTLS (`smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`). |
+| `ses` | not in v0 | Amazon SES. |
+
+### `mail_from`
+
+Sender address of emails, as a bare address such as `noreply@social.example`.
+
+- Environment variable: `MY_MAIL_FROM`
+- Default: none
+- Required: when `mail` is not `none`
+
+### `smtp_host`
+
+Host name of the SMTP server. The server must offer STARTTLS with a certificate valid for this name; the connection is refused otherwise.
+
+- Environment variable: `MY_SMTP_HOST`
+- Default: none
+- Required: when `mail = smtp`
+
+### `smtp_port`
+
+TCP port of the SMTP server (submission).
+
+- Environment variable: `MY_SMTP_PORT`
+- Default: `587`
+- Required: no
+
+### `smtp_username`
+
+User name for SMTP AUTH PLAIN, sent only after STARTTLS. Leave it empty for a server that needs no authentication.
+
+- Environment variable: `MY_SMTP_USERNAME`
+- Default: none
+- Required: no
+
+### `smtp_password`
+
+Password for SMTP AUTH PLAIN.
+
+- Environment variable: `MY_SMTP_PASSWORD` or `MY_SMTP_PASSWORD_FILE`
 - Default: none
 - Required: no
