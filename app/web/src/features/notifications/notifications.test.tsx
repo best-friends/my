@@ -55,6 +55,14 @@ describe("the notifications page", () => {
   test("shows each type, marks the newest read, and clears the badge", async () => {
     server.use(resumableSession());
     const marker = markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a1", unread_count: 1 });
+    // The posts come embedded in the notifications; none is fetched on its own.
+    const statusRequests: string[] = [];
+    server.use(
+      http.get(`${apiBase}/statuses/:id`, ({ request }) => {
+        statusRequests.push(request.url);
+        return new HttpResponse(null, { status: 404 });
+      }),
+    );
 
     await renderApp({ path: "/notifications" });
 
@@ -76,6 +84,7 @@ describe("the notifications page", () => {
       expect(notificationsLink()).toHaveAccessibleName("Notifications");
     });
     expect(articles[0]).toHaveAccessibleName(/^Unread: /);
+    expect(statusRequests).toEqual([]);
   });
 
   test("does not update the marker when nothing new is shown", async () => {
@@ -166,14 +175,11 @@ describe("the notifications page", () => {
       type,
       created_at: "2026-10-16T09:00:00Z",
       ...(type === "moderation_notice" ? {} : { account: { ...otherAccountFixture, display_name: "" } }),
-      ...(type === "boost" ? { status_id: "0192f0c4-7a8e-7000-8000-0000000000b2" } : {}),
+      ...(type === "boost"
+        ? { status: { ...statusFixture("0192f0c4-7a8e-7000-8000-0000000000b2"), spoiler_text: "spoilers", content: "<p>the ending</p>" } }
+        : {}),
     }));
-    server.use(
-      http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })),
-      http.get(`${apiBase}/statuses/:id`, ({ params }) =>
-        HttpResponse.json({ ...statusFixture(String(params["id"])), spoiler_text: "spoilers", content: "<p>the ending</p>" }),
-      ),
-    );
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
 
     const { user } = await renderApp({ path: "/notifications" });
 

@@ -220,7 +220,7 @@ export const otherAccountFixture: Schemas["Account"] = {
   created_at: "2026-10-01T00:00:00Z",
 };
 
-/** A post by Bob that mentions Alice, for GET /statuses/{id} (operationId getStatus) with any ID. */
+/** A post by Bob that mentions Alice. */
 export function statusFixture(id: string): Schemas["Status"] {
   return {
     id,
@@ -249,7 +249,7 @@ export const notificationsFixture: Schemas["Notification"][] = [
     type: "mention",
     created_at: "2026-10-16T09:00:00Z",
     account: otherAccountFixture,
-    status_id: "0192f0c4-7a8e-7000-8000-0000000000b1",
+    status: statusFixture("0192f0c4-7a8e-7000-8000-0000000000b1"),
   },
   { id: "0192f0c4-7a8e-7000-8000-0000000000a1", type: "follow", created_at: "2026-10-15T09:00:00Z", account: otherAccountFixture },
 ];
@@ -276,6 +276,5 @@ function notificationHandlers() {
       return HttpResponse.json(body);
     }),
     http.post(`${apiBase}/notifications/:id/dismiss`, ({ request }) => (authorized(request) ? new HttpResponse(null, { status: 204 }) : unauthenticated(request))),
-    http.get(`${apiBase}/statuses/:id`, ({ params }) => HttpResponse.json(statusFixture(String(params["id"])))),
   ];
 }

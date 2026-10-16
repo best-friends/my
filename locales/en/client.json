@@ -319,10 +319,6 @@
     "defaultMessage": "Loading notifications",
     "description": "Accessible name of the progress indicator while notifications load."
   },
-  "notifications.post.error": {
-    "defaultMessage": "This post could not be loaded.",
-    "description": "Shown in a notification in place of the post it is about, when the post could not be loaded."
-  },
   "notifications.post.open": {
     "defaultMessage": "Open post",
     "description": "Link in a notification that opens the post it is about."
