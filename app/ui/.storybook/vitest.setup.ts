@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Visual snapshots of every story (ADR-0027). After a story has rendered and passed axe, its frame
+// Visual snapshots of every story (ADR-0027) not tagged `no-screenshot`. After a story has rendered and passed axe, its frame
 // is captured at each container width; the project fixes the direction and theme (../vitest.config.ts).
 // Baselines live in src/__screenshots__/ and are generated only in the pinned Playwright image
 // (`make ui-snapshots-update`), because fonts and anti-aliasing differ between machines.
@@ -31,8 +31,11 @@ function describeAnimation(animation: Animation): string {
 
 afterEach(async (context) => {
   // Only story tests carry a composed story; it stays mounted until the next one renders.
-  const { story } = context as typeof context & { story?: { id: string; globals: Record<string, unknown> } };
+  const { story } = context as typeof context & { story?: { id: string; tags: readonly string[]; globals: Record<string, unknown> } };
   if (story === undefined || context.task.result?.state === "fail") return;
+  // A story tagged `no-screenshot` exists for its play function (a long, virtualized list); it still
+  // renders and passes axe, and the same component's other stories carry its screenshots.
+  if (story.tags.includes("no-screenshot")) return;
   const frame = document.querySelector<HTMLElement>("[data-story-frame]");
   if (frame === null) throw new Error(`story ${story.id} rendered no [data-story-frame]; is the preview decorator missing?`);
   const { locale, theme } = story.globals;

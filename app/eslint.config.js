@@ -175,6 +175,8 @@ export default defineConfig(
       "boundaries/flag-as-external": { outsideRootPath: true },
       "boundaries/elements": [
         { type: "ui", pattern: "ui/src", partialMatch: false },
+        // Helpers of the @my/ui component tests (the ARIA snapshot); only those tests import them.
+        { type: "ui-test", pattern: "ui/test", partialMatch: false },
         { type: "route", pattern: "web/src/routes", partialMatch: false },
         { type: "feature", pattern: "web/src/features/*", capture: ["feature"], partialMatch: false },
         { type: "lib", pattern: "web/src/lib", partialMatch: false },
@@ -201,11 +203,11 @@ export default defineConfig(
             },
             { from: { element: { type: "route" } }, allow: { to: { element: { type: ["lib", "ui"] } } } },
             { from: { element: { type: "feature" } }, allow: { to: { element: { type: ["lib", "ui"] } } } },
-            // A2: @my/ui knows only React, React Aria and the Tailwind helpers.
+            // A2: @my/ui knows only React, React Aria, TanStack Virtual (for Feed) and the Tailwind helpers.
             {
               from: { element: { type: "ui" } },
               disallow: { to: { module: { origin: "external" } } },
-              message: "@my/ui depends only on React, React Aria Components and the Tailwind helpers, not {{to.module.source}} (web-client.md A2).",
+              message: "@my/ui depends only on React, React Aria, TanStack Virtual and the Tailwind helpers, not {{to.module.source}} (web-client.md A2).",
             },
             {
               from: { element: { type: "ui" } },
@@ -213,7 +215,7 @@ export default defineConfig(
                 to: {
                   module: {
                     origin: "external",
-                    source: ["react", "react/*", "react-dom", "react-aria-components", "react-aria", "react-stately", "tailwind-variants", "tailwind-merge"],
+                    source: ["react", "react/*", "react-dom", "react-aria-components", "react-aria", "react-stately", "@tanstack/react-virtual", "tailwind-variants", "tailwind-merge"],
                   },
                 },
               },
@@ -227,6 +229,10 @@ export default defineConfig(
             {
               from: { element: { type: "ui", fileInternalPath: "**/*.test.{ts,tsx}" } },
               allow: { to: { module: { origin: "external", source: ["@testing-library/react", "@testing-library/user-event", "vitest"] } } },
+            },
+            {
+              from: { element: { type: "ui", fileInternalPath: "**/*.test.{ts,tsx}" } },
+              allow: { to: { element: { type: "ui-test" } } },
             },
           ],
         },

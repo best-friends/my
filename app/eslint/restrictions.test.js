@@ -33,6 +33,7 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
     { code: "el.setAttribute('aria-label', x);", options: restrict.syntax },
     { code: "<p style={{ color: 'red' }} />", options: restrict.syntax },
     { code: "function C({ a = 1 }) { return a; }", options: restrict.syntax },
+    { code: "function useX() { 'use strict'; return 'use no memo'; }", options: restrict.syntax },
   ],
   invalid: [
     // A5
@@ -50,6 +51,9 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
     // R5
     { ...fails("React.useMemo(() => 1, []);"), options: restrict.syntax },
     { ...fails("export default React.memo(C);"), options: restrict.syntax },
+    // R4
+    { ...fails("function useX() { 'use no memo'; return 1; }"), options: restrict.syntax },
+    { ...fails("'use no forget';"), options: restrict.syntax },
   ],
 });
 
