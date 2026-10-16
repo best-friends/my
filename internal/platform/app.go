@@ -109,6 +109,9 @@ type App struct {
 	Blobs          blob.Store
 	MediaProcessor media.Processor
 	Media          *content.MediaService
+	// Previews reads profiles and statuses as an anonymous visitor sees them, for the link
+	// previews of the web client's profile and post pages (ADR-0028).
+	Previews *content.Previews
 	// Scheduler enqueues the periodic jobs for the worker role.
 	Scheduler *queue.Scheduler
 
@@ -164,9 +167,6 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Handlers:   &queue.JobHandlerRegistry{},
 	}
 
-	if err := a.setUpWeb(opts); err != nil {
-		return nil, err
-	}
 	if a.KeyManager, err = newKeyManager(cfg); err != nil {
 		return nil, err
 	}
@@ -253,13 +253,17 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: accounts, Clock: a.Clock, IDs: a.IDs, Sealer: a.Sealer, Host: cfg.Host,
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
-	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
+	a.Instance = instance.NewService(instance.Deps{
+		UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs,
+		// The preview_image setting refers to a media file, which setMedia sets up later.
+		Media: instanceMedia{a},
+	})
 	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
-	// The user step joins once API requests are authenticated (#107).
-	a.Locales = &i18n.Resolver{Bundle: a.Messages, InstanceDefault: a.instanceDefaultLocale}
+	// The user step is the locale of the client API request's authenticated viewer.
+	a.Locales = &i18n.Resolver{Bundle: a.Messages, UserLocale: a.viewerLocale, InstanceDefault: a.instanceDefaultLocale}
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
@@ -314,6 +318,19 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
+	if err := a.setMedia(cfg, medias); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	// Link previews read statuses and their images, so the web client comes after media.
+	a.Previews = content.NewPreviews(content.PreviewDeps{
+		Repository: statuses, Accounts: a.Accounts, Restrictions: content.NoRestrictions{}, Media: a.Media,
+		DefaultLanguage: a.defaultPostLanguage,
+	})
+	if err := a.setUpWeb(opts); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
@@ -329,16 +346,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, err
 	}
 	tokens.Register(a)
-	if err := a.setMedia(cfg, medias); err != nil {
-		_ = a.Close()
-		return nil, err
-	}
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
 	// The instance is named after its host until the instance settings hold a name.
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Name: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		MaxPostCharacters: defaultMaxPostCharacters,
-		Locales:           a.Locales, RequestID: RequestID, Logger: a.Logger,
+		Authenticator:     a.Identity, Accounts: a.Accounts, RateLimiter: a.RateLimiter,
+		Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
 }
@@ -356,8 +370,12 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		InstanceName: a.Config.Host,
 		// The HTML is the same for every visitor, so only the instance default applies.
 		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
-		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
-		Logger:        a.Logger,
+		// Profile and post pages carry link previews of what an anonymous visitor may see.
+		Previews: a.Previews, Messages: a.Messages,
+		// The instance's preview image is read per request, so that a change applies at once.
+		DefaultImage: a.previewImage,
+		NotFound:     func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:       a.Logger,
 	})
 	if err != nil {
 		return err
@@ -406,7 +424,7 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 		},
 		UnattachedTTL: cfg.MediaUnattachedTTL,
 		// Avatars and headers refer to media files from the account module.
-		Referrers: []content.MediaReferrer{a.Accounts},
+		Referrers: []content.MediaReferrer{a.Accounts, a.Instance},
 		Logger:    a.Logger,
 	})
 	a.Media.RegisterJobs(a.Handlers, a.Scheduler)
@@ -424,6 +442,31 @@ func (a *App) defaultPostLanguage(ctx context.Context, userID string) (string, e
 		return "", err
 	}
 	return p.DefaultPostLanguage, nil
+}
+
+// previewImage returns the instance's link preview image (the preview_image setting) for a
+// preview in language lang, or nil when it is unset or its media file is not a processed
+// image, which leaves the web client's built-in image.
+func (a *App) previewImage(ctx context.Context, lang string) (*web.Image, error) {
+	setting, err := a.Instance.PreviewImage(ctx, lang)
+	if err != nil || setting.MediaID == "" {
+		return nil, err
+	}
+	img, err := a.Previews.Image(ctx, setting.MediaID, setting.Alt)
+	if err != nil || img == nil {
+		return nil, err
+	}
+	return &web.Image{URL: img.URL, Width: img.Width, Height: img.Height, Alt: img.Alt}, nil
+}
+
+// instanceMedia checks the media files of the instance settings with the media use cases.
+type instanceMedia struct{ a *App }
+
+func (m instanceMedia) CheckImage(ctx context.Context, mediaID string) error {
+	if m.a.Media == nil {
+		return errors.New("media files are not set up")
+	}
+	return m.a.Media.CheckImage(ctx, mediaID)
 }
 
 func (a *App) setDBQueue(q *queuedb.Queue) {

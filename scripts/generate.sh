@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Generate the client API code from api/openapi.yaml with the oapi-codegen version pinned in
-# tools/go.mod (ADR-0029).
+# tools/go.mod (ADR-0029), and the per-operation security metadata that the client API enforces
+# (internal/interface/clientapi/internal/securitygen).
 #
 #   scripts/generate.sh          regenerate every target in place
 #   scripts/generate.sh --check  generate into a scratch directory and fail if the committed code differs
@@ -19,6 +20,9 @@ targets=(
   "internal/interface/clientapi/oapi-codegen.yaml internal/interface/clientapi/api.gen.go"
 )
 
+# The security metadata, relative to the repository root.
+security_out="internal/interface/clientapi/security.gen.go"
+
 # generate CONFIG OUT writes the code that CONFIG generates from the spec to OUT.
 generate() {
   local config="$1" out="$2"
@@ -28,11 +32,21 @@ generate() {
   rm "$out.tmp"
 }
 
+# generate_security OUT writes the security metadata of the spec to OUT.
+generate_security() {
+  local out="$1"
+  mkdir -p "$(dirname "$out")"
+  (cd "$root" && go run ./internal/interface/clientapi/internal/securitygen -o "$out.tmp" "$spec")
+  printf '%s\n\n' "$header" | cat - "$out.tmp" > "$out"
+  rm "$out.tmp"
+}
+
 if [ "${1:-}" != "--check" ]; then
   for target in "${targets[@]}"; do
     read -r config out <<< "$target"
     generate "$config" "$root/$out"
   done
+  generate_security "$root/$security_out"
   exit 0
 fi
 
@@ -46,6 +60,10 @@ for target in "${targets[@]}"; do
     stale=1
   fi
 done
+generate_security "$scratch/$security_out"
+if ! diff -u "$root/$security_out" "$scratch/$security_out"; then
+  stale=1
+fi
 if [ "$stale" -ne 0 ]; then
   echo "generated client API code is stale; run 'make generate' and commit the result" >&2
   exit 1

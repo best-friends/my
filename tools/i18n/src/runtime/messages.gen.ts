@@ -20,8 +20,42 @@ export interface MessageArgs {
   "server:auth.authorize.scope.push": {};
   /** Read your account, posts, and timelines */
   "server:auth.authorize.scope.read": {};
+  /** Read accounts and your profile */
+  "server:auth.authorize.scope.read_accounts": {};
+  /** Read the accounts you block */
+  "server:auth.authorize.scope.read_blocks": {};
+  /** Read your bookmarks */
+  "server:auth.authorize.scope.read_bookmarks": {};
+  /** Read your favourites */
+  "server:auth.authorize.scope.read_favourites": {};
+  /** Read your follows and follow requests */
+  "server:auth.authorize.scope.read_follows": {};
+  /** Read the accounts you mute */
+  "server:auth.authorize.scope.read_mutes": {};
+  /** Read your notifications */
+  "server:auth.authorize.scope.read_notifications": {};
+  /** Read posts and timelines */
+  "server:auth.authorize.scope.read_statuses": {};
   /** Post and change things for you */
   "server:auth.authorize.scope.write": {};
+  /** Change your profile and settings */
+  "server:auth.authorize.scope.write_accounts": {};
+  /** Block and unblock accounts */
+  "server:auth.authorize.scope.write_blocks": {};
+  /** Add and remove bookmarks */
+  "server:auth.authorize.scope.write_bookmarks": {};
+  /** Add and remove favourites */
+  "server:auth.authorize.scope.write_favourites": {};
+  /** Follow and unfollow accounts and answer follow requests */
+  "server:auth.authorize.scope.write_follows": {};
+  /** Upload images and edit their descriptions */
+  "server:auth.authorize.scope.write_media": {};
+  /** Mute and unmute accounts */
+  "server:auth.authorize.scope.write_mutes": {};
+  /** Mark notifications as read and dismiss them */
+  "server:auth.authorize.scope.write_notifications": {};
+  /** Post, edit, delete, boost, and pin posts */
+  "server:auth.authorize.scope.write_statuses": {};
   /** Authorize {app} */
   "server:auth.authorize.title": { app: string };
   /** The request was refused because it came from another site. */
@@ -132,22 +166,46 @@ export interface MessageArgs {
   "server:config.invalid": { name: string };
   /** The required setting {name} is not set. */
   "server:config.missing": { name: string };
+  /** Your account cannot use the app right now. */
+  "server:errors.account_unavailable": {};
   /** The request is invalid. */
   "server:errors.bad_request": {};
+  /** This app is not allowed to do this. */
+  "server:errors.insufficient_scope": {};
+  /** The access token needs the scope {scope}. */
+  "server:errors.insufficient_scope_detail": { scope: string };
   /** An unexpected error occurred. Please try again later. */
   "server:errors.internal": {};
   /** The parameter {name} has an invalid value. */
   "server:errors.invalid_parameter": { name: string };
+  /** Your sign-in has expired or was revoked. Sign in again. */
+  "server:errors.invalid_token": {};
   /** The {method} method is not allowed for this resource. */
   "server:errors.method_not_allowed": { method: string };
   /** The requested resource was not found. */
   "server:errors.not_found": {};
+  /** Too many requests. */
+  "server:errors.rate_limited": {};
+  /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
+  "server:errors.rate_limited_detail": { seconds: number };
+  /** Sign in to do this. */
+  "server:errors.unauthenticated": {};
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
   /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
   "server:mail.verify_email.body": { host: string; hours: number; url: string };
   /** Confirm your email address for {host} */
   "server:mail.verify_email.subject": { host: string };
+  /** Avatar of {name} */
+  "server:preview.avatar_alt": { name: string };
+  /** A speech bubble with three dots on a blue gradient */
+  "server:preview.builtin_image_alt": {};
+  /** Image of {instance} */
+  "server:preview.default_image_alt": { instance: string };
+  /** Header image of {name} */
+  "server:preview.header_alt": { name: string };
+  /** {name} (@{handle}) */
+  "server:preview.title": { handle: string; name: string };
 }
 
 export type MessageKey = keyof MessageArgs;

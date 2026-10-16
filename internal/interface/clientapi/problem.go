@@ -61,7 +61,8 @@ func (s *Server) Localizer(ctx context.Context) *i18n.Localizer {
 }
 
 // NewProblem returns a problem document of status with the localized title and optional
-// detail, and the response headers that go with it. Handlers return it as the body of their
+// detail, and the response headers that go with it (Content-Language, and Cache-Control:
+// no-store since problems are never cached). Handlers return it as the body of their
 // operation's default response, for example
 //
 //	body, headers := s.NewProblem(ctx, http.StatusNotFound, ProblemTypeBlank, l.ServerErrorsNotFound(), "")
@@ -74,14 +75,16 @@ func (s *Server) NewProblem(ctx context.Context, status int, typ, title, detail 
 	if id := s.o.RequestID(ctx); id != "" {
 		p.RequestId = &id
 	}
-	locale := s.Localizer(ctx).Locale()
-	return p, ProblemResponseHeaders{ContentLanguage: &locale}
+	locale, cache := s.Localizer(ctx).Locale(), cacheNoStore
+	return p, ProblemResponseHeaders{ContentLanguage: &locale, CacheControl: &cache}
 }
 
 // writeProblem writes a problem document outside the strict handlers: for requests that the
-// generated code rejects and for errors that handlers return. Problems are never cached.
-func (s *Server) writeProblem(w http.ResponseWriter, r *http.Request, status int, title, detail string) {
-	p, headers := s.NewProblem(withLocale(r), status, ProblemTypeBlank, title, detail)
+// generated code rejects, that authentication, authorization, or rate limiting refuse, and for
+// errors that handlers return. Headers already set on w (WWW-Authenticate, Retry-After) are
+// kept. Problems are never cached.
+func (s *Server) writeProblem(w http.ResponseWriter, r *http.Request, status int, typ, title, detail string) {
+	p, headers := s.NewProblem(withLocale(r), status, typ, title, detail)
 	body, err := json.Marshal(p)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -132,7 +135,7 @@ func (s *Server) requestError(w http.ResponseWriter, r *http.Request, err error)
 	if name := parameterName(err); name != "" {
 		detail = l.ServerErrorsInvalidParameter(name)
 	}
-	s.writeProblem(w, r, http.StatusBadRequest, l.ServerErrorsBadRequest(), detail)
+	s.writeProblem(w, r, http.StatusBadRequest, ProblemTypeBlank, l.ServerErrorsBadRequest(), detail)
 }
 
 // responseError answers an error that a handler returned, or a response that cannot be
@@ -140,5 +143,5 @@ func (s *Server) requestError(w http.ResponseWriter, r *http.Request, err error)
 func (s *Server) responseError(w http.ResponseWriter, r *http.Request, err error) {
 	s.o.Logger.ErrorContext(r.Context(), "client api handler failed", slog.Any("error", err))
 	l := s.localizer(r)
-	s.writeProblem(w, r, http.StatusInternalServerError, l.ServerErrorsInternal(), "")
+	s.writeProblem(w, r, http.StatusInternalServerError, ProblemTypeBlank, l.ServerErrorsInternal(), "")
 }

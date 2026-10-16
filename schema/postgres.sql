@@ -535,7 +535,8 @@ CREATE TABLE user_timeline_languages (
 CREATE TABLE instance_setting_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   key text COLLATE "C" NOT NULL CHECK (key IN (
-    'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled'
+    'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
+    'preview_image'
   )),
   value text NOT NULL,
   revised_by_user_id text COLLATE "C",
@@ -555,7 +556,9 @@ CREATE TABLE instance_settings (
 -- locale. revised_by_user_id is NULL for a change from the CLI.
 CREATE TABLE instance_text_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
-  key text COLLATE "C" NOT NULL CHECK (key IN ('name', 'short_description', 'description', 'terms', 'privacy_policy')),
+  key text COLLATE "C" NOT NULL CHECK (key IN (
+    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt'
+  )),
   locale text COLLATE "C" NOT NULL,
   body text NOT NULL,
   revised_by_user_id text COLLATE "C",
@@ -995,7 +998,8 @@ CREATE TABLE feed_domain_restrictions (
 );
 
 -- ---------------------------------------------------------------------------------------------
--- notification: notifications, their dismissals, and read markers (data-model §4.7, FR-205).
+-- notification: notifications, their dismissals, read markers, and the exclusions and deleted
+-- statuses that hide them (data-model §4.7, FR-205).
 -- Owned by internal/app/notification.
 -- ---------------------------------------------------------------------------------------------
 
@@ -1029,4 +1033,20 @@ CREATE TABLE notification_dismissals (
 CREATE TABLE notification_read_markers (
   account_id text COLLATE "C" NOT NULL PRIMARY KEY,
   last_read_id text COLLATE "C" NOT NULL
+);
+
+-- Projection of the graph events: while in force (expires_at NULL or later than now), the
+-- notifications from target_account_id are hidden from viewer_account_id at read time.
+CREATE TABLE notification_exclusions (
+  viewer_account_id text COLLATE "C" NOT NULL,
+  target_account_id text COLLATE "C" NOT NULL,
+  reason text NOT NULL CHECK (reason IN ('block', 'blocked_by', 'mute')),
+  expires_at timestamptz,
+  PRIMARY KEY (viewer_account_id, target_account_id, reason)
+);
+
+-- Projection of content.status_deleted: the notifications about these statuses are hidden at
+-- read time; the erasure job deletes them and the row.
+CREATE TABLE notification_deleted_statuses (
+  status_id text COLLATE "C" NOT NULL PRIMARY KEY
 );

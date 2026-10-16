@@ -198,17 +198,35 @@ func redirectSource(u *url.URL) string {
 	return u.Scheme + "://" + u.Host
 }
 
+// scopeDescriptions word each scope on the consent screen; TestScopeDescriptions checks that
+// every scope the server knows has one.
+var scopeDescriptions = map[string]func(*i18n.Localizer) string{
+	identity.ScopeRead:               (*i18n.Localizer).ServerAuthAuthorizeScopeRead,
+	identity.ScopeWrite:              (*i18n.Localizer).ServerAuthAuthorizeScopeWrite,
+	identity.ScopeFollow:             (*i18n.Localizer).ServerAuthAuthorizeScopeFollow,
+	identity.ScopePush:               (*i18n.Localizer).ServerAuthAuthorizeScopePush,
+	identity.ScopeReadAccounts:       (*i18n.Localizer).ServerAuthAuthorizeScopeReadAccounts,
+	identity.ScopeReadBlocks:         (*i18n.Localizer).ServerAuthAuthorizeScopeReadBlocks,
+	identity.ScopeReadBookmarks:      (*i18n.Localizer).ServerAuthAuthorizeScopeReadBookmarks,
+	identity.ScopeReadFavourites:     (*i18n.Localizer).ServerAuthAuthorizeScopeReadFavourites,
+	identity.ScopeReadFollows:        (*i18n.Localizer).ServerAuthAuthorizeScopeReadFollows,
+	identity.ScopeReadMutes:          (*i18n.Localizer).ServerAuthAuthorizeScopeReadMutes,
+	identity.ScopeReadNotifications:  (*i18n.Localizer).ServerAuthAuthorizeScopeReadNotifications,
+	identity.ScopeReadStatuses:       (*i18n.Localizer).ServerAuthAuthorizeScopeReadStatuses,
+	identity.ScopeWriteAccounts:      (*i18n.Localizer).ServerAuthAuthorizeScopeWriteAccounts,
+	identity.ScopeWriteBlocks:        (*i18n.Localizer).ServerAuthAuthorizeScopeWriteBlocks,
+	identity.ScopeWriteBookmarks:     (*i18n.Localizer).ServerAuthAuthorizeScopeWriteBookmarks,
+	identity.ScopeWriteFavourites:    (*i18n.Localizer).ServerAuthAuthorizeScopeWriteFavourites,
+	identity.ScopeWriteFollows:       (*i18n.Localizer).ServerAuthAuthorizeScopeWriteFollows,
+	identity.ScopeWriteMedia:         (*i18n.Localizer).ServerAuthAuthorizeScopeWriteMedia,
+	identity.ScopeWriteMutes:         (*i18n.Localizer).ServerAuthAuthorizeScopeWriteMutes,
+	identity.ScopeWriteNotifications: (*i18n.Localizer).ServerAuthAuthorizeScopeWriteNotifications,
+	identity.ScopeWriteStatuses:      (*i18n.Localizer).ServerAuthAuthorizeScopeWriteStatuses,
+}
+
 func scopeDescription(l *i18n.Localizer, scope string) string {
-	switch scope {
-	case identity.ScopeRead:
-		return l.ServerAuthAuthorizeScopeRead()
-	case identity.ScopeWrite:
-		return l.ServerAuthAuthorizeScopeWrite()
-	case identity.ScopeFollow:
-		return l.ServerAuthAuthorizeScopeFollow()
-	case identity.ScopePush:
-		return l.ServerAuthAuthorizeScopePush()
-	default:
-		return scope
+	if describe, ok := scopeDescriptions[scope]; ok {
+		return describe(l)
 	}
+	return scope
 }

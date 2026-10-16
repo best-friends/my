@@ -31,9 +31,77 @@
     "defaultMessage": "Read your account, posts, and timelines",
     "description": "Permission (OAuth scope read) listed on the authorization page."
   },
+  "auth.authorize.scope.read_accounts": {
+    "defaultMessage": "Read accounts and your profile",
+    "description": "Permission (OAuth scope read:accounts) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_blocks": {
+    "defaultMessage": "Read the accounts you block",
+    "description": "Permission (OAuth scope read:blocks) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_bookmarks": {
+    "defaultMessage": "Read your bookmarks",
+    "description": "Permission (OAuth scope read:bookmarks) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_favourites": {
+    "defaultMessage": "Read your favourites",
+    "description": "Permission (OAuth scope read:favourites) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_follows": {
+    "defaultMessage": "Read your follows and follow requests",
+    "description": "Permission (OAuth scope read:follows) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_mutes": {
+    "defaultMessage": "Read the accounts you mute",
+    "description": "Permission (OAuth scope read:mutes) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_notifications": {
+    "defaultMessage": "Read your notifications",
+    "description": "Permission (OAuth scope read:notifications) listed on the authorization page."
+  },
+  "auth.authorize.scope.read_statuses": {
+    "defaultMessage": "Read posts and timelines",
+    "description": "Permission (OAuth scope read:statuses) listed on the authorization page."
+  },
   "auth.authorize.scope.write": {
     "defaultMessage": "Post and change things for you",
     "description": "Permission (OAuth scope write) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_accounts": {
+    "defaultMessage": "Change your profile and settings",
+    "description": "Permission (OAuth scope write:accounts) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_blocks": {
+    "defaultMessage": "Block and unblock accounts",
+    "description": "Permission (OAuth scope write:blocks) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_bookmarks": {
+    "defaultMessage": "Add and remove bookmarks",
+    "description": "Permission (OAuth scope write:bookmarks) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_favourites": {
+    "defaultMessage": "Add and remove favourites",
+    "description": "Permission (OAuth scope write:favourites) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_follows": {
+    "defaultMessage": "Follow and unfollow accounts and answer follow requests",
+    "description": "Permission (OAuth scope write:follows) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_media": {
+    "defaultMessage": "Upload images and edit their descriptions",
+    "description": "Permission (OAuth scope write:media) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_mutes": {
+    "defaultMessage": "Mute and unmute accounts",
+    "description": "Permission (OAuth scope write:mutes) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_notifications": {
+    "defaultMessage": "Mark notifications as read and dismiss them",
+    "description": "Permission (OAuth scope write:notifications) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_statuses": {
+    "defaultMessage": "Post, edit, delete, boost, and pin posts",
+    "description": "Permission (OAuth scope write:statuses) listed on the authorization page."
   },
   "auth.authorize.title": {
     "defaultMessage": "Authorize {app}",
@@ -255,9 +323,21 @@
     "defaultMessage": "The required setting {name} is not set.",
     "description": "A required configuration value is absent at startup. {name} is the environment variable or config file key, e.g. MY_DATABASE_URL."
   },
+  "errors.account_unavailable": {
+    "defaultMessage": "Your account cannot use the app right now.",
+    "description": "API error title for HTTP 403 when the access token is valid but its user cannot use the app: the registration is pending or rejected, the email address is unconfirmed, or the account is deactivated or deleted."
+  },
   "errors.bad_request": {
     "defaultMessage": "The request is invalid.",
     "description": "API error message for HTTP 400 when no more specific message applies."
+  },
+  "errors.insufficient_scope": {
+    "defaultMessage": "This app is not allowed to do this.",
+    "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."
+  },
+  "errors.insufficient_scope_detail": {
+    "defaultMessage": "The access token needs the scope {scope}.",
+    "description": "Detail of the HTTP 403 insufficient-scope API error. {scope} is the missing OAuth scope, e.g. read:accounts (not translated)."
   },
   "errors.internal": {
     "defaultMessage": "An unexpected error occurred. Please try again later.",
@@ -267,6 +347,10 @@
     "defaultMessage": "The parameter {name} has an invalid value.",
     "description": "Detail of an API error (HTTP 400) when a path, query, or header parameter cannot be parsed. {name} is the parameter name, e.g. limit (not translated)."
   },
+  "errors.invalid_token": {
+    "defaultMessage": "Your sign-in has expired or was revoked. Sign in again.",
+    "description": "API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked."
+  },
   "errors.method_not_allowed": {
     "defaultMessage": "The {method} method is not allowed for this resource.",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
@@ -274,6 +358,18 @@
   "errors.not_found": {
     "defaultMessage": "The requested resource was not found.",
     "description": "API error message for HTTP 404."
+  },
+  "errors.rate_limited": {
+    "defaultMessage": "Too many requests.",
+    "description": "API error title for HTTP 429 when a client sent more requests than the rate limit allows."
+  },
+  "errors.rate_limited_detail": {
+    "defaultMessage": "{seconds, plural, one {Try again in # second.} other {Try again in # seconds.}}",
+    "description": "Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds."
+  },
+  "errors.unauthenticated": {
+    "defaultMessage": "Sign in to do this.",
+    "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
   },
   "health.unavailable": {
     "defaultMessage": "The server is not ready to accept requests.",
@@ -286,5 +382,25 @@
   "mail.verify_email.subject": {
     "defaultMessage": "Confirm your email address for {host}",
     "description": "Subject of the email that confirms a new account's email address. {host} is the server's domain name."
+  },
+  "preview.avatar_alt": {
+    "defaultMessage": "Avatar of {name}",
+    "description": "Alt text of a profile's avatar in a link preview (og:image:alt) when the avatar is the preview image. {name} is the display name, or the username when there is none."
+  },
+  "preview.builtin_image_alt": {
+    "defaultMessage": "A speech bubble with three dots on a blue gradient",
+    "description": "Alt text of the built-in preview image in a link preview (og:image:alt), for profiles and posts without images on an instance without its own preview image. The image is a white speech bubble with three dots on a blue gradient."
+  },
+  "preview.default_image_alt": {
+    "defaultMessage": "Image of {instance}",
+    "description": "Alt text of the instance's preview image in a link preview (og:image:alt), for profiles and posts without images, when the preview_image_alt text is not set. {instance} is the instance name."
+  },
+  "preview.header_alt": {
+    "defaultMessage": "Header image of {name}",
+    "description": "Alt text of a profile's header image in a link preview (og:image:alt) when the header is the preview image. {name} is the display name, or the username when there is none."
+  },
+  "preview.title": {
+    "defaultMessage": "{name} (@{handle})",
+    "description": "Title of the link preview (og:title and the page title) of a profile or a post. {name} is the display name, or the username when there is none; {handle} is username@domain."
   }
 }

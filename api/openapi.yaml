@@ -15,6 +15,15 @@ info:
     - Every error is an RFC 9457 problem document (`application/problem+json`) whose `title`
       and `detail` are localized from `Accept-Language`. Clients branch on `type` and `status`,
       never on the text.
+    - Requests authenticate with an OAuth 2.0 access token in `Authorization: Bearer`, never
+      with cookies. Each operation lists the scopes it needs under `security`; a broad scope
+      (`read`, `write`, `follow`) grants the fine-grained scopes under it. A missing or invalid
+      token is a 401 with `WWW-Authenticate`, a token without the scope a 403
+      `insufficient_scope`.
+    - Every response carries the `RateLimit` and `RateLimit-Policy` fields
+      (draft-ietf-httpapi-ratelimit-headers): anonymous requests share a limit per client IP,
+      authenticated requests one per account. Past the limit the answer is 429 with
+      `Retry-After`.
     - IDs are UUIDv7 strings. Collections use keyset pagination: pass the `next_cursor` of a
       page as `cursor` to get the next page.
   license:
@@ -23,10 +32,12 @@ info:
 servers:
   - url: /api/v1
 security:
-  - bearer: []
+  - oauth2: []
 tags:
   - name: instance
     description: Public information about the instance.
+  - name: accounts
+    description: Accounts and the authenticated user's own account.
 paths:
   /instance:
     get:
@@ -46,12 +57,61 @@ paths:
                 $ref: "#/components/schemas/Instance"
         default:
           $ref: "#/components/responses/Problem"
+  /accounts/verify_credentials:
+    get:
+      operationId: verifyAccountCredentials
+      summary: Get the authenticated user's own account
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The account that the access token acts as.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        default:
+          $ref: "#/components/responses/Problem"
 components:
   securitySchemes:
-    bearer:
-      type: http
-      scheme: bearer
-      description: An OAuth 2.0 access token (Authorization Code + PKCE).
+    oauth2:
+      type: oauth2
+      description: |
+        An OAuth 2.0 access token (Authorization Code + PKCE S256), sent as
+        `Authorization: Bearer <token>`. `read`, `write`, and `follow` grant every scope under
+        them (`read` grants `read:accounts`; `follow` grants `read:follows`, `read:blocks`,
+        `read:mutes`, `write:follows`, `write:blocks`, and `write:mutes`).
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth/authorize
+          tokenUrl: /oauth/token
+          refreshUrl: /oauth/token
+          scopes:
+            read: Read everything the user can read.
+            write: Change everything the user can change.
+            follow: Read and change follows, blocks, and mutes.
+            push: Receive Web Push notifications.
+            "read:accounts": Read accounts, including the user's own.
+            "read:blocks": Read the accounts the user blocks.
+            "read:bookmarks": Read the user's bookmarks.
+            "read:favourites": Read the user's favourites.
+            "read:follows": Read follows and follow requests.
+            "read:mutes": Read the accounts the user mutes.
+            "read:notifications": Read the user's notifications.
+            "read:statuses": Read posts and timelines.
+            "write:accounts": Change the user's profile and preferences.
+            "write:blocks": Block and unblock accounts.
+            "write:bookmarks": Bookmark posts and remove bookmarks.
+            "write:favourites": Favourite posts and remove favourites.
+            "write:follows": Follow and unfollow accounts and answer follow requests.
+            "write:media": Upload media and change their descriptions.
+            "write:mutes": Mute and unmute accounts.
+            "write:notifications": Mark notifications read and dismiss them.
+            "write:statuses": Post, edit, delete, boost, and pin posts.
   headers:
     CacheControl:
       description: The caching policy. Anonymous public GETs are cacheable by shared caches (ADR-0016).
@@ -83,6 +143,21 @@ components:
           description: The locale of `title` and `detail`.
           schema:
             type: string
+        Cache-Control:
+          description: Always `no-store`; problems are never cached.
+          schema:
+            type: string
+        WWW-Authenticate:
+          description: |
+            The Bearer challenge of a 401 or a 403 `insufficient_scope` (RFC 6750 §3), with
+            `error` and, for `insufficient_scope`, the `scope` the operation needs.
+          schema:
+            type: string
+        Retry-After:
+          description: The seconds to wait before retrying, on a 429.
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/problem+json:
           schema:
@@ -107,7 +182,18 @@ components:
         next_cursor:
           $ref: "#/components/schemas/Cursor"
     Problem:
-      description: An RFC 9457 problem document.
+      description: |
+        An RFC 9457 problem document. Besides `about:blank`, `type` is one of
+
+        - `/api/v1/problems/unauthenticated` (401): the operation needs an access token and
+          the request has none.
+        - `/api/v1/problems/invalid-token` (401): the access token is malformed, unknown,
+          expired, or revoked. Refresh it or sign in again.
+        - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
+          `WWW-Authenticate` names.
+        - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
+          use the app (registration pending or rejected, email unverified, or the account
+          deactivated or deleted).
       type: object
       required: [type, title, status]
       properties:
@@ -160,3 +246,36 @@ components:
           description: The maximum number of characters in the text of a post.
           type: integer
           minimum: 1
+    Account:
+      description: An account, as clients show it.
+      type: object
+      required: [id, username, acct, display_name, note, url, locked, bot, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        username:
+          description: The username, without the domain.
+          type: string
+        acct:
+          description: The username for local accounts, `username@domain` for remote ones.
+          type: string
+        display_name:
+          description: The display name; empty when the account has none.
+          type: string
+        note:
+          description: The profile text as sanitized HTML; empty when there is none.
+          type: string
+        url:
+          description: The account's profile page.
+          type: string
+          format: uri
+        locked:
+          description: Whether follow requests need the account's approval.
+          type: boolean
+        bot:
+          description: Whether the account is automated.
+          type: boolean
+        created_at:
+          description: When the account was created.
+          type: string
+          format: date-time

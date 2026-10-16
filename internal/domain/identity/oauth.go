@@ -122,7 +122,9 @@ type TokenRevocation struct {
 	RevokedAt time.Time
 }
 
-// Scopes the server grants. The client API checks them per operation.
+// Scopes the server grants. The client API checks them per operation (api/openapi.yaml lists
+// the scopes of each operation). The broad scopes read, write, and follow grant the
+// fine-grained scopes under them; push grants Web Push only.
 const (
 	ScopeRead   = "read"
 	ScopeWrite  = "write"
@@ -130,8 +132,46 @@ const (
 	ScopePush   = "push"
 )
 
+// Fine-grained scopes. "read:x" is granted by read and "write:x" by write; follow grants the
+// scopes of follows, blocks, and mutes.
+const (
+	ScopeReadAccounts       = "read:accounts"
+	ScopeReadBlocks         = "read:blocks"
+	ScopeReadBookmarks      = "read:bookmarks"
+	ScopeReadFavourites     = "read:favourites"
+	ScopeReadFollows        = "read:follows"
+	ScopeReadMutes          = "read:mutes"
+	ScopeReadNotifications  = "read:notifications"
+	ScopeReadStatuses       = "read:statuses"
+	ScopeWriteAccounts      = "write:accounts"
+	ScopeWriteBlocks        = "write:blocks"
+	ScopeWriteBookmarks     = "write:bookmarks"
+	ScopeWriteFavourites    = "write:favourites"
+	ScopeWriteFollows       = "write:follows"
+	ScopeWriteMedia         = "write:media"
+	ScopeWriteMutes         = "write:mutes"
+	ScopeWriteNotifications = "write:notifications"
+	ScopeWriteStatuses      = "write:statuses"
+)
+
+// broadScopes are the scopes that AllScopes holds; together they grant every scope.
+var broadScopes = []string{ScopeFollow, ScopePush, ScopeRead, ScopeWrite}
+
 // knownScopes lists every scope, sorted.
-var knownScopes = []string{ScopeFollow, ScopePush, ScopeRead, ScopeWrite}
+var knownScopes = []string{
+	ScopeFollow, ScopePush, ScopeRead,
+	ScopeReadAccounts, ScopeReadBlocks, ScopeReadBookmarks, ScopeReadFavourites, ScopeReadFollows,
+	ScopeReadMutes, ScopeReadNotifications, ScopeReadStatuses,
+	ScopeWrite,
+	ScopeWriteAccounts, ScopeWriteBlocks, ScopeWriteBookmarks, ScopeWriteFavourites, ScopeWriteFollows,
+	ScopeWriteMedia, ScopeWriteMutes, ScopeWriteNotifications, ScopeWriteStatuses,
+}
+
+// followScopes are the fine-grained scopes that follow grants.
+var followScopes = []string{ScopeReadBlocks, ScopeReadFollows, ScopeReadMutes, ScopeWriteBlocks, ScopeWriteFollows, ScopeWriteMutes}
+
+// KnownScopes returns every scope the server knows, sorted.
+func KnownScopes() []string { return slices.Clone(knownScopes) }
 
 // ErrInvalidScope reports a scope string that ParseScope rejects.
 var ErrInvalidScope = errors.New("invalid scope")
@@ -140,8 +180,8 @@ var ErrInvalidScope = errors.New("invalid scope")
 // separated by one space (RFC 6749 §3.3). It is stored and compared as a whole.
 type Scope string
 
-// AllScopes returns the scope that holds every scope the server knows.
-func AllScopes() Scope { return Scope(strings.Join(knownScopes, " ")) }
+// AllScopes returns the scope that grants every scope the server knows: the broad scopes.
+func AllScopes() Scope { return Scope(strings.Join(broadScopes, " ")) }
 
 // ParseScope parses a space-separated list of scopes into its normal form. It rejects unknown
 // scopes; an empty list is the empty Scope.
@@ -170,13 +210,25 @@ func (s Scope) Tokens() []string {
 	return strings.Split(string(s), " ")
 }
 
-// Has reports whether s holds the scope token t.
+// Has reports whether s holds the scope token t itself; Grants also follows the broad scopes.
 func (s Scope) Has(t string) bool { return slices.Contains(s.Tokens(), t) }
 
-// Within reports whether every scope of s is also in outer.
+// Grants reports whether s allows what the scope t allows: s holds t, or a broad scope over it
+// (read over "read:x", write over "write:x", follow over the follow, block, and mute scopes).
+func (s Scope) Grants(t string) bool {
+	if s.Has(t) {
+		return true
+	}
+	if broad, _, ok := strings.Cut(t, ":"); ok && s.Has(broad) {
+		return true
+	}
+	return slices.Contains(followScopes, t) && s.Has(ScopeFollow)
+}
+
+// Within reports whether outer grants every scope of s.
 func (s Scope) Within(outer Scope) bool {
 	for _, t := range s.Tokens() {
-		if !outer.Has(t) {
+		if !outer.Grants(t) {
 			return false
 		}
 	}
