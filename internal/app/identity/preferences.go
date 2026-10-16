@@ -165,9 +165,12 @@ func CanonicalLocale(tag string) (string, error) {
 
 // defaultPreferences returns the preferences of a new user: the registration's locale or else
 // the instance default, UTC, and public posts in an undetermined language.
-func (s *Service) defaultPreferences(userID, locale string, now time.Time) (identity.Preferences, error) {
-	if locale == "" {
-		locale = s.d.DefaultLocale
+func (s *Service) defaultPreferences(ctx context.Context, userID, locale string, now time.Time) (identity.Preferences, error) {
+	if locale == "" && s.d.DefaultLocale != nil {
+		var err error
+		if locale, err = s.d.DefaultLocale(ctx); err != nil {
+			return identity.Preferences{}, fmt.Errorf("instance default locale: %w", err)
+		}
 	}
 	if locale == "" {
 		locale = i18n.SourceLocale

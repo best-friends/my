@@ -20,6 +20,7 @@ import (
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
+	"github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
@@ -65,6 +66,9 @@ type App struct {
 
 	Accounts *account.Service
 	Identity *identity.Service
+	// Instance holds the instance settings and texts, which live in the database; Config holds
+	// the deployment configuration. They never share a key (docs/reference/configuration.md).
+	Instance *instance.Service
 	Graph    *graph.Service
 
 	source queue.Source
@@ -116,6 +120,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	var (
 		identities identity.Repository
 		accounts   account.Repository
+		instances  instance.Repository
 		follows    graph.Repository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
@@ -126,7 +131,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			return nil, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
-		identities, accounts = d.IdentityRepository(), d.AccountRepository()
+		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows = d.GraphRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
@@ -140,7 +145,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			return nil, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
-		identities, accounts = d.IdentityRepository(), d.AccountRepository()
+		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows = d.GraphRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
@@ -183,10 +188,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Accounts = account.NewService(account.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: accounts, Clock: a.Clock, IDs: a.IDs, Sealer: a.Sealer, Host: cfg.Host,
 	})
+	instance.RegisterProjectors(a.Projectors, instances)
+	a.Instance = instance.NewService(instance.Deps{UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs})
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
 		RateLimiter: a.RateLimiter,
+		// The default locale is an instance setting in the database, never configuration
+		// (docs/reference/configuration.md); it is read per registration so changes apply at once.
+		DefaultLocale: a.Instance.DefaultLocale,
 	})
 	graph.RegisterProjectors(a.Projectors, follows)
 	a.Graph = graph.NewService(graph.Deps{
