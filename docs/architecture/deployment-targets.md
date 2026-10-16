@@ -1,21 +1,52 @@
 # デプロイターゲットと低コスト構成
 
-> 価格・制限値は 2026-10 時点の調査に基づく **目安** で、多くは「要検証」です。M4 で実測し、本ファイルを更新します。
-> 料金は変わるので、最終的には各社の公式ページを正としてください。
+> 価格・制限値は **2026-10-16 に公式ドキュメント / 公式料金ページで確認** した値です（#18）。各数値の出典は節末の「出典」に URL で示します。
+> 公式資料で確認できなかったものは **要検証** のまま残し、理由を併記しています。料金は改定されるので、最終的には各社の公式ページを正としてください。
+> 価格は特記がない限り USD・税抜・代表リージョン（GCP は us-central1、AWS は us-east-1）の値です。M4 で実測し、本ファイルを更新します。
 
 ## サマリ
 
 | ターゲット | コンピュート | RDB | キュー | Blob | スケジューラ | 想定固定費 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Google Cloud** | Cloud Run（min instances 0） | 外部 Neon / Turso、または Cloud SQL | Cloud Tasks（push） | GCS（または R2） | Cloud Scheduler | ほぼ $0（Cloud SQL を使うと数ドル〜） |
-| **AWS** | Lambda（Function URL）+ Lambda Web Adapter | Aurora Serverless v2（0 ACU）/ Aurora DSQL / RDS / 外部 | SQS（event source） | S3 + CloudFront | EventBridge Scheduler | ほぼ $0（DB 次第） |
-| **Self-hosted** | Docker Compose / microk8s | SQLite（+ Litestream）/ PostgreSQL | DB キュー | ローカル FS / MinIO / 外部 S3 互換 | プロセス内 cron | VM 代（$4〜6/月 クラス） |
+| **Google Cloud** | Cloud Run（min instances 0） | 外部 Neon / Turso、または Cloud SQL | Cloud Tasks（push） | GCS（または R2） | Cloud Scheduler | ほぼ $0（Cloud SQL を使うと最小構成でも約 $9/月〜） |
+| **AWS** | Lambda（Function URL）+ Lambda Web Adapter | Aurora Serverless v2（0 ACU）/ Aurora DSQL / RDS / 外部 | SQS（event source） | S3 + CloudFront | EventBridge Scheduler | ほぼ $0（DB 次第。Aurora は常時接続があると 0 ACU にならない） |
+| **Self-hosted** | Docker Compose / microk8s | SQLite（+ Litestream）/ PostgreSQL | DB キュー | ローカル FS / MinIO / 外部 S3 互換 | プロセス内 cron | VM 代（$4〜6/月 クラス、要検証） |
+
+## 設計に効く確認結果（要点）
+
+1. **Aurora Serverless v2 の 0 ACU は「ユーザー接続が 1 本もない」ときだけ** 一時停止する。常駐ワーカーの DB ポーリングやコネクションプール、RDS Proxy があると停止しない。復帰は通常約 15 秒、24 時間超の停止後は 30 秒以上。
+   → 連合サーバーは受信が途切れにくく、「ほぼ $0」になる前提は弱い。AWS の最安 DB 構成として Aurora DSQL / 外部 DB を併記する。
+2. **Aurora DSQL は外部キーとシーケンスをサポートしている**（ADR-0003 の旧記述「外部キー不可」は誤り）。残る主な制約は、1 トランザクションあたり 3,000 行・10 MiB・5 分、DDL と DML の分離（1 トランザクション 1 DDL）、分離レベルは Repeatable Read 固定、楽観的同時実行制御（コミット時に SQLSTATE 40001）。
+3. **Neon Free は 100 CU-hours/プロジェクト/月**。最小 0.25 CU で 400 時間/月（約 16.7 日）分で、常時起動（約 730 時間）には足りない。5 分無通信で scale to zero（Free では無効化不可）。
+4. **Turso Free** は 100 DB・5 GB・月 5 億 rows read・月 1,000 万 rows written。上限超過のクエリは `BLOCKED` で失敗する（課金で継続されない）。なお料金ページに「Turso is joining Supabase」との告知があり、プラン体系が変わる可能性がある。
+5. **SQS の遅延上限 15 分・Cloud Tasks の予約上限 30 日** は確認済み（ADR-0004 の前提どおり）。SQS のメッセージ上限は現在 **1 MiB**（256 KiB ではない）。
+6. **AWS Lambda Web Functions**（2026-10 発表の新形態。HTTP サーバーをそのまま動かせる）は現時点で **Node.js のみ** 対応で、Go サーバーには使えない。Go では引き続き Lambda Web Adapter（Event Functions）を使う。
 
 ## Cloudflare（実行環境としては対象外）
 
 - [ADR-0001](../adr/0001-server-language-and-runtime.md) により、Cloudflare Workers（と D1 / Cloudflare Queues）は v0 の実行環境から除外した。
-- ただし **R2（S3 互換 API）と CDN は他ターゲットと組み合わせて使える**。R2 は転送量課金が小さく、メディア配信のコストを下げる候補。
+- ただし **R2（S3 互換 API）と CDN は他ターゲットと組み合わせて使える**。R2 は転送量（egress）課金がなく、メディア配信のコストを下げる候補。
 - Cloudflare Containers 上での実行は将来の検討事項（需要があれば別 ADR）。
+
+### R2（Blob 用途のみ）
+
+| 項目 | 値 |
+| --- | --- |
+| 無料枠（Standard のみ） | 10 GB-month/月、Class A 100 万リクエスト/月、Class B 1,000 万リクエスト/月 |
+| Standard ストレージ | $0.015 / GB-month |
+| Class A（書き込み・List 等）/ Class B（読み取り） | $4.50 / 100 万、$0.36 / 100 万 |
+| Egress（インターネットへの転送） | 無料（S3 API・r2.dev 経由とも） |
+| S3 API のリージョン | `auto`（空文字と `us-east-1` は `auto` の別名） |
+| 署名付き URL | AWS SigV4。有効期限 1 秒〜7 日。**S3 API ドメイン（`<ACCOUNT_ID>.r2.cloudflarestorage.com`）でのみ有効で、カスタムドメインでは使えない** |
+| 非対応の S3 機能（抜粋） | ACL（`x-amz-acl` 等）、一部チェックサムヘッダ（`x-amz-checksum-algorithm` 等）は未実装 |
+
+- 公開配信は public bucket + カスタムドメイン、非公開オブジェクトの一時共有は S3 API ドメインの署名付き URL、と使い分ける必要がある（`BlobStore.publicUrl` / `signedUrl` の実装に影響）。
+- 要検証: aws-sdk-go-v2 の既定チェックサム動作と R2 の互換性（R2 のドキュメントは SDK ごとの設定例を載せているが、本プロジェクトの使い方で問題ないかは spike で確認する）。
+
+出典（2026-10-16 確認）:
+[R2 pricing](https://developers.cloudflare.com/r2/pricing/) /
+[R2 S3 API compatibility](https://developers.cloudflare.com/r2/api/s3/api/) /
+[R2 presigned URLs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
 
 ## Google Cloud
 
@@ -24,12 +55,207 @@
   Cloud Run + SQLite は永続ディスクがないため非推奨。
 - **キュー**: 遅延実行・レート制御・タスク名による重複排除がある Cloud Tasks を第一候補。Pub/Sub は将来オプション。
 
+### Cloud Run
+
+| 項目 | リクエストベース課金 | インスタンスベース課金 |
+| --- | --- | --- |
+| 無料枠（請求先アカウント単位・毎月リセット、us-central1 の Tier 1 価格で割引として適用） | 180,000 vCPU 秒、360,000 GiB 秒、200 万リクエスト | 240,000 vCPU 秒、450,000 GiB 秒 |
+| 課金単位 | 処理中のインスタンス時間（100 ms 単位で切り上げ） | インスタンスの起動から終了まで（最低 1 分） |
+| アイドル時 | **min instances に指定したインスタンスのみ** アイドル料金がかかる。min instances 0 ならアイドル課金なし | インスタンスが存在する間は課金 |
+
+- 本プロジェクトの既定はリクエストベース課金 + min instances 0（コールドスタートを許容）。
+- 無料の外向き転送は北米発 1 GiB/月のみ。連合配送の外向き通信量は M4 で計測する。
+
+### Cloud Tasks
+
+| 項目 | 値 |
+| --- | --- |
+| 予約の最大先送り（遅延上限） | 現在時刻から **30 日** |
+| 最大タスクサイズ | 1 MiB（バッチ投入は 10 MiB / 100 タスクまで） |
+| タスクの最大保持期間 | 31 日 |
+| タスク名による重複排除 | 削除済みタスクと同名の投入を **最大 24 時間** 拒否 |
+| キューあたりの配信レート上限 | 500 タスク/秒（システム上限。超える場合はキューを分ける） |
+| HTTP ターゲットの dispatch deadline | 既定 10 分、15 秒〜30 分 |
+| 料金 | 課金オペレーション（API 呼び出しと push 配信試行。32 KB 単位でチャンク計数）月 100 万まで無料、以降 $0.40 / 100 万 |
+| 認証 | タスクまたはキュー単位で OIDC（ID トークン）を付与できる。Cloud Run に対しては ID トークンを使い、サービスアカウントに Cloud Run Invoker ロールを付与する |
+
+- 配送のリトライ 1 回が 1 オペレーションになるため、連合配送の失敗が多いとオペレーション数が増える（M4 で計測）。
+- dispatch deadline の上限 30 分は Cloud Run のリクエストタイムアウトと揃えて設定する。
+
+### Cloud Scheduler
+
+- 課金はジョブ単位で $0.10 / ジョブ / 31 日（実行回数では課金されない。一時停止中のジョブも数える）。
+- 無料枠は **請求先アカウントあたり 3 ジョブ/月**（プロジェクト単位ではない）。定期ジョブは 1 本のトリガーから複数種のジョブを enqueue する設計にして本数を抑える（ADR-0004 の方針どおり）。
+
+### Cloud SQL（参考: 最小料金）
+
+| 構成（us-central1） | 料金 |
+| --- | --- |
+| db-f1-micro（共有 vCPU、0.6 GiB RAM） | $0.0105 / 時間 ≒ 約 $7.7 / 月（730 時間換算） |
+| db-g1-small（共有 vCPU、1.7 GiB RAM） | $0.035 / 時間 ≒ 約 $25.6 / 月 |
+| SSD ストレージ | $0.000232877 / GiB 時間 ≒ 約 $0.17 / GiB 月 |
+
+- 共有コア（db-f1-micro / db-g1-small）は Cloud SQL の SLA 対象外。インスタンスは起動している秒数で課金される。
+- 例: db-f1-micro + SSD 10 GiB で約 $9.4/月。要検証: 最小ストレージ容量とアイドル時の IPv4 アドレス料金（料金表に「IPv4 addresses while idle $0.01/時間」があるが、どの条件で発生するかは本調査では確認しきれていない）。
+
+### Cloud Storage（GCS）
+
+| 項目 | 値 |
+| --- | --- |
+| 無料枠（Always Free） | 5 GB-month の Standard ストレージ（us-east1 / us-west1 / us-central1 のみ）、Class A 5,000 回、Class B 50,000 回、北米発の外向き転送 100 GB/月 |
+| Standard ストレージ（us-central1） | $0.000027397 / GiB 時間 ≒ 約 $0.020 / GiB 月 |
+| Class A / Class B（Standard、フラット名前空間） | $0.005 / 1,000 回、$0.0004 / 1,000 回 |
+| インターネットへの転送（アジア・豪州以外宛、0〜10 TiB） | $0.12 / GiB（Cloud CDN 経由なら GCS 側の転送料は免除、キャッシュフィル料金は別） |
+| S3 互換 | XML API（`https://storage.googleapis.com`）+ HMAC キーで S3 向けツール・ライブラリを利用できる |
+| 署名 | `AWS4-HMAC-SHA256`（`x-amz-*` 拡張）と HMAC キーによる署名をサポート。署名付き URL は XML API エンドポイントでのみ有効で、有効期限は最大 604,800 秒（7 日） |
+| HMAC キー | サービスアカウントあたり最大 10 個。作成後、使えるまで最大 60 秒 |
+
+- 要検証: aws-sdk-go-v2 で生成した署名付き URL・マルチパートアップロード・チェックサムヘッダが GCS の XML API でそのまま動くか（公式ドキュメントは署名方式の互換を明記しているが、SDK の既定動作との組み合わせは spike で確認する）。
+
+出典（2026-10-16 確認）:
+[Cloud Run pricing](https://cloud.google.com/run/pricing) /
+[Google Cloud Free Program の無料枠](https://docs.cloud.google.com/free/docs/free-cloud-features) /
+[Cloud Tasks quotas and limits](https://docs.cloud.google.com/tasks/docs/quotas) /
+[Cloud Tasks pricing](https://cloud.google.com/tasks/pricing) /
+[Cloud Tasks: HTTP target tasks（認証）](https://docs.cloud.google.com/tasks/docs/creating-http-target-tasks) /
+[Cloud Tasks REST: Task（dispatchDeadline）](https://docs.cloud.google.com/tasks/docs/reference/rest/v2/projects.locations.queues.tasks) /
+[Cloud Scheduler pricing](https://cloud.google.com/scheduler/pricing) /
+[Cloud SQL pricing](https://cloud.google.com/sql/pricing) /
+[Cloud Storage pricing](https://cloud.google.com/storage/pricing) /
+[Cloud Storage interoperability](https://docs.cloud.google.com/storage/docs/interoperability) /
+[Cloud Storage signatures](https://docs.cloud.google.com/storage/docs/authentication/signatures) /
+[Cloud Storage signed URLs](https://docs.cloud.google.com/storage/docs/access-control/signed-urls) /
+[HMAC keys](https://docs.cloud.google.com/storage/docs/authentication/hmackeys)
+
 ## AWS
 
 - **構成**: Lambda（Web 用関数 + SQS コンシューマ関数、同一コード）。Lambda Web Adapter で通常の HTTP サーバーとして書ける。
-- **RDB**: Aurora Serverless v2 は 0 ACU までスケールダウン可能（復帰レイテンシあり、要検証）。Aurora DSQL は PostgreSQL 互換だが
-  機能制約（外部キー・一部 DDL など）があるため、コントラクトテストで可否を判断する。
+- **RDB**: Aurora Serverless v2 は 0 ACU まで自動一時停止できるが、ユーザー接続が残っていると停止しない（下記）。Aurora DSQL は PostgreSQL 互換で外部キーも使えるが、
+  トランザクションの行数・サイズ・時間に上限があるため、コントラクトテストで可否を判断する。
 - **キュー**: SQS の遅延は最大 15 分。→ 再投入チェーンで長いバックオフを実現。
+
+### Lambda
+
+| 項目 | 値 |
+| --- | --- |
+| 無料枠（Event Functions） | 月 100 万リクエスト + 400,000 GB 秒（Provisioned Concurrency を有効にした関数には適用されない） |
+| 料金（参考） | $0.20 / 100 万リクエスト、$0.0000166667 / GB 秒（x86、us-east-1 の第 1 段階） |
+| 関数タイムアウト | 最大 900 秒（15 分） |
+| 同期呼び出しのペイロード | リクエスト・レスポンスとも 6 MB（ストリーミング時は 6 MB 超の部分が 2 MBps に制限） |
+
+- **Lambda Web Adapter**: Lambda Runtime API と HTTP をつなぐ Rust 製のアダプタで、Go を含むマネージドランタイム上の通常の HTTP サーバーをそのまま Lambda で動かせる。zip の場合はレイヤーとして追加し `AWS_LAMBDA_EXEC_WRAPPER=/opt/bootstrap` を設定する。Function URL では複数値ヘッダ（同名ヘッダの複数指定）を返せない点に注意（AWS Compute Blog）。
+  - 要検証: アダプタ本体のリポジトリ（GitHub の awslabs）は本調査の出典範囲外のため、最新版の設定項目・バージョンは spike で確認する。
+- **Lambda Web Functions**（2026-10 発表）: HTTP サーバーを直接動かす新形態。1 環境で複数リクエストを並行処理し、scale to zero する。ただし **現時点で Node.js（`nodejs24.x`）のみ**、提供リージョンは 5 つ（東京を含む）で、Go サーバーには使えない。対応言語が広がったら再検討する。
+- **AWS Free Tier の変更**: 新規アカウントは「最大 $200 のクレジット（6 か月）」の Free plan / Paid plan 方式になり、30 以上のサービスの「Always free」枠は両プランで継続する。SQS の料金ページは「全顧客」に月 100 万リクエスト無料と明記している。
+  - 要検証: Lambda の無料枠（上表）が Always free に含まれるか。Lambda の料金ページは無料枠を記載しているが、Free Tier ページの一覧（動的表示）からは確認できなかった。
+
+### SQS
+
+| 項目 | 値 |
+| --- | --- |
+| 遅延（delay queue / メッセージタイマー） | 0 秒〜 **最大 15 分** |
+| メッセージサイズ | 最大 **1 MiB**（1,048,576 バイト）。1 リクエストに 1〜10 メッセージ、合計 1 MiB まで |
+| メッセージ保持期間 | 最大 14 日 |
+| 可視性タイムアウト | 既定 30 秒、最大 12 時間 |
+| 料金 | 全顧客に月 100 万リクエストの無料枠。ペイロード 64 KB ごとに 1 リクエストとして課金 |
+
+### EventBridge Scheduler
+
+- 無料枠は月 1,400 万回の呼び出し、超過分は $1.00 / 100 万回。
+
+### Aurora Serverless v2（0 ACU / 自動一時停止）
+
+| 項目 | 値 |
+| --- | --- |
+| 最小容量 | 0 ACU（自動一時停止）。それ以前からのクラスタは最小 0.5 ACU のため、0 に変更が必要 |
+| 一時停止までの無通信時間 | 300 秒（既定・最小）〜 86,400 秒 |
+| 復帰時間 | 通常 **約 15 秒**。24 時間を超えて停止していると深いスリープに入り **30 秒以上** |
+| 停止中の課金 | インスタンス料金は 0。ストレージ等クラスタ側の料金は継続 |
+| 一時停止しない条件（抜粋） | ユーザー接続が 1 本でも開いている / RDS Proxy を併用 / 論理レプリケーション有効 / Global Database のプライマリ / zero-ETL 連携 |
+| ACU 単価（参考） | Aurora Standard で $0.12 / ACU 時間（us-east-1、料金ページの計算例）。常時 0.5 ACU なら約 $44/月 |
+
+- 連合サーバーは外部からの受信が断続的に続くため、**実運用で 0 ACU に落ちる時間は短い可能性が高い**。また復帰中の約 15 秒は Inbox 受信や API がタイムアウトしうる（接続タイムアウトを 15〜30 秒以上にする必要がある）。
+- 新規アカウントの Free plan では Aurora PostgreSQL serverless を最大 4 ACU・1 GiB ストレージで使える（クレジット消費）。
+
+### Aurora DSQL
+
+| 項目 | 値 |
+| --- | --- |
+| 料金・無料枠 | DPU（分散処理単位）+ ストレージ（GB-month）。**月 100,000 DPU と 1 GB ストレージが無料**。アイドル時は DPU 課金なし |
+| 外部キー | **サポート**（`NO ACTION` / `RESTRICT` / `CASCADE` / `SET NULL` / `SET DEFAULT`、遅延可能制約も可）。参照整合性の確認で追加の読み取りが発生する |
+| シーケンス / identity 列 | サポート。`CACHE` の明示が必須で、値は `1` か `65536` 以上のみ。型は `bigint` |
+| 分離レベル | PostgreSQL の Repeatable Read 固定（スナップショット分離） |
+| 同時実行制御 | 楽観的（OCC）。競合はコミット時に SQLSTATE `40001`（OC000 データ競合 / OC001 スキーマ競合）。`FOR UPDATE` もロックではなくコミット時判定 |
+| トランザクション上限 | 変更行数 3,000 行、変更データ 10 MiB、実行時間 5 分 |
+| DDL | DDL と DML は別トランザクション、1 トランザクションに DDL は 1 文まで。インデックスは `CREATE INDEX ASYNC` |
+| 非対応（抜粋） | 一時テーブル、`TRUNCATE`、PL/pgSQL（SQL 関数は可）、トリガー相当はアプリ側で実装、データベースは 1 クラスタ 1 つ（`postgres`）、照合順序は `C` のみ |
+| その他の上限 | 接続は最長 60 分、テーブル 1,000、スキーマ 10、テーブルあたりインデックス 24、主キー / インデックスのキーサイズ 1 KiB、行サイズ 2 MiB |
+
+- 要検証: `SELECT ... FOR UPDATE SKIP LOCKED` の可否（公式ページで明示を見つけられなかった）。不可なら DSQL 上で DB キュー（`queue/db`）は使えず、AWS では SQS を必須にする。
+- 1 行に更新が集中するカウンタ（`SET n = n + 1`）は OCC の競合を起こしやすい。DSQL では非正規化カウンタを別テーブルに分散するか、定期再集計に寄せる。
+
+出典（2026-10-16 確認）:
+[AWS Lambda pricing](https://aws.amazon.com/lambda/pricing/) /
+[Lambda quotas](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html) /
+[Lambda Web Functions](https://docs.aws.amazon.com/lambda/latest/dg/web-functions.html) /
+[Lambda Web Function runtimes](https://docs.aws.amazon.com/lambda/latest/dg/web-functions-runtimes.html) /
+[What's New: Lambda Web Functions](https://aws.amazon.com/about-aws/whats-new/2026/10/aws-lambda-web-functions/) /
+[AWS Compute Blog: Lambda Web Adapter と response streaming](https://aws.amazon.com/blogs/compute/using-response-streaming-with-aws-lambda-web-adapter-to-optimize-performance/) /
+[AWS Free Tier](https://aws.amazon.com/free/) /
+[SQS delay queues](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-delay-queues.html) /
+[SQS message quotas](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html) /
+[SQS pricing](https://aws.amazon.com/sqs/pricing/) /
+[EventBridge pricing](https://aws.amazon.com/eventbridge/pricing/) /
+[Aurora Serverless v2 auto-pause](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2-auto-pause.html) /
+[Aurora pricing](https://aws.amazon.com/rds/aurora/pricing/) /
+[Aurora DSQL pricing](https://aws.amazon.com/rds/aurora/dsql/pricing/) /
+[Aurora DSQL: Migrating from PostgreSQL](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/working-with-postgresql-compatibility-migration-guide.html) /
+[Aurora DSQL quotas](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/CHAP_quotas.html) /
+[Aurora DSQL foreign keys](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/working-with-foreign-key-constraints.html) /
+[Aurora DSQL CREATE SEQUENCE](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/create-sequence-syntax-support.html) /
+[Aurora DSQL concurrency control](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/working-with-concurrency-control.html)
+
+要検証（本調査で未確認）: S3 / CloudFront の料金・無料枠、Lambda Function URL の追加料金の有無、Lambda Web Functions の無料枠の有無。
+
+## 外部サーバーレス DB
+
+### Neon（PostgreSQL）
+
+| 項目（Free プラン） | 値 |
+| --- | --- |
+| 月額 | $0（期限なし、カード不要） |
+| プロジェクト | 100 |
+| コンピュート | **100 CU-hours / プロジェクト / 月**（0.25 CU = 1 GB RAM なら 400 時間/月）、最大 2 CU まで自動スケール |
+| Scale to zero | 5 分無通信で停止。**Free では無効化できない** |
+| ストレージ | 1 GB / プロジェクト（全プロジェクト合計 20 GB まで） |
+| 外向き転送 | 5 GB / プロジェクト / 月 |
+| 有料（Launch） | $0.106 / CU 時間、$0.35 / GB-month、転送 500 GB/プロジェクト込み（超過 $0.10/GB） |
+
+- 常時起動（約 730 時間/月）だと 0.25 CU でも 182.5 CU-hours になり Free 枠を超える。**5 分以上アクセスが途切れる時間がどれだけあるか** が Free で収まるかの分かれ目になる（M4 で計測）。
+- 要検証: Free 枠を使い切った後の挙動（停止か、制限か）を公式ページで明示的に確認できなかった。
+
+### Turso（libSQL）
+
+| 項目（Free プラン） | 値 |
+| --- | --- |
+| 月額 | $0（カード不要） |
+| データベース数 | 100 |
+| ストレージ | 5 GB |
+| 読み取り / 書き込み | 月 5 億 rows read / 月 1,000 万 rows written |
+| Point-in-Time Restore | 1 日 |
+| 上限超過時 | クォータのあるプランでは、超過したクエリは `BLOCKED` エラーで失敗する |
+| 有料（Developer） | $4.99/月〜（年払い時の表示）、9 GB・25 億 rows read・2,500 万 rows written 込み |
+
+- rows read は「返した行」ではなく **スキャンした行** で数える（集約関数・インデックスのない検索・JOIN で増える。`SELECT 1` でも 1 行）。中断したトランザクションの書き込みも rows written に数える。
+  → タイムライン取得はインデックスで走査行数を抑え、カウンタは集計テーブルで持つ（ADR-0003 / ADR-0013 の方針と整合）。
+- 料金ページに「Turso is joining Supabase」との告知がある。プラン体系・提供継続性は今後変わりうるため、Turso 依存の機能は libSQL / SQLite 互換の範囲に留める。
+- 要検証: 料金ページの月払い価格（表示は年払い割引込み）、ドキュメントのプラン名（Starter / Scaler）と料金ページのプラン名（Free / Developer / Scaler）の対応。
+
+出典（2026-10-16 確認）:
+[Neon pricing](https://neon.com/pricing) /
+[Neon plans](https://neon.com/docs/introduction/plans) /
+[Turso pricing](https://turso.tech/pricing) /
+[Turso usage & billing](https://docs.turso.tech/help/usage-and-billing)
 
 ## Self-hosted（Docker / microk8s）
 
@@ -42,8 +268,9 @@
 
 | 観点 | 計測方法 |
 | --- | --- |
-| 1 投稿あたりの配送リクエスト数 | フォロワーのドメイン分布 × shared inbox 利用率 |
+| 1 投稿あたりの配送リクエスト数 | フォロワーのドメイン分布 × shared inbox 利用率（Cloud Tasks / SQS のオペレーション数に直結） |
 | 受信アクティビティ量 | 連合タイムラインの流量（リレー非接続時） |
-| DB 読み書き行数 | タイムライン 1 回取得あたりの 読み取り行数・コンピュート時間（Neon 等の課金単位） |
+| DB のアイドル時間 | 5 分以上アクセスが途切れる時間の合計（Neon の scale to zero、Aurora の自動一時停止が効くか） |
+| DB 読み書き行数 | タイムライン 1 回取得あたりの 読み取り行数・コンピュート時間（Neon の CU-hours、Turso の rows read、DSQL の DPU） |
 | ストレージ | ローカルメディア総量、リモートメディアのキャッシュ方針別 |
-| 転送量 | メディア配信（CDN 経由 / 直接） |
+| 転送量 | メディア配信（CDN 経由 / 直接）、連合配送の外向き通信 |
