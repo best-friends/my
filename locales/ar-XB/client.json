@@ -791,6 +791,14 @@
     "defaultMessage": "‮Wǝuʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.group.boost": {
+    "defaultMessage": "‮{name} ɐup {count,plural,one{# oʇɥǝɹ} other{# oʇɥǝɹs}} qoosʇǝp ʎonɹ dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.group.favourite": {
+    "defaultMessage": "‮{name} ɐup {count,plural,one{# oʇɥǝɹ} other{# oʇɥǝɹs}} ɟɐʌonɹıʇǝp ʎonɹ dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.load_more": {
     "defaultMessage": "‮⅂oɐp ɯoɹǝ uoʇıɟıɔɐʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -108,8 +108,8 @@ function NotificationList({ filter, headingId }: { filter: NotificationFilter; h
         <Feed
           aria-labelledby={headingId}
           items={list.items}
-          getKey={(notification) => notification.id}
-          renderItem={(notification) => <NotificationItem notification={notification} isUnread={list.isUnread(notification)} />}
+          getKey={(group) => group.key}
+          renderItem={(group) => <NotificationItem group={group} isUnread={list.isUnread(group)} />}
           isLoading={list.isLoadingMore}
           hasMore={list.hasMore}
           onLoadMore={list.loadMore}

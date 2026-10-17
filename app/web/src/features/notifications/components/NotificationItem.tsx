@@ -5,28 +5,39 @@
 // A follow offers to follow back. PostCard lays it out, so the article is named by the sentence and the
 // time and described by the post.
 //
+// A group of the favourites or the boosts of one post is one row: "Alice and 2 others favourited your
+// post", with the avatars of the others in a row above the sentence, so the number of people is in the
+// article's name.
+//
 // A row has one tab stop per place it leads to: the actor's name (the avatar is the same link for the
-// pointer, out of the tab order), and the quote of the post or the follow back button.
+// pointer, out of the tab order), and the quote of the post or the follow back button. The avatars of the
+// others are links to their profiles for the pointer only; the post's page lists who favourited and
+// boosted it.
 import { Avatar, Link, PostCard, VisuallyHidden } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import { RelationshipActions, useRelationship } from "../../profile";
-import type { Notification, NotificationAccount } from "../api/notifications";
-import { type NotificationView, useNotificationView } from "../hooks/useNotificationView";
+import type { NotificationAccount } from "../api/notifications";
+import type { NotificationGroup } from "../hooks/groupNotifications";
+import { type NotificationActor, type NotificationView, useNotificationView } from "../hooks/useNotificationView";
 
 /** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
 const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
 
+/** The most avatars of the others that a group shows; the sentence counts them all. */
+const maxOtherAvatars = 6;
+
 export type NotificationItemProps = {
-  notification: Notification;
+  /** One notification, or the favourites or the boosts of one post. */
+  group: NotificationGroup;
   /** Whether it was unread when the page opened. */
   isUnread: boolean;
 };
 
-export function NotificationItem({ notification, isUnread }: NotificationItemProps) {
+export function NotificationItem({ group, isUnread }: NotificationItemProps) {
   const t = useT();
   const intl = useIntl();
-  const view = useNotificationView(notification);
+  const view = useNotificationView(group);
   const { actor } = view;
   return (
     <PostCard
@@ -43,29 +54,33 @@ export function NotificationItem({ notification, isUnread }: NotificationItemPro
         ),
       })}
       author={
-        <p className="flex items-baseline gap-2">
-          {isUnread && (
-            <>
-              <span aria-hidden="true" className="inline-block size-2 shrink-0 self-center rounded-full bg-accent" />
-              {/* The space keeps the words apart in the article's name. */}
-              <VisuallyHidden>{t("client:notifications.unread")}</VisuallyHidden>{" "}
-            </>
-          )}
-          <span className={isUnread ? "font-semibold" : "font-normal"}>
-            {/* The actor's name is the user's text, isolated from the sentence around it (Y10). */}
-            {intl.formatMessage(
-              { id: view.sentence },
-              {
-                name:
-                  actor === null ? null : (
-                    <Link key="name" href={actor.href} className={nameLink}>
-                      <bdi>{actor.name}</bdi>
-                    </Link>
-                  ),
-              },
+        <>
+          {view.others.length > 0 && <OtherAvatars others={view.others.slice(0, maxOtherAvatars)} />}
+          <p className="flex items-baseline gap-2">
+            {isUnread && (
+              <>
+                <span aria-hidden="true" className="inline-block size-2 shrink-0 self-center rounded-full bg-accent" />
+                {/* The space keeps the words apart in the article's name. */}
+                <VisuallyHidden>{t("client:notifications.unread")}</VisuallyHidden>{" "}
+              </>
             )}
-          </span>
-        </p>
+            <span className={isUnread ? "font-semibold" : "font-normal"}>
+              {/* The actor's name is the user's text, isolated from the sentence around it (Y10). */}
+              {intl.formatMessage(
+                { id: view.sentence },
+                {
+                  name:
+                    actor === null ? null : (
+                      <Link key="name" href={actor.href} className={nameLink}>
+                        <bdi>{actor.name}</bdi>
+                      </Link>
+                    ),
+                  count: view.others.length,
+                },
+              )}
+            </span>
+          </p>
+        </>
       }
       time={
         <time dateTime={view.time.dateTime} title={view.time.absolute}>
@@ -75,6 +90,22 @@ export function NotificationItem({ notification, isUnread }: NotificationItemPro
       content={view.post === null ? null : <PostQuote post={view.post} />}
       {...(view.followBack !== null && { actions: <FollowBack account={view.followBack} /> })}
     />
+  );
+}
+
+/**
+ * The avatars of the other people of a group, as links to their profiles for the pointer: out of the tab
+ * order and hidden from screen readers, which hear their number in the sentence.
+ */
+function OtherAvatars({ others }: { others: readonly NotificationActor[] }) {
+  return (
+    <div aria-hidden="true" className="mb-1 flex flex-wrap gap-1">
+      {others.map((other) => (
+        <Link key={other.href} href={other.href} excludeFromTabOrder className="block rounded-full">
+          <Avatar src={other.avatar} name={other.name} size="xs" decorative />
+        </Link>
+      ))}
+    </div>
   );
 }
 
