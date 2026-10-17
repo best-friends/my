@@ -1,0 +1,7 @@
+{
+  "id": "https://mastodon.example/ap/users/117454922805771612#likes/1",
+  "type": "Like",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": "https://remote.example/ap/objects/01a148a3-06f8-7df3-b5af-dbc799617dbe",
+  "@context": "https://www.w3.org/ns/activitystreams"
+}

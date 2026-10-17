@@ -1,0 +1,46 @@
+{
+  "Activity": {
+    "Actor": "https://gotosocial.example/users/carol",
+    "Audience": {
+      "Cc": [
+        "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "To": [
+        "https://gotosocial.example/users/carol/followers"
+      ]
+    },
+    "ID": "https://gotosocial.example/01M54A5SJH0DT8R920Y3Z0DXHY",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://gotosocial.example/users/carol",
+            "Audience": {
+              "Cc": [
+                "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+                "https://www.w3.org/ns/activitystreams#Public"
+              ],
+              "To": [
+                "https://gotosocial.example/users/carol/followers"
+              ]
+            },
+            "ID": "https://gotosocial.example/users/carol/statuses/01M54A5QJYVJZQGQBFESG0R6Z7",
+            "Objects": [
+              {
+                "ID": "https://remote.example/ap/objects/01a148a2-de39-73ee-aa1d-2541f830c4b8"
+              }
+            ],
+            "Published": "2026-10-01T00:00:00Z",
+            "RawType": "Announce",
+            "Type": "Announce"
+          }
+        },
+        "ID": "https://gotosocial.example/users/carol/statuses/01M54A5QJYVJZQGQBFESG0R6Z7",
+        "Trusted": true
+      }
+    ],
+    "RawType": "Undo",
+    "Type": "Undo"
+  }
+}

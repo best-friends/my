@@ -1,0 +1,57 @@
+{
+  "cc": "https://www.w3.org/ns/activitystreams#Public",
+  "id": "https://gotosocial.example/users/carol/statuses/01M54AAD0JSBVPEV3CB71D6HK1/activity#Create",
+  "to": "https://gotosocial.example/users/carol/followers",
+  "type": "Create",
+  "actor": "https://gotosocial.example/users/carol",
+  "object": {
+    "cc": "https://www.w3.org/ns/activitystreams#Public",
+    "id": "https://gotosocial.example/users/carol/statuses/01M54AAD0JSBVPEV3CB71D6HK1",
+    "to": "https://gotosocial.example/users/carol/followers",
+    "url": "https://gotosocial.example/@carol/statuses/01M54AAD0JSBVPEV3CB71D6HK1",
+    "type": "Note",
+    "content": "<p>unlisted from gotosocial.example 1792220148753886065</p>",
+    "replies": {
+      "id": "https://gotosocial.example/users/carol/statuses/01M54AAD0JSBVPEV3CB71D6HK1/replies",
+      "type": "Collection",
+      "first": {
+        "id": "https://gotosocial.example/users/carol/statuses/01M54AAD0JSBVPEV3CB71D6HK1/replies?page=true",
+        "next": "https://gotosocial.example/users/carol/statuses/01M54AAD0JSBVPEV3CB71D6HK1/replies?page=true&only_other_accounts=false",
+        "type": "CollectionPage",
+        "partOf": "https://gotosocial.example/users/carol/statuses/01M54AAD0JSBVPEV3CB71D6HK1/replies"
+      }
+    },
+    "published": "2026-10-17T06:55:48Z",
+    "contentMap": {
+      "en": "<p>unlisted from gotosocial.example 1792220148753886065</p>"
+    },
+    "attributedTo": "https://gotosocial.example/users/carol",
+    "interactionPolicy": {
+      "canLike": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "canQuote": {
+        "automaticApproval": [
+          "https://gotosocial.example/users/carol"
+        ]
+      },
+      "canReply": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "canAnnounce": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      }
+    }
+  },
+  "@context": [
+    "https://gotosocial.org/ns",
+    "https://www.w3.org/ns/activitystreams"
+  ],
+  "published": "2026-10-17T06:55:48Z"
+}

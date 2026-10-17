@@ -1,0 +1,69 @@
+{
+  "cc": [
+    "https://gotosocial.example/users/carol/followers",
+    "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+  ],
+  "id": "https://gotosocial.example/users/carol/statuses/01M54A568D0GTAT08NET3MTQAS/activity#Create",
+  "to": "https://www.w3.org/ns/activitystreams#Public",
+  "type": "Create",
+  "actor": "https://gotosocial.example/users/carol",
+  "object": {
+    "cc": [
+      "https://gotosocial.example/users/carol/followers",
+      "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+    ],
+    "id": "https://gotosocial.example/users/carol/statuses/01M54A568D0GTAT08NET3MTQAS",
+    "to": "https://www.w3.org/ns/activitystreams#Public",
+    "tag": {
+      "href": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+      "name": "@alice@remote.example",
+      "type": "Mention"
+    },
+    "url": "https://gotosocial.example/@carol/statuses/01M54A568D0GTAT08NET3MTQAS",
+    "type": "Note",
+    "content": "<p><span class=\"h-card\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>alice</span></a></span> a reply from gotosocial 1792219977996571151</p>",
+    "replies": {
+      "id": "https://gotosocial.example/users/carol/statuses/01M54A568D0GTAT08NET3MTQAS/replies",
+      "type": "Collection",
+      "first": {
+        "id": "https://gotosocial.example/users/carol/statuses/01M54A568D0GTAT08NET3MTQAS/replies?page=true",
+        "next": "https://gotosocial.example/users/carol/statuses/01M54A568D0GTAT08NET3MTQAS/replies?page=true&only_other_accounts=false",
+        "type": "CollectionPage",
+        "partOf": "https://gotosocial.example/users/carol/statuses/01M54A568D0GTAT08NET3MTQAS/replies"
+      }
+    },
+    "inReplyTo": "https://remote.example/ap/objects/01a148a2-98ea-7127-ac20-ab537f56d8ba",
+    "published": "2026-10-17T06:52:57Z",
+    "contentMap": {
+      "en": "<p><span class=\"h-card\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>alice</span></a></span> a reply from gotosocial 1792219977996571151</p>"
+    },
+    "attributedTo": "https://gotosocial.example/users/carol",
+    "interactionPolicy": {
+      "canLike": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "canQuote": {
+        "automaticApproval": [
+          "https://gotosocial.example/users/carol"
+        ]
+      },
+      "canReply": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "canAnnounce": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      }
+    }
+  },
+  "@context": [
+    "https://gotosocial.org/ns",
+    "https://www.w3.org/ns/activitystreams"
+  ],
+  "published": "2026-10-17T06:52:57Z"
+}

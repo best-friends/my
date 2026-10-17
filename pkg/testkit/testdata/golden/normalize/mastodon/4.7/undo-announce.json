@@ -1,0 +1,42 @@
+{
+  "Activity": {
+    "Actor": "https://mastodon.example/ap/users/117454922805771612",
+    "Audience": {
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "https://mastodon.example/ap/users/117454922805771612#announces/117454928927409385/undo",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://mastodon.example/ap/users/117454922805771612",
+            "Audience": {
+              "Cc": [
+                "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+                "https://mastodon.example/ap/users/117454922805771612/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454928927409385/activity",
+            "Objects": [
+              {
+                "ID": "https://remote.example/ap/objects/01a148a2-b24c-73b5-b159-fdfd429294e4"
+              }
+            ],
+            "Published": "2026-10-01T00:00:00Z",
+            "RawType": "Announce",
+            "Type": "Announce"
+          }
+        },
+        "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454928927409385/activity",
+        "Trusted": true
+      }
+    ],
+    "RawType": "Undo",
+    "Type": "Undo"
+  }
+}

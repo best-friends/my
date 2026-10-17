@@ -1,0 +1,109 @@
+{
+  "id": "https://mastodon.example/ap/users/117454922805771612#updates/1792219956",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "type": "Update",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": {
+    "id": "https://mastodon.example/ap/users/117454922805771612",
+    "tag": [],
+    "url": "https://mastodon.example/@bob",
+    "name": "bob",
+    "type": "Person",
+    "inbox": "https://mastodon.example/ap/users/117454922805771612/inbox",
+    "outbox": "https://mastodon.example/ap/users/117454922805771612/outbox",
+    "summary": "",
+    "featured": "https://mastodon.example/ap/users/117454922805771612/collections/featured",
+    "memorial": false,
+    "endpoints": {
+      "sharedInbox": "https://mastodon.example/inbox"
+    },
+    "followers": "https://mastodon.example/ap/users/117454922805771612/followers",
+    "following": "https://mastodon.example/ap/users/117454922805771612/following",
+    "indexable": false,
+    "publicKey": {
+      "id": "https://mastodon.example/ap/users/117454922805771612#rsa-d460bc5b5e0b807d",
+      "owner": "https://mastodon.example/ap/users/117454922805771612",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n"
+    },
+    "published": "2026-10-17T00:00:00Z",
+    "showMedia": true,
+    "webfinger": "bob@mastodon.example",
+    "attachment": [],
+    "discoverable": false,
+    "featuredTags": "https://mastodon.example/ap/users/117454922805771612/collections/tags",
+    "showFeatured": true,
+    "interactionPolicy": {
+      "canFeature": {
+        "automaticApproval": [
+          "https://mastodon.example/ap/users/117454922805771612"
+        ]
+      }
+    },
+    "preferredUsername": "bob",
+    "showRepliesInMedia": true,
+    "featuredCollections": "https://mastodon.example/ap/users/117454922805771612/featured_collections",
+    "manuallyApprovesFollowers": false
+  },
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    "https://purl.archive.org/socialweb/webfinger",
+    {
+      "gts": "https://gotosocial.org/ns#",
+      "toot": "http://joinmastodon.org/ns#",
+      "value": "schema:value",
+      "schema": "http://schema.org#",
+      "movedTo": {
+        "@id": "as:movedTo",
+        "@type": "@id"
+      },
+      "canQuote": {
+        "@id": "gts:canQuote",
+        "@type": "@id"
+      },
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "memorial": "toot:memorial",
+      "indexable": "toot:indexable",
+      "showMedia": "toot:showMedia",
+      "suspended": "toot:suspended",
+      "canFeature": {
+        "@id": "https://w3id.org/fep/7aa9#canFeature",
+        "@type": "@id"
+      },
+      "alsoKnownAs": {
+        "@id": "as:alsoKnownAs",
+        "@type": "@id"
+      },
+      "discoverable": "toot:discoverable",
+      "featuredTags": {
+        "@id": "toot:featuredTags",
+        "@type": "@id"
+      },
+      "showFeatured": "toot:showFeatured",
+      "PropertyValue": "schema:PropertyValue",
+      "manualApproval": {
+        "@id": "gts:manualApproval",
+        "@type": "@id"
+      },
+      "automaticApproval": {
+        "@id": "gts:automaticApproval",
+        "@type": "@id"
+      },
+      "interactionPolicy": {
+        "@id": "gts:interactionPolicy",
+        "@type": "@id"
+      },
+      "attributionDomains": {
+        "@id": "toot:attributionDomains",
+        "@container": "@set"
+      },
+      "showRepliesInMedia": "toot:showRepliesInMedia",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "https://mastodon.example/729030ea-00aa-49e5-9cce-d49ee1bf08c0",
+  "type": "Follow",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+  "@context": "https://www.w3.org/ns/activitystreams"
+}

@@ -1,0 +1,13 @@
+{
+  "Activity": {
+    "Actor": "https://mastodon.example/ap/users/117454922805771612",
+    "ID": "https://mastodon.example/ap/users/117454922805771612#likes/1",
+    "Objects": [
+      {
+        "ID": "https://remote.example/ap/objects/01a148a3-06f8-7df3-b5af-dbc799617dbe"
+      }
+    ],
+    "RawType": "Like",
+    "Type": "Like"
+  }
+}

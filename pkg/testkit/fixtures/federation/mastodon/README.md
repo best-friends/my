@@ -11,9 +11,28 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
 - `4.8/` was captured from a running Mastodon 4.8 server; it is the document of
   [peers/mastodon/actor.json](https://github.com/best-friends/my/blob/main/internal/interface/activitypub/testdata/peers/mastodon/actor.json)
   (hosts, names, and texts already replaced there) with `publicKeyPem` replaced.
+- `4.7/` was captured from Mastodon v4.7.3 by the live interoperability test
+  ([deploy/docker/federation-live](../../../../../deploy/docker/federation-live/README.md)) on 2026-10-17: what Mastodon delivered to
+  this server, as this server stored it. Replaced: `mastodon.test` → `mastodon.example`, `my.test` → `remote.example`,
+  `publicKeyPem`, and the Linked Data `signatureValue`. The users (`alice`, `bob`) and the texts are the test's own.
 
 | File | Source | License |
 | --- | --- | --- |
+| `4.7/follow.json` | capture of Mastodon 4.7.3, 2026-10-17: the `Follow` of bob | capture |
+| `4.7/accept-follow.json` | capture of Mastodon 4.7.3, 2026-10-17: the `Accept` of alice's `Follow` | capture |
+| `4.7/undo-follow.json` | capture of Mastodon 4.7.3, 2026-10-17: the `Undo` of bob's `Follow` | capture |
+| `4.7/update-person.json` | capture of Mastodon 4.7.3, 2026-10-17: the `Update` of bob's actor (locked) | capture |
+| `4.7/create-note.json` | capture of Mastodon 4.7.3, 2026-10-17: a public post | capture |
+| `4.7/create-note-reply.json` | capture of Mastodon 4.7.3, 2026-10-17: a public reply to a post of alice, mentioning her | capture |
+| `4.7/create-note-unlisted.json` | capture of Mastodon 4.7.3, 2026-10-17: an unlisted post | capture |
+| `4.7/create-note-private.json` | capture of Mastodon 4.7.3, 2026-10-17: a followers-only post | capture |
+| `4.7/create-note-direct.json` | capture of Mastodon 4.7.3, 2026-10-17: a direct post to alice | capture |
+| `4.7/announce.json` | capture of Mastodon 4.7.3, 2026-10-17: a boost of a post of alice | capture |
+| `4.7/undo-announce.json` | capture of Mastodon 4.7.3, 2026-10-17: the `Undo` of that boost | capture |
+| `4.7/like.json` | capture of Mastodon 4.7.3, 2026-10-17: a favourite of a post of alice | capture |
+| `4.7/undo-like.json` | capture of Mastodon 4.7.3, 2026-10-17: the `Undo` of that favourite | capture |
+| `4.7/update-note.json` | capture of Mastodon 4.7.3, 2026-10-17: an edit of a public post | capture |
+| `4.7/delete-note.json` | capture of Mastodon 4.7.3, 2026-10-17: the deletion of a public post | capture |
 | `4.8/actor.json` | capture of a Mastodon 4.8 actor | capture |
 | `circa-2018/follow.json` | [test/fixtures/mastodon-follow-activity.json](https://akkoma.dev/AkkomaGang/akkoma/src/commit/98dd958886a8b0ef65d5bd827aba3789f1dc5116/test/fixtures/mastodon-follow-activity.json) | AGPL-3.0 |
 | `circa-2018/accept-follow.json` | [test/fixtures/mastodon-accept-activity.json](https://akkoma.dev/AkkomaGang/akkoma/src/commit/98dd958886a8b0ef65d5bd827aba3789f1dc5116/test/fixtures/mastodon-accept-activity.json) | AGPL-3.0 |

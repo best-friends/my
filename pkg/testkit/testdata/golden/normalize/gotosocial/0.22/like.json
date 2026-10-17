@@ -1,0 +1,18 @@
+{
+  "Activity": {
+    "Actor": "https://gotosocial.example/users/carol",
+    "Audience": {
+      "To": [
+        "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+      ]
+    },
+    "ID": "https://gotosocial.example/users/carol/liked/01M54A6DER0EHJ9N4KRTZZFW10",
+    "Objects": [
+      {
+        "ID": "https://remote.example/ap/objects/01a148a3-35c2-7e91-8583-71892f11726d"
+      }
+    ],
+    "RawType": "Like",
+    "Type": "Like"
+  }
+}

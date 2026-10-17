@@ -1,0 +1,110 @@
+{
+  "cc": [],
+  "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454937051722025/activity",
+  "to": [
+    "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+  ],
+  "type": "Create",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": {
+    "cc": [],
+    "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454937051722025",
+    "to": [
+      "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+    ],
+    "tag": [
+      {
+        "href": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+        "name": "@alice@remote.example",
+        "type": "Mention"
+      }
+    ],
+    "url": "https://mastodon.example/@bob/117454937051722025",
+    "type": "Note",
+    "likes": {
+      "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454937051722025/likes",
+      "type": "Collection",
+      "totalItems": 0
+    },
+    "shares": {
+      "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454937051722025/shares",
+      "type": "Collection",
+      "totalItems": 0
+    },
+    "atomUri": "https://mastodon.example/ap/users/117454922805771612/statuses/117454937051722025",
+    "content": "<p><span class=\"h-card\" translate=\"no\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\">@<span>alice</span></a></span> direct from mastodon.example 1792220108807845073</p>",
+    "context": "https://mastodon.example/contexts/117454922805771612-117454937051722025",
+    "replies": {
+      "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454937051722025/replies",
+      "type": "Collection",
+      "first": {
+        "next": "https://mastodon.example/ap/users/117454922805771612/statuses/117454937051722025/replies?only_other_accounts=true&page=true",
+        "type": "CollectionPage",
+        "items": [],
+        "partOf": "https://mastodon.example/ap/users/117454922805771612/statuses/117454937051722025/replies"
+      }
+    },
+    "summary": null,
+    "inReplyTo": null,
+    "published": "2026-10-17T06:55:08Z",
+    "sensitive": false,
+    "attachment": [],
+    "contentMap": {
+      "en": "<p><span class=\"h-card\" translate=\"no\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\">@<span>alice</span></a></span> direct from mastodon.example 1792220108807845073</p>"
+    },
+    "attributedTo": "https://mastodon.example/ap/users/117454922805771612",
+    "conversation": "https://mastodon.example/contexts/117454922805771612-117454937051722025",
+    "inReplyToAtomUri": null,
+    "interactionPolicy": {
+      "canQuote": {
+        "automaticApproval": [
+          "https://mastodon.example/ap/users/117454922805771612"
+        ]
+      }
+    }
+  },
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "gts": "https://gotosocial.org/ns#",
+      "toot": "http://joinmastodon.org/ns#",
+      "quote": {
+        "@id": "https://w3id.org/fep/044f#quote",
+        "@type": "@id"
+      },
+      "atomUri": "ostatus:atomUri",
+      "ostatus": "http://ostatus.org#",
+      "canQuote": {
+        "@id": "gts:canQuote",
+        "@type": "@id"
+      },
+      "quoteUri": "http://fedibird.com/ns#quoteUri",
+      "sensitive": "as:sensitive",
+      "canFeature": {
+        "@id": "https://w3id.org/fep/7aa9#canFeature",
+        "@type": "@id"
+      },
+      "votersCount": "toot:votersCount",
+      "conversation": "ostatus:conversation",
+      "_misskey_quote": "https://misskey-hub.net/ns#_misskey_quote",
+      "manualApproval": {
+        "@id": "gts:manualApproval",
+        "@type": "@id"
+      },
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "automaticApproval": {
+        "@id": "gts:automaticApproval",
+        "@type": "@id"
+      },
+      "interactionPolicy": {
+        "@id": "gts:interactionPolicy",
+        "@type": "@id"
+      },
+      "quoteAuthorization": {
+        "@id": "https://w3id.org/fep/044f#quoteAuthorization",
+        "@type": "@id"
+      }
+    }
+  ],
+  "published": "2026-10-17T06:55:08Z"
+}

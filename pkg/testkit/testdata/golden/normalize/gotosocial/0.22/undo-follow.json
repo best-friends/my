@@ -1,0 +1,37 @@
+{
+  "Activity": {
+    "Actor": "https://gotosocial.example/users/carol",
+    "Audience": {
+      "To": [
+        "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+      ]
+    },
+    "ID": "https://gotosocial.example/01M54A4AJGJCG1CNHYKAGRRQKW",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://gotosocial.example/users/carol",
+            "Audience": {
+              "To": [
+                "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+              ]
+            },
+            "ID": "https://gotosocial.example/users/carol/follow/01X6G79YZ5TK2GZ6078RNEY59M",
+            "Objects": [
+              {
+                "ID": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+              }
+            ],
+            "RawType": "Follow",
+            "Type": "Follow"
+          }
+        },
+        "ID": "https://gotosocial.example/users/carol/follow/01X6G79YZ5TK2GZ6078RNEY59M",
+        "Trusted": true
+      }
+    ],
+    "RawType": "Undo",
+    "Type": "Undo"
+  }
+}

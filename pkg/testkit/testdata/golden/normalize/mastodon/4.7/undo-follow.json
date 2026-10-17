@@ -1,0 +1,27 @@
+{
+  "Activity": {
+    "Actor": "https://mastodon.example/ap/users/117454922805771612",
+    "ID": "https://mastodon.example/ap/users/117454922805771612#follows/1/undo",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://mastodon.example/ap/users/117454922805771612",
+            "ID": "https://mastodon.example/729030ea-00aa-49e5-9cce-d49ee1bf08c0",
+            "Objects": [
+              {
+                "ID": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+              }
+            ],
+            "RawType": "Follow",
+            "Type": "Follow"
+          }
+        },
+        "ID": "https://mastodon.example/729030ea-00aa-49e5-9cce-d49ee1bf08c0",
+        "Trusted": true
+      }
+    ],
+    "RawType": "Undo",
+    "Type": "Undo"
+  }
+}

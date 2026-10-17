@@ -1,0 +1,70 @@
+{
+  "Activity": {
+    "Actor": "https://gotosocial.example/users/carol",
+    "Audience": {
+      "Cc": [
+        "https://gotosocial.example/users/carol/followers"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1/activity#Update",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://gotosocial.example/users/carol",
+            "Audience": {
+              "Cc": [
+                "https://gotosocial.example/users/carol/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<p>after the edit on gotosocial 1792220040586041442</p>",
+                "Language": "en"
+              }
+            ],
+            "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1",
+            "Published": "2026-10-01T00:00:00Z",
+            "RawType": "Note",
+            "Replies": {
+              "Embedded": {
+                "Collection": {
+                  "First": {
+                    "Embedded": {
+                      "Collection": {
+                        "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1/replies?page=true",
+                        "Next": {
+                          "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1/replies?page=true&only_other_accounts=false"
+                        },
+                        "Page": true
+                      }
+                    },
+                    "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1/replies?page=true",
+                    "Trusted": true
+                  },
+                  "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1/replies"
+                }
+              },
+              "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1/replies",
+              "Trusted": true
+            },
+            "Type": "Note",
+            "URL": "https://gotosocial.example/@carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1",
+            "Updated": "2026-10-01T00:00:00Z"
+          }
+        },
+        "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-01T00:00:00Z",
+    "RawType": "Update",
+    "Type": "Update"
+  }
+}

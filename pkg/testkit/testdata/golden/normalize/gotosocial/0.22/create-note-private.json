@@ -1,0 +1,63 @@
+{
+  "Activity": {
+    "Actor": "https://gotosocial.example/users/carol",
+    "Audience": {
+      "To": [
+        "https://gotosocial.example/users/carol/followers"
+      ]
+    },
+    "ID": "https://gotosocial.example/users/carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ/activity#Create",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://gotosocial.example/users/carol",
+            "Audience": {
+              "To": [
+                "https://gotosocial.example/users/carol/followers"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<p>private from gotosocial.example 1792220150973204136</p>",
+                "Language": "en"
+              }
+            ],
+            "ID": "https://gotosocial.example/users/carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ",
+            "Published": "2026-10-01T00:00:00Z",
+            "RawType": "Note",
+            "Replies": {
+              "Embedded": {
+                "Collection": {
+                  "First": {
+                    "Embedded": {
+                      "Collection": {
+                        "ID": "https://gotosocial.example/users/carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ/replies?page=true",
+                        "Next": {
+                          "ID": "https://gotosocial.example/users/carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ/replies?page=true&only_other_accounts=false"
+                        },
+                        "Page": true
+                      }
+                    },
+                    "ID": "https://gotosocial.example/users/carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ/replies?page=true",
+                    "Trusted": true
+                  },
+                  "ID": "https://gotosocial.example/users/carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ/replies"
+                }
+              },
+              "ID": "https://gotosocial.example/users/carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ/replies",
+              "Trusted": true
+            },
+            "Type": "Note",
+            "URL": "https://gotosocial.example/@carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ"
+          }
+        },
+        "ID": "https://gotosocial.example/users/carol/statuses/01M54AAF5X975KTEB6QTDWRFSJ",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-01T00:00:00Z",
+    "RawType": "Create",
+    "Type": "Create"
+  }
+}
