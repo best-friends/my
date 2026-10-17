@@ -130,6 +130,9 @@ type App struct {
 	// FanOut turns the outbound activities that the federation projectors record into
 	// deliveries (docs/architecture/federation.md §7).
 	FanOut *federation.FanOut
+	// RemoteActors fetches remote actors, checks their handles, keeps their keys, and resolves
+	// the keys of inbound signatures (docs/architecture/federation.md §6).
+	RemoteActors *federation.RemoteActors
 	// Deliverer sends the deliveries; InstanceHealth records the remote servers that answer
 	// outside deliveries (docs/architecture/federation.md §7.3).
 	Deliverer      *federation.Deliverer
@@ -167,9 +170,9 @@ type AppOptions struct {
 	// PseudoLocales makes the pseudo-locales en-XA and ar-XB selectable on every surface
 	// (`my serve -pseudo-locales`), for the E2E of the server-rendered pages. Development and tests only.
 	PseudoLocales bool
-	// PublicKeys resolves the keys of the HTTP signatures on ActivityPub GETs; nil knows no key,
-	// so that every signed GET is anonymous.
-	PublicKeys federation.PublicKeyResolver
+	// HTTPClient sends every outbound request; nil builds the SSRF-guarded client from the
+	// configuration. Tests only, to reach other test servers by their public hosts.
+	HTTPClient kernel.HTTPClient
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -212,7 +215,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feeds        timeline.Repository
 		notifs       notification.Repository
 		medias       content.MediaRepository
-		feds         federation.Repository
+		feds         federationRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -294,6 +297,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		CheckProfileImage: func(ctx context.Context, accountID, mediaID string) error {
 			return a.Media.CheckProfileImage(ctx, accountID, mediaID)
 		},
+		Sanitizer:         newHTMLSanitizer(),
+		RecordRemoteImage: a.recordRemoteImage,
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{
@@ -367,7 +372,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
-	a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
+	a.HTTPClient = opts.HTTPClient
+	if a.HTTPClient == nil {
+		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
+	}
 	a.setUpDelivery(feds)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
@@ -377,6 +385,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	a.setUpRemoteActors(cfg, feds)
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: content.NoRestrictions{}, Media: a.Media,
@@ -392,7 +401,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		Accounts: a.Accounts, Objects: a.newObjects(cfg, opts.PublicKeys), Graph: a.Graph,
+		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph,
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
@@ -445,15 +454,11 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) {
 
 // newObjects builds the use case behind the ActivityPub objects and collections of local
 // statuses (federation.md §10). Signed GETs are verified with the HTTP signature adapter and
-// the keys that keys resolves; with nil keys no remote key resolves, so every requester is
-// anonymous.
-func (a *App) newObjects(cfg *config.Config, keys federation.PublicKeyResolver) *federation.Objects {
-	if keys == nil {
-		keys = federation.UnknownPublicKeys{}
-	}
+// the keys that RemoteActors resolves, so setUpRemoteActors runs first.
+func (a *App) newObjects(cfg *config.Config) *federation.Objects {
 	return federation.NewObjects(federation.ObjectsDeps{
 		Statuses: a.Content, Accounts: a.Accounts, Graph: a.Graph, Timeline: a.Timeline, Reader: a.Statuses,
-		Signatures: federation.NewSignatureVerifier(httpsig.New(), keys, a.KV, a.Clock),
+		Signatures: federation.NewSignatureVerifier(httpsig.New(), a.RemoteActors, a.KV, a.Clock),
 		// No domain blocks exist yet; signers still go through the policy port.
 		Domains: federation.NoDomainRestrictions{},
 		// Authorized fetch (FR-408) is the instance setting, read per request.

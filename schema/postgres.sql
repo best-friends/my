@@ -1131,13 +1131,16 @@ CREATE TABLE remote_account_heads (
 );
 CREATE INDEX remote_account_heads_last_fetched_at ON remote_account_heads (last_fetched_at);
 
--- Event: WebFinger confirmed that acct:{username}@{domain} points at the actor's uri.
+-- Event: a WebFinger check of acct:{username}@{domain}. verified means that its self link points
+-- at the actor's uri; mismatch means that it answered otherwise, and the account has no handle
+-- until a later check verifies one.
 CREATE TABLE remote_account_handle_verifications (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   account_id text COLLATE "C" NOT NULL,
   username text NOT NULL,
   domain text NOT NULL,
-  verified_at timestamptz NOT NULL
+  outcome text NOT NULL CHECK (outcome IN ('verified', 'mismatch')),
+  checked_at timestamptz NOT NULL
 );
 CREATE INDEX remote_account_handle_verifications_account_id_id ON remote_account_handle_verifications (account_id, id DESC);
 

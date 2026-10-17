@@ -38,6 +38,10 @@ func (r *AccountRepository) InsertAccount(ctx context.Context, tx uow.Tx, a acco
 	if isUniqueViolation(err, "accounts_instance_actor") {
 		return fmt.Errorf("insert account %s: %w", a.ID, appaccount.ErrInstanceActorExists)
 	}
+	if isUniqueViolation(err, "accounts_uri") {
+		// A concurrent transaction stored the same remote actor; a new attempt finds it.
+		return uow.MarkRetryable(wrap(err, "insert account"))
+	}
 	return wrap(err, "insert account")
 }
 
@@ -100,6 +104,18 @@ func (r *AccountRepository) InsertProfileRevision(ctx context.Context, tx uow.Tx
 			return wrap(err, "insert profile field")
 		}
 	}
+	if rev.Remote != nil {
+		version, err := toInt32(rev.Remote.HTMLPolicyVersion, "HTML policy version")
+		if err != nil {
+			return err
+		}
+		err = q.InsertRemoteProfileRevision(ctx, postgresgen.InsertRemoteProfileRevisionParams{
+			RevisionID: rev.ID, SnapshotID: rev.Remote.SnapshotID, HtmlPolicyVersion: version,
+		})
+		if err != nil {
+			return wrap(err, "insert remote profile revision")
+		}
+	}
 	if rev.Source == nil {
 		return nil
 	}
@@ -137,6 +153,10 @@ func (r *AccountRepository) InsertKey(ctx context.Context, tx uow.Tx, k account.
 		PublicKeyPem: k.PublicKeyPEM, Fingerprint: k.Fingerprint, CreatedAt: k.CreatedAt,
 	})
 	if err != nil {
+		if isUniqueViolation(err, "account_keys_key_id_fingerprint") {
+			// A concurrent transaction stored the same key; a new attempt finds it.
+			return uow.MarkRetryable(wrap(err, "insert account key"))
+		}
 		return wrap(err, "insert account key")
 	}
 	if sealedPrivateKey == nil {
@@ -458,7 +478,19 @@ func (r *AccountRepository) FindHandleOf(ctx context.Context, accountID string) 
 
 // FindCurrentProfile implements account.Repository.
 func (r *AccountRepository) FindCurrentProfile(ctx context.Context, accountID string) (account.ProfileRevision, error) {
-	q := r.db.reader()
+	return currentProfile(ctx, r.db.reader(), accountID)
+}
+
+// CurrentProfile implements account.Repository.
+func (r *AccountRepository) CurrentProfile(ctx context.Context, tx uow.Tx, accountID string) (account.ProfileRevision, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return account.ProfileRevision{}, err
+	}
+	return currentProfile(ctx, q, accountID)
+}
+
+func currentProfile(ctx context.Context, q *postgresgen.Queries, accountID string) (account.ProfileRevision, error) {
 	head, err := q.GetProfileHead(ctx, accountID)
 	if err != nil {
 		return account.ProfileRevision{}, notFound(err, appaccount.ErrNotFound, "profile head of "+accountID)

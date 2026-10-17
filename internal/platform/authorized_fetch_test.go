@@ -3,10 +3,8 @@
 package platform_test
 
 import (
+	"bytes"
 	"context"
-	"crypto/x509"
-	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -26,47 +24,48 @@ import (
 	"github.com/best-friends/my/internal/platform"
 )
 
-// peerKeys is a federation.PublicKeyResolver that fetches the actor document of a key from the
-// test server serving its host, without a signature, as a remote server fetches a key.
-type peerKeys struct {
-	t       *testing.T
+// peerNet is the kernel.HTTPClient of the servers of TestAuthorizedFetch: it sends a request
+// for https://{host}/... to the test server serving that host, with its headers, as if the host
+// were public. Any other host is unreachable.
+type peerNet struct {
 	mu      sync.Mutex
 	servers map[string]*server // by host
 }
 
-func (k *peerKeys) add(host string, s *server) {
-	k.mu.Lock()
-	defer k.mu.Unlock()
-	k.servers[host] = s
+func (n *peerNet) add(host string, s *server) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.servers[host] = s
 }
 
-func (k *peerKeys) ResolvePublicKey(_ context.Context, keyID string, _ bool) (federation.PublicKey, error) {
-	u, err := url.Parse(keyID)
-	if err != nil {
-		return federation.PublicKey{}, fmt.Errorf("%w: %s", federation.ErrPublicKeyNotFound, keyID)
+func (n *peerNet) Do(ctx context.Context, req *kernel.HTTPRequest) (*kernel.HTTPResponse, error) {
+	u, err := url.Parse(req.URL)
+	if err != nil || u.Scheme != "https" {
+		return nil, fmt.Errorf("%w: %s", kernel.ErrInvalidHTTPRequest, req.URL)
 	}
-	k.mu.Lock()
-	s := k.servers[u.Host]
-	k.mu.Unlock()
+	n.mu.Lock()
+	s := n.servers[u.Host]
+	n.mu.Unlock()
 	if s == nil {
-		return federation.PublicKey{}, fmt.Errorf("%w: %s", federation.ErrPublicKeyNotFound, keyID)
+		return nil, fmt.Errorf("%w: %s", kernel.ErrForbiddenDestination, u.Host)
 	}
-	resp, body := s.do(k.t, http.MethodGet, u.Path, map[string]string{"Accept": "application/activity+json"})
-	var doc struct {
-		PublicKey struct{ ID, Owner, PublicKeyPem string } `json:"publicKey"`
+	method := req.Method
+	if method == "" {
+		method = http.MethodGet
 	}
-	if resp.StatusCode != http.StatusOK || json.Unmarshal([]byte(body), &doc) != nil || doc.PublicKey.ID != keyID {
-		return federation.PublicKey{}, fmt.Errorf("%w: %s answered %d %s", federation.ErrPublicKeyNotFound, keyID, resp.StatusCode, body)
-	}
-	block, _ := pem.Decode([]byte(doc.PublicKey.PublicKeyPem))
-	if block == nil {
-		return federation.PublicKey{}, fmt.Errorf("%w: %s has no PEM", federation.ErrPublicKeyNotFound, keyID)
-	}
-	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	r, err := http.NewRequestWithContext(ctx, method, s.url+u.RequestURI(), bytes.NewReader(req.Body))
 	if err != nil {
-		return federation.PublicKey{}, fmt.Errorf("%w: %w", federation.ErrPublicKeyNotFound, err)
+		return nil, err
 	}
-	return federation.PublicKey{KeyID: keyID, Owner: doc.PublicKey.Owner, Key: pub}, nil
+	r.Header = req.Header.Clone()
+	if r.Header == nil {
+		r.Header = http.Header{}
+	}
+	resp, err := http.DefaultTransport.RoundTrip(r)
+	if err != nil {
+		return nil, err
+	}
+	return &kernel.HTTPResponse{StatusCode: resp.StatusCode, Header: resp.Header, URL: req.URL, Body: resp.Body}, nil
 }
 
 // peer is one server of TestAuthorizedFetch with a user, a public status, and its instance actor.
@@ -76,11 +75,11 @@ type peer struct {
 	userID, statusID, instance string
 }
 
-func startPeer(t *testing.T, host string, keys *peerKeys) *peer {
+func startPeer(t *testing.T, host string, network *peerNet) *peer {
 	t.Helper()
 	cfg := loadConfig(t, map[string]string{"MY_HOST": host, "MY_DATABASE_URL": newDatabase(t, true)})
 	p := &peer{host: host}
-	p.srv = startApp(t, cfg, platform.AppOptions{PublicKeys: keys}, platform.ServeOptions{}, func(a *platform.App) {
+	p.srv = startApp(t, cfg, platform.AppOptions{HTTPClient: network}, platform.ServeOptions{}, func(a *platform.App) {
 		ctx := t.Context()
 		reg, err := a.Identity.RegisterLocalUser(ctx, identity.RegisterInput{
 			Username: "alice", Password: "correct horse battery staple", DisplayName: "Alice",
@@ -105,7 +104,7 @@ func startPeer(t *testing.T, host string, keys *peerKeys) *peer {
 			t.Fatalf("SetSetting: %v", err)
 		}
 	})
-	keys.add(host, p.srv)
+	network.add(host, p.srv)
 	return p
 }
 
@@ -138,13 +137,13 @@ func signedGet(t *testing.T, from, to *peer, path string) (*http.Response, strin
 
 // TestAuthorizedFetch checks two servers that both use authorized fetch (FR-408) on the real
 // database adapter: each fetches the other's objects and collections signed with its instance
-// actor's key, and the other verifies the signature with the key that it fetches without a
-// signature. Unsigned GETs of objects and collections get 401; user actors give unsigned
+// actor's key, and the other verifies the signature with the key that its remote actor resolver
+// fetches (signed with its own instance actor's key, which the first serves without checking). Unsigned GETs of objects and collections get 401; user actors give unsigned
 // requests only the document that verifying their signatures needs.
 func TestAuthorizedFetch(t *testing.T) {
-	keys := &peerKeys{t: t, servers: map[string]*server{}}
-	a := startPeer(t, "a.example", keys)
-	b := startPeer(t, "b.example", keys)
+	network := &peerNet{servers: map[string]*server{}}
+	a := startPeer(t, "a.example", network)
+	b := startPeer(t, "b.example", network)
 	ap := map[string]string{"Accept": "application/activity+json"}
 
 	for _, pair := range [][2]*peer{{a, b}, {b, a}} {

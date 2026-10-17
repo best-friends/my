@@ -66,7 +66,7 @@ ADR-0032 のプロファイルに従います。要点:
 | --- | --- |
 | `Verifier` / `Signer`（ポート） | 署名の解析・署名ベースの組み立て・暗号の検証と署名だけを行う。実装は `internal/adapter/httpsig`、コントラクトテストは `testkit.HTTPSignatureContract`（RFC 9421 付録 B のテストベクタ、Mastodon・GoToSocial 形式の draft-cavage の署名、拒否の各条件、double-knocking） |
 | `SignatureVerifier` | 受信のポリシー。`Parse`（署名なし `401`、解析不能 `400`）→ `Check`（必須の対象・時間窓・宣言されたアルゴリズム・ダイジェスト。I/O なし）→ `Verify`（鍵の解決と検証、鍵の取り直し）。拒否は `SignatureError`（`Status` と、`401` なら `Accept-Signature` の値） |
-| `PublicKeyResolver`（ポート） | `keyId` から公開鍵と持ち主（`owner`）を返す。`refresh` で取り直す。取得できなければ `ErrPublicKeyNotFound`（`401`）、取得先が止まっていれば `ErrPublicKeyUnavailable`（`503`） |
+| `PublicKeyResolver`（ポート） | `keyId` から公開鍵と持ち主（`owner`）を返す。`refresh` で取り直す。取得できなければ `ErrPublicKeyNotFound`（`401`）、取得先が止まっていれば `ErrPublicKeyUnavailable`（`503`）。実装は `RemoteActors`（§6） |
 | `SignedHTTPClient` | 送信の double-knocking。`kernel.HTTPClient` の上で署名し、結果の方式（`delivery_attempts.signature_scheme`）を返す |
 
 - `@target-uri` と `(request-target)` は `NewSignedRequest` が設定の公開オリジンとリクエストのパス・クエリから組み立て、`Host` も公開オリジンのホストにします（別のホスト宛ての署名は検証に通らない）。
@@ -209,15 +209,21 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - **同じオリジン**: 最後のリダイレクト先のオリジンと、文書の `id` のオリジンが一致しなければ採用しません。要求した URL と `id` が異なるときは、`id` を 1 回だけ取得し直して一致を確かめます（[ActivityPub 付録 B.2](https://www.w3.org/TR/activitypub/#security-verification)、FEP-fe34）。
 - 投稿は、`attributedTo` のオリジンが投稿の `id` と同じでなければ採用しません。
 - 再帰的な取得（返信先・埋め込み・`Announce` の対象）は、1 回の処理につき深さと件数に上限を置きます（[ActivityPub 付録 B.5](https://www.w3.org/TR/activitypub/#security-recursive-objects)、ADR-0034）。
-- 404 / 410 と取得の失敗は、KV に 1 時間記録して同じ URI の取得を繰り返しません。Actor の 410 は `remote_deleted` にします。
-- ドメイン単位の `federation` の制限があるドメインからは取得しません。
+- 404 / 410 と取得の失敗は、KV に 1 時間記録して同じ URI の取得を繰り返しません（名前空間 `federation.fetch_failure`、キーは URI の SHA-256）。Actor の 410 は `remote_deleted` にし、ほかの失敗は `remote_account_heads.consecutive_fetch_failures` に数えます。
+- ドメイン単位の `federation` の制限があるドメインと、自サーバーの URI からは取得しません。`instance_health` が `unavailable` のドメインからも取得しません（鍵の解決は `503`）。
+- 実装は `internal/app/federation` の `Fetcher`（取得の規則）と `RemoteActors`（Actor の解決・保存・ジョブ、`PublicKeyResolver`）です。コントラクトテストは `testkit.RemoteActorContract` です。
 
 ### 6.2 Actor とハンドル
 
-- Actor の文書から `account.UpsertRemoteActor` が `remote_account_snapshots`（内容が変わったときだけ）、プロフィールの版、公開鍵を書きます。
-- ハンドル（`account_handles`）は WebFinger で確かめたものだけです。`acct:{preferredUsername}@{Actor のホスト}` を引き、`self` リンクが Actor の `id` を指すこと、`subject` のドメインが異なるならそのドメインでも同じことを確かめます（ADR-0018 のドメイン分離に相当する構成）。確かめられなければハンドルを持たないアカウントとして扱います。
+- Actor の文書から `account.UpsertRemoteActor` が `remote_account_snapshots`（内容が変わったときだけ）、プロフィールの版（サニタイズした内容が変わったときだけ）、公開鍵を書きます。アバターとヘッダーは `content.MediaService.RecordRemoteMedia` で記録します。
+- 鍵は、`publicKey` の PEM（PKIX と PKCS #1）、`publicKey` が `id` だけで示す鍵の文書（取得する。2 件まで）、FEP-521a の `assertionMethod` の `Multikey`（Ed25519）から読みます。鍵の `id` は Actor と同じオリジンで、`owner` / `controller` は Actor でなければなりません。
+- `keyId` を取得して `Key` の文書が返ったら、`owner`（または `controller`）の Actor を取得します（ADR-0032）。
+- 初めて文書を保存したドメインは `remote_instances` に記録し、ジョブ `federation.observe_instance` が NodeInfo 2.x（`/.well-known/nodeinfo` が指す同じホストの文書）のソフトウェア名と版を `instance_nodeinfo_observations` に記録します（前回と同じなら記録しない）。
+- ハンドル（`account_handles`）は WebFinger で確かめたものだけです。`acct:{preferredUsername}@{Actor のホスト}` を引き、`self` リンクが Actor の `id` を指すこと、`subject` のドメインが異なるならそのドメインでも同じことを確かめます（ADR-0018 のドメイン分離に相当する構成）。
+  - 答え（404 を含む）が確かめなければ `mismatch` を記録し、ハンドルを持たないアカウントとして扱います。
+  - WebFinger が答えなかった（接続の失敗・429・5xx）ときは何も記録せず、それまでのハンドルを残します。
 - `@user@host` / URL での解決（FR-305）は、`federation.Resolve` が WebFinger → Actor の取得 → 書き込みを行います。URL がオブジェクト（投稿）なら投稿として取り込みます。
-- 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors` が `remote_account_heads (last_fetched_at)` の古い順に取り直します（ADR-0034）。
+- 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します（ジョブ `federation.refresh_actor`、冪等キー `refresh_actor:<account_id>`）。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors`（1 時間ごと）が `remote_account_heads (last_fetched_at)` の古い順に 200 件ずつ読み、フォローされているものを取り直します（ADR-0034）。カーソル（`last_fetched_at` と `account_id`）を持った次のジョブが続きを読みます。
 
 ### 6.3 投稿
 

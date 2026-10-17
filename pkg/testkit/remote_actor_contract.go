@@ -1,0 +1,889 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package testkit
+
+import (
+	"bytes"
+	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"reflect"
+	"regexp"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	appaccount "github.com/best-friends/my/internal/app/account"
+	appfederation "github.com/best-friends/my/internal/app/federation"
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/account"
+	"github.com/best-friends/my/internal/domain/federation"
+)
+
+// RemoteActorHarness is one database under test: an empty database with the product schema, its
+// UnitOfWork, and the account and federation repositories on it.
+type RemoteActorHarness struct {
+	UnitOfWork uow.UnitOfWork
+	Accounts   appaccount.Repository
+	Federation appfederation.Repository
+	Instances  appfederation.InstanceRepository
+}
+
+// RemoteActorFactory returns a harness on a new, empty database whose UnitOfWork uses opts.
+// The factory registers the cleanup of everything it creates with t.Cleanup.
+type RemoteActorFactory func(t *testing.T, opts uow.Options) RemoteActorHarness
+
+// RemoteActorContract verifies the account and federation repositories of a database adapter
+// through the remote actor use cases (federation.md §6): storing the actor documents of the main
+// implementations (snapshots, sanitized profile revisions, keys, handles, the server seen), key
+// rotation under the same key ID, handles that WebFinger does not confirm, documents whose id has
+// another origin, the fetch rules (signed GET, Content-Type, failures remembered, 410 Gone), the
+// periodic refresh of followed stale actors, NodeInfo observations, the public key resolver, and
+// that the handle projection equals a rebuild. The network is an in-memory HTTPClient.
+func RemoteActorContract(t *testing.T, newHarness RemoteActorFactory) {
+	t.Helper()
+	cases := []struct {
+		name string
+		run  func(t *testing.T, e *remoteEnv)
+	}{
+		{"StoresActorsOfTheMainImplementations", remoteStoresFixtureActors},
+		{"KeepsOneSnapshotPerDocument", remoteKeepsOneSnapshotPerDocument},
+		{"RevokesARotatedKey", remoteRevokesRotatedKey},
+		{"KeepsNoUnconfirmedHandle", remoteKeepsNoUnconfirmedHandle},
+		{"VerifiesHandlesOnAnotherDomain", remoteVerifiesHandleOnAnotherDomain},
+		{"RejectsIDsOfAnotherOrigin", remoteRejectsForeignIDs},
+		{"AppliesTheFetchRules", remoteAppliesFetchRules},
+		{"MarksGoneActorsDeleted", remoteMarksGoneActorsDeleted},
+		{"RefreshesFollowedStaleActors", remoteRefreshesStaleActors},
+		{"ObservesNodeInfo", remoteObservesNodeInfo},
+		{"ResolvesPublicKeys", remoteResolvesPublicKeys},
+		{"RebuildsHandles", remoteRebuildsHandles},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteEnv(t, newHarness)) })
+	}
+}
+
+type remoteEnv struct {
+	h         RemoteActorHarness
+	clock     *Clock
+	kv        *KeyValueStore
+	net       *remoteNet
+	jobs      *remoteJobs
+	handlers  *queue.JobHandlerRegistry
+	scheduler *queue.Scheduler
+	accounts  *appaccount.Service
+	actors    *appfederation.RemoteActors
+	followed  map[string]bool
+	instance  appaccount.Actor
+}
+
+func newRemoteEnv(t *testing.T, newHarness RemoteActorFactory) *remoteEnv {
+	t.Helper()
+	projectors := &uow.Projectors{}
+	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
+	appaccount.RegisterProjectors(projectors, h.Accounts)
+	clock := NewClock(time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC))
+	ids := NewIDGenerator(clock)
+	e := &remoteEnv{
+		h: h, clock: clock, kv: NewKeyValueStore(clock), net: &remoteNet{routes: map[string]remoteResponse{}},
+		jobs: &remoteJobs{seen: map[string]bool{}}, handlers: &queue.JobHandlerRegistry{}, followed: map[string]bool{},
+	}
+	e.scheduler = queue.NewScheduler(e.jobs, clock, nil)
+	images := map[string]string{}
+	e.accounts = appaccount.NewService(appaccount.Deps{
+		UnitOfWork: h.UnitOfWork, Repository: h.Accounts, Clock: clock, IDs: ids,
+		Sealer: kernel.NewSealer(NewKeyManager("remote")), Host: contractHost, GenerateKey: cachedKey,
+		Sanitizer: remoteSanitizer{},
+		RecordRemoteImage: func(_ context.Context, _ uow.Tx, accountID, u string) (string, error) {
+			k := accountID + " " + u
+			if images[k] == "" {
+				images[k] = ids.NewID()
+			}
+			return images[k], nil
+		},
+	})
+	var err error
+	if _, err = e.accounts.EnsureInstanceActor(t.Context()); err != nil {
+		t.Fatalf("EnsureInstanceActor: %v", err)
+	}
+	if e.instance, err = e.accounts.InstanceActor(t.Context()); err != nil {
+		t.Fatalf("InstanceActor: %v", err)
+	}
+	client := appfederation.NewSignedHTTPClient(e.net, remoteSigner{}, e.kv, clock)
+	fetcher := appfederation.NewFetcher(appfederation.FetcherDeps{
+		Client: client, KV: e.kv, Clock: clock, Domains: appfederation.NoDomainRestrictions{}, Instances: h.Federation,
+		Key: appfederation.InstanceKey(e.accounts), Host: contractHost,
+	})
+	e.actors = appfederation.NewRemoteActors(appfederation.RemoteActorsDeps{
+		UnitOfWork: h.UnitOfWork, Accounts: e.accounts, Instances: h.Instances, Fetcher: fetcher, HTTP: e.net,
+		Jobs: e.jobs, Outbox: queue.AfterCommit(projectors, e.jobs, nil), Followers: remoteFollowers(e.followed),
+		Clock: clock, IDs: ids, Batch: 2,
+	})
+	e.actors.RegisterJobs(e.handlers, e.scheduler)
+	return e
+}
+
+// remoteSanitizer stands in for the HTML sanitizer: it drops script elements and records
+// version 7, so that the contract sees that remote HTML went through it.
+type remoteSanitizer struct{}
+
+var (
+	remoteScripts = regexp.MustCompile(`(?s)<script.*?</script>`)
+	remoteTags    = regexp.MustCompile(`<[^>]*>`)
+)
+
+func (remoteSanitizer) SanitizeHTML(s string) string { return remoteScripts.ReplaceAllString(s, "") }
+func (remoteSanitizer) PlainText(s string) string    { return remoteTags.ReplaceAllString(s, "") }
+func (remoteSanitizer) PolicyVersion() int           { return 7 }
+
+// remoteSigner stands in for the HTTP signature adapter: it names the key in a Signature header.
+type remoteSigner struct{}
+
+func (remoteSigner) Sign(req *kernel.HTTPRequest, key appfederation.SigningKey, _ appfederation.SignOptions) error {
+	req.Header.Set("Signature", `keyId="`+key.KeyID+`"`)
+	return nil
+}
+
+func (remoteSigner) ParseAcceptSignature(string) ([]appfederation.RequestedSignature, error) {
+	return nil, appfederation.ErrMalformedSignature
+}
+
+type remoteFollowers map[string]bool
+
+func (f remoteFollowers) ActiveFollowerIDs(_ context.Context, accountID, _ string, _ int) ([]string, string, error) {
+	if f[accountID] {
+		return []string{"local-follower"}, "", nil
+	}
+	return nil, "", nil
+}
+
+// remoteResponse is what the in-memory network answers for one URL. finalURL is the URL after
+// redirects ("" for the requested one); err is returned instead of a response.
+type remoteResponse struct {
+	status      int
+	contentType string
+	body        string
+	finalURL    string
+	err         error
+}
+
+// remoteNet is a kernel.HTTPClient that answers from routes by exact URL and keeps every request.
+type remoteNet struct {
+	mu       sync.Mutex
+	routes   map[string]remoteResponse
+	requests []kernel.HTTPRequest
+}
+
+func (n *remoteNet) set(u string, r remoteResponse) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.routes[u] = r
+}
+
+func (n *remoteNet) count(u string) int {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	c := 0
+	for _, r := range n.requests {
+		if r.URL == u {
+			c++
+		}
+	}
+	return c
+}
+
+func (n *remoteNet) Do(_ context.Context, req *kernel.HTTPRequest) (*kernel.HTTPResponse, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.requests = append(n.requests, *req)
+	r, ok := n.routes[req.URL]
+	if !ok {
+		r = remoteResponse{status: http.StatusNotFound}
+	}
+	if r.err != nil {
+		return nil, r.err
+	}
+	final := req.URL
+	if r.finalURL != "" {
+		final = r.finalURL
+	}
+	h := http.Header{}
+	if r.contentType != "" {
+		h.Set("Content-Type", r.contentType)
+	}
+	return &kernel.HTTPResponse{StatusCode: r.status, Header: h, URL: final, Body: io.NopCloser(strings.NewReader(r.body))}, nil
+}
+
+// remoteJobs is a queue.JobQueue that keeps the jobs given to it, skipping a pending job's
+// idempotency key.
+type remoteJobs struct {
+	mu      sync.Mutex
+	pending []queue.NewJob
+	seen    map[string]bool
+}
+
+func (q *remoteJobs) Enqueue(_ context.Context, jobs ...queue.NewJob) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	for _, j := range jobs {
+		if j.IdempotencyKey != "" && q.seen[j.IdempotencyKey] {
+			continue
+		}
+		q.seen[j.IdempotencyKey] = true
+		q.pending = append(q.pending, j)
+	}
+	return nil
+}
+
+// take removes and returns the pending jobs of a type.
+func (q *remoteJobs) take(jobType string) []queue.NewJob {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	var out, rest []queue.NewJob
+	for _, j := range q.pending {
+		if j.Type == jobType {
+			out = append(out, j)
+			delete(q.seen, j.IdempotencyKey)
+		} else {
+			rest = append(rest, j)
+		}
+	}
+	q.pending = rest
+	return out
+}
+
+// run runs the pending jobs of a type until none is left and returns how many ran.
+func (e *remoteEnv) run(t *testing.T, jobType string) int {
+	t.Helper()
+	h, _, ok := e.handlers.Lookup(jobType)
+	if !ok {
+		t.Fatalf("no handler for %s", jobType)
+	}
+	n := 0
+	for {
+		jobs := e.jobs.take(jobType)
+		if len(jobs) == 0 {
+			return n
+		}
+		for _, j := range jobs {
+			n++
+			if res := h(t.Context(), queue.Job{Type: j.Type, Payload: j.Payload, IdempotencyKey: j.IdempotencyKey, Attempt: 1}); !res.IsDone() {
+				t.Fatalf("%s %s: %v", jobType, j.Payload, res.Err())
+			}
+		}
+	}
+}
+
+const activityJSON = "application/activity+json"
+
+// serveActor serves an actor document at its id and the WebFinger answer that confirms
+// acct:{username}@{host}.
+func (e *remoteEnv) serveActor(doc []byte) (id, username, host string) {
+	var a struct {
+		ID                string `json:"id"`
+		PreferredUsername string `json:"preferredUsername"`
+	}
+	if err := json.Unmarshal(doc, &a); err != nil {
+		panic(err)
+	}
+	u, _ := url.Parse(a.ID)
+	e.net.set(a.ID, remoteResponse{status: http.StatusOK, contentType: activityJSON + "; charset=utf-8", body: string(doc)})
+	e.serveWebFinger(u.Host, a.PreferredUsername, u.Host, a.ID)
+	return a.ID, a.PreferredUsername, u.Host
+}
+
+// serveWebFinger answers WebFinger of acct:{username}@{host} on host with subject
+// acct:{username}@{subjectDomain} and a self link to self.
+func (e *remoteEnv) serveWebFinger(host, username, subjectDomain, self string) {
+	jrd, _ := json.Marshal(map[string]any{
+		"subject": "acct:" + username + "@" + subjectDomain,
+		"links": []map[string]string{
+			{"rel": "http://webfinger.net/rel/profile-page", "type": "text/html", "href": "https://" + host + "/@" + username},
+			{"rel": "self", "type": activityJSON, "href": self},
+		},
+	})
+	e.net.set(webFingerURL(host, "acct:"+username+"@"+host), remoteResponse{status: http.StatusOK, contentType: "application/jrd+json", body: string(jrd)})
+}
+
+func webFingerURL(host, resource string) string {
+	return "https://" + host + "/.well-known/webfinger?resource=" + url.QueryEscape(resource)
+}
+
+// fixtureActor returns an actor fixture, with the http:// URIs of the GoToSocial test data
+// changed to https:// (GoToSocial serves https; fetches are https only).
+func fixtureActor(t *testing.T, path string) []byte {
+	t.Helper()
+	fixtures, err := FederationFixtures()
+	if err != nil {
+		t.Fatalf("FederationFixtures: %v", err)
+	}
+	for _, f := range fixtures {
+		if f.Path() == path {
+			return bytes.ReplaceAll(f.JSON, []byte("http://gotosocial.example"), []byte("https://gotosocial.example"))
+		}
+	}
+	t.Fatalf("no fixture %s", path)
+	return nil
+}
+
+func (e *remoteEnv) resolve(t *testing.T, uri string) appaccount.Actor {
+	t.Helper()
+	a, err := e.actors.Resolve(t.Context(), uri)
+	if err != nil {
+		t.Fatalf("Resolve(%s): %v", uri, err)
+	}
+	return a
+}
+
+func (e *remoteEnv) refresh(t *testing.T, uri string) appaccount.Actor {
+	t.Helper()
+	a, err := e.actors.Refresh(t.Context(), uri)
+	if err != nil {
+		t.Fatalf("Refresh(%s): %v", uri, err)
+	}
+	return a
+}
+
+func (e *remoteEnv) tx(t *testing.T, fn func(tx uow.Tx) error) {
+	t.Helper()
+	if err := e.h.UnitOfWork.Tx(t.Context(), fn); err != nil {
+		t.Fatalf("Tx: %v", err)
+	}
+}
+
+func remoteStoresFixtureActors(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	cases := []struct {
+		path, keyID, display, note, inbox, shared, profile string
+		fields                                             []account.ProfileField
+	}{
+		{
+			path: "mastodon/4.8/actor", keyID: "https://mastodon.example/users/alice#main-key", display: "Alice", note: "<p>Hello</p>",
+			inbox: "https://mastodon.example/users/alice/inbox", shared: "https://mastodon.example/inbox", profile: "https://mastodon.example/@alice",
+			fields: []account.ProfileField{{Position: 0, Name: "Website", ValueHTML: `<a href="https://example.org" rel="me">example.org</a>`}},
+		},
+		{
+			path: "misskey/2025.4/actor", keyID: "https://misskey.example/users/9xyzabc123#main-key", display: "Alice", note: "<p>Hello</p>",
+			inbox: "https://misskey.example/users/9xyzabc123/inbox", shared: "https://misskey.example/inbox", profile: "https://misskey.example/@alice",
+		},
+		{
+			path: "gotosocial/0.22/actor", keyID: "https://gotosocial.example/users/the_mighty_zork/main-key", display: "original zork (he/they)",
+			note: "<p>hey yo this is my profile!</p>", inbox: "https://gotosocial.example/users/the_mighty_zork/inbox",
+			profile: "https://gotosocial.example/@the_mighty_zork",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.path, func(t *testing.T) {
+			id, username, host := e.serveActor(fixtureActor(t, c.path))
+			a := e.resolve(t, id)
+			if a.Account.URI != id || a.Account.Domain != host || a.Account.ActorType != account.ActorPerson || a.Local != nil {
+				t.Errorf("account = %+v, want a remote person %s on %s", a.Account, id, host)
+			}
+			if a.Handle == nil || a.Handle.Username != username || a.Handle.Domain != host {
+				t.Errorf("handle = %+v, want %s@%s", a.Handle, username, host)
+			}
+			if got, err := e.accounts.FindByHandle(ctx, username, host); err != nil || got.Account.ID != a.Account.ID {
+				t.Errorf("FindByHandle(%s@%s) = %+v, %v", username, host, got.Account, err)
+			}
+			p := a.Profile
+			if p == nil || p.Seq != 1 || p.DisplayName != c.display || p.NoteHTML != c.note || p.AvatarMediaID == "" || p.HeaderMediaID == "" || p.Source != nil {
+				t.Errorf("profile = %+v, want revision 1 %q %q with images", p, c.display, c.note)
+			}
+			if c.fields != nil && (p == nil || !reflect.DeepEqual(p.Fields, c.fields)) {
+				t.Errorf("fields = %+v, want %+v", p.Fields, c.fields)
+			}
+			if len(a.Keys) != 1 || a.Keys[0].KeyID != c.keyID || a.Keys[0].Algorithm != account.KeyRSASHA256 {
+				t.Errorf("keys = %+v, want the RSA key %s", a.Keys, c.keyID)
+			}
+			head, err := e.accounts.RemoteHead(ctx, a.Account.ID)
+			if err != nil || head.InboxURL != c.inbox || head.SharedInboxURL != c.shared || !head.LastFetchedAt.Equal(e.clock.Now()) {
+				t.Errorf("head = %+v, %v; want inboxes %s %s", head, err, c.inbox, c.shared)
+			}
+			e.tx(t, func(tx uow.Tx) error {
+				snap, err := e.h.Accounts.LatestRemoteSnapshot(ctx, tx, a.Account.ID)
+				if err != nil || snap.ID != head.SnapshotID || snap.PreferredUsername != username || snap.ProfileURL != c.profile || len(snap.DocumentDigest) != 32 {
+					t.Errorf("snapshot = %+v, %v", snap, err)
+				}
+				if again, err := e.h.Instances.InsertRemoteInstance(ctx, tx, host, e.clock.Now()); err != nil || again {
+					t.Errorf("InsertRemoteInstance(%s) again = %v, %v; want the server recorded", host, again, err)
+				}
+				return nil
+			})
+			if a.Lifecycle.State != account.StateActive {
+				t.Errorf("lifecycle = %+v, want active", a.Lifecycle)
+			}
+		})
+	}
+	// Every fetch is signed with the instance actor's RSA key and accepts ActivityStreams only.
+	wantKey := account.KeyIRI(e.instance.Account.URI, account.KeyRSASHA256)
+	for _, r := range e.net.requests {
+		if strings.Contains(r.URL, "/.well-known/") {
+			if r.Header.Get("Signature") != "" {
+				t.Errorf("WebFinger %s is signed", r.URL)
+			}
+			continue
+		}
+		if r.Header.Get("Signature") != `keyId="`+wantKey+`"` || r.Header.Get("Accept") != appfederation.ActivityStreamsAccept || r.Purpose != kernel.HTTPPurposeJSON {
+			t.Errorf("fetch %s: Signature %q Accept %q, want signed by %s", r.URL, r.Header.Get("Signature"), r.Header.Get("Accept"), wantKey)
+		}
+	}
+	if got := len(e.jobs.take(appfederation.JobObserveInstance)); got != 3 {
+		t.Errorf("%d NodeInfo observations enqueued, want one per server", got)
+	}
+}
+
+func remoteKeepsOneSnapshotPerDocument(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	doc := fixtureActor(t, "mastodon/4.8/actor")
+	id, _, _ := e.serveActor(doc)
+	first := e.resolve(t, id)
+	e.clock.Advance(time.Hour)
+	again := e.refresh(t, id)
+	head, _ := e.accounts.RemoteHead(ctx, again.Account.ID)
+	if again.Account.ID != first.Account.ID || again.Profile.ID != first.Profile.ID || !head.LastFetchedAt.Equal(e.clock.Now()) {
+		t.Errorf("same document: profile %s → %s, fetched %v; want the same revision and a new fetch time", first.Profile.ID, again.Profile.ID, head.LastFetchedAt)
+	}
+	firstSnapshot := head.SnapshotID
+
+	e.clock.Advance(time.Hour)
+	changed := bytes.Replace(doc, []byte(`"name": "Alice"`), []byte(`"name": "Alice <script>x</script>Liddell"`), 1)
+	changed = bytes.Replace(changed, []byte(`"summary": "<p>Hello</p>"`), []byte(`"summary": "<p>Hi</p><script>alert(1)</script>"`), 1)
+	e.serveActor(changed)
+	revised := e.refresh(t, id)
+	head, _ = e.accounts.RemoteHead(ctx, revised.Account.ID)
+	if head.SnapshotID == firstSnapshot || revised.Profile.Seq != 2 || revised.Profile.DisplayName != "Alice xLiddell" || revised.Profile.NoteHTML != "<p>Hi</p>" {
+		t.Errorf("changed document: snapshot %s, profile %+v; want a new snapshot and a sanitized revision 2", head.SnapshotID, revised.Profile)
+	}
+}
+
+// rotatedKeyPEM returns the PEM of an RSA key other than ExamplePublicKeyPEM.
+func rotatedKeyPEM(t *testing.T) string {
+	t.Helper()
+	k, err := cachedKey(account.KeyRSASHA256)
+	if err != nil {
+		t.Fatalf("key: %v", err)
+	}
+	der, err := x509.MarshalPKIXPublicKey(k.(*rsa.PrivateKey).Public())
+	if err != nil {
+		t.Fatalf("MarshalPKIXPublicKey: %v", err)
+	}
+	return string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: der}))
+}
+
+func jsonString(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
+
+func remoteRevokesRotatedKey(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	doc := fixtureActor(t, "mastodon/4.8/actor")
+	id, _, _ := e.serveActor(doc)
+	keyID := "https://mastodon.example/users/alice#main-key"
+	before := e.resolve(t, id)
+	old := before.Keys[0]
+
+	e.clock.Advance(time.Minute)
+	rotated := bytes.Replace(doc, []byte(jsonString(ExamplePublicKeyPEM)), []byte(jsonString(rotatedKeyPEM(t))), 1)
+	e.serveActor(rotated)
+	key, err := e.actors.ResolvePublicKey(ctx, keyID, true)
+	if err != nil {
+		t.Fatalf("ResolvePublicKey(refresh): %v", err)
+	}
+	want, _ := cachedKey(account.KeyRSASHA256)
+	if pub, ok := key.Key.(*rsa.PublicKey); !ok || !pub.Equal(want.Public()) || key.Owner != id || key.KeyID != keyID {
+		t.Errorf("ResolvePublicKey = %+v, want the rotated key of %s", key, id)
+	}
+	cur, err := e.accounts.CurrentKey(ctx, keyID)
+	if err != nil || cur.ID == old.ID || cur.KeyID != keyID {
+		t.Errorf("CurrentKey = %+v, %v; want a new key under %s", cur, err, keyID)
+	}
+	e.tx(t, func(tx uow.Tx) error {
+		active, err := e.h.Accounts.ListActiveKeys(ctx, tx, before.Account.ID)
+		if err != nil || len(active) != 1 || active[0].ID != cur.ID {
+			t.Errorf("active keys = %+v, %v; want only the rotated key", active, err)
+		}
+		if revoked, err := e.h.Accounts.InsertKeyRevocation(ctx, tx, account.KeyRevocation{AccountKeyID: old.ID, RevokedAt: e.clock.Now()}); err != nil || revoked {
+			t.Errorf("revoke the old key again = %v, %v; want it revoked already", revoked, err)
+		}
+		return nil
+	})
+	// Fetching the same document again keeps the rotated key.
+	e.refresh(t, id)
+	if again, err := e.accounts.CurrentKey(ctx, keyID); err != nil || again.ID != cur.ID {
+		t.Errorf("CurrentKey after a refetch = %+v, %v; want %s", again, err, cur.ID)
+	}
+
+	// A key the document no longer declares is revoked.
+	withdrawn := bytes.Replace(rotated, []byte(`"id": "https://mastodon.example/users/alice#main-key"`), []byte(`"id": "https://mastodon.example/users/alice#second-key"`), 1)
+	e.serveActor(withdrawn)
+	e.refresh(t, id)
+	if _, err := e.accounts.CurrentKey(ctx, keyID); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("CurrentKey(withdrawn) = %v, want ErrNotFound", err)
+	}
+	if k, err := e.accounts.CurrentKey(ctx, "https://mastodon.example/users/alice#second-key"); err != nil || k.AccountID != before.Account.ID {
+		t.Errorf("CurrentKey(second-key) = %+v, %v", k, err)
+	}
+}
+
+func remoteKeepsNoUnconfirmedHandle(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	doc := fixtureActor(t, "mastodon/4.8/actor")
+	id, username, host := e.serveActor(doc)
+	resource := webFingerURL(host, "acct:"+username+"@"+host)
+
+	// WebFinger names another actor: no handle.
+	e.serveWebFinger(host, username, host, "https://mastodon.example/users/mallory")
+	a := e.resolve(t, id)
+	if a.Handle != nil {
+		t.Errorf("handle = %+v, want none when WebFinger names another actor", a.Handle)
+	}
+	if _, err := e.accounts.FindByHandle(ctx, username, host); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("FindByHandle = %v, want ErrNotFound", err)
+	}
+
+	// Confirmed: the handle appears.
+	e.serveWebFinger(host, username, host, id)
+	if a = e.refresh(t, id); a.Handle == nil || a.Handle.Username != username {
+		t.Errorf("handle = %+v, want %s once WebFinger confirms it", a.Handle, username)
+	}
+
+	// WebFinger does not answer: the handle stays.
+	e.net.set(resource, remoteResponse{status: http.StatusServiceUnavailable})
+	if a = e.refresh(t, id); a.Handle == nil {
+		t.Error("handle removed when WebFinger did not answer")
+	}
+
+	// WebFinger answers 404: the handle goes.
+	e.net.set(resource, remoteResponse{status: http.StatusNotFound})
+	if a = e.refresh(t, id); a.Handle != nil {
+		t.Errorf("handle = %+v, want none after WebFinger answered 404", a.Handle)
+	}
+	e.tx(t, func(tx uow.Tx) error {
+		v, err := e.h.Accounts.LatestHandleVerification(ctx, tx, a.Account.ID)
+		if err != nil || v.Outcome != account.HandleMismatch || v.Username != username || v.Domain != host {
+			t.Errorf("latest check = %+v, %v; want a mismatch of %s@%s", v, err, username, host)
+		}
+		return nil
+	})
+
+	// Another actor that WebFinger confirms under the same name takes the handle.
+	e.serveWebFinger(host, username, host, id)
+	e.refresh(t, id)
+	other := bytes.ReplaceAll(doc, []byte("https://mastodon.example/users/alice"), []byte("https://mastodon.example/users/alice2"))
+	otherID, _, _ := e.serveActor(other)
+	b := e.resolve(t, otherID)
+	if b.Handle == nil || b.Handle.Username != username {
+		t.Errorf("new holder handle = %+v", b.Handle)
+	}
+	if got, err := e.accounts.FindByHandle(ctx, username, host); err != nil || got.Account.ID != b.Account.ID {
+		t.Errorf("FindByHandle = %s, %v; want the account that verified it last", got.Account.ID, err)
+	}
+}
+
+func remoteVerifiesHandleOnAnotherDomain(t *testing.T, e *remoteEnv) {
+	doc := fixtureActor(t, "mastodon/4.8/actor")
+	id, username, host := e.serveActor(doc)
+	// The server's WebFinger names the handle on the account domain example.org.
+	e.serveWebFinger(host, username, "example.org", id)
+	a := e.resolve(t, id)
+	if a.Handle != nil {
+		t.Errorf("handle = %+v before example.org confirms it", a.Handle)
+	}
+	jrd, _ := json.Marshal(map[string]any{
+		"subject": "acct:" + username + "@example.org",
+		"links":   []map[string]string{{"rel": "self", "type": activityJSON, "href": id}},
+	})
+	e.net.set(webFingerURL("example.org", "acct:"+username+"@example.org"), remoteResponse{status: http.StatusOK, contentType: "application/jrd+json", body: string(jrd)})
+	if a = e.refresh(t, id); a.Handle == nil || a.Handle.Username != username || a.Handle.Domain != "example.org" {
+		t.Errorf("handle = %+v, want %s@example.org", a.Handle, username)
+	}
+}
+
+func remoteRejectsForeignIDs(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	doc := fixtureActor(t, "mastodon/4.8/actor")
+	id, _, _ := e.serveActor(doc)
+
+	// A server that serves a document of another origin.
+	e.net.set("https://evil.example/users/alice", remoteResponse{status: http.StatusOK, contentType: activityJSON, body: string(doc)})
+	if _, err := e.actors.Resolve(ctx, "https://evil.example/users/alice"); !errors.Is(err, appfederation.ErrFetchNotFound) {
+		t.Errorf("Resolve(evil) = %v, want ErrFetchNotFound", err)
+	}
+	// A redirect to another origin than the id's.
+	e.net.set("https://mastodon.example/@alice", remoteResponse{status: http.StatusOK, contentType: activityJSON, body: string(doc), finalURL: "https://evil.example/alice"})
+	if _, err := e.actors.Resolve(ctx, "https://mastodon.example/@alice"); !errors.Is(err, appfederation.ErrFetchNotFound) {
+		t.Errorf("Resolve(redirected) = %v, want ErrFetchNotFound", err)
+	}
+	if _, err := e.accounts.FindByURI(ctx, id); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("FindByURI(%s) = %v; want nothing stored", id, err)
+	}
+	// Another URI of the same origin: the id is fetched once more and kept.
+	e.net.set("https://mastodon.example/users/alice/alias", remoteResponse{status: http.StatusOK, contentType: activityJSON, body: string(doc)})
+	if a := e.resolve(t, "https://mastodon.example/users/alice/alias"); a.Account.URI != id {
+		t.Errorf("Resolve(alias) = %s, want %s", a.Account.URI, id)
+	}
+	if got := e.net.count(id); got != 1 {
+		t.Errorf("%d fetches of the id, want 1", got)
+	}
+	// The id of the refetched document must be itself.
+	e.net.set("https://mastodon.example/users/bob", remoteResponse{status: http.StatusOK, contentType: activityJSON, body: string(bytes.ReplaceAll(doc, []byte(id), []byte("https://mastodon.example/users/bob2")))})
+	e.net.set("https://mastodon.example/users/bob2", remoteResponse{status: http.StatusOK, contentType: activityJSON, body: string(bytes.ReplaceAll(doc, []byte(id), []byte("https://mastodon.example/users/bob3")))})
+	if _, err := e.actors.Resolve(ctx, "https://mastodon.example/users/bob"); !errors.Is(err, appfederation.ErrFetchNotFound) {
+		t.Errorf("Resolve(bob) = %v, want ErrFetchNotFound", err)
+	}
+}
+
+func remoteAppliesFetchRules(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	doc := fixtureActor(t, "mastodon/4.8/actor")
+	cases := []struct {
+		name string
+		resp remoteResponse
+		want error
+	}{
+		{"HTML", remoteResponse{status: http.StatusOK, contentType: "text/html", body: string(doc)}, appfederation.ErrFetchNotFound},
+		{"JSON-LD without the profile", remoteResponse{status: http.StatusOK, contentType: "application/ld+json", body: string(doc)}, appfederation.ErrFetchNotFound},
+		{"404", remoteResponse{status: http.StatusNotFound}, appfederation.ErrFetchNotFound},
+		{"410", remoteResponse{status: http.StatusGone}, appfederation.ErrFetchGone},
+		{"503", remoteResponse{status: http.StatusServiceUnavailable}, appfederation.ErrFetchFailed},
+		{"network", remoteResponse{err: errors.New("connection reset")}, appfederation.ErrFetchFailed},
+		{"refused", remoteResponse{err: kernel.ErrForbiddenDestination}, appfederation.ErrFetchNotFound},
+	}
+	for i, c := range cases {
+		u := fmt.Sprintf("https://rules.example/users/%d", i)
+		e.net.set(u, c.resp)
+		if _, err := e.actors.Resolve(ctx, u); !errors.Is(err, c.want) {
+			t.Errorf("%s: Resolve = %v, want %v", c.name, err, c.want)
+		}
+		// The failure is remembered: the next fetch within FetchFailureTTL sends nothing.
+		if _, err := e.actors.Resolve(ctx, u); !errors.Is(err, c.want) || e.net.count(u) != 1 {
+			t.Errorf("%s: second Resolve = %v after %d requests, want the remembered failure", c.name, err, e.net.count(u))
+		}
+	}
+	e.clock.Advance(appfederation.FetchFailureTTL)
+	e.net.set("https://rules.example/users/0", remoteResponse{status: http.StatusOK, contentType: `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`,
+		body: string(bytes.ReplaceAll(doc, []byte("https://mastodon.example/users/alice"), []byte("https://rules.example/users/0")))})
+	if _, err := e.actors.Resolve(ctx, "https://rules.example/users/0"); err != nil {
+		t.Errorf("Resolve after FetchFailureTTL with the JSON-LD profile = %v", err)
+	}
+	if _, err := e.actors.Resolve(ctx, "http://rules.example/users/0"); !errors.Is(err, appfederation.ErrFetchNotFound) {
+		t.Errorf("Resolve(http) = %v, want ErrFetchNotFound", err)
+	}
+	if _, err := e.actors.Resolve(ctx, "https://"+contractHost+"/ap/actors/x"); !errors.Is(err, appfederation.ErrFetchRefused) {
+		t.Errorf("Resolve(local) = %v, want ErrFetchRefused", err)
+	}
+}
+
+func remoteMarksGoneActorsDeleted(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	id, _, _ := e.serveActor(fixtureActor(t, "misskey/2025.4/actor"))
+	a := e.resolve(t, id)
+
+	e.net.set(id, remoteResponse{status: http.StatusServiceUnavailable})
+	if _, err := e.actors.Refresh(ctx, id); !errors.Is(err, appfederation.ErrFetchFailed) {
+		t.Fatalf("Refresh(503) = %v", err)
+	}
+	head, _ := e.accounts.RemoteHead(ctx, a.Account.ID)
+	if head.ConsecutiveFetchFailures != 1 {
+		t.Errorf("failures = %d, want 1", head.ConsecutiveFetchFailures)
+	}
+
+	e.clock.Advance(appfederation.FetchFailureTTL)
+	e.net.set(id, remoteResponse{status: http.StatusGone})
+	for range 2 {
+		if _, err := e.actors.Refresh(ctx, id); !errors.Is(err, appfederation.ErrFetchGone) {
+			t.Fatalf("Refresh(410) = %v", err)
+		}
+	}
+	got, err := e.accounts.FindByID(ctx, a.Account.ID)
+	if err != nil || got.Lifecycle.State != account.StateDeleted {
+		t.Errorf("lifecycle = %+v, %v; want deleted", got.Lifecycle, err)
+	}
+	e.tx(t, func(tx uow.Tx) error {
+		// The second 410 records nothing more.
+		st, err := e.h.Accounts.LifecycleState(ctx, tx, a.Account.ID)
+		if err != nil || st.State != account.StateDeleted {
+			t.Errorf("state = %+v, %v", st, err)
+		}
+		return nil
+	})
+}
+
+func remoteRefreshesStaleActors(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	var ids []string
+	for _, p := range []string{"mastodon/4.8/actor", "misskey/2025.4/actor", "gotosocial/0.22/actor"} {
+		id, _, _ := e.serveActor(fixtureActor(t, p))
+		a := e.resolve(t, id)
+		ids = append(ids, a.Account.ID)
+		e.clock.Advance(time.Minute)
+	}
+	e.followed[ids[0]] = true
+	e.followed[ids[2]] = true
+
+	// Fresh actors are not refreshed.
+	e.scheduler.Tick(ctx)
+	e.run(t, appfederation.JobRefreshActors)
+	if n := len(e.jobs.take(appfederation.JobRefreshActor)); n != 0 {
+		t.Errorf("%d refreshes of fresh actors", n)
+	}
+
+	e.clock.Advance(account.RemoteActorTTL)
+	e.scheduler.Tick(ctx)
+	e.run(t, appfederation.JobRefreshActors)
+	if n := e.run(t, appfederation.JobRefreshActor); n != 2 {
+		t.Errorf("%d refreshes, want the 2 followed actors", n)
+	}
+	for i, id := range ids {
+		head, _ := e.accounts.RemoteHead(ctx, id)
+		if fresh := !head.Stale(e.clock.Now()); fresh != e.followed[id] {
+			t.Errorf("actor %d: fresh = %v, want %v", i, fresh, e.followed[id])
+		}
+	}
+
+	// A stale actor used for a signature is refreshed asynchronously.
+	a, _ := e.accounts.FindByID(ctx, ids[1])
+	if _, err := e.actors.ResolvePublicKey(ctx, a.Keys[0].KeyID, false); err != nil {
+		t.Fatalf("ResolvePublicKey: %v", err)
+	}
+	if n := e.run(t, appfederation.JobRefreshActor); n != 1 {
+		t.Errorf("%d refreshes after a stale key was used, want 1", n)
+	}
+	if head, _ := e.accounts.RemoteHead(ctx, ids[1]); head.Stale(e.clock.Now()) {
+		t.Error("the actor whose key was used is still stale")
+	}
+}
+
+func remoteObservesNodeInfo(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	links := `{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.0","href":"https://mastodon.example/nodeinfo/2.0"},` +
+		`{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.1","href":"https://mastodon.example/nodeinfo/2.1"}]}`
+	e.net.set("https://mastodon.example/.well-known/nodeinfo", remoteResponse{status: http.StatusOK, contentType: "application/json", body: links})
+	e.net.set("https://mastodon.example/nodeinfo/2.1", remoteResponse{status: http.StatusOK, contentType: "application/json",
+		body: `{"version":"2.1","software":{"name":"Mastodon","version":"4.8.0"}}`})
+	id, _, _ := e.serveActor(fixtureActor(t, "mastodon/4.8/actor"))
+	e.resolve(t, id)
+	if n := e.run(t, appfederation.JobObserveInstance); n != 1 {
+		t.Fatalf("%d observations ran, want 1", n)
+	}
+	var first string
+	e.tx(t, func(tx uow.Tx) error {
+		o, err := e.h.Instances.LatestNodeInfoObservation(ctx, tx, "mastodon.example")
+		if err != nil || o.SoftwareName != "mastodon" || o.SoftwareVersion != "4.8.0" {
+			t.Errorf("observation = %+v, %v", o, err)
+		}
+		first = o.ID
+		return nil
+	})
+	// The same software again records nothing; a new version is recorded.
+	if err := e.actors.ObserveInstance(ctx, "mastodon.example"); err != nil {
+		t.Fatalf("ObserveInstance: %v", err)
+	}
+	e.net.set("https://mastodon.example/nodeinfo/2.1", remoteResponse{status: http.StatusOK, contentType: "application/json",
+		body: `{"version":"2.1","software":{"name":"mastodon","version":"4.9.0"}}`})
+	if err := e.actors.ObserveInstance(ctx, "mastodon.example"); err != nil {
+		t.Fatalf("ObserveInstance: %v", err)
+	}
+	e.tx(t, func(tx uow.Tx) error {
+		o, err := e.h.Instances.LatestNodeInfoObservation(ctx, tx, "mastodon.example")
+		if err != nil || o.ID == first || o.SoftwareVersion != "4.9.0" {
+			t.Errorf("observation = %+v, %v; want a new one for 4.9.0", o, err)
+		}
+		if _, err := e.h.Instances.LatestNodeInfoObservation(ctx, tx, "unseen.example"); !errors.Is(err, appfederation.ErrNotFound) {
+			t.Errorf("LatestNodeInfoObservation(unseen) = %v, want ErrNotFound", err)
+		}
+		return nil
+	})
+	// NodeInfo on another host is not believed.
+	e.net.set("https://misskey.example/.well-known/nodeinfo", remoteResponse{status: http.StatusOK, contentType: "application/json",
+		body: `{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.1","href":"https://elsewhere.example/nodeinfo"}]}`})
+	if err := e.actors.ObserveInstance(ctx, "misskey.example"); err == nil {
+		t.Error("ObserveInstance accepted NodeInfo on another host")
+	}
+}
+
+func remoteResolvesPublicKeys(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	// A key ID on its own path (GoToSocial): the key document leads to its owner.
+	doc := fixtureActor(t, "gotosocial/0.22/actor")
+	actorID := "https://gotosocial.example/users/the_mighty_zork"
+	keyID := actorID + "/main-key"
+	e.serveActor(doc)
+	keyDoc, _ := json.Marshal(map[string]any{
+		"@context": "https://w3id.org/security/v1", "id": keyID, "type": "Key", "owner": actorID, "publicKeyPem": ExamplePublicKeyPEM,
+	})
+	e.net.set(keyID, remoteResponse{status: http.StatusOK, contentType: activityJSON, body: string(keyDoc)})
+	key, err := e.actors.ResolvePublicKey(ctx, keyID, false)
+	if err != nil || key.Owner != actorID || key.KeyID != keyID {
+		t.Fatalf("ResolvePublicKey(%s) = %+v, %v", keyID, key, err)
+	}
+	if _, ok := key.Key.(*rsa.PublicKey); !ok {
+		t.Errorf("key is %T, want RSA", key.Key)
+	}
+	// Stored now: no fetch.
+	before := len(e.net.requests)
+	if again, err := e.actors.ResolvePublicKey(ctx, keyID, false); err != nil || again.Owner != actorID || len(e.net.requests) != before {
+		t.Errorf("stored ResolvePublicKey = %+v, %v after %d requests", again, err, len(e.net.requests)-before)
+	}
+	// A fragment key ID (Mastodon) of an unknown actor.
+	e.serveActor(fixtureActor(t, "mastodon/4.8/actor"))
+	if k, err := e.actors.ResolvePublicKey(ctx, "https://mastodon.example/users/alice#main-key", false); err != nil || k.Owner != "https://mastodon.example/users/alice" {
+		t.Errorf("ResolvePublicKey(#main-key) = %+v, %v", k, err)
+	}
+	// A key the owner does not declare.
+	if _, err := e.actors.ResolvePublicKey(ctx, "https://mastodon.example/users/alice#other-key", false); !errors.Is(err, appfederation.ErrPublicKeyNotFound) {
+		t.Errorf("ResolvePublicKey(undeclared) = %v, want ErrPublicKeyNotFound", err)
+	}
+	// Unknown and unreachable.
+	e.net.set("https://down.example/users/x", remoteResponse{err: errors.New("timeout")})
+	if _, err := e.actors.ResolvePublicKey(ctx, "https://down.example/users/x#main-key", false); !errors.Is(err, appfederation.ErrPublicKeyNotFound) {
+		t.Errorf("ResolvePublicKey(down) = %v, want ErrPublicKeyNotFound", err)
+	}
+	// A server marked unavailable answers 503 to the inbox.
+	e.tx(t, func(tx uow.Tx) error {
+		return e.h.Federation.UpsertInstanceHealth(ctx, tx, unavailableHealth("broken.example", e.clock.Now()))
+	})
+	if _, err := e.actors.ResolvePublicKey(ctx, "https://broken.example/users/x#main-key", false); !errors.Is(err, appfederation.ErrPublicKeyUnavailable) {
+		t.Errorf("ResolvePublicKey(unavailable) = %v, want ErrPublicKeyUnavailable", err)
+	}
+}
+
+func unavailableHealth(domain string, since time.Time) federation.InstanceHealth {
+	return federation.InstanceHealth{Domain: domain, State: federation.InstanceUnavailable, Since: since, FailureDays: 7, LastFailureDay: since.Format("20060102")}
+}
+
+func remoteRebuildsHandles(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	for _, p := range []string{"mastodon/4.8/actor", "misskey/2025.4/actor"} {
+		id, _, _ := e.serveActor(fixtureActor(t, p))
+		e.resolve(t, id)
+	}
+	id, username, host := e.serveActor(fixtureActor(t, "gotosocial/0.22/actor"))
+	e.serveWebFinger(host, username, host, "https://gotosocial.example/users/someone_else")
+	e.resolve(t, id)
+	want, err := e.h.Accounts.ListHandles(ctx)
+	if err != nil {
+		t.Fatalf("ListHandles: %v", err)
+	}
+	if len(want) != 2 {
+		t.Errorf("%d handles, want the 2 verified ones", len(want))
+	}
+	if err := appaccount.RebuildProjections(ctx, e.h.UnitOfWork, e.h.Accounts); err != nil {
+		t.Fatalf("RebuildProjections: %v", err)
+	}
+	if got, err := e.h.Accounts.ListHandles(ctx); err != nil || !reflect.DeepEqual(got, want) {
+		t.Errorf("rebuilt handles = %+v, %v; want %+v", got, err, want)
+	}
+}
