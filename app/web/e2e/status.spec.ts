@@ -64,7 +64,15 @@ function status(id: string, account: Status["account"], content: string, overrid
   };
 }
 
-const ancestor = status("0192f0c4-7a8e-7000-8000-0000000000c0", alice, "<p>Is anyone around for a long walk this weekend?</p>");
+// The thread starts with a long post, so that the posts above the page's post fill more than a phone's
+// first screen.
+const root = status(
+  "0192f0c4-7a8e-7000-8000-0000000000bf",
+  bob,
+  `<p>${"The forecast says the weekend stays dry, the trail along the river is open again, and the café at the end serves lunch until three. ".repeat(4)}</p><p>Who is in?</p>`,
+  { replies_count: 1 },
+);
+const ancestor = status("0192f0c4-7a8e-7000-8000-0000000000c0", alice, "<p>Is anyone around for a long walk this weekend?</p>", { in_reply_to_id: root.id });
 const post = status(
   postId,
   bob,
@@ -92,7 +100,7 @@ async function serveApi(page: Page): Promise<void> {
     }
     if (path === "/notifications/marker") return json(route, { last_read_id: "0", unread_count: 0 });
     if (path === "/timelines/home") return json(route, { items: [] });
-    if (path === `/statuses/${postId}/context`) return json(route, { ancestors: [ancestor], descendants: [reply] });
+    if (path === `/statuses/${postId}/context`) return json(route, { ancestors: [root, ancestor], descendants: [reply] });
     if (path === `/statuses/${postId}`) return json(route, post);
     if (path === `/statuses/${postId}/favourite`) {
       const on = request.method() === "POST";
@@ -103,9 +111,14 @@ async function serveApi(page: Page): Promise<void> {
   });
 }
 
-/** The article of the post the page is about. */
+/** The article of the post the page is about, named apart from the others. */
 function focusedPost(page: Page) {
-  return page.getByRole("main").getByRole("article").nth(1);
+  return page.getByRole("main").getByRole("article", { name: startsWith(message("status.focused.label")) });
+}
+
+/** A pattern for a name that starts with `text`, which may hold the brackets of a pseudo-locale. */
+function startsWith(text: string): RegExp {
+  return new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`);
 }
 
 test.describe("a post's page", () => {
@@ -122,11 +135,14 @@ test.describe("a post's page", () => {
   });
 
   test("shows the thread under its headings, with the actions of each post", async ({ page }) => {
+    // The page's post is the article named apart from the others, with its full date after the body.
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading [level=1]
       - region:
         - heading [level=2]
         - list:
+          - listitem:
+            - article /Bob/
           - listitem:
             - article:
               - link /Alice/
@@ -139,11 +155,12 @@ test.describe("a post's page", () => {
               - button [pressed=false]
               - button [pressed=false]
               - button
-      - article:
+      - article ${startsWith(message("status.focused.label")).toString()}:
         - link /Bob/
         - link /Bob/
         - time
         - paragraph
+        - time
         - button
         - button [pressed=false]
         - button [pressed=false]
@@ -157,9 +174,20 @@ test.describe("a post's page", () => {
     `);
   });
 
+  test("brings the post into the first screen below the posts it replies to", async ({ page }) => {
+    const box = await focusedPost(page).boundingBox();
+    const viewport = page.viewportSize();
+    if (box === null || viewport === null) throw new Error("the post or the viewport has no size");
+    // Its start and its body are on the first screen. On a phone the thread above it is taller than that
+    // screen, so the page has scrolled to it.
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + 100).toBeLessThanOrEqual(viewport.height);
+    if (viewport.width < 768) expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  });
+
   test("shows the icon of every action at one size, also on a post without replies", async ({ page }) => {
-    // The ancestor has no replies, so its reply button holds only its icon.
-    const ancestorPost = page.getByRole("main").getByRole("article").first();
+    // Alice's post has no replies, so its reply button holds only its icon.
+    const ancestorPost = page.getByRole("main").getByRole("article").filter({ hasText: "long walk" });
     for (const article of [ancestorPost, focusedPost(page)]) {
       for (const key of ["status.action.reply", "status.action.boost", "status.action.favourite", "status.action.bookmark", "status.action.more"]) {
         const icon = article.getByRole("button", { name: message(key) }).locator("svg");
@@ -196,6 +224,10 @@ test("the viewer's own post asks before it is deleted", async ({ page, makeAxeBu
   );
   await page.route(`**/api/v1/statuses/${own.id}/context`, (route) => route.fulfill({ json: { ancestors: [], descendants: [] } }));
   await page.goto(`/@alice/${own.id}`);
+  // A page of the viewer's own post is not their profile page. (The actions show once signed in.)
+  await expect(page.getByRole("main").getByRole("article").getByRole("button", { name: message("status.action.more") })).toBeVisible();
+  const navigation = page.getByRole("navigation", { name: message("shell.nav.label") });
+  await expect(navigation.getByRole("link", { name: message("shell.nav.profile") })).not.toHaveAttribute("aria-current");
 
   await page.getByRole("main").getByRole("article").getByRole("button", { name: message("status.action.more") }).click();
   await page.getByRole("menuitem", { name: message("status.action.delete") }).click();

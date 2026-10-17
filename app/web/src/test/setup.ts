@@ -14,6 +14,8 @@ configure({ asyncUtilTimeout: 10_000 });
 
 beforeAll(() => {
   server.listen({ onUnhandledFrame: "error" });
+  // jsdom has no Element.scrollIntoView; a page that scrolls an element into view (a post's page) calls it.
+  Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, writable: true, value: () => undefined });
 });
 
 beforeEach(() => {

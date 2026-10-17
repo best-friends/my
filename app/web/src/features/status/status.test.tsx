@@ -11,8 +11,15 @@ import { renderApp } from "../../test/render";
 import type { Status } from "./api/status";
 
 const postId = "0192f0c4-7a8e-7000-8000-0000000000c1";
-const post: Status = { ...statusFixture(postId), content: "<p>The post</p>", favourites_count: 2, boosts_count: 1, replies_count: 1 };
 const ancestor: Status = { ...statusFixture("0192f0c4-7a8e-7000-8000-0000000000c0"), content: "<p>The question</p>" };
+const post: Status = {
+  ...statusFixture(postId),
+  content: "<p>The post</p>",
+  in_reply_to_id: ancestor.id,
+  favourites_count: 2,
+  boosts_count: 1,
+  replies_count: 1,
+};
 const reply: Status = {
   ...viewerStatusFixture({ id: "0192f0c4-7a8e-7000-8000-0000000000c2", content: "<p>The answer</p>", created_at: "2026-10-16T11:00:00Z" }),
   in_reply_to_id: postId,
@@ -77,9 +84,13 @@ describe("a post's page", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Post" })).toBeInTheDocument();
     const article = await findFocusedPost();
-    // The full date instead of the relative time, and no link to the page it is on.
-    expect(within(article).getByText(/October 16, 2026/)).toHaveAttribute("datetime", post.created_at);
+    // Named apart from the other posts of the thread; the relative time as everywhere, and no link to
+    // the page it is on; the full date and the counts in words under the body.
+    expect(article).toHaveAccessibleName("Opened post Bob @bob@my.example 3 hr. ago");
     expect(within(article).queryByRole("link", { name: /ago/ })).not.toBeInTheDocument();
+    expect(within(article).getByText(/October 16, 2026/)).toHaveAttribute("datetime", post.created_at);
+    expect(within(article).getByText("1 boost")).toBeInTheDocument();
+    expect(within(article).getByText("2 favourites")).toBeInTheDocument();
 
     const earlier = await screen.findByRole("region", { name: "Earlier in the thread" });
     expect(within(earlier).getByRole("article", { description: "The question" })).toBeInTheDocument();
@@ -94,7 +105,7 @@ describe("a post's page", () => {
     expect(document.title).toBe("Post – my example");
   });
 
-  test("is where the time of a post in a timeline leads", async () => {
+  test("is where the time of a post in a timeline leads, and scrolls the post into view below its thread", async () => {
     serveThread();
     server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([post]))));
     const { user, router } = await renderApp({ path: "/local" });
@@ -102,11 +113,38 @@ describe("a post's page", () => {
     const feed = await screen.findByRole("feed", { name: "Local timeline" });
     const time = within(feed).getByRole("link", { name: "3 hr. ago" });
     expect(time).toHaveAttribute("href", `/@bob/${postId}`);
+    const scrolled = vi.spyOn(Element.prototype, "scrollIntoView");
     await user.click(time);
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Post" })).toHaveFocus();
+    const heading = await screen.findByRole("heading", { level: 1, name: "Post" });
     expect(router.state.location.pathname).toBe(`/@bob/${postId}`);
-    expect(await findFocusedPost()).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Earlier in the thread" })).toBeInTheDocument();
+    // The post comes into view once the posts above it are there; focus stays on the page's heading.
+    const article = await findFocusedPost();
+    expect(scrolled).toHaveBeenCalled();
+    expect(scrolled.mock.contexts.every((element) => element === article)).toBe(true);
+    expect(heading).toHaveFocus();
+  });
+
+  test("does not scroll a post that replies to nothing", async () => {
+    const scrolled = vi.spyOn(Element.prototype, "scrollIntoView");
+    await renderApp({ path: `/@bob/${postId}` });
+
+    expect(await screen.findByText("No replies yet.")).toBeInTheDocument();
+    expect(scrolled).not.toHaveBeenCalled();
+  });
+
+  test("does not mark the viewer's profile in the navigation on a page of the viewer's own post", async () => {
+    signedIn();
+    const own: Status = viewerStatusFixture({ id: "0192f0c4-7a8e-7000-8000-0000000000e2", content: "<p>Mine</p>" });
+    serveThread(own);
+    await renderApp({ path: `/@alice/${own.id}` });
+
+    const article = await screen.findByRole("article", { description: "Mine" });
+    // The actions show once the viewer is known.
+    expect(await within(article).findByRole("button", { name: "More actions" })).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(await within(nav).findByRole("link", { name: "Profile" })).not.toHaveAttribute("aria-current");
   });
 
   test("keeps the post on screen when its thread fails, and loads the thread again on request", async () => {
@@ -369,7 +407,7 @@ describe("a post of another server", () => {
     serveThread(remote);
     const { user } = await renderApp({ path: `/@${remote.account.acct}/${remote.id}` });
 
-    const article = await screen.findByRole("article", { name: /^Carol @carol@remote\.example / });
+    const article = await screen.findByRole("article", { name: /^Opened post Carol @carol@remote\.example / });
     // The handle is cut on the domain's side when it does not fit; the link is named by all of it.
     expect(within(article).getByRole("link", { name: "Carol @carol@remote.example" })).toBeInTheDocument();
     expect(within(article).getByText("@carol@remote.example")).toHaveAttribute("dir", "ltr");

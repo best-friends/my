@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Button, Spinner } from "@my/ui";
-import { useId } from "react";
+import { useId, useRef } from "react";
 import { useT } from "../../../lib/i18n";
-import type { Status } from "../api/status";
-import { type ThreadState, useStatusThread } from "../hooks/useStatusThread";
+import { useRevealOnce } from "../hooks/useRevealOnce";
+import { type ThreadPost, type ThreadState, useStatusThread } from "../hooks/useStatusThread";
 import { StatusCard } from "./StatusCard";
 
 export type StatusThreadProps = {
@@ -15,14 +15,19 @@ export type StatusThreadProps = {
 
 /**
  * A post and the thread around it (FR-113): the posts it replies to, oldest first, under their own
- * heading; the post itself with its full date; and the replies, depth first, under theirs. The thread
- * loads after the post, so the post is on screen at once.
+ * heading; the post itself, highlighted, with its full date; and the replies, depth first, under theirs.
+ * A line joins each post to the one it replies to when that is right above it. The thread loads after
+ * the post, so the post is on screen at once; when posts appear above it, the page scrolls it back to the
+ * top of the screen.
  */
 export function StatusThread({ id, onDeleted }: StatusThreadProps) {
   const t = useT();
   const { status, thread } = useStatusThread(id);
   const ancestorsId = useId();
   const repliesId = useId();
+  const focusedRef = useRef<HTMLElement>(null);
+  const hasAncestors = thread.status === "loaded" && thread.ancestors.length > 0;
+  useRevealOnce(focusedRef, hasAncestors);
 
   return (
     <div className="flex flex-col">
@@ -31,10 +36,16 @@ export function StatusThread({ id, onDeleted }: StatusThreadProps) {
           <h2 id={ancestorsId} className="px-4 pt-2 text-sm font-semibold text-fg-muted">
             {t("client:status.thread.ancestors")}
           </h2>
-          <StatusList statuses={thread.ancestors} />
+          <StatusList posts={thread.ancestors} />
         </section>
       )}
-      <StatusCard status={status} variant="focused" onDeleted={onDeleted} />
+      <StatusCard
+        ref={focusedRef}
+        status={status}
+        variant="focused"
+        thread={{ lineAbove: thread.status === "loaded" && thread.repliesToAncestor, lineBelow: false }}
+        onDeleted={onDeleted}
+      />
       <section aria-labelledby={repliesId} aria-busy={thread.status === "loading"}>
         <h2 id={repliesId} className="px-4 pt-4 pb-2 text-lg font-semibold">
           {t("client:status.thread.replies")}
@@ -61,17 +72,17 @@ function ThreadReplies({ thread }: { thread: ThreadState }) {
       return thread.descendants.length === 0 ? (
         <p className="px-4 pb-4 text-fg-muted">{t("client:status.thread.no_replies")}</p>
       ) : (
-        <StatusList statuses={thread.descendants} />
+        <StatusList posts={thread.descendants} />
       );
   }
 }
 
-function StatusList({ statuses }: { statuses: readonly Status[] }) {
+function StatusList({ posts }: { posts: readonly ThreadPost[] }) {
   return (
     <ol>
-      {statuses.map((status) => (
+      {posts.map(({ status, lineAbove, lineBelow }) => (
         <li key={status.id}>
-          <StatusCard status={status} />
+          <StatusCard status={status} thread={{ lineAbove, lineBelow }} />
         </li>
       ))}
     </ol>

@@ -1679,6 +1679,18 @@
     "defaultMessage": "‮∀ppǝp ʇo ɟɐʌonɹıʇǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "status.focused.boosts": {
+    "defaultMessage": "‮{count,plural,one{# qoosʇ} other{# qoosʇs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.focused.favourites": {
+    "defaultMessage": "‮{count,plural,one{# ɟɐʌonɹıʇǝ} other{# ɟɐʌonɹıʇǝs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.focused.label": {
+    "defaultMessage": "‮Odǝuǝp dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "status.link.copied": {
     "defaultMessage": "‮⅂ıuʞ ɔodıǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."

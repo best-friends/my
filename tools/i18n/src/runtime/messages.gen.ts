@@ -842,6 +842,12 @@ export interface MessageArgs {
   "client:status.favourite.off": {};
   /** Added to favourites */
   "client:status.favourite.on": {};
+  /** {count, plural, one {# boost} other {# boosts}} */
+  "client:status.focused.boosts": { count: number };
+  /** {count, plural, one {# favourite} other {# favourites}} */
+  "client:status.focused.favourites": { count: number };
+  /** Opened post */
+  "client:status.focused.label": {};
   /** Link copied */
   "client:status.link.copied": {};
   /** Could not copy the link. */

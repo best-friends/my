@@ -21,7 +21,9 @@ export function useViewChange(main: RefObject<HTMLElement | null>): void {
     if (moveFocus && heading !== null) {
       // Focusable by script only; PageHeading already sets it, other headings get it here.
       if (!heading.hasAttribute("tabindex")) heading.tabIndex = -1;
-      heading.focus();
+      // The router's scroll restoration places the page, and a page may scroll to what it is about
+      // (a post below its thread): moving focus leaves the scroll position alone.
+      heading.focus({ preventScroll: true });
     }
   });
 
