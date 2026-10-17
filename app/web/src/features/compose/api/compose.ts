@@ -100,11 +100,13 @@ export function credentialsQueryOptions(api: Api) {
 }
 
 /**
- * The account a mention names. An unknown handle is a 404, an answer rather than a failure to retry: the
- * server does not resolve it either.
+ * The account a mention names, resolved from its server when the instance does not know it yet
+ * (`resolve`), as the server resolves the mentions of a post (data-model.md §4.4). A handle that does not
+ * resolve is a 404 and a spent fetch budget a 429: answers rather than failures to retry, and the server
+ * leaves such a mention as text.
  */
 export function lookupAccountQueryOptions(api: Api, acct: string) {
-  return api.query.queryOptions("get", "/accounts/lookup", { params: { query: { acct } } }, { retry: false });
+  return api.query.queryOptions("get", "/accounts/lookup", { params: { query: { acct, resolve: true } } }, { retry: false });
 }
 
 /** The viewer's relationships with the accounts `ids` (at most `maxRelationshipIds`). */

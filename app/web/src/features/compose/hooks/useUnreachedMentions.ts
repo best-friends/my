@@ -25,12 +25,13 @@ function useSettled(value: string, delay: number): string {
 /**
  * The handles (`acct`) of the accounts of other servers that `text` mentions and that do not follow the
  * viewer, while `isLocal` (the post's visibility is `local`): a `local` post reaches only the author's
- * followers outside this server, so they will not receive it (ADR-0017 asks the client to warn).
+ * followers outside this server, so they will not receive it, and its copy there does not name them as
+ * mentioned (ADR-0017 asks the client to warn, ADR-0035).
  *
- * Each mention with a domain is resolved with GET /accounts/lookup once the text settles; the accounts it
- * finds outside this server (an `acct` with a domain) are checked with GET /accounts/relationships.
- * Handles the server does not know are left out: it does not resolve them either. Nothing is reported
- * until the answers are in.
+ * Each mention with a domain is resolved with GET /accounts/lookup (`resolve`, as the server resolves
+ * the mentions of a post) once the text settles; the accounts it finds outside this server (an `acct`
+ * with a domain) are checked with GET /accounts/relationships. Handles that do not resolve are left out:
+ * the server leaves them as text. Nothing is reported until the answers are in.
  */
 export function useUnreachedMentions(text: string, isLocal: boolean): string[] {
   const api = useApi();

@@ -7,6 +7,7 @@
 // project's catalog, so the spec finds the same elements in every locale.
 import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
+import { createIntl } from "react-intl";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 
 type Catalog = Record<string, { defaultMessage: string }>;
@@ -19,6 +20,28 @@ function message(key: string, values: Record<string, string> = {}): string {
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text.replaceAll(/\{(\w+)\}/g, (_, name: string) => values[name] ?? `{${name}}`);
 }
+
+/** The client message `key` in the project's locale, formatted with `values` as the app formats it (ICU). */
+function formatted(key: string, values: Record<string, string | number>): string {
+  const locale = test.info().project.use.locale ?? "en";
+  return createIntl({ locale, messages: { [key]: message(key) } }).formatMessage({ id: key }, values);
+}
+
+/** An account of another server that the instance resolves (WebFinger) when asked to, and that does not follow Alice. */
+const carol = {
+  id: "0192f0c4-7a8e-7000-8000-000000000003",
+  username: "carol",
+  acct: "carol@remote.example",
+  domain: "remote.example",
+  uri: "https://remote.example/users/carol",
+  display_name: "Carol",
+  note: "",
+  fields: [],
+  url: "https://remote.example/@carol",
+  locked: false,
+  bot: false,
+  created_at: "2026-10-01T00:00:00Z",
+};
 
 const account = {
   id: "0192f0c4-7a8e-7000-8000-000000000001",
@@ -91,6 +114,26 @@ async function serveApi(page: Page): Promise<Posted[]> {
         boosts_count: 0,
         favourites_count: 0,
       });
+    }
+    // Carol is found only by resolving her handle, as the server resolves the mentions of a post.
+    const query = new URL(request.url()).searchParams;
+    if (path === "/api/v1/accounts/lookup" && query.get("acct") === carol.acct && query.get("resolve") === "true") return json(route, carol);
+    if (path === "/api/v1/accounts/relationships") {
+      return json(
+        route,
+        query.getAll("id").map((id) => ({
+          id,
+          following: false,
+          requested: false,
+          followed_by: false,
+          requested_by: false,
+          show_boosts: true,
+          notify: false,
+          blocking: false,
+          muting: false,
+          muting_notifications: false,
+        })),
+      );
     }
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
@@ -170,6 +213,23 @@ test.describe("the new-post form", () => {
     expect(posted[1]?.idempotencyKey).toBeTruthy();
     expect(posted[1]?.idempotencyKey).toBe(posted[0]?.idempotencyKey);
     expect(posted[1]?.body).toEqual({ text: "Hello from the E2E", visibility: "public", language: "en" });
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("warns that a local post does not reach a mentioned account of another server that does not follow the viewer", async ({ page, makeAxeBuilder, hasTouch }) => {
+    await serveApi(page);
+    await page.goto("/");
+    const form = await openForm(page, hasTouch);
+
+    await form.getByRole("button", { name: message("compose.visibility.button", { visibility: message("compose.visibility.public") }) }).click();
+    const choices = page.getByRole("radiogroup", { name: message("compose.visibility.title") });
+    await choices.getByText(message("compose.visibility.local"), { exact: true }).click();
+    await expect(choices.getByRole("radio", { name: message("compose.visibility.local"), exact: true })).toBeChecked();
+    await page.getByRole("button", { name: message("compose.visibility.done") }).click();
+    await form.getByRole("textbox", { name: message("compose.text.label") }).fill("Hi @carol@remote.example");
+
+    await expect(form.getByText(formatted("compose.mention.unreached", { count: 1, accounts: "@carol@remote.example" }))).toBeVisible();
+    await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });
 });

@@ -140,7 +140,7 @@ export interface MessageArgs {
   "client:compose.media.unsupported": { name: string };
   /** Uploading… */
   "client:compose.media.uploading": {};
-  /** {count, plural, one {{accounts} is on another server and does not follow you, so they will not receive this post.} other {{accounts} are on other servers and do not follow you, so they will not receive this post.}} “This server” posts reach only your followers outside this server. */
+  /** {count, plural, one {{accounts} is on another server and does not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see this mention as a plain link.} other {{accounts} are on other servers and do not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see these mentions as plain links.}} */
   "client:compose.mention.unreached": { accounts: string; count: number };
   /** Add descriptions */
   "client:compose.missing_description.add": {};
