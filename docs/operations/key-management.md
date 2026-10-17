@@ -11,6 +11,8 @@
 - 暗号文には、DEK を包んだ KEK の **鍵 ID** が付く。`key_manager = local` の鍵 ID は `local:` と KEK から導いた 16 桁の 16 進数で、
   同じ KEK からは常に同じ ID になる。運営者が ID を付ける必要はない。
 - 暗号文は保存先の行 ID と列名に結び付けられており、別の行や列に写すと復号できない。
+- メディアプロキシの URL の署名鍵（HMAC-SHA256）も、KEK から HKDF-SHA256 で導く（[federation.md §9](../architecture/federation.md#9-リモートメディア)）。
+  署名は `kek` から導いた鍵で付け、`kek_previous` から導いた鍵でも検証するので、ローテーション中も前の URL が使える。
 - v0 の `key_manager` は `local`（設定の `kek` を使う）だけ。
 
 ## KEK を失うと何が起きるか

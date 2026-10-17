@@ -251,6 +251,16 @@ linters:
             - github.com/best-friends/my/internal/i18n
             - github.com/best-friends/my/locales
             - github.com/kaptinlin/messageformat-go/mf1
+        # bluemonday is the remote HTML sanitizer (ADR-0019 §2); it stays inside the adapter of
+        # kernel.HTMLSanitizer so that every caller goes through the port and its policy version.
+        bluemonday:
+          list-mode: lax
+          files:
+            - $all
+            - "!**/internal/adapter/htmlsanitizer/**"
+          deny:
+            - pkg: github.com/microcosm-cc/bluemonday
+              desc: sanitize HTML through kernel.HTMLSanitizer (internal/adapter/htmlsanitizer)
         interface:
           list-mode: lax
           files:

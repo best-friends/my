@@ -4,6 +4,8 @@ package platform
 
 import (
 	"context"
+	"crypto/hkdf"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -11,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"slices"
+	"time"
 
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
@@ -115,6 +118,8 @@ type App struct {
 	Blobs          blob.Store
 	MediaProcessor media.Processor
 	Media          *content.MediaService
+	// MediaProxy relays remote media files under /media/proxy/ and signs their URLs (ADR-0005).
+	MediaProxy *content.MediaProxy
 	// Previews reads profiles and statuses as an anonymous visitor sees them, for the link
 	// previews of the web client's profile and post pages (ADR-0028).
 	Previews *content.Previews
@@ -351,6 +356,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	if a.MediaProxy, err = newMediaProxy(cfg, medias, a); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: content.NoRestrictions{}, Media: a.Media,
@@ -380,6 +389,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	tokens.Register(a)
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
+	mediahttp.NewProxy(mediahttp.ProxyOptions{Media: a.MediaProxy, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Media: a.Media,
@@ -477,6 +487,36 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 	})
 	a.Media.RegisterJobs(a.Handlers, a.Scheduler)
 	return nil
+}
+
+// mediaProxyKeyInfo is the HKDF info that derives the media proxy's URL signing key from a KEK.
+const mediaProxyKeyInfo = "my media proxy url signature v1"
+
+// newMediaProxy builds the media proxy. Its HMAC keys are derived from the key-encryption keys
+// with HKDF-SHA256, so that it needs no secret of its own: the current KEK signs, and the
+// previous ones still verify the URLs signed before a rotation.
+func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*content.MediaProxy, error) {
+	var keys [][]byte
+	for _, kek := range append([][]byte{cfg.KEK}, cfg.PreviousKEKs...) {
+		if len(kek) == 0 {
+			continue
+		}
+		k, err := hkdf.Key(sha256.New, kek, nil, mediaProxyKeyInfo, sha256.Size)
+		if err != nil {
+			return nil, fmt.Errorf("derive the media proxy key: %w", err)
+		}
+		keys = append(keys, k)
+	}
+	return content.NewMediaProxy(content.ProxyDeps{
+		Repository: repo, HTTP: a.HTTPClient, Accounts: a.Accounts,
+		// The moderation module's domain_restrictions take its place once domain actions exist.
+		Policy: content.NoMediaRestrictions{},
+		CacheTTL: func(ctx context.Context) (time.Duration, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.RemoteMediaCacheTTL(), err
+		},
+		Keys: keys, BaseURL: "https://" + cfg.Host, Logger: a.Logger,
+	})
 }
 
 // defaultPostLanguage returns the default post language of a user's preferences, or "" for a

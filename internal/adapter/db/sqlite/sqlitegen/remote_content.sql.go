@@ -21,6 +21,31 @@ func (q *Queries) DeleteRemoteMediaCache(ctx context.Context, url string) error 
 	return err
 }
 
+const getRemoteMedia = `-- name: GetRemoteMedia :one
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+  blurhash, focus_x, focus_y, description
+FROM remote_media WHERE media_id = ?1
+`
+
+func (q *Queries) GetRemoteMedia(ctx context.Context, mediaID string) (RemoteMedium, error) {
+	row := q.db.QueryRowContext(ctx, getRemoteMedia, mediaID)
+	var i RemoteMedium
+	err := row.Scan(
+		&i.MediaID,
+		&i.OwnerAccountID,
+		&i.RemoteUrl,
+		&i.DeclaredContentType,
+		&i.DeclaredMediaType,
+		&i.Width,
+		&i.Height,
+		&i.Blurhash,
+		&i.FocusX,
+		&i.FocusY,
+		&i.Description,
+	)
+	return i, err
+}
+
 const getRemoteMediaByURL = `-- name: GetRemoteMediaByURL :one
 SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
   blurhash, focus_x, focus_y, description
