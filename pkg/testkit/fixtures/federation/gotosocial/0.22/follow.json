@@ -1,0 +1,8 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "actor": "https://gotosocial.example/users/the_mighty_zork",
+  "id": "https://gotosocial.example/users/the_mighty_zork/follow/01F8PY8RHWRQZV038T4E8T9YK8",
+  "object": "https://remote.example/users/bob",
+  "to": "https://remote.example/users/bob",
+  "type": "Follow"
+}

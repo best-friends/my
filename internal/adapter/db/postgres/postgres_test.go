@@ -305,6 +305,22 @@ func TestRemoteStatusContract(t *testing.T) {
 	})
 }
 
+func TestRemoteFollowContract(t *testing.T) {
+	testkit.RemoteFollowContract(t, func(t *testing.T, opts uow.Options) testkit.RemoteFollowHarness {
+		db := newTestDB(t, opts)
+		feds := db.FederationRepository()
+		return testkit.RemoteFollowHarness{
+			FollowHarness: testkit.FollowHarness{
+				AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+				Graph:          db.GraphRepository(),
+			},
+			Notifications: db.NotificationRepository(),
+			Federation:    feds,
+			Inbox:         feds,
+		}
+	})
+}
+
 func TestRemoteActorContract(t *testing.T) {
 	testkit.RemoteActorContract(t, func(t *testing.T, opts uow.Options) testkit.RemoteActorHarness {
 		db := newTestDB(t, opts)
