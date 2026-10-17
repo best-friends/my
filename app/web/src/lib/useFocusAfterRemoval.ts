@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+// Shared by the lists whose actions take a row off them: the settings lists and the admin dead jobs.
 import { type RefObject, useEffect, useRef } from "react";
 
 /**

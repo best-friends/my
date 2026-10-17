@@ -49,7 +49,8 @@ type RemoteActorFactory func(t *testing.T, opts uow.Options) RemoteActorHarness
 // rotation under the same key ID, handles that WebFinger does not confirm, documents whose id has
 // another origin, the fetch rules (signed GET, Content-Type, failures remembered, 410 Gone), the
 // periodic refresh of followed stale actors, NodeInfo observations, the public key resolver,
-// that the handle projection equals a rebuild, and the resolution of handles and URLs (FR-305). The network is an in-memory HTTPClient.
+// that the handle projection equals a rebuild, and the resolution of handles and URLs (FR-305).
+// The network is an in-memory HTTPClient.
 func RemoteActorContract(t *testing.T, newHarness RemoteActorFactory) {
 	t.Helper()
 	cases := []struct {
@@ -950,5 +951,36 @@ func remoteResolvesHandlesAndURLs(t *testing.T, e *remoteEnv) {
 		if _, err := e.actors.ResolveURL(ctx, uri); !errors.Is(err, appfederation.ErrUnresolvable) {
 			t.Errorf("ResolveURL(%s) = %v, want ErrUnresolvable", uri, err)
 		}
+	}
+
+	// The profile page of a resolved actor is its url.
+	if u, err := e.accounts.RemoteProfileURL(ctx, a.Account.ID); err != nil || u != "https://mastodon.example/@alice" {
+		t.Errorf("RemoteProfileURL = %q, %v; want the actor's url", u, err)
+	}
+	if _, err := e.accounts.RemoteProfileURL(ctx, e.instance.Account.ID); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("RemoteProfileURL of a local account = %v, want ErrNotFound", err)
+	}
+
+	// WebFinger names an actor that holds another handle, names no actor, or does not answer.
+	e.serveWebFinger(host, "mallory", host, id)
+	e.net.set(webFingerURL(host, "acct:bob@"+host), remoteResponse{status: http.StatusOK, contentType: "application/jrd+json", body: `{"subject":"acct:bob@` + host + `"}`})
+	e.net.set(webFingerURL(host, "acct:carol@"+host), remoteResponse{status: http.StatusServiceUnavailable})
+	for _, name := range []string{"mallory", "bob", "carol"} {
+		if _, err := e.actors.ResolveHandle(ctx, name, host); !errors.Is(err, appfederation.ErrUnresolvable) {
+			t.Errorf("ResolveHandle(%s@%s) = %v, want ErrUnresolvable", name, host, err)
+		}
+	}
+
+	// A handle on an account domain: the stored actor holds the handle on its server's domain
+	// until it is checked again, and then holds the handle on example.org.
+	e.serveWebFinger(host, username, "example.org", id)
+	jrd, _ := json.Marshal(map[string]any{
+		"subject": "acct:" + username + "@example.org",
+		"links":   []map[string]string{{"rel": "self", "type": activityJSON, "href": id}},
+	})
+	e.net.set(webFingerURL("example.org", "acct:"+username+"@example.org"), remoteResponse{status: http.StatusOK, contentType: "application/jrd+json", body: string(jrd)})
+	if c, err := e.actors.ResolveHandle(ctx, username, "Example.ORG"); err != nil || c.Account.ID != a.Account.ID ||
+		c.Handle == nil || c.Handle.Domain != "example.org" {
+		t.Errorf("ResolveHandle on the account domain = %s %+v, %v; want %s@example.org", c.Account.ID, c.Handle, err, username)
 	}
 }

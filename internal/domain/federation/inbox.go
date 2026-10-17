@@ -139,3 +139,29 @@ type ReceivedActivity struct {
 	Trust      Trust
 	ReceivedAt time.Time
 }
+
+// RemoteObjectTombstone records a Delete of an unknown object, or an Undo of an unknown
+// activity, so that the object or activity arriving later is dropped (remote_object_tombstones,
+// federation.md §3.3).
+type RemoteObjectTombstone struct {
+	// URI is the deleted object or the undone activity: on the origin of ActorURI.
+	URI         IRI
+	ActorURI    IRI
+	ActivityURI IRI
+	ReceivedAt  time.Time
+}
+
+// TombstoneFor returns the tombstone that the Delete or Undo act, received as activityURI, leaves
+// for its object when the object is unknown, and whether it leaves one: only an object on the
+// actor's origin other than the actor itself can be tombstoned, so that nobody blocks the
+// objects of others.
+func TombstoneFor(act *Activity, activityURI IRI, receivedAt time.Time) (RemoteObjectTombstone, bool) {
+	if act == nil || (act.Type != ActivityDelete && act.Type != ActivityUndo) {
+		return RemoteObjectTombstone{}, false
+	}
+	obj := act.Object().ID
+	if obj == "" || obj == act.Actor || !SameOrigin(obj, act.Actor) {
+		return RemoteObjectTombstone{}, false
+	}
+	return RemoteObjectTombstone{URI: obj, ActorURI: act.Actor, ActivityURI: activityURI, ReceivedAt: receivedAt}, true
+}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/best-friends/my/internal/adapter/htmlsanitizer"
 	"github.com/best-friends/my/internal/adapter/httpsig"
+	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/app/kernel"
@@ -56,4 +57,17 @@ func (a *App) setUpRemoteActors(cfg *config.Config, repo federationRepository) {
 		Jobs: a.Jobs, Outbox: outbox, Followers: a.Graph, Clock: a.Clock, IDs: a.IDs, Logger: a.Logger,
 	})
 	a.RemoteActors.RegisterJobs(a.Handlers, a.Scheduler)
+}
+
+// remoteMentions resolves the remote handles of local posts for the content module: handles
+// through RemoteActors, profile pages through the account module. It reads a.RemoteActors per
+// call, since the content module is built before setUpRemoteActors.
+type remoteMentions struct{ a *App }
+
+func (m remoteMentions) ResolveHandle(ctx context.Context, username, domain string) (account.Actor, error) {
+	return m.a.RemoteActors.ResolveHandle(ctx, username, domain)
+}
+
+func (m remoteMentions) RemoteProfileURL(ctx context.Context, accountID string) (string, error) {
+	return m.a.Accounts.RemoteProfileURL(ctx, accountID)
 }

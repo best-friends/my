@@ -470,7 +470,9 @@ flowchart LR
 
 - **本文**: 利用者が書いたプレーンテキストを `status_revision_sources` にそのまま保存し、サーバーが HTML を生成して `status_revision_bodies` に保存します（ADR-0019 §2）。
   - 生成する HTML は `p`、`br`、`span[class]`、`a[href, class, rel, target]` だけで、テキストはすべてエスケープします。リンクには `rel="nofollow noopener noreferrer"` と `target="_blank"` を付けます。
-  - メンション `@user`（`@user@{account_domain}`・`@user@{host}` も同じ）は、`account` の公開 API で引いたローカルの `active` なアカウントだけをリンクにし、版の `status_revision_mentions` に記録します。それ以外のドメインのハンドルはテキストのままです。
+  - メンション `@user`（`@user@{account_domain}`・`@user@{host}` も同じ）は、`account` の公開 API で引いたローカルの `active` なアカウントをリンクにし、版の `status_revision_mentions` に記録します。リンク先は `https://{host}/@{username}` です。
+  - それ以外のドメインのメンション `@user@domain` は、そのハンドル（`account_handles`）を持つリモートの `active` なアカウントをリンクにし、同じく記録します。リンク先は Actor の `url`（最新の `remote_account_snapshots.profile_url`）、無ければ Actor の `uri` です。
+  - 未知のハンドルは、トランザクションの前に `federation` の `RemoteActors.ResolveHandle`（WebFinger → Actor の取得 → 書き込み、[federation.md §6.2](federation.md#62-actor-とハンドル)）で解決します。1 つの本文で解決するのは 5 件まで、合計 10 秒までです。解決できないハンドル、`active` でないアカウントのハンドルはテキストのままです。
   - ハッシュタグ `#name` は、NFKC + 小文字化した名前で `tags` を引き（無ければ作り）、版の `status_revision_tags` に記録します。リンク先は `https://{host}/tags/{正規化した名前}` です。
   - `http` / `https` の URL だけを自動リンクにします。URL は空白・非 ASCII 文字・`<>"` などで終わり、末尾の句読点と対応しない閉じ括弧は含めません。
 - **文字数**: 本文と CW の文字数（Unicode のコードポイント数）の合計が、インスタンス設定 `max_status_length` 以下でなければなりません。設定はコマンドごとに `instance` の公開 API から読みます。
@@ -700,9 +702,9 @@ flowchart LR
 | --- | --- | --- | --- |
 | `received_activities` | イベント | `activity_uri`（PK）, `actor_uri`, `type`, `signature_scheme`（`enum(rfc9421, cavage)`）, `trust`（`enum(signed, refetch)`。署名者と `actor` が一致しない、または `id` のホストが `actor` のホストと異なれば `refetch`）, `received_at` | インデックス `(received_at)`（保持期間後に削除） |
 | `received_activity_documents` | イベント | `activity_uri`（PK）, `document`（`document`） | 原本。非同期の処理が読む。障害調査とフィクスチャ採取のため短期保持（#44） |
-| `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除） |
+| `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。`uri` は `actor_uri` と同じオリジンのものだけ（[federation §3.3](federation.md#33-順序と冪等性)）。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除） |
 | `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report)`）, `object_id`, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
-| `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
+| `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て（投稿の `Delete` は削除のトランザクションで組み立てる）、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
 | `deliveries` | イベント | `id`, `outbound_activity_id`, `inbox_url`（shared inbox に集約済み）, `domain`, `created_at` | 一意 `(outbound_activity_id, inbox_url)` |
 | `delivery_attempts` | イベント | `id`, `delivery_id`, `outcome`（`enum(succeeded, retryable_failure, permanent_failure, skipped)`）, `signature_scheme`（`enum(rfc9421, cavage)`、NULL 可 = 応答が無い）, `http_status`（`int`、NULL 可）, `error`（`text`、NULL 可）, `attempted_at` | インデックス `(delivery_id, id)`。保持期間（例: 30 日）後に削除（NFR-OPS-3） |
 | `remote_instances` | リソース | `domain`（PK）, `first_seen_at` | |

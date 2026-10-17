@@ -215,7 +215,7 @@ func (s *Server) VerifyAccountCredentials(ctx context.Context, _ VerifyAccountCr
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: the viewer's account %s: %w", v.AccountID, err)
 	}
-	body, err := s.newCredentialAccount(ctx, a)
+	body, err := s.newCredentialAccount(ctx, v.UserID, a)
 	if err != nil {
 		return nil, err
 	}

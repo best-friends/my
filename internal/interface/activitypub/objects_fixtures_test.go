@@ -32,7 +32,7 @@ type fakeObjects struct {
 	// requests are the signed requests that Authenticate saw.
 	requests []*appfederation.SignedRequest
 	outbox   []federation.ActivityDocument
-	featured []federation.ObjectDocument
+	featured []federation.NoteDocument
 	// authorizedFetch is the authorized fetch setting.
 	authorizedFetch bool
 	err             error
@@ -99,7 +99,7 @@ func (f *fakeObjects) Outbox(_ context.Context, _ string, before string) (appfed
 	return appfederation.OutboxPage{Items: f.outbox, Next: outboxNext}, f.err
 }
 
-func (f *fakeObjects) Featured(context.Context, string) ([]federation.ObjectDocument, error) {
+func (f *fakeObjects) Featured(context.Context, string) ([]federation.NoteDocument, error) {
 	return f.featured, f.err
 }
 

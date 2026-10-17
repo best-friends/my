@@ -358,3 +358,20 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   詳細の画面で消したときは前の画面に戻る（戻る先がなければホーム）。失敗したらダイアログを残してトーストで理由を知らせる。
 - **テスト**: `features/status/status.test.tsx` が画面・楽観的更新と失敗時の巻き戻し・順に送ること・複数の写しへの反映・削除を MSW で検査し、`api/cache.test.ts` がキャッシュの書き換えを単体で検査する。
   E2E（`e2e/status.spec.ts`）は、サインイン済みの状態でスレッドの ARIA スナップショット・axe・横スクロール・失敗したお気に入りの巻き戻し・メニューと削除の確認を検査する。
+
+## 14. 管理画面
+
+`features/admin` が、運用者の画面（連合先のサーバーの状態と dead job）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
+
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先、`manage_jobs` が dead job の画面に要る。
+  ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
+  守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
+- **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
+- **連合先の詳細**（`/admin/instances/{domain}`）: 状態と、最新の `instance_availability_events` の理由、最後に配送を再開した日時（最新の `marked_available`）、新しい順の履歴。
+  データモデルは成功した配送の日時を持たない（`instance_health` は失敗の間だけ更新する。[data-model §4.8](data-model.md#48-federation)）ので、「最後の成功」は配送の再開の日時で示す。
+  失敗の日数があるか停止中なら「配送を再開する」を出し、成功したら詳細の答えを置き換え、一覧と履歴を無効にして結果を知らせる。失敗はトーストで知らせ、状態とボタンを残す（E2）。
+- **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
+  「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
+  複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
+- **テスト**: `features/admin/admin.test.tsx` が出し分け・一覧と絞り込み・ページの読み足し・再開・再実行・失敗・403 を MSW で検査する。既定の閲覧者は権限を持たないので、テストは `operatorHandler()` で権限を与える。
+  E2E（`e2e/admin.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行とフォーカスの移動を検査する。

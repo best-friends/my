@@ -31,6 +31,25 @@ const ProblemTypeMissingPermission = "/api/v1/problems/missing-permission"
 // Permissions reads the permissions of users' roles. *appidentity.Service implements it.
 type Permissions interface {
 	HasPermission(ctx context.Context, userID string, p identity.Permission) (bool, error)
+	// Permissions lists the permissions of the user's roles.
+	Permissions(ctx context.Context, userID string) ([]identity.Permission, error)
+}
+
+// permissions presents the permissions of the user's roles for CredentialAccount; without
+// Options.Permissions there are none.
+func (s *Server) permissions(ctx context.Context, userID string) ([]Permission, error) {
+	out := []Permission{}
+	if s.o.Permissions == nil {
+		return out, nil
+	}
+	perms, err := s.o.Permissions.Permissions(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: permissions of %s: %w", userID, err)
+	}
+	for _, p := range perms {
+		out = append(out, Permission(p))
+	}
+	return out, nil
 }
 
 // InstanceHealth reads the health of remote servers and clears it (federation.md §7.3).

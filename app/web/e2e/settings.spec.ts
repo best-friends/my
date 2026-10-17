@@ -22,6 +22,7 @@ const viewer = {
   indexable: true,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
+  permissions: [],
 };
 
 /** Another account, as the lists of the settings show it. */

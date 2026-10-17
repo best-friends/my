@@ -123,6 +123,13 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 
 - 受信の記録は同期の部分で書くので、送信側が同じアクティビティを再送してもジョブは増えません。処理に失敗したアクティビティは dead job として残り、CLI（FR-801）から再実行します。
 - `orderingKey` は同じ Actor のアクティビティを直列化しますが（#77）、正しさはそれに頼りません（§3.3）。
+- 実装は `federation.InboxProcessor`（`internal/app/federation`）です。
+  - 手順 2 の取り直しでは、埋め込みの文書をすべて信用しないものにします。`Create` / `Update` はオブジェクトを `id` から取得し、`attributedTo` が主体のものに差し替えます。`Delete` は対象がオリジンで消えている（404 / 410 / `Tombstone`）ときだけ通します。自分自身の `Update` はハンドラが Actor を取得し直します。それ以外はアクティビティを `id` から取得し、同じ `id`・型・主体のときにその文書を使います。
+  - 主体はポート `InboxActors`（`RemoteActors.Resolve`）で解決し、ローカルの主体は捨てます。制限はポート `DomainPolicy`（主体のホスト）と `AccountPolicy`（主体のアカウント）で判定します。
+  - ハンドラは `Handle(型, ハンドラ)` で登録します。主体が自分自身を対象にする `Update` / `Delete` は `HandleOwnActor` で別に登録します（`RemoteActors` の Actor の更新・削除）。登録の無い型は `info` のログを残して完了にします（未知の型・`Move`・まだハンドラの無い型）。
+  - ハンドラは、対象が無いことを `ErrUnknownObject`、捨てることを `ErrDropActivity`、処理できないことを `ErrUnprocessable`（`Fail`）で返します。取得の `ErrFetchNotFound` / `ErrFetchGone` / `ErrFetchRefused` は捨てる、`ErrFetchFailed` / `ErrFetchUnavailable` とその他のエラーは `Retry` です。
+  - 記録や原本が無い・正規化できない・記録と主体が違うジョブは `Fail` です。
+  - 結果は `InboxOutcome`（`handled` / `unhandled` / `tombstoned` / `dropped`）です。コントラクトテストは `testkit.InboxProcessingContract` です。
 
 ### 3.3 順序と冪等性
 
@@ -140,6 +147,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | 同じ投稿への同時の `Create` と `Update` | `statuses (uri)` と版の `(status_id, seq)` の一意制約で後の方が再実行され、既存の行を使う |
 
 - tombstone は `origin = remote` の `status_deletions` と、未知の URI のための `remote_object_tombstones`（30 日で消す）の 2 つです。
+- `remote_object_tombstones` は `InboxProcessor` が書きます。`Delete` / `Undo` のハンドラが無いか、ハンドラが `ErrUnknownObject` を返したとき、対象の URI が主体と同じオリジンで主体自身でなければ記録します（ほかのサーバーのオブジェクトを封じさせない。`federation.TombstoneFor`）。
+- `Delete` / `Undo` 以外のアクティビティは、ハンドラを呼ぶ前に、アクティビティの URI に tombstone があれば捨てます。`Create` / `Update`（自分自身の Actor 以外）は、オブジェクトの URI の tombstone でも捨てます。
 - アクティビティの `object` が URI だけのとき、受信した文書の中に埋め込まれていない対象は、ローカルの DB から引くか、取り込み範囲に入るときだけ取得します。
 
 ### 3.4 アクティビティごとのハンドラ
@@ -229,6 +238,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - ハンドルは、保存済みの `account_handles` にあればそれを返します。なければ `https://{domain}` の WebFinger で `acct:{user}@{domain}` を引き、`self` リンクの Actor を `Resolve`（保存済みなら取得しない）で取得・保存します。WebFinger にも §6.1 の取得先の規則（自サーバー・`federation` の制限・`unavailable` のドメインには送らない）が掛かります。
   - URL は、Actor の `id` か Actor を返す URL（プロフィールのページなど）として `Resolve` します。
   - どちらも、ハンドルを WebFinger で確かめた Actor だけを返し、それ以外（WebFinger が Actor を示さない・取得できない・ハンドルが `mismatch`）は `ErrUnresolvable` です。
+  - ハンドルの解決は、返す Actor のハンドルが求めたハンドル（ユーザー名は大文字小文字を区別しない、ホストは正規化）と一致することも確かめます。
+  - ローカル投稿のメンション（data-model §4.4）は `ResolveHandle` を、トランザクションの外で、件数と時間に上限を置いて呼びます。
   - クライアント API は `GET /api/v1/accounts/lookup` の `resolve=true` で呼びます（トークン必須、アカウントごとに 30 回 / 5 分）。
 - URL がオブジェクト（投稿）なら投稿として取り込みます。
 - 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します（ジョブ `federation.refresh_actor`、冪等キー `refresh_actor:<account_id>`）。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors`（1 時間ごと）が `remote_account_heads (last_fetched_at)` の古い順に 200 件ずつ読み、フォローされているものを取り直します（ADR-0034）。カーソル（`last_fetched_at` と `account_id`）を持った次のジョブが続きを読みます。
@@ -263,7 +274,9 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - 記録するのはローカルの投稿・ブーストの活動だけです。リモートの投稿のイベントと、`local` 投稿のブースト（`Boost.Federates` が偽）は記録しません（ADR-0017）。
 - projector は表の 1 行につき 1 つです（`federation.RegisterOutboundProjectors`）。送信する活動を増やすときは、その活動を送るユースケースと一緒に projector を足します。
 - `inline` のキュー（テストと開発用）はトランザクションでの投入ができないので、`queue.AfterCommit` がコミットの後に投入します。
-- アクティビティの文書は `federation.fanout` が 1 回だけ組み立て、`outbound_activity_documents` に保存します。すべての配送とリトライが同じ本文を送ります（再試行で内容が変わらず、消去後の `Delete` も送れる）。
+- アクティビティの文書は `federation.fanout` が 1 回だけ組み立て、`outbound_activity_documents` に保存します。すべての配送とリトライが同じ本文を送ります（再試行で内容が変わらない）。
+- 投稿の `Delete` の文書は、projector が削除のトランザクションでイベントだけから組み立てて保存します。消去ジョブが投稿の行を消した後でも、`Delete` は保存した文書で元の `Create` の `deliveries` の inbox に届きます。
+  宛先は投稿自身の公開範囲で作者の followers に向け（§7.4）、メンション先は入れません（`Delete` は対象が消えたことしか伝えない）。
 - 投稿の文書は、イベントが指す版から組み立てます（後の編集で内容が変わらない）。
 
 ### 7.2 展開（fan-out）
@@ -322,7 +335,11 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 - `Create` の `id` は `{object}/activity`、それ以外は `/ap/activities/{uuid}`（ADR-0018）。
 - 宛先: `public` は `to: [Public]`・`cc: [followers, メンション先]`、`unlisted` は `to: [followers]`・`cc: [Public, メンション先]`、`private` と `local` は `to: [followers]`（`private` は加えて `cc: [メンション先]`）、`direct` は `to: [メンション先]`。
-- `contentMap` は版の言語ごとの本文、`content` は版の既定の言語の本文です（NFR-I18N-5）。`sensitive`・`summary`（CW）・`tag`（`Mention` / `Hashtag` / `Emoji`）・`attachment`（メディアの公開 URL・`mediaType`・`name`・`blurhash`・`focalPoint`・`width` / `height`）を付けます。
+- `contentMap` は版の言語ごとの本文、`content` は版の既定の言語の本文です（NFR-I18N-5）。言語が `und` の本文は `contentMap` に入れません。`sensitive`・`summary`（CW）・`tag`（`Mention` / `Hashtag` / `Emoji`）・`attachment`（メディアの公開 URL・`mediaType`・`name`・`blurhash`・`focalPoint`・`width` / `height`）を付けます。
+  - `sensitive` は CW があれば真です（Mastodon と同じ）。`summary` と `contentMap` は空なら省き、`sensitive`・`content`・`tag`・`attachment` は常に付けます。
+  - `attachment` は処理の終わったメディアだけで、種類を問わず `type` は `Document`（Mastodon と同じ。種類は `mediaType` で伝える）、URL・`mediaType`・寸法は `full` の変種のものです。焦点が中央なら `focalPoint` を省きます。
+  - `Mention` は `href` が Actor の IRI、`name` が `@user@domain`（ローカルのアカウントは設定 `account_domain`）、`Hashtag` は `href` が `https://{host}/tags/{name}`（ADR-0018）、`name` が `#name` です。
+- Note は `federation.notes`（`internal/app/federation`）の 1 か所で組み立て、配送（`Create` / `Update` の `object`）とオブジェクトの GET（§10）が同じものを使います。版のメディア・メンション先・ハッシュタグは `content.Reader.Parts` で引きます。
 - `@context` は AS2・security・Mastodon 拡張（`toot:`）の既存の Actor の文脈と同じものです。
 
 ## 8. 公開範囲 `local` と連合
@@ -414,7 +431,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | --- | --- | --- |
 | フィクスチャの回帰テスト | 実サーバー（Mastodon・Misskey・GoToSocial・Akkoma）から採取したアクティビティ・Actor・オブジェクトの JSON（`pkg/testkit/fixtures/federation/<実装>/<版>/…`）を正規化・ハンドラに通し、結果（正規化した値・書いた行）を golden ファイルと比べる。送信する文書は主要実装の形と比べる（既存の `internal/interface/activitypub/testdata/peers`） | `make check`（毎 PR） |
 | 署名のテストベクタ | RFC 9421 付録 B のテストベクタ、Mastodon と同じ形式の draft-cavage の署名、クエリ文字列・ダイジェストの改ざん | `make check` |
-| 順序のテスト | 同じアクティビティ列の順序を入れ替え・重複させて処理し、最終的な行が同じになることを確かめる性質テスト | `make check` |
+| 順序のテスト | 同じアクティビティ列の順序を入れ替え・重複させて処理し、最終的な行が同じになることを確かめる性質テスト（`testkit.InboxProcessingContract` の `OrderAndDuplicates`。ケースは `inboxOrderCases` で、ハンドラを足すときにケースも足す） | `make check` |
 | SSRF ガード | `testkit.HTTPClientContract`（ADR-0019 §1） | `make check` |
 | ライブの相互運用 | docker compose で Mastodon（secure mode）・GoToSocial（余力があれば Misskey）とこのサーバーを、私設 CA の TLS とコンテナのネットワークの DNS で立て、WebFinger・Actor の署名付き取得・フォロー・投稿・返信・ブースト・お気に入り・削除・編集・公開範囲ごとの配送先を往復させる（#44）。構成とシナリオは `deploy/docker/federation-live/`。未実装の処理を待つシナリオは課題の番号を付けて skip する | nightly / 手動（CI ジョブ `federation-live`、`make federation-live`） |
 

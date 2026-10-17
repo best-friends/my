@@ -28,9 +28,9 @@ type PostingPolicy interface {
 }
 
 // newCredentialAccount presents the viewer's own actor as the CredentialAccount schema: the
-// account with its follow counts and images (newProfile), the source of its profile, and its
-// posting limits.
-func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (CredentialAccount, error) {
+// account with its follow counts and images (newProfile), the source of its profile, its
+// posting limits, and the permissions of the user's roles.
+func (s *Server) newCredentialAccount(ctx context.Context, userID string, a appaccount.Actor) (CredentialAccount, error) {
 	base, err := s.newProfile(ctx, a)
 	if err != nil {
 		return CredentialAccount{}, err
@@ -39,12 +39,16 @@ func (s *Server) newCredentialAccount(ctx context.Context, a appaccount.Actor) (
 	if err != nil {
 		return CredentialAccount{}, err
 	}
+	permissions, err := s.permissions(ctx, userID)
+	if err != nil {
+		return CredentialAccount{}, err
+	}
 	out := CredentialAccount{
 		Id: base.Id, Username: base.Username, Acct: base.Acct, DisplayName: base.DisplayName, Note: base.Note,
 		Url: base.Url, Locked: base.Locked, Bot: base.Bot, CreatedAt: base.CreatedAt, Fields: base.Fields,
 		AvatarUrl: base.AvatarUrl, HeaderUrl: base.HeaderUrl,
 		FollowersCount: base.FollowersCount, FollowingCount: base.FollowingCount,
-		Source: AccountSource{Fields: []AccountFieldSource{}}, Posting: posting,
+		Source: AccountSource{Fields: []AccountFieldSource{}}, Posting: posting, Permissions: permissions,
 	}
 	p := a.Profile
 	if p == nil {
@@ -121,7 +125,7 @@ func (s *Server) UpdateAccountCredentials(ctx context.Context, req UpdateAccount
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: update the profile of %s: %w", v.AccountID, err)
 	}
-	body, err := s.newCredentialAccount(ctx, a)
+	body, err := s.newCredentialAccount(ctx, v.UserID, a)
 	if err != nil {
 		return nil, err
 	}

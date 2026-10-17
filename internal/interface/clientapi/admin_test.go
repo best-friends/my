@@ -26,6 +26,10 @@ func (f fakePermissions) HasPermission(_ context.Context, userID string, p ident
 	return slices.Contains(f[userID], p), nil
 }
 
+func (f fakePermissions) Permissions(_ context.Context, userID string) ([]identity.Permission, error) {
+	return f[userID], nil
+}
+
 // fakeHealth keeps the health of servers (in domain order) and their events (oldest first) with
 // the semantics of appfederation.Health.
 type fakeHealth struct {
@@ -183,6 +187,25 @@ var adminOperations = []struct{ method, path string }{
 	{http.MethodPost, "/admin/instances/a.example/mark_available"},
 	{http.MethodGet, "/admin/dead_jobs"},
 	{http.MethodPost, "/admin/dead_jobs/" + deadJobA + "/retry"},
+}
+
+// TestVerifyAccountCredentialsListsThePermissions checks that the viewer's own account lists the
+// permissions of the user's roles; TestVerifyAccountCredentialsHasTheSource checks that a user
+// without roles has none.
+func TestVerifyAccountCredentialsListsThePermissions(t *testing.T) {
+	e, _, _ := newAdminEnv(t)
+	res := e.get(t, "/accounts/verify_credentials", map[string]string{"Authorization": "Bearer read"})
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.StatusCode)
+	}
+	got := decodeJSON[clientapi.CredentialAccount](t, res).Permissions
+	want := []clientapi.Permission{}
+	for _, p := range identity.AllPermissions() {
+		want = append(want, clientapi.Permission(p))
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("permissions = %v, want %v", got, want)
+	}
 }
 
 func TestAdminOperationsNeedAPermission(t *testing.T) {

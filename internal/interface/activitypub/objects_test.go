@@ -119,7 +119,7 @@ func TestCollectionPages(t *testing.T) {
 		return federation.ActivityDocument{ID: federation.IRI("https://" + host + "/ap/objects/" + id + "/activity"), Type: federation.ActivityCreate}
 	}
 	s.objects.outbox = []federation.ActivityDocument{create(publicStatusID), create(outboxNext)}
-	s.objects.featured = []federation.ObjectDocument{{ID: federation.IRI("https://" + host + "/ap/objects/" + publicStatusID), Type: federation.ObjectNote}}
+	s.objects.featured = []federation.NoteDocument{{ObjectDocument: federation.ObjectDocument{ID: federation.IRI("https://" + host + "/ap/objects/" + publicStatusID), Type: federation.ObjectNote}}}
 	// Botty follows Alice; Alice follows Botty and the deactivated Carol, who is left out.
 	s.graph.edges = []graph.Edge{
 		{FollowerAccountID: botID, FolloweeAccountID: aliceID, FollowID: "0192f3c0-0000-7000-8000-000000000003", State: graph.StateActive, Since: created},

@@ -2364,7 +2364,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/Account"
         - type: object
-          required: [discoverable, indexable, source, posting]
+          required: [discoverable, indexable, source, posting, permissions]
           properties:
             discoverable:
               description: Whether the account may be suggested to others and listed in directories.
@@ -2376,6 +2376,14 @@ components:
               $ref: "#/components/schemas/AccountSource"
             posting:
               $ref: "#/components/schemas/PostingLimits"
+            permissions:
+              description: |
+                The permissions that the user's roles grant, which the admin operations need; empty
+                for a user without roles. Clients show the admin screens by them; the server checks
+                the permission of each admin operation regardless.
+              type: array
+              items:
+                $ref: "#/components/schemas/Permission"
     UpdateCredentialsRequest:
       description: A change of the profile; properties left out keep their current values.
       type: object
@@ -2594,3 +2602,21 @@ components:
       type: string
       enum: [available, unavailable]
     # --- end of admin (#261) ---
+    # --- the viewer's permissions (#267) ---
+    Permission:
+      description: |
+        A capability that a role grants. `manage_domains`: the health of remote servers.
+        `manage_jobs`: the dead jobs of the job queue. The others guard no client API operation
+        yet.
+      type: string
+      enum:
+        - manage_reports
+        - manage_accounts
+        - manage_domains
+        - manage_rules
+        - manage_settings
+        - manage_roles
+        - manage_invites
+        - view_audit
+        - manage_jobs
+    # --- end of the viewer's permissions (#267) ---

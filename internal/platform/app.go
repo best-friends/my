@@ -140,6 +140,9 @@ type App struct {
 	// Inbox verifies and records the activities POSTed to the inboxes
 	// (docs/architecture/federation.md §3.1).
 	Inbox *federation.Inbox
+	// InboxProcessor processes the recorded activities and dispatches them to the handler of
+	// their type (docs/architecture/federation.md §3.2).
+	InboxProcessor *federation.InboxProcessor
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -347,6 +350,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// No moderation restrictions exist yet; posting still goes through the policy port.
 		Restrictions:    content.NoRestrictions{},
 		Media:           medias,
+		RemoteMentions:  remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
 		MaxStatusLength: a.Instance.MaxStatusLength,
 		DefaultLanguage: a.defaultPostLanguage,
 		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
@@ -370,7 +374,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Streams = stream.NewHub(stream.HubOptions{})
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
-	a.setUpFederation(cfg, feds)
+	fedOutbox := a.setUpFederation(cfg, feds)
 
 	if opts.Version == "" {
 		opts.Version = "dev"
@@ -394,6 +398,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: content.NoRestrictions{}, Media: a.Media,
 	})
+	a.setUpFanOut(cfg, feds, fedOutbox)
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
 		Repository: statuses, Accounts: a.Accounts, Restrictions: content.NoRestrictions{}, Media: a.Media,
@@ -437,8 +442,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 }
 
 // setUpFederation registers the projectors that record outbound activities, after those of the
-// modules whose events they follow, and the fan-out of their deliveries (federation.md §7).
-func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) {
+// modules whose events they follow (federation.md §7), and returns the outbox they enqueue the
+// fan-out with.
+func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) queue.Outbox {
 	outbox := a.Outbox
 	if outbox == nil {
 		// The inline queue has no transactional enqueue; its jobs are enqueued after the commit.
@@ -447,13 +453,19 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) {
 	federation.RegisterOutboundProjectors(a.Projectors, federation.RecorderDeps{
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
 	})
+	return outbox
+}
+
+// setUpFanOut registers the fan-out of outbound activities (federation.md §7.2). It comes after
+// the status reader, which resolves the media, mentions, and hashtags of the Notes it builds.
+func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox queue.Outbox) {
 	a.FanOut = federation.NewFanOut(federation.FanOutDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox,
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
-		Accounts: a.Accounts, Graph: a.Graph,
+		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses,
 		// No domain blocks exist yet; the fan-out still goes through the policy port.
 		Domains: federation.NoDomainRestrictions{},
-		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, Logger: a.Logger,
+		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 	})
 	a.FanOut.RegisterJobs(a.Handlers)
 }
@@ -469,7 +481,7 @@ func (a *App) newObjects(cfg *config.Config) *federation.Objects {
 		Domains: federation.NoDomainRestrictions{},
 		// Authorized fetch (FR-408) is the instance setting, read per request.
 		Settings: a.Instance,
-		Host:     cfg.Host, Logger: a.Logger,
+		Host:     cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 	})
 }
 

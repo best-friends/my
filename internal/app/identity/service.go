@@ -247,20 +247,37 @@ func (s *Service) builtinRoles() []roleToEnsure {
 
 // HasPermission reports whether one of the roles that the user userID holds grants p.
 func (s *Service) HasPermission(ctx context.Context, userID string, p identity.Permission) (bool, error) {
-	roles, err := s.d.Repository.ListUserRoles(ctx, userID)
+	perms, err := s.Permissions(ctx, userID)
 	if err != nil {
 		return false, err
 	}
+	return slices.Contains(perms, p), nil
+}
+
+// Permissions returns the permissions that the roles of the user userID grant, in the order of
+// identity.AllPermissions; none for a user without roles.
+func (s *Service) Permissions(ctx context.Context, userID string) ([]identity.Permission, error) {
+	roles, err := s.d.Repository.ListUserRoles(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	granted := map[identity.Permission]bool{}
 	for _, r := range roles {
 		_, perms, err := s.d.Repository.FindRole(ctx, r.Key)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
-		if slices.Contains(perms, p) {
-			return true, nil
+		for _, p := range perms {
+			granted[p] = true
 		}
 	}
-	return false, nil
+	out := []identity.Permission{}
+	for _, p := range identity.AllPermissions() {
+		if granted[p] {
+			out = append(out, p)
+		}
+	}
+	return out, nil
 }
 
 // EnsureBuiltinRoles creates the built-in roles (admin and moderator) with their permissions,
