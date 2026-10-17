@@ -9,19 +9,9 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RouterContext } from "../../lib/query";
-import {
-  apiBase,
-  viewerFixture,
-  instanceFixture,
-  oauthPaths,
-  preferencesFixture,
-  problem,
-  relationshipFixture,
-  remoteAccountFixture,
-  viewerStatusFixture,
-  tokenResponse,
-  uploadedMediaId,
-} from "../../test/msw/handlers";
+import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
+import { instanceFixture, preferencesFixture, relationshipFixture, remoteAccountFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
+import { uploadedMediaId } from "./test/handlers";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { ComposeEntry, ComposeProvider, useReply } from ".";

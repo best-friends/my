@@ -3,7 +3,8 @@
 // errors turned into localized ApiError / NetworkError objects.
 import { http, HttpResponse } from "msw";
 import { afterEach, expect, test } from "vitest";
-import { apiBase, instanceFixture, oauthError, oauthPaths, problem, tokenResponse, viewerFixture } from "../../test/msw/handlers";
+import { apiBase, oauthError, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
+import { instanceFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { Session } from "../auth/session";
 import { ApiError, NetworkError } from "../errors";

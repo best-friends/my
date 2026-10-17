@@ -5,7 +5,7 @@
 import { delay, http, HttpResponse } from "msw";
 import { waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
-import { oauthError, oauthPaths, tokenResponse } from "../../test/msw/handlers";
+import { oauthError, oauthPaths, tokenResponse } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { createLockManager } from "../../test/locks";
 import { Session } from "./session";

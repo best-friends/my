@@ -185,6 +185,8 @@ export default defineConfig(
         // Helpers of the @my/ui component tests (the ARIA snapshot); only those tests import them.
         { type: "ui-test", pattern: "ui/test", partialMatch: false },
         { type: "route", pattern: "web/src/routes", partialMatch: false },
+        // A feature's default MSW handlers and the fixtures only it uses, for its tests and the bundle in src/test/msw.
+        { type: "feature-test", pattern: "web/src/features/*/test", capture: ["feature"], partialMatch: false },
         { type: "feature", pattern: "web/src/features/*", capture: ["feature"], partialMatch: false },
         { type: "lib", pattern: "web/src/lib", partialMatch: false },
         // Test helpers and the MSW setup, for the tests of every element.
@@ -219,6 +221,14 @@ export default defineConfig(
               allow: { to: { element: { type: "test" } } },
             },
             { from: { element: { type: "test" } }, allow: { to: { element: { type: ["test", "shell", "route", "lib", "ui"] } } } },
+            // T4: a feature's handlers build on the shared fixtures and helpers of src/test, which bundles them;
+            // besides that bundle, only the tests of the same feature import them.
+            { from: { element: { type: "feature-test" } }, allow: { to: { element: { type: "test" } } } },
+            { from: { element: { type: "test" } }, allow: { to: { element: { type: "feature-test" } } } },
+            {
+              from: { element: { type: "feature", fileInternalPath: "**/*.test.{ts,tsx}" } },
+              allow: { to: { element: { type: "feature-test", captured: { feature: "{{ from.element.captured.feature }}" } } } },
+            },
             // A2: @my/ui knows only React, React Aria, TanStack Virtual (for Feed) and the Tailwind helpers.
             {
               from: { element: { type: "ui" } },

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from "vitest";
-import { viewerStatusFixture, viewerFixture } from "../../../test/msw/handlers";
+import { viewerFixture, viewerStatusFixture } from "../../../test/fixtures";
 import type { PostingLimits } from "../api/compose";
 import { fitWithin } from "./prepareImage";
 import { countCharacters, defaultVisibility, domainMentions, narrower, postedVisibility, replyMentions } from "./policy";

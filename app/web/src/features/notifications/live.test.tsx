@@ -4,7 +4,10 @@
 import { screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
-import { apiBase, notificationsFixture, otherAccountFixture, resumableSession, streamingServer } from "../../test/msw/handlers";
+import { apiBase, resumableSession } from "../../test/msw/http";
+import { notificationsFixture } from "./test/handlers";
+import { otherAccountFixture } from "../../test/fixtures";
+import { streamingServer } from "../../test/msw/streaming";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Notification, NotificationMarker } from "./api/notifications";
