@@ -1,0 +1,62 @@
+{
+  "id": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/activity#Create",
+  "to": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+  "type": "Create",
+  "actor": "https://gotosocial.example/users/carol",
+  "object": {
+    "id": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA",
+    "to": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+    "tag": {
+      "href": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+      "name": "@alice@remote.example",
+      "type": "Mention"
+    },
+    "url": "https://gotosocial.example/@carol/statuses/01M54AAHBKGET0G8G7FX6B60DA",
+    "type": "Note",
+    "content": "<p><span class=\"h-card\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>alice</span></a></span> direct from gotosocial.example 1792220153203023370</p>",
+    "replies": {
+      "id": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies",
+      "type": "Collection",
+      "first": {
+        "id": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies?page=true",
+        "next": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies?page=true&only_other_accounts=false",
+        "type": "CollectionPage",
+        "partOf": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies"
+      }
+    },
+    "published": "2026-10-17T06:55:53Z",
+    "contentMap": {
+      "en": "<p><span class=\"h-card\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>alice</span></a></span> direct from gotosocial.example 1792220153203023370</p>"
+    },
+    "attributedTo": "https://gotosocial.example/users/carol",
+    "interactionPolicy": {
+      "canLike": {
+        "automaticApproval": [
+          "https://gotosocial.example/users/carol",
+          "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+        ]
+      },
+      "canQuote": {
+        "automaticApproval": [
+          "https://gotosocial.example/users/carol"
+        ]
+      },
+      "canReply": {
+        "automaticApproval": [
+          "https://gotosocial.example/users/carol",
+          "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+        ]
+      },
+      "canAnnounce": {
+        "automaticApproval": [
+          "https://gotosocial.example/users/carol"
+        ]
+      }
+    }
+  },
+  "@context": [
+    "https://gotosocial.org/ns",
+    "https://www.w3.org/ns/activitystreams"
+  ],
+  "published": "2026-10-17T06:55:53Z"
+}

@@ -1,0 +1,28 @@
+{
+  "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454932981512538#delete",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "type": "Delete",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": {
+    "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454932981512538",
+    "type": "Tombstone",
+    "atomUri": "https://mastodon.example/ap/users/117454922805771612/statuses/117454932981512538"
+  },
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "atomUri": "ostatus:atomUri",
+      "ostatus": "http://ostatus.org#"
+    },
+    "https://w3id.org/security/v1"
+  ],
+  "signature": {
+    "type": "RsaSignature2017",
+    "created": "2026-10-17T06:54:08Z",
+    "creator": "https://mastodon.example/ap/users/117454922805771612#rsa-d460bc5b5e0b807d",
+    "expires": "2026-10-19T06:54:08Z",
+    "signatureValue": "RVhBTVBMRS1TSUdOQVRVUkU="
+  }
+}

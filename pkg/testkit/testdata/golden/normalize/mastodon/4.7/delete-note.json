@@ -1,0 +1,26 @@
+{
+  "Activity": {
+    "Actor": "https://mastodon.example/ap/users/117454922805771612",
+    "Audience": {
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454932981512538#delete",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454932981512538",
+            "RawType": "Tombstone",
+            "Type": "Tombstone"
+          }
+        },
+        "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454932981512538",
+        "Trusted": true
+      }
+    ],
+    "RawType": "Delete",
+    "Type": "Delete"
+  }
+}

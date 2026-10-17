@@ -1,0 +1,33 @@
+{
+  "id": "https://mastodon.example/ap/users/117454922805771612#announces/117454928927409385/undo",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "type": "Undo",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": {
+    "cc": [
+      "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+      "https://mastodon.example/ap/users/117454922805771612/followers"
+    ],
+    "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454928927409385/activity",
+    "to": [
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "type": "Announce",
+    "actor": "https://mastodon.example/ap/users/117454922805771612",
+    "object": "https://remote.example/ap/objects/01a148a2-b24c-73b5-b159-fdfd429294e4",
+    "published": "2026-10-17T06:53:04Z"
+  },
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1"
+  ],
+  "signature": {
+    "type": "RsaSignature2017",
+    "created": "2026-10-17T06:53:07Z",
+    "creator": "https://mastodon.example/ap/users/117454922805771612#rsa-d460bc5b5e0b807d",
+    "expires": "2026-10-19T06:53:07Z",
+    "signatureValue": "RVhBTVBMRS1TSUdOQVRVUkU="
+  }
+}

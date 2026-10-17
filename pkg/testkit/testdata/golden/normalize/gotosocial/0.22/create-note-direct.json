@@ -1,0 +1,69 @@
+{
+  "Activity": {
+    "Actor": "https://gotosocial.example/users/carol",
+    "Audience": {
+      "To": [
+        "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+      ]
+    },
+    "ID": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/activity#Create",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://gotosocial.example/users/carol",
+            "Audience": {
+              "To": [
+                "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<p><span class=\"h-card\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>alice</span></a></span> direct from gotosocial.example 1792220153203023370</p>",
+                "Language": "en"
+              }
+            ],
+            "ID": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA",
+            "Mentions": [
+              {
+                "Href": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+                "Name": "@alice@remote.example"
+              }
+            ],
+            "Published": "2026-10-01T00:00:00Z",
+            "RawType": "Note",
+            "Replies": {
+              "Embedded": {
+                "Collection": {
+                  "First": {
+                    "Embedded": {
+                      "Collection": {
+                        "ID": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies?page=true",
+                        "Next": {
+                          "ID": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies?page=true&only_other_accounts=false"
+                        },
+                        "Page": true
+                      }
+                    },
+                    "ID": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies?page=true",
+                    "Trusted": true
+                  },
+                  "ID": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies"
+                }
+              },
+              "ID": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA/replies",
+              "Trusted": true
+            },
+            "Type": "Note",
+            "URL": "https://gotosocial.example/@carol/statuses/01M54AAHBKGET0G8G7FX6B60DA"
+          }
+        },
+        "ID": "https://gotosocial.example/users/carol/statuses/01M54AAHBKGET0G8G7FX6B60DA",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-01T00:00:00Z",
+    "RawType": "Create",
+    "Type": "Create"
+  }
+}

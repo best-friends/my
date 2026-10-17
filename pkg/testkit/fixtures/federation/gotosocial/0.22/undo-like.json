@@ -1,0 +1,14 @@
+{
+  "id": "https://gotosocial.example/01M54A6FDV0E6KWS0N1SABZX52",
+  "to": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+  "type": "Undo",
+  "actor": "https://gotosocial.example/users/carol",
+  "object": {
+    "id": "https://gotosocial.example/users/carol/liked/01M54A6DER0EHJ9N4KRTZZFW10",
+    "to": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+    "type": "Like",
+    "actor": "https://gotosocial.example/users/carol",
+    "object": "https://remote.example/ap/objects/01a148a3-35c2-7e91-8583-71892f11726d"
+  },
+  "@context": "https://www.w3.org/ns/activitystreams"
+}

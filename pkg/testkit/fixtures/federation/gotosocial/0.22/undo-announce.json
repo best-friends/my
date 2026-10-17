@@ -1,0 +1,23 @@
+{
+  "cc": [
+    "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "id": "https://gotosocial.example/01M54A5SJH0DT8R920Y3Z0DXHY",
+  "to": "https://gotosocial.example/users/carol/followers",
+  "type": "Undo",
+  "actor": "https://gotosocial.example/users/carol",
+  "object": {
+    "cc": [
+      "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "id": "https://gotosocial.example/users/carol/statuses/01M54A5QJYVJZQGQBFESG0R6Z7",
+    "to": "https://gotosocial.example/users/carol/followers",
+    "type": "Announce",
+    "actor": "https://gotosocial.example/users/carol",
+    "object": "https://remote.example/ap/objects/01a148a2-de39-73ee-aa1d-2541f830c4b8",
+    "published": "2026-10-17T06:53:15Z"
+  },
+  "@context": "https://www.w3.org/ns/activitystreams"
+}

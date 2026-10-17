@@ -1,0 +1,116 @@
+{
+  "cc": [
+    "https://mastodon.example/ap/users/117454922805771612/followers",
+    "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+  ],
+  "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619/activity",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "type": "Create",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": {
+    "cc": [
+      "https://mastodon.example/ap/users/117454922805771612/followers",
+      "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f"
+    ],
+    "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619",
+    "to": [
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "tag": [
+      {
+        "href": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+        "name": "@alice@remote.example",
+        "type": "Mention"
+      }
+    ],
+    "url": "https://mastodon.example/@bob/117454927899945619",
+    "type": "Note",
+    "likes": {
+      "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619/likes",
+      "type": "Collection",
+      "totalItems": 0
+    },
+    "shares": {
+      "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619/shares",
+      "type": "Collection",
+      "totalItems": 0
+    },
+    "atomUri": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619",
+    "content": "<p><span class=\"h-card\" translate=\"no\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\">@<span>alice</span></a></span> a reply from mastodon 1792219969097569189</p>",
+    "context": "https://mastodon.example/contexts/117454924828888842-117454927826029191",
+    "replies": {
+      "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619/replies",
+      "type": "Collection",
+      "first": {
+        "next": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619/replies?only_other_accounts=true&page=true",
+        "type": "CollectionPage",
+        "items": [],
+        "partOf": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619/replies"
+      }
+    },
+    "summary": null,
+    "inReplyTo": "https://remote.example/ap/objects/01a148a2-753a-7b02-b9bc-71380ccdfdd0",
+    "published": "2026-10-17T06:52:49Z",
+    "sensitive": false,
+    "attachment": [],
+    "contentMap": {
+      "en": "<p><span class=\"h-card\" translate=\"no\"><a href=\"https://remote.example/@alice\" class=\"u-url mention\">@<span>alice</span></a></span> a reply from mastodon 1792219969097569189</p>"
+    },
+    "attributedTo": "https://mastodon.example/ap/users/117454922805771612",
+    "conversation": "https://mastodon.example/contexts/117454924828888842-117454927826029191",
+    "inReplyToAtomUri": "https://remote.example/ap/objects/01a148a2-753a-7b02-b9bc-71380ccdfdd0",
+    "interactionPolicy": {
+      "canQuote": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      }
+    }
+  },
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "gts": "https://gotosocial.org/ns#",
+      "toot": "http://joinmastodon.org/ns#",
+      "quote": {
+        "@id": "https://w3id.org/fep/044f#quote",
+        "@type": "@id"
+      },
+      "atomUri": "ostatus:atomUri",
+      "ostatus": "http://ostatus.org#",
+      "canQuote": {
+        "@id": "gts:canQuote",
+        "@type": "@id"
+      },
+      "quoteUri": "http://fedibird.com/ns#quoteUri",
+      "sensitive": "as:sensitive",
+      "canFeature": {
+        "@id": "https://w3id.org/fep/7aa9#canFeature",
+        "@type": "@id"
+      },
+      "votersCount": "toot:votersCount",
+      "conversation": "ostatus:conversation",
+      "_misskey_quote": "https://misskey-hub.net/ns#_misskey_quote",
+      "manualApproval": {
+        "@id": "gts:manualApproval",
+        "@type": "@id"
+      },
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "automaticApproval": {
+        "@id": "gts:automaticApproval",
+        "@type": "@id"
+      },
+      "interactionPolicy": {
+        "@id": "gts:interactionPolicy",
+        "@type": "@id"
+      },
+      "quoteAuthorization": {
+        "@id": "https://w3id.org/fep/044f#quoteAuthorization",
+        "@type": "@id"
+      }
+    }
+  ],
+  "published": "2026-10-17T06:52:49Z"
+}

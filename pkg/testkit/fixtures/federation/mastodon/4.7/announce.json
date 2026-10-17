@@ -1,0 +1,15 @@
+{
+  "cc": [
+    "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+    "https://mastodon.example/ap/users/117454922805771612/followers"
+  ],
+  "id": "https://mastodon.example/ap/users/117454922805771612/statuses/117454928927409385/activity",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "type": "Announce",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": "https://remote.example/ap/objects/01a148a2-b24c-73b5-b159-fdfd429294e4",
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "published": "2026-10-17T06:53:04Z"
+}

@@ -1,0 +1,27 @@
+{
+  "Activity": {
+    "Actor": "https://mastodon.example/ap/users/117454922805771612",
+    "ID": "https://mastodon.example/ap/users/117454922805771612#accepts/follows/2",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+            "ID": "https://remote.example/ap/activities/01a148a1-d5e4-7548-b8c9-85015fb1987a",
+            "Objects": [
+              {
+                "ID": "https://mastodon.example/ap/users/117454922805771612"
+              }
+            ],
+            "RawType": "Follow",
+            "Type": "Follow"
+          }
+        },
+        "ID": "https://remote.example/ap/activities/01a148a1-d5e4-7548-b8c9-85015fb1987a",
+        "Trusted": false
+      }
+    ],
+    "RawType": "Accept",
+    "Type": "Accept"
+  }
+}

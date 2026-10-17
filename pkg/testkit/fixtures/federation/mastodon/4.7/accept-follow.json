@@ -1,0 +1,12 @@
+{
+  "id": "https://mastodon.example/ap/users/117454922805771612#accepts/follows/2",
+  "type": "Accept",
+  "actor": "https://mastodon.example/ap/users/117454922805771612",
+  "object": {
+    "id": "https://remote.example/ap/activities/01a148a1-d5e4-7548-b8c9-85015fb1987a",
+    "type": "Follow",
+    "actor": "https://remote.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f",
+    "object": "https://mastodon.example/ap/users/117454922805771612"
+  },
+  "@context": "https://www.w3.org/ns/activitystreams"
+}

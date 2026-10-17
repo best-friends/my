@@ -6,9 +6,6 @@
 // black-box checks, over HTTPS through the proxy of compose.yaml, that this server federates with
 // Mastodon and GoToSocial. scripts/federation-live.sh starts the stack and runs them; without the
 // FEDERATION_LIVE_* variables that it sets, every test skips.
-//
-// A scenario whose server side is not built yet calls pending with the issues it waits for. It is
-// skipped unless FEDERATION_LIVE_RUN_PENDING=1, which runs it to check the work on those issues.
 package federationlive
 
 import (
@@ -45,8 +42,17 @@ const (
 	gtsHost      = "gts.test"
 	gtsUser      = "carol"
 
+	// The users who never follow alice: the mentioned non-followers of TestVisibilityAudiences.
+	mastodonStranger = "dave"
+	gtsStranger      = "erin"
+	// mastodonSigner is the user of TestSignatureProfile, whose draft-cavage requests the proxy
+	// refuses in both directions (Caddyfile).
+	mastodonSigner = "eve"
+
 	// deliveryTimeout bounds the wait for an asynchronous delivery (queues, retries) to land.
 	deliveryTimeout = 90 * time.Second
+	// quietPeriod is how long a delivery that must not happen is waited for.
+	quietPeriod = 15 * time.Second
 )
 
 // env is the stack that scripts/federation-live.sh started.
@@ -113,24 +119,34 @@ func setup() (*env, error) {
 	if e.local, err = signInLocal(ctx, transport, os.Getenv("FEDERATION_LIVE_MY_PASSWORD")); err != nil {
 		return nil, fmt.Errorf("signing in to %s: %w", localHost, err)
 	}
-	gtsToken, err := signInGoToSocial(ctx, transport, os.Getenv("FEDERATION_LIVE_GTS_PASSWORD"))
-	if err != nil {
-		return nil, fmt.Errorf("signing in to %s: %w", gtsHost, err)
+	gts := map[string]string{}
+	for _, user := range []string{gtsUser, gtsStranger} {
+		token, err := signInGoToSocial(ctx, transport, user, os.Getenv("FEDERATION_LIVE_GTS_PASSWORD"))
+		if err != nil {
+			return nil, fmt.Errorf("signing in to %s as %s: %w", gtsHost, user, err)
+		}
+		gts[user] = token
 	}
-	e.peers = []*peerClient{
-		{name: "mastodon", host: mastodonHost, user: mastodonUser, token: os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN"), http: e.http},
-		{name: "gotosocial", host: gtsHost, user: gtsUser, token: gtsToken, http: e.http},
+	mastodon := func(user, token string) *peerClient {
+		return &peerClient{name: "mastodon", host: mastodonHost, user: user, token: token, http: e.http}
+	}
+	gotosocial := func(user string) *peerClient {
+		return &peerClient{name: "gotosocial", host: gtsHost, user: user, token: gts[user], http: e.http, cachedHome: true}
+	}
+	m := mastodon(mastodonUser, os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN"))
+	m.stranger = mastodon(mastodonStranger, os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN_DAVE"))
+	m.signer = mastodon(mastodonSigner, os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN_EVE"))
+	g := gotosocial(gtsUser)
+	g.stranger = gotosocial(gtsStranger)
+	e.peers = []*peerClient{m, g}
+	// GoToSocial creates accounts that approve their followers by hand; the scenarios that need an
+	// approval lock the account themselves (TestFollowApproval).
+	for _, p := range []*peerClient{g, g.stranger} {
+		if err := p.setLocked(ctx, false); err != nil {
+			return nil, fmt.Errorf("unlocking %s: %w", p.handle(), err)
+		}
 	}
 	return e, nil
-}
-
-// pending skips a scenario that needs the work of the given issues, unless
-// FEDERATION_LIVE_RUN_PENDING=1.
-func pending(t *testing.T, issues ...string) {
-	t.Helper()
-	if os.Getenv("FEDERATION_LIVE_RUN_PENDING") != "1" {
-		t.Skipf("pending %s (set FEDERATION_LIVE_RUN_PENDING=1 to run it)", strings.Join(issues, ", "))
-	}
 }
 
 // eventually calls check until it reports done or the timeout passes, then fails with its last
@@ -294,6 +310,42 @@ func (e *env) receivedActivities(t *testing.T, actorURI string) []receivedActivi
 	return out
 }
 
+// deliveryAttempt is a row of delivery_attempts with the inbox of its delivery (data-model §4.8).
+type deliveryAttempt struct {
+	Inbox, Outcome, SignatureScheme string
+	HTTPStatus                      int
+}
+
+// deliveryAttempts returns every attempt this server made to deliver to the inbox, oldest first.
+func (e *env) deliveryAttempts(t *testing.T, inbox string) []deliveryAttempt {
+	t.Helper()
+	ctx := t.Context()
+	conn, err := pgx.Connect(ctx, e.db)
+	if err != nil {
+		t.Fatalf("connecting to the database of %s: %v", localHost, err)
+	}
+	defer func() { _ = conn.Close(context.Background()) }()
+	rows, err := conn.Query(ctx, `
+		SELECT d.inbox_url, a.outcome, COALESCE(a.signature_scheme, ''), COALESCE(a.http_status, 0)
+		FROM delivery_attempts a JOIN deliveries d ON d.id = a.delivery_id
+		WHERE d.inbox_url = $1 ORDER BY a.attempted_at, a.id`, inbox)
+	if err != nil {
+		t.Fatalf("reading delivery_attempts: %v", err)
+	}
+	var out []deliveryAttempt
+	for rows.Next() {
+		var a deliveryAttempt
+		if err := rows.Scan(&a.Inbox, &a.Outcome, &a.SignatureScheme, &a.HTTPStatus); err != nil {
+			t.Fatalf("reading delivery_attempts: %v", err)
+		}
+		out = append(out, a)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("reading delivery_attempts: %v", err)
+	}
+	return out
+}
+
 // --- This server (its own client API) ---------------------------------------------------------
 
 type localClient struct {
@@ -395,11 +447,46 @@ type relationship struct {
 	FollowedBy bool   `json:"followed_by"`
 }
 
-// status is the part of a status that the scenarios read (both APIs).
+// status is the part of a status that the scenarios read (both APIs; the boost count is
+// `boosts_count` here and `reblogs_count` in the Mastodon client API).
 type status struct {
-	ID      string `json:"id"`
-	URI     string `json:"uri"`
-	Content string `json:"content"`
+	ID              string `json:"id"`
+	URI             string `json:"uri"`
+	Content         string `json:"content"`
+	Visibility      string `json:"visibility"`
+	InReplyToID     string `json:"in_reply_to_id"`
+	BoostsCount     int    `json:"boosts_count"`
+	ReblogsCount    int    `json:"reblogs_count"`
+	FavouritesCount int    `json:"favourites_count"`
+}
+
+// thread is a status context (both APIs).
+type thread struct {
+	Ancestors   []status `json:"ancestors"`
+	Descendants []status `json:"descendants"`
+}
+
+// notification is the part of a notification that the scenarios read (both APIs).
+type notification struct {
+	Type    string  `json:"type"`
+	Account account `json:"account"`
+	Status  *status `json:"status"`
+}
+
+// isNotFound reports whether err is a 404 response.
+func isNotFound(err error) bool {
+	var ae *apiError
+	return errors.As(err, &ae) && ae.status == http.StatusNotFound
+}
+
+// findStatus returns the status of the list with the URI.
+func findStatus(items []status, uri string) (status, bool) {
+	for _, s := range items {
+		if s.URI == uri {
+			return s, true
+		}
+	}
+	return status{}, false
 }
 
 func (l *localClient) call(ctx context.Context, method, path string, body, out any) error {
@@ -430,10 +517,72 @@ func (l *localClient) relationship(ctx context.Context, id string) (relationship
 	return rs[0], nil
 }
 
+func (l *localClient) unfollow(ctx context.Context, id string) error {
+	return l.call(ctx, http.MethodPost, "/accounts/"+url.PathEscape(id)+"/unfollow", nil, nil)
+}
+
+// setLocked turns the approval of follow requests on or off (update_credentials).
+func (l *localClient) setLocked(ctx context.Context, locked bool) error {
+	return l.call(ctx, http.MethodPatch, "/accounts/update_credentials", map[string]any{"locked": locked}, nil)
+}
+
+// followRequests returns the accounts whose follow requests wait for alice's approval.
+func (l *localClient) followRequests(ctx context.Context) ([]account, error) {
+	var page struct {
+		Accounts []account `json:"accounts"`
+	}
+	err := l.call(ctx, http.MethodGet, "/follow_requests", nil, &page)
+	return page.Accounts, err
+}
+
+func (l *localClient) authorize(ctx context.Context, id string) error {
+	return l.call(ctx, http.MethodPost, "/follow_requests/"+url.PathEscape(id)+"/authorize", nil, nil)
+}
+
 func (l *localClient) post(ctx context.Context, text, visibility string) (status, error) {
+	return l.reply(ctx, text, visibility, "")
+}
+
+// reply posts a status; inReplyTo is the ID of the status it replies to, or empty.
+func (l *localClient) reply(ctx context.Context, text, visibility, inReplyTo string) (status, error) {
+	body := map[string]any{"text": text, "visibility": visibility}
+	if inReplyTo != "" {
+		body["in_reply_to_id"] = inReplyTo
+	}
 	var s status
-	err := l.call(ctx, http.MethodPost, "/statuses", map[string]any{"text": text, "visibility": visibility}, &s)
+	err := l.call(ctx, http.MethodPost, "/statuses", body, &s)
 	return s, err
+}
+
+func (l *localClient) status(ctx context.Context, id string) (status, error) {
+	var s status
+	err := l.call(ctx, http.MethodGet, "/statuses/"+url.PathEscape(id), nil, &s)
+	return s, err
+}
+
+func (l *localClient) context(ctx context.Context, id string) (thread, error) {
+	var th thread
+	err := l.call(ctx, http.MethodGet, "/statuses/"+url.PathEscape(id)+"/context", nil, &th)
+	return th, err
+}
+
+func (l *localClient) edit(ctx context.Context, id, text string) (status, error) {
+	var s status
+	err := l.call(ctx, http.MethodPut, "/statuses/"+url.PathEscape(id), map[string]any{"text": text}, &s)
+	return s, err
+}
+
+func (l *localClient) delete(ctx context.Context, id string) error {
+	return l.call(ctx, http.MethodDelete, "/statuses/"+url.PathEscape(id), nil, nil)
+}
+
+// interact boosts or favourites a status (action "boost" / "favourite"), or undoes it.
+func (l *localClient) interact(ctx context.Context, id, action string, undo bool) error {
+	method := http.MethodPost
+	if undo {
+		method = http.MethodDelete
+	}
+	return l.call(ctx, method, "/statuses/"+url.PathEscape(id)+"/"+action, nil, nil)
 }
 
 func (l *localClient) home(ctx context.Context) ([]status, error) {
@@ -444,11 +593,26 @@ func (l *localClient) home(ctx context.Context) ([]status, error) {
 	return page.Items, err
 }
 
+func (l *localClient) notifications(ctx context.Context) ([]notification, error) {
+	var page struct {
+		Items []notification `json:"items"`
+	}
+	err := l.call(ctx, http.MethodGet, "/notifications", nil, &page)
+	return page.Items, err
+}
+
 // --- Peers (the Mastodon client API) ----------------------------------------------------------
 
 type peerClient struct {
 	name, host, user, token string
 	http                    *http.Client
+	// cachedHome is set for GoToSocial, whose first page of the home timeline comes from a cache
+	// that does not always take statuses that arrive after it was filled.
+	cachedHome bool
+	// stranger is another user of the peer who never follows alice (TestVisibilityAudiences).
+	stranger *peerClient
+	// signer is the user of TestSignatureProfile (Mastodon only).
+	signer *peerClient
 }
 
 // handle is the peer user's handle.
@@ -473,10 +637,30 @@ func (p *peerClient) resolve(ctx context.Context, handle string) (account, error
 	return res.Accounts[0], nil
 }
 
+// resolveStatus searches a status URI with resolve=true, which makes the peer fetch it from this
+// server with a signed GET.
+func (p *peerClient) resolveStatus(ctx context.Context, uri string) (status, error) {
+	var res struct {
+		Statuses []status `json:"statuses"`
+	}
+	q := url.Values{"q": {uri}, "resolve": {"true"}, "type": {"statuses"}, "limit": {"1"}}
+	if err := p.call(ctx, http.MethodGet, "/api/v2/search?"+q.Encode(), nil, &res); err != nil {
+		return status{}, err
+	}
+	if len(res.Statuses) == 0 {
+		return status{}, fmt.Errorf("%s found no status for %s", p.host, uri)
+	}
+	return res.Statuses[0], nil
+}
+
 func (p *peerClient) follow(ctx context.Context, id string) (relationship, error) {
 	var r relationship
 	err := p.call(ctx, http.MethodPost, "/api/v1/accounts/"+url.PathEscape(id)+"/follow", nil, &r)
 	return r, err
+}
+
+func (p *peerClient) unfollow(ctx context.Context, id string) error {
+	return p.call(ctx, http.MethodPost, "/api/v1/accounts/"+url.PathEscape(id)+"/unfollow", nil, nil)
 }
 
 func (p *peerClient) relationship(ctx context.Context, id string) (relationship, error) {
@@ -490,21 +674,90 @@ func (p *peerClient) relationship(ctx context.Context, id string) (relationship,
 	return rs[0], nil
 }
 
+// setLocked turns the approval of follow requests on or off.
+func (p *peerClient) setLocked(ctx context.Context, locked bool) error {
+	return p.call(ctx, http.MethodPatch, "/api/v1/accounts/update_credentials", map[string]any{"locked": locked}, nil)
+}
+
+// followRequests returns the accounts whose follow requests wait for the peer user's approval.
+func (p *peerClient) followRequests(ctx context.Context) ([]account, error) {
+	var as []account
+	err := p.call(ctx, http.MethodGet, "/api/v1/follow_requests", nil, &as)
+	return as, err
+}
+
+func (p *peerClient) authorize(ctx context.Context, id string) error {
+	return p.call(ctx, http.MethodPost, "/api/v1/follow_requests/"+url.PathEscape(id)+"/authorize", nil, nil)
+}
+
 func (p *peerClient) post(ctx context.Context, text, visibility string) (status, error) {
+	return p.reply(ctx, text, visibility, "")
+}
+
+// reply posts a status; inReplyTo is the peer's ID of the status it replies to, or empty.
+func (p *peerClient) reply(ctx context.Context, text, visibility, inReplyTo string) (status, error) {
+	body := map[string]any{"status": text, "visibility": visibility}
+	if inReplyTo != "" {
+		body["in_reply_to_id"] = inReplyTo
+	}
 	var s status
-	err := p.call(ctx, http.MethodPost, "/api/v1/statuses", map[string]any{"status": text, "visibility": visibility}, &s)
+	err := p.call(ctx, http.MethodPost, "/api/v1/statuses", body, &s)
 	return s, err
 }
 
+func (p *peerClient) status(ctx context.Context, id string) (status, error) {
+	var s status
+	err := p.call(ctx, http.MethodGet, "/api/v1/statuses/"+url.PathEscape(id), nil, &s)
+	return s, err
+}
+
+func (p *peerClient) context(ctx context.Context, id string) (thread, error) {
+	var th thread
+	err := p.call(ctx, http.MethodGet, "/api/v1/statuses/"+url.PathEscape(id)+"/context", nil, &th)
+	return th, err
+}
+
+func (p *peerClient) edit(ctx context.Context, id, text string) (status, error) {
+	var s status
+	err := p.call(ctx, http.MethodPut, "/api/v1/statuses/"+url.PathEscape(id), map[string]any{"status": text}, &s)
+	return s, err
+}
+
+func (p *peerClient) delete(ctx context.Context, id string) error {
+	return p.call(ctx, http.MethodDelete, "/api/v1/statuses/"+url.PathEscape(id), nil, nil)
+}
+
+// interact boosts or favourites a status (action "boost" / "favourite"), or undoes it.
+func (p *peerClient) interact(ctx context.Context, id, action string, undo bool) error {
+	verb := map[string]string{"boost": "reblog", "favourite": "favourite"}[action]
+	if undo {
+		verb = "un" + verb
+	}
+	return p.call(ctx, http.MethodPost, "/api/v1/statuses/"+url.PathEscape(id)+"/"+verb, nil, nil)
+}
+
 func (p *peerClient) home(ctx context.Context) ([]status, error) {
+	path := "/api/v1/timelines/home?limit=40"
+	if p.cachedHome {
+		// A max_id makes GoToSocial read the timeline from its database instead of its cache.
+		path += "&max_id=" + strings.Repeat("Z", 26)
+	}
 	var ss []status
-	err := p.call(ctx, http.MethodGet, "/api/v1/timelines/home?limit=40", nil, &ss)
+	err := p.call(ctx, http.MethodGet, path, nil, &ss)
 	return ss, err
 }
 
-// signInGoToSocial gets an access token for carol through GoToSocial's OAuth screens: register
+// notifications returns the peer user's notifications, including those that Mastodon's
+// notification policy filtered (include_filtered, Mastodon 4.3 and later; GoToSocial ignores it).
+func (p *peerClient) notifications(ctx context.Context) ([]notification, error) {
+	var ns []notification
+	err := p.call(ctx, http.MethodGet, "/api/v1/notifications?limit=40&include_filtered=true", nil, &ns)
+	return ns, err
+}
+
+// signInGoToSocial gets an access token for a user through GoToSocial's OAuth screens: register
 // an application, sign in, approve, and exchange the out-of-band code.
-func signInGoToSocial(ctx context.Context, transport http.RoundTripper, password string) (string, error) {
+func signInGoToSocial(ctx context.Context, transport http.RoundTripper, user, password string) (string, error) {
 	b, err := newBrowser(transport)
 	if err != nil {
 		return "", err
@@ -527,7 +780,7 @@ func signInGoToSocial(ctx context.Context, transport http.RoundTripper, password
 		return "", err
 	}
 	status, _, page, err := b.do(ctx, http.MethodPost, base+"/auth/sign_in", url.Values{
-		"username": {gtsUser + "@" + gtsHost}, "password": {password},
+		"username": {user + "@" + gtsHost}, "password": {password},
 	})
 	if err != nil {
 		return "", err
