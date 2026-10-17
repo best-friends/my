@@ -21,7 +21,8 @@ import (
 // reports (FR-701, manage_reports). The moderation module records them; issuing or lifting a
 // domain action changes the restrictions that federation and the timelines read at once.
 
-// Moderation runs the moderators' use cases. *appmoderation.Service implements it.
+// Moderation runs the moderators' use cases and lists the public domain actions.
+// *appmoderation.Service implements it.
 type Moderation interface {
 	DomainActions(ctx context.Context, f appmoderation.DomainActionFilter, limit int) ([]appmoderation.DomainActionView, error)
 	DomainAction(ctx context.Context, id string) (appmoderation.DomainActionView, error)
@@ -31,6 +32,9 @@ type Moderation interface {
 	ReportRecord(ctx context.Context, id string) (moderation.ReportRecord, error)
 	AssignReport(ctx context.Context, reportID, assigneeUserID, byUserID string) (moderation.ReportRecord, error)
 	ResolveReport(ctx context.Context, reportID string, outcome moderation.ReportOutcome, byUserID string) (moderation.ReportRecord, error)
+	// PublicDomainActions lists the domain actions that the instance lists publicly
+	// (listInstanceDomainActions, instance_domain_actions.go).
+	PublicDomainActions(ctx context.Context, before string, limit int) ([]moderation.PublicDomainAction, error)
 }
 
 // UserAccounts finds the local account of a user, to present the moderator of a report by
