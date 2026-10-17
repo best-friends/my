@@ -89,6 +89,13 @@ SELECT id, uri, domain, actor_type, created_at FROM accounts WHERE id = $1;
 SELECT id, uri, domain, actor_type, created_at FROM accounts
 WHERE domain = '' AND actor_type = 'application';
 
+-- name: GetAccountByURI :one
+SELECT id, uri, domain, actor_type, created_at FROM accounts WHERE uri = $1;
+
+-- AnyAccountOnDomain reports whether one of the accounts ids is on domain.
+-- name: AnyAccountOnDomain :one
+SELECT EXISTS (SELECT 1 FROM accounts WHERE domain = sqlc.arg(domain) AND id = ANY(sqlc.arg(ids)::text[])) AS found;
+
 -- name: GetLocalAccount :one
 SELECT account_id, user_id, username, username_normalized FROM local_accounts WHERE account_id = $1;
 

@@ -377,6 +377,22 @@ func (s *Service) AccountDomain(ctx context.Context, id string) (string, error) 
 	return a.Domain, nil
 }
 
+// FindByURI returns the actor with an ActivityPub id, local or remote. It fails with
+// ErrNotFound when there is none.
+func (s *Service) FindByURI(ctx context.Context, uri string) (Actor, error) {
+	a, err := s.d.Repository.FindAccountByURI(ctx, uri)
+	if err != nil {
+		return Actor{}, err
+	}
+	return s.actor(ctx, a)
+}
+
+// AnyOnDomain reports whether one of the accounts ids is on domain, for judging what the
+// servers of a domain may see (docs/architecture/visibility.md §1).
+func (s *Service) AnyOnDomain(ctx context.Context, domain string, ids []string) (bool, error) {
+	return s.d.Repository.AnyAccountOnDomain(ctx, domain, ids)
+}
+
 // IsLocal reports, inside tx, whether an account exists and is local. Projectors of other
 // modules call it in the transaction of the event they project.
 func (s *Service) IsLocal(ctx context.Context, tx uow.Tx, id string) (bool, error) {

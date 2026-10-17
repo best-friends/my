@@ -62,6 +62,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RecordsLifecycleEvents", accountRecordsLifecycle},
 		{"CountsLocalUsers", accountCountsLocalUsers},
 		{"ReadsRemoteInboxes", accountReadsRemoteInboxes},
+		{"FindsAccountsByURIAndDomain", accountFindsByURIAndDomain},
 		{"EnsuresBuiltinRoles", accountEnsuresBuiltinRoles},
 		{"CreatesAnAdmin", accountCreatesAdmin},
 		{"RejectsATakenAdminUsernameOrEmail", accountRejectsTakenAdmin},
@@ -826,5 +827,44 @@ func accountReadsRemoteInboxes(t *testing.T, e *accountEnv) {
 	upsert(head)
 	if got, err := e.h.Accounts.FindRemoteHead(ctx, remote); err != nil || got != head {
 		t.Errorf("FindRemoteHead = %+v, %v; want %+v", got, err, head)
+	}
+}
+
+func accountFindsByURIAndDomain(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	local := e.register(t, "urial").AccountID
+	localURI := account.ActorURI(contractHost, local)
+	remote := account.Account{
+		ID: e.ids.NewID(), URI: "https://remote.example/users/r", Domain: "remote.example",
+		ActorType: account.ActorPerson, CreatedAt: e.clock.Now(),
+	}
+	if err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return e.h.Accounts.InsertAccount(ctx, tx, remote) }); err != nil {
+		t.Fatalf("InsertAccount: %v", err)
+	}
+	for uri, want := range map[string]string{localURI: local, remote.URI: remote.ID} {
+		if got, err := e.accounts.FindByURI(ctx, uri); err != nil || got.Account.ID != want {
+			t.Errorf("FindByURI(%s) = %+v, %v; want account %s", uri, got, err, want)
+		}
+	}
+	if _, err := e.accounts.FindByURI(ctx, "https://remote.example/users/nobody"); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("FindByURI(unknown) = %v, want ErrNotFound", err)
+	}
+
+	missing := e.ids.NewID()
+	for _, tc := range []struct {
+		domain string
+		ids    []string
+		want   bool
+	}{
+		{"remote.example", []string{local, remote.ID}, true},
+		{"remote.example", []string{remote.ID}, true},
+		{"remote.example", []string{local, missing}, false},
+		{"other.example", []string{remote.ID}, false},
+		{account.LocalDomain, []string{missing, local}, true},
+		{"remote.example", nil, false},
+	} {
+		if got, err := e.accounts.AnyOnDomain(ctx, tc.domain, tc.ids); err != nil || got != tc.want {
+			t.Errorf("AnyOnDomain(%q, %v) = %v, %v; want %v", tc.domain, tc.ids, got, err, tc.want)
+		}
 	}
 }
