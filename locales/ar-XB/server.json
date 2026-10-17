@@ -475,6 +475,10 @@
     "defaultMessage": "‮⊥ɥıs ıs uoʇ ɐʌɐıʅɐqʅǝ ɟoɹ ɐɔɔonuʇs ou oʇɥǝɹ sǝɹʌǝɹs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.report.not_resolved": {
+    "defaultMessage": "‮Ouʅʎ ɐ ɹǝsoʅʌǝp ɹǝdoɹʇ ɔɐu qǝ ɹǝodǝuǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.request_too_large": {
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ʇoo ʅɐɹƃǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
