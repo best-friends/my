@@ -48,7 +48,8 @@ type RemoteAccounts interface {
 	UpsertRemoteActor(ctx context.Context, tx uow.Tx, in appaccount.RemoteActorInput) (appaccount.Account, error)
 	MarkRemoteDeleted(ctx context.Context, tx uow.Tx, accountID string) error
 	RecordRemoteFetchFailure(ctx context.Context, accountID string) error
-	InstanceActor(ctx context.Context) (appaccount.Actor, error)
+	// EnsureInstanceActor returns the instance actor, creating it with its keys on first use.
+	EnsureInstanceActor(ctx context.Context) (appaccount.Account, error)
 	PrivateKey(ctx context.Context, k appaccount.Key) (crypto.Signer, error)
 }
 
@@ -99,10 +100,15 @@ func NewRemoteActors(d RemoteActorsDeps) *RemoteActors {
 	return &RemoteActors{d: d}
 }
 
-// InstanceKey returns the RSA key of the instance actor, which signs every fetch (§2).
+// InstanceKey returns the RSA key of the instance actor, which signs every fetch (§2). The
+// instance actor is created on the first fetch.
 func InstanceKey(accounts RemoteAccounts) func(ctx context.Context) (SigningKey, error) {
 	return func(ctx context.Context) (SigningKey, error) {
-		a, err := accounts.InstanceActor(ctx)
+		ia, err := accounts.EnsureInstanceActor(ctx)
+		if err != nil {
+			return SigningKey{}, err
+		}
+		a, err := accounts.FindByID(ctx, ia.ID)
 		if err != nil {
 			return SigningKey{}, err
 		}

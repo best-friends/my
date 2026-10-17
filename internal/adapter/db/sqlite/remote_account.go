@@ -85,15 +85,6 @@ func (r *AccountRepository) AccountByURI(ctx context.Context, tx uow.Tx, uri str
 	return accountFrom(row), nil
 }
 
-// FindAccountByURI implements account.Repository.
-func (r *AccountRepository) FindAccountByURI(ctx context.Context, uri string) (account.Account, error) {
-	row, err := r.db.reader().GetAccountByURI(ctx, uri)
-	if err != nil {
-		return account.Account{}, notFound(err, appaccount.ErrNotFound, "account "+uri)
-	}
-	return accountFrom(row), nil
-}
-
 // InsertRemoteAccount implements account.Repository.
 func (r *AccountRepository) InsertRemoteAccount(ctx context.Context, tx uow.Tx, ra account.RemoteAccount) (bool, error) {
 	q, err := queries(tx)

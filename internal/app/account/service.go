@@ -384,6 +384,22 @@ func (s *Service) AccountDomain(ctx context.Context, id string) (string, error) 
 	return a.Domain, nil
 }
 
+// FindByURI returns the actor with an ActivityPub id, local or remote. It fails with
+// ErrNotFound when there is none.
+func (s *Service) FindByURI(ctx context.Context, uri string) (Actor, error) {
+	a, err := s.d.Repository.FindAccountByURI(ctx, uri)
+	if err != nil {
+		return Actor{}, err
+	}
+	return s.actor(ctx, a)
+}
+
+// AnyOnDomain reports whether one of the accounts ids is on domain, for judging what the
+// servers of a domain may see (docs/architecture/visibility.md §1).
+func (s *Service) AnyOnDomain(ctx context.Context, domain string, ids []string) (bool, error) {
+	return s.d.Repository.AnyAccountOnDomain(ctx, domain, ids)
+}
+
 // IsLocal reports, inside tx, whether an account exists and is local. Projectors of other
 // modules call it in the transaction of the event they project.
 func (s *Service) IsLocal(ctx context.Context, tx uow.Tx, id string) (bool, error) {
@@ -496,6 +512,32 @@ func (s *Service) PrivateKey(ctx context.Context, k account.Key) (crypto.Signer,
 		return nil, err
 	}
 	return signer, nil
+}
+
+// SigningKey returns the key ID and the opened private key that a local actor signs outbound
+// requests with: its newest RSA key ({actor}#main-key), which every implementation verifies
+// (ADR-0006, ADR-0032). It fails with ErrNotFound when the account does not exist or has no
+// RSA key, as a remote account has none.
+func (s *Service) SigningKey(ctx context.Context, accountID string) (keyID string, key crypto.Signer, err error) {
+	keys, err := s.d.Repository.ListKeys(ctx, accountID)
+	if err != nil {
+		return "", nil, err
+	}
+	var newest *account.Key
+	for i := range keys {
+		k := &keys[i]
+		if k.Algorithm == account.KeyRSASHA256 && (newest == nil || k.CreatedAt.After(newest.CreatedAt)) {
+			newest = k
+		}
+	}
+	if newest == nil {
+		return "", nil, fmt.Errorf("account: signing key of %s: %w", accountID, ErrNotFound)
+	}
+	signer, err := s.PrivateKey(ctx, *newest)
+	if err != nil {
+		return "", nil, err
+	}
+	return newest.KeyID, signer, nil
 }
 
 // ValidateUsername checks a new local username (account.ValidateUsername), so that other

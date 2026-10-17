@@ -16,8 +16,6 @@ import (
 type RemoteRepository interface {
 	// AccountByURI returns the account with an ActivityPub id inside tx.
 	AccountByURI(ctx context.Context, tx uow.Tx, uri string) (account.Account, error)
-	// FindAccountByURI is AccountByURI outside any transaction.
-	FindAccountByURI(ctx context.Context, uri string) (account.Account, error)
 	// InsertRemoteAccount inserts the remote subtype of an account unless it has one, and
 	// reports whether it did.
 	InsertRemoteAccount(ctx context.Context, tx uow.Tx, ra account.RemoteAccount) (bool, error)

@@ -79,9 +79,6 @@ DELETE FROM account_handles WHERE account_id = @account_id;
 DELETE FROM account_handles
 WHERE username_normalized = @username_normalized AND domain = @domain AND account_id <> @account_id;
 
--- name: GetAccountByURI :one
-SELECT id, uri, domain, actor_type, created_at FROM accounts WHERE uri = @uri;
-
 -- RecordRemoteAccountFetchFailure counts a failed fetch of an actor and defers its next refresh.
 -- name: RecordRemoteAccountFetchFailure :execrows
 UPDATE remote_account_heads

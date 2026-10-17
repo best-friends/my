@@ -161,14 +161,16 @@ func problem(w http.ResponseWriter, _ *http.Request, status int) {
 type server struct {
 	mux      *http.ServeMux
 	accounts *fakeAccounts
+	objects  *fakeObjects
+	graph    *fakeGraph
 }
 
 func newServer(t *testing.T, accountDomain string) *server {
 	t.Helper()
-	s := &server{mux: http.NewServeMux(), accounts: newAccounts(t)}
+	s := &server{mux: http.NewServeMux(), accounts: newAccounts(t), objects: newObjects(), graph: &fakeGraph{}}
 	activitypub.New(activitypub.Options{
 		Host: host, AccountDomain: accountDomain, SoftwareVersion: "0.1.0", SourceURL: "https://github.com/best-friends/my",
-		Accounts: s.accounts, Problem: problem,
+		Accounts: s.accounts, Objects: s.objects, Graph: s.graph, Problem: problem,
 	}).Register(s.mux)
 	return s
 }

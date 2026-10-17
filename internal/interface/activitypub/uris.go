@@ -12,6 +12,13 @@ import (
 // actorsPrefix is the path of local actor ids before the UUID (ADR-0018).
 const actorsPrefix = "/ap/actors/"
 
+// objectsPrefix is the path of local object ids before the UUID, and activitySegment the last
+// segment of the IRI of a status's Create (ADR-0018).
+const (
+	objectsPrefix   = "/ap/objects/"
+	activitySegment = "activity"
+)
+
 // uuidPattern matches the canonical form of a UUIDv7: 36 lowercase characters.
 var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 

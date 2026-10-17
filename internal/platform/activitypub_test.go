@@ -5,10 +5,14 @@ package platform_test
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
+	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/identity"
+	domcontent "github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/platform"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -74,5 +78,98 @@ func TestFederationEndpoints(t *testing.T) {
 	}
 	if p := decodeProblem(t, resp, body); p.Status != http.StatusNotFound {
 		t.Errorf("missing actor problem = %+v", p)
+	}
+}
+
+// TestFederationObjects checks that the composition root serves the objects and collections of
+// local statuses on the real database adapter: anyone gets public and unlisted statuses, nobody
+// gets the others without a signature that this server can verify, a deleted status is gone, and
+// the outbox lists only public and unlisted statuses.
+func TestFederationObjects(t *testing.T) {
+	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
+	ids := map[domcontent.Visibility]string{}
+	var accountID, deletedID string
+	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
+		ctx := t.Context()
+		reg, err := a.Identity.RegisterLocalUser(ctx, identity.RegisterInput{
+			Username: "alice", Password: "correct horse battery staple", DisplayName: "Alice",
+		})
+		if err != nil {
+			t.Fatalf("RegisterLocalUser: %v", err)
+		}
+		accountID = reg.AccountID
+		post := func(v domcontent.Visibility) string {
+			p, err := a.Content.Create(ctx, appcontent.CreateInput{
+				AuthorAccountID: accountID, TextInput: appcontent.TextInput{Text: "a " + string(v) + " post"}, Visibility: v,
+			})
+			if err != nil {
+				t.Fatalf("Create %s: %v", v, err)
+			}
+			return p.Status.ID
+		}
+		for _, v := range []domcontent.Visibility{
+			domcontent.VisibilityPublic, domcontent.VisibilityLocal, domcontent.VisibilityUnlisted,
+			domcontent.VisibilityPrivate, domcontent.VisibilityDirect,
+		} {
+			ids[v] = post(v)
+		}
+		deletedID = post(domcontent.VisibilityPublic)
+		if _, err := a.Content.Delete(ctx, accountID, deletedID); err != nil {
+			t.Fatalf("Delete: %v", err)
+		}
+	})
+	ap := map[string]string{"Accept": "application/activity+json"}
+	// A signature whose key this server cannot resolve makes the request anonymous.
+	signed := map[string]string{
+		"Accept":    "application/activity+json",
+		"Date":      time.Now().UTC().Format(http.TimeFormat),
+		"Signature": `keyId="https://remote.example/users/bob#main-key",algorithm="rsa-sha256",headers="(request-target) host date",signature="AAAA"`,
+	}
+	for v, id := range ids {
+		want := http.StatusNotFound
+		if v == domcontent.VisibilityPublic || v == domcontent.VisibilityUnlisted {
+			want = http.StatusOK
+		}
+		for _, h := range []map[string]string{ap, signed} {
+			for _, path := range []string{"/ap/objects/" + id, "/ap/objects/" + id + "/activity"} {
+				if resp, body := s.do(t, http.MethodGet, path, h); resp.StatusCode != want {
+					t.Errorf("GET %s (%s) = %d %s, want %d", path, v, resp.StatusCode, body, want)
+				}
+			}
+		}
+	}
+	resp, body := s.do(t, http.MethodGet, "/ap/objects/"+ids[domcontent.VisibilityPublic], ap)
+	var note struct{ ID, Type, AttributedTo string }
+	if err := json.Unmarshal([]byte(body), &note); err != nil || note.Type != "Note" ||
+		note.AttributedTo != "https://"+cfg.Host+"/ap/actors/"+accountID || resp.Header.Get("Cache-Control") != "public, max-age=60" {
+		t.Errorf("public Note = %d %v %s (%v)", resp.StatusCode, resp.Header, body, err)
+	}
+	if resp, body := s.do(t, http.MethodGet, "/ap/objects/"+deletedID, ap); resp.StatusCode != http.StatusGone || !strings.Contains(body, `"type":"Tombstone"`) {
+		t.Errorf("deleted status = %d %s, want 410 with a Tombstone", resp.StatusCode, body)
+	}
+
+	resp, body = s.do(t, http.MethodGet, "/ap/actors/"+accountID+"/outbox?page=true", ap)
+	var page struct {
+		OrderedItems []struct {
+			Type   string
+			Object struct{ ID string }
+		}
+	}
+	if err := json.Unmarshal([]byte(body), &page); err != nil || resp.StatusCode != http.StatusOK {
+		t.Fatalf("outbox page = %d %s (%v)", resp.StatusCode, body, err)
+	}
+	var listed []string
+	for _, it := range page.OrderedItems {
+		listed = append(listed, it.Object.ID)
+	}
+	want := []string{
+		"https://" + cfg.Host + "/ap/objects/" + ids[domcontent.VisibilityUnlisted],
+		"https://" + cfg.Host + "/ap/objects/" + ids[domcontent.VisibilityPublic],
+	}
+	if !slices.Equal(listed, want) {
+		t.Errorf("outbox lists %v, want the unlisted and public statuses %v", listed, want)
+	}
+	if _, body := s.do(t, http.MethodGet, "/ap/actors/"+accountID+"/outbox", ap); !strings.Contains(body, `"totalItems":5`) {
+		t.Errorf("outbox = %s, want the 5 statuses that are not deleted", body)
 	}
 }

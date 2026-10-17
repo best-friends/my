@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
@@ -35,20 +36,11 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 		}
 		doc = federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, aud, federation.TombstoneOf(federation.IRI(uri)))
 	case act.ObjectKind == federation.OutboundStatus:
-		note := federation.ObjectDocument{
-			ID: federation.IRI(s.status.URI), Type: federation.ObjectNote,
-			Published: federation.FormatTime(s.status.PublishedAt), URL: s.status.URL,
-			AttributedTo: actor, To: aud.To, Cc: aud.Cc,
-		}
-		if s.status.InReplyToURI != "" {
-			r := federation.IRI(s.status.InReplyToURI)
-			note.InReplyTo = &r
-		}
-		published := s.status.PublishedAt
+		published, updated := s.status.PublishedAt, time.Time{}
 		if act.Type == federation.ActivityUpdate {
-			note.Updated = federation.FormatTime(s.revision.RevisedAt)
-			published = s.revision.RevisedAt
+			published, updated = s.revision.RevisedAt, s.revision.RevisedAt
 		}
+		note := statusNote(s.status, actor, aud, updated)
 		doc = federation.NewActivityDocument(act.ActivityURI, act.Type, actor, published, aud, note)
 	case act.ObjectKind == federation.OutboundBoost:
 		announce := federation.NewActivityDocument(federation.IRI(s.boost.URI), federation.ActivityAnnounce, actor,
@@ -61,6 +53,25 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 		return nil, fmt.Errorf("%w: %s of a %s", federation.ErrInvalidOutbound, act.Type, act.ObjectKind)
 	}
 	return doc.Marshal()
+}
+
+// statusNote returns the Note of a local status by actor, addressed to aud: the object that its
+// activities carry and that a GET of its IRI returns (federation.md §7.4, §10). A zero updated
+// leaves updated out.
+func statusNote(st appcontent.Status, actor federation.IRI, aud federation.Audience, updated time.Time) federation.ObjectDocument {
+	note := federation.ObjectDocument{
+		ID: federation.IRI(st.URI), Type: federation.ObjectNote,
+		Published: federation.FormatTime(st.PublishedAt), URL: st.URL,
+		AttributedTo: actor, To: aud.To, Cc: aud.Cc,
+	}
+	if st.InReplyToURI != "" {
+		r := federation.IRI(st.InReplyToURI)
+		note.InReplyTo = &r
+	}
+	if !updated.IsZero() {
+		note.Updated = federation.FormatTime(updated)
+	}
+	return note
 }
 
 // actorIRI returns the ActivityPub id of an account.

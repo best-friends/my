@@ -39,23 +39,6 @@ func (q *Queries) DeleteOtherAccountHandle(ctx context.Context, arg DeleteOtherA
 	return err
 }
 
-const getAccountByURI = `-- name: GetAccountByURI :one
-SELECT id, uri, domain, actor_type, created_at FROM accounts WHERE uri = $1
-`
-
-func (q *Queries) GetAccountByURI(ctx context.Context, uri string) (Account, error) {
-	row := q.db.QueryRow(ctx, getAccountByURI, uri)
-	var i Account
-	err := row.Scan(
-		&i.ID,
-		&i.Uri,
-		&i.Domain,
-		&i.ActorType,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const getAccountKeyByKeyIDAndFingerprint = `-- name: GetAccountKeyByKeyIDAndFingerprint :one
 SELECT id, account_id, key_id, algorithm, public_key_pem, fingerprint, created_at FROM account_keys
 WHERE key_id = $1 AND fingerprint = $2

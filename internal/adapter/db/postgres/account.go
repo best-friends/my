@@ -405,6 +405,30 @@ func (r *AccountRepository) FindAccount(ctx context.Context, id string) (account
 	return accountFrom(row), nil
 }
 
+// FindAccountByURI implements account.Repository.
+func (r *AccountRepository) FindAccountByURI(ctx context.Context, uri string) (account.Account, error) {
+	row, err := r.db.reader().GetAccountByURI(ctx, uri)
+	if err != nil {
+		return account.Account{}, notFound(err, appaccount.ErrNotFound, "account "+uri)
+	}
+	return accountFrom(row), nil
+}
+
+// AnyAccountOnDomain implements account.Repository.
+func (r *AccountRepository) AnyAccountOnDomain(ctx context.Context, domain string, ids []string) (bool, error) {
+	if len(ids) == 0 {
+		return false, nil
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	found, err := r.db.reader().AnyAccountOnDomain(ctx, postgresgen.AnyAccountOnDomainParams{Domain: domain, Ids: ids})
+	if err != nil {
+		return false, wrap(err, "find accounts on "+domain)
+	}
+	return found, nil
+}
+
 // FindInstanceActor implements account.Repository.
 func (r *AccountRepository) FindInstanceActor(ctx context.Context) (account.Account, error) {
 	row, err := r.db.reader().GetInstanceActor(ctx)

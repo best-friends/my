@@ -1262,7 +1262,7 @@ CREATE TABLE deliveries (
 ) STRICT;
 CREATE UNIQUE INDEX deliveries_outbound_activity_id_inbox_url ON deliveries (outbound_activity_id, inbox_url);
 
--- Event: one attempt of a delivery. signature_scheme is NULL when nothing was sent.
+-- Event: one attempt of a delivery. signature_scheme is NULL when no response came back.
 CREATE TABLE delivery_attempts (
   id TEXT NOT NULL PRIMARY KEY,
   delivery_id TEXT NOT NULL,

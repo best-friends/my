@@ -285,20 +285,27 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 `federation.deliver`（ペイロードは `delivery_id`）:
 
-1. 宛先のドメインが `unavailable` になっていたら、試行せず `skipped` を記録して完了にする。
-2. 本文に署名して POST する（§2 の double-knocking）。
-3. 結果を分類して `delivery_attempts` に記録する。同期 projector が `instance_health` を更新する。
+1. 宛先のドメインに送らない活動なら（`unavailable`、またはドメイン単位の `suspend`。§7.2 の手順 4 と同じ `federation.Deliverable`）、試行せず `skipped` を記録して完了にする。
+2. inbox のホストのサーキットブレーカーが開いていたら、送らずに `retryable_failure`（`signature_scheme` は NULL）を記録して `Retry` を返す。
+3. `outbound_activity_documents` の本文に、Actor の RSA 鍵（`{actor}#main-key`）で署名して POST する（§2 の double-knocking）。
+4. 結果を分類して `delivery_attempts` に記録し、同じトランザクションでイベント `federation.delivery_attempted` を発行する。同期 projector が `instance_health` を更新する。
 
 | 応答 | 分類 | ジョブ |
 | --- | --- | --- |
 | 2xx | `succeeded` | `Done` |
 | 408 / 429 / 5xx（501 を除く）/ 接続・TLS・タイムアウトのエラー | `retryable_failure` | `Retry`（`Retry-After` があればそれ以降） |
-| 400 / 401（double-knocking の後）/ 403 / 404 / 410 / 413 / 422 などの 4xx、501 | `permanent_failure` | `Done`（相手が受け取らないと答えたので、リトライしない） |
+| 400 / 401（double-knocking の後）/ 403 / 404 / 410 / 413 / 422 などの 4xx、501 / `HTTPClient` が拒否した宛先（SSRF ガード・リダイレクトの上限） | `permanent_failure` | `Done`（相手が受け取らないと答えた、または送れない宛先なので、リトライしない） |
+
+- `Retry-After` は秒数と HTTP の日付のどちらも読み、24 時間で打ち切ります。ジョブの期限（リース）や停止で応答の前に打ち切られた試行は記録せず、そのまま `Retry` にします。
+- 配送や Actor が見つからない、Actor に署名の鍵がないジョブは `Fail` にします（dead job に残る）。
 
 - リトライの間隔は ADR-0004 の配送の例（1 分、5 分、30 分、2 時間、12 時間、24 時間 × 3。最大 9 回、約 4 日）で、ジッタを掛けます（`RegisterWithPolicy`）。使い切ったジョブは dead job になり、管理画面と CLI から再実行できます（NFR-REL-2）。
-- **短期のサーキットブレーカー**: プロセス内で inbox のホストごとに、連続 10 回失敗したら 60 秒間はリクエストせずに `Retry` を返します（Mastodon の `Stoplight` と同じ値）。
+- **短期のサーキットブレーカー**: プロセス内で inbox のホストごとに、`retryable_failure` が連続 10 回続いたら 60 秒間はリクエストせずに `Retry` を返します（Mastodon の `Stoplight` と同じ値）。
+  60 秒の後に送った 1 回がまた失敗すると、すぐにまた開きます。成功と `permanent_failure`（相手が答えた）で閉じます。開いている間の `Retry` も試行の 1 回に数え、待ち時間は上のリトライの間隔に従います（60 秒ごとに試行を使い切らない）。
 - **`InstanceHealth`（長期）**: `retryable_failure` を記録した日（UTC の日付）がドメインごとに異なる 7 日に達したら、`instance_availability_events`（`marked_unavailable`）を記録し、`instance_health.state` を `unavailable` にします（Mastodon の `DeliveryFailureTracker` と同じ基準）。
   配送の成功、またはそのドメインから署名付きのリクエストを受けたら `marked_available` を記録して `available` に戻します。`unavailable` のドメインには、定期ジョブ `federation.probe_instances` が 1 日 1 回 NodeInfo を取得し、成功したら戻します。
+  - 署名付きの受信と probe の成功は、`federation.Health.Reached`（理由 `inbound_request` / `probe_succeeded`）がイベント `federation.instance_reached` を発行し、配送と同じ projector が `instance_health` を更新します。失敗の記録が無いドメインでは、コミット済みの値を読むだけで書きません。
+  - probe は `/.well-known/nodeinfo` と、そこから同じホストの NodeInfo 2.x の文書を署名なしで取得し、どちらも 2xx の JSON なら成功とします。1 つのジョブは 50 ドメインを順に処理し、残りがあれば続きのジョブを投入します。
 - 1 件の配送は 1 つのジョブです。Cloud Tasks / SQS では 1 回の試行が 1 オペレーションとして課金されるので、shared inbox への集約と `unavailable` のドメインの除外で回数を抑えます（NFR-COST-5）。
 
 ### 7.4 文書の形
@@ -347,8 +354,17 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 ## 10. コレクションとオブジェクトの GET
 
-- `GET /ap/objects/{uuid}`（`/activity` を含む）は、署名から閲覧者（署名者のドメイン）を決め、`content.CanView`（`ContextObjectFetch`）を通します。権限が無いときと存在しないときは同じ 404 です（ADR-0018）。削除済みは `410 Gone` と `Tombstone` です（[ActivityPub §6.4](https://www.w3.org/TR/activitypub/#delete-activity-outbox)）。
-- outbox は `public` / `unlisted` の投稿の `Create` をページで返し、followers / following は件数とページを返します（利用者が非公開にした場合は件数だけ）。featured はピン留めした `public` / `unlisted` の投稿です。
+- `GET /ap/objects/{uuid}`（`/activity` を含む）は、署名から閲覧者（署名者のドメイン）を決め、`content.CanView`（`ContextObjectFetch`）を通します。権限が無いときと存在しないときは同じ 404 です（ADR-0018）。削除済みは、削除の前に閲覧できた相手にだけ `410 Gone` と `Tombstone` を返し、それ以外には 404 を返します（[ActivityPub §6.4](https://www.w3.org/TR/activitypub/#delete-activity-outbox)）。
+- 判定は `federation.Objects`（`internal/app/federation`）が行います。
+  - 署名は §2 の受信の規則（`SignatureVerifier`）で検証します。署名が無い・検証できない GET は未ログインとして扱い、401 にはしません（Mastodon と同じ。401 にするのは Authorized Fetch だけ）。
+  - 閲覧者のドメインは鍵の持ち主（`owner`）の Actor のホストです。`keyId` のホストと一致しないとき、ドメイン単位の `federation` の制限（§11）があるとき、自サーバーのときは未ログインとして扱います。
+  - 関係は署名者のドメインで集約します（[visibility.md §1](visibility.md#1-入力)）。ブロックは署名者のアカウントと作者の間のものです。メンション先とフォロワーは、`CanView` が許さなかったときだけ読みます（フォロワーは 1,000 件ずつ、そのドメインのアカウントがいるかを `account.AnyOnDomain` で確かめる）。
+  - 未ログインでも同じ結果になる応答（`public` / `unlisted`）だけ `Cache-Control: public, max-age=60` を付け、それ以外は `private, no-store` です。
+  - HTML を求めるリクエスト（ブラウザ）は署名を持たないので、未ログインで閲覧できる投稿だけ表示用 URL へ `303` でリダイレクトし、それ以外は 404 です。
+- コレクションはだれにも同じ内容を返します。outbox・followers・following は `totalItems` と最初のページ（`?page=true`）へのリンクを持つ `OrderedCollection` で、ページ（`OrderedCollectionPage`）は `partOf` と次のページ（`?max_id={カーソル}&page=true`）を持ちます（Mastodon と同じ形）。
+  - outbox は、未ログインの閲覧者がプロフィールで見られる投稿（`public` / `unlisted`）の `Create` を、新しい順に 20 件ずつ返します。ブーストは載せません。`totalItems` は削除されていない投稿の数です（Mastodon と同じ）。
+  - followers / following は、承認済みのフォローの相手の Actor の `id` を、新しいフォロー順に 40 件ずつ返します。有効でないアカウントは省き、`totalItems` はフォローの件数です。
+  - featured は、ピン留めした投稿のうち未ログインで閲覧できるもの（`public` / `unlisted`）の `Note` を `orderedItems` に並べます。featured-tags は空の `Collection` です。
 - Authorized Fetch（FR-408、S）は設定 `authorized_fetch` で有効にし、署名のない GET を Actor（鍵の取得のための最小の文書を除く）とオブジェクトで 401 にします。
 
 ## 11. モデレーションとの連携

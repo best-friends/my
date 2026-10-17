@@ -93,6 +93,16 @@ var (
 	ErrPublicKeyUnavailable = errors.New("public key unavailable")
 )
 
+// UnknownPublicKeys is the PublicKeyResolver that knows no key: every signature fails to
+// verify, and object fetches see every requester as anonymous. Tests use it where no key
+// should resolve; the server uses RemoteActors.
+type UnknownPublicKeys struct{}
+
+// ResolvePublicKey implements PublicKeyResolver.
+func (UnknownPublicKeys) ResolvePublicKey(_ context.Context, keyID string, _ bool) (PublicKey, error) {
+	return PublicKey{}, fmt.Errorf("%w: %s", ErrPublicKeyNotFound, keyID)
+}
+
 // VerifiedSignature is a signature that passed the policy and verified.
 type VerifiedSignature struct {
 	Scheme SignatureScheme

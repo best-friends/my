@@ -403,16 +403,6 @@ func (s *Service) RecordRemoteFetchFailure(ctx context.Context, accountID string
 	})
 }
 
-// FindByURI returns the actor with an ActivityPub id. It fails with ErrNotFound when there is
-// none.
-func (s *Service) FindByURI(ctx context.Context, uri string) (Actor, error) {
-	a, err := s.d.Repository.FindAccountByURI(ctx, uri)
-	if err != nil {
-		return Actor{}, err
-	}
-	return s.actor(ctx, a)
-}
-
 // RemoteHead returns the head of a remote actor. It fails with ErrNotFound for a local account
 // and for a remote one that has never been fetched.
 func (s *Service) RemoteHead(ctx context.Context, accountID string) (account.RemoteHead, error) {
