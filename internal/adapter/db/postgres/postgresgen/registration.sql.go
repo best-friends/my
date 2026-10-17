@@ -12,6 +12,18 @@ import (
 	"time"
 )
 
+const countRegistrationsInState = `-- name: CountRegistrationsInState :one
+SELECT COUNT(*) FROM user_registration_states WHERE state = $1
+`
+
+// CountRegistrationsInState counts the users whose registration is in a state (#338).
+func (q *Queries) CountRegistrationsInState(ctx context.Context, state string) (int64, error) {
+	row := q.db.QueryRow(ctx, countRegistrationsInState, state)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getInviteByCode = `-- name: GetInviteByCode :one
 SELECT id, code, created_by_user_id, max_uses, expires_at, created_at FROM invites WHERE code = $1
 `

@@ -831,6 +831,14 @@
     "defaultMessage": "[Ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.type.admin_report": {
+    "defaultMessage": "[Ȧ ƞḗḗẇ řḗḗƥǿǿřŧ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.admin_sign_up": {
+    "defaultMessage": "[{name} şīɠƞḗḗḓ ŭŭƥ ȧȧƞḓ ȧȧẇȧȧīŧş ȧȧƥƥřǿǿṽȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.type.boost": {
     "defaultMessage": "[{name} ƀǿǿǿǿşŧḗḗḓ ẏǿǿŭŭř ƥǿǿşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -861,6 +869,10 @@
   },
   "notifications.type.poll_closed": {
     "defaultMessage": "[Ȧ ƥǿǿŀŀ ẏǿǿŭŭ ŧǿǿǿǿķ ƥȧȧřŧ īƞ ħȧȧş ḗḗƞḓḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.report_resolved": {
+    "defaultMessage": "[Ȧ řḗḗƥǿǿřŧ ẏǿǿŭŭ ƒīŀḗḗḓ ħȧȧş ƀḗḗḗḗƞ řḗḗşǿǿŀṽḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.unread": {
@@ -1901,6 +1913,18 @@
   },
   "status.favourite.on": {
     "defaultMessage": "[Ȧḓḓḗḗḓ ŧǿǿ ƒȧȧṽǿǿŭŭřīŧḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.focused.boosts": {
+    "defaultMessage": "[{count,plural,one{# ƀǿǿǿǿşŧ} other{# ƀǿǿǿǿşŧş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.focused.favourites": {
+    "defaultMessage": "[{count,plural,one{# ƒȧȧṽǿǿŭŭřīŧḗḗ} other{# ƒȧȧṽǿǿŭŭřīŧḗḗş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.focused.label": {
+    "defaultMessage": "[Ǿƥḗḗƞḗḗḓ ƥǿǿşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.link.copied": {

@@ -70,6 +70,25 @@ export const otherAccountFixture: Schemas["Account"] = accountFixture(2, "Bob", 
 /** An account of another server that the instance knows, which the viewer does not follow and is not followed by. */
 export const remoteAccountFixture: Schemas["Account"] = accountFixture(3, "Carol");
 
+/** An `Account` like `accountFixture`'s, with a display name other than its username. */
+function namedAccountFixture(n: number, username: string, displayName: string, domain: string): Schemas["Account"] {
+  return { ...accountFixture(n, username, domain), display_name: displayName };
+}
+
+/**
+ * Accounts whose names test the layout of a post's header at 320 px (web-client.md G7, G9): a local account
+ * with a 30-character display name, an account of another server with an Arabic (right-to-left) display
+ * name, and one on a long domain whose handle does not fit the card.
+ */
+export const longNameAccountFixture: Schemas["Account"] = namedAccountFixture(21, "maximiliana", "Maximiliana Theodora Wolfharte", instanceFixture.domain);
+export const rtlNameAccountFixture: Schemas["Account"] = namedAccountFixture(22, "abdulrahman", "عبد الرحمن بن محمد الهاشمي", "remote.example");
+export const longDomainAccountFixture: Schemas["Account"] = namedAccountFixture(
+  23,
+  "dmitri",
+  "Dmitri",
+  "the-longest-community-server-name-in-the-fediverse.social.example.com",
+);
+
 /** The `Relationship` with account `id` when the viewer has none, or with `overrides`. */
 export function relationshipFixture(id: string, overrides: Partial<Schemas["Relationship"]> = {}): Schemas["Relationship"] {
   return {
@@ -94,6 +113,7 @@ export const preferencesFixture: Schemas["Preferences"] = {
   default_visibility: "public",
   default_post_language: "en",
   require_media_description: false,
+  email_moderator_notifications: false,
   timeline_languages: [],
 };
 

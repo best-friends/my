@@ -71,6 +71,10 @@
     "defaultMessage": "[Řḗḗȧȧḓ ẏǿǿŭŭř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.authorize.scope.read_reports": {
+    "defaultMessage": "[Řḗḗȧȧḓ ŧħḗḗ řḗḗƥǿǿřŧş ẏǿǿŭŭ ƒīŀḗḗḓ ȧȧƞḓ ẇħḗḗŧħḗḗř ŧħḗḗẏ ȧȧřḗḗ řḗḗşǿǿŀṽḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.authorize.scope.read_statuses": {
     "defaultMessage": "[Řḗḗȧȧḓ ƥǿǿşŧş ȧȧƞḓ ŧīḿḗḗŀīƞḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -581,6 +585,22 @@
   },
   "health.unavailable": {
     "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř īş ƞǿǿŧ řḗḗȧȧḓẏ ŧǿǿ ȧȧƈƈḗḗƥŧ řḗḗɋŭŭḗḗşŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_report.body": {
+    "defaultMessage": "[Ȧ ƞḗḗẇ řḗḗƥǿǿřŧ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ǿǿƒ {host}.\n\nǾƥḗḗƞ ẏǿǿŭŭř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ŧǿǿ řḗḗṽīḗḗẇ īŧ:\n\n{url}\n\nẎǿǿŭŭ ɠḗḗŧ ŧħīş ḗḗḿȧȧīŀ ƀḗḗƈȧȧŭŭşḗḗ ẏǿǿŭŭ ƈħǿǿşḗḗ ŧǿǿ ɠḗḗŧ ḿǿǿḓḗḗřȧȧŧǿǿř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ƀẏ ḗḗḿȧȧīŀ. Ẏǿǿŭŭ ƈȧȧƞ ŧŭŭřƞ īŧ ǿǿƒƒ īƞ ẏǿǿŭŭř ƥřḗḗƒḗḗřḗḗƞƈḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_report.subject": {
+    "defaultMessage": "[Ȧ ƞḗḗẇ řḗḗƥǿǿřŧ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ǿǿƒ {host}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_sign_up.body": {
+    "defaultMessage": "[Ȧ ƞḗḗẇ ŭŭşḗḗř şīɠƞḗḗḓ ŭŭƥ ǿǿƞ {host} ȧȧƞḓ ȧȧẇȧȧīŧş ȧȧƥƥřǿǿṽȧȧŀ.\n\nǾƥḗḗƞ ẏǿǿŭŭř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ŧǿǿ řḗḗṽīḗḗẇ ŧħḗḗ řḗḗɠīşŧřȧȧŧīǿǿƞ:\n\n{url}\n\nẎǿǿŭŭ ɠḗḗŧ ŧħīş ḗḗḿȧȧīŀ ƀḗḗƈȧȧŭŭşḗḗ ẏǿǿŭŭ ƈħǿǿşḗḗ ŧǿǿ ɠḗḗŧ ḿǿǿḓḗḗřȧȧŧǿǿř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ƀẏ ḗḗḿȧȧīŀ. Ẏǿǿŭŭ ƈȧȧƞ ŧŭŭřƞ īŧ ǿǿƒƒ īƞ ẏǿǿŭŭř ƥřḗḗƒḗḗřḗḗƞƈḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_sign_up.subject": {
+    "defaultMessage": "[Ȧ ƞḗḗẇ şīɠƞ-ŭŭƥ ȧȧẇȧȧīŧş ȧȧƥƥřǿǿṽȧȧŀ ǿǿƞ {host}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.verify_email.body": {

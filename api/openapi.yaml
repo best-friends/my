@@ -713,7 +713,8 @@ paths:
         The user's notifications, newest first. Dismissed notifications, notifications about
         deleted posts, and notifications from accounts that the user blocks, is blocked by, or
         mutes with notifications hidden are left out, also those that came before the block or
-        mute.
+        mute. The moderator notifications (`admin_report`, `admin_sign_up`) are left out once
+        the user's roles no longer grant the permission they need.
       tags: [notifications]
       security:
         - oauth2: ["read:notifications"]
@@ -726,7 +727,7 @@ paths:
           explode: true
           schema:
             type: array
-            maxItems: 8
+            maxItems: 11
             items:
               $ref: "#/components/schemas/NotificationType"
         - $ref: "#/components/parameters/Cursor"
@@ -1256,6 +1257,32 @@ paths:
           $ref: "#/components/responses/Problem"
   # --- reports (#332) ---
   /reports:
+    get:
+      operationId: listOwnReports
+      summary: List the reports that the authenticated user filed
+      description: |
+        The reports that the user filed, newest first, each with whether it is still open or
+        resolved (FR-711). A report reopened by the moderators is open again. It never tells how
+        a report was resolved, which actions it led to, the reasons given to the account, or
+        who handles it.
+      tags: [reports]
+      security:
+        - oauth2: ["read:reports"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the user's reports.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportPage"
+        default:
+          $ref: "#/components/responses/Problem"
     post:
       operationId: createReport
       summary: Report an account
@@ -1940,6 +1967,32 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: instance rules (#331) ---
+  # --- admin: moderator counts (#338) ---
+  /admin/counts:
+    get:
+      operationId: getAdminCounts
+      summary: Count what awaits the moderators
+      description: |
+        The number of open reports (with the `manage_reports` permission) and of registrations
+        that await approval (with the `manage_accounts` permission), for the badges of the
+        admin menu (FR-712). A count whose permission the user's roles lack is omitted, so a
+        user without either gets an empty object.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          description: The counts that the user may see.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCounts"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: moderator counts (#338) ---
 components:
   securitySchemes:
     oauth2:
@@ -1970,6 +2023,7 @@ components:
             "read:follows": Read follows and follow requests.
             "read:mutes": Read the accounts the user mutes.
             "read:notifications": Read the user's notifications.
+            "read:reports": Read the reports the user filed and whether they are resolved.
             "read:statuses": Read posts and timelines.
             "write:accounts": Change the user's profile and preferences.
             "write:blocks": Block and unblock accounts.
@@ -2808,9 +2862,16 @@ components:
             The post that the notification is about, as the user sees it; omitted when the user
             may not see it.
           $ref: "#/components/schemas/Status"
+        report:
+          description: The user's report that a `report_resolved` tells of.
+          $ref: "#/components/schemas/Report"
         moderation_action:
           description: The action on the user's account that a `moderation_notice` tells of.
           $ref: "#/components/schemas/ModerationAction"
+        report_id:
+          description: The report that an `admin_report` is about.
+          allOf:
+            - $ref: "#/components/schemas/Id"
     NotificationMarker:
       description: How far the authenticated user has read the notifications.
       type: object
@@ -2850,6 +2911,14 @@ components:
         `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
         about. `moderation_notice` comes from the instance and has no `account`; its
         `moderation_action` is the action on the user's account, with its kind, reason, and end.
+        `report_resolved` also comes from the instance: its `report` is the user's report that
+        the moderators resolved, without how they resolved it. It is sent once per report, even
+        when the report is reopened and resolved again.
+        about. `moderation_notice` comes from the instance and has no `account`.
+        The moderator notifications come from the instance too: `admin_report` (an account
+        that had no open report was reported; `report_id` is the report) goes to the users
+        with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
+        approval; `account` is the new user's account) to those with `manage_accounts`.
       type: string
       enum:
         - follow
@@ -2860,6 +2929,9 @@ components:
         - favourite
         - poll_closed
         - moderation_notice
+        - report_resolved
+        - admin_report
+        - admin_sign_up
     # --- end notifications ---
     # --- statuses (#109): Status is shared with the other operations; MediaAttachment is in the media section ---
     CreateStatusRequest:
@@ -3259,7 +3331,7 @@ components:
     Preferences:
       description: The authenticated user's preferences.
       type: object
-      required: [locale, time_zone, default_visibility, default_post_language, require_media_description, timeline_languages]
+      required: [locale, time_zone, default_visibility, default_post_language, require_media_description, email_moderator_notifications, timeline_languages]
       properties:
         locale:
           description: The UI locale, a BCP 47 language tag.
@@ -3274,6 +3346,11 @@ components:
           type: string
         require_media_description:
           description: Whether clients ask for a description before posting media without one.
+          type: boolean
+        email_moderator_notifications:
+          description: |
+            Whether the moderator notifications (`admin_report`, `admin_sign_up`) also come by
+            email, to the primary address. Off for a new user.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, sorted; empty shows every language.
@@ -3297,6 +3374,9 @@ components:
           type: string
         require_media_description:
           description: Whether clients ask for a description before posting media without one.
+          type: boolean
+        email_moderator_notifications:
+          description: Whether the moderator notifications also come by email.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, at most 64; empty shows every language.
@@ -3885,6 +3965,22 @@ components:
           type: integer
           minimum: 1
     # --- end of admin: instance rules (#331) ---
+    # --- admin: moderator counts (#338) ---
+    AdminCounts:
+      description: What awaits the moderators; a count whose permission the user lacks is omitted.
+      type: object
+      properties:
+        open_reports:
+          description: The reports that are open. Needs `manage_reports`.
+          type: integer
+          format: int64
+          minimum: 0
+        pending_registrations:
+          description: The registrations that await approval. Needs `manage_accounts`.
+          type: integer
+          format: int64
+          minimum: 0
+    # --- end of admin: moderator counts (#338) ---
     # --- reports (#332) ---
     CreateReportRequest:
       description: A report of an account to the moderators.
@@ -3922,9 +4018,11 @@ components:
           type: boolean
           default: false
     Report:
-      description: A report that the user filed. It never names the reporter.
+      description: |
+        A report that the user filed. It never names the reporter, and tells only whether the
+        moderators resolved it, never how.
       type: object
-      required: [id, category, comment, forwarded, filed_at, target_account, status_ids, rule_ids]
+      required: [id, category, comment, forwarded, filed_at, target_account, status_ids, rule_ids, state]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -3949,6 +4047,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Id"
+        state:
+          $ref: "#/components/schemas/ReportState"
     ReportCategory:
       description: |
         Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
@@ -3956,4 +4056,20 @@ components:
         anything else.
       type: string
       enum: [spam, legal, violation, other]
+    ReportPage:
+      description: A page of the user's reports, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Report"
+    ReportState:
+      description: |
+        `open`: the report awaits the moderators. `resolved`: the moderators handled it.
+      type: string
+      enum: [open, resolved]
     # --- end of reports (#332) ---

@@ -418,6 +418,8 @@ type Notification struct {
 	SourceAccountID    *string
 	StatusID           *string
 	ModerationActionID *string
+	ReportID           *string
+	SubjectUserID      *string
 	DedupeKey          string
 	CreatedAt          time.Time
 }
@@ -740,13 +742,14 @@ type User struct {
 }
 
 type UserPreference struct {
-	UserID                  string
-	Locale                  string
-	TimeZone                string
-	DefaultVisibility       string
-	DefaultPostLanguage     string
-	RequireMediaDescription bool
-	UpdatedAt               time.Time
+	UserID                      string
+	Locale                      string
+	TimeZone                    string
+	DefaultVisibility           string
+	DefaultPostLanguage         string
+	RequireMediaDescription     bool
+	EmailModeratorNotifications bool
+	UpdatedAt                   time.Time
 }
 
 type UserRegistrationState struct {

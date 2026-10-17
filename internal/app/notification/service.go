@@ -17,6 +17,9 @@ type Deps struct {
 	UnitOfWork uow.UnitOfWork
 	Repository Repository
 	Clock      kernel.Clock
+	// Staff reads the permissions of the recipients of the moderator notifications, which the
+	// list leaves out once the recipient no longer holds them; nil holds none.
+	Staff Staff
 }
 
 // Service runs the notification module's use cases of a local account's own notifications
@@ -58,7 +61,9 @@ func (q Query) limit() int {
 // List returns accountID's notifications that are not dismissed, newest first. It leaves out
 // the notifications from accounts that accountID blocks or is blocked by, or mutes with
 // hide_notifications, at the time of reading, also those notified before the block or mute,
-// and the notifications about deleted statuses.
+// and the notifications about deleted statuses. It also leaves out the moderator notifications
+// whose permission (notification.ModeratorPermission) the roles of accountID's user no longer
+// grant.
 // An unknown type in q.Types fails with notification.ErrInvalidType.
 func (s *Service) List(ctx context.Context, accountID string, q Query) ([]notification.Notification, error) {
 	for _, t := range q.Types {
@@ -66,7 +71,11 @@ func (s *Service) List(ctx context.Context, accountID string, q Query) ([]notifi
 			return nil, fmt.Errorf("type %q: %w", t, notification.ErrInvalidType)
 		}
 	}
-	return s.d.Repository.ListNotifications(ctx, accountID, q.Types, q.Before, q.limit(), s.d.Clock.Now())
+	hidden, err := s.hiddenTypes(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	return s.d.Repository.ListNotifications(ctx, accountID, q.Types, hidden, q.Before, q.limit(), s.d.Clock.Now())
 }
 
 // ReadMarker returns accountID's read marker; an account that has read nothing has a marker
@@ -86,7 +95,24 @@ func (s *Service) UnreadCount(ctx context.Context, accountID string) (int64, err
 	if err != nil {
 		return 0, err
 	}
-	return s.d.Repository.CountNotificationsAfter(ctx, accountID, m.LastReadID, s.d.Clock.Now())
+	hidden, err := s.hiddenTypes(ctx, accountID)
+	if err != nil {
+		return 0, err
+	}
+	return s.d.Repository.CountNotificationsAfter(ctx, accountID, m.LastReadID, hidden, s.d.Clock.Now())
+}
+
+// hiddenTypes returns the types of the moderator notifications that accountID's user no longer
+// has the permission for.
+func (s *Service) hiddenTypes(ctx context.Context, accountID string) ([]notification.Type, error) {
+	var granted []notification.Permission
+	if s.d.Staff != nil {
+		var err error
+		if granted, err = s.d.Staff.GrantedPermissions(ctx, accountID); err != nil {
+			return nil, fmt.Errorf("notification: the permissions of %s: %w", accountID, err)
+		}
+	}
+	return notification.HiddenTypes(granted), nil
 }
 
 // MarkRead marks accountID's notifications up to and including lastReadID as read, and

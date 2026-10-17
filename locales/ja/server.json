@@ -71,6 +71,10 @@
     "defaultMessage": "通知の読み取り",
     "description": "Permission (OAuth scope read:notifications) listed on the authorization page."
   },
+  "auth.authorize.scope.read_reports": {
+    "defaultMessage": "自分の通報と、その対応状況の読み取り",
+    "description": "Permission (OAuth scope read:reports) listed on the authorization page."
+  },
   "auth.authorize.scope.read_statuses": {
     "defaultMessage": "投稿とタイムラインの読み取り",
     "description": "Permission (OAuth scope read:statuses) listed on the authorization page."
@@ -475,10 +479,6 @@
     "defaultMessage": "リクエストが大きすぎます。",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
-  "errors.signature_required": {
-    "defaultMessage": "このリクエストには正しい HTTP 署名が必要です。",
-    "description": "Error title for HTTP 401 when an ActivityPub request carries no HTTP signature that verifies: a POST to an inbox, or a GET of an object or a collection when the instance uses authorized fetch. Read by other servers' operators."
-  },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
@@ -486,6 +486,10 @@
   "errors.service_unavailable": {
     "defaultMessage": "一時的に利用できません。しばらくしてからもう一度お試しください。",
     "description": "Error title for HTTP 503 when the server cannot handle the request for now, e.g. another server it needs to reach is not responding."
+  },
+  "errors.signature_required": {
+    "defaultMessage": "このリクエストには正しい HTTP 署名が必要です。",
+    "description": "Error title for HTTP 401 when an ActivityPub request carries no HTTP signature that verifies: a POST to an inbox, or a GET of an object or a collection when the instance uses authorized fetch. Read by other servers' operators."
   },
   "errors.status.already_deleted": {
     "defaultMessage": "この Idempotency-Key で作成された投稿は削除されています。",
@@ -582,6 +586,22 @@
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  },
+  "mail.admin_report.body": {
+    "defaultMessage": "{host} のモデレーターに新しい通報が届きました。\n\n次のリンクから通知を開いて、確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
+    "description": "Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_report.subject": {
+    "defaultMessage": "{host} のモデレーターに新しい通報が届きました",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {host} is the server's domain name."
+  },
+  "mail.admin_sign_up.body": {
+    "defaultMessage": "{host} に新しい利用者が登録し、承認を待っています。\n\n次のリンクから通知を開いて、登録を確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
+    "description": "Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_sign_up.subject": {
+    "defaultMessage": "{host} に承認待ちの登録があります",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {host} is the server's domain name."
   },
   "mail.verify_email.body": {
     "defaultMessage": "{host} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。",

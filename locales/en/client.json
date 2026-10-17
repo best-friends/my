@@ -831,6 +831,14 @@
     "defaultMessage": "Notifications",
     "description": "Heading and document title of the notifications page."
   },
+  "notifications.type.admin_report": {
+    "defaultMessage": "A new report awaits the moderators",
+    "description": "Notification sentence to a moderator: someone reported an account that had no open report."
+  },
+  "notifications.type.admin_sign_up": {
+    "defaultMessage": "{name} signed up and awaits approval",
+    "description": "Notification sentence to a moderator. {name} is the display name, or the username, of a new user whose registration waits for a moderator's approval."
+  },
   "notifications.type.boost": {
     "defaultMessage": "{name} boosted your post",
     "description": "Notification sentence. {name} is the display name of the account that boosted the user's post."
@@ -862,6 +870,10 @@
   "notifications.type.poll_closed": {
     "defaultMessage": "A poll you took part in has ended",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
+  },
+  "notifications.type.report_resolved": {
+    "defaultMessage": "A report you filed has been resolved",
+    "description": "Notification sentence: the moderators of the server resolved a report that the user filed. It never says how."
   },
   "notifications.unread": {
     "defaultMessage": "Unread:",
@@ -1902,6 +1914,18 @@
   "status.favourite.on": {
     "defaultMessage": "Added to favourites",
     "description": "Read out by screen readers after the user favourited a post."
+  },
+  "status.focused.boosts": {
+    "defaultMessage": "{count, plural, one {# boost} other {# boosts}}",
+    "description": "Under the body of the post a page is about: how many times it was boosted. Shown only when it was."
+  },
+  "status.focused.favourites": {
+    "defaultMessage": "{count, plural, one {# favourite} other {# favourites}}",
+    "description": "Under the body of the post a page is about: how many people favourited it. Shown only when someone did."
+  },
+  "status.focused.label": {
+    "defaultMessage": "Opened post",
+    "description": "Not shown: read out by screen readers before the author and time of the post a page is about, to tell it apart from the posts of its thread."
   },
   "status.link.copied": {
     "defaultMessage": "Link copied",

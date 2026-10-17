@@ -45,6 +45,9 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   favourite: "client:notifications.type.favourite",
   poll_closed: "client:notifications.type.poll_closed",
   moderation_notice: "client:notifications.type.moderation_notice",
+  report_resolved: "client:notifications.type.report_resolved",
+  admin_report: "client:notifications.type.admin_report",
+  admin_sign_up: "client:notifications.type.admin_sign_up",
 };
 
 /** The sentences of a group of the types that rows group (groupNotifications). */

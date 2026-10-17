@@ -10,7 +10,9 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	appnotification "github.com/best-friends/my/internal/app/notification"
+	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/domain/notification"
 )
 
@@ -98,8 +100,14 @@ func (s *Server) ListNotifications(ctx context.Context, req ListNotificationsReq
 // The posts that they are about are read together through the content module, which applies the
 // visibility policy: a post that the user may not see is left out of its notification. The source
 // accounts are read once each; a source account that no longer exists is left out. A moderation
-// notice carries its action as the user sees it (moderation.go).
+// notice carries its action as the user sees it (moderation.go), and a report_resolved the
+// user's report, which tells only that it is resolved. The account of an
+// admin_sign_up is the local account of the user who signed up.
 func (s *Server) newNotifications(ctx context.Context, accountID string, ns []notification.Notification) ([]Notification, error) {
+	presented, err := s.presentedAccounts(ctx, ns)
+	if err != nil {
+		return nil, err
+	}
 	var statusIDs []string
 	seen := map[string]bool{}
 	for _, n := range ns {
@@ -119,20 +127,25 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 	// The source accounts, read once each; nil for one that no longer exists.
 	sources := map[string]*appaccount.Actor{}
 	var found []appaccount.Actor
-	for _, n := range ns {
-		if _, ok := sources[n.SourceAccountID]; ok || n.SourceAccountID == "" {
+	for i, n := range ns {
+		id := presented[i]
+		if _, ok := sources[id]; ok || id == "" {
 			continue
 		}
-		actor, err := s.o.Accounts.FindByID(ctx, n.SourceAccountID)
+		actor, err := s.o.Accounts.FindByID(ctx, id)
 		switch {
 		case err == nil:
-			sources[n.SourceAccountID] = &actor
+			sources[id] = &actor
 			found = append(found, actor)
 		case errors.Is(err, appaccount.ErrNotFound):
-			sources[n.SourceAccountID] = nil
+			sources[id] = nil
 		default:
-			return nil, fmt.Errorf("clientapi: the source account %s of notification %s: %w", n.SourceAccountID, n.ID, err)
+			return nil, fmt.Errorf("clientapi: the account %s of notification %s: %w", id, n.ID, err)
 		}
+	}
+	reports, err := s.notifiedReports(ctx, accountID, ns)
+	if err != nil {
+		return nil, err
 	}
 	var actionIDs []string
 	for _, n := range ns {
@@ -159,18 +172,79 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 		}
 	}
 	out := make([]Notification, 0, len(ns))
-	for _, n := range ns {
+	for i, n := range ns {
 		item := Notification{Id: n.ID, Type: NotificationType(n.Type), CreatedAt: n.CreatedAt}
 		if st, ok := statuses[n.StatusID]; ok {
 			item.Status = &st
 		}
-		if a, ok := accounts[n.SourceAccountID]; ok {
+		if a, ok := accounts[presented[i]]; ok {
 			item.Account = &a
+		}
+		if r, ok := reports[n.ReportID]; ok {
+			item.Report = &r
 		}
 		if a, ok := actions[n.ModerationActionID]; ok {
 			item.ModerationAction = &a
 		}
+		if n.Type == notification.TypeAdminReport {
+			id := n.ReportID
+			item.ReportId = &id
+		}
 		out = append(out, item)
+	}
+	return out, nil
+}
+
+// presentedAccounts returns, for each of ns, the ID of the account that its account property
+// presents: the source account, or for an admin_sign_up the local account of the user who signed
+// up; "" for none.
+func (s *Server) presentedAccounts(ctx context.Context, ns []notification.Notification) ([]string, error) {
+	out := make([]string, len(ns))
+	for i, n := range ns {
+		out[i] = n.SourceAccountID
+		if n.Type != notification.TypeAdminSignUp || n.SubjectUserID == "" || s.o.UserAccounts == nil {
+			continue
+		}
+		la, err := s.o.UserAccounts.LocalAccountOfUser(ctx, n.SubjectUserID)
+		switch {
+		case err == nil:
+			out[i] = la.AccountID
+		case !errors.Is(err, appaccount.ErrNotFound):
+			return nil, fmt.Errorf("clientapi: the account of user %s of notification %s: %w", n.SubjectUserID, n.ID, err)
+		}
+	}
+	return out, nil
+}
+
+// notifiedReports presents, by ID, accountID's own reports that the report_resolved
+// notifications ns tell of; a report that no longer exists is left out.
+func (s *Server) notifiedReports(ctx context.Context, accountID string, ns []notification.Notification) (map[string]Report, error) {
+	if s.o.FiledReports == nil {
+		return nil, nil
+	}
+	var recs []moderation.ReportRecord
+	seen := map[string]bool{}
+	for _, n := range ns {
+		if n.Type != notification.TypeReportResolved || n.ReportID == "" || seen[n.ReportID] {
+			continue
+		}
+		seen[n.ReportID] = true
+		rec, err := s.o.FiledReports.ReportFiledBy(ctx, accountID, n.ReportID)
+		switch {
+		case errors.Is(err, appmoderation.ErrNotFound):
+			continue
+		case err != nil:
+			return nil, fmt.Errorf("clientapi: the report %s of notification %s: %w", n.ReportID, n.ID, err)
+		}
+		recs = append(recs, rec)
+	}
+	items, err := s.newReports(ctx, recs)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]Report, len(items))
+	for _, r := range items {
+		out[r.Id] = r
 	}
 	return out, nil
 }

@@ -5,12 +5,12 @@
 -- InsertNotification inserts nothing when the recipient already has a notification with the
 -- dedupe key.
 -- name: InsertNotification :execrows
-INSERT INTO notifications (id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, dedupe_key, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO notifications (id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, subject_user_id, dedupe_key, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (recipient_account_id, dedupe_key) DO NOTHING;
 
 -- name: GetNotification :one
-SELECT id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, dedupe_key, created_at
+SELECT id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, subject_user_id, dedupe_key, created_at
 FROM notifications WHERE id = ?;
 
 -- InsertNotificationDismissal inserts nothing when the notification is already dismissed.
@@ -21,13 +21,16 @@ ON CONFLICT (notification_id) DO NOTHING;
 -- ListNotifications pages the notifications of a recipient that are not dismissed, whose
 -- source no exclusion in force at now hides, and whose status is not deleted, newest first; an empty before starts at the
 -- newest. A non-empty types keeps only the types it lists, each followed by a comma, after a
--- leading comma (",follow,mention,").
+-- leading comma (",follow,mention,"). hidden_types, in the same form or empty, leaves out the
+-- types it lists.
 -- name: ListNotifications :many
-SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.dedupe_key, n.created_at
+SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.report_id,
+  n.subject_user_id, n.dedupe_key, n.created_at
 FROM notifications n
 WHERE n.recipient_account_id = sqlc.arg(recipient_account_id)
   AND (CAST(sqlc.arg(before) AS TEXT) = '' OR n.id < CAST(sqlc.arg(before) AS TEXT))
   AND (CAST(sqlc.arg(types) AS TEXT) = '' OR instr(CAST(sqlc.arg(types) AS TEXT), ',' || n.type || ',') > 0)
+  AND instr(CAST(sqlc.arg(hidden_types) AS TEXT), ',' || n.type || ',') = 0
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
     WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
@@ -37,11 +40,13 @@ ORDER BY n.id DESC
 LIMIT sqlc.arg(page_limit);
 
 -- CountNotificationsAfter counts the notifications of a recipient after the ID after that
--- ListNotifications would return; an empty after counts them all.
+-- ListNotifications would return; an empty after counts them all. hidden_types is that of
+-- ListNotifications.
 -- name: CountNotificationsAfter :one
 SELECT COUNT(*) FROM notifications n
 WHERE n.recipient_account_id = sqlc.arg(recipient_account_id)
   AND n.id > CAST(sqlc.arg(after) AS TEXT)
+  AND instr(CAST(sqlc.arg(hidden_types) AS TEXT), ',' || n.type || ',') = 0
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
     WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id

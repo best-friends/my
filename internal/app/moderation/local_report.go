@@ -145,7 +145,7 @@ func (s *LocalReports) File(ctx context.Context, in LocalReportInput) (moderatio
 		if err := repo.UpsertReportStatus(ctx, tx, moderation.ReportStatus{ReportID: r.ID, State: moderation.ReportOpen, Since: now}); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, ReportFiled{Report: r})
+		return emitReportFiled(ctx, tx, repo, r)
 	})
 	if err != nil {
 		return moderation.Report{}, err

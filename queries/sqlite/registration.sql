@@ -75,3 +75,7 @@ SELECT id, user_id, purpose, email_address_id, token_hash, expires_at, issued_at
 
 -- name: InsertUserTokenRedemption :exec
 INSERT INTO user_token_redemptions (token_id, redeemed_at) VALUES (?, ?);
+
+-- CountRegistrationsInState counts the users whose registration is in a state (#338).
+-- name: CountRegistrationsInState :one
+SELECT COUNT(*) FROM user_registration_states WHERE state = ?;

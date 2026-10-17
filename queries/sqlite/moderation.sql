@@ -127,6 +127,17 @@ SELECT report_id, state, outcome, assignee_user_id, since FROM report_states WHE
 SELECT id, uri, reporter_account_id, target_account_id, category, comment, forwarded, filed_at
 FROM reports WHERE target_account_id = ? ORDER BY id;
 
+-- ListReportsByReporter returns the reports that an account filed with their state, newest
+-- first, those before the report before (empty for the first page).
+-- name: ListReportsByReporter :many
+SELECT r.id, r.uri, r.reporter_account_id, r.target_account_id, r.category, r.comment, r.forwarded,
+  r.filed_at, s.state, s.outcome, s.assignee_user_id, s.since
+FROM reports r JOIN report_states s ON s.report_id = r.id
+WHERE r.reporter_account_id = sqlc.arg(reporter_account_id)
+  AND (CAST(sqlc.arg(before) AS TEXT) = '' OR r.id < sqlc.arg(before))
+ORDER BY r.id DESC
+LIMIT sqlc.arg(lim);
+
 -- Moderators' handling of reports and domain actions -----------------------------------------
 
 -- name: InsertReportAssignment :exec
@@ -200,3 +211,16 @@ SELECT a.id, a.target_account_id, a.kind, a.reason_category, a.public_reason, a.
 FROM moderation_actions a
 LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
 WHERE a.id = ?;
+
+-- Moderator notifications and counts (#338) ---------------------------------------------------
+
+-- CountReportsInState counts the reports in a state.
+-- name: CountReportsInState :one
+SELECT COUNT(*) FROM report_states WHERE state = ?;
+
+-- HasOtherOpenReportOf reports whether a report of the target other than the one given is open.
+-- name: HasOtherOpenReportOf :one
+SELECT EXISTS (
+  SELECT 1 FROM reports r JOIN report_states s ON s.report_id = r.id
+  WHERE r.target_account_id = sqlc.arg(target_account_id) AND r.id <> sqlc.arg(report_id) AND s.state = 'open'
+);

@@ -4,6 +4,7 @@ package notification
 
 import (
 	"errors"
+	"slices"
 	"testing"
 )
 
@@ -29,6 +30,20 @@ func TestValidate(t *testing.T) {
 	fromInstance.SourceAccountID, fromInstance.Type, fromInstance.ModerationActionID = "", TypeModerationNotice, "m"
 	if err := fromInstance.Validate(); err != nil {
 		t.Errorf("Validate(%+v) = %v", fromInstance, err)
+	}
+	resolved := ok
+	resolved.SourceAccountID, resolved.Type, resolved.ReportID = "", TypeReportResolved, "r"
+	if err := resolved.Validate(); err != nil {
+		t.Errorf("Validate(%+v) = %v", resolved, err)
+	}
+	noReport := resolved
+	noReport.ReportID = ""
+	strayReport := ok
+	strayReport.ReportID = "r"
+	for _, n := range []Notification{noReport, strayReport} {
+		if err := n.Validate(); err == nil {
+			t.Errorf("Validate(%+v) = nil, want an error for the report", n)
+		}
 	}
 	noAction := fromInstance
 	noAction.ModerationActionID = ""
@@ -62,10 +77,52 @@ func TestKeys(t *testing.T) {
 		MentionKey("s1"):                          "mention:s1",
 		InteractionKey(TypeFavourite, "s1", "a1"): "favourite:s1:a1",
 		InteractionKey(TypeBoost, "s1", "a1"):     "boost:s1:a1",
+		AdminReportKey("r1"):                      "admin_report:r1",
+		AdminSignUpKey("u1"):                      "admin_sign_up:u1",
+		ReportResolvedKey("r1"):                   "report_resolved:r1",
 		ModerationNoticeKey("m1"):                 "moderation_notice:m1",
 	} {
 		if got != want {
 			t.Errorf("key = %q, want %q", got, want)
 		}
+	}
+}
+
+func TestValidateModeratorNotifications(t *testing.T) {
+	for _, n := range []Notification{
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, ReportID: "r", DedupeKey: AdminReportKey("r")},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminSignUp, SubjectUserID: "u", DedupeKey: AdminSignUpKey("u")},
+	} {
+		if err := n.Validate(); err != nil {
+			t.Errorf("Validate(%+v) = %v", n, err)
+		}
+	}
+	for _, n := range []Notification{
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, ReportID: "r", SourceAccountID: "b", DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminSignUp, DedupeKey: "k"},
+	} {
+		if err := n.Validate(); err == nil {
+			t.Errorf("Validate(%+v) = nil, want an error", n)
+		}
+	}
+}
+
+func TestHiddenTypes(t *testing.T) {
+	for _, tc := range []struct {
+		granted []Permission
+		want    []Type
+	}{
+		{nil, []Type{TypeAdminReport, TypeAdminSignUp}},
+		{[]Permission{PermissionManageReports}, []Type{TypeAdminSignUp}},
+		{[]Permission{PermissionManageAccounts}, []Type{TypeAdminReport}},
+		{[]Permission{PermissionManageAccounts, PermissionManageReports, "view_audit"}, nil},
+	} {
+		if got := HiddenTypes(tc.granted); !slices.Equal(got, tc.want) {
+			t.Errorf("HiddenTypes(%v) = %v, want %v", tc.granted, got, tc.want)
+		}
+	}
+	if _, ok := ModeratorPermission(TypeFollow); ok {
+		t.Error("ModeratorPermission(follow) needs a permission")
 	}
 }

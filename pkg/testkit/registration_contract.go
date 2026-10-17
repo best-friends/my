@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appidentity "github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/identity"
 )
 
@@ -26,8 +28,9 @@ import (
 // and closed mode refuses. It also checks that concurrent sign-ups never redeem an invite more
 // than its maximum uses, that an email verification token works exactly once (also when
 // redeemed concurrently), that a failed sign-up writes nothing, that sign-ups are rate-limited
-// per address, the invite listing and revocation, and that a sign-up records its origin, which
-// the purge erases after the retention. It uses the same harness as
+// per address, the invite listing and revocation, that a sign-up records its origin, which
+// the purge erases after the retention, the count of pending registrations, and the holders of
+// a permission with where their moderator notifications are emailed. It uses the same harness as
 // AccountRepositoryContract.
 func RegistrationRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
@@ -47,6 +50,7 @@ func RegistrationRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"ListsAndRevokesInvites", registrationInvites},
 		{"AdminsAreApprovedAndVerified", registrationAdmin},
 		{"RecordsAndPurgesRegistrationOrigins", registrationRecordsOrigins},
+		{"CountsPendingAndFindsModerators", registrationModerators},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newAccountEnv(t, newHarness)) })
@@ -537,4 +541,70 @@ func registrationAdmin(t *testing.T, e *accountEnv) {
 	if a := r.access(t, reg.User.ID); !a.Allowed() || !a.EmailVerified || a.Registration != identity.RegistrationApproved {
 		t.Errorf("admin access = %+v; want allowed", a)
 	}
+}
+
+// registrationModerators checks what the moderator notifications read of the identity module:
+// the count of pending registrations, the holders of a permission, and their mailboxes.
+func registrationModerators(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	r := e.registration(identity.RegistrationApproval, true)
+	count := func(want int64) {
+		t.Helper()
+		if n, err := r.CountPendingRegistrations(ctx); err != nil || n != want {
+			t.Errorf("CountPendingRegistrations = %d, %v; want %d", n, err, want)
+		}
+	}
+	root, err := r.CreateAdmin(ctx, appidentity.CreateAdminInput{Username: "root", Email: "root@example.com", Password: "correct horse battery staple"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	count(0)
+	alice := r.signUp(t, signUpInput("alice"))
+	count(1)
+
+	holders := func(p identity.Permission) []appidentity.PermissionHolder {
+		t.Helper()
+		var out []appidentity.PermissionHolder
+		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			var err error
+			out, err = r.PermissionHolders(ctx, tx, p)
+			return err
+		})
+		if err != nil {
+			t.Fatalf("PermissionHolders(%s) = %v", p, err)
+		}
+		return out
+	}
+	want := []appidentity.PermissionHolder{{UserID: root.User.ID, AccountID: root.AccountID}}
+	for _, p := range []identity.Permission{identity.PermManageReports, identity.PermManageAccounts} {
+		if got := holders(p); !reflect.DeepEqual(got, want) {
+			t.Errorf("PermissionHolders(%s) = %+v, want %+v", p, got, want)
+		}
+	}
+
+	mailbox := func(userID string, wantOK bool) {
+		t.Helper()
+		address, locale, ok, err := r.ModeratorMailbox(ctx, userID)
+		if err != nil || ok != wantOK || (ok && (address != "root@example.com" || locale != "en")) {
+			t.Errorf("ModeratorMailbox(%s) = %q, %q, %v, %v; want ok %v", userID, address, locale, ok, err, wantOK)
+		}
+	}
+	mailbox(root.User.ID, false) // off for a new user
+	on := true
+	for _, id := range []string{root.User.ID, alice.User.ID} {
+		if _, err := r.UpdatePreferences(ctx, id, appidentity.PreferencesUpdate{EmailModeratorNotifications: &on}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mailbox(root.User.ID, true)
+	mailbox(alice.User.ID, false) // an unverified address gets no email
+	want[0].EmailModeratorNotifications = true
+	if got := holders(identity.PermManageReports); !reflect.DeepEqual(got, want) {
+		t.Errorf("PermissionHolders after opting in = %+v, want %+v", got, want)
+	}
+
+	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: identity.DecisionApproved}); err != nil {
+		t.Fatal(err)
+	}
+	count(0)
 }

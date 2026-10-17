@@ -56,6 +56,9 @@ const (
 	EventAccountRestrictionsChanged = "moderation.account_restrictions_changed"
 	// EventReportFiled follows a new report.
 	EventReportFiled = "moderation.report_filed"
+	// EventReportResolved follows every resolution of a report, the first one and those after
+	// a reopening.
+	EventReportResolved = "moderation.report_resolved"
 )
 
 // DomainRestrictionsChanged carries the restrictions in effect on one domain (not its parents)
@@ -78,10 +81,24 @@ type AccountRestrictionsChanged struct {
 func (AccountRestrictionsChanged) EventType() string { return EventAccountRestrictionsChanged }
 
 // ReportFiled carries a new report.
-type ReportFiled struct{ Report moderation.Report }
+type ReportFiled struct {
+	Report moderation.Report
+	// FirstOpen reports that no other report of the target was open when the report was filed:
+	// the moderators are notified of the first open report of an account only (data-model §4.7).
+	FirstOpen bool
+}
 
 // EventType implements uow.Event.
 func (ReportFiled) EventType() string { return EventReportFiled }
+
+// ReportResolved carries a report and its resolution.
+type ReportResolved struct {
+	Report     moderation.Report
+	Resolution moderation.ReportResolution
+}
+
+// EventType implements uow.Event.
+func (ReportResolved) EventType() string { return EventReportResolved }
 
 // Accounts is the part of the account module's public API that the moderation module reads.
 // *appaccount.Service implements it.
@@ -487,7 +504,7 @@ func (s *Service) FileRemoteReport(ctx context.Context, in RemoteReportInput) (r
 		if err := repo.UpsertReportStatus(ctx, tx, moderation.ReportStatus{ReportID: r.ID, State: moderation.ReportOpen, Since: now}); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, ReportFiled{Report: r})
+		return emitReportFiled(ctx, tx, repo, r)
 	})
 	if err != nil {
 		return moderation.Report{}, false, err
@@ -497,6 +514,20 @@ func (s *Service) FileRemoteReport(ctx context.Context, in RemoteReportInput) (r
 		return r, false, err
 	}
 	return r, true, nil
+}
+
+// emitReportFiled emits ReportFiled for the report r just filed in tx.
+func emitReportFiled(ctx context.Context, tx uow.Tx, repo Repository, r moderation.Report) error {
+	other, err := repo.HasOtherOpenReportOf(ctx, tx, r.TargetAccountID, r.ID)
+	if err != nil {
+		return err
+	}
+	return tx.Emit(ctx, ReportFiled{Report: r, FirstOpen: !other})
+}
+
+// CountOpenReports counts the reports that await the moderators (GET /api/v1/admin/counts).
+func (s *Service) CountOpenReports(ctx context.Context) (int64, error) {
+	return s.d.Repository.CountReports(ctx, moderation.ReportOpen)
 }
 
 func uniqueSorted(ids []string) []string {

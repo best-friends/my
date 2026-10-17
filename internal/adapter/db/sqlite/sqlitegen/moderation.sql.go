@@ -12,6 +12,20 @@ import (
 	"database/sql"
 )
 
+const countReportsInState = `-- name: CountReportsInState :one
+
+SELECT COUNT(*) FROM report_states WHERE state = ?
+`
+
+// Moderator notifications and counts (#338) ---------------------------------------------------
+// CountReportsInState counts the reports in a state.
+func (q *Queries) CountReportsInState(ctx context.Context, state string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countReportsInState, state)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteAccountRestrictionsOfAction = `-- name: DeleteAccountRestrictionsOfAction :exec
 DELETE FROM account_restrictions WHERE source_action_id = ?
 `
@@ -294,6 +308,26 @@ func (q *Queries) GetReportStateForUpdate(ctx context.Context, reportID string) 
 		&i.Since,
 	)
 	return i, err
+}
+
+const hasOtherOpenReportOf = `-- name: HasOtherOpenReportOf :one
+SELECT EXISTS (
+  SELECT 1 FROM reports r JOIN report_states s ON s.report_id = r.id
+  WHERE r.target_account_id = ?1 AND r.id <> ?2 AND s.state = 'open'
+)
+`
+
+type HasOtherOpenReportOfParams struct {
+	TargetAccountID string
+	ReportID        string
+}
+
+// HasOtherOpenReportOf reports whether a report of the target other than the one given is open.
+func (q *Queries) HasOtherOpenReportOf(ctx context.Context, arg HasOtherOpenReportOfParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, hasOtherOpenReportOf, arg.TargetAccountID, arg.ReportID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const insertAccountRestriction = `-- name: InsertAccountRestriction :exec
@@ -989,6 +1023,75 @@ func (q *Queries) ListReports(ctx context.Context, arg ListReportsParams) ([]Lis
 	items := []ListReportsRow{}
 	for rows.Next() {
 		var i ListReportsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uri,
+			&i.ReporterAccountID,
+			&i.TargetAccountID,
+			&i.Category,
+			&i.Comment,
+			&i.Forwarded,
+			&i.FiledAt,
+			&i.State,
+			&i.Outcome,
+			&i.AssigneeUserID,
+			&i.Since,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReportsByReporter = `-- name: ListReportsByReporter :many
+SELECT r.id, r.uri, r.reporter_account_id, r.target_account_id, r.category, r.comment, r.forwarded,
+  r.filed_at, s.state, s.outcome, s.assignee_user_id, s.since
+FROM reports r JOIN report_states s ON s.report_id = r.id
+WHERE r.reporter_account_id = ?1
+  AND (CAST(?2 AS TEXT) = '' OR r.id < ?2)
+ORDER BY r.id DESC
+LIMIT ?3
+`
+
+type ListReportsByReporterParams struct {
+	ReporterAccountID string
+	Before            string
+	Lim               int64
+}
+
+type ListReportsByReporterRow struct {
+	ID                string
+	Uri               sql.NullString
+	ReporterAccountID string
+	TargetAccountID   string
+	Category          string
+	Comment           string
+	Forwarded         int64
+	FiledAt           int64
+	State             string
+	Outcome           sql.NullString
+	AssigneeUserID    sql.NullString
+	Since             int64
+}
+
+// ListReportsByReporter returns the reports that an account filed with their state, newest
+// first, those before the report before (empty for the first page).
+func (q *Queries) ListReportsByReporter(ctx context.Context, arg ListReportsByReporterParams) ([]ListReportsByReporterRow, error) {
+	rows, err := q.db.QueryContext(ctx, listReportsByReporter, arg.ReporterAccountID, arg.Before, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListReportsByReporterRow{}
+	for rows.Next() {
+		var i ListReportsByReporterRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Uri,
