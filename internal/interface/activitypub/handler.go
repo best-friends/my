@@ -34,7 +34,7 @@ type Objects interface {
 	StatusActivity(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
 	OutboxTotal(ctx context.Context, accountID string) (int64, error)
 	Outbox(ctx context.Context, accountID, before string) (appfederation.OutboxPage, error)
-	Featured(ctx context.Context, accountID string) ([]federation.ObjectDocument, error)
+	Featured(ctx context.Context, accountID string) ([]federation.NoteDocument, error)
 }
 
 // Graph is what the followers and following collections need from the graph module;

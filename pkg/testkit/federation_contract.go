@@ -41,7 +41,10 @@ type FederationFactory func(t *testing.T, opts uow.Options) FederationHarness
 // and their lookups, the first document kept, one delivery per inbox, the state of remote
 // servers, the inboxes each visibility reaches (data-model §7), the Update and Delete that follow
 // the Create, a fan-out run again without a delivery twice, the servers left out, and the boosts
-// that are not recorded. It also covers one delivery (federation.md §7.3): the classification of
+// that are not recorded. The documents carry the body of the revision they present
+// (federation.md §7.4); a local status leaves the remote accounts that do not follow its author
+// out of tag (ADR-0035); and the Delete is stored with the deletion, so that it reaches the
+// inboxes of the Create after the status's rows are gone. It also covers one delivery (federation.md §7.3): the classification of
 // responses, the circuit breaker, the failure days that make a server unavailable and the
 // successes, signed requests, and probes that bring it back, and the dead job after the retry
 // schedule. The other modules are in-memory stand-ins; the fan-out reads its recipients in
@@ -61,6 +64,9 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"FanOutAgainDeliversNothingTwice", fedFanOutAgain},
 		{"LeavesOutSuspendedAndUnavailableServers", fedLeavesOutServers},
 		{"RecordsOnlyWhatFederates", fedRecordsOnlyWhatFederates},
+		{"BuildsTheNoteOfTheRevision", fedBuildsTheNote},
+		{"LeavesNonFollowersOutOfTheTagOfLocalStatuses", fedLeavesNonFollowersOutOfLocalTags},
+		{"DeliversTheStoredDeleteAfterThePurge", fedDeliversTheStoredDelete},
 		{"ClassifiesDeliveryResponses", fedClassifiesResponses},
 		{"BreaksTheCircuitOfAHost", fedBreaksTheCircuit},
 		{"MarksServersUnavailableAndBack", fedMarksServersUnavailable},
@@ -79,6 +85,7 @@ type fedEnv struct {
 	jobs     *fedJobs
 	handlers *queue.JobHandlerRegistry
 	statuses *fedStatuses
+	parts    *fedParts
 	accounts *fedAccounts
 	graph    *fedGraph
 	domains  fedDomains
@@ -101,14 +108,15 @@ func newFedEnv(t *testing.T, newHarness FederationFactory) *fedEnv {
 		graph:    &fedGraph{followers: map[string][]string{}, blocks: map[[2]string]bool{}},
 		domains:  fedDomains{},
 	}
+	e.parts = &fedParts{accounts: e.accounts, tags: map[string]content.Tag{}, media: map[string][]appcontent.MediaView{}}
 	outbox := queue.AfterCommit(projectors, e.jobs, nil)
 	appfederation.RegisterOutboundProjectors(projectors, appfederation.RecorderDeps{
 		Repository: h.Federation, Outbox: outbox, IDs: e.ids, Host: contractHost,
 	})
 	appfederation.NewFanOut(appfederation.FanOutDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Federation, Outbox: outbox,
-		Statuses: e.statuses, Accounts: e.accounts, Graph: e.graph, Domains: e.domains,
-		Clock: clock, IDs: e.ids, Host: contractHost, Batch: 2,
+		Statuses: e.statuses, Accounts: e.accounts, Graph: e.graph, Domains: e.domains, Parts: e.parts,
+		Clock: clock, IDs: e.ids, Host: contractHost, AccountDomain: contractAccountDomain, Batch: 2,
 	}).RegisterJobs(e.handlers)
 	return e
 }
@@ -310,6 +318,7 @@ func (e *fedEnv) local() string {
 	defer e.accounts.mu.Unlock()
 	e.accounts.actors[id] = appaccount.Actor{
 		Account:   account.Account{ID: id, URI: account.ActorURI(contractHost, id), Domain: account.LocalDomain, ActorType: account.ActorPerson},
+		Handle:    &account.Handle{AccountID: id, Username: "l" + id[len(id)-6:], UsernameNormalized: "l" + id[len(id)-6:]},
 		Lifecycle: account.LifecycleState{AccountID: id, State: account.StateActive},
 	}
 	return id
@@ -324,6 +333,7 @@ func (e *fedEnv) remote(domain string, shared bool) string {
 	defer e.accounts.mu.Unlock()
 	e.accounts.actors[id] = appaccount.Actor{
 		Account:   account.Account{ID: id, URI: uri, Domain: domain, ActorType: account.ActorPerson},
+		Handle:    &account.Handle{AccountID: id, Username: "r" + id[len(id)-6:], UsernameNormalized: "r" + id[len(id)-6:], Domain: domain},
 		Lifecycle: account.LifecycleState{AccountID: id, State: account.StateActive},
 	}
 	in := appaccount.RemoteInbox{InboxURL: uri + "/inbox"}
@@ -358,6 +368,13 @@ func (e *fedEnv) emit(t *testing.T, ev uow.Event) {
 // post creates a local status of author mentioning mentions, emits its creation, and returns it.
 func (e *fedEnv) post(t *testing.T, author string, v content.Visibility, mentions ...string) content.Status {
 	t.Helper()
+	return e.postWith(t, author, v, func(r *content.Revision) { r.MentionedAccountIDs = mentions })
+}
+
+// postWith creates a local status of author whose first revision edit changes, emits its
+// creation, and returns it.
+func (e *fedEnv) postWith(t *testing.T, author string, v content.Visibility, edit func(*content.Revision)) content.Status {
+	t.Helper()
 	e.clock.Advance(time.Second)
 	id := e.ids.NewID()
 	s := content.Status{
@@ -366,8 +383,9 @@ func (e *fedEnv) post(t *testing.T, author string, v content.Visibility, mention
 	}
 	rev := content.Revision{
 		ID: e.ids.NewID(), StatusID: id, Seq: 1, Language: "en", RevisedAt: s.PublishedAt,
-		Bodies: []content.Body{{Language: "en", ContentHTML: "<p>hello</p>"}}, MentionedAccountIDs: mentions,
+		Bodies: []content.Body{{Language: "en", ContentHTML: "<p>hello</p>"}},
 	}
+	edit(&rev)
 	e.statuses.mu.Lock()
 	e.statuses.statuses[id], e.statuses.revisions[rev.ID] = s, rev
 	e.statuses.mu.Unlock()
@@ -377,8 +395,15 @@ func (e *fedEnv) post(t *testing.T, author string, v content.Visibility, mention
 
 func (e *fedEnv) revise(t *testing.T, s content.Status) {
 	t.Helper()
+	e.reviseWith(t, s, func(*content.Revision) {})
+}
+
+// reviseWith adds a revision to s that edit changes and emits it.
+func (e *fedEnv) reviseWith(t *testing.T, s content.Status, edit func(*content.Revision)) {
+	t.Helper()
 	e.clock.Advance(time.Second)
 	rev := content.Revision{ID: e.ids.NewID(), StatusID: s.ID, Seq: 2, Language: "en", RevisedAt: e.clock.Now()}
+	edit(&rev)
 	e.statuses.mu.Lock()
 	e.statuses.revisions[rev.ID] = rev
 	e.statuses.mu.Unlock()

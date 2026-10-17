@@ -67,8 +67,10 @@ type ProfileTimeline interface {
 	Profile(ctx context.Context, viewer appcontent.Viewer, authorAccountID string, f apptimeline.ProfileFilter, q apptimeline.Query) (apptimeline.Page, error)
 }
 
-// StatusReader presents statuses to a viewer; *appcontent.Reader implements it.
+// StatusReader presents statuses to a viewer and resolves the parts of the revisions that Notes
+// present; *appcontent.Reader implements it.
 type StatusReader interface {
+	NoteParts
 	Views(ctx context.Context, viewer appcontent.Viewer, ids []string) ([]appcontent.StatusView, error)
 	Pinned(ctx context.Context, viewer appcontent.Viewer, accountID string) ([]appcontent.StatusView, error)
 }
@@ -86,6 +88,8 @@ type ObjectsDeps struct {
 	Domains DomainPolicy
 	// Host is the serving domain of this server (ADR-0018).
 	Host string
+	// AccountDomain is the domain of local handles in mentions; empty means Host.
+	AccountDomain string
 	// Logger logs the signatures that do not verify; nil means slog.Default().
 	Logger *slog.Logger
 }
@@ -95,7 +99,8 @@ type ObjectsDeps struct {
 // ContextObjectFetch alone: the requester is the signer's server, and its relation to the author
 // is aggregated over that domain (an active follower or a mentioned account on it counts).
 type Objects struct {
-	d ObjectsDeps
+	d     ObjectsDeps
+	notes notes
 }
 
 // NewObjects returns Objects on d.
@@ -106,7 +111,10 @@ func NewObjects(d ObjectsDeps) *Objects {
 	if d.Logger == nil {
 		d.Logger = slog.Default()
 	}
-	return &Objects{d: d}
+	if d.AccountDomain == "" {
+		d.AccountDomain = d.Host
+	}
+	return &Objects{d: d, notes: notes{parts: d.Reader, graph: d.Graph, host: d.Host, accountDomain: d.AccountDomain}}
 }
 
 // Authenticate returns the requester of a GET. A request without a signature, or with one that
@@ -237,13 +245,12 @@ func (o *Objects) object(ctx context.Context, req Requester, statusID string, ac
 	if err != nil {
 		return Object{}, fmt.Errorf("author of status %s: %w", statusID, err)
 	}
-	mentioned, err := o.mentionedIRIs(ctx, rev.MentionedAccountIDs)
+	actor := federation.IRI(author.Account.URI)
+	vis := appcontent.EffectiveVisibility(st.Visibility, restrictions)
+	note, err := o.notes.note(ctx, st, rev, actor, vis, updatedOf(rev))
 	if err != nil {
 		return Object{}, err
 	}
-	actor := federation.IRI(author.Account.URI)
-	vis := appcontent.EffectiveVisibility(st.Visibility, restrictions)
-	note := revisionNote(st, rev, actor, vis, mentioned)
 	if activity {
 		out.Document, err = createOf(st, actor, note).Marshal()
 	} else {
@@ -306,22 +313,6 @@ func (o *Objects) followerOnDomain(ctx context.Context, authorID, domain string)
 	}
 }
 
-// mentionedIRIs returns the ids of the mentioned accounts that exist, in order.
-func (o *Objects) mentionedIRIs(ctx context.Context, ids []string) ([]federation.IRI, error) {
-	var out []federation.IRI
-	for _, id := range ids {
-		a, err := o.d.Accounts.FindByID(ctx, id)
-		if errors.Is(err, appaccount.ErrNotFound) {
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, federation.IRI(a.Account.URI))
-	}
-	return out, nil
-}
-
 // OutboxTotal returns the totalItems of an outbox: the author's statuses that are not deleted,
 // as Mastodon reports it.
 func (o *Objects) OutboxTotal(ctx context.Context, accountID string) (int64, error) {
@@ -358,51 +349,48 @@ func (o *Objects) Outbox(ctx context.Context, accountID, before string) (OutboxP
 	out := OutboxPage{Items: []federation.ActivityDocument{}, Next: page.Next}
 	for _, v := range views {
 		actor := federation.IRI(v.Author.Account.URI)
-		out.Items = append(out.Items, createOf(v.Status, actor, viewNote(v)).Embedded())
+		out.Items = append(out.Items, createOf(v.Status, actor, o.viewNote(v)).Embedded())
 	}
 	return out, nil
 }
 
 // Featured returns the Notes of the statuses a local account pinned, newest pin first, that an
 // anonymous visitor may see: the public and unlisted ones.
-func (o *Objects) Featured(ctx context.Context, accountID string) ([]federation.ObjectDocument, error) {
+func (o *Objects) Featured(ctx context.Context, accountID string) ([]federation.NoteDocument, error) {
 	views, err := o.d.Reader.Pinned(ctx, appcontent.Viewer{Kind: appcontent.ViewerAnonymous}, accountID)
 	if err != nil {
 		return nil, err
 	}
-	out := []federation.ObjectDocument{}
+	out := []federation.NoteDocument{}
 	for _, v := range views {
-		out = append(out, viewNote(v))
+		out = append(out, o.viewNote(v))
 	}
 	return out, nil
 }
 
-// viewNote returns the Note of a status as an anonymous visitor sees it.
-func viewNote(v appcontent.StatusView) federation.ObjectDocument {
-	mentioned := make([]federation.IRI, 0, len(v.Mentions))
-	for _, m := range v.Mentions {
-		mentioned = append(mentioned, federation.IRI(m.Account.URI))
-	}
-	// The reader showed the status to an anonymous visitor, so its effective visibility is its
-	// own: a ceiling would have made it followers-only.
-	return revisionNote(v.Status, v.Revision, federation.IRI(v.Author.Account.URI), v.Status.Visibility, mentioned)
+// viewNote returns the Note of a status as an anonymous visitor sees it, from the parts that the
+// reader resolved. The reader showed the status to an anonymous visitor, so it is public or
+// unlisted and its effective visibility is its own (a ceiling would have made it followers-only):
+// no mention is left out of tag (ADR-0035 is about local statuses).
+func (o *Objects) viewNote(v appcontent.StatusView) federation.NoteDocument {
+	parts := appcontent.RevisionParts{Attachments: v.Attachments, Mentions: v.Mentions, Tags: v.Tags}
+	return statusNote(v.Status, v.Revision, federation.IRI(v.Author.Account.URI), v.Status.Visibility, parts,
+		updatedOf(v.Revision), o.d.Host, o.d.AccountDomain)
 }
 
-// revisionNote returns the Note of st as of rev, addressed by the effective visibility vis.
-func revisionNote(st appcontent.Status, rev appcontent.Revision, actor federation.IRI, vis appcontent.Visibility, mentioned []federation.IRI) federation.ObjectDocument {
-	aud := federation.Address(federation.Visibility(vis), federation.FollowersOf(actor), mentioned)
-	var updated time.Time
+// updatedOf returns when an edited status was last revised, zero for one never edited.
+func updatedOf(rev appcontent.Revision) time.Time {
 	if rev.Seq > 1 {
-		updated = rev.RevisedAt
+		return rev.RevisedAt
 	}
-	return statusNote(st, actor, aud, updated)
+	return time.Time{}
 }
 
 // createURI returns the IRI of the Create of a local status (ADR-0018: {object}/activity).
 func createURI(st appcontent.Status) federation.IRI { return federation.IRI(st.URI + "/activity") }
 
 // createOf returns the Create of a local status around its Note, addressed as the Note is.
-func createOf(st appcontent.Status, actor federation.IRI, note federation.ObjectDocument) federation.ActivityDocument {
+func createOf(st appcontent.Status, actor federation.IRI, note federation.NoteDocument) federation.ActivityDocument {
 	aud := federation.Audience{To: note.To, Cc: note.Cc}
 	return federation.NewActivityDocument(createURI(st), federation.ActivityCreate, actor, st.PublishedAt, aud, note)
 }

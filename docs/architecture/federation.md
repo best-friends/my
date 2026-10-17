@@ -249,7 +249,9 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - 記録するのはローカルの投稿・ブーストの活動だけです。リモートの投稿のイベントと、`local` 投稿のブースト（`Boost.Federates` が偽）は記録しません（ADR-0017）。
 - projector は表の 1 行につき 1 つです（`federation.RegisterOutboundProjectors`）。送信する活動を増やすときは、その活動を送るユースケースと一緒に projector を足します。
 - `inline` のキュー（テストと開発用）はトランザクションでの投入ができないので、`queue.AfterCommit` がコミットの後に投入します。
-- アクティビティの文書は `federation.fanout` が 1 回だけ組み立て、`outbound_activity_documents` に保存します。すべての配送とリトライが同じ本文を送ります（再試行で内容が変わらず、消去後の `Delete` も送れる）。
+- アクティビティの文書は `federation.fanout` が 1 回だけ組み立て、`outbound_activity_documents` に保存します。すべての配送とリトライが同じ本文を送ります（再試行で内容が変わらない）。
+- 投稿の `Delete` の文書は、projector が削除のトランザクションでイベントだけから組み立てて保存します。消去ジョブが投稿の行を消した後でも、`Delete` は保存した文書で元の `Create` の `deliveries` の inbox に届きます。
+  宛先は投稿自身の公開範囲で作者の followers に向け（§7.4）、メンション先は入れません（`Delete` は対象が消えたことしか伝えない）。
 - 投稿の文書は、イベントが指す版から組み立てます（後の編集で内容が変わらない）。
 
 ### 7.2 展開（fan-out）
@@ -306,7 +308,11 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 - `Create` の `id` は `{object}/activity`、それ以外は `/ap/activities/{uuid}`（ADR-0018）。
 - 宛先: `public` は `to: [Public]`・`cc: [followers, メンション先]`、`unlisted` は `to: [followers]`・`cc: [Public, メンション先]`、`private` と `local` は `to: [followers]`（`private` は加えて `cc: [メンション先]`）、`direct` は `to: [メンション先]`。
-- `contentMap` は版の言語ごとの本文、`content` は版の既定の言語の本文です（NFR-I18N-5）。`sensitive`・`summary`（CW）・`tag`（`Mention` / `Hashtag` / `Emoji`）・`attachment`（メディアの公開 URL・`mediaType`・`name`・`blurhash`・`focalPoint`・`width` / `height`）を付けます。
+- `contentMap` は版の言語ごとの本文、`content` は版の既定の言語の本文です（NFR-I18N-5）。言語が `und` の本文は `contentMap` に入れません。`sensitive`・`summary`（CW）・`tag`（`Mention` / `Hashtag` / `Emoji`）・`attachment`（メディアの公開 URL・`mediaType`・`name`・`blurhash`・`focalPoint`・`width` / `height`）を付けます。
+  - `sensitive` は CW があれば真です（Mastodon と同じ）。`summary` と `contentMap` は空なら省き、`sensitive`・`content`・`tag`・`attachment` は常に付けます。
+  - `attachment` は処理の終わったメディアだけで、種類を問わず `type` は `Document`（Mastodon と同じ。種類は `mediaType` で伝える）、URL・`mediaType`・寸法は `full` の変種のものです。焦点が中央なら `focalPoint` を省きます。
+  - `Mention` は `href` が Actor の IRI、`name` が `@user@domain`（ローカルのアカウントは設定 `account_domain`）、`Hashtag` は `href` が `https://{host}/tags/{name}`（ADR-0018）、`name` が `#name` です。
+- Note は `federation.notes`（`internal/app/federation`）の 1 か所で組み立て、配送（`Create` / `Update` の `object`）とオブジェクトの GET（§10）が同じものを使います。版のメディア・メンション先・ハッシュタグは `content.Reader.Parts` で引きます。
 - `@context` は AS2・security・Mastodon 拡張（`toot:`）の既存の Actor の文脈と同じものです。
 
 ## 8. 公開範囲 `local` と連合

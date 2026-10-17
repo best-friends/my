@@ -176,6 +176,17 @@ func (w *objWorld) Views(_ context.Context, _ appcontent.Viewer, ids []string) (
 	return out, nil
 }
 
+// Parts resolves the mentioned accounts of a revision; the statuses have no media or hashtags.
+func (w *objWorld) Parts(_ context.Context, rev appcontent.Revision) (appcontent.RevisionParts, error) {
+	var p appcontent.RevisionParts
+	for _, id := range rev.MentionedAccountIDs {
+		if a, ok := w.actors[id]; ok {
+			p.Mentions = append(p.Mentions, a)
+		}
+	}
+	return p, nil
+}
+
 func (w *objWorld) Pinned(ctx context.Context, viewer appcontent.Viewer, _ string) ([]appcontent.StatusView, error) {
 	p, err := w.Profile(ctx, viewer, authorID, apptimeline.ProfileFilter{ExcludeBoosts: true}, apptimeline.Query{})
 	if err != nil {

@@ -93,6 +93,21 @@ type MediaView struct {
 	URL, PreviewURL string
 }
 
+// RevisionParts are what a revision refers to, resolved: the attached media that finished
+// processing, in order; the mentioned accounts that exist, in the revision's order; and the
+// hashtags, in the revision's order.
+type RevisionParts struct {
+	Attachments []MediaView
+	Mentions    []appaccount.Actor
+	Tags        []content.Tag
+}
+
+// Full returns the variant that URL serves.
+func (v MediaView) Full() content.MediaVariant {
+	full, _ := v.Media.Result.Variant(content.VariantFull)
+	return full
+}
+
 // RevisionView is one revision of a status, for its edit history.
 type RevisionView struct {
 	Revision    content.Revision
@@ -295,26 +310,11 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 			}
 		}
 	}
-	if out.Attachments, err = r.attachments(ctx, rev.Attachments); err != nil {
+	parts, err := r.Parts(ctx, rev)
+	if err != nil {
 		return StatusView{}, err
 	}
-	for _, id := range rev.MentionedAccountIDs {
-		a, err := r.d.Accounts.FindByID(ctx, id)
-		if errors.Is(err, appaccount.ErrNotFound) {
-			continue
-		}
-		if err != nil {
-			return StatusView{}, err
-		}
-		out.Mentions = append(out.Mentions, a)
-	}
-	for _, id := range rev.TagIDs {
-		tag, err := r.d.Statuses.FindTag(ctx, id)
-		if err != nil {
-			return StatusView{}, err
-		}
-		out.Tags = append(out.Tags, tag)
-	}
+	out.Attachments, out.Mentions, out.Tags = parts.Attachments, parts.Mentions, parts.Tags
 	switch c, err := r.d.Statuses.FindCounters(ctx, st.ID); {
 	case err == nil:
 		out.Counters = c
@@ -325,6 +325,35 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 		if out.Relation, err = r.relation(ctx, viewer.AccountID, st); err != nil {
 			return StatusView{}, err
 		}
+	}
+	return out, nil
+}
+
+// Parts resolves what rev refers to. It does not decide who may see the revision; callers
+// that present it to a viewer decide that first. ActivityPub documents of local statuses are
+// built from it (federation.md §7.4).
+func (r *Reader) Parts(ctx context.Context, rev content.Revision) (RevisionParts, error) {
+	var out RevisionParts
+	var err error
+	if out.Attachments, err = r.attachments(ctx, rev.Attachments); err != nil {
+		return RevisionParts{}, err
+	}
+	for _, id := range rev.MentionedAccountIDs {
+		a, err := r.d.Accounts.FindByID(ctx, id)
+		if errors.Is(err, appaccount.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return RevisionParts{}, err
+		}
+		out.Mentions = append(out.Mentions, a)
+	}
+	for _, id := range rev.TagIDs {
+		tag, err := r.d.Statuses.FindTag(ctx, id)
+		if err != nil {
+			return RevisionParts{}, err
+		}
+		out.Tags = append(out.Tags, tag)
 	}
 	return out, nil
 }
