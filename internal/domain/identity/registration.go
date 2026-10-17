@@ -43,10 +43,32 @@ var ErrInvalidReason = errors.New("invalid registration reason")
 // ValidateRegistrationReason accepts valid UTF-8 without NUL (data-model §1.2) of at most
 // MaxRegistrationReasonLength characters.
 func ValidateRegistrationReason(reason string) error {
-	if !utf8.ValidString(reason) || strings.ContainsRune(reason, 0) || utf8.RuneCountInString(reason) > MaxRegistrationReasonLength {
+	if !validText(reason, MaxRegistrationReasonLength) {
 		return fmt.Errorf("%w: must be at most %d characters of text", ErrInvalidReason, MaxRegistrationReasonLength)
 	}
 	return nil
+}
+
+// MaxDecisionNoteLength bounds RegistrationDecision.Note, in characters.
+const MaxDecisionNoteLength = 1000
+
+// ErrInvalidNote reports a decision note that ValidateDecisionNote rejects.
+var ErrInvalidNote = errors.New("invalid registration decision note")
+
+// ValidateDecisionNote accepts valid UTF-8 without NUL (data-model §1.2) of at most
+// MaxDecisionNoteLength characters.
+func ValidateDecisionNote(note string) error {
+	if !validText(note, MaxDecisionNoteLength) {
+		return fmt.Errorf("%w: must be at most %d characters of text", ErrInvalidNote, MaxDecisionNoteLength)
+	}
+	return nil
+}
+
+// validText reports whether s is valid UTF-8 without NUL (data-model §1.2) of at most maxLen
+// characters: a moderator's or an applicant's free text that every database dialect stores as
+// it is.
+func validText(s string, maxLen int) bool {
+	return utf8.ValidString(s) && !strings.ContainsRune(s, 0) && utf8.RuneCountInString(s) <= maxLen
 }
 
 // Decision is the outcome of a registration review.

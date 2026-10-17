@@ -230,16 +230,22 @@ func (s *Service) IssueRemoteAccountAction(ctx context.Context, in AccountAction
 }
 
 // LiftAccountAction lifts an action on an account: its restrictions end, while those of other
-// actions on the account stay. Lifting an action that is already lifted changes nothing.
+// actions on the account stay. Lifting an action that is already lifted changes nothing. An
+// invalid reason fails with an error wrapping moderation.ErrInvalidAction and a
+// *moderation.TextError.
 func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserID, reason string) error {
 	now := kernel.Normalize(s.d.Clock.Now())
+	lift := moderation.Lift{ActionID: actionID, LiftedByUserID: liftedByUserID, Reason: reason, LiftedAt: now}
+	if err := lift.Validate(); err != nil {
+		return err
+	}
 	repo := s.d.Repository
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		a, err := repo.Action(ctx, tx, actionID)
 		if err != nil {
 			return err
 		}
-		err = repo.InsertActionLift(ctx, tx, moderation.Lift{ActionID: a.ID, LiftedByUserID: liftedByUserID, Reason: reason, LiftedAt: now})
+		err = repo.InsertActionLift(ctx, tx, lift)
 		if errors.Is(err, ErrAlreadyRecorded) {
 			return nil
 		}

@@ -45,6 +45,7 @@ func TestValidateEmail(t *testing.T) {
 	for _, bad := range []string{
 		"", "alice", "@example.com", "alice@", " alice@example.com", "Alice <alice@example.com>",
 		"<alice@example.com>", "a@b, c@d", "alice@example.com (comment)", "\xff@example.com",
+		"ali\x00ce@example.com", "\"a\x00\"@example.com",
 		strings.Repeat("a", identity.MaxEmailLength-len("@example.com")+1) + "@example.com",
 	} {
 		if err := identity.ValidateEmail(bad); !errors.Is(err, identity.ErrInvalidEmail) {
