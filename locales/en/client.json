@@ -525,7 +525,7 @@
   },
   "notifications.loading": {
     "defaultMessage": "Loading notifications",
-    "description": "Accessible name of the progress indicator while notifications load."
+    "description": "Visually hidden text that names the busy list of notifications while its first page loads."
   },
   "notifications.post.open": {
     "defaultMessage": "Open post",
@@ -754,6 +754,10 @@
   "profile.list.load_more_failed": {
     "defaultMessage": "Could not load more accounts: {reason}",
     "description": "Shown and announced when the next page of a follow list failed to load. {reason} is the error message."
+  },
+  "profile.list.loading": {
+    "defaultMessage": "Loading accounts",
+    "description": "Visually hidden text that names the busy follow list while its first page loads."
   },
   "profile.list.retry": {
     "defaultMessage": "Try again",
@@ -1425,7 +1429,7 @@
   },
   "status.thread.loading": {
     "defaultMessage": "Loading the replies",
-    "description": "Accessible name of the progress indicator while the thread around a post loads."
+    "description": "Visually hidden text that names the busy replies section while the thread around a post loads."
   },
   "status.thread.no_replies": {
     "defaultMessage": "No replies yet.",
@@ -1509,7 +1513,7 @@
   },
   "timeline.loading": {
     "defaultMessage": "Loading posts",
-    "description": "Accessible name of the progress indicator while posts of a timeline load."
+    "description": "Visually hidden text that names the busy region while posts load: the first page of a timeline, or a post page."
   },
   "timeline.media.no_description": {
     "defaultMessage": "No description",

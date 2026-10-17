@@ -380,6 +380,8 @@ export interface MessageArgs {
   "client:profile.list.load_more": {};
   /** Could not load more accounts: {reason} */
   "client:profile.list.load_more_failed": { reason: string };
+  /** Loading accounts */
+  "client:profile.list.loading": {};
   /** Try again */
   "client:profile.list.retry": {};
   /** Block */

@@ -4,6 +4,7 @@
 import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
 import { remoteStatusFixture, statusFixture, statusPage, timelineStatusFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
@@ -125,6 +126,23 @@ describe("a post's page", () => {
     await user.click(screen.getByRole("button", { name: "Try again" }));
 
     expect(await screen.findByRole("article", { description: "The answer" })).toBeInTheDocument();
+  });
+
+  test("shows the post at once and a skeleton in the busy replies section while the thread loads", async () => {
+    const context = deferred();
+    serveThread();
+    server.use(http.get(`${apiBase}/statuses/:id/context`, () => context.response));
+    await renderApp({ path: `/@bob/${postId}` });
+
+    expect(await findFocusedPost()).toBeInTheDocument();
+    const replies = screen.getByRole("region", { name: "Replies" });
+    expect(await findLoadingRegion("Loading the replies")).toBe(replies);
+    expect(replies).toHaveAttribute("aria-busy", "true");
+
+    context.release(HttpResponse.json({ ancestors: [], descendants: [reply] }));
+    expect(await within(replies).findByRole("article", { description: "The answer" })).toBeInTheDocument();
+    expect(replies).toHaveAttribute("aria-busy", "false");
+    expect(screen.queryByText("Loading the replies")).not.toBeInTheDocument();
   });
 
   test("says so when there are no replies", async () => {
