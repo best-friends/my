@@ -155,6 +155,8 @@ linters:
             - github.com/best-friends/my/internal/domain/federation
             - github.com/best-friends/my/internal/app
             - github.com/best-friends/my/internal/i18n
+            # IDNA 2008 A-label canonicalization of remote hosts (federation.md §1.2): pure-Go Unicode data, not an external resource.
+            - golang.org/x/net/idna
         domain-moderation:
           list-mode: strict
           files:
