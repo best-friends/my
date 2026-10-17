@@ -50,4 +50,5 @@
 | [0036](0036-moderation-federation-propagation.md) | モデレーションの処分を連合先へ伝える方法 | Proposed |
 | [0037](0037-audit-log.md) | 監査ログを処分のイベントとは別の追記専用の記録にする | Proposed |
 | [0038](0038-moderation-personal-data-retention.md) | モデレーションに関わる個人データの保持期間と開示の範囲 | Proposed |
+| [0039](0039-mobile-navigation-and-compose-entry.md) | モバイルのナビゲーションの項目と投稿の入口 | Proposed |
 <!-- adr-index:end -->

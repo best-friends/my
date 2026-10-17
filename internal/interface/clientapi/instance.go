@@ -26,18 +26,18 @@ const cachePublic = "public, max-age=60"
 // depend on the viewer's locale.
 const cachePrivate = "private, max-age=60"
 
-// GetInstance serves GET /api/v1/instance. The texts are in the locale of the request
+// GetInstance serves GET /api/v1/instance. The texts and rules are in the locale of the request
 // (ADR-0009 §2): the response varies with Accept-Language (localize) for anonymous requests
 // and is private for authenticated ones, whose locale is the user's.
 func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (GetInstanceResponseObject, error) {
 	var settings instance.Settings
 	out := Instance{Domain: s.o.Host, Name: s.o.Host, Version: s.o.SoftwareVersion, SourceUrl: s.o.SourceURL}
+	locale := s.Localizer(ctx).Locale()
 	if s.o.Instance != nil {
 		var err error
 		if settings, err = s.o.Instance.Settings(ctx); err != nil {
 			return nil, fmt.Errorf("clientapi: instance settings: %w", err)
 		}
-		locale := s.Localizer(ctx).Locale()
 		for _, t := range []struct {
 			key instance.TextKey
 			set func(string)
@@ -58,6 +58,11 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	out.Registrations = InstanceRegistrations{Mode: InstanceRegistrationsMode(settings.RegistrationMode())}
 	out.Limits = InstanceLimits{MaxPostCharacters: settings.MaxStatusLength()}
 	out.Timelines = InstanceTimelines{Local: settings.LocalTimelineEnabled(), Federated: settings.FederatedTimelineEnabled()}
+	rules, err := s.instanceRules(ctx, locale)
+	if err != nil {
+		return nil, err
+	}
+	out.Rules = rules
 
 	cache := cachePublic
 	if _, ok := ViewerFrom(ctx); ok {

@@ -283,6 +283,19 @@ type InstanceNodeinfoObservation struct {
 	ObservedAt      int64
 }
 
+type InstanceRuleHead struct {
+	RuleID     string
+	RevisionID string
+	Position   int64
+}
+
+type InstanceRuleText struct {
+	RuleRevisionID string
+	Locale         string
+	Text           string
+	Hint           string
+}
+
 type InstanceSetting struct {
 	Key        string
 	RevisionID string
