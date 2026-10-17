@@ -57,6 +57,8 @@ type Repository interface {
 	InsertBlockRetraction(ctx context.Context, tx uow.Tx, r graph.BlockRetraction) error
 	// Block returns a block by ID.
 	Block(ctx context.Context, tx uow.Tx, id string) (graph.Block, error)
+	// BlockByURI returns the block with an activity URI and its retraction, if any.
+	BlockByURI(ctx context.Context, tx uow.Tx, uri string) (graph.BlockHistory, error)
 	UpsertMute(ctx context.Context, tx uow.Tx, m graph.Mute) error
 	// DeleteMute deletes accountID's mute of targetAccountID and reports whether there was one.
 	DeleteMute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string) (bool, error)
@@ -123,6 +125,8 @@ type Repository interface {
 	// ListFollowing is ListFollowers for the edges out of followerAccountID.
 	ListFollowing(ctx context.Context, followerAccountID string, state graph.State, before string, limit int) ([]graph.Edge, error)
 	FindBlockEdge(ctx context.Context, blockerAccountID, blockedAccountID string) (graph.BlockEdge, error)
+	// FindBlock returns a block by ID, retracted or not.
+	FindBlock(ctx context.Context, id string) (graph.Block, error)
 	// ListBlocking returns the block edges out of blockerAccountID, newest block first, starting
 	// after the block ID before ("" for the newest) and returning at most limit edges.
 	ListBlocking(ctx context.Context, blockerAccountID, before string, limit int) ([]graph.BlockEdge, error)

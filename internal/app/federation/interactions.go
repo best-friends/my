@@ -283,59 +283,26 @@ func (h *StatusHandlers) boosted(ctx context.Context, in *InboxActivity) (appcon
 	if !followed {
 		return appcontent.Status{}, fmt.Errorf("%w: Announce of %s by %s, whom no local account follows (ADR-0034)", ErrDropActivity, ref.ID, act.Actor)
 	}
-	tombstoned, err := h.d.Statuses.Tombstoned(ctx, string(ref.ID))
-	if err != nil {
-		return appcontent.Status{}, err
+	if err := h.untombstoned(ctx, ref.ID); err != nil {
+		return appcontent.Status{}, fmt.Errorf("%w: %w", ErrDropActivity, err)
 	}
-	if tombstoned {
-		return appcontent.Status{}, fmt.Errorf("%w: %s is deleted", ErrDropActivity, ref.ID)
-	}
-
-	var doc *federation.Document
+	got := &Fetched{}
 	if federation.SameOrigin(ref.ID, act.Actor) {
-		doc = ref.Trusted()
+		got.Document = ref.Trusted()
 	}
-	if doc == nil {
-		got, err := h.d.Fetcher.Fetch(ctx, string(ref.ID))
-		if err != nil {
+	if got.Document == nil {
+		if got, err = h.d.Fetcher.Fetch(ctx, string(ref.ID)); err != nil {
 			return appcontent.Status{}, err
 		}
-		doc = got.Document
 	}
-	obj := doc.Object
-	switch {
-	case obj == nil || obj.ID != ref.ID:
+	if got.Document.ID() != ref.ID {
 		return appcontent.Status{}, fmt.Errorf("%w: %s is not an object", ErrDropActivity, ref.ID)
-	case !isPost(obj.Type):
-		return appcontent.Status{}, fmt.Errorf("%w: %s is a %s, not a post", ErrDropActivity, obj.ID, obj.RawType)
-	case obj.AttributedTo == "" || !federation.SameOrigin(obj.ID, obj.AttributedTo):
-		return appcontent.Status{}, fmt.Errorf("%w: %s is not attributed to an actor of its origin", ErrDropActivity, obj.ID)
 	}
-	author, err := h.d.Actors.Resolve(ctx, string(obj.AttributedTo))
-	if err != nil {
-		return appcontent.Status{}, err
+	// The same rules and storing as any fetched post (federation.md §6.3), its parent fetched one
+	// level as on receipt.
+	st, err = h.fetched(ctx, got, true)
+	if errors.Is(err, ErrNotTaken) && !errors.Is(err, ErrFetchFailed) && !errors.Is(err, ErrFetchUnavailable) {
+		return appcontent.Status{}, fmt.Errorf("%w: %w", ErrDropActivity, err)
 	}
-	if author.Account.IsLocal() {
-		return appcontent.Status{}, fmt.Errorf("%w: %s claims a local author", ErrDropActivity, obj.ID)
-	}
-	followers, err := h.followers(ctx, author)
-	if err != nil {
-		return appcontent.Status{}, err
-	}
-	mentions, err := h.mentions(ctx, obj, followers)
-	if err != nil {
-		return appcontent.Status{}, err
-	}
-	if err := h.resolveMentions(ctx, mentions); err != nil {
-		return appcontent.Status{}, err
-	}
-	post := h.inputOf(author, federation.Audience{}, "", obj, followers, mentions)
-	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		_, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, post)
-		return err
-	})
-	if err != nil && !errors.Is(err, appcontent.ErrStatusExists) {
-		return appcontent.Status{}, err
-	}
-	return h.d.Statuses.FindStatusByURI(ctx, string(obj.ID))
+	return st, err
 }

@@ -18,6 +18,7 @@ const (
 	MaxRecipients    = 1000      // to and cc together, per object or activity
 	MaxBodyBytes     = 100 << 10 // one HTML value: content, a contentMap entry, a summary
 	MaxAttachments   = 4         // attachments kept per object; the rest are dropped
+	MaxItems         = 100       // items kept per collection or collection page; the rest are dropped
 	UndeterminedLang = "und"     // BCP 47 "undetermined"
 )
 
@@ -119,9 +120,10 @@ const (
 
 // Document is a normalized AS2 document: exactly one of the fields is set.
 type Document struct {
-	Activity *Activity
-	Object   *Object
-	Actor    *Actor
+	Activity   *Activity
+	Object     *Object
+	Actor      *Actor
+	Collection *Collection
 }
 
 // ID returns the id of whichever document is set.
@@ -135,6 +137,8 @@ func (d *Document) ID() IRI {
 		return d.Object.ID
 	case d.Actor != nil:
 		return d.Actor.ID
+	case d.Collection != nil:
+		return d.Collection.ID
 	}
 	return ""
 }
@@ -281,6 +285,22 @@ type Object struct {
 	Emojis       []Emoji
 	Attachments  []Attachment
 	Poll         *Poll
+	// Replies is the collection of the replies to the object, the zero Ref when it declares none.
+	Replies Ref
+}
+
+// Collection is a normalized Collection, OrderedCollection, CollectionPage, or
+// OrderedCollectionPage (AS2 Core §5.5): the items of a collection or of one of its pages, and
+// the links to its pages.
+type Collection struct {
+	ID IRI
+	// Page is set for a CollectionPage or OrderedCollectionPage.
+	Page bool
+	// Items are the items (or orderedItems) in document order, at most MaxItems of them.
+	Items []Ref
+	// First is the first page of a collection; Next the page after a page.
+	First Ref
+	Next  Ref
 }
 
 // PublicKey is a publicKey entry of an actor.

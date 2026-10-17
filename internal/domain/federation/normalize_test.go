@@ -338,12 +338,54 @@ func TestNormalizeDialects(t *testing.T) {
 func TestNormalizeUnknown(t *testing.T) {
 	a := activity(t, `{"type":"Arrive","actor":"https://a.example/u/a","object":"https://a.example/place"}`)
 	equal(t, "unknown activity", [2]any{a.Type, a.RawType}, [2]any{federation.ActivityUnknown, "Arrive"})
-	o := object(t, `{"type":"Collection","id":"https://a.example/c"}`)
-	equal(t, "unknown object", [2]any{o.Type, o.RawType}, [2]any{federation.ObjectUnknown, "Collection"})
+	o := object(t, `{"type":"Place","id":"https://a.example/c"}`)
+	equal(t, "unknown object", [2]any{o.Type, o.RawType}, [2]any{federation.ObjectUnknown, "Place"})
 	m := activity(t, `{"type":"Move","actor":"https://a.example/u/a","object":"https://a.example/u/a","target":"https://b.example/u/a"}`)
 	equal(t, "Move target", m.Target, federation.IRI("https://b.example/u/a"))
 	d := normalize(t, `{"type":"Tombstone","id":"https://a.example/n/1","signature":{"type":"RsaSignature2017","signatureValue":"x"}}`)
 	equal(t, "Tombstone", d.Object.Type, federation.ObjectTombstone)
+}
+
+// The replies of a post are a collection whose pages may be embedded (Mastodon) or linked.
+func TestNormalizeRepliesAndCollections(t *testing.T) {
+	o := object(t, `{`+ctx+`, "id": "https://a.example/notes/1", "type": "Note",
+		"replies": {"id": "https://a.example/notes/1/replies", "type": "Collection",
+			"first": {"type": "CollectionPage", "next": "https://a.example/notes/1/replies?page=2",
+				"partOf": "https://a.example/notes/1/replies", "items": ["https://a.example/notes/2", {"id": "https://b.example/notes/3", "type": "Note"}]}}}`)
+	equal(t, "replies", o.Replies.ID, federation.IRI("https://a.example/notes/1/replies"))
+	replies := o.Replies.Trusted()
+	if replies == nil || replies.Collection == nil || replies.Collection.Page {
+		t.Fatalf("replies = %+v, want a trusted collection", replies)
+	}
+	first := replies.Collection.First.Trusted()
+	if first == nil || first.Collection == nil || !first.Collection.Page {
+		t.Fatalf("first page = %+v, want a trusted embedded page", first)
+	}
+	page := first.Collection
+	equal(t, "next", page.Next.ID, federation.IRI("https://a.example/notes/1/replies?page=2"))
+	if len(page.Items) != 2 || page.Items[0].ID != "https://a.example/notes/2" || page.Items[1].ID != "https://b.example/notes/3" {
+		t.Fatalf("items = %+v", page.Items)
+	}
+	if page.Items[1].Trusted() != nil {
+		t.Errorf("an item of another origin is trusted")
+	}
+
+	// An ordered page reads orderedItems, keeps at most MaxItems of them, and links its next page.
+	items := make([]string, 0, federation.MaxItems+5)
+	for i := range federation.MaxItems + 5 {
+		items = append(items, fmt.Sprintf(`"https://a.example/notes/%d"`, i))
+	}
+	d := normalize(t, `{`+ctx+`, "id": "https://a.example/c?page=1", "type": "OrderedCollectionPage",
+		"next": {"type": "Link", "href": "https://a.example/c?page=2"}, "orderedItems": [`+strings.Join(items, ",")+`]}`)
+	if d.Collection == nil || !d.Collection.Page || len(d.Collection.Items) != federation.MaxItems || d.Collection.Next.ID != "https://a.example/c?page=2" {
+		t.Fatalf("ordered page = %+v", d.Collection)
+	}
+	equal(t, "ID", d.ID(), federation.IRI("https://a.example/c?page=1"))
+	// A replies link without an embedded collection.
+	o = object(t, `{`+ctx+`, "id": "https://a.example/notes/1", "type": "Note", "replies": "https://a.example/notes/1/replies"}`)
+	if o.Replies.ID != "https://a.example/notes/1/replies" || o.Replies.Untrusted() != nil {
+		t.Errorf("replies = %+v, want the bare link", o.Replies)
+	}
 }
 
 func TestNormalizeErrors(t *testing.T) {

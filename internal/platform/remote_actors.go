@@ -48,8 +48,7 @@ func (a *App) setUpRemoteActors(cfg *config.Config, repo federationRepository) {
 	fetcher := federation.NewFetcher(federation.FetcherDeps{
 		Client: federation.NewSignedHTTPClient(a.HTTPClient, httpsig.New(), a.KV, a.Clock),
 		KV:     a.KV, Clock: a.Clock,
-		// No domain blocks exist yet; fetches still go through the policy port.
-		Domains: federation.NoDomainRestrictions{}, Instances: repo,
+		Domains: a.ModerationPolicy, Instances: repo,
 		Key: federation.InstanceKey(a.Accounts), Host: cfg.Host,
 	})
 	a.RemoteActors = federation.NewRemoteActors(federation.RemoteActorsDeps{

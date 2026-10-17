@@ -23,7 +23,9 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appfederation "github.com/best-friends/my/internal/app/federation"
+	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/federation"
@@ -36,6 +38,10 @@ type InboxHarness struct {
 	UnitOfWork uow.UnitOfWork
 	Inbox      appfederation.InboxRepository
 	Federation appfederation.Repository
+	// Graph and Moderation are the repositories of the modules whose inbox handlers
+	// InboxProcessingContract runs for real (Block, Undo Block, Flag).
+	Graph      appgraph.Repository
+	Moderation appmoderation.Repository
 	Instances  appfederation.InstanceRepository
 	Accounts   appaccount.Repository
 	// Statuses is the content module's repository, which the handlers of remote posts write in

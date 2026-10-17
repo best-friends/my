@@ -424,3 +424,41 @@ func TestPostLimit(t *testing.T) {
 		t.Errorf("post over the limit = %d, Retry-After %q", res.StatusCode, res.Header.Get("Retry-After"))
 	}
 }
+
+type fakeThreads struct {
+	opened []string
+	err    error
+}
+
+func (f *fakeThreads) FetchThread(_ context.Context, statusID string) error {
+	f.opened = append(f.opened, statusID)
+	return f.err
+}
+
+// Opening a thread starts fetching its remote parts; a failure to start does not fail the request,
+// and a status the viewer may not see starts nothing.
+func TestGetStatusContextFetchesTheThread(t *testing.T) {
+	f := &fakeStatuses{view: func(v appcontent.Viewer, id string) (appcontent.StatusView, error) {
+		if id != sampleStatusID {
+			return appcontent.StatusView{}, errNotFound
+		}
+		return sampleView(v), nil
+	}}
+	threads := &fakeThreads{}
+	e := newAuthEnv(t, func(o *clientapi.Options) {
+		o.Statuses, o.StatusReader, o.Interactions, o.Threads = f, f, f, threads
+	})
+	if res := e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+"/context", "", ""); res.StatusCode != http.StatusOK {
+		t.Fatalf("GET context = %d", res.StatusCode)
+	}
+	threads.err = errors.New("queue down")
+	if res := e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+"/context", "read", ""); res.StatusCode != http.StatusOK {
+		t.Errorf("GET context while the fetch fails = %d", res.StatusCode)
+	}
+	if res := e.send(t, http.MethodGet, "/statuses/01890a5d-ac96-774b-bcce-b302099a9999/context", "", ""); res.StatusCode != http.StatusNotFound {
+		t.Errorf("GET context of a missing status = %d", res.StatusCode)
+	}
+	if len(threads.opened) != 2 || threads.opened[0] != sampleStatusID {
+		t.Errorf("threads fetched = %v, want %s twice", threads.opened, sampleStatusID)
+	}
+}
