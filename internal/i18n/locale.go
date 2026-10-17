@@ -70,6 +70,7 @@ func Canonicalize(tag string) string {
 		return ""
 	}
 	parts := strings.Split(tag, "-")
+	extension := false // subtags after a singleton ("u", "x", ...) are lower case
 	for i, p := range parts {
 		if p == "" || len(p) > 8 || strings.IndexFunc(p, func(r rune) bool {
 			return (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9')
@@ -77,7 +78,10 @@ func Canonicalize(tag string) string {
 			return ""
 		}
 		switch {
-		case i == 0:
+		case i == 0 || extension:
+			parts[i] = strings.ToLower(p)
+		case len(p) == 1:
+			extension = true
 			parts[i] = strings.ToLower(p)
 		case len(p) == 4 && !isDigit(p[0]):
 			parts[i] = strings.ToUpper(p[:1]) + strings.ToLower(p[1:])

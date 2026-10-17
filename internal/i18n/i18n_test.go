@@ -75,16 +75,18 @@ func TestFallbackChain(t *testing.T) {
 
 func TestCanonicalize(t *testing.T) {
 	tests := map[string]string{
-		"ja":         "ja",
-		"JA_jp":      "ja-JP",
-		"zh-hant-tw": "zh-Hant-TW",
-		"es-419":     "es-419",
-		"en-xa":      "en-XA",
-		"de-ch-1996": "de-CH-1996",
-		"":           "",
-		"*":          "",
-		"en--US":     "",
-		"ja;q=1":     "",
+		"ja":                  "ja",
+		"JA_jp":               "ja-JP",
+		"zh-hant-tw":          "zh-Hant-TW",
+		"es-419":              "es-419",
+		"en-xa":               "en-XA",
+		"de-ch-1996":          "de-CH-1996",
+		"ja-JP-u-CA-Japanese": "ja-JP-u-ca-japanese",
+		"en-x-AB":             "en-x-ab",
+		"":                    "",
+		"*":                   "",
+		"en--US":              "",
+		"ja;q=1":              "",
 	}
 	for in, want := range tests {
 		if got := Canonicalize(in); got != want {
