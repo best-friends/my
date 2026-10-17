@@ -93,10 +93,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Look up an account by its handle
-         * @description Resolves `username` (a local account) or `username@domain` among the accounts that the
-         *     instance knows, without fetching remote ones. A leading `@` is ignored. An account that
-         *     blocks the viewer, is deactivated, or is deleted is a 404, the same as an unknown one.
+         * Look up or resolve an account by its handle or URL
+         * @description Finds `username` (a local account), `username@domain`, or the `https` URL of an actor
+         *     (its `uri`, or a profile page that serves the actor) among the accounts that the instance
+         *     knows. A leading `@` of a handle is ignored. An account that blocks the viewer, is
+         *     deactivated, or is deleted is a 404, the same as an unknown one.
+         *
+         *     With `resolve=true`, a remote account that the instance does not know yet is fetched
+         *     from its server (FR-305): a handle through WebFinger, a URL directly. Only accounts
+         *     whose handle WebFinger confirms are returned; a handle or URL that does not lead to one
+         *     is a 404. Resolving needs an access token (anonymous requests get the 401 of
+         *     `/api/v1/problems/unauthenticated`) and is limited to 30 fetches per account every
+         *     5 minutes (429 with `Retry-After`); finding a known account is not limited.
          */
         get: operations["lookupAccount"];
         put?: never;
@@ -1051,6 +1059,17 @@ export interface components {
             username: string;
             /** @description The username for local accounts, `username@domain` for remote ones. */
             acct: string;
+            /**
+             * @description The domain of the account: the domain of its handle, which for local accounts is the
+             *     instance's account domain, or the host of its `uri` when a remote account has no
+             *     confirmed handle.
+             */
+            domain: string;
+            /**
+             * Format: uri
+             * @description The ActivityPub id of the account's actor, on the server it belongs to.
+             */
+            uri: string;
             /** @description The display name; empty when the account has none. */
             display_name: string;
             /** @description The profile text as sanitized HTML; empty when there is none. */
@@ -1426,6 +1445,17 @@ export interface components {
             /** @description The username for local accounts, `username@domain` for remote ones. */
             acct: string;
             /**
+             * @description The domain of the account: the domain of its handle, which for local accounts is the
+             *     instance's account domain, or the host of its `uri` when a remote account has no
+             *     confirmed handle.
+             */
+            domain?: string;
+            /**
+             * Format: uri
+             * @description The ActivityPub id of the account's actor, on the server it belongs to.
+             */
+            uri?: string;
+            /**
              * Format: uri
              * @description The account's profile page.
              */
@@ -1784,8 +1814,10 @@ export interface operations {
     lookupAccount: {
         parameters: {
             query: {
-                /** @description The handle, `username` or `username@domain`. */
+                /** @description The handle, `username` or `username@domain`, or the `https` URL of an actor. */
                 acct: string;
+                /** @description Fetch a remote account that the instance does not know yet. */
+                resolve?: boolean;
             };
             header?: never;
             path?: never;

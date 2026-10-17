@@ -415,6 +415,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
+		Resolver:      a.RemoteActors,
 		Notifications: a.Notifications,
 		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,

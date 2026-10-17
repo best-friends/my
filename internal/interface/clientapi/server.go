@@ -35,6 +35,9 @@ type Options struct {
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// Resolver fetches unknown remote accounts for lookupAccount's resolve; nil resolves none
+	// (lookups find only stored accounts).
+	Resolver AccountResolver
 	// Profiles changes the viewer's profile.
 	Profiles Profiles
 	// Posting reads what the viewer's restrictions let them post, for CredentialAccount; nil

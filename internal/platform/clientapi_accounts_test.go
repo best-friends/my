@@ -165,8 +165,24 @@ func TestClientAPIAccounts(t *testing.T) {
 			t.Errorf("lookup %s = %s, want bob", acct, got.Id)
 		}
 	}
+	if got.Domain != "example.test" || got.Uri == "" {
+		t.Errorf("bob's domain and uri = %q, %q", got.Domain, got.Uri)
+	}
+	var byURI clientapi.Account
+	e.want(e.do(http.MethodGet, "/accounts/lookup?acct="+url.QueryEscape(got.Uri), "", nil, &byURI), http.StatusOK, "lookup by uri")
+	if byURI.Id != bob.id {
+		t.Errorf("lookup %s = %s, want bob", got.Uri, byURI.Id)
+	}
 	for _, acct := range []string{"nobody", "bob@remote.example", "bob@a@b", "@"} {
 		e.want(e.do(http.MethodGet, "/accounts/lookup?acct="+url.QueryEscape(acct), "", nil, nil), http.StatusNotFound, "lookup "+acct)
+	}
+	// Resolving needs a token, and what leads to no remote actor is a 404: this instance's URLs
+	// are never fetched, and the SSRF guard refuses loopback addresses.
+	if typ := e.want(e.do(http.MethodGet, "/accounts/lookup?resolve=true&acct=bob%40remote.example", "", nil, nil), http.StatusUnauthorized, "anonymous resolve"); typ != clientapi.ProblemTypeUnauthenticated {
+		t.Errorf("anonymous resolve type = %s", typ)
+	}
+	for _, acct := range []string{"bob@127.0.0.1", "https://example.test/users/nobody", "nobody@example.test"} {
+		e.want(e.do(http.MethodGet, "/accounts/lookup?resolve=true&acct="+url.QueryEscape(acct), alice.token, nil, nil), http.StatusNotFound, "resolve "+acct)
 	}
 	e.want(e.do(http.MethodGet, "/accounts/01890a5d-ac96-774b-bcce-b302099a8057", "", nil, nil), http.StatusNotFound, "unknown account")
 	e.want(e.do(http.MethodPost, "/accounts/01890a5d-ac96-774b-bcce-b302099a8057/follow", alice.token, nil, nil), http.StatusNotFound, "follow unknown")
