@@ -164,9 +164,11 @@ CREATE TABLE account_keys (
   key_id text NOT NULL,
   algorithm text NOT NULL CHECK (algorithm IN ('rsa_sha256', 'ed25519')),
   public_key_pem text NOT NULL,
+  fingerprint bytea NOT NULL,
   created_at timestamptz NOT NULL
 );
-CREATE UNIQUE INDEX account_keys_key_id ON account_keys (key_id);
+CREATE UNIQUE INDEX account_keys_key_id_fingerprint ON account_keys (key_id, fingerprint);
+CREATE INDEX account_keys_key_id_id ON account_keys (key_id, id DESC);
 CREATE INDEX account_keys_account_id ON account_keys (account_id);
 
 -- Resource (subtype): the sealed private key of a local actor's key (NFR-SEC-7).
@@ -292,7 +294,7 @@ CREATE TABLE status_deletions (
   status_id text COLLATE "C" NOT NULL PRIMARY KEY,
   uri text NOT NULL,
   author_account_id text COLLATE "C" NOT NULL,
-  origin text NOT NULL CHECK (origin IN ('author', 'moderation', 'remote', 'account_deletion')),
+  origin text NOT NULL CHECK (origin IN ('author', 'moderation', 'remote', 'account_deletion', 'retention')),
   moderation_action_id text COLLATE "C",
   deleted_at timestamptz NOT NULL
 );
@@ -1084,3 +1086,234 @@ CREATE TABLE account_profile_field_sources (
   value_source text NOT NULL,
   PRIMARY KEY (revision_id, position)
 );
+
+-- ---------------------------------------------------------------------------------------------
+-- account: remote actors and key rotation (data-model §4.2, docs/architecture/federation.md).
+-- Owned by internal/app/account.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource (subtype): an actor of another server.
+CREATE TABLE remote_accounts (
+  account_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  first_seen_at timestamptz NOT NULL
+);
+
+-- Event: one fetch of a remote actor's document whose content differed from the previous one.
+-- document_digest is the SHA-256 of the document.
+CREATE TABLE remote_account_snapshots (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  account_id text COLLATE "C" NOT NULL,
+  preferred_username text NOT NULL,
+  profile_url text,
+  inbox_url text NOT NULL,
+  shared_inbox_url text,
+  outbox_url text,
+  followers_url text,
+  following_url text,
+  featured_url text,
+  followers_total bigint,
+  following_total bigint,
+  statuses_total bigint,
+  document_digest bytea NOT NULL,
+  fetched_at timestamptz NOT NULL
+);
+CREATE INDEX remote_account_snapshots_account_id_id ON remote_account_snapshots (account_id, id DESC);
+
+-- Projection: the newest snapshot of each remote actor, with the endpoints delivery reads and
+-- the fetch state of the periodic refresh.
+CREATE TABLE remote_account_heads (
+  account_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  snapshot_id text COLLATE "C" NOT NULL,
+  inbox_url text NOT NULL,
+  shared_inbox_url text,
+  last_fetched_at timestamptz NOT NULL,
+  consecutive_fetch_failures integer NOT NULL CHECK (consecutive_fetch_failures >= 0)
+);
+CREATE INDEX remote_account_heads_last_fetched_at ON remote_account_heads (last_fetched_at);
+
+-- Event: WebFinger confirmed that acct:{username}@{domain} points at the actor's uri.
+CREATE TABLE remote_account_handle_verifications (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  account_id text COLLATE "C" NOT NULL,
+  username text NOT NULL,
+  domain text NOT NULL,
+  verified_at timestamptz NOT NULL
+);
+CREATE INDEX remote_account_handle_verifications_account_id_id ON remote_account_handle_verifications (account_id, id DESC);
+
+-- Event (subtype of account_profile_revisions): the snapshot a remote revision came from and the
+-- version of the HTML policy that sanitized its note_html and value_html (ADR-0019 §2).
+CREATE TABLE remote_profile_revisions (
+  revision_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  snapshot_id text COLLATE "C" NOT NULL,
+  html_policy_version integer NOT NULL
+);
+
+-- Event: a key was replaced or withdrawn. Verification uses the newest key of a key_id without
+-- a revocation.
+CREATE TABLE account_key_revocations (
+  account_key_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revoked_at timestamptz NOT NULL
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- content: remote statuses and media (data-model §4.4, docs/architecture/federation.md §9).
+-- Owned by internal/app/content.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event (subtype of status_revisions): the activity that carried a remote revision (NULL for a
+-- revision made from a fetch) and the version of the HTML policy that sanitized its bodies.
+CREATE TABLE remote_status_revisions (
+  revision_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  activity_uri text,
+  html_policy_version integer NOT NULL
+);
+
+-- Resource (subtype of media_files): a remote file as the received document declared it. The
+-- file itself is not fetched. owner_account_id copies media_files.owner_account_id.
+CREATE TABLE remote_media (
+  media_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  owner_account_id text COLLATE "C" NOT NULL,
+  remote_url text NOT NULL,
+  declared_content_type text,
+  declared_media_type text NOT NULL CHECK (declared_media_type IN ('image', 'gifv', 'video', 'audio', 'unknown')),
+  width integer,
+  height integer,
+  blurhash text,
+  focus_x double precision CHECK (focus_x BETWEEN -1.0 AND 1.0),
+  focus_y double precision CHECK (focus_y BETWEEN -1.0 AND 1.0),
+  description text
+);
+CREATE UNIQUE INDEX remote_media_owner_account_id_remote_url ON remote_media (owner_account_id, remote_url);
+
+-- Current value (cache): a remote file copied into blob storage under remote/ (FR-409,
+-- NFR-COST-4). The cleanup removes rows past expires_at and the least recently accessed ones.
+CREATE TABLE remote_media_cache (
+  url text NOT NULL PRIMARY KEY,
+  blob_key text NOT NULL,
+  content_type text NOT NULL,
+  file_size bigint NOT NULL,
+  fetched_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL,
+  last_accessed_at timestamptz NOT NULL
+);
+CREATE INDEX remote_media_cache_expires_at ON remote_media_cache (expires_at);
+CREATE INDEX remote_media_cache_last_accessed_at ON remote_media_cache (last_accessed_at);
+
+-- ---------------------------------------------------------------------------------------------
+-- federation: inbox, delivery, and remote instances (data-model §4.8,
+-- docs/architecture/federation.md). Owned by internal/app/federation.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: an activity accepted at an inbox, once per activity_uri (synthesized from the body's
+-- digest when the activity has no id). trust is refetch when the signer is not the actor.
+CREATE TABLE received_activities (
+  activity_uri text NOT NULL PRIMARY KEY,
+  actor_uri text NOT NULL,
+  type text NOT NULL,
+  signature_scheme text NOT NULL CHECK (signature_scheme IN ('rfc9421', 'cavage')),
+  trust text NOT NULL CHECK (trust IN ('signed', 'refetch')),
+  received_at timestamptz NOT NULL
+);
+CREATE INDEX received_activities_received_at ON received_activities (received_at);
+
+-- Event: the received document as it arrived, read by the asynchronous processing and kept
+-- briefly for investigation and fixtures.
+CREATE TABLE received_activity_documents (
+  activity_uri text NOT NULL PRIMARY KEY,
+  document jsonb NOT NULL
+);
+
+-- Event: a Delete of an unknown object or an Undo of an unknown target. A Create, Update, or
+-- Follow of the uri that arrives later is dropped.
+CREATE TABLE remote_object_tombstones (
+  uri text NOT NULL PRIMARY KEY,
+  actor_uri text NOT NULL,
+  activity_uri text NOT NULL,
+  received_at timestamptz NOT NULL
+);
+CREATE INDEX remote_object_tombstones_received_at ON remote_object_tombstones (received_at);
+
+-- Event: an activity a local actor sends about one of its objects.
+CREATE TABLE outbound_activities (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  activity_uri text NOT NULL,
+  type text NOT NULL,
+  actor_account_id text COLLATE "C" NOT NULL,
+  object_type text NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report')),
+  object_id text COLLATE "C" NOT NULL,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX outbound_activities_activity_uri ON outbound_activities (activity_uri);
+CREATE INDEX outbound_activities_object_type_object_id_id ON outbound_activities (object_type, object_id, id);
+
+-- Event: the body of an outbound activity, built once by the fan-out so that every delivery
+-- and retry sends the same bytes.
+CREATE TABLE outbound_activity_documents (
+  outbound_activity_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  document jsonb NOT NULL,
+  built_at timestamptz NOT NULL
+);
+
+-- Event: an inbox (shared inboxes merged) an outbound activity is delivered to. It is also the
+-- record of where a status went, for its later Update and Delete.
+CREATE TABLE deliveries (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  outbound_activity_id text COLLATE "C" NOT NULL,
+  inbox_url text NOT NULL,
+  domain text NOT NULL,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX deliveries_outbound_activity_id_inbox_url ON deliveries (outbound_activity_id, inbox_url);
+
+-- Event: one attempt of a delivery. signature_scheme is NULL when nothing was sent.
+CREATE TABLE delivery_attempts (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  delivery_id text COLLATE "C" NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('succeeded', 'retryable_failure', 'permanent_failure', 'skipped')),
+  signature_scheme text CHECK (signature_scheme IN ('rfc9421', 'cavage')),
+  http_status integer,
+  error text,
+  attempted_at timestamptz NOT NULL
+);
+CREATE INDEX delivery_attempts_delivery_id_id ON delivery_attempts (delivery_id, id);
+
+-- Resource: a server this instance has seen.
+CREATE TABLE remote_instances (
+  domain text NOT NULL PRIMARY KEY,
+  first_seen_at timestamptz NOT NULL
+);
+
+-- Event: the software a server reported in its NodeInfo.
+CREATE TABLE instance_nodeinfo_observations (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  domain text NOT NULL,
+  software_name text NOT NULL,
+  software_version text NOT NULL,
+  observed_at timestamptz NOT NULL
+);
+CREATE INDEX instance_nodeinfo_observations_domain_id ON instance_nodeinfo_observations (domain, id DESC);
+
+-- Event: a server was marked unavailable or available as a delivery target, with the reason.
+CREATE TABLE instance_availability_events (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  domain text NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('marked_unavailable', 'marked_available')),
+  reason text NOT NULL CHECK (reason IN (
+    'failure_days', 'delivery_succeeded', 'inbound_request', 'probe_succeeded', 'operator'
+  )),
+  occurred_at timestamptz NOT NULL
+);
+CREATE INDEX instance_availability_events_domain_id ON instance_availability_events (domain, id DESC);
+
+-- Projection: whether a server is a delivery target, from delivery_attempts and
+-- instance_availability_events. failure_days counts the distinct UTC days of the latest run of
+-- failures; last_failure_day is YYYYMMDD, or '' without a failure.
+CREATE TABLE instance_health (
+  domain text NOT NULL PRIMARY KEY,
+  state text NOT NULL CHECK (state IN ('available', 'unavailable')),
+  since timestamptz NOT NULL,
+  failure_days integer NOT NULL CHECK (failure_days >= 0),
+  last_failure_day text NOT NULL CHECK (length(last_failure_day) IN (0, 8))
+);
+CREATE INDEX instance_health_state ON instance_health (state);

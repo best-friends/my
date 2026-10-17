@@ -134,7 +134,7 @@ func (r *AccountRepository) InsertKey(ctx context.Context, tx uow.Tx, k account.
 	}
 	err = q.InsertAccountKey(ctx, postgresgen.InsertAccountKeyParams{
 		ID: k.ID, AccountID: k.AccountID, KeyID: k.KeyID, Algorithm: string(k.Algorithm),
-		PublicKeyPem: k.PublicKeyPEM, CreatedAt: k.CreatedAt,
+		PublicKeyPem: k.PublicKeyPEM, Fingerprint: k.Fingerprint, CreatedAt: k.CreatedAt,
 	})
 	if err != nil {
 		return wrap(err, "insert account key")
@@ -503,7 +503,7 @@ func (r *AccountRepository) ListKeys(ctx context.Context, accountID string) ([]a
 	for i, row := range rows {
 		out[i] = account.Key{
 			ID: row.ID, AccountID: row.AccountID, KeyID: row.KeyID, Algorithm: account.KeyAlgorithm(row.Algorithm),
-			PublicKeyPEM: row.PublicKeyPem, CreatedAt: utc(row.CreatedAt),
+			PublicKeyPEM: row.PublicKeyPem, Fingerprint: row.Fingerprint, CreatedAt: utc(row.CreatedAt),
 		}
 	}
 	return out, nil

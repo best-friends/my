@@ -2,7 +2,10 @@
 
 package account
 
-import "time"
+import (
+	"crypto/sha256"
+	"time"
+)
 
 // KeyAlgorithm is the signature algorithm of an actor key.
 type KeyAlgorithm string
@@ -23,6 +26,7 @@ type Key struct {
 	KeyID        string // the key's IRI, which signatures name in keyId
 	Algorithm    KeyAlgorithm
 	PublicKeyPEM string // PKIX "PUBLIC KEY" block
+	Fingerprint  []byte // SHA-256 of the PKIX DER, which tells a rotated key under the same KeyID apart
 	CreatedAt    time.Time
 }
 
@@ -34,4 +38,11 @@ func KeyIRI(actorURI string, alg KeyAlgorithm) string {
 		return actorURI + "#ed25519-key"
 	}
 	return actorURI + "#main-key"
+}
+
+// KeyFingerprint returns the fingerprint of a public key: the SHA-256 of its PKIX DER encoding
+// (data-model §4.2, account_keys.fingerprint).
+func KeyFingerprint(pkixDER []byte) []byte {
+	sum := sha256.Sum256(pkixDER)
+	return sum[:]
 }
