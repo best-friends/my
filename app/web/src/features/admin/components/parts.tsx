@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Pieces that the admin screens share, so that every list and every detail page of the admin area has the
 // same shape: the permission gate and its message, the paged list of records (rows with dividers, the empty
-// state and "show more"), the titled section of a detail page, a server's state in words, and dates in the
-// viewer's locale and time zone. The facts of a record are @my/ui's DescriptionList.
+// state and "show more"), the titled section of a detail page, a server's state in words, a domain in both
+// of its forms, and dates in the viewer's locale and time zone. The facts of a record are @my/ui's DescriptionList.
 import { Button, EmptyState } from "@my/ui";
 import { type ReactNode, type Ref, useId } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
+import { domainToUnicode } from "../../../lib/idn";
 import type { InstanceState, Permission } from "../api/admin";
 import type { PagedList } from "../hooks/pagedList";
 import { useHasPermission } from "../hooks/usePermissions";
@@ -20,6 +21,25 @@ const stateLabels: Readonly<Record<InstanceState, ClientMessageKey>> = {
 export function InstanceStateLabel({ state }: { state: InstanceState }) {
   const t = useT();
   return <span className={state === "unavailable" ? "font-semibold text-danger" : "font-semibold text-success"}>{t(stateLabels[state])}</span>;
+}
+
+/**
+ * A domain as people read it: its U-labels (`例え.jp`), followed by the A-labels the server keeps
+ * (`xn--r8jz45g.jp`) when they differ, so that a look-alike in another script stands out. A domain reads left
+ * to right in every locale.
+ */
+export function DomainName({ domain }: { domain: string }) {
+  const t = useT();
+  const unicode = domainToUnicode(domain);
+  if (unicode === domain) return <span dir="ltr">{domain}</span>;
+  return (
+    <>
+      <span dir="ltr">{unicode}</span>{" "}
+      <span className="text-sm font-normal text-fg-muted">
+        {t("client:admin.domain.ascii", { domain })}
+      </span>
+    </>
+  );
 }
 
 /** A moment in the viewer's locale and time zone, as a `<time>`. */

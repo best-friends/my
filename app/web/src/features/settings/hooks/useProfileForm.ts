@@ -61,6 +61,9 @@ export function useProfileForm() {
     ...updateProfileMutation(api),
     onSuccess: (saved) => {
       queryClient.setQueryData(credentialsQueryOptions(api).queryKey, saved);
+      // The saved profile has the new images from now on.
+      avatar.saved();
+      header.saved();
       toast.show({ message: t("client:settings.profile.saved"), tone: "success" });
     },
   });
@@ -76,8 +79,21 @@ export function useProfileForm() {
     ...header.change("header_media_id"),
   });
 
+  const draft = change();
+  // Compared with the saved profile, so that an edit undone by hand leaves nothing to save.
+  const hasChanges =
+    draft.display_name !== account.display_name ||
+    draft.note !== account.source.note ||
+    draft.locked !== account.locked ||
+    draft.bot !== account.bot ||
+    draft.avatar_media_id !== undefined ||
+    draft.header_media_id !== undefined ||
+    !sameFields(draft.fields ?? [], account.source.fields);
+
   return {
     account,
+    /** Whether the form holds changes that are not saved: leaving the page asks first. */
+    hasChanges,
     displayName: { value: displayName, onChange: setDisplayName },
     note: { value: note, onChange: setNote },
     fields: {
@@ -109,6 +125,12 @@ export function useProfileForm() {
   };
 }
 
+type Field = { name: string; value: string };
+
+function sameFields(a: readonly Field[], b: readonly Field[]): boolean {
+  return a.length === b.length && a.every((field, i) => field.name === b[i]?.name && field.value === b[i].value);
+}
+
 /** The state of one image of the profile, and its upload. */
 function useImageControl(savedUrl: CredentialAccount["avatar_url"], rendition: "thumbnail" | "full") {
   const api = useApi();
@@ -137,6 +159,10 @@ function useImageControl(savedUrl: CredentialAccount["avatar_url"], rendition: "
   };
   return {
     control,
+    /** The profile was saved with this image's change, so the saved profile has it from now on. */
+    saved: () => {
+      setImage({ kind: "keep" });
+    },
     /** The property of the profile change for this image: a new media ID, "" to remove it, or nothing. */
     change: <K extends "avatar_media_id" | "header_media_id">(property: K): Partial<Record<K, string>> => {
       if (image.kind === "new") return { [property]: image.media.id } as Partial<Record<K, string>>;

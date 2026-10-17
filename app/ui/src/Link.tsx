@@ -6,15 +6,20 @@ const link = tv({
   base: [
     "cursor-pointer rounded-sm text-accent underline-offset-2 data-hovered:text-accent-hover data-focus-visible:focus-ring",
     "data-disabled:cursor-not-allowed data-disabled:opacity-50 motion-safe:transition-colors",
-    // The link sizes a child icon next to its text, which sets no size of its own (web-client.md G11).
-    "[&>svg]:size-4 [&>svg]:shrink-0",
   ],
   variants: {
+    // Each variant sizes the link's icon, which sets no size of its own (web-client.md G11).
     variant: {
       /** A link inside running text: always underlined, so color is not the only cue (WCAG 1.4.1). */
-      inline: "underline data-hovered:decoration-2",
-      /** A link on its own (a navigation item, "show more"): a 44 px target on coarse pointers. */
-      standalone: "inline-flex min-h-6 items-center font-medium no-underline data-hovered:underline pointer-coarse:min-h-11",
+      inline: "underline data-hovered:decoration-2 [&>svg]:size-4 [&>svg]:shrink-0",
+      /** A link on its own ("show more", a link to another site): a 44 px target on coarse pointers. */
+      standalone:
+        "inline-flex min-h-6 items-center font-medium no-underline data-hovered:underline pointer-coarse:min-h-11 [&>svg]:size-4 [&>svg]:shrink-0",
+      /**
+       * An item of the app's navigation: a 44 px target on coarse pointers and an icon at `size-6`, also
+       * when the icon sits in an element of its own (the pill of the current item, with a badge).
+       */
+      navigation: "inline-flex min-h-6 items-center font-medium no-underline pointer-coarse:min-h-11 [&_svg]:size-6 [&_svg]:shrink-0",
     },
   },
   defaultVariants: { variant: "inline" },

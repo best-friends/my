@@ -136,8 +136,8 @@ function AccountRow({ account, details, children }: AccountRowProps) {
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar src={account.avatar_url} name={name} decorative />
         <p className="flex min-w-0 flex-col">
-          {/* The user's own text, in any language (web-client.md Y10). */}
-          <span dir="auto" className="truncate font-semibold">
+          {/* The user's own text, in any language, lined up with the other rows (web-client.md Y10, G9). */}
+          <span dir="auto" className="truncate font-semibold align-match-parent">
             {name}
           </span>
           <span dir="ltr" className="truncate text-start text-sm text-fg-muted">

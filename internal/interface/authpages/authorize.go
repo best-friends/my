@@ -225,6 +225,7 @@ var scopeDescriptions = map[string]func(*i18n.Localizer) string{
 	identity.ScopeWriteMedia:         (*i18n.Localizer).ServerAuthAuthorizeScopeWriteMedia,
 	identity.ScopeWriteMutes:         (*i18n.Localizer).ServerAuthAuthorizeScopeWriteMutes,
 	identity.ScopeWriteNotifications: (*i18n.Localizer).ServerAuthAuthorizeScopeWriteNotifications,
+	identity.ScopeWriteReports:       (*i18n.Localizer).ServerAuthAuthorizeScopeWriteReports,
 	identity.ScopeWriteStatuses:      (*i18n.Localizer).ServerAuthAuthorizeScopeWriteStatuses,
 }
 

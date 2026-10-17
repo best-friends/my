@@ -69,6 +69,17 @@ func TestOwnModerationActions(t *testing.T) {
 		t.Errorf("own active actions = %+v, want the warning", page.Items)
 	}
 
+	// An action on statuses names them.
+	var post clientapi.Status
+	e.want(e.do(http.MethodPost, "/statuses", alice.token, map[string]any{"text": "hello", "visibility": "public"}, &post), http.StatusOK, "post")
+	sensitive := issue(appmoderation.AccountActionInput{
+		Kind: moderation.ActionMarkStatusesSensitive, ReasonCategory: moderation.CategoryViolation, StatusIDs: []string{post.Id},
+	})
+	e.want(e.do(http.MethodGet, "/moderation/actions?limit=1", alice.token, nil, &page), http.StatusOK, "own actions on statuses")
+	if len(page.Items) != 1 || page.Items[0].Id != sensitive.ID || len(page.Items[0].StatusIds) != 1 || page.Items[0].StatusIds[0] != post.Id {
+		t.Errorf("the action on statuses = %+v, want it to name %s", page.Items, post.Id)
+	}
+
 	// The suspension ends alice's token; she signs in to the screens and sees why.
 	issue(appmoderation.AccountActionInput{
 		Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategoryLegal, PublicReason: "A court order.", NotifyTarget: true,

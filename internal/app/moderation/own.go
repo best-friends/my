@@ -46,7 +46,7 @@ func targetView(r moderation.ActionRecord, now time.Time) TargetActionView {
 	a := r.Action
 	v := TargetActionView{
 		ID: a.ID, Kind: a.Kind, ReasonCategory: a.ReasonCategory, PublicReason: a.PublicReason,
-		StatusIDs: []string{}, ExpiresAt: a.ExpiresAt, IssuedAt: a.IssuedAt, State: r.State(now),
+		StatusIDs: append([]string{}, a.StatusIDs...), ExpiresAt: a.ExpiresAt, IssuedAt: a.IssuedAt, State: r.State(now),
 	}
 	if r.Lift != nil {
 		t := r.Lift.LiftedAt

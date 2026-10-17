@@ -111,6 +111,10 @@
     "defaultMessage": "Mark notifications as read and dismiss them",
     "description": "Permission (OAuth scope write:notifications) listed on the authorization page."
   },
+  "auth.authorize.scope.write_reports": {
+    "defaultMessage": "Report accounts and posts to the moderators",
+    "description": "Permission (OAuth scope write:reports) listed on the authorization page."
+  },
   "auth.authorize.scope.write_statuses": {
     "defaultMessage": "Post, edit, delete, boost, and pin posts",
     "description": "Permission (OAuth scope write:statuses) listed on the authorization page."

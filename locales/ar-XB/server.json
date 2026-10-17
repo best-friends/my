@@ -111,6 +111,10 @@
     "defaultMessage": "‮Wɐɹʞ uoʇıɟıɔɐʇıous ɐs ɹǝɐp ɐup pısɯıss ʇɥǝɯ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.authorize.scope.write_reports": {
+    "defaultMessage": "‮ᴚǝdoɹʇ ɐɔɔonuʇs ɐup dosʇs ʇo ʇɥǝ ɯopǝɹɐʇoɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.authorize.scope.write_statuses": {
     "defaultMessage": "‮Ԁosʇ, ǝpıʇ, pǝʅǝʇǝ, qoosʇ, ɐup dıu dosʇs‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -55,6 +55,258 @@
     "defaultMessage": "失敗したジョブ",
     "description": "Heading of the screen of background jobs that failed for good, and its link in the administration menu."
   },
+  "admin.domain.ascii": {
+    "defaultMessage": "（{domain}）",
+    "description": "After a domain in non-Latin letters: the same domain as the server keeps it, in ASCII (IDNA A-labels), such as '(xn--r8jz45g.jp)'. {domain} is that ASCII form."
+  },
+  "admin.domain.both": {
+    "defaultMessage": "{unicode}（{ascii}）",
+    "description": "A domain in non-Latin letters inside a sentence. {unicode} is its readable form, such as 例え.jp; {ascii} is the same domain in ASCII as the server keeps it, such as xn--r8jz45g.jp."
+  },
+  "admin.domain_actions.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Character count under the public comment or private note of a domain action while the text is within the limit."
+  },
+  "admin.domain_actions.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Character count under the public comment or private note of a domain action when the text is longer than the limit."
+  },
+  "admin.domain_actions.confirm_suspend.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button of the confirmation of a domain suspension that closes it without suspending."
+  },
+  "admin.domain_actions.confirm_suspend.confirm": {
+    "defaultMessage": "凍結する",
+    "description": "Button of the confirmation of a domain suspension that suspends the domain."
+  },
+  "admin.domain_actions.confirm_suspend.description": {
+    "defaultMessage": "このドメインとそのサブドメインとの配送と受信をすべて止め、そのアカウントと投稿を表示しなくなります。このサーバーの利用者とそのアカウントのフォロー関係は切れ、凍結を解除しても戻りません。",
+    "description": "Text of the confirmation before suspending a remote domain: what the suspension does and what it cannot undo."
+  },
+  "admin.domain_actions.confirm_suspend.title": {
+    "defaultMessage": "{domain} を凍結しますか？",
+    "description": "Title of the confirmation before suspending a remote domain. {domain} is the domain."
+  },
+  "admin.domain_actions.domain": {
+    "defaultMessage": "ドメイン",
+    "description": "Label of the domain field of a new domain action."
+  },
+  "admin.domain_actions.domain.description": {
+    "defaultMessage": "spam.example のようなリモートのドメイン。サブドメインにも効きます。英字以外のドメインもそのまま入力できます。",
+    "description": "Help text under the domain field of a new domain action."
+  },
+  "admin.domain_actions.domain.required": {
+    "defaultMessage": "ドメインを入力してください",
+    "description": "Error under the domain field of a new domain action when it is empty."
+  },
+  "admin.domain_actions.duration": {
+    "defaultMessage": "期間",
+    "description": "Label of the select of how long a new domain action lasts."
+  },
+  "admin.domain_actions.duration.days": {
+    "defaultMessage": "{count, plural, other {# 日}}",
+    "description": "An option of the duration of a domain action, in days."
+  },
+  "admin.domain_actions.duration.description": {
+    "defaultMessage": "この期間が過ぎると処分は自動で終わります。",
+    "description": "Help text under the duration of a new domain action."
+  },
+  "admin.domain_actions.duration.indefinite": {
+    "defaultMessage": "解除するまで",
+    "description": "The duration option of a domain action without an end, and the end of such an action in its details."
+  },
+  "admin.domain_actions.empty.active": {
+    "defaultMessage": "有効な処分はありません",
+    "description": "Heading of the list of domain actions in effect when there is none."
+  },
+  "admin.domain_actions.empty.active.description": {
+    "defaultMessage": "リモートのドメインへの処分は、終わるか解除されるまでここに表示されます。",
+    "description": "Text of the empty list of domain actions in effect."
+  },
+  "admin.domain_actions.empty.all": {
+    "defaultMessage": "まだ処分はありません",
+    "description": "Heading of the list of every domain action when there is none."
+  },
+  "admin.domain_actions.expires_at": {
+    "defaultMessage": "終了",
+    "description": "Term in a domain action's details: when the action ends by itself."
+  },
+  "admin.domain_actions.filter.active": {
+    "defaultMessage": "有効",
+    "description": "Tab of the domain actions that lists those in effect now."
+  },
+  "admin.domain_actions.filter.all": {
+    "defaultMessage": "すべて",
+    "description": "Tab of the domain actions that lists every action, lifted and expired ones too."
+  },
+  "admin.domain_actions.filter.label": {
+    "defaultMessage": "表示する処分",
+    "description": "Accessible name of the tabs that filter the domain actions."
+  },
+  "admin.domain_actions.issue_failed": {
+    "defaultMessage": "処分できませんでした：{reason}",
+    "description": "Error when a new domain action failed. {reason} is the server's localized reason, which names the field at fault."
+  },
+  "admin.domain_actions.issued": {
+    "defaultMessage": "{domain} に「{kind}」を適用しました。",
+    "description": "Status after a new domain action took effect. {kind} is the kind of action, such as Suspend; {domain} is the domain."
+  },
+  "admin.domain_actions.issued_at": {
+    "defaultMessage": "処分した日時",
+    "description": "Term in a domain action's details: when the action was taken."
+  },
+  "admin.domain_actions.kind": {
+    "defaultMessage": "処分の種類",
+    "description": "Label of the choice of the kind of a new domain action, and term in a domain action's details."
+  },
+  "admin.domain_actions.kind.force_sensitive": {
+    "defaultMessage": "メディアをセンシティブにする",
+    "description": "Kind of domain action: the domain's media are marked sensitive."
+  },
+  "admin.domain_actions.kind.force_sensitive.description": {
+    "defaultMessage": "そのドメインのメディアを、警告の裏に隠して表示します。",
+    "description": "Description of the domain action that marks the domain's media sensitive."
+  },
+  "admin.domain_actions.kind.limit": {
+    "defaultMessage": "制限",
+    "description": "Kind of domain action: the domain's posts stay off the public timelines and its accounts reach only their followers."
+  },
+  "admin.domain_actions.kind.limit.description": {
+    "defaultMessage": "そのドメインの投稿を公開のタイムラインに出さず、アカウントはフォローしている人にだけ届きます。",
+    "description": "Description of the domain action that limits a domain."
+  },
+  "admin.domain_actions.kind.reject_media": {
+    "defaultMessage": "メディアを拒否",
+    "description": "Kind of domain action: the domain's media are not fetched."
+  },
+  "admin.domain_actions.kind.reject_media.description": {
+    "defaultMessage": "そのドメインのメディアを取得せず、表示しません。",
+    "description": "Description of the domain action that rejects the domain's media."
+  },
+  "admin.domain_actions.kind.reject_reports": {
+    "defaultMessage": "通報を拒否",
+    "description": "Kind of domain action: the reports the domain sends are dropped."
+  },
+  "admin.domain_actions.kind.reject_reports.description": {
+    "defaultMessage": "そのドメインから届く通報を受け付けません。",
+    "description": "Description of the domain action that rejects the domain's reports."
+  },
+  "admin.domain_actions.kind.required": {
+    "defaultMessage": "処分の種類を選んでください",
+    "description": "Error under the choice of the kind of a new domain action when none is chosen."
+  },
+  "admin.domain_actions.kind.suspend": {
+    "defaultMessage": "凍結",
+    "description": "Kind of domain action: no federation with the domain at all."
+  },
+  "admin.domain_actions.kind.suspend.description": {
+    "defaultMessage": "そのドメインとの配送と受信をすべて止め、アカウントと投稿を表示しません。",
+    "description": "Description of the domain action that suspends a domain."
+  },
+  "admin.domain_actions.lift": {
+    "defaultMessage": "解除",
+    "description": "Button of a domain action in effect that lifts it."
+  },
+  "admin.domain_actions.lift_action": {
+    "defaultMessage": "解除：{domain} の「{kind}」（{date} に処分）",
+    "description": "Accessible name of the lift button of a domain action, which names the action. {kind} is its kind; {domain} its domain; {date} when it was taken, formatted."
+  },
+  "admin.domain_actions.lift_failed": {
+    "defaultMessage": "処分を解除できませんでした：{reason}",
+    "description": "Error toast when a domain action could not be lifted. {reason} is the server's localized reason."
+  },
+  "admin.domain_actions.lifted": {
+    "defaultMessage": "{domain} の「{kind}」を解除しました。",
+    "description": "Status after a domain action was lifted. {kind} is the kind of action; {domain} is the domain."
+  },
+  "admin.domain_actions.lifted_at": {
+    "defaultMessage": "解除した日時",
+    "description": "Term in a domain action's details: when the action was lifted."
+  },
+  "admin.domain_actions.list.every_domain": {
+    "defaultMessage": "すべてのドメインを表示",
+    "description": "Link next to the list of one domain's actions that lists the actions of every domain."
+  },
+  "admin.domain_actions.list.of_domain": {
+    "defaultMessage": "{domain} への処分を表示しています。",
+    "description": "Text above the list of domain actions when it shows the actions of one domain only. {domain} is the domain."
+  },
+  "admin.domain_actions.list.title": {
+    "defaultMessage": "処分の一覧",
+    "description": "Heading of the list of domain actions."
+  },
+  "admin.domain_actions.new.title": {
+    "defaultMessage": "新しい処分",
+    "description": "Heading of the form that takes a new domain action."
+  },
+  "admin.domain_actions.obfuscate": {
+    "defaultMessage": "公開の一覧ではドメインを一部伏せ字にする",
+    "description": "Checkbox of a new domain action: the public list of moderated domains shows the domain partly hidden."
+  },
+  "admin.domain_actions.obfuscate.description": {
+    "defaultMessage": "このサーバーが処分したドメインを公開しているとき、このドメインの中ほどを * に置き換えて表示します。",
+    "description": "Help text of the checkbox that hides part of the domain in the public list."
+  },
+  "admin.domain_actions.obfuscate.no": {
+    "defaultMessage": "そのまま表示",
+    "description": "Value of a domain action's detail: the public list shows the whole domain."
+  },
+  "admin.domain_actions.obfuscate.term": {
+    "defaultMessage": "公開の一覧",
+    "description": "Term in a domain action's details: how the public list of moderated domains shows the domain."
+  },
+  "admin.domain_actions.obfuscate.yes": {
+    "defaultMessage": "一部を伏せ字",
+    "description": "Value of a domain action's detail: the public list shows the domain partly hidden."
+  },
+  "admin.domain_actions.private_note": {
+    "defaultMessage": "非公開のメモ",
+    "description": "Label of the private note of a new domain action, and term in its details."
+  },
+  "admin.domain_actions.private_note.description": {
+    "defaultMessage": "モデレーターだけが見られます。",
+    "description": "Help text under the private note of a new domain action."
+  },
+  "admin.domain_actions.public_comment": {
+    "defaultMessage": "公開コメント",
+    "description": "Label of the public comment of a new domain action, and term in its details."
+  },
+  "admin.domain_actions.public_comment.description": {
+    "defaultMessage": "ドメインと一緒に公開されることがある理由です。",
+    "description": "Help text under the public comment of a new domain action."
+  },
+  "admin.domain_actions.state": {
+    "defaultMessage": "状態",
+    "description": "Term in a domain action's details: whether it is in effect, ended, or lifted."
+  },
+  "admin.domain_actions.state.active": {
+    "defaultMessage": "有効",
+    "description": "State of a domain action that is in effect now."
+  },
+  "admin.domain_actions.state.expired": {
+    "defaultMessage": "期限切れ",
+    "description": "State of a domain action that ended at its end date."
+  },
+  "admin.domain_actions.state.lifted": {
+    "defaultMessage": "解除済み",
+    "description": "State of a domain action that a moderator lifted."
+  },
+  "admin.domain_actions.submit": {
+    "defaultMessage": "処分する",
+    "description": "Submit button of the form of a new domain action."
+  },
+  "admin.domain_actions.summary": {
+    "defaultMessage": "リモートのドメインへの制限・凍結などの処分と、その解除。",
+    "description": "Description of the domain actions screen in the administration menu of the settings."
+  },
+  "admin.domain_actions.title": {
+    "defaultMessage": "ドメインへの処分",
+    "description": "Heading of the screen of moderation actions on remote domains, and its link in the administration menu."
+  },
+  "admin.domain_actions.too_long": {
+    "defaultMessage": "{max, number} 文字以内にしてください",
+    "description": "Error under the public comment or private note of a domain action when it is too long. {max} is the limit."
+  },
   "admin.instance.back": {
     "defaultMessage": "連合先のサーバーに戻る",
     "description": "Link under the heading of a remote server's page that opens the list of remote servers."
@@ -106,6 +358,18 @@
   "admin.instance.marked_available": {
     "defaultMessage": "{domain} への配送を再開しました。",
     "description": "Announcement after an operator resumed deliveries to a remote server. {domain} is its domain."
+  },
+  "admin.instance.moderation.description": {
+    "defaultMessage": "このサーバーのドメインへの処分を見るか、新しく処分します。",
+    "description": "Help text under the link from a remote server's page to its domain actions."
+  },
+  "admin.instance.moderation.link": {
+    "defaultMessage": "ドメインへの処分",
+    "description": "Link on a remote server's page that opens the domain actions of its domain."
+  },
+  "admin.instance.moderation.title": {
+    "defaultMessage": "モデレーション",
+    "description": "Heading of the section of a remote server's page that links to its domain actions."
   },
   "admin.instance.none": {
     "defaultMessage": "なし",
@@ -1147,6 +1411,22 @@
     "defaultMessage": "{max} 文字以内にしてください。",
     "description": "Error of a profile field whose text is longer than its limit. {max} is the limit."
   },
+  "settings.profile.unsaved.description": {
+    "defaultMessage": "プロフィールへの変更は失われます。",
+    "description": "Body of the dialog shown when the user leaves the profile settings with unsaved changes: what happens if they leave."
+  },
+  "settings.profile.unsaved.leave": {
+    "defaultMessage": "変更を破棄する",
+    "description": "Button of the unsaved-changes dialog that leaves the profile settings and drops the changes."
+  },
+  "settings.profile.unsaved.stay": {
+    "defaultMessage": "編集を続ける",
+    "description": "Button of the unsaved-changes dialog that stays on the profile settings with the changes kept."
+  },
+  "settings.profile.unsaved.title": {
+    "defaultMessage": "プロフィールを保存せずに移動しますか？",
+    "description": "Title (a question) of the dialog shown when the user leaves the profile settings with changes that are not saved."
+  },
   "settings.saved": {
     "defaultMessage": "保存しました",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
@@ -1158,6 +1438,14 @@
   "settings.time_zone.label": {
     "defaultMessage": "タイムゾーン",
     "description": "Label of the select of the user's time zone."
+  },
+  "settings.time_zone.offset": {
+    "defaultMessage": "UTC{offset}",
+    "description": "Option of the time zone select for a zone that has no name, only its difference from UTC. {offset} is like +05:00 or −05:00."
+  },
+  "settings.time_zone.option": {
+    "defaultMessage": "（UTC{offset}）{name}",
+    "description": "Option of the time zone select. {offset} is the zone's difference from UTC, like +09:00 or −05:00; {name} is the zone's name in the display language, like Japan Standard Time."
   },
   "settings.timeline_languages.description": {
     "defaultMessage": "チェックした言語の投稿だけをタイムラインに表示します。何もチェックしなければすべての言語を表示します。",

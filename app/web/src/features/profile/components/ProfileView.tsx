@@ -82,7 +82,7 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
             <dl className="flex flex-col divide-y divide-border rounded-lg border border-border">
               {profile.fields.map((field) => (
                 <div key={field.key} className="flex flex-col gap-1 px-3 py-2 @md:flex-row @md:gap-4">
-                  <dt dir="auto" className="text-sm font-semibold wrap-anywhere text-fg-muted @md:w-1/3 @md:shrink-0">
+                  <dt dir="auto" className="text-sm font-semibold wrap-anywhere text-fg-muted align-match-parent @md:w-1/3 @md:shrink-0">
                     {field.name}
                   </dt>
                   <dd className="min-w-0">
