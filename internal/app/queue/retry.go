@@ -16,8 +16,8 @@ const (
 )
 
 // RetryPolicy decides how often and how late a failing job runs again (ADR-0004): exponential
-// backoff with jitter, up to MaxAttempts runs, after which the job becomes a dead job.
-// Zero fields take the defaults above.
+// backoff, or a fixed schedule of delays, with jitter, up to MaxAttempts runs, after which the
+// job becomes a dead job. Zero fields take the defaults above.
 type RetryPolicy struct {
 	// MaxAttempts is the total number of runs, including the first.
 	MaxAttempts int
@@ -25,9 +25,13 @@ type RetryPolicy struct {
 	// failed run, up to MaxDelay.
 	BaseDelay time.Duration
 	MaxDelay  time.Duration
+	// Delays, when not empty, replace the exponential backoff: the wait after the failed run
+	// number n is Delays[n-1], and the last delay repeats for later runs. BaseDelay and MaxDelay
+	// are then unused. Delivery uses it for its schedule of ADR-0004 (1 min, 5 min, 30 min, ...).
+	Delays []time.Duration
 	// Jitter is the fraction of the backoff that is random: each wait is drawn uniformly from
-	// [d*(1-Jitter), d], where d is the exponential backoff. Zero takes DefaultJitter; a
-	// negative value disables jitter. Values above 1 count as 1.
+	// [d*(1-Jitter), d], where d is the exponential backoff or the scheduled delay. Zero takes
+	// DefaultJitter; a negative value disables jitter. Values above 1 count as 1.
 	Jitter float64
 }
 
@@ -41,6 +45,9 @@ func (p RetryPolicy) Or(fallback RetryPolicy) RetryPolicy {
 	}
 	if p.MaxDelay <= 0 {
 		p.MaxDelay = fallback.MaxDelay
+	}
+	if len(p.Delays) == 0 {
+		p.Delays = fallback.Delays
 	}
 	if p.Jitter == 0 {
 		p.Jitter = fallback.Jitter
@@ -65,9 +72,12 @@ func (p RetryPolicy) Backoff(attempt int, random func() float64) time.Duration {
 	if attempt < 1 {
 		attempt = 1
 	}
+	switch {
+	case len(p.Delays) > 0:
+		d = p.Delays[min(attempt, len(p.Delays))-1]
 	// BaseDelay * 2^(attempt-1), computed in floating point to avoid overflow, capped at MaxDelay.
-	if f := float64(p.BaseDelay) * math.Exp2(float64(attempt-1)); f < float64(p.MaxDelay) {
-		d = time.Duration(f)
+	case float64(p.BaseDelay)*math.Exp2(float64(attempt-1)) < float64(p.MaxDelay):
+		d = time.Duration(float64(p.BaseDelay) * math.Exp2(float64(attempt-1)))
 	}
 	if j := min(p.Jitter, 1); j > 0 {
 		d -= time.Duration(j * random() * float64(d))
