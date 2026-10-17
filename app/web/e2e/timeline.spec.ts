@@ -75,6 +75,8 @@ function media(id: string, description: string | undefined): Status["media_attac
     state: "ready",
     meta: { focus: { x: 0, y: 0 } },
     variants: { full: variant, thumbnail: variant },
+    url: picture,
+    preview_url: picture,
     ...(description === undefined ? {} : { description }),
   };
 }

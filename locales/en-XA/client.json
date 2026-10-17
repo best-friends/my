@@ -783,6 +783,10 @@
     "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ ƞǿǿŧ ƒǿǿŭŭƞḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "profile.original": {
+    "defaultMessage": "[Ǿƥḗḗƞ ŧħḗḗ ǿǿřīɠīƞȧȧŀ ƥřǿǿƒīŀḗḗ ǿǿƞ {host}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "profile.relationship_failed": {
     "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ŀǿǿȧȧḓ ẇħḗḗŧħḗḗř ẏǿǿŭŭ ƒǿǿŀŀǿǿẇ ŧħīş ȧȧƈƈǿǿŭŭƞŧ: {reason}]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1337,6 +1341,10 @@
   },
   "status.not_found.title": {
     "defaultMessage": "[Ƥǿǿşŧ ƞǿǿŧ ƒǿǿŭŭƞḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.original": {
+    "defaultMessage": "[Ǿƥḗḗƞ ŧħḗḗ ǿǿřīɠīƞȧȧŀ ƥǿǿşŧ ǿǿƞ {host}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.thread.ancestors": {

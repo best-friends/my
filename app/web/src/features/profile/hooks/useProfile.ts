@@ -6,6 +6,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { useConfig } from "../../../lib/config";
+import { hostOf } from "../../../lib/host";
 import { followListPath } from "../../../lib/paths";
 import { type Account, accountQueryOptions } from "../api/accounts";
 
@@ -24,6 +25,8 @@ export type ProfileView = {
   followers: { count: number; href: string } | null;
   /** When the account was created: the ISO date for `<time>` and the date to show. */
   joined: { dateTime: string; date: string };
+  /** For an account of another server, its profile page there and the host of that page; null for a local account. */
+  original: { href: string; host: string } | null;
 };
 
 /** The full handle of an account: `acct` is `username` for local accounts and `username@domain` for remote ones. */
@@ -62,5 +65,7 @@ export function useProfile(acct: string): ProfileView {
     following: account.following_count === undefined ? null : { count: account.following_count, href: followListPath(account.acct, "following") },
     followers: account.followers_count === undefined ? null : { count: account.followers_count, href: followListPath(account.acct, "followers") },
     joined: { dateTime: account.created_at, date: intl.formatDate(account.created_at, { dateStyle: "long" }) },
+    // A remote account's `url` is the page its actor declares, or its actor's ID (api/openapi.yaml, Account.url).
+    original: account.acct.includes("@") ? { href: account.url, host: hostOf(account.url, account.domain) } : null,
   };
 }

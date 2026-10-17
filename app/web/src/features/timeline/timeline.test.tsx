@@ -160,6 +160,8 @@ describe("a status card", () => {
             full: { url: "https://my.example/media/full.webp", content_type: "image/webp", width: 1600, height: 900, size: 1000 },
             thumbnail: { url: "https://my.example/media/thumb.webp", content_type: "image/webp", width: 640, height: 360, size: 100 },
           },
+          url: "https://my.example/media/full.webp",
+          preview_url: "https://my.example/media/thumb.webp",
         },
       ],
     });

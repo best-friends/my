@@ -394,6 +394,8 @@ export interface MessageArgs {
   "client:profile.not_found.body": {};
   /** Account not found */
   "client:profile.not_found.title": {};
+  /** Open the original profile on {host} */
+  "client:profile.original": { host: string };
   /** Could not load whether you follow this account: {reason} */
   "client:profile.relationship_failed": { reason: string };
   /** Sign in to follow */
@@ -672,6 +674,8 @@ export interface MessageArgs {
   "client:status.not_found.body": {};
   /** Post not found */
   "client:status.not_found.title": {};
+  /** Open the original post on {host} */
+  "client:status.original": { host: string };
   /** Earlier in the thread */
   "client:status.thread.ancestors": {};
   /** Could not load the replies: {reason} */

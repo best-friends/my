@@ -5,8 +5,9 @@ import { type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui"
 import { type IntlShape, useIntl } from "react-intl";
 import { useNow } from "../../../lib/clock";
 import { useConfig } from "../../../lib/config";
+import { hostOf } from "../../../lib/host";
 import { profilePath } from "../../../lib/paths";
-import { type MediaAttachment, type Status, statusPath } from "../api/status";
+import { type MediaAttachment, type Status, statusPath, statusShareUrl } from "../api/status";
 
 export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
@@ -20,6 +21,11 @@ export type StatusView = {
   time: { dateTime: string; relative: string; absolute: string };
   /** The web client's address of the post (the boosted post for a boost), which its time links to. */
   path: string;
+  /**
+   * For a post of another server, its page there (its ActivityPub ID when it has none) and the host of that
+   * page; null for a post of this instance.
+   */
+  original: { href: string; host: string } | null;
   /** The body, as the server sanitized it. */
   html: SanitizedHtml;
   /** The language of the post (BCP 47), or undefined when the server does not know it. */
@@ -49,18 +55,34 @@ function relativeTime(intl: IntlShape, then: number, now: number): string {
   return intl.formatDate(then, { dateStyle: "medium" });
 }
 
-/** The pictures of a status that the server has finished processing, at their preview size. */
+/**
+ * The pictures of a status that are ready to show, at their preview size: `preview_url` is the thumbnail of an
+ * upload, and the media proxy URL of a remote file, which has no renditions (api/openapi.yaml, MediaAttachment).
+ */
 function mediaItems(attachments: readonly MediaAttachment[], lang: string | undefined): MediaItem[] {
   return attachments.flatMap((attachment) =>
-    attachment.state === "ready" && attachment.type === "image" && attachment.variants !== undefined
-      ? [{ id: attachment.id, src: attachment.variants.thumbnail.url, alt: attachment.description ?? null, lang }]
+    attachment.state === "ready" && attachment.type === "image" && attachment.preview_url !== undefined
+      ? [{ id: attachment.id, src: attachment.preview_url, alt: attachment.description ?? null, lang }]
       : [],
   );
 }
 
+/** Whether an account is on another server: its `acct` has a domain. */
+function isRemote(acct: string): boolean {
+  return acct.includes("@");
+}
+
+/** The page of a remote post on its server and that page's host; null for a local post. */
+function originalOf(post: Status): StatusView["original"] {
+  if (!isRemote(post.account.acct)) return null;
+  const href = statusShareUrl(post);
+  // The server gives absolute URIs (format: uri); the account's domain stands in should one not parse.
+  return { href, host: hostOf(href, post.account.domain) };
+}
+
 /** The handle of an account: `acct` is `username` for local accounts and `username@domain` for remote ones. */
 function handleOf(acct: string, localDomain: string): string {
-  return acct.includes("@") ? `@${acct}` : `@${acct}@${localDomain}`;
+  return isRemote(acct) ? `@${acct}` : `@${acct}@${localDomain}`;
 }
 
 /** Returns what the card of `status` shows. A boost shows the boosted post, with the booster above it. */
@@ -86,6 +108,7 @@ export function useStatusView(status: Status): StatusView {
       absolute: intl.formatDate(writtenAt, { dateStyle: "full", timeStyle: "short" }),
     },
     path: statusPath(post),
+    original: originalOf(post),
     // `content` is sanitized HTML (api/openapi.yaml, Status.content).
     html: serverSanitizedHtml(post.content),
     lang,

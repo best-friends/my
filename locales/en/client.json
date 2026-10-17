@@ -783,6 +783,10 @@
     "defaultMessage": "Account not found",
     "description": "Heading and document title of a profile address that names no account the user may see."
   },
+  "profile.original": {
+    "defaultMessage": "Open the original profile on {host}",
+    "description": "Link on the profile of an account of another server to its profile page on that server. {host} is that server's host name, for example 'mastodon.social'."
+  },
   "profile.relationship_failed": {
     "defaultMessage": "Could not load whether you follow this account: {reason}",
     "description": "Shown on a profile instead of the follow button when the relationship failed to load. {reason} is the error message."
@@ -1338,6 +1342,10 @@
   "status.not_found.title": {
     "defaultMessage": "Post not found",
     "description": "Heading of the page of a post that does not exist or that the user may not see."
+  },
+  "status.original": {
+    "defaultMessage": "Open the original post on {host}",
+    "description": "Accessible name of the link on a post of another server to its page on that server; the link shows only {host}, that server's host name, for example 'mastodon.social'."
   },
   "status.thread.ancestors": {
     "defaultMessage": "Earlier in the thread",
