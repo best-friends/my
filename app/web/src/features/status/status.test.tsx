@@ -370,6 +370,8 @@ describe("a post of another server", () => {
     const { user } = await renderApp({ path: `/@${remote.account.acct}/${remote.id}` });
 
     const article = await screen.findByRole("article", { name: /^Carol @carol@remote\.example / });
+    // The handle is cut on the domain's side when it does not fit; the link is named by all of it.
+    expect(within(article).getByRole("link", { name: "Carol @carol@remote.example" })).toBeInTheDocument();
     expect(within(article).getByText("@carol@remote.example")).toHaveAttribute("dir", "ltr");
     // The link shows the host and is named by where it leads; the actions stay next to it.
     const original = within(article).getByRole("link", { name: "Open the original post on remote.example" });
