@@ -1,0 +1,19 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://gotosocial.org/ns"
+  ],
+  "type": "Accept",
+  "to": "https://other.example/users/brand_new_person",
+  "cc": "https://www.w3.org/ns/activitystreams#Public",
+  "id": "http://remote.example/users/foss_satan/accepts/1234",
+  "actor": "http://remote.example/users/foss_satan",
+  "object": {
+    "type": "ReplyRequest",
+    "id": "https://other.example/users/brand_new_person/statuses/01H641QSRS3TCXSVC10X4GPKW7/replyRequest",
+    "actor": "https://other.example/users/brand_new_person",
+    "object": "http://remote.example/users/foss_satan/statuses/01FVW7JHQFSFK166WWKR8CBA6M",
+    "instrument": "https://other.example/users/brand_new_person/statuses/01H641QSRS3TCXSVC10X4GPKW7"
+  },
+  "result": "http://remote.example/users/foss_satan/authorizations/1234"
+}

@@ -1,0 +1,22 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://example.org/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ],
+  "type": "EmojiReact",
+  "id": "https://example.org/activities/23143872a0346141",
+  "actor": "https://example.org/users/akko",
+  "nickname": "akko",
+  "to": [
+    "https://remote.example/users/diana",
+    "https://example.org/users/akko/followers"
+  ],
+  "cc": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "content": "🧡",
+  "object": "https://remote.example/objects/9f0e93499d8314a9"
+}

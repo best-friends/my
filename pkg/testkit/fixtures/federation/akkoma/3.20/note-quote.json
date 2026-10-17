@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://example.org/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ],
+  "type": "Note",
+  "id": "https://example.org/activities/85717e587f95d5c0",
+  "actor": "https://example.org/users/akko",
+  "to": [
+    "https://remote.example/users/diana",
+    "https://example.org/users/akko/followers"
+  ],
+  "cc": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "context": "https://example.org/contexts/1",
+  "content": "Look at that!",
+  "quoteUri": "http://remote.example/status/85717e587f95d5c0",
+  "contentMap": {
+    "en": "Look at that!"
+  },
+  "source": {
+    "content": "Look at that!",
+    "mediaType": "text/plain"
+  },
+  "published": "2024-04-06T23:40:28Z",
+  "updated": "2024-04-06T23:40:28Z",
+  "attachemnt": [],
+  "tag": []
+}

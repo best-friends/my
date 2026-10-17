@@ -343,5 +343,6 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | SSRF ガード | `testkit.HTTPClientContract`（ADR-0019 §1） | `make check` |
 | ライブの相互運用 | docker compose で Mastodon・GoToSocial（余力があれば Misskey）とこのサーバーを、私設 CA の TLS とコンテナのネットワークの DNS で立て、フォロー・投稿・返信・ブースト・お気に入り・削除・編集・公開範囲ごとの配送先を往復させる（#44） | nightly / 手動（CI ジョブ `federation-live`） |
 
-- フィクスチャは採取したときのホスト・名前・本文を例の値に置き換えて保存し、実装と版をディレクトリ名に残します。新しい不具合を直すときは、その文書をフィクスチャに足します（ADR-0006）。
+- フィクスチャは採取したときのホスト・名前・本文・鍵を例の値に置き換えて保存し、実装と版をディレクトリ名に残します。新しい不具合を直すときは、その文書をフィクスチャに足します（ADR-0006）。
+- 置き換えと追加の手順は [pkg/testkit/README.md](../../pkg/testkit/README.md#federation-fixtures)、各ファイルの出典とライセンスは `pkg/testkit/fixtures/federation/<実装>/README.md` にあります。正規化の golden は `pkg/testkit/testdata/golden/normalize/` にあり、`go test ./pkg/testkit -update` で書き直します。
 - テストはネットワークを使わず、`HTTPClient` をホスト名で振り分けるインメモリの実装に差し替えます（ADR-0015）。

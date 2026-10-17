@@ -1,0 +1,64 @@
+{
+  "type": "Update",
+  "object": {
+    "url": "http://mastodon.example.org/@alice",
+    "type": "Person",
+    "summary": "<p>Some bio</p>",
+    "publicKey": {
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n",
+      "owner": "http://mastodon.example.org/users/alice",
+      "id": "http://mastodon.example.org/users/alice#main-key"
+    },
+    "preferredUsername": "alice",
+    "outbox": "http://mastodon.example.org/users/alice/outbox",
+    "name": "Alice",
+    "manuallyApprovesFollowers": false,
+    "inbox": "http://mastodon.example.org/users/alice/inbox",
+    "id": "http://mastodon.example.org/users/alice",
+    "following": "http://mastodon.example.org/users/alice/following",
+    "followers": "http://mastodon.example.org/users/alice/followers",
+    "endpoints": {
+      "sharedInbox": "http://mastodon.example.org/inbox"
+    },
+    "attachment": [
+      {
+        "type": "PropertyValue",
+        "name": "foo",
+        "value": "updated"
+      },
+      {
+        "type": "PropertyValue",
+        "name": "foo1",
+        "value": "updated"
+      }
+    ],
+    "icon": {
+      "type": "Image",
+      "mediaType": "image/jpeg",
+      "url": "https://files.mastodon.example.org/accounts/avatars/000/033/323/original/fd7f8ae0b3ffedc9.jpeg"
+    },
+    "image": {
+      "type": "Image",
+      "mediaType": "image/png",
+      "url": "https://files.mastodon.example.org/accounts/headers/000/033/323/original/850b3448fa5fd477.png"
+    }
+  },
+  "id": "http://mastodon.example.org/users/alice#updates/1519563538",
+  "actor": "http://mastodon.example.org/users/alice",
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "toot": "http://joinmastodon.org/ns#",
+      "sensitive": "as:sensitive",
+      "ostatus": "http://ostatus.org#",
+      "movedTo": "as:movedTo",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "conversation": "ostatus:conversation",
+      "atomUri": "ostatus:atomUri",
+      "Hashtag": "as:Hashtag",
+      "Emoji": "toot:Emoji"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "type": "Delete",
+  "signature": {
+    "type": "RsaSignature2017",
+    "signatureValue": "RVhBTVBMRS1TSUdOQVRVUkU=",
+    "creator": "http://mastodon.example.org/users/alice#main-key",
+    "created": "2018-03-03T16:24:11Z"
+  },
+  "object": {
+    "type": "Tombstone",
+    "id": "http://mastodon.example.org/users/alice/statuses/99620895606148759",
+    "atomUri": "http://mastodon.example.org/users/alice/statuses/99620895606148759"
+  },
+  "id": "http://mastodon.example.org/users/alice/statuses/99620895606148759#delete",
+  "actor": "http://mastodon.example.org/users/alice",
+  "@context": [
+    {
+      "toot": "http://joinmastodon.org/ns#",
+      "sensitive": "as:sensitive",
+      "ostatus": "http://ostatus.org#",
+      "movedTo": "as:movedTo",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "conversation": "ostatus:conversation",
+      "atomUri": "ostatus:atomUri",
+      "Hashtag": "as:Hashtag",
+      "Emoji": "toot:Emoji"
+    }
+  ]
+}

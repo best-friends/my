@@ -1,0 +1,20 @@
+{
+  "Activity": {
+    "Actor": "http://mastodon.example.org/users/admin",
+    "ID": "http://mastodon.example.org/users/admin#delete",
+    "Objects": [
+      {
+        "Embedded": {
+          "Actor": {
+            "ID": "http://mastodon.example.org/users/admin",
+            "Type": "Person"
+          }
+        },
+        "ID": "http://mastodon.example.org/users/admin",
+        "Trusted": true
+      }
+    ],
+    "RawType": "Delete",
+    "Type": "Delete"
+  }
+}

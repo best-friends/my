@@ -40,3 +40,6 @@ blob-report/
 # Storybook build and Vitest browser-mode attachments (app/ui)
 storybook-static/
 .vitest/
+
+# Scratch space of local tools and agents (logs, temporary clones).
+/.tmp/

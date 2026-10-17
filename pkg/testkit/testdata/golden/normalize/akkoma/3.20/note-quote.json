@@ -1,0 +1,24 @@
+{
+  "Object": {
+    "Audience": {
+      "Cc": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "To": [
+        "https://remote.example/users/diana",
+        "https://example.org/users/akko/followers"
+      ]
+    },
+    "Bodies": [
+      {
+        "HTML": "Look at that!",
+        "Language": "en"
+      }
+    ],
+    "ID": "https://example.org/activities/85717e587f95d5c0",
+    "Published": "2024-04-06T23:40:28Z",
+    "RawType": "Note",
+    "Type": "Note",
+    "Updated": "2024-04-06T23:40:28Z"
+  }
+}

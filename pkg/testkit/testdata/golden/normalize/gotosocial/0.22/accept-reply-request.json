@@ -1,0 +1,34 @@
+{
+  "Activity": {
+    "Actor": "http://remote.example/users/foss_satan",
+    "Audience": {
+      "Cc": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "To": [
+        "https://other.example/users/brand_new_person"
+      ]
+    },
+    "ID": "http://remote.example/users/foss_satan/accepts/1234",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://other.example/users/brand_new_person",
+            "ID": "https://other.example/users/brand_new_person/statuses/01H641QSRS3TCXSVC10X4GPKW7/replyRequest",
+            "Objects": [
+              {
+                "ID": "http://remote.example/users/foss_satan/statuses/01FVW7JHQFSFK166WWKR8CBA6M"
+              }
+            ],
+            "RawType": "ReplyRequest"
+          }
+        },
+        "ID": "https://other.example/users/brand_new_person/statuses/01H641QSRS3TCXSVC10X4GPKW7/replyRequest",
+        "Trusted": false
+      }
+    ],
+    "RawType": "Accept",
+    "Type": "Accept"
+  }
+}

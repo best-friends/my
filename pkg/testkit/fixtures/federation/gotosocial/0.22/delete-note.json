@@ -1,0 +1,11 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "actor": "http://example.org/users/admin",
+  "cc": [
+    "http://example.org/users/admin/followers",
+    "http://remote.example/users/foss_satan"
+  ],
+  "object": "http://example.org/users/admin/statuses/01FF25D5Q0DH7CHD57CTRS6WK0",
+  "to": "https://www.w3.org/ns/activitystreams#Public",
+  "type": "Delete"
+}

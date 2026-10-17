@@ -1,0 +1,22 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/8x8yep20u2",
+    "Content": ":hanapog:",
+    "Emojis": [
+      {
+        "ID": "https://misskey.example/emojis/hanapog",
+        "IconURL": "https://misskey.example/files/webpublic-8f8a9768-7264-4171-88d6-2356aabeadcd",
+        "Shortcode": "hanapog"
+      }
+    ],
+    "ID": "https://misskey.example/likes/917ocsybgp",
+    "Objects": [
+      {
+        "ID": "https://remote.example/objects/89937a53-2692-4631-bb62-770091267391"
+      }
+    ],
+    "RawType": "Like",
+    "Reaction": ":hanapog:",
+    "Type": "Like"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "@context": [
+    "https://gotosocial.org/ns",
+    "https://w3id.org/security/v1",
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "discoverable": "toot:discoverable",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "indexable": "toot:indexable",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "toot": "http://joinmastodon.org/ns#"
+    }
+  ],
+  "actor": "http://gotosocial.example/users/the_mighty_zork",
+  "bcc": "http://gotosocial.example/users/the_mighty_zork/followers",
+  "id": "http://gotosocial.example/users/the_mighty_zork#updates/01JABCDEFGHJKMNPQRSTVWXYZ0",
+  "object": {
+    "discoverable": true,
+    "featured": "http://gotosocial.example/users/the_mighty_zork/collections/featured",
+    "followers": "http://gotosocial.example/users/the_mighty_zork/followers",
+    "following": "http://gotosocial.example/users/the_mighty_zork/following",
+    "hidesCcPublicFromUnauthedWeb": false,
+    "hidesToPublicFromUnauthedWeb": false,
+    "icon": {
+      "mediaType": "image/jpeg",
+      "name": "a green goblin looking nasty",
+      "type": "Image",
+      "url": "http://gotosocial.example/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg"
+    },
+    "id": "http://gotosocial.example/users/the_mighty_zork",
+    "image": {
+      "mediaType": "image/jpeg",
+      "name": "A very old-school screenshot of the original team fortress mod for quake",
+      "type": "Image",
+      "url": "http://gotosocial.example/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg"
+    },
+    "inbox": "http://gotosocial.example/users/the_mighty_zork/inbox",
+    "indexable": true,
+    "manuallyApprovesFollowers": false,
+    "name": "original zork (he/they)",
+    "outbox": "http://gotosocial.example/users/the_mighty_zork/outbox",
+    "preferredUsername": "the_mighty_zork",
+    "publicKey": {
+      "id": "http://gotosocial.example/users/the_mighty_zork/main-key",
+      "owner": "http://gotosocial.example/users/the_mighty_zork",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n"
+    },
+    "published": "2022-05-20T11:09:18Z",
+    "summary": "<p>hey yo this is my profile!</p>",
+    "type": "Person",
+    "url": "http://gotosocial.example/@the_mighty_zork"
+  },
+  "to": "https://www.w3.org/ns/activitystreams#Public",
+  "type": "Update"
+}

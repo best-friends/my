@@ -1,0 +1,22 @@
+{
+  "Activity": {
+    "Actor": "http://gotosocial.example/users/the_mighty_zork",
+    "Audience": {
+      "Cc": [
+        "http://gotosocial.example/users/the_mighty_zork"
+      ],
+      "To": [
+        "http://gotosocial.example/users/the_mighty_zork/followers"
+      ]
+    },
+    "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01G74JJ1KS331G2JXHRMZCE0ER",
+    "Objects": [
+      {
+        "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01FCTA44PW9H1TB328S9AQXKDS"
+      }
+    ],
+    "Published": "2022-06-09T13:12:00Z",
+    "RawType": "Announce",
+    "Type": "Announce"
+  }
+}

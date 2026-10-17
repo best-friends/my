@@ -1,0 +1,27 @@
+{
+  "Activity": {
+    "Actor": "http://mastodon.example.org/users/admin",
+    "ID": "http://mastodon.example.org/users/admin#accepts/follows/4",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "http://remote.example/users/bob",
+            "ID": "http://remote.example/users/bob#follows/4",
+            "Objects": [
+              {
+                "ID": "http://mastodon.example.org/users/admin"
+              }
+            ],
+            "RawType": "Follow",
+            "Type": "Follow"
+          }
+        },
+        "ID": "http://remote.example/users/bob#follows/4",
+        "Trusted": false
+      }
+    ],
+    "RawType": "Accept",
+    "Type": "Accept"
+  }
+}

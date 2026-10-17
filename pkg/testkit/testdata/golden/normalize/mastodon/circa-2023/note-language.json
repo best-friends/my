@@ -1,0 +1,24 @@
+{
+  "Object": {
+    "AttributedTo": "https://mastodon.example/users/alice",
+    "Audience": {
+      "Cc": [
+        "https://mastodon.example/users/alice/followers"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "Bodies": [
+      {
+        "HTML": "<p>tag</p>",
+        "Language": "ja"
+      }
+    ],
+    "ID": "https://mastodon.example/users/alice/statuses/109671288784583764",
+    "Published": "2023-01-11T15:31:01Z",
+    "RawType": "Note",
+    "Type": "Note",
+    "URL": "https://mastodon.example/@alice/109671288784583764"
+  }
+}
