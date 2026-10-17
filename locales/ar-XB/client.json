@@ -276,7 +276,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.mention.unreached": {
-    "defaultMessage": "‮{count,plural,one{{accounts} ıs ou ɐuoʇɥǝɹ sǝɹʌǝɹ ɐup poǝs uoʇ ɟoʅʅoʍ ʎon, so ʇɥǝʎ ʍıʅʅ uoʇ ɹǝɔǝıʌǝ ʇɥıs dosʇ.} other{{accounts} ɐɹǝ ou oʇɥǝɹ sǝɹʌǝɹs ɐup po uoʇ ɟoʅʅoʍ ʎon, so ʇɥǝʎ ʍıʅʅ uoʇ ɹǝɔǝıʌǝ ʇɥıs dosʇ.}} “⊥ɥıs sǝɹʌǝɹ” dosʇs ɹǝɐɔɥ ouʅʎ ʎonɹ ɟoʅʅoʍǝɹs onʇsıpǝ ʇɥıs sǝɹʌǝɹ.‬",
+    "defaultMessage": "‮{count,plural,one{{accounts} ıs ou ɐuoʇɥǝɹ sǝɹʌǝɹ ɐup poǝs uoʇ ɟoʅʅoʍ ʎon, so ʇɥǝʎ ʍıʅʅ uoʇ ɹǝɔǝıʌǝ ʇɥıs dosʇ. Onʇsıpǝ ʇɥıs sǝɹʌǝɹ, “⊥ɥıs sǝɹʌǝɹ” dosʇs ɹǝɐɔɥ ouʅʎ ʎonɹ ɟoʅʅoʍǝɹs, ʍɥo sǝǝ ʇɥıs ɯǝuʇıou ɐs ɐ dʅɐıu ʅıuʞ.} other{{accounts} ɐɹǝ ou oʇɥǝɹ sǝɹʌǝɹs ɐup po uoʇ ɟoʅʅoʍ ʎon, so ʇɥǝʎ ʍıʅʅ uoʇ ɹǝɔǝıʌǝ ʇɥıs dosʇ. Onʇsıpǝ ʇɥıs sǝɹʌǝɹ, “⊥ɥıs sǝɹʌǝɹ” dosʇs ɹǝɐɔɥ ouʅʎ ʎonɹ ɟoʅʅoʍǝɹs, ʍɥo sǝǝ ʇɥǝsǝ ɯǝuʇıous ɐs dʅɐıu ʅıuʞs.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.missing_description.add": {

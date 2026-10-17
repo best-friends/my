@@ -10,7 +10,7 @@ import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RouterContext } from "../../lib/query";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
-import { instanceFixture, preferencesFixture, relationshipFixture, remoteAccountFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
+import { accountFixture, instanceFixture, preferencesFixture, relationshipFixture, remoteAccountFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
 import { uploadedMediaId } from "./test/handlers";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -251,7 +251,8 @@ describe("hints before posting", () => {
     );
     const { user } = await renderApp();
     const sheet = await openSheet(user);
-    const warning = "@carol@remote.example is on another server and does not follow you, so they will not receive this post. “This server” posts reach only your followers outside this server.";
+    const warning =
+      "@carol@remote.example is on another server and does not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see this mention as a plain link.";
 
     // The local viewer and an unknown handle are not warned about; neither is a public post.
     await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Hi @Carol@remote.example, @alice@my.example and @nobody@else.example");
@@ -266,6 +267,36 @@ describe("hints before posting", () => {
     await user.click(await screen.findByRole("radio", { name: "Unlisted" }));
     await user.click(screen.getByRole("button", { name: "Done" }));
     expect(within(sheet).queryByText(warning)).not.toBeInTheDocument();
+  });
+
+  test("a local post warns about a mentioned account that the server resolves from its server", async () => {
+    signedIn();
+    // Dave is not known yet: only resolving (WebFinger, as when the post is made) finds him.
+    const dave = accountFixture(4, "Dave", "new.example");
+    const resolved: (string | null)[] = [];
+    server.use(
+      http.get(`${apiBase}/accounts/lookup`, ({ request }) => {
+        const query = new URL(request.url).searchParams;
+        resolved.push(query.get("resolve"));
+        if (query.get("acct") !== dave.acct) return undefined;
+        return query.get("resolve") === "true" ? HttpResponse.json(dave) : problem(404, "about:blank", "Not Found");
+      }),
+    );
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+
+    await user.click(await within(sheet).findByRole("button", { name: "Visibility: Public" }));
+    await user.click(await screen.findByRole("radio", { name: "This server" }));
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "Hi @carol@remote.example and @dave@new.example");
+
+    expect(
+      await within(sheet).findByText(
+        "@carol@remote.example and @dave@new.example are on other servers and do not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see these mentions as plain links.",
+      ),
+    ).toBeInTheDocument();
+    expect(resolved.length).toBeGreaterThan(0);
+    expect(resolved.every((r) => r === "true")).toBe(true);
   });
 
   test("a local post does not warn about a mentioned follower on another server", async () => {
