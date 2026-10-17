@@ -238,6 +238,11 @@ type Account struct {
 	// DisplayName The display name; empty when the account has none.
 	DisplayName string `json:"display_name"`
 
+	// Domain The domain of the account: the domain of its handle, which for local accounts is the
+	// instance's account domain, or the host of its `uri` when a remote account has no
+	// confirmed handle.
+	Domain string `json:"domain"`
+
 	// Fields The profile's metadata fields, in their order; empty when there are none.
 	Fields []ProfileField `json:"fields"`
 
@@ -262,6 +267,9 @@ type Account struct {
 
 	// Note The profile text as sanitized HTML; empty when there is none.
 	Note string `json:"note"`
+
+	// Uri The ActivityPub id of the account's actor, on the server it belongs to.
+	Uri string `json:"uri"`
 
 	// Url The account's profile page.
 	Url string `json:"url"`
@@ -445,6 +453,11 @@ type CredentialAccount struct {
 	// DisplayName The display name; empty when the account has none.
 	DisplayName string `json:"display_name"`
 
+	// Domain The domain of the account: the domain of its handle, which for local accounts is the
+	// instance's account domain, or the host of its `uri` when a remote account has no
+	// confirmed handle.
+	Domain string `json:"domain"`
+
 	// Fields The profile's metadata fields, in their order; empty when there are none.
 	Fields []ProfileField `json:"fields"`
 
@@ -480,6 +493,9 @@ type CredentialAccount struct {
 
 	// Source The profile as the user typed it, for editing.
 	Source AccountSource `json:"source"`
+
+	// Uri The ActivityPub id of the account's actor, on the server it belongs to.
+	Uri string `json:"uri"`
 
 	// Url The account's profile page.
 	Url string `json:"url"`
@@ -1051,10 +1067,18 @@ type StatusMention struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
 	Acct string `json:"acct"`
 
+	// Domain The domain of the account: the domain of its handle, which for local accounts is the
+	// instance's account domain, or the host of its `uri` when a remote account has no
+	// confirmed handle.
+	Domain *string `json:"domain,omitempty"`
+
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
+
+	// Uri The ActivityPub id of the account's actor, on the server it belongs to.
+	Uri *string `json:"uri,omitempty"`
 
 	// Url The account's profile page.
 	Url string `json:"url"`
@@ -1198,8 +1222,11 @@ type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.
 type LookupAccountParams struct {
-	// Acct The handle, `username` or `username@domain`.
+	// Acct The handle, `username` or `username@domain`, or the `https` URL of an actor.
 	Acct string `form:"acct" json:"acct"`
+
+	// Resolve Fetch a remote account that the instance does not know yet.
+	Resolve *bool `form:"resolve,omitempty" json:"resolve,omitempty"`
 }
 
 // GetRelationshipsParams defines parameters for GetRelationships.
@@ -1385,7 +1412,7 @@ type EditStatusJSONRequestBody = EditStatusRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// LookupAccount Look up an account by its handle
+	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(w http.ResponseWriter, r *http.Request, params LookupAccountParams)
 	// GetRelationships Get the viewer's relationships with accounts
@@ -1579,6 +1606,19 @@ func (siw *ServerInterfaceWrapper) LookupAccount(w http.ResponseWriter, r *http.
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "acct"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "acct", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "resolve" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "resolve", r.URL.Query(), &params.Resolve, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "resolve"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "resolve", Err: err})
 		}
 		return
 	}
@@ -6730,7 +6770,7 @@ func (response GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse) Visi
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// LookupAccount Look up an account by its handle
+	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(ctx context.Context, request LookupAccountRequestObject) (LookupAccountResponseObject, error)
 	// GetRelationships Get the viewer's relationships with accounts

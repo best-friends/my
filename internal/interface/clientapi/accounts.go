@@ -11,6 +11,7 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
+	appfederation "github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/domain/account"
 )
 
@@ -22,6 +23,18 @@ type Accounts interface {
 	// FindByHandle returns the actor with a handle (domain is account.LocalDomain for local
 	// accounts), failing with appaccount.ErrNotFound when there is none.
 	FindByHandle(ctx context.Context, username, domain string) (appaccount.Actor, error)
+	// FindByURI returns the actor with an ActivityPub id, failing with appaccount.ErrNotFound
+	// when there is none.
+	FindByURI(ctx context.Context, uri string) (appaccount.Actor, error)
+}
+
+// AccountResolver fetches the remote accounts that the instance does not know yet, by handle
+// (WebFinger) or by URL (FR-305). Both fail with an error wrapping
+// appfederation.ErrUnresolvable when the handle or URL leads to no account.
+// *appfederation.RemoteActors implements it.
+type AccountResolver interface {
+	ResolveHandle(ctx context.Context, username, domain string) (appaccount.Actor, error)
+	ResolveURL(ctx context.Context, uri string) (appaccount.Actor, error)
 }
 
 // cacheNoStore is the Cache-Control of responses that depend on the viewer (ADR-0016).
@@ -83,7 +96,13 @@ func (s *Server) profileImages(ctx context.Context, actors ...appaccount.Actor) 
 // newAccount presents an actor as the Account schema, without the follow counts. imgs holds the
 // actor's images (Server.profileImages).
 func (s *Server) newAccount(a appaccount.Actor, imgs profileImages) Account {
-	out := Account{Id: a.Account.ID, CreatedAt: a.Account.CreatedAt, Url: a.Account.URI, Fields: []ProfileField{}}
+	out := Account{
+		Id: a.Account.ID, CreatedAt: a.Account.CreatedAt, Uri: a.Account.URI, Url: a.Account.URI,
+		Domain: a.Account.Domain, Fields: []ProfileField{},
+	}
+	if a.Account.IsLocal() {
+		out.Domain = s.accountDomain()
+	}
 	switch {
 	case a.Local != nil:
 		out.Username, out.Acct = a.Local.Username, a.Local.Username
@@ -93,6 +112,7 @@ func (s *Server) newAccount(a appaccount.Actor, imgs profileImages) Account {
 		out.Acct = a.Handle.Username
 		if a.Handle.Domain != account.LocalDomain {
 			out.Acct += "@" + a.Handle.Domain
+			out.Domain = a.Handle.Domain
 		}
 	}
 	if p := a.Profile; p != nil {
@@ -223,24 +243,36 @@ func (s *Server) GetAccount(ctx context.Context, req GetAccountRequestObject) (G
 	return GetAccount200JSONResponse{AccountProfileJSONResponse{Body: body, Headers: AccountProfileResponseHeaders{CacheControl: cacheFor(v)}}}, nil
 }
 
-// LookupAccount serves GET /api/v1/accounts/lookup: an account by its handle.
+// LookupAccount serves GET /api/v1/accounts/lookup: an account by its handle or actor URL,
+// fetched from its server when resolve is set and the instance does not know it (FR-305).
 func (s *Server) LookupAccount(ctx context.Context, req LookupAccountRequestObject) (LookupAccountResponseObject, error) {
 	v := viewerOf(ctx)
-	username, domain, ok := s.parseAcct(req.Params.Acct)
-	if !ok {
-		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	resolve := req.Params.Resolve != nil && *req.Params.Resolve
+	if resolve && v == nil {
+		l := s.Localizer(ctx)
+		body, headers := s.NewProblem(ctx, http.StatusUnauthorized, ProblemTypeUnauthenticated, l.ServerErrorsUnauthenticated(), "")
+		challenge := "Bearer"
+		headers.WWWAuthenticate = &challenge
+		return LookupAccountdefaultApplicationProblemPlusJSONResponse{Body: body, Headers: headers, StatusCode: http.StatusUnauthorized}, nil
 	}
-	a, err := s.o.Accounts.FindByHandle(ctx, username, domain)
-	if errors.Is(err, appaccount.ErrNotFound) {
-		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
-	}
+	a, found, err := s.lookup(ctx, req.Params.Acct)
 	if err != nil {
 		return nil, err
 	}
-	if ok, err = s.presentable(ctx, a, v, true); err != nil {
-		return nil, err
+	if !found && resolve && s.o.Resolver != nil && s.resolvable(req.Params.Acct) {
+		if p, h, limited := s.LimitProblem(ctx, ResolveLimit, v.AccountID); limited {
+			return LookupAccountdefaultApplicationProblemPlusJSONResponse{Body: p, Headers: h, StatusCode: http.StatusTooManyRequests}, nil
+		}
+		if a, found, err = s.resolve(ctx, req.Params.Acct); err != nil {
+			return nil, err
+		}
 	}
-	if !ok {
+	if !found {
+		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	if ok, err := s.presentable(ctx, a, v, true); err != nil {
+		return nil, err
+	} else if !ok {
 		return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	}
 	body, err := s.newProfile(ctx, a)
@@ -248,6 +280,60 @@ func (s *Server) LookupAccount(ctx context.Context, req LookupAccountRequestObje
 		return nil, err
 	}
 	return LookupAccount200JSONResponse{AccountProfileJSONResponse{Body: body, Headers: AccountProfileResponseHeaders{CacheControl: cacheFor(v)}}}, nil
+}
+
+// lookup finds the stored account of acct, a handle or an actor URL; found is false when there
+// is none.
+func (s *Server) lookup(ctx context.Context, acct string) (a appaccount.Actor, found bool, err error) {
+	if isURL(acct) {
+		a, err = s.o.Accounts.FindByURI(ctx, acct)
+	} else if username, domain, ok := s.parseAcct(acct); ok {
+		a, err = s.o.Accounts.FindByHandle(ctx, username, domain)
+	} else {
+		return appaccount.Actor{}, false, nil
+	}
+	if errors.Is(err, appaccount.ErrNotFound) {
+		return appaccount.Actor{}, false, nil
+	}
+	return a, err == nil, err
+}
+
+// resolvable reports whether acct can name a remote account: an actor URL, or a handle of
+// another domain.
+func (s *Server) resolvable(acct string) bool {
+	if isURL(acct) {
+		return true
+	}
+	_, domain, ok := s.parseAcct(acct)
+	return ok && domain != account.LocalDomain
+}
+
+// resolve fetches the remote account of acct, which is resolvable; found is false when it
+// leads to none.
+func (s *Server) resolve(ctx context.Context, acct string) (a appaccount.Actor, found bool, err error) {
+	if isURL(acct) {
+		a, err = s.o.Resolver.ResolveURL(ctx, acct)
+	} else {
+		username, domain, _ := s.parseAcct(acct)
+		a, err = s.o.Resolver.ResolveHandle(ctx, username, domain)
+	}
+	if errors.Is(err, appfederation.ErrUnresolvable) {
+		return appaccount.Actor{}, false, nil
+	}
+	return a, err == nil, err
+}
+
+// isURL reports whether a lookup names an actor by URL rather than by handle.
+func isURL(acct string) bool {
+	return strings.HasPrefix(acct, "https://") || strings.HasPrefix(acct, "http://")
+}
+
+// accountDomain is the domain of local handles.
+func (s *Server) accountDomain() string {
+	if s.o.AccountDomain != "" {
+		return s.o.AccountDomain
+	}
+	return s.o.Host
 }
 
 // parseAcct splits a handle, "username" or "username@domain" with an optional leading "@",
