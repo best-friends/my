@@ -138,7 +138,7 @@ func (r *StatusRepository) InsertRevision(ctx context.Context, tx uow.Tx, rev co
 			return wrap(err, "insert status revision emoji")
 		}
 	}
-	return nil
+	return insertRemoteRevisionParts(ctx, q, rev)
 }
 
 // InsertDeletion implements content.Repository.
@@ -568,7 +568,7 @@ func findRevision(ctx context.Context, q *postgresgen.Queries, id string) (conte
 	if rev.EmojiIDs, err = nonEmpty(q.ListStatusRevisionEmojis(ctx, id)); err != nil {
 		return content.Revision{}, wrap(err, "list status revision emoji")
 	}
-	return rev, nil
+	return rev, findRemoteRevisionParts(ctx, q, &rev)
 }
 
 // nonEmpty turns an empty list into nil, as the domain leaves absent children nil.

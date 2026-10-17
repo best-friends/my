@@ -12,6 +12,15 @@ import (
 	"database/sql"
 )
 
+const deletePollTallies = `-- name: DeletePollTallies :exec
+DELETE FROM poll_tallies WHERE poll_id = ?1
+`
+
+func (q *Queries) DeletePollTallies(ctx context.Context, pollID string) error {
+	_, err := q.db.ExecContext(ctx, deletePollTallies, pollID)
+	return err
+}
+
 const deleteRemoteMediaCache = `-- name: DeleteRemoteMediaCache :exec
 DELETE FROM remote_media_cache WHERE url = ?1
 `
@@ -19,6 +28,114 @@ DELETE FROM remote_media_cache WHERE url = ?1
 func (q *Queries) DeleteRemoteMediaCache(ctx context.Context, url string) error {
 	_, err := q.db.ExecContext(ctx, deleteRemoteMediaCache, url)
 	return err
+}
+
+const existsLocalStatusInConversation = `-- name: ExistsLocalStatusInConversation :one
+SELECT EXISTS (
+  SELECT 1 FROM statuses s
+  WHERE s.conversation_uri = ?1 AND s.is_local = 1
+    AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+)
+`
+
+// ExistsLocalStatusInConversation reports whether a local status that is not deleted belongs to
+// the conversation, for the scope of remote content (ADR-0034: replies in a thread that has a
+// local status).
+func (q *Queries) ExistsLocalStatusInConversation(ctx context.Context, conversationUri sql.NullString) (bool, error) {
+	row := q.db.QueryRowContext(ctx, existsLocalStatusInConversation, conversationUri)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const getCustomEmoji = `-- name: GetCustomEmoji :one
+SELECT id, shortcode, domain, uri, created_at FROM custom_emojis WHERE id = ?1
+`
+
+func (q *Queries) GetCustomEmoji(ctx context.Context, id string) (CustomEmoji, error) {
+	row := q.db.QueryRowContext(ctx, getCustomEmoji, id)
+	var i CustomEmoji
+	err := row.Scan(
+		&i.ID,
+		&i.Shortcode,
+		&i.Domain,
+		&i.Uri,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getCustomEmojiByShortcode = `-- name: GetCustomEmojiByShortcode :one
+SELECT id, shortcode, domain, uri, created_at FROM custom_emojis
+WHERE shortcode = ?1 AND domain = ?2
+`
+
+type GetCustomEmojiByShortcodeParams struct {
+	Shortcode string
+	Domain    string
+}
+
+func (q *Queries) GetCustomEmojiByShortcode(ctx context.Context, arg GetCustomEmojiByShortcodeParams) (CustomEmoji, error) {
+	row := q.db.QueryRowContext(ctx, getCustomEmojiByShortcode, arg.Shortcode, arg.Domain)
+	var i CustomEmoji
+	err := row.Scan(
+		&i.ID,
+		&i.Shortcode,
+		&i.Domain,
+		&i.Uri,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getLatestCustomEmojiImage = `-- name: GetLatestCustomEmojiImage :one
+SELECT id, emoji_id, media_id, revised_at FROM custom_emoji_images
+WHERE emoji_id = ?1 ORDER BY id DESC LIMIT 1
+`
+
+func (q *Queries) GetLatestCustomEmojiImage(ctx context.Context, emojiID string) (CustomEmojiImage, error) {
+	row := q.db.QueryRowContext(ctx, getLatestCustomEmojiImage, emojiID)
+	var i CustomEmojiImage
+	err := row.Scan(
+		&i.ID,
+		&i.EmojiID,
+		&i.MediaID,
+		&i.RevisedAt,
+	)
+	return i, err
+}
+
+const getLatestPollTallyObservation = `-- name: GetLatestPollTallyObservation :one
+SELECT id, poll_id, voters_count, observed_at FROM poll_tally_observations
+WHERE poll_id = ?1 ORDER BY id DESC LIMIT 1
+`
+
+func (q *Queries) GetLatestPollTallyObservation(ctx context.Context, pollID string) (PollTallyObservation, error) {
+	row := q.db.QueryRowContext(ctx, getLatestPollTallyObservation, pollID)
+	var i PollTallyObservation
+	err := row.Scan(
+		&i.ID,
+		&i.PollID,
+		&i.VotersCount,
+		&i.ObservedAt,
+	)
+	return i, err
+}
+
+const getPollByRevision = `-- name: GetPollByRevision :one
+SELECT id, revision_id, multiple, closes_at FROM polls WHERE revision_id = ?1
+`
+
+func (q *Queries) GetPollByRevision(ctx context.Context, revisionID string) (Poll, error) {
+	row := q.db.QueryRowContext(ctx, getPollByRevision, revisionID)
+	var i Poll
+	err := row.Scan(
+		&i.ID,
+		&i.RevisionID,
+		&i.Multiple,
+		&i.ClosesAt,
+	)
+	return i, err
 }
 
 const getRemoteMedia = `-- name: GetRemoteMedia :one
@@ -106,6 +223,149 @@ func (q *Queries) GetRemoteStatusRevision(ctx context.Context, revisionID string
 	var i RemoteStatusRevision
 	err := row.Scan(&i.RevisionID, &i.ActivityUri, &i.HtmlPolicyVersion)
 	return i, err
+}
+
+const insertCustomEmojiIfAbsent = `-- name: InsertCustomEmojiIfAbsent :exec
+INSERT INTO custom_emojis (id, shortcode, domain, uri, created_at)
+VALUES (?1, ?2, ?3, ?4, ?5)
+ON CONFLICT DO NOTHING
+`
+
+type InsertCustomEmojiIfAbsentParams struct {
+	ID        string
+	Shortcode string
+	Domain    string
+	Uri       sql.NullString
+	CreatedAt int64
+}
+
+func (q *Queries) InsertCustomEmojiIfAbsent(ctx context.Context, arg InsertCustomEmojiIfAbsentParams) error {
+	_, err := q.db.ExecContext(ctx, insertCustomEmojiIfAbsent,
+		arg.ID,
+		arg.Shortcode,
+		arg.Domain,
+		arg.Uri,
+		arg.CreatedAt,
+	)
+	return err
+}
+
+const insertCustomEmojiImage = `-- name: InsertCustomEmojiImage :exec
+INSERT INTO custom_emoji_images (id, emoji_id, media_id, revised_at)
+VALUES (?1, ?2, ?3, ?4)
+`
+
+type InsertCustomEmojiImageParams struct {
+	ID        string
+	EmojiID   string
+	MediaID   string
+	RevisedAt int64
+}
+
+func (q *Queries) InsertCustomEmojiImage(ctx context.Context, arg InsertCustomEmojiImageParams) error {
+	_, err := q.db.ExecContext(ctx, insertCustomEmojiImage,
+		arg.ID,
+		arg.EmojiID,
+		arg.MediaID,
+		arg.RevisedAt,
+	)
+	return err
+}
+
+const insertPoll = `-- name: InsertPoll :exec
+INSERT INTO polls (id, revision_id, multiple, closes_at) VALUES (?1, ?2, ?3, ?4)
+`
+
+type InsertPollParams struct {
+	ID         string
+	RevisionID string
+	Multiple   int64
+	ClosesAt   sql.NullInt64
+}
+
+func (q *Queries) InsertPoll(ctx context.Context, arg InsertPollParams) error {
+	_, err := q.db.ExecContext(ctx, insertPoll,
+		arg.ID,
+		arg.RevisionID,
+		arg.Multiple,
+		arg.ClosesAt,
+	)
+	return err
+}
+
+const insertPollOption = `-- name: InsertPollOption :exec
+INSERT INTO poll_options (poll_id, position, title) VALUES (?1, ?2, ?3)
+`
+
+type InsertPollOptionParams struct {
+	PollID   string
+	Position int64
+	Title    string
+}
+
+func (q *Queries) InsertPollOption(ctx context.Context, arg InsertPollOptionParams) error {
+	_, err := q.db.ExecContext(ctx, insertPollOption, arg.PollID, arg.Position, arg.Title)
+	return err
+}
+
+const insertPollTally = `-- name: InsertPollTally :exec
+INSERT INTO poll_tallies (poll_id, position, votes, voters_count)
+VALUES (?1, ?2, ?3, ?4)
+`
+
+type InsertPollTallyParams struct {
+	PollID      string
+	Position    int64
+	Votes       int64
+	VotersCount sql.NullInt64
+}
+
+func (q *Queries) InsertPollTally(ctx context.Context, arg InsertPollTallyParams) error {
+	_, err := q.db.ExecContext(ctx, insertPollTally,
+		arg.PollID,
+		arg.Position,
+		arg.Votes,
+		arg.VotersCount,
+	)
+	return err
+}
+
+const insertPollTallyObservation = `-- name: InsertPollTallyObservation :exec
+INSERT INTO poll_tally_observations (id, poll_id, voters_count, observed_at)
+VALUES (?1, ?2, ?3, ?4)
+`
+
+type InsertPollTallyObservationParams struct {
+	ID          string
+	PollID      string
+	VotersCount sql.NullInt64
+	ObservedAt  int64
+}
+
+func (q *Queries) InsertPollTallyObservation(ctx context.Context, arg InsertPollTallyObservationParams) error {
+	_, err := q.db.ExecContext(ctx, insertPollTallyObservation,
+		arg.ID,
+		arg.PollID,
+		arg.VotersCount,
+		arg.ObservedAt,
+	)
+	return err
+}
+
+const insertPollTallyObservationCount = `-- name: InsertPollTallyObservationCount :exec
+INSERT INTO poll_tally_observation_counts (observation_id, position, votes)
+VALUES (?1, ?2, ?3)
+`
+
+type InsertPollTallyObservationCountParams struct {
+	ObservationID string
+	Position      int64
+	Votes         int64
+}
+
+func (q *Queries) InsertPollTallyObservationCount(ctx context.Context, arg InsertPollTallyObservationCountParams) error {
+	_, err := q.db.ExecContext(ctx, insertPollTallyObservationCount, arg.ObservationID, arg.Position, arg.Votes)
+	return err
 }
 
 const insertRemoteMedia = `-- name: InsertRemoteMedia :execrows
@@ -235,6 +495,93 @@ func (q *Queries) ListLeastRecentlyAccessedRemoteMediaCache(ctx context.Context,
 	for rows.Next() {
 		var i ListLeastRecentlyAccessedRemoteMediaCacheRow
 		if err := rows.Scan(&i.Url, &i.BlobKey, &i.FileSize); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPollOptions = `-- name: ListPollOptions :many
+SELECT poll_id, position, title FROM poll_options WHERE poll_id = ?1 ORDER BY position
+`
+
+func (q *Queries) ListPollOptions(ctx context.Context, pollID string) ([]PollOption, error) {
+	rows, err := q.db.QueryContext(ctx, listPollOptions, pollID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PollOption{}
+	for rows.Next() {
+		var i PollOption
+		if err := rows.Scan(&i.PollID, &i.Position, &i.Title); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPollTallies = `-- name: ListPollTallies :many
+SELECT poll_id, position, votes, voters_count FROM poll_tallies WHERE poll_id = ?1 ORDER BY position
+`
+
+func (q *Queries) ListPollTallies(ctx context.Context, pollID string) ([]PollTally, error) {
+	rows, err := q.db.QueryContext(ctx, listPollTallies, pollID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PollTally{}
+	for rows.Next() {
+		var i PollTally
+		if err := rows.Scan(
+			&i.PollID,
+			&i.Position,
+			&i.Votes,
+			&i.VotersCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPollTallyObservationCounts = `-- name: ListPollTallyObservationCounts :many
+SELECT observation_id, position, votes FROM poll_tally_observation_counts
+WHERE observation_id = ?1 ORDER BY position
+`
+
+func (q *Queries) ListPollTallyObservationCounts(ctx context.Context, observationID string) ([]PollTallyObservationCount, error) {
+	rows, err := q.db.QueryContext(ctx, listPollTallyObservationCounts, observationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PollTallyObservationCount{}
+	for rows.Next() {
+		var i PollTallyObservationCount
+		if err := rows.Scan(&i.ObservationID, &i.Position, &i.Votes); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

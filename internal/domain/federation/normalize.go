@@ -252,7 +252,8 @@ func (n normalizer) ref(v any, container IRI) (Ref, error) {
 }
 
 func (n normalizer) poll(o object) *Poll {
-	p := &Poll{EndTime: n.time(o.get("endTime")), Closed: n.time(o.get("closed")), VotersCount: integer(o.get("votersCount"))}
+	// The end of a poll is in the future until it closes, so it is not clamped to now.
+	p := &Poll{EndTime: parseTime(o.get("endTime")), Closed: n.time(o.get("closed")), VotersCount: integer(o.get("votersCount"))}
 	choices := o.get("oneOf")
 	if choices == nil {
 		choices = o.get("anyOf")
@@ -274,6 +275,15 @@ func (n normalizer) poll(o object) *Poll {
 
 // time reads an RFC 3339 timestamp; a future one is clamped to now, a malformed one is zero.
 func (n normalizer) time(v any) time.Time {
+	t := parseTime(v)
+	if t.After(n.now) {
+		return n.now
+	}
+	return t
+}
+
+// parseTime reads an RFC 3339 timestamp in UTC; a malformed one is zero.
+func parseTime(v any) time.Time {
 	s, ok := v.(string)
 	if !ok {
 		return time.Time{}
@@ -281,9 +291,6 @@ func (n normalizer) time(v any) time.Time {
 	t, err := time.Parse(time.RFC3339, strings.TrimSpace(s))
 	if err != nil {
 		return time.Time{}
-	}
-	if t.After(n.now) {
-		return n.now
 	}
 	return t.UTC()
 }

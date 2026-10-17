@@ -1314,3 +1314,73 @@ CREATE TABLE instance_health (
   last_failure_day TEXT NOT NULL CHECK (length(last_failure_day) IN (0, 8))
 ) STRICT;
 CREATE INDEX instance_health_state ON instance_health (state);
+
+-- ---------------------------------------------------------------------------------------------
+-- content: custom emoji and polls of statuses (data-model §4.4). Owned by internal/app/content.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a custom emoji, unique by its shortcode on a domain ('' for this instance). uri is
+-- the id of a remote emoji's Emoji object.
+CREATE TABLE custom_emojis (
+  id TEXT NOT NULL PRIMARY KEY,
+  shortcode TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  uri TEXT,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX custom_emojis_shortcode_domain ON custom_emojis (shortcode, domain);
+CREATE UNIQUE INDEX custom_emojis_uri ON custom_emojis (uri);
+
+-- Event (revision): the image of a custom emoji. The newest row is the current image.
+CREATE TABLE custom_emoji_images (
+  id TEXT NOT NULL PRIMARY KEY,
+  emoji_id TEXT NOT NULL,
+  media_id TEXT NOT NULL,
+  revised_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX custom_emoji_images_emoji_id_id ON custom_emoji_images (emoji_id, id DESC);
+
+-- Event (child of a revision): the poll of a status revision (FR-112). closes_at is NULL for a
+-- poll without an end.
+CREATE TABLE polls (
+  id TEXT NOT NULL PRIMARY KEY,
+  revision_id TEXT NOT NULL,
+  multiple INTEGER NOT NULL CHECK (multiple IN (0, 1)),
+  closes_at INTEGER
+) STRICT;
+CREATE UNIQUE INDEX polls_revision_id ON polls (revision_id);
+
+-- Event (child of a poll): one choice of a poll.
+CREATE TABLE poll_options (
+  poll_id TEXT NOT NULL,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  title TEXT NOT NULL,
+  PRIMARY KEY (poll_id, position)
+) STRICT;
+
+-- Event: the counts of a remote poll as its server reported them (in a Create or an Update).
+CREATE TABLE poll_tally_observations (
+  id TEXT NOT NULL PRIMARY KEY,
+  poll_id TEXT NOT NULL,
+  voters_count INTEGER CHECK (voters_count >= 0),
+  observed_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX poll_tally_observations_poll_id_id ON poll_tally_observations (poll_id, id DESC);
+
+-- Event (child of an observation): the votes of one choice.
+CREATE TABLE poll_tally_observation_counts (
+  observation_id TEXT NOT NULL,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  votes INTEGER NOT NULL CHECK (votes >= 0),
+  PRIMARY KEY (observation_id, position)
+) STRICT;
+
+-- Projection: the votes of each choice of a poll, from its newest observation (remote polls).
+-- voters_count is NULL when the server did not report it.
+CREATE TABLE poll_tallies (
+  poll_id TEXT NOT NULL,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  votes INTEGER NOT NULL CHECK (votes >= 0),
+  voters_count INTEGER CHECK (voters_count >= 0),
+  PRIMARY KEY (poll_id, position)
+) STRICT;

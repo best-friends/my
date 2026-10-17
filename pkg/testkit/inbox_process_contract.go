@@ -692,6 +692,23 @@ var inboxOrderCases = []inboxOrderCase{
 		rows: noteRows(inboxAlice+"/notes/1", inboxAlice+"/notes/2"),
 		want: inboxNoteRows{Live: []federation.IRI{inboxAlice + "/notes/2"}, Gone: []federation.IRI{inboxAlice + "/notes/1"}},
 	},
+	{
+		name:       "RemoteStatusCreateUpdateDelete",
+		activities: remoteStatusActivities("create", "update-1", "delete"),
+		wire:       wireStatusHandlers,
+		rows:       remoteStatusRows(inboxAlice + "/notes/1"),
+		want:       inboxStatusRows{Live: []inboxLiveStatus{}, Gone: []federation.IRI{inboxAlice + "/notes/1"}},
+	},
+	{
+		name:       "RemoteStatusCreateAndUpdates",
+		activities: remoteStatusActivities("create", "update-1", "update-2"),
+		wire:       wireStatusHandlers,
+		rows:       remoteStatusRows(inboxAlice + "/notes/1"),
+		want: inboxStatusRows{
+			Live: []inboxLiveStatus{{URI: inboxAlice + "/notes/1", HTML: "<p>update-2</p>", RevisedAt: remoteOrderPublished.Add(2 * time.Minute)}},
+			Gone: []federation.IRI{},
+		},
+	},
 }
 
 // inboxOrderAndDuplicates runs every inboxOrderCases case in each of inboxSequences, each on a
