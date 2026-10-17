@@ -858,7 +858,9 @@ export interface MessageArgs {
   "server:errors.request_too_large": {};
   /** You cannot do this to your own account. */
   "server:errors.self_relationship": {};
-  /** This document is served only to requests with a valid HTTP signature. */
+  /** The service is temporarily unavailable. Please try again later. */
+  "server:errors.service_unavailable": {};
+  /** This request needs a valid HTTP signature. */
   "server:errors.signature_required": {};
   /** The post created with this Idempotency-Key has been deleted. */
   "server:errors.status.already_deleted": {};
@@ -902,6 +904,8 @@ export interface MessageArgs {
   "server:errors.unauthenticated": {};
   /** The request cannot be processed. */
   "server:errors.unprocessable": {};
+  /** The request body has an unsupported content type. */
+  "server:errors.unsupported_media_type": {};
   /** {name} must be an image that you uploaded and that has finished processing. */
   "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */

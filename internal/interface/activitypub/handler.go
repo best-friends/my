@@ -64,6 +64,8 @@ type Options struct {
 	Accounts Accounts
 	Objects  Objects
 	Graph    Graph
+	// Inbox receives the activities POSTed to the inboxes; nil serves no inbox.
+	Inbox Inbox
 	// HTML serves the web client's page for profile pages (/@alice) and other single-segment
 	// paths when the request does not ask for ActivityPub; nil answers 404.
 	HTML http.Handler
@@ -118,6 +120,10 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathNodeInfo, http.HandlerFunc(h.nodeInfo))
 	r.Handle("GET "+actorsPrefix+"{id}", http.HandlerFunc(h.actor))
 	r.Handle("GET "+actorsPrefix+"{id}/{collection}", http.HandlerFunc(h.collection))
+	if h.o.Inbox != nil {
+		r.Handle("POST "+sharedInboxPath, http.HandlerFunc(h.sharedInbox))
+		r.Handle("POST "+actorsPrefix+"{id}/"+collInbox, http.HandlerFunc(h.actorInbox))
+	}
 	r.Handle("GET "+objectsPrefix+"{id}", http.HandlerFunc(h.object))
 	r.Handle("GET "+objectsPrefix+"{id}/"+activitySegment, http.HandlerFunc(h.object))
 	// A wildcard cannot share a path segment with "@", so every single-segment GET that no

@@ -795,9 +795,16 @@ func (l *Localizer) ServerErrorsSelfRelationship() string {
 	return l.format("server:errors.self_relationship", nil)
 }
 
-// ServerErrorsSignatureRequired formats "server:errors.signature_required". Error title for HTTP 401 when the instance uses authorized fetch and an ActivityPub GET of an object or a collection carries no HTTP signature that verifies. Read by other servers' operators.
+// ServerErrorsServiceUnavailable formats "server:errors.service_unavailable". Error title for HTTP 503 when the server cannot handle the request for now, e.g. another server it needs to reach is not responding.
 //
-//	en: This document is served only to requests with a valid HTTP signature.
+//	en: The service is temporarily unavailable. Please try again later.
+func (l *Localizer) ServerErrorsServiceUnavailable() string {
+	return l.format("server:errors.service_unavailable", nil)
+}
+
+// ServerErrorsSignatureRequired formats "server:errors.signature_required". Error title for HTTP 401 when an ActivityPub request carries no HTTP signature that verifies: a POST to an inbox, or a GET of an object or a collection when the instance uses authorized fetch. Read by other servers' operators.
+//
+//	en: This request needs a valid HTTP signature.
 func (l *Localizer) ServerErrorsSignatureRequired() string {
 	return l.format("server:errors.signature_required", nil)
 }
@@ -947,6 +954,13 @@ func (l *Localizer) ServerErrorsUnauthenticated() string {
 //	en: The request cannot be processed.
 func (l *Localizer) ServerErrorsUnprocessable() string {
 	return l.format("server:errors.unprocessable", nil)
+}
+
+// ServerErrorsUnsupportedMediaType formats "server:errors.unsupported_media_type". Error title for HTTP 415 when a request body is not in a format the endpoint accepts.
+//
+//	en: The request body has an unsupported content type.
+func (l *Localizer) ServerErrorsUnsupportedMediaType() string {
+	return l.format("server:errors.unsupported_media_type", nil)
 }
 
 // ServerErrorsUnusableImage formats "server:errors.unusable_image". Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated).

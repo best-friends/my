@@ -26,8 +26,8 @@ var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89a
 // strictly, so a UUID in another case or form does not name anything.
 func validID(s string) bool { return uuidPattern.MatchString(s) }
 
-// Collections of an actor, the last path segment under {actor}/ (ADR-0018). The inbox is
-// named in actor documents but not served yet.
+// Collections of an actor, the last path segment under {actor}/ (ADR-0018). The inbox only
+// takes POSTs.
 const (
 	collInbox       = "inbox"
 	collOutbox      = "outbox"
@@ -37,8 +37,11 @@ const (
 	collFeaturedTag = "featured-tags"
 )
 
+// sharedInboxPath is the path of the instance's shared inbox.
+const sharedInboxPath = "/ap/inbox"
+
 // sharedInboxURI returns the shared inbox of the instance on host.
-func sharedInboxURI(host string) string { return "https://" + host + "/ap/inbox" }
+func sharedInboxURI(host string) string { return "https://" + host + sharedInboxPath }
 
 // profileURL returns the human-readable profile URL of a local username on host.
 func profileURL(host, username string) string { return "https://" + host + "/@" + username }

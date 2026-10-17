@@ -451,8 +451,12 @@
     "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ḓǿǿ ŧħīş ŧǿǿ ẏǿǿŭŭř ǿǿẇƞ ȧȧƈƈǿǿŭŭƞŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.service_unavailable": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽīƈḗḗ īş ŧḗḗḿƥǿǿřȧȧřīŀẏ ŭŭƞȧȧṽȧȧīŀȧȧƀŀḗḗ. Ƥŀḗḗȧȧşḗḗ ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.signature_required": {
-    "defaultMessage": "[Ŧħīş ḓǿǿƈŭŭḿḗḗƞŧ īş şḗḗřṽḗḗḓ ǿǿƞŀẏ ŧǿǿ řḗḗɋŭŭḗḗşŧş ẇīŧħ ȧȧ ṽȧȧŀīḓ ĦŦŦƤ şīɠƞȧȧŧŭŭřḗḗ.]",
+    "defaultMessage": "[Ŧħīş řḗḗɋŭŭḗḗşŧ ƞḗḗḗḗḓş ȧȧ ṽȧȧŀīḓ ĦŦŦƤ şīɠƞȧȧŧŭŭřḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.status.already_deleted": {
@@ -537,6 +541,10 @@
   },
   "errors.unprocessable": {
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ƥřǿǿƈḗḗşşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unsupported_media_type": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƀǿǿḓẏ ħȧȧş ȧȧƞ ŭŭƞşŭŭƥƥǿǿřŧḗḗḓ ƈǿǿƞŧḗḗƞŧ ŧẏƥḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.unusable_image": {

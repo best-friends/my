@@ -90,23 +90,26 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 | --- | --- | --- |
 | 1 | `Content-Type` が `application/activity+json`、`application/ld+json`（AS2 のプロファイル付き）、`application/json` のどれか | `415` |
 | 2 | 本文を 1 MiB まで読む（`http.MaxBytesReader`、ADR-0019 §5） | `413` |
-| 3 | IP 単位のレート制限（ADR-0019 §5） | `429` + `Retry-After` |
+| 3 | IP 単位のレート制限（ADR-0019 §5。1,000 / 5 分、IPv6 は /64 単位） | `429` + `Retry-After` |
 | 4 | 署名ヘッダを解析し、`keyId` のホストを得る | `401`（署名なし）/ `400`（解析不能） |
 | 5 | `keyId` のホストのドメイン単位の処分（`federation` の制限、§11） | `403` |
-| 6 | ドメイン単位のレート制限（`keyId` のホスト） | `429` |
-| 7 | ダイジェストの照合 | `401` |
-| 8 | 本文の JSON から `id`・`type`・`actor`・`object`（の `id`）だけを読む | `400` |
+| 6 | ドメイン単位のレート制限（`keyId` のホスト。2,000 / 5 分） | `429` + `Retry-After` |
+| 7 | ダイジェストの照合と、鍵の要らない検査（必須の対象・時間窓・宣言されたアルゴリズム。`SignatureVerifier.Check`） | `401` + `Accept-Signature` |
+| 8 | 本文の JSON から `id`・`type`・`actor`・`object`（の `id`）だけを読む（`federation.ReadEnvelope`）。`type` と `https` の `actor` が必須で、IRI は 2,048 バイト、`type` は 255 バイトまで | `400` |
 | 9 | 未知の Actor の自分自身の `Delete` / `Update`（`actor == object`、`accounts (uri)` に無い）なら、鍵を取りに行かずに捨てる（ADR-0019 §7） | `202` |
 | 10 | 鍵の解決（未知・期限切れなら Actor を取得。5 秒で打ち切る） | `401`（取得できない）/ `503`（取得先がサーキットブレーカーで止まっている） |
-| 11 | 署名の検証（ADR-0032 の必須の対象・時間窓） | `401` + `Accept-Signature` |
+| 11 | 署名の検証（ADR-0032。保存した鍵で検証できなければ鍵を取り直して 1 回だけ再検証する） | `401` + `Accept-Signature` |
 | 12 | 署名者と `actor` の照合。一致しなければジョブに `trust = refetch` を付ける | — |
 | 13 | 1 つの短いトランザクションで、`received_activities` に `ON CONFLICT DO NOTHING` で挿入し、行が増えたときだけ `received_activity_documents` と `federation.inbox` ジョブ（`queue.Outbox`）を書く | — |
 | 14 | 署名者のドメインの `instance_health` を `available` に戻す（§7.3） | — |
 | 15 | `202 Accepted` | — |
 
-- `id` の無いアクティビティは、`actor` と本文の SHA-256 から `urn:my:digest:<hex>` を合成して重複排除のキーにします（[data-model §2.2](data-model.md#22-冪等キーと一意制約)）。
-- `id` のホストが `actor` のホストと異なるアクティビティは、`trust = refetch` にします。
+- `id` の無いアクティビティは、`actor`・改行・受け取った本文をつないだ SHA-256 の 16 進表記から `urn:my:digest:<hex>` を合成して重複排除のキーにします（[data-model §2.2](data-model.md#22-冪等キーと一意制約)）。
+- `id` のホストが `actor` のホストと異なるアクティビティと、鍵の持ち主（`owner`）が `keyId` のホストに無いアクティビティは、`trust = refetch` にします。
 - 鍵の取得はトランザクションの外で行います（ADR-0003）。取得した Actor の書き込みは、受信の記録とは別の短いトランザクションです。
+- 手順 1・2 と、個人の inbox の宛先の確認（404）は `internal/interface/activitypub` が、手順 3〜14 は `federation.Inbox.Receive` が行います。拒否は `InboxRejection`（`Status`、`429` の `Retry-After`、`401` の `Accept-Signature`）で返します。レート制限のストアが使えないときは、制限を掛けずに通します。
+- 受信の記録は `InboxRepository`（`received_activities` と `received_activity_documents`）に書きます。コントラクトテストは `testkit.InboxContract` です。
+- 個人の inbox と shared inbox は同じ記録をします。誰宛てかはアクティビティの宛先が決めます。
 
 ### 3.2 非同期の部分
 

@@ -17,10 +17,11 @@ import (
 )
 
 // federationRepository is what the database adapters provide to the federation module: the
-// outbound side and the remote servers seen.
+// outbound side, the remote servers seen, and the received activities.
 type federationRepository interface {
 	federation.Repository
 	federation.InstanceRepository
+	federation.InboxRepository
 }
 
 // newHTMLSanitizer returns the sanitizer of remote HTML (ADR-0019 §2).

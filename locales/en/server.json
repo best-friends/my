@@ -448,12 +448,16 @@
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
   "errors.signature_required": {
-    "defaultMessage": "This document is served only to requests with a valid HTTP signature.",
-    "description": "Error title for HTTP 401 when the instance uses authorized fetch and an ActivityPub GET of an object or a collection carries no HTTP signature that verifies. Read by other servers' operators."
+    "defaultMessage": "This request needs a valid HTTP signature.",
+    "description": "Error title for HTTP 401 when an ActivityPub request carries no HTTP signature that verifies: a POST to an inbox, or a GET of an object or a collection when the instance uses authorized fetch. Read by other servers' operators."
   },
   "errors.self_relationship": {
     "defaultMessage": "You cannot do this to your own account.",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
+  },
+  "errors.service_unavailable": {
+    "defaultMessage": "The service is temporarily unavailable. Please try again later.",
+    "description": "Error title for HTTP 503 when the server cannot handle the request for now, e.g. another server it needs to reach is not responding."
   },
   "errors.status.already_deleted": {
     "defaultMessage": "The post created with this Idempotency-Key has been deleted.",
@@ -538,6 +542,10 @@
   "errors.unprocessable": {
     "defaultMessage": "The request cannot be processed.",
     "description": "API error title for HTTP 422; the detail says what is wrong with the request."
+  },
+  "errors.unsupported_media_type": {
+    "defaultMessage": "The request body has an unsupported content type.",
+    "description": "Error title for HTTP 415 when a request body is not in a format the endpoint accepts."
   },
   "errors.unusable_image": {
     "defaultMessage": "{name} must be an image that you uploaded and that has finished processing.",
