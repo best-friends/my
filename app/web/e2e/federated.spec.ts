@@ -103,6 +103,9 @@ test.describe("the federated timeline while the server serves it", () => {
     // Where focus goes after a navigation is the shell's, and e2e/shell.spec.ts checks it.
     const heading = page.getByRole("heading", { level: 1 });
     await expect(link).toHaveAttribute("aria-current", "page");
+    // The address changes before the new page renders (the router keeps the old one during the transition), so
+    // the heading is read once the timeline's feed is there; the home page without a session has none.
+    await expect(page.getByRole("feed")).toBeVisible();
     const name = (await heading.textContent()) ?? "";
     const feed = page.getByRole("feed", { name });
     await expect(feed.getByRole("article")).toHaveCount(3);
