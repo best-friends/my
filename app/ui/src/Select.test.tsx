@@ -89,4 +89,22 @@ describe("Select", () => {
     );
     expect(screen.getByRole("button", { name: /Language/ })).toHaveAccessibleDescription("Choose a language.");
   });
+
+  it("names an option by its label and describes it by its description", async () => {
+    const user = userEvent.setup();
+    render(
+      <Select label="Time zone">
+        <SelectItem id="America/New_York" textValue="Eastern Time" description="America/New_York">
+          Eastern Time
+        </SelectItem>
+        <SelectItem id="America/Detroit" textValue="Eastern Time" description="America/Detroit">
+          Eastern Time
+        </SelectItem>
+      </Select>,
+    );
+    await user.click(screen.getByRole("button", { name: /Time zone/ }));
+    const options = await screen.findAllByRole("option", { name: "Eastern Time" });
+    expect(options[0]).toHaveAccessibleDescription("America/New_York");
+    expect(options[1]).toHaveAccessibleDescription("America/Detroit");
+  });
 });
