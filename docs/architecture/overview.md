@@ -174,7 +174,7 @@ cmd/
 internal/
   domain/<module>/   # 純粋なドメイン（identity, account, content, graph, ...）
   app/<module>/      # ユースケースとポート定義
-  app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator / KeyManager / KeyValueStore / Mailer）、UUIDv7 ヘルパー、Sealer、RateLimiter
+  app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator / KeyManager / KeyValueStore / Mailer / HTMLSanitizer）、UUIDv7 ヘルパー、Sealer、RateLimiter
   app/uow/           # UnitOfWork ポート、トランザクションのリトライ、同期 projector の登録先
   app/queue/         # ジョブキューのポート、ハンドラの登録先、リトライ方針、pull runner、プロセス内 Scheduler
   app/blob/          # BlobStore ポートとキーの構文
@@ -196,6 +196,7 @@ internal/
     mail/{none,smtp,ses}/
     system/          # Clock / IDGenerator の本番実装（システム時計・UUIDv7）
     keymanager/local/ # KeyManager の実装（設定の KEK。KMS アダプタは後続）
+    htmlsanitizer/   # HTMLSanitizer の実装（bluemonday。リモート HTML の許可リスト。federation.md §5）
   platform/          # 設定、composition root、ログ、HTTP サーバー
   i18n/              # メッセージ整形・ロケール解決（型付きアクセサは tools/i18n が生成）
 pkg/
