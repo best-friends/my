@@ -180,6 +180,25 @@ func auditRecordsOperations(t *testing.T, e *auditEnv) {
 	if n := len(e.list(t, appmoderation.AuditQuery{}, 10)); n != 5 {
 		t.Errorf("audit log after the failure = %d entries, want 5", n)
 	}
+
+	// An action on an account and its lift, once.
+	e.clock.Advance(time.Second)
+	acted, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+		TargetAccountID: e.remote, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategorySpam, IssuedByUserID: "mod-2",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.clock.Advance(time.Second)
+	for _, by := range []string{"mod-1", "mod-2"} {
+		if err := e.svc.LiftAccountAction(ctx, acted.ID, by, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	checkAudit(t, e.list(t, appmoderation.AuditQuery{TargetKind: moderation.AuditTargetAccount, TargetID: e.remote}, 10), []auditWant{
+		{moderation.AuditActorUser, "mod-1", moderation.AuditAccountActionLifted, moderation.AuditTargetAccount, e.remote, "@bob@remote.example", acted.ID, e.clock.Now()},
+		{moderation.AuditActorUser, "mod-2", moderation.AuditAccountActionIssued, moderation.AuditTargetAccount, e.remote, "@bob@remote.example", acted.ID, acted.IssuedAt},
+	})
 }
 
 func auditRollsBack(t *testing.T, e *auditEnv) {

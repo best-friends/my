@@ -211,3 +211,13 @@ func accessTokenFromRow(row postgresgen.GetAccessTokenByAccessHashRow) identity.
 	}
 	return t
 }
+
+// RevokeTokensOfUser implements identity.Repository.
+func (r *IdentityRepository) RevokeTokensOfUser(ctx context.Context, tx uow.Tx, userID string, reason identity.TokenRevocationReason, at time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.RevokeTokensOfUser(ctx, postgresgen.RevokeTokensOfUserParams{Reason: string(reason), RevokedAt: at, UserID: userID})
+	return wrap(err, "revoke the tokens of a user")
+}

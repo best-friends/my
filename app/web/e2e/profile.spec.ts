@@ -6,7 +6,7 @@
 // role and position.
 import type { Page } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
 
 type Account = components["schemas"]["Account"];
 type Relationship = components["schemas"]["Relationship"];
@@ -49,6 +49,16 @@ const bob: Account = {
   following_count: 1,
   avatar_url: avatar,
   header_url: header,
+};
+
+/** An account with a right-to-left name, among left-to-right ones in a list. */
+const layla: Account = {
+  ...alice,
+  id: "0192f0c4-7a8e-7000-8000-000000000004",
+  username: "layla",
+  acct: "layla",
+  display_name: "ليلى",
+  url: "https://my.example/@layla",
 };
 
 function post(n: number): Status {
@@ -102,7 +112,9 @@ async function signedInServer(page: Page) {
   await page.route(`**/api/v1/accounts/${bob.id}/statuses*`, (route) =>
     route.fulfill(json({ items: [post(1), post(2), { ...post(3), boost: post(30), content: "" }] })),
   );
-  await page.route(`**/api/v1/accounts/${bob.id}/followers*`, (route) => route.fulfill(json({ accounts: [alice, { ...bob, id: "0192f0c4-7a8e-7000-8000-000000000003" }] })));
+  await page.route(`**/api/v1/accounts/${bob.id}/followers*`, (route) =>
+    route.fulfill(json({ accounts: [alice, layla, { ...bob, id: "0192f0c4-7a8e-7000-8000-000000000003" }] })),
+  );
   for (const action of ["follow", "unfollow", "mute", "unmute", "block", "unblock"]) {
     await page.route(`**/api/v1/accounts/${bob.id}/${action}`, (route) => {
       changes.push(action);
@@ -248,10 +260,34 @@ test.describe("the followers of an account", () => {
 
   test("link to the followers' profiles, pass axe and do not scroll sideways", async ({ page, makeAxeBuilder }) => {
     const links = page.getByRole("main").getByRole("list").getByRole("link");
-    await expect(links).toHaveCount(2);
+    await expect(links).toHaveCount(3);
     await expect(links.first()).toHaveAttribute("href", "/@alice");
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+  });
+
+  test("line every name up with the page's start, whatever the direction of the name (G9)", async ({ page, locale }) => {
+    const names = page.getByRole("main").getByRole("list").getByRole("link").locator('span[dir="auto"]');
+    await expect(names).toHaveCount(3);
+    const pageDir = localeDir(locale ?? "en");
+    // How far each name's text starts from the start edge of its box, in the page's direction: 0 when the
+    // text lines up with the page's start, whether the name runs left to right or right to left.
+    const gaps = await names.evaluateAll(
+      (elements, dir) =>
+        elements.map((element) => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          const text = range.getBoundingClientRect();
+          const box = element.getBoundingClientRect();
+          return [element.textContent, Math.round(dir === "rtl" ? box.right - text.right : text.left - box.left)];
+        }),
+      pageDir,
+    );
+    expect(gaps).toEqual([
+      [alice.display_name, 0],
+      [layla.display_name, 0],
+      [bob.display_name, 0],
+    ]);
   });
 });
 

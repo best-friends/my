@@ -75,6 +75,10 @@ type AuditAction string
 // Audited operations. A new administrative operation adds its action here, to the schema's
 // CHECK, and to the API's enum, and emits it from its use case.
 const (
+	// AuditAccountActionIssued: an action on an account (moderation_actions).
+	AuditAccountActionIssued AuditAction = "account_action_issued"
+	// AuditAccountActionLifted: the lift of an action on an account (moderation_action_lifts).
+	AuditAccountActionLifted AuditAction = "account_action_lifted"
 	// AuditDomainActionIssued: an action on a domain (domain_moderation_actions).
 	AuditDomainActionIssued AuditAction = "domain_action_issued"
 	// AuditDomainActionLifted: the lift of an action on a domain.
@@ -108,6 +112,8 @@ var auditActions = []struct {
 	action AuditAction
 	target AuditTargetKind
 }{
+	{AuditAccountActionIssued, AuditTargetAccount},
+	{AuditAccountActionLifted, AuditTargetAccount},
 	{AuditDomainActionIssued, AuditTargetDomain},
 	{AuditDomainActionLifted, AuditTargetDomain},
 	{AuditReportAssigned, AuditTargetReport},

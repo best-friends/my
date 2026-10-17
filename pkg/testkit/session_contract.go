@@ -4,6 +4,7 @@ package testkit
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appidentity "github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/identity"
 )
@@ -251,5 +253,66 @@ func sessionRejectsInactiveAccounts(t *testing.T, e *accountEnv) {
 		if !errors.Is(err, appidentity.ErrInvalidCredentials) || err.Error() != wrongErr.Error() {
 			t.Fatalf("SignIn to a deactivated account = %v, want the wrong-password error %v", err, wrongErr)
 		}
+	}
+}
+
+// loginPolicy is an identity.LoginPolicy that forbids the accounts in it to log in.
+type loginPolicy map[string]bool
+
+func (p loginPolicy) LoginRestricted(_ context.Context, accountID string) (bool, error) {
+	return p[accountID], nil
+}
+
+// sessionModerationEndsLogins checks the login restriction (data-model §5.2): the policy keeps
+// a restricted account from signing in and from using its tokens, and revoking a user's
+// sessions and tokens ends those of that user only, once.
+func sessionModerationEndsLogins(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	reg := e.sessionUser(t)
+	signed := e.signIn(t, appidentity.SignInInput{})
+	tokens, _ := e.webTokensFor(t, reg.User.ID)
+	bob := e.register(t, "bob")
+	bobTokens, _ := e.webTokensFor(t, bob.User.ID)
+
+	policy := loginPolicy{reg.AccountID: true}
+	e.identity = e.newIdentityWith(func(d *appidentity.Deps) { d.Logins = policy })
+	_, wrongErr := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: "wrong password"})
+	if _, err := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: sessionPassword}); !errors.Is(err, appidentity.ErrInvalidCredentials) || err.Error() != wrongErr.Error() {
+		t.Errorf("SignIn while login is restricted = %v, want the wrong-password error %v", err, wrongErr)
+	}
+	if _, err := e.identity.AuthenticateBearer(ctx, tokens.AccessToken); !errors.Is(err, appidentity.ErrAccountUnavailable) {
+		t.Errorf("AuthenticateBearer while login is restricted = %v, want ErrAccountUnavailable", err)
+	}
+	if _, err := e.identity.AuthenticateBearer(ctx, bobTokens.AccessToken); err != nil {
+		t.Errorf("AuthenticateBearer of another user = %v", err)
+	}
+
+	revoke := func() {
+		t.Helper()
+		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			now := e.clock.Now()
+			if err := e.h.Identity.RevokeSessionsOfUser(ctx, tx, reg.User.ID, identity.RevokedModeration, now); err != nil {
+				return err
+			}
+			return e.h.Identity.RevokeTokensOfUser(ctx, tx, reg.User.ID, identity.TokenRevokedModeration, now)
+		})
+		if err != nil {
+			t.Fatalf("revoke the sessions and tokens of a user = %v", err)
+		}
+	}
+	revoke()
+	revoke() // revoking again changes nothing
+	e.wantInvalidSession(t, signed.Token, "a session revoked by moderation")
+	e.wantAccess(t, tokens.AccessToken, false, "a token revoked by moderation")
+	e.wantAccess(t, bobTokens.AccessToken, true, "another user's token")
+	if _, err := e.identity.RefreshWebClient(ctx, tokens.RefreshToken); err == nil {
+		t.Error("RefreshWebClient with a token revoked by moderation = nil, want an error")
+	}
+
+	// Once the restriction ends, the user signs in again.
+	delete(policy, reg.AccountID)
+	again := e.signIn(t, appidentity.SignInInput{})
+	if _, err := e.identity.Authenticate(ctx, again.Token); err != nil {
+		t.Errorf("Authenticate after the restriction ended = %v", err)
 	}
 }

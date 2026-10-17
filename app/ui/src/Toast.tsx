@@ -11,7 +11,7 @@ import { createContext, type ReactNode, use, useEffect, useRef, useState } from 
 import { Button } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { useAnnouncer } from "./Announcer";
-import { CloseIcon } from "./CloseIcon";
+import { CloseIcon } from "./Icons";
 
 export type ToastTone = "neutral" | "success" | "danger";
 
@@ -79,7 +79,7 @@ const toast = tv({
     ],
     dismiss: [
       "grid size-8 shrink-0 place-items-center rounded-md text-fg-muted outline-none data-focus-visible:focus-ring",
-      "data-hovered:bg-surface-sunken data-hovered:text-fg pointer-coarse:size-11",
+      "data-hovered:bg-surface-sunken data-hovered:text-fg pointer-coarse:size-11 [&>svg]:size-4",
     ],
   },
   variants: {

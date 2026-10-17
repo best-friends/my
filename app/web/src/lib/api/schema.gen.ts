@@ -1348,6 +1348,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/accounts/{id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the moderation actions on an account
+         * @description The actions that moderators took on an account (FR-703), newest first, lifted and
+         *     expired ones included unless `active` is set. An unknown account is a 404. Needs the
+         *     `manage_accounts` permission.
+         */
+        get: operations["listAccountActions"];
+        put?: never;
+        /**
+         * Take a moderation action on an account
+         * @description Records an action on an account (FR-703), in effect at once and until it expires or is
+         *     lifted; several actions on one account add up. On a local account: `warn` only tells
+         *     the account; `force_sensitive` shows its media as sensitive; `limit` makes its posts,
+         *     past ones included, followers-only and keeps them off the public timelines;
+         *     `restrict_posting` stops it posting, replying, boosting, and editing;
+         *     `restrict_interaction` stops it following, favouriting, boosting, and replying;
+         *     `disable_login` ends its sessions and tokens and stops it logging in; `suspend` does all
+         *     of these and hides its profile and posts from everyone else. A remote account takes
+         *     `limit`, `suspend`, and `force_sensitive`. Another kind, the instance actor, or a
+         *     `report_id` that is not a report of the account is a 422 naming `kind`, `id`, or
+         *     `report_id`; `ban`, `delete_statuses`, and `mark_statuses_sensitive` are not taken yet.
+         *     A text that is too long or contains U+0000 is a 422 naming it. An unknown account is a
+         *     404. Needs the `manage_accounts` permission.
+         */
+        post: operations["createAccountAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/account_actions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a moderation action on an account
+         * @description An unknown ID is a 404. Needs the `manage_accounts` permission.
+         */
+        get: operations["getAccountAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/account_actions/{id}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lift a moderation action on an account
+         * @description Ends the action's restrictions at once; those of other actions on the account stay.
+         *     Sessions and tokens that the action ended stay ended. Lifting a lifted action changes
+         *     nothing and keeps its first reason. A `reason` that is too long or contains U+0000 is a
+         *     422 naming `reason`. An unknown ID is a 404. Needs the `manage_accounts` permission.
+         */
+        post: operations["liftAccountAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/rules": {
         parameters: {
             query?: never;
@@ -2233,7 +2314,8 @@ export interface components {
          */
         AdminInstanceState: "available" | "unavailable";
         /**
-         * @description The kind of an audited operation, each on one kind of target. On a `domain`:
+         * @description The kind of an audited operation, each on one kind of target. On an `account`:
+         *     `account_action_issued`, `account_action_lifted`. On a `domain`:
          *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
          *     `report_unassigned`, `report_resolved`. On a `user` (a registration):
          *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
@@ -2241,7 +2323,7 @@ export interface components {
          *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
          * @enum {string}
          */
-        AdminAuditAction: "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -2263,8 +2345,8 @@ export interface components {
             action: components["schemas"]["AdminAuditAction"];
             target_kind: components["schemas"]["AdminAuditTargetKind"];
             /**
-             * @description The target: the ID of a report, a user, or a rule, the domain of a domain action, or
-             *     the key of a setting or a text.
+             * @description The target: the ID of an account, a report, a user, or a rule, the domain of a domain
+             *     action, or the key of a setting or a text.
              */
             target_id: string;
             /**
@@ -2403,11 +2485,101 @@ export interface components {
         ResolveReportRequest: {
             outcome: components["schemas"]["AdminReportOutcome"];
         };
+        /** @description A moderation action on an account (FR-703). */
+        AdminAccountAction: {
+            id: components["schemas"]["Id"];
+            /** @description The account the action is on. */
+            account_id: components["schemas"]["Id"];
+            kind: components["schemas"]["AdminAccountActionKind"];
+            reason_category: components["schemas"]["AdminAccountActionCategory"];
+            /** @description The reason shown to the account; omitted when there is none. */
+            public_reason?: string;
+            /** @description The moderators' note; omitted when there is none. */
+            private_note?: string;
+            /** @description The report the action follows from; omitted when there is none. */
+            report_id?: components["schemas"]["Id"];
+            /**
+             * @description `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
+             *     account's own server.
+             * @enum {string}
+             */
+            issuer: "moderator" | "system" | "remote";
+            /**
+             * @description The account of the moderator who took the action; omitted for the CLI and the
+             *     system.
+             */
+            issued_by_account_id?: components["schemas"]["Id"];
+            /** @description Whether the account is told of the action. */
+            notify_target: boolean;
+            state: components["schemas"]["AdminAccountActionState"];
+            /** Format: date-time */
+            issued_at: string;
+            /**
+             * Format: date-time
+             * @description When the action ends by itself; omitted for one that lasts until lifted.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When the action was lifted; omitted until it is.
+             */
+            lifted_at?: string;
+            /** @description Why the action was lifted; omitted until it is or when no reason was given. */
+            lift_reason?: string;
+        };
         /**
-         * @description A capability that a role grants. `manage_domains`: the health of remote servers and the
-         *     moderation actions on domains. `manage_reports`: the reports. `manage_rules`: the
-         *     instance rules. `manage_jobs`: the dead jobs of the job queue. The others guard no
-         *     client API operation yet.
+         * @description The kind of reason for an action.
+         * @enum {string}
+         */
+        AdminAccountActionCategory: "spam" | "legal" | "violation" | "other";
+        /**
+         * @description `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
+         *     posts. `force_sensitive`: every attachment is shown as sensitive. `limit`: every post is
+         *     followers-only and stays off the public timelines. `restrict_posting`: no posting.
+         *     `restrict_interaction`: no following, favouriting, boosting, or replying.
+         *     `disable_login`: no logging in. `suspend`: all of these, and the profile and posts are
+         *     hidden. `ban`: a suspension that never ends, with the deletion of the account.
+         * @enum {string}
+         */
+        AdminAccountActionKind: "warn" | "mark_statuses_sensitive" | "delete_statuses" | "force_sensitive" | "limit" | "restrict_posting" | "restrict_interaction" | "disable_login" | "suspend" | "ban";
+        /** @description A page of account actions, newest first. */
+        AdminAccountActionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAccountAction"][];
+        };
+        /**
+         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+         *     lifted it.
+         * @enum {string}
+         */
+        AdminAccountActionState: "active" | "expired" | "lifted";
+        /** @description A moderation action to take on an account. */
+        CreateAccountActionRequest: {
+            kind: components["schemas"]["AdminAccountActionKind"];
+            /** @default other */
+            reason_category: components["schemas"]["AdminAccountActionCategory"];
+            /** @description The reason shown to the account. */
+            public_reason?: string;
+            /** @description A note for the moderators only. */
+            private_note?: string;
+            /** @description The report of the account that the action follows from. */
+            report_id?: components["schemas"]["Id"];
+            /**
+             * @description Whether a local account is told of the action; ignored for a remote one.
+             * @default true
+             */
+            notify_target: boolean;
+            /** @description The seconds the action lasts; omitted, it lasts until it is lifted. */
+            expires_in?: number;
+        };
+        /** @description Why an action on an account is lifted. */
+        LiftAccountActionRequest: {
+            reason?: string;
+        };
+        /**
+         * @description A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
+         *     `manage_domains`: the health of remote servers and the moderation actions on domains.
+         *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
+         *     dead jobs of the job queue. The others guard no client API operation yet.
          * @enum {string}
          */
         Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
@@ -2571,6 +2743,16 @@ export interface components {
                 "application/json": components["schemas"]["AdminReport"];
             };
         };
+        /** @description The account action. */
+        AdminAccountAction: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminAccountAction"];
+            };
+        };
         /** @description The rule. */
         AdminRule: {
             headers: {
@@ -2603,6 +2785,10 @@ export interface components {
         DomainActionId: components["schemas"]["Id"];
         /** @description The ID of the report. */
         ReportId: components["schemas"]["Id"];
+        /** @description The ID of the account action. */
+        AccountActionId: components["schemas"]["Id"];
+        /** @description The ID of the account, local or remote. */
+        AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
         RuleId: components["schemas"]["Id"];
     };
@@ -4081,6 +4267,94 @@ export interface operations {
         };
         responses: {
             200: components["responses"]["AdminReport"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAccountActions: {
+        parameters: {
+            query?: {
+                /** @description Keep only the actions in effect now, neither lifted nor expired. */
+                active?: boolean;
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of account actions. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccountActionPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createAccountAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAccountActionRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminAccountAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAccountAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account action. */
+                id: components["parameters"]["AccountActionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminAccountAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    liftAccountAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account action. */
+                id: components["parameters"]["AccountActionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LiftAccountActionRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminAccountAction"];
             default: components["responses"]["Problem"];
         };
     };

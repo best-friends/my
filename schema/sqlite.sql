@@ -703,6 +703,7 @@ CREATE TABLE sessions (
   expires_at INTEGER NOT NULL
 ) STRICT;
 CREATE UNIQUE INDEX sessions_token_hash ON sessions (token_hash);
+CREATE INDEX sessions_user_id ON sessions (user_id);
 
 -- Event: a session ended before it expired.
 CREATE TABLE session_revocations (
@@ -785,6 +786,7 @@ CREATE TABLE oauth_access_tokens (
 CREATE UNIQUE INDEX oauth_access_tokens_access_token_hash ON oauth_access_tokens (access_token_hash);
 CREATE UNIQUE INDEX oauth_access_tokens_refresh_token_hash ON oauth_access_tokens (refresh_token_hash);
 CREATE INDEX oauth_access_tokens_family_id ON oauth_access_tokens (family_id);
+CREATE INDEX oauth_access_tokens_user_id ON oauth_access_tokens (user_id);
 
 -- Event: a token row (its access and refresh token) stopped working.
 CREATE TABLE oauth_token_revocations (
@@ -1622,9 +1624,10 @@ CREATE TABLE audit_log_entries (
   actor_kind TEXT NOT NULL CHECK (actor_kind IN ('user', 'cli', 'system', 'remote')),
   actor_user_id TEXT,
   action TEXT NOT NULL CHECK (action IN (
-    'domain_action_issued', 'domain_action_lifted', 'report_assigned', 'report_unassigned',
-    'report_resolved', 'registration_approved', 'registration_rejected', 'setting_changed',
-    'text_changed', 'rule_added', 'rule_revised', 'rule_moved', 'rule_retired'
+    'account_action_issued', 'account_action_lifted', 'domain_action_issued',
+    'domain_action_lifted', 'report_assigned', 'report_unassigned', 'report_resolved',
+    'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
+    'rule_added', 'rule_revised', 'rule_moved', 'rule_retired'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',

@@ -127,10 +127,17 @@ func (s *Service) accountLabel(ctx context.Context, id string) (string, error) {
 		return id, nil
 	case err != nil:
 		return "", err
-	case a.Local != nil:
-		return "@" + a.Local.Username, nil
-	case a.Handle != nil:
-		return "@" + a.Handle.Username + "@" + a.Handle.Domain, nil
 	}
-	return a.Account.URI, nil
+	return actorLabel(a), nil
+}
+
+// actorLabel returns the display name of an account for the audit log, as accountLabel does.
+func actorLabel(a appaccount.Actor) string {
+	switch {
+	case a.Local != nil:
+		return "@" + a.Local.Username
+	case a.Handle != nil:
+		return "@" + a.Handle.Username + "@" + a.Handle.Domain
+	}
+	return a.Account.URI
 }

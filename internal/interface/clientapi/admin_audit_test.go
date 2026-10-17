@@ -148,8 +148,10 @@ func TestListAuditLog(t *testing.T) {
 			t.Errorf("?%s = %d %v, want %v", query, res.StatusCode, auditIDs(got), want)
 		}
 	}
-	if q := f.queries[len(f.queries)-1]; q.ActorUserID != "" || q.TargetKind != moderation.AuditTargetReport || q.TargetID != reportOne {
-		t.Errorf("last query = %+v", q)
+	if !slices.ContainsFunc(f.queries, func(q appmoderation.AuditQuery) bool {
+		return q.ActorUserID == "" && q.TargetKind == moderation.AuditTargetReport && q.TargetID == reportOne
+	}) {
+		t.Errorf("queries = %+v, want one on the report", f.queries)
 	}
 	if !slices.ContainsFunc(f.queries, func(q appmoderation.AuditQuery) bool { return q.ActorUserID == "user-"+aliceAccountID }) {
 		t.Errorf("queries = %+v, want one by alice's user", f.queries)

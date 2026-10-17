@@ -188,15 +188,31 @@ func (s *Server) newProfile(ctx context.Context, a appaccount.Actor) (Account, e
 	return out, nil
 }
 
+// ProfileRestrictions reads whether moderation hides an account's profile from everyone but
+// itself (profile_view, data-model §5.2). *moderation.AccountPolicy implements it.
+type ProfileRestrictions interface {
+	ProfileHidden(ctx context.Context, accountID string) (bool, error)
+}
+
 // presentable reports whether an account may be shown: it is a user's account (not the
-// instance actor) and active, and, when blockCheck is set, it does not block the viewer. An
+// instance actor) and active, and, unless it is the viewer's own, moderation does not hide its
+// profile and, when blockCheck is set, it does not block the viewer. An
 // account that is not presentable is answered as if it did not exist, so that a blocked
 // viewer cannot tell it apart from an unknown one.
 func (s *Server) presentable(ctx context.Context, a appaccount.Actor, viewer *Viewer, blockCheck bool) (bool, error) {
 	if a.Account.ActorType == account.ActorApplication || !a.Lifecycle.Active() {
 		return false, nil
 	}
-	if !blockCheck || viewer == nil || viewer.AccountID == a.Account.ID {
+	if viewer != nil && viewer.AccountID == a.Account.ID {
+		return true, nil
+	}
+	if s.o.ProfileRestrictions != nil {
+		hidden, err := s.o.ProfileRestrictions.ProfileHidden(ctx, a.Account.ID)
+		if err != nil || hidden {
+			return false, err
+		}
+	}
+	if !blockCheck || viewer == nil {
 		return true, nil
 	}
 	blocked, err := s.o.Graph.IsBlocking(ctx, a.Account.ID, viewer.AccountID)
@@ -204,7 +220,8 @@ func (s *Server) presentable(ctx context.Context, a appaccount.Actor, viewer *Vi
 }
 
 // visibleAccount returns the account with an ID as the viewer may see it; ok is false when
-// there is none, it is not active, or it blocks the viewer (nil for an anonymous request).
+// there is none, it is not active, moderation hides its profile, or it blocks the viewer (nil
+// for an anonymous request).
 func (s *Server) visibleAccount(ctx context.Context, viewer *Viewer, id string) (appaccount.Actor, bool, error) {
 	return s.presentableByID(ctx, viewer, id, true)
 }

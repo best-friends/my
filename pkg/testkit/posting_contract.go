@@ -43,7 +43,8 @@ type PostingFactory func(t *testing.T, opts uow.Options) PostingHarness
 // posting with mentions, hashtags, and links rendered to HTML; mentions of remote accounts, the
 // unknown ones resolved before the transaction and within bounds; returning the same status for a
 // repeated Idempotency-Key, also under concurrency; the max_status_length setting; rejecting
-// invalid input; capping the visibility through the RestrictionPolicy; replies to statuses the
+// invalid input; capping the visibility and forbidding posts and replies through the
+// RestrictionPolicy; replies to statuses the
 // author may see; attaching only the author's own processed uploads; the default post language; editing into new revisions that move the head;
 // deleting into a tombstone that removes the status from the projections; and the emitted
 // domain events.
@@ -646,6 +647,14 @@ func postingRestrictions(t *testing.T, e *postingEnv) {
 	if _, err := e.content.Delete(ctx, alice, p.Status.ID); err != nil {
 		t.Errorf("Delete under the post restriction = %v, want allowed", err)
 	}
+
+	// The interact restriction forbids replies, not posts.
+	root := e.postText(t, e.user(t, "bob"), "root", content.VisibilityPublic)
+	e.restrictions.set(alice, appcontent.Restrictions{Interact: true})
+	if _, err := e.content.Create(ctx, appcontent.CreateInput{AuthorAccountID: alice, TextInput: appcontent.TextInput{Text: "re"}, Visibility: content.VisibilityPublic, InReplyToID: root.Status.ID}); !errors.Is(err, appcontent.ErrInteractionRestricted) {
+		t.Errorf("reply under the interact restriction = %v, want ErrInteractionRestricted", err)
+	}
+	e.postText(t, alice, "still posts", content.VisibilityPublic)
 }
 
 func postingReplies(t *testing.T, e *postingEnv) {

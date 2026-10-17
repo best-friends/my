@@ -113,6 +113,15 @@ Text takes its size from its role, never from the screen it is on
 `text-xl` and `text-3xl` have no role and are not used by screens. Names (`font-semibold`) are the only other weight;
 emphasis inside running text comes from the content, not from the UI.
 
+### Names in rows
+
+A user's name gets `dir="auto"` (Y10), which also turns `text-align: start` around for a right-to-left name.
+When the `dir="auto"` element is a block (a `p`, or a `span` inside a flex or grid row), it also takes
+`align-match-parent` (`text-align: match-parent`, with the `-webkit-` value Chromium needs), so it lines up with the page's
+start like the rows around it and only the text inside it runs right to left
+([G9](../../docs/architecture/web-client.md#162-文字)). Post bodies and content warnings keep their own direction's alignment.
+The utility is not named `text-*` because `tailwind-merge` would read that as a color and drop the element's color class.
+
 ## Spacing, radius, shadow
 
 - Spacing is Tailwind's 0.25rem step (`p-1` = 0.25rem, `gap-4` = 1rem), limited to `0.5`, `1`, `2`, `3`, `4`, `6`, `8` and `10`.
@@ -168,9 +177,22 @@ The kit gives every region of data the same four states
 | State | Component | Notes |
 | --- | --- | --- |
 | Empty | `EmptyState` | A heading of one short fact, a description of what appears here, and an action that leads on. `headingLevel` is one below the region's heading. |
-| Loading | `Skeleton` for the first page of a list, `Spinner` for a button or a small region | Never both in one region. The region carries `aria-busy` and one loading label. |
-| Error | The error state of the region | What happened, the reason, and "Try again". It replaces only the region; content already loaded stays. |
-| Offline | The app's offline bar | One `role="status"` bar from the app layout; regions show their own error only when a request fails. |
+| Loading | `PostSkeleton`, `AccountRowSkeleton`, `NotificationRowSkeleton` (or `Skeleton` shapes) for the first page of a list; `Spinner` for a button or a small region | Never both in one region. The region carries `aria-busy` and one loading label. |
+| Error | `RegionError` | What happened (`heading`), the reason (`reason`) and the retry button (`retryLabel`, `onRetry`, `isRetrying`). It replaces only the region; content already loaded stays. |
+| Offline | `OfflineBanner` | One `role="status"` bar from the app layout; regions show their own error only when a request fails. |
+
+- The skeleton rows are hidden from assistive technology (`aria-hidden`) as a whole, so a region that repeats them
+  still has only the one loading label it gives itself (a `VisuallyHidden` text, or a `Spinner`).
+  `PostSkeleton` and `NotificationRowSkeleton` have the padding, bottom border and container layout of `PostCard`;
+  `AccountRowSkeleton` has no border, because account lists separate their rows with `divide-y`.
+- `RegionError` is not a live region by default: a failure that came with the page is found by reading.
+  `alert` makes it `role="alert"`, only for the result of the user's own action, such as a retry that failed again
+  ([APG alert](https://www.w3.org/WAI/ARIA/apg/patterns/alert/)). Without `headingLevel` the message is a paragraph
+  (the failure of the next page of a list); with it, a heading one below the region's heading.
+- `OfflineBanner` is rendered once for the whole session, empty while `isOffline` is false, so that going offline is
+  announced (a live region announces only changes made after it is in the page). It sticks to the top edge
+  (`position: sticky`) and pads itself for `env(safe-area-inset-top)`, so the app renders it before any element that
+  already pads for that inset.
 
 ## The token check
 

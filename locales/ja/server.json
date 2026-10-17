@@ -367,6 +367,10 @@
     "defaultMessage": "アクセストークンにスコープ {scope} が必要です。",
     "description": "Detail of the HTTP 403 insufficient-scope API error. {scope} is the missing OAuth scope, e.g. read:accounts (not translated)."
   },
+  "errors.interaction_restricted": {
+    "defaultMessage": "現在、あなたのアカウントはフォロー・お気に入り・ブースト・返信ができません。",
+    "description": "Detail of the HTTP 403 API error when a moderator restricted the account from interacting with others (following, favouriting, boosting, replying)."
+  },
   "errors.internal": {
     "defaultMessage": "予期しないエラーが発生しました。しばらくしてからもう一度お試しください。",
     "description": "API error message for HTTP 500. Must not reveal internal details."

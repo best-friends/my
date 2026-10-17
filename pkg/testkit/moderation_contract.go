@@ -3,6 +3,7 @@
 package testkit
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/account"
@@ -28,15 +30,17 @@ type ModerationHarness struct {
 type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 
 // ModerationContract verifies the moderation repository of a database adapter through the
-// moderation use cases and moderation.FederationPolicy (federation.md §11): a domain action
-// restricts the domain and its subdomains until it expires or is lifted, a lift ends only its
-// own action's restrictions, actions on remote accounts restrict them and actions on local
-// accounts are refused, invalid actions are refused, each action is lifted once, every change
-// emits the restrictions in effect afterwards, a received report is filed once, open, with its
-// statuses and its comment cut to the limit, the domain actions list newest first with their
-// lifts and filters, the public list keeps only the limits and suspensions in effect without
-// their private notes, and moderators list, assign, and resolve reports. The accounts are
-// in-memory stand-ins.
+// moderation use cases, moderation.FederationPolicy (federation.md §11), and
+// moderation.AccountPolicy (data-model §5.3): a domain action restricts the domain and its
+// subdomains until it expires or is lifted, a lift ends only its own action's restrictions,
+// actions on remote accounts restrict them, each kind of action on a local account takes away
+// its capabilities until it ends and may name a report of the account only, kinds that do not
+// apply to an account are refused, invalid actions are refused, each action is lifted once,
+// every change emits the restrictions in effect afterwards, a received report is filed once,
+// open, with its statuses and its comment cut to the limit, the actions on domains and on
+// accounts list newest first with their lifts and filters, the public list keeps only the
+// limits and suspensions in effect without their private notes, and moderators list, assign,
+// and resolve reports. The accounts are in-memory stand-ins.
 func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -46,6 +50,8 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"DomainActionsCoverSubdomainsUntilTheyEnd", moderationDomainActions},
 		{"LiftEndsOnlyItsOwnAction", moderationLifts},
 		{"RemoteAccountActions", moderationAccountActions},
+		{"LocalAccountActions", moderationLocalAccountActions},
+		{"ListsAccountActions", moderationListsAccountActions},
 		{"RejectsInvalidActions", moderationRejectsInvalid},
 		{"RecordsEachLiftOnce", moderationLiftsOnce},
 		{"EmitsTheRestrictionsInEffect", moderationEmits},
@@ -60,16 +66,20 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 }
 
 type moderationEnv struct {
-	h       ModerationHarness
-	clock   *Clock
-	ids     *IDGenerator
-	actors  *stubActors
-	svc     *appmoderation.Service
-	policy  *appmoderation.FederationPolicy
-	events  *eventLog
-	remote  string
-	local   string
-	reports string
+	h      ModerationHarness
+	clock  *Clock
+	ids    *IDGenerator
+	actors *stubActors
+	svc    *appmoderation.Service
+	policy *appmoderation.FederationPolicy
+	// accounts is the AccountPolicy on the same repository.
+	accounts *appmoderation.AccountPolicy
+	events   *eventLog
+	remote   string
+	local    string
+	reports  string
+	// instance is the instance actor.
+	instance string
 }
 
 func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv {
@@ -88,7 +98,9 @@ func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv
 		UnitOfWork: h.UnitOfWork, Repository: h.Moderation, Accounts: e.actors, Clock: clock, IDs: ids,
 	})
 	e.policy = appmoderation.NewFederationPolicy(h.Moderation, clock)
-	e.remote, e.local, e.reports = ids.NewID(), ids.NewID(), ids.NewID()
+	e.accounts = appmoderation.NewAccountPolicy(h.Moderation, e.actors, clock)
+	e.remote, e.local, e.reports, e.instance = ids.NewID(), ids.NewID(), ids.NewID(), ids.NewID()
+	e.actors.set(appaccount.Actor{Account: account.Account{ID: e.instance, Domain: account.LocalDomain, ActorType: account.ActorApplication}})
 	e.actors.set(appaccount.Actor{Account: account.Account{ID: e.remote, Domain: "remote.example", URI: "https://remote.example/users/bob"}})
 	e.actors.set(appaccount.Actor{Account: account.Account{ID: e.local, Domain: account.LocalDomain}})
 	e.actors.set(appaccount.Actor{Account: account.Account{ID: e.reports, Domain: "remote.example", URI: "https://remote.example/actor"}})
@@ -183,22 +195,22 @@ func moderationAccountActions(t *testing.T, e *moderationEnv) {
 		}
 	}
 	suspended(e.remote, false)
-	a, err := e.svc.IssueRemoteAccountAction(ctx, appmoderation.AccountActionInput{
+	a, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
 		TargetAccountID: e.remote, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategorySpam, Duration: time.Hour,
 	})
 	if err != nil {
-		t.Fatalf("IssueRemoteAccountAction = %v", err)
+		t.Fatalf("IssueAccountAction = %v", err)
 	}
 	suspended(e.remote, true)
 	suspended(e.local, false)
 	e.clock.Advance(time.Hour)
 	suspended(e.remote, false)
 
-	a, err = e.svc.IssueRemoteAccountAction(ctx, appmoderation.AccountActionInput{
+	a, err = e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
 		TargetAccountID: e.remote, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategoryOther,
 	})
 	if err != nil {
-		t.Fatalf("IssueRemoteAccountAction = %v", err)
+		t.Fatalf("IssueAccountAction = %v", err)
 	}
 	suspended(e.remote, true)
 	if err := e.svc.LiftAccountAction(ctx, a.ID, "", "appealed"); err != nil {
@@ -210,18 +222,205 @@ func moderationAccountActions(t *testing.T, e *moderationEnv) {
 	}
 
 	for _, in := range []appmoderation.AccountActionInput{
-		{TargetAccountID: e.local, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategoryOther},
 		{TargetAccountID: e.remote, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategoryOther},
+		{TargetAccountID: e.remote, Kind: moderation.ActionDisableLogin, ReasonCategory: moderation.CategoryOther},
 		{TargetAccountID: e.remote, Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryOther},
+		{TargetAccountID: e.local, Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryOther},
+		{TargetAccountID: e.local, Kind: moderation.ActionDeleteStatuses, ReasonCategory: moderation.CategoryOther},
+		{TargetAccountID: e.local, Kind: moderation.ActionMarkStatusesSensitive, ReasonCategory: moderation.CategoryOther},
+		{TargetAccountID: e.instance, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategoryOther},
 	} {
-		if _, err := e.svc.IssueRemoteAccountAction(ctx, in); !errors.Is(err, appmoderation.ErrUnsupportedAction) {
-			t.Errorf("IssueRemoteAccountAction(%s of %s) = %v, want ErrUnsupportedAction", in.Kind, in.TargetAccountID, err)
+		if _, err := e.svc.IssueAccountAction(ctx, in); !errors.Is(err, appmoderation.ErrUnsupportedAction) {
+			t.Errorf("IssueAccountAction(%s of %s) = %v, want ErrUnsupportedAction", in.Kind, in.TargetAccountID, err)
 		}
 	}
 	missing := appmoderation.AccountActionInput{TargetAccountID: e.ids.NewID(), Kind: moderation.ActionLimit, ReasonCategory: moderation.CategoryOther}
-	if _, err := e.svc.IssueRemoteAccountAction(ctx, missing); !errors.Is(err, appmoderation.ErrAccountNotFound) {
-		t.Errorf("IssueRemoteAccountAction(missing) = %v, want ErrAccountNotFound", err)
+	if _, err := e.svc.IssueAccountAction(ctx, missing); !errors.Is(err, appmoderation.ErrAccountNotFound) {
+		t.Errorf("IssueAccountAction(missing) = %v, want ErrAccountNotFound", err)
 	}
+}
+
+// moderationLocalAccountActions checks the actions on a local account: each kind takes away
+// the capabilities of data-model §5.2 through the AccountPolicy until it expires or is lifted,
+// and an action may name a report of the account only.
+func moderationLocalAccountActions(t *testing.T, e *moderationEnv) {
+	ctx := t.Context()
+	check := func(when string, login, interact, profile bool, content appcontent.Restrictions) {
+		t.Helper()
+		for _, c := range []struct {
+			name string
+			f    func(context.Context, string) (bool, error)
+			want bool
+		}{
+			{"LoginRestricted", e.accounts.LoginRestricted, login},
+			{"InteractionRestricted", e.accounts.InteractionRestricted, interact},
+			{"ProfileHidden", e.accounts.ProfileHidden, profile},
+		} {
+			if got, err := c.f(ctx, e.local); err != nil || got != c.want {
+				t.Errorf("%s: %s = %v, %v; want %v", when, c.name, got, err, c.want)
+			}
+		}
+		got, err := e.accounts.Content().Restrictions(ctx, e.local)
+		if err != nil || got != content {
+			t.Errorf("%s: content restrictions = %+v, %v; want %+v", when, got, err, content)
+		}
+	}
+	issue := func(kind moderation.ActionKind, d time.Duration) moderation.Action {
+		t.Helper()
+		a, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+			TargetAccountID: e.local, Kind: kind, ReasonCategory: moderation.CategoryViolation, NotifyTarget: true, Duration: d,
+		})
+		if err != nil {
+			t.Fatalf("IssueAccountAction(%s) = %v", kind, err)
+		}
+		if !a.NotifyTarget || a.Issuer != moderation.IssuerModerator {
+			t.Errorf("IssueAccountAction(%s) = %+v, want a moderator's action that notifies the target", kind, a)
+		}
+		return a
+	}
+	lift := func(a moderation.Action) {
+		t.Helper()
+		if err := e.svc.LiftAccountAction(ctx, a.ID, "user-1", ""); err != nil {
+			t.Fatalf("LiftAccountAction(%s) = %v", a.Kind, err)
+		}
+	}
+	none := appcontent.Restrictions{}
+	check("before", false, false, false, none)
+
+	w := issue(moderation.ActionWarn, 0)
+	check("warn", false, false, false, none)
+	lift(w)
+
+	for _, c := range []struct {
+		kind                     moderation.ActionKind
+		login, interact, profile bool
+		content                  appcontent.Restrictions
+	}{
+		{moderation.ActionForceSensitive, false, false, false, appcontent.Restrictions{MediaSensitive: true}},
+		{moderation.ActionLimit, false, false, false, appcontent.Restrictions{Author: appcontent.AuthorRestrictions{VisibilityCeilingPrivate: true, PublicDiscovery: true}}},
+		{moderation.ActionRestrictPosting, false, false, false, appcontent.Restrictions{Post: true}},
+		{moderation.ActionRestrictInteraction, false, true, false, appcontent.Restrictions{Interact: true}},
+		{moderation.ActionDisableLogin, true, false, false, none},
+		{moderation.ActionSuspend, true, true, true, appcontent.Restrictions{Post: true, Interact: true, Author: appcontent.AuthorRestrictions{ProfileView: true}}},
+	} {
+		a := issue(c.kind, 0)
+		check(string(c.kind), c.login, c.interact, c.profile, c.content)
+		lift(a)
+		check(string(c.kind)+" lifted", false, false, false, none)
+	}
+
+	// Actions add up, and an expiring one ends by itself while the others stay.
+	posting := issue(moderation.ActionRestrictPosting, time.Hour)
+	login := issue(moderation.ActionDisableLogin, 0)
+	check("posting and login", true, false, false, appcontent.Restrictions{Post: true})
+	e.clock.Advance(time.Hour)
+	check("posting expired", true, false, false, none)
+	lift(login)
+	check("all ended", false, false, false, none)
+	if v, err := e.svc.AccountAction(ctx, posting.ID); err != nil || v.State != moderation.ActionExpired {
+		t.Errorf("AccountAction(expired) = %+v, %v", v, err)
+	}
+
+	// The restrictions of the account's domain apply to a remote account.
+	e.domainAction(t, "remote.example", moderation.DomainSuspend, 0)
+	if hidden, err := e.accounts.ProfileHidden(ctx, e.remote); err != nil || !hidden {
+		t.Errorf("ProfileHidden(remote of a suspended domain) = %v, %v; want true", hidden, err)
+	}
+	if hidden, err := e.accounts.ProfileHidden(ctx, e.local); err != nil || hidden {
+		t.Errorf("ProfileHidden(local) after a domain action = %v, %v; want false", hidden, err)
+	}
+
+	// An action may follow from a report of its account only.
+	r, _, err := e.svc.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
+		URI: "https://remote.example/flags/7", ReporterAccountID: e.reports, TargetAccountID: e.local,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+		TargetAccountID: e.local, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategorySpam, ReportID: r.ID,
+	})
+	if err != nil || a.ReportID != r.ID {
+		t.Errorf("IssueAccountAction(with its report) = %+v, %v", a, err)
+	}
+	for _, id := range []string{e.ids.NewID(), r.ID} {
+		in := appmoderation.AccountActionInput{TargetAccountID: e.remote, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam, ReportID: id}
+		if _, err := e.svc.IssueAccountAction(ctx, in); !errors.Is(err, appmoderation.ErrInvalidReportReference) {
+			t.Errorf("IssueAccountAction(report %s of another account) = %v, want ErrInvalidReportReference", id, err)
+		}
+	}
+	// A remote account is never notified.
+	ra, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+		TargetAccountID: e.remote, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam, NotifyTarget: true,
+	})
+	if err != nil || ra.NotifyTarget {
+		t.Errorf("IssueAccountAction(remote, notify) = %+v, %v; want no notice", ra, err)
+	}
+}
+
+// moderationListsAccountActions checks the moderators' list of the actions on accounts.
+func moderationListsAccountActions(t *testing.T, e *moderationEnv) {
+	ctx := t.Context()
+	issue := func(target string, kind moderation.ActionKind, d time.Duration) moderation.Action {
+		t.Helper()
+		a, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+			TargetAccountID: target, Kind: kind, ReasonCategory: moderation.CategoryOther, PublicReason: "public",
+			PrivateNote: "private", IssuedByUserID: "user-1", Duration: d,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		e.clock.Advance(time.Second)
+		return a
+	}
+	first := issue(e.local, moderation.ActionLimit, 0)
+	expiring := issue(e.local, moderation.ActionRestrictPosting, time.Hour)
+	remote := issue(e.remote, moderation.ActionSuspend, 0)
+	lifted := issue(e.local, moderation.ActionDisableLogin, 0)
+	if err := e.svc.LiftAccountAction(ctx, lifted.ID, "user-2", "appealed"); err != nil {
+		t.Fatal(err)
+	}
+	liftedAt := e.clock.Now()
+	ids := func(vs []appmoderation.AccountActionView) []string {
+		out := []string{}
+		for _, v := range vs {
+			out = append(out, v.Action.ID)
+		}
+		return out
+	}
+	list := func(f appmoderation.AccountActionFilter, limit int, want ...string) []appmoderation.AccountActionView {
+		t.Helper()
+		got, err := e.svc.AccountActions(ctx, f, limit)
+		if err != nil || !reflect.DeepEqual(ids(got), append([]string{}, want...)) {
+			t.Errorf("AccountActions(%+v, %d) = %v, %v; want %v", f, limit, ids(got), err, want)
+		}
+		return got
+	}
+	all := list(appmoderation.AccountActionFilter{}, 10, lifted.ID, remote.ID, expiring.ID, first.ID)
+	if len(all) == 4 {
+		want := moderation.Lift{ActionID: lifted.ID, LiftedByUserID: "user-2", Reason: "appealed", LiftedAt: liftedAt}
+		if v := all[0]; v.State != moderation.ActionLifted || v.Lift == nil || !reflect.DeepEqual(*v.Lift, want) || !reflect.DeepEqual(v.Action, lifted) {
+			t.Errorf("lifted action = %+v", v)
+		}
+		if v := all[2]; v.State != moderation.ActionActive || v.Lift != nil || !reflect.DeepEqual(v.Action, expiring) {
+			t.Errorf("expiring action = %+v", v)
+		}
+	}
+	list(appmoderation.AccountActionFilter{AccountID: e.local}, 10, lifted.ID, expiring.ID, first.ID)
+	list(appmoderation.AccountActionFilter{AccountID: e.local}, 2, lifted.ID, expiring.ID)
+	list(appmoderation.AccountActionFilter{AccountID: e.local, Before: expiring.ID}, 2, first.ID)
+	list(appmoderation.AccountActionFilter{AccountID: e.local, Active: true}, 10, expiring.ID, first.ID)
+	e.clock.Advance(time.Hour)
+	list(appmoderation.AccountActionFilter{Active: true}, 10, remote.ID, first.ID)
+	if _, err := e.svc.AccountAction(ctx, e.ids.NewID()); !errors.Is(err, appmoderation.ErrNotFound) {
+		t.Errorf("AccountAction(unknown) = %v, want ErrNotFound", err)
+	}
+}
+
+// AccountDomain implements appmoderation.AccountDomains.
+func (s *stubActors) AccountDomain(ctx context.Context, id string) (string, error) {
+	a, err := s.FindByID(ctx, id)
+	return a.Account.Domain, err
 }
 
 func moderationRejectsInvalid(t *testing.T, e *moderationEnv) {
@@ -262,8 +461,8 @@ func moderationRejectsInvalid(t *testing.T, e *moderationEnv) {
 		{ReasonCategory: moderation.CategorySpam, PrivateNote: strings.Repeat("a", moderation.MaxActionText+1)},
 	} {
 		in.TargetAccountID, in.Kind = e.remote, moderation.ActionLimit
-		if _, err := e.svc.IssueRemoteAccountAction(ctx, in); !errors.Is(err, moderation.ErrInvalidAction) {
-			t.Errorf("IssueRemoteAccountAction(%+v) = %v, want ErrInvalidAction", in, err)
+		if _, err := e.svc.IssueAccountAction(ctx, in); !errors.Is(err, moderation.ErrInvalidAction) {
+			t.Errorf("IssueAccountAction(%+v) = %v, want ErrInvalidAction", in, err)
 		}
 	}
 	e.checkDomain(t, "bad.example", false, false, false)
@@ -279,7 +478,7 @@ func moderationRejectsInvalid(t *testing.T, e *moderationEnv) {
 	}
 
 	// A lift with an invalid reason is refused and leaves the action in effect.
-	a, err := e.svc.IssueRemoteAccountAction(ctx, appmoderation.AccountActionInput{
+	a, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
 		TargetAccountID: e.remote, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam,
 	})
 	if err != nil {
@@ -298,7 +497,7 @@ func moderationRejectsInvalid(t *testing.T, e *moderationEnv) {
 func moderationLiftsOnce(t *testing.T, e *moderationEnv) {
 	ctx := t.Context()
 	d := e.domainAction(t, "bad.example", moderation.DomainSuspend, 0)
-	a, err := e.svc.IssueRemoteAccountAction(ctx, appmoderation.AccountActionInput{
+	a, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
 		TargetAccountID: e.remote, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategoryOther,
 	})
 	if err != nil {
@@ -365,7 +564,7 @@ func moderationEmits(t *testing.T, e *moderationEnv) {
 		t.Errorf("events after the lift = %+v, want %+v", events, want)
 	}
 
-	s, err := e.svc.IssueRemoteAccountAction(ctx, appmoderation.AccountActionInput{
+	s, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
 		TargetAccountID: e.remote, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategoryOther,
 	})
 	if err != nil {
@@ -459,10 +658,10 @@ func moderationListsDomainActions(t *testing.T, e *moderationEnv) {
 	}
 	all := list(appmoderation.DomainActionFilter{}, 10, lifted.ID, expiring.ID, first.ID)
 	if len(all) == 3 {
-		if v := all[0]; v.State != moderation.DomainActionLifted || v.Lift == nil || v.Lift.LiftedByUserID != "user-1" || !v.Lift.LiftedAt.Equal(liftedAt) || !reflect.DeepEqual(v.Action, lifted) {
+		if v := all[0]; v.State != moderation.ActionLifted || v.Lift == nil || v.Lift.LiftedByUserID != "user-1" || !v.Lift.LiftedAt.Equal(liftedAt) || !reflect.DeepEqual(v.Action, lifted) {
 			t.Errorf("lifted action = %+v", v)
 		}
-		if v := all[1]; v.State != moderation.DomainActionActive || v.Lift != nil || !reflect.DeepEqual(v.Action, expiring) {
+		if v := all[1]; v.State != moderation.ActionActive || v.Lift != nil || !reflect.DeepEqual(v.Action, expiring) {
 			t.Errorf("expiring action = %+v", v)
 		}
 	}
@@ -475,7 +674,7 @@ func moderationListsDomainActions(t *testing.T, e *moderationEnv) {
 	list(appmoderation.DomainActionFilter{Active: true}, 10, first.ID)
 
 	v, err := e.svc.DomainAction(ctx, expiring.ID)
-	if err != nil || v.State != moderation.DomainActionExpired || v.Lift != nil {
+	if err != nil || v.State != moderation.ActionExpired || v.Lift != nil {
 		t.Errorf("DomainAction(expired) = %+v, %v", v, err)
 	}
 	if _, err := e.svc.DomainAction(ctx, e.ids.NewID()); !errors.Is(err, appmoderation.ErrNotFound) {
