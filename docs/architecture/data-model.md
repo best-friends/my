@@ -492,6 +492,21 @@ flowchart LR
 | `content.status_revised` | 編集 | 投稿、新しい版 | `status_heads`、`status_mention_index` | `feed_entries`（言語）・`feed_tag_entries`・`feed_direct_recipients`、通知 `mention`（編集で増えたメンション） |
 | `content.status_deleted` | 削除 | 投稿、削除の行 | すべての投稿の投影から外す、`account_post_counters` 減算 | `feed_*` から外す、`notification_deleted_statuses` |
 
+#### リモート投稿のコマンド
+
+受信した `Create` / `Update` / `Delete` の投稿は、`federation` のハンドラ（[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）が、取り込み範囲（[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)）を判定してから `content` の公開 API（`IngestRemoteStatus` / `ReviseRemoteStatus` / `DeleteRemoteStatus`）を 1 つのトランザクションの中で呼びます。
+ローカル投稿と同じドメインイベント（`content.status_created` / `content.status_revised` / `content.status_deleted`）を発行するので、投稿の投影・`feed_*`・メンションの通知は同じ projector で更新されます。
+
+- **投稿の行**: `id` は `published` の時刻の UUIDv7（§1.3）、`is_local` は偽です。公開範囲は宛先から決め（`local` にはならない）、`url` は表示用 URL が `id` と異なるときだけ持ちます。
+  `conversation_uri` は、返信でなければ自分の `uri`、既知の親への返信なら親の `conversation_uri`、親が未知の返信なら NULL（スレッドが分からない）です。
+- **版**: 本文は言語ごとにサニタイズして `status_revision_bodies` に保存し、版の `language` は文書の最初の言語です（`contentMap` も `content` も無ければ `und` の空の本文 1 行）。CW はプレーンテキスト、`remote_status_revisions` に版を運んだアクティビティとサニタイザのポリシーの版を記録します。
+  メンションは `Mention` のタグと宛先のローカルの Actor で、未知のリモートの Actor は 1 つの投稿につき 5 件・合計 10 秒まで取得します。ハッシュタグは `tags` を正規化した名前で引き（無ければ作り）、添付は 4 件まで `remote_media` に宣言値を記録します。
+- **編集**: `updated`（無ければ `published`）が現在版の `revised_at` より新しいときだけ、`seq + 1` の版を作ります。古い `Update` と同じ `Update` の再処理は版を作りません。
+- **削除**: `status_deletions`（`origin = remote`）を記録します。削除済みの投稿の `Delete` は何もしません。
+- **カスタム絵文字**: リモートの絵文字の `domain` は作者のホスト、`uri` は `Emoji` の `id` です。画像は作者を所有者とする `remote_media` で、記録した画像と異なる URL が届いたら新しい `custom_emoji_images` の行にします。
+- **投票**: `Question` の選択肢（20 件まで、プレーンテキスト）を版の `polls` / `poll_options` に、受信した票数を `poll_tally_observations` に記録します。リモートの票は取り消されないので、合計が最新の観測より少ない観測（遅れて届いた古い集計）と同じ票数の観測は記録しません。どの順で `Update` が届いても、集計は最も多い票数になります。
+  観測を記録したらドメインイベント `content.poll_tally_observed` を発行し、同期 projector が `poll_tallies` を最新の観測に置き換えます。版を作らない `Update`（Mastodon が票数の変化で送る `Question` の `Update`）も、現在版の投票の観測を記録します。
+
 #### ブースト
 
 | テーブル | 分類 | カラム | 制約 |
@@ -552,8 +567,9 @@ flowchart LR
 | `poll_votes` | イベント | `id`, `poll_id`, `account_id`, `position`, `uri`（NULL 可）, `voted_at` | 一意 `(poll_id, account_id, position)`, `(uri)` |
 | `poll_tally_observations` | イベント | `id`, `poll_id`, `voters_count`（NULL 可）, `observed_at` | リモートの投票の集計値（`Update` で届く） |
 | `poll_tally_observation_counts` | イベント（子） | `observation_id`, `position`, `votes` | PK `(observation_id, position)` |
-| `poll_tallies` | 投影 | `poll_id`, `position`, `votes`, `voters_count` | PK `(poll_id, position)`。ローカルは `poll_votes` から、リモートは最新の観測から |
+| `poll_tallies` | 投影 | `poll_id`, `position`, `votes`, `voters_count`（NULL 可。投票者数の分からない複数選択のリモートの投票） | PK `(poll_id, position)`。ローカルは `poll_votes` から、リモートは最新の観測から |
 
+- リモートの投票で `votersCount` が無いときは、単一選択なら票数の合計を投票者数にし、複数選択なら（誰も投票していなければ 0、それ以外は）NULL にします。
 - タグのモデレーション（使用禁止・トレンド除外）は、v0 では持ちません。必要になったら `tag_moderation_actions` を同じ型で追加します。
 
 #### 利用者ごとの関係【現在値】
@@ -1028,5 +1044,4 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 - [ ] 同一モジュール内の外部キーを方言別スキーマに付けるか（Aurora DSQL は対応済み、#18）
 - [ ] PostgreSQL で `id` を `uuid` 型にするか（#17 は `COLLATE "C"` の `text` か `uuid` のどちらかを推奨）
 - [ ] ホームタイムラインの読み取り窓の既定値 7 日と広げ方の見直し（ADR-0013 の計測で決める）
-- [ ] 古いリモート投稿の消去条件（[ADR-0034](../adr/0034-remote-content-scope-and-retention.md) の決定で確定する）
 - [ ] 書き込み行数の増加（イベント + 投影）が従量課金 DB のコストに与える影響の計測（M2）

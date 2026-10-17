@@ -1,0 +1,434 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package federation
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"time"
+
+	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/federation"
+)
+
+// Bounds of ingesting remote posts (federation.md §3.3, §6.3).
+const (
+	// UpdateAsCreateWindow is how recent the published time of an Update of an unknown post
+	// must be for the Update to be taken as its Create (Mastodon does the same).
+	UpdateAsCreateWindow = 24 * time.Hour
+	// MaxResolvedMentions bounds the unknown remote actors that one post's mentions fetch, and
+	// MentionResolveTimeout the time they take together; the others are left out.
+	MaxResolvedMentions   = 5
+	MentionResolveTimeout = 10 * time.Second
+	// MaxMentions bounds the mentions of one post that are stored.
+	MaxMentions = federation.MaxTags
+)
+
+// RemoteStatuses is the part of the content module's public API that stores remote posts
+// (federation.md §1.1). *appcontent.Service implements it.
+type RemoteStatuses interface {
+	IngestRemoteStatus(ctx context.Context, tx uow.Tx, in appcontent.RemoteStatusInput) (appcontent.Post, error)
+	ReviseRemoteStatus(ctx context.Context, tx uow.Tx, in appcontent.RemoteStatusInput) (bool, error)
+	DeleteRemoteStatus(ctx context.Context, tx uow.Tx, uri, authorAccountID string) error
+	FindStatusByURI(ctx context.Context, uri string) (appcontent.Status, error)
+	Tombstoned(ctx context.Context, uri string) (bool, error)
+	LocalStatusInConversation(ctx context.Context, conversationURI string) (bool, error)
+}
+
+// StatusAccounts is the part of the account module's public API that ingesting posts reads: the
+// accounts that a post mentions and the followers collection of its author.
+// *appaccount.Service implements it.
+type StatusAccounts interface {
+	FindByURI(ctx context.Context, uri string) (appaccount.Actor, error)
+	RemoteFollowersURL(ctx context.Context, accountID string) (string, error)
+}
+
+// StatusHandlersDeps are the ports of StatusHandlers.
+type StatusHandlersDeps struct {
+	UnitOfWork uow.UnitOfWork
+	Statuses   RemoteStatuses
+	Accounts   StatusAccounts
+	// Actors resolves the remote actors that a post in scope mentions and that are not stored
+	// yet; *RemoteActors implements it.
+	Actors InboxActors
+	// Fetcher fetches the object of a Create or Update that carries only its id.
+	Fetcher DocumentFetcher
+	// Followers tells whether local accounts follow the author (ADR-0034).
+	Followers Followers
+	Clock     kernel.Clock
+	// Host is the serving domain: actors on it are local.
+	Host   string
+	Logger *slog.Logger
+}
+
+// StatusHandlers are the inbox handlers of remote posts (federation.md §3.4): Create and Update
+// of Note, Question, and the converted types, and Delete of a post. Only posts related to a local
+// account are ingested (ADR-0034).
+type StatusHandlers struct {
+	d      StatusHandlersDeps
+	origin string
+}
+
+// NewStatusHandlers returns the StatusHandlers on d.
+func NewStatusHandlers(d StatusHandlersDeps) *StatusHandlers {
+	if d.Logger == nil {
+		d.Logger = slog.Default()
+	}
+	return &StatusHandlers{d: d, origin: federation.IRI("https://" + d.Host).Origin()}
+}
+
+// Register sets the handlers of Create, Update, and Delete on p.
+func (h *StatusHandlers) Register(p *InboxProcessor) {
+	p.Handle(federation.ActivityCreate, h.Create)
+	p.Handle(federation.ActivityUpdate, h.Update)
+	p.Handle(federation.ActivityDelete, h.Delete)
+}
+
+// Create ingests the post of a Create when it is in scope (ADR-0034). A post that is stored
+// already is left as it is, and one that is deleted, or whose URI a deletion keeps, is dropped.
+func (h *StatusHandlers) Create(ctx context.Context, a *InboxActivity) error {
+	obj, err := h.object(ctx, a)
+	if err != nil {
+		return err
+	}
+	switch _, err := h.d.Statuses.FindStatusByURI(ctx, string(obj.ID)); {
+	case errors.Is(err, appcontent.ErrNotFound):
+		return h.ingest(ctx, a, obj)
+	case err != nil:
+		return err
+	}
+	tombstoned, err := h.d.Statuses.Tombstoned(ctx, string(obj.ID))
+	if err != nil {
+		return err
+	}
+	if tombstoned {
+		return fmt.Errorf("%w: %s is deleted", ErrDropActivity, obj.ID)
+	}
+	return nil
+}
+
+// Update records a new revision of a stored post (federation.md §3.3): an Update older than the
+// current revision makes none. The Update of a post that is not stored is taken as its Create
+// when the post is in scope and was published within UpdateAsCreateWindow.
+func (h *StatusHandlers) Update(ctx context.Context, a *InboxActivity) error {
+	obj, err := h.object(ctx, a)
+	if err != nil {
+		return err
+	}
+	switch _, err := h.d.Statuses.FindStatusByURI(ctx, string(obj.ID)); {
+	case errors.Is(err, appcontent.ErrNotFound):
+		if obj.Published.IsZero() || h.d.Clock.Now().Sub(obj.Published) > UpdateAsCreateWindow {
+			return fmt.Errorf("%w: Update of an unknown post %s published long ago", ErrDropActivity, obj.ID)
+		}
+		return h.ingest(ctx, a, obj)
+	case err != nil:
+		return err
+	}
+	followers, err := h.followers(ctx, a.Actor)
+	if err != nil {
+		return err
+	}
+	mentions, err := h.mentions(ctx, obj, followers)
+	if err != nil {
+		return err
+	}
+	if err := h.resolveMentions(ctx, mentions); err != nil {
+		return err
+	}
+	in := h.input(a, obj, followers, mentions)
+	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		_, err := h.d.Statuses.ReviseRemoteStatus(ctx, tx, in)
+		return err
+	})
+	switch {
+	case errors.Is(err, appcontent.ErrNotFound):
+		return fmt.Errorf("%w: Update of a deleted post %s", ErrDropActivity, obj.ID)
+	case errors.Is(err, appcontent.ErrNotAuthor):
+		return fmt.Errorf("%w: %s is not the author of %s", ErrDropActivity, a.Actor.Account.URI, obj.ID)
+	}
+	return err
+}
+
+// Delete deletes a stored post of the actor (federation.md §3.4). A post that is not stored is
+// ErrUnknownObject, so that the processor keeps a tombstone for a Create arriving later.
+func (h *StatusHandlers) Delete(ctx context.Context, a *InboxActivity) error {
+	id := a.Activity.Object().ID
+	if id == "" || !federation.SameOrigin(id, a.Activity.Actor) {
+		return fmt.Errorf("%w: Delete of %q by %s", ErrDropActivity, id, a.Activity.Actor)
+	}
+	err := h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		return h.d.Statuses.DeleteRemoteStatus(ctx, tx, string(id), a.Actor.Account.ID)
+	})
+	switch {
+	case errors.Is(err, appcontent.ErrNotFound):
+		return fmt.Errorf("%w: %s", ErrUnknownObject, id)
+	case errors.Is(err, appcontent.ErrNotAuthor):
+		return fmt.Errorf("%w: %s is not the author of %s", ErrDropActivity, a.Actor.Account.URI, id)
+	case errors.Is(err, appcontent.ErrAlreadyDeleted):
+		return nil
+	}
+	return err
+}
+
+// object returns the post of a Create or Update: the embedded one when it is trusted, otherwise
+// the one its origin serves, fetched only when a local account follows the actor. It must be a
+// post of the actor, from the actor's origin.
+func (h *StatusHandlers) object(ctx context.Context, a *InboxActivity) (*federation.Object, error) {
+	act := a.Activity
+	ref := act.Object()
+	if ref.ID == "" || !federation.SameOrigin(ref.ID, act.Actor) {
+		return nil, fmt.Errorf("%w: %s of %q is not an object of the actor's origin", ErrDropActivity, act.Type, ref.ID)
+	}
+	doc := ref.Trusted()
+	if doc == nil {
+		// Only a post in scope is fetched (federation.md §3.3); without the post, only the
+		// follows of its author tell.
+		followed, err := h.followed(ctx, a.Actor)
+		if err != nil {
+			return nil, err
+		}
+		if !followed {
+			return nil, fmt.Errorf("%w: %s of %s by its id only, from an author no local account follows", ErrDropActivity, act.Type, ref.ID)
+		}
+		got, err := h.d.Fetcher.Fetch(ctx, string(ref.ID))
+		if err != nil {
+			return nil, err
+		}
+		doc = got.Document
+	}
+	obj := doc.Object
+	switch {
+	case obj == nil || obj.ID != ref.ID:
+		return nil, fmt.Errorf("%w: %s is not an object", ErrDropActivity, ref.ID)
+	case !isPost(obj.Type):
+		return nil, fmt.Errorf("%w: %s is a %s, not a post", ErrDropActivity, obj.ID, obj.RawType)
+	case obj.AttributedTo != "" && obj.AttributedTo != act.Actor:
+		return nil, fmt.Errorf("%w: %s is attributed to %s, not to %s", ErrDropActivity, obj.ID, obj.AttributedTo, act.Actor)
+	}
+	return obj, nil
+}
+
+func isPost(t federation.ObjectType) bool {
+	switch t {
+	case federation.ObjectNote, federation.ObjectQuestion, federation.ObjectArticle, federation.ObjectPage,
+		federation.ObjectEvent, federation.ObjectImage, federation.ObjectVideo, federation.ObjectAudio:
+		return true
+	}
+	return false
+}
+
+// ingest stores a post that is not stored yet, when it is in scope and its URI has no tombstone.
+func (h *StatusHandlers) ingest(ctx context.Context, a *InboxActivity, obj *federation.Object) error {
+	tombstoned, err := h.d.Statuses.Tombstoned(ctx, string(obj.ID))
+	if err != nil {
+		return err
+	}
+	if tombstoned {
+		return fmt.Errorf("%w: %s is deleted", ErrDropActivity, obj.ID)
+	}
+	followers, err := h.followers(ctx, a.Actor)
+	if err != nil {
+		return err
+	}
+	mentions, err := h.mentions(ctx, obj, followers)
+	if err != nil {
+		return err
+	}
+	ok, err := h.inScope(ctx, a.Actor, obj, mentions)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("%w: %s is not related to a local account (ADR-0034)", ErrDropActivity, obj.ID)
+	}
+	if err := h.resolveMentions(ctx, mentions); err != nil {
+		return err
+	}
+	in := h.input(a, obj, followers, mentions)
+	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		_, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, in)
+		return err
+	})
+	if errors.Is(err, appcontent.ErrStatusExists) {
+		return nil // a concurrent activity stored it
+	}
+	return err
+}
+
+// inScope reports whether a post is related to a local account (ADR-0034): a local account
+// follows its author, it mentions or addresses a local account, or it replies to a local post or
+// into a thread that has one.
+func (h *StatusHandlers) inScope(ctx context.Context, author appaccount.Actor, obj *federation.Object, m *postMentions) (bool, error) {
+	if m.local {
+		return true, nil
+	}
+	if followed, err := h.followed(ctx, author); err != nil || followed {
+		return followed, err
+	}
+	if obj.InReplyTo == "" {
+		return false, nil
+	}
+	parent, err := h.d.Statuses.FindStatusByURI(ctx, string(obj.InReplyTo))
+	switch {
+	case errors.Is(err, appcontent.ErrNotFound):
+		return false, nil
+	case err != nil:
+		return false, err
+	case parent.IsLocal:
+		return true, nil
+	}
+	conversation := parent.ConversationURI
+	if conversation == "" {
+		conversation = parent.URI
+	}
+	return h.d.Statuses.LocalStatusInConversation(ctx, conversation)
+}
+
+// followed reports whether a local account follows the remote author: its followers are local.
+func (h *StatusHandlers) followed(ctx context.Context, author appaccount.Actor) (bool, error) {
+	followers, _, err := h.d.Followers.ActiveFollowerIDs(ctx, author.Account.ID, "", 1)
+	return len(followers) > 0, err
+}
+
+// followers returns the followers collection of a remote author, "" when it is unknown.
+func (h *StatusHandlers) followers(ctx context.Context, author appaccount.Actor) (federation.IRI, error) {
+	u, err := h.d.Accounts.RemoteFollowersURL(ctx, author.Account.ID)
+	if errors.Is(err, appaccount.ErrNotFound) {
+		return "", nil
+	}
+	return federation.IRI(u), err
+}
+
+// postMentions are the actors a post mentions or addresses: the stored accounts, and the remote
+// actors that are not stored yet.
+type postMentions struct {
+	accountIDs []string
+	unknown    []federation.IRI
+	local      bool
+}
+
+// mentions looks up the actors a post mentions (its Mention tags, and the local actors it
+// addresses, federation.md §4) among the stored accounts.
+func (h *StatusHandlers) mentions(ctx context.Context, obj *federation.Object, followers federation.IRI) (*postMentions, error) {
+	m := &postMentions{}
+	for _, iri := range obj.MentionedIRIs(followers, h.isLocal) {
+		if len(m.accountIDs)+len(m.unknown) == MaxMentions {
+			break
+		}
+		a, err := h.d.Accounts.FindByURI(ctx, string(iri))
+		switch {
+		case errors.Is(err, appaccount.ErrNotFound):
+			if !h.isLocal(iri) {
+				m.unknown = append(m.unknown, iri)
+			}
+			continue
+		case err != nil:
+			return nil, err
+		}
+		if a.Account.IsLocal() {
+			if !a.Lifecycle.Active() {
+				continue
+			}
+			m.local = true
+		}
+		m.accountIDs = append(m.accountIDs, a.Account.ID)
+	}
+	return m, nil
+}
+
+// resolveMentions fetches the remote actors of m that are not stored, at most
+// MaxResolvedMentions of them within MentionResolveTimeout; those that cannot be resolved are
+// left out of the mentions.
+func (h *StatusHandlers) resolveMentions(ctx context.Context, m *postMentions) error {
+	if len(m.unknown) == 0 || h.d.Actors == nil {
+		return nil
+	}
+	budget, cancel := context.WithTimeout(ctx, MentionResolveTimeout)
+	defer cancel()
+	for _, iri := range m.unknown[:min(len(m.unknown), MaxResolvedMentions)] {
+		a, err := h.d.Actors.Resolve(budget, string(iri))
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			h.d.Logger.InfoContext(ctx, "mentioned actor not resolved", slog.String("actor", string(iri)), slog.Any("reason", err))
+			continue
+		}
+		m.accountIDs = append(m.accountIDs, a.Account.ID)
+	}
+	return nil
+}
+
+func (h *StatusHandlers) isLocal(iri federation.IRI) bool { return iri.Origin() == h.origin }
+
+// input maps a normalized post to what the content module stores (federation.md §4).
+func (h *StatusHandlers) input(a *InboxActivity, obj *federation.Object, followers federation.IRI, m *postMentions) appcontent.RemoteStatusInput {
+	audience := obj.Audience
+	if len(audience.To) == 0 && len(audience.Cc) == 0 {
+		audience = a.Activity.Audience
+	}
+	in := appcontent.RemoteStatusInput{
+		URI:                 string(obj.ID),
+		AuthorAccountID:     a.Actor.Account.ID,
+		AuthorDomain:        a.Actor.Account.Domain,
+		Visibility:          appcontent.Visibility(audience.Visibility(followers)),
+		InReplyToURI:        string(obj.InReplyTo),
+		PublishedAt:         obj.Published,
+		RevisedAt:           obj.Updated,
+		ActivityURI:         string(a.Received.ActivityURI),
+		SpoilerText:         obj.SpoilerText,
+		Sensitive:           obj.Sensitive,
+		MentionedAccountIDs: m.accountIDs,
+		Hashtags:            obj.Hashtags,
+	}
+	if obj.URL != obj.ID {
+		in.URL = string(obj.URL)
+	}
+	for _, b := range obj.Bodies {
+		in.Bodies = append(in.Bodies, appcontent.RemoteBody{Language: b.Language, HTML: b.HTML})
+	}
+	for _, e := range obj.Emojis {
+		in.Emojis = append(in.Emojis, appcontent.RemoteEmojiInput{URI: string(e.ID), Shortcode: e.Shortcode, ImageURL: string(e.IconURL)})
+	}
+	for _, at := range obj.Attachments {
+		in.Attachments = append(in.Attachments, appcontent.RemoteAttachmentInput{
+			Type: at.Type, URL: string(at.URL), ContentType: at.MediaType, Description: at.Name, Blurhash: at.Blurhash,
+			Width: at.Width, Height: at.Height, Focus: at.FocalPoint,
+		})
+	}
+	if p := obj.Poll; p != nil && len(p.Options) > 0 {
+		in.Poll = pollInput(p)
+	}
+	return in
+}
+
+func pollInput(p *federation.Poll) *appcontent.RemotePollInput {
+	in := &appcontent.RemotePollInput{Multiple: p.Multiple}
+	closes := p.EndTime
+	if closes.IsZero() {
+		closes = p.Closed
+	}
+	if !closes.IsZero() {
+		in.ClosesAt = &closes
+	}
+	var total int64
+	for _, o := range p.Options {
+		in.Options = append(in.Options, o.Name)
+		in.Votes = append(in.Votes, int64(o.Votes))
+		total += int64(o.Votes)
+	}
+	// Without votersCount, a single-choice poll has one voter per vote; a multiple-choice one has
+	// an unknown number, unless nobody voted.
+	switch voters := int64(p.VotersCount); {
+	case voters > 0:
+		in.VotersCount = &voters
+	case !p.Multiple || total == 0:
+		in.VotersCount = &total
+	}
+	return in
+}

@@ -200,6 +200,20 @@ func (p *InboxProcessor) register(r inboxRoute, h InboxHandler) {
 	p.handlers[r] = h
 }
 
+// Handles reports whether activities of type t have a handler, and, for Undo, which of the
+// undone types have one; it lets the composition root check its wiring.
+func (p *InboxProcessor) Handles(t federation.ActivityType, undone ...federation.ActivityType) bool {
+	if _, ok := p.handlers[inboxRoute{typ: t}]; !ok {
+		return false
+	}
+	for _, u := range undone {
+		if _, ok := p.undo[u]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 // RegisterJobs registers the handler of JobInbox.
 func (p *InboxProcessor) RegisterJobs(h *queue.JobHandlerRegistry) {
 	h.Register(JobInbox, p.HandleJob)

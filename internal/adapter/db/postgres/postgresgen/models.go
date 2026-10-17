@@ -123,6 +123,21 @@ type BoostRetraction struct {
 	RetractedAt time.Time
 }
 
+type CustomEmoji struct {
+	ID        string
+	Shortcode string
+	Domain    string
+	Uri       *string
+	CreatedAt time.Time
+}
+
+type CustomEmojiImage struct {
+	ID        string
+	EmojiID   string
+	MediaID   string
+	RevisedAt time.Time
+}
+
 type Delivery struct {
 	ID                 string
 	OutboundActivityID string
@@ -403,6 +418,39 @@ type PasswordCredential struct {
 	UserID       string
 	PasswordHash string
 	SetAt        time.Time
+}
+
+type Poll struct {
+	ID         string
+	RevisionID string
+	Multiple   bool
+	ClosesAt   *time.Time
+}
+
+type PollOption struct {
+	PollID   string
+	Position int32
+	Title    string
+}
+
+type PollTally struct {
+	PollID      string
+	Position    int32
+	Votes       int64
+	VotersCount *int64
+}
+
+type PollTallyObservation struct {
+	ID          string
+	PollID      string
+	VotersCount *int64
+	ObservedAt  time.Time
+}
+
+type PollTallyObservationCount struct {
+	ObservationID string
+	Position      int32
+	Votes         int64
 }
 
 type ReceivedActivity struct {

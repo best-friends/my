@@ -123,6 +123,21 @@ type BoostRetraction struct {
 	RetractedAt int64
 }
 
+type CustomEmoji struct {
+	ID        string
+	Shortcode string
+	Domain    string
+	Uri       sql.NullString
+	CreatedAt int64
+}
+
+type CustomEmojiImage struct {
+	ID        string
+	EmojiID   string
+	MediaID   string
+	RevisedAt int64
+}
+
 type Delivery struct {
 	ID                 string
 	OutboundActivityID string
@@ -403,6 +418,39 @@ type PasswordCredential struct {
 	UserID       string
 	PasswordHash string
 	SetAt        int64
+}
+
+type Poll struct {
+	ID         string
+	RevisionID string
+	Multiple   int64
+	ClosesAt   sql.NullInt64
+}
+
+type PollOption struct {
+	PollID   string
+	Position int64
+	Title    string
+}
+
+type PollTally struct {
+	PollID      string
+	Position    int64
+	Votes       int64
+	VotersCount sql.NullInt64
+}
+
+type PollTallyObservation struct {
+	ID          string
+	PollID      string
+	VotersCount sql.NullInt64
+	ObservedAt  int64
+}
+
+type PollTallyObservationCount struct {
+	ObservationID string
+	Position      int64
+	Votes         int64
 }
 
 type ReceivedActivity struct {

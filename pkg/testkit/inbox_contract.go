@@ -21,6 +21,7 @@ import (
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appfederation "github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
@@ -37,6 +38,9 @@ type InboxHarness struct {
 	Federation appfederation.Repository
 	Instances  appfederation.InstanceRepository
 	Accounts   appaccount.Repository
+	// Statuses is the content module's repository, which the handlers of remote posts write in
+	// their cases of the order and duplicate property test (inboxOrderCases).
+	Statuses appcontent.Repository
 }
 
 // InboxFactory returns a harness on a new, empty database whose UnitOfWork uses opts. The
