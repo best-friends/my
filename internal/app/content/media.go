@@ -75,6 +75,9 @@ type MediaDeps struct {
 	// UnattachedTTL is how long an upload may stay unattached; zero means DefaultUnattachedTTL.
 	UnattachedTTL time.Duration
 	Referrers     []MediaReferrer
+	// Proxy signs the media proxy URLs that present remote media files (federation.md §9);
+	// nil presents no remote file.
+	Proxy *MediaProxy
 	// Logger logs what jobs survive; nil means slog.Default().
 	Logger *slog.Logger
 }
@@ -221,6 +224,8 @@ type Media struct {
 	File content.MediaFile
 	// Upload is the upload subtype, nil for a remote file.
 	Upload *content.UploadedMedia
+	// Remote is the remote subtype with the declared values, nil for an upload.
+	Remote *content.RemoteMedia
 	// Result is the newest processing result, nil while the file is being processed.
 	Result *content.MediaProcessingResult
 	// Focus is the focal point, nil when none is set (the center).
@@ -244,6 +249,14 @@ func (s *MediaService) Media(ctx context.Context, id string) (Media, error) {
 		m.Upload = &up
 	} else if !errors.Is(err, ErrNotFound) {
 		return Media{}, err
+	}
+	if file.Origin == content.MediaOriginRemote {
+		rm, err := s.d.Repository.FindRemoteMedia(ctx, id)
+		if err != nil {
+			return Media{}, err
+		}
+		m.Remote = &rm
+		return m, nil
 	}
 	if r, err := s.d.Repository.FindLatestProcessingResult(ctx, id); err == nil {
 		m.Result = &r
@@ -363,6 +376,15 @@ func (s *MediaService) CheckImage(ctx context.Context, id string) error {
 // URL returns the public URL of a variant.
 func (s *MediaService) URL(v content.MediaVariant) string { return s.d.Blobs.PublicURL(v.BlobKey) }
 
+// ProxyURL returns the media proxy URL of a remote media file (federation.md §9), and false when
+// no proxy is configured.
+func (s *MediaService) ProxyURL(mediaID string) (string, bool) {
+	if s.d.Proxy == nil {
+		return "", false
+	}
+	return s.d.Proxy.URL(mediaID, content.VariantFull), true
+}
+
 // ImageRef names a media file that an account shows as an image of its own, such as the
 // avatar or header of its profile.
 type ImageRef struct {
@@ -370,10 +392,11 @@ type ImageRef struct {
 	MediaID   string
 }
 
-// ImageURLs returns the URL of the full variant of each ref's media file, keyed by ref, for the
-// files that the ref's account owns and whose processing succeeded; the other refs are absent.
-// It reads every file in one repository call, so that presenting a page of accounts reads their
-// images together instead of one by one.
+// ImageURLs returns the URL of each ref's media file, keyed by ref, for the files that the ref's
+// account owns: the full variant of an upload whose processing succeeded, or the media proxy URL
+// of a remote file (ProxyURL); the other refs are absent. It reads the uploads in one repository
+// call and the remote files in another, so that presenting a page of accounts reads their images
+// together instead of one by one.
 func (s *MediaService) ImageURLs(ctx context.Context, refs []ImageRef) (map[ImageRef]string, error) {
 	out := map[ImageRef]string{}
 	ids := make([]string, 0, len(refs))
@@ -393,9 +416,30 @@ func (s *MediaService) ImageURLs(ctx context.Context, refs []ImageRef) (map[Imag
 	for _, v := range variants {
 		byID[v.File.ID] = v
 	}
+	var rest []string
 	for _, ref := range refs {
-		if v, ok := byID[ref.MediaID]; ok && v.File.OwnerAccountID == ref.AccountID {
-			out[ref] = s.URL(v.Variant)
+		if v, ok := byID[ref.MediaID]; ok {
+			if v.File.OwnerAccountID == ref.AccountID {
+				out[ref] = s.URL(v.Variant)
+			}
+		} else if !slices.Contains(rest, ref.MediaID) {
+			rest = append(rest, ref.MediaID)
+		}
+	}
+	if len(rest) == 0 || s.d.Proxy == nil {
+		return out, nil
+	}
+	remote, err := s.d.Repository.ListRemoteMedia(ctx, rest)
+	if err != nil {
+		return nil, fmt.Errorf("content: the remote images %v: %w", rest, err)
+	}
+	owners := make(map[string]string, len(remote))
+	for _, m := range remote {
+		owners[m.MediaID] = m.OwnerAccountID
+	}
+	for _, ref := range refs {
+		if owner, ok := owners[ref.MediaID]; ok && owner == ref.AccountID {
+			out[ref], _ = s.ProxyURL(ref.MediaID)
 		}
 	}
 	return out, nil

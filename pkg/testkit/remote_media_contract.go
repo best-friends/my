@@ -74,4 +74,14 @@ func mediaRecordsRemoteMedia(t *testing.T, e *mediaEnv) {
 			t.Errorf("FindRemoteMedia(%s) = %v, want ErrNotFound", id, err)
 		}
 	}
+
+	// A page of files is read together, by ID, leaving out uploads and unknown IDs.
+	listed, err := e.h.Media.ListRemoteMedia(ctx, []string{bare.MediaID, upload.File.ID, first.MediaID, "0192f0c1-0000-7000-8000-00000000dead"})
+	wantList := []content.RemoteMedia{first, want}
+	if first.MediaID > bare.MediaID {
+		wantList = []content.RemoteMedia{want, first}
+	}
+	if err != nil || !reflect.DeepEqual(listed, wantList) {
+		t.Errorf("ListRemoteMedia = %+v, %v; want %+v", listed, err, wantList)
+	}
 }

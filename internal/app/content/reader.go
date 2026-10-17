@@ -84,12 +84,14 @@ type ViewerRelation struct {
 	Pinned bool
 }
 
-// MediaView is an attached media file that finished processing.
+// MediaView is an attached media file that can be shown: an upload that finished processing, or
+// a remote file (Media.Remote) served through the media proxy.
 type MediaView struct {
 	Media Media
 	// Description is the alt text of the attachment, "" for none.
 	Description string
-	// URL is the full variant, PreviewURL the thumbnail (the full variant without one).
+	// URL is the full variant, PreviewURL the thumbnail (the full variant without one). For a
+	// remote file both are its media proxy URL.
 	URL, PreviewURL string
 }
 
@@ -393,7 +395,8 @@ func found[T any](_ T, err error) (bool, error) {
 	}
 }
 
-// attachments returns the attached media that finished processing, in order.
+// attachments returns the attached media that can be shown, in order: the uploads that finished
+// processing, and the remote files when the media proxy is configured.
 func (r *Reader) attachments(ctx context.Context, in []content.Attachment) ([]MediaView, error) {
 	if r.d.Media == nil {
 		return nil, nil
@@ -406,6 +409,12 @@ func (r *Reader) attachments(ctx context.Context, in []content.Attachment) ([]Me
 		}
 		if err != nil {
 			return nil, err
+		}
+		if m.Remote != nil {
+			if u, ok := r.d.Media.ProxyURL(m.File.ID); ok {
+				out = append(out, MediaView{Media: m, Description: at.Description, URL: u, PreviewURL: u})
+			}
+			continue
 		}
 		if !m.Ready() {
 			continue

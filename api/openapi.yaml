@@ -1120,7 +1120,29 @@ paths:
       summary: Get the local timeline
       description: |
         The public posts of the instance's accounts, newest first, and their local posts for a
-        logged-in viewer, in the viewer's timeline languages.
+        logged-in viewer, in the viewer's timeline languages. The instance setting
+        `local_timeline_enabled` turns it off; it is then a 404.
+      tags: [timelines]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /timelines/public:
+    get:
+      operationId: getPublicTimeline
+      summary: Get the federated timeline
+      description: |
+        The public posts of the instance's accounts and of the remote accounts whose posts the
+        instance holds, newest first, in the viewer's timeline languages (FR-202). Posts of other
+        visibilities, `local` ones included, and boosts never appear on it. The instance setting
+        `federated_timeline_enabled` turns it off; it is then a 404.
       tags: [timelines]
       security:
         - {}
@@ -1689,7 +1711,9 @@ components:
           description: The profile text as sanitized HTML; empty when there is none.
           type: string
         url:
-          description: The account's profile page.
+          description: |
+            The account's profile page: on this instance for a local account, and for a remote
+            one the page its actor declares (`url`), or its `uri` when it declares none.
           type: string
           format: uri
         locked:
@@ -1840,9 +1864,15 @@ components:
     MediaAttachment:
       description: |
         A media file, as an upload of the user (the media operations) or as an attachment of
-        a status (`Status.media_attachments`). `variants` and `blurhash` are present once the
-        file is `ready`; statuses attach only ready files. In a status, `description` is the
-        status revision's own copy of the alternative text.
+        a status (`Status.media_attachments`). `url`, `preview_url`, `variants`, and `blurhash`
+        are present once the file is `ready`; statuses attach only ready files. In a status,
+        `description` is the status revision's own copy of the alternative text, absent when the
+        attachment has none.
+
+        A file of a remote status is always `ready`: the instance does not process it, so it has
+        no `variants`; `url` and `preview_url` are its media proxy URL (federation.md §9),
+        `remote_url` its URL on the remote server, and `meta`, `blurhash`, and `type` what the
+        remote server declared.
       type: object
       required: [id, type, state, meta]
       properties:
@@ -1869,6 +1899,18 @@ components:
           $ref: "#/components/schemas/MediaMeta"
         variants:
           $ref: "#/components/schemas/MediaVariants"
+        url:
+          description: Where the file is served on this instance; for an upload, `variants.full.url`.
+          type: string
+          format: uri
+        preview_url:
+          description: Where its preview is served; for an upload, `variants.thumbnail.url`.
+          type: string
+          format: uri
+        remote_url:
+          description: The file's URL on the remote server, for a file of a remote status; clients load `url` instead.
+          type: string
+          format: uri
     MediaFocus:
       description: |
         The focal point that previews keep in view when they crop the image, from -1.0 (left,
@@ -1892,11 +1934,11 @@ components:
       required: [focus]
       properties:
         width:
-          description: The width of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+          description: The width of the original image in pixels, after its EXIF orientation; absent until the file is ready, and for a remote file whose server declared none.
           type: integer
           minimum: 1
         height:
-          description: The height of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+          description: The height of the original image in pixels, after its EXIF orientation; absent until the file is ready, and for a remote file whose server declared none.
           type: integer
           minimum: 1
         focus:
@@ -2107,13 +2149,17 @@ components:
           type: string
           format: uri
         url:
-          description: The HTML page of the status; omitted when it has none.
+          description: |
+            The HTML page of the status, on the server it belongs to for a remote status; omitted
+            when it has none.
           type: string
           format: uri
         account:
           $ref: "#/components/schemas/Account"
         content:
-          description: The text as sanitized HTML, with mentions, hashtags, and URLs linked.
+          description: |
+            The text as sanitized HTML, with mentions, hashtags, and URLs linked. The HTML of a
+            remote status is what the server's sanitizer kept of the received document (ADR-0019 §2).
           type: string
         spoiler_text:
           description: The content warning; empty when there is none.
