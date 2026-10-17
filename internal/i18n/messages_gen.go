@@ -200,6 +200,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeWriteNotifications() string {
 	return l.format("server:auth.authorize.scope.write_notifications", nil)
 }
 
+// ServerAuthAuthorizeScopeWriteReports formats "server:auth.authorize.scope.write_reports". Permission (OAuth scope write:reports) listed on the authorization page.
+//
+//	en: Report accounts and posts to the moderators
+func (l *Localizer) ServerAuthAuthorizeScopeWriteReports() string {
+	return l.format("server:auth.authorize.scope.write_reports", nil)
+}
+
 // ServerAuthAuthorizeScopeWriteStatuses formats "server:auth.authorize.scope.write_statuses". Permission (OAuth scope write:statuses) listed on the authorization page.
 //
 //	en: Post, edit, delete, boost, and pin posts

@@ -4,7 +4,8 @@ import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useDisplaySettings } from "../../../lib/locale";
 import type { Visibility } from "../api/me";
-import { displayLanguageOf, displayLanguageOptions, timeZoneOptions, timelineLanguageOptions } from "../hooks/languages";
+import { displayLanguageOf, displayLanguageOptions, timelineLanguageOptions } from "../hooks/languages";
+import { useTimeZoneOptions } from "../hooks/timeZones";
 import { type PreferenceControl, usePreferences } from "../hooks/usePreferences";
 
 /** The visibilities in the order of ADR-0017, widest first, with their label and description. */
@@ -24,19 +25,7 @@ export function PreferencesForm() {
     <div className="flex flex-col gap-8">
       <p className="text-fg-muted">{t("client:settings.preferences.autosave")}</p>
       <DisplayLanguageSelect control={locale} />
-      <Select
-        label={t("client:settings.time_zone.label")}
-        description={t("client:settings.time_zone.description")}
-        value={timeZone.value}
-        onChange={(key) => {
-          if (typeof key === "string") timeZone.onChange(key);
-        }}
-        isInvalid={timeZone.error !== undefined}
-        errorMessage={timeZone.error}
-        items={timeZoneOptions(timeZone.value).map((zone) => ({ id: zone }))}
-      >
-        {(item) => <SelectItem id={item.id}>{item.id}</SelectItem>}
-      </Select>
+      <TimeZoneSelect control={timeZone} />
       <RadioGroup
         label={t("client:settings.default_visibility.label")}
         description={t("client:settings.default_visibility.description")}
@@ -79,6 +68,34 @@ function DisplayLanguageSelect({ control }: { control: PreferenceControl<string>
         // The name is in its own language, so a screen reader reads it in that language.
         <SelectItem id={item.id} textValue={item.name}>
           <span lang={item.id}>{item.name}</span>
+        </SelectItem>
+      )}
+    </Select>
+  );
+}
+
+/**
+ * The time zone: each option is the zone's name in the display language with its difference from UTC, and is
+ * described by its IANA name, which tells apart the zones of one name (America/New_York, America/Detroit).
+ */
+function TimeZoneSelect({ control }: { control: PreferenceControl<string> }) {
+  const t = useT();
+  const options = useTimeZoneOptions(control.value);
+  return (
+    <Select
+      label={t("client:settings.time_zone.label")}
+      description={t("client:settings.time_zone.description")}
+      value={control.value}
+      onChange={(key) => {
+        if (typeof key === "string") control.onChange(key);
+      }}
+      isInvalid={control.error !== undefined}
+      errorMessage={control.error}
+      items={options}
+    >
+      {(item) => (
+        <SelectItem id={item.id} textValue={item.typeahead} description={item.id}>
+          {item.label}
         </SelectItem>
       )}
     </Select>

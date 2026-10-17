@@ -11,7 +11,8 @@ import { tv } from "tailwind-variants";
 const statusMessage = tv({
   slots: {
     region: "",
-    box: "rounded-md border border-s-4 border-border bg-surface-raised px-4 py-3 text-base text-fg",
+    // A domain or a handle in the message is one long word; it wraps rather than scroll the page.
+    box: "rounded-md border border-s-4 border-border bg-surface-raised px-4 py-3 text-base wrap-anywhere text-fg",
   },
   variants: {
     tone: {

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A remote server's page below its heading (federation.md §7.3): its health, why it is in its state, when
-// deliveries last resumed, the button that resumes them, and the history of its availability, newest first.
-import { Button, DescriptionItem, DescriptionList, EmptyState } from "@my/ui";
+// deliveries last resumed, the button that resumes them, the way to its moderation actions (FR-702), and the
+// history of its availability, newest first.
+import { Button, DescriptionItem, DescriptionList, EmptyState, Link } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { AvailabilityEvent } from "../api/admin";
@@ -34,6 +35,7 @@ export function InstanceDetail({ domain }: InstanceDetailProps) {
 function InstanceView({ domain }: InstanceDetailProps) {
   const t = useT();
   const descriptionId = useId();
+  const moderationId = useId();
   const view = useInstance(domain);
   const { health, events } = view;
   // The newest event says why the server is in its state; the newest marked_available one, when deliveries
@@ -66,6 +68,16 @@ function InstanceView({ domain }: InstanceDetailProps) {
           </div>
         )}
       </div>
+      <DetailSection title={t("client:admin.instance.moderation.title")}>
+        <div className="flex flex-col items-start gap-1">
+          <Link href={`/admin/domain-actions?domain=${encodeURIComponent(domain)}`} variant="standalone" aria-describedby={moderationId}>
+            {t("client:admin.instance.moderation.link")}
+          </Link>
+          <p id={moderationId} className="text-sm text-fg-muted">
+            {t("client:admin.instance.moderation.description")}
+          </p>
+        </div>
+      </DetailSection>
       <DetailSection title={t("client:admin.instance.history.title")}>
         <RecordList list={events} getId={(event) => event.id} empty={<EmptyState headingLevel={3} heading={t("client:admin.instance.history.empty")} />}>
           {(event) => (

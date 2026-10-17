@@ -216,6 +216,11 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   ストアはそのロケールのカタログを読み込んでから `<html>` の `lang` / `dir` を変え、i18n のプロバイダを描画し直す。読み込みが前後したときは最後に頼んだロケールが勝つ。
   タイムゾーンは `react-intl` の `timeZone` になる。ロケールが変わると、サーバーが `Accept-Language` で訳した内容を取り直すために、Query をすべて無効にする。
   サインインしていないときと設定を読むまでは、サーバーのロケールのままになる。表示言語の選択肢は、カタログのあるロケール（疑似ロケールは、今それで表示しているときだけ）を、それぞれの言語の名前で並べる。
+  タイムゾーンの選択肢は、表示中のロケールの CLDR の名前（`Intl.DisplayNames` にタイムゾーンの種類はないので、`Intl.DateTimeFormat` の `timeZoneName: "longGeneric"`。名前のないゾーンは UTC からの差だけ）に、
+  画面を開いた時点の UTC からの差を付けて「（UTC+09:00）日本標準時」と出し、その差と名前の順に並べる。IANA の名前（`Asia/Tokyo`）は、同じ名前のゾーンを見分けるための選択肢の説明（`SelectItem` の `description`）にする。
+- **未保存の変更**: プロフィールの編集のように、まとめて保存するフォームは、保存していない変更があるまま別の画面へ移るとき（検索条件とハッシュだけの変化は除く）に、TanStack Router の `useBlocker`（`withResolver`）で遷移を止め、
+  `ConfirmDialog`（`alertdialog`）で確かめる。フォーカスは「編集を続ける」から始まり、Esc もそれと同じく画面に残る。再読み込みとタブを閉じるときは、ブラウザ自身の確認（`beforeunload`）になる。
+  変更は保存済みの値と比べて求めるので、手で元に戻した変更や保存した後は確かめない。設定を変えたとたんに保存する画面（表示と投稿）は対象にしない。
 - **プロバイダ**（`App.tsx`）: 外側から、ランタイム設定、表示のロケール、i18n（`react-intl` と React Aria の `I18nProvider`）、QueryClient（`lib/query`）、セッションと API クライアント（`lib/auth/SessionProvider`、§10）、`AnnouncerProvider` / `ToastProvider`、React Aria の `RouterProvider`、ルーターの順に置く。
 - **文言**（`lib/i18n`）: クライアントの文言は `locales/<locale>/client.json` にあり、ロケールごとに別のチャンクで読み込む。足りない文言は `ja-JP` → `ja` → `en` の順に補う。
   ID の型は `tools/i18n` が生成する `MessageArgs` から作る（`ClientMessageKey`）。文字列にするときは `useT()` の `t("client:…", 引数)` を使い、ID と引数の型を検査する。
@@ -373,15 +378,25 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 ## 14. 管理画面
 
-`features/admin` が、運用者の画面（連合先のサーバーの状態と dead job）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
+`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先、`manage_jobs` が dead job の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
 - **連合先の詳細**（`/admin/instances/{domain}`）: 状態と、最新の `instance_availability_events` の理由、最後に配送を再開した日時（最新の `marked_available`）、新しい順の履歴。
   データモデルは成功した配送の日時を持たない（`instance_health` は失敗の間だけ更新する。[data-model §4.8](data-model.md#48-federation)）ので、「最後の成功」は配送の再開の日時で示す。
   失敗の日数があるか停止中なら「配送を再開する」を出し、成功したら詳細の答えを置き換え、一覧と履歴を無効にして結果を知らせる。失敗はトーストで知らせ、状態とボタンを残す（E2）。
+  「モデレーション」の区画から、そのドメインのドメインへの処分の画面（`/admin/domain-actions?domain=…`）へリンクする。
+- **ドメインへの処分**（`/admin/domain-actions`、FR-702）: 新しい処分のフォームと、新しい順の処分の一覧の 2 つの区画。一覧は「有効」（`active=true`）と「すべて」のタブ（`?filter=all`、URL に置く。S3）で、
+  `?domain=` があればそのドメインの処分だけを出し、フォームのドメインにも入れ、「すべてのドメインを表示」のリンクで外せる。各処分は見出し（ドメイン）と、種類・状態・処分した日時・終了（なければ「解除するまで」）・解除した日時・公開の一覧での伏せ字の説明リスト、公開コメントと非公開のメモにする。
+  - **ドメインの 2 つの形**: サーバーはドメインを IDNA の A-label（`xn--r8jz45g.jp`）で記録して返す。画面は `lib/idn.ts`（RFC 3492 の Punycode の復号。表示専用）で U-label（`例え.jp`）に戻し、違うときは A-label を括弧で後に添える（`features/admin` の `DomainName`、連合先の一覧と詳細の見出しも同じ）。
+    似た字形の別の文字のドメインを見分けられるようにするためである。文の中では U+2066 / U+2069 で囲む。フォームは U-label のまま送り、A-label への変換はサーバーが行う。
+  - **フォーム**: ドメイン（必須）、種類（`RadioGroup`、必須、既定の選択なし、軽いものから `suspend` まで、それぞれの効果の説明付き）、期間（`DurationSelect`、1・7・30・90・180・365 日と「解除するまで」）、公開コメントと非公開のメモ（`ReasonField`、5,000 文字）、伏せ字（`Checkbox`）。
+    ブラウザの制約検証が通ってから送る。`suspend` だけは送る前に `ConfirmDialog` で確かめ（NFR-MOD-7）、失敗はダイアログの中に出す。ほかの種類はすぐに送り、失敗はフォームの下（`role="alert"`）に出して入力を残す。
+    成功したらドメインを残して入力を空にし、一覧を無効にして、結果をフォームの `StatusMessage` に出す。
+  - **解除**: 有効な処分の「解除」（アクセシブルネームに種類・ドメイン・処分した日時を含める）は確かめずに送る。成功したら、キャッシュの「有効」の一覧から除いてフォーカスを次の行のボタンに移し（`lib/useFocusAfterRemoval.ts`）、
+    「すべて」の一覧では解除済みに置き換えてフォーカスをその行の見出しに移す。結果は一覧の区画の `StatusMessage` に出し、失敗はトーストで知らせる（E2）。
 - **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
   「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
   複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
@@ -391,7 +406,8 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   開くと最初の入力欄（なければ「キャンセル」）にフォーカスが移り、Esc で閉じ、閉じると開いたボタンにフォーカスが戻る。失敗はダイアログの中（`errorMessage`）に出して開いたままにし、成功したら閉じて、結果を画面の `StatusMessage`（`role="status"`）に出す。
   操作で開いたボタンが消えるとき（一覧から行が消えるなど）は、`lib/useFocusAfterRemoval.ts` でフォーカスの行き先を決める。
 - **テスト**: `features/admin/admin.test.tsx` が出し分け・一覧と絞り込み・ページの読み足し・再開・再実行・失敗・403 を MSW で検査する。既定の閲覧者は権限を持たないので、テストは `operatorHandler()` で権限を与える。
-  E2E（`e2e/admin.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行とフォーカスの移動を検査する。
+  `features/admin/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
+  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動を検査する。
 
 ## 15. 検索とほかのサーバーのアカウントのフォロー
 

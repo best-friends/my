@@ -5,6 +5,7 @@ package testkit
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -34,10 +35,13 @@ type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 // moderation.AccountPolicy (data-model §5.3): a domain action restricts the domain and its
 // subdomains until it expires or is lifted, a lift ends only its own action's restrictions,
 // actions on remote accounts restrict them, each kind of action on a local account takes away
-// its capabilities until it ends and may name a report of the account only, kinds that do not
-// apply to an account are refused, invalid actions are refused, each action is lifted once,
+// its capabilities until it ends and may name a report of the account only, the actions on
+// statuses record and act on statuses of the account only and a ban schedules the deletion of
+// the account and is never lifted, kinds that do not apply to an account are refused, invalid actions are refused, each action is lifted once,
 // every change emits the restrictions in effect afterwards, a received report is filed once,
-// open, with its statuses and its comment cut to the limit, the actions on domains and on
+// open, with its statuses and its comment cut to the limit, a local report is filed open with
+// its statuses and cited rules only when the reporter may see those statuses of the target and
+// the rules are in effect, the actions on domains and on
 // accounts list newest first with their lifts and filters, the public list keeps only the
 // limits and suspensions in effect without their private notes, and moderators list, assign,
 // and resolve reports. The accounts are in-memory stand-ins.
@@ -51,11 +55,13 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"LiftEndsOnlyItsOwnAction", moderationLifts},
 		{"RemoteAccountActions", moderationAccountActions},
 		{"LocalAccountActions", moderationLocalAccountActions},
+		{"ActionsOnStatusesAndBans", moderationStatusesAndBans},
 		{"ListsAccountActions", moderationListsAccountActions},
 		{"RejectsInvalidActions", moderationRejectsInvalid},
 		{"RecordsEachLiftOnce", moderationLiftsOnce},
 		{"EmitsTheRestrictionsInEffect", moderationEmits},
 		{"FilesARemoteReportOnce", moderationReports},
+		{"FilesALocalReport", moderationLocalReports},
 		{"ListsDomainActions", moderationListsDomainActions},
 		{"ListsPublicDomainActions", moderationListsPublicDomainActions},
 		{"HandlesReports", moderationHandlesReports},
@@ -70,8 +76,11 @@ type moderationEnv struct {
 	clock  *Clock
 	ids    *IDGenerator
 	actors *stubActors
-	svc    *appmoderation.Service
-	policy *appmoderation.FederationPolicy
+	// statuses and lifecycles stand in for the content and account modules.
+	statuses   *stubModerationStatuses
+	lifecycles *stubLifecycles
+	svc        *appmoderation.Service
+	policy     *appmoderation.FederationPolicy
 	// accounts is the AccountPolicy on the same repository.
 	accounts *appmoderation.AccountPolicy
 	events   *eventLog
@@ -90,12 +99,15 @@ func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv
 	ids := NewIDGenerator(clock)
 	e := &moderationEnv{
 		h: h, clock: clock, ids: ids, actors: &stubActors{actors: map[string]appaccount.Actor{}}, events: &eventLog{},
+		statuses:   &stubModerationStatuses{live: map[string]appcontent.Status{}, deleted: map[string]string{}, marked: map[string][]string{}},
+		lifecycles: &stubLifecycles{due: map[string]time.Time{}},
 	}
 	for _, typ := range []string{appmoderation.EventDomainRestrictionsChanged, appmoderation.EventAccountRestrictionsChanged, appmoderation.EventReportFiled} {
 		projectors.Register(typ, e.events.record)
 	}
 	e.svc = appmoderation.NewService(appmoderation.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Moderation, Accounts: e.actors, Clock: clock, IDs: ids,
+		Statuses: e.statuses, Lifecycles: e.lifecycles,
 	})
 	e.policy = appmoderation.NewFederationPolicy(h.Moderation, clock)
 	e.accounts = appmoderation.NewAccountPolicy(h.Moderation, e.actors, clock)
@@ -225,9 +237,7 @@ func moderationAccountActions(t *testing.T, e *moderationEnv) {
 		{TargetAccountID: e.remote, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategoryOther},
 		{TargetAccountID: e.remote, Kind: moderation.ActionDisableLogin, ReasonCategory: moderation.CategoryOther},
 		{TargetAccountID: e.remote, Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionDeleteStatuses, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionMarkStatusesSensitive, ReasonCategory: moderation.CategoryOther},
+		{TargetAccountID: e.remote, Kind: moderation.ActionDeleteStatuses, ReasonCategory: moderation.CategoryOther, StatusIDs: []string{e.ids.NewID()}},
 		{TargetAccountID: e.instance, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategoryOther},
 	} {
 		if _, err := e.svc.IssueAccountAction(ctx, in); !errors.Is(err, appmoderation.ErrUnsupportedAction) {
@@ -320,6 +330,26 @@ func moderationLocalAccountActions(t *testing.T, e *moderationEnv) {
 	if v, err := e.svc.AccountAction(ctx, posting.ID); err != nil || v.State != moderation.ActionExpired {
 		t.Errorf("AccountAction(expired) = %+v, %v", v, err)
 	}
+
+	// A limit keeps the account's notifications from the accounts that do not follow it, and so
+	// does a limit on its domain.
+	reach := func(when, accountID string, want bool) {
+		t.Helper()
+		if got, err := e.accounts.UnsolicitedReachRestricted(ctx, accountID); err != nil || got != want {
+			t.Errorf("%s: UnsolicitedReachRestricted = %v, %v; want %v", when, got, err, want)
+		}
+	}
+	limit := issue(moderation.ActionLimit, 0)
+	reach("limit", e.local, true)
+	lift(limit)
+	reach("limit lifted", e.local, false)
+	domainLimit := e.domainAction(t, "remote.example", moderation.DomainLimit, 0)
+	reach("domain limit", e.remote, true)
+	reach("local after a domain limit", e.local, false)
+	if err := e.svc.LiftDomainAction(ctx, domainLimit.ID, "user-1"); err != nil {
+		t.Fatalf("LiftDomainAction(limit) = %v", err)
+	}
+	reach("domain limit lifted", e.remote, false)
 
 	// The restrictions of the account's domain apply to a remote account.
 	e.domainAction(t, "remote.example", moderation.DomainSuspend, 0)
@@ -730,6 +760,106 @@ func moderationListsPublicDomainActions(t *testing.T, e *moderationEnv) {
 	}
 	if want := []moderation.DomainActionKind{moderation.DomainRejectReports, moderation.DomainRejectMedia}; err != nil || !reflect.DeepEqual(kinds, want) {
 		t.Errorf("ListDomainActions(reject_media, reject_reports) = %v, %v; want %v", kinds, err, want)
+	}
+}
+
+// reportedStatuses is a stand-in for the content module: the statuses by ID with their authors,
+// and those that the viewer of hidden may not see.
+type reportedStatuses struct {
+	authors map[string]string
+	hidden  map[string]bool
+}
+
+func (s reportedStatuses) Visible(_ context.Context, _ appcontent.Viewer, id string) (appcontent.Status, error) {
+	author, ok := s.authors[id]
+	if !ok || s.hidden[id] {
+		return appcontent.Status{}, fmt.Errorf("status %s: %w", id, appcontent.ErrNotFound)
+	}
+	return appcontent.Status{ID: id, AuthorAccountID: author}, nil
+}
+
+// citableRules is a stand-in for the instance module: the rules in effect.
+type citableRules map[string]bool
+
+func (r citableRules) RuleInEffect(_ context.Context, id string) (bool, error) { return r[id], nil }
+
+func moderationLocalReports(t *testing.T, e *moderationEnv) {
+	ctx := t.Context()
+	reporter := e.ids.NewID()
+	e.actors.set(appaccount.Actor{Account: account.Account{ID: reporter, Domain: account.LocalDomain}})
+	statuses := reportedStatuses{
+		authors: map[string]string{"r1": e.remote, "r2": e.remote, "hidden": e.remote, "mine": reporter},
+		hidden:  map[string]bool{"hidden": true},
+	}
+	reports := appmoderation.NewLocalReports(appmoderation.LocalReportDeps{
+		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Moderation, Accounts: e.actors, Statuses: statuses,
+		Rules: citableRules{"rule-1": true, "rule-2": true}, Clock: e.clock, IDs: e.ids,
+	})
+	r, err := reports.File(ctx, appmoderation.LocalReportInput{
+		ReporterAccountID: reporter, TargetAccountID: e.remote, StatusIDs: []string{"r2", "r1", "r2"},
+		Category: moderation.CategoryViolation, RuleIDs: []string{"rule-2", "rule-1"}, Comment: "rude", Forward: true,
+	})
+	if err != nil {
+		t.Fatalf("File = %v", err)
+	}
+	if !reflect.DeepEqual(r.StatusIDs, []string{"r1", "r2"}) || !reflect.DeepEqual(r.RuleIDs, []string{"rule-1", "rule-2"}) || !r.Forwarded || r.URI != "" {
+		t.Errorf("report = %+v, want the statuses r1 and r2, the rules rule-1 and rule-2, forwarded", r)
+	}
+	got, err := e.svc.ReportRecord(ctx, r.ID)
+	if err != nil || !reflect.DeepEqual(got.Report, r) || got.Status.State != moderation.ReportOpen || !got.Status.Since.Equal(r.FiledAt) {
+		t.Errorf("ReportRecord = %+v, %v; want %+v, open", got, err, r)
+	}
+	listed, err := e.svc.Reports(ctx, appmoderation.ReportQuery{State: moderation.ReportOpen}, 10)
+	if err != nil || len(listed) != 1 || !reflect.DeepEqual(listed[0].Report, r) {
+		t.Errorf("Reports(open) = %+v, %v; want the report", listed, err)
+	}
+	if events := e.events.take(); len(events) != 1 {
+		t.Errorf("events = %+v, want one ReportFiled", events)
+	}
+
+	// A local target is never forwarded to; a report without statuses or rules is a report.
+	local, err := reports.File(ctx, appmoderation.LocalReportInput{
+		ReporterAccountID: reporter, TargetAccountID: e.local, Category: moderation.CategorySpam, Forward: true,
+	})
+	if err != nil || local.Forwarded || len(local.StatusIDs) != 0 || len(local.RuleIDs) != 0 {
+		t.Errorf("File(local target) = %+v, %v; want a report that is not forwarded", local, err)
+	}
+
+	for _, tc := range []struct {
+		name  string
+		in    appmoderation.LocalReportInput
+		field string
+	}{
+		{"a status the reporter may not see", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{"r1", "hidden"}, Category: moderation.CategorySpam}, "status_ids"},
+		{"another account's status", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{"mine"}, Category: moderation.CategorySpam}, "status_ids"},
+		{"an unknown status", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{"gone"}, Category: moderation.CategorySpam}, "status_ids"},
+		{"a rule of another category", appmoderation.LocalReportInput{TargetAccountID: e.remote, Category: moderation.CategorySpam, RuleIDs: []string{"rule-1"}}, "rule_ids"},
+		{"an unknown category", appmoderation.LocalReportInput{TargetAccountID: e.remote, Category: "abuse"}, "category"},
+		{"a rule not in effect", appmoderation.LocalReportInput{TargetAccountID: e.remote, Category: moderation.CategoryViolation, RuleIDs: []string{"retired"}}, "rule_ids"},
+		{"the reporter", appmoderation.LocalReportInput{TargetAccountID: reporter, Category: moderation.CategorySpam}, "account_id"},
+		{"an unknown account", appmoderation.LocalReportInput{TargetAccountID: e.ids.NewID(), Category: moderation.CategorySpam}, "account_id"},
+	} {
+		tc.in.ReporterAccountID = reporter
+		_, err := reports.File(ctx, tc.in)
+		var fieldErr *appmoderation.ReportFieldError
+		if !errors.Is(err, moderation.ErrInvalidReport) || !errors.As(err, &fieldErr) || fieldErr.Field != tc.field {
+			t.Errorf("File(%s) = %v, want a *ReportFieldError of %s", tc.name, err, tc.field)
+		}
+	}
+	for _, in := range []appmoderation.LocalReportInput{
+		{TargetAccountID: e.remote, Category: moderation.CategoryOther, Comment: strings.Repeat("a", moderation.MaxLocalReportComment+1)},
+	} {
+		in.ReporterAccountID = reporter
+		if _, err := reports.File(ctx, in); !errors.Is(err, moderation.ErrInvalidReport) {
+			t.Errorf("File(%+v) = %v, want ErrInvalidReport", in, err)
+		}
+	}
+	if events := e.events.take(); len(events) != 1 {
+		t.Errorf("events = %+v, want one ReportFiled for the report on the local account alone", events)
+	}
+	all, err := e.svc.ReportsOf(ctx, e.remote)
+	if err != nil || len(all) != 1 {
+		t.Errorf("ReportsOf(remote) = %+v, %v; want only the filed report", all, err)
 	}
 }
 

@@ -186,7 +186,14 @@ func (p *Previews) Status(ctx context.Context, statusID string) (StatusPreview, 
 	if out.Language == "" || out.Language == UndeterminedLanguage {
 		out.Language = prof.Language
 	}
-	if !rev.Sensitive && rev.SpoilerText == "" {
+	// Moderation may show the attachments as sensitive (data-model §5.2): the preview shows none.
+	sensitive := rev.Sensitive || r.MediaSensitive
+	if !sensitive && len(rev.Attachments) > 0 {
+		if sensitive, err = p.d.Repository.SensitivityOverridden(ctx, st.ID); err != nil {
+			return StatusPreview{}, err
+		}
+	}
+	if !sensitive && rev.SpoilerText == "" {
 		for _, at := range rev.Attachments {
 			img, err := p.Image(ctx, at.MediaID, at.Description)
 			if err != nil {
