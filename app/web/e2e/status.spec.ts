@@ -225,7 +225,8 @@ test("the viewer's own post asks before it is deleted", async ({ page, makeAxeBu
   // A page of the viewer's own post is not their profile page. (The actions show once signed in.)
   await expect(page.getByRole("main").getByRole("article").getByRole("button", { name: message("status.action.more") })).toBeVisible();
   const navigation = page.getByRole("navigation", { name: message("shell.nav.label") });
-  await expect(navigation.getByRole("link", { name: message("shell.nav.profile") })).not.toHaveAttribute("aria-current");
+  // Found by its address: below md the rail's Profile is hidden and the menu's sheet has the same item (ADR-0039).
+  await expect(navigation.locator('a[href="/profile"]')).not.toHaveAttribute("aria-current");
 
   await page.getByRole("main").getByRole("article").getByRole("button", { name: message("status.action.more") }).click();
   await page.getByRole("menuitem", { name: message("status.action.delete") }).click();

@@ -2,10 +2,24 @@
 // The app shell in every width × locale project (ADR-0027): the layout of each page, its landmarks, and
 // what a navigation does to focus and the document title (web-client.md Y5). Names change with the
 // locale, so elements are found by role and position, and texts are compared with each other.
+import type { Page } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 
 /** Every page of the shell, in the order of the navigation. */
-const pages = ["/home", "/local", "/search", "/notifications", "/profile", "/settings"] as const;
+const pages = ["/home", "/local", "/notifications", "/search", "/profile", "/settings"] as const;
+
+/** The pages that phones reach from the menu's sheet instead of the tab bar (ADR-0039). */
+const menuPages: ReadonlySet<string> = new Set(["/profile", "/settings"]);
+
+/** Whether the project's viewport has the phones' tab bar rather than the rail (Tailwind's md). */
+function hasTabBar(page: Page): boolean {
+  return (page.viewportSize()?.width ?? 0) < 768;
+}
+
+/** The items of the navigation that the project's width shows; the others are hidden (display: none). */
+function shownItems(page: Page) {
+  return page.getByRole("navigation").getByRole("listitem").filter({ visible: true });
+}
 
 /** The instance name in index.html's runtime config. */
 const instanceName = "my example";
@@ -34,8 +48,19 @@ for (const path of pages) {
       const heading = await page.getByRole("heading", { level: 1 }).textContent();
       expect(heading).toBeTruthy();
       await expect(page).toHaveTitle(new RegExp(`${escapeRegExp(heading ?? "")}.*${escapeRegExp(instanceName)}`));
-      await expect(page.getByRole("navigation").locator(`a[href="${path}"]`)).toHaveAttribute("aria-current", "page");
-      await expect(page.locator('nav a[aria-current="page"]')).toHaveCount(1);
+      const current = page.locator('nav a[aria-current="page"]').filter({ visible: true });
+      if (hasTabBar(page) && menuPages.has(path)) {
+        // On phones the page is in the menu's sheet, which marks it; no item of the tab bar is current.
+        await expect(current).toHaveCount(0);
+        await page.getByRole("navigation").getByRole("button").click();
+        const sheet = page.getByRole("dialog");
+        await expect(sheet.locator(`a[href="${path}"]`)).toHaveAttribute("aria-current", "page");
+        await expect(sheet.locator('a[aria-current="page"]')).toHaveCount(1);
+      } else {
+        // On phones /local is the tab bar's Timelines, which links to it.
+        await expect(current).toHaveCount(1);
+        await expect(current).toHaveAttribute("href", path);
+      }
     });
   });
 }
@@ -66,24 +91,16 @@ test.describe("layout", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  test("exposes the skip link, the navigation with six links, and the main landmark with one level-one heading", async ({ page }) => {
+  test("exposes the skip link, the navigation, and the main landmark with one level-one heading", async ({ page }) => {
+    // Phones: Home, Timelines, Notifications, Search and the Menu button (ADR-0039). From md: Home, Local,
+    // Notifications, Search, Profile and Settings (the instance answers nothing here, so no Federated).
+    const items = hasTabBar(page) ? ["link", "link", "link", "link", "button"] : ["link", "link", "link", "link", "link", "link"];
     await expect(page.locator("body")).toMatchAriaSnapshot(`
       - link
       - navigation:
         - list:
           - /children: equal
-          - listitem:
-            - link
-          - listitem:
-            - link
-          - listitem:
-            - link
-          - listitem:
-            - link
-          - listitem:
-            - link
-          - listitem:
-            - link
+${items.map((role) => `          - listitem:\n            - ${role}`).join("\n")}
       - main:
         - heading [level=1]
     `);
@@ -107,8 +124,8 @@ test.describe("layout", () => {
   });
 
   test("shows the icon of every navigation item at one size", async ({ page }) => {
-    const icons = page.getByRole("navigation").getByRole("link").locator("svg");
-    await expect(icons).toHaveCount(6);
+    const icons = shownItems(page).locator("svg");
+    await expect(icons).toHaveCount(hasTabBar(page) ? 5 : 6);
     for (const icon of await icons.all()) {
       expect(await icon.boundingBox()).toMatchObject({ width: 24, height: 24 });
     }
@@ -126,7 +143,8 @@ test.describe("navigation", () => {
     const firstHeading = await page.getByRole("heading", { level: 1 }).textContent();
     await expect(page.getByRole("heading", { level: 1 })).not.toBeFocused();
 
-    const local = page.getByRole("navigation").locator('a[href="/local"]');
+    // The tab bar's Timelines on phones, Local from md: both link to the local timeline.
+    const local = page.getByRole("navigation").locator('a[href="/local"]').filter({ visible: true });
     if (hasTouch) await local.tap();
     else await local.click();
 
@@ -148,15 +166,64 @@ test.describe("navigation", () => {
     await page.keyboard.press("Enter");
     await expect(page.getByRole("main")).toBeFocused();
 
-    await page.getByRole("navigation").locator('a[href="/settings"]').focus();
+    await page.getByRole("navigation").locator('a[href="/search"]').focus();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/settings$/);
+    await expect(page).toHaveURL(/\/search$/);
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
 
     await page.goBack();
     await expect(page).toHaveURL(/\/home$/);
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
     await expect(page.getByRole("navigation").locator('a[href="/home"]')).toHaveAttribute("aria-current", "page");
+  });
+});
+
+test.describe("the menu of the phones' tab bar", () => {
+  test.beforeEach(async ({ page }) => {
+    test.skip(!hasTabBar(page), "the rail from md has every item and no menu");
+    await page.goto("/home");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
+  test("opens a sheet with the profile and the settings from the keyboard, and Esc gives focus back", async ({ page, makeAxeBuilder }) => {
+    const menu = page.getByRole("navigation").getByRole("button");
+    await menu.focus();
+    await page.keyboard.press("Enter");
+
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toMatchAriaSnapshot(`
+      - dialog:
+        - heading [level=2]
+        - button
+        - list:
+          - listitem:
+            - link
+          - listitem:
+            - link
+    `);
+    await expect(sheet.getByRole("link")).toHaveText([/./, /./]);
+    await expect(sheet.locator('a[href="/profile"]')).toBeVisible();
+    await expect(sheet.locator('a[href="/settings"]')).toBeVisible();
+    await expect(sheet.locator('a[aria-current="page"]')).toHaveCount(0);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(menu).toBeFocused();
+  });
+
+  test("closes when one of its links is followed, and focus moves to the new page's heading", async ({ page, hasTouch }) => {
+    const menu = page.getByRole("navigation").getByRole("button");
+    if (hasTouch) await menu.tap();
+    else await menu.click();
+    const settings = page.getByRole("dialog").locator('a[href="/settings"]');
+    if (hasTouch) await settings.tap();
+    else await settings.click();
+
+    await expect(page).toHaveURL(/\/settings$/);
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
   });
 });
 

@@ -719,6 +719,14 @@
     "defaultMessage": "[Ħǿǿḿḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "local.disabled.body": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ şħǿǿẇ ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ īŧş ȧȧƈƈǿǿŭŭƞŧş īƞ ǿǿƞḗḗ ŧīḿḗḗŀīƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "local.disabled.title": {
+    "defaultMessage": "[Ŧħḗḗ ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ īş ǿǿƒƒ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "local.title": {
     "defaultMessage": "[Ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1755,6 +1763,14 @@
     "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.menu.close": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.menu.title": {
+    "defaultMessage": "[Ḿḗḗƞŭŭ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.nav.home": {
     "defaultMessage": "[Ħǿǿḿḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1765,6 +1781,10 @@
   },
   "shell.nav.local": {
     "defaultMessage": "[Ŀǿǿƈȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.menu": {
+    "defaultMessage": "[Ḿḗḗƞŭŭ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.nav.notifications": {
@@ -1789,6 +1809,10 @@
   },
   "shell.nav.settings": {
     "defaultMessage": "[Şḗḗŧŧīƞɠş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.timelines": {
+    "defaultMessage": "[Ŧīḿḗḗŀīƞḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.not_found.body": {
@@ -2073,6 +2097,18 @@
   },
   "timeline.signed_out.heading": {
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ şīɠƞḗḗḓ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.tabs.label": {
+    "defaultMessage": "[Ŧīḿḗḗŀīƞḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.tabs.local": {
+    "defaultMessage": "[Ŀǿǿƈȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.tabs.public": {
+    "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   }
 }

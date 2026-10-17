@@ -25,11 +25,15 @@ type RegistrationRepository interface {
 	InsertRegistrationDecision(ctx context.Context, tx uow.Tx, d identity.RegistrationDecision) error
 	// UpsertRegistrationState sets the current registration state of s.UserID.
 	UpsertRegistrationState(ctx context.Context, tx uow.Tx, s identity.UserRegistrationState) error
+	// TransitionPendingRegistrationState sets the registration state of s.UserID only while it
+	// is pending, and reports whether it did.
+	TransitionPendingRegistrationState(ctx context.Context, tx uow.Tx, s identity.UserRegistrationState) (bool, error)
 	FindRegistrationApplication(ctx context.Context, userID string) (identity.RegistrationApplication, error)
 	FindRegistrationState(ctx context.Context, userID string) (identity.UserRegistrationState, error)
 	// ListRegistrations returns the users in a registration state with their applications,
-	// longest in the state first, at most limit of them.
-	ListRegistrations(ctx context.Context, state identity.RegistrationState, limit int) ([]RegistrationEntry, error)
+	// longest in the state first, after the position after (all of them for the zero
+	// position), at most limit of them.
+	ListRegistrations(ctx context.Context, state identity.RegistrationState, after RegistrationPosition, limit int) ([]RegistrationEntry, error)
 	// CountRegistrations counts the users in a registration state.
 	CountRegistrations(ctx context.Context, state identity.RegistrationState) (int64, error)
 
@@ -59,6 +63,18 @@ type RegistrationRepository interface {
 	FindPrimaryEmail(ctx context.Context, userID string) (identity.EmailAddress, bool, error)
 }
 
+// RegistrationPosition is the place of a registration in ListRegistrations: the time it
+// entered its state and its user. The zero position is before every registration.
+type RegistrationPosition struct {
+	Since  time.Time
+	UserID string
+}
+
+// Position returns the place of e in ListRegistrations.
+func (e RegistrationEntry) Position() RegistrationPosition {
+	return RegistrationPosition{Since: e.State.Since, UserID: e.Application.UserID}
+}
+
 // RegistrationEntry is a user's registration as moderators review it.
 type RegistrationEntry struct {
 	Application identity.RegistrationApplication
@@ -66,8 +82,10 @@ type RegistrationEntry struct {
 	// Email is the user's primary email address and EmailVerified whether it is confirmed.
 	Email         string
 	EmailVerified bool
-	// Username is the username of the user's local account.
-	Username string
+	// AccountID and Username are the ID and username of the user's local account, "" when
+	// it is gone.
+	AccountID string
+	Username  string
 }
 
 // Errors of the registration use cases.
@@ -525,23 +543,63 @@ const MaxListLimit = 1000
 // ListRegistrations returns the registrations in a state, longest in the state first, at most
 // limit (1 to MaxListLimit) of them, with the usernames of their local accounts.
 func (s *Service) ListRegistrations(ctx context.Context, state identity.RegistrationState, limit int) ([]RegistrationEntry, error) {
+	return s.ListRegistrationsAfter(ctx, state, RegistrationPosition{}, limit)
+}
+
+// ListRegistrationsAfter is ListRegistrations from after a position, for the pages that follow
+// the first.
+func (s *Service) ListRegistrationsAfter(ctx context.Context, state identity.RegistrationState, after RegistrationPosition, limit int) ([]RegistrationEntry, error) {
 	if limit < 1 || limit > MaxListLimit {
 		return nil, fmt.Errorf("identity: limit must be 1 to %d", MaxListLimit)
 	}
-	entries, err := s.d.Repository.ListRegistrations(ctx, state, limit)
+	entries, err := s.d.Repository.ListRegistrations(ctx, state, after, limit)
 	if err != nil {
 		return nil, err
 	}
 	for i := range entries {
-		la, err := s.d.Accounts.LocalAccountOfUser(ctx, entries[i].Application.UserID)
-		switch {
-		case err == nil:
-			entries[i].Username = la.Username
-		case !errors.Is(err, account.ErrNotFound):
+		if entries[i].AccountID, entries[i].Username, err = s.localAccountOf(ctx, entries[i].Application.UserID); err != nil {
 			return nil, err
 		}
 	}
 	return entries, nil
+}
+
+// Registration returns the registration of a user, in whatever state. It fails with
+// ErrNotFound when the user did not sign up on the registration page.
+func (s *Service) Registration(ctx context.Context, userID string) (RegistrationEntry, error) {
+	app, err := s.d.Repository.FindRegistrationApplication(ctx, userID)
+	if err != nil {
+		return RegistrationEntry{}, err
+	}
+	st, err := s.d.Repository.FindRegistrationState(ctx, userID)
+	if err != nil {
+		return RegistrationEntry{}, err
+	}
+	e := RegistrationEntry{Application: app, State: st}
+	email, verified, err := s.d.Repository.FindPrimaryEmail(ctx, userID)
+	switch {
+	case err == nil:
+		e.Email, e.EmailVerified = email.Address, verified
+	case !errors.Is(err, ErrNotFound):
+		return RegistrationEntry{}, err
+	}
+	if e.AccountID, e.Username, err = s.localAccountOf(ctx, userID); err != nil {
+		return RegistrationEntry{}, err
+	}
+	return e, nil
+}
+
+// localAccountOf returns the ID and username of a user's local account, or "" for both when
+// it is gone.
+func (s *Service) localAccountOf(ctx context.Context, userID string) (id, username string, err error) {
+	la, err := s.d.Accounts.LocalAccountOfUser(ctx, userID)
+	switch {
+	case err == nil:
+		return la.AccountID, la.Username, nil
+	case errors.Is(err, account.ErrNotFound):
+		return "", "", nil
+	}
+	return "", "", err
 }
 
 // DecideInput is a moderator's decision on a pending registration.
@@ -556,7 +614,8 @@ type DecideInput struct {
 // DecideRegistration approves or rejects a pending registration. It fails with
 // identity.ErrInvalidNote for a note that identity.ValidateDecisionNote rejects, with
 // ErrNotFound when the user has no application, and with ErrNotPending when the registration is
-// already decided. The decision is audited in its transaction (ADR-0037).
+// already decided, also by a concurrent decision: a decided registration never changes again.
+// The decision is audited in its transaction (ADR-0037).
 func (s *Service) DecideRegistration(ctx context.Context, in DecideInput) (identity.RegistrationDecision, error) {
 	if in.Decision != identity.DecisionApproved && in.Decision != identity.DecisionRejected {
 		return identity.RegistrationDecision{}, fmt.Errorf("identity: unknown decision %q", in.Decision)
@@ -585,13 +644,16 @@ func (s *Service) DecideRegistration(ctx context.Context, in DecideInput) (ident
 		return identity.RegistrationDecision{}, err
 	}
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := s.d.Repository.InsertRegistrationDecision(ctx, tx, d); err != nil {
-			return err
-		}
-		err := s.d.Repository.UpsertRegistrationState(ctx, tx, identity.UserRegistrationState{
+		moved, err := s.d.Repository.TransitionPendingRegistrationState(ctx, tx, identity.UserRegistrationState{
 			UserID: in.UserID, State: in.Decision.State(), Since: now,
 		})
 		if err != nil {
+			return err
+		}
+		if !moved {
+			return ErrNotPending
+		}
+		if err := s.d.Repository.InsertRegistrationDecision(ctx, tx, d); err != nil {
 			return err
 		}
 		return tx.Emit(ctx, audit)
