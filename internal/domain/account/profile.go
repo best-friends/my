@@ -28,6 +28,25 @@ type ProfileRevision struct {
 	Fields        []ProfileField
 	// Source is what the owner typed, nil for a revision without one (remote profiles).
 	Source *ProfileSource
+	// Remote is where a remote revision came from, nil for a local one.
+	Remote *RemoteProfileSource
+}
+
+// SameContent reports whether r and o present the same profile: everything but their
+// identity, Seq, time, and sources.
+func (r ProfileRevision) SameContent(o ProfileRevision) bool {
+	if r.DisplayName != o.DisplayName || r.NoteHTML != o.NoteHTML || r.Locked != o.Locked || r.Bot != o.Bot ||
+		r.Discoverable != o.Discoverable || r.Indexable != o.Indexable ||
+		r.AvatarMediaID != o.AvatarMediaID || r.HeaderMediaID != o.HeaderMediaID || len(r.Fields) != len(o.Fields) {
+		return false
+	}
+	for i, f := range r.Fields {
+		g := o.Fields[i]
+		if f.Position != g.Position || f.Name != g.Name || f.ValueHTML != g.ValueHTML {
+			return false
+		}
+	}
+	return true
 }
 
 // ProfileField is one metadata field of a profile revision (FR-006), ordered by Position.

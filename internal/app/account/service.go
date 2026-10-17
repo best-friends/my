@@ -34,6 +34,13 @@ type Deps struct {
 	// an image that the account uploaded and that was processed successfully (the content
 	// module); nil accepts no image.
 	CheckProfileImage func(ctx context.Context, accountID, mediaID string) error
+	// Sanitizer cleans the HTML of remote profiles (ADR-0019 §2); remote actors cannot be
+	// stored without it.
+	Sanitizer kernel.HTMLSanitizer
+	// RecordRemoteImage records the avatar or header image of a remote actor at url inside tx
+	// and returns its media file ID (the content module); nil keeps remote profiles without
+	// images.
+	RecordRemoteImage func(ctx context.Context, tx uow.Tx, accountID, url string) (string, error)
 }
 
 // ErrUnusableImage reports an avatar or header that is not a processed image of the account.

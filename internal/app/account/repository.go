@@ -19,6 +19,8 @@ var (
 	// ErrInstanceActorExists reports a second instance actor: there is only one local
 	// Application actor.
 	ErrInstanceActorExists = errors.New("account: the instance actor already exists")
+	// ErrNotRemote reports a remote actor's document whose id is a local account's.
+	ErrNotRemote = errors.New("account: not a remote account")
 )
 
 // Repository is the persistence port of the account module (data-model §4.2). The database
@@ -104,4 +106,6 @@ type Repository interface {
 	// CountLocalAccounts counts the local accounts of users (not the instance actor) that are
 	// not deleted.
 	CountLocalAccounts(ctx context.Context) (int, error)
+
+	RemoteRepository
 }

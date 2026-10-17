@@ -129,6 +129,9 @@ type App struct {
 	// FanOut turns the outbound activities that the federation projectors record into
 	// deliveries (docs/architecture/federation.md §7).
 	FanOut *federation.FanOut
+	// RemoteActors fetches remote actors, checks their handles, keeps their keys, and resolves
+	// the keys of inbound signatures (docs/architecture/federation.md §6).
+	RemoteActors *federation.RemoteActors
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -204,7 +207,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feeds        timeline.Repository
 		notifs       notification.Repository
 		medias       content.MediaRepository
-		feds         federation.Repository
+		feds         federationRepository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -286,6 +289,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		CheckProfileImage: func(ctx context.Context, accountID, mediaID string) error {
 			return a.Media.CheckProfileImage(ctx, accountID, mediaID)
 		},
+		Sanitizer:         newHTMLSanitizer(),
+		RecordRemoteImage: a.recordRemoteImage,
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{
@@ -368,6 +373,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	a.setUpRemoteActors(cfg, feds)
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: content.NoRestrictions{}, Media: a.Media,

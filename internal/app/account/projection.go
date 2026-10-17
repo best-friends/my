@@ -44,8 +44,9 @@ type LifecycleEventRecorded struct {
 func (LifecycleEventRecorded) EventType() string { return EventLifecycleEventRecorded }
 
 // RegisterProjectors registers the account module's synchronous projectors (data-model §9):
-// account_handles from local accounts, account_profile_heads from profile revisions, and
-// account_lifecycle_states from lifecycle events. Each projector applies the same rule as
+// account_handles from local accounts and the handle checks of remote actors,
+// account_profile_heads from profile revisions, account_lifecycle_states from lifecycle events,
+// and remote_account_heads from the fetches of remote actors. Each projector applies the same rule as
 // RebuildProjections, so updating incrementally and rebuilding agree.
 func RegisterProjectors(r *uow.Projectors, repo Repository) {
 	r.Register(EventLocalAccountCreated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
@@ -74,6 +75,26 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 		}
 		return repo.UpsertLifecycleState(ctx, tx, state.Apply(ev))
 	})
+	r.Register(EventRemoteActorFetched, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		return repo.UpsertRemoteHead(ctx, tx, e.(RemoteActorFetched).Head)
+	})
+	r.Register(EventHandleChecked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		return applyHandleCheck(ctx, tx, repo, e.(HandleChecked).Verification)
+	})
+}
+
+// applyHandleCheck makes account_handles follow the newest handle check of a remote actor: a
+// verified handle is the account's (taken from another account that verified the same name
+// before), and a mismatch leaves the account without one.
+func applyHandleCheck(ctx context.Context, tx uow.Tx, repo Repository, v account.HandleVerification) error {
+	h, ok := v.Handle()
+	if !ok {
+		return repo.DeleteHandle(ctx, tx, v.AccountID)
+	}
+	if err := repo.DeleteOtherHandle(ctx, tx, h); err != nil {
+		return err
+	}
+	return repo.UpsertHandle(ctx, tx, h)
 }
 
 func localHandle(la account.LocalAccount) account.Handle {
@@ -114,6 +135,15 @@ func rebuildHandles(ctx context.Context, tx uow.Tx, repo Repository) error {
 	}
 	for _, la := range locals {
 		if err := repo.UpsertHandle(ctx, tx, localHandle(la)); err != nil {
+			return err
+		}
+	}
+	checks, err := repo.ListLatestHandleVerifications(ctx, tx)
+	if err != nil {
+		return err
+	}
+	for _, v := range checks {
+		if err := applyHandleCheck(ctx, tx, repo, v); err != nil {
 			return err
 		}
 	}

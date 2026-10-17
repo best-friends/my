@@ -423,11 +423,12 @@ type RegistrationApplication struct {
 }
 
 type RemoteAccountHandleVerification struct {
-	ID         string
-	AccountID  string
-	Username   string
-	Domain     string
-	VerifiedAt time.Time
+	ID        string
+	AccountID string
+	Username  string
+	Domain    string
+	Outcome   string
+	CheckedAt time.Time
 }
 
 type RemoteAccountHead struct {
