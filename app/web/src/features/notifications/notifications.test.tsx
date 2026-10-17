@@ -4,9 +4,10 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
 import { notificationsFixture } from "./test/handlers";
-import { otherAccountFixture, statusFixture } from "../../test/fixtures";
+import { otherAccountFixture, relationshipFixture, statusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Notification, NotificationMarker, NotificationType } from "./api/notifications";
@@ -71,12 +72,16 @@ describe("the notifications page", () => {
     const feed = await screen.findByRole("feed", { name: "Notifications" });
     const articles = within(feed).getAllByRole("article");
     expect(articles).toHaveLength(2);
-    // Names are wrapped in directional isolates (FSI … PDI). The mention came after the marker: it stays marked new while the page is open.
-    expect(articles[0]).toHaveAccessibleName(/^Unread: \u2068Bob\u2069 mentioned you/);
-    expect(articles[1]).toHaveAccessibleName(/^\u2068Bob\u2069 followed you/);
-    // The post the mention is about.
-    expect(await within(articles[0] ?? feed).findByText("hello", { exact: false })).toBeInTheDocument();
-    expect(within(articles[0] ?? feed).getByRole("link", { name: "Open post" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
+    // The mention came after the marker: it stays marked new while the page is open.
+    expect(articles[0]).toHaveAccessibleName(/^Unread: Bob mentioned you/);
+    expect(articles[1]).toHaveAccessibleName(/^Bob followed you/);
+    // The post the mention is about is quoted as its text, in one link to its page.
+    expect(within(articles[0] ?? feed).getByRole("link", { name: "@alice hello" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
+    // The time is relative as in the timelines, with the full date and time as its tooltip.
+    const time = within(articles[0] ?? feed).getByRole("time");
+    expect(time).toHaveAttribute("datetime", "2026-10-16T09:00:00Z");
+    expect(time.getAttribute("title")).toMatch(/2026/);
+    expect(time.textContent).not.toBe(time.getAttribute("title"));
 
     // Showing the list moved the marker to the newest notification, once, and the badge went away.
     await waitFor(() => {
@@ -96,7 +101,7 @@ describe("the notifications page", () => {
     await renderApp({ path: "/notifications" });
 
     const feed = await screen.findByRole("feed", { name: "Notifications" });
-    expect(within(feed).getAllByRole("article")[0]).toHaveAccessibleName(/^\u2068Bob\u2069 mentioned you/);
+    expect(within(feed).getAllByRole("article")[0]).toHaveAccessibleName(/^Bob mentioned you/);
     expect(marker.updates).toEqual([]);
   });
 
@@ -106,7 +111,7 @@ describe("the notifications page", () => {
     const { user, router } = await renderApp({ path: "/notifications" });
     const feed = await screen.findByRole("feed", { name: "Notifications" });
 
-    await user.click(within(feed).getByRole("link", { name: "Open post" }));
+    await user.click(within(feed).getByRole("link", { name: "@alice hello" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Post" })).toHaveFocus();
     expect(router.state.location.pathname).toBe("/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
@@ -131,7 +136,7 @@ describe("the notifications page", () => {
     expect(within(tabs).getByRole("tab", { name: "Follows" })).toHaveAttribute("aria-selected", "true");
     const feed = await screen.findByRole("feed", { name: "Notifications" });
     expect(within(feed).getAllByRole("article")).toHaveLength(1);
-    expect(within(feed).getByRole("article")).toHaveAccessibleName(/\u2068Bob\u2069 followed you/);
+    expect(within(feed).getByRole("article")).toHaveAccessibleName(/Bob followed you/);
     expect(requested).toEqual([["follow", "follow_request", "follow_accepted"]]);
 
     await user.click(within(tabs).getByRole("tab", { name: "Mentions" }));
@@ -139,7 +144,7 @@ describe("the notifications page", () => {
     await waitFor(() => {
       expect(router.state.location.search).toEqual({ filter: "mentions" });
     });
-    expect(await screen.findByRole("article", { name: /\u2068Bob\u2069 mentioned you/ })).toBeInTheDocument();
+    expect(await screen.findByRole("article", { name: /Bob mentioned you/ })).toBeInTheDocument();
     expect(within(tabs).getByRole("tab", { name: "Mentions" })).toHaveAttribute("aria-selected", "true");
     expect(marker.updates).toEqual([]);
   });
@@ -169,8 +174,35 @@ describe("the notifications page", () => {
     const feed = await screen.findByRole("feed", { name: "Notifications" });
     expect(within(feed).getAllByRole("article")).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: "Load more notifications" }));
-    expect(await within(feed).findByRole("article", { name: /\u2068Bob\u2069 followed you/ })).toBeInTheDocument();
+    expect(await within(feed).findByRole("article", { name: /Bob followed you/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Load more notifications" })).not.toBeInTheDocument();
+  });
+
+  test("shows the heading and a skeleton of notifications while the first page loads", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a2", unread_count: 0 });
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get(`${apiBase}/notifications`, async () => {
+        await released;
+        return HttpResponse.json({ items: notificationsFixture });
+      }),
+    );
+    const { user } = await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    await user.click(notificationsLink());
+
+    // After the router's pending delay, the page has its heading and a skeleton named once.
+    await findLoadingRegion("Loading notifications");
+    expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    release();
+
+    expect(await screen.findByRole("feed", { name: "Notifications" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading notifications")).not.toBeInTheDocument();
   });
 
   test("says when there is nothing to show", async () => {
@@ -196,21 +228,55 @@ describe("the notifications page", () => {
     }));
     server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
 
-    const { user } = await renderApp({ path: "/notifications" });
+    await renderApp({ path: "/notifications" });
 
     const feed = await screen.findByRole("feed", { name: "Notifications" });
     // Without a display name, the username stands in.
     expect(within(feed).getAllByRole("article").map((article) => article.getAttribute("aria-posinset"))).toEqual(["1", "2", "3", "4", "5", "6"]);
-    expect(within(feed).getByRole("article", { name: /\u2068bob\u2069 requested to follow you/ })).toBeInTheDocument();
-    expect(within(feed).getByRole("article", { name: /\u2068bob\u2069 accepted your follow request/ })).toBeInTheDocument();
-    expect(within(feed).getByRole("article", { name: /\u2068bob\u2069 favourited your post/ })).toBeInTheDocument();
+    expect(within(feed).getByRole("article", { name: /bob requested to follow you/ })).toBeInTheDocument();
+    expect(within(feed).getByRole("article", { name: /bob accepted your follow request/ })).toBeInTheDocument();
+    expect(within(feed).getByRole("article", { name: /bob favourited your post/ })).toBeInTheDocument();
     expect(within(feed).getByRole("article", { name: /A poll you took part in has ended/ })).toBeInTheDocument();
     expect(within(feed).getByRole("article", { name: /The moderators of this server sent you a notice/ })).toBeInTheDocument();
-    const boost = within(feed).getByRole("article", { name: /\u2068bob\u2069 boosted your post/ });
-    const toggle = await within(boost).findByRole("button", { name: "Show content" });
-    expect(within(boost).getByText("the ending")).not.toBeVisible();
-    await user.click(toggle);
-    expect(within(boost).getByText("the ending")).toBeVisible();
+    // A post behind a content warning shows the warning only; its page asks to open it.
+    const boost = within(feed).getByRole("article", { name: /bob boosted your post/ });
+    expect(within(boost).getByRole("link", { name: "Content warning: spoilers" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b2");
+    expect(within(boost).queryByText("the ending", { exact: false })).not.toBeInTheDocument();
+    // The types without an actor link to no profile.
+    expect(within(within(feed).getByRole("article", { name: /The moderators/ })).queryAllByRole("link")).toEqual([]);
+  });
+
+  test("links the actor to their profile and offers a follow back, one tab stop each", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a2", unread_count: 0 });
+    server.use(
+      http.get(`${apiBase}/accounts/relationships`, ({ request }) =>
+        HttpResponse.json(new URL(request.url).searchParams.getAll("id").map((id) => relationshipFixture(id, { followed_by: true }))),
+      ),
+    );
+    const { user, router } = await renderApp({ path: "/notifications?filter=follows" });
+    const follow = await screen.findByRole("article", { name: /Bob followed you/ });
+
+    // The follow back is the profile's follow button, without the menu of mute and block.
+    const followBack = await within(follow).findByRole("button", { name: "Follow back" });
+    expect(within(follow).getAllByRole("button")).toEqual([followBack]);
+    // The avatar is the same link as the name for the pointer, out of the tab order and hidden from screen readers.
+    const name = within(follow).getByRole("link", { name: "Bob" });
+    expect(within(follow).getAllByRole("link")).toEqual([name]);
+
+    // From the keyboard alone: the tab stops of the row are the name, then the follow back.
+    name.focus();
+    await user.tab();
+    expect(followBack).toHaveFocus();
+    await user.click(followBack);
+    expect(await within(follow).findByRole("button", { name: "Following" })).toHaveFocus();
+
+    await user.tab({ shift: true });
+    expect(name).toHaveFocus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/@bob");
+    });
   });
 
   test("offers a retry when the list fails", async () => {
@@ -224,7 +290,9 @@ describe("the notifications page", () => {
 
     const { user } = await renderApp({ path: "/notifications" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Something went wrong" })).toBeInTheDocument();
+    // The page keeps its heading; the list shows why it failed.
+    expect(await screen.findByText("Service Unavailable")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("feed", { name: "Notifications" })).toBeInTheDocument();

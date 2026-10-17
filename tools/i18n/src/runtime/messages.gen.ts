@@ -236,6 +236,8 @@ export interface MessageArgs {
   "client:admin.missing_permission.heading": {};
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
+  /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
+  "client:api.error.offline": {};
   /** The server could not handle the request (error {status}). Try again later. */
   "client:api.error.status": { status: string };
   /** Close */
@@ -398,18 +400,16 @@ export interface MessageArgs {
   "client:notifications.load_more": {};
   /** Loading notifications */
   "client:notifications.loading": {};
+  /** Content warning: {summary} */
+  "client:notifications.post.content_warning": { summary: string };
   /** Open post */
   "client:notifications.post.open": {};
-  /** Show content */
-  "client:notifications.post.show": {};
   /** Try again */
   "client:notifications.retry": {};
   /** Sign in */
   "client:notifications.sign_in": {};
   /** Sign in to see your notifications. */
   "client:notifications.signed_out": {};
-  /** {time, date, medium} {time, time, short} */
-  "client:notifications.time": { time: Date | number };
   /** Notifications */
   "client:notifications.title": {};
   /** {name} boosted your post */
@@ -512,6 +512,8 @@ export interface MessageArgs {
   "client:profile.list.load_more": {};
   /** Could not load more accounts: {reason} */
   "client:profile.list.load_more_failed": { reason: string };
+  /** Loading accounts */
+  "client:profile.list.loading": {};
   /** Try again */
   "client:profile.list.retry": {};
   /** Block */
@@ -790,6 +792,8 @@ export interface MessageArgs {
   "client:shell.not_found.home": {};
   /** Page not found */
   "client:shell.not_found.title": {};
+  /** You are offline. Anything that failed to load loads again when you are back online. */
+  "client:shell.offline": {};
   /** Skip to main content */
   "client:shell.skip_to_main": {};
   /** The server sent settings the app cannot read. Reload the page; if this keeps happening, tell the server's administrator. */

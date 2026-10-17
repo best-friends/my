@@ -107,8 +107,8 @@ export const fetchProperties = ["window", "globalThis", "self"].map((object) => 
 /** @type {ClassRestriction[]} Tailwind classes forbidden in every client source file. */
 export const classes = [
   {
-    // D7: physical directions, except under rtl: / ltr: (direction-specific icon flips).
-    pattern: String.raw`^(?!${variants}(?:rtl|ltr):)${variants}!?-?(?:m[lr]|p[lr]|scroll-[mp][lr]|left|right|rounded-[lr]|rounded-[tb][lr]|border-[lr]|text-(?:left|right)|float-(?:left|right)|clear-(?:left|right))(?:-|$)`,
+    // D7: physical directions, except under rtl: / ltr: (direction-specific icon flips, mask-l / mask-r edge fades).
+    pattern: String.raw`^(?!${variants}(?:rtl|ltr):)${variants}!?-?(?:m[lr]|p[lr]|scroll-[mp][lr]|left|right|rounded-[lr]|rounded-[tb][lr]|border-[lr]|mask-[lr]|text-(?:left|right)|float-(?:left|right)|clear-(?:left|right))(?:-|$)`,
     message: "Use logical utilities (ms- / me- / ps- / pe- / start- / end- / text-start / rounded-s / border-s); physical directions are allowed only under rtl: / ltr: (web-client.md D7).",
   },
   {

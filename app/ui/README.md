@@ -164,8 +164,10 @@ Icons are part of the kit, so that every screen draws the same shapes at the sam
   A screen never writes SVG paths of its own; a missing icon is added to the kit, with a story.
 - They are decorative: `aria-hidden="true"` and `focusable="false"`. The meaning is in the visible label or the accessible
   name of the control. An icon-only control has an `aria-label` and a `Tooltip` with the same text.
-- The control sizes its icon: `Button`, `ToggleButton` and `Link` size a child `svg` (`size-5` in buttons, `size-4` next to
-  `text-sm`), and the navigation uses `size-6`. An icon sets no size of its own, so it never renders at 0 × 0.
+- The control sizes its icon: `Button`, `ToggleButton` and `Link` size a child `svg` (`size-5` in buttons, also in a
+  `toolbar` button among toggles, `size-4` in a small button and next to a link's text), and a `navigation` link sizes
+  every `svg` in it at `size-6`. An icon sets no size of its own, and neither does the screen that places it, so it never
+  renders at 0 × 0.
 - A toggle shows its state by the icon's shape (filled, or a heavier stroke) as well as its color.
 - Icons with a direction (reply, back, forward) mirror in right-to-left text with `rtl:-scale-x-100`.
 
@@ -250,7 +252,7 @@ The overlay components wrap React Aria Components, which handle focus, Esc and t
 | `Popover` in a `PopoverTrigger` | Non-modal dialog | Named by `title` or `aria-label`. |
 | `Menu`, `MenuItem`, `MenuSeparator` in a `MenuTrigger`; `SubmenuTrigger` | Menu button | `intent="danger"` for destructive items. Submenus open towards the inline end. |
 | `Tooltip` in a `TooltipTrigger` | Tooltip | Describes its trigger; never the trigger's only name. |
-| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. |
+| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. Tabs that do not fit scroll sideways in the list, which has no scrollbar and fades out (statically, a 2rem mask) at each inline edge with hidden tabs (`data-overflow-start` / `data-overflow-end`); the focused or selected tab scrolls into view, clear of the fade. |
 | `AnnouncerProvider`, `useAnnouncer` | Live regions | One polite `role="status"` and one assertive `role="alert"` region for the app. |
 | `ToastProvider`, `useToast` | Toasts | Announced through the Announcer; the visible list is a labelled region. |
 | `StatusMessage` | Status | The result of an action that stays on the page: a `role="status"` region, empty until it has a message. |

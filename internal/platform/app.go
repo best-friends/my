@@ -497,6 +497,10 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) qu
 	federation.RegisterSuspensionProjectors(a.Projectors, federation.RecorderDeps{
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
 	})
+	// Forwarded reports (FR-709) are Flags of the instance actor.
+	federation.RegisterReportProjectors(a.Projectors, federation.RecorderDeps{
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
+	}, a.Accounts)
 	return outbox
 }
 
@@ -508,6 +512,7 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
 		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph,
 		Blocks:  a.Graph,
+		Reports: a.Moderation,
 		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,

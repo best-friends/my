@@ -3,5 +3,6 @@
 // navigation. Other features and routes use it through this file only (web-client.md A3).
 export { notificationFilters, notificationMarkerQueryOptions, notificationsQueryOptions, type NotificationFilter } from "./api/notifications";
 export { catchUpNotifications, receiveNotification } from "./api/live";
+export { NotificationsSkeleton } from "./components/NotificationsSkeleton";
 export { NotificationsView } from "./components/NotificationsView";
 export { useUnreadNotificationCount } from "./hooks/useUnreadNotifications";

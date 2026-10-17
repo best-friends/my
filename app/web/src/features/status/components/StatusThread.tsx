@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Spinner } from "@my/ui";
+import { Button, PostSkeleton, VisuallyHidden } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
@@ -45,11 +45,22 @@ export function StatusThread({ id, onDeleted }: StatusThreadProps) {
   );
 }
 
+/** Placeholder replies, for as long as the thread loads. */
+const replyPlaceholders = ["first", "second"] as const;
+
 function ThreadReplies({ thread }: { thread: ThreadState }) {
   const t = useT();
   switch (thread.status) {
     case "loading":
-      return <Spinner label={t("client:status.thread.loading")} className="mx-auto my-4" />;
+      // The section is busy meanwhile; the hidden text names what it waits for, once (web-client.md G15).
+      return (
+        <>
+          <VisuallyHidden>{t("client:status.thread.loading")}</VisuallyHidden>
+          {replyPlaceholders.map((key) => (
+            <PostSkeleton key={key} />
+          ))}
+        </>
+      );
     case "error":
       return (
         <div className="flex flex-col items-center gap-3 p-4 text-center">
