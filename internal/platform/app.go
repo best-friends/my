@@ -375,7 +375,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	// After the content and graph projectors, which reject the commands that must not reach
 	// the timelines (data-model §4.6).
 	timeline.RegisterProjectors(a.Projectors, feeds)
-	timeline.RegisterModerationProjectors(a.Projectors, feeds)
+	timeline.RegisterModerationProjectors(a.Projectors, feeds, a.Accounts)
 	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
 	// After the graph and content projectors, whose events these projectors turn into notifications.
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{

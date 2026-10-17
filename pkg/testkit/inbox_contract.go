@@ -31,7 +31,8 @@ import (
 )
 
 // InboxHarness is one database under test: an empty database with the product schema, its
-// UnitOfWork, and the federation module's repositories on it.
+// UnitOfWork, the federation module's repositories on it, and the account repository that the
+// handlers of the own actor's Update and Delete write through.
 type InboxHarness struct {
 	UnitOfWork uow.UnitOfWork
 	Inbox      appfederation.InboxRepository
@@ -40,6 +41,8 @@ type InboxHarness struct {
 	// InboxProcessingContract runs for real (Block, Undo Block, Flag).
 	Graph      appgraph.Repository
 	Moderation appmoderation.Repository
+	Instances  appfederation.InstanceRepository
+	Accounts   appaccount.Repository
 }
 
 // InboxFactory returns a harness on a new, empty database whose UnitOfWork uses opts. The

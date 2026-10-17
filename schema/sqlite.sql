@@ -1123,6 +1123,7 @@ CREATE TABLE remote_account_heads (
   consecutive_fetch_failures INTEGER NOT NULL CHECK (consecutive_fetch_failures >= 0)
 ) STRICT;
 CREATE INDEX remote_account_heads_last_fetched_at ON remote_account_heads (last_fetched_at);
+CREATE INDEX remote_account_heads_shared_inbox_url ON remote_account_heads (shared_inbox_url);
 
 -- Event: a WebFinger check of acct:{username}@{domain}. verified means that its self link points
 -- at the actor's uri; mismatch means that it answered otherwise, and the account has no handle

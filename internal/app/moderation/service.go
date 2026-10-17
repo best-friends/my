@@ -29,6 +29,9 @@ type Report = moderation.Report
 // Effect is moderation.Effect, a restriction in effect as the events carry it.
 type Effect = moderation.Effect
 
+// RestrictProfileView is moderation.RestrictProfileView.
+const RestrictProfileView = moderation.RestrictProfileView
+
 // Domain events of the moderation module.
 const (
 	// EventDomainRestrictionsChanged follows every action on a domain and every lift of one,

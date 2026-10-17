@@ -40,5 +40,6 @@ func (a *App) setUpInboxProcessor(repo federation.InboxRepository) {
 		Blocks: a.Graph, Reports: a.Moderation, Policy: a.ModerationPolicy,
 		Objects: federation.LocalObjectsOf{Accounts: a.Accounts, Content: a.Content}, Host: a.Config.Host,
 	})
+	a.RemoteActors.RegisterInboxHandlers(a.InboxProcessor)
 	a.InboxProcessor.RegisterJobs(a.Handlers)
 }

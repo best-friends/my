@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/uow"
@@ -26,7 +27,9 @@ var errEntryExists = errors.New("timeline: the feed entry already exists")
 //   - feed_direct_recipients holds the current mentions of each direct post;
 //   - feed_tag_entries holds the current tags of each post;
 //   - feed_follow_edges holds each active follow with its show_boosts preference;
-//   - feed_exclusions holds both directions of each block in force and each mute.
+//   - feed_exclusions holds both directions of each block in force and each mute;
+//   - feed_author_restrictions holds profile_view for each deleted account, local or remote,
+//     whose entries disappear at once while the purge removes them later.
 //
 // Register them after the content projectors, so that a command that those reject (such as a
 // concurrent boost of the same pair) never reaches them. RebuildProjections applies the same
@@ -149,6 +152,15 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 	r.Register(appgraph.EventUnmuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appgraph.Unmuted)
 		return repo.DeleteExclusion(ctx, tx, ev.AccountID, ev.TargetAccountID, timeline.ExcludedMute)
+	})
+
+	r.Register(appaccount.EventLifecycleEventRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appaccount.LifecycleEventRecorded)
+		if !ev.Deletes() {
+			return nil
+		}
+		// Deletion is final, so the restriction never ends (data-model §4.6, §8).
+		return repo.UpsertAuthorRestriction(ctx, tx, AuthorRestriction{AccountID: ev.Event.AccountID, Restriction: timeline.RestrictProfileView})
 	})
 }
 
