@@ -183,6 +183,57 @@ export const RightToLeftPost: Story = {
   },
 };
 
+/**
+ * The post a page is about: its own surface and a bar on its start edge, a name that tells it apart, and
+ * its full date and counts in words between the body and the actions.
+ */
+export const Highlighted: Story = {
+  args: {
+    label: "Selected post",
+    highlighted: true,
+    time: <time dateTime="2026-10-16T09:00:00Z">2h</time>,
+    content: <PostContent html={serverSanitizedHtml("<p>The post this page is about, in larger text.</p>")} lang="en" className="text-lg" />,
+    details: (
+      <>
+        <time dateTime="2026-10-16T09:00:00Z">Friday, October 16, 2026 at 9:00 AM</time>
+        <span className="tabular-nums">3 boosts</span>
+        <span className="tabular-nums">12 favourites</span>
+      </>
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("article", { name: /^Selected post\s+Alice\s+@alice\s+2h$/ })).toHaveAccessibleDescription(/The post this page is about/);
+    await expect(canvas.getByText("3 boosts")).toBeVisible();
+  },
+};
+
+/**
+ * Three posts of a thread, each a reply to the one above: a line joins their avatars. The middle one is
+ * the highlighted post of the page; the cards with a line below keep their avatar's column free.
+ */
+export const Thread: Story = {
+  render: (args) => (
+    <div>
+      <PostCard {...args} lineBelow />
+      <PostCard
+        {...args}
+        avatar={<Avatar name="Bob" decorative />}
+        author={<Author name="Bob" handle="@bob" />}
+        content={<PostContent html={serverSanitizedHtml("<p>A reply, and the post this page is about.</p>")} lang="en" className="text-lg" />}
+        label="Selected post"
+        highlighted
+        lineAbove
+        lineBelow
+      />
+      <PostCard {...args} content={<PostContent html={serverSanitizedHtml("<p>A reply to the reply.</p>")} lang="en" />} lineAbove />
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole("article")).toHaveLength(3);
+    await expect(canvas.getByRole("article", { name: /^Selected post\s+Bob/ })).toBeInTheDocument();
+  },
+};
+
 export const WithoutAvatarOrActions: Story = {
   args: { avatar: undefined, actions: undefined },
 };

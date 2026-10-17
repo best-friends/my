@@ -1903,6 +1903,18 @@
     "defaultMessage": "お気に入りに追加しました",
     "description": "Read out by screen readers after the user favourited a post."
   },
+  "status.focused.boosts": {
+    "defaultMessage": "{count, plural, other {ブースト # 件}}",
+    "description": "Under the body of the post a page is about: how many times it was boosted. Shown only when it was."
+  },
+  "status.focused.favourites": {
+    "defaultMessage": "{count, plural, other {お気に入り # 件}}",
+    "description": "Under the body of the post a page is about: how many people favourited it. Shown only when someone did."
+  },
+  "status.focused.label": {
+    "defaultMessage": "開いている投稿",
+    "description": "Not shown: read out by screen readers before the author and time of the post a page is about, to tell it apart from the posts of its thread."
+  },
   "status.link.copied": {
     "defaultMessage": "リンクをコピーしました",
     "description": "Toast after the address of a post was copied to the clipboard."
