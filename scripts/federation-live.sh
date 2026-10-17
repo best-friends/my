@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-only
 # Live interoperability test (ADR-0006, ADR-0015, docs/architecture/federation.md §12): start
-# deploy/docker/federation-live/compose.yaml (this server, Mastodon, GoToSocial, a private CA), create one user
-# on each server, and run the scenarios in deploy/docker/federation-live (go test -tags federationlive).
+# deploy/docker/federation-live/compose.yaml (this server, Mastodon, GoToSocial, Misskey, a private CA), create
+# the users on each server, and run the scenarios in deploy/docker/federation-live (go test -tags federationlive).
 #
 # Whatever the outcome, it writes to $FEDERATION_LIVE_OUT (default .tmp/federation-live/out):
 #   logs/<service>.log   the log of every container
@@ -40,7 +40,7 @@ printf '%s\n' \
 	'basicConstraints=critical,CA:FALSE' \
 	'keyUsage=critical,digitalSignature' \
 	'extendedKeyUsage=serverAuth' \
-	'subjectAltName=DNS:my.test,DNS:mastodon.test,DNS:gts.test' >"$certs/server.ext"
+	'subjectAltName=DNS:my.test,DNS:mastodon.test,DNS:gts.test,DNS:misskey.test' >"$certs/server.ext"
 openssl x509 -req -in "$certs/server.csr" -CA "$certs/ca.pem" -CAkey "$certs/ca.key" -CAcreateserial \
 	-days 2 -extfile "$certs/server.ext" -out "$certs/server.pem" 2>/dev/null
 # Throwaway keys, read by containers that run as other users.
@@ -50,6 +50,7 @@ chmod 0644 "$certs"/*
 rand() { openssl rand -hex "$1"; }
 my_password="$(rand 16)"
 gts_password="Aa1!$(rand 16)"
+misskey_password="$(rand 16)"
 export FEDERATION_LIVE_CERTS="$certs"
 export FEDERATION_LIVE_HTTPS_PORT="$port"
 export FEDERATION_LIVE_DB_PORT="$db_port"
@@ -132,12 +133,14 @@ wait_ready() {
 wait_ready my.test /readyz
 wait_ready mastodon.test /health
 wait_ready gts.test /readyz
+wait_ready misskey.test /healthz
 
 # --- Users --------------------------------------------------------------------------------------
 # alice@my.test. On Mastodon: bob (alice's follower), dave (never follows alice: the mentioned
 # non-follower of the visibility scenario), and eve (the signature scenario). On GoToSocial: carol
-# (alice's follower) and erin (never follows alice).
-log "creating alice@my.test, bob, dave, and eve @mastodon.test, and carol and erin @gts.test"
+# (alice's follower) and erin (never follows alice). On Misskey: grace (alice's follower) and heidi (never
+# follows alice), made by its administrator mkadmin.
+log "creating alice@my.test, bob, dave, and eve @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username alice -email alice@my.test >/dev/null
 
 for user in bob dave eve; do
@@ -175,6 +178,26 @@ for user in carol erin; do
 	"${compose[@]}" "${gts[@]}" confirm --username "$user" >/dev/null
 done
 
+# Misskey: the first account that admin/accounts/create makes is the administrator, who needs no token; it
+# makes the others. Each response carries the user's own API token ("i"). A new Misskey federates with no
+# one (federation "none"), so the administrator opens it to every server; a rate limit factor of 0 lifts the
+# rate limits of the API (ap/show allows 30 calls an hour), which the scenarios call far more often.
+misskey() {
+	https misskey.test "/api/$1" -X POST -H 'Content-Type: application/json' -d "$2"
+}
+misskey_create() {
+	misskey admin/accounts/create "$(jq -nc --arg u "$1" --arg p "$misskey_password" --arg i "${2:-}" \
+		'{username: $u, password: $p} + (if $i == "" then {} else {i: $i} end)')" | jq -r '.token // empty'
+}
+misskey_token_admin="$(misskey_create mkadmin)"
+[[ -n "$misskey_token_admin" ]] || fail "could not create the administrator of misskey.test"
+misskey_token_grace="$(misskey_create grace "$misskey_token_admin")"
+misskey_token_heidi="$(misskey_create heidi "$misskey_token_admin")"
+[[ -n "$misskey_token_grace" && -n "$misskey_token_heidi" ]] || fail "could not create the Misskey users"
+misskey admin/update-meta "$(jq -nc --arg i "$misskey_token_admin" '{i: $i, federation: "all"}')" >/dev/null
+misskey admin/roles/update-default-policies \
+	"$(jq -nc --arg i "$misskey_token_admin" '{i: $i, policies: {rateLimitFactor: 0}}')" >/dev/null
+
 # --- Scenarios ----------------------------------------------------------------------------------
 log "running the scenarios"
 # Also written to $work/scenarios.env, to rerun the scenarios against a stack kept with FEDERATION_LIVE_KEEP=1
@@ -186,6 +209,8 @@ export FEDERATION_LIVE_MASTODON_TOKEN="$mastodon_token_bob"
 export FEDERATION_LIVE_MASTODON_TOKEN_DAVE="$mastodon_token_dave"
 export FEDERATION_LIVE_MASTODON_TOKEN_EVE="$mastodon_token_eve"
 export FEDERATION_LIVE_GTS_PASSWORD="$gts_password"
+export FEDERATION_LIVE_MISSKEY_TOKEN="$misskey_token_grace"
+export FEDERATION_LIVE_MISSKEY_TOKEN_HEIDI="$misskey_token_heidi"
 env | grep '^FEDERATION_LIVE_' >"$work/scenarios.env"
 cd "$root"
 go test -tags federationlive -count=1 -v "$@" ./deploy/docker/federation-live 2>&1 | tee "$out/scenarios.log"

@@ -1,0 +1,22 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/asfo7no84zv70002",
+    "ID": "https://misskey.example/dcbf6764-227b-4517-91cb-86dd4757e86e",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "ID": "https://misskey.example/notes/asfobu054zv7000x",
+            "RawType": "Tombstone",
+            "Type": "Tombstone"
+          }
+        },
+        "ID": "https://misskey.example/notes/asfobu054zv7000x",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-17T08:03:24.07Z",
+    "RawType": "Delete",
+    "Type": "Delete"
+  }
+}

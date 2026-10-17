@@ -1,7 +1,7 @@
 name: Nightly
 
 # Checks too slow for every PR (ADR-0015): the web E2E over the full width × locale matrix and the live
-# interoperability test with Mastodon and GoToSocial.
+# interoperability test with Mastodon, GoToSocial, and Misskey.
 
 on:
   schedule:

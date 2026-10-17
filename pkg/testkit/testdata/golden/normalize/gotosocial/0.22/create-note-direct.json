@@ -30,7 +30,7 @@
                 "Name": "@alice@remote.example"
               }
             ],
-            "Published": "2026-10-01T00:00:00Z",
+            "Published": "2026-10-17T06:55:53Z",
             "RawType": "Note",
             "Replies": {
               "Embedded": {
@@ -62,7 +62,7 @@
         "Trusted": true
       }
     ],
-    "Published": "2026-10-01T00:00:00Z",
+    "Published": "2026-10-17T06:55:53Z",
     "RawType": "Create",
     "Type": "Create"
   }

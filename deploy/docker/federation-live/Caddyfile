@@ -49,3 +49,8 @@ https://gts.test {
 	import site
 	reverse_proxy gotosocial:8080
 }
+
+https://misskey.test {
+	import site
+	reverse_proxy misskey:3000
+}

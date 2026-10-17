@@ -1,0 +1,15 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/asfo7no84zv70002",
+    "Content": "👍",
+    "ID": "https://misskey.example/likes/asfoaqef4zv7000t",
+    "Objects": [
+      {
+        "ID": "https://remote.example/ap/objects/01a148e2-4400-7a88-ba6a-6710b1274540"
+      }
+    ],
+    "RawType": "Like",
+    "Reaction": "👍",
+    "Type": "Like"
+  }
+}

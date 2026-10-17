@@ -4,7 +4,7 @@
 
 // Package federationlive holds the scenarios of the live interoperability test (federation.md §12):
 // black-box checks, over HTTPS through the proxy of compose.yaml, that this server federates with
-// Mastodon and GoToSocial. scripts/federation-live.sh starts the stack and runs them; without the
+// Mastodon, GoToSocial, and Misskey. scripts/federation-live.sh starts the stack and runs them; without the
 // FEDERATION_LIVE_* variables that it sets, every test skips.
 package federationlive
 
@@ -41,10 +41,13 @@ const (
 	mastodonUser = "bob"
 	gtsHost      = "gts.test"
 	gtsUser      = "carol"
+	misskeyHost  = "misskey.test"
+	misskeyUser  = "grace"
 
 	// The users who never follow alice: the mentioned non-followers of TestVisibilityAudiences.
 	mastodonStranger = "dave"
 	gtsStranger      = "erin"
+	misskeyStranger  = "heidi"
 	// mastodonSigner is the user of TestSignatureProfile, whose draft-cavage requests the proxy
 	// refuses in both directions (Caddyfile).
 	mastodonSigner = "eve"
@@ -102,7 +105,7 @@ func setup() (*env, error) {
 				return nil, err
 			}
 			switch host {
-			case localHost, mastodonHost, gtsHost:
+			case localHost, mastodonHost, gtsHost, misskeyHost:
 				return dialer.DialContext(ctx, network, proxy)
 			}
 			return nil, fmt.Errorf("%s is not a host of the stack", host)
@@ -128,17 +131,25 @@ func setup() (*env, error) {
 		gts[user] = token
 	}
 	mastodon := func(user, token string) *peerClient {
-		return &peerClient{name: "mastodon", host: mastodonHost, user: user, token: token, http: e.http}
+		return &peerClient{name: "mastodon", host: mastodonHost, user: user,
+			peerAPI: &mastodonAPI{host: mastodonHost, token: token, http: e.http}}
 	}
 	gotosocial := func(user string) *peerClient {
-		return &peerClient{name: "gotosocial", host: gtsHost, user: user, token: gts[user], http: e.http, cachedHome: true}
+		return &peerClient{name: "gotosocial", host: gtsHost, user: user,
+			peerAPI: &mastodonAPI{host: gtsHost, token: gts[user], http: e.http, cachedHome: true}}
+	}
+	misskey := func(user, token string) *peerClient {
+		return &peerClient{name: "misskey", host: misskeyHost, user: user,
+			peerAPI: &misskeyAPI{host: misskeyHost, token: token, http: e.http}, noEdits: misskeyNoEdits}
 	}
 	m := mastodon(mastodonUser, os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN"))
 	m.stranger = mastodon(mastodonStranger, os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN_DAVE"))
 	m.signer = mastodon(mastodonSigner, os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN_EVE"))
 	g := gotosocial(gtsUser)
 	g.stranger = gotosocial(gtsStranger)
-	e.peers = []*peerClient{m, g}
+	k := misskey(misskeyUser, os.Getenv("FEDERATION_LIVE_MISSKEY_TOKEN"))
+	k.stranger = misskey(misskeyStranger, os.Getenv("FEDERATION_LIVE_MISSKEY_TOKEN_HEIDI"))
+	e.peers = []*peerClient{m, g, k}
 	// GoToSocial creates accounts that approve their followers by hand; the scenarios that need an
 	// approval lock the account themselves (TestFollowApproval).
 	for _, p := range []*peerClient{g, g.stranger} {
@@ -430,7 +441,7 @@ func s256(verifier string) string {
 }
 
 // account is the part of an account that the scenarios read, in this server's client API and in
-// the Mastodon client API that both peers serve.
+// the Mastodon client API (Misskey's users are converted to it, misskey_test.go).
 type account struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
@@ -601,29 +612,73 @@ func (l *localClient) notifications(ctx context.Context) ([]notification, error)
 	return page.Items, err
 }
 
-// --- Peers (the Mastodon client API) ----------------------------------------------------------
+// --- Peers ------------------------------------------------------------------------------------
 
+// peerClient is a user of a peer server, driven through that server's own client API (peerAPI).
 type peerClient struct {
-	name, host, user, token string
-	http                    *http.Client
-	// cachedHome is set for GoToSocial, whose first page of the home timeline comes from a cache
-	// that does not always take statuses that arrive after it was filled.
-	cachedHome bool
+	name, host, user string
+	peerAPI
 	// stranger is another user of the peer who never follows alice (TestVisibilityAudiences).
 	stranger *peerClient
 	// signer is the user of TestSignatureProfile (Mastodon only).
 	signer *peerClient
+	// noEdits, when set, says why the peer neither edits its posts nor applies the edits it
+	// receives (TestEdit).
+	noEdits string
 }
 
 // handle is the peer user's handle.
 func (p *peerClient) handle() string { return p.user + "@" + p.host }
 
-func (p *peerClient) call(ctx context.Context, method, path string, body, out any) error {
+func (p *peerClient) post(ctx context.Context, text, visibility string) (status, error) {
+	return p.reply(ctx, text, visibility, "")
+}
+
+// peerAPI is what the scenarios do as a peer user, in the terms of the Mastodon client API: IDs are
+// the peer's own, and statuses, accounts, and visibilities are converted to the types above.
+type peerAPI interface {
+	// resolve finds a handle, making the peer fetch it through WebFinger if needed.
+	resolve(ctx context.Context, handle string) (account, error)
+	// resolveStatus finds a status by its URI, making the peer fetch it if needed; it fails when
+	// the user cannot see the status.
+	resolveStatus(ctx context.Context, uri string) (status, error)
+	follow(ctx context.Context, id string) (relationship, error)
+	unfollow(ctx context.Context, id string) error
+	relationship(ctx context.Context, id string) (relationship, error)
+	// setLocked turns the approval of follow requests on or off.
+	setLocked(ctx context.Context, locked bool) error
+	// followRequests returns the accounts whose follow requests wait for the user's approval.
+	followRequests(ctx context.Context) ([]account, error)
+	authorize(ctx context.Context, id string) error
+	// reply posts a status; inReplyTo is the peer's ID of the status it replies to, or empty.
+	reply(ctx context.Context, text, visibility, inReplyTo string) (status, error)
+	status(ctx context.Context, id string) (status, error)
+	context(ctx context.Context, id string) (thread, error)
+	edit(ctx context.Context, id, text string) (status, error)
+	delete(ctx context.Context, id string) error
+	// interact boosts or favourites a status (action "boost" / "favourite"), or undoes it.
+	interact(ctx context.Context, id, action string, undo bool) error
+	home(ctx context.Context) ([]status, error)
+	// notifications returns the user's notifications, including the filtered ones.
+	notifications(ctx context.Context) ([]notification, error)
+}
+
+// --- Mastodon and GoToSocial (the Mastodon client API) ----------------------------------------
+
+type mastodonAPI struct {
+	host, token string
+	http        *http.Client
+	// cachedHome is set for GoToSocial, whose first page of the home timeline comes from a cache
+	// that does not always take statuses that arrive after it was filled.
+	cachedHome bool
+}
+
+func (p *mastodonAPI) call(ctx context.Context, method, path string, body, out any) error {
 	return call(ctx, p.http, p.token, method, "https://"+p.host+path, body, out)
 }
 
 // resolve searches a handle with resolve=true, which makes the peer fetch it through WebFinger.
-func (p *peerClient) resolve(ctx context.Context, handle string) (account, error) {
+func (p *mastodonAPI) resolve(ctx context.Context, handle string) (account, error) {
 	var res struct {
 		Accounts []account `json:"accounts"`
 	}
@@ -639,7 +694,7 @@ func (p *peerClient) resolve(ctx context.Context, handle string) (account, error
 
 // resolveStatus searches a status URI with resolve=true, which makes the peer fetch it from this
 // server with a signed GET.
-func (p *peerClient) resolveStatus(ctx context.Context, uri string) (status, error) {
+func (p *mastodonAPI) resolveStatus(ctx context.Context, uri string) (status, error) {
 	var res struct {
 		Statuses []status `json:"statuses"`
 	}
@@ -653,17 +708,17 @@ func (p *peerClient) resolveStatus(ctx context.Context, uri string) (status, err
 	return res.Statuses[0], nil
 }
 
-func (p *peerClient) follow(ctx context.Context, id string) (relationship, error) {
+func (p *mastodonAPI) follow(ctx context.Context, id string) (relationship, error) {
 	var r relationship
 	err := p.call(ctx, http.MethodPost, "/api/v1/accounts/"+url.PathEscape(id)+"/follow", nil, &r)
 	return r, err
 }
 
-func (p *peerClient) unfollow(ctx context.Context, id string) error {
+func (p *mastodonAPI) unfollow(ctx context.Context, id string) error {
 	return p.call(ctx, http.MethodPost, "/api/v1/accounts/"+url.PathEscape(id)+"/unfollow", nil, nil)
 }
 
-func (p *peerClient) relationship(ctx context.Context, id string) (relationship, error) {
+func (p *mastodonAPI) relationship(ctx context.Context, id string) (relationship, error) {
 	var rs []relationship
 	if err := p.call(ctx, http.MethodGet, "/api/v1/accounts/relationships?"+url.Values{"id[]": {id}}.Encode(), nil, &rs); err != nil {
 		return relationship{}, err
@@ -675,27 +730,22 @@ func (p *peerClient) relationship(ctx context.Context, id string) (relationship,
 }
 
 // setLocked turns the approval of follow requests on or off.
-func (p *peerClient) setLocked(ctx context.Context, locked bool) error {
+func (p *mastodonAPI) setLocked(ctx context.Context, locked bool) error {
 	return p.call(ctx, http.MethodPatch, "/api/v1/accounts/update_credentials", map[string]any{"locked": locked}, nil)
 }
 
 // followRequests returns the accounts whose follow requests wait for the peer user's approval.
-func (p *peerClient) followRequests(ctx context.Context) ([]account, error) {
+func (p *mastodonAPI) followRequests(ctx context.Context) ([]account, error) {
 	var as []account
 	err := p.call(ctx, http.MethodGet, "/api/v1/follow_requests", nil, &as)
 	return as, err
 }
 
-func (p *peerClient) authorize(ctx context.Context, id string) error {
+func (p *mastodonAPI) authorize(ctx context.Context, id string) error {
 	return p.call(ctx, http.MethodPost, "/api/v1/follow_requests/"+url.PathEscape(id)+"/authorize", nil, nil)
 }
 
-func (p *peerClient) post(ctx context.Context, text, visibility string) (status, error) {
-	return p.reply(ctx, text, visibility, "")
-}
-
-// reply posts a status; inReplyTo is the peer's ID of the status it replies to, or empty.
-func (p *peerClient) reply(ctx context.Context, text, visibility, inReplyTo string) (status, error) {
+func (p *mastodonAPI) reply(ctx context.Context, text, visibility, inReplyTo string) (status, error) {
 	body := map[string]any{"status": text, "visibility": visibility}
 	if inReplyTo != "" {
 		body["in_reply_to_id"] = inReplyTo
@@ -705,30 +755,30 @@ func (p *peerClient) reply(ctx context.Context, text, visibility, inReplyTo stri
 	return s, err
 }
 
-func (p *peerClient) status(ctx context.Context, id string) (status, error) {
+func (p *mastodonAPI) status(ctx context.Context, id string) (status, error) {
 	var s status
 	err := p.call(ctx, http.MethodGet, "/api/v1/statuses/"+url.PathEscape(id), nil, &s)
 	return s, err
 }
 
-func (p *peerClient) context(ctx context.Context, id string) (thread, error) {
+func (p *mastodonAPI) context(ctx context.Context, id string) (thread, error) {
 	var th thread
 	err := p.call(ctx, http.MethodGet, "/api/v1/statuses/"+url.PathEscape(id)+"/context", nil, &th)
 	return th, err
 }
 
-func (p *peerClient) edit(ctx context.Context, id, text string) (status, error) {
+func (p *mastodonAPI) edit(ctx context.Context, id, text string) (status, error) {
 	var s status
 	err := p.call(ctx, http.MethodPut, "/api/v1/statuses/"+url.PathEscape(id), map[string]any{"status": text}, &s)
 	return s, err
 }
 
-func (p *peerClient) delete(ctx context.Context, id string) error {
+func (p *mastodonAPI) delete(ctx context.Context, id string) error {
 	return p.call(ctx, http.MethodDelete, "/api/v1/statuses/"+url.PathEscape(id), nil, nil)
 }
 
 // interact boosts or favourites a status (action "boost" / "favourite"), or undoes it.
-func (p *peerClient) interact(ctx context.Context, id, action string, undo bool) error {
+func (p *mastodonAPI) interact(ctx context.Context, id, action string, undo bool) error {
 	verb := map[string]string{"boost": "reblog", "favourite": "favourite"}[action]
 	if undo {
 		verb = "un" + verb
@@ -736,7 +786,7 @@ func (p *peerClient) interact(ctx context.Context, id, action string, undo bool)
 	return p.call(ctx, http.MethodPost, "/api/v1/statuses/"+url.PathEscape(id)+"/"+verb, nil, nil)
 }
 
-func (p *peerClient) home(ctx context.Context) ([]status, error) {
+func (p *mastodonAPI) home(ctx context.Context) ([]status, error) {
 	path := "/api/v1/timelines/home?limit=40"
 	if p.cachedHome {
 		// A max_id makes GoToSocial read the timeline from its database instead of its cache.
@@ -749,7 +799,7 @@ func (p *peerClient) home(ctx context.Context) ([]status, error) {
 
 // notifications returns the peer user's notifications, including those that Mastodon's
 // notification policy filtered (include_filtered, Mastodon 4.3 and later; GoToSocial ignores it).
-func (p *peerClient) notifications(ctx context.Context) ([]notification, error) {
+func (p *mastodonAPI) notifications(ctx context.Context) ([]notification, error) {
 	var ns []notification
 	err := p.call(ctx, http.MethodGet, "/api/v1/notifications?limit=40&include_filtered=true", nil, &ns)
 	return ns, err

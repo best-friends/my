@@ -1,0 +1,27 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/asfo7no84zv70002",
+    "ID": "https://misskey.example/e5b3548b-bc9c-4f45-a0c6-8b96f9c9f822",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999",
+            "ID": "https://remote.example/ap/activities/01a148e0-4358-7504-be2c-ae81757d6f34",
+            "Objects": [
+              {
+                "ID": "https://misskey.example/users/asfo7no84zv70002"
+              }
+            ],
+            "RawType": "Follow",
+            "Type": "Follow"
+          }
+        },
+        "ID": "https://remote.example/ap/activities/01a148e0-4358-7504-be2c-ae81757d6f34",
+        "Trusted": false
+      }
+    ],
+    "RawType": "Accept",
+    "Type": "Accept"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/asfo7no84zv70002",
+    "Audience": {
+      "To": [
+        "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999"
+      ]
+    },
+    "ID": "https://misskey.example/notes/asfoew7r4zv7001u/activity",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://misskey.example/users/asfo7no84zv70002",
+            "Audience": {
+              "To": [
+                "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<a href=\"https://remote.example/@alice\" class=\"u-url mention\">@alice@remote.example</a> direct from misskey.example 1792224344720265308",
+                "Language": "und"
+              }
+            ],
+            "ID": "https://misskey.example/notes/asfoew7r4zv7001u",
+            "Mentions": [
+              {
+                "Href": "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999",
+                "Name": "@alice@remote.example"
+              }
+            ],
+            "Published": "2026-10-17T08:05:44.727Z",
+            "RawType": "Note",
+            "Type": "Note"
+          }
+        },
+        "ID": "https://misskey.example/notes/asfoew7r4zv7001u",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-17T08:05:44.727Z",
+    "RawType": "Create",
+    "Type": "Create"
+  }
+}

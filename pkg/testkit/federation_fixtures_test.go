@@ -24,7 +24,7 @@ import (
 var update = flag.Bool("update", false, "rewrite the golden files under testdata/golden")
 
 // normalizeNow is the "now" of the normalization: later than every fixture's timestamps.
-var normalizeNow = time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+var normalizeNow = time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
 
 func federationFixtures(t *testing.T) []testkit.FederationFixture {
 	t.Helper()

@@ -1,0 +1,37 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/asfo7no84zv70002",
+    "ID": "https://misskey.example/notes/asfoa1214zv7000o/activity/undo",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://misskey.example/users/asfo7no84zv70002",
+            "Audience": {
+              "Cc": [
+                "https://misskey.example/users/asfo7no84zv70002/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "ID": "https://misskey.example/notes/asfoa1214zv7000o/activity",
+            "Objects": [
+              {
+                "ID": "https://remote.example/ap/objects/01a148e1-c3b2-76cf-b3a7-7c073768309f"
+              }
+            ],
+            "Published": "2026-10-17T08:01:57.721Z",
+            "RawType": "Announce",
+            "Type": "Announce"
+          }
+        },
+        "ID": "https://misskey.example/notes/asfoa1214zv7000o/activity",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-17T08:01:59.757Z",
+    "RawType": "Undo",
+    "Type": "Undo"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "Key": "sec:Key",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "sensitive": "as:sensitive",
+      "Hashtag": "as:Hashtag",
+      "quoteUrl": "as:quoteUrl",
+      "toot": "http://joinmastodon.org/ns#",
+      "Emoji": "toot:Emoji",
+      "featured": "toot:featured",
+      "discoverable": "toot:discoverable",
+      "schema": "http://schema.org#",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value",
+      "misskey": "https://misskey-hub.net/ns#",
+      "_misskey_content": "misskey:_misskey_content",
+      "_misskey_quote": "misskey:_misskey_quote",
+      "_misskey_reaction": "misskey:_misskey_reaction",
+      "_misskey_votes": "misskey:_misskey_votes",
+      "_misskey_summary": "misskey:_misskey_summary",
+      "_misskey_followedMessage": "misskey:_misskey_followedMessage",
+      "_misskey_requireSigninToViewContents": "misskey:_misskey_requireSigninToViewContents",
+      "_misskey_makeNotesFollowersOnlyBefore": "misskey:_misskey_makeNotesFollowersOnlyBefore",
+      "_misskey_makeNotesHiddenBefore": "misskey:_misskey_makeNotesHiddenBefore",
+      "_misskey_license": "misskey:_misskey_license",
+      "freeText": {
+        "@id": "misskey:freeText",
+        "@type": "schema:text"
+      },
+      "isCat": "misskey:isCat",
+      "vcard": "http://www.w3.org/2006/vcard/ns#"
+    }
+  ],
+  "id": "https://misskey.example/notes/asfo9e964zv7000k/activity",
+  "actor": "https://misskey.example/users/asfo7no84zv70002",
+  "type": "Create",
+  "published": "2026-10-17T08:01:28.170Z",
+  "object": {
+    "id": "https://misskey.example/notes/asfo9e964zv7000k",
+    "type": "Note",
+    "attributedTo": "https://misskey.example/users/asfo7no84zv70002",
+    "content": "<a href=\"https://remote.example/@alice\" class=\"u-url mention\">@alice@remote.example</a> a reply from misskey 1792224088169529597",
+    "published": "2026-10-17T08:01:28.170Z",
+    "to": [
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "cc": [
+      "https://misskey.example/users/asfo7no84zv70002/followers",
+      "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999"
+    ],
+    "inReplyTo": "https://remote.example/ap/objects/01a148e1-502c-7f77-b5ca-5cef75200a1a",
+    "attachment": [],
+    "sensitive": false,
+    "tag": [
+      {
+        "type": "Mention",
+        "href": "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999",
+        "name": "@alice@remote.example"
+      }
+    ]
+  },
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "cc": [
+    "https://misskey.example/users/asfo7no84zv70002/followers",
+    "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999"
+  ]
+}

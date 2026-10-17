@@ -31,7 +31,7 @@ A fixture comes from a public source whose license allows copying it into this A
 - the implementation's documentation, when its license is compatible (Akkoma's `docs/` is CC BY 4.0, which requires
   attribution; Mastodon's documentation is GFDL and must not be copied);
 - a document captured from a running server, recorded with the server's version and the capture date. The live
-  interoperability test writes every activity it receives from Mastodon and GoToSocial to its output
+  interoperability test writes every activity it receives from Mastodon, GoToSocial, and Misskey to its output
   ([deploy/docker/federation-live/README.md](../../deploy/docker/federation-live/README.md#adding-a-captured-activity-as-a-fixture)).
 - the document that the implementation's own rendering code produces, rendered from its source at a pinned release or
   commit, when no test data has it; the README names the functions and links the source.
