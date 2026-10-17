@@ -33,6 +33,7 @@ a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OS
 | Non-functional requirements (`NFR-xxx`) | [docs/requirements/02-non-functional.md](docs/requirements/02-non-functional.md) |
 | Architecture overview, ports, flows | [docs/architecture/overview.md](docs/architecture/overview.md) |
 | Hosting targets & cost notes | [docs/architecture/deployment-targets.md](docs/architecture/deployment-targets.md) |
+| Federation design (inbox, delivery, fetch, sanitizing) | [docs/architecture/federation.md](docs/architecture/federation.md) |
 | Decisions | [docs/adr/README.md](docs/adr/README.md) — **Accepted ADRs are binding; Proposed ADRs are not yet decisions** |
 | Tasks | GitHub Issues / Milestones / Project of `best-friends/my` |
 | Agent playbooks | [docs/agents/](docs/agents/) |
