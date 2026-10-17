@@ -21,6 +21,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/accounts/{id}/statuses":                       {Operation: "listAccountStatuses", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"GET /api/v1/admin/account_actions/{id}":                   {Operation: "getAccountAction", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/accounts/{id}/actions":                  {Operation: "listAccountActions", Scopes: []string{"admin:read"}},
+	"GET /api/v1/admin/counts":                                 {Operation: "getAdminCounts", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/dead_jobs":                              {Operation: "listDeadJobs", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/domain_actions":                         {Operation: "listDomainActions", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/domain_actions/{id}":                    {Operation: "getDomainAction", Scopes: []string{"admin:read"}},

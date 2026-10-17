@@ -105,6 +105,10 @@ type Options struct {
 	// FiledReports reads the reports that the viewer filed (listOwnReports) and that their
 	// report_resolved notifications tell of; nil leaves the report out of the notifications.
 	FiledReports FiledReports
+	// ReportCounts and RegistrationCounts count what awaits the moderators (admin_counts.go);
+	// nil leaves the count out.
+	ReportCounts       ReportCounts
+	RegistrationCounts RegistrationCounts
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

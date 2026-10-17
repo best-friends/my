@@ -31,7 +31,8 @@ func (r *NotificationRepository) InsertNotification(ctx context.Context, tx uow.
 	rows, err := q.InsertNotification(ctx, postgresgen.InsertNotificationParams{
 		ID: n.ID, RecipientAccountID: n.RecipientAccountID, Type: string(n.Type),
 		SourceAccountID: toNullString(n.SourceAccountID), StatusID: toNullString(n.StatusID),
-		ModerationActionID: toNullString(n.ModerationActionID), ReportID: toNullString(n.ReportID), DedupeKey: n.DedupeKey, CreatedAt: n.CreatedAt,
+		ModerationActionID: toNullString(n.ModerationActionID), ReportID: toNullString(n.ReportID),
+		SubjectUserID: toNullString(n.SubjectUserID), DedupeKey: n.DedupeKey, CreatedAt: n.CreatedAt,
 	})
 	if err != nil {
 		return false, wrap(err, "insert notification")
@@ -114,17 +115,13 @@ func (r *NotificationRepository) InsertDeletedStatus(ctx context.Context, tx uow
 }
 
 // ListNotifications implements notification.Repository.
-func (r *NotificationRepository) ListNotifications(ctx context.Context, recipientAccountID string, types []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error) {
-	names := make([]string, len(types))
-	for i, t := range types {
-		names[i] = string(t)
-	}
+func (r *NotificationRepository) ListNotifications(ctx context.Context, recipientAccountID string, types, hidden []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error) {
 	n, err := toInt32(limit, "page limit")
 	if err != nil {
 		return nil, err
 	}
 	rows, err := r.db.reader().ListNotifications(ctx, postgresgen.ListNotificationsParams{
-		RecipientAccountID: recipientAccountID, Before: before, AllTypes: len(types) == 0, Types: names, Now: now, PageLimit: n,
+		RecipientAccountID: recipientAccountID, Before: before, AllTypes: len(types) == 0, Types: typeNames(types), HiddenTypes: typeNames(hidden), Now: now, PageLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list notifications")
@@ -137,9 +134,9 @@ func (r *NotificationRepository) ListNotifications(ctx context.Context, recipien
 }
 
 // CountNotificationsAfter implements notification.Repository.
-func (r *NotificationRepository) CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, now time.Time) (int64, error) {
+func (r *NotificationRepository) CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, hidden []notification.Type, now time.Time) (int64, error) {
 	n, err := r.db.reader().CountNotificationsAfter(ctx, postgresgen.CountNotificationsAfterParams{
-		RecipientAccountID: recipientAccountID, After: after, Now: now,
+		RecipientAccountID: recipientAccountID, After: after, HiddenTypes: typeNames(hidden), Now: now,
 	})
 	return n, wrap(err, "count notifications")
 }
@@ -157,6 +154,16 @@ func notificationFrom(row postgresgen.Notification) notification.Notification {
 	return notification.Notification{
 		ID: row.ID, RecipientAccountID: row.RecipientAccountID, Type: notification.Type(row.Type),
 		SourceAccountID: fromNullString(row.SourceAccountID), StatusID: fromNullString(row.StatusID),
-		ModerationActionID: fromNullString(row.ModerationActionID), ReportID: fromNullString(row.ReportID), DedupeKey: row.DedupeKey, CreatedAt: utc(row.CreatedAt),
+		ModerationActionID: fromNullString(row.ModerationActionID), ReportID: fromNullString(row.ReportID),
+		SubjectUserID: fromNullString(row.SubjectUserID), DedupeKey: row.DedupeKey, CreatedAt: utc(row.CreatedAt),
 	}
+}
+
+// typeNames returns the types as the queries take them; none is an empty array.
+func typeNames(types []notification.Type) []string {
+	names := make([]string, len(types))
+	for i, t := range types {
+		names[i] = string(t)
+	}
+	return names
 }

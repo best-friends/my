@@ -400,7 +400,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
 		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, Reach: a.AccountPolicy, IDs: a.IDs,
 	})
-	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
+	a.Notifications = notification.NewService(notification.Deps{
+		UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock, Staff: moderatorStaff{a},
+	})
+	a.setUpModeratorNotifications(cfg, notifs, moderatorStaff{a})
 	a.setUpRetention(cfg, retention, statuses)
 	a.Streams = stream.NewHub(stream.HubOptions{})
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
@@ -477,8 +480,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
 		Moderation: a.Moderation, UserAccounts: a.Accounts, FiledReports: a.Moderation,
 		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
-		Rules:       a.Instance,
-		Reports:     a.LocalReports,
+		Rules:        a.Instance,
+		Reports:      a.LocalReports,
+		ReportCounts: a.Moderation, RegistrationCounts: a.Identity,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil

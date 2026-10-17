@@ -37,23 +37,31 @@ const countNotificationsAfter = `-- name: CountNotificationsAfter :one
 SELECT COUNT(*) FROM notifications n
 WHERE n.recipient_account_id = $1
   AND n.id > $2::text
+  AND NOT (n.type = ANY($3::text[]))
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
     WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
-      AND (x.expires_at IS NULL OR x.expires_at > $3::timestamptz))
+      AND (x.expires_at IS NULL OR x.expires_at > $4::timestamptz))
   AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id)
 `
 
 type CountNotificationsAfterParams struct {
 	RecipientAccountID string
 	After              string
+	HiddenTypes        []string
 	Now                time.Time
 }
 
 // CountNotificationsAfter counts the notifications of a recipient after the ID after that
-// ListNotifications would return; an empty after counts them all.
+// ListNotifications would return; an empty after counts them all. hidden_types is that of
+// ListNotifications.
 func (q *Queries) CountNotificationsAfter(ctx context.Context, arg CountNotificationsAfterParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countNotificationsAfter, arg.RecipientAccountID, arg.After, arg.Now)
+	row := q.db.QueryRow(ctx, countNotificationsAfter,
+		arg.RecipientAccountID,
+		arg.After,
+		arg.HiddenTypes,
+		arg.Now,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -75,7 +83,7 @@ func (q *Queries) DeleteNotificationExclusion(ctx context.Context, arg DeleteNot
 }
 
 const getNotification = `-- name: GetNotification :one
-SELECT id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, dedupe_key, created_at
+SELECT id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, subject_user_id, dedupe_key, created_at
 FROM notifications WHERE id = $1
 `
 
@@ -90,6 +98,7 @@ func (q *Queries) GetNotification(ctx context.Context, id string) (Notification,
 		&i.StatusID,
 		&i.ModerationActionID,
 		&i.ReportID,
+		&i.SubjectUserID,
 		&i.DedupeKey,
 		&i.CreatedAt,
 	)
@@ -112,8 +121,8 @@ func (q *Queries) GetNotificationReadMarker(ctx context.Context, accountID strin
 const insertNotification = `-- name: InsertNotification :execrows
 
 
-INSERT INTO notifications (id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, dedupe_key, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO notifications (id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, subject_user_id, dedupe_key, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT (recipient_account_id, dedupe_key) DO NOTHING
 `
 
@@ -125,6 +134,7 @@ type InsertNotificationParams struct {
 	StatusID           *string
 	ModerationActionID *string
 	ReportID           *string
+	SubjectUserID      *string
 	DedupeKey          string
 	CreatedAt          time.Time
 }
@@ -142,6 +152,7 @@ func (q *Queries) InsertNotification(ctx context.Context, arg InsertNotification
 		arg.StatusID,
 		arg.ModerationActionID,
 		arg.ReportID,
+		arg.SubjectUserID,
 		arg.DedupeKey,
 		arg.CreatedAt,
 	)
@@ -184,18 +195,20 @@ func (q *Queries) InsertNotificationDismissal(ctx context.Context, arg InsertNot
 }
 
 const listNotifications = `-- name: ListNotifications :many
-SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.report_id, n.dedupe_key, n.created_at
+SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.report_id,
+  n.subject_user_id, n.dedupe_key, n.created_at
 FROM notifications n
 WHERE n.recipient_account_id = $1
   AND ($2::text = '' OR n.id < $2::text)
   AND ($3::boolean OR n.type = ANY($4::text[]))
+  AND NOT (n.type = ANY($5::text[]))
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
     WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
-      AND (x.expires_at IS NULL OR x.expires_at > $5::timestamptz))
+      AND (x.expires_at IS NULL OR x.expires_at > $6::timestamptz))
   AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id)
 ORDER BY n.id DESC
-LIMIT $6
+LIMIT $7
 `
 
 type ListNotificationsParams struct {
@@ -203,19 +216,21 @@ type ListNotificationsParams struct {
 	Before             string
 	AllTypes           bool
 	Types              []string
+	HiddenTypes        []string
 	Now                time.Time
 	PageLimit          int32
 }
 
 // ListNotifications pages the notifications of a recipient that are not dismissed, whose
 // source no exclusion in force at now hides, and whose status is not deleted, newest first; an empty before starts at the
-// newest. With all_types false only the listed types count.
+// newest. With all_types false only the listed types count; hidden_types are left out.
 func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]Notification, error) {
 	rows, err := q.db.Query(ctx, listNotifications,
 		arg.RecipientAccountID,
 		arg.Before,
 		arg.AllTypes,
 		arg.Types,
+		arg.HiddenTypes,
 		arg.Now,
 		arg.PageLimit,
 	)
@@ -234,6 +249,7 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			&i.StatusID,
 			&i.ModerationActionID,
 			&i.ReportID,
+			&i.SubjectUserID,
 			&i.DedupeKey,
 			&i.CreatedAt,
 		); err != nil {

@@ -393,6 +393,8 @@ func (e MediaAttachmentType) Valid() bool {
 
 // Defines values for NotificationType.
 const (
+	NotificationTypeAdminReport      NotificationType = "admin_report"
+	NotificationTypeAdminSignUp      NotificationType = "admin_sign_up"
 	NotificationTypeBoost            NotificationType = "boost"
 	NotificationTypeFavourite        NotificationType = "favourite"
 	NotificationTypeFollow           NotificationType = "follow"
@@ -407,6 +409,10 @@ const (
 // Valid indicates whether the value is a known member of the NotificationType enum.
 func (e NotificationType) Valid() bool {
 	switch e {
+	case NotificationTypeAdminReport:
+		return true
+	case NotificationTypeAdminSignUp:
+		return true
 	case NotificationTypeBoost:
 		return true
 	case NotificationTypeFavourite:
@@ -745,6 +751,15 @@ type AdminAvailabilityEventPage struct {
 
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminCounts What awaits the moderators; a count whose permission the user lacks is omitted.
+type AdminCounts struct {
+	// OpenReports The reports that are open. Needs `manage_reports`.
+	OpenReports *int64 `json:"open_reports,omitempty"`
+
+	// PendingRegistrations The registrations that await approval. Needs `manage_accounts`.
+	PendingRegistrations *int64 `json:"pending_registrations,omitempty"`
 }
 
 // AdminDeadJob A job that failed for good.
@@ -1553,6 +1568,9 @@ type Notification struct {
 	// Report The user's report that a `report_resolved` tells of.
 	Report *Report `json:"report,omitempty"`
 
+	// ReportId The report that an `admin_report` is about.
+	ReportId *Id `json:"report_id,omitempty"`
+
 	// Status The post that the notification is about, as the user sees it; omitted when the user
 	// may not see it.
 	Status *Status `json:"status,omitempty"`
@@ -1566,6 +1584,11 @@ type Notification struct {
 	// `report_resolved` also comes from the instance: its `report` is the user's report that
 	// the moderators resolved, without how they resolved it. It is sent once per report, even
 	// when the report is reopened and resolved again.
+	// about. `moderation_notice` comes from the instance and has no `account`.
+	// The moderator notifications come from the instance too: `admin_report` (an account
+	// that had no open report was reported; `report_id` is the report) goes to the users
+	// with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
+	// approval; `account` is the new user's account) to those with `manage_accounts`.
 	Type NotificationType `json:"type"`
 }
 
@@ -1605,6 +1628,11 @@ type NotificationPage struct {
 // `report_resolved` also comes from the instance: its `report` is the user's report that
 // the moderators resolved, without how they resolved it. It is sent once per report, even
 // when the report is reopened and resolved again.
+// about. `moderation_notice` comes from the instance and has no `account`.
+// The moderator notifications come from the instance too: `admin_report` (an account
+// that had no open report was reported; `report_id` is the report) goes to the users
+// with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
+// approval; `account` is the new user's account) to those with `manage_accounts`.
 type NotificationType string
 
 // PageInfo The pagination of a collection page; collection responses embed it with allOf.
@@ -1644,6 +1672,10 @@ type Preferences struct {
 	// public timelines; `private` followers and mentioned accounts; `direct` mentioned
 	// accounts.
 	DefaultVisibility Visibility `json:"default_visibility"`
+
+	// EmailModeratorNotifications Whether the moderator notifications (`admin_report`, `admin_sign_up`) also come by
+	// email, to the primary address. Off for a new user.
+	EmailModeratorNotifications bool `json:"email_moderator_notifications"`
 
 	// Locale The UI locale, a BCP 47 language tag.
 	Locale string `json:"locale"`
@@ -2061,6 +2093,9 @@ type UpdatePreferencesRequest struct {
 	// public timelines; `private` followers and mentioned accounts; `direct` mentioned
 	// accounts.
 	DefaultVisibility *Visibility `json:"default_visibility,omitempty"`
+
+	// EmailModeratorNotifications Whether the moderator notifications also come by email.
+	EmailModeratorNotifications *bool `json:"email_moderator_notifications,omitempty"`
 
 	// Locale The UI locale, a BCP 47 language tag.
 	Locale *string `json:"locale,omitempty"`
@@ -2498,6 +2533,9 @@ type ServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// GetAdminCounts Count what awaits the moderators
+	// (GET /admin/counts)
+	GetAdminCounts(w http.ResponseWriter, r *http.Request)
 	// ListDeadJobs List the dead jobs
 	// (GET /admin/dead_jobs)
 	ListDeadJobs(w http.ResponseWriter, r *http.Request, params ListDeadJobsParams)
@@ -3345,6 +3383,20 @@ func (siw *ServerInterfaceWrapper) CreateAccountAction(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateAccountAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminCounts operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminCounts(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminCounts(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5463,6 +5515,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/rules/{id}", wrapper.UpdateInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
 
 	return m
 }
@@ -6626,6 +6679,67 @@ type CreateAccountActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateAccountActiondefaultApplicationProblemPlusJSONResponse) VisitCreateAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminCountsRequestObject struct {
+}
+
+type GetAdminCountsResponseObject interface {
+	VisitGetAdminCountsResponse(w http.ResponseWriter) error
+}
+
+type GetAdminCounts200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetAdminCounts200JSONResponse struct {
+	Body    AdminCounts
+	Headers GetAdminCounts200ResponseHeaders
+}
+
+func (response GetAdminCounts200JSONResponse) VisitGetAdminCountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminCountsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAdminCountsdefaultApplicationProblemPlusJSONResponse) VisitGetAdminCountsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -10179,6 +10293,9 @@ type StrictServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(ctx context.Context, request CreateAccountActionRequestObject) (CreateAccountActionResponseObject, error)
+	// GetAdminCounts Count what awaits the moderators
+	// (GET /admin/counts)
+	GetAdminCounts(ctx context.Context, request GetAdminCountsRequestObject) (GetAdminCountsResponseObject, error)
 	// ListDeadJobs List the dead jobs
 	// (GET /admin/dead_jobs)
 	ListDeadJobs(ctx context.Context, request ListDeadJobsRequestObject) (ListDeadJobsResponseObject, error)
@@ -10931,6 +11048,30 @@ func (sh *strictHandler) CreateAccountAction(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateAccountActionResponseObject); ok {
 		if err := validResponse.VisitCreateAccountActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminCounts operation middleware
+func (sh *strictHandler) GetAdminCounts(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminCountsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminCounts(ctx, request.(GetAdminCountsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminCounts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminCountsResponseObject); ok {
+		if err := validResponse.VisitGetAdminCountsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

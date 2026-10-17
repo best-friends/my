@@ -46,3 +46,12 @@ INSERT INTO user_roles (user_id, role_id, grant_id) VALUES ($1, $2, $3);
 SELECT r.id, r.key, r.position, r.created_at FROM user_roles ur
 JOIN roles r ON r.id = ur.role_id
 WHERE ur.user_id = $1 ORDER BY r.position DESC, r.key;
+
+-- Moderator notifications (#338) --------------------------------------------------------------
+
+-- ListUserIDsWithPermission returns the users whose current roles grant a permission, by ID.
+-- name: ListUserIDsWithPermission :many
+SELECT DISTINCT ur.user_id FROM user_roles ur
+JOIN role_permissions rp ON rp.role_id = ur.role_id
+WHERE rp.permission = $1
+ORDER BY ur.user_id;

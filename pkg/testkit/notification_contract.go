@@ -46,8 +46,10 @@ type NotificationFactory func(t *testing.T, opts uow.Options) NotificationHarnes
 // duplicates; hiding notifications across blocks and from accounts muted with
 // hide_notifications, also those notified before the block or mute, which a lifted block or
 // mute shows again; notifying of a source with unsolicited_reach only the accounts that follow
-// it; leaving out notifications about deleted statuses; listing with a type filter and keyset paging; and the read marker,
-// unread count, and dismissals.
+// it; leaving out notifications about deleted statuses; listing with a type filter and keyset paging; the read marker,
+// unread count, and dismissals; and the moderator notifications of the first open report of an
+// account and of a pending registration, to the holders of the permission they need, emailed by
+// a job to those who want that, and left out once the permission is gone.
 func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -67,6 +69,7 @@ func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 		{"LeavesOutDeletedStatuses", notificationDeletedStatuses},
 		{"ListsWithTypesAndPages", notificationLists},
 		{"TracksReadMarkersAndDismissals", notificationReads},
+		{"NotifiesModerators", notificationModerators},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newNotificationEnv(t, newHarness)) })
@@ -83,6 +86,10 @@ type notificationEnv struct {
 	reach        *contractReach
 	// only holds just the notification projectors, for projecting an event again.
 	only *uow.Projectors
+	// staff stands in for the roles and preferences of the moderators; outbox keeps the jobs
+	// that the moderator projectors enqueue.
+	staff  *stubStaff
+	outbox *recordingOutbox
 }
 
 func newNotificationEnv(t *testing.T, newHarness NotificationFactory) *notificationEnv {
@@ -96,7 +103,9 @@ func newNotificationEnv(t *testing.T, newHarness NotificationFactory) *notificat
 		nh = newHarness(t, opts)
 		return nh.AccountHarness
 	})
-	e := &notificationEnv{accountEnv: ae, nh: nh, only: &uow.Projectors{}, reach: &contractReach{}}
+	e := &notificationEnv{
+		accountEnv: ae, nh: nh, only: &uow.Projectors{}, reach: &contractReach{}, staff: newStubStaff(), outbox: &recordingOutbox{},
+	}
 	e.graph = appgraph.NewService(appgraph.Deps{
 		UnitOfWork: nh.UnitOfWork, Repository: nh.Graph, Accounts: ae.accounts, Clock: ae.clock, IDs: ae.ids, Host: contractHost,
 	})
@@ -108,6 +117,9 @@ func newNotificationEnv(t *testing.T, newHarness NotificationFactory) *notificat
 	}
 	appnotification.RegisterProjectors(captured.Projectors, deps)
 	appnotification.RegisterProjectors(e.only, deps)
+	modDeps := appnotification.ModeratorDeps{Repository: nh.Notifications, Staff: e.staff, IDs: ae.ids, Outbox: e.outbox}
+	appnotification.RegisterModeratorProjectors(captured.Projectors, modDeps)
+	appnotification.RegisterModeratorProjectors(e.only, modDeps)
 	e.content = appcontent.NewService(appcontent.Deps{
 		UnitOfWork: nh.UnitOfWork, Repository: nh.Statuses, Accounts: ae.accounts, Relationships: e.graph,
 		MaxStatusLength: func(context.Context) (int, error) { return 500, nil },
@@ -118,7 +130,7 @@ func newNotificationEnv(t *testing.T, newHarness NotificationFactory) *notificat
 		Accounts: ae.accounts, Relationships: e.graph, Clock: ae.clock, IDs: ae.ids, Host: contractHost,
 	})
 	e.svc = appnotification.NewService(appnotification.Deps{
-		UnitOfWork: nh.UnitOfWork, Repository: nh.Notifications, Clock: ae.clock,
+		UnitOfWork: nh.UnitOfWork, Repository: nh.Notifications, Clock: ae.clock, Staff: e.staff,
 	})
 	return e
 }
