@@ -502,9 +502,28 @@ func followRejectsInvalid(t *testing.T, e *followEnv) {
 	if _, err := e.graph.Follow(ctx, alice, bob); !errors.Is(err, appgraph.ErrAccountUnavailable) {
 		t.Errorf("Follow(deactivated) = %v, want ErrAccountUnavailable", err)
 	}
+	// A follower whose moderation restrictions forbid interacting may not follow.
+	carol := e.user(t, "carol", false)
+	restricted := appgraph.NewService(appgraph.Deps{
+		UnitOfWork: e.h.UnitOfWork, Repository: e.repo, Accounts: e.accounts, Clock: e.clock, IDs: e.ids, Host: contractHost,
+		Interactions: interactionPolicy{alice: true},
+	})
+	if _, err := restricted.Follow(ctx, alice, carol); !errors.Is(err, appgraph.ErrInteractionRestricted) {
+		t.Errorf("Follow under the interact restriction = %v, want ErrInteractionRestricted", err)
+	}
 	if edges, _ := e.repo.ListEdges(ctx); len(edges) != 0 {
 		t.Errorf("edges = %+v, want none", edges)
 	}
+	if _, err := restricted.Follow(ctx, carol, alice); err != nil {
+		t.Errorf("Follow by an account without restrictions = %v", err)
+	}
+}
+
+// interactionPolicy is a graph.InteractionPolicy that forbids the accounts in it to interact.
+type interactionPolicy map[string]bool
+
+func (p interactionPolicy) InteractionRestricted(_ context.Context, accountID string) (bool, error) {
+	return p[accountID], nil
 }
 
 func followRecordsOnce(t *testing.T, e *followEnv) {

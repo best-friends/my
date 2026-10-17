@@ -2,15 +2,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, fn } from "storybook/test";
+import { StarIcon } from "./Icons";
 import { ToggleButton, type ToggleButtonProps } from "./ToggleButton";
-
-function StarIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-      <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z" />
-    </svg>
-  );
-}
 
 /** A toggle with its own state, as an app controls it with `isSelected` / `onChange`. */
 function Controlled({ defaultSelected = false, count, ...props }: Omit<ToggleButtonProps, "children"> & { count?: number }) {

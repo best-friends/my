@@ -51,7 +51,6 @@ export { Avatar, type AvatarProps } from "./Avatar";
 export { Badge, type BadgeProps } from "./Badge";
 export { DescriptionItem, DescriptionList, type DescriptionItemProps, type DescriptionListProps } from "./DescriptionList";
 export { EmptyState, type EmptyStateProps, type HeadingLevel } from "./EmptyState";
-export { ExternalLinkIcon } from "./ExternalLinkIcon";
 export { OfflineBanner, type OfflineBannerProps } from "./OfflineBanner";
 export { RegionError, type RegionErrorProps } from "./RegionError";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
@@ -59,6 +58,27 @@ export { AccountRowSkeleton, NotificationRowSkeleton, PostSkeleton, type Skeleto
 export { Spinner, type SpinnerProps } from "./Spinner";
 export { StatusMessage, type StatusMessageProps } from "./StatusMessage";
 export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
+
+// Icons (web-client.md §16.3): decorative, 24 × 24 with a 2px stroke, sized by the control around them.
+export {
+  BackIcon,
+  BookmarkIcon,
+  BoostIcon,
+  CloseIcon,
+  ExternalLinkIcon,
+  FederatedIcon,
+  HomeIcon,
+  LocalIcon,
+  MoreIcon,
+  NotificationsIcon,
+  PlusIcon,
+  ProfileIcon,
+  ReplyIcon,
+  SearchIcon,
+  SettingsIcon,
+  StarIcon,
+  type ToggleIconProps,
+} from "./Icons";
 
 // Timeline.
 export { ContentWarning, type ContentWarningProps } from "./ContentWarning";

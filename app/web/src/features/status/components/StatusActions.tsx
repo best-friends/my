@@ -1,11 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Dialog, Menu, MenuItem, MenuTrigger, ToggleButton, type ToggleButtonProps } from "@my/ui";
+import {
+  BookmarkIcon,
+  BoostIcon,
+  Button,
+  Dialog,
+  Menu,
+  MenuItem,
+  MenuTrigger,
+  MoreIcon,
+  ReplyIcon,
+  StarIcon,
+  ToggleButton,
+  type ToggleButtonProps,
+} from "@my/ui";
 import { type ReactNode, useId, useState } from "react";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
 import { type RelationToggle, useStatusActions } from "../hooks/useStatusActions";
-import { BookmarkIcon, BoostIcon, MoreIcon, ReplyIcon, StarIcon } from "./icons";
+
+/** The reply and menu buttons, with icons as large as the toggles' between them. */
+const plainActionClass = "px-2 text-fg-muted [&>svg]:size-5";
 
 export type StatusActionsProps = {
   status: Status;
@@ -36,7 +51,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
         aria-label={t("client:status.action.reply")}
         {...(post.replies_count > 0 && { "aria-describedby": repliesId })}
         onPress={actions.reply}
-        className="px-2 text-fg-muted"
+        className={plainActionClass}
       >
         <ReplyIcon />
         <Count id={repliesId} value={post.replies_count} />
@@ -45,7 +60,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
       <RelationButton label={t("client:status.action.favourite")} toggle={actions.favourite} tone="warning" icon={(on) => <StarIcon filled={on} />} />
       <RelationButton label={t("client:status.action.bookmark")} toggle={actions.bookmark} tone="accent" icon={(on) => <BookmarkIcon filled={on} />} />
       <MenuTrigger>
-        <Button variant="ghost" size="sm" aria-label={t("client:status.action.more")} className="px-2 text-fg-muted">
+        <Button variant="ghost" size="sm" aria-label={t("client:status.action.more")} className={plainActionClass}>
           <MoreIcon />
         </Button>
         <Menu aria-label={t("client:status.action.more")} placement="bottom end">
