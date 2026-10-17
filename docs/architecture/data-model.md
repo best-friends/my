@@ -520,6 +520,11 @@ flowchart LR
 - `boost_edges` は、取り消されていないブーストのうち、元投稿が削除されていないものを持ちます。投稿の削除イベントを記録したトランザクションで、その投稿の行を消します（取り消しイベントは作りません）。
 - `status_counters.boosts_count` は `boost_edges` の行を挿入・削除したときだけ増減し、`favourites_count` は `favourites` の行を実際に挿入・削除したときだけ増減します（§2.3）。再構築は、取り消されていない `boosts` と `favourites` の件数を数えます。
 - 同じ組への同時のブーストは、後の方が `boost_edges` の主キーで再実行され、既存のブーストを返します。同時の取り消しは、後の方が `boost_retractions` の主キーで再実行され、何もしません。
+- **リモートのブーストとお気に入り**: 受信した `Announce` / `Like` / `Undo` は、`federation` のハンドラ（[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）が `content` の公開 API（`RecordRemoteBoost` / `RetractRemoteBoost` / `RecordRemoteFavourite` / `RemoveRemoteFavourite`）で記録します。ローカルのコマンドと同じドメインイベントを発行するので、件数・`feed_entries`・通知は同じ projector で更新されます。
+  - リモートのアカウントがブーストできるのは、閲覧できる投稿のうち `Boostable` なものです。ローカルの投稿は、そのアカウントが ActivityPub で取得したときに見られるもの（`canView` の `ContextObjectFetch`）で、`local` の投稿は誰もブーストできません（ADR-0017）。公開範囲が `direct` になる（宛先が公開でもフォロワーでもない）`Announce` は記録しません。
+  - ブーストの `id` は `Announce` の `published`（無い・未来なら受信時刻）の UUIDv7、`boosts.uri` は `Announce` の `id` です。`Undo Announce` は `boost_retractions`（`origin = remote`）を記録します。
+  - リモートのアカウントがお気に入りできるのは、閲覧できる（`ContextObjectFetch`）ローカルの投稿だけです。`favourites.uri` は `Like`（または `EmojiReact`）の `id` です。そのため、リモートの投稿のお気に入りは常にローカルのアカウントのもので、`Like` の配送の対象です。
+  - `Undo Like` は、`favourites (uri)` で引き、無ければ埋め込みの `Like` の `object` が指す投稿への主体のお気に入りを消します。
 
 ブースト・お気に入りのコマンドは、行を実際に書いたときだけ次のドメインイベントを 1 つ発行します（`tx.Emit`、§2.1）。ブックマークとピン留めは本人だけのものなので、イベントを発行しません。
 
@@ -722,8 +727,8 @@ flowchart LR
 | `received_activities` | イベント | `activity_uri`（PK）, `actor_uri`, `type`, `signature_scheme`（`enum(rfc9421, cavage)`）, `trust`（`enum(signed, refetch)`。署名者と `actor` が一致しない、または `id` のホストが `actor` のホストと異なれば `refetch`）, `received_at` | インデックス `(received_at)`（保持期間後に削除） |
 | `received_activity_documents` | イベント | `activity_uri`（PK）, `document`（`document`） | 原本。非同期の処理が読む。障害調査とフィクスチャ採取のため短期保持（#44） |
 | `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。`uri` は `actor_uri` と同じオリジンのものだけ（[federation §3.3](federation.md#33-順序と冪等性)）。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除） |
-| `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report)`）, `object_id`, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
-| `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て（投稿の `Delete` は削除のトランザクションで組み立てる）、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
+| `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report)`）, `object_id`（`favourite` は投稿の ID）, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
+| `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て（投稿の `Delete` と `Like` / `Undo Like` は記録のトランザクションで組み立てる）、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
 | `deliveries` | イベント | `id`, `outbound_activity_id`, `inbox_url`（shared inbox に集約済み）, `domain`, `created_at` | 一意 `(outbound_activity_id, inbox_url)` |
 | `delivery_attempts` | イベント | `id`, `delivery_id`, `outcome`（`enum(succeeded, retryable_failure, permanent_failure, skipped)`）, `signature_scheme`（`enum(rfc9421, cavage)`、NULL 可 = 応答が無い）, `http_status`（`int`、NULL 可）, `error`（`text`、NULL 可）, `attempted_at` | インデックス `(delivery_id, id)`。保持期間（例: 30 日）後に削除（NFR-OPS-3） |
 | `remote_instances` | リソース | `domain`（PK）, `first_seen_at` | |
@@ -733,6 +738,8 @@ flowchart LR
 
 - **配送先の記録** は `deliveries` が兼ねます。
   - 投稿の `Update` / `Delete` は、その投稿の `Create` の `outbound_activities` に紐づく `deliveries` の inbox に送ります（§7）。
+- お気に入りは現在値で、取り消すと行が消えます。そこで `favourite` の活動は、お気に入りを決める組（`actor_account_id` と投稿）で記録し、`object_id` は投稿の ID です。
+  `Like` / `Undo Like` の本文はイベントの値（お気に入りの `uri`・投稿の `uri`）から記録のトランザクションで組み立てるので、行が消えた後の `Undo Like` も `Like` の `id` を埋め込めます。
 - `instance_health` は、`retryable_failure` を記録した日が `last_failure_day` と違えば `failure_days` を 1 増やし、7 に達したら `instance_availability_events`（`marked_unavailable`）を記録して `unavailable` にします。
   成功・署名付きの受信・probe の成功は `failure_days` を 0 に戻し、`unavailable` なら `marked_available` を記録します（[federation.md §7.3](federation.md#73-配送とリトライ)）。
   `permanent_failure` と `skipped` は `instance_health` を変えません。projector は同じドメインへの同時の更新を失わないよう、行を読んでから書くまで行ロックを取ります（PostgreSQL は `SELECT ... FOR UPDATE`、SQLite は書き込みが直列）。

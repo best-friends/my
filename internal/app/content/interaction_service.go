@@ -179,7 +179,7 @@ func (s *Interactions) Unfavourite(ctx context.Context, accountID, statusID stri
 		if err != nil || !deleted {
 			return err
 		}
-		return tx.Emit(ctx, Unfavourited{Favourite: f, Status: RefOf(st)})
+		return tx.Emit(ctx, Unfavourited{Favourite: f, Status: RefOf(st), RemovedAt: s.d.Clock.Now()})
 	})
 }
 

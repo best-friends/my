@@ -249,12 +249,16 @@ func interactionRejectsDuplicates(t *testing.T, e *interactionEnv) {
 	if err := tx(func(tx uow.Tx) error { return second(e.h.Interactions.InsertFavourite(ctx, tx, g)) }); !errors.Is(err, appcontent.ErrFavouriteURIUsed) {
 		t.Errorf("InsertFavourite(same URI) = %v, want ErrFavouriteURIUsed", err)
 	}
+	if got, err := e.h.Interactions.FindFavouriteByURI(ctx, f.URI); err != nil || got.AccountID != f.AccountID || got.StatusID != f.StatusID {
+		t.Errorf("FindFavouriteByURI = %+v, %v; want %+v", got, err, f)
+	}
 
 	for name, err := range map[string]error{
 		"FindBoost":           second(e.h.Interactions.FindBoost(ctx, "missing")),
 		"FindBoostRetraction": second(e.h.Interactions.FindBoostRetraction(ctx, s.ID)),
 		"FindBoostEdge":       second(e.h.Interactions.FindBoostEdge(ctx, author, s.ID)),
 		"FindFavourite":       second(e.h.Interactions.FindFavourite(ctx, author, "missing")),
+		"FindFavouriteByURI":  second(e.h.Interactions.FindFavouriteByURI(ctx, "https://social.example/missing")),
 		"FindBookmark":        second(e.h.Interactions.FindBookmark(ctx, author, s.ID)),
 		"FindPin":             second(e.h.Interactions.FindPin(ctx, author, s.ID)),
 	} {

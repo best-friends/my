@@ -324,6 +324,15 @@ func (r *InteractionRepository) FindFavourite(ctx context.Context, accountID, st
 	return favouriteFrom(row), nil
 }
 
+// FindFavouriteByURI implements content.InteractionRepository.
+func (r *InteractionRepository) FindFavouriteByURI(ctx context.Context, uri string) (content.Favourite, error) {
+	row, err := r.db.reader().GetFavouriteByURI(ctx, uri)
+	if err != nil {
+		return content.Favourite{}, notFound(err, appcontent.ErrNotFound, "favourite "+uri)
+	}
+	return favouriteFrom(row), nil
+}
+
 // FindBookmark implements content.InteractionRepository.
 func (r *InteractionRepository) FindBookmark(ctx context.Context, accountID, statusID string) (content.Bookmark, error) {
 	row, err := r.db.reader().GetBookmark(ctx, postgresgen.GetBookmarkParams{AccountID: accountID, StatusID: statusID})

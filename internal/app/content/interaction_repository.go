@@ -99,6 +99,8 @@ type InteractionRepository interface {
 	FindBoostRetraction(ctx context.Context, boostID string) (content.BoostRetraction, error)
 	FindBoostEdge(ctx context.Context, boosterAccountID, statusID string) (content.BoostEdge, error)
 	FindFavourite(ctx context.Context, accountID, statusID string) (content.Favourite, error)
+	// FindFavouriteByURI returns the favourite whose Like is uri.
+	FindFavouriteByURI(ctx context.Context, uri string) (content.Favourite, error)
 	FindBookmark(ctx context.Context, accountID, statusID string) (content.Bookmark, error)
 	FindPin(ctx context.Context, accountID, statusID string) (content.Pin, error)
 	// ListFavourites, ListBookmarks, and ListPins return an account's rows newest first:
