@@ -7,7 +7,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/domain/identity"
 )
 
@@ -45,27 +44,12 @@ func (s *Service) AuthenticateBearer(ctx context.Context, accessToken string) (B
 	if err != nil {
 		return Bearer{}, err
 	}
-	if !access.Allowed() {
-		return Bearer{}, ErrAccountUnavailable
-	}
-	st, err := s.d.Accounts.UserLifecycle(ctx, tok.UserID)
-	if errors.Is(err, account.ErrNotFound) {
-		return Bearer{}, ErrAccountUnavailable
-	}
-	if err != nil {
-		return Bearer{}, err
-	}
-	if !st.Active() {
-		return Bearer{}, ErrAccountUnavailable
-	}
-	if restricted, err := s.loginRestricted(ctx, st.AccountID); err != nil {
-		return Bearer{}, err
-	} else if restricted {
+	if !access.Allowed() || access.AccountID == "" || !access.AccountActive {
 		return Bearer{}, ErrAccountUnavailable
 	}
 	return Bearer{
 		TokenID: tok.ID, ClientID: tok.ClientID, UserID: tok.UserID,
-		AccountID: st.AccountID, Scope: tok.Scope, ExpiresAt: tok.ExpiresAt,
+		AccountID: access.AccountID, Scope: tok.Scope, ExpiresAt: tok.ExpiresAt,
 	}, nil
 }
 

@@ -450,6 +450,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
+		Moderation: a.Moderation, UserLocales: a.Identity,
 	}).Register(a)
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {
@@ -470,7 +471,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
 		Moderation: a.Moderation, UserAccounts: a.Accounts,
-		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy,
+		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
 		Rules:       a.Instance,
 		Reports:     a.LocalReports,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,

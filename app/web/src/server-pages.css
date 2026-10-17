@@ -131,4 +131,13 @@
     @apply flex flex-col gap-1 rounded-md bg-surface-sunken py-3 ps-8 pe-4;
     list-style: disc;
   }
+
+  /* The moderation actions on the status page of an account that moderation keeps out. */
+  .moderation-actions {
+    @apply flex flex-col gap-3;
+  }
+
+  .moderation-actions li {
+    @apply flex flex-col gap-1 rounded-md bg-surface-sunken px-4 py-3;
+  }
 }
