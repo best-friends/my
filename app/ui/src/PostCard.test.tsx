@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { Avatar } from "./Avatar";
-import { PostCard } from "./PostCard";
+import { PostCard, PostCardAuthor } from "./PostCard";
 import { PostContent, serverSanitizedHtml } from "./PostContent";
 
 describe("PostCard", () => {
@@ -32,5 +32,29 @@ describe("PostCard", () => {
       />,
     );
     expect(screen.getByRole("article", { name: "Bob boosted Alice @alice 2h" })).toHaveAccessibleDescription("Hello");
+  });
+});
+
+describe("PostCardAuthor", () => {
+  it("names a link around it by the full name and handle, the handle left to right", () => {
+    const handle = "@carol@a-rather-long-community-server-name.social.example.com";
+    render(
+      <a href="#profile">
+        <PostCardAuthor name="Carol" handle={handle} />
+      </a>,
+    );
+    expect(screen.getByRole("link", { name: `Carol ${handle}` })).toBeInTheDocument();
+    // The ellipsis of a cut handle is at its end, the domain's side, in a right-to-left page too.
+    expect(screen.getByText(handle)).toHaveAttribute("dir", "ltr");
+    expect(screen.getByText("Carol")).toHaveAttribute("dir", "auto");
+  });
+
+  it("is the name alone without a handle", () => {
+    render(
+      <a href="#profile">
+        <PostCardAuthor name="Bob" />
+      </a>,
+    );
+    expect(screen.getByRole("link", { name: "Bob" })).toBeInTheDocument();
   });
 });

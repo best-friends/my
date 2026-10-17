@@ -82,5 +82,5 @@ export { ContentWarning, type ContentWarningProps } from "./ContentWarning";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { MediaGrid, type MediaGridProps, type MediaItem } from "./MediaGrid";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
-export { PostCard, type PostCardProps } from "./PostCard";
+export { PostCard, PostCardAuthor, type PostCardAuthorProps, type PostCardProps } from "./PostCard";
 export { PostContent, serverSanitizedHtml, type PostContentProps, type SanitizedHtml } from "./PostContent";
