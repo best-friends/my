@@ -8,7 +8,7 @@ import { useConfig } from "../../../lib/config";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { Account } from "../api/relationships";
 import { type AccountAction, type AccountList, useBlocks, useFollowRequests, useMutes } from "../hooks/useAccountLists";
-import { useFocusAfterRemoval } from "../hooks/useFocusAfterRemoval";
+import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
 
 export function BlockedAccounts() {
   const t = useT();
