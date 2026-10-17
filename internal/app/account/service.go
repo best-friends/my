@@ -123,7 +123,7 @@ func (s *Service) prepareKeys(ctx context.Context, a account.Account, now time.T
 		if err := checkAlgorithm(alg, priv); err != nil {
 			return nil, err
 		}
-		pubPEM, err := encodePublicKey(priv.Public())
+		pubPEM, fingerprint, err := encodePublicKey(priv.Public())
 		if err != nil {
 			return nil, fmt.Errorf("account: encode %s public key: %w", alg, err)
 		}
@@ -137,6 +137,7 @@ func (s *Service) prepareKeys(ctx context.Context, a account.Account, now time.T
 			KeyID:        account.KeyIRI(a.URI, alg),
 			Algorithm:    alg,
 			PublicKeyPEM: pubPEM,
+			Fingerprint:  fingerprint,
 			CreatedAt:    now,
 		}
 		sealed, err := s.d.Sealer.Seal(ctx, der, privateKeyAAD(k.ID))

@@ -44,13 +44,13 @@ func privateKeyAAD(accountKeyID string) []byte {
 	return kernel.AAD(accountKeyID, "local_account_private_keys.private_key_enc")
 }
 
-// encodePublicKey returns the PKIX PEM block of a public key.
-func encodePublicKey(pub crypto.PublicKey) (string, error) {
+// encodePublicKey returns the PKIX PEM block and the fingerprint of a public key.
+func encodePublicKey(pub crypto.PublicKey) (pemBlock string, fingerprint []byte, err error) {
 	der, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: der})), nil
+	return string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: der})), account.KeyFingerprint(der), nil
 }
 
 // ParsePublicKeyPEM parses a key's PublicKeyPEM.

@@ -295,6 +295,26 @@ var schema = []field{
 		secret: true,
 		set:    func(c *Config, v string) { c.SMTPPassword = v },
 	},
+	{
+		key: "profile",
+		doc: "Whether this is a production instance. Settings that weaken a security default for development, such as `http_allow_private_networks`, are refused in the `production` profile (ADR-0019).",
+		def: "production",
+		choices: []choice{
+			{value: "production", inV0: true, doc: "A production instance."},
+			{value: "development", inV0: true, doc: "A development or test instance."},
+		},
+		set: func(c *Config, v string) { c.Profile = v },
+	},
+	{
+		key: "http_allow_private_networks",
+		doc: "Lets outbound HTTP (federation, media, link previews) reach loopback, private, and other non-public addresses and host names, over plain `http` and on any port. For development and tests against local servers only: the server logs a warning at start, and the `production` profile refuses it (ADR-0019 §1).",
+		def: "false",
+		choices: []choice{
+			{value: "false", inV0: true, doc: "Only public `https` destinations on ports 443 and 80."},
+			{value: "true", inV0: true, doc: "Every destination; requires `profile = development`."},
+		},
+		set: func(c *Config, v string) { c.HTTPAllowPrivateNetworks = v == "true" },
+	},
 }
 
 // crossChecks rejects missing conditional settings and contradictory combinations.
@@ -326,6 +346,9 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 	}
 	if vals["mail"] == "smtp" && !present["smtp_host"] {
 		issues = append(issues, Issue{Key: "smtp_host", Missing: true, Message: "required when mail is smtp"})
+	}
+	if vals["http_allow_private_networks"] == "true" && vals["profile"] != "development" {
+		issues = append(issues, Issue{Key: "http_allow_private_networks", Message: "true is refused in the production profile; set profile = development"})
 	}
 	if vals["queue"] == "inline" && vals["role"] != "" && vals["role"] != string(RoleAll) {
 		issues = append(issues, Issue{Key: "queue", Message: fmt.Sprintf("inline runs jobs in the enqueuing process and requires role = all, not %s", vals["role"])})

@@ -104,7 +104,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `BlobStore` | メディアの保存・署名付き URL | fs | [0005](../adr/0005-blob-storage-and-media.md) |
 | `MediaProcessor` | サムネイル・リサイズ・EXIF 除去 | native | [0005](../adr/0005-blob-storage-and-media.md) |
 | `KeyValueStore` | キャッシュ・レート制限・連合ライブラリ用 KV | db | [0003](../adr/0003-database-abstraction.md) |
-| `HttpClient` | 外部 HTTP（SSRF ガード・タイムアウト・UA 付与） | `net/http` + SSRF ガード | [0006](../adr/0006-federation-protocol-scope.md) |
+| `HTTPClient` | 外部 HTTP（SSRF ガード・用途別の本文上限とタイムアウト・UA 付与） | httpclient（`net/http` + SSRF ガード） | [0006](../adr/0006-federation-protocol-scope.md), [0019](../adr/0019-security-baseline.md) |
 | `Mailer` | メール送信 | none（ログ出力） | [0010](../adr/0010-configuration-and-packaging.md) |
 | `PushSender` | Web Push 送信 | webpush | — |
 | `Publisher` / `Subscriber` | リアルタイム更新の通知と購読（§4.4） | in-process（`stream.Hub`） | [0016](../adr/0016-client-api-style.md) |

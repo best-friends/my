@@ -15,6 +15,7 @@ import (
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
+	"github.com/best-friends/my/internal/adapter/httpclient"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
 	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
@@ -85,6 +86,8 @@ type App struct {
 	RateLimiter *kernel.RateLimiter
 	// Mailer is the mail adapter that cfg.Mail selects.
 	Mailer kernel.Mailer
+	// HTTPClient sends every outbound HTTP request through the SSRF guard (ADR-0019 §1).
+	HTTPClient kernel.HTTPClient
 
 	Accounts *account.Service
 	Identity *identity.Service
@@ -343,6 +346,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
+	a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -529,6 +533,17 @@ func newMailer(cfg *config.Config, logger *slog.Logger) (kernel.Mailer, error) {
 	default:
 		return nil, fmt.Errorf("mail %q is not implemented yet", cfg.Mail)
 	}
+}
+
+// newHTTPClient returns the SSRF-guarded HTTPClient. http_allow_private_networks, which the
+// configuration accepts only in the development profile, turns the guard off with a warning.
+func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger) kernel.HTTPClient {
+	opts := httpclient.Options{UserAgent: fmt.Sprintf("my/%s (+https://%s/)", version, cfg.Host)}
+	if cfg.HTTPAllowPrivateNetworks {
+		logger.Warn("http_allow_private_networks is on: outbound HTTP can reach loopback and private networks; never use it in production")
+		opts.AllowPrivateNetworks, opts.AllowHTTP, opts.AnyPort = true, true, true
+	}
+	return httpclient.New(opts)
 }
 
 // hostOnly returns host without a port.
