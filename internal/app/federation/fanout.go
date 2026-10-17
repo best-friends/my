@@ -35,8 +35,12 @@ type FanOutDeps struct {
 	Domains DomainPolicy
 	Clock   kernel.Clock
 	IDs     kernel.IDGenerator
+	// Parts resolves the media, mentions, and hashtags of the revisions that Notes present.
+	Parts NoteParts
 	// Host is the serving domain of the activity and object URIs (ADR-0018).
 	Host string
+	// AccountDomain is the domain of local handles in mentions; empty means Host.
+	AccountDomain string
 	// Batch is the number of recipients per job; zero means FanOutBatch.
 	Batch int
 	// Logger logs the activities whose object is gone; nil means slog.Default().
@@ -48,6 +52,7 @@ type FanOutDeps struct {
 //
 //  1. It builds the activity's document once, on the first batch, and stores it
 //     (outbound_activity_documents), so that every delivery and retry sends the same bytes.
+//     The Delete of a status has its document stored already, by the projector that recorded it.
 //  2. It reads up to Batch recipients: the author's active followers through the graph module,
 //     the accounts the object mentions, the inboxes an earlier activity went to, or, for the
 //     Delete of an actor, the shared inboxes known to the instance.
@@ -62,7 +67,8 @@ type FanOutDeps struct {
 // Running a batch again inserts no delivery twice and enqueues no JobDeliver twice: the
 // deliveries are unique per (activity, inbox), and only new rows get a job.
 type FanOut struct {
-	d FanOutDeps
+	d     FanOutDeps
+	notes notes
 }
 
 // NewFanOut returns the fan-out on d.
@@ -76,7 +82,10 @@ func NewFanOut(d FanOutDeps) *FanOut {
 	if d.Logger == nil {
 		d.Logger = slog.Default()
 	}
-	return &FanOut{d: d}
+	if d.AccountDomain == "" {
+		d.AccountDomain = d.Host
+	}
+	return &FanOut{d: d, notes: notes{parts: d.Parts, graph: d.Graph, host: d.Host, accountDomain: d.AccountDomain}}
 }
 
 // RegisterJobs registers the JobFanOut handler.

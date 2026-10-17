@@ -112,10 +112,23 @@ func RegisterOutboundProjectors(r *uow.Projectors, d RecorderDeps) {
 		if !ok || !ev.Status.IsLocal {
 			return nil
 		}
-		return rec.record(ctx, tx, federation.OutboundActivity{
+		act, err := rec.insert(ctx, tx, federation.OutboundActivity{
 			Type: federation.ActivityDelete, ActorAccountID: ev.Status.AuthorAccountID,
 			ObjectKind: federation.OutboundStatus, ObjectID: ev.Status.ID, CreatedAt: ev.Deletion.DeletedAt,
-		}, "")
+		})
+		if err != nil {
+			return err
+		}
+		// The document is stored with the deletion, so that every delivery of the Delete
+		// sends it whether or not the status's rows are still there (federation.md §7.1).
+		doc, err := deleteDocument(act, d.Host, ev.Status)
+		if err != nil {
+			return err
+		}
+		if _, err := d.Repository.InsertOutboundDocument(ctx, tx, act.ID, doc, act.CreatedAt); err != nil {
+			return err
+		}
+		return rec.enqueue(ctx, tx, act, "")
 	})
 	r.Register(appcontent.EventBoosted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appcontent.Boosted)
@@ -166,17 +179,31 @@ type recorder struct{ d RecorderDeps }
 // /ap/activities/{id} (ADR-0018). The ID is generated here, in the transaction: a retried
 // attempt starts over with a new one, and nothing of the rolled-back attempt remains.
 func (r recorder) record(ctx context.Context, tx uow.Tx, a federation.OutboundActivity, revisionID string) error {
+	a, err := r.insert(ctx, tx, a)
+	if err != nil {
+		return err
+	}
+	return r.enqueue(ctx, tx, a, revisionID)
+}
+
+// insert gives a its ID and URI and inserts it in tx.
+func (r recorder) insert(ctx context.Context, tx uow.Tx, a federation.OutboundActivity) (federation.OutboundActivity, error) {
 	a.ID = r.d.IDs.NewID()
 	if a.ActivityURI == "" {
 		a.ActivityURI = federation.IRI(appcontent.ActivityURI(r.d.Host, a.ID))
 	}
 	a.CreatedAt = kernel.Normalize(a.CreatedAt)
 	if err := a.Validate(); err != nil {
-		return err
+		return federation.OutboundActivity{}, err
 	}
 	if err := r.d.Repository.InsertOutboundActivity(ctx, tx, a); err != nil {
-		return fmt.Errorf("record %s %s: %w", a.Type, a.ObjectID, err)
+		return federation.OutboundActivity{}, fmt.Errorf("record %s %s: %w", a.Type, a.ObjectID, err)
 	}
+	return a, nil
+}
+
+// enqueue enqueues the first fan-out batch of a in tx.
+func (r recorder) enqueue(ctx context.Context, tx uow.Tx, a federation.OutboundActivity, revisionID string) error {
 	job, err := fanOutPayload{OutboundActivityID: a.ID, RevisionID: revisionID}.job()
 	if err != nil {
 		return err

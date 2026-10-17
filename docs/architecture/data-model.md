@@ -704,7 +704,7 @@ flowchart LR
 | `received_activity_documents` | イベント | `activity_uri`（PK）, `document`（`document`） | 原本。非同期の処理が読む。障害調査とフィクスチャ採取のため短期保持（#44） |
 | `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除） |
 | `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report)`）, `object_id`, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
-| `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
+| `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て（投稿の `Delete` は削除のトランザクションで組み立てる）、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
 | `deliveries` | イベント | `id`, `outbound_activity_id`, `inbox_url`（shared inbox に集約済み）, `domain`, `created_at` | 一意 `(outbound_activity_id, inbox_url)` |
 | `delivery_attempts` | イベント | `id`, `delivery_id`, `outcome`（`enum(succeeded, retryable_failure, permanent_failure, skipped)`）, `signature_scheme`（`enum(rfc9421, cavage)`、NULL 可 = 応答が無い）, `http_status`（`int`、NULL 可）, `error`（`text`、NULL 可）, `attempted_at` | インデックス `(delivery_id, id)`。保持期間（例: 30 日）後に削除（NFR-OPS-3） |
 | `remote_instances` | リソース | `domain`（PK）, `first_seen_at` | |

@@ -6,46 +6,191 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
+	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/domain/federation"
 )
 
+// NoteParts resolves what a revision refers to (its media, mentioned accounts, and hashtags) for
+// the Note of a status. *appcontent.Reader implements it.
+type NoteParts interface {
+	Parts(ctx context.Context, rev appcontent.Revision) (appcontent.RevisionParts, error)
+}
+
+// Relationships reads the relationship of an account with another; *appgraph.Service
+// implements it.
+type Relationships interface {
+	Relationship(ctx context.Context, accountID, targetID string) (appgraph.Relationship, error)
+}
+
+// notes builds the Note of a local status, the one place that the fan-out (the object of Create
+// and Update) and object fetches (GET of the status's IRI) build it (federation.md §7.4).
+type notes struct {
+	parts NoteParts
+	graph Relationships
+	// host serves the hashtag pages; accountDomain is the domain of local handles.
+	host, accountDomain string
+}
+
+// note returns the Note of st as of rev by author, addressed by the effective visibility vis. A
+// zero updated leaves updated out.
+//
+// The Note of a local-visibility status leaves out of tag the remote accounts that do not
+// actively follow the author at the time it is built (ADR-0035): a server that gets the status
+// for a follower would otherwise let a mentioned account there see it. The mention links in the
+// content stay. Its addressing has no mentioned accounts anyway (ADR-0017).
+func (n notes) note(ctx context.Context, st appcontent.Status, rev appcontent.Revision, author federation.IRI, vis appcontent.Visibility, updated time.Time) (federation.NoteDocument, error) {
+	parts, err := n.parts.Parts(ctx, rev)
+	if err != nil {
+		return federation.NoteDocument{}, err
+	}
+	if vis == appcontent.VisibilityLocal {
+		kept := parts.Mentions[:0:0]
+		for _, m := range parts.Mentions {
+			if !m.Account.IsLocal() {
+				r, err := n.graph.Relationship(ctx, m.Account.ID, st.AuthorAccountID)
+				if err != nil {
+					return federation.NoteDocument{}, err
+				}
+				if !r.ActivelyFollowing() {
+					continue
+				}
+			}
+			kept = append(kept, m)
+		}
+		parts.Mentions = kept
+	}
+	return statusNote(st, rev, author, vis, parts, updated, n.host, n.accountDomain), nil
+}
+
+// statusNote returns the Note of a local status st as of rev by actor, addressed by the effective
+// visibility vis to its followers and the mentioned accounts of parts, with the body of rev:
+// content per language, content warning, attachments, and the mentions and hashtags of parts as
+// tag (federation.md §7.4). A zero updated leaves updated out.
+func statusNote(st appcontent.Status, rev appcontent.Revision, actor federation.IRI, vis appcontent.Visibility, parts appcontent.RevisionParts, updated time.Time, host, accountDomain string) federation.NoteDocument {
+	mentioned := make([]federation.IRI, 0, len(parts.Mentions))
+	for _, m := range parts.Mentions {
+		mentioned = append(mentioned, federation.IRI(m.Account.URI))
+	}
+	aud := federation.Address(federation.Visibility(vis), federation.FollowersOf(actor), mentioned)
+	note := federation.NoteDocument{
+		ObjectDocument: federation.ObjectDocument{
+			ID: federation.IRI(st.URI), Type: federation.ObjectNote,
+			Published: federation.FormatTime(st.PublishedAt), URL: st.URL,
+			AttributedTo: actor, To: aud.To, Cc: aud.Cc,
+		},
+		Summary: rev.SpoilerText,
+		// A content warning hides the whole status, as Mastodon marks it.
+		Sensitive:  rev.Sensitive || rev.SpoilerText != "",
+		Attachment: []federation.AttachmentDocument{},
+		Tag:        []federation.TagDocument{},
+	}
+	if st.InReplyToURI != "" {
+		r := federation.IRI(st.InReplyToURI)
+		note.InReplyTo = &r
+	}
+	if !updated.IsZero() {
+		note.Updated = federation.FormatTime(updated)
+	}
+	for i, b := range rev.Bodies {
+		if i == 0 || b.Language == rev.Language {
+			note.Content = b.ContentHTML
+		}
+		if b.Language != "" && b.Language != "und" {
+			if note.ContentMap == nil {
+				note.ContentMap = map[string]string{}
+			}
+			note.ContentMap[b.Language] = b.ContentHTML
+		}
+	}
+	for _, m := range parts.Attachments {
+		note.Attachment = append(note.Attachment, attachmentOf(m))
+	}
+	for _, m := range parts.Mentions {
+		note.Tag = append(note.Tag, federation.TagDocument{
+			Type: federation.TagMention, Href: m.Account.URI, Name: handleOf(m, accountDomain),
+		})
+	}
+	for _, t := range parts.Tags {
+		note.Tag = append(note.Tag, federation.TagDocument{
+			Type: federation.TagHashtag, Href: "https://" + host + "/tags/" + url.PathEscape(t.Name), Name: "#" + t.Name,
+		})
+	}
+	return note
+}
+
+// attachmentOf returns the attachment document of a processed media file: the URL, type, and
+// size of its full variant, its alternative text, blurhash, and focal point.
+func attachmentOf(m appcontent.MediaView) federation.AttachmentDocument {
+	full := m.Full()
+	a := federation.AttachmentDocument{
+		Type: federation.AttachmentType, MediaType: full.ContentType, URL: m.URL, Name: m.Description,
+		Width: full.Width, Height: full.Height,
+	}
+	if r := m.Media.Result; r != nil {
+		a.Blurhash = r.Blurhash
+		if a.Width == 0 || a.Height == 0 {
+			a.Width, a.Height = r.Width, r.Height
+		}
+	}
+	if f := m.Media.Focus; f != nil && (f.X != 0 || f.Y != 0) {
+		a.FocalPoint = []float64{f.X, f.Y}
+	}
+	return a
+}
+
+// handleOf returns the handle of a mentioned account, @user@domain, with local accounts on
+// accountDomain; "" when the account has no handle.
+func handleOf(a appaccount.Actor, accountDomain string) string {
+	switch {
+	case a.Handle != nil && a.Handle.Domain != "":
+		return "@" + a.Handle.Username + "@" + a.Handle.Domain
+	case a.Handle != nil:
+		return "@" + a.Handle.Username + "@" + accountDomain
+	case a.Local != nil:
+		return "@" + a.Local.Username + "@" + accountDomain
+	}
+	return ""
+}
+
 // document builds the body of act (federation.md §7.4): the activity envelope with its context
 // and addressing around the object. The object of a Create or Update is the status's Note as of
-// the revision the activity presents, with its identity, author, reply target, and addressing.
+// the revision the activity presents. The Delete of a status has no document here: its
+// projector stores it with the deletion (deleteDocument), so document returns nil.
 func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, s subject) ([]byte, error) {
 	if act.ObjectKind == federation.OutboundAccount {
 		return accountDocument(f.d.Host, act, s.actor)
+	}
+	if act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete {
+		return nil, nil
 	}
 	actor, err := f.actorIRI(ctx, act.ActorAccountID)
 	if err != nil {
 		return nil, err
 	}
-	mentioned, err := f.actorIRIs(ctx, s.mentioned)
-	if err != nil {
-		return nil, err
-	}
-	aud := federation.Address(federation.Visibility(s.visibility), federation.FollowersOf(actor), mentioned)
 
 	var doc federation.ActivityDocument
-	switch {
-	case act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete:
-		uri := s.status.URI
-		if uri == "" {
-			uri = appcontent.StatusURI(f.d.Host, act.ObjectID)
-		}
-		doc = federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, aud, federation.TombstoneOf(federation.IRI(uri)))
-	case act.ObjectKind == federation.OutboundStatus:
+	switch act.ObjectKind {
+	case federation.OutboundStatus:
 		published, updated := s.status.PublishedAt, time.Time{}
 		if act.Type == federation.ActivityUpdate {
 			published, updated = s.revision.RevisedAt, s.revision.RevisedAt
 		}
-		note := statusNote(s.status, actor, aud, updated)
-		doc = federation.NewActivityDocument(act.ActivityURI, act.Type, actor, published, aud, note)
-	case act.ObjectKind == federation.OutboundBoost:
+		note, err := f.notes.note(ctx, s.status, s.revision, actor, s.visibility, updated)
+		if err != nil {
+			return nil, err
+		}
+		doc = federation.NewActivityDocument(act.ActivityURI, act.Type, actor, published, federation.Audience{To: note.To, Cc: note.Cc}, note)
+	case federation.OutboundBoost:
+		mentioned, err := f.actorIRIs(ctx, s.mentioned)
+		if err != nil {
+			return nil, err
+		}
+		aud := federation.Address(federation.Visibility(s.visibility), federation.FollowersOf(actor), mentioned)
 		announce := federation.NewActivityDocument(federation.IRI(s.boost.URI), federation.ActivityAnnounce, actor,
 			s.boost.BoostedAt, aud, federation.IRI(s.status.URI))
 		doc = announce
@@ -72,23 +217,19 @@ func accountDocument(host string, act federation.OutboundActivity, a appaccount.
 	return federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, aud, object).Marshal()
 }
 
-// statusNote returns the Note of a local status by actor, addressed to aud: the object that its
-// activities carry and that a GET of its IRI returns (federation.md §7.4, §10). A zero updated
-// leaves updated out.
-func statusNote(st appcontent.Status, actor federation.IRI, aud federation.Audience, updated time.Time) federation.ObjectDocument {
-	note := federation.ObjectDocument{
-		ID: federation.IRI(st.URI), Type: federation.ObjectNote,
-		Published: federation.FormatTime(st.PublishedAt), URL: st.URL,
-		AttributedTo: actor, To: aud.To, Cc: aud.Cc,
+// deleteDocument returns the Delete of a local status st, built from the deletion event alone so
+// that it does not depend on rows that the purge removes: a Tombstone of the status's IRI,
+// addressed by the status's own visibility to the author's followers (federation.md §7.1). It
+// names no mentioned account: a Delete tells only that the status is gone, and goes to the
+// inboxes of the Create.
+func deleteDocument(act federation.OutboundActivity, host string, st appcontent.Status) ([]byte, error) {
+	actor := federation.IRI(appaccount.ActorURI(host, st.AuthorAccountID))
+	uri := st.URI
+	if uri == "" {
+		uri = appcontent.StatusURI(host, st.ID)
 	}
-	if st.InReplyToURI != "" {
-		r := federation.IRI(st.InReplyToURI)
-		note.InReplyTo = &r
-	}
-	if !updated.IsZero() {
-		note.Updated = federation.FormatTime(updated)
-	}
-	return note
+	aud := federation.Address(federation.Visibility(st.Visibility), federation.FollowersOf(actor), nil)
+	return federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, aud, federation.TombstoneOf(federation.IRI(uri))).Marshal()
 }
 
 // actorIRI returns the ActivityPub id of an account.

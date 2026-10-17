@@ -336,6 +336,10 @@ func (s *Service) RecordLifecycleEvent(ctx context.Context, in LifecycleInput) (
 	return e, nil
 }
 
+// ActorURI returns the ActivityPub id of a local account on host (ADR-0018), the URI that every
+// local account gets when it is created.
+func ActorURI(host, accountID string) string { return account.ActorURI(host, accountID) }
+
 // Actor is an account with what is needed to present it: its handle and current profile
 // (when it has them), public keys, and lifecycle state.
 type Actor struct {
