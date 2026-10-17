@@ -107,11 +107,13 @@ type App struct {
 	Statuses *content.Reader
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
-	// Moderation records the actions on domains and remote accounts and the reports received
-	// from other servers; ModerationPolicy reads the restrictions they impose for federation
-	// and the media proxy (docs/architecture/federation.md §11).
+	// Moderation records the actions on domains and accounts and the reports received from
+	// other servers; ModerationPolicy reads the restrictions they impose for federation and the
+	// media proxy (docs/architecture/federation.md §11), and AccountPolicy those that the
+	// identity, graph, and content modules and the client API apply (data-model §5.3).
 	Moderation       *moderation.Service
 	ModerationPolicy *moderation.FederationPolicy
+	AccountPolicy    *moderation.AccountPolicy
 	// LocalReports files the reports of local users (FR-701).
 	LocalReports *moderation.LocalReports
 
@@ -336,10 +338,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	// The user step is the locale of the client API request's authenticated viewer.
 	a.Locales = &i18n.Resolver{Bundle: a.Messages, UserLocale: a.viewerLocale, InstanceDefault: a.instanceDefaultLocale}
+	// Moderation needs only the account module; the modules below read its restrictions.
+	a.setUpModeration(mods)
+	identity.RegisterModerationProjectors(a.Projectors, identities, a.Accounts, a.Clock)
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
-		RateLimiter: a.RateLimiter,
+		Logins: a.AccountPolicy, RateLimiter: a.RateLimiter,
 		// The default locale and the registration mode are instance settings in the database,
 		// never configuration (docs/reference/configuration.md); they are read per registration so
 		// changes apply at once.
@@ -360,14 +365,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	graph.RegisterProjectors(a.Projectors, follows)
 	a.Graph = graph.NewService(graph.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
+		Interactions: a.AccountPolicy,
 	})
 	a.Graph.RegisterJobs(a.Handlers, a.Scheduler)
-	a.setUpModeration(mods)
 	content.RegisterProjectors(a.Projectors, statuses)
 	a.Content = content.NewService(content.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
-		// No moderation restrictions exist yet; posting still goes through the policy port.
-		Restrictions:    content.NoRestrictions{},
+		Restrictions:    a.AccountPolicy.Content(),
 		Media:           medias,
 		RemoteMentions:  remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
 		Sanitizer:       newHTMLSanitizer(),
@@ -380,7 +384,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	content.RegisterInteractionProjectors(a.Projectors, interactions)
 	a.Interactions = content.NewInteractions(content.InteractionDeps{
 		UnitOfWork: a.UnitOfWork, Statuses: statuses, Interactions: interactions,
-		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: content.NoRestrictions{},
+		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: a.AccountPolicy.Content(),
 		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
 	// After the content and graph projectors, which reject the commands that must not reach
@@ -424,13 +428,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpInbox(feds)
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
-		Restrictions: content.NoRestrictions{}, Media: a.Media,
+		Restrictions: a.AccountPolicy.Content(), Media: a.Media,
 	})
 	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
-		Repository: statuses, Accounts: a.Accounts, Restrictions: content.NoRestrictions{}, Media: a.Media,
+		Repository: statuses, Accounts: a.Accounts, Restrictions: a.AccountPolicy.Content(), Media: a.Media,
 		DefaultLanguage: a.defaultPostLanguage,
 	})
 	if err := a.setUpWeb(opts); err != nil {
@@ -466,6 +470,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
 		Moderation: a.Moderation, UserAccounts: a.Accounts,
+		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy,
 		Rules:       a.Instance,
 		Reports:     a.LocalReports,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,

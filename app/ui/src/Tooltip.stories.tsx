@@ -4,15 +4,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, waitFor } from "storybook/test";
 import { Button } from "./Button";
+import { BoostIcon } from "./Icons";
 import { Tooltip, TooltipTrigger } from "./Tooltip";
-
-function BoostIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 fill-none stroke-current stroke-[1.5]">
-      <path d="M3 6l2-2 2 2M5 4v6a2 2 0 002 2h4M13 10l-2 2-2-2M11 12V6a2 2 0 00-2-2H5" />
-    </svg>
-  );
-}
 
 const meta = {
   title: "Overlays/Tooltip",

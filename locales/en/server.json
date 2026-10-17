@@ -371,6 +371,10 @@
     "defaultMessage": "The access token needs the scope {scope}.",
     "description": "Detail of the HTTP 403 insufficient-scope API error. {scope} is the missing OAuth scope, e.g. read:accounts (not translated)."
   },
+  "errors.interaction_restricted": {
+    "defaultMessage": "Your account may not follow, favourite, boost, or reply right now.",
+    "description": "Detail of the HTTP 403 API error when a moderator restricted the account from interacting with others (following, favouriting, boosting, replying)."
+  },
   "errors.internal": {
     "defaultMessage": "An unexpected error occurred. Please try again later.",
     "description": "API error message for HTTP 500. Must not reveal internal details."

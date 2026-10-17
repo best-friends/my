@@ -12,8 +12,8 @@ import (
 	"github.com/best-friends/my/internal/domain/moderation"
 )
 
-// The moderators' use cases: listing the domain actions (FR-702) and handling the reports in
-// their queue (FR-701). The admin API and the CLI call them; they check the moderator's
+// The moderators' use cases: listing the actions on domains (FR-702) and accounts (FR-703) and
+// handling the reports in their queue (FR-701). The admin API and the CLI call them; they check the moderator's
 // permissions before.
 
 // ErrInvalidQuery reports a list query with an unknown filter value.
@@ -22,7 +22,7 @@ var ErrInvalidQuery = errors.New("moderation: invalid query")
 // DomainActionView is a domain action with its lift and whether it is in effect now.
 type DomainActionView struct {
 	moderation.DomainActionRecord
-	State moderation.DomainActionState
+	State moderation.ActionState
 }
 
 func (s *Service) view(r moderation.DomainActionRecord) DomainActionView {
@@ -64,6 +64,54 @@ func (s *Service) DomainActions(ctx context.Context, f DomainActionFilter, limit
 	out := make([]DomainActionView, len(rs))
 	for i, r := range rs {
 		out[i] = s.view(r)
+	}
+	return out, nil
+}
+
+// AccountActionView is an action on an account with its lift and whether it is in effect now.
+type AccountActionView struct {
+	moderation.ActionRecord
+	State moderation.ActionState
+}
+
+func (s *Service) accountView(r moderation.ActionRecord) AccountActionView {
+	return AccountActionView{ActionRecord: r, State: r.State(s.d.Clock.Now())}
+}
+
+// AccountAction returns an action on an account with its lift; it fails with ErrNotFound for an
+// unknown ID.
+func (s *Service) AccountAction(ctx context.Context, id string) (AccountActionView, error) {
+	r, err := s.d.Repository.FindActionRecord(ctx, id)
+	if err != nil {
+		return AccountActionView{}, err
+	}
+	return s.accountView(r), nil
+}
+
+// AccountActionFilter selects the actions on accounts that AccountActions lists.
+type AccountActionFilter struct {
+	// AccountID keeps the actions on one account; "" keeps every account.
+	AccountID string
+	// Active keeps the actions in effect now: neither lifted nor expired.
+	Active bool
+	// Before is the ID of the last action of the previous page; "" starts from the newest.
+	Before string
+}
+
+// AccountActions lists up to limit actions on accounts, newest first.
+func (s *Service) AccountActions(ctx context.Context, f AccountActionFilter, limit int) ([]AccountActionView, error) {
+	q := ActionQuery{AccountID: f.AccountID, Before: f.Before}
+	if f.Active {
+		now := kernel.Normalize(s.d.Clock.Now())
+		q.InEffectAt = &now
+	}
+	rs, err := s.d.Repository.ListActions(ctx, q, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]AccountActionView, len(rs))
+	for i, r := range rs {
+		out[i] = s.accountView(r)
 	}
 	return out, nil
 }

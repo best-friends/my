@@ -22,6 +22,114 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AdminAccountActionIssuer.
+const (
+	AdminAccountActionIssuerModerator AdminAccountActionIssuer = "moderator"
+	AdminAccountActionIssuerRemote    AdminAccountActionIssuer = "remote"
+	AdminAccountActionIssuerSystem    AdminAccountActionIssuer = "system"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccountActionIssuer enum.
+func (e AdminAccountActionIssuer) Valid() bool {
+	switch e {
+	case AdminAccountActionIssuerModerator:
+		return true
+	case AdminAccountActionIssuerRemote:
+		return true
+	case AdminAccountActionIssuerSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccountActionCategory.
+const (
+	AdminAccountActionCategoryLegal     AdminAccountActionCategory = "legal"
+	AdminAccountActionCategoryOther     AdminAccountActionCategory = "other"
+	AdminAccountActionCategorySpam      AdminAccountActionCategory = "spam"
+	AdminAccountActionCategoryViolation AdminAccountActionCategory = "violation"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccountActionCategory enum.
+func (e AdminAccountActionCategory) Valid() bool {
+	switch e {
+	case AdminAccountActionCategoryLegal:
+		return true
+	case AdminAccountActionCategoryOther:
+		return true
+	case AdminAccountActionCategorySpam:
+		return true
+	case AdminAccountActionCategoryViolation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccountActionKind.
+const (
+	AdminAccountActionKindBan                   AdminAccountActionKind = "ban"
+	AdminAccountActionKindDeleteStatuses        AdminAccountActionKind = "delete_statuses"
+	AdminAccountActionKindDisableLogin          AdminAccountActionKind = "disable_login"
+	AdminAccountActionKindForceSensitive        AdminAccountActionKind = "force_sensitive"
+	AdminAccountActionKindLimit                 AdminAccountActionKind = "limit"
+	AdminAccountActionKindMarkStatusesSensitive AdminAccountActionKind = "mark_statuses_sensitive"
+	AdminAccountActionKindRestrictInteraction   AdminAccountActionKind = "restrict_interaction"
+	AdminAccountActionKindRestrictPosting       AdminAccountActionKind = "restrict_posting"
+	AdminAccountActionKindSuspend               AdminAccountActionKind = "suspend"
+	AdminAccountActionKindWarn                  AdminAccountActionKind = "warn"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccountActionKind enum.
+func (e AdminAccountActionKind) Valid() bool {
+	switch e {
+	case AdminAccountActionKindBan:
+		return true
+	case AdminAccountActionKindDeleteStatuses:
+		return true
+	case AdminAccountActionKindDisableLogin:
+		return true
+	case AdminAccountActionKindForceSensitive:
+		return true
+	case AdminAccountActionKindLimit:
+		return true
+	case AdminAccountActionKindMarkStatusesSensitive:
+		return true
+	case AdminAccountActionKindRestrictInteraction:
+		return true
+	case AdminAccountActionKindRestrictPosting:
+		return true
+	case AdminAccountActionKindSuspend:
+		return true
+	case AdminAccountActionKindWarn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccountActionState.
+const (
+	AdminAccountActionStateActive  AdminAccountActionState = "active"
+	AdminAccountActionStateExpired AdminAccountActionState = "expired"
+	AdminAccountActionStateLifted  AdminAccountActionState = "lifted"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccountActionState enum.
+func (e AdminAccountActionState) Valid() bool {
+	switch e {
+	case AdminAccountActionStateActive:
+		return true
+	case AdminAccountActionStateExpired:
+		return true
+	case AdminAccountActionStateLifted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminAvailabilityEventKind.
 const (
 	AdminAvailabilityEventKindMarkedAvailable   AdminAvailabilityEventKind = "marked_available"
@@ -500,6 +608,89 @@ type AccountSource struct {
 	Note string `json:"note"`
 }
 
+// AdminAccountAction A moderation action on an account (FR-703).
+type AdminAccountAction struct {
+	// AccountId The account the action is on.
+	AccountId Id `json:"account_id"`
+
+	// ExpiresAt When the action ends by itself; omitted for one that lasts until lifted.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id       Id        `json:"id"`
+	IssuedAt time.Time `json:"issued_at"`
+
+	// IssuedByAccountId The account of the moderator who took the action; omitted for the CLI and the
+	// system.
+	IssuedByAccountId *Id `json:"issued_by_account_id,omitempty"`
+
+	// Issuer `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
+	// account's own server.
+	Issuer AdminAccountActionIssuer `json:"issuer"`
+
+	// Kind `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
+	// posts. `force_sensitive`: every attachment is shown as sensitive. `limit`: every post is
+	// followers-only and stays off the public timelines. `restrict_posting`: no posting.
+	// `restrict_interaction`: no following, favouriting, boosting, or replying.
+	// `disable_login`: no logging in. `suspend`: all of these, and the profile and posts are
+	// hidden. `ban`: a suspension that never ends, with the deletion of the account.
+	Kind AdminAccountActionKind `json:"kind"`
+
+	// LiftReason Why the action was lifted; omitted until it is or when no reason was given.
+	LiftReason *string `json:"lift_reason,omitempty"`
+
+	// LiftedAt When the action was lifted; omitted until it is.
+	LiftedAt *time.Time `json:"lifted_at,omitempty"`
+
+	// NotifyTarget Whether the account is told of the action.
+	NotifyTarget bool `json:"notify_target"`
+
+	// PrivateNote The moderators' note; omitted when there is none.
+	PrivateNote *string `json:"private_note,omitempty"`
+
+	// PublicReason The reason shown to the account; omitted when there is none.
+	PublicReason *string `json:"public_reason,omitempty"`
+
+	// ReasonCategory The kind of reason for an action.
+	ReasonCategory AdminAccountActionCategory `json:"reason_category"`
+
+	// ReportId The report the action follows from; omitted when there is none.
+	ReportId *Id `json:"report_id,omitempty"`
+
+	// State `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+	// lifted it.
+	State AdminAccountActionState `json:"state"`
+}
+
+// AdminAccountActionIssuer `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
+// account's own server.
+type AdminAccountActionIssuer string
+
+// AdminAccountActionCategory The kind of reason for an action.
+type AdminAccountActionCategory string
+
+// AdminAccountActionKind `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
+// posts. `force_sensitive`: every attachment is shown as sensitive. `limit`: every post is
+// followers-only and stays off the public timelines. `restrict_posting`: no posting.
+// `restrict_interaction`: no following, favouriting, boosting, or replying.
+// `disable_login`: no logging in. `suspend`: all of these, and the profile and posts are
+// hidden. `ban`: a suspension that never ends, with the deletion of the account.
+type AdminAccountActionKind string
+
+// AdminAccountActionPage A page of account actions, newest first.
+type AdminAccountActionPage struct {
+	Items []AdminAccountAction `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminAccountActionState `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+// lifted it.
+type AdminAccountActionState string
+
 // AdminAvailabilityEvent The time a remote server was marked unavailable or available again, and why.
 type AdminAvailabilityEvent struct {
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
@@ -761,6 +952,33 @@ type AdminRuleText struct {
 
 	// Text The rule, on one line, as plain text.
 	Text string `json:"text"`
+}
+
+// CreateAccountActionRequest A moderation action to take on an account.
+type CreateAccountActionRequest struct {
+	// ExpiresIn The seconds the action lasts; omitted, it lasts until it is lifted.
+	ExpiresIn *int `json:"expires_in,omitempty"`
+
+	// Kind `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
+	// posts. `force_sensitive`: every attachment is shown as sensitive. `limit`: every post is
+	// followers-only and stays off the public timelines. `restrict_posting`: no posting.
+	// `restrict_interaction`: no following, favouriting, boosting, or replying.
+	// `disable_login`: no logging in. `suspend`: all of these, and the profile and posts are
+	// hidden. `ban`: a suspension that never ends, with the deletion of the account.
+	Kind AdminAccountActionKind `json:"kind"`
+
+	// NotifyTarget Whether a local account is told of the action; ignored for a remote one.
+	NotifyTarget *bool `json:"notify_target,omitempty"`
+
+	// PrivateNote A note for the moderators only.
+	PrivateNote *string `json:"private_note,omitempty"`
+
+	// PublicReason The reason shown to the account.
+	PublicReason   *string                     `json:"public_reason,omitempty"`
+	ReasonCategory *AdminAccountActionCategory `json:"reason_category,omitempty"`
+
+	// ReportId The report of the account that the action follows from.
+	ReportId *Id `json:"report_id,omitempty"`
 }
 
 // CreateDomainActionRequest A moderation action to take on a domain.
@@ -1076,6 +1294,11 @@ type InstanceTimelines struct {
 	Local bool `json:"local"`
 }
 
+// LiftAccountActionRequest Why an action on an account is lifted.
+type LiftAccountActionRequest struct {
+	Reason *string `json:"reason,omitempty"`
+}
+
 // MediaAttachment A media file, as an upload of the user (the media operations) or as an attachment of
 // a status (`Status.media_attachments`). `url`, `preview_url`, `variants`, and `blurhash`
 // are present once the file is `ready`; statuses attach only ready files. In a status,
@@ -1294,10 +1517,10 @@ type PageInfo struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
-// Permission A capability that a role grants. `manage_domains`: the health of remote servers and the
-// moderation actions on domains. `manage_reports`: the reports. `manage_rules`: the
-// instance rules. `manage_jobs`: the dead jobs of the job queue. The others guard no
-// client API operation yet.
+// Permission A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
+// `manage_domains`: the health of remote servers and the moderation actions on domains.
+// `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
+// dead jobs of the job queue. The others guard no client API operation yet.
 type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
@@ -1746,10 +1969,20 @@ type UpdatePreferencesRequest struct {
 // accounts.
 type Visibility string
 
+// AccountActionId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type AccountActionId = Id
+
 // AccountId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type AccountId = Id
+
+// AdminAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type AdminAccountId = Id
 
 // DomainActionId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -1837,6 +2070,18 @@ type ListAccountStatusesParams struct {
 
 	// Pinned List only the account's pinned posts.
 	Pinned *bool `form:"pinned,omitempty" json:"pinned,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAccountActionsParams defines parameters for ListAccountActions.
+type ListAccountActionsParams struct {
+	// Active Keep only the actions in effect now, neither lifted nor expired.
+	Active *bool `form:"active,omitempty" json:"active,omitempty"`
 
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -2019,6 +2264,12 @@ type FollowAccountJSONRequestBody = FollowAccountRequest
 // MuteAccountJSONRequestBody defines body for MuteAccount for application/json ContentType.
 type MuteAccountJSONRequestBody = MuteAccountRequest
 
+// LiftAccountActionJSONRequestBody defines body for LiftAccountAction for application/json ContentType.
+type LiftAccountActionJSONRequestBody = LiftAccountActionRequest
+
+// CreateAccountActionJSONRequestBody defines body for CreateAccountAction for application/json ContentType.
+type CreateAccountActionJSONRequestBody = CreateAccountActionRequest
+
 // CreateDomainActionJSONRequestBody defines body for CreateDomainAction for application/json ContentType.
 type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 
@@ -2102,6 +2353,18 @@ type ServerInterface interface {
 	// UnmuteAccount Unmute an account
 	// (POST /accounts/{id}/unmute)
 	UnmuteAccount(w http.ResponseWriter, r *http.Request, id AccountId)
+	// GetAccountAction Get a moderation action on an account
+	// (GET /admin/account_actions/{id})
+	GetAccountAction(w http.ResponseWriter, r *http.Request, id AccountActionId)
+	// LiftAccountAction Lift a moderation action on an account
+	// (POST /admin/account_actions/{id}/lift)
+	LiftAccountAction(w http.ResponseWriter, r *http.Request, id AccountActionId)
+	// ListAccountActions List the moderation actions on an account
+	// (GET /admin/accounts/{id}/actions)
+	ListAccountActions(w http.ResponseWriter, r *http.Request, id AdminAccountId, params ListAccountActionsParams)
+	// CreateAccountAction Take a moderation action on an account
+	// (POST /admin/accounts/{id}/actions)
+	CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId)
 	// ListDeadJobs List the dead jobs
 	// (GET /admin/dead_jobs)
 	ListDeadJobs(w http.ResponseWriter, r *http.Request, params ListDeadJobsParams)
@@ -2797,6 +3060,152 @@ func (siw *ServerInterfaceWrapper) UnmuteAccount(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UnmuteAccount(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAccountAction operation middleware
+func (siw *ServerInterfaceWrapper) GetAccountAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AccountActionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAccountAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LiftAccountAction operation middleware
+func (siw *ServerInterfaceWrapper) LiftAccountAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AccountActionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LiftAccountAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAccountActions operation middleware
+func (siw *ServerInterfaceWrapper) ListAccountActions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAccountActionsParams
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "active"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAccountActions(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAccountAction operation middleware
+func (siw *ServerInterfaceWrapper) CreateAccountAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAccountAction(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4798,6 +5207,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/assign_to_self", wrapper.AssignReportToSelf)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/unassign", wrapper.UnassignReport)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/resolve", wrapper.ResolveReport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/actions", wrapper.ListAccountActions)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/actions", wrapper.CreateAccountAction)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/account_actions/{id}", wrapper.GetAccountAction)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/account_actions/{id}/lift", wrapper.LiftAccountAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/rules", wrapper.ListInstanceRules)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules", wrapper.CreateInstanceRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/rules/{id}", wrapper.GetInstanceRule)
@@ -4824,6 +5237,15 @@ type AccountProfileJSONResponse struct {
 	Body Account
 
 	Headers AccountProfileResponseHeaders
+}
+
+type AdminAccountActionResponseHeaders struct {
+	CacheControl *string
+}
+type AdminAccountActionJSONResponse struct {
+	Body AdminAccountAction
+
+	Headers AdminAccountActionResponseHeaders
 }
 
 type AdminDomainActionResponseHeaders struct {
@@ -5728,6 +6150,236 @@ type UnmuteAccountdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UnmuteAccountdefaultApplicationProblemPlusJSONResponse) VisitUnmuteAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccountActionRequestObject struct {
+	Id AccountActionId `json:"id"`
+}
+
+type GetAccountActionResponseObject interface {
+	VisitGetAccountActionResponse(w http.ResponseWriter) error
+}
+
+type GetAccountAction200JSONResponse struct{ AdminAccountActionJSONResponse }
+
+func (response GetAccountAction200JSONResponse) VisitGetAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccountActiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAccountActiondefaultApplicationProblemPlusJSONResponse) VisitGetAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LiftAccountActionRequestObject struct {
+	Id   AccountActionId `json:"id"`
+	Body *LiftAccountActionJSONRequestBody
+}
+
+type LiftAccountActionResponseObject interface {
+	VisitLiftAccountActionResponse(w http.ResponseWriter) error
+}
+
+type LiftAccountAction200JSONResponse struct{ AdminAccountActionJSONResponse }
+
+func (response LiftAccountAction200JSONResponse) VisitLiftAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LiftAccountActiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response LiftAccountActiondefaultApplicationProblemPlusJSONResponse) VisitLiftAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountActionsRequestObject struct {
+	Id     AdminAccountId `json:"id"`
+	Params ListAccountActionsParams
+}
+
+type ListAccountActionsResponseObject interface {
+	VisitListAccountActionsResponse(w http.ResponseWriter) error
+}
+
+type ListAccountActions200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAccountActions200JSONResponse struct {
+	Body    AdminAccountActionPage
+	Headers ListAccountActions200ResponseHeaders
+}
+
+func (response ListAccountActions200JSONResponse) VisitListAccountActionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountActionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAccountActionsdefaultApplicationProblemPlusJSONResponse) VisitListAccountActionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAccountActionRequestObject struct {
+	Id   AdminAccountId `json:"id"`
+	Body *CreateAccountActionJSONRequestBody
+}
+
+type CreateAccountActionResponseObject interface {
+	VisitCreateAccountActionResponse(w http.ResponseWriter) error
+}
+
+type CreateAccountAction200JSONResponse struct{ AdminAccountActionJSONResponse }
+
+func (response CreateAccountAction200JSONResponse) VisitCreateAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAccountActiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateAccountActiondefaultApplicationProblemPlusJSONResponse) VisitCreateAccountActionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -9145,6 +9797,18 @@ type StrictServerInterface interface {
 	// UnmuteAccount Unmute an account
 	// (POST /accounts/{id}/unmute)
 	UnmuteAccount(ctx context.Context, request UnmuteAccountRequestObject) (UnmuteAccountResponseObject, error)
+	// GetAccountAction Get a moderation action on an account
+	// (GET /admin/account_actions/{id})
+	GetAccountAction(ctx context.Context, request GetAccountActionRequestObject) (GetAccountActionResponseObject, error)
+	// LiftAccountAction Lift a moderation action on an account
+	// (POST /admin/account_actions/{id}/lift)
+	LiftAccountAction(ctx context.Context, request LiftAccountActionRequestObject) (LiftAccountActionResponseObject, error)
+	// ListAccountActions List the moderation actions on an account
+	// (GET /admin/accounts/{id}/actions)
+	ListAccountActions(ctx context.Context, request ListAccountActionsRequestObject) (ListAccountActionsResponseObject, error)
+	// CreateAccountAction Take a moderation action on an account
+	// (POST /admin/accounts/{id}/actions)
+	CreateAccountAction(ctx context.Context, request CreateAccountActionRequestObject) (CreateAccountActionResponseObject, error)
 	// ListDeadJobs List the dead jobs
 	// (GET /admin/dead_jobs)
 	ListDeadJobs(ctx context.Context, request ListDeadJobsRequestObject) (ListDeadJobsResponseObject, error)
@@ -9769,6 +10433,128 @@ func (sh *strictHandler) UnmuteAccount(w http.ResponseWriter, r *http.Request, i
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnmuteAccountResponseObject); ok {
 		if err := validResponse.VisitUnmuteAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAccountAction operation middleware
+func (sh *strictHandler) GetAccountAction(w http.ResponseWriter, r *http.Request, id AccountActionId) {
+	var request GetAccountActionRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAccountAction(ctx, request.(GetAccountActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAccountAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAccountActionResponseObject); ok {
+		if err := validResponse.VisitGetAccountActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LiftAccountAction operation middleware
+func (sh *strictHandler) LiftAccountAction(w http.ResponseWriter, r *http.Request, id AccountActionId) {
+	var request LiftAccountActionRequestObject
+
+	request.Id = id
+
+	var body LiftAccountActionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LiftAccountAction(ctx, request.(LiftAccountActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LiftAccountAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LiftAccountActionResponseObject); ok {
+		if err := validResponse.VisitLiftAccountActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAccountActions operation middleware
+func (sh *strictHandler) ListAccountActions(w http.ResponseWriter, r *http.Request, id AdminAccountId, params ListAccountActionsParams) {
+	var request ListAccountActionsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAccountActions(ctx, request.(ListAccountActionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAccountActions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAccountActionsResponseObject); ok {
+		if err := validResponse.VisitListAccountActionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateAccountAction operation middleware
+func (sh *strictHandler) CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request CreateAccountActionRequestObject
+
+	request.Id = id
+
+	var body CreateAccountActionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAccountAction(ctx, request.(CreateAccountActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAccountAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateAccountActionResponseObject); ok {
+		if err := validResponse.VisitCreateAccountActionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

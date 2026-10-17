@@ -2,7 +2,7 @@
 // The accounts that follow an account, or that it follows: a list of links to their profiles, with a
 // button that loads the next page. A button rather than loading at the end of the scroll keeps the end of
 // the list reachable for keyboard users and the following content in reach (WCAG 2.1.1).
-import { Avatar, Button, EmptyState, Link } from "@my/ui";
+import { Avatar, BackIcon, Button, EmptyState, Link } from "@my/ui";
 import type { ReactNode } from "react";
 import { useT } from "../../../lib/i18n";
 import { profilePath } from "../../../lib/paths";
@@ -31,7 +31,8 @@ export function FollowListView({ acct, list, renderHeading }: FollowListViewProp
       <div className="flex flex-col gap-1">
         {renderHeading(list === "followers" ? t("client:profile.followers.title", { name: isolated }) : t("client:profile.following.title", { name: isolated }))}
         <p>
-          <Link href={profilePath(profile.account.acct)} variant="standalone">
+          <Link href={profilePath(profile.account.acct)} variant="standalone" className="gap-1">
+            <BackIcon />
             {t("client:profile.list.back", { name: isolated })}
           </Link>
         </p>

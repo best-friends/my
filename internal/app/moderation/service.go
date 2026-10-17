@@ -16,9 +16,13 @@ import (
 )
 
 var (
-	// ErrUnsupportedAction reports an action on an account that this module does not issue: an
-	// action on a local account, or one whose kind has effects beyond its restrictions.
+	// ErrUnsupportedAction reports an action on an account that this module does not issue: a
+	// kind that does not apply to the account (login on a remote account), one whose effects
+	// this module does not carry out yet, or an action on the instance actor.
 	ErrUnsupportedAction = errors.New("moderation: the action is not supported")
+	// ErrInvalidReportReference reports an action that names a report that does not exist or
+	// is of another account.
+	ErrInvalidReportReference = errors.New("moderation: the report does not exist or is of another account")
 	// ErrAccountNotFound reports an action or a report on an account that does not exist.
 	ErrAccountNotFound = errors.New("moderation: the account does not exist")
 )
@@ -29,8 +33,13 @@ type Report = moderation.Report
 // Effect is moderation.Effect, a restriction in effect as the events carry it.
 type Effect = moderation.Effect
 
-// RestrictProfileView is moderation.RestrictProfileView.
-const RestrictProfileView = moderation.RestrictProfileView
+// Restrictions that other modules look for in the events.
+const (
+	// RestrictProfileView is moderation.RestrictProfileView.
+	RestrictProfileView = moderation.RestrictProfileView
+	// RestrictLogin is moderation.RestrictLogin.
+	RestrictLogin = moderation.RestrictLogin
+)
 
 // Domain events of the moderation module.
 const (
@@ -83,9 +92,9 @@ type Deps struct {
 	IDs        kernel.IDGenerator
 }
 
-// Service runs the moderation module's use cases: actions on domains and remote accounts, their
-// lifts, and the reports received from other servers, and the moderators' lists of them and
-// handling of the reports (admin.go).
+// Service runs the moderation module's use cases: actions on domains and accounts, their lifts,
+// and the reports received from other servers, and the moderators' lists of them and handling
+// of the reports (admin.go).
 type Service struct{ d Deps }
 
 // NewService returns a Service on d.
@@ -172,6 +181,14 @@ func (s *Service) emitDomain(ctx context.Context, tx uow.Tx, domain string, now 
 // restrictions they impose (data-model §5.2: login and post mean nothing for a remote account).
 var remoteActionKinds = []moderation.ActionKind{moderation.ActionLimit, moderation.ActionSuspend, moderation.ActionForceSensitive}
 
+// localActionKinds are the kinds of actions on a local account that this module issues: those
+// whose effects are their restrictions and the notice to the account (data-model §5.2). The
+// other kinds also change statuses or the account's lifecycle.
+var localActionKinds = []moderation.ActionKind{
+	moderation.ActionWarn, moderation.ActionForceSensitive, moderation.ActionLimit, moderation.ActionRestrictPosting,
+	moderation.ActionRestrictInteraction, moderation.ActionDisableLogin, moderation.ActionSuspend,
+}
+
 // AccountActionInput is a moderator's action on an account.
 type AccountActionInput struct {
 	TargetAccountID string
@@ -179,19 +196,28 @@ type AccountActionInput struct {
 	ReasonCategory  moderation.Category
 	PublicReason    string
 	PrivateNote     string
+	// ReportID is the report the action follows from; "" for none. The report must be of the
+	// target account.
+	ReportID string
+	// NotifyTarget tells a local target of the action (moderation_notice); it is ignored for a
+	// remote account.
+	NotifyTarget bool
 	// IssuedByUserID is the moderator; "" for the CLI.
 	IssuedByUserID string
 	// Duration is how long the action lasts; zero lasts until it is lifted.
 	Duration time.Duration
 }
 
-// IssueRemoteAccountAction records an action on a remote account and, in the same transaction,
-// the restrictions it imposes, and emits AccountRestrictionsChanged. It takes the kinds whose
-// only effect is their restrictions (limit, suspend, force_sensitive) and fails with
-// ErrUnsupportedAction for another kind or a local account.
-func (s *Service) IssueRemoteAccountAction(ctx context.Context, in AccountActionInput) (moderation.Action, error) {
-	if !slices.Contains(remoteActionKinds, in.Kind) {
-		return moderation.Action{}, fmt.Errorf("%w: %s on a remote account", ErrUnsupportedAction, in.Kind)
+// IssueAccountAction records an action on an account and, in the same transaction, the
+// restrictions it imposes (data-model §5.2), and emits AccountRestrictionsChanged. A local
+// account takes the kinds of localActionKinds, a remote one limit, suspend, and
+// force_sensitive; another kind, or the instance actor, fails with ErrUnsupportedAction, and an
+// unknown kind or an invalid field with moderation.ErrInvalidAction. An unknown account fails
+// with ErrAccountNotFound, and a report that does not exist or is of
+// another account with ErrInvalidReportReference.
+func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput) (moderation.Action, error) {
+	if !in.Kind.Valid() {
+		return moderation.Action{}, fmt.Errorf("%w: kind %q", moderation.ErrInvalidAction, in.Kind)
 	}
 	target, err := s.d.Accounts.FindByID(ctx, in.TargetAccountID)
 	switch {
@@ -199,14 +225,34 @@ func (s *Service) IssueRemoteAccountAction(ctx context.Context, in AccountAction
 		return moderation.Action{}, fmt.Errorf("%w: %s", ErrAccountNotFound, in.TargetAccountID)
 	case err != nil:
 		return moderation.Action{}, err
-	case target.Account.IsLocal():
-		return moderation.Action{}, fmt.Errorf("%w: %s is a local account", ErrUnsupportedAction, in.TargetAccountID)
+	case target.IsInstanceActor():
+		return moderation.Action{}, fmt.Errorf("%w: %s is the instance actor", ErrUnsupportedAction, in.TargetAccountID)
+	}
+	kinds, where := remoteActionKinds, "remote"
+	if target.Account.IsLocal() {
+		kinds, where = localActionKinds, "local"
+	} else {
+		in.NotifyTarget = false
+	}
+	if !slices.Contains(kinds, in.Kind) {
+		return moderation.Action{}, fmt.Errorf("%w: %s on a %s account", ErrUnsupportedAction, in.Kind, where)
+	}
+	if in.ReportID != "" {
+		r, err := s.d.Repository.FindReport(ctx, in.ReportID)
+		switch {
+		case errors.Is(err, ErrNotFound):
+			return moderation.Action{}, fmt.Errorf("%w: no report %s", ErrInvalidReportReference, in.ReportID)
+		case err != nil:
+			return moderation.Action{}, err
+		case r.TargetAccountID != in.TargetAccountID:
+			return moderation.Action{}, fmt.Errorf("%w: report %s is of another account", ErrInvalidReportReference, in.ReportID)
+		}
 	}
 	now := kernel.Normalize(s.d.Clock.Now())
 	a := moderation.Action{
 		ID: s.d.IDs.NewID(), TargetAccountID: in.TargetAccountID, Kind: in.Kind, ReasonCategory: in.ReasonCategory,
-		PublicReason: in.PublicReason, PrivateNote: in.PrivateNote, Issuer: moderation.IssuerModerator,
-		IssuedByUserID: in.IssuedByUserID, ExpiresAt: expiry(now, in.Duration), IssuedAt: now,
+		PublicReason: in.PublicReason, PrivateNote: in.PrivateNote, ReportID: in.ReportID, Issuer: moderation.IssuerModerator,
+		IssuedByUserID: in.IssuedByUserID, NotifyTarget: in.NotifyTarget, ExpiresAt: expiry(now, in.Duration), IssuedAt: now,
 	}
 	if err := a.Validate(); err != nil {
 		return moderation.Action{}, err

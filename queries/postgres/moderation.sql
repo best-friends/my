@@ -165,3 +165,27 @@ SELECT a.id, a.domain, a.kind, a.public_comment, a.private_note, a.obfuscate, a.
 FROM domain_moderation_actions a
 LEFT JOIN domain_moderation_action_lifts l ON l.action_id = a.id
 WHERE a.id = $1;
+
+-- ListModerationActions returns the actions on accounts with their lifts, newest first: those
+-- on an account (empty for every account), only those in effect at in_effect_at unless it is
+-- NULL, and those before the action before (empty for the first page).
+-- name: ListModerationActions :many
+SELECT a.id, a.target_account_id, a.kind, a.reason_category, a.public_reason, a.private_note,
+  a.report_id, a.issuer, a.issued_by_user_id, a.notify_target, a.expires_at, a.issued_at,
+  l.action_id AS lift_action_id, l.lifted_by_user_id, l.reason AS lift_reason, l.lifted_at
+FROM moderation_actions a
+LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
+WHERE (sqlc.arg(account_id)::text = '' OR a.target_account_id = sqlc.arg(account_id)::text)
+  AND (sqlc.narg(in_effect_at)::timestamptz IS NULL
+    OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > sqlc.narg(in_effect_at)::timestamptz)))
+  AND (sqlc.arg(before)::text = '' OR a.id < sqlc.arg(before)::text)
+ORDER BY a.id DESC
+LIMIT sqlc.arg(lim);
+
+-- name: GetModerationActionRecord :one
+SELECT a.id, a.target_account_id, a.kind, a.reason_category, a.public_reason, a.private_note,
+  a.report_id, a.issuer, a.issued_by_user_id, a.notify_target, a.expires_at, a.issued_at,
+  l.action_id AS lift_action_id, l.lifted_by_user_id, l.reason AS lift_reason, l.lifted_at
+FROM moderation_actions a
+LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
+WHERE a.id = $1;

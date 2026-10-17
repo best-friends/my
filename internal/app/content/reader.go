@@ -325,6 +325,14 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 		return StatusView{}, err
 	}
 	out.Attachments, out.Mentions, out.Tags = parts.Attachments, parts.Mentions, parts.Tags
+	if len(out.Attachments) > 0 && !out.Revision.Sensitive {
+		// An author under force_sensitive has every attachment shown as sensitive (data-model §5.2).
+		rs, err := r.d.Restrictions.Restrictions(ctx, st.AuthorAccountID)
+		if err != nil {
+			return StatusView{}, err
+		}
+		out.Revision.Sensitive = rs.MediaSensitive
+	}
 	switch c, err := r.d.Statuses.FindCounters(ctx, st.ID); {
 	case err == nil:
 		out.Counters = c

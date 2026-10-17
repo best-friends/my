@@ -185,13 +185,13 @@ func TestDomainActionState(t *testing.T) {
 	soon, past := now.Add(time.Hour), now.Add(-time.Hour)
 	for _, tc := range []struct {
 		r    DomainActionRecord
-		want DomainActionState
+		want ActionState
 	}{
-		{DomainActionRecord{}, DomainActionActive},
-		{DomainActionRecord{Action: DomainAction{ExpiresAt: &soon}}, DomainActionActive},
-		{DomainActionRecord{Action: DomainAction{ExpiresAt: &now}}, DomainActionExpired},
-		{DomainActionRecord{Action: DomainAction{ExpiresAt: &past}, Lift: &DomainLift{}}, DomainActionLifted},
-		{DomainActionRecord{Lift: &DomainLift{}}, DomainActionLifted},
+		{DomainActionRecord{}, ActionActive},
+		{DomainActionRecord{Action: DomainAction{ExpiresAt: &soon}}, ActionActive},
+		{DomainActionRecord{Action: DomainAction{ExpiresAt: &now}}, ActionExpired},
+		{DomainActionRecord{Action: DomainAction{ExpiresAt: &past}, Lift: &DomainLift{}}, ActionLifted},
+		{DomainActionRecord{Lift: &DomainLift{}}, ActionLifted},
 	} {
 		if got := tc.r.State(now); got != tc.want {
 			t.Errorf("State(%+v) = %s, want %s", tc.r, got, tc.want)

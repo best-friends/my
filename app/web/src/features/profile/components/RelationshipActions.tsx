@@ -4,7 +4,7 @@
 // a menu button (WAI-ARIA APG, menu button pattern) with mute and block. Undoing a follow or a request,
 // blocking and unblocking ask first in an alert dialog (WAI-ARIA APG, alert dialog pattern). A follow
 // request to an account of another server says which server it waits for.
-import { Button, Dialog, Link, Menu, MenuItem, MenuTrigger } from "@my/ui";
+import { Button, Dialog, Link, Menu, MenuItem, MenuTrigger, MoreIcon } from "@my/ui";
 import { useId, useState } from "react";
 import { type Translate, useT } from "../../../lib/i18n";
 import type { Account, RelationshipAction } from "../api/accounts";
@@ -211,15 +211,5 @@ function ConfirmDialog({ isOpen, kind, name, onCancel, onConfirm }: ConfirmDialo
         </Button>
       </div>
     </Dialog>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="size-5">
-      <circle cx="5" cy="12" r="2" />
-      <circle cx="12" cy="12" r="2" />
-      <circle cx="19" cy="12" r="2" />
-    </svg>
   );
 }

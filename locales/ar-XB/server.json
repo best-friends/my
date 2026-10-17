@@ -371,6 +371,10 @@
     "defaultMessage": "‮⊥ɥǝ ɐɔɔǝss ʇoʞǝu uǝǝps ʇɥǝ sɔodǝ {scope}.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.interaction_restricted": {
+    "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ɯɐʎ uoʇ ɟoʅʅoʍ, ɟɐʌonɹıʇǝ, qoosʇ, oɹ ɹǝdʅʎ ɹıƃɥʇ uoʍ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.internal": {
     "defaultMessage": "‮∀u nuǝxdǝɔʇǝp ǝɹɹoɹ oɔɔnɹɹǝp. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

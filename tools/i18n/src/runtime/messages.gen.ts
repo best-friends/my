@@ -960,6 +960,8 @@ export interface MessageArgs {
   "server:errors.insufficient_scope": {};
   /** The access token needs the scope {scope}. */
   "server:errors.insufficient_scope_detail": { scope: string };
+  /** Your account may not follow, favourite, boost, or reply right now. */
+  "server:errors.interaction_restricted": {};
   /** An unexpected error occurred. Please try again later. */
   "server:errors.internal": {};
   /** The parameter {name} has an invalid value. */

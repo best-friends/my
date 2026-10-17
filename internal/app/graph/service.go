@@ -23,7 +23,16 @@ var (
 	ErrRemoteAccount = errors.New("graph: the account is not local")
 	// ErrBlocked reports a follow between two accounts when either blocks the other.
 	ErrBlocked = errors.New("graph: one of the accounts blocks the other")
+	// ErrInteractionRestricted reports a follower whose moderation restrictions forbid
+	// following (the interact restriction, data-model §5.2).
+	ErrInteractionRestricted = errors.New("graph: the account may not interact")
 )
+
+// InteractionPolicy reads whether moderation forbids an account to interact (data-model §5.3).
+// *moderation.AccountPolicy implements it.
+type InteractionPolicy interface {
+	InteractionRestricted(ctx context.Context, accountID string) (bool, error)
+}
 
 // Accounts is the part of the account module's public API that the graph module reads: an
 // account's locality, lifecycle state, and current profile (whose locked flag decides whether a
@@ -41,6 +50,9 @@ type Deps struct {
 	IDs        kernel.IDGenerator
 	// Host is the serving domain of the Follow and Block activity URIs (ADR-0018).
 	Host string
+	// Interactions forbids following to the accounts that moderation restricts; nil restricts
+	// nobody.
+	Interactions InteractionPolicy
 }
 
 // Service runs the graph module's follow, block, and mute use cases: those of local accounts,
@@ -87,8 +99,9 @@ func (r Relationship) RequestedFollow() bool { return r.Following == graph.State
 // current profile is locked: then it is a follow request, pending until the followee accepts it
 // (FR-302). A follow of a remote account is always pending until its server sends an Accept
 // (AcceptRemote). Following an account that the follower already follows or has requested to
-// follow changes nothing. The follower must be local and active, the followee active (local or
-// remote), and neither may block the other (ErrBlocked).
+// follow changes nothing. The follower must be local and active and allowed to interact
+// (ErrInteractionRestricted), the followee active (local or remote), and neither may block the
+// other (ErrBlocked).
 func (s *Service) Follow(ctx context.Context, followerID, followeeID string) (Relationship, error) {
 	f := graph.Follow{FollowerAccountID: followerID, FolloweeAccountID: followeeID}
 	if err := f.Validate(); err != nil {
@@ -96,6 +109,15 @@ func (s *Service) Follow(ctx context.Context, followerID, followeeID string) (Re
 	}
 	if _, err := s.localActive(ctx, followerID); err != nil {
 		return Relationship{}, err
+	}
+	if s.d.Interactions != nil {
+		restricted, err := s.d.Interactions.InteractionRestricted(ctx, followerID)
+		if err != nil {
+			return Relationship{}, err
+		}
+		if restricted {
+			return Relationship{}, fmt.Errorf("account %s: %w", followerID, ErrInteractionRestricted)
+		}
 	}
 	followee, err := s.active(ctx, followeeID)
 	if err != nil {
