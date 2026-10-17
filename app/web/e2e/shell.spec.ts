@@ -5,7 +5,7 @@
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 
 /** Every page of the shell, in the order of the navigation. */
-const pages = ["/home", "/local", "/notifications", "/profile", "/settings"] as const;
+const pages = ["/home", "/local", "/search", "/notifications", "/profile", "/settings"] as const;
 
 /** The instance name in index.html's runtime config. */
 const instanceName = "my example";
@@ -34,8 +34,7 @@ for (const path of pages) {
       const heading = await page.getByRole("heading", { level: 1 }).textContent();
       expect(heading).toBeTruthy();
       await expect(page).toHaveTitle(new RegExp(`${escapeRegExp(heading ?? "")}.*${escapeRegExp(instanceName)}`));
-      const links = page.getByRole("navigation").getByRole("link");
-      await expect(links.nth(pages.indexOf(path))).toHaveAttribute("aria-current", "page");
+      await expect(page.getByRole("navigation").locator(`a[href="${path}"]`)).toHaveAttribute("aria-current", "page");
       await expect(page.locator('nav a[aria-current="page"]')).toHaveCount(1);
     });
   });
@@ -67,12 +66,14 @@ test.describe("layout", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  test("exposes the skip link, the navigation with five links, and the main landmark with one level-one heading", async ({ page }) => {
+  test("exposes the skip link, the navigation with six links, and the main landmark with one level-one heading", async ({ page }) => {
     await expect(page.locator("body")).toMatchAriaSnapshot(`
       - link
       - navigation:
         - list:
           - /children: equal
+          - listitem:
+            - link
           - listitem:
             - link
           - listitem:
@@ -117,7 +118,7 @@ test.describe("navigation", () => {
     const firstHeading = await page.getByRole("heading", { level: 1 }).textContent();
     await expect(page.getByRole("heading", { level: 1 })).not.toBeFocused();
 
-    const local = page.getByRole("navigation").getByRole("link").nth(1);
+    const local = page.getByRole("navigation").locator('a[href="/local"]');
     if (hasTouch) await local.tap();
     else await local.click();
 
@@ -139,7 +140,7 @@ test.describe("navigation", () => {
     await page.keyboard.press("Enter");
     await expect(page.getByRole("main")).toBeFocused();
 
-    await page.getByRole("navigation").getByRole("link").nth(4).focus();
+    await page.getByRole("navigation").locator('a[href="/settings"]').focus();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/settings$/);
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
@@ -147,7 +148,7 @@ test.describe("navigation", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/home$/);
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
-    await expect(page.getByRole("navigation").getByRole("link").nth(0)).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation").locator('a[href="/home"]')).toHaveAttribute("aria-current", "page");
   });
 });
 
