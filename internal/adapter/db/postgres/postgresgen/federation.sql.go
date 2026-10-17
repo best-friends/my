@@ -680,6 +680,26 @@ func (q *Queries) ListUnavailableInstances(ctx context.Context, arg ListUnavaila
 	return items, nil
 }
 
+const lockInstanceHealth = `-- name: LockInstanceHealth :one
+SELECT domain, state, since, failure_days, last_failure_day FROM instance_health WHERE domain = $1
+FOR UPDATE
+`
+
+// LockInstanceHealth reads the health of a server in the transaction that updates it and locks
+// the row, so that concurrent deliveries to one server do not lose an update.
+func (q *Queries) LockInstanceHealth(ctx context.Context, domain string) (InstanceHealth, error) {
+	row := q.db.QueryRow(ctx, lockInstanceHealth, domain)
+	var i InstanceHealth
+	err := row.Scan(
+		&i.Domain,
+		&i.State,
+		&i.Since,
+		&i.FailureDays,
+		&i.LastFailureDay,
+	)
+	return i, err
+}
+
 const upsertInstanceHealth = `-- name: UpsertInstanceHealth :exec
 INSERT INTO instance_health (domain, state, since, failure_days, last_failure_day)
 VALUES ($1, $2, $3, $4, $5)

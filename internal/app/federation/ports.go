@@ -47,6 +47,24 @@ type Repository interface {
 	// InstanceState returns the health state of a remote server; a server without a row is
 	// available.
 	InstanceState(ctx context.Context, domain string) (federation.InstanceState, error)
+
+	// InsertDeliveryAttempt records one attempt of a delivery.
+	InsertDeliveryAttempt(ctx context.Context, tx uow.Tx, a federation.DeliveryAttempt) error
+	// LockInstanceHealth reads the health of a remote server in tx, locking its row where the
+	// database needs it, so that concurrent updates of one server do not lose each other.
+	LockInstanceHealth(ctx context.Context, tx uow.Tx, domain string) (federation.InstanceHealth, error)
+	// InsertAvailabilityEvent records that a server was marked unavailable or available.
+	InsertAvailabilityEvent(ctx context.Context, tx uow.Tx, e federation.AvailabilityEvent) error
+
+	FindDelivery(ctx context.Context, id string) (federation.Delivery, error)
+	// ListDeliveryAttempts returns the attempts of a delivery, oldest first.
+	ListDeliveryAttempts(ctx context.Context, deliveryID string) ([]federation.DeliveryAttempt, error)
+	FindInstanceHealth(ctx context.Context, domain string) (federation.InstanceHealth, error)
+	// ListAvailabilityEvents returns at most limit availability events of a server, newest first.
+	ListAvailabilityEvents(ctx context.Context, domain string, limit int) ([]federation.AvailabilityEvent, error)
+	// ListUnavailableInstances returns at most limit unavailable servers in domain order,
+	// starting after the domain after ("" for the first).
+	ListUnavailableInstances(ctx context.Context, after string, limit int) ([]federation.InstanceHealth, error)
 }
 
 // Statuses is the part of the content module's public API that delivery reads: the local

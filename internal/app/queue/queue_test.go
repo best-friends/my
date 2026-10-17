@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -22,6 +23,25 @@ func TestBackoffDoublesUpToMaxDelay(t *testing.T) {
 		if got := p.Backoff(attempt, fixed(0.9)); got != want {
 			t.Errorf("Backoff(%d) = %v, want %v", attempt, got, want)
 		}
+	}
+}
+
+func TestBackoffFollowsDelays(t *testing.T) {
+	p := queue.RetryPolicy{Delays: []time.Duration{time.Minute, 5 * time.Minute, time.Hour}, BaseDelay: time.Second, Jitter: -1}
+	for attempt, want := range map[int]time.Duration{
+		0: time.Minute, 1: time.Minute, 2: 5 * time.Minute, 3: time.Hour, 4: time.Hour, 500: time.Hour,
+	} {
+		if got := p.Backoff(attempt, fixed(0.9)); got != want {
+			t.Errorf("Backoff(%d) = %v, want %v", attempt, got, want)
+		}
+	}
+	// Jitter applies to the scheduled delay too.
+	if got := (queue.RetryPolicy{Delays: []time.Duration{100 * time.Second}, Jitter: 0.5}).Backoff(1, fixed(0.5)); got != 75*time.Second {
+		t.Errorf("Backoff with jitter = %v, want 75s", got)
+	}
+	// Or keeps a policy's own delays and fills in missing ones.
+	if got := (queue.RetryPolicy{}).Or(p); len(got.Delays) != 3 {
+		t.Errorf("Or(delays) = %+v, want the fallback's delays", got)
 	}
 }
 
@@ -44,7 +64,7 @@ func TestBackoffJitter(t *testing.T) {
 func TestRetryPolicyOr(t *testing.T) {
 	got := queue.RetryPolicy{MaxAttempts: 2}.Or(queue.RetryPolicy{MaxAttempts: 9, BaseDelay: time.Second, MaxDelay: time.Hour, Jitter: 0.1})
 	want := queue.RetryPolicy{MaxAttempts: 2, BaseDelay: time.Second, MaxDelay: time.Hour, Jitter: 0.1}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Or = %+v, want %+v", got, want)
 	}
 }
@@ -111,7 +131,7 @@ func TestRegistry(t *testing.T) {
 	}
 	policy := queue.RetryPolicy{MaxAttempts: 2}
 	r.RegisterWithPolicy("a", func(context.Context, queue.Job) queue.Result { return queue.Done() }, policy)
-	if h, p, ok := r.Lookup("a"); !ok || h == nil || p != policy {
+	if h, p, ok := r.Lookup("a"); !ok || h == nil || !reflect.DeepEqual(p, policy) {
 		t.Fatalf("Lookup = %v, %+v, %v", h != nil, p, ok)
 	}
 	defer func() {
