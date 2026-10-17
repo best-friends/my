@@ -34,7 +34,7 @@ type store interface {
 	deleteClaimed(ctx context.Context, tx uow.Tx, id, worker string, attempt int) (int64, error)
 	release(ctx context.Context, tx uow.Tx, id, worker string, attempt, newAttempt int, runAt time.Time, lastErr string) (int64, error)
 	insertDeadFromClaim(ctx context.Context, tx uow.Tx, id, worker string, attempt int, lastErr string, failedAt time.Time) (int64, error)
-	listDead(ctx context.Context, tx uow.Tx, limit int) ([]queue.DeadJob, error)
+	listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error)
 	requeueDead(ctx context.Context, tx uow.Tx, id string, runAt time.Time) error
 	deleteDead(ctx context.Context, tx uow.Tx, id string) (int64, error)
 	insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) error
@@ -167,14 +167,14 @@ func claimResult(op string, rows int64, err error) error {
 }
 
 // ListDeadJobs implements queue.DeadJobs.
-func (q *Queue) ListDeadJobs(ctx context.Context, limit int) ([]queue.DeadJob, error) {
+func (q *Queue) ListDeadJobs(ctx context.Context, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
 	var out []queue.DeadJob
 	err := q.db.Tx(ctx, func(tx uow.Tx) error {
 		var err error
-		out, err = q.st.listDead(ctx, tx, limit)
+		out, err = q.st.listDead(ctx, tx, after, limit)
 		return err
 	})
 	if err != nil {

@@ -19,6 +19,18 @@
     "defaultMessage": "After you choose, you will be sent back to {host}.",
     "description": "Note under the permissions on the authorization (consent) page. {host} is the host name the application receives the answer at."
   },
+  "auth.authorize.scope.admin": {
+    "defaultMessage": "Administer the instance, as far as your roles allow",
+    "description": "Permission (OAuth scope admin) listed on the authorization page."
+  },
+  "auth.authorize.scope.admin_read": {
+    "defaultMessage": "Read the instance's administration data, as far as your roles allow",
+    "description": "Permission (OAuth scope admin:read) listed on the authorization page."
+  },
+  "auth.authorize.scope.admin_write": {
+    "defaultMessage": "Change the instance's administration data, as far as your roles allow",
+    "description": "Permission (OAuth scope admin:write) listed on the authorization page."
+  },
   "auth.authorize.scope.follow": {
     "defaultMessage": "Follow, block, and mute accounts",
     "description": "Permission (OAuth scope follow) listed on the authorization page."
@@ -406,6 +418,10 @@
   "errors.method_not_allowed": {
     "defaultMessage": "The {method} method is not allowed for this resource.",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
+  },
+  "errors.missing_permission_detail": {
+    "defaultMessage": "Your roles need the permission {permission}.",
+    "description": "Detail of the HTTP 403 missing-permission API error of an admin operation. {permission} is the missing role permission, e.g. manage_jobs (not translated)."
   },
   "errors.not_found": {
     "defaultMessage": "The requested resource was not found.",

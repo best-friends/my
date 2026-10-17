@@ -293,11 +293,13 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - `Retry-After` は秒数と HTTP の日付のどちらも読み、24 時間で打ち切ります。ジョブの期限（リース）や停止で応答の前に打ち切られた試行は記録せず、そのまま `Retry` にします。
 - 配送や Actor が見つからない、Actor に署名の鍵がないジョブは `Fail` にします（dead job に残る）。
 
-- リトライの間隔は ADR-0004 の配送の例（1 分、5 分、30 分、2 時間、12 時間、24 時間 × 3。最大 9 回、約 4 日）で、ジッタを掛けます（`RegisterWithPolicy`）。使い切ったジョブは dead job になり、管理画面と CLI から再実行できます（NFR-REL-2）。
+- リトライの間隔は ADR-0004 の配送の例（1 分、5 分、30 分、2 時間、12 時間、24 時間 × 3。最大 9 回、約 4 日）で、ジッタを掛けます（`RegisterWithPolicy`）。使い切ったジョブは dead job になり、管理 API（`GET /api/v1/admin/dead_jobs` と `POST /api/v1/admin/dead_jobs/{id}/retry`、権限 `manage_jobs`）から再実行できます（NFR-REL-2）。
 - **短期のサーキットブレーカー**: プロセス内で inbox のホストごとに、`retryable_failure` が連続 10 回続いたら 60 秒間はリクエストせずに `Retry` を返します（Mastodon の `Stoplight` と同じ値）。
   60 秒の後に送った 1 回がまた失敗すると、すぐにまた開きます。成功と `permanent_failure`（相手が答えた）で閉じます。開いている間の `Retry` も試行の 1 回に数え、待ち時間は上のリトライの間隔に従います（60 秒ごとに試行を使い切らない）。
 - **`InstanceHealth`（長期）**: `retryable_failure` を記録した日（UTC の日付）がドメインごとに異なる 7 日に達したら、`instance_availability_events`（`marked_unavailable`）を記録し、`instance_health.state` を `unavailable` にします（Mastodon の `DeliveryFailureTracker` と同じ基準）。
   配送の成功、またはそのドメインから署名付きのリクエストを受けたら `marked_available` を記録して `available` に戻します。`unavailable` のドメインには、定期ジョブ `federation.probe_instances` が 1 日 1 回 NodeInfo を取得し、成功したら戻します。
+  運営者は管理 API（`POST /api/v1/admin/instances/{domain}/mark_available`、権限 `manage_domains`）でも戻せます。理由は `operator` で、失敗の日数も 0 に戻ります。
+  `instance_health` と `instance_availability_events` は管理 API（`GET /api/v1/admin/instances`、`.../{domain}/availability_events`）で読めます。
   - 署名付きの受信と probe の成功は、`federation.Health.Reached`（理由 `inbound_request` / `probe_succeeded`）がイベント `federation.instance_reached` を発行し、配送と同じ projector が `instance_health` を更新します。失敗の記録が無いドメインでは、コミット済みの値を読むだけで書きません。
   - probe は `/.well-known/nodeinfo` と、そこから同じホストの NodeInfo 2.x の文書を署名なしで取得し、どちらも 2xx の JSON なら成功とします。1 つのジョブは 50 ドメインを順に処理し、残りがあれば続きのジョブを投入します。
 - 1 件の配送は 1 つのジョブです。Cloud Tasks / SQS では 1 回の試行が 1 オペレーションとして課金されるので、shared inbox への集約と `unavailable` のドメインの除外で回数を抑えます（NFR-COST-5）。

@@ -62,7 +62,7 @@ CREATE TABLE role_permissions (
   role_id text COLLATE "C" NOT NULL,
   permission text NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
-    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit'
+    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs'
   )),
   PRIMARY KEY (role_id, permission)
 );

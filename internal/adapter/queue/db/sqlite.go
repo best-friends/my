@@ -116,12 +116,16 @@ func (sqliteStore) insertDeadFromClaim(ctx context.Context, tx uow.Tx, id, worke
 	})
 }
 
-func (sqliteStore) listDead(ctx context.Context, tx uow.Tx, limit int) ([]queue.DeadJob, error) {
+func (sqliteStore) listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
 	q, err := sqliteQueries(tx)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := q.ListDeadJobs(ctx, int64(limit))
+	var afterFailedAt int64
+	if after.ID != "" {
+		afterFailedAt = millis(after.FailedAt)
+	}
+	rows, err := q.ListDeadJobs(ctx, sqlitequeue.ListDeadJobsParams{AfterID: after.ID, AfterFailedAt: afterFailedAt, BatchLimit: int64(limit)})
 	if err != nil {
 		return nil, err
 	}

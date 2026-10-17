@@ -568,17 +568,20 @@ func (q *Queries) ListDeliveryAttempts(ctx context.Context, deliveryID string) (
 
 const listInstanceAvailabilityEvents = `-- name: ListInstanceAvailabilityEvents :many
 SELECT id, domain, kind, reason, occurred_at FROM instance_availability_events
-WHERE domain = $1 ORDER BY id DESC LIMIT $2
+WHERE domain = $1 AND ($2::text = '' OR id < $2::text)
+ORDER BY id DESC LIMIT $3
 `
 
 type ListInstanceAvailabilityEventsParams struct {
 	Domain     string
+	Before     string
 	BatchLimit int32
 }
 
-// ListInstanceAvailabilityEvents returns the availability events of a server, newest first.
+// ListInstanceAvailabilityEvents returns the availability events of a server, newest first,
+// before the event @before (” for the newest).
 func (q *Queries) ListInstanceAvailabilityEvents(ctx context.Context, arg ListInstanceAvailabilityEventsParams) ([]InstanceAvailabilityEvent, error) {
-	rows, err := q.db.Query(ctx, listInstanceAvailabilityEvents, arg.Domain, arg.BatchLimit)
+	rows, err := q.db.Query(ctx, listInstanceAvailabilityEvents, arg.Domain, arg.Before, arg.BatchLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -592,6 +595,46 @@ func (q *Queries) ListInstanceAvailabilityEvents(ctx context.Context, arg ListIn
 			&i.Kind,
 			&i.Reason,
 			&i.OccurredAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listInstanceHealth = `-- name: ListInstanceHealth :many
+SELECT domain, state, since, failure_days, last_failure_day FROM instance_health
+WHERE ($1::text = '' OR state = $1::text) AND domain > $2
+ORDER BY domain LIMIT $3
+`
+
+type ListInstanceHealthParams struct {
+	State       string
+	AfterDomain string
+	BatchLimit  int32
+}
+
+// ListInstanceHealth returns the servers with a health row (those with failures or unavailable),
+// in domain order after @after_domain, of the state @state (” for every state).
+func (q *Queries) ListInstanceHealth(ctx context.Context, arg ListInstanceHealthParams) ([]InstanceHealth, error) {
+	rows, err := q.db.Query(ctx, listInstanceHealth, arg.State, arg.AfterDomain, arg.BatchLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []InstanceHealth{}
+	for rows.Next() {
+		var i InstanceHealth
+		if err := rows.Scan(
+			&i.Domain,
+			&i.State,
+			&i.Since,
+			&i.FailureDays,
+			&i.LastFailureDay,
 		); err != nil {
 			return nil, err
 		}
