@@ -628,6 +628,27 @@ func (e Permission) Valid() bool {
 	}
 }
 
+// Defines values for RegistrationState.
+const (
+	RegistrationStateApproved RegistrationState = "approved"
+	RegistrationStatePending  RegistrationState = "pending"
+	RegistrationStateRejected RegistrationState = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the RegistrationState enum.
+func (e RegistrationState) Valid() bool {
+	switch e {
+	case RegistrationStateApproved:
+		return true
+	case RegistrationStatePending:
+		return true
+	case RegistrationStateRejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ReportCategory.
 const (
 	ReportCategoryLegal     ReportCategory = "legal"
@@ -1105,6 +1126,50 @@ type AdminInstanceHealthPage struct {
 // AdminInstanceState `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
 // `Reject`.
 type AdminInstanceState string
+
+// AdminRegistration A user's registration as the moderators review it (FR-721).
+type AdminRegistration struct {
+	// AccountId The user's local account; omitted when it is gone.
+	AccountId *Id `json:"account_id,omitempty"`
+
+	// Email The user's primary email address; empty when there is none.
+	Email string `json:"email"`
+
+	// EmailVerified Whether the user confirmed the email address.
+	EmailVerified bool `json:"email_verified"`
+
+	// InviteId The invite the user signed up with; omitted for none.
+	InviteId *Id `json:"invite_id,omitempty"`
+
+	// Reason Why the user wants to join, as plain text; omitted when they gave none.
+	Reason *string `json:"reason,omitempty"`
+
+	// Since When the registration entered its state.
+	Since time.Time `json:"since"`
+
+	// State Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+	// sign in, and `rejected` keeps them out.
+	State RegistrationState `json:"state"`
+
+	// SubmittedAt When the user signed up.
+	SubmittedAt time.Time `json:"submitted_at"`
+
+	// UserId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	UserId Id `json:"user_id"`
+
+	// Username The username of the user's local account; omitted when it is gone.
+	Username *string `json:"username,omitempty"`
+}
+
+// AdminRegistrationPage A page of registrations, longest in their state first.
+type AdminRegistrationPage struct {
+	Items []AdminRegistration `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
 
 // AdminReport A report of an account to the moderators (FR-701).
 type AdminReport struct {
@@ -2070,6 +2135,16 @@ type ProfileField struct {
 	Value string `json:"value"`
 }
 
+// RegistrationDecisionRequest A moderator's decision on a registration.
+type RegistrationDecisionRequest struct {
+	// Note A note for the moderators, as plain text; omitted or empty for none.
+	Note *string `json:"note,omitempty"`
+}
+
+// RegistrationState Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+// sign in, and `rejected` keeps them out.
+type RegistrationState string
+
 // Relationship The viewer's relationship with an account. It never says whether the account blocks
 // the viewer: such an account is not found at all.
 type Relationship struct {
@@ -2470,6 +2545,11 @@ type InstanceDomain = string
 // Limit defines model for Limit.
 type Limit = int
 
+// RegistrationUserId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type RegistrationUserId = Id
+
 // ReportId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -2623,6 +2703,15 @@ type ListInstanceHealthParams struct {
 
 // ListInstanceAvailabilityEventsParams defines parameters for ListInstanceAvailabilityEvents.
 type ListInstanceAvailabilityEventsParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListPendingRegistrationsParams defines parameters for ListPendingRegistrations.
+type ListPendingRegistrationsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -2788,6 +2877,12 @@ type CreateAccountActionJSONRequestBody = CreateAccountActionRequest
 // CreateDomainActionJSONRequestBody defines body for CreateDomainAction for application/json ContentType.
 type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 
+// ApproveRegistrationJSONRequestBody defines body for ApproveRegistration for application/json ContentType.
+type ApproveRegistrationJSONRequestBody = RegistrationDecisionRequest
+
+// RejectRegistrationJSONRequestBody defines body for RejectRegistration for application/json ContentType.
+type RejectRegistrationJSONRequestBody = RegistrationDecisionRequest
+
 // AddReportNoteJSONRequestBody defines body for AddReportNote for application/json ContentType.
 type AddReportNoteJSONRequestBody = CreateReportNoteRequest
 
@@ -2919,6 +3014,15 @@ type ServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(w http.ResponseWriter, r *http.Request, domain InstanceDomain)
+	// ListPendingRegistrations List the registrations that await approval
+	// (GET /admin/registrations)
+	ListPendingRegistrations(w http.ResponseWriter, r *http.Request, params ListPendingRegistrationsParams)
+	// ApproveRegistration Approve a registration
+	// (POST /admin/registrations/{user_id}/approve)
+	ApproveRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId)
+	// RejectRegistration Reject a registration
+	// (POST /admin/registrations/{user_id}/reject)
+	RejectRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId)
 	// ListReports List the reports
 	// (GET /admin/reports)
 	ListReports(w http.ResponseWriter, r *http.Request, params ListReportsParams)
@@ -4230,6 +4334,104 @@ func (siw *ServerInterfaceWrapper) MarkInstanceAvailable(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.MarkInstanceAvailable(w, r, domain)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPendingRegistrations operation middleware
+func (siw *ServerInterfaceWrapper) ListPendingRegistrations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPendingRegistrationsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPendingRegistrations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveRegistration operation middleware
+func (siw *ServerInterfaceWrapper) ApproveRegistration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId RegistrationUserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveRegistration(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectRegistration operation middleware
+func (siw *ServerInterfaceWrapper) RejectRegistration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId RegistrationUserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectRegistration(w, r, userId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6028,6 +6230,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/registrations", wrapper.ListPendingRegistrations)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/registrations/{user_id}/approve", wrapper.ApproveRegistration)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/registrations/{user_id}/reject", wrapper.RejectRegistration)
 
 	return m
 }
@@ -6075,6 +6280,15 @@ type AdminInstanceHealthJSONResponse struct {
 	Body AdminInstanceHealth
 
 	Headers AdminInstanceHealthResponseHeaders
+}
+
+type AdminRegistrationResponseHeaders struct {
+	CacheControl *string
+}
+type AdminRegistrationJSONResponse struct {
+	Body AdminRegistration
+
+	Headers AdminRegistrationResponseHeaders
 }
 
 type AdminReportDetailResponseHeaders struct {
@@ -7888,6 +8102,180 @@ type MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse) VisitMarkInstanceAvailableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRegistrationsRequestObject struct {
+	Params ListPendingRegistrationsParams
+}
+
+type ListPendingRegistrationsResponseObject interface {
+	VisitListPendingRegistrationsResponse(w http.ResponseWriter) error
+}
+
+type ListPendingRegistrations200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListPendingRegistrations200JSONResponse struct {
+	Body    AdminRegistrationPage
+	Headers ListPendingRegistrations200ResponseHeaders
+}
+
+func (response ListPendingRegistrations200JSONResponse) VisitListPendingRegistrationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRegistrationsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListPendingRegistrationsdefaultApplicationProblemPlusJSONResponse) VisitListPendingRegistrationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistrationRequestObject struct {
+	UserId RegistrationUserId `json:"user_id"`
+	Body   *ApproveRegistrationJSONRequestBody
+}
+
+type ApproveRegistrationResponseObject interface {
+	VisitApproveRegistrationResponse(w http.ResponseWriter) error
+}
+
+type ApproveRegistration200JSONResponse struct{ AdminRegistrationJSONResponse }
+
+func (response ApproveRegistration200JSONResponse) VisitApproveRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistrationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ApproveRegistrationdefaultApplicationProblemPlusJSONResponse) VisitApproveRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRegistrationRequestObject struct {
+	UserId RegistrationUserId `json:"user_id"`
+	Body   *RejectRegistrationJSONRequestBody
+}
+
+type RejectRegistrationResponseObject interface {
+	VisitRejectRegistrationResponse(w http.ResponseWriter) error
+}
+
+type RejectRegistration200JSONResponse struct{ AdminRegistrationJSONResponse }
+
+func (response RejectRegistration200JSONResponse) VisitRejectRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRegistrationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RejectRegistrationdefaultApplicationProblemPlusJSONResponse) VisitRejectRegistrationResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -11014,6 +11402,15 @@ type StrictServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(ctx context.Context, request MarkInstanceAvailableRequestObject) (MarkInstanceAvailableResponseObject, error)
+	// ListPendingRegistrations List the registrations that await approval
+	// (GET /admin/registrations)
+	ListPendingRegistrations(ctx context.Context, request ListPendingRegistrationsRequestObject) (ListPendingRegistrationsResponseObject, error)
+	// ApproveRegistration Approve a registration
+	// (POST /admin/registrations/{user_id}/approve)
+	ApproveRegistration(ctx context.Context, request ApproveRegistrationRequestObject) (ApproveRegistrationResponseObject, error)
+	// RejectRegistration Reject a registration
+	// (POST /admin/registrations/{user_id}/reject)
+	RejectRegistration(ctx context.Context, request RejectRegistrationRequestObject) (RejectRegistrationResponseObject, error)
 	// ListReports List the reports
 	// (GET /admin/reports)
 	ListReports(ctx context.Context, request ListReportsRequestObject) (ListReportsResponseObject, error)
@@ -12058,6 +12455,104 @@ func (sh *strictHandler) MarkInstanceAvailable(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(MarkInstanceAvailableResponseObject); ok {
 		if err := validResponse.VisitMarkInstanceAvailableResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPendingRegistrations operation middleware
+func (sh *strictHandler) ListPendingRegistrations(w http.ResponseWriter, r *http.Request, params ListPendingRegistrationsParams) {
+	var request ListPendingRegistrationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPendingRegistrations(ctx, request.(ListPendingRegistrationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPendingRegistrations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPendingRegistrationsResponseObject); ok {
+		if err := validResponse.VisitListPendingRegistrationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveRegistration operation middleware
+func (sh *strictHandler) ApproveRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId) {
+	var request ApproveRegistrationRequestObject
+
+	request.UserId = userId
+
+	var body ApproveRegistrationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveRegistration(ctx, request.(ApproveRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveRegistrationResponseObject); ok {
+		if err := validResponse.VisitApproveRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectRegistration operation middleware
+func (sh *strictHandler) RejectRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId) {
+	var request RejectRegistrationRequestObject
+
+	request.UserId = userId
+
+	var body RejectRegistrationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectRegistration(ctx, request.(RejectRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectRegistrationResponseObject); ok {
+		if err := validResponse.VisitRejectRegistrationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

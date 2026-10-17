@@ -25,6 +25,11 @@ VALUES ($1, $2, $3, $4, $5, $6, $7);
 INSERT INTO user_registration_states (user_id, state, since) VALUES ($1, $2, $3)
 ON CONFLICT (user_id) DO UPDATE SET state = excluded.state, since = excluded.since;
 
+-- TransitionPendingRegistrationState moves a pending registration to a decided state and
+-- affects no row when the registration is not pending.
+-- name: TransitionPendingRegistrationState :execrows
+UPDATE user_registration_states SET state = $1, since = $2 WHERE user_id = $3 AND state = 'pending';
+
 -- name: GetRegistrationState :one
 SELECT user_id, state, since FROM user_registration_states WHERE user_id = $1;
 
@@ -37,6 +42,8 @@ JOIN registration_applications a ON a.user_id = s.user_id
 LEFT JOIN user_primary_emails p ON p.user_id = s.user_id
 LEFT JOIN user_email_addresses e ON e.id = p.email_address_id
 WHERE s.state = sqlc.arg(state)
+  AND (CAST(sqlc.arg(after_user_id) AS TEXT) = '' OR s.since > sqlc.arg(after_since)
+    OR (s.since = sqlc.arg(after_since) AND s.user_id > sqlc.arg(after_user_id)))
 ORDER BY s.since, s.user_id
 LIMIT sqlc.arg(page_limit);
 

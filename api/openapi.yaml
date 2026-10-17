@@ -2096,6 +2096,81 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: moderator counts (#338) ---
+  # --- admin: registrations (#345) ---
+  /admin/registrations:
+    get:
+      operationId: listPendingRegistrations
+      summary: List the registrations that await approval
+      description: |
+        The sign-ups that wait for a moderator's decision (FR-721), with the reasons their
+        applicants gave, longest waiting first. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of pending registrations.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRegistrationPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/registrations/{user_id}/approve:
+    post:
+      operationId: approveRegistration
+      summary: Approve a registration
+      description: |
+        Approves a pending registration, so that its user can sign in, with an optional note
+        for the moderators; the decision is audited. Deciding a decided registration changes
+        nothing and keeps its decision. A user without a registration is a 404. Needs the
+        `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RegistrationUserId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationDecisionRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRegistration"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/registrations/{user_id}/reject:
+    post:
+      operationId: rejectRegistration
+      summary: Reject a registration
+      description: |
+        Rejects a pending registration, so that its user cannot sign in, with an optional note
+        for the moderators; the decision is audited. Deciding a decided registration changes
+        nothing and keeps its decision. A user without a registration is a 404. Needs the
+        `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RegistrationUserId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationDecisionRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRegistration"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: registrations (#345) ---
 components:
   securitySchemes:
     oauth2:
@@ -2242,6 +2317,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: registrations (#345) ---
+    RegistrationUserId:
+      name: user_id
+      in: path
+      required: true
+      description: The ID of the user who signed up.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: registrations (#345) ---
   responses:
     StatusPage:
       description: A page of posts and boosts, newest first.
@@ -2370,6 +2454,17 @@ components:
           schema:
             $ref: "#/components/schemas/AdminRule"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: registrations (#345) ---
+    AdminRegistration:
+      description: The registration.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminRegistration"
+    # --- end of admin: registrations (#345) ---
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -4244,6 +4339,70 @@ components:
           format: int64
           minimum: 0
     # --- end of admin: moderator counts (#338) ---
+    # --- admin: registrations (#345) ---
+    AdminRegistration:
+      description: A user's registration as the moderators review it (FR-721).
+      type: object
+      required: [user_id, state, since, email, email_verified, submitted_at]
+      properties:
+        user_id:
+          $ref: "#/components/schemas/Id"
+        account_id:
+          description: The user's local account; omitted when it is gone.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        username:
+          description: The username of the user's local account; omitted when it is gone.
+          type: string
+        state:
+          $ref: "#/components/schemas/RegistrationState"
+        since:
+          description: When the registration entered its state.
+          type: string
+          format: date-time
+        email:
+          description: The user's primary email address; empty when there is none.
+          type: string
+        email_verified:
+          description: Whether the user confirmed the email address.
+          type: boolean
+        reason:
+          description: Why the user wants to join, as plain text; omitted when they gave none.
+          type: string
+        invite_id:
+          description: The invite the user signed up with; omitted for none.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        submitted_at:
+          description: When the user signed up.
+          type: string
+          format: date-time
+    AdminRegistrationPage:
+      description: A page of registrations, longest in their state first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminRegistration"
+    RegistrationDecisionRequest:
+      description: A moderator's decision on a registration.
+      type: object
+      properties:
+        note:
+          description: A note for the moderators, as plain text; omitted or empty for none.
+          type: string
+          maxLength: 1000
+    RegistrationState:
+      description: |
+        Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+        sign in, and `rejected` keeps them out.
+      type: string
+      enum: [pending, approved, rejected]
+    # --- end of admin: registrations (#345) ---
     # --- reports (#332) ---
     CreateReportRequest:
       description: A report of an account to the moderators.
