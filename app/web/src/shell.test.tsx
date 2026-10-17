@@ -45,12 +45,14 @@ describe("the display locale", () => {
   test("stays the user's while GET /preferences is rate-limited after a reload", async () => {
     server.use(resumableSession(), http.get(`${apiBase}/preferences`, () => HttpResponse.json({ ...preferencesFixture, locale: "ja" })));
     // The instance's locale is English; the user's preferences say Japanese.
-    const { unmount } = await renderApp({ path: "/home", locale: (await loadStartI18n(document)).locale });
+    const { unmount, session } = await renderApp({ path: "/home", locale: (await loadStartI18n(document)).locale });
     await screen.findByRole("heading", { level: 1, name: "ホーム" });
     expect(document.documentElement).toHaveAttribute("lang", "ja");
 
     // The page is loaded again from the server's shell, in the instance's locale, and the preferences are refused.
     unmount();
+    // A reload leaves no tab behind to talk to over the session's BroadcastChannel.
+    session.dispose();
     document.documentElement.lang = "en";
     server.use(http.get(`${apiBase}/preferences`, () => rateLimited(30)));
     await renderApp({ path: "/home", locale: (await loadStartI18n(document)).locale });
