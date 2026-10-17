@@ -155,7 +155,7 @@ func (r *StatusRepository) InsertDeletion(ctx context.Context, tx uow.Tx, d cont
 		ModerationActionID: toNullString(d.ModerationActionID),
 		DeletedAt:          d.DeletedAt,
 	})
-	if isUniqueViolation(err, "status_deletions_pkey") || isUniqueViolation(err, "status_deletions_uri") {
+	if isUniqueViolation(err, "status_deletions_pkey") || isUniqueViolation(err, "status_deletions_tombstone_uri") {
 		return fmt.Errorf("delete status %s: %w", d.StatusID, appcontent.ErrAlreadyDeleted)
 	}
 	return wrap(err, "insert status deletion")

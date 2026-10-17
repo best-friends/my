@@ -63,6 +63,8 @@ An instance setting that has never been set reads as its default, which is defin
 | [`smtp_password`](#smtp_password) | `MY_SMTP_PASSWORD` | none | no | yes |
 | [`profile`](#profile) | `MY_PROFILE` | `production` | no | no |
 | [`http_allow_private_networks`](#http_allow_private_networks) | `MY_HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | no | no |
+| [`remote_status_retention`](#remote_status_retention) | `MY_REMOTE_STATUS_RETENTION` | `2160h` | no | no |
+| [`remote_status_max_retention`](#remote_status_max_retention) | `MY_REMOTE_STATUS_MAX_RETENTION` | none | no | no |
 
 ## Settings
 
@@ -348,3 +350,19 @@ Lets outbound HTTP (federation, media, link previews) reach loopback, private, a
 | --- | --- | --- |
 | `false` | yes | Only public `https` destinations on ports 443 and 80. |
 | `true` | yes | Every destination; requires `profile = development`. |
+
+### `remote_status_retention`
+
+How long a remote post is kept after its publication when nothing on this instance refers to it (a local reply, boost, favourite, bookmark, notification, or a thread with a local post); the hourly purge then deletes it (ADR-0034, FR-803). A Go duration such as `2160h` (90 days).
+
+- Environment variable: `MY_REMOTE_STATUS_RETENTION`
+- Default: `2160h`
+- Required: no
+
+### `remote_status_max_retention`
+
+The longest a remote post is kept after its publication, even when this instance refers to it; the hourly purge then deletes it, while local accounts' replies, boosts, favourites, and bookmarks stay and show it as deleted (ADR-0034). A Go duration such as `8760h` (365 days); empty keeps referred posts without limit.
+
+- Environment variable: `MY_REMOTE_STATUS_MAX_RETENTION`
+- Default: none
+- Required: no

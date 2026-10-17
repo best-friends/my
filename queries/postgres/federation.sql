@@ -31,12 +31,14 @@ WHERE activity_uri IN (
 );
 
 -- DeleteReceivedActivitiesBefore removes at most @batch_limit activities received before
--- @received_before.
+-- @received_before whose documents are gone, so that no document outlives its activity.
 -- name: DeleteReceivedActivitiesBefore :execrows
 DELETE FROM received_activities
 WHERE activity_uri IN (
   SELECT a.activity_uri FROM received_activities a
-  WHERE a.received_at < @received_before ORDER BY a.received_at LIMIT @batch_limit
+  WHERE a.received_at < @received_before
+    AND NOT EXISTS (SELECT 1 FROM received_activity_documents d WHERE d.activity_uri = a.activity_uri)
+  ORDER BY a.received_at LIMIT @batch_limit
 );
 
 -- name: InsertRemoteObjectTombstone :execrows
@@ -76,11 +78,15 @@ ON CONFLICT (outbound_activity_id) DO NOTHING;
 -- name: GetOutboundActivityDocument :one
 SELECT document FROM outbound_activity_documents WHERE outbound_activity_id = @outbound_activity_id;
 
+-- DeleteOutboundActivityDocumentsBefore removes at most @batch_limit documents built before
+-- @built_before. The activity's ID is a UUIDv7 no later than its document, so @id_before (the
+-- UUIDv7 floor of @built_before) bounds the scan of the primary key.
 -- name: DeleteOutboundActivityDocumentsBefore :execrows
 DELETE FROM outbound_activity_documents
 WHERE outbound_activity_id IN (
   SELECT d.outbound_activity_id FROM outbound_activity_documents d
-  WHERE d.built_at < @built_before ORDER BY d.built_at LIMIT @batch_limit
+  WHERE d.outbound_activity_id < @id_before AND d.built_at < @built_before
+  ORDER BY d.outbound_activity_id LIMIT @batch_limit
 );
 
 -- InsertDelivery adds an inbox to an activity once; zero rows means it was already there.
@@ -106,10 +112,14 @@ VALUES (@id, @delivery_id, @outcome, @signature_scheme, @http_status, @error, @a
 SELECT id, delivery_id, outcome, signature_scheme, http_status, error, attempted_at FROM delivery_attempts
 WHERE delivery_id = @delivery_id ORDER BY id;
 
+-- DeleteDeliveryAttemptsBefore removes at most @batch_limit attempts made before
+-- @attempted_before; @id_before (the UUIDv7 floor of @attempted_before) bounds the scan of the
+-- primary key.
 -- name: DeleteDeliveryAttemptsBefore :execrows
 DELETE FROM delivery_attempts
 WHERE id IN (
-  SELECT a.id FROM delivery_attempts a WHERE a.attempted_at < @attempted_before ORDER BY a.id LIMIT @batch_limit
+  SELECT a.id FROM delivery_attempts a WHERE a.id < @id_before AND a.attempted_at < @attempted_before
+  ORDER BY a.id LIMIT @batch_limit
 );
 
 -- name: InsertRemoteInstance :execrows
