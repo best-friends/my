@@ -108,7 +108,7 @@ Text takes its size from its role, never from the screen it is on
 | Focused content | `text-lg` | The body of the post a detail page is about |
 | Body | `text-base` | Post bodies, profile text, form values, menu items |
 | Secondary | `text-sm text-fg-muted` | Handles, times, counts, descriptions and hints of fields |
-| Label | `text-xs` | Badges, the labels of the bottom tab bar |
+| Label | `text-xs` | Badges, the labels of the bottom tab bar and the side rail |
 
 `text-xl` and `text-3xl` have no role and are not used by screens. Names (`font-semibold`) are the only other weight;
 emphasis inside running text comes from the content, not from the UI.

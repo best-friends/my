@@ -362,6 +362,10 @@ export interface MessageArgs {
   "client:compose.warning.toggle": {};
   /** Home */
   "client:home.title": {};
+  /** This server does not show the public posts of its accounts in one timeline. */
+  "client:local.disabled.body": {};
+  /** The local timeline is off */
+  "client:local.disabled.title": {};
   /** Local timeline */
   "client:local.title": {};
   /** Sign in to {instance} to post, follow people and read your home timeline. */
@@ -880,12 +884,18 @@ export interface MessageArgs {
   "client:shell.error.unexpected.reason": {};
   /** Loading */
   "client:shell.loading": {};
+  /** Close */
+  "client:shell.menu.close": {};
+  /** Menu */
+  "client:shell.menu.title": {};
   /** Home */
   "client:shell.nav.home": {};
   /** Main */
   "client:shell.nav.label": {};
   /** Local */
   "client:shell.nav.local": {};
+  /** Menu */
+  "client:shell.nav.menu": {};
   /** Notifications */
   "client:shell.nav.notifications": {};
   /** Notifications, {count, plural, one {# unread} other {# unread}} */
@@ -898,6 +908,8 @@ export interface MessageArgs {
   "client:shell.nav.search": {};
   /** Settings */
   "client:shell.nav.settings": {};
+  /** Timelines */
+  "client:shell.nav.timelines": {};
   /** There is no page at this address. */
   "client:shell.not_found.body": {};
   /** Go to the home timeline */
@@ -1040,6 +1052,12 @@ export interface MessageArgs {
   "client:timeline.signed_out.description": {};
   /** You are not signed in */
   "client:timeline.signed_out.heading": {};
+  /** Timelines */
+  "client:timeline.tabs.label": {};
+  /** Local */
+  "client:timeline.tabs.local": {};
+  /** Federated */
+  "client:timeline.tabs.public": {};
   /** Allow */
   "server:auth.authorize.approve": {};
   /** Deny */

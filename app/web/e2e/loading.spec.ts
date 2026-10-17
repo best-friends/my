@@ -61,9 +61,12 @@ test.describe("a timeline's first page", () => {
     await page.goto("/local");
 
     await expectLoadingRegion(page);
+    // The timelines' tabs are there while the first page loads, and the skeleton is in the tab's panel.
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading [level=1]
-      - text: /.+/
+      - tablist
+      - tabpanel:
+        - text: /.+/
     `);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
