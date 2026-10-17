@@ -703,6 +703,10 @@
     "defaultMessage": "Following",
     "description": "Button on a profile of an account the user follows; pressing it offers to unfollow."
   },
+  "profile.follow.pending_remote": {
+    "defaultMessage": "Waiting for {host} to accept your follow request.",
+    "description": "Shown under the follow button of an account on another server while the user's follow request awaits that server's answer. {host} is the server's host name."
+  },
   "profile.follow.request": {
     "defaultMessage": "Request to follow",
     "description": "Button on a profile of an account that approves its followers: it sends a follow request."
@@ -838,6 +842,50 @@
   "profile.title": {
     "defaultMessage": "Profile",
     "description": "Heading and document title of the signed-in user's own profile page."
+  },
+  "search.description": {
+    "defaultMessage": "Enter @username@server or the address of a profile, on this server or another one.",
+    "description": "Help text under the search field for a signed-in user, who can find accounts on any server."
+  },
+  "search.description_signed_out": {
+    "defaultMessage": "Enter @username@server or the address of a profile. Only accounts this server already knows are found.",
+    "description": "Help text under the search field while nobody is signed in: the server does not fetch unknown accounts from other servers."
+  },
+  "search.failed": {
+    "defaultMessage": "The search failed: {reason}",
+    "description": "Error under the search field when the search failed for another reason. {reason} is the localized reason."
+  },
+  "search.label": {
+    "defaultMessage": "Handle or URL",
+    "description": "Label of the search field, which takes an account's handle (@username@server) or the address of its profile."
+  },
+  "search.not_found": {
+    "defaultMessage": "No account found. Check the handle or the address.",
+    "description": "Error under the search field when neither this server nor the account's server knows the account."
+  },
+  "search.not_found_signed_out": {
+    "defaultMessage": "This server does not know that account. Sign in to look it up on its own server.",
+    "description": "Error under the search field when nobody is signed in and this server does not know the account."
+  },
+  "search.rate_limited": {
+    "defaultMessage": "Too many searches. Try again in a few minutes.",
+    "description": "Error under the search field when the server limits how often the user can look up accounts on other servers."
+  },
+  "search.required": {
+    "defaultMessage": "Enter a handle or a URL.",
+    "description": "Error under the search field when it is sent empty."
+  },
+  "search.sign_in": {
+    "defaultMessage": "Sign in to find accounts on other servers",
+    "description": "Link on the search page while nobody is signed in; it signs in and comes back to the search."
+  },
+  "search.submit": {
+    "defaultMessage": "Search",
+    "description": "Button that sends the search for an account."
+  },
+  "search.title": {
+    "defaultMessage": "Search",
+    "description": "Heading and document title of the page that finds an account by its handle or URL."
   },
   "session.account.title": {
     "defaultMessage": "Account",
@@ -1202,6 +1250,10 @@
   "shell.nav.profile": {
     "defaultMessage": "Profile",
     "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.nav.search": {
+    "defaultMessage": "Search",
+    "description": "Navigation item that opens the account search. Keep it short: it is shown under an icon in a bottom tab bar."
   },
   "shell.nav.settings": {
     "defaultMessage": "Settings",

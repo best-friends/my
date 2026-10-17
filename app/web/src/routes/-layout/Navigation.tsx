@@ -13,10 +13,10 @@ import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { profilePath } from "../../lib/paths";
-import { HomeIcon, LocalIcon, NotificationsIcon, ProfileIcon, SettingsIcon } from "./icons";
+import { HomeIcon, LocalIcon, NotificationsIcon, ProfileIcon, SearchIcon, SettingsIcon } from "./icons";
 
 type NavigationItem = {
-  to: "/home" | "/local" | "/notifications" | "/profile" | "/settings";
+  to: "/home" | "/local" | "/search" | "/notifications" | "/profile" | "/settings";
   label: ClientMessageKey;
   icon: ReactNode;
 };
@@ -24,6 +24,7 @@ type NavigationItem = {
 const items: readonly NavigationItem[] = [
   { to: "/home", label: "client:shell.nav.home", icon: <HomeIcon /> },
   { to: "/local", label: "client:shell.nav.local", icon: <LocalIcon /> },
+  { to: "/search", label: "client:shell.nav.search", icon: <SearchIcon /> },
   { to: "/notifications", label: "client:shell.nav.notifications", icon: <NotificationsIcon /> },
   { to: "/profile", label: "client:shell.nav.profile", icon: <ProfileIcon /> },
   { to: "/settings", label: "client:shell.nav.settings", icon: <SettingsIcon /> },
@@ -53,7 +54,7 @@ export function Navigation() {
       aria-label={t("client:shell.nav.label")}
       className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface-raised px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:h-svh md:border-t-0 md:border-e md:bg-surface md:px-0 md:pb-0"
     >
-      <ul className="grid grid-cols-5 md:flex md:flex-col md:gap-1 md:p-2 lg:w-60">
+      <ul className="grid auto-cols-fr grid-flow-col md:flex md:flex-col md:gap-1 md:p-2 lg:w-60">
         {items.map((item) => {
           const badge = item.to === "/notifications" && unread > 0;
           return (
