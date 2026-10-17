@@ -170,8 +170,8 @@ export interface paths {
          * Block an account
          * @description Ends the follows between the viewer and the account in both directions and keeps
          *     either from following the other until the block is lifted (FR-303). Blocking an
-         *     account that the viewer already blocks changes nothing. Only local accounts can be
-         *     blocked.
+         *     account that the viewer already blocks changes nothing. Blocking a remote account
+         *     also sends a Block to its server.
          */
         post: operations["blockAccount"];
         delete?: never;

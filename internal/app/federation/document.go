@@ -163,6 +163,9 @@ func handleOf(a appaccount.Actor, accountDomain string) string {
 // favourite, have no document here: their projectors store them with the event (deleteDocument,
 // likeDocument), so document returns nil.
 func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, s subject) ([]byte, error) {
+	if act.ObjectKind == federation.OutboundBlock {
+		return f.blockDocument(ctx, act, s)
+	}
 	if act.ObjectKind == federation.OutboundFollow {
 		return f.followDocument(ctx, s)
 	}

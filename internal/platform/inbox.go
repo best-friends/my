@@ -21,9 +21,8 @@ func (a *App) setUpInbox(repo federation.InboxRepository) {
 		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox,
 		Signatures: federation.NewSignatureVerifier(httpsig.New(), a.RemoteActors, a.KV, a.Clock),
 		Accounts:   a.Accounts,
-		// No domain blocks exist yet; signers still go through the policy port.
-		Domains: federation.NoDomainRestrictions{},
-		Health:  a.InstanceHealth, RateLimiter: a.RateLimiter, Clock: a.Clock, Logger: a.Logger,
+		Domains:    a.ModerationPolicy,
+		Health:     a.InstanceHealth, RateLimiter: a.RateLimiter, Clock: a.Clock, Logger: a.Logger,
 	})
 	a.setUpInboxProcessor(repo)
 }
@@ -34,9 +33,12 @@ func (a *App) setUpInbox(repo federation.InboxRepository) {
 func (a *App) setUpInboxProcessor(repo federation.InboxRepository) {
 	a.InboxProcessor = federation.NewInboxProcessor(federation.InboxProcessorDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Actors: a.RemoteActors, Fetcher: a.RemoteActors,
-		// No domain or account restrictions exist yet; actors still go through the policy ports.
-		Domains: federation.NoDomainRestrictions{}, Accounts: federation.NoAccountRestrictions{},
+		Domains: a.ModerationPolicy, Accounts: a.ModerationPolicy,
 		Clock: a.Clock, Logger: a.Logger,
+	})
+	federation.RegisterModerationHandlers(a.InboxProcessor, federation.ModerationHandlerDeps{
+		Blocks: a.Graph, Reports: a.Moderation, Policy: a.ModerationPolicy,
+		Objects: federation.LocalObjectsOf{Accounts: a.Accounts, Content: a.Content}, Host: a.Config.Host,
 	})
 	a.RemoteActors.RegisterInboxHandlers(a.InboxProcessor)
 	a.InboxProcessor.RegisterJobs(a.Handlers)

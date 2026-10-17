@@ -17,7 +17,8 @@ import (
 // between them in both directions, pending or active, with the reason blocked, and while the
 // block is in force neither account can follow the other (Follow fails with ErrBlocked).
 // Blocking an account that the blocker already blocks changes nothing. The blocker must be
-// local and active; the blocked account must exist and be local.
+// local and active; the blocked account must exist and may be remote, in which case the
+// federation module delivers a Block to its server.
 func (s *Service) Block(ctx context.Context, blockerID, blockedID string) (Relationship, error) {
 	b := graph.Block{BlockerAccountID: blockerID, BlockedAccountID: blockedID}
 	if err := b.Validate(); err != nil {
@@ -26,40 +27,40 @@ func (s *Service) Block(ctx context.Context, blockerID, blockedID string) (Relat
 	if _, err := s.localActive(ctx, blockerID); err != nil {
 		return Relationship{}, err
 	}
-	target, err := s.existing(ctx, blockedID)
-	if err != nil {
+	if _, err := s.existing(ctx, blockedID); err != nil {
 		return Relationship{}, err
-	}
-	if !target.Account.IsLocal() {
-		return Relationship{}, fmt.Errorf("account %s: %w", blockedID, ErrRemoteAccount)
 	}
 	b.ID = s.d.IDs.NewID()
 	b.URI = graph.BlockURI(s.d.Host, b.ID)
 	b.CreatedAt = s.d.Clock.Now()
 
-	repo := s.d.Repository
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := repo.LockPair(ctx, tx, blockerID, blockedID); err != nil {
-			return err
-		}
-		if _, err := repo.BlockEdge(ctx, tx, blockerID, blockedID); !errors.Is(err, ErrNotFound) {
-			return err // nil: already blocked
-		}
-		if err := repo.InsertBlock(ctx, tx, b); err != nil {
-			return err
-		}
-		if err := s.terminateIn(ctx, tx, blockerID, blockedID, graph.TerminatedBlocked, false, b.CreatedAt); err != nil {
-			return err
-		}
-		if err := s.terminateIn(ctx, tx, blockedID, blockerID, graph.TerminatedBlocked, false, b.CreatedAt); err != nil {
-			return err
-		}
-		return tx.Emit(ctx, Blocked{Block: b})
-	})
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.blockIn(ctx, tx, b) })
 	if err != nil {
 		return Relationship{}, err
 	}
 	return s.Relationship(ctx, blockerID, blockedID)
+}
+
+// blockIn records b in tx unless its pair already has a block in force, ending the follows
+// between the two accounts in both directions.
+func (s *Service) blockIn(ctx context.Context, tx uow.Tx, b graph.Block) error {
+	repo := s.d.Repository
+	if err := repo.LockPair(ctx, tx, b.BlockerAccountID, b.BlockedAccountID); err != nil {
+		return err
+	}
+	if _, err := repo.BlockEdge(ctx, tx, b.BlockerAccountID, b.BlockedAccountID); !errors.Is(err, ErrNotFound) {
+		return err // nil: already blocked
+	}
+	if err := repo.InsertBlock(ctx, tx, b); err != nil {
+		return err
+	}
+	if err := s.terminateIn(ctx, tx, b.BlockerAccountID, b.BlockedAccountID, graph.TerminatedBlocked, false, b.CreatedAt); err != nil {
+		return err
+	}
+	if err := s.terminateIn(ctx, tx, b.BlockedAccountID, b.BlockerAccountID, graph.TerminatedBlocked, false, b.CreatedAt); err != nil {
+		return err
+	}
+	return tx.Emit(ctx, Blocked{Block: b})
 }
 
 // Unblock lifts blockerID's block of blockedID. The follows that the block ended stay ended.
@@ -79,16 +80,27 @@ func (s *Service) Unblock(ctx context.Context, blockerID, blockedID string) (Rel
 		if err != nil {
 			return err
 		}
-		r := graph.BlockRetraction{BlockID: b.ID, RetractedAt: now}
-		if err := repo.InsertBlockRetraction(ctx, tx, r); err != nil {
-			return err
-		}
-		return tx.Emit(ctx, Unblocked{Block: b, Retraction: r})
+		return s.retractIn(ctx, tx, b, now)
 	})
 	if err != nil {
 		return Relationship{}, err
 	}
 	return s.Relationship(ctx, blockerID, blockedID)
+}
+
+// retractIn lifts block b in tx.
+func (s *Service) retractIn(ctx context.Context, tx uow.Tx, b graph.Block, now time.Time) error {
+	r := graph.BlockRetraction{BlockID: b.ID, RetractedAt: now}
+	if err := s.d.Repository.InsertBlockRetraction(ctx, tx, r); err != nil {
+		return err
+	}
+	return tx.Emit(ctx, Unblocked{Block: b, Retraction: r})
+}
+
+// FindBlock returns a block, retracted or not, for the delivery of its Block and Undo Block. It
+// fails with ErrNotFound when there is none.
+func (s *Service) FindBlock(ctx context.Context, id string) (graph.Block, error) {
+	return s.d.Repository.FindBlock(ctx, id)
 }
 
 // Blocks returns the accounts accountID blocks, newest block first.

@@ -29,13 +29,15 @@ import (
 // that drops the Create or Follow arriving later (for an Undo of an embedded Follow, the next
 // Follow of its pair), restricted actors are dropped except for what
 // takes something back, activities of other signers are confirmed at their origin, activities
-// that can never be processed fail, and the own-actor Update and Delete have their own route.
+// that can never be processed fail, the own-actor Update and Delete have their own route, and an
+// Undo goes to the handler of the type it undoes. The handlers of Block, Undo Block, and Flag run
+// for real on the graph and moderation repositories.
 //
 // Its subtest OrderAndDuplicates is the property test of NFR-REL-1: every case's activities are
 // processed in several orders and with duplicated jobs, each run on a new database, and the
 // final rows must be the same. The tasks that add inbox handlers add their cases to
-// inboxOrderCases. The actors, fetches, restrictions, and the handlers of this file are
-// in-memory stand-ins.
+// inboxOrderCases. The actors, fetches, restrictions, and the handlers of notes and follows
+// are in-memory stand-ins.
 func InboxProcessingContract(t *testing.T, newHarness InboxFactory) {
 	t.Helper()
 	cases := []struct {
@@ -52,6 +54,7 @@ func InboxProcessingContract(t *testing.T, newHarness InboxFactory) {
 		{"FailsWhatCanNeverBeProcessed", inboxFailsUnprocessable},
 		{"RoutesTheOwnActorsUpdateAndDelete", inboxRoutesOwnActor},
 		{"RoutesUndoByTheUndoneType", inboxRoutesUndo},
+		{"HandlesBlocksAndFlags", inboxHandlesModeration},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -94,11 +97,16 @@ func newInboxProcessEnv(t *testing.T, newHarness InboxFactory) *inboxProcessEnv 
 		follows: &inboxFollows{active: map[federation.IRI]bool{}, ended: map[federation.IRI]bool{}},
 	}
 	e.fetcher.clock = e.clock
-	e.processor = appfederation.NewInboxProcessor(appfederation.InboxProcessorDeps{
-		UnitOfWork: h.UnitOfWork, Repository: h.Inbox, Actors: e.actors, Fetcher: e.fetcher,
+	e.processor = e.newProcessor()
+	return e
+}
+
+// newProcessor returns an InboxProcessor on the env's harness and stand-ins, without handlers.
+func (e *inboxProcessEnv) newProcessor() *appfederation.InboxProcessor {
+	return appfederation.NewInboxProcessor(appfederation.InboxProcessorDeps{
+		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Inbox, Actors: e.actors, Fetcher: e.fetcher,
 		Domains: e.domains, Accounts: e.suspended, Clock: e.clock,
 	})
-	return e
 }
 
 // wireStandIns registers the stand-in handlers of notes (Create, Delete) and follows (Follow,

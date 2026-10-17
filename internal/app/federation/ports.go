@@ -114,15 +114,14 @@ type Graph interface {
 }
 
 // DomainPolicy says whether a domain block keeps activities from a remote server: the
-// federation restriction (suspend) of a domain or one of its parents (federation.md §11). The
-// moderation module provides it.
+// federation restriction (suspend) of a domain or one of its parents (federation.md §11).
+// *moderation.FederationPolicy implements it.
 type DomainPolicy interface {
 	FederationSuspended(ctx context.Context, domain string) (bool, error)
 }
 
-// NoDomainRestrictions is the DomainPolicy of an instance without domain blocks: it suspends
-// no server. It stands in for the policy that the moderation module derives from
-// domain_restrictions.
+// NoDomainRestrictions is the DomainPolicy that suspends no server: the default of the use cases
+// built without a policy, such as in tests.
 type NoDomainRestrictions struct{}
 
 // FederationSuspended implements DomainPolicy.
@@ -131,15 +130,14 @@ func (NoDomainRestrictions) FederationSuspended(context.Context, string) (bool, 
 }
 
 // AccountPolicy says whether a restriction of a remote account keeps its activities: the
-// federation restriction (suspend, ban) of the account (federation.md §11). The moderation module
-// provides it.
+// federation restriction (suspend, ban) of the account (federation.md §11).
+// *moderation.FederationPolicy implements it.
 type AccountPolicy interface {
 	AccountFederationSuspended(ctx context.Context, accountID string) (bool, error)
 }
 
-// NoAccountRestrictions is the AccountPolicy of an instance without account restrictions: it
-// suspends no account. It stands in for the policy that the moderation module derives from
-// account_restrictions.
+// NoAccountRestrictions is the AccountPolicy that suspends no account: the default of the use
+// cases built without a policy, such as in tests.
 type NoAccountRestrictions struct{}
 
 // AccountFederationSuspended implements AccountPolicy.

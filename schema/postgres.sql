@@ -1421,3 +1421,123 @@ CREATE TABLE remote_follow_tombstones (
 CREATE INDEX remote_follow_tombstones_actor_uri_object_uri ON remote_follow_tombstones (actor_uri, object_uri, received_at);
 CREATE INDEX remote_follow_tombstones_received_at ON remote_follow_tombstones (received_at);
 CREATE INDEX remote_object_tombstones_activity_uri ON remote_object_tombstones (activity_uri);
+
+-- ---------------------------------------------------------------------------------------------
+-- moderation: actions on accounts and domains, the restrictions they impose, and reports
+-- (data-model §4.3, §5.2, docs/architecture/federation.md §11). Owned by internal/app/moderation.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: a moderation action on an account. A ban never expires.
+CREATE TABLE moderation_actions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  target_account_id text COLLATE "C" NOT NULL,
+  kind text NOT NULL CHECK (kind IN (
+    'warn', 'mark_statuses_sensitive', 'delete_statuses', 'force_sensitive', 'limit',
+    'restrict_posting', 'restrict_interaction', 'disable_login', 'suspend', 'ban'
+  )),
+  reason_category text NOT NULL CHECK (reason_category IN ('spam', 'legal', 'violation', 'other')),
+  public_reason text,
+  private_note text,
+  report_id text COLLATE "C",
+  issuer text NOT NULL CHECK (issuer IN ('moderator', 'system', 'remote')),
+  issued_by_user_id text COLLATE "C",
+  notify_target boolean NOT NULL,
+  expires_at timestamptz,
+  issued_at timestamptz NOT NULL,
+  CHECK (kind <> 'ban' OR expires_at IS NULL),
+  CHECK (expires_at IS NULL OR expires_at > issued_at)
+);
+CREATE INDEX moderation_actions_target_account_id_id ON moderation_actions (target_account_id, id DESC);
+CREATE INDEX moderation_actions_report_id ON moderation_actions (report_id);
+
+-- Event: a moderation action on an account was lifted. Expiry is not a lift.
+-- lifted_by_user_id is NULL for the system.
+CREATE TABLE moderation_action_lifts (
+  action_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  lifted_by_user_id text COLLATE "C",
+  reason text,
+  lifted_at timestamptz NOT NULL
+);
+
+-- Projection: the restrictions that the actions on an account impose, one row per restriction
+-- and action, until effective_until (NULL: until lifted).
+CREATE TABLE account_restrictions (
+  account_id text COLLATE "C" NOT NULL,
+  restriction text NOT NULL CHECK (restriction IN (
+    'login', 'post', 'interact', 'visibility_ceiling_private', 'public_discovery',
+    'unsolicited_reach', 'media_sensitive', 'profile_view', 'federation', 'media_fetch',
+    'report_intake'
+  )),
+  source_action_id text COLLATE "C" NOT NULL,
+  effective_until timestamptz,
+  PRIMARY KEY (account_id, restriction, source_action_id)
+);
+CREATE INDEX account_restrictions_source_action_id ON account_restrictions (source_action_id);
+
+-- Event: a moderation action on a domain and its subdomains. issued_by_user_id is NULL for the
+-- CLI.
+CREATE TABLE domain_moderation_actions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  domain text NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('limit', 'suspend', 'reject_media', 'reject_reports', 'force_sensitive')),
+  public_comment text,
+  private_note text,
+  obfuscate boolean NOT NULL,
+  issued_by_user_id text COLLATE "C",
+  expires_at timestamptz,
+  issued_at timestamptz NOT NULL,
+  CHECK (expires_at IS NULL OR expires_at > issued_at)
+);
+CREATE INDEX domain_moderation_actions_domain_id ON domain_moderation_actions (domain, id DESC);
+
+-- Event: a domain action was lifted. lifted_by_user_id is NULL for the CLI.
+CREATE TABLE domain_moderation_action_lifts (
+  action_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  lifted_by_user_id text COLLATE "C",
+  lifted_at timestamptz NOT NULL
+);
+
+-- Projection: the restrictions that the actions on a domain impose on it and its subdomains,
+-- until effective_until (NULL: until lifted).
+CREATE TABLE domain_restrictions (
+  domain text NOT NULL,
+  restriction text NOT NULL CHECK (restriction IN (
+    'public_discovery', 'unsolicited_reach', 'profile_view', 'federation', 'media_fetch',
+    'report_intake', 'media_sensitive'
+  )),
+  source_action_id text COLLATE "C" NOT NULL,
+  effective_until timestamptz,
+  PRIMARY KEY (domain, restriction, source_action_id)
+);
+CREATE INDEX domain_restrictions_source_action_id ON domain_restrictions (source_action_id);
+
+-- Resource: a report of an account. uri is the id of a received Flag (or the URI synthesized
+-- for a Flag without one), NULL for a local report.
+CREATE TABLE reports (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  uri text,
+  reporter_account_id text COLLATE "C" NOT NULL,
+  target_account_id text COLLATE "C" NOT NULL,
+  category text NOT NULL CHECK (category IN ('spam', 'legal', 'violation', 'other')),
+  comment text NOT NULL,
+  forwarded boolean NOT NULL,
+  filed_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX reports_uri ON reports (uri);
+CREATE INDEX reports_target_account_id_id ON reports (target_account_id, id);
+
+-- Resource (child of a report): the statuses a report points at.
+CREATE TABLE report_statuses (
+  report_id text COLLATE "C" NOT NULL,
+  status_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (report_id, status_id)
+);
+
+-- Projection: whether a report is open, and who handles it.
+CREATE TABLE report_states (
+  report_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  state text NOT NULL CHECK (state IN ('open', 'resolved')),
+  assignee_user_id text COLLATE "C",
+  since timestamptz NOT NULL
+);
+CREATE INDEX report_states_state_report_id ON report_states (state, report_id);

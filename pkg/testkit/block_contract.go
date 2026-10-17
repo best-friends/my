@@ -23,7 +23,8 @@ import (
 // both directions with the reason blocked and refuses follows while it is in force, unblocking,
 // blocking again as a new block that keeps the earlier one on record, paging blocks, rejecting
 // invalid blocks, recording each retraction once, concurrent follows and blocks of one pair,
-// the emitted domain events, muting with and without expiry (an expired mute no longer applies
+// the emitted domain events, the blocks of remote accounts received from their servers and a
+// local account's block of a remote one, muting with and without expiry (an expired mute no longer applies
 // on read), paging mutes, rejecting invalid mutes, deleting expired mutes with an Unmuted each,
 // and the property that follow_edges,
 // follow_counters, and block_edges equal a rebuild from the follows, the blocks, and their events.
@@ -41,6 +42,7 @@ func BlockRepositoryContract(t *testing.T, newHarness FollowFactory) {
 		{"RecordsEachRetractionOnce", blockRecordsOnce},
 		{"AgreesOnConcurrentFollowsAndBlocks", blockConcurrent},
 		{"EmitsDomainEvents", blockEmitsEvents},
+		{"ReceivesBlocksOfRemoteAccounts", blockReceivesRemote},
 		{"MutesUntilUnmutedOrExpired", muteExpires},
 		{"PagesMutes", mutePages},
 		{"RejectsInvalidMutes", muteRejectsInvalid},

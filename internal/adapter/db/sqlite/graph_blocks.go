@@ -261,3 +261,32 @@ func (r *GraphRepository) ListMutes(ctx context.Context, accountID string, now t
 	}
 	return out, nil
 }
+
+// BlockByURI implements graph.Repository.
+func (r *GraphRepository) BlockByURI(ctx context.Context, tx uow.Tx, uri string) (graph.BlockHistory, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return graph.BlockHistory{}, err
+	}
+	row, err := q.GetBlockByURI(ctx, toNullString(uri))
+	if err != nil {
+		return graph.BlockHistory{}, notFound(err, appgraph.ErrNotFound, "block "+uri)
+	}
+	h := graph.BlockHistory{Block: blockFrom(sqlitegen.Block{
+		ID: row.ID, Uri: row.Uri, BlockerAccountID: row.BlockerAccountID, BlockedAccountID: row.BlockedAccountID,
+		CreatedAt: row.CreatedAt,
+	})}
+	if row.RetractedAt.Valid {
+		h.Retraction = &graph.BlockRetraction{BlockID: row.ID, RetractedAt: fromMillis(row.RetractedAt.Int64)}
+	}
+	return h, nil
+}
+
+// FindBlock implements graph.Repository.
+func (r *GraphRepository) FindBlock(ctx context.Context, id string) (graph.Block, error) {
+	row, err := r.db.reader().GetBlock(ctx, id)
+	if err != nil {
+		return graph.Block{}, notFound(err, appgraph.ErrNotFound, "block "+id)
+	}
+	return blockFrom(row), nil
+}
