@@ -1822,7 +1822,9 @@ paths:
         posts of the account that `status_ids` names, for everyone, the account included, and
         sends their deletion like the account's own; `mark_statuses_sensitive` shows their
         media as sensitive until it is lifted. A remote account takes `limit`, `suspend`, and
-        `force_sensitive`. Another kind, the instance actor, or a `report_id` that is not a
+        `force_sensitive`, with the same effects here: a `suspend` also drops what the account
+        sends, and its lift brings the profile and posts back. An action on a remote account is
+        not sent to its server, and `notify_target` does not apply to it. Another kind, the instance actor, or a `report_id` that is not a
         report of the account is a 422 naming `kind`, `id`, or `report_id`. `status_ids` on
         another kind, missing, repeated, or too many on an action on posts, or naming a post
         that does not exist, is deleted, or is of another account is a 422 naming `status_ids`;
