@@ -61,6 +61,10 @@ type Config struct {
 	SMTPPort     int
 	SMTPUsername string
 	SMTPPassword string
+	// Profile is "production" or "development".
+	Profile string
+	// HTTPAllowPrivateNetworks lets the HTTPClient reach non-public destinations (development only).
+	HTTPAllowPrivateNetworks bool
 }
 
 // LogValue logs the configuration with its secrets redacted (ADR-0019 §6).
@@ -98,6 +102,8 @@ func (c *Config) LogValue() slog.Value {
 		slog.Int("smtp_port", c.SMTPPort),
 		slog.String("smtp_username", c.SMTPUsername),
 		slog.String("smtp_password", redact(c.SMTPPassword != "")),
+		slog.String("profile", c.Profile),
+		slog.Bool("http_allow_private_networks", c.HTTPAllowPrivateNetworks),
 	)
 }
 
