@@ -47,7 +47,7 @@ my admin account action lift -reason "appealed" <action id>
   `delete_statuses` を解除しても消した投稿は戻りません。`mark_statuses_sensitive` を解除すると元の表示に戻ります。
 - `ban` は期限を付けられず、解除もできません。迷うときは期限付きの `suspend` を使います。
   処分から 30 日後に、1 時間ごとのジョブがアカウントを削除します（アカウントと投稿が表示から消え、連合先に `Delete` を送ります）。
-- `report_id`（`-report`）は、対象のアカウントの通報だけを指定できます。
+- `report_id`（`-report`）は、対象のアカウントの通報だけを指定できます。未解決の通報は、処分と同時に `actioned` で解決されます（監査ログにも解決が残ります）。解決済みの通報は変わりません。
 - `public_reason` は本人に見せる理由、`private_note` はモデレーターだけのメモです。`notify_target`（既定は真、CLI では `-no-notify` で偽）は本人に知らせるかどうかです。
 
 ### 本人に見えるもの
@@ -111,14 +111,20 @@ my admin report show <report id>
 my admin report assign <report id> <username>
 my admin report unassign <report id>
 my admin report resolve -outcome dismissed <report id>
+my admin report note <report id> "以前の通報と同じ相手"
+my admin report reopen <report id>
 ```
 
 管理 API では `GET /api/v1/admin/reports`（`state` で絞り込み）、`GET .../{id}`、`POST .../{id}/assign_to_self`、`POST .../{id}/unassign`、
-`POST .../{id}/resolve`（本文 `{"outcome": "actioned" | "dismissed"}`）です。
+`POST .../{id}/resolve`（本文 `{"outcome": "actioned" | "dismissed"}`）、`POST .../{id}/notes`（本文 `{"body": "..."}`）、`POST .../{id}/reopen` です。
 
 - 担当（`assign`）は、ロールが `manage_reports` を持つローカルの利用者にだけ割り当てられます。管理 API では自分を担当にします。
 - 解決（`resolve`）の結果は、対象に処分をした `actioned` か、処分の必要がなかった `dismissed` です。解決済みの通報をもう一度解決しても結果は変わりません。
-- 担当・解決はイベント（`report_assignments`・`report_resolutions`）として残り、現在の状態は `report_states` が持ちます。
+- 通報から処分を出す（処分の `report_id` / `-report`）と、その通報は同じ操作で `actioned` として解決されます。
+- メモ（`note`）はモデレーターだけが見る内部メモで、2,000 文字までです。対象にも通報者にも見せません。編集・削除はできません。
+- 再開（`reopen`）は、解決済みの通報を `open` に戻します（担当は残ります）。未解決の通報は再開できません（管理 API では `409`）。
+- 通報の詳細（`show`・`GET .../{id}`）は、メモを古い順に、対象のほかの通報の数と対象への処分の数（解除・期限切れを含む）とともに返します。一覧はメモを返しません。
+- 担当・解決・再開・メモはイベント（`report_assignments`・`report_resolutions`・`report_reopenings`・`report_notes`）として残り、現在の状態は `report_states` が持ちます。
 - ローカルの通報者には、最初の解決で通知（`report_resolved`）が届きます。再開してもう一度解決しても、通知は増えません。
   通報者は自分の通報を `GET /api/v1/reports` で一覧でき、未解決か解決済みかだけが見えます。解決の結果・処分の内容・対象への理由・担当は見えません（FR-711）。
 
@@ -148,7 +154,7 @@ my admin report resolve -outcome dismissed <report id>
 | --- | --- |
 | `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除） |
 | `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除） |
-| `report` | `report_assigned`・`report_unassigned`・`report_resolved`（通報の担当・担当の解除・解決） |
+| `report` | `report_assigned`・`report_unassigned`・`report_resolved`・`report_reopened`・`report_note_added`（通報の担当・担当の解除・解決・再開・メモ） |
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |
 | `setting` | `setting_changed`（インスタンス設定）・`text_changed`（インスタンスの文章。1 ロケールの変更） |
 | `rule` | `rule_added`・`rule_revised`・`rule_moved`・`rule_retired`（インスタンスのルール） |
@@ -164,6 +170,6 @@ my admin audit list -target-kind domain -target-id spam.example
 - 1 行は操作者（`user` ならその利用者、CLI なら `cli`）・操作・対象の種類と ID・対象の表示名・元の記録の ID・日時です。
   対象の ID は、アカウント・通報・利用者・ルールの ID、ドメイン単位の処分ではドメイン、設定と文章ではキーです。
 - 対象の表示名（`@alice`・`@bob@example.com`・ドメイン・設定のキー・ルールの文。文章はキーとロケール）は記録したときの写しなので、対象が消えた後も読めます。
-- 理由とメモの本文は写しません。元の記録（処分・担当・解決・審査・設定やルールの版）の ID から引きます。
+- 理由とメモの本文は写しません。元の記録（処分・担当・解決・再開・メモ・審査・設定やルールの版）の ID から引きます。
 - 一覧は新しい順のキーセットページングです（CLI は `-before <entry id>`）。
 - 監査ログを更新・削除する API と CLI はありません。

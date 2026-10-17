@@ -27,6 +27,7 @@ type fakeModeration struct {
 	actions []moderation.DomainActionRecord
 	reports []moderation.ReportRecord
 	issued  []appmoderation.DomainActionInput
+	notes   []moderation.ReportNote
 }
 
 func (f *fakeModeration) id() string {
@@ -222,6 +223,8 @@ func TestModerationOperationsNeedAPermission(t *testing.T) {
 		{http.MethodPost, "/admin/reports/" + reportOne + "/assign_to_self", "", "manage_reports"},
 		{http.MethodPost, "/admin/reports/" + reportOne + "/unassign", "", "manage_reports"},
 		{http.MethodPost, "/admin/reports/" + reportOne + "/resolve", `{"outcome":"dismissed"}`, "manage_reports"},
+		{http.MethodPost, "/admin/reports/" + reportOne + "/notes", `{"body":"look"}`, "manage_reports"},
+		{http.MethodPost, "/admin/reports/" + reportOne + "/reopen", "", "manage_reports"},
 	} {
 		res := e.send(t, op.method, op.path, "bob-admin", op.body)
 		if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||

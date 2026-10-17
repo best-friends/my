@@ -32,6 +32,11 @@ type Moderation interface {
 	ReportRecord(ctx context.Context, id string) (moderation.ReportRecord, error)
 	AssignReport(ctx context.Context, reportID, assigneeUserID, byUserID string) (moderation.ReportRecord, error)
 	ResolveReport(ctx context.Context, reportID string, outcome moderation.ReportOutcome, byUserID string) (moderation.ReportRecord, error)
+	// ReportDetail, AddReportNote, and ReopenReport serve the report's detail, its notes, and
+	// its reopening (admin_report_notes.go).
+	ReportDetail(ctx context.Context, id string) (moderation.ReportDetail, error)
+	AddReportNote(ctx context.Context, reportID, body, byUserID string) (moderation.ReportNote, error)
+	ReopenReport(ctx context.Context, reportID, byUserID string) (moderation.ReportRecord, error)
 	// PublicDomainActions lists the domain actions that the instance lists publicly
 	// (listInstanceDomainActions, instance_domain_actions.go).
 	PublicDomainActions(ctx context.Context, before string, limit int) ([]moderation.PublicDomainAction, error)
@@ -272,14 +277,14 @@ func (s *Server) newAdminReports(ctx context.Context, recs []moderation.ReportRe
 	return out, nil
 }
 
-// reportResponse presents one report.
-func (s *Server) reportResponse(ctx context.Context, rec moderation.ReportRecord) (AdminReportJSONResponse, error) {
-	rs, err := s.newAdminReports(ctx, []moderation.ReportRecord{rec})
+// reportResponse presents one report with its notes and the history of its target, read after
+// the operation that changed rec.
+func (s *Server) reportResponse(ctx context.Context, rec moderation.ReportRecord) (AdminReportDetailJSONResponse, error) {
+	d, err := s.o.Moderation.ReportDetail(ctx, rec.Report.ID)
 	if err != nil {
-		return AdminReportJSONResponse{}, err
+		return AdminReportDetailJSONResponse{}, fmt.Errorf("clientapi: report %s: %w", rec.Report.ID, err)
 	}
-	cache := cacheNoStore
-	return AdminReportJSONResponse{Body: rs[0], Headers: AdminReportResponseHeaders{CacheControl: &cache}}, nil
+	return s.reportDetailResponse(ctx, d)
 }
 
 // ListReports serves GET /api/v1/admin/reports, newest first. The cursor is the ID of the last
@@ -325,14 +330,14 @@ func (s *Server) GetReport(ctx context.Context, req GetReportRequestObject) (Get
 	} else if p != nil {
 		return GetReportdefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
-	rec, err := s.o.Moderation.ReportRecord(ctx, req.Id)
+	d, err := s.o.Moderation.ReportDetail(ctx, req.Id)
 	if errors.Is(err, appmoderation.ErrNotFound) {
 		return GetReportdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: report %s: %w", req.Id, err)
 	}
-	res, err := s.reportResponse(ctx, rec)
+	res, err := s.reportDetailResponse(ctx, d)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +345,7 @@ func (s *Server) GetReport(ctx context.Context, req GetReportRequestObject) (Get
 }
 
 // assignReport makes assignee ("" for nobody) handle a report for the viewer, a moderator.
-func (s *Server) assignReport(ctx context.Context, id string, self bool) (*AdminReportJSONResponse, *problem, error) {
+func (s *Server) assignReport(ctx context.Context, id string, self bool) (*AdminReportDetailJSONResponse, *problem, error) {
 	if p, err := s.requirePermission(ctx, identity.PermManageReports); err != nil || p != nil {
 		return nil, p, err
 	}
