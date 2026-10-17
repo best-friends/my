@@ -9,6 +9,7 @@ import (
 	"slices"
 	"time"
 
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
@@ -17,6 +18,9 @@ import (
 // The instance rules (FR-705, data-model §4.9). A rule keeps its ID for life: revising its
 // texts or moving it records a new revision, and retiring it removes it from the rules in
 // effect while reports that cite it still find it.
+//
+// Each change that records something records its audit log entry in the same transaction
+// (ADR-0037); one that records nothing, such as moving a rule to its place, is not audited.
 
 // RuleRepository is the persistence port of the instance rules. It is part of Repository.
 type RuleRepository interface {
@@ -155,6 +159,7 @@ func (s *Service) AddRule(ctx context.Context, in AddRuleInput) (instance.Rule, 
 	now := s.d.Clock.Now()
 	rule := instance.Rule{ID: s.d.IDs.NewID(), CreatedAt: now}
 	revID := s.d.IDs.NewID()
+	audit := s.audit(appmoderation.AuditRuleAdded, appmoderation.AuditTargetRule, rule.ID, ruleLabel(texts), revID, in.CreatedByUserID, now)
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		heads, err := s.d.Repository.ListRuleHeads(ctx, tx)
 		if err != nil {
@@ -176,7 +181,10 @@ func (s *Service) AddRule(ctx context.Context, in AddRuleInput) (instance.Rule, 
 		if err := s.d.Repository.InsertRuleRevision(ctx, tx, rule.Revision); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, RuleRevised{Revision: rule.Revision})
+		if err := tx.Emit(ctx, RuleRevised{Revision: rule.Revision}); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, audit)
 	})
 	if err != nil {
 		return instance.Rule{}, err
@@ -245,6 +253,7 @@ func (s *Service) SetRuleText(ctx context.Context, in SetRuleTextInput) (instanc
 func (s *Service) revise(ctx context.Context, ruleID, by string, edit func([]instance.RuleText) ([]instance.RuleText, error)) (instance.Rule, error) {
 	now := s.d.Clock.Now()
 	revID := s.d.IDs.NewID()
+	audit := s.audit(appmoderation.AuditRuleRevised, appmoderation.AuditTargetRule, ruleID, "", revID, by, now)
 	var rule instance.Rule
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		var err error
@@ -264,7 +273,10 @@ func (s *Service) revise(ctx context.Context, ruleID, by string, edit func([]ins
 		if err := s.d.Repository.InsertRuleRevision(ctx, tx, rule.Revision); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, RuleRevised{Revision: rule.Revision})
+		if err := tx.Emit(ctx, RuleRevised{Revision: rule.Revision}); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, withLabel(audit, ruleLabel(texts)))
 	})
 	if err != nil {
 		return instance.Rule{}, err
@@ -299,8 +311,10 @@ func (s *Service) MoveRule(ctx context.Context, in MoveRuleInput) (instance.Rule
 		}
 		return ids[i]
 	}
+	audit := s.audit(appmoderation.AuditRuleMoved, appmoderation.AuditTargetRule, in.RuleID, "", "", in.RevisedByUserID, now)
 	var moved instance.Rule
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		source := ""
 		var err error
 		if moved, err = s.d.Repository.Rule(ctx, tx, in.RuleID); err != nil {
 			return err
@@ -337,10 +351,20 @@ func (s *Service) MoveRule(ctx context.Context, in MoveRuleInput) (instance.Rule
 				return err
 			}
 			if r.ID == in.RuleID {
-				moved = r
+				moved, source = r, r.Revision.ID
+			}
+			if source == "" {
+				source = r.Revision.ID
 			}
 		}
-		return nil
+		if n == 0 {
+			return nil // every rule is in place: nothing is recorded
+		}
+		// The entry's source is the moved rule's revision, or, when only the rules after it were
+		// renumbered, the first revision recorded.
+		e := withLabel(audit, ruleLabel(moved.Revision.Texts))
+		e.Entry.SourceEventID = source
+		return tx.Emit(ctx, e)
 	})
 	if err != nil {
 		return instance.Rule{}, err
@@ -353,6 +377,8 @@ func (s *Service) MoveRule(ctx context.Context, in MoveRuleInput) (instance.Rule
 // ErrNotFound for an unknown rule.
 func (s *Service) RetireRule(ctx context.Context, ruleID, retiredByUserID string) (instance.Rule, error) {
 	ret := instance.RuleRetirement{RuleID: ruleID, RetiredByUserID: retiredByUserID, RetiredAt: s.d.Clock.Now()}
+	// The retirement's row is keyed by the rule's ID.
+	audit := s.audit(appmoderation.AuditRuleRetired, appmoderation.AuditTargetRule, ruleID, "", ruleID, retiredByUserID, ret.RetiredAt)
 	var rule instance.Rule
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		var err error
@@ -367,7 +393,10 @@ func (s *Service) RetireRule(ctx context.Context, ruleID, retiredByUserID string
 			return err
 		}
 		rule.Retirement = &ret
-		return tx.Emit(ctx, RuleRetired{Retirement: ret})
+		if err := tx.Emit(ctx, RuleRetired{Retirement: ret}); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, withLabel(audit, ruleLabel(rule.Revision.Texts)))
 	})
 	if err != nil {
 		return instance.Rule{}, err
@@ -430,4 +459,20 @@ func (s *Service) LocalizedRules(ctx context.Context, locale string) ([]Localize
 		}
 	}
 	return out, nil
+}
+
+// ruleLabel returns the display name of a rule for the audit log: its text in the first of its
+// locales, which are sorted.
+func ruleLabel(texts []instance.RuleText) string {
+	if len(texts) == 0 {
+		return ""
+	}
+	return texts[0].Text
+}
+
+// withLabel returns e with the target label set, for an entry whose label is known only inside
+// the transaction.
+func withLabel(e appmoderation.AuditRecorded, label string) appmoderation.AuditRecorded {
+	e.Entry.TargetLabel = label
+	return e
 }

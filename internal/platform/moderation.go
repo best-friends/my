@@ -15,7 +15,8 @@ import (
 // proxy read the domain and account restrictions through (docs/architecture/federation.md §11),
 // and the policy of the accounts' restrictions (data-model §5.3). It needs the account module,
 // and comes before the identity module and everything that federates. It also registers the
-// job that deletes the accounts whose deletion is due, which bans schedule.
+// job that deletes the accounts whose deletion is due, which bans schedule, and
+// the audit log projector.
 func (a *App) setUpModeration(repo moderation.Repository) {
 	a.Moderation = moderation.NewService(moderation.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs,
@@ -27,6 +28,9 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 	// (federation.md §11.1).
 	a.Moderation.RegisterJobs(a.Handlers, a.Scheduler)
 	a.Accounts.RegisterDeletionJobs(a.Handlers, a.Scheduler)
+	// The administrative use cases of every module emit their audit log entries; the projector
+	// writes them in the transaction of the operation (ADR-0037).
+	moderation.RegisterAuditProjector(a.Projectors, repo)
 }
 
 // moderationStatuses gives the moderation module the content module, which is built after it

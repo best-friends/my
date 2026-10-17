@@ -480,6 +480,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
 		Moderation: a.Moderation, UserAccounts: a.Accounts, FiledReports: a.Moderation,
 		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
+		AuditLog:     a.Moderation,
 		Rules:        a.Instance,
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity,

@@ -141,24 +141,40 @@ func (s *Service) ReportRecord(ctx context.Context, id string) (moderation.Repor
 
 // AssignReport makes assigneeUserID the moderator who handles a report, or leaves it to nobody
 // when assigneeUserID is "". It records the assignment and, in the same transaction, the
-// report's new assignee in its state; assigning the current assignee again records nothing.
+// report's new assignee in its state and the audit log entry; assigning the current assignee
+// again records nothing.
 // byUserID is the moderator who assigns it, "" for the CLI.
 func (s *Service) AssignReport(ctx context.Context, reportID, assigneeUserID, byUserID string) (moderation.ReportRecord, error) {
 	now := kernel.Normalize(s.d.Clock.Now())
 	repo := s.d.Repository
-	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+	label, err := s.reportLabel(ctx, reportID)
+	if err != nil {
+		return moderation.ReportRecord{}, err
+	}
+	assignmentID, auditID := s.d.IDs.NewID(), s.d.IDs.NewID()
+	action := moderation.AuditReportAssigned
+	if assigneeUserID == "" {
+		action = moderation.AuditReportUnassigned
+	}
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		st, err := repo.ReportStatusForUpdate(ctx, tx, reportID)
 		if err != nil || st.AssigneeUserID == assigneeUserID {
 			return err
 		}
 		err = repo.InsertReportAssignment(ctx, tx, moderation.ReportAssignment{
-			ID: s.d.IDs.NewID(), ReportID: reportID, AssigneeUserID: assigneeUserID, AssignedByUserID: byUserID, AssignedAt: now,
+			ID: assignmentID, ReportID: reportID, AssigneeUserID: assigneeUserID, AssignedByUserID: byUserID, AssignedAt: now,
 		})
 		if err != nil {
 			return err
 		}
 		st.AssigneeUserID = assigneeUserID
-		return repo.UpsertReportStatus(ctx, tx, st)
+		if err := repo.UpsertReportStatus(ctx, tx, st); err != nil {
+			return err
+		}
+		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+			ID: auditID, Action: action, TargetKind: moderation.AuditTargetReport,
+			TargetID: reportID, TargetLabel: label, SourceEventID: assignmentID, OccurredAt: now,
+		}, byUserID)
 	})
 	if err != nil {
 		return moderation.ReportRecord{}, err
@@ -167,9 +183,9 @@ func (s *Service) AssignReport(ctx context.Context, reportID, assigneeUserID, by
 }
 
 // ResolveReport resolves an open report with outcome, recording the resolution and, in the same
-// transaction, the report's resolved state, and emits ReportResolved. Resolving a resolved
-// report records nothing and keeps its outcome. It fails with moderation.ErrInvalidReport for
-// an unknown outcome. byUserID is the moderator, "" for the CLI.
+// transaction, the report's resolved state and the audit log entry, and emits ReportResolved.
+// Resolving a resolved report records nothing and keeps its outcome. It fails with
+// moderation.ErrInvalidReport for an unknown outcome. byUserID is the moderator, "" for the CLI.
 func (s *Service) ResolveReport(ctx context.Context, reportID string, outcome moderation.ReportOutcome, byUserID string) (moderation.ReportRecord, error) {
 	if !outcome.Valid() {
 		return moderation.ReportRecord{}, fmt.Errorf("%w: outcome %q", moderation.ErrInvalidReport, outcome)
@@ -180,10 +196,22 @@ func (s *Service) ResolveReport(ctx context.Context, reportID string, outcome mo
 		return moderation.ReportRecord{}, err
 	}
 	now := kernel.Normalize(s.d.Clock.Now())
+	label, err := s.accountLabel(ctx, report.TargetAccountID)
+	if err != nil {
+		return moderation.ReportRecord{}, err
+	}
+	resolutionID, auditID := s.d.IDs.NewID(), s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		return s.resolveReport(ctx, tx, report, moderation.ReportResolution{
-			ID: s.d.IDs.NewID(), ReportID: reportID, Outcome: outcome, ResolvedByUserID: byUserID, ResolvedAt: now,
+		resolved, err := s.resolveReport(ctx, tx, report, moderation.ReportResolution{
+			ID: resolutionID, ReportID: reportID, Outcome: outcome, ResolvedByUserID: byUserID, ResolvedAt: now,
 		})
+		if err != nil || !resolved {
+			return err
+		}
+		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+			ID: auditID, Action: moderation.AuditReportResolved, TargetKind: moderation.AuditTargetReport,
+			TargetID: reportID, TargetLabel: label, SourceEventID: resolutionID, OccurredAt: now,
+		}, byUserID)
 	})
 	if err != nil {
 		return moderation.ReportRecord{}, err
@@ -191,20 +219,30 @@ func (s *Service) ResolveReport(ctx context.Context, reportID string, outcome mo
 	return s.ReportRecord(ctx, reportID)
 }
 
+// reportLabel returns the display name of a report for the audit log: the handle of the account
+// it reports. It fails with ErrNotFound for an unknown report.
+func (s *Service) reportLabel(ctx context.Context, reportID string) (string, error) {
+	r, err := s.d.Repository.FindReport(ctx, reportID)
+	if err != nil {
+		return "", err
+	}
+	return s.accountLabel(ctx, r.TargetAccountID)
+}
+
 // resolveReport records res and the resolved state of report in tx and emits ReportResolved,
-// unless the report is resolved already.
-func (s *Service) resolveReport(ctx context.Context, tx uow.Tx, report moderation.Report, res moderation.ReportResolution) error {
+// unless the report is resolved already; it reports whether it resolved the report.
+func (s *Service) resolveReport(ctx context.Context, tx uow.Tx, report moderation.Report, res moderation.ReportResolution) (bool, error) {
 	repo := s.d.Repository
 	st, err := repo.ReportStatusForUpdate(ctx, tx, report.ID)
 	if err != nil || st.State == moderation.ReportResolved {
-		return err
+		return false, err
 	}
 	if err := repo.InsertReportResolution(ctx, tx, res); err != nil {
-		return err
+		return false, err
 	}
 	st.State, st.Outcome, st.Since = moderation.ReportResolved, res.Outcome, res.ResolvedAt
 	if err := repo.UpsertReportStatus(ctx, tx, st); err != nil {
-		return err
+		return false, err
 	}
-	return tx.Emit(ctx, ReportResolved{Report: report, Resolution: res})
+	return true, tx.Emit(ctx, ReportResolved{Report: report, Resolution: res})
 }
