@@ -47,4 +47,7 @@
 | [0033](0033-inbox-processing-model.md) | Inbox の受信処理モデル（同期・非同期の境界、重複排除、順序） | Accepted |
 | [0034](0034-remote-content-scope-and-retention.md) | リモートコンテンツの取り込み範囲・リフレッシュ・保持 | Accepted |
 | [0035](0035-local-visibility-mention-tags.md) | 公開範囲 local の投稿は、フォロワーでないリモートのメンション先を tag に入れない | Accepted |
+| [0036](0036-moderation-federation-propagation.md) | モデレーションの処分を連合先へ伝える方法 | Proposed |
+| [0037](0037-audit-log.md) | 監査ログを処分のイベントとは別の追記専用の記録にする | Proposed |
+| [0038](0038-moderation-personal-data-retention.md) | モデレーションに関わる個人データの保持期間と開示の範囲 | Proposed |
 <!-- adr-index:end -->

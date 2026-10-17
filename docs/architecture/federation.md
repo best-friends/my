@@ -2,7 +2,7 @@
 
 > 前提にしている ADR: [ADR-0002](../adr/0002-modular-monolith-hexagonal.md)、[ADR-0003](../adr/0003-database-abstraction.md)、[ADR-0004](../adr/0004-job-queue-abstraction.md)、[ADR-0005](../adr/0005-blob-storage-and-media.md)、[ADR-0006](../adr/0006-federation-protocol-scope.md)、[ADR-0017](../adr/0017-visibility-local.md)、[ADR-0018](../adr/0018-federated-uris.md)、[ADR-0019](../adr/0019-security-baseline.md)、[ADR-0020](../adr/0020-data-modeling-principles.md)。
 > 署名は [ADR-0032](../adr/0032-http-signature-profile.md)、受信処理は [ADR-0033](../adr/0033-inbox-processing-model.md)、取り込み範囲と保持は [ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、`local` 投稿のメンションは [ADR-0035](../adr/0035-local-visibility-mention-tags.md) に従います。
-> 要件: FR-305、FR-401〜410、FR-701〜702、NFR-SEC-1〜2、NFR-SEC-4〜5、NFR-PERF-4、NFR-REL-1〜2、NFR-COST-4〜5。テーブルは [論理データモデル](data-model.md) §4.8 ほかにあります。
+> 要件: FR-305、FR-401〜410、FR-701〜702、FR-709、FR-713、FR-716〜717、NFR-MOD-3、NFR-SEC-1〜2、NFR-SEC-4〜5、NFR-PERF-4、NFR-REL-1〜2、NFR-COST-4〜5。テーブルは [論理データモデル](data-model.md) §4.8 ほかにあります。
 
 ## 1. 構成
 
@@ -463,7 +463,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | ドメインの `media_fetch`（`reject_media`） | 受け付ける | 送る | メディアプロキシが取得しない |
 | ドメインの `report_intake`（`reject_reports`） | `Flag` を捨てる | — | — |
 | ドメインの `media_sensitive`（`force_sensitive`） | 受け付ける | 送る | 添付をセンシティブとして表示 |
-| アカウントの `federation`（`suspend` / `ban`） | リモートなら `Delete` / `Undo` / `Reject` 以外を捨てる | ローカルなら送らない | — |
+| アカウントの `federation`（`suspend` / `ban`） | リモートなら `Delete` / `Undo` / `Reject` 以外を捨てる | ローカルなら、下の「処分の伝播」のアクティビティ以外を送らない | ローカルの Actor の GET は、空のプロフィールに `suspended: true` を付けた Actor を返す（鍵は返す）。投稿などのオブジェクトの GET は `404` |
 
 - 判定はサブドメインにも効きます（[data-model §4.3](data-model.md#ドメイン単位の処分)）。
 - `Block` の受信は `graph` の関係として記録します（相手からのブロックで、モデレーションの処分ではありません）。
@@ -471,7 +471,27 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - `moderation.FederationPolicy` は、呼ばれるたびに期限内の制限を読みます（`DomainPolicy`・`AccountPolicy`・`content.MediaFetchPolicy` と、`Flag` の `RejectsReports`）。処分は `moderation.Service` の `IssueDomainAction` / `LiftDomainAction` と、アカウントへの `IssueAccountAction`（リモートのアカウントには制限だけを生む `limit` / `suspend` / `force_sensitive`）/ `LiftAccountAction` が記録します。
   ドメイン単位の処分の発行・解除・一覧と、通報の一覧・担当・解決は、管理 API（`/api/v1/admin/domain_actions`・`/api/v1/admin/reports`、権限 `manage_domains` / `manage_reports`）と CLI（`my admin domain` / `my admin report`）から行います（[運用手順](../operations/moderation.md)）。入力されたドメインは `CanonicalHost` で正規化してから渡します。
 - `Block` / `Undo Block` の送信（§7.1）は、ローカルのアカウントがリモートのアカウントをブロック・解除したときだけです。`Block` の `id` はブロックの URI（`/ap/activities/{block_id}`）、宛先はブロックした相手だけで、相手の個人の inbox に送ります（shared inbox に集約しない。Mastodon と同じ）。
-- 通報の転送（`forwarded`）は、インスタンス Actor から対象のアカウントの inbox へ `Flag` を送ります（FR-701）。
+- 通報の転送（FR-709）は、ローカルの通報者が転送を選んだリモートのアカウントへの通報だけを、受け付けのトランザクションで outbox に積みます。
+  `Flag` の主体はインスタンス Actor、`object` は対象の Actor の `id` と通報した投稿の URI、`content` はコメント、宛先は対象のアカウントの inbox だけです。通報者・IP・メールアドレスは載せません。
+  返信先の第三者のサーバーへは転送しません（[ADR-0036](../adr/0036-moderation-federation-propagation.md)）。
+
+### 11.1 処分の伝播
+
+処分が連合先に送るものは [ADR-0036](../adr/0036-moderation-federation-propagation.md) のとおりです。どれも処分のトランザクションで outbox に積み、§7 の配送とリトライに乗せます（NFR-MOD-3）。
+
+| 処分 | 送るもの | 宛先 |
+| --- | --- | --- |
+| ローカルの `suspend` / `ban` | `Update(Actor)`（`suspended: true`、名前・アイコン・ヘッダー・自己紹介・プロフィール補足情報を空にする） | `Delete`（Actor）と同じ（§7.2） |
+| ローカルの `suspend` の解除・期限切れ | `Update(Actor)`（元のプロフィール）。期限切れは期限の時刻に定期ジョブが積む | 同上 |
+| ローカルの `ban` | 上の `Update` と、`deletion_scheduled` の期日の `Delete`（Actor） | 同上 |
+| ローカルの投稿への `delete_statuses` | 投稿ごとの `Delete` | 本人の削除と同じ（§7.2） |
+| リモートのアカウントの `suspend` | そのアカウントのローカルの利用者へのフォローに `Reject(Follow)`、ローカルの利用者からのフォローに `Undo(Follow)` | そのアカウントの inbox |
+| ドメインの `suspend` | 送らない。両方向のフォローを `follow_terminations`（`reason = moderation`）で切り、`relationship_severances` を記録する | — |
+| それ以外（`limit`・`restrict_posting`・`force_sensitive` など） | 送らない | — |
+
+- `suspended` は Mastodon 拡張（`toot:suspended`）で、`@context` は §7.4 の Actor と同じです。
+- 処分を解除しても、切ったフォローは戻しません。
+- 受信した Actor の `suspended: true` は、リモートのアカウントの表示に出すだけで、このサーバーの処分にはしません。
 
 ## 12. テスト
 
