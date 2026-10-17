@@ -205,18 +205,41 @@ type statusView struct {
 	Pending, Rejected bool
 	// VerifyEmail asks the user to open the link sent to their address; empty when verified.
 	VerifyEmail string
+	// Restricted tells that moderation keeps the account out of the app, by Actions
+	// (moderation.go).
+	Restricted bool
+	Actions    []statusAction
 }
 
-func (h *Handler) renderStatus(w http.ResponseWriter, r *http.Request, status int, access appidentity.Access, notice, alert string) {
-	p := h.newPage(r, (*i18n.Localizer).ServerAuthStatusTitle)
+// renderStatus shows the status page of userID, in the user's saved locale. notice and alert
+// are worded in l, the page's localizer, when given.
+func (h *Handler) renderStatus(w http.ResponseWriter, r *http.Request, status int, userID string, access appidentity.Access, notice, alert func(l *i18n.Localizer) string) {
+	l := h.userLocalizer(r, userID)
+	title := (*i18n.Localizer).ServerAuthStatusTitle
+	if access.LoginRestricted {
+		title = (*i18n.Localizer).ServerAuthStatusRestrictedTitle
+	}
+	actions, err := h.restrictionActions(r.Context(), l, access)
+	if err != nil {
+		h.internalError(w, r, err)
+		return
+	}
+	p := page{L: l, Lang: l.Locale(), Dir: l.Direction(), Title: title(l), Stylesheet: h.o.Stylesheet}
 	p.CSRFToken = h.csrfToken(w, r)
-	p.Notice, p.Error = notice, alert
+	if notice != nil {
+		p.Notice = notice(l)
+	}
+	if alert != nil {
+		p.Error = alert(l)
+	}
 	v := &statusView{
-		Pending:  access.Registration == identity.RegistrationPending,
-		Rejected: access.Registration == identity.RegistrationRejected,
+		Pending:    access.Registration == identity.RegistrationPending,
+		Rejected:   access.Registration == identity.RegistrationRejected,
+		Restricted: access.LoginRestricted,
+		Actions:    actions,
 	}
 	if access.AwaitingVerification() && !v.Rejected {
-		v.VerifyEmail = p.L.ServerAuthStatusVerifyEmail(access.Email)
+		v.VerifyEmail = l.ServerAuthStatusVerifyEmail(access.Email)
 	}
 	p.Status = v
 	h.render(w, r, status, pageStatus, p)
@@ -291,18 +314,18 @@ func (h *Handler) resendVerification(w http.ResponseWriter, r *http.Request) {
 		h.internalError(w, r, err)
 		return
 	}
-	l := h.newPage(r, (*i18n.Localizer).ServerAuthStatusTitle).L
 	var limited *kernel.RateLimitedError
 	switch err := h.o.Identity.ResendVerificationEmail(r.Context(), session.UserID); {
 	case err == nil:
-		h.renderStatus(w, r, http.StatusOK, access, l.ServerAuthStatusResent(access.Email), "")
+		h.renderStatus(w, r, http.StatusOK, session.UserID, access, func(l *i18n.Localizer) string { return l.ServerAuthStatusResent(access.Email) }, nil)
 	case errors.Is(err, appidentity.ErrAlreadyVerified):
 		http.Redirect(w, r, PathSignIn, http.StatusSeeOther)
 	case errors.As(err, &limited):
 		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(limited.RetryAfter.Seconds()))))
-		h.renderStatus(w, r, http.StatusTooManyRequests, access, "", l.ServerAuthStatusResendRateLimited(int(math.Ceil(limited.RetryAfter.Minutes()))))
+		minutes := int(math.Ceil(limited.RetryAfter.Minutes()))
+		h.renderStatus(w, r, http.StatusTooManyRequests, session.UserID, access, nil, func(l *i18n.Localizer) string { return l.ServerAuthStatusResendRateLimited(minutes) })
 	default:
 		h.o.Logger.ErrorContext(r.Context(), "send the verification email again", slog.String("user", session.UserID), slog.Any("error", err))
-		h.renderStatus(w, r, http.StatusServiceUnavailable, access, "", l.ServerAuthStatusResendFailed())
+		h.renderStatus(w, r, http.StatusServiceUnavailable, session.UserID, access, nil, (*i18n.Localizer).ServerAuthStatusResendFailed)
 	}
 }
