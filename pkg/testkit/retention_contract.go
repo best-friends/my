@@ -43,7 +43,7 @@ type RetentionFactory func(t *testing.T, opts uow.Options) RetentionHarness
 // favourite, bookmark, or notification refers to stay; past remote_status_max_retention every
 // remote status goes, leaving the local accounts' interactions; each transaction deletes a
 // bounded batch; a purged status can be fetched and deleted again; the inbox and delivery records
-// go after their retention; and unrelated remote accounts keep only their current profile.
+// and the tombstones of unknown objects and Follows go after their retention; and unrelated remote accounts keep only their current profile.
 func RetentionContract(t *testing.T, newHarness RetentionFactory) {
 	t.Helper()
 	cases := []struct {
@@ -401,6 +401,11 @@ func retentionFederationRecords(t *testing.T, e *retentionEnv) {
 			}); err != nil {
 				return err
 			}
+			if _, err := e.rh.Inbox.InsertRemoteFollowTombstone(ctx, tx, federation.RemoteFollowTombstone{
+				ActivityURI: r.received + "#undo", ActorURI: "https://remote.example/users/alice", ObjectURI: r.received + "/followee", ReceivedAt: at,
+			}); err != nil {
+				return err
+			}
 			if err := e.rh.Federation.InsertOutboundActivity(ctx, tx, act); err != nil {
 				return err
 			}
@@ -422,15 +427,15 @@ func retentionFederationRecords(t *testing.T, e *retentionEnv) {
 	if _, err := purger.Run(ctx); err != nil {
 		t.Fatalf("Run = %v", err)
 	}
-	type want struct{ document, activity, tombstone, outbound, attempt bool }
+	type want struct{ document, activity, tombstone, followTombstone, outbound, attempt bool }
 	for _, tc := range []struct {
 		name string
 		r    record
 		want want
 	}{
-		{"fresh", fresh, want{true, true, true, true, true}},
-		{"week", week, want{false, true, true, true, true}},
-		{"month", month, want{false, false, false, false, false}},
+		{"fresh", fresh, want{true, true, true, true, true, true}},
+		{"week", week, want{false, true, true, true, true, true}},
+		{"month", month, want{false, false, false, false, false, false}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var got want
@@ -440,6 +445,16 @@ func retentionFederationRecords(t *testing.T, e *retentionEnv) {
 			got.activity = err == nil
 			got.tombstone, err = e.rh.Inbox.RemoteObjectTombstoned(ctx, tc.r.received+"/object")
 			if err != nil {
+				t.Fatal(err)
+			}
+			err = e.rh.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+				_, err := e.rh.Inbox.LiveRemoteFollowTombstone(ctx, tx, "https://remote.example/users/alice", tc.r.received+"/followee")
+				return err
+			})
+			switch {
+			case err == nil:
+				got.followTombstone = true
+			case !errors.Is(err, appfederation.ErrNotFound):
 				t.Fatal(err)
 			}
 			_, err = e.rh.Federation.FindOutboundDocument(ctx, tc.r.outboundID)
