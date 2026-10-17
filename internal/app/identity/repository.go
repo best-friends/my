@@ -5,6 +5,7 @@ package identity
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/identity"
@@ -55,6 +56,9 @@ type Repository interface {
 	// InsertSessionRevocation records that a session ended; it does nothing when the session
 	// already has a revocation, so that revoking twice keeps the first reason.
 	InsertSessionRevocation(ctx context.Context, tx uow.Tx, r identity.SessionRevocation) error
+	// RevokeSessionsOfUser revokes every session of a user that has not expired at at and has
+	// no revocation yet.
+	RevokeSessionsOfUser(ctx context.Context, tx uow.Tx, userID string, reason identity.RevocationReason, at time.Time) error
 	UpsertSessionActivity(ctx context.Context, tx uow.Tx, a identity.SessionActivity) error
 	// FindUnrevokedSession returns the session whose token hashes to tokenHash, unless it has
 	// a revocation, with its activity (a zero LastSeenAt when it has none). Expiry is the

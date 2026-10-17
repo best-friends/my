@@ -9,7 +9,7 @@
 //
 // The local and federated timelines appear only while the instance serves them (FR-202). With all seven
 // items in the tab bar, the pill around the icon still fits a seventh of a 320 px screen.
-import { Badge, Link } from "@my/ui";
+import { Badge, FederatedIcon, HomeIcon, Link, LocalIcon, NotificationsIcon, ProfileIcon, SearchIcon, SettingsIcon } from "@my/ui";
 import { useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useUnreadNotificationCount } from "../../features/notifications";
@@ -17,7 +17,6 @@ import { useViewer } from "../../features/session";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { profilePath } from "../../lib/paths";
-import { FederatedIcon, HomeIcon, LocalIcon, NotificationsIcon, ProfileIcon, SearchIcon, SettingsIcon } from "./icons";
 
 type NavigationItem = {
   to: "/home" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/settings";
@@ -75,7 +74,7 @@ export function Navigation() {
                 variant="standalone"
                 className="group flex min-h-16 flex-col justify-center gap-1 px-1 text-xs font-normal text-fg-muted no-underline data-hovered:bg-surface-sunken data-hovered:no-underline pointer-coarse:min-h-16 short:min-h-12 aria-[current=page]:font-semibold aria-[current=page]:text-accent md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base"
               >
-                <span className="relative rounded-full px-2 py-0.5 group-aria-[current=page]:bg-accent group-aria-[current=page]:text-accent-fg md:px-4 lg:px-1">
+                <span className="relative rounded-full px-2 py-0.5 group-aria-[current=page]:bg-accent [&>svg]:size-6 [&>svg]:shrink-0 group-aria-[current=page]:text-accent-fg md:px-4 lg:px-1">
                   {item.icon}
                   {badge && (
                     <Badge

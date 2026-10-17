@@ -5,7 +5,7 @@
 import type { ReactNode, Ref } from "react";
 import { Button, Dialog as AriaDialog, DialogTrigger, Heading, Modal, ModalOverlay } from "react-aria-components";
 import { tv } from "tailwind-variants";
-import { CloseIcon } from "./CloseIcon";
+import { CloseIcon } from "./Icons";
 
 export { DialogTrigger };
 export type { DialogTriggerProps } from "react-aria-components";
@@ -28,7 +28,7 @@ const modal = tv({
     title: "flex-1 text-lg font-semibold text-pretty",
     close: [
       "-me-2 -mt-1 grid size-9 shrink-0 place-items-center rounded-md text-fg-muted outline-none",
-      "data-hovered:bg-surface-sunken data-hovered:text-fg data-focus-visible:focus-ring pointer-coarse:size-11",
+      "data-hovered:bg-surface-sunken data-hovered:text-fg data-focus-visible:focus-ring pointer-coarse:size-11 [&>svg]:size-5",
     ],
     // React Aria cannot set overscroll-behavior on iOS WebKit under the shell's CSP, so each overlay's
     // scrollable surface sets it, and its scroll never chains to the page (web-client.md §9).

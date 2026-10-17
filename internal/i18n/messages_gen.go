@@ -648,6 +648,13 @@ func (l *Localizer) ServerErrorsInsufficientScopeDetail(scope string) string {
 	return l.format("server:errors.insufficient_scope_detail", map[string]any{"scope": scope})
 }
 
+// ServerErrorsInteractionRestricted formats "server:errors.interaction_restricted". Detail of the HTTP 403 API error when a moderator restricted the account from interacting with others (following, favouriting, boosting, replying).
+//
+//	en: Your account may not follow, favourite, boost, or reply right now.
+func (l *Localizer) ServerErrorsInteractionRestricted() string {
+	return l.format("server:errors.interaction_restricted", nil)
+}
+
 // ServerErrorsInternal formats "server:errors.internal". API error message for HTTP 500. Must not reveal internal details.
 //
 //	en: An unexpected error occurred. Please try again later.

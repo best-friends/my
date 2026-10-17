@@ -3,7 +3,7 @@
 // decides which by the viewport (web-client.md D2) and passes it to ComposeProvider; ComposeEntry then
 // renders the panel, or the sheet with the button that opens it (the shell shows that button only on pages
 // with a feed). Only one form is ever on the page.
-import { Button, Sheet, Tooltip, TooltipTrigger } from "@my/ui";
+import { Button, PlusIcon, Sheet, Tooltip, TooltipTrigger } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { type ComposeLayout, ComposeContext, type ComposeController, useComposeContext, useComposeController } from "../hooks/useCompose";
@@ -66,16 +66,11 @@ function ComposeSheet({ controller, trigger }: { controller: ComposeController; 
   const open = () => {
     controller.setSheetOpen(true);
   };
-  const icon = (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-5 fill-none stroke-current stroke-2">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
   return (
     <>
       {trigger === "labelled" && (
         <Button variant="primary" onPress={open} className="min-h-12 rounded-full px-5 shadow-lg">
-          {icon}
+          <PlusIcon />
           {t("client:compose.open")}
         </Button>
       )}
@@ -83,7 +78,7 @@ function ComposeSheet({ controller, trigger }: { controller: ComposeController; 
         // An icon-only button is named by aria-label and shows the same words as a tooltip (web-client.md G12).
         <TooltipTrigger>
           <Button variant="primary" aria-label={t("client:compose.open")} onPress={open} className="size-12 rounded-full px-0 shadow-lg">
-            {icon}
+            <PlusIcon />
           </Button>
           <Tooltip placement="start">{t("client:compose.open")}</Tooltip>
         </TooltipTrigger>

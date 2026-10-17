@@ -102,6 +102,8 @@ func (s *Server) statusProblem(ctx context.Context, err error) (problem, bool) {
 		return s.problem(ctx, http.StatusForbidden, ProblemTypeAccountUnavailable, l.ServerErrorsAccountUnavailable(), ""), true
 	case errors.Is(err, appcontent.ErrPostingRestricted):
 		return s.problem(ctx, http.StatusForbidden, ProblemTypeBlank, l.ServerErrorsForbidden(), l.ServerErrorsStatusPostingRestricted()), true
+	case errors.Is(err, appcontent.ErrInteractionRestricted):
+		return s.problem(ctx, http.StatusForbidden, ProblemTypeBlank, l.ServerErrorsForbidden(), l.ServerErrorsInteractionRestricted()), true
 	case errors.Is(err, appcontent.ErrNotAuthor):
 		return s.problem(ctx, http.StatusForbidden, ProblemTypeBlank, l.ServerErrorsForbidden(), l.ServerErrorsStatusNotAuthor()), true
 	case errors.Is(err, appcontent.ErrAlreadyDeleted):
