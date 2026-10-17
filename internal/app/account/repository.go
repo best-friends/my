@@ -5,6 +5,7 @@ package account
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/account"
@@ -97,6 +98,9 @@ type Repository interface {
 	FindCurrentProfile(ctx context.Context, accountID string) (account.ProfileRevision, error)
 	// FindLifecycleState returns the projected state; ErrNotFound means the account is active.
 	FindLifecycleState(ctx context.Context, accountID string) (account.LifecycleState, error)
+	// ListDueDeletions returns up to limit lifecycle states in deletion_scheduled whose
+	// deletion is due at or before now, earliest due first.
+	ListDueDeletions(ctx context.Context, now time.Time, limit int) ([]account.LifecycleState, error)
 	// FindRemoteHead returns the head of a remote actor; ErrNotFound means the account is local
 	// or has never been fetched.
 	FindRemoteHead(ctx context.Context, accountID string) (account.RemoteHead, error)

@@ -29,12 +29,33 @@ func (r *ModerationRepository) InsertAction(ctx context.Context, tx uow.Tx, a mo
 	if err != nil {
 		return err
 	}
-	return wrap(q.InsertModerationAction(ctx, postgresgen.InsertModerationActionParams{
+	err = q.InsertModerationAction(ctx, postgresgen.InsertModerationActionParams{
 		ID: a.ID, TargetAccountID: a.TargetAccountID, Kind: string(a.Kind), ReasonCategory: string(a.ReasonCategory),
 		PublicReason: toNullString(a.PublicReason), PrivateNote: toNullString(a.PrivateNote), ReportID: toNullString(a.ReportID),
 		Issuer: string(a.Issuer), IssuedByUserID: toNullString(a.IssuedByUserID), NotifyTarget: a.NotifyTarget,
 		ExpiresAt: a.ExpiresAt, IssuedAt: a.IssuedAt,
-	}), "insert moderation action")
+	})
+	if err != nil {
+		return wrap(err, "insert moderation action")
+	}
+	for _, id := range a.StatusIDs {
+		if err := q.InsertModerationActionStatus(ctx, postgresgen.InsertModerationActionStatusParams{ActionID: a.ID, StatusID: id}); err != nil {
+			return wrap(err, "insert moderation action status")
+		}
+	}
+	return nil
+}
+
+// actionStatusIDs returns the statuses of an action on statuses, nil for none.
+func actionStatusIDs(ctx context.Context, q *postgresgen.Queries, actionID string) ([]string, error) {
+	ids, err := q.ListModerationActionStatusIDs(ctx, actionID)
+	if err != nil {
+		return nil, wrap(err, "list moderation action statuses")
+	}
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	return ids, nil
 }
 
 // Action implements moderation.Repository.
@@ -47,12 +68,16 @@ func (r *ModerationRepository) Action(ctx context.Context, tx uow.Tx, id string)
 	if err != nil {
 		return moderation.Action{}, notFound(err, appmoderation.ErrNotFound, "moderation action "+id)
 	}
+	statusIDs, err := actionStatusIDs(ctx, q, id)
+	if err != nil {
+		return moderation.Action{}, err
+	}
 	return moderation.Action{
 		ID: row.ID, TargetAccountID: row.TargetAccountID, Kind: moderation.ActionKind(row.Kind),
 		ReasonCategory: moderation.Category(row.ReasonCategory), PublicReason: fromNullString(row.PublicReason),
 		PrivateNote: fromNullString(row.PrivateNote), ReportID: fromNullString(row.ReportID), Issuer: moderation.Issuer(row.Issuer),
 		IssuedByUserID: fromNullString(row.IssuedByUserID), NotifyTarget: row.NotifyTarget,
-		ExpiresAt: utcPtr(row.ExpiresAt), IssuedAt: utc(row.IssuedAt),
+		ExpiresAt: utcPtr(row.ExpiresAt), IssuedAt: utc(row.IssuedAt), StatusIDs: statusIDs,
 	}, nil
 }
 
@@ -493,7 +518,11 @@ func (r *ModerationRepository) FindActionRecord(ctx context.Context, id string) 
 	if err != nil {
 		return moderation.ActionRecord{}, notFound(err, appmoderation.ErrNotFound, "moderation action "+id)
 	}
-	return actionRecordFrom(postgresgen.ListModerationActionsRow(row)), nil
+	rec := actionRecordFrom(postgresgen.ListModerationActionsRow(row))
+	if rec.Action.StatusIDs, err = actionStatusIDs(ctx, r.db.reader(), id); err != nil {
+		return moderation.ActionRecord{}, err
+	}
+	return rec, nil
 }
 
 // ListActions implements moderation.Repository.
@@ -511,6 +540,9 @@ func (r *ModerationRepository) ListActions(ctx context.Context, q appmoderation.
 	out := make([]moderation.ActionRecord, len(rows))
 	for i, row := range rows {
 		out[i] = actionRecordFrom(row)
+		if out[i].Action.StatusIDs, err = actionStatusIDs(ctx, r.db.reader(), row.ID); err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }

@@ -683,6 +683,10 @@ type AdminAccountAction struct {
 	// State `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
 	// lifted it.
 	State AdminAccountActionState `json:"state"`
+
+	// StatusIds The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+	// on, in ID order; omitted for the other kinds.
+	StatusIds *[]Id `json:"status_ids,omitempty"`
 }
 
 // AdminAccountActionIssuer `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
@@ -977,7 +981,8 @@ type AdminRuleText struct {
 
 // CreateAccountActionRequest A moderation action to take on an account.
 type CreateAccountActionRequest struct {
-	// ExpiresIn The seconds the action lasts; omitted, it lasts until it is lifted.
+	// ExpiresIn The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
+	// actions on posts take none.
 	ExpiresIn *int `json:"expires_in,omitempty"`
 
 	// Kind `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
@@ -1000,6 +1005,10 @@ type CreateAccountActionRequest struct {
 
 	// ReportId The report of the account that the action follows from.
 	ReportId *Id `json:"report_id,omitempty"`
+
+	// StatusIds The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+	// on; required for them and taken by no other kind.
+	StatusIds *[]Id `json:"status_ids,omitempty"`
 }
 
 // CreateDomainActionRequest A moderation action to take on a domain.

@@ -326,12 +326,9 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 	}
 	out.Attachments, out.Mentions, out.Tags = parts.Attachments, parts.Mentions, parts.Tags
 	if len(out.Attachments) > 0 && !out.Revision.Sensitive {
-		// An author under force_sensitive has every attachment shown as sensitive (data-model §5.2).
-		rs, err := r.d.Restrictions.Restrictions(ctx, st.AuthorAccountID)
-		if err != nil {
+		if out.Revision.Sensitive, err = r.forcedSensitive(ctx, st); err != nil {
 			return StatusView{}, err
 		}
-		out.Revision.Sensitive = rs.MediaSensitive
 	}
 	switch c, err := r.d.Statuses.FindCounters(ctx, st.ID); {
 	case err == nil:
@@ -345,6 +342,18 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 		}
 	}
 	return out, nil
+}
+
+// forcedSensitive reports whether moderation shows the attachments of st as sensitive
+// (data-model §5.2): a mark_statuses_sensitive action marks the status, or its author is under
+// force_sensitive.
+func (r *Reader) forcedSensitive(ctx context.Context, st content.Status) (bool, error) {
+	marked, err := r.d.Statuses.SensitivityOverridden(ctx, st.ID)
+	if err != nil || marked {
+		return marked, err
+	}
+	rs, err := r.d.Restrictions.Restrictions(ctx, st.AuthorAccountID)
+	return rs.MediaSensitive, err
 }
 
 // Parts resolves what rev refers to. It does not decide who may see the revision; callers

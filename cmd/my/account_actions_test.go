@@ -3,10 +3,13 @@
 package main
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/best-friends/my/internal/app/content"
+	domaincontent "github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/platform"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -29,6 +32,7 @@ func TestAdminAccountActionCommands(t *testing.T) {
 		!strings.Contains(stdout, "issued restrict_posting on account "+accountID) || !strings.Contains(stdout, "expires 20") {
 		t.Errorf("account action issue -duration = %d %q", code, stdout)
 	}
+	posting := regexp.MustCompile(`\(action (\S+),`).FindStringSubmatch(stdout)
 	cfg, _, err := config.Load(config.Source{})
 	if err != nil {
 		t.Fatal(err)
@@ -57,13 +61,45 @@ func TestAdminAccountActionCommands(t *testing.T) {
 		t.Errorf("account action list -active:\n%s", stdout)
 	}
 
+	// delete_statuses deletes the statuses it names.
+	if posting == nil {
+		t.Fatal("no restrict_posting action to lift")
+	}
+	if code, _, stderr = runCmd(t, adminCmd, "account", "action", "lift", posting[1]); code != 0 {
+		t.Fatalf("account action lift restrict_posting = %d %q", code, stderr)
+	}
+	post, err := app.Content.Create(t.Context(), content.CreateInput{
+		TextInput: content.TextInput{Text: "spam"}, AuthorAccountID: accountID, Visibility: domaincontent.VisibilityPublic,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code, stdout, stderr = runCmd(t, adminCmd, "account", "action", "issue", "-kind", "delete_statuses", "-status", post.Status.ID, "@root"); code != 0 ||
+		!strings.Contains(stdout, "issued delete_statuses") || !strings.Contains(stdout, "statuses: "+post.Status.ID) {
+		t.Errorf("account action issue delete_statuses = %d %q %q", code, stdout, stderr)
+	}
+	if _, err := app.Content.Find(t.Context(), post.Status.ID); !errors.Is(err, content.ErrNotFound) {
+		t.Errorf("Find(deleted status) = %v, want ErrNotFound", err)
+	}
+	// A ban is never lifted.
+	code, stdout, stderr = runCmd(t, adminCmd, "account", "action", "issue", "-kind", "ban", "@root")
+	ban := regexp.MustCompile(`^issued ban on account \S+ \(action (\S+), never expires\)\n$`).FindStringSubmatch(stdout)
+	if code != 0 || ban == nil {
+		t.Fatalf("account action issue ban = %d %q %q", code, stdout, stderr)
+	}
+	if code, _, stderr = runCmd(t, adminCmd, "account", "action", "lift", ban[1]); code != 1 || !strings.Contains(stderr, "never lifted") {
+		t.Errorf("account action lift ban = %d %q", code, stderr)
+	}
+
 	for _, tc := range []struct {
 		args []string
 		code int
 		want string
 	}{
 		{[]string{"account", "action", "issue", "-kind", "silence", "@root"}, 1, `invalid action: kind "silence"`},
-		{[]string{"account", "action", "issue", "-kind", "ban", "@root"}, 1, "not supported"},
+		{[]string{"account", "action", "issue", "-kind", "ban", "-duration", "24h", "@root"}, 1, "never expires"},
+		{[]string{"account", "action", "issue", "-kind", "delete_statuses", "@root"}, 1, "statuses of the action"},
+		{[]string{"account", "action", "issue", "-kind", "mark_statuses_sensitive", "-status", post.Status.ID, "@root"}, 1, "the status does not exist"},
 		{[]string{"account", "action", "issue", "-kind", "warn", "-category", "rude", "@root"}, 1, `category "rude"`},
 		{[]string{"account", "action", "issue", "-kind", "warn", "-report", "01890a5d-ac96-774b-bcce-b302099a0000", "@root"}, 1, "the report does not exist"},
 		{[]string{"account", "action", "issue", "-kind", "warn", "@nobody"}, 1, `no account is "@nobody"`},

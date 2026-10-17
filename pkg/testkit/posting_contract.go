@@ -46,8 +46,8 @@ type PostingFactory func(t *testing.T, opts uow.Options) PostingHarness
 // invalid input; capping the visibility and forbidding posts and replies through the
 // RestrictionPolicy; replies to statuses the
 // author may see; attaching only the author's own processed uploads; the default post language; editing into new revisions that move the head;
-// deleting into a tombstone that removes the status from the projections; and the emitted
-// domain events.
+// deleting into a tombstone that removes the status from the projections; the deletion and
+// the sensitivity that moderation actions on statuses record; and the emitted domain events.
 func PostingContract(t *testing.T, newHarness PostingFactory) {
 	t.Helper()
 	cases := []struct {
@@ -67,6 +67,7 @@ func PostingContract(t *testing.T, newHarness PostingFactory) {
 		{"EditsIntoNewRevisions", postingEdits},
 		{"AttachesOwnProcessedMedia", postingAttachesMedia},
 		{"DeletesIntoATombstone", postingDeletes},
+		{"CarriesOutModerationOnStatuses", postingModeration},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newPostingEnv(t, newHarness)) })

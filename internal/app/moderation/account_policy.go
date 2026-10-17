@@ -22,8 +22,9 @@ type AccountDomains interface {
 // restrictions in effect on an account are those of its own actions (account_restrictions) and
 // those of its domain and the parent domains (domain_restrictions), read at the time of each
 // call. The other modules decide through it, never from the moderation tables: the content
-// module through Content, the identity module through LoginRestricted, and the graph module
-// through InteractionRestricted.
+// module through Content, the identity module through LoginRestricted, the graph module
+// through InteractionRestricted, and the notification module through
+// UnsolicitedReachRestricted.
 type AccountPolicy struct {
 	repo     Repository
 	accounts AccountDomains
@@ -84,6 +85,12 @@ func (p *AccountPolicy) InteractionRestricted(ctx context.Context, accountID str
 // moderators (the profile_view restriction: suspend, or a suspended domain).
 func (p *AccountPolicy) ProfileHidden(ctx context.Context, accountID string) (bool, error) {
 	return p.has(ctx, accountID, moderation.RestrictProfileView)
+}
+
+// UnsolicitedReachRestricted reports whether an account's notifications reach only the accounts
+// that follow it (the unsolicited_reach restriction: limit, or a limited domain).
+func (p *AccountPolicy) UnsolicitedReachRestricted(ctx context.Context, accountID string) (bool, error) {
+	return p.has(ctx, accountID, moderation.RestrictUnsolicitedReach)
 }
 
 // Content returns the policy as the content module's RestrictionPolicy.

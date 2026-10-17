@@ -48,6 +48,7 @@ func runAdminAccountAction(args []string, stdout, stderr io.Writer) int {
 		active, noNotify                                           bool
 		duration                                                   time.Duration
 		limit                                                      = 50
+		statuses                                                   []string
 	)
 	c, code := parseSubcommand("my admin account action "+sub, args[1:], 1, stderr, adminAccountActionUsage, func(fs *flag.FlagSet) {
 		switch sub {
@@ -63,6 +64,10 @@ func runAdminAccountAction(args []string, stdout, stderr io.Writer) int {
 			fs.StringVar(&report, "report", "", "the ID of the report of the account that the action follows from")
 			fs.BoolVar(&noNotify, "no-notify", false, "do not tell the account of the action")
 			fs.DurationVar(&duration, "duration", 0, "how long the action lasts, such as 720h; 0 lasts until lifted")
+			fs.Func("status", "the ID of a status of the account that delete_statuses or mark_statuses_sensitive acts on; repeat it for several", func(s string) error {
+				statuses = append(statuses, s)
+				return nil
+			})
 		case "lift":
 			fs.StringVar(&reason, "reason", "", "why the action is lifted")
 		}
@@ -105,15 +110,22 @@ func runAdminAccountAction(args []string, stdout, stderr io.Writer) int {
 		a, err = app.Moderation.IssueAccountAction(ctx, appmoderation.AccountActionInput{
 			TargetAccountID: id, Kind: moderation.ActionKind(kind), ReasonCategory: moderation.Category(category),
 			PublicReason: publicReason, PrivateNote: note, ReportID: report, NotifyTarget: !noNotify, Duration: duration,
+			StatusIDs: statuses,
 		})
 		if err == nil {
 			_, _ = fmt.Fprintf(stdout, "issued %s on account %s (action %s, %s)\n", a.Kind, a.TargetAccountID, a.ID, describeExpiry(a.ExpiresAt))
+			if len(a.StatusIDs) > 0 {
+				_, _ = fmt.Fprintf(stdout, "statuses: %s\n", strings.Join(a.StatusIDs, " "))
+			}
 		}
 	case "lift":
 		id := c.fs.Arg(0)
 		err = app.Moderation.LiftAccountAction(ctx, id, "", reason)
-		if errors.Is(err, appmoderation.ErrNotFound) {
+		switch {
+		case errors.Is(err, appmoderation.ErrNotFound):
 			err = fmt.Errorf("no account action has the ID %q", id)
+		case errors.Is(err, appmoderation.ErrNotLiftable):
+			err = fmt.Errorf("account action %s is a ban, which is never lifted", id)
 		}
 		if err == nil {
 			_, _ = fmt.Fprintf(stdout, "lifted account action %s\n", id)
@@ -179,7 +191,8 @@ func adminAccountActionUsage(w io.Writer) {
   my admin account action list [-active] [-before <id>] [-limit <n>] [-config <file>] <account>
   my admin account action issue -kind <kind> [-category <category>] [-public-reason <text>]
                                 [-private-note <text>] [-report <report id>] [-no-notify]
-                                [-duration <d>] [-config <file>] <account>
+                                [-duration <d>] [-status <status id>]... [-config <file>]
+                                <account>
   my admin account action lift [-reason <text>] [-config <file>] <action id>
 
 Moderation actions on accounts (FR-703), in effect at once. <account> is
@@ -194,12 +207,20 @@ ID. Several actions on one account add up. On a local account:
   restrict_interaction  it cannot follow, favourite, boost, or reply
   disable_login         its sessions and tokens end and it cannot log in
   suspend               all of the above, and its profile and posts are hidden
+  ban                   a suspension that is never lifted; the account is
+                        deleted 30 days later
+  delete_statuses       deletes the statuses given with -status, for everyone
+  mark_statuses_sensitive
+                        shows the media of the statuses given with -status as
+                        sensitive
 
-A remote account takes limit, suspend, and force_sensitive. ban,
-delete_statuses, and mark_statuses_sensitive are not issued yet.
+delete_statuses and mark_statuses_sensitive need one -status or more (up to
+100), and take no -duration; nor does ban. A remote account takes limit,
+suspend, and force_sensitive.
 
 list shows the actions on the account newest first, lifted and expired ones
 included unless -active is given. lift ends one action; the other actions on
-the account stay. Lifting a lifted action changes nothing.
+the account stay, and so do the statuses that delete_statuses deleted. Lifting
+a lifted action changes nothing; a ban is never lifted.
 `)
 }
