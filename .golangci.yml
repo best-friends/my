@@ -263,6 +263,20 @@ linters:
           deny:
             - pkg: github.com/microcosm-cc/bluemonday
               desc: sanitize HTML through kernel.HTMLSanitizer (internal/adapter/htmlsanitizer)
+        # The HTTP signature libraries (ADR-0006) stay inside the adapter of federation.Signer and
+        # federation.Verifier, so that every signature goes through the policy of ADR-0032.
+        httpsig:
+          list-mode: lax
+          files:
+            - $all
+            - "!**/internal/adapter/httpsig/**"
+          deny:
+            - pkg: github.com/dadrus/httpsig
+              desc: sign and verify through federation.Signer / federation.Verifier (internal/adapter/httpsig)
+            - pkg: code.superseriousbusiness.org/httpsig
+              desc: sign and verify through federation.Signer / federation.Verifier (internal/adapter/httpsig)
+            - pkg: github.com/dunglas/httpsfv
+              desc: Structured Fields of HTTP signatures are parsed in internal/adapter/httpsig
         interface:
           list-mode: lax
           files:

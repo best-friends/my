@@ -60,6 +60,24 @@ ADR-0032 のプロファイルに従います。要点:
 - **署名者と主体**: 鍵の持ち主（`owner`）がアクティビティの `actor` と一致し、`keyId` のホストが `actor` のホストと一致することを確かめます。一致しなければ、オブジェクトを `id` からオリジンに取り直します（§3.3）。
 - **インスタンス Actor**: オブジェクトの取得（GET）は、インスタンス Actor（`Application`）の鍵で署名します。相手が Authorized Fetch でも取得でき、特定の利用者の鍵を使わないので、相手のブロックに巻き込まれません。
 
+### 2.1 実装
+
+| 型（`internal/app/federation`） | 役割 |
+| --- | --- |
+| `Verifier` / `Signer`（ポート） | 署名の解析・署名ベースの組み立て・暗号の検証と署名だけを行う。実装は `internal/adapter/httpsig`、コントラクトテストは `testkit.HTTPSignatureContract`（RFC 9421 付録 B のテストベクタ、Mastodon・GoToSocial 形式の draft-cavage の署名、拒否の各条件、double-knocking） |
+| `SignatureVerifier` | 受信のポリシー。`Parse`（署名なし `401`、解析不能 `400`）→ `Check`（必須の対象・時間窓・宣言されたアルゴリズム・ダイジェスト。I/O なし）→ `Verify`（鍵の解決と検証、鍵の取り直し）。拒否は `SignatureError`（`Status` と、`401` なら `Accept-Signature` の値） |
+| `PublicKeyResolver`（ポート） | `keyId` から公開鍵と持ち主（`owner`）を返す。`refresh` で取り直す。取得できなければ `ErrPublicKeyNotFound`（`401`）、取得先が止まっていれば `ErrPublicKeyUnavailable`（`503`） |
+| `SignedHTTPClient` | 送信の double-knocking。`kernel.HTTPClient` の上で署名し、結果の方式（`delivery_attempts.signature_scheme`）を返す |
+
+- `@target-uri` と `(request-target)` は `NewSignedRequest` が設定の公開オリジンとリクエストのパス・クエリから組み立て、`Host` も公開オリジンのホストにします（別のホスト宛ての署名は検証に通らない）。
+- RFC 9421 で `alg` が無い RSA の署名は、`rsa-v1_5-sha256`、`rsa-pss-sha512` の順に検証します（RFC 9421 付録 B の署名は `alg` を持たない）。
+- 送信の RFC 9421 の `created` はシステムの時計から取ります（`dadrus/httpsig` が時計を差し替えられないため）。draft-cavage の `Date` は `kernel.Clock` から取ります。
+- `code.superseriousbusiness.org/httpsig` は `algorithm="hs2019"` を固定で書くので、RSA の署名はアダプタが `rsa-sha256` に書き換えます（`algorithm` は署名の対象ではない）。
+  このライブラリは、署名が `(created)` / `(expires)` を対象にするときだけ、システムの時計で 10 秒を超える未来の `created` と 10 秒を超えて過ぎた `expires` も拒否します（主要実装は `Date` に署名するので影響しない）。
+- `Accept-Signature` を付けた `401` には、RFC 9421 で再送します。要求された対象をプロファイルの対象に加え、ラベル・`tag`・`nonce` も要求に合わせます。鍵とアルゴリズムは自分のものを使います。
+- KV の名前空間: `federation.signature_scheme`（ホストごとの記憶。値は `rfc9421`、7 日）、`federation.key_refresh`（`keyId` ごとの取り直しの間隔、5 分）。記憶のあるホストで draft-cavage への再送が成功したら記憶を消します。
+- ライブラリ（`dadrus/httpsig`、`code.superseriousbusiness.org/httpsig`、`dunglas/httpsfv`）は `internal/adapter/httpsig` の外から使えません（`.golangci.yml` の depguard）。
+
 ## 3. 受信（Inbox）
 
 ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理を非同期** にします（NFR-PERF-4）。
