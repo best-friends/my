@@ -431,6 +431,10 @@
     "defaultMessage": "You cannot do this to your own account.",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
   },
+  "errors.service_unavailable": {
+    "defaultMessage": "The service is temporarily unavailable. Please try again later.",
+    "description": "Error title for HTTP 503 when the server cannot handle the request for now, e.g. another server it needs to reach is not responding."
+  },
   "errors.status.already_deleted": {
     "defaultMessage": "The post created with this Idempotency-Key has been deleted.",
     "description": "Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated)."
@@ -511,9 +515,17 @@
     "defaultMessage": "Sign in to do this.",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
   },
+  "errors.unauthorized": {
+    "defaultMessage": "The request could not be authenticated.",
+    "description": "Error title for HTTP 401 when a request from another server has no valid signature."
+  },
   "errors.unprocessable": {
     "defaultMessage": "The request cannot be processed.",
     "description": "API error title for HTTP 422; the detail says what is wrong with the request."
+  },
+  "errors.unsupported_media_type": {
+    "defaultMessage": "The request body has an unsupported content type.",
+    "description": "Error title for HTTP 415 when a request body is not in a format the endpoint accepts."
   },
   "errors.unusable_image": {
     "defaultMessage": "{name} must be an image that you uploaded and that has finished processing.",

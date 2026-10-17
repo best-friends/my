@@ -1,0 +1,291 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package federation
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"time"
+
+	appaccount "github.com/best-friends/my/internal/app/account"
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/federation"
+)
+
+// JobInbox processes one received activity (federation.md §3.2). Its payload is inboxPayload.
+const JobInbox = "federation.inbox"
+
+// InboxMaxBodyBytes is the largest request body an inbox reads (ADR-0019 §5).
+const InboxMaxBodyBytes = 1 << 20
+
+// Rate limits of the inbox (ADR-0019 §5): per client IP before the signature is parsed, and per
+// signing server (the host of the keyId) before the request costs a key lookup.
+var (
+	InboxIPLimit     = kernel.Limit{Name: "inbox.ip", Max: 1000, Window: 5 * time.Minute}
+	InboxDomainLimit = kernel.Limit{Name: "inbox.domain", Max: 2000, Window: 5 * time.Minute}
+)
+
+// inboxPayload is the payload of JobInbox: the received activity to read from
+// received_activity_documents, and whether its object must be fetched again from the origin.
+type inboxPayload struct {
+	ActivityURI string           `json:"activity_uri"`
+	Trust       federation.Trust `json:"trust"`
+}
+
+// inboxJob returns the JobInbox of a received activity. Its idempotency key is the hash of the
+// activity URI, which may be long; its ordering key serializes the activities of one actor.
+func inboxJob(a federation.ReceivedActivity) (queue.NewJob, error) {
+	b, err := json.Marshal(inboxPayload{ActivityURI: string(a.ActivityURI), Trust: a.Trust})
+	if err != nil {
+		return queue.NewJob{}, err
+	}
+	sum := sha256.Sum256([]byte(a.ActivityURI))
+	return queue.NewJob{
+		Type: JobInbox, Payload: b,
+		IdempotencyKey: "inbox:" + hex.EncodeToString(sum[:]),
+		OrderingKey:    "inbox:" + string(a.ActorURI),
+	}, nil
+}
+
+// InboxRepository is the persistence port of received activities (data-model §4.8): the
+// deduplication row and the document as it arrived. The database adapters implement it and pass
+// testkit.InboxContract. Lookups that find nothing return an error wrapping ErrNotFound.
+type InboxRepository interface {
+	// InsertReceivedActivity records a received activity unless one with its activity URI is
+	// recorded, and reports whether it did.
+	InsertReceivedActivity(ctx context.Context, tx uow.Tx, a federation.ReceivedActivity) (bool, error)
+	// InsertReceivedDocument stores the document of a received activity.
+	InsertReceivedDocument(ctx context.Context, tx uow.Tx, activityURI federation.IRI, document []byte) error
+
+	FindReceivedActivity(ctx context.Context, activityURI federation.IRI) (federation.ReceivedActivity, error)
+	FindReceivedDocument(ctx context.Context, activityURI federation.IRI) ([]byte, error)
+}
+
+// InboxAccounts is the part of the account module's public API that the inbox reads.
+// *appaccount.Service implements it.
+type InboxAccounts interface {
+	FindByURI(ctx context.Context, uri string) (appaccount.Actor, error)
+}
+
+// InstanceReacher records that a remote server is up; *Health implements it.
+type InstanceReacher interface {
+	Reached(ctx context.Context, domain string, reason federation.AvailabilityReason) error
+}
+
+// InboxDeps are the ports and settings of Inbox.
+type InboxDeps struct {
+	UnitOfWork uow.UnitOfWork
+	Repository InboxRepository
+	// Outbox enqueues JobInbox in the transaction that records the activity.
+	Outbox     queue.Outbox
+	Signatures *SignatureVerifier
+	Accounts   InboxAccounts
+	// Domains are the domain blocks; nil means NoDomainRestrictions.
+	Domains DomainPolicy
+	Health  InstanceReacher
+	// RateLimiter applies IPLimit and DomainLimit; nil applies none.
+	RateLimiter *kernel.RateLimiter
+	// IPLimit and DomainLimit default to InboxIPLimit and InboxDomainLimit.
+	IPLimit     kernel.Limit
+	DomainLimit kernel.Limit
+	Clock       kernel.Clock
+	Logger      *slog.Logger
+}
+
+// Inbox is the synchronous part of receiving an activity (federation.md §3.1, ADR-0033): it
+// verifies the request, records the activity once, and enqueues JobInbox, whose handlers do the
+// rest asynchronously.
+type Inbox struct {
+	d InboxDeps
+}
+
+// NewInbox returns the Inbox on d.
+func NewInbox(d InboxDeps) *Inbox {
+	if d.Domains == nil {
+		d.Domains = NoDomainRestrictions{}
+	}
+	if d.IPLimit.Max == 0 {
+		d.IPLimit = InboxIPLimit
+	}
+	if d.DomainLimit.Max == 0 {
+		d.DomainLimit = InboxDomainLimit
+	}
+	if d.Logger == nil {
+		d.Logger = slog.Default()
+	}
+	return &Inbox{d: d}
+}
+
+// InboxRequest is one POST to an inbox whose content type and body size the HTTP handler has
+// checked (federation.md §3.1 steps 1 and 2).
+type InboxRequest struct {
+	Request *SignedRequest
+	// ClientIP is the address the request came from, for the IP rate limit; "" skips it.
+	ClientIP string
+}
+
+// InboxRejection is the answer to a request that the inbox refuses before it touches the
+// database or the queue: the HTTP status of the step that refused it (federation.md §3.1).
+type InboxRejection struct {
+	Status int
+	// RetryAfter is the Retry-After of a 429; 0 otherwise.
+	RetryAfter time.Duration
+	// AcceptSignature is the Accept-Signature of a 401 about the signature; "" otherwise.
+	AcceptSignature string
+	Err             error
+}
+
+func (e *InboxRejection) Error() string {
+	return fmt.Sprintf("inbox rejected the request (%d): %v", e.Status, e.Err)
+}
+
+// Unwrap returns the cause.
+func (e *InboxRejection) Unwrap() error { return e.Err }
+
+// Received is the outcome of an accepted request, answered with 202 Accepted.
+type Received struct {
+	// ActivityURI is the activity's deduplication key; "" when the request was dropped.
+	ActivityURI federation.IRI
+	Trust       federation.Trust
+	// Recorded reports that the activity was new: it was recorded and JobInbox enqueued.
+	Recorded bool
+	// Dropped reports an unknown actor's Delete or Update of itself, dropped unverified.
+	Dropped bool
+}
+
+// Receive runs steps 3 to 14 of federation.md §3.1 on in. A refused request fails with an
+// *InboxRejection before anything is written; any other error is unexpected (500).
+func (i *Inbox) Receive(ctx context.Context, in InboxRequest) (Received, error) {
+	r := in.Request
+	// 3. The client IP's rate limit.
+	if in.ClientIP != "" {
+		if err := i.take(ctx, i.d.IPLimit, kernel.ClientKey(in.ClientIP)); err != nil {
+			return Received{}, err
+		}
+	}
+	// 4. The signature header, and the host of its keyId.
+	sig, err := i.d.Signatures.Parse(r)
+	if err != nil {
+		return Received{}, rejection(err)
+	}
+	keyHost := sig.KeyHost()
+	if keyHost == "" {
+		return Received{}, rejection(i.d.Signatures.unauthorized(r, fmt.Errorf("keyId %q has no valid host", sig.KeyID)))
+	}
+	// 5. Domain blocks of the signing server.
+	suspended, err := i.d.Domains.FederationSuspended(ctx, keyHost)
+	if err != nil {
+		return Received{}, err
+	}
+	if suspended {
+		return Received{}, &InboxRejection{Status: http.StatusForbidden, Err: fmt.Errorf("%s is suspended", keyHost)}
+	}
+	// 6. The signing server's rate limit.
+	if err := i.take(ctx, i.d.DomainLimit, keyHost); err != nil {
+		return Received{}, err
+	}
+	// 7. The body digest, with the other checks that need no key (components, time window).
+	if err := i.d.Signatures.Check(r, sig); err != nil {
+		return Received{}, rejection(err)
+	}
+	// 8. id, type, actor, and object.
+	env, err := federation.ReadEnvelope(r.Body, CanonicalHost)
+	if err != nil {
+		return Received{}, &InboxRejection{Status: http.StatusBadRequest, Err: err}
+	}
+	// 9. An unknown actor's Delete or Update of itself.
+	if env.SelfRemoval() {
+		switch _, err := i.d.Accounts.FindByURI(ctx, string(env.Actor)); {
+		case errors.Is(err, appaccount.ErrNotFound):
+			return Received{Dropped: true}, nil
+		case err != nil:
+			return Received{}, err
+		}
+	}
+	// 10, 11. The key, fetched when unknown or stale, and the signature.
+	v, err := i.d.Signatures.Verify(ctx, r, sig)
+	if err != nil {
+		return Received{}, rejection(err)
+	}
+	// 12. The signer against the actor.
+	owner, ok := signer(v)
+	if !ok {
+		owner = "" // a key whose owner is not on the key's host speaks for no one
+	}
+	a := federation.ReceivedActivity{
+		ActivityURI: env.ActivityURI(r.Body), ActorURI: env.Actor, Type: env.Type,
+		Scheme: string(v.Scheme), Trust: env.TrustFor(owner), ReceivedAt: kernel.Normalize(i.d.Clock.Now()),
+	}
+	// 13. The record, the document, and the job, once per activity.
+	recorded, err := i.record(ctx, a, r.Body)
+	if err != nil {
+		return Received{}, err
+	}
+	// 14. A signed request shows that its server is up.
+	if err := i.d.Health.Reached(ctx, keyHost, federation.ReasonInboundRequest); err != nil && !errors.Is(err, context.Canceled) {
+		i.d.Logger.WarnContext(ctx, "inbox could not record the server as reached", slog.String("domain", keyHost), slog.Any("error", err))
+	}
+	return Received{ActivityURI: a.ActivityURI, Trust: a.Trust, Recorded: recorded}, nil
+}
+
+func (i *Inbox) record(ctx context.Context, a federation.ReceivedActivity, body []byte) (bool, error) {
+	job, err := inboxJob(a)
+	if err != nil {
+		return false, err
+	}
+	var recorded bool
+	err = i.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		ok, err := i.d.Repository.InsertReceivedActivity(ctx, tx, a)
+		if err != nil || !ok {
+			recorded = false
+			return err
+		}
+		if err := i.d.Repository.InsertReceivedDocument(ctx, tx, a.ActivityURI, body); err != nil {
+			return err
+		}
+		recorded = true
+		return i.d.Outbox.EnqueueTx(ctx, tx, job)
+	})
+	if err != nil {
+		return false, fmt.Errorf("record received activity %s: %w", a.ActivityURI, err)
+	}
+	return recorded, nil
+}
+
+// take takes one event of key from lim. Over the limit it returns the 429 rejection. A store
+// failure lets the request through: rate limits protect against abuse, and the inbox must not
+// refuse every server when the store is down.
+func (i *Inbox) take(ctx context.Context, lim kernel.Limit, key string) error {
+	if i.d.RateLimiter == nil {
+		return nil
+	}
+	d, err := i.d.RateLimiter.Take(ctx, lim, key)
+	if err != nil {
+		i.d.Logger.WarnContext(ctx, "inbox rate limit unavailable", slog.String("limit", lim.Name), slog.Any("error", err))
+		return nil
+	}
+	if d.Allowed {
+		return nil
+	}
+	return &InboxRejection{
+		Status: http.StatusTooManyRequests, RetryAfter: d.RetryAfter,
+		Err: &kernel.RateLimitedError{RetryAfter: d.RetryAfter},
+	}
+}
+
+// rejection turns a SignatureError into the InboxRejection with its status; other errors stay.
+func rejection(err error) error {
+	var se *SignatureError
+	if !errors.As(err, &se) {
+		return err
+	}
+	return &InboxRejection{Status: se.Status, AcceptSignature: se.AcceptSignature, Err: err}
+}

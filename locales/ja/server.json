@@ -431,6 +431,10 @@
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
   },
+  "errors.service_unavailable": {
+    "defaultMessage": "一時的に利用できません。しばらくしてからもう一度お試しください。",
+    "description": "Error title for HTTP 503 when the server cannot handle the request for now, e.g. another server it needs to reach is not responding."
+  },
   "errors.status.already_deleted": {
     "defaultMessage": "この Idempotency-Key で作成された投稿は削除されています。",
     "description": "Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated)."
@@ -511,9 +515,17 @@
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
   },
+  "errors.unauthorized": {
+    "defaultMessage": "リクエストを認証できませんでした。",
+    "description": "Error title for HTTP 401 when a request from another server has no valid signature."
+  },
   "errors.unprocessable": {
     "defaultMessage": "リクエストを処理できません。",
     "description": "API error title for HTTP 422; the detail says what is wrong with the request."
+  },
+  "errors.unsupported_media_type": {
+    "defaultMessage": "リクエスト本文の形式に対応していません。",
+    "description": "Error title for HTTP 415 when a request body is not in a format the endpoint accepts."
   },
   "errors.unusable_image": {
     "defaultMessage": "{name} には、自分でアップロードして処理が終わった画像を指定してください。",

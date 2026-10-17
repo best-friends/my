@@ -848,6 +848,8 @@ export interface MessageArgs {
   "server:errors.request_too_large": {};
   /** You cannot do this to your own account. */
   "server:errors.self_relationship": {};
+  /** The service is temporarily unavailable. Please try again later. */
+  "server:errors.service_unavailable": {};
   /** The post created with this Idempotency-Key has been deleted. */
   "server:errors.status.already_deleted": {};
   /** The post has no text. */
@@ -888,8 +890,12 @@ export interface MessageArgs {
   "server:errors.too_many": { max: number; name: string };
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
+  /** The request could not be authenticated. */
+  "server:errors.unauthorized": {};
   /** The request cannot be processed. */
   "server:errors.unprocessable": {};
+  /** The request body has an unsupported content type. */
+  "server:errors.unsupported_media_type": {};
   /** {name} must be an image that you uploaded and that has finished processing. */
   "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */

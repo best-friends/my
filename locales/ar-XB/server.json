@@ -431,6 +431,10 @@
     "defaultMessage": "‮⅄on ɔɐuuoʇ po ʇɥıs ʇo ʎonɹ oʍu ɐɔɔonuʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.service_unavailable": {
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌıɔǝ ıs ʇǝɯdoɹɐɹıʅʎ nuɐʌɐıʅɐqʅǝ. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.status.already_deleted": {
     "defaultMessage": "‮⊥ɥǝ dosʇ ɔɹǝɐʇǝp ʍıʇɥ ʇɥıs Ipǝɯdoʇǝuɔʎ-Ӽǝʎ ɥɐs qǝǝu pǝʅǝʇǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -511,8 +515,16 @@
     "defaultMessage": "‮Sıƃu ıu ʇo po ʇɥıs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.unauthorized": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔonʅp uoʇ qǝ ɐnʇɥǝuʇıɔɐʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.unprocessable": {
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔɐuuoʇ qǝ dɹoɔǝssǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unsupported_media_type": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ qopʎ ɥɐs ɐu nusnddoɹʇǝp ɔouʇǝuʇ ʇʎdǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.unusable_image": {

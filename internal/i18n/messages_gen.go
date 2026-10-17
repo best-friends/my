@@ -760,6 +760,13 @@ func (l *Localizer) ServerErrorsSelfRelationship() string {
 	return l.format("server:errors.self_relationship", nil)
 }
 
+// ServerErrorsServiceUnavailable formats "server:errors.service_unavailable". Error title for HTTP 503 when the server cannot handle the request for now, e.g. another server it needs to reach is not responding.
+//
+//	en: The service is temporarily unavailable. Please try again later.
+func (l *Localizer) ServerErrorsServiceUnavailable() string {
+	return l.format("server:errors.service_unavailable", nil)
+}
+
 // ServerErrorsStatusAlreadyDeleted formats "server:errors.status.already_deleted". Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated).
 //
 //	en: The post created with this Idempotency-Key has been deleted.
@@ -900,11 +907,25 @@ func (l *Localizer) ServerErrorsUnauthenticated() string {
 	return l.format("server:errors.unauthenticated", nil)
 }
 
+// ServerErrorsUnauthorized formats "server:errors.unauthorized". Error title for HTTP 401 when a request from another server has no valid signature.
+//
+//	en: The request could not be authenticated.
+func (l *Localizer) ServerErrorsUnauthorized() string {
+	return l.format("server:errors.unauthorized", nil)
+}
+
 // ServerErrorsUnprocessable formats "server:errors.unprocessable". API error title for HTTP 422; the detail says what is wrong with the request.
 //
 //	en: The request cannot be processed.
 func (l *Localizer) ServerErrorsUnprocessable() string {
 	return l.format("server:errors.unprocessable", nil)
+}
+
+// ServerErrorsUnsupportedMediaType formats "server:errors.unsupported_media_type". Error title for HTTP 415 when a request body is not in a format the endpoint accepts.
+//
+//	en: The request body has an unsupported content type.
+func (l *Localizer) ServerErrorsUnsupportedMediaType() string {
+	return l.format("server:errors.unsupported_media_type", nil)
 }
 
 // ServerErrorsUnusableImage formats "server:errors.unusable_image". Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated).
