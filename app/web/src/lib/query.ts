@@ -50,6 +50,15 @@ export function shellQueryRetry(failureCount: number, error: unknown): boolean {
   return failureCount < 1;
 }
 
+/**
+ * The options of a feature that reads the shell's queries on its own as soon as the shell does (the new-post form).
+ * The shell's observers load these queries and handle their failures: a 429 waits for Retry-After (lib/rateLimit.ts),
+ * anything else shows where the shell uses it. So mounting another reader does not send the request again for a
+ * failure already known (`retryOnMount: false`), which would spend more of the rate limit and make the rate-limit bar
+ * go and come back; it shows the last value or its defaults instead.
+ */
+export const shellQueryReader = { retry: shellQueryRetry, retryOnMount: false } as const;
+
 function refetchFailed(query: Query): "always" | false {
   return query.state.status === "error" ? "always" : false;
 }

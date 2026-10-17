@@ -55,11 +55,17 @@ describe("the display locale", () => {
     session.dispose();
     document.documentElement.lang = "en";
     server.use(http.get(`${apiBase}/preferences`, () => rateLimited(30)));
+    const preferences = countRequests("/preferences");
     await renderApp({ path: "/home", locale: (await loadStartI18n(document)).locale });
 
     expect(await screen.findByRole("heading", { level: 1, name: "ホーム" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "メイン" })).toBeInTheDocument();
-    expect(await screen.findByText(/^サーバーへのリクエストが多すぎます。/)).toBeInTheDocument();
+    // The new-post button mounts once the viewer has loaded; its form reads the same preferences, but does not
+    // ask again for what the rate limit refused, so the bar stays as it is instead of going and coming back.
+    expect(await screen.findByRole("button", { name: "投稿を書く" })).toBeInTheDocument();
+    const bar = await screen.findByText(/^サーバーへのリクエストが多すぎます。/);
+    expect(preferences.count).toBe(1);
+    expect(bar).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute("lang", "ja");
     expect(screen.queryByText("問題が発生しました")).not.toBeInTheDocument();
     expect(screen.queryByText("Something went wrong")).not.toBeInTheDocument();

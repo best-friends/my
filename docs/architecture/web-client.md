@@ -264,7 +264,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 - **外枠の読み込み**: 外枠はどの画面でも、閲覧者（`GET /accounts/verify_credentials`、`useViewer`）・設定（`GET /preferences`、`useUserDisplaySettings`）・インスタンス（`GET /instance`、`useTimelineAvailability`）・
   通知の既読位置（`GET /notifications/marker`、`useUnreadNotificationCount`）を読む。どれが失敗しても画面全体のエラーにはせず、前に読めた値（Query のキャッシュ）か既定の値（閲覧者は読み込み中か `AccountSection` の区画のエラー、
   表示言語は上の「表示のロケール」、タイムラインは localStorage の値、未読数は 0）で表示を続ける。閲覧者は、前に読めたアカウントがあれば再取得が失敗してもサインイン中のままにする。
-  これらの query の `retry` は、外枠と、同じものを読む投稿フォーム（`useComposeForm`）で `lib/query.ts` の `shellQueryRetry` にする（loader は再試行しないまま）。4xx（429 を含む）は再試行せず、それ以外（5xx・`NetworkError`）は 1 回だけ再試行するので、失敗は約 1 秒で区画に出る。
+  これらの query の `retry` は `lib/query.ts` の `shellQueryRetry` にする（loader は再試行しないまま）。同じものを外枠と同時に読む投稿フォーム（`useComposeForm`）は `shellQueryReader` で、さらに `retryOnMount: false` にし、外枠がすでに知っている失敗をマウントのたびに取り直さない（429 の制限を使い増やさず、帯も消えて出直さない）。4xx（429 を含む）は再試行せず、それ以外（5xx・`NetworkError`）は 1 回だけ再試行するので、失敗は約 1 秒で区画に出る。
 - **レート制限**（`lib/rateLimit.ts`）: サーバーのレート制限の 429 は `Retry-After`（秒数か HTTP の日付）を持つ。API クライアントはそれを `ApiError` の `retryAt`（時刻）にし、`rateLimitedUntil(error)` が 429 のときだけそれを返す。
   レイアウトの `useRateLimitRetry` が、画面で使っている query（observer のあるもの）のうち 429 で失敗して止まっているものを Query のキャッシュから探し、その最も遅い `retryAt` に、それらを取り直す（時刻が理由なので Effect のタイマー）。
   その間、オフラインの帯（`ConnectionBanner` が出す 1 つの `OfflineBanner`）に、リクエストが多すぎることと、読み込み直す時刻（秒まで）を出す。オフラインのときはオフラインの文言を優先する。
