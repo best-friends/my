@@ -20,9 +20,6 @@ import { ReportDialog } from "../../report";
 import type { Status } from "../api/status";
 import { type RelationToggle, useStatusActions } from "../hooks/useStatusActions";
 
-/** The reply and menu buttons, with icons as large as the toggles' between them. */
-const plainActionClass = "px-2 text-fg-muted [&>svg]:size-5";
-
 export type StatusActionsProps = {
   status: Status;
   /** Called after the post is deleted, for a page that shows only this post. */
@@ -50,11 +47,11 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
     <>
       <Button
         variant="ghost"
-        size="sm"
+        size="toolbar"
         aria-label={t("client:status.action.reply")}
         {...(post.replies_count > 0 && { "aria-describedby": repliesId })}
         onPress={actions.reply}
-        className={plainActionClass}
+        className="text-fg-muted"
       >
         <ReplyIcon />
         <Count id={repliesId} value={post.replies_count} />
@@ -63,7 +60,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
       <RelationButton label={t("client:status.action.favourite")} toggle={actions.favourite} tone="warning" icon={(on) => <StarIcon filled={on} />} />
       <RelationButton label={t("client:status.action.bookmark")} toggle={actions.bookmark} tone="accent" icon={(on) => <BookmarkIcon filled={on} />} />
       <MenuTrigger>
-        <Button variant="ghost" size="sm" aria-label={t("client:status.action.more")} className={plainActionClass}>
+        <Button variant="ghost" size="toolbar" aria-label={t("client:status.action.more")} className="text-fg-muted">
           <MoreIcon />
         </Button>
         <Menu aria-label={t("client:status.action.more")} placement="bottom end">

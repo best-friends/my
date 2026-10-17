@@ -1373,12 +1373,18 @@ export interface paths {
          *     `restrict_posting` stops it posting, replying, boosting, and editing;
          *     `restrict_interaction` stops it following, favouriting, boosting, and replying;
          *     `disable_login` ends its sessions and tokens and stops it logging in; `suspend` does all
-         *     of these and hides its profile and posts from everyone else. A remote account takes
-         *     `limit`, `suspend`, and `force_sensitive`. Another kind, the instance actor, or a
-         *     `report_id` that is not a report of the account is a 422 naming `kind`, `id`, or
-         *     `report_id`; `ban`, `delete_statuses`, and `mark_statuses_sensitive` are not taken yet.
-         *     A text that is too long or contains U+0000 is a 422 naming it. An unknown account is a
-         *     404. Needs the `manage_accounts` permission.
+         *     of these and hides its profile and posts from everyone else; `ban` is a `suspend` that
+         *     is never lifted and deletes the account 30 days later. `delete_statuses` deletes the
+         *     posts of the account that `status_ids` names, for everyone, the account included, and
+         *     sends their deletion like the account's own; `mark_statuses_sensitive` shows their
+         *     media as sensitive until it is lifted. A remote account takes `limit`, `suspend`, and
+         *     `force_sensitive`. Another kind, the instance actor, or a `report_id` that is not a
+         *     report of the account is a 422 naming `kind`, `id`, or `report_id`. `status_ids` on
+         *     another kind, missing, repeated, or too many on an action on posts, or naming a post
+         *     that does not exist, is deleted, or is of another account is a 422 naming `status_ids`;
+         *     `expires_in` on a `ban` or an action on posts is a 422 naming `expires_in`. A text that
+         *     is too long or contains U+0000 is a 422 naming it. An unknown account is a 404. Needs
+         *     the `manage_accounts` permission.
          */
         post: operations["createAccountAction"];
         delete?: never;
@@ -1419,8 +1425,10 @@ export interface paths {
         /**
          * Lift a moderation action on an account
          * @description Ends the action's restrictions at once; those of other actions on the account stay.
-         *     Sessions and tokens that the action ended stay ended. Lifting a lifted action changes
-         *     nothing and keeps its first reason. A `reason` that is too long or contains U+0000 is a
+         *     Sessions and tokens that the action ended stay ended, and so do the posts that
+         *     `delete_statuses` deleted; the posts that `mark_statuses_sensitive` marked are shown as
+         *     they were. Lifting a lifted action changes nothing and keeps its first reason. A `ban`
+         *     is never lifted: a 422 naming `id`. A `reason` that is too long or contains U+0000 is a
          *     422 naming `reason`. An unknown ID is a 404. Needs the `manage_accounts` permission.
          */
         post: operations["liftAccountAction"];
@@ -2472,6 +2480,11 @@ export interface components {
             lifted_at?: string;
             /** @description Why the action was lifted; omitted until it is or when no reason was given. */
             lift_reason?: string;
+            /**
+             * @description The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+             *     on, in ID order; omitted for the other kinds.
+             */
+            status_ids?: components["schemas"]["Id"][];
         };
         /**
          * @description The kind of reason for an action.
@@ -2514,8 +2527,16 @@ export interface components {
              * @default true
              */
             notify_target: boolean;
-            /** @description The seconds the action lasts; omitted, it lasts until it is lifted. */
+            /**
+             * @description The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
+             *     actions on posts take none.
+             */
             expires_in?: number;
+            /**
+             * @description The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+             *     on; required for them and taken by no other kind.
+             */
+            status_ids?: components["schemas"]["Id"][];
         };
         /** @description Why an action on an account is lifted. */
         LiftAccountActionRequest: {

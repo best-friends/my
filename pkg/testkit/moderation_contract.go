@@ -35,8 +35,9 @@ type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 // moderation.AccountPolicy (data-model §5.3): a domain action restricts the domain and its
 // subdomains until it expires or is lifted, a lift ends only its own action's restrictions,
 // actions on remote accounts restrict them, each kind of action on a local account takes away
-// its capabilities until it ends and may name a report of the account only, kinds that do not
-// apply to an account are refused, invalid actions are refused, each action is lifted once,
+// its capabilities until it ends and may name a report of the account only, the actions on
+// statuses record and act on statuses of the account only and a ban schedules the deletion of
+// the account and is never lifted, kinds that do not apply to an account are refused, invalid actions are refused, each action is lifted once,
 // every change emits the restrictions in effect afterwards, a received report is filed once,
 // open, with its statuses and its comment cut to the limit, a local report is filed open with
 // its statuses and cited rules only when the reporter may see those statuses of the target and
@@ -54,6 +55,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"LiftEndsOnlyItsOwnAction", moderationLifts},
 		{"RemoteAccountActions", moderationAccountActions},
 		{"LocalAccountActions", moderationLocalAccountActions},
+		{"ActionsOnStatusesAndBans", moderationStatusesAndBans},
 		{"ListsAccountActions", moderationListsAccountActions},
 		{"RejectsInvalidActions", moderationRejectsInvalid},
 		{"RecordsEachLiftOnce", moderationLiftsOnce},
@@ -74,8 +76,11 @@ type moderationEnv struct {
 	clock  *Clock
 	ids    *IDGenerator
 	actors *stubActors
-	svc    *appmoderation.Service
-	policy *appmoderation.FederationPolicy
+	// statuses and lifecycles stand in for the content and account modules.
+	statuses   *stubModerationStatuses
+	lifecycles *stubLifecycles
+	svc        *appmoderation.Service
+	policy     *appmoderation.FederationPolicy
 	// accounts is the AccountPolicy on the same repository.
 	accounts *appmoderation.AccountPolicy
 	events   *eventLog
@@ -94,12 +99,15 @@ func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv
 	ids := NewIDGenerator(clock)
 	e := &moderationEnv{
 		h: h, clock: clock, ids: ids, actors: &stubActors{actors: map[string]appaccount.Actor{}}, events: &eventLog{},
+		statuses:   &stubModerationStatuses{live: map[string]appcontent.Status{}, deleted: map[string]string{}, marked: map[string][]string{}},
+		lifecycles: &stubLifecycles{due: map[string]time.Time{}},
 	}
 	for _, typ := range []string{appmoderation.EventDomainRestrictionsChanged, appmoderation.EventAccountRestrictionsChanged, appmoderation.EventReportFiled} {
 		projectors.Register(typ, e.events.record)
 	}
 	e.svc = appmoderation.NewService(appmoderation.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Moderation, Accounts: e.actors, Clock: clock, IDs: ids,
+		Statuses: e.statuses, Lifecycles: e.lifecycles,
 	})
 	e.policy = appmoderation.NewFederationPolicy(h.Moderation, clock)
 	e.accounts = appmoderation.NewAccountPolicy(h.Moderation, e.actors, clock)
@@ -229,9 +237,7 @@ func moderationAccountActions(t *testing.T, e *moderationEnv) {
 		{TargetAccountID: e.remote, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategoryOther},
 		{TargetAccountID: e.remote, Kind: moderation.ActionDisableLogin, ReasonCategory: moderation.CategoryOther},
 		{TargetAccountID: e.remote, Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionDeleteStatuses, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionMarkStatusesSensitive, ReasonCategory: moderation.CategoryOther},
+		{TargetAccountID: e.remote, Kind: moderation.ActionDeleteStatuses, ReasonCategory: moderation.CategoryOther, StatusIDs: []string{e.ids.NewID()}},
 		{TargetAccountID: e.instance, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategoryOther},
 	} {
 		if _, err := e.svc.IssueAccountAction(ctx, in); !errors.Is(err, appmoderation.ErrUnsupportedAction) {
@@ -324,6 +330,26 @@ func moderationLocalAccountActions(t *testing.T, e *moderationEnv) {
 	if v, err := e.svc.AccountAction(ctx, posting.ID); err != nil || v.State != moderation.ActionExpired {
 		t.Errorf("AccountAction(expired) = %+v, %v", v, err)
 	}
+
+	// A limit keeps the account's notifications from the accounts that do not follow it, and so
+	// does a limit on its domain.
+	reach := func(when, accountID string, want bool) {
+		t.Helper()
+		if got, err := e.accounts.UnsolicitedReachRestricted(ctx, accountID); err != nil || got != want {
+			t.Errorf("%s: UnsolicitedReachRestricted = %v, %v; want %v", when, got, err, want)
+		}
+	}
+	limit := issue(moderation.ActionLimit, 0)
+	reach("limit", e.local, true)
+	lift(limit)
+	reach("limit lifted", e.local, false)
+	domainLimit := e.domainAction(t, "remote.example", moderation.DomainLimit, 0)
+	reach("domain limit", e.remote, true)
+	reach("local after a domain limit", e.local, false)
+	if err := e.svc.LiftDomainAction(ctx, domainLimit.ID, "user-1"); err != nil {
+		t.Fatalf("LiftDomainAction(limit) = %v", err)
+	}
+	reach("domain limit lifted", e.remote, false)
 
 	// The restrictions of the account's domain apply to a remote account.
 	e.domainAction(t, "remote.example", moderation.DomainSuspend, 0)

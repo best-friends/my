@@ -2,7 +2,7 @@
 // Shared E2E fixtures and assertions (ADR-0027). Specs import `test` and `expect` from here, not from
 // @playwright/test, so every spec gets the same axe configuration.
 import AxeBuilder from "@axe-core/playwright";
-import { test as base, expect, type Page } from "@playwright/test";
+import { test as base, expect, type Locator, type Page } from "@playwright/test";
 import { previewOrigin } from "./server-origin.ts";
 
 /** The axe rule tags for WCAG 2.2 AA (ADR-0027, web-client.md Y1). */
@@ -102,4 +102,31 @@ export async function expectNoHorizontalScroll(page: Page): Promise<void> {
   expect(scrollWidth, `scrollWidth ${scrollWidth}px exceeds clientWidth ${clientWidth}px`).toBeLessThanOrEqual(
     clientWidth,
   );
+}
+
+/**
+ * Asserts that a tab is whole in its tab list, which scrolls sideways when the tabs do not fit: no part of
+ * it is cut off by the list's edges or under the fade (as wide as the list's scroll-padding) of an edge with
+ * more tabs behind it. Polls, since the list scrolls after a render.
+ */
+export async function expectTabWhollyVisible(tab: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      tab.evaluate((element) => {
+        const list = element.closest<HTMLElement>('[role="tablist"]');
+        if (list === null) return "not in a tablist";
+        const style = getComputedStyle(list);
+        const rtl = style.direction === "rtl";
+        const offset = Math.abs(list.scrollLeft);
+        const start = offset > 1;
+        const end = list.scrollWidth - list.clientWidth - offset > 1;
+        const listRect = list.getBoundingClientRect();
+        const tabRect = element.getBoundingClientRect();
+        const left = listRect.left + ((rtl ? end : start) ? Number.parseFloat(style.scrollPaddingLeft) : 0);
+        const right = listRect.right - ((rtl ? start : end) ? Number.parseFloat(style.scrollPaddingRight) : 0);
+        // A pixel of slack for fractional positions.
+        return tabRect.left >= left - 1 && tabRect.right <= right + 1 ? "whole" : `${tabRect.left}–${tabRect.right} outside ${left}–${right} (scrollLeft ${list.scrollLeft})`;
+      }),
+    )
+    .toBe("whole");
 }

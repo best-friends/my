@@ -24,6 +24,25 @@ describe("Link", () => {
     expect(onPress).toHaveBeenCalledOnce();
   });
 
+  it("can leave the tab order and still be followed with the pointer", async () => {
+    const user = userEvent.setup();
+    const onPress = vi.fn();
+    render(
+      <>
+        <Link href="#a" excludeFromTabOrder onPress={onPress}>
+          Avatar
+        </Link>
+        <Link href="#a">Name</Link>
+      </>,
+    );
+    const avatar = screen.getByRole("link", { name: "Avatar" });
+    expect(avatar).toHaveAttribute("tabindex", "-1");
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Name" })).toHaveFocus();
+    await user.click(avatar);
+    expect(onPress).toHaveBeenCalledOnce();
+  });
+
   it("keeps the underline inline and merges className", () => {
     render(
       <Link href="/a" className="font-bold">
