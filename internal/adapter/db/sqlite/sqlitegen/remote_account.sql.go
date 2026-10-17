@@ -12,6 +12,33 @@ import (
 	"database/sql"
 )
 
+const deleteAccountHandle = `-- name: DeleteAccountHandle :exec
+DELETE FROM account_handles WHERE account_id = ?1
+`
+
+func (q *Queries) DeleteAccountHandle(ctx context.Context, accountID string) error {
+	_, err := q.db.ExecContext(ctx, deleteAccountHandle, accountID)
+	return err
+}
+
+const deleteOtherAccountHandle = `-- name: DeleteOtherAccountHandle :exec
+DELETE FROM account_handles
+WHERE username_normalized = ?1 AND domain = ?2 AND account_id <> ?3
+`
+
+type DeleteOtherAccountHandleParams struct {
+	UsernameNormalized string
+	Domain             string
+	AccountID          string
+}
+
+// DeleteOtherAccountHandle removes the handle of another account that holds the same name,
+// so that the account that verified it last keeps it.
+func (q *Queries) DeleteOtherAccountHandle(ctx context.Context, arg DeleteOtherAccountHandleParams) error {
+	_, err := q.db.ExecContext(ctx, deleteOtherAccountHandle, arg.UsernameNormalized, arg.Domain, arg.AccountID)
+	return err
+}
+
 const getAccountKeyByKeyIDAndFingerprint = `-- name: GetAccountKeyByKeyIDAndFingerprint :one
 SELECT id, account_id, key_id, algorithm, public_key_pem, fingerprint, created_at FROM account_keys
 WHERE key_id = ?1 AND fingerprint = ?2
@@ -64,11 +91,11 @@ func (q *Queries) GetCurrentAccountKey(ctx context.Context, keyID string) (Accou
 }
 
 const getLatestRemoteAccountHandleVerification = `-- name: GetLatestRemoteAccountHandleVerification :one
-SELECT id, account_id, username, domain, verified_at FROM remote_account_handle_verifications
+SELECT id, account_id, username, domain, outcome, checked_at FROM remote_account_handle_verifications
 WHERE account_id = ?1 ORDER BY id DESC LIMIT 1
 `
 
-// GetLatestRemoteAccountHandleVerification returns the newest verified handle of an actor.
+// GetLatestRemoteAccountHandleVerification returns the newest handle check of an actor.
 func (q *Queries) GetLatestRemoteAccountHandleVerification(ctx context.Context, accountID string) (RemoteAccountHandleVerification, error) {
 	row := q.db.QueryRowContext(ctx, getLatestRemoteAccountHandleVerification, accountID)
 	var i RemoteAccountHandleVerification
@@ -77,7 +104,8 @@ func (q *Queries) GetLatestRemoteAccountHandleVerification(ctx context.Context, 
 		&i.AccountID,
 		&i.Username,
 		&i.Domain,
-		&i.VerifiedAt,
+		&i.Outcome,
+		&i.CheckedAt,
 	)
 	return i, err
 }
@@ -174,16 +202,17 @@ func (q *Queries) InsertRemoteAccount(ctx context.Context, arg InsertRemoteAccou
 }
 
 const insertRemoteAccountHandleVerification = `-- name: InsertRemoteAccountHandleVerification :exec
-INSERT INTO remote_account_handle_verifications (id, account_id, username, domain, verified_at)
-VALUES (?1, ?2, ?3, ?4, ?5)
+INSERT INTO remote_account_handle_verifications (id, account_id, username, domain, outcome, checked_at)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6)
 `
 
 type InsertRemoteAccountHandleVerificationParams struct {
-	ID         string
-	AccountID  string
-	Username   string
-	Domain     string
-	VerifiedAt int64
+	ID        string
+	AccountID string
+	Username  string
+	Domain    string
+	Outcome   string
+	CheckedAt int64
 }
 
 func (q *Queries) InsertRemoteAccountHandleVerification(ctx context.Context, arg InsertRemoteAccountHandleVerificationParams) error {
@@ -192,7 +221,8 @@ func (q *Queries) InsertRemoteAccountHandleVerification(ctx context.Context, arg
 		arg.AccountID,
 		arg.Username,
 		arg.Domain,
-		arg.VerifiedAt,
+		arg.Outcome,
+		arg.CheckedAt,
 	)
 	return err
 }
@@ -264,21 +294,113 @@ func (q *Queries) InsertRemoteProfileRevision(ctx context.Context, arg InsertRem
 	return err
 }
 
+const listActiveAccountKeys = `-- name: ListActiveAccountKeys :many
+SELECT k.id, k.account_id, k.key_id, k.algorithm, k.public_key_pem, k.fingerprint, k.created_at
+FROM account_keys k
+WHERE k.account_id = ?1
+  AND NOT EXISTS (SELECT 1 FROM account_key_revocations r WHERE r.account_key_id = k.id)
+ORDER BY k.id
+`
+
+// ListActiveAccountKeys returns the keys of an account without a revocation, oldest first.
+func (q *Queries) ListActiveAccountKeys(ctx context.Context, accountID string) ([]AccountKey, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveAccountKeys, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AccountKey{}
+	for rows.Next() {
+		var i AccountKey
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.KeyID,
+			&i.Algorithm,
+			&i.PublicKeyPem,
+			&i.Fingerprint,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLatestRemoteAccountHandleVerifications = `-- name: ListLatestRemoteAccountHandleVerifications :many
+SELECT v.id, v.account_id, v.username, v.domain, v.outcome, v.checked_at
+FROM remote_account_handle_verifications v
+WHERE v.id = (
+  SELECT w.id FROM remote_account_handle_verifications w
+  WHERE w.account_id = v.account_id ORDER BY w.id DESC LIMIT 1
+)
+ORDER BY v.id
+`
+
+// ListLatestRemoteAccountHandleVerifications returns the newest handle check of every actor,
+// oldest first, for rebuilding account_handles.
+func (q *Queries) ListLatestRemoteAccountHandleVerifications(ctx context.Context) ([]RemoteAccountHandleVerification, error) {
+	rows, err := q.db.QueryContext(ctx, listLatestRemoteAccountHandleVerifications)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RemoteAccountHandleVerification{}
+	for rows.Next() {
+		var i RemoteAccountHandleVerification
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.Username,
+			&i.Domain,
+			&i.Outcome,
+			&i.CheckedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStaleRemoteAccountHeads = `-- name: ListStaleRemoteAccountHeads :many
 SELECT account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures
-FROM remote_account_heads WHERE last_fetched_at < ?1
-ORDER BY last_fetched_at LIMIT ?2
+FROM remote_account_heads
+WHERE last_fetched_at < ?1
+  AND (last_fetched_at > ?2 OR (last_fetched_at = ?2 AND account_id > ?3))
+ORDER BY last_fetched_at, account_id LIMIT ?4
 `
 
 type ListStaleRemoteAccountHeadsParams struct {
-	FetchedBefore int64
-	BatchLimit    int64
+	FetchedBefore  int64
+	AfterFetchedAt int64
+	AfterAccountID string
+	BatchLimit     int64
 }
 
 // ListStaleRemoteAccountHeads returns the actors fetched before @fetched_before, the least
-// recently fetched first, for the periodic refresh.
+// recently fetched first, after the cursor (@after_fetched_at, @after_account_id), for the
+// periodic refresh.
 func (q *Queries) ListStaleRemoteAccountHeads(ctx context.Context, arg ListStaleRemoteAccountHeadsParams) ([]RemoteAccountHead, error) {
-	rows, err := q.db.QueryContext(ctx, listStaleRemoteAccountHeads, arg.FetchedBefore, arg.BatchLimit)
+	rows, err := q.db.QueryContext(ctx, listStaleRemoteAccountHeads,
+		arg.FetchedBefore,
+		arg.AfterFetchedAt,
+		arg.AfterAccountID,
+		arg.BatchLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -305,6 +427,26 @@ func (q *Queries) ListStaleRemoteAccountHeads(ctx context.Context, arg ListStale
 		return nil, err
 	}
 	return items, nil
+}
+
+const recordRemoteAccountFetchFailure = `-- name: RecordRemoteAccountFetchFailure :execrows
+UPDATE remote_account_heads
+SET consecutive_fetch_failures = consecutive_fetch_failures + 1, last_fetched_at = ?1
+WHERE account_id = ?2
+`
+
+type RecordRemoteAccountFetchFailureParams struct {
+	LastFetchedAt int64
+	AccountID     string
+}
+
+// RecordRemoteAccountFetchFailure counts a failed fetch of an actor and defers its next refresh.
+func (q *Queries) RecordRemoteAccountFetchFailure(ctx context.Context, arg RecordRemoteAccountFetchFailureParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, recordRemoteAccountFetchFailure, arg.LastFetchedAt, arg.AccountID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const upsertRemoteAccountHead = `-- name: UpsertRemoteAccountHead :exec

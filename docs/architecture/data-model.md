@@ -313,14 +313,14 @@ flowchart LR
 | `local_accounts` | リソース（部分型） | `account_id`（PK）, `user_id`, `username`, `username_normalized` | 一意 `(user_id)`, `(username_normalized)`。ローカルのユーザー名は変更しない（URI は ID ベースだが、ハンドルの再利用による混乱を避けるため） |
 | `remote_accounts` | リソース（部分型） | `account_id`（PK）, `first_seen_at` | |
 | `remote_account_snapshots` | イベント | `id`, `account_id`, `preferred_username`, `profile_url`（NULL 可）, `inbox_url`, `shared_inbox_url`（NULL 可）, `outbox_url` / `followers_url` / `following_url` / `featured_url`（NULL 可。持たない実装がある）, `followers_total` / `following_total` / `statuses_total`（`bigint`、NULL 可）, `document_digest`（`bytes`。文書の SHA-256）, `fetched_at` | インデックス `(account_id, id DESC)`。取得のたびに 1 行。内容（ダイジェスト）が前回と同じなら挿入しない |
-| `remote_account_heads` | 投影 | `account_id`（PK）, `snapshot_id`, `inbox_url`, `shared_inbox_url`（NULL 可）, `last_fetched_at`, `consecutive_fetch_failures`（`int`） | インデックス `(last_fetched_at)`（定期リフレッシュ） |
-| `remote_account_handle_verifications` | イベント | `id`, `account_id`, `username`, `domain`, `verified_at` | インデックス `(account_id, id DESC)`。WebFinger で `acct:{username}@{domain}` の `self` リンクが Actor の `uri` を指すことを確かめた記録（[federation.md §6.2](federation.md#62-actor-とハンドル)） |
-| `account_handles` | 投影 | `account_id`（PK）, `username`, `username_normalized`, `domain` | **一意 `(username_normalized, domain)`**。WebFinger・`@user@host` の解決（FR-305, FR-401）。ローカルは `local_accounts`、リモートは最新の `remote_account_handle_verifications` から作る（確かめていないリモートのアカウントは行を持たない） |
+| `remote_account_heads` | 投影 | `account_id`（PK）, `snapshot_id`, `inbox_url`, `shared_inbox_url`（NULL 可）, `last_fetched_at`, `consecutive_fetch_failures`（`int`） | インデックス `(last_fetched_at)`（定期リフレッシュ）。取得のたびに最新のスナップショットを指し、`last_fetched_at` を取得の時刻、`consecutive_fetch_failures` を 0 にする。取得に失敗したら `consecutive_fetch_failures` を 1 増やし、`last_fetched_at` を失敗の時刻にする（次の定期リフレッシュを 24 時間後に送る） |
+| `remote_account_handle_verifications` | イベント | `id`, `account_id`, `username`, `domain`, `outcome`（`enum(verified, mismatch)`）, `checked_at` | インデックス `(account_id, id DESC)`。WebFinger で `acct:{username}@{domain}` を確かめた記録（[federation.md §6.2](federation.md#62-actor-とハンドル)）。`verified` は `self` リンクが Actor の `uri` を指したこと、`mismatch` は答えがそれを確かめなかったこと。結果が最新の記録と同じなら挿入しない |
+| `account_handles` | 投影 | `account_id`（PK）, `username`, `username_normalized`, `domain` | **一意 `(username_normalized, domain)`**。WebFinger・`@user@host` の解決（FR-305, FR-401）。ローカルは `local_accounts`、リモートは最新の `remote_account_handle_verifications` が `verified` のときだけ作る（確かめていない・`mismatch` のリモートのアカウントは行を持たない） |
 
 - インスタンス自身の Actor（`Application`）もローカルの `accounts` に 1 行持ちます（`local_accounts` と `account_handles` には入れません）。
   ローカルの `application` はこの 1 行だけなので、部分一意インデックスで二重作成を防ぎ、作成を冪等にします。
 - ローカルアカウントの `uri` は `https://{host}/ap/actors/{id}`（ADR-0018）です。ハンドルの `domain` は `account_domain` ではなく `''` です（設定値に依存させない）。
-- リモートのハンドルが変わった場合、同じハンドルを別の Actor が後から名乗ることがあります。そのとき投影の一意制約で衝突したら、古い側を再取得して解消するジョブを入れます。
+- リモートのハンドルが変わった場合、同じハンドルを別の Actor が後から名乗ることがあります。後から `verified` を記録した Actor がハンドルを持ち、先に持っていた Actor の行は投影から消えます（再構築も記録の `id` 順に当てはめるので同じ結果になります）。
 
 #### プロフィール【イベント（版）】
 
@@ -354,7 +354,7 @@ flowchart LR
 | `account_key_revocations` | イベント | `account_key_id`（PK）, `revoked_at` | |
 
 - ローカルの Actor（インスタンス Actor を含む）は、作成時に RSA 2048 ビット（`rsa_sha256`、`key_id` = `{actor}#main-key`）と Ed25519（`ed25519`、`key_id` = `{actor}#ed25519-key`）の 2 つの鍵を持ちます。
-- リモートの Actor は、同じ `key_id` のまま公開鍵を替えることがあります（Mastodon の `#main-key`）。取得した鍵の `fingerprint` が既存の行と違えば新しい行を作り、同じトランザクションで古い行に `account_key_revocations` を記録します。署名の検証は、`key_id` の失効していない最新の行を使います（[ADR-0032](../adr/0032-http-signature-profile.md)）。
+- リモートの Actor は、同じ `key_id` のまま公開鍵を替えることがあります（Mastodon の `#main-key`）。取得した鍵の `fingerprint` が既存の行と違えば新しい行を作り、同じトランザクションで古い行に `account_key_revocations` を記録します。文書が宣言しなくなった鍵も同じように失効させます。別のアカウントの鍵になっている `key_id` は書き換えません。署名の検証は、`key_id` の失効していない最新の行を使います（[ADR-0032](../adr/0032-http-signature-profile.md)）。
 - `private_key_enc` は PKCS #8 の秘密鍵を `kernel.Sealer` で暗号化した値です（ADR-0019 §6）。AAD は `account_key_id` と列名 `local_account_private_keys.private_key_enc` で、別の行・列に写すと復号できません。
 
 #### ライフサイクル
@@ -956,7 +956,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `account_lifecycle_states` | `account_lifecycle_events` | 同期 |
 | `user_registration_states` | `registration_decisions` | 同期 |
 | `user_roles` | `user_role_grants`, `user_role_revocations` | 同期 |
-| `account_handles` / `remote_account_heads` / `account_profile_heads` | `local_accounts`, `remote_account_snapshots`, `account_profile_revisions` | 同期 |
+| `account_handles` / `remote_account_heads` / `account_profile_heads` | `local_accounts` と `remote_account_handle_verifications`、`remote_account_snapshots` と取得の結果、`account_profile_revisions` | 同期 |
 | `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses`、`status_deletions` | 同期 |
 | `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
 | `feed_*` | `content` と `graph` の `ReplayEvents` が現在の状態から再生するイベント（下記） | 同期 |
