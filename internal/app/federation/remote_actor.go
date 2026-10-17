@@ -42,6 +42,7 @@ const (
 type RemoteAccounts interface {
 	FindByID(ctx context.Context, id string) (appaccount.Actor, error)
 	FindByURI(ctx context.Context, uri string) (appaccount.Actor, error)
+	FindByHandle(ctx context.Context, username, domain string) (appaccount.Actor, error)
 	RemoteHead(ctx context.Context, accountID string) (appaccount.RemoteHead, error)
 	CurrentKey(ctx context.Context, keyID string) (appaccount.Key, error)
 	StaleRemoteActors(ctx context.Context, after appaccount.RemoteHead, limit int) ([]appaccount.RemoteHead, error)

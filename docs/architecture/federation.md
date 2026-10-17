@@ -223,6 +223,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - 答え（404 を含む）が確かめなければ `mismatch` を記録し、ハンドルを持たないアカウントとして扱います。
   - WebFinger が答えなかった（接続の失敗・429・5xx）ときは何も記録せず、それまでのハンドルを残します。
 - `@user@host` / URL での解決（FR-305）は、`federation.Resolve` が WebFinger → Actor の取得 → 書き込みを行います。URL がオブジェクト（投稿）なら投稿として取り込みます。
+  - ハンドルの解決は `RemoteActors.ResolveHandle` です。保存したハンドルがあればそのアカウントを返し（古ければ非同期で取り直す）、無ければ `{host}` の WebFinger で `acct:{user}@{host}` を引き、`self` の Actor を取得して保存します。その Actor のハンドルの確認（上記）がこのハンドルを確かめなければ `ErrHandleNotFound`、WebFinger が答えなければ `ErrFetchFailed` です。
+  - ローカル投稿のメンション（data-model §4.4）は、これを使います。ネットワークの I/O をするので、トランザクションの外で、件数と時間に上限を置いて呼びます。
 - 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します（ジョブ `federation.refresh_actor`、冪等キー `refresh_actor:<account_id>`）。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors`（1 時間ごと）が `remote_account_heads (last_fetched_at)` の古い順に 200 件ずつ読み、フォローされているものを取り直します（ADR-0034）。カーソル（`last_fetched_at` と `account_id`）を持った次のジョブが続きを読みます。
 
 ### 6.3 投稿
