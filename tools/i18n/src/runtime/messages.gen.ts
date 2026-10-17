@@ -236,6 +236,8 @@ export interface MessageArgs {
   "client:admin.missing_permission.heading": {};
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
+  /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
+  "client:api.error.offline": {};
   /** The server could not handle the request (error {status}). Try again later. */
   "client:api.error.status": { status: string };
   /** Close */
@@ -790,6 +792,8 @@ export interface MessageArgs {
   "client:shell.not_found.home": {};
   /** Page not found */
   "client:shell.not_found.title": {};
+  /** You are offline. Anything that failed to load loads again when you are back online. */
+  "client:shell.offline": {};
   /** Skip to main content */
   "client:shell.skip_to_main": {};
   /** The server sent settings the app cannot read. Reload the page; if this keeps happening, tell the server's administrator. */

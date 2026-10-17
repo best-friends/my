@@ -467,6 +467,10 @@
     "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗȧȧƈħ ŧħḗḗ şḗḗřṽḗḗř. Ƈħḗḗƈķ ẏǿǿŭŭř ƈǿǿƞƞḗḗƈŧīǿǿƞ ȧȧƞḓ ŧřẏ ȧȧɠȧȧīƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "api.error.offline": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ǿǿƒƒŀīƞḗḗ, şǿǿ ŧħḗḗ şḗḗřṽḗḗř ƈȧȧƞƞǿǿŧ ƀḗḗ řḗḗȧȧƈħḗḗḓ. Ƈǿǿƞƞḗḗƈŧ ŧǿǿ ŧħḗḗ īƞŧḗḗřƞḗḗŧ ȧȧƞḓ ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "api.error.status": {
     "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ħȧȧƞḓŀḗḗ ŧħḗḗ řḗḗɋŭŭḗḗşŧ (ḗḗřřǿǿř {status}). Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1573,6 +1577,10 @@
   },
   "shell.not_found.title": {
     "defaultMessage": "[Ƥȧȧɠḗḗ ƞǿǿŧ ƒǿǿŭŭƞḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.offline": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ǿǿƒƒŀīƞḗḗ. Ȧƞẏŧħīƞɠ ŧħȧȧŧ ƒȧȧīŀḗḗḓ ŧǿǿ ŀǿǿȧȧḓ ŀǿǿȧȧḓş ȧȧɠȧȧīƞ ẇħḗḗƞ ẏǿǿŭŭ ȧȧřḗḗ ƀȧȧƈķ ǿǿƞŀīƞḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.skip_to_main": {
