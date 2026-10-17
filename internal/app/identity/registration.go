@@ -121,8 +121,9 @@ type SignUpInput struct {
 	// Reason is why the applicant wants to join; it is kept in approval mode and ignored in
 	// the other modes.
 	Reason string
-	// IP is the client address ("" when unknown); it keys SignUpIPLimit and is stored with
-	// the session.
+	// IP is the client address ("" when unknown); it keys SignUpIPLimit and is recorded as the
+	// registration's origin and, with UserAgent, the session's. An unknown or unparsable
+	// address is not recorded and does not stop the sign-up.
 	IP        string
 	UserAgent string
 	// CurrentToken is the session token the browser already holds, if any; the new user's
@@ -149,7 +150,8 @@ type SignedUp struct {
 //
 // In one transaction it writes the user, password, primary email address, preferences, local
 // account, application, the system's decision, the registration state, the invite's
-// redemption, the email verification token, and a session; then it sends the verification
+// redemption, the email verification token, the registration's origin, and a session with its
+// origin; then it sends the verification
 // email. The invite's redemption takes the next sequence number, so concurrent sign-ups never
 // redeem an invite more than its maximum uses.
 //
@@ -268,6 +270,11 @@ func (s *Service) SignUp(ctx context.Context, in SignUpInput) (SignedUp, error) 
 		}
 		if verification != nil {
 			if err := repo.InsertUserToken(ctx, tx, verification.token); err != nil {
+				return err
+			}
+		}
+		if ip := normalizeIP(in.IP); ip != "" {
+			if err := repo.InsertRegistrationOrigin(ctx, tx, identity.RegistrationOrigin{UserID: p.user.ID, IP: ip, RecordedAt: now}); err != nil {
 				return err
 			}
 		}
@@ -432,13 +439,14 @@ func (s *Service) ResendVerificationEmail(ctx context.Context, userID string) er
 	return s.sendVerification(ctx, email.Address, prefs.Locale, v.secret)
 }
 
-// Access is what a user may do, from their registration state and email verification.
+// Access is what a user may do, from their registration state, email verification, and
+// whether moderation forbids their local account to log in.
 //
 // Only an allowed user may use the app: the OAuth authorization endpoint calls UserAccess and
-// refuses users for whom Allowed is false, so that a pending, rejected, or unverified user gets
-// no access token, and AuthenticateBearer checks it again on every client API request. Such
-// users can still sign in to the server-rendered screens, which tell them what they are
-// waiting for.
+// refuses users for whom Allowed is false, so that a pending, rejected, unverified, or
+// login-restricted user gets no access token, and AuthenticateBearer checks it again on every
+// client API request. Such users can still sign in to the server-rendered screens, which tell
+// them what they are waiting for or which moderation actions keep them out.
 type Access struct {
 	Registration identity.RegistrationState
 	// Email is the user's primary email address ("" when none).
@@ -447,11 +455,20 @@ type Access struct {
 	EmailVerified bool
 	// EmailVerificationRequired is true when an unverified address keeps the user out.
 	EmailVerificationRequired bool
+	// AccountID is the local account the user logs in as ("" when the user has none).
+	AccountID string
+	// AccountActive is true when that account is active: not deactivated, scheduled for
+	// deletion, or deleted.
+	AccountActive bool
+	// LoginRestricted is true when moderation forbids the account to log in and use the app
+	// (disable_login, suspend).
+	LoginRestricted bool
 }
 
-// Allowed reports whether the user may use the app: approved and, when required, verified.
+// Allowed reports whether the user may use the app: approved, verified when that is required,
+// and not restricted from logging in.
 func (a Access) Allowed() bool {
-	return a.Registration == identity.RegistrationApproved && (a.EmailVerified || !a.EmailVerificationRequired)
+	return a.Registration == identity.RegistrationApproved && (a.EmailVerified || !a.EmailVerificationRequired) && !a.LoginRestricted
 }
 
 // AwaitingVerification reports whether the user must still confirm their email address.
@@ -475,6 +492,20 @@ func (s *Service) UserAccess(ctx context.Context, userID string) (Access, error)
 	case errors.Is(err, ErrNotFound):
 		out.EmailVerified = true
 	default:
+		return Access{}, err
+	}
+	if s.d.Accounts == nil {
+		return out, nil
+	}
+	life, err := s.d.Accounts.UserLifecycle(ctx, userID)
+	switch {
+	case errors.Is(err, account.ErrNotFound):
+		return out, nil
+	case err != nil:
+		return Access{}, err
+	}
+	out.AccountID, out.AccountActive = life.AccountID, life.Active()
+	if out.LoginRestricted, err = s.loginRestricted(ctx, life.AccountID); err != nil {
 		return Access{}, err
 	}
 	return out, nil

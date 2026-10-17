@@ -4,7 +4,7 @@
 // API with `page.route`, as a signed-in user's server would. Names change with the locale, so elements are
 // found by role and position.
 import type { Page } from "@playwright/test";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, expectTabWhollyVisible, test } from "./fixtures";
 
 const alice = {
   id: "0192f0c4-7a8e-7000-8000-000000000001",
@@ -227,5 +227,57 @@ test.describe("notifications", () => {
 
     await page.reload();
     await expect(page.getByRole("tab").nth(1)).toHaveAttribute("aria-selected", "true");
+  });
+
+  // On a phone the type tabs do not all fit: the list scrolls sideways and shows each tab whole once reached.
+  test("every type tab is reached whole from the keyboard, also when it starts selected", async ({ page }) => {
+    await page.goto("/notifications");
+    const tabs = page.getByRole("tab");
+    await expect(tabs).toHaveCount(5);
+    await tabs.first().focus();
+    const rtl = (await page.locator("html").getAttribute("dir")) === "rtl";
+    for (let index = 1; index < 5; index += 1) {
+      await page.keyboard.press(rtl ? "ArrowLeft" : "ArrowRight");
+      await expect(tabs.nth(index)).toBeFocused();
+      await expectTabWhollyVisible(tabs.nth(index));
+    }
+    await expect(page).toHaveURL(/\/notifications\?filter=favourites$/);
+    await page.reload();
+    await expect(tabs.last()).toHaveAttribute("aria-selected", "true");
+    await expectTabWhollyVisible(tabs.last());
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("the type tabs scroll sideways under a finger, and a tap selects the one reached", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "touch only on the phone widths");
+    await page.goto("/notifications");
+    const list = page.getByRole("tablist");
+    const favourites = page.getByRole("tab").last();
+    await expect(page.getByRole("tab").first()).toHaveAttribute("aria-selected", "true");
+    // Swipe towards the inline start, which brings the tabs at the inline end into view.
+    const box = await list.boundingBox();
+    if (box === null) throw new Error("the tab list is not rendered");
+    const rtl = (await page.locator("html").getAttribute("dir")) === "rtl";
+    // Playwright has only tap, so the swipe is raw touch events, which Chromium turns into a scroll.
+    // Long labels (en-XA) need more than one swipe, so it swipes until the list has reached its end.
+    const cdp = await page.context().newCDPSession(page);
+    const y = box.y + box.height / 2;
+    const from = rtl ? box.x + 20 : box.x + box.width - 20;
+    const step = (rtl ? box.width - 40 : 40 - box.width) / 10;
+    await expect(async () => {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from, y }] });
+      for (let move = 1; move <= 10; move += 1) {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from + step * move, y }] });
+      }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await expect(list).not.toHaveAttribute("data-overflow-end", { timeout: 1000 });
+    }).toPass();
+    // The list scrolled: the tabs at the inline start are now behind the fade of that edge.
+    if (await list.evaluate((element) => element.scrollWidth > element.clientWidth)) await expect(list).toHaveAttribute("data-overflow-start");
+    await expectTabWhollyVisible(favourites);
+    await favourites.tap();
+    await expect(favourites).toHaveAttribute("aria-selected", "true");
+    await expect(page).toHaveURL(/\/notifications\?filter=favourites$/);
+    await expectTabWhollyVisible(favourites);
   });
 });

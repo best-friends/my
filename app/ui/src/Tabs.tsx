@@ -5,12 +5,19 @@
 // The selection is controllable, so a route can keep the tab in the URL (web-client.md S3): pass the key
 // from the validated search params as `selectedKey`, and navigate in `onSelectionChange`. Each Tab may
 // instead have an `href`, so that the tabs are links and the router's own navigation selects them.
-import type { ReactNode, Ref } from "react";
+//
+// Tabs that do not fit scroll sideways inside the list (by finger, trackpad or Shift + wheel), which has no
+// scrollbar, as in React Aria's own TabList styles. The inline edge behind which tabs are hidden fades out,
+// so that a tab cut by the edge reads as "more this way". The fade is static (no transition), so it shows
+// with reduced motion too. The tab that gets focus or the selection scrolls fully into view, clear of the fade.
+import { use, useEffect, useRef, useState, type ReactNode, type Ref } from "react";
+import { mergeRefs } from "react-aria";
 import {
   Tab as AriaTab,
   TabList as AriaTabList,
   TabPanel as AriaTabPanel,
   Tabs as AriaTabs,
+  TabListStateContext,
   type TabListProps as AriaTabListProps,
   type TabPanelProps as AriaTabPanelProps,
   type TabProps as AriaTabProps,
@@ -22,7 +29,15 @@ import { tv } from "tailwind-variants";
 const tabs = tv({
   slots: {
     root: "flex flex-col gap-4",
-    list: "flex gap-1 overflow-x-auto border-b border-border",
+    // overflow-y-clip keeps the list from scrolling vertically by a pixel, as overflow-x-auto alone would.
+    // scroll-px-8 is the width of the fade: a tab scrolled into view stays clear of it (scrollTabIntoView).
+    list: [
+      "flex scroll-px-8 gap-1 overflow-x-auto overflow-y-clip border-b border-border scrollbar-none",
+      // The edge with hidden tabs fades out over its last 2rem (the scroll-px above). It is a mask rather than a
+      // gradient overlay, so it works on any surface, and the two edges' mask layers combine.
+      "data-overflow-start:ltr:mask-l-from-[calc(100%-2rem)] data-overflow-start:rtl:mask-r-from-[calc(100%-2rem)]",
+      "data-overflow-end:ltr:mask-r-from-[calc(100%-2rem)] data-overflow-end:rtl:mask-l-from-[calc(100%-2rem)]",
+    ],
     tab: [
       "flex shrink-0 cursor-default items-center border-b-2 border-transparent px-4 py-2 text-sm font-medium",
       "text-fg-muted outline-none select-none pointer-coarse:min-h-11",
@@ -57,8 +72,102 @@ export type TabListProps<T extends object> = Omit<AriaTabListProps<T>, "classNam
   ref?: Ref<HTMLDivElement>;
 };
 
-export function TabList<T extends object>({ className, ...props }: TabListProps<T>) {
-  return <AriaTabList {...props} className={tabs().list({ class: className })} />;
+export function TabList<T extends object>({ className, ref, ...props }: TabListProps<T>) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const overflow = useInlineOverflow(listRef);
+  // Null while React Aria builds the collection, which renders the list once without its state.
+  const state = use(TabListStateContext);
+  const selectedKey = state?.selectedKey;
+  const focusedKey = state?.selectionManager.focusedKey;
+
+  // The list's scroll position is outside React: bring the tab that is now focused or selected into view,
+  // which includes the selected tab of the first render (a tab from the URL). It is done again in the next
+  // frame, after the tabs of the first render exist and after a router's scroll restoration of the
+  // navigation that a URL-bound selection makes, which puts back the list's scroll position from before it.
+  useEffect(() => {
+    const list = listRef.current;
+    if (list === null) return;
+    const reveal = () => {
+      const active = list.ownerDocument.activeElement;
+      const tab =
+        active instanceof HTMLElement && active.getAttribute("role") === "tab" && list.contains(active)
+          ? active
+          : list.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+      if (tab !== null) scrollTabIntoView(list, tab);
+    };
+    reveal();
+    const frame = requestAnimationFrame(reveal);
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [selectedKey, focusedKey]);
+
+  return (
+    <AriaTabList
+      {...props}
+      ref={mergeRefs(listRef, ref)}
+      data-overflow-start={overflow.start || undefined}
+      data-overflow-end={overflow.end || undefined}
+      className={tabs().list({ class: className })}
+    />
+  );
+}
+
+type InlineOverflow = { start: boolean; end: boolean };
+
+/**
+ * Whether the element hides content before its inline start and after its inline end. In RTL, scrollLeft
+ * is 0 at the start and negative towards the end (CSSOM View), so its magnitude is the logical offset.
+ */
+function measureInlineOverflow(element: HTMLElement): InlineOverflow {
+  const offset = Math.abs(element.scrollLeft);
+  const max = element.scrollWidth - element.clientWidth;
+  // A pixel of slack for fractional widths and scroll positions.
+  return { start: offset > 1, end: max - offset > 1 };
+}
+
+function useInlineOverflow(ref: { readonly current: HTMLElement | null }): InlineOverflow {
+  const [overflow, setOverflow] = useState<InlineOverflow>({ start: false, end: false });
+  useEffect(() => {
+    const element = ref.current;
+    if (element === null || typeof ResizeObserver === "undefined") return;
+    const update = () => {
+      const next = measureInlineOverflow(element);
+      setOverflow((current) => (current.start === next.start && current.end === next.end ? current : next));
+    };
+    // The list resizes with its container, and its tabs when a label or the font changes. A ResizeObserver
+    // reports every element once when it starts observing it, which takes the first measurement.
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    for (const child of element.children) observer.observe(child);
+    element.addEventListener("scroll", update, { passive: true });
+    return () => {
+      observer.disconnect();
+      element.removeEventListener("scroll", update);
+    };
+  }, [ref]);
+  return overflow;
+}
+
+/**
+ * Scrolls the list, and only the list (never the page), so that the tab is inside it and clear of the
+ * fades, whose width is the list's scroll-padding. Rectangles and the change of scrollLeft are both
+ * physical, so the arithmetic is the same in LTR and RTL; a tab wider than the room aligns its inline start.
+ */
+function scrollTabIntoView(list: HTMLElement, tab: HTMLElement) {
+  const style = getComputedStyle(list);
+  const listRect = list.getBoundingClientRect();
+  const tabRect = tab.getBoundingClientRect();
+  const left = listRect.left + (Number.parseFloat(style.scrollPaddingLeft) || 0);
+  const right = listRect.right - (Number.parseFloat(style.scrollPaddingRight) || 0);
+  const rtl = style.direction === "rtl";
+  if (tabRect.width > right - left) {
+    list.scrollLeft += rtl ? tabRect.right - right : tabRect.left - left;
+  } else if (tabRect.left < left) {
+    list.scrollLeft += tabRect.left - left;
+  } else if (tabRect.right > right) {
+    list.scrollLeft += tabRect.right - right;
+  }
 }
 
 export type TabProps = Omit<AriaTabProps, "className" | "style" | "children"> & {

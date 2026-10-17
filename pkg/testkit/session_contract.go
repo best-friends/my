@@ -77,12 +77,16 @@ func sessionSignsInAndOut(t *testing.T, e *accountEnv) {
 	if err != nil {
 		t.Fatalf("Authenticate = %v", err)
 	}
-	if s.ID != got.Session.ID || s.UserID != reg.User.ID || s.IP != "192.0.2.1" || !s.CreatedAt.Equal(now) ||
+	if s.ID != got.Session.ID || s.UserID != reg.User.ID || !s.CreatedAt.Equal(now) ||
 		!s.ExpiresAt.Equal(now.Add(appidentity.DefaultSessionTTL)) {
 		t.Errorf("Authenticate = %+v, want the new session of %s created at %v", s, reg.User.ID, now)
 	}
-	if len(s.UserAgent) > identity.MaxUserAgentLength || s.UserAgent != strings.Repeat("é", identity.MaxUserAgentLength/2) {
-		t.Errorf("stored user agent has %d bytes, want it cut to %d bytes of whole characters", len(s.UserAgent), identity.MaxUserAgentLength)
+	o, err := e.h.Identity.FindSessionOrigin(ctx, s.ID)
+	if err != nil || o.SessionID != s.ID || o.UserID != reg.User.ID || o.IP != "192.0.2.1" || !o.CreatedAt.Equal(now) {
+		t.Errorf("FindSessionOrigin = %+v, %v; want 192.0.2.1 for the session created at %v", o, err, now)
+	}
+	if len(o.UserAgent) > identity.MaxUserAgentLength || o.UserAgent != strings.Repeat("é", identity.MaxUserAgentLength/2) {
+		t.Errorf("stored user agent has %d bytes, want it cut to %d bytes of whole characters", len(o.UserAgent), identity.MaxUserAgentLength)
 	}
 
 	// Activity is recorded at sign-in and refreshed only after the interval.
@@ -264,7 +268,8 @@ func (p loginPolicy) LoginRestricted(_ context.Context, accountID string) (bool,
 }
 
 // sessionModerationEndsLogins checks the login restriction (data-model §5.2): the policy keeps
-// a restricted account from signing in and from using its tokens, and revoking a user's
+// a restricted account from using the app and its tokens while it still signs in to the
+// server-rendered screens, and revoking a user's
 // sessions and tokens ends those of that user only, once.
 func sessionModerationEndsLogins(t *testing.T, e *accountEnv) {
 	ctx := t.Context()
@@ -276,9 +281,16 @@ func sessionModerationEndsLogins(t *testing.T, e *accountEnv) {
 
 	policy := loginPolicy{reg.AccountID: true}
 	e.identity = e.newIdentityWith(func(d *appidentity.Deps) { d.Logins = policy })
-	_, wrongErr := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: "wrong password"})
-	if _, err := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: sessionPassword}); !errors.Is(err, appidentity.ErrInvalidCredentials) || err.Error() != wrongErr.Error() {
-		t.Errorf("SignIn while login is restricted = %v, want the wrong-password error %v", err, wrongErr)
+	// The restricted user signs in to the server-rendered screens only, which show the actions;
+	// the user may not use the app.
+	if _, err := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: sessionPassword}); err != nil {
+		t.Errorf("SignIn while login is restricted = %v, want a session for the screens", err)
+	}
+	if a, err := e.identity.UserAccess(ctx, reg.User.ID); err != nil || a.Allowed() || !a.LoginRestricted || a.AccountID != reg.AccountID || !a.AccountActive {
+		t.Errorf("UserAccess while login is restricted = %+v, %v; want restricted and not allowed", a, err)
+	}
+	if a, err := e.identity.UserAccess(ctx, bob.User.ID); err != nil || !a.Allowed() || a.LoginRestricted {
+		t.Errorf("UserAccess of another user = %+v, %v; want allowed", a, err)
 	}
 	if _, err := e.identity.AuthenticateBearer(ctx, tokens.AccessToken); !errors.Is(err, appidentity.ErrAccountUnavailable) {
 		t.Errorf("AuthenticateBearer while login is restricted = %v, want ErrAccountUnavailable", err)

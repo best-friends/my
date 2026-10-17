@@ -275,6 +275,18 @@
     "defaultMessage": "‮⅄on ɐɹǝ sıƃuǝp ıu‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.status.action_ends_in": {
+    "defaultMessage": "‮{days,plural,one{Ǝups ıu # pɐʎ} other{Ǝups ıu # pɐʎs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.action_reason": {
+    "defaultMessage": "‮ᴚǝɐsou: {category}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.action_until_lifted": {
+    "defaultMessage": "‮⅂ɐsʇs nuʇıʅ ɐ ɯopǝɹɐʇoɹ ʅıɟʇs ıʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.status.pending": {
     "defaultMessage": "‮⅄onɹ ɹǝƃısʇɹɐʇıou ıs ʍɐıʇıuƃ ɟoɹ ɐ ɯopǝɹɐʇoɹ's ɐddɹoʌɐʅ. ⅄on ɔɐu sıƃu ıu, qnʇ ʎon ɔɐu nsǝ ʇɥǝ ɐdd ouʅʎ ɐɟʇǝɹ ıʇ ıs ɐddɹoʌǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -297,6 +309,14 @@
   },
   "auth.status.resent": {
     "defaultMessage": "‮Mǝ sǝuʇ ɐ uǝʍ ʅıuʞ ʇo {email}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.restricted": {
+    "defaultMessage": "‮∀ ɯopǝɹɐʇoɹ ɥɐs ʇɐʞǝu ɐɔʇıou ou ʎonɹ ɐɔɔonuʇ, so ʎon ɔɐuuoʇ nsǝ ʇɥǝ ɐdd. ⊥ɥǝsǝ ɐɔʇıous ɐɹǝ ıu ǝɟɟǝɔʇ:‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.restricted_title": {
+    "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ıs ɹǝsʇɹıɔʇǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.status.title": {
@@ -573,6 +593,14 @@
   },
   "mail.verify_email.subject": {
     "defaultMessage": "‮Ↄouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss ɟoɹ {host}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "moderation.action.category": {
+    "defaultMessage": "‮{category,select,legal{⅂ǝƃɐʅ ɹǝɐsous} other{Oʇɥǝɹ} spam{Sdɐɯ} violation{Ʌıoʅɐʇıou oɟ ʇɥǝ ıusʇɐuɔǝ's ɹnʅǝs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "moderation.action.kind": {
+    "defaultMessage": "‮{kind,select,ban{Ԑɐuuǝp: ʇɥǝ ɐɔɔonuʇ ıs pǝʅǝʇǝp} delete_statuses{Ԁosʇs pǝʅǝʇǝp} disable_login{⅂oƃıu pısɐqʅǝp} force_sensitive{Wǝpıɐ ɐʅʍɐʎs ɯɐɹʞǝp ɐs sǝusıʇıʌǝ} limit{⅂ıɯıʇǝp: dosʇs sɥoʍu ʇo ɟoʅʅoʍǝɹs ouʅʎ ɐup ʞǝdʇ oɟɟ ʇɥǝ dnqʅıɔ ʇıɯǝʅıuǝs} mark_statuses_sensitive{Ԁosʇs ɯɐɹʞǝp ɐs sǝusıʇıʌǝ} other{Wopǝɹɐʇıou ɐɔʇıou} restrict_interaction{No ɟoʅʅoʍıuƃ, ɟɐʌonɹıʇıuƃ, qoosʇıuƃ, oɹ ɹǝdʅʎıuƃ} restrict_posting{No dosʇıuƃ, ɹǝdʅʎıuƃ, qoosʇıuƃ, oɹ ǝpıʇıuƃ} suspend{Snsdǝupǝp: uo nsǝ oɟ ʇɥǝ ɐdd, ɐup ʇɥǝ dɹoɟıʅǝ ɐup dosʇs ɐɹǝ ɥıppǝu} warn{Mɐɹuıuƃ}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "preview.avatar_alt": {

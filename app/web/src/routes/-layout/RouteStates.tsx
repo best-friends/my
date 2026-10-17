@@ -4,7 +4,9 @@
 import { Button, Center, Link, Spinner } from "@my/ui";
 import { useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { type ErrorComponentProps, useRouter } from "@tanstack/react-router";
+import { NetworkError } from "../../lib/errors";
 import { useT } from "../../lib/i18n";
+import { useOnReconnect } from "../../lib/network";
 import { PageHeading } from "./PageHeading";
 
 /** The router's defaultPendingComponent: shown only when a page takes longer than defaultPendingMs to load. */
@@ -18,7 +20,7 @@ export function RoutePending() {
 }
 
 /** The error of one page, inside the layout so that the navigation stays usable (the router's defaultErrorComponent). */
-export function RouteError({ reset }: ErrorComponentProps) {
+export function RouteError({ error, reset }: ErrorComponentProps) {
   const t = useT();
   const router = useRouter();
   const queryErrorResetBoundary = useQueryErrorResetBoundary();
@@ -29,10 +31,14 @@ export function RouteError({ reset }: ErrorComponentProps) {
     reset();
     void router.invalidate();
   };
+  // A page that failed for the network loads again by itself when the app is back online (web-client.md G17).
+  const network = error instanceof NetworkError;
+  useOnReconnect(retry, network);
   return (
     <>
       <PageHeading>{t("client:shell.error.title")}</PageHeading>
-      <p>{t("client:shell.error.body")}</p>
+      {/* The network failure's message says whether the app is offline. */}
+      <p>{network ? error.message : t("client:shell.error.body")}</p>
       <div>
         <Button variant="primary" onPress={retry}>
           {t("client:shell.error.retry")}

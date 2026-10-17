@@ -5,7 +5,8 @@
 //
 // - sends the access token as a Bearer token, and after a 401 refreshes it once and sends the request again;
 // - turns every response with an error status into an ApiError and every network failure into a
-//   NetworkError, with a localized message (errors.ts).
+//   NetworkError, with a localized message (errors.ts);
+// - tells lib/network whether the server answered, which decides whether the app is offline (web-client.md G17).
 //
 // The client sends the locale the app is displayed in as Accept-Language, so that the server localizes its
 // problems too; it reads the locale for every request, as the user can change it while the page is open.
@@ -14,6 +15,7 @@ import createQueryClient, { type OpenapiQueryClient } from "openapi-react-query"
 import type { Session } from "../auth/session";
 import type { AppLocale } from "../locale";
 import { apiErrorFromResponse, NetworkError } from "../errors";
+import { isBrowserOffline, reportNetworkFailure, reportResponse } from "../network";
 import type { paths } from "./schema.gen";
 
 /** The base path of the client API, `servers[0].url` in api/openapi.yaml. */
@@ -87,7 +89,6 @@ function authMiddleware(session: Session, locale: Pick<AppLocale, "t">): Middlew
   };
 }
 
-/** Throws an ApiError for every response with an error status, and turns network failures into a NetworkError. */
 /** Sends the locale the app is displayed in at the time of the request. */
 function localeMiddleware(locale: Pick<AppLocale, "locale">): Middleware {
   return {
@@ -98,16 +99,22 @@ function localeMiddleware(locale: Pick<AppLocale, "locale">): Middleware {
   };
 }
 
+/**
+ * Throws an ApiError for every response with an error status, and turns network failures into a NetworkError, whose
+ * message says that the app is offline when the browser has no network.
+ */
 function errorMiddleware(locale: Pick<AppLocale, "t">): Middleware {
   return {
     async onResponse({ response }) {
+      reportResponse();
       if (response.ok) return undefined;
       throw await apiErrorFromResponse(response, locale.t);
     },
     onError({ error }) {
       // An aborted request (TanStack Query cancelling a query) stays an AbortError.
       if (error instanceof DOMException && error.name === "AbortError") return undefined;
-      return new NetworkError(locale.t("client:api.error.network"), { cause: error });
+      reportNetworkFailure();
+      return new NetworkError(locale.t(isBrowserOffline() ? "client:api.error.offline" : "client:api.error.network"), { cause: error });
     },
   };
 }

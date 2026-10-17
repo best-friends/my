@@ -37,6 +37,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/instance":                                     {Operation: "getInstance", Anonymous: true},
 	"GET /api/v1/instance/domain_actions":                      {Operation: "listInstanceDomainActions", Anonymous: true},
 	"GET /api/v1/media/{id}":                                   {Operation: "getMedia", Scopes: []string{"write:media"}},
+	"GET /api/v1/moderation/actions":                           {Operation: "listOwnModerationActions", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/mutes":                                        {Operation: "listMutes", Scopes: []string{"read:mutes"}},
 	"GET /api/v1/notifications":                                {Operation: "listNotifications", Scopes: []string{"read:notifications"}},
 	"GET /api/v1/notifications/marker":                         {Operation: "getNotificationMarker", Scopes: []string{"read:notifications"}},

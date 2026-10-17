@@ -467,6 +467,10 @@
     "defaultMessage": "サーバーに接続できませんでした。接続を確かめて、もう一度試してください。",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."
   },
+  "api.error.offline": {
+    "defaultMessage": "オフラインのため、サーバーに接続できません。インターネットに接続して、もう一度試してください。",
+    "description": "Error message when a request failed because the device has no network connection. Shown as the reason why something could not load or be sent."
+  },
   "api.error.status": {
     "defaultMessage": "サーバーが要求を処理できませんでした（エラー {status}）。しばらくしてから試してください。",
     "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
@@ -789,7 +793,7 @@
   },
   "notifications.loading": {
     "defaultMessage": "通知を読み込み中",
-    "description": "Accessible name of the progress indicator while notifications load."
+    "description": "Visually hidden text that names the busy list of notifications while its first page loads."
   },
   "notifications.post.content_warning": {
     "defaultMessage": "CW：{summary}",
@@ -1018,6 +1022,10 @@
   "profile.list.load_more_failed": {
     "defaultMessage": "続きのアカウントを読み込めませんでした: {reason}",
     "description": "Shown and announced when the next page of a follow list failed to load. {reason} is the error message."
+  },
+  "profile.list.loading": {
+    "defaultMessage": "アカウントを読み込み中",
+    "description": "Visually hidden text that names the busy follow list while its first page loads."
   },
   "profile.list.retry": {
     "defaultMessage": "もう一度試す",
@@ -1575,6 +1583,10 @@
     "defaultMessage": "ページが見つかりません",
     "description": "Heading of the page shown for an address that the web client has no page for."
   },
+  "shell.offline": {
+    "defaultMessage": "オフラインです。読み込めなかったものは、オンラインに戻ると読み込み直します。",
+    "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
+  },
   "shell.skip_to_main": {
     "defaultMessage": "本文へ移動",
     "description": "Link at the very start of every page, visible when focused, that moves keyboard focus past the navigation."
@@ -1713,7 +1725,7 @@
   },
   "status.thread.loading": {
     "defaultMessage": "返信を読み込んでいます",
-    "description": "Accessible name of the progress indicator while the thread around a post loads."
+    "description": "Visually hidden text that names the busy replies section while the thread around a post loads."
   },
   "status.thread.no_replies": {
     "defaultMessage": "まだ返信はありません。",
@@ -1797,7 +1809,7 @@
   },
   "timeline.loading": {
     "defaultMessage": "投稿を読み込み中",
-    "description": "Accessible name of the progress indicator while posts of a timeline load."
+    "description": "Visually hidden text that names the busy region while posts load: the first page of a timeline, or a post page."
   },
   "timeline.media.no_description": {
     "defaultMessage": "説明なし",

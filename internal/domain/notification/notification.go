@@ -12,8 +12,8 @@ type Type string
 
 // Notification types. The notification module generates follow, follow_request,
 // follow_accepted, mention, boost, and favourite from the graph and content events, and
-// report_resolved from the moderation events; poll_closed and moderation_notice belong to the
-// modules that close polls and act on accounts.
+// moderation_notice and report_resolved from the moderation events; poll_closed belongs to the
+// module that closes polls.
 const (
 	TypeFollow           Type = "follow"
 	TypeFollowRequest    Type = "follow_request"
@@ -81,6 +81,9 @@ func (n Notification) Validate() error {
 	if (n.Type == TypeReportResolved) != (n.ReportID != "") {
 		return errors.New("notification: a report_resolved, and only it, names a report")
 	}
+	if (n.Type == TypeModerationNotice) != (n.ModerationActionID != "") {
+		return errors.New("notification: a moderation_notice, and only it, names a moderation action")
+	}
 	return nil
 }
 
@@ -101,6 +104,11 @@ func InteractionKey(t Type, statusID, sourceAccountID string) string {
 // ReportResolvedKey is the dedupe key of a report_resolved notification: one per report, so
 // that resolving a reopened report again does not notify the reporter again.
 func ReportResolvedKey(reportID string) string { return string(TypeReportResolved) + ":" + reportID }
+
+// ModerationNoticeKey is the dedupe key of a moderation_notice notification: one per action.
+func ModerationNoticeKey(actionID string) string {
+	return string(TypeModerationNotice) + ":" + actionID
+}
 
 // Dismissal is the event that the recipient dismissed a notification (notification_dismissals).
 // Dismissed notifications leave the list and the unread count.

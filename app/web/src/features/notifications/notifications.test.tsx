@@ -4,6 +4,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
 import { notificationsFixture } from "./test/handlers";
 import { otherAccountFixture, relationshipFixture, statusFixture } from "../../test/fixtures";
@@ -177,6 +178,33 @@ describe("the notifications page", () => {
     expect(screen.queryByRole("button", { name: "Load more notifications" })).not.toBeInTheDocument();
   });
 
+  test("shows the heading and a skeleton of notifications while the first page loads", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a2", unread_count: 0 });
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get(`${apiBase}/notifications`, async () => {
+        await released;
+        return HttpResponse.json({ items: notificationsFixture });
+      }),
+    );
+    const { user } = await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    await user.click(notificationsLink());
+
+    // After the router's pending delay, the page has its heading and a skeleton named once.
+    await findLoadingRegion("Loading notifications");
+    expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    release();
+
+    expect(await screen.findByRole("feed", { name: "Notifications" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading notifications")).not.toBeInTheDocument();
+  });
+
   test("says when there is nothing to show", async () => {
     server.use(resumableSession(), http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items: [] })));
 
@@ -263,7 +291,9 @@ describe("the notifications page", () => {
 
     const { user } = await renderApp({ path: "/notifications" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Something went wrong" })).toBeInTheDocument();
+    // The page keeps its heading; the list shows why it failed.
+    expect(await screen.findByText("Service Unavailable")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("feed", { name: "Notifications" })).toBeInTheDocument();

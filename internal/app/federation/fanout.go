@@ -15,6 +15,7 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/federation"
@@ -43,6 +44,8 @@ type FanOutDeps struct {
 	// Follows reads the follows that Follow, Accept, Reject, and Undo Follow are about; nil
 	// fails those activities.
 	Follows FollowReader
+	// Reports reads the forwarded reports that Flags are about; nil fails those activities.
+	Reports ReportReader
 	// Host is the serving domain of the activity and object URIs (ADR-0018).
 	Host string
 	// AccountDomain is the domain of local handles in mentions; empty means Host.
@@ -234,6 +237,8 @@ const (
 	phaseCounterpart phase = "counterpart"
 	// phaseSharedInboxes are the shared inboxes known to the instance, in batches.
 	phaseSharedInboxes phase = "shared_inboxes"
+	// phaseReported is the remote account a forwarded report is about, in one batch.
+	phaseReported phase = "reported"
 )
 
 // subject is what the fan-out of one activity needs to know about its object.
@@ -263,8 +268,10 @@ type subject struct {
 	// followURI is the Follow that an Accept answers when it is not the follow's own (a Follow
 	// the follower sent again), "" otherwise.
 	followURI federation.IRI
-	// actor is the local actor an account activity is about.
+	// actor is the local actor an account activity is about, or the instance actor of a Flag.
 	actor appaccount.Actor
+	// report is the forwarded report a Flag is about.
+	report appmoderation.Report
 }
 
 // phases returns the sources of recipients of the activity, in order (data-model §7,
@@ -278,8 +285,11 @@ type subject struct {
 //     inbox known to the instance (data-model §8).
 //   - Follow, Accept, Reject, and Undo Follow: the other account of the follow.
 //   - Like and Undo Like: the author of the favourited status.
+//   - Flag: the reported account.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
+	case federation.OutboundReport:
+		return []phase{phaseReported}
 	case federation.OutboundBlock:
 		return []phase{phaseBlocked}
 	case federation.OutboundAccount:
@@ -310,6 +320,9 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p
 	s := subject{act: act, actorID: act.ActorAccountID}
 	if act.ObjectKind == federation.OutboundBlock {
 		return f.blockSubject(ctx, s)
+	}
+	if act.ObjectKind == federation.OutboundReport {
+		return f.reportSubject(ctx, s)
 	}
 	if act.ObjectKind == federation.OutboundFollow {
 		s.followURI = federation.IRI(p.FollowURI)
@@ -422,6 +435,9 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 		return targets, next, err
 	case phaseBlocked:
 		targets, err = f.blockedInbox(ctx, s)
+		return targets, "", err
+	case phaseReported:
+		targets, err = f.reportedInbox(ctx, s)
 		return targets, "", err
 	case phaseStatusAuthor:
 		targets, err = f.statusAuthorTargets(ctx, s)
