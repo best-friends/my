@@ -77,6 +77,37 @@ paths:
                 $ref: "#/components/schemas/Instance"
         default:
           $ref: "#/components/responses/Problem"
+  # --- instance: public domain actions (#347) ---
+  /instance/domain_actions:
+    get:
+      operationId: listInstanceDomainActions
+      summary: List the domains that the instance moderates
+      description: |
+        The moderation actions in effect on remote domains that the instance lists publicly
+        (FR-718): `limit` and `suspend`, one item per action, newest first. The instance
+        setting `domain_actions_visibility` decides who may read it: `none` makes it a 404,
+        `users` a 401 `/api/v1/problems/unauthenticated` for a request without an access
+        token, and `all` serves everyone. The setting `domain_actions_rationale_visibility`
+        decides, in the same way, who gets each action's public comment. The moderators'
+        private notes are never listed.
+      tags: [instance]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of domain actions.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstanceDomainActionPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of instance: public domain actions (#347) ---
   /accounts/verify_credentials:
     get:
       operationId: verifyAccountCredentials
@@ -2074,6 +2105,42 @@ components:
         federated:
           description: Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`).
           type: boolean
+    # --- instance: public domain actions (#347) ---
+    InstanceDomainAction:
+      description: A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718).
+      type: object
+      required: [domain, digest, kind]
+      properties:
+        domain:
+          description: |
+            The domain, in IDNA A-labels. When the moderators chose to obfuscate it, the
+            characters of its middle half other than dots are replaced with `*`.
+          type: string
+        digest:
+          description: The SHA-256 of the domain (not obfuscated) in lower-case hexadecimal, to check a known domain against an obfuscated item.
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        kind:
+          description: |
+            `suspend`: no federation with the domain at all. `limit`: its posts stay off the
+            public timelines and its accounts reach only their followers.
+          type: string
+          enum: [limit, suspend]
+        comment:
+          description: The public reason for the action; omitted when there is none or the viewer may not read it.
+          type: string
+    InstanceDomainActionPage:
+      description: A page of public domain actions, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/InstanceDomainAction"
+    # --- end of instance: public domain actions (#347) ---
     # Accounts and relationships (#108).
     Account:
       description: An account, as clients show it (FR-006).

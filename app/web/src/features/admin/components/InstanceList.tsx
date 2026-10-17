@@ -3,12 +3,11 @@
 // URL by the route (web-client.md S3), and the servers of the selected filter, each with its state, since when,
 // and its failures, linking to the server's page with the reasons. The tabs follow the WAI-ARIA APG tabs
 // pattern with automatic activation (React Aria Tabs); only the selected panel is mounted.
-import { EmptyState, Link, Tab, TabList, TabPanel, Tabs } from "@my/ui";
+import { DescriptionItem, DescriptionList, EmptyState, Link, Tab, TabList, TabPanel, Tabs } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type InstanceFilter, instanceFilters, type InstanceHealth } from "../api/admin";
 import { useInstances } from "../hooks/useInstances";
-import { useHasPermission } from "../hooks/usePermissions";
-import { Day, DateTime, Detail, InstanceStateLabel, MissingPermission, MoreButton } from "./parts";
+import { Day, DateTime, InstanceStateLabel, RecordList, RequirePermission } from "./parts";
 
 const filterLabels: Readonly<Record<InstanceFilter, ClientMessageKey>> = {
   all: "client:admin.instances.filter.all",
@@ -32,10 +31,16 @@ export type InstanceListProps = {
   onFilterChange: (filter: InstanceFilter) => void;
 };
 
-export function InstanceList({ filter, onFilterChange }: InstanceListProps) {
+export function InstanceList(props: InstanceListProps) {
+  return (
+    <RequirePermission permission="manage_domains">
+      <InstanceTabs {...props} />
+    </RequirePermission>
+  );
+}
+
+function InstanceTabs({ filter, onFilterChange }: InstanceListProps) {
   const t = useT();
-  const allowed = useHasPermission("manage_domains");
-  if (!allowed) return <MissingPermission permission="manage_domains" />;
   return (
     <Tabs
       selectedKey={filter}
@@ -60,20 +65,14 @@ export function InstanceList({ filter, onFilterChange }: InstanceListProps) {
 function Instances({ filter }: { filter: InstanceFilter }) {
   const t = useT();
   const list = useInstances(filter);
-  if (list.items.length === 0) {
-    return <EmptyState heading={t("client:admin.instances.empty")} description={t("client:admin.instances.empty.description")} />;
-  }
   return (
-    <div className="flex flex-col gap-4">
-      <ul className="flex flex-col divide-y divide-border">
-        {list.items.map((health) => (
-          <li key={health.domain} className="@container py-3">
-            <InstanceRow health={health} />
-          </li>
-        ))}
-      </ul>
-      <MoreButton list={list} />
-    </div>
+    <RecordList
+      list={list}
+      getId={(health) => health.domain}
+      empty={<EmptyState heading={t("client:admin.instances.empty")} description={t("client:admin.instances.empty.description")} />}
+    >
+      {(health) => <InstanceRow health={health} />}
+    </RecordList>
   );
 }
 
@@ -87,16 +86,16 @@ function InstanceRow({ health }: { health: InstanceHealth }) {
           <span dir="ltr">{health.domain}</span>
         </Link>
       </h2>
-      <dl className="grid grid-cols-1 gap-2 @sm:grid-cols-2 @2xl:grid-cols-4">
-        <Detail term={t("client:admin.instance.state")}>
+      <DescriptionList columns={4}>
+        <DescriptionItem term={t("client:admin.instance.state")}>
           <InstanceStateLabel state={health.state} />
-        </Detail>
-        <Detail term={t("client:admin.instance.since")}>{health.since === undefined ? t("client:admin.instance.none") : <DateTime value={health.since} />}</Detail>
-        <Detail term={t("client:admin.instance.failure_days")}>{t("client:admin.instance.failure_days.value", { count: health.failure_days })}</Detail>
-        <Detail term={t("client:admin.instance.last_failure")}>
+        </DescriptionItem>
+        <DescriptionItem term={t("client:admin.instance.since")}>{health.since === undefined ? t("client:admin.instance.none") : <DateTime value={health.since} />}</DescriptionItem>
+        <DescriptionItem term={t("client:admin.instance.failure_days")}>{t("client:admin.instance.failure_days.value", { count: health.failure_days })}</DescriptionItem>
+        <DescriptionItem term={t("client:admin.instance.last_failure")}>
           {health.last_failure_day === undefined ? t("client:admin.instance.none") : <Day value={health.last_failure_day} />}
-        </Detail>
-      </dl>
+        </DescriptionItem>
+      </DescriptionList>
     </div>
   );
 }

@@ -591,15 +591,17 @@ SELECT a.id, a.domain, a.kind, a.public_comment, a.private_note, a.obfuscate, a.
 FROM domain_moderation_actions a
 LEFT JOIN domain_moderation_action_lifts l ON l.action_id = a.id
 WHERE ($1::text = '' OR a.domain = $1::text)
-  AND ($2::timestamptz IS NULL
-    OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > $2::timestamptz)))
-  AND ($3::text = '' OR a.id < $3::text)
+  AND (cardinality($2::text[]) = 0 OR a.kind = ANY($2::text[]))
+  AND ($3::timestamptz IS NULL
+    OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > $3::timestamptz)))
+  AND ($4::text = '' OR a.id < $4::text)
 ORDER BY a.id DESC
-LIMIT $4
+LIMIT $5
 `
 
 type ListDomainModerationActionsParams struct {
 	Domain     string
+	Kinds      []string
 	InEffectAt *time.Time
 	Before     string
 	Lim        int32
@@ -621,11 +623,13 @@ type ListDomainModerationActionsRow struct {
 }
 
 // ListDomainModerationActions returns the domain actions with their lifts, newest first: those
-// of a domain (empty for every domain), only those in effect at in_effect_at unless it is NULL, and
-// those before the action before (empty for the first page).
+// of a domain (empty for every domain), of the kinds (empty for every kind), only those in effect
+// at in_effect_at unless it is NULL, and those before the action before (empty for the first
+// page).
 func (q *Queries) ListDomainModerationActions(ctx context.Context, arg ListDomainModerationActionsParams) ([]ListDomainModerationActionsRow, error) {
 	rows, err := q.db.Query(ctx, listDomainModerationActions,
 		arg.Domain,
+		arg.Kinds,
 		arg.InEffectAt,
 		arg.Before,
 		arg.Lim,

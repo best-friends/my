@@ -1,6 +1,6 @@
 # アカウント・ドメインへの処分と通報の対応
 
-運営者・モデレーター向けの手順です。要件は FR-701〜FR-703（[機能要件](../requirements/01-functional.md)）、
+運営者・モデレーター向けの手順です。要件は FR-701〜FR-703・FR-718（[機能要件](../requirements/01-functional.md)）、
 テーブルは [データモデル §4.3](../architecture/data-model.md#43-moderation)、連合への効き方は [federation.md §11](../architecture/federation.md#11-モデレーションとの連携) です。
 
 どれも管理 API（`/api/v1/admin/...`、スコープ `admin:read` / `admin:write`）と CLI（`my admin account action` / `my admin domain` / `my admin report`）で行えます。
@@ -66,6 +66,23 @@ my admin domain lift <action id>
 - 期限（`-duration` / `expires_in`）を付けた処分は期限で自然に終わります。期限切れは「解除」ではないので、一覧では `expired` と表示します。
 - 解除はその処分の制限だけを消します。同じドメインへの別の処分は残ります。解除済みの処分をもう一度解除しても何も変わりません。
 - 一覧は新しい順で、`-active`（`active=true`）を付けると効いているものだけを出します。
+
+### 処分したドメインの公開
+
+効いている `limit` と `suspend` の処分は、`GET /api/v1/instance/domain_actions` で公開できます（FR-718）。
+誰に見せるかはインスタンス設定 `domain_actions_visibility`（`none` / `users` / `all`、既定 `none`）で、
+公開コメントを誰に見せるかは `domain_actions_rationale_visibility`（同じ値、既定 `none`）で決めます（[インスタンス設定](instance-settings.md)）。
+
+```sh
+my instance set domain_actions_visibility users
+my instance set domain_actions_rationale_visibility users
+```
+
+- `none` では `404`、`users` ではアクセストークンの無い要求に `401` を返します。
+- 処分ごとに 1 項目で、新しい順です。ドメイン・ドメインの SHA-256（16 進）・種類と、見せてよい相手には公開コメントを返します。非公開のメモは返しません。
+- `-obfuscate`（`obfuscate`）を付けた処分は、ドメインの中ほど半分の文字（ドット以外）を `*` に置き換えて公開します（`bad.example` → `bad.*****le`）。
+  知っているドメインの SHA-256 と比べれば、伏せたドメインかどうかを確かめられます。
+- `reject_media`・`reject_reports`・`force_sensitive` の処分と、解除・期限切れの処分は公開しません。
 
 ## 通報
 

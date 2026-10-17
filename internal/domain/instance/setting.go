@@ -33,6 +33,10 @@ const (
 	SettingRemoteMediaPolicy        SettingKey = "remote_media_policy"
 	SettingRemoteMediaCacheTTL      SettingKey = "remote_media_cache_ttl"
 	SettingAuthorizedFetch          SettingKey = "authorized_fetch"
+	// SettingDomainActionsVisibility and SettingDomainActionsRationaleVisibility decide who
+	// may read the public list of domain actions and their public comments (FR-718).
+	SettingDomainActionsVisibility          SettingKey = "domain_actions_visibility"
+	SettingDomainActionsRationaleVisibility SettingKey = "domain_actions_rationale_visibility"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -56,6 +60,25 @@ const (
 	RemoteMediaAvatars RemoteMediaPolicy = "avatars" // keep avatars and headers for remote_media_cache_ttl
 	RemoteMediaAll     RemoteMediaPolicy = "all"     // keep every remote file for remote_media_cache_ttl
 )
+
+// Audience is the value of the settings that decide who may read something public about the
+// instance (SettingDomainActionsVisibility, SettingDomainActionsRationaleVisibility).
+type Audience string
+
+// Audiences.
+const (
+	AudienceNone  Audience = "none"  // nobody
+	AudienceUsers Audience = "users" // the instance's logged-in users
+	AudienceAll   Audience = "all"   // everyone, anonymous visitors included
+)
+
+// Allows reports whether a reader may read what a reaches; authenticated is whether the reader
+// is a logged-in user of the instance.
+func (a Audience) Allows(authenticated bool) bool {
+	return a == AudienceAll || (a == AudienceUsers && authenticated)
+}
+
+var audienceChoices = []string{string(AudienceNone), string(AudienceUsers), string(AudienceAll)}
 
 // Bounds of SettingRemoteMediaCacheTTL, in seconds: a minute to a year.
 const (
@@ -133,6 +156,14 @@ var definitions = []Definition{
 	{
 		Key: SettingAuthorizedFetch, Kind: KindBool, Default: "false",
 		Doc: "Whether ActivityPub objects, collections, and full actor documents are served only to requests with a verified HTTP signature (authorized fetch, FR-408).",
+	},
+	{
+		Key: SettingDomainActionsVisibility, Kind: KindEnum, Default: string(AudienceNone), Choices: audienceChoices,
+		Doc: "Who may read the list of the limited and suspended domains: nobody, logged-in users, or everyone (FR-718).",
+	},
+	{
+		Key: SettingDomainActionsRationaleVisibility, Kind: KindEnum, Default: string(AudienceNone), Choices: audienceChoices,
+		Doc: "Who may read the public comments of the listed domain actions: nobody, logged-in users, or everyone (FR-718).",
 	},
 }
 
@@ -356,6 +387,19 @@ func (s Settings) RemoteMediaCacheTTL() time.Duration {
 
 // AuthorizedFetch returns the value of SettingAuthorizedFetch.
 func (s Settings) AuthorizedFetch() bool { return s.boolValue(SettingAuthorizedFetch) }
+
+// DomainActionsVisibility returns the value of SettingDomainActionsVisibility.
+func (s Settings) DomainActionsVisibility() Audience {
+	v, _ := s.Value(SettingDomainActionsVisibility)
+	return Audience(v)
+}
+
+// DomainActionsRationaleVisibility returns the value of
+// SettingDomainActionsRationaleVisibility.
+func (s Settings) DomainActionsRationaleVisibility() Audience {
+	v, _ := s.Value(SettingDomainActionsRationaleVisibility)
+	return Audience(v)
+}
 
 // MediaKeys returns the setting keys whose values are media IDs.
 func MediaKeys() []SettingKey {

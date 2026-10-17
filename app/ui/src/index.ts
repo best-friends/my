@@ -13,11 +13,13 @@ export { I18nProvider, type I18nProviderProps, RouterProvider } from "react-aria
 // Form controls.
 export { Button, type ButtonProps } from "./Button";
 export { Checkbox, type CheckboxProps } from "./Checkbox";
+export { DurationSelect, type DurationSelectProps } from "./DurationSelect";
 export type { FieldErrorMessage, FieldTextProps } from "./Field";
 // The hidden file input behind a Button child (React Aria FileTrigger): it has no look of its own.
 export { FileTrigger, type FileTriggerProps } from "react-aria-components";
 export { Link, type LinkProps } from "./Link";
 export { Radio, RadioGroup, type RadioGroupProps, type RadioProps } from "./RadioGroup";
+export { ReasonField, type ReasonFieldProps } from "./ReasonField";
 export { Select, SelectItem, type SelectItemProps, type SelectProps } from "./Select";
 export { Switch, type SwitchProps } from "./Switch";
 export { TextArea, type TextAreaProps } from "./TextArea";
@@ -25,6 +27,7 @@ export { TextField, type TextFieldProps } from "./TextField";
 export { ToggleButton, type ToggleButtonProps } from "./ToggleButton";
 
 // Overlays, tabs and announcements.
+export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog";
 export { AnnouncerProvider, useAnnouncer, type Announce, type AnnouncerProviderProps, type Politeness } from "./Announcer";
 export { Dialog, DialogTrigger, Sheet, type DialogProps, type DialogTriggerProps, type SheetProps } from "./Dialog";
 export {
@@ -46,10 +49,12 @@ export { Tooltip, TooltipTrigger, type TooltipProps, type TooltipTriggerProps } 
 // Display.
 export { Avatar, type AvatarProps } from "./Avatar";
 export { Badge, type BadgeProps } from "./Badge";
+export { DescriptionItem, DescriptionList, type DescriptionItemProps, type DescriptionListProps } from "./DescriptionList";
 export { EmptyState, type EmptyStateProps, type HeadingLevel } from "./EmptyState";
 export { ExternalLinkIcon } from "./ExternalLinkIcon";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { Spinner, type SpinnerProps } from "./Spinner";
+export { StatusMessage, type StatusMessageProps } from "./StatusMessage";
 export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
 
 // Timeline.

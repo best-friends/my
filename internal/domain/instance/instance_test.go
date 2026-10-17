@@ -131,6 +131,45 @@ func TestAuthorizedFetchSetting(t *testing.T) {
 	}
 }
 
+func TestDomainActionsVisibilitySettings(t *testing.T) {
+	var zero instance.Settings
+	if zero.DomainActionsVisibility() != instance.AudienceNone || zero.DomainActionsRationaleVisibility() != instance.AudienceNone {
+		t.Errorf("zero Settings list domain actions to %q and their comments to %q, want none by default",
+			zero.DomainActionsVisibility(), zero.DomainActionsRationaleVisibility())
+	}
+	s := instance.NewSettings([]instance.CurrentSetting{
+		{Key: instance.SettingDomainActionsVisibility, RevisionID: "r1", Value: "all"},
+		{Key: instance.SettingDomainActionsRationaleVisibility, RevisionID: "r2", Value: "users"},
+	})
+	if s.DomainActionsVisibility() != instance.AudienceAll || s.DomainActionsRationaleVisibility() != instance.AudienceUsers {
+		t.Errorf("Settings list domain actions to %q and their comments to %q, want all and users",
+			s.DomainActionsVisibility(), s.DomainActionsRationaleVisibility())
+	}
+	for _, tc := range []struct {
+		a                   instance.Audience
+		anonymous, loggedIn bool
+	}{
+		{instance.AudienceNone, false, false},
+		{instance.AudienceUsers, false, true},
+		{instance.AudienceAll, true, true},
+		{"unknown", false, false},
+	} {
+		if got := tc.a.Allows(false); got != tc.anonymous {
+			t.Errorf("%q.Allows(anonymous) = %v, want %v", tc.a, got, tc.anonymous)
+		}
+		if got := tc.a.Allows(true); got != tc.loggedIn {
+			t.Errorf("%q.Allows(logged in) = %v, want %v", tc.a, got, tc.loggedIn)
+		}
+	}
+	def, err := instance.Lookup(instance.SettingDomainActionsVisibility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := def.Parse("everyone"); !errors.Is(err, instance.ErrInvalidValue) {
+		t.Errorf("Parse(everyone) = %v, want ErrInvalidValue", err)
+	}
+}
+
 func TestSupersedes(t *testing.T) {
 	rev := instance.SettingRevision{ID: "b"}
 	for _, tc := range []struct {

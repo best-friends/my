@@ -67,8 +67,9 @@ func TestInstanceSetGetList(t *testing.T) {
 		}
 	}
 
-	list := mustInstance(t, "", "list")
-	for _, want := range []string{"registration_mode           closed  set", "max_status_length           500     default", `name         ja`, `"例"`} {
+	// The columns are as wide as the longest key, so compare with single spaces.
+	list := strings.Join(strings.Fields(mustInstance(t, "", "list")), " ")
+	for _, want := range []string{"registration_mode closed set", "max_status_length 500 default", `name ja`, `"例"`} {
 		if !strings.Contains(list, want) {
 			t.Errorf("list = %q, missing %q", list, want)
 		}

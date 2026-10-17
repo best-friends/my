@@ -50,6 +50,17 @@ func (f *fakeModeration) DomainActions(_ context.Context, flt appmoderation.Doma
 	return out, nil
 }
 
+func (f *fakeModeration) PublicDomainActions(_ context.Context, before string, limit int) ([]moderation.PublicDomainAction, error) {
+	out := []moderation.PublicDomainAction{}
+	for _, r := range slices.Backward(f.actions) {
+		if slices.Contains(moderation.PublicDomainActionKinds(), r.Action.Kind) && r.State(f.now) == moderation.ActionActive &&
+			(before == "" || r.Action.ID < before) && len(out) < limit {
+			out = append(out, r.Action.Public())
+		}
+	}
+	return out, nil
+}
+
 func (f *fakeModeration) DomainAction(_ context.Context, id string) (appmoderation.DomainActionView, error) {
 	for _, r := range f.actions {
 		if r.Action.ID == id {

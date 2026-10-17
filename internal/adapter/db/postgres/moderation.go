@@ -421,7 +421,7 @@ func (r *ModerationRepository) ListDomainActions(ctx context.Context, q appmoder
 		return nil, err
 	}
 	rows, err := r.db.reader().ListDomainModerationActions(ctx, postgresgen.ListDomainModerationActionsParams{
-		Domain: q.Domain, InEffectAt: q.InEffectAt, Before: q.Before, Lim: lim,
+		Domain: q.Domain, Kinds: domainActionKindStrings(q.Kinds), InEffectAt: q.InEffectAt, Before: q.Before, Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list domain moderation actions")
@@ -476,4 +476,13 @@ func (r *ModerationRepository) ListActions(ctx context.Context, q appmoderation.
 		out[i] = actionRecordFrom(row)
 	}
 	return out, nil
+}
+
+// domainActionKindStrings returns the kinds as strings, never nil.
+func domainActionKindStrings(kinds []moderation.DomainActionKind) []string {
+	out := make([]string, len(kinds))
+	for i, k := range kinds {
+		out[i] = string(k)
+	}
+	return out
 }
