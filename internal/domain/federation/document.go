@@ -75,6 +75,31 @@ func (d ActivityDocument) Embedded() ActivityDocument {
 // Marshal returns the JSON of d, the bytes every delivery of it sends.
 func (d ActivityDocument) Marshal() ([]byte, error) { return json.Marshal(d) }
 
+// FlagDocument is the Flag that forwards a report to the server of the reported account
+// (federation.md §11), in the shape that Mastodon sends and reads: the instance actor as its
+// actor, the reported actor and statuses as its object, and the comment as plain-text content.
+// It has no audience and names nothing of the reporter.
+type FlagDocument struct {
+	Context []any        `json:"@context"`
+	ID      IRI          `json:"id"`
+	Type    ActivityType `json:"type"`
+	Actor   IRI          `json:"actor"`
+	Content string       `json:"content"`
+	Object  []IRI        `json:"object"`
+}
+
+// NewFlagDocument returns the Flag id of actor about the reported actor target and its
+// statuses, with the comment as its content.
+func NewFlagDocument(id, actor, target IRI, statuses []IRI, comment string) FlagDocument {
+	return FlagDocument{
+		Context: LDContext(), ID: id, Type: ActivityFlag, Actor: actor, Content: comment,
+		Object: append([]IRI{target}, statuses...),
+	}
+}
+
+// Marshal returns the JSON of d, the bytes every delivery of it sends.
+func (d FlagDocument) Marshal() ([]byte, error) { return json.Marshal(d) }
+
 // ObjectDocument is the part of an object document that every kind shares: its identity, author,
 // and addressing. A Note adds its body in NoteDocument.
 type ObjectDocument struct {

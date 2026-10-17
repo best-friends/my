@@ -152,3 +152,10 @@ func (s *LocalReports) File(ctx context.Context, in LocalReportInput) (moderatio
 	}
 	return r, nil
 }
+
+// FindReport returns a report with its statuses, as the federation module reads it to forward
+// the report to the target's server (FR-709). It fails with an error wrapping ErrNotFound for an
+// unknown ID.
+func (s *Service) FindReport(ctx context.Context, id string) (Report, error) {
+	return s.d.Repository.FindReport(ctx, id)
+}
