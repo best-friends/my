@@ -19,6 +19,8 @@ import "github.com/best-friends/my/internal/domain/graph"
 //   - EventFollowAccepted: a pending follow became active.
 //   - EventFollowRejected: a pending follow was declined.
 //   - EventFollowTerminated: a pending or active follow ended.
+//   - EventFollowResent: a remote follower sent a Follow again, under another URI, for a follow
+//     that is already active.
 //   - EventFollowPreferencesChanged: the follower changed the preferences of a live follow.
 //   - EventBlocked: an account blocked another.
 //   - EventUnblocked: a block was lifted.
@@ -31,6 +33,7 @@ const (
 	EventFollowAccepted           = "graph.follow_accepted"
 	EventFollowRejected           = "graph.follow_rejected"
 	EventFollowTerminated         = "graph.follow_terminated"
+	EventFollowResent             = "graph.follow_resent"
 	EventFollowPreferencesChanged = "graph.follow_preferences_changed"
 	EventBlocked                  = "graph.blocked"
 	EventUnblocked                = "graph.unblocked"
@@ -112,6 +115,15 @@ type FollowTerminated struct {
 
 // EventType implements uow.Event.
 func (FollowTerminated) EventType() string { return EventFollowTerminated }
+
+// FollowResent is emitted when a remote follower sends a Follow again for an active follow.
+type FollowResent struct {
+	Follow graph.Follow
+	Resend graph.Resend
+}
+
+// EventType implements uow.Event.
+func (FollowResent) EventType() string { return EventFollowResent }
 
 // FollowPreferencesChanged is emitted when the preferences of a live follow change.
 type FollowPreferencesChanged struct {

@@ -547,6 +547,13 @@ type RemoteAccountSnapshot struct {
 	FetchedAt         int64
 }
 
+type RemoteFollowTombstone struct {
+	ActivityUri string
+	ActorUri    string
+	ObjectUri   string
+	ReceivedAt  int64
+}
+
 type RemoteMediaCache struct {
 	Url            string
 	BlobKey        string

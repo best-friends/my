@@ -397,6 +397,45 @@ func (p *InboxProcessor) tombstoned(ctx context.Context, in *InboxActivity) erro
 			return fmt.Errorf("%w: %s has a tombstone", ErrDropActivity, uri)
 		}
 	}
+	if act.Type == federation.ActivityFollow {
+		return p.followTombstoned(ctx, in)
+	}
+	return nil
+}
+
+// followTombstoned refuses the first Follow of a pair that an earlier Undo of an unknown Follow
+// named (federation.md §3.3). The Follow uses up the pair's tombstone: it records a tombstone of
+// its own URI with the Undo's URI, so that it stays dropped when it is processed again, and a
+// later Follow of the pair goes through.
+func (p *InboxProcessor) followTombstoned(ctx context.Context, in *InboxActivity) error {
+	act := in.Activity
+	object := act.Object().ID
+	if object == "" {
+		return nil
+	}
+	var dropped federation.IRI
+	err := p.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		dropped = ""
+		t, err := p.d.Repository.LiveRemoteFollowTombstone(ctx, tx, act.Actor, object)
+		if errors.Is(err, ErrNotFound) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		dropped = t.ActivityURI
+		_, err = p.d.Repository.InsertRemoteObjectTombstone(ctx, tx, federation.RemoteObjectTombstone{
+			URI: in.Received.ActivityURI, ActorURI: act.Actor, ActivityURI: t.ActivityURI,
+			ReceivedAt: kernel.Normalize(p.d.Clock.Now()),
+		})
+		return err
+	})
+	if err != nil {
+		return fmt.Errorf("read follow tombstone of %s: %w", act.Actor, err)
+	}
+	if dropped != "" {
+		return fmt.Errorf("%w: %s undid a Follow of %s before it arrived", ErrDropActivity, dropped, object)
+	}
 	return nil
 }
 
@@ -429,9 +468,21 @@ func (p *InboxProcessor) dispatch(ctx context.Context, in *InboxActivity) (Inbox
 }
 
 // tombstone records the tombstone of the unknown target of a Delete or Undo, when it may have
-// one.
+// one: the pair of an embedded Follow of the actor's for an Undo of one, the target's URI
+// otherwise.
 func (p *InboxProcessor) tombstone(ctx context.Context, in *InboxActivity) (InboxOutcome, error) {
-	t, ok := federation.TombstoneFor(in.Activity, in.Received.ActivityURI, kernel.Normalize(p.d.Clock.Now()))
+	now := kernel.Normalize(p.d.Clock.Now())
+	if ft, ok := federation.FollowTombstoneFor(in.Activity, in.Received.ActivityURI, now); ok {
+		err := p.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			_, err := p.d.Repository.InsertRemoteFollowTombstone(ctx, tx, ft)
+			return err
+		})
+		if err != nil {
+			return "", fmt.Errorf("record follow tombstone of %s: %w", ft.ActivityURI, err)
+		}
+		return InboxTombstoned, nil
+	}
+	t, ok := federation.TombstoneFor(in.Activity, in.Received.ActivityURI, now)
 	if !ok {
 		return p.dropped(ctx, in, fmt.Errorf("%w: %s may not leave a tombstone for %s", ErrDropActivity, in.Activity.Actor, in.Activity.Object().ID))
 	}

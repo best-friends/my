@@ -75,6 +75,13 @@ type InboxRepository interface {
 	InsertRemoteObjectTombstone(ctx context.Context, tx uow.Tx, t federation.RemoteObjectTombstone) (bool, error)
 	// RemoteObjectTombstoned reports whether uri has a tombstone.
 	RemoteObjectTombstoned(ctx context.Context, uri federation.IRI) (bool, error)
+	// InsertRemoteFollowTombstone records the tombstone of a pair unless its Undo has one, and
+	// reports whether it did.
+	InsertRemoteFollowTombstone(ctx context.Context, tx uow.Tx, t federation.RemoteFollowTombstone) (bool, error)
+	// LiveRemoteFollowTombstone returns the oldest tombstone of the pair from actorURI to
+	// objectURI that has not dropped a Follow yet: no remote object tombstone has its
+	// ActivityURI. It fails with ErrNotFound when there is none.
+	LiveRemoteFollowTombstone(ctx context.Context, tx uow.Tx, actorURI, objectURI federation.IRI) (federation.RemoteFollowTombstone, error)
 }
 
 // InboxAccounts is the part of the account module's public API that the inbox reads.

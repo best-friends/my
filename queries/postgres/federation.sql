@@ -175,3 +175,19 @@ ORDER BY domain LIMIT sqlc.arg(batch_limit);
 -- name: LockInstanceHealth :one
 SELECT domain, state, since, failure_days, last_failure_day FROM instance_health WHERE domain = @domain
 FOR UPDATE;
+
+-- InsertRemoteFollowTombstone inserts nothing when the Undo is already recorded.
+-- name: InsertRemoteFollowTombstone :execrows
+INSERT INTO remote_follow_tombstones (activity_uri, actor_uri, object_uri, received_at)
+VALUES (@activity_uri, @actor_uri, @object_uri, @received_at)
+ON CONFLICT (activity_uri) DO NOTHING;
+
+-- GetLiveRemoteFollowTombstone returns the oldest tombstone of the pair that has not dropped a
+-- Follow yet: no remote_object_tombstones row was recorded with its activity_uri.
+-- name: GetLiveRemoteFollowTombstone :one
+SELECT t.activity_uri, t.actor_uri, t.object_uri, t.received_at
+FROM remote_follow_tombstones t
+WHERE t.actor_uri = @actor_uri AND t.object_uri = @object_uri
+  AND NOT EXISTS (SELECT 1 FROM remote_object_tombstones o WHERE o.activity_uri = t.activity_uri)
+ORDER BY t.received_at, t.activity_uri
+LIMIT 1;

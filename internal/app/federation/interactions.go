@@ -48,7 +48,7 @@ func registerFavouriteProjectors(r *uow.Projectors, rec recorder) {
 		if _, err := rec.d.Repository.InsertOutboundDocument(ctx, tx, act.ID, doc, act.CreatedAt); err != nil {
 			return err
 		}
-		return rec.enqueue(ctx, tx, act, "")
+		return rec.enqueue(ctx, tx, act, fanOutPayload{})
 	}
 	r.Register(appcontent.EventFavourited, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appcontent.Favourited)
