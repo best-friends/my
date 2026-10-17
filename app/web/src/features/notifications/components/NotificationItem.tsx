@@ -1,44 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // One notification as an article of the notifications feed (web-client.md Y6): a sentence that says what
-// happened ("Alice followed you"), when, and for the types about a post, the post itself. PostCard lays it
-// out, so the article is named by the sentence and the time and described by the post.
-import { Avatar, ContentWarning, Link, PostCard, PostContent, serverSanitizedHtml, VisuallyHidden } from "@my/ui";
-import { type Translate, useT } from "../../../lib/i18n";
-import { statusPath } from "../../status";
-import type { Notification, NotificationAccount, NotificationStatus } from "../api/notifications";
+// happened ("Alice followed you") with the actor's name as a link to their profile, when, relative to now
+// as in the timelines (G8), and for the types about a post, a quote of the post that links to its page.
+// A follow offers to follow back. PostCard lays it out, so the article is named by the sentence and the
+// time and described by the post.
+//
+// A row has one tab stop per place it leads to: the actor's name (the avatar is the same link for the
+// pointer, out of the tab order), and the quote of the post or the follow back button.
+import { Avatar, Link, PostCard, VisuallyHidden } from "@my/ui";
+import { useIntl } from "react-intl";
+import { useT } from "../../../lib/i18n";
+import { RelationshipActions, useRelationship } from "../../profile";
+import type { Notification, NotificationAccount } from "../api/notifications";
+import { type NotificationView, useNotificationView } from "../hooks/useNotificationView";
 
-/**
- * The account's name inside a sentence of the UI's language. It is the user's text in any script, so it
- * is wrapped in Unicode directional isolates (FSI … PDI): a right-to-left name does not reorder the
- * sentence around it, as `dir="auto"` does for a whole element (web-client.md Y10).
- */
-function isolatedName(account: NotificationAccount | undefined): string {
-  const name = account === undefined ? "" : account.display_name || account.username;
-  return `\u2068${name}\u2069`;
-}
-
-/** The sentence that says what happened, in the UI's language. */
-function sentenceOf(t: Translate, notification: Notification): string {
-  const name = isolatedName(notification.account);
-  switch (notification.type) {
-    case "follow":
-      return t("client:notifications.type.follow", { name });
-    case "follow_request":
-      return t("client:notifications.type.follow_request", { name });
-    case "follow_accepted":
-      return t("client:notifications.type.follow_accepted", { name });
-    case "mention":
-      return t("client:notifications.type.mention", { name });
-    case "boost":
-      return t("client:notifications.type.boost", { name });
-    case "favourite":
-      return t("client:notifications.type.favourite", { name });
-    case "poll_closed":
-      return t("client:notifications.type.poll_closed");
-    case "moderation_notice":
-      return t("client:notifications.type.moderation_notice");
-  }
-}
+/** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
+const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
 
 export type NotificationItemProps = {
   notification: Notification;
@@ -48,10 +25,23 @@ export type NotificationItemProps = {
 
 export function NotificationItem({ notification, isUnread }: NotificationItemProps) {
   const t = useT();
-  const { account } = notification;
+  const intl = useIntl();
+  const view = useNotificationView(notification);
+  const { actor } = view;
   return (
     <PostCard
-      avatar={account === undefined ? undefined : <Avatar src={account.avatar_url} name={account.display_name || account.username} decorative />}
+      {...(actor !== null && {
+        avatar: (
+          // The same profile as the name, for the pointer: out of the tab order and hidden from screen
+          // readers, which reach it by the name (one tab stop per profile). React Aria's Link does not take
+          // `aria-hidden`, so an element around it hides it.
+          <div aria-hidden="true">
+            <Link href={actor.href} excludeFromTabOrder className="block rounded-full">
+              <Avatar src={actor.avatar} name={actor.name} decorative />
+            </Link>
+          </div>
+        ),
+      })}
       author={
         <p className="flex items-baseline gap-2">
           {isUnread && (
@@ -61,38 +51,71 @@ export function NotificationItem({ notification, isUnread }: NotificationItemPro
               <VisuallyHidden>{t("client:notifications.unread")}</VisuallyHidden>{" "}
             </>
           )}
-          <span className={isUnread ? "font-semibold" : "font-normal"}>{sentenceOf(t, notification)}</span>
+          <span className={isUnread ? "font-semibold" : "font-normal"}>
+            {/* The actor's name is the user's text, isolated from the sentence around it (Y10). */}
+            {intl.formatMessage(
+              { id: view.sentence },
+              {
+                name:
+                  actor === null ? null : (
+                    <Link key="name" href={actor.href} className={nameLink}>
+                      <bdi>{actor.name}</bdi>
+                    </Link>
+                  ),
+              },
+            )}
+          </span>
         </p>
       }
       time={
-        <time dateTime={notification.created_at}>{t("client:notifications.time", { time: new Date(notification.created_at) })}</time>
+        <time dateTime={view.time.dateTime} title={view.time.absolute}>
+          {view.time.relative}
+        </time>
       }
-      content={notification.status === undefined ? null : <NotificationPostView status={notification.status} />}
+      content={view.post === null ? null : <PostQuote post={view.post} />}
+      {...(view.followBack !== null && { actions: <FollowBack account={view.followBack} /> })}
     />
   );
 }
 
 /**
- * The post a notification is about, quieter than in a timeline, with its content warning kept. The server
- * embeds it in the notification, and leaves it out when the user may not see it.
+ * The post a notification is about, as a quote that links to its page in the app, with its thread and the
+ * actions on it (FR-113). The server embeds it in the notification, and leaves it out when the user may not
+ * see it. A post behind a content warning shows the warning only.
  */
-function NotificationPostView({ status }: { status: NotificationStatus }) {
+function PostQuote({ post }: { post: NonNullable<NotificationView["post"]> }) {
   const t = useT();
-  const lang = status.language === "und" ? undefined : status.language;
-  const body = <PostContent html={serverSanitizedHtml(status.content)} lang={lang} className="text-fg-muted" />;
+  const intl = useIntl();
+  const label =
+    post.contentWarning !== null ? (
+      // The warning is the author's text in the post's language, isolated from the UI's sentence (Y10).
+      intl.formatMessage(
+        { id: "client:notifications.post.content_warning" },
+        {
+          summary: (
+            <bdi key="summary" lang={post.lang}>
+              {post.contentWarning}
+            </bdi>
+          ),
+        },
+      )
+    ) : post.text === "" ? (
+      // A post of pictures only has no text to quote.
+      t("client:notifications.post.open")
+    ) : (
+      <span dir="auto" lang={post.lang} className="line-clamp-3 whitespace-pre-line">
+        {post.text}
+      </span>
+    );
   return (
-    <div className="flex flex-col gap-2">
-      {status.spoiler_text === "" ? (
-        body
-      ) : (
-        <ContentWarning summary={status.spoiler_text} summaryLang={lang} toggleLabel={t("client:notifications.post.show")}>
-          {body}
-        </ContentWarning>
-      )}
-      {/* The post's page in the app, with its thread and the actions on it (FR-113). */}
-      <Link href={statusPath(status)} variant="standalone" className="self-start text-sm">
-        {t("client:notifications.post.open")}
-      </Link>
-    </div>
+    <Link href={post.href} className="block border-s-2 border-border ps-3 wrap-anywhere text-fg no-underline data-hovered:underline">
+      {label}
+    </Link>
   );
+}
+
+/** Follow back from a follow notification: the profile's follow button, without its menu. */
+function FollowBack({ account }: { account: NotificationAccount }) {
+  const relationship = useRelationship(account);
+  return <RelationshipActions account={account} name={account.display_name || account.username} state={relationship} showMenu={false} />;
 }
