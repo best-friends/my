@@ -47,6 +47,7 @@ export { Tooltip, TooltipTrigger, type TooltipProps, type TooltipTriggerProps } 
 export { Avatar, type AvatarProps } from "./Avatar";
 export { Badge, type BadgeProps } from "./Badge";
 export { EmptyState, type EmptyStateProps, type HeadingLevel } from "./EmptyState";
+export { ExternalLinkIcon } from "./ExternalLinkIcon";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { Spinner, type SpinnerProps } from "./Spinner";
 export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";

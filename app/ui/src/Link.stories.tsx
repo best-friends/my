@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ExternalLinkIcon } from "./ExternalLinkIcon";
 import { Link } from "./Link";
 
 const meta = {
@@ -21,5 +22,20 @@ export const Inline: Story = {
 };
 
 export const Standalone: Story = { args: { variant: "standalone", children: "Show more replies" } };
+
+/** A link to another site ends with the external-link icon, which mirrors in right-to-left text. */
+export const External: Story = {
+  args: {
+    variant: "standalone",
+    href: "https://remote.example/@carol",
+    className: "gap-1",
+    children: (
+      <>
+        Open the original profile on remote.example
+        <ExternalLinkIcon />
+      </>
+    ),
+  },
+};
 
 export const Disabled: Story = { args: { variant: "standalone", isDisabled: true, children: "Show more replies" } };
