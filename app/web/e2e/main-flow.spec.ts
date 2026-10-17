@@ -55,14 +55,6 @@ function message(key: string, values: Record<string, string> = {}): string {
   return text.replaceAll(/\{(\w+)\}/g, (_, name: string) => values[name] ?? `{${name}}`);
 }
 
-/**
- * An account's name as the app puts it into a sentence of the UI: between Unicode directional isolates
- * (FSI … PDI, web-client.md Y10).
- */
-function isolated(name: string): string {
-  return `\u2068${name}\u2069`;
-}
-
 /** A regular expression that matches `text` literally. */
 function literal(text: string): RegExp {
   return new RegExp(text.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&"));
@@ -349,7 +341,7 @@ test.describe("the main flow", () => {
 
     await test.step("the first user is notified of the follower and asks to follow back", async () => {
       await navigate(page, "notifications");
-      const notification = page.getByRole("feed").getByRole("article").filter({ hasText: message("notifications.type.follow", { name: isolated(bob.username) }) });
+      const notification = page.getByRole("feed").getByRole("article").filter({ hasText: message("notifications.type.follow", { name: bob.username }) });
       await expect(notification).toBeVisible();
       await expect(page.getByRole("main")).toMatchAriaSnapshot(`
         - heading [level=1]
@@ -362,14 +354,19 @@ test.describe("the main flow", () => {
         - tabpanel:
           - feed:
             - article:
-              - paragraph
+              - paragraph:
+                - link
               - time
+              - button
       `);
       await expectQuality(page);
 
-      await page.goto(`/@${bob.username}`);
+      // The follow back is in the notification; the second user approves followers, so it is a request.
+      await notification.getByRole("button", { name: message("profile.follow.request") }).click();
+      await expect(notification.getByRole("button", { name: message("profile.follow.requested") })).toBeVisible();
+      // The actor's name leads to their profile, which shows the same request.
+      await notification.getByRole("link", { name: bob.username }).click();
       await expect(pageHeading(page)).toHaveText(bob.username);
-      await page.getByRole("button", { name: message("profile.follow.request") }).click();
       await expect(page.getByRole("button", { name: message("profile.follow.requested") })).toBeVisible();
       await expectQuality(page);
     });
@@ -377,7 +374,7 @@ test.describe("the main flow", () => {
     await test.step("the second user is notified of the request and accepts it", async () => {
       await navigate(bobPage, "notifications");
       await expect(
-        bobPage.getByRole("feed").getByRole("article").filter({ hasText: message("notifications.type.follow_request", { name: isolated(alice.username) }) }),
+        bobPage.getByRole("feed").getByRole("article").filter({ hasText: message("notifications.type.follow_request", { name: alice.username }) }),
       ).toBeVisible();
       await expectQuality(bobPage);
       await navigate(bobPage, "settings");
@@ -400,7 +397,7 @@ test.describe("the main flow", () => {
     await test.step("the first user is notified that the request was accepted", async () => {
       await navigate(page, "notifications");
       await expect(
-        page.getByRole("feed").getByRole("article").filter({ hasText: message("notifications.type.follow_accepted", { name: isolated(bob.username) }) }),
+        page.getByRole("feed").getByRole("article").filter({ hasText: message("notifications.type.follow_accepted", { name: bob.username }) }),
       ).toBeVisible();
       await expectQuality(page);
     });
