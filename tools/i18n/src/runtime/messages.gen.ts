@@ -398,18 +398,16 @@ export interface MessageArgs {
   "client:notifications.load_more": {};
   /** Loading notifications */
   "client:notifications.loading": {};
+  /** Content warning: {summary} */
+  "client:notifications.post.content_warning": { summary: string };
   /** Open post */
   "client:notifications.post.open": {};
-  /** Show content */
-  "client:notifications.post.show": {};
   /** Try again */
   "client:notifications.retry": {};
   /** Sign in */
   "client:notifications.sign_in": {};
   /** Sign in to see your notifications. */
   "client:notifications.signed_out": {};
-  /** {time, date, medium} {time, time, short} */
-  "client:notifications.time": { time: Date | number };
   /** Notifications */
   "client:notifications.title": {};
   /** A new report awaits the moderators */
