@@ -137,9 +137,9 @@ test.describe("the federated timeline while the server serves it", () => {
     await expectNoHorizontalScroll(page);
   });
 
-  test("fits the six items of the navigation in its width", async ({ page }) => {
+  test("fits all seven items of the navigation in its width", async ({ page }) => {
     const nav = page.getByRole("navigation");
-    await expect(nav.getByRole("link")).toHaveCount(6);
+    await expect(nav.getByRole("link")).toHaveCount(7);
     const navBox = await nav.boundingBox();
     expect(navBox).not.toBeNull();
     for (const link of await nav.getByRole("link").all()) {

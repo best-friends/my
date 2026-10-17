@@ -128,6 +128,7 @@ describe("the navigation's timelines", () => {
       "/home",
       "/local",
       "/public",
+      "/search",
       "/notifications",
       "/profile",
       "/settings",

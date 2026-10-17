@@ -276,7 +276,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.mention.unreached": {
-    "defaultMessage": "[{count,plural,one{{accounts} īş ǿǿƞ ȧȧƞǿǿŧħḗḗř şḗḗřṽḗḗř ȧȧƞḓ ḓǿǿḗḗş ƞǿǿŧ ƒǿǿŀŀǿǿẇ ẏǿǿŭŭ, şǿǿ ŧħḗḗẏ ẇīŀŀ ƞǿǿŧ řḗḗƈḗḗīṽḗḗ ŧħīş ƥǿǿşŧ.} other{{accounts} ȧȧřḗḗ ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş ȧȧƞḓ ḓǿǿ ƞǿǿŧ ƒǿǿŀŀǿǿẇ ẏǿǿŭŭ, şǿǿ ŧħḗḗẏ ẇīŀŀ ƞǿǿŧ řḗḗƈḗḗīṽḗḗ ŧħīş ƥǿǿşŧ.}} “Ŧħīş şḗḗřṽḗḗř” ƥǿǿşŧş řḗḗȧȧƈħ ǿǿƞŀẏ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇḗḗřş ǿǿŭŭŧşīḓḗḗ ŧħīş şḗḗřṽḗḗř.]",
+    "defaultMessage": "[{count,plural,one{{accounts} īş ǿǿƞ ȧȧƞǿǿŧħḗḗř şḗḗřṽḗḗř ȧȧƞḓ ḓǿǿḗḗş ƞǿǿŧ ƒǿǿŀŀǿǿẇ ẏǿǿŭŭ, şǿǿ ŧħḗḗẏ ẇīŀŀ ƞǿǿŧ řḗḗƈḗḗīṽḗḗ ŧħīş ƥǿǿşŧ. Ǿŭŭŧşīḓḗḗ ŧħīş şḗḗřṽḗḗř, “Ŧħīş şḗḗřṽḗḗř” ƥǿǿşŧş řḗḗȧȧƈħ ǿǿƞŀẏ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇḗḗřş, ẇħǿǿ şḗḗḗḗ ŧħīş ḿḗḗƞŧīǿǿƞ ȧȧş ȧȧ ƥŀȧȧīƞ ŀīƞķ.} other{{accounts} ȧȧřḗḗ ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş ȧȧƞḓ ḓǿǿ ƞǿǿŧ ƒǿǿŀŀǿǿẇ ẏǿǿŭŭ, şǿǿ ŧħḗḗẏ ẇīŀŀ ƞǿǿŧ řḗḗƈḗḗīṽḗḗ ŧħīş ƥǿǿşŧ. Ǿŭŭŧşīḓḗḗ ŧħīş şḗḗřṽḗḗř, “Ŧħīş şḗḗřṽḗḗř” ƥǿǿşŧş řḗḗȧȧƈħ ǿǿƞŀẏ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇḗḗřş, ẇħǿǿ şḗḗḗḗ ŧħḗḗşḗḗ ḿḗḗƞŧīǿǿƞş ȧȧş ƥŀȧȧīƞ ŀīƞķş.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.missing_description.add": {
@@ -703,6 +703,10 @@
     "defaultMessage": "[Ƒǿǿŀŀǿǿẇīƞɠ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "profile.follow.pending_remote": {
+    "defaultMessage": "[Ẇȧȧīŧīƞɠ ƒǿǿř {host} ŧǿǿ ȧȧƈƈḗḗƥŧ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇ řḗḗɋŭŭḗḗşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "profile.follow.request": {
     "defaultMessage": "[Řḗḗɋŭŭḗḗşŧ ŧǿǿ ƒǿǿŀŀǿǿẇ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -849,6 +853,50 @@
   },
   "public.title": {
     "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.description": {
+    "defaultMessage": "[Ḗƞŧḗḗř @ŭŭşḗḗřƞȧȧḿḗḗ@şḗḗřṽḗḗř ǿǿř ŧħḗḗ ȧȧḓḓřḗḗşş ǿǿƒ ȧȧ ƥřǿǿƒīŀḗḗ, ǿǿƞ ŧħīş şḗḗřṽḗḗř ǿǿř ȧȧƞǿǿŧħḗḗř ǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.description_signed_out": {
+    "defaultMessage": "[Ḗƞŧḗḗř @ŭŭşḗḗřƞȧȧḿḗḗ@şḗḗřṽḗḗř ǿǿř ŧħḗḗ ȧȧḓḓřḗḗşş ǿǿƒ ȧȧ ƥřǿǿƒīŀḗḗ. Ǿƞŀẏ ȧȧƈƈǿǿŭŭƞŧş ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ķƞǿǿẇş ȧȧřḗḗ ƒǿǿŭŭƞḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.failed": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗȧȧřƈħ ƒȧȧīŀḗḗḓ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.label": {
+    "defaultMessage": "[Ħȧȧƞḓŀḗḗ ǿǿř ŬŘĿ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.not_found": {
+    "defaultMessage": "[Ƞǿǿ ȧȧƈƈǿǿŭŭƞŧ ƒǿǿŭŭƞḓ. Ƈħḗḗƈķ ŧħḗḗ ħȧȧƞḓŀḗḗ ǿǿř ŧħḗḗ ȧȧḓḓřḗḗşş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.not_found_signed_out": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ ķƞǿǿẇ ŧħȧȧŧ ȧȧƈƈǿǿŭŭƞŧ. Şīɠƞ īƞ ŧǿǿ ŀǿǿǿǿķ īŧ ŭŭƥ ǿǿƞ īŧş ǿǿẇƞ şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.rate_limited": {
+    "defaultMessage": "[Ŧǿǿǿǿ ḿȧȧƞẏ şḗḗȧȧřƈħḗḗş. Ŧřẏ ȧȧɠȧȧīƞ īƞ ȧȧ ƒḗḗẇ ḿīƞŭŭŧḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.required": {
+    "defaultMessage": "[Ḗƞŧḗḗř ȧȧ ħȧȧƞḓŀḗḗ ǿǿř ȧȧ ŬŘĿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.sign_in": {
+    "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ ƒīƞḓ ȧȧƈƈǿǿŭŭƞŧş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.submit": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.title": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "session.account.title": {
@@ -1217,6 +1265,10 @@
   },
   "shell.nav.public": {
     "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.search": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.nav.settings": {

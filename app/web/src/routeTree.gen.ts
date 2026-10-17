@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PublicRouteImport } from './routes/public'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as AtChar123acctChar125IdRouteImport } from './routes/@{$acct}_.$id'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
@@ -70,6 +71,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const PublicRoute = PublicRouteImport.update({
   id: '/public',
   path: '/public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AtChar123acctChar125IdRoute = AtChar123acctChar125IdRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
+  '/search': typeof SearchRoute
   '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
+  '/search': typeof SearchRoute
   '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
+  '/search': typeof SearchRoute
   '/@{$acct}_/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/public'
+    | '/search'
     | '/@{$acct}/$id'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/public'
+    | '/search'
     | '/@{$acct}/$id'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/public'
+    | '/search'
     | '/@{$acct}_/$id'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
@@ -302,6 +314,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
   PublicRoute: typeof PublicRoute
+  SearchRoute: typeof SearchRoute
   AtChar123acctChar125IdRoute: typeof AtChar123acctChar125IdRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
@@ -374,6 +387,13 @@ declare module '@tanstack/react-router' {
       path: '/public'
       fullPath: '/public'
       preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/@{$acct}_/$id': {
@@ -486,6 +506,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
   PublicRoute: PublicRoute,
+  SearchRoute: SearchRoute,
   AtChar123acctChar125IdRoute: AtChar123acctChar125IdRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
