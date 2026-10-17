@@ -5,6 +5,7 @@
 // several features use are in src/test/fixtures.ts. Each operation has one default handler, so the order of
 // the modules does not matter (handlers.test.ts checks it). A test that needs another answer overrides a
 // handler with `server.use()`.
+export * as admin from "../../features/admin/test/handlers";
 export * as compose from "../../features/compose/test/handlers";
 export * as core from "./http";
 export * as notifications from "../../features/notifications/test/handlers";

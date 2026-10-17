@@ -1,4 +1,204 @@
 {
+  "admin.dead_jobs.attempts": {
+    "defaultMessage": "試行回数",
+    "description": "Term in a failed job's details: how many times the job ran."
+  },
+  "admin.dead_jobs.created_at": {
+    "defaultMessage": "作成日時",
+    "description": "Term in a failed job's details: when the job was enqueued first."
+  },
+  "admin.dead_jobs.empty": {
+    "defaultMessage": "失敗したジョブはありません",
+    "description": "Heading of the failed jobs screen when no job failed for good."
+  },
+  "admin.dead_jobs.failed_at": {
+    "defaultMessage": "失敗した日時",
+    "description": "Term in a failed job's details: when the job failed for good."
+  },
+  "admin.dead_jobs.idempotency_key": {
+    "defaultMessage": "冪等キー",
+    "description": "Term in a failed job's details: the key that keeps the job from being enqueued twice."
+  },
+  "admin.dead_jobs.last_error": {
+    "defaultMessage": "最後のエラー",
+    "description": "Term in a failed job's details: why the job's last run failed."
+  },
+  "admin.dead_jobs.ordering_key": {
+    "defaultMessage": "順序キー",
+    "description": "Term in a failed job's details: the key that runs the jobs with the same key one after another."
+  },
+  "admin.dead_jobs.payload": {
+    "defaultMessage": "ペイロード",
+    "description": "Term in a failed job's details: the job's input data, as JSON."
+  },
+  "admin.dead_jobs.retried": {
+    "defaultMessage": "ジョブ {type} をもう一度実行するようにキューに入れました。",
+    "description": "Announcement after an operator ran a failed job again. {type} is the job type, such as federation.deliver."
+  },
+  "admin.dead_jobs.retry": {
+    "defaultMessage": "再実行",
+    "description": "Button of a failed job that runs it again."
+  },
+  "admin.dead_jobs.retry_failed": {
+    "defaultMessage": "ジョブを再実行できませんでした: {reason}",
+    "description": "Error toast when a failed job could not be run again. {reason} is the server's localized reason."
+  },
+  "admin.dead_jobs.retry_job": {
+    "defaultMessage": "再実行: {type}（{date} に失敗）",
+    "description": "Accessible name of the run-again button of a failed job, which names the job. {type} is the job type; {date} is when it failed, formatted."
+  },
+  "admin.dead_jobs.summary": {
+    "defaultMessage": "失敗したまま止まったバックグラウンドのジョブと、その再実行。",
+    "description": "Description of the failed jobs screen in the administration menu of the settings."
+  },
+  "admin.dead_jobs.title": {
+    "defaultMessage": "失敗したジョブ",
+    "description": "Heading of the screen of background jobs that failed for good, and its link in the administration menu."
+  },
+  "admin.instance.back": {
+    "defaultMessage": "連合先のサーバーに戻る",
+    "description": "Link under the heading of a remote server's page that opens the list of remote servers."
+  },
+  "admin.instance.event.marked_available": {
+    "defaultMessage": "配送を再開",
+    "description": "Heading of an entry of a remote server's history: deliveries to it resumed."
+  },
+  "admin.instance.event.marked_unavailable": {
+    "defaultMessage": "配送を停止",
+    "description": "Heading of an entry of a remote server's history: deliveries to it were paused."
+  },
+  "admin.instance.failure_days": {
+    "defaultMessage": "配送に失敗した日数",
+    "description": "Term in a remote server's details: on how many different days deliveries to it failed in a row."
+  },
+  "admin.instance.failure_days.value": {
+    "defaultMessage": "{count, plural, other {# 日}}",
+    "description": "The number of days with failed deliveries to a remote server."
+  },
+  "admin.instance.history.empty": {
+    "defaultMessage": "このサーバーへの配送を停止したことはありません",
+    "description": "Text of a remote server's history when deliveries to it were never paused or resumed."
+  },
+  "admin.instance.history.title": {
+    "defaultMessage": "履歴",
+    "description": "Heading of the history of a remote server: when deliveries to it were paused and resumed, and why."
+  },
+  "admin.instance.last_failure": {
+    "defaultMessage": "最後に配送に失敗した日",
+    "description": "Term in a remote server's details: the last day a delivery to it failed."
+  },
+  "admin.instance.last_resumed": {
+    "defaultMessage": "最後に配送を再開した日時",
+    "description": "Term in a remote server's details: the last time deliveries to it resumed after a pause."
+  },
+  "admin.instance.mark_available": {
+    "defaultMessage": "配送を再開する",
+    "description": "Button on a remote server's page that clears its failures and resumes deliveries to it."
+  },
+  "admin.instance.mark_available.description": {
+    "defaultMessage": "失敗した日数を消し、このサーバーにすべての配送を再び送ります。",
+    "description": "Description under the button that resumes deliveries to a remote server."
+  },
+  "admin.instance.mark_failed": {
+    "defaultMessage": "配送を再開できませんでした: {reason}",
+    "description": "Error toast when deliveries to a remote server could not be resumed. {reason} is the server's localized reason."
+  },
+  "admin.instance.marked_available": {
+    "defaultMessage": "{domain} への配送を再開しました。",
+    "description": "Announcement after an operator resumed deliveries to a remote server. {domain} is its domain."
+  },
+  "admin.instance.none": {
+    "defaultMessage": "なし",
+    "description": "Value of a term in a remote server's details that has nothing to show, such as the last failure of a server without failures."
+  },
+  "admin.instance.reason": {
+    "defaultMessage": "理由",
+    "description": "Term in a remote server's details: why deliveries to it were last paused or resumed."
+  },
+  "admin.instance.reason.delivery_succeeded": {
+    "defaultMessage": "このサーバーへの配送が成功した。",
+    "description": "Why deliveries to a remote server resumed: a delivery to it succeeded."
+  },
+  "admin.instance.reason.failure_days": {
+    "defaultMessage": "7 日間、配送に失敗した。",
+    "description": "Why deliveries to a remote server were paused: they failed on 7 different days."
+  },
+  "admin.instance.reason.inbound_request": {
+    "defaultMessage": "このサーバーから署名付きの要求が届いた。",
+    "description": "Why deliveries to a remote server resumed: it sent this server a signed request."
+  },
+  "admin.instance.reason.operator": {
+    "defaultMessage": "管理者が配送を再開した。",
+    "description": "Why deliveries to a remote server resumed: an operator resumed them."
+  },
+  "admin.instance.reason.probe_succeeded": {
+    "defaultMessage": "毎日の確認でサーバーに届いた。",
+    "description": "Why deliveries to a remote server resumed: the daily check reached it."
+  },
+  "admin.instance.since": {
+    "defaultMessage": "この状態になった日時",
+    "description": "Term in a remote server's details: since when it is in its state."
+  },
+  "admin.instance.state": {
+    "defaultMessage": "状態",
+    "description": "Term in a remote server's details: whether deliveries go to it."
+  },
+  "admin.instance.state.available": {
+    "defaultMessage": "配送中",
+    "description": "State of a remote server that gets every delivery."
+  },
+  "admin.instance.state.unavailable": {
+    "defaultMessage": "配送停止中",
+    "description": "State of a remote server that gets only follow requests and their answers, because deliveries to it kept failing."
+  },
+  "admin.instances.empty": {
+    "defaultMessage": "配送に失敗しているサーバーはありません",
+    "description": "Heading of the remote servers screen when no server has failed deliveries."
+  },
+  "admin.instances.empty.description": {
+    "defaultMessage": "一覧にないサーバーには、すべての配送を送っています。",
+    "description": "Text under the heading of the empty remote servers screen."
+  },
+  "admin.instances.filter.all": {
+    "defaultMessage": "すべて",
+    "description": "Tab of the remote servers screen that shows every listed server."
+  },
+  "admin.instances.filter.available": {
+    "defaultMessage": "配送中",
+    "description": "Tab of the remote servers screen that shows the servers that get every delivery, though some deliveries failed."
+  },
+  "admin.instances.filter.label": {
+    "defaultMessage": "サーバーの状態",
+    "description": "Accessible name of the tabs that filter the remote servers by state."
+  },
+  "admin.instances.filter.unavailable": {
+    "defaultMessage": "配送停止中",
+    "description": "Tab of the remote servers screen that shows the servers whose deliveries are paused."
+  },
+  "admin.instances.summary": {
+    "defaultMessage": "配送に失敗しているサーバーと、配送を停止している理由。",
+    "description": "Description of the remote servers screen in the administration menu of the settings."
+  },
+  "admin.instances.title": {
+    "defaultMessage": "連合先のサーバー",
+    "description": "Heading of the screen of the remote servers that deliveries failed to reach, and its link in the administration menu."
+  },
+  "admin.list.more": {
+    "defaultMessage": "さらに表示",
+    "description": "Button under a list of an admin screen that loads more of it."
+  },
+  "admin.menu.title": {
+    "defaultMessage": "管理",
+    "description": "Heading of the links to the admin screens on the settings page, shown only to operators."
+  },
+  "admin.missing_permission.description": {
+    "defaultMessage": "あなたのロールには権限 {permission} がありません。このサーバーの管理者に依頼してください。",
+    "description": "Text of an admin screen for a user whose roles lack its permission. {permission} is the permission's code, such as manage_jobs."
+  },
+  "admin.missing_permission.heading": {
+    "defaultMessage": "この画面を使う権限がありません",
+    "description": "Heading of an admin screen for a user whose roles lack its permission."
+  },
   "api.error.network": {
     "defaultMessage": "サーバーに接続できませんでした。接続を確かめて、もう一度試してください。",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."

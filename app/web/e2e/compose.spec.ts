@@ -61,6 +61,7 @@ async function serveApi(page: Page): Promise<Posted[]> {
         indexable: true,
         source: { note: "", fields: [] },
         posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
+        permissions: [],
       });
     if (path === "/api/v1/instance") {
       return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 } });

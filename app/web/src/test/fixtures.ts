@@ -36,6 +36,7 @@ export const viewerFixture: Schemas["CredentialAccount"] = {
   indexable: true,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
+  permissions: [],
 };
 
 /**

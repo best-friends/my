@@ -125,6 +125,7 @@ func TestVerifyAccountCredentialsHasTheSource(t *testing.T) {
 				clientapi.VisibilityPublic, clientapi.VisibilityLocal, clientapi.VisibilityUnlisted, clientapi.VisibilityPrivate, clientapi.VisibilityDirect,
 			},
 		},
+		Permissions: []clientapi.Permission{},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("account = %+v, want %+v", got, want)
