@@ -77,12 +77,16 @@ func sessionSignsInAndOut(t *testing.T, e *accountEnv) {
 	if err != nil {
 		t.Fatalf("Authenticate = %v", err)
 	}
-	if s.ID != got.Session.ID || s.UserID != reg.User.ID || s.IP != "192.0.2.1" || !s.CreatedAt.Equal(now) ||
+	if s.ID != got.Session.ID || s.UserID != reg.User.ID || !s.CreatedAt.Equal(now) ||
 		!s.ExpiresAt.Equal(now.Add(appidentity.DefaultSessionTTL)) {
 		t.Errorf("Authenticate = %+v, want the new session of %s created at %v", s, reg.User.ID, now)
 	}
-	if len(s.UserAgent) > identity.MaxUserAgentLength || s.UserAgent != strings.Repeat("é", identity.MaxUserAgentLength/2) {
-		t.Errorf("stored user agent has %d bytes, want it cut to %d bytes of whole characters", len(s.UserAgent), identity.MaxUserAgentLength)
+	o, err := e.h.Identity.FindSessionOrigin(ctx, s.ID)
+	if err != nil || o.SessionID != s.ID || o.UserID != reg.User.ID || o.IP != "192.0.2.1" || !o.CreatedAt.Equal(now) {
+		t.Errorf("FindSessionOrigin = %+v, %v; want 192.0.2.1 for the session created at %v", o, err, now)
+	}
+	if len(o.UserAgent) > identity.MaxUserAgentLength || o.UserAgent != strings.Repeat("é", identity.MaxUserAgentLength/2) {
+		t.Errorf("stored user agent has %d bytes, want it cut to %d bytes of whole characters", len(o.UserAgent), identity.MaxUserAgentLength)
 	}
 
 	// Activity is recorded at sign-in and refreshed only after the interval.

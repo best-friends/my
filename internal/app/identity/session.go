@@ -59,8 +59,9 @@ func HashToken(token string) []byte {
 type SignInInput struct {
 	Email    string
 	Password string
-	// IP is the client address ("" when unknown); it keys a rate limit and is stored with
-	// the session.
+	// IP is the client address ("" when unknown); it keys a rate limit and, with UserAgent,
+	// is recorded as the session's origin. An unknown or unparsable address is not recorded
+	// and does not stop the sign-in.
 	IP        string
 	UserAgent string
 	// CurrentToken is the session token the browser already holds, if any. Signing in revokes
@@ -137,24 +138,31 @@ func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) 
 type newSession struct {
 	token    string
 	session  identity.Session
+	origin   identity.SessionOrigin
 	previous string // ID of the session to revoke as replaced, or ""
 }
 
 func (n newSession) signedIn() SignedIn { return SignedIn{Token: n.token, Session: n.session} }
 
-// prepareSession returns a new session of userID with a new token. currentToken is the
-// session token the browser holds, if any; the new session replaces it.
+// prepareSession returns a new session of userID with a new token and its origin (ip and
+// userAgent). currentToken is the session token the browser holds, if any; the new session
+// replaces it.
 func (s *Service) prepareSession(ctx context.Context, userID, ip, userAgent, currentToken string, now time.Time) (newSession, error) {
 	token, hash := NewToken(SessionTokenPrefix)
 	n := newSession{token: token, session: identity.Session{
 		ID:        s.d.IDs.NewID(),
 		UserID:    userID,
 		TokenHash: hash,
-		UserAgent: truncate(userAgent, identity.MaxUserAgentLength),
-		IP:        ip,
 		CreatedAt: now,
 		ExpiresAt: now.Add(s.sessionTTL()),
 	}}
+	n.origin = identity.SessionOrigin{
+		SessionID: n.session.ID,
+		UserID:    userID,
+		IP:        normalizeIP(ip),
+		UserAgent: truncate(userAgent, identity.MaxUserAgentLength),
+		CreatedAt: now,
+	}
 	if currentToken != "" {
 		switch old, _, err := s.d.Repository.FindUnrevokedSession(ctx, HashToken(currentToken)); {
 		case err == nil:
@@ -166,7 +174,7 @@ func (s *Service) prepareSession(ctx context.Context, userID, ip, userAgent, cur
 	return n, nil
 }
 
-// writeSession writes a prepared session, revoking the one it replaces.
+// writeSession writes a prepared session and its origin, revoking the one it replaces.
 func (s *Service) writeSession(ctx context.Context, tx uow.Tx, n newSession) error {
 	now := n.session.CreatedAt
 	if n.previous != "" {
@@ -177,6 +185,11 @@ func (s *Service) writeSession(ctx context.Context, tx uow.Tx, n newSession) err
 	}
 	if err := s.d.Repository.InsertSession(ctx, tx, n.session); err != nil {
 		return err
+	}
+	if !n.origin.Empty() {
+		if err := s.d.Repository.InsertSessionOrigin(ctx, tx, n.origin); err != nil {
+			return err
+		}
 	}
 	return s.d.Repository.UpsertSessionActivity(ctx, tx, identity.SessionActivity{SessionID: n.session.ID, LastSeenAt: now})
 }

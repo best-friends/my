@@ -285,6 +285,10 @@ flowchart LR
 
 - セッションは、サーバーが返す画面（ログイン・登録・認可同意）の Cookie `__Host-my_session` です（ADR-0019 §4、ADR-0030）。
   ログインのたびに新しいトークンを発行し、ブラウザが持っていた古いセッションは `replaced` で失効させます。
+- ログイン元（`session_origins`）と登録元（`registration_origins`）は、セッション・利用者と同じトランザクションで記録します。
+  - IP アドレスは正規形（IPv4 射影の IPv6 は IPv4、ゾーンは外す）で持ち、同じアドレスが同じ文字列になるようにします。IP アドレスとして読めない値は記録しません。
+  - IP アドレスも User-Agent も分からないログインは `session_origins` の行を作らず、IP アドレスの分からない登録は `registration_origins` の行を作りません。どちらもログインと登録を妨げません。
+  - 1 時間ごとの消去ジョブ `identity.purge_origins` が、保持期間（既定 180 日）を過ぎた行を、1 文あたり 1,000 行・1 テーブルあたり 20 文まで、古い順に消します。セッションと利用者は残ります。
 - `scope` は RFC 6749 の scope 文字列（空白区切り・ソート済みの正規形）です。照合は文字列全体で行い、個々のスコープの検索には使わないため、1 カラムで持ちます。
 - `oauth_clients` 以外のテーブルの `client_id` は `oauth_clients.id` を指します。クライアントが送る公開の識別子は `oauth_clients.client_id` です。
 - ファーストパーティの Web クライアント（`client_id` は `my-web`）は起動時に冪等に登録します。リダイレクト URI は設定 `web_origin` から導くので、`oauth_client_redirect_uris` は起動のたびに設定値へ置き換える【現在値】です。
@@ -412,10 +416,13 @@ flowchart LR
 
 | テーブル | カラム | 制約 |
 | --- | --- | --- |
-| `account_restrictions` | `account_id`, `restriction`（§5.2 の能力の enum）, `source_action_id`, `effective_until`（NULL 可 = 無期限） | PK `(account_id, restriction, source_action_id)`。読み取りは `WHERE account_id = ? AND (effective_until IS NULL OR effective_until > :now)` |
+| `account_restrictions` | `account_id`, `restriction`（§5.2 の能力の enum）, `source_action_id`, `effective_until`（NULL 可 = 無期限） | PK `(account_id, restriction, source_action_id)`。インデックス `(effective_until)`（期限切れの行の削除）。読み取りは `WHERE account_id = ? AND (effective_until IS NULL OR effective_until > :now)` |
 
 - 1 つの処分は複数の制限を生みます（例: サイレンス → 3 つの制限、§5.2）。
 - 複数の処分が重なった場合は、制限の和集合になります。解除すると、その処分由来の行だけが消えます。期限切れの行は、読み取り時の条件で無効になり、定期ジョブで掃除します。
+  `account_restrictions` の期限切れの行は、5 分ごとのジョブ `moderation.expire_restrictions` が、1 トランザクションあたり件数を区切って消します。
+- アカウントの凍結（`federation` の制限）が効き始めたとき（効いている `federation` の行が無かったアカウントに行ができた）と、終わったとき（`federation` の行が消え、効いている行が残らない）に、`moderation` は同じトランザクションで `moderation.account_suspension_changed` を発行します。
+  終わりは、解除か期限切れの行の削除の、先に行を消した方が 1 回だけ伝えます。ローカルのアカウントなら `federation` がこれを受けて `Update`（Actor）を積みます（[federation.md §11.1](federation.md#111-処分の伝播)）。
 
 #### ドメイン単位の処分
 
