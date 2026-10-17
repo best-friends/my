@@ -5,6 +5,7 @@ package inline_test
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"testing"
 	"time"
 
@@ -62,5 +63,51 @@ func TestRunSynchronously(t *testing.T) {
 	}
 	if len(ran) != 3 {
 		t.Fatalf("ran %v, want the delayed child once it is due", ran)
+	}
+}
+
+// An Enqueue from another goroutine while a drain runs (a scheduled job, say) does not return
+// before its own jobs ran.
+func TestRunSynchronouslyWhileAnotherDrainRuns(t *testing.T) {
+	clock := testkit.NewClock(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	q := inline.New(inline.Options{Clock: clock, IDs: testkit.NewIDGenerator(clock)})
+	var reg queue.JobHandlerRegistry
+	started, release := make(chan struct{}), make(chan struct{})
+	reg.Register("slow", func(context.Context, queue.Job) queue.Result {
+		close(started)
+		<-release
+		return queue.Done()
+	})
+	var mu sync.Mutex
+	ran := false
+	reg.Register("quick", func(context.Context, queue.Job) queue.Result {
+		mu.Lock()
+		defer mu.Unlock()
+		ran = true
+		return queue.Done()
+	})
+	q.RunSynchronously(queue.NewPullRunner(q, &reg, queue.RunnerOptions{Clock: clock}))
+
+	slow := make(chan error, 1)
+	go func() { slow <- q.Enqueue(context.Background(), queue.NewJob{Type: "slow"}) }()
+	<-started
+	quick := make(chan error, 1)
+	go func() { quick <- q.Enqueue(t.Context(), queue.NewJob{Type: "quick"}) }()
+	select {
+	case err := <-quick:
+		t.Fatalf("Enqueue returned (%v) while another drain held its job", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+	close(release)
+	if err := <-quick; err != nil {
+		t.Fatalf("Enqueue: %v", err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if !ran {
+		t.Errorf("Enqueue returned before its job ran")
+	}
+	if err := <-slow; err != nil {
+		t.Errorf("Enqueue of the slow job: %v", err)
 	}
 }

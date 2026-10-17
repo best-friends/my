@@ -42,7 +42,7 @@ func (a *App) setUpInboxProcessor(repo federation.InboxRepository) {
 	})
 	a.RemoteActors.RegisterInboxHandlers(a.InboxProcessor)
 	a.InboxProcessor.RegisterJobs(a.Handlers)
-	a.registerStatusHandlers()
+	a.registerStatusHandlers(repo)
 	// The handlers of each activity type (federation.md §3.4).
 	federation.RegisterFollowHandlers(a.InboxProcessor, federation.FollowHandlerDeps{Graph: a.Graph, Accounts: a.Accounts})
 }

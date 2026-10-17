@@ -207,6 +207,8 @@ func TestRemoteStatusContract(t *testing.T) {
 			Timeline:       db.TimelineRepository(),
 			Notifications:  db.NotificationRepository(),
 			Inbox:          db.FederationRepository(),
+			Federation:     db.FederationRepository(),
+			Instances:      db.FederationRepository(),
 		}
 	})
 }
