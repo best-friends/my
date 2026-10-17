@@ -7,6 +7,7 @@ import { SettingsHeading } from "./-layout/SettingsHeading";
 
 /** Editing the signed-in user's profile (FR-006). */
 export const Route = createFileRoute("/settings/profile")({
+  staticData: { title: "client:settings.profile.title" },
   beforeLoad: requireSignIn,
   loader: ({ context }) => context.queryClient.query({ ...credentialsQueryOptions(context.api), staleTime: "static" }),
   component: ProfilePage,

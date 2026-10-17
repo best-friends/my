@@ -7,6 +7,7 @@ import { SettingsHeading } from "./-layout/SettingsHeading";
 
 /** The display language, time zone, default visibility and timeline languages (FR-007, FR-208). */
 export const Route = createFileRoute("/settings/preferences")({
+  staticData: { title: "client:settings.preferences.title" },
   beforeLoad: requireSignIn,
   loader: ({ context }) => context.queryClient.query({ ...preferencesQueryOptions(context.api), staleTime: "static" }),
   component: PreferencesPage,

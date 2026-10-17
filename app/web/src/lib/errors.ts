@@ -46,6 +46,22 @@ export class NetworkError extends Error {
   override name = "NetworkError";
 }
 
+/**
+ * What kind of failure an error is, for the words that describe it (web-client.md G16): no response
+ * (`network`), the server refused the viewer (`forbidden`, 403) or found nothing (`not-found`, 404), the
+ * server failed otherwise (`server`), or the error did not come from the API at all (`unexpected`).
+ */
+export type ErrorKind = "network" | "server" | "not-found" | "forbidden" | "unexpected";
+
+/** Classifies an error of the API client by what the user can make of it. */
+export function errorKind(error: unknown): ErrorKind {
+  if (error instanceof NetworkError) return "network";
+  if (!(error instanceof ApiError)) return "unexpected";
+  if (error.status === 403) return "forbidden";
+  if (error.status === 404) return "not-found";
+  return "server";
+}
+
 /** Whether `value` has the required members of a Problem. */
 function isProblem(value: unknown): value is Problem {
   if (typeof value !== "object" || value === null) return false;

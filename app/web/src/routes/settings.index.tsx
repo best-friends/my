@@ -8,6 +8,7 @@ import { PageHeading } from "./-layout/PageHeading";
 
 /** The settings: the links to their pages and, for a viewer with admin permissions, to the admin screens; and the signed-in account with signing out. */
 export const Route = createFileRoute("/settings/")({
+  staticData: { title: "client:settings.title" },
   component: SettingsPage,
 });
 

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { followListQueryOptions, FollowListSkeleton, FollowListView } from "../features/profile";
 import { PageHeading } from "./-layout/PageHeading";
 import { loadAccount, profileParamsSchema } from "./-profile/loadAccount";
+import { FollowListError } from "./-profile/ProfileError";
 import { ProfileNotFound } from "./-profile/ProfileNotFound";
 
 /** The accounts that follow an account (FR-301). */
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/@{$acct}_/followers")({
   component: FollowersPage,
   pendingComponent: FollowersPending,
   notFoundComponent: ProfileNotFound,
+  errorComponent: FollowersError,
 });
 
 function FollowersPage() {
@@ -25,4 +27,8 @@ function FollowersPage() {
 function FollowersPending() {
   const { acct } = Route.useParams();
   return <FollowListSkeleton acct={acct} list="followers" renderHeading={(text) => <PageHeading>{text}</PageHeading>} />;
+}
+
+function FollowersError(props: ErrorComponentProps) {
+  return <FollowListError {...props} list="followers" />;
 }

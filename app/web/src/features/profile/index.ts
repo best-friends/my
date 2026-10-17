@@ -8,4 +8,5 @@ export { FollowListSkeleton } from "./components/FollowListSkeleton";
 export { FollowListView } from "./components/FollowListView";
 export { ProfileView } from "./components/ProfileView";
 export { RelationshipActions } from "./components/RelationshipActions";
+export { isolate } from "./hooks/useProfile";
 export { useRelationship } from "./hooks/useRelationship";

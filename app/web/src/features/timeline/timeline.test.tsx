@@ -81,7 +81,8 @@ describe("the local timeline", () => {
     );
     const { user } = await renderApp({ path: "/local" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Something went wrong" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Could not load this page" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Local timeline" })).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole("button", { name: "Try again" }));
     // The router reruns the loader after its pending delay: about a second in jsdom.
