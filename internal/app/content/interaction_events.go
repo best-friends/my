@@ -2,7 +2,11 @@
 
 package content
 
-import "github.com/best-friends/my/internal/domain/content"
+import (
+	"time"
+
+	"github.com/best-friends/my/internal/domain/content"
+)
 
 // Event types of the interactions with statuses, for uow.Projectors (data-model §4.4). Each
 // interaction command emits at most one of them inside its transaction, and only when it
@@ -77,6 +81,8 @@ func (Favourited) EventType() string { return EventFavourited }
 type Unfavourited struct {
 	Favourite content.Favourite
 	Status    StatusRef
+	// RemovedAt is when the favourite was deleted.
+	RemovedAt time.Time
 }
 
 // EventType implements uow.Event.

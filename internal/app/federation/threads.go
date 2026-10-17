@@ -434,7 +434,7 @@ func (h *StatusHandlers) store(ctx context.Context, author appaccount.Actor, obj
 	if err := h.resolveMentions(ctx, mentions); err != nil {
 		return appcontent.Status{}, err
 	}
-	in := h.input(author, "", federation.Audience{}, obj, followers, mentions)
+	in := h.inputOf(author, federation.Audience{}, "", obj, followers, mentions)
 	var st appcontent.Status
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		p, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, in)

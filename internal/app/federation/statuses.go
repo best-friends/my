@@ -152,7 +152,7 @@ func (h *StatusHandlers) Update(ctx context.Context, a *InboxActivity) error {
 	if err := h.resolveMentions(ctx, mentions); err != nil {
 		return err
 	}
-	in := h.input(a.Actor, a.Received.ActivityURI, a.Activity.Audience, obj, followers, mentions)
+	in := h.input(a, obj, followers, mentions)
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		_, err := h.d.Statuses.ReviseRemoteStatus(ctx, tx, in)
 		return err
@@ -261,7 +261,7 @@ func (h *StatusHandlers) ingest(ctx context.Context, a *InboxActivity, obj *fede
 	if err := h.resolveMentions(ctx, mentions); err != nil {
 		return err
 	}
-	in := h.input(a.Actor, a.Received.ActivityURI, a.Activity.Audience, obj, followers, mentions)
+	in := h.input(a, obj, followers, mentions)
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		p, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, in)
 		if err != nil {
@@ -381,13 +381,19 @@ func (h *StatusHandlers) resolveMentions(ctx context.Context, m *postMentions) e
 
 func (h *StatusHandlers) isLocal(iri federation.IRI) bool { return iri.Origin() == h.origin }
 
-// input maps a normalized post of author to what the content module stores (federation.md §4).
-// activityURI is the Create or Update that carried it ("" for a fetched post), whose audience
-// stands in for the post's when it has none.
-func (h *StatusHandlers) input(author appaccount.Actor, activityURI federation.IRI, activityAudience federation.Audience, obj *federation.Object, followers federation.IRI, m *postMentions) appcontent.RemoteStatusInput {
+// input maps a normalized post that activity a carried to what the content module stores
+// (federation.md §4).
+func (h *StatusHandlers) input(a *InboxActivity, obj *federation.Object, followers federation.IRI, m *postMentions) appcontent.RemoteStatusInput {
+	return h.inputOf(a.Actor, a.Activity.Audience, string(a.Received.ActivityURI), obj, followers, m)
+}
+
+// inputOf maps a normalized post by author to what the content module stores (federation.md
+// §4). A post without addressing takes fallback, the addressing of the activity that carried it;
+// activityURI is that activity, "" for a post fetched by its id.
+func (h *StatusHandlers) inputOf(author appaccount.Actor, fallback federation.Audience, activityURI string, obj *federation.Object, followers federation.IRI, m *postMentions) appcontent.RemoteStatusInput {
 	audience := obj.Audience
 	if len(audience.To) == 0 && len(audience.Cc) == 0 {
-		audience = activityAudience
+		audience = fallback
 	}
 	in := appcontent.RemoteStatusInput{
 		URI:                 string(obj.ID),
@@ -397,7 +403,7 @@ func (h *StatusHandlers) input(author appaccount.Actor, activityURI federation.I
 		InReplyToURI:        string(obj.InReplyTo),
 		PublishedAt:         obj.Published,
 		RevisedAt:           obj.Updated,
-		ActivityURI:         string(activityURI),
+		ActivityURI:         activityURI,
 		SpoilerText:         obj.SpoilerText,
 		Sensitive:           obj.Sensitive,
 		MentionedAccountIDs: m.accountIDs,

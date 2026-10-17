@@ -287,6 +287,23 @@ func (q *Queries) GetFavourite(ctx context.Context, arg GetFavouriteParams) (Fav
 	return i, err
 }
 
+const getFavouriteByURI = `-- name: GetFavouriteByURI :one
+SELECT account_id, status_id, uri, created_at, id FROM favourites WHERE uri = ?
+`
+
+func (q *Queries) GetFavouriteByURI(ctx context.Context, uri string) (Favourite, error) {
+	row := q.db.QueryRowContext(ctx, getFavouriteByURI, uri)
+	var i Favourite
+	err := row.Scan(
+		&i.AccountID,
+		&i.StatusID,
+		&i.Uri,
+		&i.CreatedAt,
+		&i.ID,
+	)
+	return i, err
+}
+
 const getStatusPin = `-- name: GetStatusPin :one
 SELECT account_id, status_id, slot, created_at, id FROM status_pins WHERE account_id = ? AND status_id = ?
 `
