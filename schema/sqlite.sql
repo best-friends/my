@@ -1689,7 +1689,7 @@ CREATE TABLE audit_log_entries (
     'account_action_issued', 'account_action_lifted', 'domain_action_issued',
     'domain_action_lifted', 'report_assigned', 'report_unassigned', 'report_resolved',
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
-    'rule_added', 'rule_revised', 'rule_moved', 'rule_retired'
+    'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',

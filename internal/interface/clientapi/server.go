@@ -102,6 +102,9 @@ type Options struct {
 	// Rules runs the use cases of the instance rules: the admin operations (admin_rules.go)
 	// and the rules of GET /instance, which lists none when it is nil.
 	Rules InstanceRules
+	// Roles lists, grants, and revokes the roles of users for the admin operations
+	// (admin_roles.go).
+	Roles Roles
 	// Reports files the reports of local users (reports.go).
 	Reports Reports
 	// FiledReports reads the reports that the viewer filed (listOwnReports) and that their

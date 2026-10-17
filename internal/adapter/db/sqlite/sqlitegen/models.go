@@ -643,6 +643,11 @@ type Role struct {
 	CreatedAt int64
 }
 
+type RolePermission struct {
+	RoleID     string
+	Permission string
+}
+
 type SessionOrigin struct {
 	SessionID string
 	UserID    string

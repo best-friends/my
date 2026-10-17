@@ -141,6 +141,8 @@ const (
 	AdminAuditActionReportAssigned       AdminAuditAction = "report_assigned"
 	AdminAuditActionReportResolved       AdminAuditAction = "report_resolved"
 	AdminAuditActionReportUnassigned     AdminAuditAction = "report_unassigned"
+	AdminAuditActionRoleGranted          AdminAuditAction = "role_granted"
+	AdminAuditActionRoleRevoked          AdminAuditAction = "role_revoked"
 	AdminAuditActionRuleAdded            AdminAuditAction = "rule_added"
 	AdminAuditActionRuleMoved            AdminAuditAction = "rule_moved"
 	AdminAuditActionRuleRetired          AdminAuditAction = "rule_retired"
@@ -169,6 +171,10 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionReportResolved:
 		return true
 	case AdminAuditActionReportUnassigned:
+		return true
+	case AdminAuditActionRoleGranted:
+		return true
+	case AdminAuditActionRoleRevoked:
 		return true
 	case AdminAuditActionRuleAdded:
 		return true
@@ -851,7 +857,8 @@ type AdminAccountActionState string
 // `report_unassigned`, `report_resolved`. On a `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 // (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+// user): `role_granted`, `role_revoked`.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -867,7 +874,8 @@ type AdminAuditEntry struct {
 	// `report_unassigned`, `report_resolved`. On a `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+	// user): `role_granted`, `role_revoked`.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -1147,6 +1155,27 @@ type AdminReportPage struct {
 
 // AdminReportState `open` reports await the moderators; `resolved` ones are handled.
 type AdminReportState string
+
+// AdminRole A role (FR-720): a named set of permissions. A higher position outranks a lower one;
+// a user may grant and revoke only the roles at or below their highest one.
+type AdminRole struct {
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Key The name of the role, such as `admin` or `moderator`.
+	Key string `json:"key"`
+
+	// Permissions The permissions that the role grants, in the order of `Permission`.
+	Permissions []Permission `json:"permissions"`
+	Position    int          `json:"position"`
+}
+
+// AdminRoleList Roles, highest position first.
+type AdminRoleList struct {
+	Items []AdminRole `json:"items"`
+}
 
 // AdminRule A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
 // across revisions, so reports keep citing it.
@@ -1838,8 +1867,9 @@ type PageInfo struct {
 
 // Permission A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
-// `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
-// dead jobs of the job queue. The others guard no client API operation yet.
+// `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+// roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+// log. The others guard no client API operation yet.
 type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
@@ -2345,6 +2375,9 @@ type Limit = int
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type ReportId = Id
 
+// RoleKey defines model for RoleKey.
+type RoleKey = string
+
 // RuleId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -2750,6 +2783,15 @@ type ServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// ListAccountRoles List the roles of a local account
+	// (GET /admin/accounts/{id}/roles)
+	ListAccountRoles(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// RevokeAccountRole Revoke a role from a local account
+	// (DELETE /admin/accounts/{id}/roles/{role})
+	RevokeAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey)
+	// GrantAccountRole Grant a role to a local account
+	// (PUT /admin/accounts/{id}/roles/{role})
+	GrantAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey)
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams)
@@ -2801,6 +2843,9 @@ type ServerInterface interface {
 	// UnassignReport Leave a report to nobody
 	// (POST /admin/reports/{id}/unassign)
 	UnassignReport(w http.ResponseWriter, r *http.Request, id ReportId)
+	// ListRoles List the roles
+	// (GET /admin/roles)
+	ListRoles(w http.ResponseWriter, r *http.Request)
 	// ListInstanceRules List the instance rules
 	// (GET /admin/rules)
 	ListInstanceRules(w http.ResponseWriter, r *http.Request, params ListInstanceRulesParams)
@@ -3612,6 +3657,102 @@ func (siw *ServerInterfaceWrapper) CreateAccountAction(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// ListAccountRoles operation middleware
+func (siw *ServerInterfaceWrapper) ListAccountRoles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAccountRoles(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeAccountRole operation middleware
+func (siw *ServerInterfaceWrapper) RevokeAccountRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role" -------------
+	var role RoleKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role", r.PathValue("role"), &role, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeAccountRole(w, r, id, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GrantAccountRole operation middleware
+func (siw *ServerInterfaceWrapper) GrantAccountRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role" -------------
+	var role RoleKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role", r.PathValue("role"), &role, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GrantAccountRole(w, r, id, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAuditLog operation middleware
 func (siw *ServerInterfaceWrapper) ListAuditLog(w http.ResponseWriter, r *http.Request) {
 
@@ -4254,6 +4395,20 @@ func (siw *ServerInterfaceWrapper) UnassignReport(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UnassignReport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoles operation middleware
+func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoles(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5835,6 +5990,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/roles", wrapper.ListRoles)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/roles", wrapper.ListAccountRoles)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.RevokeAccountRole)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.GrantAccountRole)
 
 	return m
 }
@@ -5891,6 +6050,15 @@ type AdminReportJSONResponse struct {
 	Body AdminReport
 
 	Headers AdminReportResponseHeaders
+}
+
+type AdminRoleListResponseHeaders struct {
+	CacheControl *string
+}
+type AdminRoleListJSONResponse struct {
+	Body AdminRoleList
+
+	Headers AdminRoleListResponseHeaders
 }
 
 type AdminRuleResponseHeaders struct {
@@ -7021,6 +7189,173 @@ func (response CreateAccountActiondefaultApplicationProblemPlusJSONResponse) Vis
 	return err
 }
 
+type ListAccountRolesRequestObject struct {
+	Id AdminAccountId `json:"id"`
+}
+
+type ListAccountRolesResponseObject interface {
+	VisitListAccountRolesResponse(w http.ResponseWriter) error
+}
+
+type ListAccountRoles200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response ListAccountRoles200JSONResponse) VisitListAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountRolesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAccountRolesdefaultApplicationProblemPlusJSONResponse) VisitListAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeAccountRoleRequestObject struct {
+	Id   AdminAccountId `json:"id"`
+	Role RoleKey        `json:"role"`
+}
+
+type RevokeAccountRoleResponseObject interface {
+	VisitRevokeAccountRoleResponse(w http.ResponseWriter) error
+}
+
+type RevokeAccountRole200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response RevokeAccountRole200JSONResponse) VisitRevokeAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeAccountRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RevokeAccountRoledefaultApplicationProblemPlusJSONResponse) VisitRevokeAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GrantAccountRoleRequestObject struct {
+	Id   AdminAccountId `json:"id"`
+	Role RoleKey        `json:"role"`
+}
+
+type GrantAccountRoleResponseObject interface {
+	VisitGrantAccountRoleResponse(w http.ResponseWriter) error
+}
+
+type GrantAccountRole200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response GrantAccountRole200JSONResponse) VisitGrantAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GrantAccountRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GrantAccountRoledefaultApplicationProblemPlusJSONResponse) VisitGrantAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListAuditLogRequestObject struct {
 	Params ListAuditLogParams
 }
@@ -7978,6 +8313,60 @@ type UnassignReportdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UnassignReportdefaultApplicationProblemPlusJSONResponse) VisitUnassignReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesRequestObject struct {
+}
+
+type ListRolesResponseObject interface {
+	VisitListRolesResponse(w http.ResponseWriter) error
+}
+
+type ListRoles200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response ListRoles200JSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListRolesdefaultApplicationProblemPlusJSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -10674,6 +11063,15 @@ type StrictServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(ctx context.Context, request CreateAccountActionRequestObject) (CreateAccountActionResponseObject, error)
+	// ListAccountRoles List the roles of a local account
+	// (GET /admin/accounts/{id}/roles)
+	ListAccountRoles(ctx context.Context, request ListAccountRolesRequestObject) (ListAccountRolesResponseObject, error)
+	// RevokeAccountRole Revoke a role from a local account
+	// (DELETE /admin/accounts/{id}/roles/{role})
+	RevokeAccountRole(ctx context.Context, request RevokeAccountRoleRequestObject) (RevokeAccountRoleResponseObject, error)
+	// GrantAccountRole Grant a role to a local account
+	// (PUT /admin/accounts/{id}/roles/{role})
+	GrantAccountRole(ctx context.Context, request GrantAccountRoleRequestObject) (GrantAccountRoleResponseObject, error)
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(ctx context.Context, request ListAuditLogRequestObject) (ListAuditLogResponseObject, error)
@@ -10725,6 +11123,9 @@ type StrictServerInterface interface {
 	// UnassignReport Leave a report to nobody
 	// (POST /admin/reports/{id}/unassign)
 	UnassignReport(ctx context.Context, request UnassignReportRequestObject) (UnassignReportResponseObject, error)
+	// ListRoles List the roles
+	// (GET /admin/roles)
+	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
 	// ListInstanceRules List the instance rules
 	// (GET /admin/rules)
 	ListInstanceRules(ctx context.Context, request ListInstanceRulesRequestObject) (ListInstanceRulesResponseObject, error)
@@ -11439,6 +11840,86 @@ func (sh *strictHandler) CreateAccountAction(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// ListAccountRoles operation middleware
+func (sh *strictHandler) ListAccountRoles(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request ListAccountRolesRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAccountRoles(ctx, request.(ListAccountRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAccountRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAccountRolesResponseObject); ok {
+		if err := validResponse.VisitListAccountRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeAccountRole operation middleware
+func (sh *strictHandler) RevokeAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey) {
+	var request RevokeAccountRoleRequestObject
+
+	request.Id = id
+	request.Role = role
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeAccountRole(ctx, request.(RevokeAccountRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeAccountRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeAccountRoleResponseObject); ok {
+		if err := validResponse.VisitRevokeAccountRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GrantAccountRole operation middleware
+func (sh *strictHandler) GrantAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey) {
+	var request GrantAccountRoleRequestObject
+
+	request.Id = id
+	request.Role = role
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GrantAccountRole(ctx, request.(GrantAccountRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GrantAccountRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GrantAccountRoleResponseObject); ok {
+		if err := validResponse.VisitGrantAccountRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListAuditLog operation middleware
 func (sh *strictHandler) ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams) {
 	var request ListAuditLogRequestObject
@@ -11885,6 +12366,30 @@ func (sh *strictHandler) UnassignReport(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnassignReportResponseObject); ok {
 		if err := validResponse.VisitUnassignReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoles operation middleware
+func (sh *strictHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	var request ListRolesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoles(ctx, request.(ListRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRolesResponseObject); ok {
+		if err := validResponse.VisitListRolesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
