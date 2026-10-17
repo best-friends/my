@@ -14,11 +14,13 @@ import (
 // compacted with the normative ActivityStreams context, never processed as JSON-LD: @context is
 // not interpreted (a missing one means the normative context, AS2 Core §2.1), and a Linked Data
 // signature is ignored. Unknown properties, including dialect extensions such as Misskey's
-// _misskey_content and _misskey_quote, are ignored. now bounds future timestamps.
+// _misskey_content and _misskey_quote, are ignored. now bounds future timestamps. host
+// canonicalizes the host of every IRI in the document (see NormalizeIRI); an IRI whose host it
+// rejects is read as absent.
 //
 // It returns ErrMalformed for a document that is not a JSON object with a type, and
 // ErrLimitExceeded for one over a limit (MaxDepth, MaxTags, MaxRecipients, MaxBodyBytes).
-func Normalize(raw []byte, now time.Time) (*Document, error) {
+func Normalize(raw []byte, now time.Time, host HostFunc) (*Document, error) {
 	v, err := decode(raw, MaxDepth)
 	if err != nil {
 		return nil, err
@@ -27,12 +29,13 @@ func Normalize(raw []byte, now time.Time) (*Document, error) {
 	if !ok {
 		return nil, fmt.Errorf("%w: not a JSON object", ErrMalformed)
 	}
-	n := normalizer{now: now.UTC()}
+	n := normalizer{now: now.UTC(), host: host}
 	return n.document(o)
 }
 
 type normalizer struct {
-	now time.Time
+	now  time.Time
+	host HostFunc
 }
 
 func (n normalizer) document(o object) (*Document, error) {
@@ -77,15 +80,15 @@ var (
 
 func (n normalizer) activity(o object, t ActivityType, raw string) (*Activity, error) {
 	a := &Activity{
-		ID:        iri(o.get("id")),
+		ID:        n.iri(o.get("id")),
 		Type:      t,
 		RawType:   raw,
-		Actor:     firstRef(o.get("actor")),
-		Target:    firstRef(o.get("target")),
+		Actor:     n.firstRef(o.get("actor")),
+		Target:    n.firstRef(o.get("target")),
 		Published: n.time(o.get("published")),
 	}
 	var err error
-	if a.Audience, err = audience(o); err != nil {
+	if a.Audience, err = n.audience(o); err != nil {
 		return nil, err
 	}
 	container := a.ID
@@ -112,7 +115,7 @@ func (n normalizer) activity(o object, t ActivityType, raw string) (*Activity, e
 	case ActivityLike:
 		a.Reaction = strings.TrimSpace(str(o.get("_misskey_reaction")))
 	}
-	if _, _, a.Emojis, err = tags(o.get("tag")); err != nil {
+	if _, _, a.Emojis, err = n.tags(o.get("tag")); err != nil {
 		return nil, err
 	}
 	return a, nil
@@ -120,19 +123,19 @@ func (n normalizer) activity(o object, t ActivityType, raw string) (*Activity, e
 
 func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) {
 	obj := &Object{
-		ID:           iri(o.get("id")),
+		ID:           n.iri(o.get("id")),
 		Type:         t,
 		RawType:      raw,
 		Converted:    slices.Contains(convertedTypes, t),
-		AttributedTo: firstRef(o.get("attributedTo")),
-		InReplyTo:    firstRef(o.get("inReplyTo")),
+		AttributedTo: n.firstRef(o.get("attributedTo")),
+		InReplyTo:    n.firstRef(o.get("inReplyTo")),
 		Published:    n.time(o.get("published")),
 		Updated:      n.time(o.get("updated")),
-		URL:          displayURL(o.get("url")),
+		URL:          n.displayURL(o.get("url")),
 		Sensitive:    o.get("sensitive") == true,
 	}
 	var err error
-	if obj.Audience, err = audience(o); err != nil {
+	if obj.Audience, err = n.audience(o); err != nil {
 		return nil, err
 	}
 	if obj.Bodies, err = bodies(o); err != nil {
@@ -166,10 +169,10 @@ func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) 
 	} else {
 		obj.SpoilerText = summary
 	}
-	if obj.Mentions, obj.Hashtags, obj.Emojis, err = tags(o.get("tag")); err != nil {
+	if obj.Mentions, obj.Hashtags, obj.Emojis, err = n.tags(o.get("tag")); err != nil {
 		return nil, err
 	}
-	obj.Attachments = attachments(o.get("attachment"))
+	obj.Attachments = n.attachments(o.get("attachment"))
 	if t == ObjectQuestion {
 		obj.Poll = n.poll(o)
 	}
@@ -178,18 +181,18 @@ func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) 
 
 func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
 	a := &Actor{
-		ID:                        iri(o.get("id")),
+		ID:                        n.iri(o.get("id")),
 		Type:                      t,
 		PreferredUsername:         strings.TrimSpace(str(o.get("preferredUsername"))),
 		Name:                      strings.TrimSpace(str(o.get("name"))),
-		URL:                       displayURL(o.get("url")),
-		Inbox:                     firstRef(o.get("inbox")),
-		Outbox:                    firstRef(o.get("outbox")),
-		Followers:                 firstRef(o.get("followers")),
-		Following:                 firstRef(o.get("following")),
-		Featured:                  firstRef(o.get("featured")),
-		Icon:                      imageURL(o.get("icon")),
-		Image:                     imageURL(o.get("image")),
+		URL:                       n.displayURL(o.get("url")),
+		Inbox:                     n.firstRef(o.get("inbox")),
+		Outbox:                    n.firstRef(o.get("outbox")),
+		Followers:                 n.firstRef(o.get("followers")),
+		Following:                 n.firstRef(o.get("following")),
+		Featured:                  n.firstRef(o.get("featured")),
+		Icon:                      n.imageURL(o.get("icon")),
+		Image:                     n.imageURL(o.get("image")),
 		ManuallyApprovesFollowers: o.get("manuallyApprovesFollowers") == true,
 		Discoverable:              o.get("discoverable") == true,
 		Published:                 n.time(o.get("published")),
@@ -199,7 +202,7 @@ func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
 		return nil, err
 	}
 	if ep, ok := o.get("endpoints").(object); ok {
-		a.SharedInbox = firstRef(ep.get("sharedInbox"))
+		a.SharedInbox = n.firstRef(ep.get("sharedInbox"))
 	}
 	for _, v := range list(o.get("publicKey")) {
 		k, ok := v.(object)
@@ -207,7 +210,7 @@ func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
 			continue
 		}
 		if pem := str(k.get("publicKeyPem")); pem != "" {
-			a.PublicKeys = append(a.PublicKeys, PublicKey{ID: iri(k.get("id")), Owner: firstRef(k.get("owner")), PEM: pem})
+			a.PublicKeys = append(a.PublicKeys, PublicKey{ID: n.iri(k.get("id")), Owner: n.firstRef(k.get("owner")), PEM: pem})
 		}
 	}
 	for _, v := range list(o.get("attachment")) {
@@ -221,7 +224,7 @@ func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
 		}
 		a.Fields = append(a.Fields, Field{Name: strings.TrimSpace(str(f.get("name"))), Value: value})
 	}
-	if _, _, a.Emojis, err = tags(o.get("tag")); err != nil {
+	if _, _, a.Emojis, err = n.tags(o.get("tag")); err != nil {
 		return nil, err
 	}
 	return a, nil
@@ -232,11 +235,11 @@ func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
 func (n normalizer) ref(v any, container IRI) (Ref, error) {
 	switch v := v.(type) {
 	case string:
-		return Ref{ID: normalizeIRI(v)}, nil
+		return Ref{ID: n.normalizeIRI(v)}, nil
 	case object:
 		names := strs(v.get("type"))
 		if len(names) == 0 || isLink(v) {
-			return Ref{ID: linkIRI(v)}, nil
+			return Ref{ID: n.linkIRI(v)}, nil
 		}
 		doc, err := n.document(v)
 		if err != nil {
@@ -286,23 +289,23 @@ func (n normalizer) time(v any) time.Time {
 }
 
 // audience reads to and cc, normalizing the spellings of Public and dropping duplicates.
-func audience(o object) (Audience, error) {
+func (n normalizer) audience(o object) (Audience, error) {
 	to, cc := list(o.get("to")), list(o.get("cc"))
 	if len(to)+len(cc) > MaxRecipients {
 		return Audience{}, fmt.Errorf("%w: %d recipients (max %d)", ErrLimitExceeded, len(to)+len(cc), MaxRecipients)
 	}
-	return Audience{To: recipients(to), Cc: recipients(cc)}, nil
+	return Audience{To: n.recipients(to), Cc: n.recipients(cc)}, nil
 }
 
-func recipients(vs []any) []IRI {
+func (n normalizer) recipients(vs []any) []IRI {
 	var out []IRI
 	for _, v := range vs {
 		var r IRI
 		switch v := v.(type) {
 		case string:
-			r = normalizeIRI(v)
+			r = n.normalizeIRI(v)
 		case object:
-			r = linkIRI(v)
+			r = n.linkIRI(v)
 		}
 		if r != "" && !slices.Contains(out, r) {
 			out = append(out, r)
@@ -361,7 +364,7 @@ func firstMapValue(v any) (string, error) {
 }
 
 // tags reads the tag property: Mention, Hashtag, and Emoji entries.
-func tags(v any) (mentions []Mention, hashtags []string, emojis []Emoji, err error) {
+func (n normalizer) tags(v any) (mentions []Mention, hashtags []string, emojis []Emoji, err error) {
 	vs := list(v)
 	if len(vs) > MaxTags {
 		return nil, nil, nil, fmt.Errorf("%w: %d tags (max %d)", ErrLimitExceeded, len(vs), MaxTags)
@@ -375,7 +378,7 @@ func tags(v any) (mentions []Mention, hashtags []string, emojis []Emoji, err err
 		name := strings.TrimSpace(str(t.get("name")))
 		switch {
 		case slices.Contains(types, "Mention"):
-			if href := firstRef(t.get("href")); href != "" {
+			if href := n.firstRef(t.get("href")); href != "" {
 				mentions = append(mentions, Mention{Href: href, Name: name})
 			}
 		case slices.Contains(types, "Hashtag"):
@@ -384,8 +387,8 @@ func tags(v any) (mentions []Mention, hashtags []string, emojis []Emoji, err err
 			}
 		case slices.Contains(types, "Emoji"):
 			code := strings.Trim(name, ":")
-			if icon := imageURL(t.get("icon")); code != "" && icon != "" {
-				emojis = append(emojis, Emoji{ID: iri(t.get("id")), Shortcode: code, IconURL: icon})
+			if icon := n.imageURL(t.get("icon")); code != "" && icon != "" {
+				emojis = append(emojis, Emoji{ID: n.iri(t.get("id")), Shortcode: code, IconURL: icon})
 			}
 		}
 	}
@@ -395,7 +398,7 @@ func tags(v any) (mentions []Mention, hashtags []string, emojis []Emoji, err err
 var attachmentTypes = []string{"Document", "Image", "Video", "Audio"}
 
 // attachments reads up to MaxAttachments media attachments. A bare Link is not an attachment.
-func attachments(v any) []Attachment {
+func (n normalizer) attachments(v any) []Attachment {
 	var out []Attachment
 	for _, v := range list(v) {
 		if len(out) == MaxAttachments {
@@ -409,7 +412,7 @@ func attachments(v any) []Attachment {
 		if i < 0 {
 			continue
 		}
-		l := firstLink(o.get("url"))
+		l := n.firstLink(o.get("url"))
 		if l.Href == "" {
 			continue
 		}
@@ -438,16 +441,16 @@ func attachments(v any) []Attachment {
 }
 
 // links reads a property whose values are IRIs or Links.
-func links(v any) []Link {
+func (n normalizer) links(v any) []Link {
 	var out []Link
 	for _, v := range list(v) {
 		switch v := v.(type) {
 		case string:
-			if h := normalizeIRI(v); h != "" {
+			if h := n.normalizeIRI(v); h != "" {
 				out = append(out, Link{Href: h})
 			}
 		case object:
-			if h := linkIRI(v); h != "" {
+			if h := n.linkIRI(v); h != "" {
 				out = append(out, Link{Href: h, MediaType: strings.TrimSpace(str(v.get("mediaType"))), Name: str(v.get("name"))})
 			}
 		}
@@ -455,16 +458,16 @@ func links(v any) []Link {
 	return out
 }
 
-func firstLink(v any) Link {
-	if ls := links(v); len(ls) > 0 {
+func (n normalizer) firstLink(v any) Link {
+	if ls := n.links(v); len(ls) > 0 {
 		return ls[0]
 	}
 	return Link{}
 }
 
 // displayURL returns the first text/html (or untyped) url, else the first url.
-func displayURL(v any) IRI {
-	ls := links(v)
+func (n normalizer) displayURL(v any) IRI {
+	ls := n.links(v)
 	for _, l := range ls {
 		if l.MediaType == "" || strings.HasPrefix(l.MediaType, "text/html") {
 			return l.Href
@@ -477,18 +480,18 @@ func displayURL(v any) IRI {
 }
 
 // imageURL reads an icon or image: an IRI, a Link, or an Image object (or a list of them).
-func imageURL(v any) IRI {
+func (n normalizer) imageURL(v any) IRI {
 	for _, v := range list(v) {
 		switch v := v.(type) {
 		case string:
-			if h := normalizeIRI(v); h != "" {
+			if h := n.normalizeIRI(v); h != "" {
 				return h
 			}
 		case object:
-			if h := firstLink(v.get("url")).Href; h != "" {
+			if h := n.firstLink(v.get("url")).Href; h != "" {
 				return h
 			}
-			if h := normalizeIRI(str(v.get("href"))); h != "" {
+			if h := n.normalizeIRI(str(v.get("href"))); h != "" {
 				return h
 			}
 		}
@@ -502,22 +505,22 @@ func isLink(o object) bool {
 }
 
 // linkIRI returns the href of a Link or the id of an object.
-func linkIRI(o object) IRI {
+func (n normalizer) linkIRI(o object) IRI {
 	if isLink(o) {
-		return normalizeIRI(str(o.get("href")))
+		return n.normalizeIRI(str(o.get("href")))
 	}
-	return iri(o.get("id"))
+	return n.iri(o.get("id"))
 }
 
 // firstRef returns the IRI of the first value of a property that refers to a document.
-func firstRef(v any) IRI {
+func (n normalizer) firstRef(v any) IRI {
 	for _, v := range list(v) {
 		var r IRI
 		switch v := v.(type) {
 		case string:
-			r = normalizeIRI(v)
+			r = n.normalizeIRI(v)
 		case object:
-			r = linkIRI(v)
+			r = n.linkIRI(v)
 		}
 		if r != "" {
 			return r
@@ -526,7 +529,21 @@ func firstRef(v any) IRI {
 	return ""
 }
 
-func iri(v any) IRI { return normalizeIRI(str(v)) }
+func (n normalizer) iri(v any) IRI { return n.normalizeIRI(str(v)) }
+
+// normalizeIRI reads one IRI value: every spelling of Public becomes PublicIRI, and any other
+// value goes through NormalizeIRI. A value NormalizeIRI rejects is "".
+func (n normalizer) normalizeIRI(s string) IRI {
+	switch strings.TrimSpace(s) {
+	case "as:Public", "Public", string(PublicIRI):
+		return PublicIRI
+	}
+	i, err := NormalizeIRI(s, n.host)
+	if err != nil {
+		return ""
+	}
+	return i
+}
 
 // list reads a property that may be single, an array, or null as a slice.
 func list(v any) []any {

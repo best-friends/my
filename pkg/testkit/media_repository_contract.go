@@ -39,8 +39,8 @@ type MediaFactory func(t *testing.T, opts uow.Options) MediaHarness
 // enqueued, rejected uploads leaving nothing behind, idempotent processing that records one
 // result with its variants and deletes the file as received, failures recorded as results,
 // focal points and descriptions as current values that only the uploader reads and changes
-// until a status attaches the file, and the cleanup of old unattached uploads that keeps attached
-// and referenced ones.
+// until a status attaches the file, the cleanup of old unattached uploads that keeps attached
+// and referenced ones, and remote media files recorded once per owner and URL.
 func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 	t.Helper()
 	cases := []struct {
@@ -58,6 +58,7 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"UpdatesOnlyOwnUnattachedUploads", mediaUpdates},
 		{"CleansUpOldUnattachedUploads", mediaCleansUp},
 		{"CleanupPagesPastReferencedUploads", mediaCleanupPages},
+		{"RecordsRemoteMediaOnce", mediaRecordsRemoteMedia},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newMediaEnv(t, newHarness)) })

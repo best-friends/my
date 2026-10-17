@@ -10,6 +10,7 @@ linters:
   enable:
     - depguard
     - errorlint
+    - forbidigo
     - gocritic
     - gosec
     - misspell
@@ -154,6 +155,8 @@ linters:
             - github.com/best-friends/my/internal/domain/federation
             - github.com/best-friends/my/internal/app
             - github.com/best-friends/my/internal/i18n
+            # IDNA 2008 A-label canonicalization of remote hosts (federation.md §1.2): pure-Go Unicode data, not an external resource.
+            - golang.org/x/net/idna
         domain-moderation:
           list-mode: strict
           files:
@@ -250,6 +253,16 @@ linters:
             - github.com/best-friends/my/internal/i18n
             - github.com/best-friends/my/locales
             - github.com/kaptinlin/messageformat-go/mf1
+        # bluemonday is the remote HTML sanitizer (ADR-0019 §2); it stays inside the adapter of
+        # kernel.HTMLSanitizer so that every caller goes through the port and its policy version.
+        bluemonday:
+          list-mode: lax
+          files:
+            - $all
+            - "!**/internal/adapter/htmlsanitizer/**"
+          deny:
+            - pkg: github.com/microcosm-cc/bluemonday
+              desc: sanitize HTML through kernel.HTMLSanitizer (internal/adapter/htmlsanitizer)
         interface:
           list-mode: lax
           files:
@@ -292,6 +305,14 @@ linters:
               desc: testkit depends only on application ports and domain types
             - pkg: github.com/best-friends/my/internal/platform
               desc: testkit depends only on application ports and domain types
+    # Every outbound request goes through the SSRF-guarded kernel.HTTPClient (ADR-0019 §1);
+    # http.DefaultClient and the package-level helpers that use it bypass the guard.
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^http\.(DefaultClient|Get|Head|Post|PostForm)$
+          pkg: ^net/http$
+          msg: send outbound requests through kernel.HTTPClient (ADR-0019 §1)
     nolintlint:
       require-explanation: true
       require-specific: true

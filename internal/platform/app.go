@@ -4,6 +4,8 @@ package platform
 
 import (
 	"context"
+	"crypto/hkdf"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -11,10 +13,12 @@ import (
 	"net"
 	"net/http"
 	"slices"
+	"time"
 
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
+	"github.com/best-friends/my/internal/adapter/httpclient"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
 	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
@@ -86,6 +90,8 @@ type App struct {
 	RateLimiter *kernel.RateLimiter
 	// Mailer is the mail adapter that cfg.Mail selects.
 	Mailer kernel.Mailer
+	// HTTPClient sends every outbound HTTP request through the SSRF guard (ADR-0019 §1).
+	HTTPClient kernel.HTTPClient
 
 	Accounts *account.Service
 	Identity *identity.Service
@@ -113,6 +119,8 @@ type App struct {
 	Blobs          blob.Store
 	MediaProcessor media.Processor
 	Media          *content.MediaService
+	// MediaProxy relays remote media files under /media/proxy/ and signs their URLs (ADR-0005).
+	MediaProxy *content.MediaProxy
 	// Previews reads profiles and statuses as an anonymous visitor sees them, for the link
 	// previews of the web client's profile and post pages (ADR-0028).
 	Previews *content.Previews
@@ -351,7 +359,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
+	a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
 	if err := a.setMedia(cfg, medias); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	if a.MediaProxy, err = newMediaProxy(cfg, medias, a); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
@@ -384,6 +397,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	tokens.Register(a)
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
+	mediahttp.NewProxy(mediahttp.ProxyOptions{Media: a.MediaProxy, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Media: a.Media,
@@ -505,6 +519,36 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 	return nil
 }
 
+// mediaProxyKeyInfo is the HKDF info that derives the media proxy's URL signing key from a KEK.
+const mediaProxyKeyInfo = "my media proxy url signature v1"
+
+// newMediaProxy builds the media proxy. Its HMAC keys are derived from the key-encryption keys
+// with HKDF-SHA256, so that it needs no secret of its own: the current KEK signs, and the
+// previous ones still verify the URLs signed before a rotation.
+func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*content.MediaProxy, error) {
+	var keys [][]byte
+	for _, kek := range append([][]byte{cfg.KEK}, cfg.PreviousKEKs...) {
+		if len(kek) == 0 {
+			continue
+		}
+		k, err := hkdf.Key(sha256.New, kek, nil, mediaProxyKeyInfo, sha256.Size)
+		if err != nil {
+			return nil, fmt.Errorf("derive the media proxy key: %w", err)
+		}
+		keys = append(keys, k)
+	}
+	return content.NewMediaProxy(content.ProxyDeps{
+		Repository: repo, HTTP: a.HTTPClient, Accounts: a.Accounts,
+		// The moderation module's domain_restrictions take its place once domain actions exist.
+		Policy: content.NoMediaRestrictions{},
+		CacheTTL: func(ctx context.Context) (time.Duration, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.RemoteMediaCacheTTL(), err
+		},
+		Keys: keys, BaseURL: "https://" + cfg.Host, Logger: a.Logger,
+	})
+}
+
 // defaultPostLanguage returns the default post language of a user's preferences, or "" for a
 // user without preferences.
 func (a *App) defaultPostLanguage(ctx context.Context, userID string) (string, error) {
@@ -559,6 +603,17 @@ func newMailer(cfg *config.Config, logger *slog.Logger) (kernel.Mailer, error) {
 	default:
 		return nil, fmt.Errorf("mail %q is not implemented yet", cfg.Mail)
 	}
+}
+
+// newHTTPClient returns the SSRF-guarded HTTPClient. http_allow_private_networks, which the
+// configuration accepts only in the development profile, turns the guard off with a warning.
+func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger) kernel.HTTPClient {
+	opts := httpclient.Options{UserAgent: fmt.Sprintf("my/%s (+https://%s/)", version, cfg.Host)}
+	if cfg.HTTPAllowPrivateNetworks {
+		logger.Warn("http_allow_private_networks is on: outbound HTTP can reach loopback and private networks; never use it in production")
+		opts.AllowPrivateNetworks, opts.AllowHTTP, opts.AnyPort = true, true, true
+	}
+	return httpclient.New(opts)
 }
 
 // hostOnly returns host without a port.

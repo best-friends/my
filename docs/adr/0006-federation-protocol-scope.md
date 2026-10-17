@@ -1,6 +1,6 @@
 # ADR-0006: 連合プロトコルの対応範囲
 
-- Status: Accepted
+- Status: Accepted（一部を ADR-0032（送信の署名の順序） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #8

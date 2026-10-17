@@ -4,6 +4,7 @@ package federation
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -25,9 +26,12 @@ var (
 	ErrMalformed = errors.New("federation: malformed AS2 document")
 	// ErrLimitExceeded reports a document over one of the limits.
 	ErrLimitExceeded = errors.New("federation: AS2 document exceeds a limit")
+	// ErrInvalidIRI reports a value that is not an absolute IRI with a valid host.
+	ErrInvalidIRI = errors.New("federation: invalid IRI")
 )
 
-// IRI is an absolute IRI with a lower-case scheme and host. The empty IRI means "absent".
+// IRI is an absolute IRI with a lower-case scheme and a canonical host (IDNA A-labels, see
+// NormalizeIRI), so that equal hosts compare equal. The empty IRI means "absent".
 type IRI string
 
 // PublicIRI is the special collection that addresses everyone (ActivityPub §5.6). Every
@@ -307,19 +311,50 @@ type Actor struct {
 // Bot reports whether the actor is an automated account.
 func (a *Actor) Bot() bool { return a.Type == ActorService || a.Type == ActorApplication }
 
-// normalizeIRI parses s as an absolute IRI and lower-cases its scheme and host. It returns ""
-// when s is not an absolute IRI with a host.
-func normalizeIRI(s string) IRI {
-	s = strings.TrimSpace(s)
-	switch s {
-	case "as:Public", "Public", string(PublicIRI):
-		return PublicIRI
+// HostFunc canonicalizes the host of a remote IRI or the domain of a handle, without a port:
+// the application layer maps it to IDNA A-labels (federation.md §1.2), which the domain cannot
+// do with the standard library alone. It returns an error for a host that is not a valid name.
+type HostFunc func(host string) (string, error)
+
+// NormalizeIRI parses s as an absolute IRI with a host and no userinfo, lower-cases its scheme,
+// and replaces its host with what host returns. An IP literal keeps its spelling, lower-cased.
+// It returns ErrInvalidIRI when s is not such an IRI or host rejects its host.
+func NormalizeIRI(s string, host HostFunc) (IRI, error) {
+	u, err := url.Parse(strings.TrimSpace(s))
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", ErrInvalidIRI, err)
 	}
-	u, err := url.Parse(s)
-	if err != nil || u.Scheme == "" || u.Host == "" || u.User != nil {
-		return ""
+	if u.Scheme == "" || u.Host == "" || u.User != nil {
+		return "", fmt.Errorf("%w: %q is not an absolute IRI with a host", ErrInvalidIRI, s)
 	}
 	u.Scheme = strings.ToLower(u.Scheme)
-	u.Host = strings.ToLower(u.Host)
-	return IRI(u.String())
+	name, port := u.Hostname(), u.Port()
+	if strings.HasPrefix(u.Host, "[") {
+		name = "[" + strings.ToLower(name) + "]"
+	} else if name, err = host(name); err != nil {
+		return "", fmt.Errorf("%w: %w", ErrInvalidIRI, err)
+	}
+	u.Host = name
+	if port != "" {
+		u.Host += ":" + port
+	}
+	return IRI(u.String()), nil
+}
+
+// DomainAndParents returns a canonical host and its parent domains, from the host itself to the
+// last label, so that a domain-level moderation action on a domain also covers its subdomains
+// (data-model §4.3): "a.b.example" gives "a.b.example", "b.example", "example".
+func DomainAndParents(host string) []string {
+	if host == "" {
+		return nil
+	}
+	out := []string{host}
+	for i := strings.IndexByte(host, '.'); i >= 0; i = strings.IndexByte(host, '.') {
+		host = host[i+1:]
+		if host == "" {
+			break
+		}
+		out = append(out, host)
+	}
+	return out
 }

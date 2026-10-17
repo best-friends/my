@@ -367,6 +367,16 @@ func (s *Service) RemoteInbox(ctx context.Context, accountID string) (RemoteInbo
 	return RemoteInbox{InboxURL: h.InboxURL, SharedInboxURL: h.SharedInboxURL}, nil
 }
 
+// AccountDomain returns the domain of an account (account.LocalDomain for a local one). It
+// fails with ErrNotFound when there is none.
+func (s *Service) AccountDomain(ctx context.Context, id string) (string, error) {
+	a, err := s.d.Repository.FindAccount(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	return a.Domain, nil
+}
+
 // IsLocal reports, inside tx, whether an account exists and is local. Projectors of other
 // modules call it in the transaction of the event they project.
 func (s *Service) IsLocal(ctx context.Context, tx uow.Tx, id string) (bool, error) {

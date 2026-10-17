@@ -1,7 +1,7 @@
 # 連合の設計（ActivityPub S2S）
 
 > 前提にしている ADR: [ADR-0002](../adr/0002-modular-monolith-hexagonal.md)、[ADR-0003](../adr/0003-database-abstraction.md)、[ADR-0004](../adr/0004-job-queue-abstraction.md)、[ADR-0005](../adr/0005-blob-storage-and-media.md)、[ADR-0006](../adr/0006-federation-protocol-scope.md)、[ADR-0017](../adr/0017-visibility-local.md)、[ADR-0018](../adr/0018-federated-uris.md)、[ADR-0019](../adr/0019-security-baseline.md)、[ADR-0020](../adr/0020-data-modeling-principles.md)。
-> Proposed の [ADR-0032](../adr/0032-http-signature-profile.md)（署名）、[ADR-0033](../adr/0033-inbox-processing-model.md)（受信処理）、[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)（取り込み範囲と保持）、[ADR-0035](../adr/0035-local-visibility-mention-tags.md)（`local` 投稿のメンション）の推奨案に従っています。決定で推奨案が変われば、この文書を直します。
+> 署名は [ADR-0032](../adr/0032-http-signature-profile.md)、受信処理は [ADR-0033](../adr/0033-inbox-processing-model.md)、取り込み範囲と保持は [ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、`local` 投稿のメンションは [ADR-0035](../adr/0035-local-visibility-mention-tags.md) に従います。
 > 要件: FR-305、FR-401〜410、FR-701〜702、NFR-SEC-1〜2、NFR-SEC-4〜5、NFR-PERF-4、NFR-REL-1〜2、NFR-COST-4〜5。テーブルは [論理データモデル](data-model.md) §4.8 ほかにあります。
 
 ## 1. 構成
@@ -14,6 +14,7 @@
 | `internal/app/federation` | ユースケース（受信 `Receive`、アクティビティの処理、配送の展開 `FanOut`、配送 `Deliver`、Actor / オブジェクトの取得 `Fetch`、解決 `Resolve`）、ジョブハンドラ、ポート（`Signer`・`Verifier`・リポジトリ） |
 | `internal/app/kernel` | `HTTPClient` ポート（連合のほか、メディアプロキシ・リンクプレビュー・Web Push も使うので全モジュール共通に置く） |
 | `internal/adapter/httpclient` | SSRF ガード付きの `HTTPClient`（ADR-0019 §1）。コントラクトテストは `testkit.HTTPClientContract` |
+| `internal/adapter/htmlsanitizer` | `kernel.HTMLSanitizer` ポートの実装（§5、ADR-0019 §2）。`bluemonday` はこの中に閉じ込める。ポリシーの版は定数 `PolicyVersion`。コントラクトテストは `testkit.HTMLSanitizerContract` |
 | `internal/adapter/httpsig` | `Signer` / `Verifier` の実装。RFC 9421 は `github.com/dadrus/httpsig`、draft-cavage-12 は `code.superseriousbusiness.org/httpsig`（ADR-0006）。ライブラリはこの中に閉じ込める |
 | `internal/interface/activitypub` | HTTP の入口（Inbox の `POST`、Actor・オブジェクト・コレクションの `GET`、WebFinger、NodeInfo）。ユースケースを呼ぶだけ |
 | `internal/interface/media` | メディアプロキシ `/media/proxy/…`（§9） |
@@ -35,7 +36,19 @@
 ### 1.2 自サーバーの URI
 
 - 受信した文書の中の自サーバーの URI（ホストが設定 `host` のもの）は、ADR-0018 の正規表現でパースして DB を引き、HTTP で取得しません。パースできない自サーバーの URI は存在しないものとして扱います。
-- リモートの URI は、`https` で、ホストが小文字・punycode の IRI として正規化してから比較・保存します。フラグメントは `#main-key` などの鍵を除いて保存しません。
+- リモートの URI は、`https` で、ホストを正規化した IRI として正規化してから比較・保存します。フラグメントは `#main-key` などの鍵を除いて保存しません。
+
+#### ホスト名の正規化（IDN）
+
+- 外から入るホストはすべて、比較・保存の前に IDNA 2008 の A-label（小文字の punycode）にそろえます。U-label（`例え.jp`）と A-label（`xn--r8jz45g.jp`）、全角や大文字で書かれた同じホストは同じ値になり、オリジンの照合（`id` と `attributedTo`、`keyId` と `actor`、取得結果の `id`）、ドメイン単位の処分、`InstanceHealth`、shared inbox の集約で同じホストとして扱われます。
+- 写像は `golang.org/x/net/idna` で行うので、`internal/app/federation` に置きます（ドメイン層は標準ライブラリだけを使うため）。
+  - 受信・取得した文書は `federation.Normalize`（アプリケーション層）で読み、文書の中のすべての IRI のホストを写像します。
+  - 文書の外から来る IRI（取得する URL・`keyId`・利用者が入力した URL）は `federation.CanonicalIRI`、WebFinger の `acct:` のドメインと、運営者が入力するドメイン単位の処分のドメインは `federation.CanonicalHost` を通します。
+  - ドメイン単位の処分の照合は、正規化したホストとその親ドメイン（`federation.DomainAndParents`）で引きます。
+- 写像は WHATWG URL のホストの解析と同じ UTS #46 の非推移的処理です（`ß` は `ss` にしない）。Bidi 規則と ContextJ を確かめ、ラベルと名前の長さを検証します。ラベルの 3・4 文字目の `--`（`r3---sn-x.example` など）と `_` は、実在するホストがあるので許します。
+- 写像できないホスト（解読できない `xn--` ラベル、許されない文字、空のラベル、長すぎるラベル）は不正です。文書の中の不正な IRI は無いものとして読み、文書の外から来たものはエラーにします。
+- IP アドレスはそのままの表記（小文字）で扱います。末尾の `.` は取り除きます。
+- **表示**: ホストを人に見せるときは `federation.DisplayHost` で U-label に戻します。ただし、なりすましを防ぐため、どれかのラベルが UTS #39 §5.2 の「highly restrictive」に当てはまらない（文字が 1 つの用字だけでも、ラテン文字＋漢字＋ひらがな・カタカナ、ラテン文字＋漢字＋注音字母、ラテン文字＋漢字＋ハングルのどれかの組み合わせでもない）ときは、ホスト全体を A-label のまま表示します。キリル文字の `а` とラテン文字の混じった `xn--pple-43d.com` は A-label で表示されます。保存と比較には常に A-label を使います。
 
 ## 2. 署名
 
@@ -289,11 +302,23 @@ ADR-0017 を連合の各経路に当てはめた結果です。
 ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 - リモートの添付・アバター・ヘッダー・カスタム絵文字は、`media_files`（`origin = remote`）と `remote_media` に、受信した文書が宣言した値（URL・`mediaType`・寸法・`blurhash`・焦点・代替テキスト）を記録します。取り込み時にファイルは取得しません。
-- クライアント API は、リモートのメディアの URL を **メディアプロキシの URL** `https://{host}/media/proxy/{media_id}/{variant}?sig=…` で返します。`sig` は `media_id` と `variant` の HMAC で、プロキシを任意の URL の中継に使わせません。
-- プロキシ（`internal/interface/media`）は `HTTPClient` で元の URL を取得し、形式を中身で判定して（ADR-0019 §8。SVG は拒否）、`Cache-Control: public, max-age=…` と `Content-Security-Policy: default-src 'none'; sandbox` を付けて中継します。CDN がキャッシュします（NFR-COST-4）。
-  サイズの上限は画像 16 MiB、動画・音声 100 MiB です（ADR-0019 §1）。
-- インスタンス設定 `remote_media_policy`（`none` / `avatars` / `all`）と `remote_media_cache_ttl` で、TTL 付きのキャッシュを選べます（FR-409）。キャッシュは `remote_media_cache` と Blob（`remote/` のキー）に置き、`media.cleanup_remote` が期限と容量の上限で消します（FR-803）。
-- ドメイン単位の `media_fetch` の制限（`reject_media`）があるドメインのメディアは、プロキシが取得せず 404 を返します。`media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。
+- 取り込みは `content.MediaService.RecordRemoteMedia` を受信のトランザクションの中で呼び、同じ所有者・同じ URL のファイルは最初に記録したものを返します。
+- クライアント API は、リモートのメディアの URL を **メディアプロキシの URL** `https://{host}/media/proxy/{media_id}/{variant}?sig=…`（`content.MediaProxy.URL`）で返します。
+  `sig` は `media_id` と `variant` の HMAC-SHA256（base64url）で、プロキシを任意の URL の中継に使わせません。
+  鍵は設定 `kek` から HKDF-SHA256 で導くので、プロキシに専用の秘密はありません。`kek_previous` から導いた鍵も検証に使うので、KEK のローテーション中も前の URL が使えます。
+  `variant` は元のファイルそのものの `full` だけです。
+- プロキシ（`content.MediaProxy` と `internal/interface/media`）は、`HTTPClient` で元の URL を取得し、形式を中身の先頭のバイトで判定して（ADR-0019 §8。許可リストは JPEG / PNG / GIF / WebP / AVIF / MP4 / WebM / MP3 / Ogg で、SVG は拒否）、
+  判定した `Content-Type`、`Cache-Control: public, max-age={remote_media_cache_ttl}`、`X-Content-Type-Options: nosniff`、`Content-Security-Policy: default-src 'none'; sandbox`、`Cross-Origin-Resource-Policy: cross-origin` を付けて中継します。
+  リモートのヘッダ（`Content-Type` など）と利用者のリクエストのヘッダは使いません。CDN がキャッシュします（NFR-COST-4）。
+- サイズの上限は、中身で判定した種類ごとに画像 16 MiB、動画・音声 100 MiB です（ADR-0019 §1）。`Content-Length` が上限を超えるものは本文を読まずに断ります。
+  長さのない画像は上限まで読んでから返し、長さのない動画・音声は中継の途中で上限を超えたらレスポンスを中断します（CDN が途中までのファイルをキャッシュしないように）。
+- 署名がない・合わない URL、記録のないメディア、`media_fetch` の制限、SSRF ガードが拒否した宛先、リモートの 4xx、許可リストにない形式、上限を超えるものは、どれも 404 です。リモートに届かないときと 5xx は 502 です。エラーのレスポンスは `Cache-Control: no-store` です。
+- インスタンス設定 `remote_media_policy`（`none` / `avatars` / `all`、既定 `none`）と `remote_media_cache_ttl`（秒、既定 86400）で、TTL 付きのキャッシュを選べます（FR-409）。
+  キャッシュは `remote_media_cache` と Blob（`remote/` のキー）に置き、`media.cleanup_remote` が期限と容量の上限で消します（FR-803）。
+  キャッシュはまだ実装していない（#276）ので、プロキシはどの方針でも `none` と同じく毎回中継し、`remote_media_cache_ttl` は `max-age` にだけ効きます。
+- ドメイン単位の `media_fetch` の制限（`reject_media`）は、メディアの所有者のドメインと URL のホストの両方に当て、どちらかが制限されていればプロキシは取得せず 404 を返します。
+  判定はポート `content.MediaFetchPolicy` を通します。`moderation` の投影ができるまでは、どのドメインも制限しない `content.NoMediaRestrictions` を組み込みます。
+  `media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。
 - サムネイル・blurhash がない動画は、クライアントが「プレビューなし」として表示します。
 
 ## 10. コレクションとオブジェクトの GET

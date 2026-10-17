@@ -61,6 +61,8 @@ An instance setting that has never been set reads as its default, which is defin
 | [`smtp_port`](#smtp_port) | `MY_SMTP_PORT` | `587` | no | no |
 | [`smtp_username`](#smtp_username) | `MY_SMTP_USERNAME` | none | no | no |
 | [`smtp_password`](#smtp_password) | `MY_SMTP_PASSWORD` | none | no | yes |
+| [`profile`](#profile) | `MY_PROFILE` | `production` | no | no |
+| [`http_allow_private_networks`](#http_allow_private_networks) | `MY_HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | no | no |
 
 ## Settings
 
@@ -320,3 +322,29 @@ Password for SMTP AUTH PLAIN.
 - Environment variable: `MY_SMTP_PASSWORD` or `MY_SMTP_PASSWORD_FILE`
 - Default: none
 - Required: no
+
+### `profile`
+
+Whether this is a production instance. Settings that weaken a security default for development, such as `http_allow_private_networks`, are refused in the `production` profile (ADR-0019).
+
+- Environment variable: `MY_PROFILE`
+- Default: `production`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `production` | yes | A production instance. |
+| `development` | yes | A development or test instance. |
+
+### `http_allow_private_networks`
+
+Lets outbound HTTP (federation, media, link previews) reach loopback, private, and other non-public addresses and host names, over plain `http` and on any port. For development and tests against local servers only: the server logs a warning at start, and the `production` profile refuses it (ADR-0019 §1).
+
+- Environment variable: `MY_HTTP_ALLOW_PRIVATE_NETWORKS`
+- Default: `false`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `false` | yes | Only public `https` destinations on ports 443 and 80. |
+| `true` | yes | Every destination; requires `profile = development`. |

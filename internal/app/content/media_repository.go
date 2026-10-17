@@ -38,7 +38,15 @@ type MediaRepository interface {
 	// the file; a missing file is not deleted and not an error.
 	DeleteUnattachedMedia(ctx context.Context, tx uow.Tx, mediaID string) (bool, error)
 
+	// InsertRemoteMedia inserts the remote subtype of a media file. It reports false, and
+	// inserts nothing, when the owner already has a remote media file with the same URL.
+	InsertRemoteMedia(ctx context.Context, tx uow.Tx, m content.RemoteMedia) (bool, error)
+	// RemoteMediaByURL returns the remote media file of an owner with a URL.
+	RemoteMediaByURL(ctx context.Context, tx uow.Tx, ownerAccountID, remoteURL string) (content.RemoteMedia, error)
+
 	FindMediaFile(ctx context.Context, id string) (content.MediaFile, error)
+	// FindRemoteMedia returns the remote subtype of a media file; an upload is not found.
+	FindRemoteMedia(ctx context.Context, mediaID string) (content.RemoteMedia, error)
 	FindUploadedMedia(ctx context.Context, mediaID string) (content.UploadedMedia, error)
 	// FindLatestProcessingResult returns the newest processing result of a media file with
 	// its variants: the file's current state.

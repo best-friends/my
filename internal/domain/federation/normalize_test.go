@@ -17,7 +17,7 @@ var now = time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 
 func normalize(t *testing.T, doc string) *federation.Document {
 	t.Helper()
-	d, err := federation.Normalize([]byte(doc), now)
+	d, err := federation.Normalize([]byte(doc), now, lowerHost)
 	if err != nil {
 		t.Fatalf("Normalize: %v\n%s", err, doc)
 	}
@@ -348,7 +348,7 @@ func TestNormalizeUnknown(t *testing.T) {
 func TestNormalizeErrors(t *testing.T) {
 	deep := strings.Repeat(`{"a":`, federation.MaxDepth+1) + `1` + strings.Repeat(`}`, federation.MaxDepth+1)
 	deepOK := `{"type":"Note","x":` + strings.Repeat(`[`, federation.MaxDepth-1) + strings.Repeat(`]`, federation.MaxDepth-1) + `}`
-	if _, err := federation.Normalize([]byte(deepOK), now); err != nil {
+	if _, err := federation.Normalize([]byte(deepOK), now, lowerHost); err != nil {
 		t.Errorf("depth %d: %v, want no error", federation.MaxDepth, err)
 	}
 	many := func(n int, item string) string {
@@ -372,7 +372,7 @@ func TestNormalizeErrors(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if _, err := federation.Normalize([]byte(c.doc), now); !errors.Is(err, c.want) {
+			if _, err := federation.Normalize([]byte(c.doc), now, lowerHost); !errors.Is(err, c.want) {
 				t.Errorf("Normalize = %v, want %v", err, c.want)
 			}
 		})
@@ -380,7 +380,7 @@ func TestNormalizeErrors(t *testing.T) {
 	// The limits themselves are allowed.
 	ok := `{"type":"Note","tag":` + many(federation.MaxTags, `{}`) + `,"to":` + many(federation.MaxRecipients, `"https://a.example/u"`) +
 		`,"content":"` + strings.Repeat("a", federation.MaxBodyBytes) + `"}`
-	if _, err := federation.Normalize([]byte(ok), now); err != nil {
+	if _, err := federation.Normalize([]byte(ok), now, lowerHost); err != nil {
 		t.Errorf("Normalize at the limits = %v, want no error", err)
 	}
 }
@@ -400,5 +400,56 @@ func TestSameOrigin(t *testing.T) {
 		if got := federation.SameOrigin(c.a, c.b); got != c.want {
 			t.Errorf("SameOrigin(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
 		}
+	}
+}
+
+// lowerHost is the HostFunc of these tests: the IDNA mapping is the application layer's.
+func lowerHost(h string) (string, error) {
+	if h == "" || strings.ContainsAny(h, " *") {
+		return "", errors.New("bad host")
+	}
+	return strings.ToLower(h), nil
+}
+
+func TestNormalizeIRI(t *testing.T) {
+	cases := []struct {
+		in   string
+		want federation.IRI
+	}{
+		{" HTTPS://A.Example/Path?Q#frag ", "https://a.example/Path?Q#frag"},
+		{"https://A.Example:8443/x", "https://a.example:8443/x"},
+		{"https://[2001:DB8::1]:8443/x", "https://[2001:db8::1]:8443/x"},
+		{"https://bad*host/x", ""},
+		{"https://:443/x", ""},
+		{"https://user@a.example/x", ""},
+		{"/relative", ""},
+		{"mailto:a@a.example", ""},
+		{"", ""},
+	}
+	for _, c := range cases {
+		got, err := federation.NormalizeIRI(c.in, lowerHost)
+		if got != c.want || (err != nil) != (c.want == "") {
+			t.Errorf("NormalizeIRI(%q) = %q, %v; want %q", c.in, got, err, c.want)
+		}
+		if err != nil && !errors.Is(err, federation.ErrInvalidIRI) {
+			t.Errorf("NormalizeIRI(%q) error = %v, want ErrInvalidIRI", c.in, err)
+		}
+	}
+}
+
+func TestNormalizeRejectedHost(t *testing.T) {
+	o := object(t, `{"type":"Note","id":"https://bad*host/n/1","attributedTo":"https://a.example/u/a","to":["https://bad*host/u/b","as:Public"]}`)
+	equal(t, "ID", o.ID, federation.IRI(""))
+	equal(t, "To", o.Audience.To, []federation.IRI{federation.PublicIRI})
+}
+
+func TestDomainAndParents(t *testing.T) {
+	cases := map[string][]string{
+		"a.b.example": {"a.b.example", "b.example", "example"},
+		"example":     {"example"},
+		"":            nil,
+	}
+	for in, want := range cases {
+		equal(t, in, federation.DomainAndParents(in), want)
 	}
 }
