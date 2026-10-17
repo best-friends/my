@@ -30,6 +30,132 @@ export interface MessageArgs {
   "client:admin.dead_jobs.summary": {};
   /** Failed jobs */
   "client:admin.dead_jobs.title": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:admin.domain_actions.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:admin.domain_actions.characters_over": { count: number };
+  /** Cancel */
+  "client:admin.domain_actions.confirm_suspend.cancel": {};
+  /** Suspend */
+  "client:admin.domain_actions.confirm_suspend.confirm": {};
+  /** Nothing is sent to or accepted from this domain and its subdomains, and their accounts and posts are hidden. Follows between people here and their accounts end, and lifting the suspension does not bring them back. */
+  "client:admin.domain_actions.confirm_suspend.description": {};
+  /** Suspend {domain}? */
+  "client:admin.domain_actions.confirm_suspend.title": { domain: string };
+  /** Domain */
+  "client:admin.domain_actions.domain": {};
+  /** A remote domain, such as spam.example. The action also covers its subdomains. A domain in non-Latin letters can be entered as it is. */
+  "client:admin.domain_actions.domain.description": {};
+  /** Enter a domain */
+  "client:admin.domain_actions.domain.required": {};
+  /** Duration */
+  "client:admin.domain_actions.duration": {};
+  /** {count, plural, one {# day} other {# days}} */
+  "client:admin.domain_actions.duration.days": { count: number };
+  /** The action ends by itself after this. */
+  "client:admin.domain_actions.duration.description": {};
+  /** Until lifted */
+  "client:admin.domain_actions.duration.indefinite": {};
+  /** No domain actions in effect */
+  "client:admin.domain_actions.empty.active": {};
+  /** Actions taken on remote domains are listed here until they end or are lifted. */
+  "client:admin.domain_actions.empty.active.description": {};
+  /** No domain actions yet */
+  "client:admin.domain_actions.empty.all": {};
+  /** Ends */
+  "client:admin.domain_actions.expires_at": {};
+  /** In effect */
+  "client:admin.domain_actions.filter.active": {};
+  /** All */
+  "client:admin.domain_actions.filter.all": {};
+  /** Show domain actions */
+  "client:admin.domain_actions.filter.label": {};
+  /** The action could not be taken: {reason} */
+  "client:admin.domain_actions.issue_failed": { reason: string };
+  /** {kind} is in effect for {domain}. */
+  "client:admin.domain_actions.issued": { domain: string; kind: string };
+  /** Taken at */
+  "client:admin.domain_actions.issued_at": {};
+  /** Action */
+  "client:admin.domain_actions.kind": {};
+  /** Mark media sensitive */
+  "client:admin.domain_actions.kind.force_sensitive": {};
+  /** Media from the domain are hidden behind a warning. */
+  "client:admin.domain_actions.kind.force_sensitive.description": {};
+  /** Limit */
+  "client:admin.domain_actions.kind.limit": {};
+  /** Its posts stay off the public timelines, and its accounts reach only people who follow them. */
+  "client:admin.domain_actions.kind.limit.description": {};
+  /** Reject media */
+  "client:admin.domain_actions.kind.reject_media": {};
+  /** Media from the domain are not fetched or shown. */
+  "client:admin.domain_actions.kind.reject_media.description": {};
+  /** Reject reports */
+  "client:admin.domain_actions.kind.reject_reports": {};
+  /** Reports sent from the domain are dropped. */
+  "client:admin.domain_actions.kind.reject_reports.description": {};
+  /** Choose an action */
+  "client:admin.domain_actions.kind.required": {};
+  /** Suspend */
+  "client:admin.domain_actions.kind.suspend": {};
+  /** Nothing is sent to or accepted from the domain, and its accounts and posts are hidden. */
+  "client:admin.domain_actions.kind.suspend.description": {};
+  /** Lift */
+  "client:admin.domain_actions.lift": {};
+  /** Lift {kind} for {domain}, taken {date} */
+  "client:admin.domain_actions.lift_action": { date: string; domain: string; kind: string };
+  /** The action could not be lifted: {reason} */
+  "client:admin.domain_actions.lift_failed": { reason: string };
+  /** {kind} for {domain} is lifted. */
+  "client:admin.domain_actions.lifted": { domain: string; kind: string };
+  /** Lifted at */
+  "client:admin.domain_actions.lifted_at": {};
+  /** Show every domain */
+  "client:admin.domain_actions.list.every_domain": {};
+  /** Showing the actions on {domain}. */
+  "client:admin.domain_actions.list.of_domain": { domain: string };
+  /** Actions */
+  "client:admin.domain_actions.list.title": {};
+  /** New action */
+  "client:admin.domain_actions.new.title": {};
+  /** Hide part of the domain in the public list */
+  "client:admin.domain_actions.obfuscate": {};
+  /** When this server lists its moderated domains publicly, the middle of this domain is replaced with asterisks. */
+  "client:admin.domain_actions.obfuscate.description": {};
+  /** Shown in full */
+  "client:admin.domain_actions.obfuscate.no": {};
+  /** Public list */
+  "client:admin.domain_actions.obfuscate.term": {};
+  /** Partly hidden */
+  "client:admin.domain_actions.obfuscate.yes": {};
+  /** Private note */
+  "client:admin.domain_actions.private_note": {};
+  /** Only moderators see this. */
+  "client:admin.domain_actions.private_note.description": {};
+  /** Public comment */
+  "client:admin.domain_actions.public_comment": {};
+  /** The reason, which may be shown publicly with the domain. */
+  "client:admin.domain_actions.public_comment.description": {};
+  /** State */
+  "client:admin.domain_actions.state": {};
+  /** In effect */
+  "client:admin.domain_actions.state.active": {};
+  /** Ended */
+  "client:admin.domain_actions.state.expired": {};
+  /** Lifted */
+  "client:admin.domain_actions.state.lifted": {};
+  /** Take action */
+  "client:admin.domain_actions.submit": {};
+  /** Limiting, suspending and other actions on remote domains, and lifting them. */
+  "client:admin.domain_actions.summary": {};
+  /** Domain actions */
+  "client:admin.domain_actions.title": {};
+  /** Use at most {max, number} characters */
+  "client:admin.domain_actions.too_long": { max: number };
+  /** ({domain}) */
+  "client:admin.domain.ascii": { domain: string };
+  /** {unicode} ({ascii}) */
+  "client:admin.domain.both": { ascii: string; unicode: string };
   /** Back to remote servers */
   "client:admin.instance.back": {};
   /** Deliveries resumed */
@@ -56,6 +182,12 @@ export interface MessageArgs {
   "client:admin.instance.mark_failed": { reason: string };
   /** Deliveries to {domain} resume. */
   "client:admin.instance.marked_available": { domain: string };
+  /** See the moderation actions on this server's domain, or take a new one. */
+  "client:admin.instance.moderation.description": {};
+  /** Domain actions */
+  "client:admin.instance.moderation.link": {};
+  /** Moderation */
+  "client:admin.instance.moderation.title": {};
   /** None */
   "client:admin.instance.none": {};
   /** Reason */
