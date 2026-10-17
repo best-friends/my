@@ -64,6 +64,8 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 - 生成コードが解釈できないリクエスト（パラメータの形式違いなど）は 400 になり、`detail` がパラメータ名を示します。
   解釈できても本文の値をアプリケーション層が拒否した場合（長すぎる・多すぎる・不正な値）は 422（`about:blank`、`title` は `l.ServerErrorsUnprocessable()`）で、
   `detail` がプロパティ名を示します（`l.ServerErrorsTooLong`・`ServerErrorsTooMany`・`ServerErrorsInvalidValue`）。
+  パス・クエリのパラメーターが不正な UTF-8 かヌル文字を含む要求は、`platform` が操作より前に 400 にします。
+  JSON の本文の文字列がヌル文字を含む要求は、ハンドラより前に strict のミドルウェア（`rejectInvalidBodyText`）が 422（`l.ServerErrorsInvalidValue`。`media[1].description` のようにプロパティの位置を示す）にします（[data-model §1.2](data-model.md#12-論理型)）。
   ハンドラが `error` を返した場合は 500 で、内部の詳細は応答に含めずログに記録します。
 - どの操作にも一致しない `/api/v1` 以下のリクエストは、`platform` のフォールバックが 404 / 405 の問題を返します。
 
