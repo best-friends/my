@@ -50,6 +50,24 @@ func (k ActionKind) Valid() bool {
 // Restrictions returns the restrictions an action of kind k imposes (data-model §5.2).
 func (k ActionKind) Restrictions() []Restriction { return accountRestrictions[k] }
 
+// OnStatuses reports whether an action of kind k acts on statuses of its account that it names
+// (moderation_action_statuses): mark_statuses_sensitive and delete_statuses. Such an action
+// names at least one status and never expires; the other kinds name none.
+func (k ActionKind) OnStatuses() bool {
+	return k == ActionMarkStatusesSensitive || k == ActionDeleteStatuses
+}
+
+// Liftable reports whether an action of kind k can be lifted: every kind but ban, which deletes
+// its account (FR-703).
+func (k ActionKind) Liftable() bool { return k != ActionBan }
+
+// MaxActionStatuses is the number of statuses that one action on statuses names at most.
+const MaxActionStatuses = 100
+
+// BanDeletionDelay is how long after a ban its account is deleted: the ban records the
+// account's deletion_scheduled lifecycle event due then (data-model §4.2, §8).
+const BanDeletionDelay = 30 * 24 * time.Hour
+
 // Category is the reason category of an action or a report.
 type Category string
 
@@ -89,8 +107,16 @@ func (i Issuer) Valid() bool {
 	return false
 }
 
-// ErrInvalidAction reports an action with a missing or invalid field.
-var ErrInvalidAction = errors.New("moderation: invalid action")
+var (
+	// ErrInvalidAction reports an action with a missing or invalid field.
+	ErrInvalidAction = errors.New("moderation: invalid action")
+	// ErrActionNeverExpires reports an end on a kind of action that never expires: a ban and
+	// the actions on statuses. It wraps ErrInvalidAction.
+	ErrActionNeverExpires = fmt.Errorf("%w: the kind of action never expires", ErrInvalidAction)
+	// ErrInvalidActionStatuses reports statuses of an action on statuses that are missing,
+	// repeated, or too many, or statuses named by another kind. It wraps ErrInvalidAction.
+	ErrInvalidActionStatuses = fmt.Errorf("%w: the statuses of the action", ErrInvalidAction)
+)
 
 // Action is one moderation action on an account (moderation_actions, an event). It is
 // immutable; lifting it is a separate Lift event, and an expired action is not lifted: its
@@ -108,6 +134,9 @@ type Action struct {
 	NotifyTarget    bool
 	ExpiresAt       *time.Time // nil: until lifted
 	IssuedAt        time.Time
+	// StatusIDs are the statuses of the target that an action on statuses acts on, in ID
+	// order (moderation_action_statuses); nil for the other kinds.
+	StatusIDs []string
 }
 
 // MaxActionText is the number of characters of each text of a moderation action and of a lift:
@@ -115,7 +144,8 @@ type Action struct {
 const MaxActionText = 5000
 
 // Validate checks the invariants of a new action: a known kind, category, and issuer, valid
-// texts, an end after its start, and no end for a ban.
+// texts, an end after its start, no end for a ban or an action on statuses, and from 1 to
+// MaxActionStatuses distinct statuses for an action on statuses and none for another kind.
 func (a Action) Validate() error {
 	if err := checkTexts(textField{"public_reason", a.PublicReason}, textField{"private_note", a.PrivateNote}); err != nil {
 		return err
@@ -129,10 +159,30 @@ func (a Action) Validate() error {
 		return fmt.Errorf("%w: category %q", ErrInvalidAction, a.ReasonCategory)
 	case !a.Issuer.Valid():
 		return fmt.Errorf("%w: issuer %q", ErrInvalidAction, a.Issuer)
-	case a.Kind == ActionBan && a.ExpiresAt != nil:
-		return fmt.Errorf("%w: a ban never expires", ErrInvalidAction)
+	case (a.Kind == ActionBan || a.Kind.OnStatuses()) && a.ExpiresAt != nil:
+		return fmt.Errorf("%w: %s", ErrActionNeverExpires, a.Kind)
 	case a.ExpiresAt != nil && !a.ExpiresAt.After(a.IssuedAt):
 		return fmt.Errorf("%w: it must expire after it is issued", ErrInvalidAction)
+	}
+	return a.validateStatuses()
+}
+
+func (a Action) validateStatuses() error {
+	if !a.Kind.OnStatuses() {
+		if len(a.StatusIDs) > 0 {
+			return fmt.Errorf("%w: %s names no statuses", ErrInvalidActionStatuses, a.Kind)
+		}
+		return nil
+	}
+	if len(a.StatusIDs) == 0 || len(a.StatusIDs) > MaxActionStatuses {
+		return fmt.Errorf("%w: %s names 1 to %d statuses", ErrInvalidActionStatuses, a.Kind, MaxActionStatuses)
+	}
+	seen := make(map[string]bool, len(a.StatusIDs))
+	for _, id := range a.StatusIDs {
+		if id == "" || seen[id] {
+			return fmt.Errorf("%w: status %q is empty or repeated", ErrInvalidActionStatuses, id)
+		}
+		seen[id] = true
 	}
 	return nil
 }

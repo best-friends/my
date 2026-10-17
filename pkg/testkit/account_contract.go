@@ -60,6 +60,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RevisesProfiles", accountRevisesProfiles},
 		{"UpdatesLocalProfiles", accountUpdatesLocalProfiles},
 		{"RecordsLifecycleEvents", accountRecordsLifecycle},
+		{"ExecutesScheduledDeletions", accountExecutesDeletions},
 		{"CountsLocalUsers", accountCountsLocalUsers},
 		{"ReadsRemoteInboxes", accountReadsRemoteInboxes},
 		{"FindsAccountsByURIAndDomain", accountFindsByURIAndDomain},

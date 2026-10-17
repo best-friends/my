@@ -63,6 +63,12 @@ func TestActionsAndTheirRestrictions(t *testing.T) {
 			t.Errorf("Validate(%s) = %v, want ErrInvalidAction", name, err)
 		}
 	}
+	if err := ban.Validate(); !errors.Is(err, ErrActionNeverExpires) {
+		t.Errorf("Validate(expiring ban) = %v, want ErrActionNeverExpires", err)
+	}
+	if ActionBan.Liftable() || !ActionSuspend.Liftable() || !ActionDeleteStatuses.Liftable() {
+		t.Error("only a ban should not be liftable")
+	}
 	d := DomainAction{ID: "d", Domain: "bad.example", Kind: DomainSuspend, IssuedAt: now}
 	if err := d.Validate(); err != nil {
 		t.Fatalf("Validate = %v", err)
@@ -74,6 +80,49 @@ func TestActionsAndTheirRestrictions(t *testing.T) {
 		if ValidDomain(domain) {
 			t.Errorf("ValidDomain(%q) = true", domain)
 		}
+	}
+}
+
+func TestActionsOnStatuses(t *testing.T) {
+	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
+	later := now.Add(time.Hour)
+	base := Action{ID: "a", TargetAccountID: "x", ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now}
+	with := func(kind ActionKind, ids []string, expires *time.Time) Action {
+		a := base
+		a.Kind, a.StatusIDs, a.ExpiresAt = kind, ids, expires
+		return a
+	}
+	tooMany := make([]string, MaxActionStatuses+1)
+	for i := range tooMany {
+		tooMany[i] = strings.Repeat("s", i+1)
+	}
+	for _, kind := range []ActionKind{ActionDeleteStatuses, ActionMarkStatusesSensitive} {
+		if !kind.OnStatuses() || len(kind.Restrictions()) != 0 {
+			t.Errorf("%s: OnStatuses = %v, restrictions %v", kind, kind.OnStatuses(), kind.Restrictions())
+		}
+		if err := with(kind, []string{"s1", "s2"}, nil).Validate(); err != nil {
+			t.Errorf("Validate(%s on 2 statuses) = %v", kind, err)
+		}
+		for name, c := range map[string]struct {
+			a    Action
+			want error
+		}{
+			"no statuses":    {with(kind, nil, nil), ErrInvalidActionStatuses},
+			"repeated":       {with(kind, []string{"s1", "s1"}, nil), ErrInvalidActionStatuses},
+			"empty":          {with(kind, []string{""}, nil), ErrInvalidActionStatuses},
+			"too many":       {with(kind, tooMany, nil), ErrInvalidActionStatuses},
+			"with an expiry": {with(kind, []string{"s1"}, &later), ErrActionNeverExpires},
+		} {
+			if err := c.a.Validate(); !errors.Is(err, c.want) || !errors.Is(err, ErrInvalidAction) {
+				t.Errorf("Validate(%s, %s) = %v, want %v", kind, name, err, c.want)
+			}
+		}
+	}
+	if err := with(ActionSuspend, []string{"s1"}, nil).Validate(); !errors.Is(err, ErrInvalidActionStatuses) {
+		t.Errorf("Validate(suspend naming a status) = %v, want ErrInvalidActionStatuses", err)
+	}
+	if ActionSuspend.OnStatuses() || ActionBan.OnStatuses() {
+		t.Error("suspend and ban act on accounts, not statuses")
 	}
 }
 

@@ -34,8 +34,9 @@ type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 // moderation.AccountPolicy (data-model §5.3): a domain action restricts the domain and its
 // subdomains until it expires or is lifted, a lift ends only its own action's restrictions,
 // actions on remote accounts restrict them, each kind of action on a local account takes away
-// its capabilities until it ends and may name a report of the account only, kinds that do not
-// apply to an account are refused, invalid actions are refused, each action is lifted once,
+// its capabilities until it ends and may name a report of the account only, the actions on
+// statuses record and act on statuses of the account only and a ban schedules the deletion of
+// the account and is never lifted, kinds that do not apply to an account are refused, invalid actions are refused, each action is lifted once,
 // every change emits the restrictions in effect afterwards, a received report is filed once,
 // open, with its statuses and its comment cut to the limit, the actions on domains and on
 // accounts list newest first with their lifts and filters, the public list keeps only the
@@ -51,6 +52,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"LiftEndsOnlyItsOwnAction", moderationLifts},
 		{"RemoteAccountActions", moderationAccountActions},
 		{"LocalAccountActions", moderationLocalAccountActions},
+		{"ActionsOnStatusesAndBans", moderationStatusesAndBans},
 		{"ListsAccountActions", moderationListsAccountActions},
 		{"RejectsInvalidActions", moderationRejectsInvalid},
 		{"RecordsEachLiftOnce", moderationLiftsOnce},
@@ -70,8 +72,11 @@ type moderationEnv struct {
 	clock  *Clock
 	ids    *IDGenerator
 	actors *stubActors
-	svc    *appmoderation.Service
-	policy *appmoderation.FederationPolicy
+	// statuses and lifecycles stand in for the content and account modules.
+	statuses   *stubModerationStatuses
+	lifecycles *stubLifecycles
+	svc        *appmoderation.Service
+	policy     *appmoderation.FederationPolicy
 	// accounts is the AccountPolicy on the same repository.
 	accounts *appmoderation.AccountPolicy
 	events   *eventLog
@@ -90,12 +95,15 @@ func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv
 	ids := NewIDGenerator(clock)
 	e := &moderationEnv{
 		h: h, clock: clock, ids: ids, actors: &stubActors{actors: map[string]appaccount.Actor{}}, events: &eventLog{},
+		statuses:   &stubModerationStatuses{live: map[string]appcontent.Status{}, deleted: map[string]string{}, marked: map[string][]string{}},
+		lifecycles: &stubLifecycles{due: map[string]time.Time{}},
 	}
 	for _, typ := range []string{appmoderation.EventDomainRestrictionsChanged, appmoderation.EventAccountRestrictionsChanged, appmoderation.EventReportFiled} {
 		projectors.Register(typ, e.events.record)
 	}
 	e.svc = appmoderation.NewService(appmoderation.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Moderation, Accounts: e.actors, Clock: clock, IDs: ids,
+		Statuses: e.statuses, Lifecycles: e.lifecycles,
 	})
 	e.policy = appmoderation.NewFederationPolicy(h.Moderation, clock)
 	e.accounts = appmoderation.NewAccountPolicy(h.Moderation, e.actors, clock)
@@ -225,9 +233,7 @@ func moderationAccountActions(t *testing.T, e *moderationEnv) {
 		{TargetAccountID: e.remote, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategoryOther},
 		{TargetAccountID: e.remote, Kind: moderation.ActionDisableLogin, ReasonCategory: moderation.CategoryOther},
 		{TargetAccountID: e.remote, Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionDeleteStatuses, ReasonCategory: moderation.CategoryOther},
-		{TargetAccountID: e.local, Kind: moderation.ActionMarkStatusesSensitive, ReasonCategory: moderation.CategoryOther},
+		{TargetAccountID: e.remote, Kind: moderation.ActionDeleteStatuses, ReasonCategory: moderation.CategoryOther, StatusIDs: []string{e.ids.NewID()}},
 		{TargetAccountID: e.instance, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategoryOther},
 	} {
 		if _, err := e.svc.IssueAccountAction(ctx, in); !errors.Is(err, appmoderation.ErrUnsupportedAction) {
