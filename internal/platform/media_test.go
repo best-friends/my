@@ -65,7 +65,14 @@ func TestUploadedMediaIsServedWithoutLocation(t *testing.T) {
 					t.Errorf("%s still has the EXIF and GPS data", v.BlobKey)
 				}
 			}
-			if _, err := s.app.Blobs.Head(t.Context(), m.Upload.BlobKey); err == nil {
+			// The job records the result before it deletes the upload as received, so the
+			// deletion may still be under way when the media reads as ready.
+			_, err = s.app.Blobs.Head(t.Context(), m.Upload.BlobKey)
+			for err == nil && time.Now().Before(deadline) {
+				time.Sleep(20 * time.Millisecond)
+				_, err = s.app.Blobs.Head(t.Context(), m.Upload.BlobKey)
+			}
+			if err == nil {
 				t.Errorf("the upload as received, with its location, is kept at %s", m.Upload.BlobKey)
 			}
 			if resp, _ := s.do(t, http.MethodGet, "/"+m.Upload.BlobKey, nil); resp.StatusCode != http.StatusNotFound {
