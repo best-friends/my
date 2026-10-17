@@ -60,3 +60,21 @@ func (r *FederationRepository) FindReceivedDocument(ctx context.Context, activit
 	}
 	return []byte(doc), nil
 }
+
+// InsertRemoteObjectTombstone implements federation.InboxRepository.
+func (r *FederationRepository) InsertRemoteObjectTombstone(ctx context.Context, tx uow.Tx, t federation.RemoteObjectTombstone) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := q.InsertRemoteObjectTombstone(ctx, sqlitegen.InsertRemoteObjectTombstoneParams{
+		Uri: string(t.URI), ActorUri: string(t.ActorURI), ActivityUri: string(t.ActivityURI), ReceivedAt: toMillis(t.ReceivedAt),
+	})
+	return n == 1, wrap(err, "insert remote object tombstone")
+}
+
+// RemoteObjectTombstoned implements federation.InboxRepository.
+func (r *FederationRepository) RemoteObjectTombstoned(ctx context.Context, uri federation.IRI) (bool, error) {
+	ok, err := r.db.reader().HasRemoteObjectTombstone(ctx, string(uri))
+	return ok, wrap(err, "read remote object tombstone")
+}

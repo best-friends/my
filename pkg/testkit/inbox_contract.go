@@ -45,8 +45,9 @@ type InboxFactory func(t *testing.T, opts uow.Options) InboxHarness
 // federation.inbox job, the URI synthesized for an activity without an id, trust = refetch for an
 // activity whose signer is not its actor, every refusal answered with its status before the
 // database or the queue is touched, an unknown actor's own Delete dropped without fetching its
-// key, and the signer's server marked available again. Signatures, keys, and the other modules
-// are in-memory stand-ins.
+// key, and the signer's server marked available again. It also checks that a tombstone of a
+// remote object is recorded once. Signatures, keys, and the other modules are in-memory
+// stand-ins.
 func InboxContract(t *testing.T, newHarness InboxFactory) {
 	t.Helper()
 	cases := []struct {
@@ -59,6 +60,7 @@ func InboxContract(t *testing.T, newHarness InboxFactory) {
 		{"RefusesWithoutTouchingTheDatabaseOrTheQueue", inboxRefuses},
 		{"DropsAnUnknownActorsOwnDelete", inboxDropsUnknownSelfDelete},
 		{"MarksTheSignersServerAvailable", inboxMarksServerAvailable},
+		{"RecordsTombstonesOnce", inboxRecordsTombstonesOnce},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -531,5 +533,44 @@ func inboxMarksServerAvailable(t *testing.T, e *inboxEnv) {
 	events, err := e.h.Federation.ListAvailabilityEvents(ctx, "remote.example", "", 10)
 	if err != nil || len(events) != 1 || events[0].Kind != federation.MarkedAvailable || events[0].Reason != federation.ReasonInboundRequest {
 		t.Errorf("availability events = %+v, %v; want one marked_available for inbound_request", events, err)
+	}
+}
+
+func inboxRecordsTombstonesOnce(t *testing.T, e *inboxEnv) {
+	ctx := t.Context()
+	note := federation.IRI(inboxAlice + "/notes/gone")
+	first := federation.RemoteObjectTombstone{
+		URI: note, ActorURI: inboxAlice, ActivityURI: inboxAlice + "/activities/delete-1", ReceivedAt: e.clock.Now(),
+	}
+	if ok, err := e.h.Inbox.RemoteObjectTombstoned(ctx, note); err != nil || ok {
+		t.Fatalf("RemoteObjectTombstoned before = %t, %v; want false", ok, err)
+	}
+	insert := func(ts federation.RemoteObjectTombstone) bool {
+		t.Helper()
+		var inserted bool
+		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			var err error
+			inserted, err = e.h.Inbox.InsertRemoteObjectTombstone(ctx, tx, ts)
+			return err
+		})
+		if err != nil {
+			t.Fatalf("InsertRemoteObjectTombstone: %v", err)
+		}
+		return inserted
+	}
+	if !insert(first) {
+		t.Error("InsertRemoteObjectTombstone = false, want the first tombstone recorded")
+	}
+	again := first
+	again.ActivityURI = inboxAlice + "/activities/delete-2"
+	again.ReceivedAt = e.clock.Now().Add(time.Minute)
+	if insert(again) {
+		t.Error("InsertRemoteObjectTombstone again = true, want the first tombstone to stay")
+	}
+	if ok, err := e.h.Inbox.RemoteObjectTombstoned(ctx, note); err != nil || !ok {
+		t.Errorf("RemoteObjectTombstoned = %t, %v; want true", ok, err)
+	}
+	if ok, err := e.h.Inbox.RemoteObjectTombstoned(ctx, inboxAlice+"/notes/other"); err != nil || ok {
+		t.Errorf("RemoteObjectTombstoned(other) = %t, %v; want false", ok, err)
 	}
 }

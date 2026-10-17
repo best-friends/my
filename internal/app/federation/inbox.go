@@ -40,9 +40,9 @@ type inboxPayload struct {
 	Trust       federation.Trust `json:"trust"`
 }
 
-// inboxJob returns the JobInbox of a received activity. Its idempotency key is the hash of the
+// InboxJob returns the JobInbox of a received activity. Its idempotency key is the hash of the
 // activity URI, which may be long; its ordering key serializes the activities of one actor.
-func inboxJob(a federation.ReceivedActivity) (queue.NewJob, error) {
+func InboxJob(a federation.ReceivedActivity) (queue.NewJob, error) {
 	b, err := json.Marshal(inboxPayload{ActivityURI: string(a.ActivityURI), Trust: a.Trust})
 	if err != nil {
 		return queue.NewJob{}, err
@@ -56,8 +56,10 @@ func inboxJob(a federation.ReceivedActivity) (queue.NewJob, error) {
 }
 
 // InboxRepository is the persistence port of received activities (data-model §4.8): the
-// deduplication row and the document as it arrived. The database adapters implement it and pass
-// testkit.InboxContract. Lookups that find nothing return an error wrapping ErrNotFound.
+// deduplication row, the document as it arrived, and the tombstones of unknown objects. The
+// database adapters implement it and pass testkit.InboxContract and
+// testkit.InboxProcessingContract. Lookups that find nothing return an error wrapping
+// ErrNotFound.
 type InboxRepository interface {
 	// InsertReceivedActivity records a received activity unless one with its activity URI is
 	// recorded, and reports whether it did.
@@ -67,6 +69,12 @@ type InboxRepository interface {
 
 	FindReceivedActivity(ctx context.Context, activityURI federation.IRI) (federation.ReceivedActivity, error)
 	FindReceivedDocument(ctx context.Context, activityURI federation.IRI) ([]byte, error)
+
+	// InsertRemoteObjectTombstone records a tombstone unless its URI has one, and reports whether
+	// it did: the first tombstone stays.
+	InsertRemoteObjectTombstone(ctx context.Context, tx uow.Tx, t federation.RemoteObjectTombstone) (bool, error)
+	// RemoteObjectTombstoned reports whether uri has a tombstone.
+	RemoteObjectTombstoned(ctx context.Context, uri federation.IRI) (bool, error)
 }
 
 // InboxAccounts is the part of the account module's public API that the inbox reads.
@@ -237,7 +245,7 @@ func (i *Inbox) Receive(ctx context.Context, in InboxRequest) (Received, error) 
 }
 
 func (i *Inbox) record(ctx context.Context, a federation.ReceivedActivity, body []byte) (bool, error) {
-	job, err := inboxJob(a)
+	job, err := InboxJob(a)
 	if err != nil {
 		return false, err
 	}
