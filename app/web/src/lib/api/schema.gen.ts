@@ -1619,6 +1619,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the registrations that await approval
+         * @description The sign-ups that wait for a moderator's decision (FR-721), with the reasons their
+         *     applicants gave, longest waiting first. Needs the `manage_accounts` permission.
+         */
+        get: operations["listPendingRegistrations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/registrations/{user_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a registration
+         * @description Approves a pending registration, so that its user can sign in, with an optional note
+         *     for the moderators; the decision is audited. Deciding a decided registration changes
+         *     nothing and keeps its decision. A user without a registration is a 404. Needs the
+         *     `manage_accounts` permission.
+         */
+        post: operations["approveRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/registrations/{user_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a registration
+         * @description Rejects a pending registration, so that its user cannot sign in, with an optional note
+         *     for the moderators; the decision is audited. Deciding a decided registration changes
+         *     nothing and keeps its decision. A user without a registration is a 404. Needs the
+         *     `manage_accounts` permission.
+         */
+        post: operations["rejectRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2819,6 +2886,48 @@ export interface components {
              */
             pending_registrations?: number;
         };
+        /** @description A user's registration as the moderators review it (FR-721). */
+        AdminRegistration: {
+            user_id: components["schemas"]["Id"];
+            /** @description The user's local account; omitted when it is gone. */
+            account_id?: components["schemas"]["Id"];
+            /** @description The username of the user's local account; omitted when it is gone. */
+            username?: string;
+            state: components["schemas"]["RegistrationState"];
+            /**
+             * Format: date-time
+             * @description When the registration entered its state.
+             */
+            since: string;
+            /** @description The user's primary email address; empty when there is none. */
+            email: string;
+            /** @description Whether the user confirmed the email address. */
+            email_verified: boolean;
+            /** @description Why the user wants to join, as plain text; omitted when they gave none. */
+            reason?: string;
+            /** @description The invite the user signed up with; omitted for none. */
+            invite_id?: components["schemas"]["Id"];
+            /**
+             * Format: date-time
+             * @description When the user signed up.
+             */
+            submitted_at: string;
+        };
+        /** @description A page of registrations, longest in their state first. */
+        AdminRegistrationPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminRegistration"][];
+        };
+        /** @description A moderator's decision on a registration. */
+        RegistrationDecisionRequest: {
+            /** @description A note for the moderators, as plain text; omitted or empty for none. */
+            note?: string;
+        };
+        /**
+         * @description Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+         *     sign in, and `rejected` keeps them out.
+         * @enum {string}
+         */
+        RegistrationState: "pending" | "approved" | "rejected";
         /** @description A report of an account to the moderators. */
         CreateReportRequest: {
             /** @description The account reported, local or remote. */
@@ -2996,6 +3105,16 @@ export interface components {
                 "application/json": components["schemas"]["AdminRule"];
             };
         };
+        /** @description The registration. */
+        AdminRegistration: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRegistration"];
+            };
+        };
     };
     parameters: {
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
@@ -3024,6 +3143,8 @@ export interface components {
         AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
         RuleId: components["schemas"]["Id"];
+        /** @description The ID of the user who signed up. */
+        RegistrationUserId: components["schemas"]["Id"];
     };
     requestBodies: never;
     headers: {
@@ -4806,6 +4927,73 @@ export interface operations {
                     "application/json": components["schemas"]["AdminCounts"];
                 };
             };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listPendingRegistrations: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of pending registrations. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRegistrationPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    approveRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the user who signed up. */
+                user_id: components["parameters"]["RegistrationUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RegistrationDecisionRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRegistration"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    rejectRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the user who signed up. */
+                user_id: components["parameters"]["RegistrationUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RegistrationDecisionRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRegistration"];
             default: components["responses"]["Problem"];
         };
     };
