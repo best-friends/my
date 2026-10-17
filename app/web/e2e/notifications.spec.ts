@@ -180,15 +180,19 @@ test.describe("notifications", () => {
     if (box === null) throw new Error("the tab list is not rendered");
     const rtl = (await page.locator("html").getAttribute("dir")) === "rtl";
     // Playwright has only tap, so the swipe is raw touch events, which Chromium turns into a scroll.
+    // Long labels (en-XA) need more than one swipe, so it swipes until the list has reached its end.
     const cdp = await page.context().newCDPSession(page);
     const y = box.y + box.height / 2;
     const from = rtl ? box.x + 20 : box.x + box.width - 20;
     const step = (rtl ? box.width - 40 : 40 - box.width) / 10;
-    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from, y }] });
-    for (let move = 1; move <= 10; move += 1) {
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from + step * move, y }] });
-    }
-    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await expect(async () => {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from, y }] });
+      for (let move = 1; move <= 10; move += 1) {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from + step * move, y }] });
+      }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await expect(list).not.toHaveAttribute("data-overflow-end", { timeout: 1000 });
+    }).toPass();
     // The list scrolled: the tabs at the inline start are now behind the fade of that edge.
     if (await list.evaluate((element) => element.scrollWidth > element.clientWidth)) await expect(list).toHaveAttribute("data-overflow-start");
     await expectTabWhollyVisible(favourites);
