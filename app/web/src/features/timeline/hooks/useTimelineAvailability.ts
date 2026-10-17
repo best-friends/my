@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useApi } from "../../../lib/auth/SessionProvider";
+import { shellQueryRetry } from "../../../lib/query";
 import { instanceQueryOptions } from "../api/timelines";
 
 /** Which public timelines to offer: an instance setting turns each off, and it is then a 404 (FR-202). */
@@ -50,7 +51,7 @@ function writeStored(availability: TimelineAvailability): void {
  */
 export function useTimelineAvailability(): TimelineAvailability {
   const api = useApi();
-  const instance = useQuery(instanceQueryOptions(api));
+  const instance = useQuery({ ...instanceQueryOptions(api), retry: shellQueryRetry });
   const [stored] = useState(readStored);
   const local = instance.data?.timelines.local;
   const federated = instance.data?.timelines.federated;

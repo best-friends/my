@@ -5,7 +5,7 @@
 import { type Query, QueryClient } from "@tanstack/react-query";
 import type { Api } from "./api/client";
 import type { Session } from "./auth/session";
-import { NetworkError } from "./errors";
+import { ApiError, NetworkError } from "./errors";
 
 /** What every route receives as its router context. */
 export type RouterContext = { queryClient: QueryClient; api: Api; session: Session };
@@ -36,6 +36,18 @@ export function createQueryClient(): QueryClient {
       },
     },
   });
+}
+
+/**
+ * The `retry` of the queries the app shell reads on every page (the viewer, the preferences, the instance, the
+ * notification marker), which show their last value or a default while they fail: another try finds the same
+ * answer to a request the server refused (4xx), and a 429 only spends more of the rate limit before Retry-After
+ * (lib/rateLimit.ts loads it again then). Anything else is tried once more, so that a failure shows in about a
+ * second instead of after the default three tries (about seven seconds).
+ */
+export function shellQueryRetry(failureCount: number, error: unknown): boolean {
+  if (error instanceof ApiError && error.status < 500) return false;
+  return failureCount < 1;
 }
 
 function refetchFailed(query: Query): "always" | false {

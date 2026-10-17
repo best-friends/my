@@ -7,7 +7,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { apiBase, oauthError, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
-import { viewerFixture } from "../../test/fixtures";
+import { preferencesFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 
@@ -50,6 +50,10 @@ function oauthServer() {
       seen.authorizations.push(authorization);
       return authorization === "Bearer access-2" ? HttpResponse.json(viewerFixture) : problem(401, "/api/v1/problems/invalid-token", "Invalid token");
     }),
+    // The shell's other requests take the refreshed token too, as every operation of the server does.
+    http.get(`${apiBase}/preferences`, ({ request }) =>
+      request.headers.get("Authorization") === "Bearer access-2" ? HttpResponse.json(preferencesFixture) : problem(401, "/api/v1/problems/invalid-token", "Invalid token"),
+    ),
   );
   return {
     seen,
@@ -142,8 +146,10 @@ describe("signing in and out", () => {
     });
 
     // No token was ever written where a script could read it later.
-    // localStorage holds only the instance's public timelines, which the navigation keeps for an offline start.
-    expect(Object.keys(localStorage)).toEqual(["my:instance:timelines"]);
+    // localStorage holds only the instance's public timelines, which the navigation keeps for an offline start, and
+    // the locale the app was last displayed in, which the next start begins in.
+    expect(Object.keys(localStorage).toSorted()).toEqual(["my:display:locale", "my:instance:timelines"]);
+    expect(localStorage.getItem("my:display:locale")).toBe("en");
     expect(sessionStorage).toHaveLength(0);
     expect(idb.open).not.toHaveBeenCalled();
     expect(document.cookie).toBe("");

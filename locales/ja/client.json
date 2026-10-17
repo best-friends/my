@@ -1791,6 +1791,10 @@
     "defaultMessage": "オフラインです。読み込めなかったものは、オンラインに戻ると読み込み直します。",
     "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
   },
+  "shell.rate_limited": {
+    "defaultMessage": "サーバーへのリクエストが多すぎます。読み込めなかったものは {time} に読み込み直します。",
+    "description": "Text of the bar at the top of the app while the server's rate limit refuses requests (HTTP 429). {time} is the time of day the app loads again, with seconds (for example 12:34:56). Screen readers announce it when it appears."
+  },
   "shell.skip_to_main": {
     "defaultMessage": "本文へ移動",
     "description": "Link at the very start of every page, visible when focused, that moves keyboard focus past the navigation."
