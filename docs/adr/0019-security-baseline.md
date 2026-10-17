@@ -1,6 +1,6 @@
 # ADR-0019: セキュリティベースライン
 
-- Status: Accepted
+- Status: Accepted（一部を ADR-0032（§7 の送信の署名の既定） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #34

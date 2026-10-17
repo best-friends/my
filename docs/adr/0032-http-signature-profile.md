@@ -1,6 +1,6 @@
 # ADR-0032: HTTP 署名の受信・送信プロファイル
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-17
 - Deciders: @rosylilly
 - Issue: #232
@@ -42,9 +42,7 @@ FR-404 は draft-cavage-12 と RFC 9421 の両方の署名と double-knocking �
 
 ## Decision（決定）
 
-> 推奨案。Accepted にするのは Decider のみ。
-
-**選択肢 1 を推奨する。** 受信と送信のプロファイルを次のとおりにする。
+**選択肢 1 を採用する。** 受信と送信のプロファイルを次のとおりにする。
 
 ### 受信
 
@@ -78,7 +76,7 @@ FR-404 は draft-cavage-12 と RFC 9421 の両方の署名と double-knocking �
 
 この ADR が Accepted になったら、ADR-0006 の「送信は RFC 9421 を先に試し…」と ADR-0019 §7 の最後の項目は、この ADR に置き換わる（Decider が両 ADR の該当箇所に参照を付ける）。
 
-### この推奨を覆す条件
+### この決定を見直す条件
 
 - 主要実装のいずれかが draft-cavage を受け付けなくなった場合（選択肢 2 が有力になる）
 - 送信のリクエスト数の計測で、double-knocking の再送が配送全体の数 % を超える場合（記憶の TTL か順序を見直す）

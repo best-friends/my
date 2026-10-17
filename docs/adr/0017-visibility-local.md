@@ -1,6 +1,6 @@
 # ADR-0017: 公開範囲 `local`（サーバーローカル）を追加する
 
-- Status: Accepted
+- Status: Accepted（一部を ADR-0035（`local` 投稿の `tag` のメンション） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: —
