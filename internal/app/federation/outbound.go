@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
@@ -77,9 +78,12 @@ type RecorderDeps struct {
 //     Update, and Delete.
 //   - content.boosted / boost_retracted of a boost that federates: Announce and Undo Announce.
 //     A boost of a local status (Boost.Federates is false) is not recorded (ADR-0017).
+//   - account.profile_revised of a local profile (ProfileRevised.Federates): Update of the
+//     actor.
+//   - account.lifecycle_event_recorded of a local account's deletion: Delete of the actor.
 //
-// Other activities (Like, Follow, Accept, Block, profile updates, account deletion) are added
-// here, one projector each, with the use cases that send them.
+// Other activities (Like, Follow, Accept, Block) are added here, one projector each, with the
+// use cases that send them.
 func RegisterOutboundProjectors(r *uow.Projectors, d RecorderDeps) {
 	rec := recorder{d: d}
 	r.Register(appcontent.EventStatusCreated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
@@ -145,6 +149,26 @@ func RegisterOutboundProjectors(r *uow.Projectors, d RecorderDeps) {
 		return rec.record(ctx, tx, federation.OutboundActivity{
 			Type: federation.ActivityUndo, ActorAccountID: ev.Boost.BoosterAccountID,
 			ObjectKind: federation.OutboundBoost, ObjectID: ev.Boost.ID, CreatedAt: ev.Retraction.RetractedAt,
+		}, "")
+	})
+	r.Register(appaccount.EventProfileRevised, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev, ok := e.(appaccount.ProfileRevised)
+		if !ok || !ev.Federates() {
+			return nil
+		}
+		return rec.record(ctx, tx, federation.OutboundActivity{
+			Type: federation.ActivityUpdate, ActorAccountID: ev.Revision.AccountID,
+			ObjectKind: federation.OutboundAccount, ObjectID: ev.Revision.AccountID, CreatedAt: ev.Revision.RevisedAt,
+		}, "")
+	})
+	r.Register(appaccount.EventLifecycleEventRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev, ok := e.(appaccount.LifecycleEventRecorded)
+		if !ok || !ev.DeletesLocalAccount() {
+			return nil
+		}
+		return rec.record(ctx, tx, federation.OutboundActivity{
+			Type: federation.ActivityDelete, ActorAccountID: ev.Event.AccountID,
+			ObjectKind: federation.OutboundAccount, ObjectID: ev.Event.AccountID, CreatedAt: ev.Event.OccurredAt,
 		}, "")
 	})
 }

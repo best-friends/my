@@ -16,6 +16,7 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appfederation "github.com/best-friends/my/internal/app/federation"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/account"
@@ -70,13 +71,19 @@ type inboxProcessEnv struct {
 	processor *appfederation.InboxProcessor
 	notes     *inboxNotes
 	follows   *inboxFollows
+	// projectors are the projectors of the harness's UnitOfWork, empty unless a case's wire
+	// registers some.
+	projectors *uow.Projectors
+	// accounts is the account module of the own-actor handlers, nil unless wired.
+	accounts *appaccount.Service
 }
 
 func newInboxProcessEnv(t *testing.T, newHarness InboxFactory) *inboxProcessEnv {
 	t.Helper()
-	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}})
+	projectors := &uow.Projectors{}
+	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
 	e := &inboxProcessEnv{
-		h: h, clock: NewClock(time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)),
+		h: h, projectors: projectors, clock: NewClock(time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)),
 		actors:  &inboxActors{known: map[federation.IRI]bool{inboxAlice: true, inboxBob: true}},
 		fetcher: &inboxFetcher{docs: map[string][]byte{}, errs: map[string]error{}},
 		domains: inboxDomains{}, suspended: inboxAccountPolicy{},
@@ -632,6 +639,21 @@ func followRows(uris ...string) func(t *testing.T, e *inboxProcessEnv) any {
 
 var inboxOrderCases = []inboxOrderCase{
 	{
+		// An Update of the actor before or after its Delete never brings it back, and the
+		// Delete is recorded once (federation.md §3.4).
+		name: "OwnActorUpdatesAndDelete",
+		activities: func(t *testing.T) [][]byte {
+			return [][]byte{
+				inboxDoc(t, "Update", inboxAlice+"#updates/1", "", inboxActorDoc("Alice 1")),
+				inboxDoc(t, "Delete", inboxAlice+"#delete", "", inboxAlice),
+				inboxDoc(t, "Update", inboxAlice+"#updates/2", "", inboxActorDoc("Alice 2")),
+			}
+		},
+		wire: wireOwnActor,
+		rows: ownActorRows,
+		want: inboxOwnActorRows{Deleted: true, RemoteDeletions: 1},
+	},
+	{
 		name: "CreateAndDelete",
 		activities: func(t *testing.T) [][]byte {
 			n := inboxAlice + "/notes/1"
@@ -746,4 +768,77 @@ func permutations(s []int) [][]int {
 		}
 	}
 	return out
+}
+
+// inboxActorDoc returns the actor document of alice named name.
+func inboxActorDoc(name string) map[string]any {
+	return map[string]any{
+		"id": inboxAlice, "type": "Person", "inbox": inboxAlice + "/inbox", "preferredUsername": "alice", "name": name,
+	}
+}
+
+// wireOwnActor registers the stand-ins and the own-actor handlers of RemoteActors on the account
+// module of the harness's database, with alice stored as she was first fetched. The network
+// answers nothing.
+func wireOwnActor(t *testing.T, e *inboxProcessEnv) {
+	t.Helper()
+	e.wireStandIns()
+	appaccount.RegisterProjectors(e.projectors, e.h.Accounts)
+	ids := NewIDGenerator(e.clock)
+	e.accounts = appaccount.NewService(appaccount.Deps{
+		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Accounts, Clock: e.clock, IDs: ids,
+		Sealer: kernel.NewSealer(NewKeyManager("inbox")), Host: contractHost, GenerateKey: cachedKey,
+		Sanitizer:         remoteSanitizer{},
+		RecordRemoteImage: func(context.Context, uow.Tx, string, string) (string, error) { return "", nil },
+	})
+	net := &remoteNet{routes: map[string]remoteResponse{}}
+	kv := NewKeyValueStore(e.clock)
+	fetcher := appfederation.NewFetcher(appfederation.FetcherDeps{
+		Client: appfederation.NewSignedHTTPClient(net, remoteSigner{}, kv, e.clock), KV: kv, Clock: e.clock,
+		Domains: appfederation.NoDomainRestrictions{}, Instances: e.h.Federation,
+		Key: appfederation.InstanceKey(e.accounts), Host: contractHost,
+	})
+	jobs := &remoteJobs{seen: map[string]bool{}}
+	actors := appfederation.NewRemoteActors(appfederation.RemoteActorsDeps{
+		UnitOfWork: e.h.UnitOfWork, Accounts: e.accounts, Instances: e.h.Instances, Fetcher: fetcher, HTTP: net,
+		Jobs: jobs, Outbox: queue.AfterCommit(e.projectors, jobs, nil), Followers: remoteFollowers{},
+		Clock: e.clock, IDs: ids,
+	})
+	actors.RegisterInboxHandlers(e.processor)
+	if _, err := e.accounts.SaveRemoteActor(t.Context(), appaccount.RemoteActorInput{
+		URI: inboxAlice, Domain: federation.IRI(inboxAlice).Host(), Type: "Person", PreferredUsername: "alice",
+		Name: "Alice", InboxURL: inboxAlice + "/inbox", Document: []byte(`{}`),
+	}); err != nil {
+		t.Fatalf("SaveRemoteActor(alice): %v", err)
+	}
+}
+
+// inboxOwnActorRows are what the own-actor handlers leave of alice: whether she is deleted, and
+// how many remote_deleted events she has.
+type inboxOwnActorRows struct {
+	Deleted         bool
+	RemoteDeletions int
+}
+
+func ownActorRows(t *testing.T, e *inboxProcessEnv) any {
+	t.Helper()
+	ctx := t.Context()
+	a, err := e.accounts.FindByURI(ctx, inboxAlice)
+	if err != nil {
+		t.Fatalf("FindByURI(alice): %v", err)
+	}
+	r := inboxOwnActorRows{Deleted: a.Deleted()}
+	err = e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		events, err := e.h.Accounts.ListLifecycleEvents(ctx, tx)
+		for _, ev := range events {
+			if ev.AccountID == a.Account.ID && ev.Kind == account.LifecycleRemoteDeleted {
+				r.RemoteDeletions++
+			}
+		}
+		return err
+	})
+	if err != nil {
+		t.Fatalf("ListLifecycleEvents: %v", err)
+	}
+	return r
 }
