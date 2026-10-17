@@ -208,7 +208,8 @@ func payloadOf(t *testing.T, j queue.Job) string {
 
 func queueRunsDueJobsInOrder(t *testing.T, newHarness QueueFactory) {
 	f := newQueueFixture(t, newHarness)
-	later := probe(`{"N": "later", "nested": {"b": [1, 2], "a": null}}`)
+	// The payload round-trips whatever a JSON column refuses, such as an escaped NUL.
+	later := probe(`{"N": "later", "nested": {"b": [1, 2], "a": null, "s": "nul \u0000"}}`)
 	later.RunAt = contractStart.Add(10 * time.Minute)
 	later.IdempotencyKey = "key-later"
 	later.OrderingKey = "order-1"
@@ -792,7 +793,7 @@ func queueTransactionalEnqueue(t *testing.T, newHarness QueueFactory) {
 	attempts := 0
 	err = f.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
 		attempts++
-		if err := f.h.Outbox.EnqueueTx(t.Context(), tx, probe(`{"N":"committed"}`)); err != nil {
+		if err := f.h.Outbox.EnqueueTx(t.Context(), tx, probe(`{"N":"committed", "s":"nul \u0000"}`)); err != nil {
 			return err
 		}
 		if attempts == 1 {

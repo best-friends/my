@@ -42,7 +42,7 @@ func (sqliteStore) insertJob(ctx context.Context, tx uow.Tx, j queue.Job) error 
 	return q.InsertJob(ctx, sqlitequeue.InsertJobParams{
 		ID:             j.ID,
 		Type:           j.Type,
-		Payload:        string(j.Payload),
+		Payload:        j.Payload,
 		IdempotencyKey: nullString(j.IdempotencyKey),
 		OrderingKey:    nullString(j.OrderingKey),
 		RunAt:          millis(j.RunAt),
@@ -171,7 +171,7 @@ func (sqliteStore) insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) err
 	return q.InsertOutboxEvent(ctx, sqlitequeue.InsertOutboxEventParams{
 		ID:             j.ID,
 		JobType:        j.Type,
-		Payload:        string(j.Payload),
+		Payload:        j.Payload,
 		IdempotencyKey: nullString(j.IdempotencyKey),
 		OrderingKey:    nullString(j.OrderingKey),
 		RunAt:          millis(j.RunAt),

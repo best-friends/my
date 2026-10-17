@@ -276,8 +276,8 @@
     "description": "State of an attached image while it is being sent to the server."
   },
   "compose.mention.unreached": {
-    "defaultMessage": "{count, plural, other {{accounts} はほかのサーバーのアカウントで、あなたをフォローしていないため、この投稿は届きません。}}公開範囲「このサーバー」の投稿は、ほかのサーバーではあなたのフォロワーにだけ届きます。",
-    "description": "Warning under a post with the visibility 'This server' that mentions accounts of other servers that do not follow the author (ADR-0017). {accounts} is the list of their handles, for example '@carol@remote.example and @dave@other.example'; {count} is how many there are."
+    "defaultMessage": "{count, plural, other {{accounts} はほかのサーバーのアカウントで、あなたをフォローしていないため、この投稿は届きません。}}公開範囲「このサーバー」の投稿は、ほかのサーバーではあなたのフォロワーにだけ届き、このメンションはメンションではなくただのリンクとして表示されます。",
+    "description": "Warning under a post with the visibility 'This server' that mentions accounts of other servers that do not follow the author (ADR-0017, ADR-0035): those accounts do not receive the post, and the author's followers on other servers see the mention as a plain link, not as a mention. {accounts} is the list of their handles, for example '@carol@remote.example and @dave@other.example'; {count} is how many there are."
   },
   "compose.missing_description.add": {
     "defaultMessage": "説明を書く",
@@ -703,6 +703,10 @@
     "defaultMessage": "フォロー中",
     "description": "Button on a profile of an account the user follows; pressing it offers to unfollow."
   },
+  "profile.follow.pending_remote": {
+    "defaultMessage": "{host} がフォローのリクエストを承認するのを待っています。",
+    "description": "Shown under the follow button of an account on another server while the user's follow request awaits that server's answer. {host} is the server's host name."
+  },
   "profile.follow.request": {
     "defaultMessage": "フォローをリクエスト",
     "description": "Button on a profile of an account that approves its followers: it sends a follow request."
@@ -838,6 +842,50 @@
   "profile.title": {
     "defaultMessage": "プロフィール",
     "description": "Heading and document title of the signed-in user's own profile page."
+  },
+  "search.description": {
+    "defaultMessage": "@ユーザー名@サーバー か、プロフィールのアドレスを入力します。ほかのサーバーのアカウントも探せます。",
+    "description": "Help text under the search field for a signed-in user, who can find accounts on any server."
+  },
+  "search.description_signed_out": {
+    "defaultMessage": "@ユーザー名@サーバー か、プロフィールのアドレスを入力します。このサーバーがすでに知っているアカウントだけが見つかります。",
+    "description": "Help text under the search field while nobody is signed in: the server does not fetch unknown accounts from other servers."
+  },
+  "search.failed": {
+    "defaultMessage": "検索できませんでした: {reason}",
+    "description": "Error under the search field when the search failed for another reason. {reason} is the localized reason."
+  },
+  "search.label": {
+    "defaultMessage": "ハンドルまたは URL",
+    "description": "Label of the search field, which takes an account's handle (@username@server) or the address of its profile."
+  },
+  "search.not_found": {
+    "defaultMessage": "アカウントが見つかりません。ハンドルかアドレスを確かめてください。",
+    "description": "Error under the search field when neither this server nor the account's server knows the account."
+  },
+  "search.not_found_signed_out": {
+    "defaultMessage": "このサーバーはそのアカウントを知りません。サインインすると、そのアカウントのサーバーに問い合わせられます。",
+    "description": "Error under the search field when nobody is signed in and this server does not know the account."
+  },
+  "search.rate_limited": {
+    "defaultMessage": "検索の回数が多すぎます。数分たってからもう一度お試しください。",
+    "description": "Error under the search field when the server limits how often the user can look up accounts on other servers."
+  },
+  "search.required": {
+    "defaultMessage": "ハンドルか URL を入力してください。",
+    "description": "Error under the search field when it is sent empty."
+  },
+  "search.sign_in": {
+    "defaultMessage": "サインインしてほかのサーバーのアカウントを探す",
+    "description": "Link on the search page while nobody is signed in; it signs in and comes back to the search."
+  },
+  "search.submit": {
+    "defaultMessage": "検索",
+    "description": "Button that sends the search for an account."
+  },
+  "search.title": {
+    "defaultMessage": "検索",
+    "description": "Heading and document title of the page that finds an account by its handle or URL."
   },
   "session.account.title": {
     "defaultMessage": "アカウント",
@@ -1202,6 +1250,10 @@
   "shell.nav.profile": {
     "defaultMessage": "プロフィール",
     "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in a bottom tab bar."
+  },
+  "shell.nav.search": {
+    "defaultMessage": "検索",
+    "description": "Navigation item that opens the account search. Keep it short: it is shown under an icon in a bottom tab bar."
   },
   "shell.nav.settings": {
     "defaultMessage": "設定",

@@ -37,8 +37,12 @@
 | `lang` | BCP 47 言語タグ。不明は `und` | `TEXT` | `text` |
 | `enum(…)` | 英小文字スネークケースの列挙 | `TEXT` + `CHECK` | `text` + `CHECK` |
 | `bytes` | バイナリ（暗号化済みの秘密など） | `BLOB` | `bytea` |
-| `document` | **解釈しない** JSON 文書（受信した AP 文書の原本など）。検索・制約・部分更新に使わない | `TEXT` | `jsonb` |
+| `document` | **解釈しない** JSON 文書のバイト列（受信した AP 文書の原本など）。書いたバイト列のまま読み戻す。検索・制約・部分更新に使わない | `BLOB` | `bytea` |
 
+- `document` を JSON の型（PostgreSQL の `jsonb`・`json`）や `text` にしないのは、データベースに文書を解釈させないためです。
+  - `jsonb` はキーの順序と空白を変え、重複したキーは最後の値だけを残します。AS2 の正規化（[federation §4](federation.md#4-as2-の正規化)）は最初の値を読み、`contentMap` の順序にも意味を持たせるので、方言によって処理の結果が変わってしまいます。
+  - `jsonb` は `\u0000` と対になっていないサロゲートのエスケープを、`text` はヌル文字を受け付けません。そのような受信を `500` で返すと、送信側は再送し続けます。
+  - 受信した文書の原本は、障害調査とフィクスチャの採取のため、受け取ったバイト列のまま残します。
 - 表記: カラムは特記がなければ `NOT NULL`。NULL 可のものは「NULL 可」と書きます。
   - **状態を NULL で表すことはしません**（ADR-0020 規約 4）。NULL 可は「任意の関連」（例: 通報に基づかない処分の `report_id`）と「無期限」（`expires_at`）に限ります。
 - 名前: カラム・テーブルは英語スネークケースで、テーブル名は複数形です。
@@ -414,11 +418,11 @@ flowchart LR
 | `reports` | リソース | `id`, `uri`（NULL 可。受信した `Flag` の `id`、`id` の無い `Flag` は受信の記録と同じ `urn:my:digest:…`）, `reporter_account_id`, `target_account_id`, `category`（`enum(spam, legal, violation, other)`）, `comment`（5,000 文字まで）, `forwarded`（`bool`）, `filed_at` | 一意 `(uri)`。インデックス `(target_account_id, id)` |
 | `report_statuses` | リソース（子） | `report_id`, `status_id` | PK `(report_id, status_id)` |
 | `report_rule_citations` | リソース（子） | `report_id`, `rule_id` | PK `(report_id, rule_id)`。ルールの文言が改訂されても `rule_id` は変わらない（§4.9） |
-| `report_assignments` | イベント | `id`, `report_id`, `assignee_user_id`（NULL 可 = 担当解除）, `assigned_by_user_id`, `assigned_at` | インデックス `(report_id, id DESC)` |
-| `report_resolutions` | イベント | `id`, `report_id`, `outcome`（`enum(actioned, dismissed)`）, `resolved_by_user_id`, `resolved_at` | 処分との関連は `moderation_actions.report_id` で辿る |
+| `report_assignments` | イベント | `id`, `report_id`, `assignee_user_id`（NULL 可 = 担当解除）, `assigned_by_user_id`（NULL 可 = CLI）, `assigned_at` | インデックス `(report_id, id DESC)`。担当が変わらない割り当ては記録しない |
+| `report_resolutions` | イベント | `id`, `report_id`, `outcome`（`enum(actioned, dismissed)`）, `resolved_by_user_id`（NULL 可 = CLI）, `resolved_at` | インデックス `(report_id, id DESC)`。処分との関連は `moderation_actions.report_id` で辿る。解決済みの通報の解決は記録しない |
 | `report_reopenings` | イベント | `id`, `report_id`, `reopened_by_user_id`, `reopened_at` | |
 | `report_notes` | イベント | `id`, `report_id`, `author_user_id`, `body`, `written_at` | |
-| `report_states` | 投影 | `report_id`（PK）, `state`（`enum(open, resolved)`）, `assignee_user_id`（NULL 可）, `since` | インデックス `(state, report_id)`（未解決一覧） |
+| `report_states` | 投影 | `report_id`（PK）, `state`（`enum(open, resolved)`）, `outcome`（`enum(actioned, dismissed)`、NULL 可。最後の解決の結果）, `assignee_user_id`（NULL 可）, `since`（受け付けた時刻か、解決した時刻） | インデックス `(state, report_id)`（未解決一覧）。`outcome` は `state = resolved` のときだけ値を持つ（`CHECK` 制約） |
 
 #### 登録の拒否リスト（C）
 

@@ -140,7 +140,7 @@ export interface MessageArgs {
   "client:compose.media.unsupported": { name: string };
   /** Uploading… */
   "client:compose.media.uploading": {};
-  /** {count, plural, one {{accounts} is on another server and does not follow you, so they will not receive this post.} other {{accounts} are on other servers and do not follow you, so they will not receive this post.}} “This server” posts reach only your followers outside this server. */
+  /** {count, plural, one {{accounts} is on another server and does not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see this mention as a plain link.} other {{accounts} are on other servers and do not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see these mentions as plain links.}} */
   "client:compose.mention.unreached": { accounts: string; count: number };
   /** Add descriptions */
   "client:compose.missing_description.add": {};
@@ -354,6 +354,8 @@ export interface MessageArgs {
   "client:profile.follow.blocked": {};
   /** Following */
   "client:profile.follow.following": {};
+  /** Waiting for {host} to accept your follow request. */
+  "client:profile.follow.pending_remote": { host: string };
   /** Request to follow */
   "client:profile.follow.request": {};
   /** Requested */
@@ -422,6 +424,28 @@ export interface MessageArgs {
   "client:profile.tag.requested_you": {};
   /** Profile */
   "client:profile.title": {};
+  /** Enter @username@server or the address of a profile, on this server or another one. */
+  "client:search.description": {};
+  /** Enter @username@server or the address of a profile. Only accounts this server already knows are found. */
+  "client:search.description_signed_out": {};
+  /** The search failed: {reason} */
+  "client:search.failed": { reason: string };
+  /** Handle or URL */
+  "client:search.label": {};
+  /** No account found. Check the handle or the address. */
+  "client:search.not_found": {};
+  /** This server does not know that account. Sign in to look it up on its own server. */
+  "client:search.not_found_signed_out": {};
+  /** Too many searches. Try again in a few minutes. */
+  "client:search.rate_limited": {};
+  /** Enter a handle or a URL. */
+  "client:search.required": {};
+  /** Sign in to find accounts on other servers */
+  "client:search.sign_in": {};
+  /** Search */
+  "client:search.submit": {};
+  /** Search */
+  "client:search.title": {};
   /** Account */
   "client:session.account.title": {};
   /** Sign in */
@@ -604,6 +628,8 @@ export interface MessageArgs {
   "client:shell.nav.notifications_unread": { count: number };
   /** Profile */
   "client:shell.nav.profile": {};
+  /** Search */
+  "client:shell.nav.search": {};
   /** Settings */
   "client:shell.nav.settings": {};
   /** There is no page at this address. */

@@ -13,7 +13,7 @@ import (
 type DeadJob struct {
 	ID             string
 	Type           string
-	Payload        string
+	Payload        []byte
 	IdempotencyKey sql.NullString
 	OrderingKey    sql.NullString
 	Attempt        int64
@@ -25,7 +25,7 @@ type DeadJob struct {
 type OutboxEvent struct {
 	ID             string
 	JobType        string
-	Payload        string
+	Payload        []byte
 	IdempotencyKey sql.NullString
 	OrderingKey    sql.NullString
 	RunAt          int64

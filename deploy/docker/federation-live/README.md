@@ -118,8 +118,8 @@ pinned Mastodon and GoToSocial versions, so they can become fixtures of the regr
 3. Record it in `pkg/testkit/fixtures/federation/<implementation>/README.md` as a capture from that server version, with
    the capture date, and update the golden files.
 
-The stored document is the one this server read: PostgreSQL's `jsonb` does not keep the key order and the whitespace of
-the request body.
+The stored document has the bytes of the request body as this server received it, key order and whitespace
+included; reformat it (`jq --indent 2 .`) before saving it as a fixture.
 
 ## Updating the peers
 

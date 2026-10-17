@@ -94,7 +94,7 @@ test.describe("notifications", () => {
 
   test("the navigation shows the unread count and names its link with it", async ({ page }) => {
     await page.goto("/");
-    const link = page.getByRole("navigation").getByRole("link").nth(2);
+    const link = page.getByRole("navigation").locator('a[href="/notifications"]');
     await expect(link).toHaveAccessibleName(/2/);
     await expect(link.locator('[aria-hidden="true"]', { hasText: "2" })).toBeVisible();
     await expectNoHorizontalScroll(page);
@@ -131,7 +131,7 @@ test.describe("notifications", () => {
     await page.goto("/notifications");
     await expect(page.getByRole("feed").getByRole("article")).toHaveCount(3);
     await expect.poll(() => server.updates).toEqual([mentionId]);
-    await expect(page.getByRole("navigation").getByRole("link").nth(2).locator('[aria-hidden="true"]', { hasText: "2" })).toHaveCount(0);
+    await expect(page.getByRole("navigation").locator('a[href="/notifications"]').locator('[aria-hidden="true"]', { hasText: "2" })).toHaveCount(0);
   });
 
   test("the type filter works from the keyboard and lives in the URL", async ({ page }) => {

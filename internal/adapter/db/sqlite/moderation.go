@@ -234,7 +234,8 @@ func (r *ModerationRepository) UpsertReportStatus(ctx context.Context, tx uow.Tx
 		return err
 	}
 	return wrap(q.UpsertReportState(ctx, sqlitegen.UpsertReportStateParams{
-		ReportID: s.ReportID, State: string(s.State), AssigneeUserID: toNullString(s.AssigneeUserID), Since: toMillis(s.Since),
+		ReportID: s.ReportID, State: string(s.State), Outcome: toNullString(string(s.Outcome)),
+		AssigneeUserID: toNullString(s.AssigneeUserID), Since: toMillis(s.Since),
 	}), "upsert report state")
 }
 
@@ -308,10 +309,14 @@ func (r *ModerationRepository) FindReportStatus(ctx context.Context, reportID st
 	if err != nil {
 		return moderation.ReportStatus{}, notFound(err, appmoderation.ErrNotFound, "report state "+reportID)
 	}
+	return reportStatusFrom(row), nil
+}
+
+func reportStatusFrom(row sqlitegen.ReportState) moderation.ReportStatus {
 	return moderation.ReportStatus{
-		ReportID: row.ReportID, State: moderation.ReportState(row.State), AssigneeUserID: row.AssigneeUserID.String,
-		Since: fromMillis(row.Since),
-	}, nil
+		ReportID: row.ReportID, State: moderation.ReportState(row.State), Outcome: moderation.ReportOutcome(row.Outcome.String),
+		AssigneeUserID: row.AssigneeUserID.String, Since: fromMillis(row.Since),
+	}
 }
 
 // ListReportsOf implements moderation.Repository.
@@ -325,6 +330,106 @@ func (r *ModerationRepository) ListReportsOf(ctx context.Context, targetAccountI
 		if out[i], err = r.reportFrom(ctx, row); err != nil {
 			return nil, err
 		}
+	}
+	return out, nil
+}
+
+// InsertReportAssignment implements moderation.Repository.
+func (r *ModerationRepository) InsertReportAssignment(ctx context.Context, tx uow.Tx, a moderation.ReportAssignment) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertReportAssignment(ctx, sqlitegen.InsertReportAssignmentParams{
+		ID: a.ID, ReportID: a.ReportID, AssigneeUserID: toNullString(a.AssigneeUserID),
+		AssignedByUserID: toNullString(a.AssignedByUserID), AssignedAt: toMillis(a.AssignedAt),
+	}), "insert report assignment")
+}
+
+// InsertReportResolution implements moderation.Repository.
+func (r *ModerationRepository) InsertReportResolution(ctx context.Context, tx uow.Tx, res moderation.ReportResolution) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertReportResolution(ctx, sqlitegen.InsertReportResolutionParams{
+		ID: res.ID, ReportID: res.ReportID, Outcome: string(res.Outcome),
+		ResolvedByUserID: toNullString(res.ResolvedByUserID), ResolvedAt: toMillis(res.ResolvedAt),
+	}), "insert report resolution")
+}
+
+// ReportStatusForUpdate implements moderation.Repository. SQLite serializes write
+// transactions, so it needs no lock.
+func (r *ModerationRepository) ReportStatusForUpdate(ctx context.Context, tx uow.Tx, reportID string) (moderation.ReportStatus, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return moderation.ReportStatus{}, err
+	}
+	row, err := q.GetReportStateForUpdate(ctx, reportID)
+	if err != nil {
+		return moderation.ReportStatus{}, notFound(err, appmoderation.ErrNotFound, "report state "+reportID)
+	}
+	return reportStatusFrom(row), nil
+}
+
+// ListReports implements moderation.Repository.
+func (r *ModerationRepository) ListReports(ctx context.Context, q appmoderation.ReportQuery, limit int) ([]moderation.ReportRecord, error) {
+	rows, err := r.db.reader().ListReports(ctx, sqlitegen.ListReportsParams{State: string(q.State), Before: q.Before, Lim: int64(limit)})
+	if err != nil {
+		return nil, wrap(err, "list reports")
+	}
+	out := make([]moderation.ReportRecord, len(rows))
+	for i, row := range rows {
+		rep, err := r.reportFrom(ctx, sqlitegen.Report{
+			ID: row.ID, Uri: row.Uri, ReporterAccountID: row.ReporterAccountID, TargetAccountID: row.TargetAccountID,
+			Category: row.Category, Comment: row.Comment, Forwarded: row.Forwarded, FiledAt: row.FiledAt,
+		})
+		if err != nil {
+			return nil, err
+		}
+		out[i] = moderation.ReportRecord{Report: rep, Status: reportStatusFrom(sqlitegen.ReportState{
+			ReportID: row.ID, State: row.State, Outcome: row.Outcome, AssigneeUserID: row.AssigneeUserID, Since: row.Since,
+		})}
+	}
+	return out, nil
+}
+
+func domainActionRecordFrom(row sqlitegen.ListDomainModerationActionsRow) moderation.DomainActionRecord {
+	rec := moderation.DomainActionRecord{Action: moderation.DomainAction{
+		ID: row.ID, Domain: row.Domain, Kind: moderation.DomainActionKind(row.Kind), PublicComment: row.PublicComment.String,
+		PrivateNote: row.PrivateNote.String, Obfuscate: row.Obfuscate != 0, IssuedByUserID: row.IssuedByUserID.String,
+		ExpiresAt: fromNullMillis(row.ExpiresAt), IssuedAt: fromMillis(row.IssuedAt),
+	}}
+	if row.LiftActionID.Valid {
+		rec.Lift = &moderation.DomainLift{ActionID: row.ID, LiftedByUserID: row.LiftedByUserID.String, LiftedAt: fromMillis(row.LiftedAt.Int64)}
+	}
+	return rec
+}
+
+// FindDomainActionRecord implements moderation.Repository.
+func (r *ModerationRepository) FindDomainActionRecord(ctx context.Context, id string) (moderation.DomainActionRecord, error) {
+	row, err := r.db.reader().GetDomainModerationActionRecord(ctx, id)
+	if err != nil {
+		return moderation.DomainActionRecord{}, notFound(err, appmoderation.ErrNotFound, "domain moderation action "+id)
+	}
+	return domainActionRecordFrom(sqlitegen.ListDomainModerationActionsRow(row)), nil
+}
+
+// ListDomainActions implements moderation.Repository.
+func (r *ModerationRepository) ListDomainActions(ctx context.Context, q appmoderation.DomainActionQuery, limit int) ([]moderation.DomainActionRecord, error) {
+	var at int64
+	if q.InEffectAt != nil {
+		at = toMillis(*q.InEffectAt)
+	}
+	rows, err := r.db.reader().ListDomainModerationActions(ctx, sqlitegen.ListDomainModerationActionsParams{
+		Domain: q.Domain, InEffectAt: at, Before: q.Before, Lim: int64(limit),
+	})
+	if err != nil {
+		return nil, wrap(err, "list domain moderation actions")
+	}
+	out := make([]moderation.DomainActionRecord, len(rows))
+	for i, row := range rows {
+		out[i] = domainActionRecordFrom(row)
 	}
 	return out, nil
 }

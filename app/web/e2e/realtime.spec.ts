@@ -117,7 +117,7 @@ test.describe("new posts in the home timeline", () => {
 test("a notification from the stream raises the unread badge", async ({ page }) => {
   await signedInServer(page, sse("notification", notification), 1);
   await page.goto("/home");
-  const link = page.getByRole("navigation").getByRole("link").nth(2);
+  const link = page.getByRole("navigation").locator('a[href="/notifications"]');
   await expect(link).toHaveAccessibleName(/2/);
   await expect(link.locator('[aria-hidden="true"]', { hasText: "2" })).toBeVisible();
   await expectNoHorizontalScroll(page);

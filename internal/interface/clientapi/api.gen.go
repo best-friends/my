@@ -67,6 +67,54 @@ func (e AdminAvailabilityEventReason) Valid() bool {
 	}
 }
 
+// Defines values for AdminDomainActionKind.
+const (
+	AdminDomainActionKindForceSensitive AdminDomainActionKind = "force_sensitive"
+	AdminDomainActionKindLimit          AdminDomainActionKind = "limit"
+	AdminDomainActionKindRejectMedia    AdminDomainActionKind = "reject_media"
+	AdminDomainActionKindRejectReports  AdminDomainActionKind = "reject_reports"
+	AdminDomainActionKindSuspend        AdminDomainActionKind = "suspend"
+)
+
+// Valid indicates whether the value is a known member of the AdminDomainActionKind enum.
+func (e AdminDomainActionKind) Valid() bool {
+	switch e {
+	case AdminDomainActionKindForceSensitive:
+		return true
+	case AdminDomainActionKindLimit:
+		return true
+	case AdminDomainActionKindRejectMedia:
+		return true
+	case AdminDomainActionKindRejectReports:
+		return true
+	case AdminDomainActionKindSuspend:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminDomainActionState.
+const (
+	AdminDomainActionStateActive  AdminDomainActionState = "active"
+	AdminDomainActionStateExpired AdminDomainActionState = "expired"
+	AdminDomainActionStateLifted  AdminDomainActionState = "lifted"
+)
+
+// Valid indicates whether the value is a known member of the AdminDomainActionState enum.
+func (e AdminDomainActionState) Valid() bool {
+	switch e {
+	case AdminDomainActionStateActive:
+		return true
+	case AdminDomainActionStateExpired:
+		return true
+	case AdminDomainActionStateLifted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminInstanceState.
 const (
 	AdminInstanceStateAvailable   AdminInstanceState = "available"
@@ -79,6 +127,66 @@ func (e AdminInstanceState) Valid() bool {
 	case AdminInstanceStateAvailable:
 		return true
 	case AdminInstanceStateUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminReportCategory.
+const (
+	AdminReportCategoryLegal     AdminReportCategory = "legal"
+	AdminReportCategoryOther     AdminReportCategory = "other"
+	AdminReportCategorySpam      AdminReportCategory = "spam"
+	AdminReportCategoryViolation AdminReportCategory = "violation"
+)
+
+// Valid indicates whether the value is a known member of the AdminReportCategory enum.
+func (e AdminReportCategory) Valid() bool {
+	switch e {
+	case AdminReportCategoryLegal:
+		return true
+	case AdminReportCategoryOther:
+		return true
+	case AdminReportCategorySpam:
+		return true
+	case AdminReportCategoryViolation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminReportOutcome.
+const (
+	AdminReportOutcomeActioned  AdminReportOutcome = "actioned"
+	AdminReportOutcomeDismissed AdminReportOutcome = "dismissed"
+)
+
+// Valid indicates whether the value is a known member of the AdminReportOutcome enum.
+func (e AdminReportOutcome) Valid() bool {
+	switch e {
+	case AdminReportOutcomeActioned:
+		return true
+	case AdminReportOutcomeDismissed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminReportState.
+const (
+	AdminReportStateOpen     AdminReportState = "open"
+	AdminReportStateResolved AdminReportState = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the AdminReportState enum.
+func (e AdminReportState) Valid() bool {
+	switch e {
+	case AdminReportStateOpen:
+		return true
+	case AdminReportStateResolved:
 		return true
 	default:
 		return false
@@ -413,6 +521,61 @@ type AdminDeadJobPage struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
+// AdminDomainAction A moderation action on a remote domain and its subdomains (FR-702).
+type AdminDomainAction struct {
+	// Domain The domain, in IDNA A-labels.
+	Domain string `json:"domain"`
+
+	// ExpiresAt When the action ends by itself; omitted for one that lasts until lifted.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id       Id        `json:"id"`
+	IssuedAt time.Time `json:"issued_at"`
+
+	// Kind `suspend`: no federation with the domain at all. `limit`: its posts stay off the public
+	// timelines and its accounts reach only their followers. `reject_media`: its media are
+	// not fetched. `reject_reports`: its reports are dropped. `force_sensitive`: its media
+	// are marked sensitive.
+	Kind AdminDomainActionKind `json:"kind"`
+
+	// LiftedAt When the action was lifted; omitted until it is.
+	LiftedAt *time.Time `json:"lifted_at,omitempty"`
+
+	// Obfuscate Whether a public list of the domain actions hides part of the domain.
+	Obfuscate bool `json:"obfuscate"`
+
+	// PrivateNote The moderators' note; omitted when there is none.
+	PrivateNote *string `json:"private_note,omitempty"`
+
+	// PublicComment The reason that may be shown publicly; omitted when there is none.
+	PublicComment *string `json:"public_comment,omitempty"`
+
+	// State `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+	// lifted it.
+	State AdminDomainActionState `json:"state"`
+}
+
+// AdminDomainActionKind `suspend`: no federation with the domain at all. `limit`: its posts stay off the public
+// timelines and its accounts reach only their followers. `reject_media`: its media are
+// not fetched. `reject_reports`: its reports are dropped. `force_sensitive`: its media
+// are marked sensitive.
+type AdminDomainActionKind string
+
+// AdminDomainActionPage A page of domain actions, newest first.
+type AdminDomainActionPage struct {
+	Items []AdminDomainAction `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminDomainActionState `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+// lifted it.
+type AdminDomainActionState string
+
 // AdminInstanceHealth Whether deliveries go to a remote server (federation.md §7.3).
 type AdminInstanceHealth struct {
 	Domain string `json:"domain"`
@@ -442,6 +605,95 @@ type AdminInstanceHealthPage struct {
 // AdminInstanceState `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
 // `Reject`.
 type AdminInstanceState string
+
+// AdminReport A report of an account to the moderators (FR-701).
+type AdminReport struct {
+	// AssigneeAccountId The account of the moderator who handles the report; omitted when nobody does.
+	AssigneeAccountId *Id                 `json:"assignee_account_id,omitempty"`
+	Category          AdminReportCategory `json:"category"`
+
+	// Comment The reporter's comment as plain text, up to 5,000 characters.
+	Comment string    `json:"comment"`
+	FiledAt time.Time `json:"filed_at"`
+
+	// Forwarded Whether the report was forwarded to the target's server.
+	Forwarded bool `json:"forwarded"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Outcome How the report was resolved, present only while it is resolved. `actioned`: a moderator
+	// took an action on the target. `dismissed`: there was nothing to act on.
+	Outcome *AdminReportOutcome `json:"outcome,omitempty"`
+
+	// ReporterAccount The reporter, often the instance actor of a remote server; omitted when the account is gone.
+	ReporterAccount *Account `json:"reporter_account,omitempty"`
+
+	// ReporterAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	ReporterAccountId Id `json:"reporter_account_id"`
+
+	// State `open` reports await the moderators; `resolved` ones are handled.
+	State AdminReportState `json:"state"`
+
+	// StateChangedAt When the report was filed or, once resolved, resolved.
+	StateChangedAt time.Time `json:"state_changed_at"`
+
+	// StatusIds The IDs of the target's posts that the report points at.
+	StatusIds []Id `json:"status_ids"`
+
+	// TargetAccount The account reported; omitted when the account is gone.
+	TargetAccount *Account `json:"target_account,omitempty"`
+
+	// TargetAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	TargetAccountId Id `json:"target_account_id"`
+
+	// Uri The `id` of the `Flag` activity that another server sent; omitted for a report
+	// made on this server.
+	Uri *string `json:"uri,omitempty"`
+}
+
+// AdminReportCategory defines model for AdminReport.Category.
+type AdminReportCategory string
+
+// AdminReportOutcome How the report was resolved, present only while it is resolved. `actioned`: a moderator
+// took an action on the target. `dismissed`: there was nothing to act on.
+type AdminReportOutcome string
+
+// AdminReportPage A page of reports, newest first.
+type AdminReportPage struct {
+	Items []AdminReport `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminReportState `open` reports await the moderators; `resolved` ones are handled.
+type AdminReportState string
+
+// CreateDomainActionRequest A moderation action to take on a domain.
+type CreateDomainActionRequest struct {
+	// Domain The remote domain, such as `spam.example`; a U-label spelling such as `例え.jp` is
+	// accepted. The action covers its subdomains.
+	Domain string `json:"domain"`
+
+	// ExpiresIn The seconds the action lasts; omitted, it lasts until it is lifted.
+	ExpiresIn *int `json:"expires_in,omitempty"`
+
+	// Kind `suspend`: no federation with the domain at all. `limit`: its posts stay off the public
+	// timelines and its accounts reach only their followers. `reject_media`: its media are
+	// not fetched. `reject_reports`: its reports are dropped. `force_sensitive`: its media
+	// are marked sensitive.
+	Kind          AdminDomainActionKind `json:"kind"`
+	Obfuscate     *bool                 `json:"obfuscate,omitempty"`
+	PrivateNote   *string               `json:"private_note,omitempty"`
+	PublicComment *string               `json:"public_comment,omitempty"`
+}
 
 // CreateStatusRequest A new status.
 type CreateStatusRequest struct {
@@ -841,9 +1093,9 @@ type PageInfo struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
-// Permission A capability that a role grants. `manage_domains`: the health of remote servers.
-// `manage_jobs`: the dead jobs of the job queue. The others guard no client API operation
-// yet.
+// Permission A capability that a role grants. `manage_domains`: the health of remote servers and the
+// moderation actions on domains. `manage_reports`: the reports. `manage_jobs`: the dead
+// jobs of the job queue. The others guard no client API operation yet.
 type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
@@ -973,6 +1225,13 @@ type Relationship struct {
 
 	// ShowBoosts Whether the viewer's follow shows the account's boosts in the home timeline (true without a follow).
 	ShowBoosts bool `json:"show_boosts"`
+}
+
+// ResolveReportRequest How a report is resolved.
+type ResolveReportRequest struct {
+	// Outcome How the report was resolved, present only while it is resolved. `actioned`: a moderator
+	// took an action on the target. `dismissed`: there was nothing to act on.
+	Outcome AdminReportOutcome `json:"outcome"`
 }
 
 // SpoilerText The content warning; omitted or empty for none. It counts toward `max_post_characters`.
@@ -1260,6 +1519,11 @@ type Visibility string
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type AccountId = Id
 
+// DomainActionId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type DomainActionId = Id
+
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 
@@ -1268,6 +1532,11 @@ type InstanceDomain = string
 
 // Limit defines model for Limit.
 type Limit = int
+
+// ReportId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type ReportId = Id
 
 // StatusId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -1348,6 +1617,22 @@ type ListDeadJobsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListDomainActionsParams defines parameters for ListDomainActions.
+type ListDomainActionsParams struct {
+	// Domain Keep only the actions on this domain (not those on its parent domains). It is
+	// normalized like the domain of a new action.
+	Domain *string `form:"domain,omitempty" json:"domain,omitempty"`
+
+	// Active Keep only the actions in effect now, neither lifted nor expired.
+	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListInstanceHealthParams defines parameters for ListInstanceHealth.
 type ListInstanceHealthParams struct {
 	// State Keep only the servers in this state; omitted keeps both.
@@ -1362,6 +1647,18 @@ type ListInstanceHealthParams struct {
 
 // ListInstanceAvailabilityEventsParams defines parameters for ListInstanceAvailabilityEvents.
 type ListInstanceAvailabilityEventsParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListReportsParams defines parameters for ListReports.
+type ListReportsParams struct {
+	// State Keep only the reports in this state; omitted keeps both.
+	State *AdminReportState `form:"state,omitempty" json:"state,omitempty"`
+
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -1469,6 +1766,12 @@ type FollowAccountJSONRequestBody = FollowAccountRequest
 // MuteAccountJSONRequestBody defines body for MuteAccount for application/json ContentType.
 type MuteAccountJSONRequestBody = MuteAccountRequest
 
+// CreateDomainActionJSONRequestBody defines body for CreateDomainAction for application/json ContentType.
+type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
+
+// ResolveReportJSONRequestBody defines body for ResolveReport for application/json ContentType.
+type ResolveReportJSONRequestBody = ResolveReportRequest
+
 // UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
 type UploadMediaMultipartRequestBody = MediaUpload
 
@@ -1540,6 +1843,18 @@ type ServerInterface interface {
 	// RetryDeadJob Run a dead job again
 	// (POST /admin/dead_jobs/{id}/retry)
 	RetryDeadJob(w http.ResponseWriter, r *http.Request, id Id)
+	// ListDomainActions List the moderation actions on domains
+	// (GET /admin/domain_actions)
+	ListDomainActions(w http.ResponseWriter, r *http.Request, params ListDomainActionsParams)
+	// CreateDomainAction Take a moderation action on a domain
+	// (POST /admin/domain_actions)
+	CreateDomainAction(w http.ResponseWriter, r *http.Request)
+	// GetDomainAction Get a moderation action on a domain
+	// (GET /admin/domain_actions/{id})
+	GetDomainAction(w http.ResponseWriter, r *http.Request, id DomainActionId)
+	// LiftDomainAction Lift a moderation action on a domain
+	// (POST /admin/domain_actions/{id}/lift)
+	LiftDomainAction(w http.ResponseWriter, r *http.Request, id DomainActionId)
 	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
 	// (GET /admin/instances)
 	ListInstanceHealth(w http.ResponseWriter, r *http.Request, params ListInstanceHealthParams)
@@ -1552,6 +1867,21 @@ type ServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(w http.ResponseWriter, r *http.Request, domain InstanceDomain)
+	// ListReports List the reports
+	// (GET /admin/reports)
+	ListReports(w http.ResponseWriter, r *http.Request, params ListReportsParams)
+	// GetReport Get a report
+	// (GET /admin/reports/{id})
+	GetReport(w http.ResponseWriter, r *http.Request, id ReportId)
+	// AssignReportToSelf Take a report
+	// (POST /admin/reports/{id}/assign_to_self)
+	AssignReportToSelf(w http.ResponseWriter, r *http.Request, id ReportId)
+	// ResolveReport Resolve a report
+	// (POST /admin/reports/{id}/resolve)
+	ResolveReport(w http.ResponseWriter, r *http.Request, id ReportId)
+	// UnassignReport Leave a report to nobody
+	// (POST /admin/reports/{id}/unassign)
+	UnassignReport(w http.ResponseWriter, r *http.Request, id ReportId)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(w http.ResponseWriter, r *http.Request, params ListBlocksParams)
@@ -2259,6 +2589,144 @@ func (siw *ServerInterfaceWrapper) RetryDeadJob(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListDomainActions operation middleware
+func (siw *ServerInterfaceWrapper) ListDomainActions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDomainActionsParams
+
+	// ------------- Optional query parameter "domain" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "domain", r.URL.Query(), &params.Domain, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "domain"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "active"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDomainActions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDomainAction operation middleware
+func (siw *ServerInterfaceWrapper) CreateDomainAction(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDomainAction(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDomainAction operation middleware
+func (siw *ServerInterfaceWrapper) GetDomainAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id DomainActionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDomainAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LiftDomainAction operation middleware
+func (siw *ServerInterfaceWrapper) LiftDomainAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id DomainActionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LiftDomainAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListInstanceHealth operation middleware
 func (siw *ServerInterfaceWrapper) ListInstanceHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -2416,6 +2884,169 @@ func (siw *ServerInterfaceWrapper) MarkInstanceAvailable(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.MarkInstanceAvailable(w, r, domain)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListReports operation middleware
+func (siw *ServerInterfaceWrapper) ListReports(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListReportsParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListReports(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReport operation middleware
+func (siw *ServerInterfaceWrapper) GetReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AssignReportToSelf operation middleware
+func (siw *ServerInterfaceWrapper) AssignReportToSelf(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AssignReportToSelf(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResolveReport operation middleware
+func (siw *ServerInterfaceWrapper) ResolveReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResolveReport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnassignReport operation middleware
+func (siw *ServerInterfaceWrapper) UnassignReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnassignReport(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3656,6 +4287,15 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}", wrapper.GetInstanceHealth)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}/availability_events", wrapper.ListInstanceAvailabilityEvents)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/instances/{domain}/mark_available", wrapper.MarkInstanceAvailable)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions", wrapper.ListDomainActions)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/domain_actions", wrapper.CreateDomainAction)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions/{id}", wrapper.GetDomainAction)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/domain_actions/{id}/lift", wrapper.LiftDomainAction)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/reports", wrapper.ListReports)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/reports/{id}", wrapper.GetReport)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/assign_to_self", wrapper.AssignReportToSelf)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/unassign", wrapper.UnassignReport)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/resolve", wrapper.ResolveReport)
 
 	return m
 }
@@ -3678,6 +4318,15 @@ type AccountProfileJSONResponse struct {
 	Headers AccountProfileResponseHeaders
 }
 
+type AdminDomainActionResponseHeaders struct {
+	CacheControl *string
+}
+type AdminDomainActionJSONResponse struct {
+	Body AdminDomainAction
+
+	Headers AdminDomainActionResponseHeaders
+}
+
 type AdminInstanceHealthResponseHeaders struct {
 	CacheControl *string
 }
@@ -3685,6 +4334,15 @@ type AdminInstanceHealthJSONResponse struct {
 	Body AdminInstanceHealth
 
 	Headers AdminInstanceHealthResponseHeaders
+}
+
+type AdminReportResponseHeaders struct {
+	CacheControl *string
+}
+type AdminReportJSONResponse struct {
+	Body AdminReport
+
+	Headers AdminReportResponseHeaders
 }
 
 type ProblemResponseHeaders struct {
@@ -4684,6 +5342,233 @@ func (response RetryDeadJobdefaultApplicationProblemPlusJSONResponse) VisitRetry
 	return err
 }
 
+type ListDomainActionsRequestObject struct {
+	Params ListDomainActionsParams
+}
+
+type ListDomainActionsResponseObject interface {
+	VisitListDomainActionsResponse(w http.ResponseWriter) error
+}
+
+type ListDomainActions200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListDomainActions200JSONResponse struct {
+	Body    AdminDomainActionPage
+	Headers ListDomainActions200ResponseHeaders
+}
+
+func (response ListDomainActions200JSONResponse) VisitListDomainActionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDomainActionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListDomainActionsdefaultApplicationProblemPlusJSONResponse) VisitListDomainActionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDomainActionRequestObject struct {
+	Body *CreateDomainActionJSONRequestBody
+}
+
+type CreateDomainActionResponseObject interface {
+	VisitCreateDomainActionResponse(w http.ResponseWriter) error
+}
+
+type CreateDomainAction200JSONResponse struct{ AdminDomainActionJSONResponse }
+
+func (response CreateDomainAction200JSONResponse) VisitCreateDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDomainActiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateDomainActiondefaultApplicationProblemPlusJSONResponse) VisitCreateDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDomainActionRequestObject struct {
+	Id DomainActionId `json:"id"`
+}
+
+type GetDomainActionResponseObject interface {
+	VisitGetDomainActionResponse(w http.ResponseWriter) error
+}
+
+type GetDomainAction200JSONResponse struct{ AdminDomainActionJSONResponse }
+
+func (response GetDomainAction200JSONResponse) VisitGetDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDomainActiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetDomainActiondefaultApplicationProblemPlusJSONResponse) VisitGetDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LiftDomainActionRequestObject struct {
+	Id DomainActionId `json:"id"`
+}
+
+type LiftDomainActionResponseObject interface {
+	VisitLiftDomainActionResponse(w http.ResponseWriter) error
+}
+
+type LiftDomainAction200JSONResponse struct{ AdminDomainActionJSONResponse }
+
+func (response LiftDomainAction200JSONResponse) VisitLiftDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LiftDomainActiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response LiftDomainActiondefaultApplicationProblemPlusJSONResponse) VisitLiftDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListInstanceHealthRequestObject struct {
 	Params ListInstanceHealthParams
 }
@@ -4900,6 +5785,289 @@ type MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse) VisitMarkInstanceAvailableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReportsRequestObject struct {
+	Params ListReportsParams
+}
+
+type ListReportsResponseObject interface {
+	VisitListReportsResponse(w http.ResponseWriter) error
+}
+
+type ListReports200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListReports200JSONResponse struct {
+	Body    AdminReportPage
+	Headers ListReports200ResponseHeaders
+}
+
+func (response ListReports200JSONResponse) VisitListReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReportsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListReportsdefaultApplicationProblemPlusJSONResponse) VisitListReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReportRequestObject struct {
+	Id ReportId `json:"id"`
+}
+
+type GetReportResponseObject interface {
+	VisitGetReportResponse(w http.ResponseWriter) error
+}
+
+type GetReport200JSONResponse struct{ AdminReportJSONResponse }
+
+func (response GetReport200JSONResponse) VisitGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetReportdefaultApplicationProblemPlusJSONResponse) VisitGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignReportToSelfRequestObject struct {
+	Id ReportId `json:"id"`
+}
+
+type AssignReportToSelfResponseObject interface {
+	VisitAssignReportToSelfResponse(w http.ResponseWriter) error
+}
+
+type AssignReportToSelf200JSONResponse struct{ AdminReportJSONResponse }
+
+func (response AssignReportToSelf200JSONResponse) VisitAssignReportToSelfResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignReportToSelfdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response AssignReportToSelfdefaultApplicationProblemPlusJSONResponse) VisitAssignReportToSelfResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveReportRequestObject struct {
+	Id   ReportId `json:"id"`
+	Body *ResolveReportJSONRequestBody
+}
+
+type ResolveReportResponseObject interface {
+	VisitResolveReportResponse(w http.ResponseWriter) error
+}
+
+type ResolveReport200JSONResponse struct{ AdminReportJSONResponse }
+
+func (response ResolveReport200JSONResponse) VisitResolveReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveReportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ResolveReportdefaultApplicationProblemPlusJSONResponse) VisitResolveReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnassignReportRequestObject struct {
+	Id ReportId `json:"id"`
+}
+
+type UnassignReportResponseObject interface {
+	VisitUnassignReportResponse(w http.ResponseWriter) error
+}
+
+type UnassignReport200JSONResponse struct{ AdminReportJSONResponse }
+
+func (response UnassignReport200JSONResponse) VisitUnassignReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnassignReportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UnassignReportdefaultApplicationProblemPlusJSONResponse) VisitUnassignReportResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -7003,6 +8171,18 @@ type StrictServerInterface interface {
 	// RetryDeadJob Run a dead job again
 	// (POST /admin/dead_jobs/{id}/retry)
 	RetryDeadJob(ctx context.Context, request RetryDeadJobRequestObject) (RetryDeadJobResponseObject, error)
+	// ListDomainActions List the moderation actions on domains
+	// (GET /admin/domain_actions)
+	ListDomainActions(ctx context.Context, request ListDomainActionsRequestObject) (ListDomainActionsResponseObject, error)
+	// CreateDomainAction Take a moderation action on a domain
+	// (POST /admin/domain_actions)
+	CreateDomainAction(ctx context.Context, request CreateDomainActionRequestObject) (CreateDomainActionResponseObject, error)
+	// GetDomainAction Get a moderation action on a domain
+	// (GET /admin/domain_actions/{id})
+	GetDomainAction(ctx context.Context, request GetDomainActionRequestObject) (GetDomainActionResponseObject, error)
+	// LiftDomainAction Lift a moderation action on a domain
+	// (POST /admin/domain_actions/{id}/lift)
+	LiftDomainAction(ctx context.Context, request LiftDomainActionRequestObject) (LiftDomainActionResponseObject, error)
 	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
 	// (GET /admin/instances)
 	ListInstanceHealth(ctx context.Context, request ListInstanceHealthRequestObject) (ListInstanceHealthResponseObject, error)
@@ -7015,6 +8195,21 @@ type StrictServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(ctx context.Context, request MarkInstanceAvailableRequestObject) (MarkInstanceAvailableResponseObject, error)
+	// ListReports List the reports
+	// (GET /admin/reports)
+	ListReports(ctx context.Context, request ListReportsRequestObject) (ListReportsResponseObject, error)
+	// GetReport Get a report
+	// (GET /admin/reports/{id})
+	GetReport(ctx context.Context, request GetReportRequestObject) (GetReportResponseObject, error)
+	// AssignReportToSelf Take a report
+	// (POST /admin/reports/{id}/assign_to_self)
+	AssignReportToSelf(ctx context.Context, request AssignReportToSelfRequestObject) (AssignReportToSelfResponseObject, error)
+	// ResolveReport Resolve a report
+	// (POST /admin/reports/{id}/resolve)
+	ResolveReport(ctx context.Context, request ResolveReportRequestObject) (ResolveReportResponseObject, error)
+	// UnassignReport Leave a report to nobody
+	// (POST /admin/reports/{id}/unassign)
+	UnassignReport(ctx context.Context, request UnassignReportRequestObject) (UnassignReportResponseObject, error)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(ctx context.Context, request ListBlocksRequestObject) (ListBlocksResponseObject, error)
@@ -7629,6 +8824,115 @@ func (sh *strictHandler) RetryDeadJob(w http.ResponseWriter, r *http.Request, id
 	}
 }
 
+// ListDomainActions operation middleware
+func (sh *strictHandler) ListDomainActions(w http.ResponseWriter, r *http.Request, params ListDomainActionsParams) {
+	var request ListDomainActionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDomainActions(ctx, request.(ListDomainActionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDomainActions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDomainActionsResponseObject); ok {
+		if err := validResponse.VisitListDomainActionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDomainAction operation middleware
+func (sh *strictHandler) CreateDomainAction(w http.ResponseWriter, r *http.Request) {
+	var request CreateDomainActionRequestObject
+
+	var body CreateDomainActionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDomainAction(ctx, request.(CreateDomainActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDomainAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDomainActionResponseObject); ok {
+		if err := validResponse.VisitCreateDomainActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDomainAction operation middleware
+func (sh *strictHandler) GetDomainAction(w http.ResponseWriter, r *http.Request, id DomainActionId) {
+	var request GetDomainActionRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDomainAction(ctx, request.(GetDomainActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDomainAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDomainActionResponseObject); ok {
+		if err := validResponse.VisitGetDomainActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LiftDomainAction operation middleware
+func (sh *strictHandler) LiftDomainAction(w http.ResponseWriter, r *http.Request, id DomainActionId) {
+	var request LiftDomainActionRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LiftDomainAction(ctx, request.(LiftDomainActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LiftDomainAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LiftDomainActionResponseObject); ok {
+		if err := validResponse.VisitLiftDomainActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListInstanceHealth operation middleware
 func (sh *strictHandler) ListInstanceHealth(w http.ResponseWriter, r *http.Request, params ListInstanceHealthParams) {
 	var request ListInstanceHealthRequestObject
@@ -7727,6 +9031,143 @@ func (sh *strictHandler) MarkInstanceAvailable(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(MarkInstanceAvailableResponseObject); ok {
 		if err := validResponse.VisitMarkInstanceAvailableResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListReports operation middleware
+func (sh *strictHandler) ListReports(w http.ResponseWriter, r *http.Request, params ListReportsParams) {
+	var request ListReportsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListReports(ctx, request.(ListReportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListReports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListReportsResponseObject); ok {
+		if err := validResponse.VisitListReportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReport operation middleware
+func (sh *strictHandler) GetReport(w http.ResponseWriter, r *http.Request, id ReportId) {
+	var request GetReportRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReport(ctx, request.(GetReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReportResponseObject); ok {
+		if err := validResponse.VisitGetReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AssignReportToSelf operation middleware
+func (sh *strictHandler) AssignReportToSelf(w http.ResponseWriter, r *http.Request, id ReportId) {
+	var request AssignReportToSelfRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AssignReportToSelf(ctx, request.(AssignReportToSelfRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AssignReportToSelf")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AssignReportToSelfResponseObject); ok {
+		if err := validResponse.VisitAssignReportToSelfResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResolveReport operation middleware
+func (sh *strictHandler) ResolveReport(w http.ResponseWriter, r *http.Request, id ReportId) {
+	var request ResolveReportRequestObject
+
+	request.Id = id
+
+	var body ResolveReportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResolveReport(ctx, request.(ResolveReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResolveReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResolveReportResponseObject); ok {
+		if err := validResponse.VisitResolveReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnassignReport operation middleware
+func (sh *strictHandler) UnassignReport(w http.ResponseWriter, r *http.Request, id ReportId) {
+	var request UnassignReportRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnassignReport(ctx, request.(UnassignReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnassignReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnassignReportResponseObject); ok {
+		if err := validResponse.VisitUnassignReportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

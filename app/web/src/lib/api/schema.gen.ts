@@ -1117,6 +1117,185 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/domain_actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the moderation actions on domains
+         * @description The actions that moderators took on remote domains (FR-702), newest first, lifted and
+         *     expired ones included unless `active` is set. Needs the `manage_domains` permission.
+         */
+        get: operations["listDomainActions"];
+        put?: never;
+        /**
+         * Take a moderation action on a domain
+         * @description Records an action on a remote domain and its subdomains (FR-702), in effect at once and
+         *     until it expires or is lifted. A `suspend` stops every delivery to the domain, every
+         *     fetch from it, and every activity received from it, and hides its accounts and posts
+         *     from the timelines; `limit` keeps its posts off the public timelines and its accounts
+         *     from reaching users who do not follow them; `reject_media` stops fetching its media;
+         *     `reject_reports` drops the reports it sends; `force_sensitive` marks its media
+         *     sensitive. The domain is normalized (IDNA A-labels in lower case, without a trailing
+         *     dot); one that is not a valid domain is a 422 naming `domain`. Needs the
+         *     `manage_domains` permission.
+         */
+        post: operations["createDomainAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/domain_actions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a moderation action on a domain
+         * @description An unknown ID is a 404. Needs the `manage_domains` permission.
+         */
+        get: operations["getDomainAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/domain_actions/{id}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lift a moderation action on a domain
+         * @description Ends the action's restrictions at once; those of other actions on the domain stay.
+         *     Lifting a lifted action changes nothing. An unknown ID is a 404. Needs the
+         *     `manage_domains` permission.
+         */
+        post: operations["liftDomainAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the reports
+         * @description The reports in the moderators' queue (FR-701), newest first. Needs the `manage_reports`
+         *     permission.
+         */
+        get: operations["listReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a report
+         * @description An unknown ID is a 404. Needs the `manage_reports` permission.
+         */
+        get: operations["getReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reports/{id}/assign_to_self": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take a report
+         * @description Makes the authenticated user the moderator who handles the report. An unknown ID is a
+         *     404. Needs the `manage_reports` permission.
+         */
+        post: operations["assignReportToSelf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reports/{id}/unassign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave a report to nobody
+         * @description Removes the moderator who handles the report, whoever it is. An unknown ID is a 404.
+         *     Needs the `manage_reports` permission.
+         */
+        post: operations["unassignReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reports/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a report
+         * @description Resolves an open report with an outcome. Resolving a resolved report changes nothing
+         *     and keeps its outcome. An unknown ID is a 404. Needs the `manage_reports` permission.
+         */
+        post: operations["resolveReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1851,10 +2030,122 @@ export interface components {
          * @enum {string}
          */
         AdminInstanceState: "available" | "unavailable";
+        /** @description A moderation action on a remote domain and its subdomains (FR-702). */
+        AdminDomainAction: {
+            id: components["schemas"]["Id"];
+            /** @description The domain, in IDNA A-labels. */
+            domain: string;
+            kind: components["schemas"]["AdminDomainActionKind"];
+            /** @description The reason that may be shown publicly; omitted when there is none. */
+            public_comment?: string;
+            /** @description The moderators' note; omitted when there is none. */
+            private_note?: string;
+            /** @description Whether a public list of the domain actions hides part of the domain. */
+            obfuscate: boolean;
+            state: components["schemas"]["AdminDomainActionState"];
+            /** Format: date-time */
+            issued_at: string;
+            /**
+             * Format: date-time
+             * @description When the action ends by itself; omitted for one that lasts until lifted.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When the action was lifted; omitted until it is.
+             */
+            lifted_at?: string;
+        };
         /**
-         * @description A capability that a role grants. `manage_domains`: the health of remote servers.
-         *     `manage_jobs`: the dead jobs of the job queue. The others guard no client API operation
-         *     yet.
+         * @description `suspend`: no federation with the domain at all. `limit`: its posts stay off the public
+         *     timelines and its accounts reach only their followers. `reject_media`: its media are
+         *     not fetched. `reject_reports`: its reports are dropped. `force_sensitive`: its media
+         *     are marked sensitive.
+         * @enum {string}
+         */
+        AdminDomainActionKind: "limit" | "suspend" | "reject_media" | "reject_reports" | "force_sensitive";
+        /** @description A page of domain actions, newest first. */
+        AdminDomainActionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminDomainAction"][];
+        };
+        /**
+         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+         *     lifted it.
+         * @enum {string}
+         */
+        AdminDomainActionState: "active" | "expired" | "lifted";
+        /** @description A report of an account to the moderators (FR-701). */
+        AdminReport: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The `id` of the `Flag` activity that another server sent; omitted for a report
+             *     made on this server.
+             */
+            uri?: string;
+            /** @enum {string} */
+            category: "spam" | "legal" | "violation" | "other";
+            /** @description The reporter's comment as plain text, up to 5,000 characters. */
+            comment: string;
+            /** @description Whether the report was forwarded to the target's server. */
+            forwarded: boolean;
+            /** Format: date-time */
+            filed_at: string;
+            state: components["schemas"]["AdminReportState"];
+            outcome?: components["schemas"]["AdminReportOutcome"];
+            /**
+             * Format: date-time
+             * @description When the report was filed or, once resolved, resolved.
+             */
+            state_changed_at: string;
+            /** @description The account of the moderator who handles the report; omitted when nobody does. */
+            assignee_account_id?: components["schemas"]["Id"];
+            reporter_account_id: components["schemas"]["Id"];
+            /** @description The reporter, often the instance actor of a remote server; omitted when the account is gone. */
+            reporter_account?: components["schemas"]["Account"];
+            target_account_id: components["schemas"]["Id"];
+            /** @description The account reported; omitted when the account is gone. */
+            target_account?: components["schemas"]["Account"];
+            /** @description The IDs of the target's posts that the report points at. */
+            status_ids: components["schemas"]["Id"][];
+        };
+        /**
+         * @description How the report was resolved, present only while it is resolved. `actioned`: a moderator
+         *     took an action on the target. `dismissed`: there was nothing to act on.
+         * @enum {string}
+         */
+        AdminReportOutcome: "actioned" | "dismissed";
+        /** @description A page of reports, newest first. */
+        AdminReportPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminReport"][];
+        };
+        /**
+         * @description `open` reports await the moderators; `resolved` ones are handled.
+         * @enum {string}
+         */
+        AdminReportState: "open" | "resolved";
+        /** @description A moderation action to take on a domain. */
+        CreateDomainActionRequest: {
+            /**
+             * @description The remote domain, such as `spam.example`; a U-label spelling such as `例え.jp` is
+             *     accepted. The action covers its subdomains.
+             */
+            domain: string;
+            kind: components["schemas"]["AdminDomainActionKind"];
+            public_comment?: string;
+            private_note?: string;
+            /** @default false */
+            obfuscate: boolean;
+            /** @description The seconds the action lasts; omitted, it lasts until it is lifted. */
+            expires_in?: number;
+        };
+        /** @description How a report is resolved. */
+        ResolveReportRequest: {
+            outcome: components["schemas"]["AdminReportOutcome"];
+        };
+        /**
+         * @description A capability that a role grants. `manage_domains`: the health of remote servers and the
+         *     moderation actions on domains. `manage_reports`: the reports. `manage_jobs`: the dead
+         *     jobs of the job queue. The others guard no client API operation yet.
          * @enum {string}
          */
         Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
@@ -1940,6 +2231,26 @@ export interface components {
                 "application/json": components["schemas"]["AdminInstanceHealth"];
             };
         };
+        /** @description The domain action. */
+        AdminDomainAction: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminDomainAction"];
+            };
+        };
+        /** @description The report. */
+        AdminReport: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminReport"];
+            };
+        };
     };
     parameters: {
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
@@ -1957,6 +2268,10 @@ export interface components {
         AccountId: components["schemas"]["Id"];
         /** @description The domain of the remote server, such as `mastodon.example`. */
         InstanceDomain: string;
+        /** @description The ID of the domain action. */
+        DomainActionId: components["schemas"]["Id"];
+        /** @description The ID of the report. */
+        ReportId: components["schemas"]["Id"];
     };
     requestBodies: never;
     headers: {
@@ -3187,6 +3502,186 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminInstanceHealth"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listDomainActions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Keep only the actions on this domain (not those on its parent domains). It is
+                 *     normalized like the domain of a new action.
+                 */
+                domain?: string;
+                /** @description Keep only the actions in effect now, neither lifted nor expired. */
+                active?: boolean;
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of domain actions. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDomainActionPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createDomainAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDomainActionRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminDomainAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getDomainAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the domain action. */
+                id: components["parameters"]["DomainActionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminDomainAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    liftDomainAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the domain action. */
+                id: components["parameters"]["DomainActionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminDomainAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listReports: {
+        parameters: {
+            query?: {
+                /** @description Keep only the reports in this state; omitted keeps both. */
+                state?: components["schemas"]["AdminReportState"];
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of reports. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReportPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the report. */
+                id: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminReport"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    assignReportToSelf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the report. */
+                id: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminReport"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    unassignReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the report. */
+                id: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminReport"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    resolveReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the report. */
+                id: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveReportRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminReport"];
             default: components["responses"]["Problem"];
         };
     };

@@ -598,6 +598,7 @@ type Report struct {
 type ReportState struct {
 	ReportID       string
 	State          string
+	Outcome        sql.NullString
 	AssigneeUserID sql.NullString
 	Since          int64
 }

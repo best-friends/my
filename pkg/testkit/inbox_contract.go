@@ -68,6 +68,7 @@ func InboxContract(t *testing.T, newHarness InboxFactory) {
 		run  func(t *testing.T, e *inboxEnv)
 	}{
 		{"RecordsAnActivityOnce", inboxRecordsOnce},
+		{"KeepsTheDocumentByteExact", inboxKeepsDocumentByteExact},
 		{"SynthesizesTheURIOfAnActivityWithoutID", inboxSynthesizesURI},
 		{"MarksActivitiesOfOtherSignersForRefetch", inboxMarksRefetch},
 		{"RefusesWithoutTouchingTheDatabaseOrTheQueue", inboxRefuses},
@@ -338,7 +339,7 @@ func inboxRecordsOnce(t *testing.T, e *inboxEnv) {
 	if err != nil {
 		t.Fatalf("FindReceivedDocument: %v", err)
 	}
-	if !sameJSON(doc, body) {
+	if !bytes.Equal(doc, body) {
 		t.Errorf("document = %s, want %s", doc, body)
 	}
 	jobs := e.jobs.all()
@@ -369,6 +370,35 @@ func inboxRecordsOnce(t *testing.T, e *inboxEnv) {
 	}
 	if a, err := e.h.Inbox.FindReceivedActivity(ctx, federation.IRI(id)); err != nil || !a.ReceivedAt.Equal(want.ReceivedAt) {
 		t.Errorf("received activity after the retry = %+v, %v; want the first", a, err)
+	}
+}
+
+// inboxKeepsDocumentByteExact checks that the document reads back with the bytes it arrived
+// with, whatever a JSON column would change: whitespace, key order, a duplicate key (the
+// asynchronous processing reads the first), escapes, and an escaped NUL or lone surrogate, which
+// a PostgreSQL jsonb column refuses.
+func inboxKeepsDocumentByteExact(t *testing.T, e *inboxEnv) {
+	in := e.inbox(kernel.Limit{}, kernel.Limit{})
+	id := inboxAlice + "/activities/raw"
+	body := []byte(strings.NewReplacer("ID", id, "ACTOR", inboxAlice).Replace(`{ "type":"Create",
+	"id": "ID", "actor":"ACTOR", "@context": "https://www.w3.org/ns/activitystreams",
+  "object": {"type": "Note", "id": "ACTOR/notes/raw", "content": "first", "content": "second",
+    "summary": "nul \u0000, lone \ud800, \u00e9 vs é, \/"},
+  "zz": 1.50, "aa": 1e2 }
+`))
+	got, err := e.receive(t, in, inboxPost{body: body, signature: inboxAliceKey + " yes"})
+	if err != nil {
+		t.Fatalf("Receive: %v", err)
+	}
+	if !got.Recorded || got.ActivityURI != federation.IRI(id) {
+		t.Fatalf("Receive = %+v, want recorded %s", got, id)
+	}
+	doc, err := e.h.Inbox.FindReceivedDocument(t.Context(), federation.IRI(id))
+	if err != nil {
+		t.Fatalf("FindReceivedDocument: %v", err)
+	}
+	if !bytes.Equal(doc, body) {
+		t.Errorf("document = %q, want %q", doc, body)
 	}
 }
 
