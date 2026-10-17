@@ -2052,6 +2052,156 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: moderator counts (#338) ---
+  # --- admin: accounts (#344) ---
+  /admin/accounts:
+    get:
+      operationId: listAdminAccounts
+      summary: Search the accounts
+      description: |
+        The local and remote accounts (FR-714), newest first, without the instance actor:
+        those whose handle's username starts with `username` (case-insensitively; a remote
+        account whose handle is not verified has none), on a `domain`, local or remote
+        (`origin`), in a `state`, and, for local accounts, of a primary email address (`email`,
+        case-insensitively), an email domain (`email_domain`), or an IP address that the
+        account registered or signed in from (`ip`). At most one of `email`, `email_domain`,
+        and `ip` is given. The results never include an email or IP address. A search reads at
+        most 400 accounts per page, so a page can be short, or empty, and still have a
+        `next_cursor`. An unknown `origin` or `state`, an `ip` that is not an IP address, an
+        `email_domain` with an `@` inside, more than one of `email`, `email_domain`, and `ip`,
+        or a parameter longer than 320 characters is a 400 naming it. Needs the
+        `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: username
+          in: query
+          required: false
+          description: Keep the accounts whose username starts with this.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 320
+        - name: domain
+          in: query
+          required: false
+          description: Keep the remote accounts of this domain (its punycode form).
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 320
+        - name: origin
+          in: query
+          required: false
+          description: Keep the local or the remote accounts.
+          schema:
+            type: string
+            enum: [local, remote]
+        - name: state
+          in: query
+          required: false
+          description: Keep the accounts in this state.
+          schema:
+            $ref: "#/components/schemas/AdminAccountState"
+        - name: email
+          in: query
+          required: false
+          description: Keep the local account whose primary email address is this.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 320
+        - name: email_domain
+          in: query
+          required: false
+          description: |
+            Keep the local accounts whose primary email address is at this domain
+            (`example.com` or `@example.com`).
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 320
+        - name: ip
+          in: query
+          required: false
+          description: |
+            Keep the local accounts that registered or signed in from this IP address, within
+            the retention of the sign-in and registration origins.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 320
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of accounts.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccountPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}:
+    get:
+      operationId: getAdminAccount
+      summary: Get the details of an account
+      description: |
+        An account as the moderators see it (FR-714): its state, the restrictions of its own
+        actions, and, for a local account, its registration, whether its email address is
+        verified, and its roles, with its newest 20 actions and reports. The email address and
+        the IP addresses are not included; `POST .../reveal` shows them. An unknown account is
+        a 404. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+      responses:
+        "200":
+          description: The account.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccountDetail"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}/reveal:
+    post:
+      operationId: revealAdminAccount
+      summary: Show the email address and the IP addresses of a local account
+      description: |
+        The primary email address of a local account, where it registered and its newest 20
+        sign-ins came from, and up to 20 other accounts per IP address that used the same one
+        (FR-714). Each call is recorded in the audit log as `revealed_private_data` before
+        anything is returned; it changes nothing else. IP addresses are kept for the retention
+        of the sign-in and registration origins only (ADR-0038). A remote account or the
+        instance actor is a 422 naming `id`. An unknown account is a 404. Needs the
+        `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+      responses:
+        "200":
+          description: The email address and the IP addresses of the account.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccountPrivateData"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: accounts (#344) ---
 components:
   securitySchemes:
     oauth2:
@@ -3580,7 +3730,8 @@ components:
     AdminAuditAction:
       description: |
         The kind of an audited operation, each on one kind of target. On an `account`:
-        `account_action_issued`, `account_action_lifted`. On a `domain`:
+        `account_action_issued`, `account_action_lifted`, `revealed_private_data` (a moderator
+        was shown the account's email address and IP addresses). On a `domain`:
         `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
         `report_unassigned`, `report_resolved`. On a `user` (a registration):
         `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
@@ -3603,6 +3754,7 @@ components:
         - rule_revised
         - rule_moved
         - rule_retired
+        - revealed_private_data
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -4005,7 +4157,8 @@ components:
     # --- the viewer's permissions (#267) ---
     Permission:
       description: |
-        A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
+        A capability that a role grants. `manage_accounts`: the accounts and their moderation
+        actions.
         `manage_domains`: the health of remote servers and the moderation actions on domains.
         `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
         dead jobs of the job queue. The others guard no client API operation yet.
@@ -4133,6 +4286,182 @@ components:
           format: int64
           minimum: 0
     # --- end of admin: moderator counts (#338) ---
+    # --- admin: accounts (#344) ---
+    AdminAccount:
+      description: |
+        An account as the moderators see it (FR-714). It never includes an email or IP address.
+      type: object
+      required: [id, account, local, state, restrictions]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        account:
+          $ref: "#/components/schemas/Account"
+        local:
+          description: Whether the account is on this server.
+          type: boolean
+        state:
+          $ref: "#/components/schemas/AdminAccountState"
+        restrictions:
+          description: |
+            What the account's own actions take away now (data-model §5.2), in a fixed order.
+            The domain actions on its domain are listed apart.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAccountRestriction"
+        registration_state:
+          $ref: "#/components/schemas/AdminAccountRegistrationState"
+    AdminAccountDetail:
+      description: The details of an account (FR-714).
+      allOf:
+        - $ref: "#/components/schemas/AdminAccount"
+        - type: object
+          required: [roles, actions, reports]
+          properties:
+            registration:
+              $ref: "#/components/schemas/AdminAccountRegistration"
+            email_verified:
+              description: |
+                Whether the primary email address of a local account is verified; omitted when
+                it has none.
+              type: boolean
+            roles:
+              description: The keys of the user's roles, highest position first; empty for a remote account.
+              type: array
+              items:
+                type: string
+            actions:
+              description: The newest 20 actions on the account, newest first.
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminAccountAction"
+            reports:
+              description: The newest 20 reports of the account, newest first.
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminReport"
+    AdminAccountPage:
+      description: A page of accounts, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminAccount"
+    AdminAccountPrivateData:
+      description: |
+        The email address and the IP addresses of a local account (FR-714). Showing them is
+        recorded in the audit log.
+      type: object
+      required: [sign_ins, same_ip_accounts]
+      properties:
+        email:
+          description: The primary email address; omitted when there is none.
+          type: string
+        email_verified:
+          description: Whether the primary email address is verified; omitted with `email`.
+          type: boolean
+        registration_ip:
+          description: |
+            The IP address the account registered from; omitted for a registration from an
+            unknown address, by the command line, or past the retention.
+          type: string
+        registered_at:
+          description: When the account registered from `registration_ip`; omitted with it.
+          type: string
+          format: date-time
+        sign_ins:
+          description: The newest 20 sign-ins within the retention, newest first.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAccountSignIn"
+        same_ip_accounts:
+          description: |
+            For each IP address of `sign_ins` and `registration_ip`, newest first, up to 20
+            other accounts that registered or signed in from it, newest first.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminSameIpAccounts"
+    AdminAccountRegistration:
+      description: The registration application of a local account.
+      type: object
+      required: [submitted_at, state_changed_at]
+      properties:
+        submitted_at:
+          type: string
+          format: date-time
+        reason:
+          description: Why the applicant wants to join; omitted when not asked or not given.
+          type: string
+        invite_id:
+          $ref: "#/components/schemas/Id"
+        state_changed_at:
+          description: When the registration entered its `registration_state`.
+          type: string
+          format: date-time
+    AdminAccountRegistrationState:
+      description: |
+        Where the registration of a local account stands; a user made with the command line is
+        `approved`. Omitted for a remote account.
+      type: string
+      enum: [pending, approved, rejected]
+    AdminAccountRestriction:
+      description: |
+        A capability that an action takes away (data-model §5.2). `login`: logging in and the
+        API. `post`: posting, replying, boosting, editing. `interact`: following, favouriting,
+        boosting, voting. `visibility_ceiling_private`: posts are followers-only.
+        `public_discovery`: posts stay off the public timelines and search.
+        `unsolicited_reach`: notifications reach followers only. `media_sensitive`: media shows
+        as sensitive. `profile_view`: the profile and posts are hidden. `federation`: nothing is
+        delivered or received.
+      type: string
+      enum:
+        - login
+        - post
+        - interact
+        - visibility_ceiling_private
+        - public_discovery
+        - unsolicited_reach
+        - media_sensitive
+        - profile_view
+        - federation
+    AdminAccountSignIn:
+      description: Where one sign-in came from.
+      type: object
+      required: [signed_in_at]
+      properties:
+        ip:
+          description: The IP address; omitted when unknown.
+          type: string
+        user_agent:
+          description: The User-Agent; omitted when unknown.
+          type: string
+        signed_in_at:
+          type: string
+          format: date-time
+    AdminAccountState:
+      description: |
+        The state of an account, the first that applies: `deleted` (deleted here or on its
+        server), `suspended` (a `suspend` or `ban`), `disabled` (a `disable_login`), `rejected`
+        and `pending` (the registration of a local account), `limited` (a `limit`), and
+        `active`.
+      type: string
+      enum: [active, pending, rejected, limited, disabled, suspended, deleted]
+    AdminSameIpAccounts:
+      description: The other accounts that used one IP address.
+      type: object
+      required: [ip, accounts]
+      properties:
+        ip:
+          type: string
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAccount"
+    # --- end of admin: accounts (#344) ---
     # --- reports (#332) ---
     CreateReportRequest:
       description: A report of an account to the moderators.

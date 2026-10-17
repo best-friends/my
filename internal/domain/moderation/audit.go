@@ -105,6 +105,9 @@ const (
 	AuditRuleMoved AuditAction = "rule_moved"
 	// AuditRuleRetired: a rule was retired (instance_rule_retirements).
 	AuditRuleRetired AuditAction = "rule_retired"
+	// AuditRevealedPrivateData: a moderator was shown the email address and the IP addresses of
+	// a local account (FR-714); the operation has no row of its own.
+	AuditRevealedPrivateData AuditAction = "revealed_private_data"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -127,6 +130,7 @@ var auditActions = []struct {
 	{AuditRuleRevised, AuditTargetRule},
 	{AuditRuleMoved, AuditTargetRule},
 	{AuditRuleRetired, AuditTargetRule},
+	{AuditRevealedPrivateData, AuditTargetAccount},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

@@ -1,10 +1,10 @@
 # アカウント・ドメインへの処分と通報の対応
 
-運営者・モデレーター向けの手順です。要件は FR-701〜FR-703・FR-718（[機能要件](../requirements/01-functional.md)）、
+運営者・モデレーター向けの手順です。要件は FR-701〜FR-703・FR-714・FR-718（[機能要件](../requirements/01-functional.md)）、
 テーブルは [データモデル §4.3](../architecture/data-model.md#43-moderation)、連合への効き方は [federation.md §11](../architecture/federation.md#11-モデレーションとの連携) です。
 
-どれも管理 API（`/api/v1/admin/...`、スコープ `admin:read` / `admin:write`）と CLI（`my admin account action` / `my admin domain` / `my admin report`）で行えます。
-管理 API はロールの権限を要します。アカウントへの処分は `manage_accounts`、ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。
+アカウントの管理（管理 API だけ）を除き、どれも管理 API（`/api/v1/admin/...`、スコープ `admin:read` / `admin:write`）と CLI（`my admin account action` / `my admin domain` / `my admin report`）で行えます。
+管理 API はロールの権限を要します。アカウントの管理と処分は `manage_accounts`、ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。
 CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直接つなぎ、操作者の利用者を記録しません（`issued_by_user_id` などは NULL、[監査ログ](#監査ログ)の操作者は `cli`）。
 
 ## アカウントへの処分
@@ -56,6 +56,20 @@ my admin account action lift -reason "appealed" <action id>
 - 本人は `GET /api/v1/moderation/actions`（スコープ `read:accounts`、`active` で絞り込み）で自分への処分を新しい順に確かめられます。`notify_target` が偽の処分も、解除・期限切れの処分も並びます。
 - `private_note`・通報・処分した人・解除の理由は、本人には一切見せません。
 - `disable_login` と `suspend` を受けた本人は、アプリと API を使えませんが、ログイン画面（`/auth/sign_in`）にはログインでき、効いている `disable_login` / `suspend` の種類・理由・期限を確かめられます。認可（`/oauth/authorize`）はこの画面を `403` で返し、トークンを発行しません。
+
+## アカウントの管理
+
+アカウントの検索・詳細・IP アドレスとメールアドレスの表示は管理 API で行い、権限 `manage_accounts` を要します（FR-714）。
+
+- `GET /api/v1/admin/accounts` は、ローカルとリモートのアカウントを新しい順に返します（インスタンス Actor は除く）。
+  ユーザー名の前方一致（`username`）・ドメイン（`domain`）・ローカルかリモートか（`origin`）・状態（`state`）と、ローカルのアカウントのメールアドレス（`email`）・メールのドメイン（`email_domain`）・登録かログインに使った IP アドレス（`ip`）で絞り込めます。
+  `email`・`email_domain`・`ip` は 1 つだけ指定できます。一覧には IP アドレスとメールアドレスを含めません。
+- 状態は次のうち最初に当てはまるものです: `deleted`（削除）、`suspended`（`suspend`・`ban`）、`disabled`（`disable_login`）、`rejected`・`pending`（登録審査）、`limited`（`limit`）、`active`。
+  状態と制限（`restrictions`）はアカウント自身への処分だけから決まり、ドメイン単位の処分は含みません。
+- `GET /api/v1/admin/accounts/{id}` は、状態・制限と、ローカルのアカウントでは登録の申請と審査・メールの確認・ロール、新しい順に 20 件までの処分と通報を返します。
+- `POST /api/v1/admin/accounts/{id}/reveal` は、ローカルのアカウントのメールアドレス、登録とログイン（新しい順に 20 件）の IP アドレスと User-Agent、同じ IP アドレスを使ったほかのアカウント（IP アドレスごとに 20 件まで）を返します。
+  呼ぶたびに監査ログに `revealed_private_data` を記録し、記録できたときだけ返します。IP アドレスは保持期間（既定 180 日）を過ぎると消えるので、それより前のログイン元は表示できません。
+- 検索は 1 ページを埋めるのに 400 アカウントまで読みます。条件に合うアカウントが少ないと、短いページや空のページにも `next_cursor` が付くので、続けて読みます。
 
 ## ドメイン単位の処分
 
@@ -146,7 +160,7 @@ my admin report resolve -outcome dismissed <report id>
 
 | 対象の種類 | 操作 |
 | --- | --- |
-| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除） |
+| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`revealed_private_data`（IP アドレスとメールアドレスの表示） |
 | `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除） |
 | `report` | `report_assigned`・`report_unassigned`・`report_resolved`（通報の担当・担当の解除・解決） |
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |

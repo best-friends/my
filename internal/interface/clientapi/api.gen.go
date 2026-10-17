@@ -130,6 +130,99 @@ func (e AdminAccountActionState) Valid() bool {
 	}
 }
 
+// Defines values for AdminAccountRegistrationState.
+const (
+	AdminAccountRegistrationStateApproved AdminAccountRegistrationState = "approved"
+	AdminAccountRegistrationStatePending  AdminAccountRegistrationState = "pending"
+	AdminAccountRegistrationStateRejected AdminAccountRegistrationState = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccountRegistrationState enum.
+func (e AdminAccountRegistrationState) Valid() bool {
+	switch e {
+	case AdminAccountRegistrationStateApproved:
+		return true
+	case AdminAccountRegistrationStatePending:
+		return true
+	case AdminAccountRegistrationStateRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccountRestriction.
+const (
+	AdminAccountRestrictionFederation               AdminAccountRestriction = "federation"
+	AdminAccountRestrictionInteract                 AdminAccountRestriction = "interact"
+	AdminAccountRestrictionLogin                    AdminAccountRestriction = "login"
+	AdminAccountRestrictionMediaSensitive           AdminAccountRestriction = "media_sensitive"
+	AdminAccountRestrictionPost                     AdminAccountRestriction = "post"
+	AdminAccountRestrictionProfileView              AdminAccountRestriction = "profile_view"
+	AdminAccountRestrictionPublicDiscovery          AdminAccountRestriction = "public_discovery"
+	AdminAccountRestrictionUnsolicitedReach         AdminAccountRestriction = "unsolicited_reach"
+	AdminAccountRestrictionVisibilityCeilingPrivate AdminAccountRestriction = "visibility_ceiling_private"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccountRestriction enum.
+func (e AdminAccountRestriction) Valid() bool {
+	switch e {
+	case AdminAccountRestrictionFederation:
+		return true
+	case AdminAccountRestrictionInteract:
+		return true
+	case AdminAccountRestrictionLogin:
+		return true
+	case AdminAccountRestrictionMediaSensitive:
+		return true
+	case AdminAccountRestrictionPost:
+		return true
+	case AdminAccountRestrictionProfileView:
+		return true
+	case AdminAccountRestrictionPublicDiscovery:
+		return true
+	case AdminAccountRestrictionUnsolicitedReach:
+		return true
+	case AdminAccountRestrictionVisibilityCeilingPrivate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccountState.
+const (
+	AdminAccountStateActive    AdminAccountState = "active"
+	AdminAccountStateDeleted   AdminAccountState = "deleted"
+	AdminAccountStateDisabled  AdminAccountState = "disabled"
+	AdminAccountStateLimited   AdminAccountState = "limited"
+	AdminAccountStatePending   AdminAccountState = "pending"
+	AdminAccountStateRejected  AdminAccountState = "rejected"
+	AdminAccountStateSuspended AdminAccountState = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccountState enum.
+func (e AdminAccountState) Valid() bool {
+	switch e {
+	case AdminAccountStateActive:
+		return true
+	case AdminAccountStateDeleted:
+		return true
+	case AdminAccountStateDisabled:
+		return true
+	case AdminAccountStateLimited:
+		return true
+	case AdminAccountStatePending:
+		return true
+	case AdminAccountStateRejected:
+		return true
+	case AdminAccountStateSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminAuditAction.
 const (
 	AdminAuditActionAccountActionIssued  AdminAuditAction = "account_action_issued"
@@ -141,6 +234,7 @@ const (
 	AdminAuditActionReportAssigned       AdminAuditAction = "report_assigned"
 	AdminAuditActionReportResolved       AdminAuditAction = "report_resolved"
 	AdminAuditActionReportUnassigned     AdminAuditAction = "report_unassigned"
+	AdminAuditActionRevealedPrivateData  AdminAuditAction = "revealed_private_data"
 	AdminAuditActionRuleAdded            AdminAuditAction = "rule_added"
 	AdminAuditActionRuleMoved            AdminAuditAction = "rule_moved"
 	AdminAuditActionRuleRetired          AdminAuditAction = "rule_retired"
@@ -169,6 +263,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionReportResolved:
 		return true
 	case AdminAuditActionReportUnassigned:
+		return true
+	case AdminAuditActionRevealedPrivateData:
 		return true
 	case AdminAuditActionRuleAdded:
 		return true
@@ -667,6 +763,24 @@ func (e Visibility) Valid() bool {
 	}
 }
 
+// Defines values for ListAdminAccountsParamsOrigin.
+const (
+	ListAdminAccountsParamsOriginLocal  ListAdminAccountsParamsOrigin = "local"
+	ListAdminAccountsParamsOriginRemote ListAdminAccountsParamsOrigin = "remote"
+)
+
+// Valid indicates whether the value is a known member of the ListAdminAccountsParamsOrigin enum.
+func (e ListAdminAccountsParamsOrigin) Valid() bool {
+	switch e {
+	case ListAdminAccountsParamsOriginLocal:
+		return true
+	case ListAdminAccountsParamsOriginRemote:
+		return true
+	default:
+		return false
+	}
+}
+
 // Account An account, as clients show it (FR-006).
 type Account struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
@@ -758,6 +872,34 @@ type AccountSource struct {
 	Note string `json:"note"`
 }
 
+// AdminAccount An account as the moderators see it (FR-714). It never includes an email or IP address.
+type AdminAccount struct {
+	// Account An account, as clients show it (FR-006).
+	Account Account `json:"account"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Local Whether the account is on this server.
+	Local bool `json:"local"`
+
+	// RegistrationState Where the registration of a local account stands; a user made with the command line is
+	// `approved`. Omitted for a remote account.
+	RegistrationState *AdminAccountRegistrationState `json:"registration_state,omitempty"`
+
+	// Restrictions What the account's own actions take away now (data-model §5.2), in a fixed order.
+	// The domain actions on its domain are listed apart.
+	Restrictions []AdminAccountRestriction `json:"restrictions"`
+
+	// State The state of an account, the first that applies: `deleted` (deleted here or on its
+	// server), `suspended` (a `suspend` or `ban`), `disabled` (a `disable_login`), `rejected`
+	// and `pending` (the registration of a local account), `limited` (a `limit`), and
+	// `active`.
+	State AdminAccountState `json:"state"`
+}
+
 // AdminAccountAction A moderation action on an account (FR-703).
 type AdminAccountAction struct {
 	// AccountId The account the action is on.
@@ -845,8 +987,129 @@ type AdminAccountActionPage struct {
 // lifted it.
 type AdminAccountActionState string
 
+// AdminAccountDetail The details of an account (FR-714).
+type AdminAccountDetail struct {
+	// Account An account, as clients show it (FR-006).
+	Account Account `json:"account"`
+
+	// Actions The newest 20 actions on the account, newest first.
+	Actions []AdminAccountAction `json:"actions"`
+
+	// EmailVerified Whether the primary email address of a local account is verified; omitted when
+	// it has none.
+	EmailVerified *bool `json:"email_verified,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Local Whether the account is on this server.
+	Local bool `json:"local"`
+
+	// Registration The registration application of a local account.
+	Registration *AdminAccountRegistration `json:"registration,omitempty"`
+
+	// RegistrationState Where the registration of a local account stands; a user made with the command line is
+	// `approved`. Omitted for a remote account.
+	RegistrationState *AdminAccountRegistrationState `json:"registration_state,omitempty"`
+
+	// Reports The newest 20 reports of the account, newest first.
+	Reports []AdminReport `json:"reports"`
+
+	// Restrictions What the account's own actions take away now (data-model §5.2), in a fixed order.
+	// The domain actions on its domain are listed apart.
+	Restrictions []AdminAccountRestriction `json:"restrictions"`
+
+	// Roles The keys of the user's roles, highest position first; empty for a remote account.
+	Roles []string `json:"roles"`
+
+	// State The state of an account, the first that applies: `deleted` (deleted here or on its
+	// server), `suspended` (a `suspend` or `ban`), `disabled` (a `disable_login`), `rejected`
+	// and `pending` (the registration of a local account), `limited` (a `limit`), and
+	// `active`.
+	State AdminAccountState `json:"state"`
+}
+
+// AdminAccountPage A page of accounts, newest first.
+type AdminAccountPage struct {
+	Items []AdminAccount `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminAccountPrivateData The email address and the IP addresses of a local account (FR-714). Showing them is
+// recorded in the audit log.
+type AdminAccountPrivateData struct {
+	// Email The primary email address; omitted when there is none.
+	Email *string `json:"email,omitempty"`
+
+	// EmailVerified Whether the primary email address is verified; omitted with `email`.
+	EmailVerified *bool `json:"email_verified,omitempty"`
+
+	// RegisteredAt When the account registered from `registration_ip`; omitted with it.
+	RegisteredAt *time.Time `json:"registered_at,omitempty"`
+
+	// RegistrationIp The IP address the account registered from; omitted for a registration from an
+	// unknown address, by the command line, or past the retention.
+	RegistrationIp *string `json:"registration_ip,omitempty"`
+
+	// SameIpAccounts For each IP address of `sign_ins` and `registration_ip`, newest first, up to 20
+	// other accounts that registered or signed in from it, newest first.
+	SameIpAccounts []AdminSameIpAccounts `json:"same_ip_accounts"`
+
+	// SignIns The newest 20 sign-ins within the retention, newest first.
+	SignIns []AdminAccountSignIn `json:"sign_ins"`
+}
+
+// AdminAccountRegistration The registration application of a local account.
+type AdminAccountRegistration struct {
+	// InviteId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	InviteId *Id `json:"invite_id,omitempty"`
+
+	// Reason Why the applicant wants to join; omitted when not asked or not given.
+	Reason *string `json:"reason,omitempty"`
+
+	// StateChangedAt When the registration entered its `registration_state`.
+	StateChangedAt time.Time `json:"state_changed_at"`
+	SubmittedAt    time.Time `json:"submitted_at"`
+}
+
+// AdminAccountRegistrationState Where the registration of a local account stands; a user made with the command line is
+// `approved`. Omitted for a remote account.
+type AdminAccountRegistrationState string
+
+// AdminAccountRestriction A capability that an action takes away (data-model §5.2). `login`: logging in and the
+// API. `post`: posting, replying, boosting, editing. `interact`: following, favouriting,
+// boosting, voting. `visibility_ceiling_private`: posts are followers-only.
+// `public_discovery`: posts stay off the public timelines and search.
+// `unsolicited_reach`: notifications reach followers only. `media_sensitive`: media shows
+// as sensitive. `profile_view`: the profile and posts are hidden. `federation`: nothing is
+// delivered or received.
+type AdminAccountRestriction string
+
+// AdminAccountSignIn Where one sign-in came from.
+type AdminAccountSignIn struct {
+	// Ip The IP address; omitted when unknown.
+	Ip         *string   `json:"ip,omitempty"`
+	SignedInAt time.Time `json:"signed_in_at"`
+
+	// UserAgent The User-Agent; omitted when unknown.
+	UserAgent *string `json:"user_agent,omitempty"`
+}
+
+// AdminAccountState The state of an account, the first that applies: `deleted` (deleted here or on its
+// server), `suspended` (a `suspend` or `ban`), `disabled` (a `disable_login`), `rejected`
+// and `pending` (the registration of a local account), `limited` (a `limit`), and
+// `active`.
+type AdminAccountState string
+
 // AdminAuditAction The kind of an audited operation, each on one kind of target. On an `account`:
-// `account_action_issued`, `account_action_lifted`. On a `domain`:
+// `account_action_issued`, `account_action_lifted`, `revealed_private_data` (a moderator
+// was shown the account's email address and IP addresses). On a `domain`:
 // `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 // `report_unassigned`, `report_resolved`. On a `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
@@ -862,7 +1125,8 @@ type AdminAuditActorKind string
 // AdminAuditEntry One operation of a moderator or an administrator (FR-704).
 type AdminAuditEntry struct {
 	// Action The kind of an audited operation, each on one kind of target. On an `account`:
-	// `account_action_issued`, `account_action_lifted`. On a `domain`:
+	// `account_action_issued`, `account_action_lifted`, `revealed_private_data` (a moderator
+	// was shown the account's email address and IP addresses). On a `domain`:
 	// `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 	// `report_unassigned`, `report_resolved`. On a `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
@@ -1187,6 +1451,12 @@ type AdminRuleText struct {
 
 	// Text The rule, on one line, as plain text.
 	Text string `json:"text"`
+}
+
+// AdminSameIpAccounts The other accounts that used one IP address.
+type AdminSameIpAccounts struct {
+	Accounts []AdminAccount `json:"accounts"`
+	Ip       string         `json:"ip"`
 }
 
 // CreateAccountActionRequest A moderation action to take on an account.
@@ -1836,7 +2106,8 @@ type PageInfo struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
-// Permission A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
+// Permission A capability that a role grants. `manage_accounts`: the accounts and their moderation
+// actions.
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
 // `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
 // dead jobs of the job queue. The others guard no client API operation yet.
@@ -2420,6 +2691,41 @@ type ListAccountStatusesParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListAdminAccountsParams defines parameters for ListAdminAccounts.
+type ListAdminAccountsParams struct {
+	// Username Keep the accounts whose username starts with this.
+	Username *string `form:"username,omitempty" json:"username,omitempty"`
+
+	// Domain Keep the remote accounts of this domain (its punycode form).
+	Domain *string `form:"domain,omitempty" json:"domain,omitempty"`
+
+	// Origin Keep the local or the remote accounts.
+	Origin *ListAdminAccountsParamsOrigin `form:"origin,omitempty" json:"origin,omitempty"`
+
+	// State Keep the accounts in this state.
+	State *AdminAccountState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Email Keep the local account whose primary email address is this.
+	Email *string `form:"email,omitempty" json:"email,omitempty"`
+
+	// EmailDomain Keep the local accounts whose primary email address is at this domain
+	// (`example.com` or `@example.com`).
+	EmailDomain *string `form:"email_domain,omitempty" json:"email_domain,omitempty"`
+
+	// Ip Keep the local accounts that registered or signed in from this IP address, within
+	// the retention of the sign-in and registration origins.
+	Ip *string `form:"ip,omitempty" json:"ip,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAdminAccountsParamsOrigin defines parameters for ListAdminAccounts.
+type ListAdminAccountsParamsOrigin string
+
 // ListAccountActionsParams defines parameters for ListAccountActions.
 type ListAccountActionsParams struct {
 	// Active Keep only the actions in effect now, neither lifted nor expired.
@@ -2744,12 +3050,21 @@ type ServerInterface interface {
 	// LiftAccountAction Lift a moderation action on an account
 	// (POST /admin/account_actions/{id}/lift)
 	LiftAccountAction(w http.ResponseWriter, r *http.Request, id AccountActionId)
+	// ListAdminAccounts Search the accounts
+	// (GET /admin/accounts)
+	ListAdminAccounts(w http.ResponseWriter, r *http.Request, params ListAdminAccountsParams)
+	// GetAdminAccount Get the details of an account
+	// (GET /admin/accounts/{id})
+	GetAdminAccount(w http.ResponseWriter, r *http.Request, id AdminAccountId)
 	// ListAccountActions List the moderation actions on an account
 	// (GET /admin/accounts/{id}/actions)
 	ListAccountActions(w http.ResponseWriter, r *http.Request, id AdminAccountId, params ListAccountActionsParams)
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// RevealAdminAccount Show the email address and the IP addresses of a local account
+	// (POST /admin/accounts/{id}/reveal)
+	RevealAdminAccount(w http.ResponseWriter, r *http.Request, id AdminAccountId)
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams)
@@ -3518,6 +3833,169 @@ func (siw *ServerInterfaceWrapper) LiftAccountAction(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ListAdminAccounts operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminAccounts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAdminAccountsParams
+
+	// ------------- Optional query parameter "username" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "username", r.URL.Query(), &params.Username, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "username"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "username", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "domain" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "domain", r.URL.Query(), &params.Domain, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "domain"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "origin" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "origin", r.URL.Query(), &params.Origin, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "origin"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "origin", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "email" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "email", r.URL.Query(), &params.Email, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "email"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "email", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "email_domain" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "email_domain", r.URL.Query(), &params.EmailDomain, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "email_domain"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "email_domain", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "ip" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "ip", r.URL.Query(), &params.Ip, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "ip"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ip", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminAccounts(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminAccount operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminAccount(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAccountActions operation middleware
 func (siw *ServerInterfaceWrapper) ListAccountActions(w http.ResponseWriter, r *http.Request) {
 
@@ -3603,6 +4081,32 @@ func (siw *ServerInterfaceWrapper) CreateAccountAction(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateAccountAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevealAdminAccount operation middleware
+func (siw *ServerInterfaceWrapper) RevealAdminAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevealAdminAccount(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5835,6 +6339,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts", wrapper.ListAdminAccounts)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}", wrapper.GetAdminAccount)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/reveal", wrapper.RevealAdminAccount)
 
 	return m
 }
@@ -6902,6 +7409,130 @@ func (response LiftAccountActiondefaultApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type ListAdminAccountsRequestObject struct {
+	Params ListAdminAccountsParams
+}
+
+type ListAdminAccountsResponseObject interface {
+	VisitListAdminAccountsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminAccounts200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAdminAccounts200JSONResponse struct {
+	Body    AdminAccountPage
+	Headers ListAdminAccounts200ResponseHeaders
+}
+
+func (response ListAdminAccounts200JSONResponse) VisitListAdminAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminAccountsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAdminAccountsdefaultApplicationProblemPlusJSONResponse) VisitListAdminAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminAccountRequestObject struct {
+	Id AdminAccountId `json:"id"`
+}
+
+type GetAdminAccountResponseObject interface {
+	VisitGetAdminAccountResponse(w http.ResponseWriter) error
+}
+
+type GetAdminAccount200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetAdminAccount200JSONResponse struct {
+	Body    AdminAccountDetail
+	Headers GetAdminAccount200ResponseHeaders
+}
+
+func (response GetAdminAccount200JSONResponse) VisitGetAdminAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminAccountdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAdminAccountdefaultApplicationProblemPlusJSONResponse) VisitGetAdminAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListAccountActionsRequestObject struct {
 	Id     AdminAccountId `json:"id"`
 	Params ListAccountActionsParams
@@ -6998,6 +7629,68 @@ type CreateAccountActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateAccountActiondefaultApplicationProblemPlusJSONResponse) VisitCreateAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevealAdminAccountRequestObject struct {
+	Id AdminAccountId `json:"id"`
+}
+
+type RevealAdminAccountResponseObject interface {
+	VisitRevealAdminAccountResponse(w http.ResponseWriter) error
+}
+
+type RevealAdminAccount200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type RevealAdminAccount200JSONResponse struct {
+	Body    AdminAccountPrivateData
+	Headers RevealAdminAccount200ResponseHeaders
+}
+
+func (response RevealAdminAccount200JSONResponse) VisitRevealAdminAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevealAdminAccountdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RevealAdminAccountdefaultApplicationProblemPlusJSONResponse) VisitRevealAdminAccountResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -10668,12 +11361,21 @@ type StrictServerInterface interface {
 	// LiftAccountAction Lift a moderation action on an account
 	// (POST /admin/account_actions/{id}/lift)
 	LiftAccountAction(ctx context.Context, request LiftAccountActionRequestObject) (LiftAccountActionResponseObject, error)
+	// ListAdminAccounts Search the accounts
+	// (GET /admin/accounts)
+	ListAdminAccounts(ctx context.Context, request ListAdminAccountsRequestObject) (ListAdminAccountsResponseObject, error)
+	// GetAdminAccount Get the details of an account
+	// (GET /admin/accounts/{id})
+	GetAdminAccount(ctx context.Context, request GetAdminAccountRequestObject) (GetAdminAccountResponseObject, error)
 	// ListAccountActions List the moderation actions on an account
 	// (GET /admin/accounts/{id}/actions)
 	ListAccountActions(ctx context.Context, request ListAccountActionsRequestObject) (ListAccountActionsResponseObject, error)
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(ctx context.Context, request CreateAccountActionRequestObject) (CreateAccountActionResponseObject, error)
+	// RevealAdminAccount Show the email address and the IP addresses of a local account
+	// (POST /admin/accounts/{id}/reveal)
+	RevealAdminAccount(ctx context.Context, request RevealAdminAccountRequestObject) (RevealAdminAccountResponseObject, error)
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(ctx context.Context, request ListAuditLogRequestObject) (ListAuditLogResponseObject, error)
@@ -11379,6 +12081,58 @@ func (sh *strictHandler) LiftAccountAction(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// ListAdminAccounts operation middleware
+func (sh *strictHandler) ListAdminAccounts(w http.ResponseWriter, r *http.Request, params ListAdminAccountsParams) {
+	var request ListAdminAccountsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminAccounts(ctx, request.(ListAdminAccountsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminAccounts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminAccountsResponseObject); ok {
+		if err := validResponse.VisitListAdminAccountsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminAccount operation middleware
+func (sh *strictHandler) GetAdminAccount(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request GetAdminAccountRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminAccount(ctx, request.(GetAdminAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminAccountResponseObject); ok {
+		if err := validResponse.VisitGetAdminAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListAccountActions operation middleware
 func (sh *strictHandler) ListAccountActions(w http.ResponseWriter, r *http.Request, id AdminAccountId, params ListAccountActionsParams) {
 	var request ListAccountActionsRequestObject
@@ -11432,6 +12186,32 @@ func (sh *strictHandler) CreateAccountAction(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateAccountActionResponseObject); ok {
 		if err := validResponse.VisitCreateAccountActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevealAdminAccount operation middleware
+func (sh *strictHandler) RevealAdminAccount(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request RevealAdminAccountRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevealAdminAccount(ctx, request.(RevealAdminAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevealAdminAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevealAdminAccountResponseObject); ok {
+		if err := validResponse.VisitRevealAdminAccountResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
