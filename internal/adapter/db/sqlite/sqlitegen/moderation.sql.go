@@ -30,6 +30,52 @@ func (q *Queries) DeleteDomainRestrictionsOfAction(ctx context.Context, sourceAc
 	return err
 }
 
+const deleteExpiredAccountRestrictions = `-- name: DeleteExpiredAccountRestrictions :many
+DELETE FROM account_restrictions
+WHERE rowid IN (
+  SELECT r.rowid FROM account_restrictions AS r
+  WHERE r.effective_until <= CAST(?1 AS INTEGER)
+  ORDER BY r.effective_until
+  LIMIT ?2
+)
+RETURNING account_id, restriction, source_action_id, effective_until
+`
+
+type DeleteExpiredAccountRestrictionsParams struct {
+	Now        int64
+	BatchLimit int64
+}
+
+// DeleteExpiredAccountRestrictions deletes at most batch_limit rows of any account that have
+// expired at now, the earliest expired first, and returns them.
+func (q *Queries) DeleteExpiredAccountRestrictions(ctx context.Context, arg DeleteExpiredAccountRestrictionsParams) ([]AccountRestriction, error) {
+	rows, err := q.db.QueryContext(ctx, deleteExpiredAccountRestrictions, arg.Now, arg.BatchLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AccountRestriction{}
+	for rows.Next() {
+		var i AccountRestriction
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.Restriction,
+			&i.SourceActionID,
+			&i.EffectiveUntil,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDomainModerationAction = `-- name: GetDomainModerationAction :one
 SELECT id, domain, kind, public_comment, private_note, obfuscate, issued_by_user_id, expires_at, issued_at
 FROM domain_moderation_actions WHERE id = ?

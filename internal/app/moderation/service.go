@@ -209,7 +209,8 @@ type AccountActionInput struct {
 }
 
 // IssueAccountAction records an action on an account and, in the same transaction, the
-// restrictions it imposes (data-model §5.2), and emits AccountRestrictionsChanged. A local
+// restrictions it imposes (data-model §5.2), and emits AccountRestrictionsChanged, and
+// AccountSuspensionChanged when the action suspends an account that was not suspended. A local
 // account takes the kinds of localActionKinds, a remote one limit, suspend, and
 // force_sensitive; another kind, or the instance actor, fails with ErrUnsupportedAction, and an
 // unknown kind or an invalid field with moderation.ErrInvalidAction. An unknown account fails
@@ -259,6 +260,10 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 	}
 	repo := s.d.Repository
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
+		if err != nil {
+			return err
+		}
 		if err := repo.InsertAction(ctx, tx, a); err != nil {
 			return err
 		}
@@ -267,7 +272,10 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 				return err
 			}
 		}
-		return s.emitAccount(ctx, tx, a.TargetAccountID, now)
+		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
+			return err
+		}
+		return s.emitSuspension(ctx, tx, a.TargetAccountID, before, now)
 	})
 	if err != nil {
 		return moderation.Action{}, err
@@ -276,7 +284,8 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 }
 
 // LiftAccountAction lifts an action on an account: its restrictions end, while those of other
-// actions on the account stay. Lifting an action that is already lifted changes nothing. An
+// actions on the account stay. Lifting the account's last suspension emits
+// AccountSuspensionChanged. Lifting an action that is already lifted changes nothing. An
 // invalid reason fails with an error wrapping moderation.ErrInvalidAction and a
 // *moderation.TextError.
 func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserID, reason string) error {
@@ -298,10 +307,17 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if err != nil {
 			return err
 		}
+		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
+		if err != nil {
+			return err
+		}
 		if err := repo.DeleteAccountRestrictionsOf(ctx, tx, a.ID); err != nil {
 			return err
 		}
-		return s.emitAccount(ctx, tx, a.TargetAccountID, now)
+		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
+			return err
+		}
+		return s.emitSuspension(ctx, tx, a.TargetAccountID, before, now)
 	})
 }
 

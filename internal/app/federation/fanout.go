@@ -34,8 +34,11 @@ type FanOutDeps struct {
 	Graph    Graph
 	// Domains are the domain blocks; nil means NoDomainRestrictions.
 	Domains DomainPolicy
-	Clock   kernel.Clock
-	IDs     kernel.IDGenerator
+	// Suspensions tells the local actors that moderation suspends, whose Update carries the
+	// suspended document (federation.md §11.1); nil means NoAccountRestrictions.
+	Suspensions AccountPolicy
+	Clock       kernel.Clock
+	IDs         kernel.IDGenerator
 	// Parts resolves the media, mentions, and hashtags of the revisions that Notes present.
 	Parts NoteParts
 	// Blocks reads the local blocks that Block and Undo Block are about.
@@ -81,6 +84,9 @@ type FanOut struct {
 func NewFanOut(d FanOutDeps) *FanOut {
 	if d.Domains == nil {
 		d.Domains = NoDomainRestrictions{}
+	}
+	if d.Suspensions == nil {
+		d.Suspensions = NoAccountRestrictions{}
 	}
 	if d.Batch <= 0 {
 		d.Batch = FanOutBatch
@@ -163,13 +169,13 @@ func (f *FanOut) Run(ctx context.Context, p fanOutPayload) error {
 	var nextJob *queue.NewJob
 	switch {
 	case next != "":
-		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, Phase: string(phases[idx]), After: next}.job()
+		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, SharedInboxes: p.SharedInboxes, Phase: string(phases[idx]), After: next}.job()
 		if err != nil {
 			return err
 		}
 		nextJob = &j
 	case idx+1 < len(phases):
-		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, Phase: string(phases[idx+1])}.job()
+		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, SharedInboxes: p.SharedInboxes, Phase: string(phases[idx+1])}.job()
 		if err != nil {
 			return err
 		}
@@ -263,8 +269,13 @@ type subject struct {
 	// followURI is the Follow that an Accept answers when it is not the follow's own (a Follow
 	// the follower sent again), "" otherwise.
 	followURI federation.IRI
-	// actor is the local actor an account activity is about.
-	actor appaccount.Actor
+	// actor is the local actor an account activity is about, and suspended whether moderation
+	// suspends it when the fan-out starts.
+	actor     appaccount.Actor
+	suspended bool
+	// sharedInboxes sends an actor's Update to every known shared inbox too
+	// (fanOutPayload.SharedInboxes).
+	sharedInboxes bool
 }
 
 // phases returns the sources of recipients of the activity, in order (data-model §7,
@@ -274,8 +285,9 @@ type subject struct {
 //   - Update and Delete: the inboxes of the Create, then, for a public or unlisted status, the
 //     followers at that time.
 //   - Announce and Undo Announce: the booster's followers, then the boosted status's author.
-//   - Update of an actor: its followers. Delete of an actor: its followers, then every shared
-//     inbox known to the instance (data-model §8).
+//   - Update of an actor: its followers. Delete of an actor, and the Update of a suspension or
+//     of its end: its followers, then every shared inbox known to the instance (data-model §8,
+//     federation.md §11.1).
 //   - Follow, Accept, Reject, and Undo Follow: the other account of the follow.
 //   - Like and Undo Like: the author of the favourited status.
 func (s subject) phases() []phase {
@@ -283,7 +295,7 @@ func (s subject) phases() []phase {
 	case federation.OutboundBlock:
 		return []phase{phaseBlocked}
 	case federation.OutboundAccount:
-		if s.act.Type == federation.ActivityDelete {
+		if s.act.Type == federation.ActivityDelete || s.sharedInboxes {
 			return []phase{phaseFollowers, phaseSharedInboxes}
 		}
 		return []phase{phaseFollowers}
@@ -317,6 +329,7 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p
 	}
 	revisionID := p.RevisionID
 	if act.ObjectKind == federation.OutboundAccount {
+		s.sharedInboxes = p.SharedInboxes
 		return f.accountSubject(ctx, s)
 	}
 	if act.ObjectKind == federation.OutboundFavourite {
@@ -369,10 +382,12 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p
 	return s, nil
 }
 
-// accountSubject loads the local actor of an Update or a Delete of an actor. The Update of an
-// actor that is no longer active, or no longer local, has nothing to send: a later Delete
-// supersedes it. The Delete of an actor goes out whatever its state, since the account row
-// stays after the purge (data-model §8).
+// accountSubject loads the local actor of an Update or a Delete of an actor, and whether
+// moderation suspends it. The Update of an actor that is no longer active, or no longer local,
+// has nothing to send: a later Delete supersedes it. A suspended actor that is not deleted is
+// the exception: its Update tells that it is suspended, also while a ban schedules its
+// deletion (federation.md §11.1). The Delete of an actor goes out whatever its state, since
+// the account row stays after the purge (data-model §8).
 func (f *FanOut) accountSubject(ctx context.Context, s subject) (subject, error) {
 	act := s.act
 	if act.ObjectID != act.ActorAccountID || (act.Type != federation.ActivityUpdate && act.Type != federation.ActivityDelete) {
@@ -386,10 +401,17 @@ func (f *FanOut) accountSubject(ctx context.Context, s subject) (subject, error)
 		return subject{}, err
 	case !a.Account.IsLocal() || a.IsInstanceActor():
 		return subject{}, fmt.Errorf("%w: %s of the account %s, which is not a local user's", federation.ErrInvalidOutbound, act.Type, act.ObjectID)
-	case act.Type == federation.ActivityUpdate && !a.Lifecycle.Active():
-		return subject{}, fmt.Errorf("%w: account %s is not active", errGone, act.ObjectID)
 	}
 	s.actor = a
+	if act.Type == federation.ActivityDelete {
+		return s, nil
+	}
+	if s.suspended, err = f.d.Suspensions.AccountFederationSuspended(ctx, act.ObjectID); err != nil {
+		return subject{}, err
+	}
+	if !a.Lifecycle.Active() && (!s.suspended || a.Deleted()) {
+		return subject{}, fmt.Errorf("%w: account %s is not active", errGone, act.ObjectID)
+	}
 	return s, nil
 }
 

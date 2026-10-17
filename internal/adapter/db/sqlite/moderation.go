@@ -189,6 +189,23 @@ func (r *ModerationRepository) AccountRestrictionRows(ctx context.Context, tx uo
 	return out, nil
 }
 
+// DeleteExpiredAccountRestrictions implements moderation.Repository.
+func (r *ModerationRepository) DeleteExpiredAccountRestrictions(ctx context.Context, tx uow.Tx, now time.Time, limit int) ([]moderation.RestrictionRow, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.DeleteExpiredAccountRestrictions(ctx, sqlitegen.DeleteExpiredAccountRestrictionsParams{Now: toMillis(now), BatchLimit: int64(limit)})
+	if err != nil {
+		return nil, wrap(err, "delete expired account restrictions")
+	}
+	out := make([]moderation.RestrictionRow, len(rows))
+	for i, row := range rows {
+		out[i] = restrictionRowsFrom(row.AccountID, row.Restriction, row.SourceActionID, row.EffectiveUntil)
+	}
+	return out, nil
+}
+
 // InsertDomainRestriction implements moderation.Repository.
 func (r *ModerationRepository) InsertDomainRestriction(ctx context.Context, tx uow.Tx, row moderation.RestrictionRow) error {
 	q, err := queries(tx)

@@ -136,12 +136,14 @@ wait_ready gts.test /readyz
 wait_ready misskey.test /healthz
 
 # --- Users --------------------------------------------------------------------------------------
-# alice@my.test. On Mastodon: bob (alice's follower), dave (never follows alice: the mentioned
-# non-follower of the visibility scenario), and eve (the signature scenario). On GoToSocial: carol
-# (alice's follower) and erin (never follows alice). On Misskey: grace (alice's follower) and heidi (never
-# follows alice), made by its administrator mkadmin.
-log "creating alice@my.test, bob, dave, and eve @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
+# alice@my.test, and frank@my.test (the user that the suspension scenario suspends). On Mastodon: bob
+# (alice's follower), dave (never follows alice: the mentioned non-follower of the visibility scenario),
+# and eve (the signature scenario). On GoToSocial: carol (alice's follower) and erin (never follows
+# alice). On Misskey: grace (alice's follower) and heidi (never follows alice), made by its administrator
+# mkadmin.
+log "creating alice and frank @my.test, bob, dave, and eve @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username alice -email alice@my.test >/dev/null
+printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username frank -email frank@my.test >/dev/null
 
 for user in bob dave eve; do
 	"${compose[@]}" exec -T mastodon-web bin/tootctl accounts create "$user" --email "$user@mastodon.test" --confirmed --approve >/dev/null

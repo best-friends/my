@@ -43,7 +43,9 @@ type FederationFactory func(t *testing.T, opts uow.Options) FederationHarness
 // servers, the inboxes each visibility reaches (data-model §7), the Update and Delete that follow
 // the Create, a fan-out run again without a delivery twice, the servers left out, the boosts that
 // are not recorded, the Update and Delete of a local actor (to its followers, and for the
-// Delete to every known shared inbox), and the Block and Undo Block of a local block of a remote
+// Delete to every known shared inbox), the Update of a local actor's suspension and of its end
+// (to its followers and every known shared inbox, with the emptied actor marked suspended while
+// the suspension is in effect), and the Block and Undo Block of a local block of a remote
 // account. The documents carry the body of the revision they present
 // (federation.md §7.4); a local status leaves the remote accounts that do not follow its author
 // out of tag (ADR-0035); and the Delete is stored with the deletion, so that it reaches the
@@ -71,6 +73,7 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"RecordsOnlyWhatFederates", fedRecordsOnlyWhatFederates},
 		{"DeliversLocalBlocksOfRemoteAccounts", fedDeliversBlocks},
 		{"UpdatesAndDeletesActors", fedUpdatesAndDeletesActors},
+		{"PropagatesSuspensionsOfLocalActors", fedPropagatesSuspensions},
 		{"BuildsTheNoteOfTheRevision", fedBuildsTheNote},
 		{"LeavesNonFollowersOutOfTheTagOfLocalStatuses", fedLeavesNonFollowersOutOfLocalTags},
 		{"DeliversTheStoredDeleteAfterThePurge", fedDeliversTheStoredDelete},
@@ -98,6 +101,8 @@ type fedEnv struct {
 	graph    *fedGraph
 	blocks   *fedBlocks
 	domains  fedDomains
+	// suspensions are the suspended accounts.
+	suspensions *fedSuspensions
 	// handled are the fan-out jobs run so far, to run them again.
 	handled []queue.Job
 	// projectors are the projectors of the harness's UnitOfWork.
@@ -111,12 +116,13 @@ func newFedEnv(t *testing.T, newHarness FederationFactory) *fedEnv {
 	clock := NewClock(time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC))
 	e := &fedEnv{
 		h: h, projectors: projectors, clock: clock, ids: NewIDGenerator(clock), jobs: &fedJobs{seen: map[string]bool{}},
-		handlers: &queue.JobHandlerRegistry{},
-		statuses: &fedStatuses{statuses: map[string]content.Status{}, deleted: map[string]bool{}, revisions: map[string]content.Revision{}, boosts: map[string]content.Boost{}},
-		accounts: &fedAccounts{actors: map[string]appaccount.Actor{}, inboxes: map[string]appaccount.RemoteInbox{}},
-		graph:    &fedGraph{followers: map[string][]string{}, blocks: map[[2]string]bool{}},
-		blocks:   &fedBlocks{blocks: map[string]graph.Block{}},
-		domains:  fedDomains{},
+		handlers:    &queue.JobHandlerRegistry{},
+		statuses:    &fedStatuses{statuses: map[string]content.Status{}, deleted: map[string]bool{}, revisions: map[string]content.Revision{}, boosts: map[string]content.Boost{}},
+		accounts:    &fedAccounts{actors: map[string]appaccount.Actor{}, inboxes: map[string]appaccount.RemoteInbox{}},
+		graph:       &fedGraph{followers: map[string][]string{}, blocks: map[[2]string]bool{}},
+		blocks:      &fedBlocks{blocks: map[string]graph.Block{}},
+		domains:     fedDomains{},
+		suspensions: &fedSuspensions{accounts: map[string]bool{}},
 	}
 	e.parts = &fedParts{accounts: e.accounts, tags: map[string]content.Tag{}, media: map[string][]appcontent.MediaView{}}
 	outbox := queue.AfterCommit(projectors, e.jobs, nil)
@@ -126,10 +132,14 @@ func newFedEnv(t *testing.T, newHarness FederationFactory) *fedEnv {
 	appfederation.RegisterBlockProjectors(projectors, appfederation.RecorderDeps{
 		Repository: h.Federation, Outbox: outbox, IDs: e.ids, Host: contractHost, Accounts: e.accounts,
 	})
+	appfederation.RegisterSuspensionProjectors(projectors, appfederation.RecorderDeps{
+		Repository: h.Federation, Outbox: outbox, IDs: e.ids, Host: contractHost, Accounts: e.accounts,
+	})
 	appfederation.NewFanOut(appfederation.FanOutDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Federation, Outbox: outbox,
 		Statuses: e.statuses, Accounts: e.accounts, Graph: e.graph, Domains: e.domains, Parts: e.parts, Blocks: e.blocks,
-		Clock: clock, IDs: e.ids, Host: contractHost, AccountDomain: contractAccountDomain, Batch: 2,
+		Suspensions: e.suspensions,
+		Clock:       clock, IDs: e.ids, Host: contractHost, AccountDomain: contractAccountDomain, Batch: 2,
 	}).RegisterJobs(e.handlers)
 	return e
 }
