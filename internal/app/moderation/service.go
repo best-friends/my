@@ -84,7 +84,8 @@ type Deps struct {
 }
 
 // Service runs the moderation module's use cases: actions on domains and remote accounts, their
-// lifts, and the reports received from other servers.
+// lifts, and the reports received from other servers, and the moderators' lists of them and
+// handling of the reports (admin.go).
 type Service struct{ d Deps }
 
 // NewService returns a Service on d.

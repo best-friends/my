@@ -1533,11 +1533,35 @@ CREATE TABLE report_statuses (
   PRIMARY KEY (report_id, status_id)
 );
 
--- Projection: whether a report is open, and who handles it.
+-- Projection: whether a report is open, how it was resolved, and who handles it. outcome is
+-- that of the latest resolution, set exactly when the report is resolved.
 CREATE TABLE report_states (
   report_id text COLLATE "C" NOT NULL PRIMARY KEY,
   state text NOT NULL CHECK (state IN ('open', 'resolved')),
+  outcome text CHECK (outcome IN ('actioned', 'dismissed')),
   assignee_user_id text COLLATE "C",
-  since timestamptz NOT NULL
+  since timestamptz NOT NULL,
+  CHECK ((state = 'resolved') = (outcome IS NOT NULL))
 );
 CREATE INDEX report_states_state_report_id ON report_states (state, report_id);
+
+-- Event: a moderator took a report, or gave it up (assignee_user_id NULL).
+-- assigned_by_user_id is NULL for the CLI.
+CREATE TABLE report_assignments (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  report_id text COLLATE "C" NOT NULL,
+  assignee_user_id text COLLATE "C",
+  assigned_by_user_id text COLLATE "C",
+  assigned_at timestamptz NOT NULL
+);
+CREATE INDEX report_assignments_report_id_id ON report_assignments (report_id, id DESC);
+
+-- Event: a moderator resolved a report. resolved_by_user_id is NULL for the CLI.
+CREATE TABLE report_resolutions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  report_id text COLLATE "C" NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('actioned', 'dismissed')),
+  resolved_by_user_id text COLLATE "C",
+  resolved_at timestamptz NOT NULL
+);
+CREATE INDEX report_resolutions_report_id_id ON report_resolutions (report_id, id DESC);

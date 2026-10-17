@@ -79,6 +79,11 @@ type Options struct {
 	Permissions    Permissions
 	InstanceHealth InstanceHealth
 	DeadJobs       queue.DeadJobs
+	// Moderation runs the moderators' use cases on domain actions and reports for the admin
+	// operations (admin_moderation.go); UserAccounts presents the moderator of a report by
+	// account, and nil leaves it out.
+	Moderation   Moderation
+	UserAccounts UserAccounts
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

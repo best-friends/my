@@ -414,11 +414,11 @@ flowchart LR
 | `reports` | リソース | `id`, `uri`（NULL 可。受信した `Flag` の `id`、`id` の無い `Flag` は受信の記録と同じ `urn:my:digest:…`）, `reporter_account_id`, `target_account_id`, `category`（`enum(spam, legal, violation, other)`）, `comment`（5,000 文字まで）, `forwarded`（`bool`）, `filed_at` | 一意 `(uri)`。インデックス `(target_account_id, id)` |
 | `report_statuses` | リソース（子） | `report_id`, `status_id` | PK `(report_id, status_id)` |
 | `report_rule_citations` | リソース（子） | `report_id`, `rule_id` | PK `(report_id, rule_id)`。ルールの文言が改訂されても `rule_id` は変わらない（§4.9） |
-| `report_assignments` | イベント | `id`, `report_id`, `assignee_user_id`（NULL 可 = 担当解除）, `assigned_by_user_id`, `assigned_at` | インデックス `(report_id, id DESC)` |
-| `report_resolutions` | イベント | `id`, `report_id`, `outcome`（`enum(actioned, dismissed)`）, `resolved_by_user_id`, `resolved_at` | 処分との関連は `moderation_actions.report_id` で辿る |
+| `report_assignments` | イベント | `id`, `report_id`, `assignee_user_id`（NULL 可 = 担当解除）, `assigned_by_user_id`（NULL 可 = CLI）, `assigned_at` | インデックス `(report_id, id DESC)`。担当が変わらない割り当ては記録しない |
+| `report_resolutions` | イベント | `id`, `report_id`, `outcome`（`enum(actioned, dismissed)`）, `resolved_by_user_id`（NULL 可 = CLI）, `resolved_at` | インデックス `(report_id, id DESC)`。処分との関連は `moderation_actions.report_id` で辿る。解決済みの通報の解決は記録しない |
 | `report_reopenings` | イベント | `id`, `report_id`, `reopened_by_user_id`, `reopened_at` | |
 | `report_notes` | イベント | `id`, `report_id`, `author_user_id`, `body`, `written_at` | |
-| `report_states` | 投影 | `report_id`（PK）, `state`（`enum(open, resolved)`）, `assignee_user_id`（NULL 可）, `since` | インデックス `(state, report_id)`（未解決一覧） |
+| `report_states` | 投影 | `report_id`（PK）, `state`（`enum(open, resolved)`）, `outcome`（`enum(actioned, dismissed)`、NULL 可。最後の解決の結果）, `assignee_user_id`（NULL 可）, `since`（受け付けた時刻か、解決した時刻） | インデックス `(state, report_id)`（未解決一覧）。`outcome` は `state = resolved` のときだけ値を持つ（`CHECK` 制約） |
 
 #### 登録の拒否リスト（C）
 

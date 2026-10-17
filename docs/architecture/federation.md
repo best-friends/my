@@ -448,6 +448,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - `Block` の受信は `graph` の関係として記録します（相手からのブロックで、モデレーションの処分ではありません）。
 - `Flag` の受信は `reports`（`uri` は `Flag` の `id`、`id` が無ければ受信の記録と同じ `urn:my:digest:…`。同じ `Flag` の再処理は何もしない）と `report_states`（`open`）になり、モデレーターの通報一覧に入ります（FR-701）。コメントは 5,000 文字で切ります。
 - `moderation.FederationPolicy` は、呼ばれるたびに期限内の制限を読みます（`DomainPolicy`・`AccountPolicy`・`content.MediaFetchPolicy` と、`Flag` の `RejectsReports`）。処分は `moderation.Service` の `IssueDomainAction` / `LiftDomainAction` と、リモートのアカウントへの `IssueRemoteAccountAction`（制限だけを生む `limit` / `suspend` / `force_sensitive`）/ `LiftAccountAction` が記録します。
+  ドメイン単位の処分の発行・解除・一覧と、通報の一覧・担当・解決は、管理 API（`/api/v1/admin/domain_actions`・`/api/v1/admin/reports`、権限 `manage_domains` / `manage_reports`）と CLI（`my admin domain` / `my admin report`）から行います（[運用手順](../operations/moderation.md)）。入力されたドメインは `CanonicalHost` で正規化してから渡します。
 - `Block` / `Undo Block` の送信（§7.1）は、ローカルのアカウントがリモートのアカウントをブロック・解除したときだけです。`Block` の `id` はブロックの URI（`/ap/activities/{block_id}`）、宛先はブロックした相手だけで、相手の個人の inbox に送ります（shared inbox に集約しない。Mastodon と同じ）。
 - 通報の転送（`forwarded`）は、インスタンス Actor から対象のアカウントの inbox へ `Flag` を送ります（FR-701）。
 
