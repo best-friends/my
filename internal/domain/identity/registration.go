@@ -40,10 +40,11 @@ const MaxRegistrationReasonLength = 1000
 // ErrInvalidReason reports a registration reason that ValidateRegistrationReason rejects.
 var ErrInvalidReason = errors.New("invalid registration reason")
 
-// ValidateRegistrationReason accepts valid UTF-8 of at most MaxRegistrationReasonLength characters.
+// ValidateRegistrationReason accepts valid UTF-8 without NUL (data-model §1.2) of at most
+// MaxRegistrationReasonLength characters.
 func ValidateRegistrationReason(reason string) error {
-	if !utf8.ValidString(reason) || utf8.RuneCountInString(reason) > MaxRegistrationReasonLength {
-		return fmt.Errorf("%w: must be at most %d characters", ErrInvalidReason, MaxRegistrationReasonLength)
+	if !utf8.ValidString(reason) || strings.ContainsRune(reason, 0) || utf8.RuneCountInString(reason) > MaxRegistrationReasonLength {
+		return fmt.Errorf("%w: must be at most %d characters of text", ErrInvalidReason, MaxRegistrationReasonLength)
 	}
 	return nil
 }

@@ -44,7 +44,7 @@ func TestValidateRegistrationReason(t *testing.T) {
 			t.Errorf("ValidateRegistrationReason(%d chars) = %v", len([]rune(ok)), err)
 		}
 	}
-	for _, bad := range []string{strings.Repeat("a", identity.MaxRegistrationReasonLength+1), "\xff"} {
+	for _, bad := range []string{strings.Repeat("a", identity.MaxRegistrationReasonLength+1), "\xff", "a\x00b"} {
 		if err := identity.ValidateRegistrationReason(bad); !errors.Is(err, identity.ErrInvalidReason) {
 			t.Errorf("ValidateRegistrationReason(%q...) = %v, want ErrInvalidReason", bad[:1], err)
 		}

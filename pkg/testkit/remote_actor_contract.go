@@ -51,8 +51,9 @@ type RemoteActorFactory func(t *testing.T, opts uow.Options) RemoteActorHarness
 // another origin, the fetch rules (signed GET, Content-Type, failures remembered, 410 Gone), the
 // periodic refresh of followed stale actors, NodeInfo observations, the public key resolver, that
 // the handle projection equals a rebuild, the resolution of handles and URLs (FR-305), the Update
-// and Delete that remote actors send of themselves (federation.md §3.4), and the shared inboxes
-// known to the instance. The network is an in-memory HTTPClient.
+// and Delete that remote actors send of themselves (federation.md §3.4), the shared inboxes
+// known to the instance, and documents with NUL in every string (stored as U+FFFD, federation.md
+// §4). The network is an in-memory HTTPClient.
 func RemoteActorContract(t *testing.T, newHarness RemoteActorFactory) {
 	t.Helper()
 	cases := []struct {
@@ -75,6 +76,7 @@ func RemoteActorContract(t *testing.T, newHarness RemoteActorFactory) {
 		{"ReceivesDeletesOfActors", remoteReceivesActorDeletes},
 		{"ListsKnownSharedInboxes", remoteListsKnownSharedInboxes},
 		{"ResolvesHandlesAndURLs", remoteResolvesHandlesAndURLs},
+		{"StoresStringsWithNUL", remoteStoresStringsWithNUL},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteEnv(t, newHarness)) })
@@ -967,6 +969,74 @@ func remoteReceivesActorUpdates(t *testing.T, e *remoteEnv) {
 	}
 	if err := e.actors.ReceiveActorUpdate(ctx, act, note); !errors.Is(err, appfederation.ErrNotOwnActor) {
 		t.Errorf("ReceiveActorUpdate(Note) = %v, want ErrNotOwnActor", err)
+	}
+}
+
+// remoteStoresStringsWithNUL stores an actor whose every string has a NUL (\u0000), fetched and
+// received in an Update: each NUL is stored as U+FFFD (federation.md §4) the same way in every
+// dialect, and nothing fails.
+func remoteStoresStringsWithNUL(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	const id, host = "https://nul.example/users/alice", "nul.example"
+	doc := func(name string) map[string]any {
+		return map[string]any{
+			"@context": "https://www.w3.org/ns/activitystreams", "id": id, "type": "Person",
+			"preferredUsername": "ali\x00ce", "name": name, "summary": "<p>bio\x00</p>", "url": "https://nul.example/@alice\x00",
+			"inbox": id + "/inbox", "outbox": id + "/outbox\x00", "followers": id + "/followers\x00", "following": id + "/following\x00",
+			"featured": id + "/featured\x00", "endpoints": map[string]any{"sharedInbox": "https://nul.example/inbox\x00"},
+			"icon":       map[string]any{"type": "Image", "url": "https://nul.example/avatar\x00.png"},
+			"image":      map[string]any{"type": "Image", "url": "https://nul.example/header\x00.png"},
+			"publicKey":  map[string]any{"id": id + "#main-key", "owner": id, "publicKeyPem": rotatedKeyPEM(t)},
+			"attachment": []any{map[string]any{"type": "PropertyValue", "name": "Site\x00", "value": "<p>v\x00</p>"}},
+			"tag":        []any{map[string]any{"type": "Emoji", "id": "https://nul.example/emojis/1\x00", "name": ":blob\x00:", "icon": map[string]any{"type": "Image", "url": "https://nul.example/e\x00.png"}}},
+		}
+	}
+	raw, err := json.Marshal(doc("Alice\x00"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(raw, []byte(`\u0000`)) {
+		t.Fatalf("the document %s has no \\u0000", raw)
+	}
+	e.net.set(id, remoteResponse{status: http.StatusOK, contentType: activityJSON, body: string(raw)})
+	e.serveWebFinger(host, "ali\uFFFDce", host, id)
+	a := e.resolve(t, id)
+	if p := nulPath(reflect.ValueOf(a), "Actor"); p != "" {
+		t.Errorf("%s has a NUL", p)
+	}
+	if a.Profile == nil || a.Profile.DisplayName != "Alice\uFFFD" || a.Profile.NoteHTML != "<p>bio\uFFFD</p>" ||
+		!reflect.DeepEqual(a.Profile.Fields, []account.ProfileField{{Position: 0, Name: "Site\uFFFD", ValueHTML: "<p>v\uFFFD</p>"}}) {
+		t.Errorf("profile = %+v, want every NUL as U+FFFD", a.Profile)
+	}
+	if a.Handle == nil || a.Handle.Username != "ali\uFFFDce" || len(a.Keys) != 1 {
+		t.Errorf("handle = %+v, keys = %+v; want ali\uFFFDce and the key", a.Handle, a.Keys)
+	}
+	head, err := e.accounts.RemoteHead(ctx, a.Account.ID)
+	if err != nil || head.SharedInboxURL != "https://nul.example/inbox%EF%BF%BD" {
+		t.Errorf("head = %+v, %v; want the shared inbox with U+FFFD", head, err)
+	}
+	e.tx(t, func(tx uow.Tx) error {
+		snap, err := e.h.Accounts.LatestRemoteSnapshot(ctx, tx, a.Account.ID)
+		if err != nil || snap.PreferredUsername != "ali\uFFFDce" || snap.ProfileURL != "https://nul.example/@alice%EF%BF%BD" {
+			t.Errorf("snapshot = %+v, %v; want every NUL as U+FFFD", snap, err)
+		}
+		return nil
+	})
+
+	// An Update with the document embedded stores the same way.
+	e.clock.Advance(time.Minute)
+	update, err := json.Marshal(map[string]any{
+		"@context": "https://www.w3.org/ns/activitystreams", "id": id + "#updates/1\x00", "type": "Update", "actor": id, "object": doc("Renamed\x00"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.actors.ReceiveActorUpdate(ctx, e.receivedActivity(t, update), update); err != nil {
+		t.Fatalf("ReceiveActorUpdate: %v", err)
+	}
+	got, err := e.accounts.FindByID(ctx, a.Account.ID)
+	if err != nil || got.Profile == nil || got.Profile.Seq != 2 || got.Profile.DisplayName != "Renamed\uFFFD" {
+		t.Errorf("profile = %+v, %v; want revision 2 named Renamed\uFFFD", got.Profile, err)
 	}
 }
 

@@ -182,6 +182,7 @@ func TestTextValidate(t *testing.T) {
 		{name, "a\nb", false},
 		{desc, "a\nb", true},
 		{name, "\xff", false},
+		{desc, "a\x00b", false},
 	} {
 		if err := tc.d.Validate(tc.body); (err == nil) != tc.ok {
 			t.Errorf("Validate(%s, %q) = %v, want ok %v", tc.d.Key, tc.body, err, tc.ok)

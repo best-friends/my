@@ -87,6 +87,20 @@ func TestTruncateComment(t *testing.T) {
 	}
 }
 
+func TestReportValidate(t *testing.T) {
+	ok := Report{ID: "r", ReporterAccountID: "a", TargetAccountID: "b", Category: CategorySpam, Comment: "spam", FiledAt: time.Unix(1, 0)}
+	if err := ok.Validate(); err != nil {
+		t.Fatalf("Validate = %v", err)
+	}
+	for _, comment := range []string{"a\x00b", "\xff", strings.Repeat("a", MaxReportComment+1)} {
+		r := ok
+		r.Comment = comment
+		if err := r.Validate(); !errors.Is(err, ErrInvalidReport) {
+			t.Errorf("Validate(comment %q...) = %v, want ErrInvalidReport", comment[:1], err)
+		}
+	}
+}
+
 func TestDomainActionState(t *testing.T) {
 	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
 	soon, past := now.Add(time.Hour), now.Add(-time.Hour)

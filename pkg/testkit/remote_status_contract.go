@@ -60,7 +60,8 @@ type RemoteStatusFactory func(t *testing.T, opts uow.Options) RemoteStatusHarnes
 // leave tombstones; and the timeline and notification projectors see remote posts. The parent of a
 // reply is fetched one level; an opened thread fetches its ancestors and replies within
 // ThreadDepth and ThreadMaxItems; fetched posts must be attributed within their origin; failed
-// fetches are not repeated; and Resolver resolves handles and the URLs of accounts and posts. The
+// fetches are not repeated; Resolver resolves handles and the URLs of accounts and posts; and a
+// post with NUL in every string is stored with U+FFFD (federation.md §4). The
 // actors and the fetches are in-memory stand-ins, and the network of the fetch cases is in memory.
 func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 	t.Helper()
@@ -81,6 +82,7 @@ func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 		{"FetchesThreadsWithinBounds", remoteFetchesThreadsWithinBounds},
 		{"RemembersFailedFetches", remoteRemembersFailedFetches},
 		{"ResolvesHandlesAndURLsOfAccountsAndPosts", remoteResolves},
+		{"StoresStringsWithNUL", remoteStatusStoresStringsWithNUL},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteStatusEnv(t, newHarness)) })
@@ -581,6 +583,72 @@ func remoteRecordsParts(t *testing.T, e *remoteStatusEnv) {
 	three := int64(3)
 	if want := []content.PollTally{{PollID: poll.ID, Position: 0, Votes: 3, VotersCount: &three}, {PollID: poll.ID, Position: 1, Votes: 1, VotersCount: &three}}; err != nil || !reflect.DeepEqual(tallies, want) {
 		t.Errorf("PollTallies = %+v, %v; want %+v", tallies, err, want)
+	}
+}
+
+// remoteStatusStoresStringsWithNUL delivers a Create of a poll whose every string has a NUL (\u0000):
+// the activity is recorded and handled, and each NUL is stored as U+FFFD (federation.md §4) the
+// same way in every dialect.
+func remoteStatusStoresStringsWithNUL(t *testing.T, e *remoteStatusEnv) {
+	const alice = "https://remote.example/users/alice"
+	e.follower(t, alice)
+	const n = "\x00"
+	id := alice + "/notes/nul" + n
+	doc := remoteActivity(t, "Create", id+"/activity", alice, remoteNote(id, alice, remoteNow.Add(-time.Minute), map[string]any{
+		"type":       "Question",
+		"url":        "https://remote.example/@alice/nul" + n,
+		"content":    "<p>a" + n + "b #Go" + n + "</p>",
+		"contentMap": map[string]any{"en" + n: "<p>c" + n + "</p>", "ja": "<p>d" + n + "</p>"},
+		"summary":    "cw" + n,
+		"tag": []any{
+			map[string]any{"type": "Hashtag", "name": "#Go" + n},
+			map[string]any{"type": "Mention", "href": alice, "name": "@alice" + n},
+			map[string]any{"type": "Emoji", "id": "https://remote.example/emojis/nul" + n, "name": ":blob" + n + ":", "icon": map[string]any{"type": "Image", "url": "https://remote.example/files/blob" + n + ".png"}},
+		},
+		"attachment": []any{map[string]any{
+			"type": "Document", "mediaType": "image/png" + n, "url": "https://remote.example/files/a" + n + ".png", "name": "alt" + n, "blurhash": "U" + n,
+		}},
+		"oneOf":   []any{map[string]any{"type": "Note", "name": "yes" + n}, map[string]any{"type": "Note", "name": "no" + n}},
+		"endTime": remoteNow.Add(time.Hour).Format(time.RFC3339),
+	}))
+	if !strings.Contains(string(doc), `\u0000`) {
+		t.Fatalf("the document %s has no \\u0000", doc)
+	}
+	e.expect(t, doc, appfederation.InboxHandled)
+
+	p := e.post(t, alice+"/notes/nul%EF%BF%BD")
+	if path := nulPath(reflect.ValueOf(p), "Post"); path != "" {
+		t.Errorf("%s has a NUL", path)
+	}
+	st, rev := p.Status, p.Revision
+	if st.URL != "https://remote.example/@alice/nul%EF%BF%BD" || rev.SpoilerText != "cw\uFFFD" || len(rev.Bodies) != 2 ||
+		rev.Bodies[0] != (content.Body{Language: "ja", ContentHTML: "<p>d\uFFFD</p>"}) || rev.Bodies[1] != (content.Body{Language: federation.UndeterminedLang, ContentHTML: "<p>c\uFFFD</p>"}) {
+		t.Errorf("post = %+v, want every NUL as U+FFFD", p)
+	}
+	if rev.Poll == nil || len(rev.Poll.Options) != 2 || rev.Poll.Options[0].Title != "yes\uFFFD" {
+		t.Errorf("poll = %+v, want the options with U+FFFD", rev.Poll)
+	}
+	if len(rev.Attachments) != 1 || rev.Attachments[0].Description != "alt\uFFFD" {
+		t.Fatalf("attachments = %+v, want one described alt\uFFFD", rev.Attachments)
+	}
+	if m, err := e.h.Media.FindRemoteMedia(t.Context(), rev.Attachments[0].MediaID); err != nil ||
+		m.RemoteURL != "https://remote.example/files/a%EF%BF%BD.png" || m.Description != "alt\uFFFD" || nulPath(reflect.ValueOf(m), "") != "" {
+		t.Errorf("attachment = %+v, %v; want every NUL as U+FFFD", m, err)
+	}
+	for _, tagID := range rev.TagIDs {
+		if tag, err := e.h.Statuses.FindTag(t.Context(), tagID); err != nil || nulPath(reflect.ValueOf(tag), "") != "" {
+			t.Errorf("tag = %+v, %v; want no NUL", tag, err)
+		}
+	}
+	for _, emojiID := range rev.EmojiIDs {
+		if emoji, _, err := e.content.CustomEmoji(t.Context(), emojiID); err != nil || nulPath(reflect.ValueOf(emoji), "") != "" {
+			t.Errorf("emoji = %+v, %v; want no NUL", emoji, err)
+		}
+	}
+	// Processing it again is a no-op, not a failure.
+	got, err := e.processor.Process(t.Context(), federation.IRI(alice+"/notes/nul%EF%BF%BD/activity"), federation.TrustSigned)
+	if err != nil || got != appfederation.InboxHandled {
+		t.Errorf("processing again = %q, %v; want handled", got, err)
 	}
 }
 

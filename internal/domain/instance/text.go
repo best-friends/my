@@ -63,6 +63,8 @@ func (d TextDefinition) Validate(body string) error {
 	switch {
 	case !utf8.ValidString(body):
 		return invalid("not valid UTF-8")
+	case strings.ContainsRune(body, 0):
+		return invalid("contains NUL") // data-model §1.2
 	case utf8.RuneCountInString(body) > d.MaxLength:
 		return invalid(fmt.Sprintf("longer than %d characters", d.MaxLength))
 	case d.SingleLine && strings.ContainsAny(body, "\r\n"):
