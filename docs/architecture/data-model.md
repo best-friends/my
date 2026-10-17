@@ -470,7 +470,9 @@ flowchart LR
 
 - **本文**: 利用者が書いたプレーンテキストを `status_revision_sources` にそのまま保存し、サーバーが HTML を生成して `status_revision_bodies` に保存します（ADR-0019 §2）。
   - 生成する HTML は `p`、`br`、`span[class]`、`a[href, class, rel, target]` だけで、テキストはすべてエスケープします。リンクには `rel="nofollow noopener noreferrer"` と `target="_blank"` を付けます。
-  - メンション `@user`（`@user@{account_domain}`・`@user@{host}` も同じ）は、`account` の公開 API で引いたローカルの `active` なアカウントだけをリンクにし、版の `status_revision_mentions` に記録します。それ以外のドメインのハンドルはテキストのままです。
+  - メンション `@user`（`@user@{account_domain}`・`@user@{host}` も同じ）は、`account` の公開 API で引いたローカルの `active` なアカウントをリンクにし、版の `status_revision_mentions` に記録します。リンク先は `https://{host}/@{username}` です。
+  - それ以外のドメインのメンション `@user@domain` は、そのハンドル（`account_handles`）を持つリモートの `active` なアカウントをリンクにし、同じく記録します。リンク先は Actor の `url`（最新の `remote_account_snapshots.profile_url`）、無ければ Actor の `uri` です。
+  - 未知のハンドルは、トランザクションの前に `federation` の `RemoteActors.ResolveHandle`（WebFinger → Actor の取得 → 書き込み、[federation.md §6.2](federation.md#62-actor-とハンドル)）で解決します。1 つの本文で解決するのは 5 件まで、合計 10 秒までです。解決できないハンドル、`active` でないアカウントのハンドルはテキストのままです。
   - ハッシュタグ `#name` は、NFKC + 小文字化した名前で `tags` を引き（無ければ作り）、版の `status_revision_tags` に記録します。リンク先は `https://{host}/tags/{正規化した名前}` です。
   - `http` / `https` の URL だけを自動リンクにします。URL は空白・非 ASCII 文字・`<>"` などで終わり、末尾の句読点と対応しない閉じ括弧は含めません。
 - **文字数**: 本文と CW の文字数（Unicode のコードポイント数）の合計が、インスタンス設定 `max_status_length` 以下でなければなりません。設定はコマンドごとに `instance` の公開 API から読みます。

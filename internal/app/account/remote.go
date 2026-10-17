@@ -409,6 +409,17 @@ func (s *Service) RemoteHead(ctx context.Context, accountID string) (account.Rem
 	return s.d.Repository.FindRemoteHead(ctx, accountID)
 }
 
+// RemoteProfileURL returns the profile page of a remote actor, the url of its newest document:
+// "" when the document has none. It fails with ErrNotFound for a local account and for a remote
+// one that has never been fetched.
+func (s *Service) RemoteProfileURL(ctx context.Context, accountID string) (string, error) {
+	snap, err := s.d.Repository.FindLatestRemoteSnapshot(ctx, accountID)
+	if err != nil {
+		return "", err
+	}
+	return snap.ProfileURL, nil
+}
+
 // StaleRemoteActors returns at most limit remote actors whose last fetch is RemoteActorTTL or
 // more old, the least recently fetched first, starting after the head after (the zero value
 // for the first page).

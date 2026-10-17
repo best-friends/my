@@ -7,8 +7,10 @@ import (
 	"errors"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	appinstance "github.com/best-friends/my/internal/app/instance"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/content"
@@ -37,7 +40,8 @@ type PostingHarness struct {
 type PostingFactory func(t *testing.T, opts uow.Options) PostingHarness
 
 // PostingContract verifies the content module's posting use cases on a database adapter:
-// posting with mentions, hashtags, and links rendered to HTML; returning the same status for a
+// posting with mentions, hashtags, and links rendered to HTML; mentions of remote accounts, the
+// unknown ones resolved before the transaction and within bounds; returning the same status for a
 // repeated Idempotency-Key, also under concurrency; the max_status_length setting; rejecting
 // invalid input; capping the visibility through the RestrictionPolicy; replies to statuses the
 // author may see; attaching only the author's own processed uploads; the default post language; editing into new revisions that move the head;
@@ -51,6 +55,7 @@ func PostingContract(t *testing.T, newHarness PostingFactory) {
 	}{
 		{"PostsAStatus", postingPosts},
 		{"RendersProfileText", postingRendersProfileText},
+		{"MentionsRemoteAccounts", postingMentionsRemote},
 		{"ReturnsTheSameStatusForAnIdempotencyKey", postingIdempotent},
 		{"AgreesOnConcurrentIdempotencyKeys", postingIdempotentConcurrent},
 		{"EnforcesMaxStatusLength", postingMaxLength},
@@ -77,6 +82,78 @@ type postingEnv struct {
 	restrictions *fakeRestrictions
 	languages    map[string]string // default post language by user ID
 	events       *eventLog
+	remote       *fakeRemoteMentions
+}
+
+// trackingUnitOfWork is a UnitOfWork that knows whether one of its transactions is running.
+type trackingUnitOfWork struct {
+	uow.UnitOfWork
+	inTx *atomic.Bool
+}
+
+func (u trackingUnitOfWork) Tx(ctx context.Context, fn func(tx uow.Tx) error) error {
+	return u.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		u.inTx.Store(true)
+		defer u.inTx.Store(false)
+		return fn(tx)
+	})
+}
+
+// fakeRemoteMentions is a content.RemoteMentions whose resolvable handles the test serves: a
+// resolution stores the actor, as fetching it would. It records every resolution and whether
+// one ran inside a transaction of the content module or without a deadline.
+type fakeRemoteMentions struct {
+	accounts *appaccount.Service // with a sanitizer, for storing remote actors
+	inTx     *atomic.Bool
+	mu       sync.Mutex
+	actors   map[string]appaccount.RemoteActorInput // by lowercase user@domain
+	calls    []string
+	inTxRuns int
+	unbound  int
+}
+
+func (f *fakeRemoteMentions) ResolveHandle(ctx context.Context, username, domain string) (appaccount.Actor, error) {
+	f.mu.Lock()
+	h := username + "@" + domain
+	f.calls = append(f.calls, h)
+	if f.inTx.Load() {
+		f.inTxRuns++
+	}
+	if _, ok := ctx.Deadline(); !ok {
+		f.unbound++
+	}
+	in, ok := f.actors[strings.ToLower(h)]
+	f.mu.Unlock()
+	if !ok {
+		return appaccount.Actor{}, errors.New("fake: no actor holds " + h)
+	}
+	return f.accounts.SaveRemoteActor(ctx, in)
+}
+
+func (f *fakeRemoteMentions) RemoteProfileURL(ctx context.Context, accountID string) (string, error) {
+	return f.accounts.RemoteProfileURL(ctx, accountID)
+}
+
+// serve makes username@domain resolvable to a remote actor whose profile page is profileURL.
+func (f *fakeRemoteMentions) serve(username, domain, profileURL string) appaccount.RemoteActorInput {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	in := appaccount.RemoteActorInput{
+		URI: "https://" + domain + "/users/" + username, Domain: domain, Type: "Person", PreferredUsername: username,
+		ProfileURL: profileURL, InboxURL: "https://" + domain + "/users/" + username + "/inbox",
+		Document: []byte(`{"id":"https://` + domain + `/users/` + username + `"}`),
+		Handle:   appaccount.HandleCheck{Outcome: account.HandleVerified, Username: username, Domain: domain},
+	}
+	f.actors[strings.ToLower(username+"@"+domain)] = in
+	return in
+}
+
+func (f *fakeRemoteMentions) takeCalls() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := f.calls
+	f.calls = nil
+	return out
 }
 
 // fakeRestrictions is a RestrictionPolicy whose restrictions the test sets per account.
@@ -134,13 +211,22 @@ func newPostingEnv(t *testing.T, newHarness PostingFactory) *postingEnv {
 			UnitOfWork: ph.UnitOfWork, Repository: ph.Instance, Clock: ae.clock, IDs: ae.ids,
 		}),
 	}
+	inTx := &atomic.Bool{}
+	e.remote = &fakeRemoteMentions{
+		accounts: appaccount.NewService(appaccount.Deps{
+			UnitOfWork: ph.UnitOfWork, Repository: ph.Accounts, Clock: ae.clock, IDs: ae.ids,
+			Sealer: kernel.NewSealer(NewKeyManager("posting")), Host: contractHost, Sanitizer: remoteSanitizer{},
+		}),
+		inTx: inTx, actors: map[string]appaccount.RemoteActorInput{},
+	}
 	e.content = appcontent.NewService(appcontent.Deps{
-		UnitOfWork:      ph.UnitOfWork,
+		UnitOfWork:      trackingUnitOfWork{UnitOfWork: ph.UnitOfWork, inTx: inTx},
 		Repository:      ph.Statuses,
 		Accounts:        ae.accounts,
 		Relationships:   e.graph,
 		Restrictions:    e.restrictions,
 		Media:           ph.Media,
+		RemoteMentions:  e.remote,
 		MaxStatusLength: e.instance.MaxStatusLength,
 		DefaultLanguage: func(_ context.Context, userID string) (string, error) { return e.languages[userID], nil },
 		Clock:           ae.clock,
@@ -231,6 +317,80 @@ func postingRendersProfileText(t *testing.T, e *postingEnv) {
 		if !strings.Contains(html, want) {
 			t.Errorf("RenderProfileText = %s, want it to contain %s", html, want)
 		}
+	}
+}
+
+// postingMentionsRemote checks mentions of remote accounts: a stored one links to its profile
+// page without a resolution, an unknown one is resolved outside the transaction, one that does
+// not resolve stays text, and at most MaxResolvedMentions handles of a text are resolved.
+func postingMentionsRemote(t *testing.T, e *postingEnv) {
+	ctx := t.Context()
+	alice := e.user(t, "alice")
+	carol, err := e.remote.accounts.SaveRemoteActor(ctx, e.remote.serve("Carol", "remote.example", "https://remote.example/@Carol"))
+	if err != nil {
+		t.Fatalf("SaveRemoteActor = %v", err)
+	}
+	e.remote.serve("dave", "other.example", "")
+	e.remote.takeCalls()
+
+	p := e.postText(t, alice, "hi @carol@Remote.Example, @dave@other.example and @nobody@nowhere.example", content.VisibilityPublic)
+	if calls := e.remote.takeCalls(); !reflect.DeepEqual(calls, []string{"dave@other.example", "nobody@nowhere.example"}) {
+		t.Errorf("resolved %v, want the unknown handles only", calls)
+	}
+	dave, err := e.accounts.FindByHandle(ctx, "dave", "other.example")
+	if err != nil {
+		t.Fatalf("FindByHandle(dave@other.example) = %v", err)
+	}
+	want := []string{carol.Account.ID, dave.Account.ID}
+	slices.Sort(want)
+	if !reflect.DeepEqual(p.Revision.MentionedAccountIDs, want) {
+		t.Errorf("mentions = %v, want carol and dave %v", p.Revision.MentionedAccountIDs, want)
+	}
+	if m := e.mentionsOf(t, p.Status.ID); !reflect.DeepEqual(m, want) {
+		t.Errorf("mention index = %v, want %v", m, want)
+	}
+	html := p.Revision.Bodies[0].ContentHTML
+	for _, s := range []string{
+		`<span class="h-card"><a href="https://remote.example/@Carol" class="u-url mention" rel="nofollow noopener noreferrer" target="_blank">@<span>Carol</span></a></span>`,
+		// No url: the link is the actor's URI.
+		`<a href="https://other.example/users/dave" class="u-url mention"`,
+		"@nobody@nowhere.example",
+	} {
+		if !strings.Contains(html, s) {
+			t.Errorf("HTML %s, want it to contain %s", html, s)
+		}
+	}
+	e.remote.mu.Lock()
+	inTx, unbound := e.remote.inTxRuns, e.remote.unbound
+	e.remote.mu.Unlock()
+	if inTx != 0 || unbound != 0 {
+		t.Errorf("%d resolutions ran inside a transaction and %d without a deadline, want none", inTx, unbound)
+	}
+
+	// The unknown handles of one text are bounded.
+	var text []string
+	for i := range appcontent.MaxResolvedMentions + 2 {
+		text = append(text, "@u"+strconv.Itoa(i)+"@far.example")
+	}
+	p = e.postText(t, alice, strings.Join(text, " "), content.VisibilityPublic)
+	if calls := e.remote.takeCalls(); len(calls) != appcontent.MaxResolvedMentions {
+		t.Errorf("resolved %v, want the first %d handles", calls, appcontent.MaxResolvedMentions)
+	}
+	if len(p.Revision.MentionedAccountIDs) != 0 {
+		t.Errorf("mentions = %v, want none", p.Revision.MentionedAccountIDs)
+	}
+
+	// A remote account that is not active stays text.
+	err = e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return e.remote.accounts.MarkRemoteDeleted(ctx, tx, carol.Account.ID) })
+	if err != nil {
+		t.Fatalf("MarkRemoteDeleted = %v", err)
+	}
+	p = e.postText(t, alice, "bye @carol@remote.example", content.VisibilityPublic)
+	if calls := e.remote.takeCalls(); len(calls) != 0 {
+		t.Errorf("resolved %v, want no resolution of a stored handle", calls)
+	}
+	if len(p.Revision.MentionedAccountIDs) != 0 || strings.Contains(p.Revision.Bodies[0].ContentHTML, "<a") {
+		t.Errorf("mention of a deleted account = %v %s, want text", p.Revision.MentionedAccountIDs, p.Revision.Bodies[0].ContentHTML)
 	}
 }
 

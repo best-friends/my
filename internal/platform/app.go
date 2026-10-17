@@ -347,6 +347,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// No moderation restrictions exist yet; posting still goes through the policy port.
 		Restrictions:    content.NoRestrictions{},
 		Media:           medias,
+		RemoteMentions:  remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
 		MaxStatusLength: a.Instance.MaxStatusLength,
 		DefaultLanguage: a.defaultPostLanguage,
 		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,

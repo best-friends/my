@@ -86,6 +86,25 @@ type Accounts interface {
 	FindByHandle(ctx context.Context, username, domain string) (appaccount.Actor, error)
 }
 
+// RemoteMentions finds the remote accounts that local text mentions (federation.md §6.2). The
+// federation module's RemoteActors resolves handles and the account module reads profile pages;
+// the platform joins them.
+type RemoteMentions interface {
+	// ResolveHandle returns the remote account with the handle username@domain: the stored one,
+	// or the one that WebFinger leads to, fetched and stored. It does network I/O.
+	ResolveHandle(ctx context.Context, username, domain string) (appaccount.Actor, error)
+	// RemoteProfileURL returns the profile page (the actor's url) of a remote account, "" when
+	// its document has none.
+	RemoteProfileURL(ctx context.Context, accountID string) (string, error)
+}
+
+// Bounds of resolving the unknown remote handles of one text (federation.md §6.2): handles past
+// MaxResolvedMentions, and those still unresolved after MentionResolveTimeout, stay text.
+const (
+	MaxResolvedMentions   = 5
+	MentionResolveTimeout = 10 * time.Second
+)
+
 // Relationships is the part of the graph module's public API that the content module reads:
 // the follows and blocks between two accounts. *appgraph.Service implements it.
 type Relationships interface {
@@ -101,6 +120,9 @@ type Deps struct {
 	Restrictions  RestrictionPolicy
 	// Media reads the media files that posts attach; nil accepts no attachments.
 	Media MediaRepository
+	// RemoteMentions resolves the remote handles that a text mentions; nil leaves every remote
+	// handle text.
+	RemoteMentions RemoteMentions
 	// MaxStatusLength returns the current max_status_length instance setting (FR-101); it is
 	// read per command, so that changes apply at once.
 	MaxStatusLength func(ctx context.Context) (int, error)
@@ -176,8 +198,8 @@ type CreateInput struct {
 	IdempotencyKey string
 }
 
-// Create posts a local status. The text becomes HTML with mentions of local, active accounts,
-// hashtags, and URLs linked; attached media must be the author's own processed uploads
+// Create posts a local status. The text becomes HTML with mentions of active accounts (local
+// ones, and remote ones resolved before the transaction), hashtags, and URLs linked; attached media must be the author's own processed uploads
 // (ErrMediaNotFound, ErrMediaNotReady); the visibility is capped by the author's visibility ceiling
 // (data-model §5.4) and stored as capped. A reply must target a status the author may see.
 //
@@ -489,7 +511,8 @@ func CountCharacters(text, spoilerText string) int {
 }
 
 // prepareText validates the content against the instance settings, resolves its mentions to
-// local, active accounts, and renders it.
+// active accounts, and renders it. It runs before the transaction, since resolving a remote
+// handle may fetch it.
 func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in TextInput) (preparedText, error) {
 	for _, v := range []string{in.Text, in.SpoilerText} {
 		if !utf8.ValidString(v) || strings.ContainsRune(v, 0) {
@@ -530,22 +553,25 @@ func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in T
 	}, nil
 }
 
-// render resolves the mentions of parsed text to local, active accounts and renders it. It
-// returns the HTML and the IDs of the mentioned accounts, sorted.
+// render resolves the mentions of parsed text to active accounts and renders it. It returns
+// the HTML and the IDs of the mentioned accounts, sorted. It may do network I/O through
+// RemoteMentions, so it never runs inside a transaction.
 func (s *Service) render(ctx context.Context, parsed ParsedText) (string, []string, error) {
 	targets := map[MentionHandle]MentionTarget{}
 	var mentions []string
+	r := &mentionResolver{s: s}
+	defer r.close()
 	for _, h := range parsed.Mentions() {
-		a, ok, err := s.mentioned(ctx, h)
+		target, id, ok, err := r.resolve(ctx, h)
 		if err != nil {
 			return "", nil, err
 		}
 		if !ok {
 			continue
 		}
-		targets[h] = MentionTarget{Username: a.Handle.Username, URL: profileURL(s.d.Host, a.Handle.Username)}
-		if !slices.Contains(mentions, a.Account.ID) {
-			mentions = append(mentions, a.Account.ID)
+		targets[h] = target
+		if !slices.Contains(mentions, id) {
+			mentions = append(mentions, id)
 		}
 	}
 	slices.Sort(mentions)
@@ -553,8 +579,8 @@ func (s *Service) render(ctx context.Context, parsed ParsedText) (string, []stri
 }
 
 // RenderProfileText renders the typed note or field value of a local profile to HTML through
-// the same rules as the text of a post (FR-006, ADR-0019 §2): mentions of local, active
-// accounts, hashtags, and URLs become links and everything else is escaped. It implements the
+// the same rules as the text of a post (FR-006, ADR-0019 §2): mentions of active accounts,
+// hashtags, and URLs become links and everything else is escaped. It implements the
 // account module's RenderProfileText.
 func (s *Service) RenderProfileText(ctx context.Context, text string) (string, error) {
 	html, _, err := s.render(ctx, ParseText(text))
@@ -615,24 +641,6 @@ func (s *Service) checkMedia(ctx context.Context, authorID, mediaID string) erro
 		return fmt.Errorf("media %s: %w", mediaID, ErrMediaNotReady)
 	}
 	return nil
-}
-
-// mentioned resolves a mentioned handle to a local, active account. Handles of other domains
-// are left to the federation module and stay text.
-func (s *Service) mentioned(ctx context.Context, h MentionHandle) (appaccount.Actor, bool, error) {
-	if h.Domain != "" && h.Domain != strings.ToLower(s.d.AccountDomain) && h.Domain != strings.ToLower(s.d.Host) {
-		return appaccount.Actor{}, false, nil
-	}
-	// "" is account.LocalDomain, the domain of local handles.
-	a, err := s.d.Accounts.FindByHandle(ctx, h.Username, "")
-	if errors.Is(err, appaccount.ErrNotFound) {
-		return appaccount.Actor{}, false, nil
-	}
-	if err != nil {
-		return appaccount.Actor{}, false, err
-	}
-	ok := a.Account.IsLocal() && a.Lifecycle.Active() && a.Handle != nil
-	return a, ok, nil
 }
 
 // language canonicalizes the requested language, falling back to the author's default.

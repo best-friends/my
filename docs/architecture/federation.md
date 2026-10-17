@@ -229,6 +229,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - ハンドルは、保存済みの `account_handles` にあればそれを返します。なければ `https://{domain}` の WebFinger で `acct:{user}@{domain}` を引き、`self` リンクの Actor を `Resolve`（保存済みなら取得しない）で取得・保存します。WebFinger にも §6.1 の取得先の規則（自サーバー・`federation` の制限・`unavailable` のドメインには送らない）が掛かります。
   - URL は、Actor の `id` か Actor を返す URL（プロフィールのページなど）として `Resolve` します。
   - どちらも、ハンドルを WebFinger で確かめた Actor だけを返し、それ以外（WebFinger が Actor を示さない・取得できない・ハンドルが `mismatch`）は `ErrUnresolvable` です。
+  - ハンドルの解決は、返す Actor のハンドルが求めたハンドル（ユーザー名は大文字小文字を区別しない、ホストは正規化）と一致することも確かめます。
+  - ローカル投稿のメンション（data-model §4.4）は `ResolveHandle` を、トランザクションの外で、件数と時間に上限を置いて呼びます。
   - クライアント API は `GET /api/v1/accounts/lookup` の `resolve=true` で呼びます（トークン必須、アカウントごとに 30 回 / 5 分）。
 - URL がオブジェクト（投稿）なら投稿として取り込みます。
 - 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します（ジョブ `federation.refresh_actor`、冪等キー `refresh_actor:<account_id>`）。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors`（1 時間ごと）が `remote_account_heads (last_fetched_at)` の古い順に 200 件ずつ読み、フォローされているものを取り直します（ADR-0034）。カーソル（`last_fetched_at` と `account_id`）を持った次のジョブが続きを読みます。
