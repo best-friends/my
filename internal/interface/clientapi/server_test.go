@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"slices"
 	"testing"
 
@@ -60,8 +61,9 @@ func TestGetInstance(t *testing.T) {
 		Registrations: clientapi.InstanceRegistrations{Mode: clientapi.InstanceRegistrationsModeApproval},
 		Limits:        clientapi.InstanceLimits{MaxPostCharacters: 500},
 		Timelines:     clientapi.InstanceTimelines{Local: true, Federated: true},
+		Rules:         []clientapi.InstanceRule{},
 	}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("instance = %+v, want %+v", got, want)
 	}
 	if cc := res.Header.Get("Cache-Control"); cc != "public, max-age=60" {

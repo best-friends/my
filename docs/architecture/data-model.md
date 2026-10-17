@@ -799,9 +799,9 @@ flowchart LR
 | `instance_text_revisions` | イベント（版） | `id`, `key`（`enum(name, short_description, description, terms, privacy_policy, preview_image_alt)`）, `locale`（`lang`）, `body`（空 = そのロケールの文章を消す）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, locale, id DESC)` |
 | `instance_texts` | 投影 | `key`, `locale`, `revision_id` | PK `(key, locale)`。表示はロケールのフォールバックチェーン（ADR-0009）で選ぶ |
 | `instance_rules` | リソース | `id`, `created_at` | ルールの識別子。通報が引用する（`report_rule_citations`） |
-| `instance_rule_revisions` | イベント（版） | `id`, `rule_id`, `position`, `revised_by_user_id`, `revised_at` | インデックス `(rule_id, id DESC)` |
-| `instance_rule_texts` | イベント（版の子） | `rule_revision_id`, `locale`, `text`, `hint`（NULL 可） | PK `(rule_revision_id, locale)` |
-| `instance_rule_retirements` | イベント | `rule_id`（PK）, `retired_by_user_id`, `retired_at` | 廃止したルールも通報からは参照できる |
+| `instance_rule_revisions` | イベント（版） | `id`, `rule_id`, `position`（`int`）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(rule_id, id DESC)`。版は位置とすべてのロケールの文を持つ |
+| `instance_rule_texts` | イベント（版の子） | `rule_revision_id`, `locale`（`lang`）, `text`（`string(300)`。1 行）, `hint`（`string(1000)`。空 = 補足なし） | PK `(rule_revision_id, locale)`。1 つの版に 50 ロケールまで |
+| `instance_rule_retirements` | イベント | `rule_id`（PK）, `retired_by_user_id`（NULL 可 = CLI による廃止）, `retired_at` | 廃止したルールも通報からは参照できる |
 | `instance_rule_heads` | 投影 | `rule_id`（PK）, `revision_id`, `position` | 有効なルールだけ。インデックス `(position)` |
 
 - 設定値は 1 キー 1 スカラーにします。複合的な設定はキーを分けます（JSON にしない）。
@@ -814,6 +814,12 @@ flowchart LR
   再起動で反映するデプロイの構成（アダプタ・接続先・ホスト名・秘密情報）は設定に、運営者が稼働中に変える方針と文章はこの表に置きます。
   どちらかがもう一方を上書きすることはありません（[設定リファレンス](../reference/configuration.md)、[運用手順](../operations/instance-settings.md)）。
 - 新しい設定は、それを使う機能と一緒にキーを追加します。
+- ルールの文の改訂と並べ替えは、どちらも位置とすべてのロケールの文を写した新しい版を記録します。`rule_id` は変わらないので、通報の引用（`report_rule_citations`）はそのまま残ります。
+  - 新しいルールは有効なルールの最後（最大の `position` + 1）に置きます。有効なルールは 100 個までです。
+  - 並べ替えは、移すルールを有効なルールの中の指定の位置（1 から）に入れて 1, 2, ... と振り直し、`position` が変わるルールにだけ版を記録します。
+    廃止で空いた番号は、次の並べ替えで詰まります。同じ `position` のルールは `rule_id` の順に並べます（PostgreSQL の READ COMMITTED で同時に追加した場合）。
+- `instance_rule_heads` は、廃止していないルールの `id` が最大の版を指します。廃止すると行が消え、廃止は取り消せません。
+- ルールの文は、テキストと同じフォールバックチェーンで選び、チェーンのどのロケールにも文が無ければロケール順で最初の文を使います（読み手によってルールが一覧から消えないように）。
 
 ### 4.10 基盤（アダプタ所有）
 

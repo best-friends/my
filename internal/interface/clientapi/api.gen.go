@@ -676,6 +676,47 @@ type AdminReportPage struct {
 // AdminReportState `open` reports await the moderators; `resolved` ones are handled.
 type AdminReportState string
 
+// AdminRule A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
+// across revisions, so reports keep citing it.
+type AdminRule struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Position The sort key of the rule; the rules in effect are listed by it. Retiring a rule
+	// leaves a gap until the next move.
+	Position int `json:"position"`
+
+	// RetiredAt When the rule was retired; omitted for a rule in effect.
+	RetiredAt *time.Time `json:"retired_at,omitempty"`
+
+	// RevisedAt When the current revision was recorded.
+	RevisedAt time.Time `json:"revised_at"`
+
+	// Texts The texts by locale.
+	Texts []AdminRuleText `json:"texts"`
+}
+
+// AdminRuleList The rules.
+type AdminRuleList struct {
+	Items []AdminRule `json:"items"`
+}
+
+// AdminRuleText The text of a rule in one locale.
+type AdminRuleText struct {
+	// Hint An explanation of the rule, as plain text; omitted when there is none.
+	Hint *string `json:"hint,omitempty"`
+
+	// Locale The BCP 47 tag of the locale, canonical (`ja-JP`).
+	Locale string `json:"locale"`
+
+	// Text The rule, on one line, as plain text.
+	Text string `json:"text"`
+}
+
 // CreateDomainActionRequest A moderation action to take on a domain.
 type CreateDomainActionRequest struct {
 	// Domain The remote domain, such as `spam.example`; a U-label spelling such as `例え.jp` is
@@ -854,6 +895,9 @@ type Instance struct {
 	// Registrations How people sign up on the instance.
 	Registrations InstanceRegistrations `json:"registrations"`
 
+	// Rules The rules in effect, in order, each in the locale of the request.
+	Rules []InstanceRule `json:"rules"`
+
 	// ShortDescription A one-paragraph summary of the instance, as plain text; omitted when there is none.
 	ShortDescription *string `json:"short_description,omitempty"`
 
@@ -884,6 +928,43 @@ type InstanceRegistrations struct {
 // InstanceRegistrationsMode Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
 // approval), `invite` (only with an invite), or `closed` (nobody).
 type InstanceRegistrationsMode string
+
+// InstanceRule A rule of the instance (FR-705), in the first locale of the request's fallback chain
+// that the rule has (the request's locale and its parents, the instance's default locale
+// and its parents, then `en`), or else in its first locale. Reports cite it by `id`.
+type InstanceRule struct {
+	// Hint An explanation of the rule, as plain text; omitted when there is none.
+	Hint *string `json:"hint,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Lang The BCP 47 tag of the locale of `text` and `hint`, for the `lang` attribute.
+	Lang string `json:"lang"`
+
+	// Text The rule, on one line, as plain text.
+	Text string `json:"text"`
+}
+
+// InstanceRuleInput The texts of a rule.
+type InstanceRuleInput struct {
+	// Texts The rule in each locale, at least one; they replace every earlier text.
+	Texts []InstanceRuleTextInput `json:"texts"`
+}
+
+// InstanceRuleTextInput The text of a rule in one locale.
+type InstanceRuleTextInput struct {
+	// Hint An explanation of the rule, as plain text; omitted or empty for none.
+	Hint *string `json:"hint,omitempty"`
+
+	// Locale A BCP 47 tag; it is canonicalized (`ja_jp` becomes `ja-JP`).
+	Locale string `json:"locale"`
+
+	// Text The rule, on one line, as plain text.
+	Text string `json:"text"`
+}
 
 // InstanceTimelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
 // clients do not offer it.
@@ -1013,6 +1094,12 @@ type MediaVariants struct {
 	Thumbnail MediaVariant `json:"thumbnail"`
 }
 
+// MoveInstanceRuleRequest The new place of a rule.
+type MoveInstanceRuleRequest struct {
+	// Position The place among the rules in effect, from 1.
+	Position int `json:"position"`
+}
+
 // MuteAccountRequest The settings of a mute.
 type MuteAccountRequest struct {
 	// Duration How long the mute lasts, in seconds; 0 mutes until unmuted.
@@ -1108,8 +1195,9 @@ type PageInfo struct {
 }
 
 // Permission A capability that a role grants. `manage_domains`: the health of remote servers and the
-// moderation actions on domains. `manage_reports`: the reports. `manage_jobs`: the dead
-// jobs of the job queue. The others guard no client API operation yet.
+// moderation actions on domains. `manage_reports`: the reports. `manage_rules`: the
+// instance rules. `manage_jobs`: the dead jobs of the job queue. The others guard no
+// client API operation yet.
 type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
@@ -1552,6 +1640,11 @@ type Limit = int
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type ReportId = Id
 
+// RuleId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type RuleId = Id
+
 // StatusId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -1680,6 +1773,12 @@ type ListReportsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListInstanceRulesParams defines parameters for ListInstanceRules.
+type ListInstanceRulesParams struct {
+	// IncludeRetired Also list the retired rules, after the rules in effect.
+	IncludeRetired *bool `form:"include_retired,omitempty" json:"include_retired,omitempty"`
+}
+
 // ListBlocksParams defines parameters for ListBlocks.
 type ListBlocksParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -1786,6 +1885,15 @@ type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 
 // ResolveReportJSONRequestBody defines body for ResolveReport for application/json ContentType.
 type ResolveReportJSONRequestBody = ResolveReportRequest
+
+// CreateInstanceRuleJSONRequestBody defines body for CreateInstanceRule for application/json ContentType.
+type CreateInstanceRuleJSONRequestBody = InstanceRuleInput
+
+// UpdateInstanceRuleJSONRequestBody defines body for UpdateInstanceRule for application/json ContentType.
+type UpdateInstanceRuleJSONRequestBody = InstanceRuleInput
+
+// MoveInstanceRuleJSONRequestBody defines body for MoveInstanceRule for application/json ContentType.
+type MoveInstanceRuleJSONRequestBody = MoveInstanceRuleRequest
 
 // UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
 type UploadMediaMultipartRequestBody = MediaUpload
@@ -1897,6 +2005,24 @@ type ServerInterface interface {
 	// UnassignReport Leave a report to nobody
 	// (POST /admin/reports/{id}/unassign)
 	UnassignReport(w http.ResponseWriter, r *http.Request, id ReportId)
+	// ListInstanceRules List the instance rules
+	// (GET /admin/rules)
+	ListInstanceRules(w http.ResponseWriter, r *http.Request, params ListInstanceRulesParams)
+	// CreateInstanceRule Add an instance rule
+	// (POST /admin/rules)
+	CreateInstanceRule(w http.ResponseWriter, r *http.Request)
+	// GetInstanceRule Get an instance rule
+	// (GET /admin/rules/{id})
+	GetInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId)
+	// UpdateInstanceRule Revise the texts of an instance rule
+	// (PATCH /admin/rules/{id})
+	UpdateInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId)
+	// MoveInstanceRule Move an instance rule
+	// (POST /admin/rules/{id}/move)
+	MoveInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId)
+	// RetireInstanceRule Retire an instance rule
+	// (POST /admin/rules/{id}/retire)
+	RetireInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(w http.ResponseWriter, r *http.Request, params ListBlocksParams)
@@ -3062,6 +3188,157 @@ func (siw *ServerInterfaceWrapper) UnassignReport(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UnassignReport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInstanceRules operation middleware
+func (siw *ServerInterfaceWrapper) ListInstanceRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInstanceRulesParams
+
+	// ------------- Optional query parameter "include_retired" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_retired", r.URL.Query(), &params.IncludeRetired, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_retired"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_retired", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInstanceRules(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateInstanceRule operation middleware
+func (siw *ServerInterfaceWrapper) CreateInstanceRule(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateInstanceRule(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInstanceRule operation middleware
+func (siw *ServerInterfaceWrapper) GetInstanceRule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id RuleId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInstanceRule(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateInstanceRule operation middleware
+func (siw *ServerInterfaceWrapper) UpdateInstanceRule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id RuleId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateInstanceRule(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MoveInstanceRule operation middleware
+func (siw *ServerInterfaceWrapper) MoveInstanceRule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id RuleId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MoveInstanceRule(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetireInstanceRule operation middleware
+func (siw *ServerInterfaceWrapper) RetireInstanceRule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id RuleId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetireInstanceRule(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4311,6 +4588,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/assign_to_self", wrapper.AssignReportToSelf)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/unassign", wrapper.UnassignReport)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/resolve", wrapper.ResolveReport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/rules", wrapper.ListInstanceRules)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules", wrapper.CreateInstanceRule)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/rules/{id}", wrapper.GetInstanceRule)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/rules/{id}", wrapper.UpdateInstanceRule)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
 
 	return m
 }
@@ -4358,6 +4641,15 @@ type AdminReportJSONResponse struct {
 	Body AdminReport
 
 	Headers AdminReportResponseHeaders
+}
+
+type AdminRuleResponseHeaders struct {
+	CacheControl *string
+}
+type AdminRuleJSONResponse struct {
+	Body AdminRule
+
+	Headers AdminRuleResponseHeaders
 }
 
 type ProblemResponseHeaders struct {
@@ -6083,6 +6375,345 @@ type UnassignReportdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UnassignReportdefaultApplicationProblemPlusJSONResponse) VisitUnassignReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceRulesRequestObject struct {
+	Params ListInstanceRulesParams
+}
+
+type ListInstanceRulesResponseObject interface {
+	VisitListInstanceRulesResponse(w http.ResponseWriter) error
+}
+
+type ListInstanceRules200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListInstanceRules200JSONResponse struct {
+	Body    AdminRuleList
+	Headers ListInstanceRules200ResponseHeaders
+}
+
+func (response ListInstanceRules200JSONResponse) VisitListInstanceRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceRulesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListInstanceRulesdefaultApplicationProblemPlusJSONResponse) VisitListInstanceRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInstanceRuleRequestObject struct {
+	Body *CreateInstanceRuleJSONRequestBody
+}
+
+type CreateInstanceRuleResponseObject interface {
+	VisitCreateInstanceRuleResponse(w http.ResponseWriter) error
+}
+
+type CreateInstanceRule200JSONResponse struct{ AdminRuleJSONResponse }
+
+func (response CreateInstanceRule200JSONResponse) VisitCreateInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInstanceRuledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateInstanceRuledefaultApplicationProblemPlusJSONResponse) VisitCreateInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInstanceRuleRequestObject struct {
+	Id RuleId `json:"id"`
+}
+
+type GetInstanceRuleResponseObject interface {
+	VisitGetInstanceRuleResponse(w http.ResponseWriter) error
+}
+
+type GetInstanceRule200JSONResponse struct{ AdminRuleJSONResponse }
+
+func (response GetInstanceRule200JSONResponse) VisitGetInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInstanceRuledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetInstanceRuledefaultApplicationProblemPlusJSONResponse) VisitGetInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateInstanceRuleRequestObject struct {
+	Id   RuleId `json:"id"`
+	Body *UpdateInstanceRuleJSONRequestBody
+}
+
+type UpdateInstanceRuleResponseObject interface {
+	VisitUpdateInstanceRuleResponse(w http.ResponseWriter) error
+}
+
+type UpdateInstanceRule200JSONResponse struct{ AdminRuleJSONResponse }
+
+func (response UpdateInstanceRule200JSONResponse) VisitUpdateInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateInstanceRuledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateInstanceRuledefaultApplicationProblemPlusJSONResponse) VisitUpdateInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MoveInstanceRuleRequestObject struct {
+	Id   RuleId `json:"id"`
+	Body *MoveInstanceRuleJSONRequestBody
+}
+
+type MoveInstanceRuleResponseObject interface {
+	VisitMoveInstanceRuleResponse(w http.ResponseWriter) error
+}
+
+type MoveInstanceRule200JSONResponse struct{ AdminRuleJSONResponse }
+
+func (response MoveInstanceRule200JSONResponse) VisitMoveInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MoveInstanceRuledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response MoveInstanceRuledefaultApplicationProblemPlusJSONResponse) VisitMoveInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireInstanceRuleRequestObject struct {
+	Id RuleId `json:"id"`
+}
+
+type RetireInstanceRuleResponseObject interface {
+	VisitRetireInstanceRuleResponse(w http.ResponseWriter) error
+}
+
+type RetireInstanceRule200JSONResponse struct{ AdminRuleJSONResponse }
+
+func (response RetireInstanceRule200JSONResponse) VisitRetireInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireInstanceRuledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RetireInstanceRuledefaultApplicationProblemPlusJSONResponse) VisitRetireInstanceRuleResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -8225,6 +8856,24 @@ type StrictServerInterface interface {
 	// UnassignReport Leave a report to nobody
 	// (POST /admin/reports/{id}/unassign)
 	UnassignReport(ctx context.Context, request UnassignReportRequestObject) (UnassignReportResponseObject, error)
+	// ListInstanceRules List the instance rules
+	// (GET /admin/rules)
+	ListInstanceRules(ctx context.Context, request ListInstanceRulesRequestObject) (ListInstanceRulesResponseObject, error)
+	// CreateInstanceRule Add an instance rule
+	// (POST /admin/rules)
+	CreateInstanceRule(ctx context.Context, request CreateInstanceRuleRequestObject) (CreateInstanceRuleResponseObject, error)
+	// GetInstanceRule Get an instance rule
+	// (GET /admin/rules/{id})
+	GetInstanceRule(ctx context.Context, request GetInstanceRuleRequestObject) (GetInstanceRuleResponseObject, error)
+	// UpdateInstanceRule Revise the texts of an instance rule
+	// (PATCH /admin/rules/{id})
+	UpdateInstanceRule(ctx context.Context, request UpdateInstanceRuleRequestObject) (UpdateInstanceRuleResponseObject, error)
+	// MoveInstanceRule Move an instance rule
+	// (POST /admin/rules/{id}/move)
+	MoveInstanceRule(ctx context.Context, request MoveInstanceRuleRequestObject) (MoveInstanceRuleResponseObject, error)
+	// RetireInstanceRule Retire an instance rule
+	// (POST /admin/rules/{id}/retire)
+	RetireInstanceRule(ctx context.Context, request RetireInstanceRuleRequestObject) (RetireInstanceRuleResponseObject, error)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(ctx context.Context, request ListBlocksRequestObject) (ListBlocksResponseObject, error)
@@ -9183,6 +9832,181 @@ func (sh *strictHandler) UnassignReport(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnassignReportResponseObject); ok {
 		if err := validResponse.VisitUnassignReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInstanceRules operation middleware
+func (sh *strictHandler) ListInstanceRules(w http.ResponseWriter, r *http.Request, params ListInstanceRulesParams) {
+	var request ListInstanceRulesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInstanceRules(ctx, request.(ListInstanceRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInstanceRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInstanceRulesResponseObject); ok {
+		if err := validResponse.VisitListInstanceRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateInstanceRule operation middleware
+func (sh *strictHandler) CreateInstanceRule(w http.ResponseWriter, r *http.Request) {
+	var request CreateInstanceRuleRequestObject
+
+	var body CreateInstanceRuleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateInstanceRule(ctx, request.(CreateInstanceRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateInstanceRule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateInstanceRuleResponseObject); ok {
+		if err := validResponse.VisitCreateInstanceRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInstanceRule operation middleware
+func (sh *strictHandler) GetInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId) {
+	var request GetInstanceRuleRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInstanceRule(ctx, request.(GetInstanceRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInstanceRule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInstanceRuleResponseObject); ok {
+		if err := validResponse.VisitGetInstanceRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateInstanceRule operation middleware
+func (sh *strictHandler) UpdateInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId) {
+	var request UpdateInstanceRuleRequestObject
+
+	request.Id = id
+
+	var body UpdateInstanceRuleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateInstanceRule(ctx, request.(UpdateInstanceRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateInstanceRule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateInstanceRuleResponseObject); ok {
+		if err := validResponse.VisitUpdateInstanceRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MoveInstanceRule operation middleware
+func (sh *strictHandler) MoveInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId) {
+	var request MoveInstanceRuleRequestObject
+
+	request.Id = id
+
+	var body MoveInstanceRuleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MoveInstanceRule(ctx, request.(MoveInstanceRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MoveInstanceRule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MoveInstanceRuleResponseObject); ok {
+		if err := validResponse.VisitMoveInstanceRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetireInstanceRule operation middleware
+func (sh *strictHandler) RetireInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId) {
+	var request RetireInstanceRuleRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetireInstanceRule(ctx, request.(RetireInstanceRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetireInstanceRule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetireInstanceRuleResponseObject); ok {
+		if err := validResponse.VisitRetireInstanceRuleResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

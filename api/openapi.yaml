@@ -1580,6 +1580,144 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: domain actions and reports (#296) ---
+  # --- admin: instance rules (#331) ---
+  /admin/rules:
+    get:
+      operationId: listInstanceRules
+      summary: List the instance rules
+      description: |
+        Every rule in every locale (FR-705): the rules in effect by position, followed, when
+        `include_retired` is set, by the retired ones. The list is not paginated; at most 100
+        rules are in effect. Needs the `manage_rules` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: include_retired
+          in: query
+          required: false
+          description: Also list the retired rules, after the rules in effect.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: The rules.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRuleList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createInstanceRule
+      summary: Add an instance rule
+      description: |
+        Adds a rule after the rules in effect. A text that is blank, longer than 300
+        characters, or on more than one line, a hint longer than 1,000 characters, a locale
+        that is not a BCP 47 tag or appears twice (after canonicalization: `ja_jp` is `ja-JP`),
+        no texts, or more than 50 is a 422 naming the property (`texts[0].text`). With 100
+        rules in effect it is a 422 naming `rules`. Needs the `manage_rules` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstanceRuleInput"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRule"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/rules/{id}:
+    get:
+      operationId: getInstanceRule
+      summary: Get an instance rule
+      description: |
+        A rule, retired or not; reports cite rules by ID. An unknown ID is a 404. Needs the
+        `manage_rules` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRule"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateInstanceRule
+      summary: Revise the texts of an instance rule
+      description: |
+        Records a revision whose texts replace every text of the rule; the rule keeps its ID
+        and position. The texts are checked as for a new rule (422). A retired rule is a 409
+        and an unknown ID a 404. Needs the `manage_rules` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstanceRuleInput"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRule"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/rules/{id}/move:
+    post:
+      operationId: moveInstanceRule
+      summary: Move an instance rule
+      description: |
+        Moves the rule to a place among the rules in effect and numbers them 1, 2, ... in their
+        new order; a place after the last rule moves it last. A `position` below 1 is a 422, a
+        retired rule a 409, and an unknown ID a 404. Needs the `manage_rules` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveInstanceRuleRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRule"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/rules/{id}/retire:
+    post:
+      operationId: retireInstanceRule
+      summary: Retire an instance rule
+      description: |
+        Removes the rule from the rules in effect, at once and for good; reports that cite it
+        still refer to it. Retiring a retired rule changes nothing. An unknown ID is a 404.
+        Needs the `manage_rules` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRule"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: instance rules (#331) ---
 components:
   securitySchemes:
     oauth2:
@@ -1699,6 +1837,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: domain actions and reports (#296) ---
+    # --- admin: instance rules (#331) ---
+    RuleId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the rule.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: instance rules (#331) ---
   responses:
     StatusPage:
       description: A page of posts and boosts, newest first.
@@ -1805,6 +1952,17 @@ components:
           schema:
             $ref: "#/components/schemas/AdminReport"
     # --- end of admin: domain actions and reports (#296) ---
+    # --- admin: instance rules (#331) ---
+    AdminRule:
+      description: The rule.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminRule"
+    # --- end of admin: instance rules (#331) ---
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -1879,7 +2037,7 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, registrations, limits, timelines]
+      required: [domain, name, version, source_url, registrations, limits, timelines, rules]
       properties:
         domain:
           description: The domain that serves the instance.
@@ -1906,6 +2064,11 @@ components:
           $ref: "#/components/schemas/InstanceLimits"
         timelines:
           $ref: "#/components/schemas/InstanceTimelines"
+        rules:
+          description: The rules in effect, in order, each in the locale of the request.
+          type: array
+          items:
+            $ref: "#/components/schemas/InstanceRule"
     InstanceRegistrations:
       description: How people sign up on the instance.
       type: object
@@ -1939,6 +2102,25 @@ components:
         federated:
           description: Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`).
           type: boolean
+    InstanceRule:
+      description: |
+        A rule of the instance (FR-705), in the first locale of the request's fallback chain
+        that the rule has (the request's locale and its parents, the instance's default locale
+        and its parents, then `en`), or else in its first locale. Reports cite it by `id`.
+      type: object
+      required: [id, text, lang]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        text:
+          description: The rule, on one line, as plain text.
+          type: string
+        hint:
+          description: An explanation of the rule, as plain text; omitted when there is none.
+          type: string
+        lang:
+          description: The BCP 47 tag of the locale of `text` and `hint`, for the `lang` attribute.
+          type: string
     # Accounts and relationships (#108).
     Account:
       description: An account, as clients show it (FR-006).
@@ -3082,8 +3264,9 @@ components:
     Permission:
       description: |
         A capability that a role grants. `manage_domains`: the health of remote servers and the
-        moderation actions on domains. `manage_reports`: the reports. `manage_jobs`: the dead
-        jobs of the job queue. The others guard no client API operation yet.
+        moderation actions on domains. `manage_reports`: the reports. `manage_rules`: the
+        instance rules. `manage_jobs`: the dead jobs of the job queue. The others guard no
+        client API operation yet.
       type: string
       enum:
         - manage_reports
@@ -3096,3 +3279,99 @@ components:
         - view_audit
         - manage_jobs
     # --- end of the viewer's permissions (#267) ---
+    # --- admin: instance rules (#331) ---
+    AdminRule:
+      description: |
+        A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
+        across revisions, so reports keep citing it.
+      type: object
+      required: [id, position, texts, created_at, revised_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        position:
+          description: |
+            The sort key of the rule; the rules in effect are listed by it. Retiring a rule
+            leaves a gap until the next move.
+          type: integer
+          minimum: 1
+        texts:
+          description: The texts by locale.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRuleText"
+        created_at:
+          type: string
+          format: date-time
+        revised_at:
+          description: When the current revision was recorded.
+          type: string
+          format: date-time
+        retired_at:
+          description: When the rule was retired; omitted for a rule in effect.
+          type: string
+          format: date-time
+    AdminRuleList:
+      description: The rules.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRule"
+    AdminRuleText:
+      description: The text of a rule in one locale.
+      type: object
+      required: [locale, text]
+      properties:
+        locale:
+          description: The BCP 47 tag of the locale, canonical (`ja-JP`).
+          type: string
+        text:
+          description: The rule, on one line, as plain text.
+          type: string
+        hint:
+          description: An explanation of the rule, as plain text; omitted when there is none.
+          type: string
+    InstanceRuleInput:
+      description: The texts of a rule.
+      type: object
+      required: [texts]
+      properties:
+        texts:
+          description: The rule in each locale, at least one; they replace every earlier text.
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/InstanceRuleTextInput"
+    InstanceRuleTextInput:
+      description: The text of a rule in one locale.
+      type: object
+      required: [locale, text]
+      properties:
+        locale:
+          description: A BCP 47 tag; it is canonicalized (`ja_jp` becomes `ja-JP`).
+          type: string
+          minLength: 1
+          maxLength: 64
+        text:
+          description: The rule, on one line, as plain text.
+          type: string
+          minLength: 1
+          maxLength: 300
+        hint:
+          description: An explanation of the rule, as plain text; omitted or empty for none.
+          type: string
+          maxLength: 1000
+    MoveInstanceRuleRequest:
+      description: The new place of a rule.
+      type: object
+      required: [position]
+      properties:
+        position:
+          description: The place among the rules in effect, from 1.
+          type: integer
+          minimum: 1
+    # --- end of admin: instance rules (#331) ---

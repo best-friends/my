@@ -582,6 +582,52 @@ CREATE TABLE instance_texts (
 );
 
 -- ---------------------------------------------------------------------------------------------
+-- instance: rules (data-model §4.9, FR-705). Owned by internal/app/instance.
+-- A rule keeps its ID across revisions, so reports cite it by rule_id; retired rules stay.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a rule of the instance.
+CREATE TABLE instance_rules (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  created_at timestamptz NOT NULL
+);
+
+-- Event (revision): one version of a rule, with its position and texts. revised_by_user_id is
+-- NULL for a change from the CLI.
+CREATE TABLE instance_rule_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  rule_id text COLLATE "C" NOT NULL,
+  position integer NOT NULL,
+  revised_by_user_id text COLLATE "C",
+  revised_at timestamptz NOT NULL
+);
+CREATE INDEX instance_rule_revisions_rule_id_id ON instance_rule_revisions (rule_id, id DESC);
+
+-- Event (child of a revision): the text of a rule revision in one locale. An empty hint means none.
+CREATE TABLE instance_rule_texts (
+  rule_revision_id text COLLATE "C" NOT NULL,
+  locale text COLLATE "C" NOT NULL,
+  text text NOT NULL,
+  hint text NOT NULL,
+  PRIMARY KEY (rule_revision_id, locale)
+);
+
+-- Event: the retirement of a rule. retired_by_user_id is NULL for the CLI.
+CREATE TABLE instance_rule_retirements (
+  rule_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  retired_by_user_id text COLLATE "C",
+  retired_at timestamptz NOT NULL
+);
+
+-- Projection: the current revision and position of each rule in effect (not retired).
+CREATE TABLE instance_rule_heads (
+  rule_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revision_id text COLLATE "C" NOT NULL,
+  position integer NOT NULL
+);
+CREATE INDEX instance_rule_heads_position ON instance_rule_heads (position);
+
+-- ---------------------------------------------------------------------------------------------
 -- content: media files (data-model §4.4, ADR-0005, ADR-0019 §8). Owned by internal/app/content.
 -- ---------------------------------------------------------------------------------------------
 
