@@ -41,7 +41,7 @@
 
 - 文字列の論理型（`id`・`string(n)`・`text`・`iri`・`lang`・`enum`）の値は、妥当な UTF-8 でヌル文字（U+0000）を含みません。
   PostgreSQL の `text` はヌル文字を保存できず、SQLite は保存できるので、方言で結果が変わらないようにアプリが書く前に守ります。
-  ローカルの入力はヌル文字を含めば拒否し（`content.ErrInvalidText`）、リモートの文書の文字列は正規化でヌル文字を U+FFFD に置き換えます（[federation §4](federation.md#4-as2-の正規化)）。
+  ローカルの入力はドメインの検証で拒否し（投稿の `content.ErrInvalidText` など。検証の無い入力は #320）、リモートの文書の文字列は正規化でヌル文字を U+FFFD に置き換えます（[federation §4](federation.md#4-as2-の正規化)）。
 - 表記: カラムは特記がなければ `NOT NULL`。NULL 可のものは「NULL 可」と書きます。
   - **状態を NULL で表すことはしません**（ADR-0020 規約 4）。NULL 可は「任意の関連」（例: 通報に基づかない処分の `report_id`）と「無期限」（`expires_at`）に限ります。
 - 名前: カラム・テーブルは英語スネークケースで、テーブル名は複数形です。
