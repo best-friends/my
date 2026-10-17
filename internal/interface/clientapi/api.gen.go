@@ -608,6 +608,10 @@ type Instance struct {
 	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13).
 	SourceUrl string `json:"source_url"`
 
+	// Timelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
+	// clients do not offer it.
+	Timelines InstanceTimelines `json:"timelines"`
+
 	// Version The server version.
 	Version string `json:"version"`
 }
@@ -628,6 +632,16 @@ type InstanceRegistrations struct {
 // InstanceRegistrationsMode Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
 // approval), `invite` (only with an invite), or `closed` (nobody).
 type InstanceRegistrationsMode string
+
+// InstanceTimelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
+// clients do not offer it.
+type InstanceTimelines struct {
+	// Federated Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`).
+	Federated bool `json:"federated"`
+
+	// Local Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`).
+	Local bool `json:"local"`
+}
 
 // MediaAttachment A media file, as an upload of the user (the media operations) or as an attachment of
 // a status (`Status.media_attachments`). `url`, `preview_url`, `variants`, and `blurhash`

@@ -1197,6 +1197,7 @@ export interface components {
              */
             source_url: string;
             limits: components["schemas"]["InstanceLimits"];
+            timelines: components["schemas"]["InstanceTimelines"];
         };
         /** @description How people sign up on the instance. */
         InstanceRegistrations: {
@@ -1211,6 +1212,16 @@ export interface components {
         InstanceLimits: {
             /** @description The maximum number of characters in the text and content warning of a post. */
             max_post_characters: number;
+        };
+        /**
+         * @description Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
+         *     clients do not offer it.
+         */
+        InstanceTimelines: {
+            /** @description Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`). */
+            local: boolean;
+            /** @description Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`). */
+            federated: boolean;
         };
         /** @description An account, as clients show it (FR-006). */
         Account: {

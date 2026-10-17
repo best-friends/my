@@ -1635,7 +1635,7 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, registrations, limits]
+      required: [domain, name, version, source_url, registrations, limits, timelines]
       properties:
         domain:
           description: The domain that serves the instance.
@@ -1660,6 +1660,8 @@ components:
           format: uri
         limits:
           $ref: "#/components/schemas/InstanceLimits"
+        timelines:
+          $ref: "#/components/schemas/InstanceTimelines"
     InstanceRegistrations:
       description: How people sign up on the instance.
       type: object
@@ -1680,6 +1682,19 @@ components:
           description: The maximum number of characters in the text and content warning of a post.
           type: integer
           minimum: 1
+    InstanceTimelines:
+      description: |
+        Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
+        clients do not offer it.
+      type: object
+      required: [local, federated]
+      properties:
+        local:
+          description: Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`).
+          type: boolean
+        federated:
+          description: Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`).
+          type: boolean
     # Accounts and relationships (#108).
     Account:
       description: An account, as clients show it (FR-006).
