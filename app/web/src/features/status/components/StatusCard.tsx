@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, ContentWarning, ExternalLinkIcon, Link, MediaGrid, PostCard, PostContent } from "@my/ui";
+import { Avatar, BoostIcon, ContentWarning, ExternalLinkIcon, Link, MediaGrid, PostCard, PostContent } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
 import { useStatusView } from "../hooks/useStatusView";
-import { BoostIcon } from "./icons";
 import { StatusActions } from "./StatusActions";
 
 export type StatusCardProps = {

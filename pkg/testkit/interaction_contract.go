@@ -35,7 +35,7 @@ type InteractionFactory func(t *testing.T, opts uow.Options) InteractionHarness
 // InteractionRepositoryContract verifies the interaction repository of a database adapter
 // together with the content module's projectors and its Interactions use cases: boosts and
 // their retractions with boost_edges, favourites, bookmarks, and pins; the visibility check
-// through content.CanView; counters that move only when a row is actually written, also under
+// through content.CanView; the acting account's moderation restrictions; counters that move only when a row is actually written, also under
 // concurrent and repeated commands; the events for other modules' projectors; status deletions;
 // and the property that incrementally updated projections equal a rebuild from the sources.
 func InteractionRepositoryContract(t *testing.T, newHarness InteractionFactory) {
@@ -51,6 +51,7 @@ func InteractionRepositoryContract(t *testing.T, newHarness InteractionFactory) 
 		{"BookmarksAndPins", interactionBookmarksAndPins},
 		{"LimitsConcurrentPins", interactionLimitsConcurrentPins},
 		{"ChecksVisibility", interactionChecksVisibility},
+		{"AppliesRestrictions", interactionRestrictions},
 		{"CountsConcurrentCommandsOnce", interactionCountsConcurrentOnce},
 		{"ForgetsDeletedStatuses", interactionForgetsDeletedStatuses},
 		{"IncrementalProjectionEqualsRebuild", interactionProjectionEqualsRebuild},
@@ -68,6 +69,8 @@ type interactionEnv struct {
 	svc       *appcontent.Interactions
 	actors    *stubActors
 	relations *stubRelations
+	// restrictions are the acting accounts' moderation restrictions.
+	restrictions *fakeRestrictions
 
 	mu     sync.Mutex
 	events []uow.Event
@@ -82,10 +85,11 @@ func newInteractionEnv(t *testing.T, newHarness InteractionFactory) *interaction
 	clock := NewClock(time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC))
 	ids := NewIDGenerator(clock)
 	e := &interactionEnv{
-		statusEnv: &statusEnv{h: StatusHarness{UnitOfWork: h.UnitOfWork, Statuses: h.Statuses}, clock: clock, ids: ids},
-		h:         h,
-		actors:    &stubActors{actors: map[string]appaccount.Actor{}},
-		relations: &stubRelations{follows: map[[2]string]graph.State{}, blocks: map[[2]string]bool{}},
+		statusEnv:    &statusEnv{h: StatusHarness{UnitOfWork: h.UnitOfWork, Statuses: h.Statuses}, clock: clock, ids: ids},
+		h:            h,
+		actors:       &stubActors{actors: map[string]appaccount.Actor{}},
+		relations:    &stubRelations{follows: map[[2]string]graph.State{}, blocks: map[[2]string]bool{}},
+		restrictions: &fakeRestrictions{byID: map[string]appcontent.Restrictions{}},
 	}
 	for _, typ := range []string{appcontent.EventBoosted, appcontent.EventBoostRetracted, appcontent.EventFavourited, appcontent.EventUnfavourited} {
 		projectors.Register(typ, func(_ context.Context, _ uow.Tx, ev uow.Event) error {
@@ -97,9 +101,52 @@ func newInteractionEnv(t *testing.T, newHarness InteractionFactory) *interaction
 	}
 	e.svc = appcontent.NewInteractions(appcontent.InteractionDeps{
 		UnitOfWork: h.UnitOfWork, Statuses: h.Statuses, Interactions: h.Interactions,
-		Accounts: e.actors, Relationships: e.relations, Clock: clock, IDs: ids, Host: contractHost,
+		Accounts: e.actors, Relationships: e.relations, Restrictions: e.restrictions, Clock: clock, IDs: ids, Host: contractHost,
 	})
 	return e
+}
+
+// interactionRestrictions checks the moderation restrictions of the acting account
+// (data-model §5.2): the interact restriction forbids favouriting and boosting, the post
+// restriction boosting, and neither bookmarking.
+func interactionRestrictions(t *testing.T, e *interactionEnv) {
+	ctx := t.Context()
+	author, actor := e.localAccount(), e.localAccount()
+	st := e.post(t, author, content.VisibilityPublic)
+	e.takeEvents()
+	for _, tc := range []struct {
+		r                appcontent.Restrictions
+		favourite, boost error
+	}{
+		{appcontent.Restrictions{Interact: true}, appcontent.ErrInteractionRestricted, appcontent.ErrInteractionRestricted},
+		{appcontent.Restrictions{Post: true}, nil, appcontent.ErrPostingRestricted},
+	} {
+		e.restrictions.set(actor, tc.r)
+		if _, err := e.svc.Boost(ctx, actor, st.ID); err == nil || !errors.Is(err, tc.boost) {
+			t.Errorf("Boost under %+v = %v, want %v", tc.r, err, tc.boost)
+		}
+		_, err := e.svc.Favourite(ctx, actor, st.ID)
+		if tc.favourite == nil {
+			if err != nil {
+				t.Errorf("Favourite under %+v = %v", tc.r, err)
+			}
+			if err := e.svc.Unfavourite(ctx, actor, st.ID); err != nil {
+				t.Fatal(err)
+			}
+		} else if !errors.Is(err, tc.favourite) {
+			t.Errorf("Favourite under %+v = %v, want %v", tc.r, err, tc.favourite)
+		}
+		if err := e.svc.Bookmark(ctx, actor, st.ID); err != nil {
+			t.Errorf("Bookmark under %+v = %v, want allowed", tc.r, err)
+		}
+	}
+	e.restrictions.set(actor, appcontent.Restrictions{})
+	if _, err := e.svc.Boost(ctx, actor, st.ID); err != nil {
+		t.Errorf("Boost after the restrictions ended = %v", err)
+	}
+	if c, err := e.svc.Counters(ctx, st.ID); err != nil || c.BoostsCount != 1 || c.FavouritesCount != 0 {
+		t.Errorf("counters = %+v, %v; want only the boost after the restrictions", c, err)
+	}
 }
 
 // takeEvents returns the event types recorded since the last call; the projectors record an

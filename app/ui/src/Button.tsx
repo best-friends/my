@@ -6,7 +6,8 @@ const button = tv({
   base: [
     "inline-flex cursor-default items-center justify-center gap-2 rounded-md text-center font-medium select-none",
     "data-disabled:opacity-50 data-focus-visible:focus-ring data-pending:cursor-wait motion-safe:transition-colors",
-    "pointer-coarse:min-h-11",
+    // The button sizes a child icon, which sets no size of its own (web-client.md G11).
+    "pointer-coarse:min-h-11 [&>svg]:shrink-0",
   ],
   variants: {
     variant: {
@@ -20,8 +21,8 @@ const button = tv({
       danger: "bg-danger text-danger-fg data-hovered:shadow-md data-pressed:shadow-sm",
     },
     size: {
-      sm: "min-h-8 px-3 text-sm",
-      md: "min-h-10 px-4 text-base",
+      sm: "min-h-8 px-3 text-sm [&>svg]:size-4",
+      md: "min-h-10 px-4 text-base [&>svg]:size-5",
     },
   },
   defaultVariants: { variant: "secondary", size: "md" },

@@ -113,6 +113,15 @@ Text takes its size from its role, never from the screen it is on
 `text-xl` and `text-3xl` have no role and are not used by screens. Names (`font-semibold`) are the only other weight;
 emphasis inside running text comes from the content, not from the UI.
 
+### Names in rows
+
+A user's name gets `dir="auto"` (Y10), which also turns `text-align: start` around for a right-to-left name.
+When the `dir="auto"` element is a block (a `p`, or a `span` inside a flex or grid row), it also takes
+`align-match-parent` (`text-align: match-parent`, with the `-webkit-` value Chromium needs), so it lines up with the page's
+start like the rows around it and only the text inside it runs right to left
+([G9](../../docs/architecture/web-client.md#162-文字)). Post bodies and content warnings keep their own direction's alignment.
+The utility is not named `text-*` because `tailwind-merge` would read that as a color and drop the element's color class.
+
 ## Spacing, radius, shadow
 
 - Spacing is Tailwind's 0.25rem step (`p-1` = 0.25rem, `gap-4` = 1rem), limited to `0.5`, `1`, `2`, `3`, `4`, `6`, `8` and `10`.

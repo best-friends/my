@@ -301,6 +301,7 @@ func TestStatusProblems(t *testing.T) {
 		{content.ErrInvalidVisibility, http.StatusUnprocessableEntity, "", ""},
 		{fmt.Errorf("x: %w", content.ErrInvalidIdempotencyKey), http.StatusUnprocessableEntity, "", "Idempotency-Key の値が正しくありません。"},
 		{appcontent.ErrPostingRestricted, http.StatusForbidden, "", "現在、あなたのアカウントは投稿できません。"},
+		{fmt.Errorf("x: %w", appcontent.ErrInteractionRestricted), http.StatusForbidden, "", "現在、あなたのアカウントはフォロー・お気に入り・ブースト・返信ができません。"},
 		{appcontent.ErrAlreadyDeleted, http.StatusConflict, "", "この Idempotency-Key で作成された投稿は削除されています。"},
 		{appcontent.ErrAccountUnavailable, http.StatusForbidden, clientapi.ProblemTypeAccountUnavailable, ""},
 		{errors.New("boom"), http.StatusInternalServerError, "", ""},
@@ -328,14 +329,19 @@ func TestStatusProblems(t *testing.T) {
 		{http.MethodPost, "/pin", content.ErrPinLimit, "固定できる投稿は 5 件までです。"},
 		{http.MethodPost, "/favourite", errNotFound, ""},
 		{http.MethodDelete, "/bookmark", errNotFound, ""},
+		{http.MethodPost, "/favourite", appcontent.ErrInteractionRestricted, "現在、あなたのアカウントはフォロー・お気に入り・ブースト・返信ができません。"},
+		{http.MethodPost, "/boost", appcontent.ErrPostingRestricted, "現在、あなたのアカウントは投稿できません。"},
 	}
 	for _, tc := range interactions {
 		e := newStatusEnv(t, &fakeStatuses{interact: func(string, string, string) error { return tc.err }})
 		res := e.send(t, tc.method, "/statuses/"+sampleStatusID+tc.path, "write", "")
 		p := decodeProblem(t, res)
 		want := http.StatusUnprocessableEntity
-		if errors.Is(tc.err, appcontent.ErrNotFound) {
+		switch {
+		case errors.Is(tc.err, appcontent.ErrNotFound):
 			want = http.StatusNotFound
+		case errors.Is(tc.err, appcontent.ErrInteractionRestricted), errors.Is(tc.err, appcontent.ErrPostingRestricted):
+			want = http.StatusForbidden
 		}
 		if res.StatusCode != want || (tc.detail != "" && (p.Detail == nil || *p.Detail != tc.detail)) {
 			t.Errorf("%s %s with %v = %d %+v", tc.method, tc.path, tc.err, res.StatusCode, p)

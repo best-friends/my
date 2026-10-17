@@ -2,7 +2,7 @@
 // Where the new-post form lives (the issue's "sheet on mobile, side panel on desktop"). The app shell
 // decides which by the viewport (web-client.md D2) and passes it to ComposeProvider; ComposeEntry then
 // renders the panel or the button that opens the sheet. Only one form is ever on the page.
-import { Button, Sheet } from "@my/ui";
+import { Button, PlusIcon, Sheet } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { type ComposeLayout, ComposeContext, type ComposeController, useComposeContext, useComposeController } from "../hooks/useCompose";
@@ -60,9 +60,7 @@ function ComposeSheet({ controller }: { controller: ComposeController }) {
         }}
         className="min-h-12 rounded-full px-5 shadow-lg"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 fill-none stroke-current stroke-2">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <PlusIcon />
         {t("client:compose.open")}
       </Button>
       <Sheet

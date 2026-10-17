@@ -261,15 +261,27 @@ func ValidDomain(d string) bool {
 	return true
 }
 
-// DomainActionState is whether a domain action is in effect at some time.
-type DomainActionState string
+// ActionState is whether an action on an account or a domain is in effect at some time.
+type ActionState string
 
-// States of a domain action.
+// States of an action.
 const (
-	DomainActionActive  DomainActionState = "active"
-	DomainActionExpired DomainActionState = "expired"
-	DomainActionLifted  DomainActionState = "lifted"
+	ActionActive  ActionState = "active"
+	ActionExpired ActionState = "expired"
+	ActionLifted  ActionState = "lifted"
 )
+
+// stateAt returns the state at now of an action that ends at expiresAt (nil: until lifted) and
+// is lifted when lifted is true. A lifted action is lifted even after it would have expired.
+func stateAt(expiresAt *time.Time, lifted bool, now time.Time) ActionState {
+	switch {
+	case lifted:
+		return ActionLifted
+	case !InEffect(expiresAt, now):
+		return ActionExpired
+	}
+	return ActionActive
+}
 
 // DomainActionRecord is a domain action with its lift, as the moderators list it.
 type DomainActionRecord struct {
@@ -277,14 +289,18 @@ type DomainActionRecord struct {
 	Lift   *DomainLift // nil until lifted
 }
 
-// State returns whether the action is in effect at now. A lifted action is lifted even after
-// it would have expired.
-func (r DomainActionRecord) State(now time.Time) DomainActionState {
-	switch {
-	case r.Lift != nil:
-		return DomainActionLifted
-	case r.Action.ExpiresAt != nil && !r.Action.ExpiresAt.After(now):
-		return DomainActionExpired
-	}
-	return DomainActionActive
+// State returns whether the action is in effect at now.
+func (r DomainActionRecord) State(now time.Time) ActionState {
+	return stateAt(r.Action.ExpiresAt, r.Lift != nil, now)
+}
+
+// ActionRecord is an action on an account with its lift, as the moderators list it.
+type ActionRecord struct {
+	Action Action
+	Lift   *Lift // nil until lifted
+}
+
+// State returns whether the action is in effect at now.
+func (r ActionRecord) State(now time.Time) ActionState {
+	return stateAt(r.Action.ExpiresAt, r.Lift != nil, now)
 }

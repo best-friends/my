@@ -1611,6 +1611,114 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: domain actions and reports (#296) ---
+  # --- admin: account actions (#316) ---
+  /admin/accounts/{id}/actions:
+    get:
+      operationId: listAccountActions
+      summary: List the moderation actions on an account
+      description: |
+        The actions that moderators took on an account (FR-703), newest first, lifted and
+        expired ones included unless `active` is set. An unknown account is a 404. Needs the
+        `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+        - name: active
+          in: query
+          required: false
+          description: Keep only the actions in effect now, neither lifted nor expired.
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of account actions.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccountActionPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createAccountAction
+      summary: Take a moderation action on an account
+      description: |
+        Records an action on an account (FR-703), in effect at once and until it expires or is
+        lifted; several actions on one account add up. On a local account: `warn` only tells
+        the account; `force_sensitive` shows its media as sensitive; `limit` makes its posts,
+        past ones included, followers-only and keeps them off the public timelines;
+        `restrict_posting` stops it posting, replying, boosting, and editing;
+        `restrict_interaction` stops it following, favouriting, boosting, and replying;
+        `disable_login` ends its sessions and tokens and stops it logging in; `suspend` does all
+        of these and hides its profile and posts from everyone else. A remote account takes
+        `limit`, `suspend`, and `force_sensitive`. Another kind, the instance actor, or a
+        `report_id` that is not a report of the account is a 422 naming `kind`, `id`, or
+        `report_id`; `ban`, `delete_statuses`, and `mark_statuses_sensitive` are not taken yet.
+        A text that is too long or contains U+0000 is a 422 naming it. An unknown account is a
+        404. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountActionRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAccountAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/account_actions/{id}:
+    get:
+      operationId: getAccountAction
+      summary: Get a moderation action on an account
+      description: An unknown ID is a 404. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/AccountActionId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAccountAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/account_actions/{id}/lift:
+    post:
+      operationId: liftAccountAction
+      summary: Lift a moderation action on an account
+      description: |
+        Ends the action's restrictions at once; those of other actions on the account stay.
+        Sessions and tokens that the action ended stay ended. Lifting a lifted action changes
+        nothing and keeps its first reason. A `reason` that is too long or contains U+0000 is a
+        422 naming `reason`. An unknown ID is a 404. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AccountActionId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LiftAccountActionRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAccountAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: account actions (#316) ---
   # --- admin: instance rules (#331) ---
   /admin/rules:
     get:
@@ -1868,6 +1976,22 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: domain actions and reports (#296) ---
+    # --- admin: account actions (#316) ---
+    AccountActionId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the account action.
+      schema:
+        $ref: "#/components/schemas/Id"
+    AdminAccountId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the account, local or remote.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: account actions (#316) ---
     # --- admin: instance rules (#331) ---
     RuleId:
       name: id
@@ -1983,6 +2107,17 @@ components:
           schema:
             $ref: "#/components/schemas/AdminReport"
     # --- end of admin: domain actions and reports (#296) ---
+    # --- admin: account actions (#316) ---
+    AdminAccountAction:
+      description: The account action.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminAccountAction"
+    # --- end of admin: account actions (#316) ---
     # --- admin: instance rules (#331) ---
     AdminRule:
       description: The rule.
@@ -3327,13 +3462,150 @@ components:
         outcome:
           $ref: "#/components/schemas/AdminReportOutcome"
     # --- end of admin: domain actions and reports (#296) ---
+    # --- admin: account actions (#316) ---
+    AdminAccountAction:
+      description: A moderation action on an account (FR-703).
+      type: object
+      required: [id, account_id, kind, reason_category, issuer, notify_target, state, issued_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        account_id:
+          description: The account the action is on.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        kind:
+          $ref: "#/components/schemas/AdminAccountActionKind"
+        reason_category:
+          $ref: "#/components/schemas/AdminAccountActionCategory"
+        public_reason:
+          description: The reason shown to the account; omitted when there is none.
+          type: string
+        private_note:
+          description: The moderators' note; omitted when there is none.
+          type: string
+        report_id:
+          description: The report the action follows from; omitted when there is none.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        issuer:
+          description: |
+            `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
+            account's own server.
+          type: string
+          enum: [moderator, system, remote]
+        issued_by_account_id:
+          description: |
+            The account of the moderator who took the action; omitted for the CLI and the
+            system.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        notify_target:
+          description: Whether the account is told of the action.
+          type: boolean
+        state:
+          $ref: "#/components/schemas/AdminAccountActionState"
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          description: When the action ends by itself; omitted for one that lasts until lifted.
+          type: string
+          format: date-time
+        lifted_at:
+          description: When the action was lifted; omitted until it is.
+          type: string
+          format: date-time
+        lift_reason:
+          description: Why the action was lifted; omitted until it is or when no reason was given.
+          type: string
+    AdminAccountActionCategory:
+      description: The kind of reason for an action.
+      type: string
+      enum: [spam, legal, violation, other]
+    AdminAccountActionKind:
+      description: |
+        `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
+        posts. `force_sensitive`: every attachment is shown as sensitive. `limit`: every post is
+        followers-only and stays off the public timelines. `restrict_posting`: no posting.
+        `restrict_interaction`: no following, favouriting, boosting, or replying.
+        `disable_login`: no logging in. `suspend`: all of these, and the profile and posts are
+        hidden. `ban`: a suspension that never ends, with the deletion of the account.
+      type: string
+      enum:
+        - warn
+        - mark_statuses_sensitive
+        - delete_statuses
+        - force_sensitive
+        - limit
+        - restrict_posting
+        - restrict_interaction
+        - disable_login
+        - suspend
+        - ban
+    AdminAccountActionPage:
+      description: A page of account actions, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminAccountAction"
+    AdminAccountActionState:
+      description: |
+        `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+        lifted it.
+      type: string
+      enum: [active, expired, lifted]
+    CreateAccountActionRequest:
+      description: A moderation action to take on an account.
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: "#/components/schemas/AdminAccountActionKind"
+        reason_category:
+          allOf:
+            - $ref: "#/components/schemas/AdminAccountActionCategory"
+          default: other
+        public_reason:
+          description: The reason shown to the account.
+          type: string
+          maxLength: 5000
+        private_note:
+          description: A note for the moderators only.
+          type: string
+          maxLength: 5000
+        report_id:
+          description: The report of the account that the action follows from.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        notify_target:
+          description: Whether a local account is told of the action; ignored for a remote one.
+          type: boolean
+          default: true
+        expires_in:
+          description: The seconds the action lasts; omitted, it lasts until it is lifted.
+          type: integer
+          minimum: 1
+    LiftAccountActionRequest:
+      description: Why an action on an account is lifted.
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 5000
+    # --- end of admin: account actions (#316) ---
     # --- the viewer's permissions (#267) ---
     Permission:
       description: |
-        A capability that a role grants. `manage_domains`: the health of remote servers and the
-        moderation actions on domains. `manage_reports`: the reports. `manage_rules`: the
-        instance rules. `manage_jobs`: the dead jobs of the job queue. The others guard no
-        client API operation yet.
+        A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
+        `manage_domains`: the health of remote servers and the moderation actions on domains.
+        `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
+        dead jobs of the job queue. The others guard no client API operation yet.
       type: string
       enum:
         - manage_reports

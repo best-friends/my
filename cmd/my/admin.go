@@ -31,6 +31,8 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case args[0] == "-h" || args[0] == "-help" || args[0] == "--help":
 		adminUsage(stderr)
 		return 0
+	case args[0] == "account":
+		return runAdminAccount(args[1:], stdout, stderr)
 	case args[0] == "domain":
 		return runAdminDomain(args[1:], stdout, stderr)
 	case args[0] == "report":
@@ -167,10 +169,12 @@ func promptPassword(fd int, stderr io.Writer) (string, error) {
 
 func adminUsage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage: my admin create -username <name> -email <address> [-config <file>]
+       my admin account action list|issue|lift ...   (my admin account action -help)
        my admin domain list|issue|lift ...   (my admin domain -help)
        my admin report list|show|assign|unassign|resolve ...   (my admin report -help)
 
-my admin domain and my admin report moderate remote domains and handle reports.
+my admin account, my admin domain, and my admin report moderate accounts and
+remote domains and handle reports.
 
 my admin create creates an administrator: a user with the password, the email address as primary
 address, a local account with the username, and the built-in admin role, in one
