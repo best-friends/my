@@ -421,8 +421,15 @@ func (r *ModerationRepository) ListDomainActions(ctx context.Context, q appmoder
 	if q.InEffectAt != nil {
 		at = toMillis(*q.InEffectAt)
 	}
+	var kinds string // "" keeps every kind
+	if len(q.Kinds) > 0 {
+		var err error
+		if kinds, err = jsonList(domainActionKindStrings(q.Kinds)); err != nil {
+			return nil, err
+		}
+	}
 	rows, err := r.db.reader().ListDomainModerationActions(ctx, sqlitegen.ListDomainModerationActionsParams{
-		Domain: q.Domain, InEffectAt: at, Before: q.Before, Lim: int64(limit),
+		Domain: q.Domain, Kinds: kinds, InEffectAt: at, Before: q.Before, Lim: int64(limit),
 	})
 	if err != nil {
 		return nil, wrap(err, "list domain moderation actions")
@@ -432,4 +439,13 @@ func (r *ModerationRepository) ListDomainActions(ctx context.Context, q appmoder
 		out[i] = domainActionRecordFrom(row)
 	}
 	return out, nil
+}
+
+// domainActionKindStrings returns the kinds as strings, never nil.
+func domainActionKindStrings(kinds []moderation.DomainActionKind) []string {
+	out := make([]string, len(kinds))
+	for i, k := range kinds {
+		out[i] = string(k)
+	}
+	return out
 }

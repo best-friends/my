@@ -76,7 +76,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | Y4 | フォーカスできる要素はすべて `focus-visible` のリングを持つ。固定ヘッダでフォーカスを隠さない（`scroll-padding`） | 見た目のスナップショット、レビュー |
 | Y5 | ルートが変わったら、新しい画面の `h1`（`tabindex="-1"`）にフォーカスを移し、`document.title` を更新する。外枠が 1 か所で行う（§9） | Playwright、統合テスト |
 | Y6 | タイムラインは feed パターンにする（`@my/ui` の `Feed`。`role="feed"`、`<article>`、`aria-posinset` / `aria-setsize`（総数が分からないときは `-1`）、`aria-busy` を必ず戻す、Page Down / Page Up で記事の間を移動し、Control + End / Control + Home で feed の外に出る）。仮想化しても、フォーカスのある記事は表示範囲の外でもマウントしておく | ARIA スナップショット、キーボードのテスト（`Feed` の部品のテストとストーリー） |
-| Y7 | 新しい投稿を自動で差し込まない。「N 件の新しい投稿」は `@my/ui` の `NewItemsButton`（`role="status"` の中のボタン）で知らせ、押されたときだけ差し込む。それ以外の件数・完了・エラーは、共通の `role="status"` / `role="alert"` の通知部品（`@my/ui` の `AnnouncerProvider` / `useAnnouncer`、見える通知は `ToastProvider` / `useToast`）だけで知らせる。フォーカスを奪わない | ARIA スナップショット、部品のテスト（Announcer・NewItemsButton のテストとストーリー）、レビュー |
+| Y7 | 新しい投稿を自動で差し込まない。「N 件の新しい投稿」は `@my/ui` の `NewItemsButton`（`role="status"` の中のボタン）で知らせ、押されたときだけ差し込む。それ以外の件数・完了・エラーは、共通の `role="status"` / `role="alert"` の通知部品（`@my/ui` の `AnnouncerProvider` / `useAnnouncer`、見える通知は `ToastProvider` / `useToast`、操作の結果を画面に残すときは `StatusMessage`）だけで知らせる。フォーカスを奪わない | ARIA スナップショット、部品のテスト（Announcer・NewItemsButton のテストとストーリー）、レビュー |
 | Y8 | CW は disclosure パターン（`aria-expanded` のボタン、閉じた内容は `hidden`）にする | 部品のテスト |
 | Y9 | 画像の添付には代替テキストの入力欄を必ず出す。リモートの画像で代替テキストがないものには「説明なし」のバッジを付ける | 部品のテスト |
 | Y10 | 利用者が書いた内容（表示名・投稿・プロフィール）は `dir="auto"` で表示し、分かる場合は `lang` を付ける | 部品のテスト、ARIA スナップショット |
@@ -381,6 +381,11 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
   「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
   複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
+- **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection` にし（`features/admin/components/parts.tsx`）、
+  記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
+- **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
+  開くと最初の入力欄（なければ「キャンセル」）にフォーカスが移り、Esc で閉じ、閉じると開いたボタンにフォーカスが戻る。失敗はダイアログの中（`errorMessage`）に出して開いたままにし、成功したら閉じて、結果を画面の `StatusMessage`（`role="status"`）に出す。
+  操作で開いたボタンが消えるとき（一覧から行が消えるなど）は、`lib/useFocusAfterRemoval.ts` でフォーカスの行き先を決める。
 - **テスト**: `features/admin/admin.test.tsx` が出し分け・一覧と絞り込み・ページの読み足し・再開・再実行・失敗・403 を MSW で検査する。既定の閲覧者は権限を持たないので、テストは `operatorHandler()` で権限を与える。
   E2E（`e2e/admin.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行とフォーカスの移動を検査する。
 
