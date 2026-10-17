@@ -301,7 +301,7 @@ func (s *Service) FileRemoteReport(ctx context.Context, in RemoteReportInput) (r
 	r = moderation.Report{
 		ID: s.d.IDs.NewID(), URI: in.URI, ReporterAccountID: in.ReporterAccountID, TargetAccountID: in.TargetAccountID,
 		Category: moderation.CategoryOther, Comment: moderation.TruncateComment(in.Comment), FiledAt: now,
-		StatusIDs: uniqueSorted(in.StatusIDs),
+		StatusIDs: uniqueSorted(in.StatusIDs), RuleIDs: []string{},
 	}
 	if err := r.Validate(); err != nil {
 		return moderation.Report{}, false, err

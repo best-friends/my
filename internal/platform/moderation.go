@@ -13,3 +13,13 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 	})
 	a.ModerationPolicy = moderation.NewFederationPolicy(repo, a.Clock)
 }
+
+// setUpLocalReports builds the filing of local users' reports, which checks the reported
+// statuses through the status reader and the cited rules through the instance module, so it
+// comes after both.
+func (a *App) setUpLocalReports(repo moderation.Repository) {
+	a.LocalReports = moderation.NewLocalReports(moderation.LocalReportDeps{
+		UnitOfWork: a.UnitOfWork, Repository: repo, Accounts: a.Accounts, Statuses: a.Statuses,
+		Rules: a.Instance, Clock: a.Clock, IDs: a.IDs,
+	})
+}

@@ -73,6 +73,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/follow_requests/{id}/reject":                 {Operation: "rejectFollowRequest", Scopes: []string{"write:follows"}},
 	"POST /api/v1/media":                                       {Operation: "uploadMedia", Scopes: []string{"write:media"}},
 	"POST /api/v1/notifications/{id}/dismiss":                  {Operation: "dismissNotification", Scopes: []string{"write:notifications"}},
+	"POST /api/v1/reports":                                     {Operation: "createReport", Scopes: []string{"write:reports"}},
 	"POST /api/v1/statuses":                                    {Operation: "createStatus", Scopes: []string{"write:statuses"}},
 	"POST /api/v1/statuses/{id}/bookmark":                      {Operation: "bookmarkStatus", Scopes: []string{"write:bookmarks"}},
 	"POST /api/v1/statuses/{id}/boost":                         {Operation: "boostStatus", Scopes: []string{"write:statuses"}},

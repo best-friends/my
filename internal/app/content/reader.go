@@ -142,6 +142,14 @@ func (r *Reader) View(ctx context.Context, viewer Viewer, statusID string) (Stat
 	return r.present(ctx, viewer, st, author)
 }
 
+// Visible returns a status that viewer may see, without what a client shows of it; a status
+// that the viewer may not see fails with ErrNotFound, the same as a missing or deleted one.
+// Other modules check through it that a viewer may refer to a status, such as in a report.
+func (r *Reader) Visible(ctx context.Context, viewer Viewer, statusID string) (content.Status, error) {
+	st, _, err := r.aud.visibleStatus(ctx, viewer, statusID)
+	return st, err
+}
+
 // Thread returns the ancestors and descendants of a status that viewer may see (FR-106).
 func (r *Reader) Thread(ctx context.Context, viewer Viewer, statusID string) (Thread, error) {
 	st, _, err := r.aud.visibleStatus(ctx, viewer, statusID)

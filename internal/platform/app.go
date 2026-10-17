@@ -112,6 +112,8 @@ type App struct {
 	// and the media proxy (docs/architecture/federation.md §11).
 	Moderation       *moderation.Service
 	ModerationPolicy *moderation.FederationPolicy
+	// LocalReports files the reports of local users (FR-701).
+	LocalReports *moderation.LocalReports
 
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
@@ -424,6 +426,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: content.NoRestrictions{}, Media: a.Media,
 	})
+	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
@@ -464,6 +467,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
 		Moderation: a.Moderation, UserAccounts: a.Accounts,
 		Rules:       a.Instance,
+		Reports:     a.LocalReports,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil

@@ -142,6 +142,11 @@ func (r *ModerationRepository) InsertReport(ctx context.Context, tx uow.Tx, rep 
 			return false, wrap(err, "insert report status")
 		}
 	}
+	for _, id := range rep.RuleIDs {
+		if err := q.InsertReportRuleCitation(ctx, sqlitegen.InsertReportRuleCitationParams{ReportID: rep.ID, RuleID: id}); err != nil {
+			return false, wrap(err, "insert report rule citation")
+		}
+	}
 	return true, nil
 }
 
@@ -278,10 +283,14 @@ func (r *ModerationRepository) reportFrom(ctx context.Context, row sqlitegen.Rep
 	if err != nil {
 		return moderation.Report{}, wrap(err, "list report statuses")
 	}
+	rules, err := r.db.reader().ListReportRuleIDs(ctx, row.ID)
+	if err != nil {
+		return moderation.Report{}, wrap(err, "list report rule citations")
+	}
 	return moderation.Report{
 		ID: row.ID, URI: row.Uri.String, ReporterAccountID: row.ReporterAccountID, TargetAccountID: row.TargetAccountID,
 		Category: moderation.Category(row.Category), Comment: row.Comment, Forwarded: row.Forwarded != 0,
-		FiledAt: fromMillis(row.FiledAt), StatusIDs: ids,
+		FiledAt: fromMillis(row.FiledAt), StatusIDs: ids, RuleIDs: rules,
 	}, nil
 }
 

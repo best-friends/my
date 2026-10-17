@@ -48,6 +48,8 @@ tags:
     description: Posts, their threads and edit history, and boosts, favourites, bookmarks, and pins of them.
   - name: timelines
     description: The home, local, hashtag, and account timelines.
+  - name: reports
+    description: Reports of accounts and posts to the moderators.
   - name: streaming
     description: Real-time updates of the home timeline and the notifications.
   - name: admin
@@ -1214,6 +1216,41 @@ paths:
           $ref: "#/components/responses/StatusPage"
         default:
           $ref: "#/components/responses/Problem"
+  # --- reports (#332) ---
+  /reports:
+    post:
+      operationId: createReport
+      summary: Report an account
+      description: |
+        Reports an account, and optionally some of its posts, to the moderators (FR-701). The
+        report waits, open, in the moderators' queue; nothing tells the account of it, and
+        nothing that the account can read names the reporter. 422 when the account does not
+        exist or is the user's own (`account_id`), when a post is not the account's or the
+        user may not see it (`status_ids`), when `rule_ids` cite a rule that is not in effect
+        or the category is not `violation`, or when the comment is too long. Reports are
+        limited to 30 per hour per account (429 beyond).
+      tags: [reports]
+      security:
+        - oauth2: ["write:reports"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportRequest"
+      responses:
+        "200":
+          description: The filed report.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of reports (#332) ---
   # --- streaming (#116) ---
   /streaming:
     get:
@@ -1788,6 +1825,7 @@ components:
             "write:media": Upload media and change their descriptions.
             "write:mutes": Mute and unmute accounts.
             "write:notifications": Mark notifications read and dismiss them.
+            "write:reports": Report accounts and posts to the moderators.
             "write:statuses": Post, edit, delete, boost, and pin posts.
   headers:
     CacheControl:
@@ -3220,7 +3258,7 @@ components:
     AdminReport:
       description: A report of an account to the moderators (FR-701).
       type: object
-      required: [id, category, comment, forwarded, filed_at, state, state_changed_at, reporter_account_id, target_account_id, status_ids]
+      required: [id, category, comment, forwarded, filed_at, state, state_changed_at, reporter_account_id, target_account_id, status_ids, rule_ids]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -3268,6 +3306,13 @@ components:
             - $ref: "#/components/schemas/Account"
         status_ids:
           description: The IDs of the target's posts that the report points at.
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+        rule_ids:
+          description: |
+            The IDs of the instance rules that the report cites, retired ones included; only a
+            report of the `violation` category cites rules.
           type: array
           items:
             $ref: "#/components/schemas/Id"
@@ -3442,3 +3487,75 @@ components:
           type: integer
           minimum: 1
     # --- end of admin: instance rules (#331) ---
+    # --- reports (#332) ---
+    CreateReportRequest:
+      description: A report of an account to the moderators.
+      type: object
+      required: [account_id, category]
+      properties:
+        account_id:
+          description: The account reported, local or remote.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        status_ids:
+          description: Posts of the account that the user can see, up to 20.
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Id"
+        category:
+          $ref: "#/components/schemas/ReportCategory"
+        rule_ids:
+          description: |
+            Instance rules in effect that the account broke, up to 20; only with the
+            `violation` category.
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Id"
+        comment:
+          description: A comment for the moderators as plain text.
+          type: string
+          maxLength: 1000
+        forward:
+          description: |
+            Asks to forward the report to the server of a remote account, without naming the
+            reporter. It means nothing for a local account.
+          type: boolean
+          default: false
+    Report:
+      description: A report that the user filed. It never names the reporter.
+      type: object
+      required: [id, category, comment, forwarded, filed_at, target_account, status_ids, rule_ids]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        category:
+          $ref: "#/components/schemas/ReportCategory"
+        comment:
+          description: The comment as plain text.
+          type: string
+        forwarded:
+          description: Whether the report is to be forwarded to the target's server.
+          type: boolean
+        filed_at:
+          type: string
+          format: date-time
+        target_account:
+          $ref: "#/components/schemas/Account"
+        status_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+        rule_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+    ReportCategory:
+      description: |
+        Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
+        is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
+        anything else.
+      type: string
+      enum: [spam, legal, violation, other]
+    # --- end of reports (#332) ---

@@ -454,6 +454,21 @@ func (q *Queries) InsertReportResolution(ctx context.Context, arg InsertReportRe
 	return err
 }
 
+const insertReportRuleCitation = `-- name: InsertReportRuleCitation :exec
+INSERT INTO report_rule_citations (report_id, rule_id) VALUES ($1, $2)
+ON CONFLICT (report_id, rule_id) DO NOTHING
+`
+
+type InsertReportRuleCitationParams struct {
+	ReportID string
+	RuleID   string
+}
+
+func (q *Queries) InsertReportRuleCitation(ctx context.Context, arg InsertReportRuleCitationParams) error {
+	_, err := q.db.Exec(ctx, insertReportRuleCitation, arg.ReportID, arg.RuleID)
+	return err
+}
+
 const insertReportStatus = `-- name: InsertReportStatus :exec
 INSERT INTO report_statuses (report_id, status_id) VALUES ($1, $2)
 ON CONFLICT (report_id, status_id) DO NOTHING
@@ -671,6 +686,30 @@ func (q *Queries) ListDomainRestrictionsInEffect(ctx context.Context, arg ListDo
 			return nil, err
 		}
 		items = append(items, restriction)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReportRuleIDs = `-- name: ListReportRuleIDs :many
+SELECT rule_id FROM report_rule_citations WHERE report_id = $1 ORDER BY rule_id
+`
+
+func (q *Queries) ListReportRuleIDs(ctx context.Context, reportID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listReportRuleIDs, reportID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var rule_id string
+		if err := rows.Scan(&rule_id); err != nil {
+			return nil, err
+		}
+		items = append(items, rule_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
