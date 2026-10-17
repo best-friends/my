@@ -96,9 +96,39 @@ The choice is therefore applied by a same-origin, render-blocking classic script
   and `text-3xl` (1.875rem). Line heights are taller than Tailwind's defaults (1.7 for `text-base`) for CJK and Arabic, and `body`
   uses the `text-base` line height.
 
+### Type roles
+
+Text takes its size from its role, never from the screen it is on
+([web-client.md §16.2](../../docs/architecture/web-client.md#162-文字)):
+
+| Role | Classes | Used for |
+| --- | --- | --- |
+| Page title | `text-2xl font-semibold` | The `h1` of `PageHeading`, one per page |
+| Section title | `text-lg font-semibold` | `h2` of a region (replies, settings groups), the heading of `EmptyState` and of dialogs |
+| Focused content | `text-lg` | The body of the post a detail page is about |
+| Body | `text-base` | Post bodies, profile text, form values, menu items |
+| Secondary | `text-sm text-fg-muted` | Handles, times, counts, descriptions and hints of fields |
+| Label | `text-xs` | Badges, the labels of the bottom tab bar |
+
+`text-xl` and `text-3xl` have no role and are not used by screens. Names (`font-semibold`) are the only other weight;
+emphasis inside running text comes from the content, not from the UI.
+
 ## Spacing, radius, shadow
 
-- Spacing is Tailwind's 0.25rem step (`p-1` = 0.25rem, `gap-4` = 1rem).
+- Spacing is Tailwind's 0.25rem step (`p-1` = 0.25rem, `gap-4` = 1rem), limited to `0.5`, `1`, `2`, `3`, `4`, `6`, `8` and `10`.
+  Each role has one value:
+
+  | Role | Value |
+  | --- | --- |
+  | Icon and its text, a name and its handle | `gap-1` |
+  | Controls in a row (actions of a post, buttons of a dialog) | `gap-2` |
+  | Avatar and the content beside it; lines inside a card | `gap-3` |
+  | Inside a row of a list or a card | `px-4 py-3` |
+  | Page gutter (set by the app layout only) | `px-4` |
+  | Fields of a form; blocks inside a page | `gap-4` |
+  | Sections of a page | `gap-6` (`gap-8` from `@3xl`) |
+  | Around an `EmptyState` or a page-level spinner | `py-10` |
+
 - Radius: `rounded-sm` (0.25rem), `rounded-md` (0.5rem), `rounded-lg` (0.75rem), `rounded-xl` (1rem), and `rounded-full`.
 - Shadow: `shadow-sm`, `shadow-md`, `shadow-lg`. In the dark theme raised surfaces are told apart by `surface-raised`, not by shadow.
 
@@ -116,10 +146,24 @@ for example `motion-safe:transition-colors`; `make web-tokens` fails on `transit
 - Durations: `duration-fast` (100ms), `duration-normal` (200ms), `duration-slow` (300ms). A bare `transition-*` uses 200ms.
 - Easing: `ease-standard` (the default), `ease-enter` (things appearing), `ease-exit` (things leaving).
 
+## Icons
+
+Icons are part of the kit, so that every screen draws the same shapes at the same sizes
+([web-client.md §16.3](../../docs/architecture/web-client.md#163-アイコン)):
+
+- They are drawn in-house on a 24 × 24 grid with a 2px round stroke, like the existing `CloseIcon` and `ExternalLinkIcon`.
+  A screen never writes SVG paths of its own; a missing icon is added to the kit, with a story.
+- They are decorative: `aria-hidden="true"` and `focusable="false"`. The meaning is in the visible label or the accessible
+  name of the control. An icon-only control has an `aria-label` and a `Tooltip` with the same text.
+- The control sizes its icon: `Button`, `ToggleButton` and `Link` size a child `svg` (`size-5` in buttons, `size-4` next to
+  `text-sm`), and the navigation uses `size-6`. An icon sets no size of its own, so it never renders at 0 × 0.
+- A toggle shows its state by the icon's shape (filled, or a heavier stroke) as well as its color.
+- Icons with a direction (reply, back, forward) mirror in right-to-left text with `rtl:-scale-x-100`.
+
 ## States of a region
 
-The kit gives every region of data the same four states. A feature only picks one from its hook's state; every string
-comes in as a prop.
+The kit gives every region of data the same four states
+([web-client.md §16.4](../../docs/architecture/web-client.md#164-空読み込み中エラーオフライン)):
 
 | State | Component | Notes |
 | --- | --- | --- |

@@ -1323,6 +1323,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the instance rules
+         * @description Every rule in every locale (FR-705): the rules in effect by position, followed, when
+         *     `include_retired` is set, by the retired ones. The list is not paginated; at most 100
+         *     rules are in effect. Needs the `manage_rules` permission.
+         */
+        get: operations["listInstanceRules"];
+        put?: never;
+        /**
+         * Add an instance rule
+         * @description Adds a rule after the rules in effect. A text that is blank, longer than 300
+         *     characters, or on more than one line, a hint longer than 1,000 characters, a locale
+         *     that is not a BCP 47 tag or appears twice (after canonicalization: `ja_jp` is `ja-JP`),
+         *     no texts, or more than 50 is a 422 naming the property (`texts[0].text`). With 100
+         *     rules in effect it is a 422 naming `rules`. Needs the `manage_rules` permission.
+         */
+        post: operations["createInstanceRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an instance rule
+         * @description A rule, retired or not; reports cite rules by ID. An unknown ID is a 404. Needs the
+         *     `manage_rules` permission.
+         */
+        get: operations["getInstanceRule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Revise the texts of an instance rule
+         * @description Records a revision whose texts replace every text of the rule; the rule keeps its ID
+         *     and position. The texts are checked as for a new rule (422). A retired rule is a 409
+         *     and an unknown ID a 404. Needs the `manage_rules` permission.
+         */
+        patch: operations["updateInstanceRule"];
+        trace?: never;
+    };
+    "/admin/rules/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move an instance rule
+         * @description Moves the rule to a place among the rules in effect and numbers them 1, 2, ... in their
+         *     new order; a place after the last rule moves it last. A `position` below 1 is a 422, a
+         *     retired rule a 409, and an unknown ID a 404. Needs the `manage_rules` permission.
+         */
+        post: operations["moveInstanceRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rules/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire an instance rule
+         * @description Removes the rule from the rules in effect, at once and for good; reports that cite it
+         *     still refer to it. Retiring a retired rule changes nothing. An unknown ID is a 404.
+         *     Needs the `manage_rules` permission.
+         */
+        post: operations["retireInstanceRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1404,6 +1505,8 @@ export interface components {
             source_url: string;
             limits: components["schemas"]["InstanceLimits"];
             timelines: components["schemas"]["InstanceTimelines"];
+            /** @description The rules in effect, in order, each in the locale of the request. */
+            rules: components["schemas"]["InstanceRule"][];
         };
         /** @description How people sign up on the instance. */
         InstanceRegistrations: {
@@ -1428,6 +1531,20 @@ export interface components {
             local: boolean;
             /** @description Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`). */
             federated: boolean;
+        };
+        /**
+         * @description A rule of the instance (FR-705), in the first locale of the request's fallback chain
+         *     that the rule has (the request's locale and its parents, the instance's default locale
+         *     and its parents, then `en`), or else in its first locale. Reports cite it by `id`.
+         */
+        InstanceRule: {
+            id: components["schemas"]["Id"];
+            /** @description The rule, on one line, as plain text. */
+            text: string;
+            /** @description An explanation of the rule, as plain text; omitted when there is none. */
+            hint?: string;
+            /** @description The BCP 47 tag of the locale of `text` and `hint`, for the `lang` attribute. */
+            lang: string;
         };
         /** @description A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718). */
         InstanceDomainAction: {
@@ -2204,11 +2321,70 @@ export interface components {
         };
         /**
          * @description A capability that a role grants. `manage_domains`: the health of remote servers and the
-         *     moderation actions on domains. `manage_reports`: the reports. `manage_jobs`: the dead
-         *     jobs of the job queue. The others guard no client API operation yet.
+         *     moderation actions on domains. `manage_reports`: the reports. `manage_rules`: the
+         *     instance rules. `manage_jobs`: the dead jobs of the job queue. The others guard no
+         *     client API operation yet.
          * @enum {string}
          */
         Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
+        /**
+         * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
+         *     across revisions, so reports keep citing it.
+         */
+        AdminRule: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The sort key of the rule; the rules in effect are listed by it. Retiring a rule
+             *     leaves a gap until the next move.
+             */
+            position: number;
+            /** @description The texts by locale. */
+            texts: components["schemas"]["AdminRuleText"][];
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the current revision was recorded.
+             */
+            revised_at: string;
+            /**
+             * Format: date-time
+             * @description When the rule was retired; omitted for a rule in effect.
+             */
+            retired_at?: string;
+        };
+        /** @description The rules. */
+        AdminRuleList: {
+            items: components["schemas"]["AdminRule"][];
+        };
+        /** @description The text of a rule in one locale. */
+        AdminRuleText: {
+            /** @description The BCP 47 tag of the locale, canonical (`ja-JP`). */
+            locale: string;
+            /** @description The rule, on one line, as plain text. */
+            text: string;
+            /** @description An explanation of the rule, as plain text; omitted when there is none. */
+            hint?: string;
+        };
+        /** @description The texts of a rule. */
+        InstanceRuleInput: {
+            /** @description The rule in each locale, at least one; they replace every earlier text. */
+            texts: components["schemas"]["InstanceRuleTextInput"][];
+        };
+        /** @description The text of a rule in one locale. */
+        InstanceRuleTextInput: {
+            /** @description A BCP 47 tag; it is canonicalized (`ja_jp` becomes `ja-JP`). */
+            locale: string;
+            /** @description The rule, on one line, as plain text. */
+            text: string;
+            /** @description An explanation of the rule, as plain text; omitted or empty for none. */
+            hint?: string;
+        };
+        /** @description The new place of a rule. */
+        MoveInstanceRuleRequest: {
+            /** @description The place among the rules in effect, from 1. */
+            position: number;
+        };
     };
     responses: {
         /** @description A page of posts and boosts, newest first. */
@@ -2311,6 +2487,16 @@ export interface components {
                 "application/json": components["schemas"]["AdminReport"];
             };
         };
+        /** @description The rule. */
+        AdminRule: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRule"];
+            };
+        };
     };
     parameters: {
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
@@ -2333,6 +2519,8 @@ export interface components {
         DomainActionId: components["schemas"]["Id"];
         /** @description The ID of the report. */
         ReportId: components["schemas"]["Id"];
+        /** @description The ID of the rule. */
+        RuleId: components["schemas"]["Id"];
     };
     requestBodies: never;
     headers: {
@@ -3771,6 +3959,120 @@ export interface operations {
         };
         responses: {
             200: components["responses"]["AdminReport"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInstanceRules: {
+        parameters: {
+            query?: {
+                /** @description Also list the retired rules, after the rules in effect. */
+                include_retired?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The rules. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRuleList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createInstanceRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstanceRuleInput"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getInstanceRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the rule. */
+                id: components["parameters"]["RuleId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateInstanceRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the rule. */
+                id: components["parameters"]["RuleId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstanceRuleInput"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    moveInstanceRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the rule. */
+                id: components["parameters"]["RuleId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveInstanceRuleRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    retireInstanceRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the rule. */
+                id: components["parameters"]["RuleId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRule"];
             default: components["responses"]["Problem"];
         };
     };
