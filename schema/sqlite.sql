@@ -576,6 +576,52 @@ CREATE TABLE instance_texts (
 ) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
+-- instance: rules (data-model §4.9, FR-705). Owned by internal/app/instance.
+-- A rule keeps its ID across revisions, so reports cite it by rule_id; retired rules stay.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a rule of the instance.
+CREATE TABLE instance_rules (
+  id TEXT NOT NULL PRIMARY KEY,
+  created_at INTEGER NOT NULL
+) STRICT;
+
+-- Event (revision): one version of a rule, with its position and texts. revised_by_user_id is
+-- NULL for a change from the CLI.
+CREATE TABLE instance_rule_revisions (
+  id TEXT NOT NULL PRIMARY KEY,
+  rule_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  revised_by_user_id TEXT,
+  revised_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX instance_rule_revisions_rule_id_id ON instance_rule_revisions (rule_id, id DESC);
+
+-- Event (child of a revision): the text of a rule revision in one locale. An empty hint means none.
+CREATE TABLE instance_rule_texts (
+  rule_revision_id TEXT NOT NULL,
+  locale TEXT NOT NULL,
+  text TEXT NOT NULL,
+  hint TEXT NOT NULL,
+  PRIMARY KEY (rule_revision_id, locale)
+) STRICT;
+
+-- Event: the retirement of a rule. retired_by_user_id is NULL for the CLI.
+CREATE TABLE instance_rule_retirements (
+  rule_id TEXT NOT NULL PRIMARY KEY,
+  retired_by_user_id TEXT,
+  retired_at INTEGER NOT NULL
+) STRICT;
+
+-- Projection: the current revision and position of each rule in effect (not retired).
+CREATE TABLE instance_rule_heads (
+  rule_id TEXT NOT NULL PRIMARY KEY,
+  revision_id TEXT NOT NULL,
+  position INTEGER NOT NULL
+) STRICT;
+CREATE INDEX instance_rule_heads_position ON instance_rule_heads (position);
+
+-- ---------------------------------------------------------------------------------------------
 -- content: media files (data-model §4.4, ADR-0005, ADR-0019 §8). Owned by internal/app/content.
 -- ---------------------------------------------------------------------------------------------
 

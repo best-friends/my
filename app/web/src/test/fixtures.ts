@@ -17,6 +17,7 @@ export const instanceFixture: Schemas["Instance"] = {
   registrations: { mode: "approval" },
   limits: { max_post_characters: 500 },
   timelines: { local: true, federated: true },
+  rules: [],
 };
 
 /** The signed-in user's `CredentialAccount` for GET /accounts/verify_credentials (operationId verifyAccountCredentials). */

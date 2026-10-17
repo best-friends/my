@@ -168,3 +168,35 @@ func TestClientAPIInstanceSettings(t *testing.T) {
 		t.Errorf("instance = %+v (description %v), want the stored settings and the ja name", got, got.Description)
 	}
 }
+
+// TestClientAPIInstanceRules checks that GET /api/v1/instance lists the rules in effect from
+// the database, in the request's locale, without the retired ones.
+func TestClientAPIInstanceRules(t *testing.T) {
+	app := newClientAPIApp(t)
+	ctx := t.Context()
+	kind, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{
+		{Locale: "en", Text: "Be kind"}, {Locale: "ja", Text: "親切に", Hint: "嫌がらせ禁止"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "Old"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := app.Instance.RetireRule(ctx, old.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	spec := apitest.Load(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/instance", nil)
+	req.Header.Set("Accept-Language", "ja-JP")
+	res := spec.Serve(t, app.Handler(), req)
+	var got clientapi.Instance
+	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Rules) != 1 || got.Rules[0].Id != kind.ID || got.Rules[0].Text != "親切に" || got.Rules[0].Lang != "ja" ||
+		got.Rules[0].Hint == nil || *got.Rules[0].Hint != "嫌がらせ禁止" {
+		t.Errorf("rules = %+v, want the ja text of the rule in effect", got.Rules)
+	}
+}
