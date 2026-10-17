@@ -128,10 +128,12 @@ WHERE domain = @domain ORDER BY id DESC LIMIT 1;
 INSERT INTO instance_availability_events (id, domain, kind, reason, occurred_at)
 VALUES (@id, @domain, @kind, @reason, @occurred_at);
 
--- ListInstanceAvailabilityEvents returns the availability events of a server, newest first.
+-- ListInstanceAvailabilityEvents returns the availability events of a server, newest first,
+-- before the event @before ('' for the newest).
 -- name: ListInstanceAvailabilityEvents :many
 SELECT id, domain, kind, reason, occurred_at FROM instance_availability_events
-WHERE domain = @domain ORDER BY id DESC LIMIT @batch_limit;
+WHERE domain = sqlc.arg(domain) AND (sqlc.arg(before)::text = '' OR id < sqlc.arg(before)::text)
+ORDER BY id DESC LIMIT sqlc.arg(batch_limit);
 
 -- name: UpsertInstanceHealth :exec
 INSERT INTO instance_health (domain, state, since, failure_days, last_failure_day)
@@ -150,6 +152,13 @@ SELECT domain, state, since, failure_days, last_failure_day FROM instance_health
 -- name: ListUnavailableInstances :many
 SELECT domain, state, since, failure_days, last_failure_day FROM instance_health
 WHERE state = 'unavailable' AND domain > @after_domain ORDER BY domain LIMIT @batch_limit;
+
+-- ListInstanceHealth returns the servers with a health row (those with failures or unavailable),
+-- in domain order after @after_domain, of the state @state ('' for every state).
+-- name: ListInstanceHealth :many
+SELECT domain, state, since, failure_days, last_failure_day FROM instance_health
+WHERE (sqlc.arg(state)::text = '' OR state = sqlc.arg(state)::text) AND domain > sqlc.arg(after_domain)
+ORDER BY domain LIMIT sqlc.arg(batch_limit);
 
 -- LockInstanceHealth reads the health of a server in the transaction that updates it and locks
 -- the row, so that concurrent deliveries to one server do not lose an update.

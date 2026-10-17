@@ -46,8 +46,10 @@ type FederationFactory func(t *testing.T, opts uow.Options) FederationHarness
 // Delete to every known shared inbox). It also covers one delivery (federation.md §7.3): the classification of
 // responses, the circuit breaker, the failure days that make a server unavailable and the
 // successes, signed requests, and probes that bring it back, and the dead job after the retry
-// schedule. The other modules are in-memory stand-ins; the fan-out reads its recipients in
-// batches of two, so that every source of recipients spans several jobs.
+// schedule. It covers the admin views too: the servers with a health row by state and page, the
+// pages of availability events, and an operator's clearing of a server. The other modules are
+// in-memory stand-ins; the fan-out reads its recipients in batches of two, so that every source
+// of recipients spans several jobs.
 func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -69,6 +71,7 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"MarksServersUnavailableAndBack", fedMarksServersUnavailable},
 		{"BuriesExhaustedDeliveries", fedBuriesExhaustedDeliveries},
 		{"ProbesUnavailableServers", fedProbesUnavailableServers},
+		{"ListsAndClearsServersForOperators", fedListsServersForOperators},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newFedEnv(t, newHarness)) })

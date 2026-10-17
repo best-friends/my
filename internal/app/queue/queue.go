@@ -148,11 +148,22 @@ type DeadJob struct {
 	FailedAt  time.Time
 }
 
-// DeadJobs gives the admin screen and the CLI access to dead jobs.
+// Position returns the position of d in the order of DeadJobs.ListDeadJobs.
+func (d DeadJob) Position() DeadJobPosition { return DeadJobPosition{FailedAt: d.FailedAt, ID: d.ID} }
+
+// DeadJobPosition is a position in the order of DeadJobs.ListDeadJobs: most recently failed
+// first, and by descending ID among the jobs that failed at the same time. The zero value is
+// the position before the first dead job.
+type DeadJobPosition struct {
+	FailedAt time.Time
+	ID       string
+}
+
+// DeadJobs gives the admin API and the CLI access to dead jobs.
 type DeadJobs interface {
-	// ListDeadJobs returns up to limit dead jobs, most recently failed first; none when
-	// limit <= 0.
-	ListDeadJobs(ctx context.Context, limit int) ([]DeadJob, error)
+	// ListDeadJobs returns up to limit dead jobs, most recently failed first, starting after the
+	// position after (the zero value for the first); none when limit <= 0.
+	ListDeadJobs(ctx context.Context, after DeadJobPosition, limit int) ([]DeadJob, error)
 	// RequeueDeadJob enqueues the dead job id again with a fresh attempt count, to run now,
 	// and removes it from the dead jobs. When a job with the same IdempotencyKey is pending,
 	// that job stands in for it. It returns ErrDeadJobNotFound when there is no such dead job.

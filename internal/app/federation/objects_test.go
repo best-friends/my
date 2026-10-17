@@ -481,3 +481,23 @@ func TestObjectsAuthenticate(t *testing.T) {
 		}
 	})
 }
+
+// fetchSetting is an appfederation.FetchSettings with a fixed value.
+type fetchSetting struct {
+	on  bool
+	err error
+}
+
+func (s fetchSetting) AuthorizedFetch(context.Context) (bool, error) { return s.on, s.err }
+
+func TestObjectsAuthorizedFetch(t *testing.T) {
+	if on, err := appfederation.NewObjects(appfederation.ObjectsDeps{}).AuthorizedFetch(t.Context()); on || err != nil {
+		t.Errorf("without settings = %v, %v; want off", on, err)
+	}
+	for _, s := range []fetchSetting{{on: true}, {on: false}, {err: errors.New("database is down")}} {
+		on, err := appfederation.NewObjects(appfederation.ObjectsDeps{Settings: s}).AuthorizedFetch(t.Context())
+		if on != s.on || !errors.Is(err, s.err) {
+			t.Errorf("AuthorizedFetch = %v, %v; want %v, %v", on, err, s.on, s.err)
+		}
+	}
+}

@@ -3,12 +3,8 @@
 package activitypub
 
 import (
-	"log/slog"
 	"net/http"
-	"net/url"
 	"strings"
-
-	appfederation "github.com/best-friends/my/internal/app/federation"
 )
 
 // object serves GET /ap/objects/{id} (the Note of a local status) and GET
@@ -27,13 +23,16 @@ func (h *Handler) object(w http.ResponseWriter, r *http.Request) {
 	activity := strings.HasSuffix(r.URL.Path, "/"+activitySegment)
 	html := parseAccept(r.Header.Get("Accept")).prefersHTML()
 
-	var req appfederation.Requester
+	// A browser carries no signature: it is anonymous, and authorized fetch does not apply to
+	// the redirect to the status page.
+	var acc access
 	if !html {
-		origin := &url.URL{Scheme: "https", Host: h.o.Host}
-		var err error
-		if req, err = h.o.Objects.Authenticate(r.Context(), appfederation.NewSignedRequest(origin, r, nil)); err != nil {
-			h.o.Logger.ErrorContext(r.Context(), "activitypub authenticate failed", slog.Any("error", err))
-			h.o.Problem(w, r, http.StatusInternalServerError)
+		var ok bool
+		if acc, ok = h.authorize(w, r, true); !ok {
+			return
+		}
+		if acc.refused() {
+			h.unauthorized(w, r)
 			return
 		}
 	}
@@ -41,7 +40,7 @@ func (h *Handler) object(w http.ResponseWriter, r *http.Request) {
 	if activity {
 		get = h.o.Objects.StatusActivity
 	}
-	obj, err := get(r.Context(), req, id)
+	obj, err := get(r.Context(), acc.requester, id)
 	if err != nil {
 		h.fail(w, r, err)
 		return
@@ -54,12 +53,9 @@ func (h *Handler) object(w http.ResponseWriter, r *http.Request) {
 		redirect(w, r, obj.URL, http.StatusSeeOther)
 		return
 	}
-	status, cache := http.StatusOK, cachePrivate
+	status := http.StatusOK
 	if obj.Gone {
 		status = http.StatusGone
 	}
-	if obj.Public {
-		cache = cachePublic
-	}
-	writeBody(w, typeActivityJSON, cache, status, obj.Document)
+	writeBody(w, typeActivityJSON, acc.cache(obj.Public), status, obj.Document)
 }

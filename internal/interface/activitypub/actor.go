@@ -23,8 +23,34 @@ func (h *Handler) actorDocument(a appaccount.Actor) federation.ActorDocument {
 	return appfederation.LocalActorDocument(h.o.Host, a, h.instanceActorUsername())
 }
 
+// keyDocument is the minimal actor document that authorized fetch serves to a request without
+// a verified signature: what a server needs to verify the actor's signatures and to address it,
+// with the properties Mastodon keeps in the same case (id, type, preferredUsername, inbox,
+// publicKey, endpoints).
+type keyDocument struct {
+	Context           []any             `json:"@context"`
+	ID                string            `json:"id"`
+	Type              string            `json:"type"`
+	PreferredUsername string            `json:"preferredUsername"`
+	Inbox             string            `json:"inbox"`
+	PublicKey         *publicKey        `json:"publicKey,omitempty"`
+	Endpoints         map[string]string `json:"endpoints"`
+}
+
+// keyDocumentOf returns the minimal document of a full actor document.
+func keyDocumentOf(doc actorDocument) keyDocument {
+	return keyDocument{
+		Context: doc.Context, ID: doc.ID, Type: doc.Type, PreferredUsername: doc.PreferredUsername,
+		Inbox: doc.Inbox, PublicKey: doc.PublicKey, Endpoints: doc.Endpoints,
+	}
+}
+
 // actor serves GET /ap/actors/{id}: the actor document, or for a request that prefers HTML
-// a 303 redirect to the profile page (ADR-0018).
+// a 303 redirect to the profile page (ADR-0018). Under authorized fetch (FR-408), a request
+// without a verified signature gets the minimal document that verifying the actor's signatures
+// needs, so that any server can still fetch the key; the instance actor's document is minimal
+// already and is served whole to everyone, so that servers that also use authorized fetch can
+// fetch each other's instance actors to verify the instance actors' signed fetches.
 func (h *Handler) actor(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Vary", "Accept")
 	a, err := h.lookupID(r, r.PathValue("id"))
@@ -37,7 +63,19 @@ func (h *Handler) actor(w http.ResponseWriter, r *http.Request) {
 		redirect(w, r, doc.URL, http.StatusSeeOther)
 		return
 	}
-	h.writeJSON(w, r, typeActivityJSON, doc)
+	if a.Account.ActorType == account.ActorApplication {
+		h.writeJSON(w, r, typeActivityJSON, doc)
+		return
+	}
+	acc, ok := h.authorize(w, r, false)
+	if !ok {
+		return
+	}
+	if acc.refused() {
+		h.writeJSONCache(w, r, typeActivityJSON, acc.cache(false), keyDocumentOf(doc))
+		return
+	}
+	h.writeJSONCache(w, r, typeActivityJSON, acc.cache(true), doc)
 }
 
 // lookupID finds the visible local actor with an id from a URI.

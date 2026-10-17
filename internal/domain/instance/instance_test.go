@@ -120,6 +120,17 @@ func TestRemoteMediaSettings(t *testing.T) {
 	}
 }
 
+func TestAuthorizedFetchSetting(t *testing.T) {
+	var zero instance.Settings
+	if zero.AuthorizedFetch() {
+		t.Error("zero Settings have authorized fetch on, want it off by default")
+	}
+	s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingAuthorizedFetch, RevisionID: "r1", Value: "true"}})
+	if !s.AuthorizedFetch() {
+		t.Error("Settings with authorized_fetch true have it off")
+	}
+}
+
 func TestSupersedes(t *testing.T) {
 	rev := instance.SettingRevision{ID: "b"}
 	for _, tc := range []struct {

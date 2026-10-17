@@ -57,7 +57,7 @@ CREATE TABLE role_permissions (
   role_id TEXT NOT NULL,
   permission TEXT NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
-    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit'
+    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs'
   )),
   PRIMARY KEY (role_id, permission)
 ) STRICT;
@@ -533,7 +533,7 @@ CREATE TABLE instance_setting_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   key TEXT NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
-    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl'
+    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,
