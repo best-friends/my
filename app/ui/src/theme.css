@@ -172,6 +172,15 @@
   outline-offset: 2px;
 }
 
+/* Lines a `dir="auto"` block up with its parent's direction (web-client.md G9): a right-to-left name in a
+   left-to-right row starts where the other rows start, and the other way round. Chromium knows only the
+   prefixed value and drops the standard one; Firefox takes the standard one. Not `text-*`, which
+   tailwind-merge reads as a color and so drops the element's color class. */
+@utility align-match-parent {
+  text-align: -webkit-match-parent;
+  text-align: match-parent;
+}
+
 @layer base {
   /* The theme hook: <html data-theme="light|dark"> forces a theme; without it the OS decides.
      color-scheme drives light-dark() and the browser's own controls and scrollbars. */
