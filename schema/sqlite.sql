@@ -533,7 +533,7 @@ CREATE TABLE instance_setting_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   key TEXT NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
-    'preview_image'
+    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,

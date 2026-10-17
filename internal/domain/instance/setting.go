@@ -30,6 +30,8 @@ const (
 	SettingLocalTimelineEnabled     SettingKey = "local_timeline_enabled"
 	SettingFederatedTimelineEnabled SettingKey = "federated_timeline_enabled"
 	SettingPreviewImage             SettingKey = "preview_image"
+	SettingRemoteMediaPolicy        SettingKey = "remote_media_policy"
+	SettingRemoteMediaCacheTTL      SettingKey = "remote_media_cache_ttl"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -41,6 +43,23 @@ const (
 	RegistrationApproval RegistrationMode = "approval" // sign-ups wait for a moderator's approval
 	RegistrationInvite   RegistrationMode = "invite"   // sign-up needs an invite
 	RegistrationClosed   RegistrationMode = "closed"   // nobody may sign up
+)
+
+// RemoteMediaPolicy is the value of SettingRemoteMediaPolicy (FR-409, ADR-0005): which remote
+// media files the instance keeps a copy of.
+type RemoteMediaPolicy string
+
+// Remote media policies.
+const (
+	RemoteMediaNone    RemoteMediaPolicy = "none"    // keep nothing; the media proxy relays every file
+	RemoteMediaAvatars RemoteMediaPolicy = "avatars" // keep avatars and headers for remote_media_cache_ttl
+	RemoteMediaAll     RemoteMediaPolicy = "all"     // keep every remote file for remote_media_cache_ttl
+)
+
+// Bounds of SettingRemoteMediaCacheTTL, in seconds: a minute to a year.
+const (
+	MinRemoteMediaCacheTTL = 60
+	MaxRemoteMediaCacheTTL = 365 * 24 * 60 * 60
 )
 
 // Bounds of SettingMaxStatusLength, in characters.
@@ -100,6 +119,15 @@ var definitions = []Definition{
 	{
 		Key: SettingPreviewImage, Kind: KindMedia, Default: "",
 		Doc: "Media ID of the link preview image of profiles and posts without images; empty means the built-in image (ADR-0028).",
+	},
+	{
+		Key: SettingRemoteMediaPolicy, Kind: KindEnum, Default: string(RemoteMediaNone),
+		Choices: []string{string(RemoteMediaNone), string(RemoteMediaAvatars), string(RemoteMediaAll)},
+		Doc:     "Which remote media files the instance keeps a copy of; none relays every file through the media proxy (FR-409, ADR-0005).",
+	},
+	{
+		Key: SettingRemoteMediaCacheTTL, Kind: KindInt, Default: "86400", Min: MinRemoteMediaCacheTTL, Max: MaxRemoteMediaCacheTTL,
+		Doc: "How long a fetched remote media file may be kept, in seconds: the max-age of the media proxy's responses for the CDN and browsers (FR-409).",
 	},
 }
 
@@ -275,16 +303,20 @@ func (s Settings) RegistrationMode() RegistrationMode {
 	return RegistrationMode(v)
 }
 
-// MaxStatusLength returns the value of SettingMaxStatusLength.
-func (s Settings) MaxStatusLength() int {
-	v, _ := s.Value(SettingMaxStatusLength)
+// intValue returns the value of a KindInt key, or its default when the stored value does not
+// parse.
+func (s Settings) intValue(key SettingKey) int {
+	v, _ := s.Value(key)
 	n, err := strconv.Atoi(v)
 	if err != nil {
-		d, _ := Lookup(SettingMaxStatusLength)
+		d, _ := Lookup(key)
 		n, _ = strconv.Atoi(d.Default)
 	}
 	return n
 }
+
+// MaxStatusLength returns the value of SettingMaxStatusLength.
+func (s Settings) MaxStatusLength() int { return s.intValue(SettingMaxStatusLength) }
 
 // DefaultLocale returns the value of SettingDefaultLocale.
 func (s Settings) DefaultLocale() string {
@@ -304,6 +336,17 @@ func (s Settings) FederatedTimelineEnabled() bool {
 func (s Settings) PreviewImageMediaID() string {
 	v, _ := s.Value(SettingPreviewImage)
 	return v
+}
+
+// RemoteMediaPolicy returns the value of SettingRemoteMediaPolicy.
+func (s Settings) RemoteMediaPolicy() RemoteMediaPolicy {
+	v, _ := s.Value(SettingRemoteMediaPolicy)
+	return RemoteMediaPolicy(v)
+}
+
+// RemoteMediaCacheTTL returns the value of SettingRemoteMediaCacheTTL.
+func (s Settings) RemoteMediaCacheTTL() time.Duration {
+	return time.Duration(s.intValue(SettingRemoteMediaCacheTTL)) * time.Second
 }
 
 // MediaKeys returns the setting keys whose values are media IDs.
