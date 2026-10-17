@@ -75,6 +75,11 @@ type Repository interface {
 	// DeleteStatusProjections removes a status from every status projection: its head, its
 	// mentions, its counters, its link to its parent, and the links of its replies to it.
 	DeleteStatusProjections(ctx context.Context, tx uow.Tx, statusID string) error
+	// InsertSensitivityOverride records that a mark_statuses_sensitive action shows a status as
+	// sensitive (status_sensitivity_overrides); recording it again does nothing.
+	InsertSensitivityOverride(ctx context.Context, tx uow.Tx, statusID, actionID string) error
+	// DeleteSensitivityOverridesOf deletes the overrides of a lifted action.
+	DeleteSensitivityOverridesOf(ctx context.Context, tx uow.Tx, actionID string) error
 
 	// Rebuilds empty one projection and derive it again from the statuses, their revisions,
 	// and their deletions, by the same rules as the projectors (data-model §9).
@@ -125,6 +130,8 @@ type Repository interface {
 	// ListReplies returns the statuses that reply to uri and are not deleted, ordered by ID.
 	ListReplies(ctx context.Context, uri string) ([]content.Status, error)
 	FindCounters(ctx context.Context, statusID string) (content.Counters, error)
+	// SensitivityOverridden reports whether an action shows a status as sensitive.
+	SensitivityOverridden(ctx context.Context, statusID string) (bool, error)
 	// FindPostCounter returns the post counter of an account; ErrNotFound means it has no
 	// statuses.
 	FindPostCounter(ctx context.Context, accountID string) (content.PostCounter, error)

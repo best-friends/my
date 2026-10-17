@@ -4,6 +4,7 @@
 import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
 import { remoteStatusFixture, statusFixture, statusPage, timelineStatusFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
@@ -125,6 +126,23 @@ describe("a post's page", () => {
     await user.click(screen.getByRole("button", { name: "Try again" }));
 
     expect(await screen.findByRole("article", { description: "The answer" })).toBeInTheDocument();
+  });
+
+  test("shows the post at once and a skeleton in the busy replies section while the thread loads", async () => {
+    const context = deferred();
+    serveThread();
+    server.use(http.get(`${apiBase}/statuses/:id/context`, () => context.response));
+    await renderApp({ path: `/@bob/${postId}` });
+
+    expect(await findFocusedPost()).toBeInTheDocument();
+    const replies = screen.getByRole("region", { name: "Replies" });
+    expect(await findLoadingRegion("Loading the replies")).toBe(replies);
+    expect(replies).toHaveAttribute("aria-busy", "true");
+
+    context.release(HttpResponse.json({ ancestors: [], descendants: [reply] }));
+    expect(await within(replies).findByRole("article", { description: "The answer" })).toBeInTheDocument();
+    expect(replies).toHaveAttribute("aria-busy", "false");
+    expect(screen.queryByText("Loading the replies")).not.toBeInTheDocument();
   });
 
   test("says so when there are no replies", async () => {
@@ -370,6 +388,8 @@ describe("a post of another server", () => {
     const { user } = await renderApp({ path: `/@${remote.account.acct}/${remote.id}` });
 
     const article = await screen.findByRole("article", { name: /^Carol @carol@remote\.example / });
+    // The handle is cut on the domain's side when it does not fit; the link is named by all of it.
+    expect(within(article).getByRole("link", { name: "Carol @carol@remote.example" })).toBeInTheDocument();
     expect(within(article).getByText("@carol@remote.example")).toHaveAttribute("dir", "ltr");
     // The link shows the host and is named by where it leads; the actions stay next to it.
     const original = within(article).getByRole("link", { name: "Open the original post on remote.example" });

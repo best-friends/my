@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
-import { followListQueryOptions, FollowListView } from "../features/profile";
+import { followListQueryOptions, FollowListSkeleton, FollowListView } from "../features/profile";
 import { PageHeading } from "./-layout/PageHeading";
 import { loadAccount, profileParamsSchema } from "./-profile/loadAccount";
 import { FollowListError } from "./-profile/ProfileError";
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/@{$acct}_/followers")({
     await context.queryClient.infiniteQuery({ ...followListQueryOptions(context.api, account.id, "followers"), staleTime: "static" });
   },
   component: FollowersPage,
+  pendingComponent: FollowersPending,
   notFoundComponent: ProfileNotFound,
   errorComponent: FollowersError,
 });
@@ -21,6 +22,11 @@ export const Route = createFileRoute("/@{$acct}_/followers")({
 function FollowersPage() {
   const { acct } = Route.useParams();
   return <FollowListView key={acct} acct={acct} list="followers" renderHeading={(text) => <PageHeading>{text}</PageHeading>} />;
+}
+
+function FollowersPending() {
+  const { acct } = Route.useParams();
+  return <FollowListSkeleton acct={acct} list="followers" renderHeading={(text) => <PageHeading>{text}</PageHeading>} />;
 }
 
 function FollowersError(props: ErrorComponentProps) {

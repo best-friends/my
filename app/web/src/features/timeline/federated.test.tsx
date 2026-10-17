@@ -6,6 +6,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { instanceFixture, statusPage, timelineStatusFixture } from "../../test/fixtures";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -62,8 +63,9 @@ describe("the federated timeline", () => {
     await screen.findByRole("heading", { level: 1, name: "Home" });
     await user.click(await within(navigation()).findByRole("link", { name: "Federated" }));
 
-    // After the router's pending delay, the page has its heading and says that posts are loading.
-    expect(await screen.findByRole("progressbar", { name: "Loading posts" })).toBeInTheDocument();
+    // After the router's pending delay, the page has its heading and a skeleton named once as loading posts.
+    await findLoadingRegion("Loading posts");
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Federated timeline" })).toBeInTheDocument();
     expect(screen.queryByRole("feed")).not.toBeInTheDocument();
     release();

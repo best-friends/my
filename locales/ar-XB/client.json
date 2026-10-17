@@ -795,12 +795,12 @@
     "defaultMessage": "‮⅂oɐpıuƃ uoʇıɟıɔɐʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "notifications.post.open": {
-    "defaultMessage": "‮Odǝu dosʇ‬",
+  "notifications.post.content_warning": {
+    "defaultMessage": "‮Ↄouʇǝuʇ ʍɐɹuıuƃ: {summary}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "notifications.post.show": {
-    "defaultMessage": "‮Sɥoʍ ɔouʇǝuʇ‬",
+  "notifications.post.open": {
+    "defaultMessage": "‮Odǝu dosʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.retry": {
@@ -813,10 +813,6 @@
   },
   "notifications.signed_out": {
     "defaultMessage": "‮Sıƃu ıu ʇo sǝǝ ʎonɹ uoʇıɟıɔɐʇıous.‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "notifications.time": {
-    "defaultMessage": "‮{time, date, medium} {time, time, short}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.title": {
@@ -1021,6 +1017,10 @@
   },
   "profile.list.load_more_failed": {
     "defaultMessage": "‮Ↄonʅp uoʇ ʅoɐp ɯoɹǝ ɐɔɔonuʇs: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.list.loading": {
+    "defaultMessage": "‮⅂oɐpıuƃ ɐɔɔonuʇs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "profile.list.retry": {
