@@ -75,7 +75,7 @@ func (q *Queries) DeleteNotificationExclusion(ctx context.Context, arg DeleteNot
 }
 
 const getNotification = `-- name: GetNotification :one
-SELECT id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, dedupe_key, created_at
+SELECT id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, dedupe_key, created_at
 FROM notifications WHERE id = $1
 `
 
@@ -89,6 +89,7 @@ func (q *Queries) GetNotification(ctx context.Context, id string) (Notification,
 		&i.SourceAccountID,
 		&i.StatusID,
 		&i.ModerationActionID,
+		&i.ReportID,
 		&i.DedupeKey,
 		&i.CreatedAt,
 	)
@@ -111,8 +112,8 @@ func (q *Queries) GetNotificationReadMarker(ctx context.Context, accountID strin
 const insertNotification = `-- name: InsertNotification :execrows
 
 
-INSERT INTO notifications (id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, dedupe_key, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO notifications (id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, dedupe_key, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 ON CONFLICT (recipient_account_id, dedupe_key) DO NOTHING
 `
 
@@ -123,6 +124,7 @@ type InsertNotificationParams struct {
 	SourceAccountID    *string
 	StatusID           *string
 	ModerationActionID *string
+	ReportID           *string
 	DedupeKey          string
 	CreatedAt          time.Time
 }
@@ -139,6 +141,7 @@ func (q *Queries) InsertNotification(ctx context.Context, arg InsertNotification
 		arg.SourceAccountID,
 		arg.StatusID,
 		arg.ModerationActionID,
+		arg.ReportID,
 		arg.DedupeKey,
 		arg.CreatedAt,
 	)
@@ -181,7 +184,7 @@ func (q *Queries) InsertNotificationDismissal(ctx context.Context, arg InsertNot
 }
 
 const listNotifications = `-- name: ListNotifications :many
-SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.dedupe_key, n.created_at
+SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.report_id, n.dedupe_key, n.created_at
 FROM notifications n
 WHERE n.recipient_account_id = $1
   AND ($2::text = '' OR n.id < $2::text)
@@ -230,6 +233,7 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			&i.SourceAccountID,
 			&i.StatusID,
 			&i.ModerationActionID,
+			&i.ReportID,
 			&i.DedupeKey,
 			&i.CreatedAt,
 		); err != nil {

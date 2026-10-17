@@ -32,6 +32,7 @@ export const handlers = [
         target_account: account,
         status_ids: body.status_ids ?? [],
         rule_ids: body.rule_ids ?? [],
+        state: "open",
       };
       return HttpResponse.json(report);
     });

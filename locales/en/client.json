@@ -863,6 +863,10 @@
     "defaultMessage": "A poll you took part in has ended",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
   },
+  "notifications.type.report_resolved": {
+    "defaultMessage": "A report you filed has been resolved",
+    "description": "Notification sentence: the moderators of the server resolved a report that the user filed. It never says how."
+  },
   "notifications.unread": {
     "defaultMessage": "Unread:",
     "description": "Read by screen readers before the sentence of a notification that was new when the page opened."

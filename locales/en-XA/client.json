@@ -863,6 +863,10 @@
     "defaultMessage": "[Ȧ ƥǿǿŀŀ ẏǿǿŭŭ ŧǿǿǿǿķ ƥȧȧřŧ īƞ ħȧȧş ḗḗƞḓḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.type.report_resolved": {
+    "defaultMessage": "[Ȧ řḗḗƥǿǿřŧ ẏǿǿŭŭ ƒīŀḗḗḓ ħȧȧş ƀḗḗḗḗƞ řḗḗşǿǿŀṽḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.unread": {
     "defaultMessage": "[Ŭƞřḗḗȧȧḓ:]",
     "description": "Generated from en by tools/i18n; do not edit."

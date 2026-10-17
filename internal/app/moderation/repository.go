@@ -83,6 +83,10 @@ type Repository interface {
 	// those in q.State (any state when empty) whose ID is below q.Before (from the newest when
 	// empty).
 	ListReports(ctx context.Context, q ReportQuery, limit int) ([]moderation.ReportRecord, error)
+	// ListReportsByReporter returns up to limit reports that reporterAccountID filed, with their
+	// statuses and states, newest first: those whose ID is below before (from the newest when
+	// empty).
+	ListReportsByReporter(ctx context.Context, reporterAccountID, before string, limit int) ([]moderation.ReportRecord, error)
 	// FindActionRecord returns an action on an account with its lift.
 	FindActionRecord(ctx context.Context, id string) (moderation.ActionRecord, error)
 	// ListActions returns up to limit actions on accounts with their lifts, newest first: those

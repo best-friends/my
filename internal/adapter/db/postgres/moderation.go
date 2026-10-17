@@ -434,16 +434,44 @@ func (r *ModerationRepository) ListReports(ctx context.Context, q appmoderation.
 	}
 	out := make([]moderation.ReportRecord, len(rows))
 	for i, row := range rows {
-		rep, err := r.reportFrom(ctx, postgresgen.Report{
-			ID: row.ID, Uri: row.Uri, ReporterAccountID: row.ReporterAccountID, TargetAccountID: row.TargetAccountID,
-			Category: row.Category, Comment: row.Comment, Forwarded: row.Forwarded, FiledAt: row.FiledAt,
-		})
-		if err != nil {
+		if out[i], err = r.reportRecordFrom(ctx, row); err != nil {
 			return nil, err
 		}
-		out[i] = moderation.ReportRecord{Report: rep, Status: reportStatusFrom(postgresgen.ReportState{
-			ReportID: row.ID, State: row.State, Outcome: row.Outcome, AssigneeUserID: row.AssigneeUserID, Since: row.Since,
-		})}
+	}
+	return out, nil
+}
+
+// reportRecordFrom reads the statuses and rules of the report of row.
+func (r *ModerationRepository) reportRecordFrom(ctx context.Context, row postgresgen.ListReportsRow) (moderation.ReportRecord, error) {
+	rep, err := r.reportFrom(ctx, postgresgen.Report{
+		ID: row.ID, Uri: row.Uri, ReporterAccountID: row.ReporterAccountID, TargetAccountID: row.TargetAccountID,
+		Category: row.Category, Comment: row.Comment, Forwarded: row.Forwarded, FiledAt: row.FiledAt,
+	})
+	if err != nil {
+		return moderation.ReportRecord{}, err
+	}
+	return moderation.ReportRecord{Report: rep, Status: reportStatusFrom(postgresgen.ReportState{
+		ReportID: row.ID, State: row.State, Outcome: row.Outcome, AssigneeUserID: row.AssigneeUserID, Since: row.Since,
+	})}, nil
+}
+
+// ListReportsByReporter implements moderation.Repository.
+func (r *ModerationRepository) ListReportsByReporter(ctx context.Context, reporterAccountID, before string, limit int) ([]moderation.ReportRecord, error) {
+	lim, err := toInt32(limit, "limit")
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListReportsByReporter(ctx, postgresgen.ListReportsByReporterParams{
+		ReporterAccountID: reporterAccountID, Before: before, Lim: lim,
+	})
+	if err != nil {
+		return nil, wrap(err, "list reports by reporter")
+	}
+	out := make([]moderation.ReportRecord, len(rows))
+	for i, row := range rows {
+		if out[i], err = r.reportRecordFrom(ctx, postgresgen.ListReportsRow(row)); err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }

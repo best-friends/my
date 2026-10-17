@@ -726,7 +726,7 @@ paths:
           explode: true
           schema:
             type: array
-            maxItems: 8
+            maxItems: 9
             items:
               $ref: "#/components/schemas/NotificationType"
         - $ref: "#/components/parameters/Cursor"
@@ -1256,6 +1256,32 @@ paths:
           $ref: "#/components/responses/Problem"
   # --- reports (#332) ---
   /reports:
+    get:
+      operationId: listOwnReports
+      summary: List the reports that the authenticated user filed
+      description: |
+        The reports that the user filed, newest first, each with whether it is still open or
+        resolved (FR-711). A report reopened by the moderators is open again. It never tells how
+        a report was resolved, which actions it led to, the reasons given to the account, or
+        who handles it.
+      tags: [reports]
+      security:
+        - oauth2: ["read:reports"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the user's reports.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportPage"
+        default:
+          $ref: "#/components/responses/Problem"
     post:
       operationId: createReport
       summary: Report an account
@@ -1970,6 +1996,7 @@ components:
             "read:follows": Read follows and follow requests.
             "read:mutes": Read the accounts the user mutes.
             "read:notifications": Read the user's notifications.
+            "read:reports": Read the reports the user filed and whether they are resolved.
             "read:statuses": Read posts and timelines.
             "write:accounts": Change the user's profile and preferences.
             "write:blocks": Block and unblock accounts.
@@ -2808,6 +2835,9 @@ components:
             The post that the notification is about, as the user sees it; omitted when the user
             may not see it.
           $ref: "#/components/schemas/Status"
+        report:
+          description: The user's report that a `report_resolved` tells of.
+          $ref: "#/components/schemas/Report"
         moderation_action:
           description: The action on the user's account that a `moderation_notice` tells of.
           $ref: "#/components/schemas/ModerationAction"
@@ -2850,6 +2880,9 @@ components:
         `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
         about. `moderation_notice` comes from the instance and has no `account`; its
         `moderation_action` is the action on the user's account, with its kind, reason, and end.
+        `report_resolved` also comes from the instance: its `report` is the user's report that
+        the moderators resolved, without how they resolved it. It is sent once per report, even
+        when the report is reopened and resolved again.
       type: string
       enum:
         - follow
@@ -2860,6 +2893,7 @@ components:
         - favourite
         - poll_closed
         - moderation_notice
+        - report_resolved
     # --- end notifications ---
     # --- statuses (#109): Status is shared with the other operations; MediaAttachment is in the media section ---
     CreateStatusRequest:
@@ -3922,9 +3956,11 @@ components:
           type: boolean
           default: false
     Report:
-      description: A report that the user filed. It never names the reporter.
+      description: |
+        A report that the user filed. It never names the reporter, and tells only whether the
+        moderators resolved it, never how.
       type: object
-      required: [id, category, comment, forwarded, filed_at, target_account, status_ids, rule_ids]
+      required: [id, category, comment, forwarded, filed_at, target_account, status_ids, rule_ids, state]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -3949,6 +3985,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Id"
+        state:
+          $ref: "#/components/schemas/ReportState"
     ReportCategory:
       description: |
         Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
@@ -3956,4 +3994,20 @@ components:
         anything else.
       type: string
       enum: [spam, legal, violation, other]
+    ReportPage:
+      description: A page of the user's reports, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Report"
+    ReportState:
+      description: |
+        `open`: the report awaits the moderators. `resolved`: the moderators handled it.
+      type: string
+      enum: [open, resolved]
     # --- end of reports (#332) ---

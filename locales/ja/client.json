@@ -863,6 +863,10 @@
     "defaultMessage": "参加した投票が終了しました",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
   },
+  "notifications.type.report_resolved": {
+    "defaultMessage": "あなたの通報への対応が完了しました",
+    "description": "Notification sentence: the moderators of the server resolved a report that the user filed. It never says how."
+  },
   "notifications.unread": {
     "defaultMessage": "未読:",
     "description": "Read by screen readers before the sentence of a notification that was new when the page opened."

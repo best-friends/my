@@ -216,12 +216,12 @@ describe("the notifications page", () => {
   test("names the actor of every type and hides a post behind its content warning", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
-    const types: NotificationType[] = ["follow_request", "follow_accepted", "boost", "favourite", "poll_closed", "moderation_notice"];
+    const types: NotificationType[] = ["follow_request", "follow_accepted", "boost", "favourite", "poll_closed", "moderation_notice", "report_resolved"];
     const items: Notification[] = types.map((type, i) => ({
       id: `0192f0c4-7a8e-7000-8000-0000000000c${String(i)}`,
       type,
       created_at: "2026-10-16T09:00:00Z",
-      ...(type === "moderation_notice" ? {} : { account: { ...otherAccountFixture, display_name: "" } }),
+      ...(type === "moderation_notice" || type === "report_resolved" ? {} : { account: { ...otherAccountFixture, display_name: "" } }),
       ...(type === "boost"
         ? { status: { ...statusFixture("0192f0c4-7a8e-7000-8000-0000000000b2"), spoiler_text: "spoilers", content: "<p>the ending</p>" } }
         : {}),
@@ -232,12 +232,13 @@ describe("the notifications page", () => {
 
     const feed = await screen.findByRole("feed", { name: "Notifications" });
     // Without a display name, the username stands in.
-    expect(within(feed).getAllByRole("article").map((article) => article.getAttribute("aria-posinset"))).toEqual(["1", "2", "3", "4", "5", "6"]);
+    expect(within(feed).getAllByRole("article").map((article) => article.getAttribute("aria-posinset"))).toEqual(["1", "2", "3", "4", "5", "6", "7"]);
     expect(within(feed).getByRole("article", { name: /bob requested to follow you/ })).toBeInTheDocument();
     expect(within(feed).getByRole("article", { name: /bob accepted your follow request/ })).toBeInTheDocument();
     expect(within(feed).getByRole("article", { name: /bob favourited your post/ })).toBeInTheDocument();
     expect(within(feed).getByRole("article", { name: /A poll you took part in has ended/ })).toBeInTheDocument();
     expect(within(feed).getByRole("article", { name: /The moderators of this server sent you a notice/ })).toBeInTheDocument();
+    expect(within(feed).getByRole("article", { name: /A report you filed has been resolved/ })).toBeInTheDocument();
     // A post behind a content warning shows the warning only; its page asks to open it.
     const boost = within(feed).getByRole("article", { name: /bob boosted your post/ });
     expect(within(boost).getByRole("link", { name: "Content warning: spoilers" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b2");
