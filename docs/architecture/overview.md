@@ -121,10 +121,10 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 
 1. Client API の投稿作成 → `PostStatus` ユースケース
 2. ドメインで検証（文字数・公開範囲・メンション解決）→ `Status` を生成
-3. **1 回のトランザクション**（`UnitOfWork.Tx`）で `statuses` + 付随行 + `outbox_events`（配送予定）を書き込む（Transactional Outbox）
-4. `JobQueue.enqueue(FanOutDelivery{statusId})`（失敗しても outbox から再投入できる）
-5. ワーカー: 公開範囲に応じて宛先 inbox を算出し（`local` はリモートフォロワーのみ）、**shared inbox 単位** に `DeliverActivity{inbox, activityId}` を投入
-6. `DeliverActivity` が署名付き POST。失敗時はバックオフで再投入、ドメインが連続失敗したら一時停止
+3. **1 回のトランザクション**（`UnitOfWork.Tx`）で `statuses` + 付随行を書き、同じトランザクションの同期 projector が `outbound_activities`（`Create`）と `outbox_events`（`federation.fanout` ジョブ）を書く（Transactional Outbox）
+4. リレーが outbox のジョブをキューに渡す（コミットした分だけが届く）
+5. ワーカー: `federation.fanout` が文書を 1 回だけ組み立て、公開範囲に応じて宛先 inbox を 500 件ずつ算出し（`local` はリモートフォロワーのみ）、**shared inbox 単位** の `deliveries` ごとに `federation.deliver{deliveryId}` を投入
+6. `federation.deliver` が署名付き POST。失敗時はバックオフで再投入、ドメインが連続失敗したら一時停止
 
 ### 4.2 Inbox 受信
 
