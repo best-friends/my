@@ -98,13 +98,34 @@ describe("preferences", () => {
     const { user } = await renderApp({ path: "/settings/preferences" });
 
     await user.click(await screen.findByRole("button", { name: /Time zone/ }));
-    await user.click(await screen.findByRole("option", { name: "Asia/Tokyo" }));
+    await user.click(await screen.findByRole("option", { name: "(UTC+09:00) Japan Standard Time" }));
 
     const timeZone = screen.getByRole("button", { name: /Time zone/ });
     await waitFor(() => {
       expect(timeZone).toHaveAccessibleDescription(expect.stringContaining("time_zone is not a valid value.") as string);
     });
-    expect(timeZone).toHaveTextContent("UTC");
+    expect(timeZone).toHaveTextContent("(UTC+00:00) Coordinated Universal Time");
+  });
+
+  test("time zones are named in the display language with their offset, and described by their IANA name", async () => {
+    const prefs = preferencesServer({ locale: "ja", time_zone: "Asia/Tokyo" });
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    const timeZone = await screen.findByRole("button", { name: /タイムゾーン/ });
+    expect(timeZone).toHaveTextContent("（UTC+09:00）日本標準時");
+
+    await user.click(timeZone);
+    const listbox = await screen.findByRole("listbox");
+    expect(within(listbox).getByRole("option", { name: "（UTC+09:00）日本標準時" })).toHaveAccessibleDescription("Asia/Tokyo");
+    // Zones of one name are told apart by their IANA name.
+    expect(within(listbox).getByRole("option", { description: "America/New_York" })).toHaveAccessibleName(/^（UTC−0[45]:00）米国東部時間$/);
+    expect(within(listbox).getByRole("option", { description: "America/Detroit" })).toHaveAccessibleName(/^（UTC−0[45]:00）米国東部時間$/);
+    // Nepal is ahead of UTC by 5 hours 45 minutes all year; its IANA name depends on the ICU data (Asia/Katmandu).
+    await user.click(within(listbox).getByRole("option", { name: "（UTC+05:45）ネパール時間" }));
+
+    await waitFor(() => {
+      expect(prefs.changes).toEqual([{ time_zone: expect.stringMatching(/^Asia\/Kat(h)?mandu$/) as string }]);
+    });
+    expect(timeZone).toHaveTextContent("（UTC+05:45）ネパール時間");
   });
 });
 
@@ -194,6 +215,68 @@ describe("profile", () => {
         avatar_media_id: "0192f0c4-7a8e-7000-8000-00000000bbbb",
       },
     ]);
+  });
+
+  test("leaving with unsaved changes asks first: keeping them stays, discarding them leaves", async () => {
+    profileServer();
+    const { user, router } = await renderApp({ path: "/settings/profile" });
+    const displayName = await screen.findByRole("textbox", { name: "Display name" });
+    await user.type(displayName, " Liddell");
+    const settings = screen.getByRole("link", { name: "Settings" });
+
+    await user.click(settings);
+    const dialog = await screen.findByRole("alertdialog", { name: "Leave without saving your profile?" });
+    expect(dialog).toHaveAccessibleDescription("Your changes to your profile will be lost.");
+    expect(within(dialog).getByRole("button", { name: "Keep editing" })).toHaveFocus();
+    await user.click(within(dialog).getByRole("button", { name: "Keep editing" }));
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/settings/profile");
+    expect(screen.getByRole("textbox", { name: "Display name" })).toHaveValue("Alice Liddell");
+    await waitFor(() => {
+      expect(settings).toHaveFocus();
+    });
+
+    await user.click(settings);
+    await user.click(await screen.findByRole("button", { name: "Discard changes" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/settings");
+  });
+
+  test("Esc in the question stays on the form", async () => {
+    profileServer();
+    const { user, router } = await renderApp({ path: "/settings/profile" });
+    await user.click(await screen.findByRole("checkbox", { name: "Approve followers" }));
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+    expect(router.state.location.pathname).toBe("/settings/profile");
+    expect(screen.getByRole("checkbox", { name: "Approve followers" })).toBeChecked();
+  });
+
+  test("leaving without changes, or after undoing or saving them, does not ask", async () => {
+    profileServer();
+    const { user, router } = await renderApp({ path: "/settings/profile" });
+    const displayName = await screen.findByRole("textbox", { name: "Display name" });
+    // Undone by hand: nothing is left to save.
+    await user.type(displayName, "!");
+    await user.type(displayName, "{Backspace}");
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+
+    await router.navigate({ to: "/settings/profile" });
+    await user.type(await screen.findByRole("textbox", { name: "Display name" }), " Liddell");
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+    expect((await screen.findAllByText("Your profile has been saved.")).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   test("a save the server refuses says why", async () => {

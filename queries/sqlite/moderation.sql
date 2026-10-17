@@ -95,6 +95,10 @@ ON CONFLICT (uri) DO NOTHING;
 INSERT INTO report_statuses (report_id, status_id) VALUES (?, ?)
 ON CONFLICT (report_id, status_id) DO NOTHING;
 
+-- name: InsertReportRuleCitation :exec
+INSERT INTO report_rule_citations (report_id, rule_id) VALUES (?, ?)
+ON CONFLICT (report_id, rule_id) DO NOTHING;
+
 -- name: UpsertReportState :exec
 INSERT INTO report_states (report_id, state, outcome, assignee_user_id, since) VALUES (?, ?, ?, ?, ?)
 ON CONFLICT (report_id) DO UPDATE SET
@@ -111,6 +115,9 @@ FROM reports WHERE uri = ?;
 
 -- name: ListReportStatusIDs :many
 SELECT status_id FROM report_statuses WHERE report_id = ? ORDER BY status_id;
+
+-- name: ListReportRuleIDs :many
+SELECT rule_id FROM report_rule_citations WHERE report_id = ? ORDER BY rule_id;
 
 -- name: GetReportState :one
 SELECT report_id, state, outcome, assignee_user_id, since FROM report_states WHERE report_id = ?;

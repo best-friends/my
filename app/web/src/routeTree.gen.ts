@@ -22,6 +22,7 @@ import { Route as AtChar123acctChar125IdRouteImport } from './routes/@{$acct}_.$
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
+import { Route as AdminDomainActionsRouteImport } from './routes/admin.domain-actions'
 import { Route as AdminInstancesRouteImport } from './routes/admin.instances'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
@@ -100,6 +101,11 @@ const AdminDeadJobsRoute = AdminDeadJobsRouteImport.update({
   path: '/admin/dead-jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDomainActionsRoute = AdminDomainActionsRouteImport.update({
+  id: '/admin/domain-actions',
+  path: '/admin/domain-actions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminInstancesRoute = AdminInstancesRouteImport.update({
   id: '/admin/instances',
   path: '/admin/instances',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -243,6 +252,7 @@ export interface FileRouteTypes {
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/admin/dead-jobs'
+    | '/admin/domain-actions'
     | '/admin/instances'
     | '/login/callback'
     | '/settings/blocks'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/admin/dead-jobs'
+    | '/admin/domain-actions'
     | '/admin/instances'
     | '/login/callback'
     | '/settings/blocks'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
     | '/admin/dead-jobs'
+    | '/admin/domain-actions'
     | '/admin/instances'
     | '/login_/callback'
     | '/settings/blocks'
@@ -319,6 +331,7 @@ export interface RootRouteChildren {
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
+  AdminDomainActionsRoute: typeof AdminDomainActionsRoute
   AdminInstancesRoute: typeof AdminInstancesRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
@@ -424,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDeadJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/domain-actions': {
+      id: '/admin/domain-actions'
+      path: '/admin/domain-actions'
+      fullPath: '/admin/domain-actions'
+      preLoaderRoute: typeof AdminDomainActionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/instances': {
       id: '/admin/instances'
       path: '/admin/instances'
@@ -511,6 +531,7 @@ const rootRouteChildren: RootRouteChildren = {
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
+  AdminDomainActionsRoute: AdminDomainActionsRoute,
   AdminInstancesRoute: AdminInstancesRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,

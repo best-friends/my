@@ -19,13 +19,14 @@ import (
 )
 
 // fakeAccountModeration keeps actions on accounts, oldest first, with the semantics of
-// appmoderation.Service: a local account takes the kinds without effects beyond their
-// restrictions, a remote one limit, suspend, and force_sensitive.
+// appmoderation.Service: a local account takes every kind, a remote one limit, suspend, and
+// force_sensitive; an action on statuses names statuses of its account; a ban is not lifted.
 type fakeAccountModeration struct {
 	now      time.Time
 	n        int
 	accounts fakeAccounts
 	reports  map[string]string // report ID → target account ID
+	statuses map[string]string // status ID → author account ID
 	actions  []moderation.ActionRecord
 	issued   []appmoderation.AccountActionInput
 }
@@ -62,7 +63,8 @@ func (f *fakeAccountModeration) IssueAccountAction(_ context.Context, in appmode
 	}
 	kinds := []moderation.ActionKind{moderation.ActionLimit, moderation.ActionSuspend, moderation.ActionForceSensitive}
 	if target.Account.IsLocal() {
-		kinds = append(kinds, moderation.ActionWarn, moderation.ActionRestrictPosting, moderation.ActionRestrictInteraction, moderation.ActionDisableLogin)
+		kinds = append(kinds, moderation.ActionWarn, moderation.ActionRestrictPosting, moderation.ActionRestrictInteraction,
+			moderation.ActionDisableLogin, moderation.ActionBan, moderation.ActionDeleteStatuses, moderation.ActionMarkStatusesSensitive)
 	}
 	if !slices.Contains(kinds, in.Kind) {
 		return moderation.Action{}, appmoderation.ErrUnsupportedAction
@@ -70,12 +72,20 @@ func (f *fakeAccountModeration) IssueAccountAction(_ context.Context, in appmode
 	if in.ReportID != "" && f.reports[in.ReportID] != in.TargetAccountID {
 		return moderation.Action{}, appmoderation.ErrInvalidReportReference
 	}
+	for _, id := range in.StatusIDs {
+		if f.statuses[id] != in.TargetAccountID {
+			return moderation.Action{}, appmoderation.ErrInvalidStatusReference
+		}
+	}
 	f.issued = append(f.issued, in)
 	f.n++
 	a := moderation.Action{
 		ID: fmt.Sprintf("01890a5d-ac96-774b-bcce-b30209901%03d", f.n), TargetAccountID: in.TargetAccountID, Kind: in.Kind,
 		ReasonCategory: in.ReasonCategory, PublicReason: in.PublicReason, PrivateNote: in.PrivateNote, ReportID: in.ReportID,
 		Issuer: moderation.IssuerModerator, IssuedByUserID: in.IssuedByUserID, NotifyTarget: in.NotifyTarget, IssuedAt: f.now,
+	}
+	if len(in.StatusIDs) > 0 {
+		a.StatusIDs = slices.Sorted(slices.Values(in.StatusIDs))
 	}
 	if in.Duration > 0 {
 		t := f.now.Add(in.Duration)
@@ -96,6 +106,9 @@ func (f *fakeAccountModeration) LiftAccountAction(_ context.Context, id, by, rea
 	}
 	for i, r := range f.actions {
 		if r.Action.ID == id {
+			if !r.Action.Kind.Liftable() {
+				return appmoderation.ErrNotLiftable
+			}
 			if r.Lift == nil {
 				f.actions[i].Lift = &l
 			}
@@ -109,7 +122,10 @@ func (f *fakeAccountModeration) LiftAccountAction(_ context.Context, id, by, rea
 // acts on bob, and reportOne is a report of bob.
 func newAccountModerationEnv(t *testing.T) (*authEnv, *fakeAccountModeration) {
 	t.Helper()
-	f := &fakeAccountModeration{now: adminNow, reports: map[string]string{reportOne: bobAccountID, reportTwo: aliceAccountID}}
+	f := &fakeAccountModeration{
+		now: adminNow, reports: map[string]string{reportOne: bobAccountID, reportTwo: aliceAccountID},
+		statuses: map[string]string{bobStatusOne: bobAccountID, bobStatusTwo: bobAccountID, aliceStatus: aliceAccountID},
+	}
 	e, _ := newModerationEnvWith(t, func(o *clientapi.Options) {
 		f.accounts = o.Accounts.(fakeAccounts)
 		f.accounts[bobAccountID] = appaccount.Actor{
@@ -125,7 +141,12 @@ func newAccountModerationEnv(t *testing.T) (*authEnv, *fakeAccountModeration) {
 	return e, f
 }
 
-const instanceActorID = "01890a5d-ac96-774b-bcce-b302099a5009"
+const (
+	instanceActorID = "01890a5d-ac96-774b-bcce-b302099a5009"
+	bobStatusOne    = "01890a5d-ac96-774b-bcce-b302099a6001"
+	bobStatusTwo    = "01890a5d-ac96-774b-bcce-b302099a6002"
+	aliceStatus     = "01890a5d-ac96-774b-bcce-b302099a6003"
+)
 
 func TestAccountActionOperationsNeedAPermission(t *testing.T) {
 	e, f := newAccountModerationEnv(t)
@@ -245,13 +266,46 @@ func TestCreateListAndLiftAccountActions(t *testing.T) {
 	}
 }
 
+func TestAccountActionsOnStatusesAndBans(t *testing.T) {
+	e, f := newAccountModerationEnv(t)
+	path := "/admin/accounts/" + bobAccountID + "/actions"
+	res := e.sendJSON(t, http.MethodPost, path, "admin", `{"kind":"delete_statuses","status_ids":["`+bobStatusTwo+`","`+bobStatusOne+`"]}`)
+	del := decodeJSON[clientapi.AdminAccountAction](t, res)
+	if res.StatusCode != http.StatusOK || del.Kind != clientapi.AdminAccountActionKindDeleteStatuses || del.StatusIds == nil ||
+		!slices.Equal(*del.StatusIds, []string{bobStatusOne, bobStatusTwo}) {
+		t.Errorf("delete_statuses = %d %+v", res.StatusCode, del)
+	}
+	res = e.sendJSON(t, http.MethodPost, path, "admin", `{"kind":"warn"}`)
+	if w := decodeJSON[clientapi.AdminAccountAction](t, res); w.StatusIds != nil {
+		t.Errorf("warn = %+v, want no status_ids", w)
+	}
+	res = e.sendJSON(t, http.MethodPost, path, "admin", `{"kind":"ban","public_reason":"spam"}`)
+	ban := decodeJSON[clientapi.AdminAccountAction](t, res)
+	if res.StatusCode != http.StatusOK || ban.Kind != clientapi.AdminAccountActionKindBan || ban.ExpiresAt != nil {
+		t.Fatalf("ban = %d %+v", res.StatusCode, ban)
+	}
+	res = e.sendJSON(t, http.MethodPost, "/admin/account_actions/"+ban.Id+"/lift", "admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, "id") {
+		t.Errorf("lift a ban = %d %+v, want 422 naming id", res.StatusCode, p)
+	}
+	if f.actions[2].Lift != nil {
+		t.Error("the ban was lifted")
+	}
+}
+
 func TestCreateAccountActionRejectsInvalidInput(t *testing.T) {
 	e, f := newAccountModerationEnv(t)
 	bob := "/admin/accounts/" + bobAccountID + "/actions"
 	for _, tc := range []struct{ path, body, want string }{
 		{bob, `{"kind":"silence","x":"invalid-on-purpose"}`, "kind"},
-		{bob, `{"kind":"ban"}`, "kind"},
-		{bob, `{"kind":"delete_statuses"}`, "kind"},
+		{"/admin/accounts/" + reporterAccountID + "/actions", `{"kind":"ban"}`, "kind"},
+		{bob, `{"kind":"ban","expires_in":3600}`, "expires_in"},
+		{bob, `{"kind":"delete_statuses"}`, "status_ids"},
+		{bob, `{"kind":"delete_statuses","status_ids":["` + bobStatusOne + `"],"expires_in":3600}`, "expires_in"},
+		{bob, `{"kind":"delete_statuses","status_ids":["` + aliceStatus + `"]}`, "status_ids"},
+		{bob, `{"kind":"mark_statuses_sensitive","status_ids":["` + reportThree + `"]}`, "status_ids"},
+		{bob, `{"kind":"warn","status_ids":["` + bobStatusOne + `"]}`, "status_ids"},
+		{bob, `{"kind":"delete_statuses","x":"invalid-on-purpose","status_ids":["` + bobStatusOne + `","` + bobStatusOne + `"]}`, "status_ids"},
 		{"/admin/accounts/" + reporterAccountID + "/actions", `{"kind":"disable_login"}`, "kind"},
 		{"/admin/accounts/" + instanceActorID + "/actions", `{"kind":"suspend"}`, "id"},
 		{bob, `{"kind":"warn","reason_category":"rude","x":"invalid-on-purpose"}`, "reason_category"},

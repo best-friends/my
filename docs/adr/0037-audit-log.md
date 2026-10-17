@@ -1,6 +1,6 @@
 # ADR-0037: 監査ログを処分のイベントとは別の追記専用の記録にする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-17
 - Deciders: @rosylilly
 - Issue: #327
@@ -35,9 +35,7 @@ GDPR 32 条と個人情報保護法 23 条（安全管理措置）は、処理�
 
 ## Decision（決定）
 
-> 推奨案。
-
-**選択肢 1 を推奨する。**
+**選択肢 1 を採用する。**
 
 - `audit_log_entries` は `moderation` が持つ【イベント】で、カラムは `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block)`）, `target_id`, `target_label`（記録時の対象の表示名の写し。`@user@host`・ドメイン・設定のキーなど）, `source_event_id`（元のイベントの行の ID）, `occurred_at`。
 - 各モジュールのユースケースは、元のイベントと同じトランザクションで `AuditRecorded` のドメインイベントを発行し、`moderation` の購読者がそれを書く（`uow.Event`。他のモジュールの `internal/app` を呼ぶ既存の経路だけを使う）。
@@ -47,7 +45,7 @@ GDPR 32 条と個人情報保護法 23 条（安全管理措置）は、処理�
 - CLI は操作者を `actor_kind = cli` で記録する。CLI の実行者の OS ユーザー名は残さない。
 - 改ざん検知（ハッシュ連鎖など）は持たない。DB に直接書ける運営者は監査ログも書き換えられ、1 人で運用するインスタンスでは効果が薄いため。
 
-この推奨を覆す条件: 複数のモデレーターで運用するインスタンスで、運営者自身の操作を第三者が検証する要件が出た場合は、ハッシュ連鎖か外部への複製を足す ADR を書く。
+この決定を覆す条件: 複数のモデレーターで運用するインスタンスで、運営者自身の操作を第三者が検証する要件が出た場合は、ハッシュ連鎖か外部への複製を足す ADR を書く。
 
 ## Consequences（影響）
 

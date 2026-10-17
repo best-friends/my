@@ -22,9 +22,19 @@ type Accounts interface {
 
 // Relationships is the part of the graph module's public API that the projectors read: whether
 // a block between the recipient and the source, or the recipient's mute of the source with
-// hide_notifications, keeps the notification from being created. *appgraph.Service implements it.
+// hide_notifications, keeps the notification from being created, and whether the recipient
+// follows the source. *appgraph.Service implements it.
 type Relationships interface {
 	HidesNotifications(ctx context.Context, tx uow.Tx, recipientID, sourceID string) (bool, error)
+	Follows(ctx context.Context, tx uow.Tx, followerID, followeeID string) (bool, error)
+}
+
+// ReachPolicy is the part of the moderation module's public API that the projectors read:
+// whether the source's restrictions, its own and its domain's, include unsolicited_reach, so
+// that it notifies only the accounts that follow it (data-model §5.2).
+// *appmoderation.AccountPolicy implements it.
+type ReachPolicy interface {
+	UnsolicitedReachRestricted(ctx context.Context, accountID string) (bool, error)
 }
 
 // ProjectorDeps are the ports the notification projectors use.
@@ -32,7 +42,10 @@ type ProjectorDeps struct {
 	Repository    Repository
 	Accounts      Accounts
 	Relationships Relationships
-	IDs           kernel.IDGenerator
+	// Reach keeps the notifications of a source with unsolicited_reach from the recipients
+	// that do not follow it; nil restricts no source.
+	Reach ReachPolicy
+	IDs   kernel.IDGenerator
 }
 
 // RegisterProjectors registers the synchronous projectors that create notifications from the
@@ -48,7 +61,8 @@ type ProjectorDeps struct {
 //   - content.favourited: favourite, to the status's author.
 //
 // A notification goes only to a local recipient other than its source, and not when either
-// blocks the other or the recipient mutes the source with hide_notifications. Each notification
+// blocks the other, the recipient mutes the source with hide_notifications, or the source has
+// unsolicited_reach (a limit on it or its domain) and the recipient does not follow it. Each notification
 // has a dedupe key unique per recipient (notification.FollowKey, MentionKey, InteractionKey),
 // so projecting an event again, or a repeated boost or favourite, creates nothing more.
 //
@@ -191,8 +205,9 @@ func (p *projector) interaction(ctx context.Context, tx uow.Tx, t notification.T
 	})
 }
 
-// notify inserts n unless its recipient is its source or not local, or the relationship
-// between them hides it. A notification with the same dedupe key leaves n out.
+// notify inserts n unless its recipient is its source or not local, the relationship between
+// them hides it, or the source may reach only its followers and the recipient is none. A
+// notification with the same dedupe key leaves n out.
 func (p *projector) notify(ctx context.Context, tx uow.Tx, n notification.Notification) error {
 	if n.RecipientAccountID == n.SourceAccountID {
 		return nil
@@ -206,6 +221,9 @@ func (p *projector) notify(ctx context.Context, tx uow.Tx, n notification.Notifi
 		if err != nil || hidden {
 			return err
 		}
+		if reached, err := p.reaches(ctx, tx, n.RecipientAccountID, n.SourceAccountID); err != nil || !reached {
+			return err
+		}
 	}
 	n.ID = p.d.IDs.NewID()
 	if err := n.Validate(); err != nil {
@@ -213,4 +231,17 @@ func (p *projector) notify(ctx context.Context, tx uow.Tx, n notification.Notifi
 	}
 	_, err = p.d.Repository.InsertNotification(ctx, tx, n)
 	return err
+}
+
+// reaches reports whether sourceID may notify recipientID: always, unless the source has
+// unsolicited_reach, and then only when the recipient follows it.
+func (p *projector) reaches(ctx context.Context, tx uow.Tx, recipientID, sourceID string) (bool, error) {
+	if p.d.Reach == nil {
+		return true, nil
+	}
+	restricted, err := p.d.Reach.UnsolicitedReachRestricted(ctx, sourceID)
+	if err != nil || !restricted {
+		return err == nil, err
+	}
+	return p.d.Relationships.Follows(ctx, tx, recipientID, sourceID)
 }

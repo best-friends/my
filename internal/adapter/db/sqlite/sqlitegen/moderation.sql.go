@@ -550,6 +550,21 @@ func (q *Queries) InsertReportResolution(ctx context.Context, arg InsertReportRe
 	return err
 }
 
+const insertReportRuleCitation = `-- name: InsertReportRuleCitation :exec
+INSERT INTO report_rule_citations (report_id, rule_id) VALUES (?, ?)
+ON CONFLICT (report_id, rule_id) DO NOTHING
+`
+
+type InsertReportRuleCitationParams struct {
+	ReportID string
+	RuleID   string
+}
+
+func (q *Queries) InsertReportRuleCitation(ctx context.Context, arg InsertReportRuleCitationParams) error {
+	_, err := q.db.ExecContext(ctx, insertReportRuleCitation, arg.ReportID, arg.RuleID)
+	return err
+}
+
 const insertReportStatus = `-- name: InsertReportStatus :exec
 INSERT INTO report_statuses (report_id, status_id) VALUES (?, ?)
 ON CONFLICT (report_id, status_id) DO NOTHING
@@ -868,6 +883,33 @@ func (q *Queries) ListModerationActions(ctx context.Context, arg ListModerationA
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReportRuleIDs = `-- name: ListReportRuleIDs :many
+SELECT rule_id FROM report_rule_citations WHERE report_id = ? ORDER BY rule_id
+`
+
+func (q *Queries) ListReportRuleIDs(ctx context.Context, reportID string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listReportRuleIDs, reportID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var rule_id string
+		if err := rows.Scan(&rule_id); err != nil {
+			return nil, err
+		}
+		items = append(items, rule_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

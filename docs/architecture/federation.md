@@ -494,7 +494,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - `suspended` は Mastodon 拡張（`toot:suspended`）で、`@context` は §7.4 の Actor と同じです。凍結中の文書は `federation.ActorDocument.Suspend` が作り、`id`・コレクション・inbox・鍵は残します。
 - 凍結とその終わりは、`moderation` が処分・解除・期限切れの行の削除のトランザクションで発行する `moderation.account_suspension_changed`（[data-model §4.3](data-model.md#制限投影)）から、`federation.RegisterSuspensionProjectors` が同じトランザクションで `Update`（Actor）を積みます。重なった凍結の 2 つ目と、1 つが残る解除は何も送りません。
   文書は展開の始めの時点の状態から組み立てるので（§7.4）、凍結と解除が続けて起きても、後から展開した `Update` ほど新しい状態を表します。
-- BAN の `Delete`（Actor）は、削除の予約の期日にアカウントの削除（`deleted`）が記録されたときに、§7.1 のアカウント削除と同じ経路で送ります。
+- BAN の `Delete`（Actor）は、削除の予約の期日に `account.execute_deletions` がアカウントの削除（`deleted`）を記録したときに、§7.1 のアカウント削除と同じ経路で送ります。凍結中でも `Delete` は止めません。
 - 処分を解除しても、切ったフォローは戻しません。
 - 受信した Actor の `suspended: true` は、リモートのアカウントの表示に出すだけで、このサーバーの処分にはしません。
 

@@ -2,7 +2,7 @@
 import { Link } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
-import { availabilityEventsQueryOptions, InstanceDetail, instanceQueryOptions } from "../features/admin";
+import { availabilityEventsQueryOptions, DomainName, InstanceDetail, instanceQueryOptions } from "../features/admin";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
@@ -32,9 +32,8 @@ function InstanceHeading() {
   return (
     <div className="flex flex-col items-start gap-1">
       <PageHeading>
-        {/* A domain reads left to right in every locale. */}
-        <span dir="ltr" className="wrap-anywhere">
-          {domain}
+        <span className="wrap-anywhere">
+          <DomainName domain={domain} />
         </span>
       </PageHeading>
       <Link href="/admin/instances" variant="standalone" className="text-sm">

@@ -114,6 +114,8 @@ type App struct {
 	Moderation       *moderation.Service
 	ModerationPolicy *moderation.FederationPolicy
 	AccountPolicy    *moderation.AccountPolicy
+	// LocalReports files the reports of local users (FR-701).
+	LocalReports *moderation.LocalReports
 
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
@@ -392,7 +394,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
 	// After the graph and content projectors, whose events these projectors turn into notifications.
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
-		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
+		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, Reach: a.AccountPolicy, IDs: a.IDs,
 	})
 	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
 	a.setUpRetention(cfg, retention, statuses)
@@ -428,6 +430,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: a.AccountPolicy.Content(), Media: a.Media,
 	})
+	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
@@ -470,6 +473,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Moderation: a.Moderation, UserAccounts: a.Accounts,
 		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy,
 		Rules:       a.Instance,
+		Reports:     a.LocalReports,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil

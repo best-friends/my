@@ -156,4 +156,13 @@ func fedPropagatesSuspensions(t *testing.T, e *fedEnv) {
 		t.Fatalf("Updates after the ban = %+v, want three", updates)
 	}
 	check(updates[2], true)
+
+	// The deletion at the end of the ban's grace period still sends the Delete of the actor while
+	// the account is suspended.
+	e.lifecycle(t, author, account.LifecycleDeleted)
+	e.drain(t)
+	del := e.activity(t, federation.OutboundAccount, author, federation.ActivityDelete)
+	if got := e.inboxes(t, del.ID); !slices.Equal(got, want) {
+		t.Errorf("Delete inboxes of the suspended actor = %v, want %v", got, want)
+	}
 }
