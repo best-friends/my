@@ -10,7 +10,9 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	appnotification "github.com/best-friends/my/internal/app/notification"
+	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/domain/notification"
 )
 
@@ -97,7 +99,8 @@ func (s *Server) ListNotifications(ctx context.Context, req ListNotificationsReq
 // newNotifications presents accountID's notifications ns, in order, as the Notification schema.
 // The posts that they are about are read together through the content module, which applies the
 // visibility policy: a post that the user may not see is left out of its notification. The source
-// accounts are read once each; a source account that no longer exists is left out.
+// accounts are read once each; a source account that no longer exists is left out. A
+// report_resolved carries the user's report, which tells only that it is resolved.
 func (s *Server) newNotifications(ctx context.Context, accountID string, ns []notification.Notification) ([]Notification, error) {
 	var statusIDs []string
 	seen := map[string]bool{}
@@ -133,6 +136,10 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 			return nil, fmt.Errorf("clientapi: the source account %s of notification %s: %w", n.SourceAccountID, n.ID, err)
 		}
 	}
+	reports, err := s.notifiedReports(ctx, accountID, ns)
+	if err != nil {
+		return nil, err
+	}
 	parts, err := s.statusParts(ctx, views, found...)
 	if err != nil {
 		return nil, err
@@ -156,7 +163,43 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 		if a, ok := accounts[n.SourceAccountID]; ok {
 			item.Account = &a
 		}
+		if r, ok := reports[n.ReportID]; ok {
+			item.Report = &r
+		}
 		out = append(out, item)
+	}
+	return out, nil
+}
+
+// notifiedReports presents, by ID, accountID's own reports that the report_resolved
+// notifications ns tell of; a report that no longer exists is left out.
+func (s *Server) notifiedReports(ctx context.Context, accountID string, ns []notification.Notification) (map[string]Report, error) {
+	if s.o.FiledReports == nil {
+		return nil, nil
+	}
+	var recs []moderation.ReportRecord
+	seen := map[string]bool{}
+	for _, n := range ns {
+		if n.ReportID == "" || seen[n.ReportID] {
+			continue
+		}
+		seen[n.ReportID] = true
+		rec, err := s.o.FiledReports.ReportFiledBy(ctx, accountID, n.ReportID)
+		switch {
+		case errors.Is(err, appmoderation.ErrNotFound):
+			continue
+		case err != nil:
+			return nil, fmt.Errorf("clientapi: the report %s of notification %s: %w", n.ReportID, n.ID, err)
+		}
+		recs = append(recs, rec)
+	}
+	items, err := s.newReports(ctx, recs)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]Report, len(items))
+	for _, r := range items {
+		out[r.Id] = r
 	}
 	return out, nil
 }

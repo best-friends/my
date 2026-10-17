@@ -37,6 +37,8 @@ function sentenceOf(t: Translate, notification: Notification): string {
       return t("client:notifications.type.poll_closed");
     case "moderation_notice":
       return t("client:notifications.type.moderation_notice");
+    case "report_resolved":
+      return t("client:notifications.type.report_resolved");
   }
 }
 

@@ -469,7 +469,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
-		Moderation: a.Moderation, UserAccounts: a.Accounts,
+		Moderation: a.Moderation, UserAccounts: a.Accounts, FiledReports: a.Moderation,
 		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy,
 		Rules:       a.Instance,
 		Reports:     a.LocalReports,

@@ -11,8 +11,9 @@ import (
 type Type string
 
 // Notification types. The notification module generates follow, follow_request,
-// follow_accepted, mention, boost, and favourite from the graph and content events;
-// poll_closed and moderation_notice belong to the modules that close polls and act on reports.
+// follow_accepted, mention, boost, and favourite from the graph and content events, and
+// report_resolved from the moderation events; poll_closed and moderation_notice belong to the
+// modules that close polls and act on accounts.
 const (
 	TypeFollow           Type = "follow"
 	TypeFollowRequest    Type = "follow_request"
@@ -22,19 +23,20 @@ const (
 	TypeFavourite        Type = "favourite"
 	TypePollClosed       Type = "poll_closed"
 	TypeModerationNotice Type = "moderation_notice"
+	TypeReportResolved   Type = "report_resolved"
 )
 
 // Types are every notification type, in a stable order.
 var Types = []Type{
 	TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
-	TypePollClosed, TypeModerationNotice,
+	TypePollClosed, TypeModerationNotice, TypeReportResolved,
 }
 
 // Valid reports whether t is a known notification type.
 func (t Type) Valid() bool {
 	switch t {
 	case TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
-		TypePollClosed, TypeModerationNotice:
+		TypePollClosed, TypeModerationNotice, TypeReportResolved:
 		return true
 	}
 	return false
@@ -49,9 +51,10 @@ type Notification struct {
 	ID                 string
 	RecipientAccountID string
 	Type               Type
-	SourceAccountID    string // "" for moderation_notice, which comes from the instance
+	SourceAccountID    string // "" for moderation_notice and report_resolved, which come from the instance
 	StatusID           string // "" unless the notification is about a status
 	ModerationActionID string // "" unless the notification is a moderation_notice
+	ReportID           string // "" unless the notification is a report_resolved
 	DedupeKey          string
 	CreatedAt          time.Time
 }
@@ -75,6 +78,9 @@ func (n Notification) Validate() error {
 	if n.SourceAccountID == n.RecipientAccountID {
 		return ErrSelfNotification
 	}
+	if (n.Type == TypeReportResolved) != (n.ReportID != "") {
+		return errors.New("notification: a report_resolved, and only it, names a report")
+	}
 	return nil
 }
 
@@ -91,6 +97,10 @@ func MentionKey(statusID string) string { return string(TypeMention) + ":" + sta
 func InteractionKey(t Type, statusID, sourceAccountID string) string {
 	return string(t) + ":" + statusID + ":" + sourceAccountID
 }
+
+// ReportResolvedKey is the dedupe key of a report_resolved notification: one per report, so
+// that resolving a reopened report again does not notify the reporter again.
+func ReportResolvedKey(reportID string) string { return string(TypeReportResolved) + ":" + reportID }
 
 // Dismissal is the event that the recipient dismissed a notification (notification_dismissals).
 // Dismissed notifications leave the list and the unread count.

@@ -130,6 +130,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeReadNotifications() string {
 	return l.format("server:auth.authorize.scope.read_notifications", nil)
 }
 
+// ServerAuthAuthorizeScopeReadReports formats "server:auth.authorize.scope.read_reports". Permission (OAuth scope read:reports) listed on the authorization page.
+//
+//	en: Read the reports you filed and whether they are resolved
+func (l *Localizer) ServerAuthAuthorizeScopeReadReports() string {
+	return l.format("server:auth.authorize.scope.read_reports", nil)
+}
+
 // ServerAuthAuthorizeScopeReadStatuses formats "server:auth.authorize.scope.read_statuses". Permission (OAuth scope read:statuses) listed on the authorization page.
 //
 //	en: Read posts and timelines

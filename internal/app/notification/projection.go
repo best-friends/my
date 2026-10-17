@@ -9,6 +9,7 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/notification"
 )
@@ -46,6 +47,10 @@ type ProjectorDeps struct {
 //     mentions; an edit notifies only the accounts it newly mentions.
 //   - content.boosted: boost, to the status's author.
 //   - content.favourited: favourite, to the status's author.
+//   - moderation.report_resolved: report_resolved, to the reporter when the reporter is a local
+//     account. It comes from the instance and has no source account. Its dedupe key is the
+//     report's (notification.ReportResolvedKey), so only the first resolution notifies: a
+//     report reopened and resolved again does not notify again.
 //
 // A notification goes only to a local recipient other than its source, and not when either
 // blocks the other or the recipient mutes the source with hide_notifications. Each notification
@@ -152,6 +157,13 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 	r.Register(appcontent.EventFavourited, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.Favourited)
 		return p.interaction(ctx, tx, notification.TypeFavourite, ev.Status, ev.Favourite.AccountID, ev.Favourite.CreatedAt)
+	})
+	r.Register(appmoderation.EventReportResolved, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appmoderation.ReportResolved)
+		return p.notify(ctx, tx, notification.Notification{
+			RecipientAccountID: ev.Report.ReporterAccountID, Type: notification.TypeReportResolved, ReportID: ev.Report.ID,
+			DedupeKey: notification.ReportResolvedKey(ev.Report.ID), CreatedAt: ev.Resolution.ResolvedAt,
+		})
 	})
 }
 

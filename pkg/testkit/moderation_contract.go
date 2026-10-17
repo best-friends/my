@@ -43,7 +43,8 @@ type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 // the rules are in effect, the actions on domains and on
 // accounts list newest first with their lifts and filters, the public list keeps only the
 // limits and suspensions in effect without their private notes, and moderators list, assign,
-// and resolve reports. The accounts are in-memory stand-ins.
+// and resolve reports, each resolution emitting the report with it, and a reporter lists only
+// their own reports, newest first, with their states. The accounts are in-memory stand-ins.
 func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -63,6 +64,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"ListsDomainActions", moderationListsDomainActions},
 		{"ListsPublicDomainActions", moderationListsPublicDomainActions},
 		{"HandlesReports", moderationHandlesReports},
+		{"ListsTheReportsOfAReporter", moderationReportsOfReporter},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newModerationEnv(t, newHarness)) })
@@ -95,7 +97,7 @@ func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv
 	e := &moderationEnv{
 		h: h, clock: clock, ids: ids, actors: &stubActors{actors: map[string]appaccount.Actor{}}, events: &eventLog{},
 	}
-	for _, typ := range []string{appmoderation.EventDomainRestrictionsChanged, appmoderation.EventAccountRestrictionsChanged, appmoderation.EventReportFiled} {
+	for _, typ := range []string{appmoderation.EventDomainRestrictionsChanged, appmoderation.EventAccountRestrictionsChanged, appmoderation.EventReportFiled, appmoderation.EventReportResolved} {
 		projectors.Register(typ, e.events.record)
 	}
 	e.svc = appmoderation.NewService(appmoderation.Deps{
@@ -925,5 +927,75 @@ func moderationHandlesReports(t *testing.T, e *moderationEnv) {
 	}
 	if _, err := e.svc.Reports(ctx, appmoderation.ReportQuery{State: "closed"}, 10); !errors.Is(err, appmoderation.ErrInvalidQuery) {
 		t.Errorf("Reports(closed) = %v, want ErrInvalidQuery", err)
+	}
+}
+
+func moderationReportsOfReporter(t *testing.T, e *moderationEnv) {
+	ctx := t.Context()
+	other := e.ids.NewID()
+	e.actors.set(appaccount.Actor{Account: account.Account{ID: other, Domain: "other.example", URI: "https://other.example/actor"}})
+	file := func(n, reporter string) moderation.Report {
+		t.Helper()
+		e.clock.Advance(time.Second)
+		r, _, err := e.svc.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
+			URI: "https://remote.example/flags/" + n, ReporterAccountID: reporter, TargetAccountID: e.local, StatusIDs: []string{"s" + n},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+	a, theirs, b, c := file("1", e.reports), file("2", other), file("3", e.reports), file("4", e.reports)
+	e.events.take()
+	list := func(before string, limit int, want ...string) []moderation.ReportRecord {
+		t.Helper()
+		got, err := e.svc.ReportsFiledBy(ctx, e.reports, before, limit)
+		ids := []string{}
+		for _, r := range got {
+			ids = append(ids, r.Report.ID)
+		}
+		if err != nil || !reflect.DeepEqual(ids, append([]string{}, want...)) {
+			t.Errorf("ReportsFiledBy(%q, %d) = %v, %v; want %v", before, limit, ids, err, want)
+		}
+		return got
+	}
+	list("", 2, c.ID, b.ID)
+	list(b.ID, 2, a.ID)
+	if got, err := e.svc.ReportsFiledBy(ctx, e.ids.NewID(), "", 10); err != nil || len(got) != 0 {
+		t.Errorf("ReportsFiledBy(nobody) = %v, %v; want none", got, err)
+	}
+
+	// Resolving emits the report with its resolution, once.
+	e.clock.Advance(time.Minute)
+	resolvedAt := e.clock.Now()
+	if _, err := e.svc.ResolveReport(ctx, b.ID, moderation.OutcomeActioned, "mod-1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.ResolveReport(ctx, b.ID, moderation.OutcomeDismissed, "mod-1"); err != nil {
+		t.Fatal(err)
+	}
+	events := e.events.take()
+	if len(events) != 1 {
+		t.Fatalf("events = %+v, want one ReportResolved", events)
+	}
+	ev, ok := events[0].(appmoderation.ReportResolved)
+	if !ok || !reflect.DeepEqual(ev.Report, b) || ev.Resolution.ReportID != b.ID || ev.Resolution.Outcome != moderation.OutcomeActioned ||
+		ev.Resolution.ResolvedByUserID != "mod-1" || !ev.Resolution.ResolvedAt.Equal(resolvedAt) || ev.Resolution.ID == "" {
+		t.Errorf("event = %+v, want b resolved as actioned at %v", events[0], resolvedAt)
+	}
+	all := list("", 10, c.ID, b.ID, a.ID)
+	if len(all) == 3 && (all[1].Status.State != moderation.ReportResolved || all[0].Status.State != moderation.ReportOpen ||
+		!reflect.DeepEqual(all[1].Report, b)) {
+		t.Errorf("listed = %+v, want b resolved and c open", all)
+	}
+
+	if got, err := e.svc.ReportFiledBy(ctx, e.reports, b.ID); err != nil || got.Status.State != moderation.ReportResolved || !reflect.DeepEqual(got.Report, b) {
+		t.Errorf("ReportFiledBy(b) = %+v, %v", got, err)
+	}
+	if _, err := e.svc.ReportFiledBy(ctx, e.reports, theirs.ID); !errors.Is(err, appmoderation.ErrNotFound) {
+		t.Errorf("ReportFiledBy(another reporter's) = %v, want ErrNotFound", err)
+	}
+	if _, err := e.svc.ReportFiledBy(ctx, e.reports, e.ids.NewID()); !errors.Is(err, appmoderation.ErrNotFound) {
+		t.Errorf("ReportFiledBy(unknown) = %v, want ErrNotFound", err)
 	}
 }

@@ -428,6 +428,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** A report you filed has been resolved */
+  "client:notifications.type.report_resolved": {};
   /** Unread: */
   "client:notifications.unread": {};
   /** {count, plural, one {# unread} other {# unread}} */
@@ -954,6 +956,8 @@ export interface MessageArgs {
   "server:auth.authorize.scope.read_mutes": {};
   /** Read your notifications */
   "server:auth.authorize.scope.read_notifications": {};
+  /** Read the reports you filed and whether they are resolved */
+  "server:auth.authorize.scope.read_reports": {};
   /** Read posts and timelines */
   "server:auth.authorize.scope.read_statuses": {};
   /** Post and change things for you */

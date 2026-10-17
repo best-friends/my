@@ -401,6 +401,7 @@ const (
 	NotificationTypeMention          NotificationType = "mention"
 	NotificationTypeModerationNotice NotificationType = "moderation_notice"
 	NotificationTypePollClosed       NotificationType = "poll_closed"
+	NotificationTypeReportResolved   NotificationType = "report_resolved"
 )
 
 // Valid indicates whether the value is a known member of the NotificationType enum.
@@ -421,6 +422,8 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeModerationNotice:
 		return true
 	case NotificationTypePollClosed:
+		return true
+	case NotificationTypeReportResolved:
 		return true
 	default:
 		return false
@@ -484,6 +487,24 @@ func (e ReportCategory) Valid() bool {
 	case ReportCategorySpam:
 		return true
 	case ReportCategoryViolation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReportState.
+const (
+	ReportStateOpen     ReportState = "open"
+	ReportStateResolved ReportState = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the ReportState enum.
+func (e ReportState) Valid() bool {
+	switch e {
+	case ReportStateOpen:
+		return true
+	case ReportStateResolved:
 		return true
 	default:
 		return false
@@ -1465,6 +1486,9 @@ type Notification struct {
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
 
+	// Report The user's report that a `report_resolved` tells of.
+	Report *Report `json:"report,omitempty"`
+
 	// Status The post that the notification is about, as the user sees it; omitted when the user
 	// may not see it.
 	Status *Status `json:"status,omitempty"`
@@ -1474,6 +1498,9 @@ type Notification struct {
 	// (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
 	// `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
 	// about. `moderation_notice` comes from the instance and has no `account`.
+	// `report_resolved` also comes from the instance: its `report` is the user's report that
+	// the moderators resolved, without how they resolved it. It is sent once per report, even
+	// when the report is reopened and resolved again.
 	Type NotificationType `json:"type"`
 }
 
@@ -1509,6 +1536,9 @@ type NotificationPage struct {
 // (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
 // `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
 // about. `moderation_notice` comes from the instance and has no `account`.
+// `report_resolved` also comes from the instance: its `report` is the user's report that
+// the moderators resolved, without how they resolved it. It is sent once per report, even
+// when the report is reopened and resolved again.
 type NotificationType string
 
 // PageInfo The pagination of a collection page; collection responses embed it with allOf.
@@ -1652,7 +1682,8 @@ type Relationship struct {
 	ShowBoosts bool `json:"show_boosts"`
 }
 
-// Report A report that the user filed. It never names the reporter.
+// Report A report that the user filed. It never names the reporter, and tells only whether the
+// moderators resolved it, never how.
 type Report struct {
 	// Category Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
 	// is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
@@ -1669,9 +1700,12 @@ type Report struct {
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	Id        Id   `json:"id"`
-	RuleIds   []Id `json:"rule_ids"`
-	StatusIds []Id `json:"status_ids"`
+	Id      Id   `json:"id"`
+	RuleIds []Id `json:"rule_ids"`
+
+	// State `open`: the report awaits the moderators. `resolved`: the moderators handled it.
+	State     ReportState `json:"state"`
+	StatusIds []Id        `json:"status_ids"`
 
 	// TargetAccount An account, as clients show it (FR-006).
 	TargetAccount Account `json:"target_account"`
@@ -1681,6 +1715,17 @@ type Report struct {
 // is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
 // anything else.
 type ReportCategory string
+
+// ReportPage A page of the user's reports, newest first.
+type ReportPage struct {
+	Items []Report `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// ReportState `open`: the report awaits the moderators. `resolved`: the moderators handled it.
+type ReportState string
 
 // ResolveReportRequest How a report is resolved.
 type ResolveReportRequest struct {
@@ -2211,6 +2256,15 @@ type ListNotificationsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListOwnReportsParams defines parameters for ListOwnReports.
+type ListOwnReportsParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // CreateStatusParams defines parameters for CreateStatus.
 type CreateStatusParams struct {
 	// IdempotencyKey A key the client chooses per new status; a retry with the same key returns the status
@@ -2479,6 +2533,9 @@ type ServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(w http.ResponseWriter, r *http.Request)
+	// ListOwnReports List the reports that the authenticated user filed
+	// (GET /reports)
+	ListOwnReports(w http.ResponseWriter, r *http.Request, params ListOwnReportsParams)
 	// CreateReport Report an account
 	// (POST /reports)
 	CreateReport(w http.ResponseWriter, r *http.Request)
@@ -4408,6 +4465,52 @@ func (siw *ServerInterfaceWrapper) UpdatePreferences(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ListOwnReports operation middleware
+func (siw *ServerInterfaceWrapper) ListOwnReports(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListOwnReportsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOwnReports(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreateReport operation middleware
 func (siw *ServerInterfaceWrapper) CreateReport(w http.ResponseWriter, r *http.Request) {
 
@@ -5191,6 +5294,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/local", wrapper.GetLocalTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/public", wrapper.GetPublicTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/tag/{hashtag}", wrapper.GetHashtagTimeline)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/reports", wrapper.ListOwnReports)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/reports", wrapper.CreateReport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/dead_jobs", wrapper.ListDeadJobs)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/dead_jobs/{id}/retry", wrapper.RetryDeadJob)
@@ -8607,6 +8711,68 @@ func (response UpdatePreferencesdefaultApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type ListOwnReportsRequestObject struct {
+	Params ListOwnReportsParams
+}
+
+type ListOwnReportsResponseObject interface {
+	VisitListOwnReportsResponse(w http.ResponseWriter) error
+}
+
+type ListOwnReports200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListOwnReports200JSONResponse struct {
+	Body    ReportPage
+	Headers ListOwnReports200ResponseHeaders
+}
+
+func (response ListOwnReports200JSONResponse) VisitListOwnReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOwnReportsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListOwnReportsdefaultApplicationProblemPlusJSONResponse) VisitListOwnReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateReportRequestObject struct {
 	Body *CreateReportJSONRequestBody
 }
@@ -9923,6 +10089,9 @@ type StrictServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(ctx context.Context, request UpdatePreferencesRequestObject) (UpdatePreferencesResponseObject, error)
+	// ListOwnReports List the reports that the authenticated user filed
+	// (GET /reports)
+	ListOwnReports(ctx context.Context, request ListOwnReportsRequestObject) (ListOwnReportsResponseObject, error)
 	// CreateReport Report an account
 	// (POST /reports)
 	CreateReport(ctx context.Context, request CreateReportRequestObject) (CreateReportResponseObject, error)
@@ -11591,6 +11760,32 @@ func (sh *strictHandler) UpdatePreferences(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdatePreferencesResponseObject); ok {
 		if err := validResponse.VisitUpdatePreferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOwnReports operation middleware
+func (sh *strictHandler) ListOwnReports(w http.ResponseWriter, r *http.Request, params ListOwnReportsParams) {
+	var request ListOwnReportsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOwnReports(ctx, request.(ListOwnReportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOwnReports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListOwnReportsResponseObject); ok {
+		if err := validResponse.VisitListOwnReportsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

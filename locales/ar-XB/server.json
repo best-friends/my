@@ -71,6 +71,10 @@
     "defaultMessage": "‮ᴚǝɐp ʎonɹ uoʇıɟıɔɐʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.authorize.scope.read_reports": {
+    "defaultMessage": "‮ᴚǝɐp ʇɥǝ ɹǝdoɹʇs ʎon ɟıʅǝp ɐup ʍɥǝʇɥǝɹ ʇɥǝʎ ɐɹǝ ɹǝsoʅʌǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.authorize.scope.read_statuses": {
     "defaultMessage": "‮ᴚǝɐp dosʇs ɐup ʇıɯǝʅıuǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."

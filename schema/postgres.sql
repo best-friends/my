@@ -1078,11 +1078,13 @@ CREATE TABLE notifications (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   recipient_account_id text COLLATE "C" NOT NULL,
   type text NOT NULL CHECK (type IN (
-    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice'
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
+    'report_resolved'
   )),
   source_account_id text COLLATE "C",
   status_id text COLLATE "C",
   moderation_action_id text COLLATE "C",
+  report_id text COLLATE "C",
   dedupe_key text NOT NULL,
   created_at timestamptz NOT NULL,
   -- nobody is notified of their own actions.
@@ -1576,6 +1578,8 @@ CREATE TABLE reports (
 );
 CREATE UNIQUE INDEX reports_uri ON reports (uri);
 CREATE INDEX reports_target_account_id_id ON reports (target_account_id, id);
+-- A reporter lists their own reports.
+CREATE INDEX reports_reporter_account_id_id ON reports (reporter_account_id, id);
 
 -- Resource (child of a report): the statuses a report points at.
 CREATE TABLE report_statuses (

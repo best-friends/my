@@ -944,6 +944,72 @@ func (q *Queries) ListReports(ctx context.Context, arg ListReportsParams) ([]Lis
 	return items, nil
 }
 
+const listReportsByReporter = `-- name: ListReportsByReporter :many
+SELECT r.id, r.uri, r.reporter_account_id, r.target_account_id, r.category, r.comment, r.forwarded,
+  r.filed_at, s.state, s.outcome, s.assignee_user_id, s.since
+FROM reports r JOIN report_states s ON s.report_id = r.id
+WHERE r.reporter_account_id = $1::text
+  AND ($2::text = '' OR r.id < $2::text)
+ORDER BY r.id DESC
+LIMIT $3
+`
+
+type ListReportsByReporterParams struct {
+	ReporterAccountID string
+	Before            string
+	Lim               int32
+}
+
+type ListReportsByReporterRow struct {
+	ID                string
+	Uri               *string
+	ReporterAccountID string
+	TargetAccountID   string
+	Category          string
+	Comment           string
+	Forwarded         bool
+	FiledAt           time.Time
+	State             string
+	Outcome           *string
+	AssigneeUserID    *string
+	Since             time.Time
+}
+
+// ListReportsByReporter returns the reports that an account filed with their state, newest
+// first, those before the report before (empty for the first page).
+func (q *Queries) ListReportsByReporter(ctx context.Context, arg ListReportsByReporterParams) ([]ListReportsByReporterRow, error) {
+	rows, err := q.db.Query(ctx, listReportsByReporter, arg.ReporterAccountID, arg.Before, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListReportsByReporterRow{}
+	for rows.Next() {
+		var i ListReportsByReporterRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uri,
+			&i.ReporterAccountID,
+			&i.TargetAccountID,
+			&i.Category,
+			&i.Comment,
+			&i.Forwarded,
+			&i.FiledAt,
+			&i.State,
+			&i.Outcome,
+			&i.AssigneeUserID,
+			&i.Since,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReportsOfTarget = `-- name: ListReportsOfTarget :many
 SELECT id, uri, reporter_account_id, target_account_id, category, comment, forwarded, filed_at
 FROM reports WHERE target_account_id = $1 ORDER BY id
