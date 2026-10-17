@@ -419,6 +419,7 @@ type Notification struct {
 	StatusID           sql.NullString
 	ModerationActionID sql.NullString
 	ReportID           sql.NullString
+	SubjectUserID      sql.NullString
 	DedupeKey          string
 	CreatedAt          int64
 }
@@ -741,13 +742,14 @@ type User struct {
 }
 
 type UserPreference struct {
-	UserID                  string
-	Locale                  string
-	TimeZone                string
-	DefaultVisibility       string
-	DefaultPostLanguage     string
-	RequireMediaDescription int64
-	UpdatedAt               int64
+	UserID                      string
+	Locale                      string
+	TimeZone                    string
+	DefaultVisibility           string
+	DefaultPostLanguage         string
+	RequireMediaDescription     int64
+	EmailModeratorNotifications int64
+	UpdatedAt                   int64
 }
 
 type UserRegistrationState struct {

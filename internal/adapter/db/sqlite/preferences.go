@@ -19,13 +19,14 @@ func (r *IdentityRepository) InsertPreferences(ctx context.Context, tx uow.Tx, p
 		return err
 	}
 	err = q.InsertUserPreferences(ctx, sqlitegen.InsertUserPreferencesParams{
-		UserID:                  p.UserID,
-		Locale:                  p.Locale,
-		TimeZone:                p.TimeZone,
-		DefaultVisibility:       string(p.DefaultVisibility),
-		DefaultPostLanguage:     p.DefaultPostLanguage,
-		RequireMediaDescription: boolToInt(p.RequireMediaDescription),
-		UpdatedAt:               toMillis(p.UpdatedAt),
+		UserID:                      p.UserID,
+		Locale:                      p.Locale,
+		TimeZone:                    p.TimeZone,
+		DefaultVisibility:           string(p.DefaultVisibility),
+		DefaultPostLanguage:         p.DefaultPostLanguage,
+		RequireMediaDescription:     boolToInt(p.RequireMediaDescription),
+		EmailModeratorNotifications: boolToInt(p.EmailModeratorNotifications),
+		UpdatedAt:                   toMillis(p.UpdatedAt),
 	})
 	return wrap(err, "insert preferences")
 }
@@ -37,13 +38,14 @@ func (r *IdentityRepository) UpdatePreferences(ctx context.Context, tx uow.Tx, p
 		return err
 	}
 	n, err := q.UpdateUserPreferences(ctx, sqlitegen.UpdateUserPreferencesParams{
-		Locale:                  p.Locale,
-		TimeZone:                p.TimeZone,
-		DefaultVisibility:       string(p.DefaultVisibility),
-		DefaultPostLanguage:     p.DefaultPostLanguage,
-		RequireMediaDescription: boolToInt(p.RequireMediaDescription),
-		UpdatedAt:               toMillis(p.UpdatedAt),
-		UserID:                  p.UserID,
+		Locale:                      p.Locale,
+		TimeZone:                    p.TimeZone,
+		DefaultVisibility:           string(p.DefaultVisibility),
+		DefaultPostLanguage:         p.DefaultPostLanguage,
+		RequireMediaDescription:     boolToInt(p.RequireMediaDescription),
+		EmailModeratorNotifications: boolToInt(p.EmailModeratorNotifications),
+		UpdatedAt:                   toMillis(p.UpdatedAt),
+		UserID:                      p.UserID,
 	})
 	if err != nil {
 		return wrap(err, "update preferences")
@@ -79,13 +81,14 @@ func (r *IdentityRepository) FindPreferences(ctx context.Context, userID string)
 		return identity.Preferences{}, notFound(err, appidentity.ErrNotFound, "preferences of "+userID)
 	}
 	return identity.Preferences{
-		UserID:                  row.UserID,
-		Locale:                  row.Locale,
-		TimeZone:                row.TimeZone,
-		DefaultVisibility:       identity.Visibility(row.DefaultVisibility),
-		DefaultPostLanguage:     row.DefaultPostLanguage,
-		RequireMediaDescription: row.RequireMediaDescription != 0,
-		UpdatedAt:               fromMillis(row.UpdatedAt),
+		UserID:                      row.UserID,
+		Locale:                      row.Locale,
+		TimeZone:                    row.TimeZone,
+		DefaultVisibility:           identity.Visibility(row.DefaultVisibility),
+		DefaultPostLanguage:         row.DefaultPostLanguage,
+		RequireMediaDescription:     row.RequireMediaDescription != 0,
+		EmailModeratorNotifications: row.EmailModeratorNotifications != 0,
+		UpdatedAt:                   fromMillis(row.UpdatedAt),
 	}, nil
 }
 

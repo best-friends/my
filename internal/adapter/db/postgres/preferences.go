@@ -19,13 +19,14 @@ func (r *IdentityRepository) InsertPreferences(ctx context.Context, tx uow.Tx, p
 		return err
 	}
 	err = q.InsertUserPreferences(ctx, postgresgen.InsertUserPreferencesParams{
-		UserID:                  p.UserID,
-		Locale:                  p.Locale,
-		TimeZone:                p.TimeZone,
-		DefaultVisibility:       string(p.DefaultVisibility),
-		DefaultPostLanguage:     p.DefaultPostLanguage,
-		RequireMediaDescription: p.RequireMediaDescription,
-		UpdatedAt:               p.UpdatedAt,
+		UserID:                      p.UserID,
+		Locale:                      p.Locale,
+		TimeZone:                    p.TimeZone,
+		DefaultVisibility:           string(p.DefaultVisibility),
+		DefaultPostLanguage:         p.DefaultPostLanguage,
+		RequireMediaDescription:     p.RequireMediaDescription,
+		EmailModeratorNotifications: p.EmailModeratorNotifications,
+		UpdatedAt:                   p.UpdatedAt,
 	})
 	return wrap(err, "insert preferences")
 }
@@ -37,13 +38,14 @@ func (r *IdentityRepository) UpdatePreferences(ctx context.Context, tx uow.Tx, p
 		return err
 	}
 	n, err := q.UpdateUserPreferences(ctx, postgresgen.UpdateUserPreferencesParams{
-		UserID:                  p.UserID,
-		Locale:                  p.Locale,
-		TimeZone:                p.TimeZone,
-		DefaultVisibility:       string(p.DefaultVisibility),
-		DefaultPostLanguage:     p.DefaultPostLanguage,
-		RequireMediaDescription: p.RequireMediaDescription,
-		UpdatedAt:               p.UpdatedAt,
+		UserID:                      p.UserID,
+		Locale:                      p.Locale,
+		TimeZone:                    p.TimeZone,
+		DefaultVisibility:           string(p.DefaultVisibility),
+		DefaultPostLanguage:         p.DefaultPostLanguage,
+		RequireMediaDescription:     p.RequireMediaDescription,
+		EmailModeratorNotifications: p.EmailModeratorNotifications,
+		UpdatedAt:                   p.UpdatedAt,
 	})
 	if err != nil {
 		return wrap(err, "update preferences")
@@ -79,13 +81,14 @@ func (r *IdentityRepository) FindPreferences(ctx context.Context, userID string)
 		return identity.Preferences{}, notFound(err, appidentity.ErrNotFound, "preferences of "+userID)
 	}
 	return identity.Preferences{
-		UserID:                  row.UserID,
-		Locale:                  row.Locale,
-		TimeZone:                row.TimeZone,
-		DefaultVisibility:       identity.Visibility(row.DefaultVisibility),
-		DefaultPostLanguage:     row.DefaultPostLanguage,
-		RequireMediaDescription: row.RequireMediaDescription,
-		UpdatedAt:               utc(row.UpdatedAt),
+		UserID:                      row.UserID,
+		Locale:                      row.Locale,
+		TimeZone:                    row.TimeZone,
+		DefaultVisibility:           identity.Visibility(row.DefaultVisibility),
+		DefaultPostLanguage:         row.DefaultPostLanguage,
+		RequireMediaDescription:     row.RequireMediaDescription,
+		EmailModeratorNotifications: row.EmailModeratorNotifications,
+		UpdatedAt:                   utc(row.UpdatedAt),
 	}, nil
 }
 

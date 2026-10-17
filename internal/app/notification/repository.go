@@ -50,13 +50,14 @@ type Repository interface {
 
 	// ListNotifications returns the recipient's visible notifications, newest first, starting
 	// after the notification ID before ("" for the newest) and returning at most limit
-	// notifications. A non-empty types keeps only notifications of those types. A notification
-	// is visible when it is not dismissed, no exclusion of the recipient that is in force at now
-	// has its source as the target, and its status, if any, is not recorded as deleted.
-	ListNotifications(ctx context.Context, recipientAccountID string, types []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error)
+	// notifications. A non-empty types keeps only notifications of those types, and hidden
+	// leaves out the notifications of its types. A notification is visible when it is not
+	// dismissed, no exclusion of the recipient that is in force at now has its source as the
+	// target, and its status, if any, is not recorded as deleted.
+	ListNotifications(ctx context.Context, recipientAccountID string, types, hidden []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error)
 	// CountNotificationsAfter counts the recipient's visible notifications, as in
-	// ListNotifications, whose ID is greater than after ("" counts them all).
-	CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, now time.Time) (int64, error)
+	// ListNotifications with hidden, whose ID is greater than after ("" counts them all).
+	CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, hidden []notification.Type, now time.Time) (int64, error)
 	// FindReadMarker returns an account's read marker; ErrNotFound means it has read nothing.
 	FindReadMarker(ctx context.Context, accountID string) (notification.ReadMarker, error)
 	// StatusHasNotifications reports whether a notification, dismissed or not, is about the status.

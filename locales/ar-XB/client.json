@@ -831,6 +831,14 @@
     "defaultMessage": "‮Noʇıɟıɔɐʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.type.admin_report": {
+    "defaultMessage": "‮∀ uǝʍ ɹǝdoɹʇ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.admin_sign_up": {
+    "defaultMessage": "‮{name} sıƃuǝp nd ɐup ɐʍɐıʇs ɐddɹoʌɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.type.boost": {
     "defaultMessage": "‮{name} qoosʇǝp ʎonɹ dosʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."

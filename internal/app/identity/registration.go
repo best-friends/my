@@ -29,6 +29,8 @@ type RegistrationRepository interface {
 	// ListRegistrations returns the users in a registration state with their applications,
 	// longest in the state first, at most limit of them.
 	ListRegistrations(ctx context.Context, state identity.RegistrationState, limit int) ([]RegistrationEntry, error)
+	// CountRegistrations counts the users in a registration state.
+	CountRegistrations(ctx context.Context, state identity.RegistrationState) (int64, error)
 
 	// InsertInvite fails with an error wrapping ErrInviteCodeTaken when another invite has the code.
 	InsertInvite(ctx context.Context, tx uow.Tx, i identity.Invite) error
@@ -151,8 +153,8 @@ type SignedUp struct {
 // In one transaction it writes the user, password, primary email address, preferences, local
 // account, application, the system's decision, the registration state, the invite's
 // redemption, the email verification token, the registration's origin, and a session with its
-// origin; then it sends the verification
-// email. The invite's redemption takes the next sequence number, so concurrent sign-ups never
+// origin, and emits RegistrationPending when the registration awaits a moderator; then it sends
+// the verification email. The invite's redemption takes the next sequence number, so concurrent sign-ups never
 // redeem an invite more than its maximum uses.
 //
 // It fails with ErrRegistrationClosed, ErrInviteRequired, ErrInvalidInvite, ErrEmailTaken,
@@ -267,6 +269,11 @@ func (s *Service) SignUp(ctx context.Context, in SignUpInput) (SignedUp, error) 
 		}
 		if err := repo.UpsertRegistrationState(ctx, tx, state); err != nil {
 			return err
+		}
+		if state.State == identity.RegistrationPending {
+			if err := tx.Emit(ctx, RegistrationPending{UserID: p.user.ID, AccountID: p.acct.Account.ID, SubmittedAt: now}); err != nil {
+				return err
+			}
 		}
 		if verification != nil {
 			if err := repo.InsertUserToken(ctx, tx, verification.token); err != nil {
