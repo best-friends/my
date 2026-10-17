@@ -123,14 +123,27 @@ async function signedInServer(page: Page) {
 
 const profile = `/@${bob.acct}`;
 
+// Without motion the colors and the dialog do not transition (motion-safe:), so axe never samples a button
+// or the confirmation in the middle of changing its colors or fading in, which it can under load.
+test.use({ reducedMotion: "reduce" });
+
+/**
+ * The relationship buttons: the follow button, then the menu button. They are the only buttons of the
+ * profile's header and appear once the relationship has loaded; until then the first buttons of the main
+ * landmark are the actions of the posts below, so a search of the whole landmark could find a post's.
+ */
+function relationshipButtons(page: Page) {
+  return page.getByRole("main").locator("header").first().getByRole("button");
+}
+
 test.describe("a profile", () => {
   let server: Awaited<ReturnType<typeof signedInServer>>;
   test.beforeEach(async ({ page }) => {
     server = await signedInServer(page);
     await page.goto(profile);
     await expect(page.getByRole("feed")).toBeVisible();
-    // The relationship has loaded: the follow button is there.
-    await expect(page.getByRole("main").getByRole("button").first()).toBeVisible();
+    // The relationship has loaded: the follow button and the menu button are there.
+    await expect(relationshipButtons(page)).toHaveCount(2);
   });
 
   test("has no axe violations and does not scroll sideways", async ({ page, makeAxeBuilder }) => {
@@ -187,10 +200,12 @@ test.describe("a profile", () => {
   });
 
   test("sends a follow request and withdraws it after asking, with the focus kept on the button", async ({ page, makeAxeBuilder }) => {
-    const follow = page.getByRole("main").getByRole("button").first();
+    const follow = relationshipButtons(page).first();
+    const request = await follow.textContent();
     await follow.click();
     await expect.poll(() => server.changes).toEqual(["follow"]);
     // The same button now says the request is pending, and pressing it asks before withdrawing it.
+    await expect(follow).not.toHaveText(request ?? "");
     await follow.click();
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toBeVisible();
@@ -203,7 +218,7 @@ test.describe("a profile", () => {
   });
 
   test("mutes from the menu, which works from the keyboard", async ({ page, makeAxeBuilder }) => {
-    const more = page.getByRole("main").getByRole("button").nth(1);
+    const more = relationshipButtons(page).nth(1);
     await more.focus();
     await page.keyboard.press("Enter");
     const menu = page.getByRole("menu");
