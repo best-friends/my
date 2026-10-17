@@ -6,6 +6,19 @@
 import type { Page } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 
+const alice = {
+  id: "0192f0c4-7a8e-7000-8000-000000000001",
+  username: "alice",
+  acct: "alice",
+  display_name: "Alice",
+  note: "",
+  fields: [],
+  url: "https://my.example/@alice",
+  locked: false,
+  bot: false,
+  created_at: "2026-10-01T00:00:00Z",
+};
+
 const bob = {
   id: "0192f0c4-7a8e-7000-8000-000000000002",
   username: "bob",
@@ -55,15 +68,36 @@ const notifications = [
 ];
 
 /**
- * Answers the session refresh and the notification operations; returns the read marker updates it got and
- * the posts requested on their own, which should be none: the notifications embed them.
+ * Answers the session refresh, the notification operations and Alice's relationship with Bob, who follows
+ * her; returns the read marker updates it got, the follows it got, and the posts requested on their own,
+ * which should be none: the notifications embed them.
  */
 async function signedInServer(page: Page) {
   const updates: string[] = [];
   const statusRequests: string[] = [];
+  const follows: string[] = [];
+  let relationship = {
+    id: bob.id,
+    following: false,
+    requested: false,
+    followed_by: true,
+    requested_by: false,
+    show_boosts: true,
+    notify: false,
+    blocking: false,
+    muting: false,
+    muting_notifications: false,
+  };
   let marker: { last_read_id: string; unread_count: number } = { last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a1", unread_count: 2 };
   const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   await page.route("**/oauth/token/refresh", (route) => route.fulfill(json({ access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 })));
+  await page.route("**/api/v1/accounts/verify_credentials", (route) => route.fulfill(json(alice)));
+  await page.route("**/api/v1/accounts/relationships*", (route) => route.fulfill(json([relationship])));
+  await page.route(`**/api/v1/accounts/${bob.id}/follow`, (route) => {
+    follows.push(bob.id);
+    relationship = { ...relationship, following: true };
+    return route.fulfill(json(relationship));
+  });
   await page.route("**/api/v1/notifications/marker", async (route) => {
     if (route.request().method() === "PUT") {
       const { last_read_id: id } = route.request().postDataJSON() as { last_read_id: string };
@@ -83,7 +117,7 @@ async function signedInServer(page: Page) {
     statusRequests.push(route.request().url());
     return route.fulfill({ status: 404 });
   });
-  return { updates, statusRequests };
+  return { updates, follows, statusRequests };
 }
 
 test.describe("notifications", () => {
@@ -104,10 +138,9 @@ test.describe("notifications", () => {
     await page.goto("/notifications");
     const feed = page.getByRole("feed");
     await expect(feed.getByRole("article")).toHaveCount(3);
-    // The post of the mention is shown, and the boosted post is behind its content warning.
-    // Its link opens the post's page in the app.
-    await expect(feed.getByRole("article").first().getByRole("link")).toHaveAttribute("href", `/@bob/${postId}`);
-    await expect(feed.getByRole("article").nth(1).getByRole("button")).toBeVisible();
+    // Each row names the actor with a link to their profile and says when, relative to now; a row about a
+    // post quotes it in one link to its page (the boosted post shows its content warning only), and the
+    // follow offers a follow back. The avatars are the same links for the pointer, hidden from the tree.
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading [level=1]
       - tablist:
@@ -118,10 +151,29 @@ test.describe("notifications", () => {
         - tab
       - tabpanel:
         - feed:
-          - article
-          - article
-          - article
+          - article:
+            - paragraph:
+              - link:
+                - /url: /@bob
+            - time
+            - link:
+              - /url: /@bob/${postId}
+          - article:
+            - paragraph:
+              - link:
+                - /url: /@bob
+            - time
+            - link:
+              - /url: /@bob/${postId}
+          - article:
+            - paragraph:
+              - link:
+                - /url: /@bob
+            - time
+            - button
     `);
+    await expect(feed.getByRole("article").first().locator("time")).toHaveAttribute("datetime", "2026-10-16T09:00:00Z");
+    await expect(feed.getByRole("article").first().locator("time")).toHaveAttribute("title", /2026/);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
     expect(server.statusRequests).toEqual([]);
@@ -132,6 +184,33 @@ test.describe("notifications", () => {
     await expect(page.getByRole("feed").getByRole("article")).toHaveCount(3);
     await expect.poll(() => server.updates).toEqual([mentionId]);
     await expect(page.getByRole("navigation").locator('a[href="/notifications"]').locator('[aria-hidden="true"]', { hasText: "2" })).toHaveCount(0);
+  });
+
+  test("from the keyboard alone, a follow leads to the follower's profile and follows back", async ({ page }) => {
+    await page.goto("/notifications?filter=follows");
+    const follow = page.getByRole("feed").getByRole("article");
+    await expect(follow).toHaveCount(1);
+    const name = follow.getByRole("link");
+    const followBack = follow.getByRole("button");
+    await expect(followBack).toBeVisible();
+
+    // After the article itself (the feed pattern), the row's tab stops are the name, then the follow
+    // back: the avatar is out of the tab order.
+    await page.getByRole("tab").first().focus();
+    await page.keyboard.press("Tab");
+    await expect(follow).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(name).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(followBack).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => server.follows).toEqual([bob.id]);
+    await expect(followBack).toBeFocused();
+
+    await page.keyboard.press("Shift+Tab");
+    await expect(name).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/@bob$/);
   });
 
   test("the type filter works from the keyboard and lives in the URL", async ({ page }) => {

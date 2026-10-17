@@ -527,13 +527,13 @@
     "defaultMessage": "通知を読み込み中",
     "description": "Accessible name of the progress indicator while notifications load."
   },
+  "notifications.post.content_warning": {
+    "defaultMessage": "CW：{summary}",
+    "description": "A notification's link to the post it is about, when the post is behind its author's content warning: the warning only. {summary} is the warning's text."
+  },
   "notifications.post.open": {
     "defaultMessage": "投稿を開く",
-    "description": "Link in a notification that opens the post it is about."
-  },
-  "notifications.post.show": {
-    "defaultMessage": "内容を表示",
-    "description": "Button that shows a post hidden behind its author's content warning, in a notification."
+    "description": "A notification's link to the post it is about, when the post has no text to quote (pictures only)."
   },
   "notifications.retry": {
     "defaultMessage": "もう一度試す",
@@ -546,10 +546,6 @@
   "notifications.signed_out": {
     "defaultMessage": "通知を見るにはログインしてください。",
     "description": "Text on the notifications page when nobody is signed in."
-  },
-  "notifications.time": {
-    "defaultMessage": "{time, date, medium} {time, time, short}",
-    "description": "When a notification happened: its date and time, for example 'Oct 16, 2026 9:41 AM'. {time} is that moment."
   },
   "notifications.title": {
     "defaultMessage": "通知",

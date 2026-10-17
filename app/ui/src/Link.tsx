@@ -20,11 +20,21 @@ const link = tv({
   defaultVariants: { variant: "inline" },
 });
 
-export type LinkProps = RACLinkProps & VariantProps<typeof link>;
+export type LinkProps = RACLinkProps &
+  VariantProps<typeof link> & {
+    /**
+     * Leaves the link out of the tab order (`tabindex="-1"`), for a second link to the same place for the
+     * pointer, such as an avatar next to the name that is the link for the keyboard. Hide it from screen
+     * readers too, inside an element with `aria-hidden` (React Aria does not put `aria-hidden` on the
+     * link), so that the place is reached once.
+     */
+    excludeFromTabOrder?: boolean;
+  };
 
 /**
  * A link (React Aria Link). With `href` it renders an `<a>`; client-side navigation comes from the
- * app's React Aria `RouterProvider`, so the kit knows no router.
+ * app's React Aria `RouterProvider`, so the kit knows no router. React Aria's useLink hands
+ * `excludeFromTabOrder` to useFocusable, which sets the `tabindex`.
  */
 export function Link({ variant, className, ...props }: LinkProps) {
   return <RACLink {...props} className={composeRenderProps(className, (className) => link({ variant, className }))} />;
