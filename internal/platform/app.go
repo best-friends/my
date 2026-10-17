@@ -483,7 +483,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		AuditLog:     a.Moderation,
 		Rules:        a.Instance,
 		Reports:      a.LocalReports,
-		ReportCounts: a.Moderation, RegistrationCounts: a.Identity,
+		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil

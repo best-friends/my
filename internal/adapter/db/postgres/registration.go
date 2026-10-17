@@ -48,6 +48,21 @@ func (r *IdentityRepository) UpsertRegistrationState(ctx context.Context, tx uow
 	return wrap(err, "upsert registration state")
 }
 
+// TransitionPendingRegistrationState implements identity.Repository.
+func (r *IdentityRepository) TransitionPendingRegistrationState(ctx context.Context, tx uow.Tx, s identity.UserRegistrationState) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := q.TransitionPendingRegistrationState(ctx, postgresgen.TransitionPendingRegistrationStateParams{
+		State: string(s.State), Since: s.Since, UserID: s.UserID,
+	})
+	if err != nil {
+		return false, wrap(err, "transition pending registration state")
+	}
+	return n > 0, nil
+}
+
 // FindRegistrationApplication implements identity.Repository.
 func (r *IdentityRepository) FindRegistrationApplication(ctx context.Context, userID string) (identity.RegistrationApplication, error) {
 	row, err := r.db.reader().GetRegistrationApplicationByUser(ctx, userID)
@@ -70,12 +85,13 @@ func (r *IdentityRepository) FindRegistrationState(ctx context.Context, userID s
 }
 
 // ListRegistrations implements identity.Repository.
-func (r *IdentityRepository) ListRegistrations(ctx context.Context, state identity.RegistrationState, limit int) ([]appidentity.RegistrationEntry, error) {
+func (r *IdentityRepository) ListRegistrations(ctx context.Context, state identity.RegistrationState, after appidentity.RegistrationPosition, limit int) ([]appidentity.RegistrationEntry, error) {
 	n, err := toInt32(limit, "limit")
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.db.reader().ListRegistrationsInState(ctx, postgresgen.ListRegistrationsInStateParams{State: string(state), PageLimit: n})
+	rows, err := r.db.reader().ListRegistrationsInState(ctx, postgresgen.ListRegistrationsInStateParams{
+		State: string(state), AfterUserID: after.UserID, AfterSince: after.Since, PageLimit: n})
 	if err != nil {
 		return nil, wrap(err, "list registrations")
 	}
