@@ -252,7 +252,7 @@ The overlay components wrap React Aria Components, which handle focus, Esc and t
 | `Popover` in a `PopoverTrigger` | Non-modal dialog | Named by `title` or `aria-label`. |
 | `Menu`, `MenuItem`, `MenuSeparator` in a `MenuTrigger`; `SubmenuTrigger` | Menu button | `intent="danger"` for destructive items. Submenus open towards the inline end. |
 | `Tooltip` in a `TooltipTrigger` | Tooltip | Describes its trigger; never the trigger's only name. |
-| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. |
+| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. Tabs that do not fit scroll sideways in the list, which has no scrollbar and fades out (statically, a 2rem mask) at each inline edge with hidden tabs (`data-overflow-start` / `data-overflow-end`); the focused or selected tab scrolls into view, clear of the fade. |
 | `AnnouncerProvider`, `useAnnouncer` | Live regions | One polite `role="status"` and one assertive `role="alert"` region for the app. |
 | `ToastProvider`, `useToast` | Toasts | Announced through the Announcer; the visible list is a labelled region. |
 | `StatusMessage` | Status | The result of an action that stays on the page: a `role="status"` region, empty until it has a message. |
