@@ -994,7 +994,8 @@ flowchart LR
 | `report_intake` | 通報を受け付けない（ドメイン単位の `reject_reports`） | `Flag` の受信 |
 
 - 新しい処分は、`kind` に値を足して対応表に 1 行書くだけで追加できます（テーブル変更なし）。
-- リモートアカウントへの処分は `limit` / `suspend` / `force_sensitive` などを同じ表で扱います。`login` と `post` はリモートには意味がないので無視します。リモートのアカウントの `suspend` は、同じトランザクションで両方向のフォローを切ります（`relationship_severances`）。
+- リモートアカウントへの処分は、制限だけを生む `limit` / `suspend` / `force_sensitive` を同じ表で扱います。ほかの種類（`login` や `post` の制限、本人への通知、投稿への処分、`ban`）はリモートには意味がないので受け付けません（`moderation.ErrUnsupportedAction`）。`notify_target` は常に偽です。
+- リモートのアカウントの `suspend` は、同じトランザクションで両方向のフォローを切ります（`relationship_severances`）。切断は、ローカルのアカウントと同じく凍結の始まりに発行される `moderation.account_suspension_changed`（凍結した処分の ID を持つ）を契機にします。
 - ローカルのアカウントの `suspend` / `ban` とその解除・期限切れ、`delete_statuses` が連合先に送るものは [ADR-0036](../adr/0036-moderation-federation-propagation.md) と [federation.md §11](federation.md#11-モデレーションとの連携) にあります。
 - ドメイン単位の処分の対応: `limit` → `public_discovery`, `unsolicited_reach`、`suspend` → `profile_view`, `federation`、`reject_media` → `media_fetch`、`reject_reports` → `report_intake`、`force_sensitive` → `media_sensitive`。
 

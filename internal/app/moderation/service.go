@@ -360,7 +360,7 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
 		}
-		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
+		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, a.ID, before, now); err != nil {
 			return err
 		}
 		if err := tx.Emit(ctx, AccountActionIssued{Action: a}); err != nil {
@@ -475,7 +475,7 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
 		}
-		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
+		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, "", before, now); err != nil {
 			return err
 		}
 		// The lift's row is keyed by the action's ID.
