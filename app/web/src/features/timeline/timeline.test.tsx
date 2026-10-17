@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The timelines through the whole app (web-client.md T4): the real router and QueryClient, MSW for the
 // client API. Time is fixed so that relative times are known.
-import { screen, within } from "@testing-library/react";
+import { isInaccessible, screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Status } from "./api/timelines";
@@ -140,10 +140,38 @@ describe("a status card", () => {
 
     const [withAvatar, withoutAvatar] = await screen.findAllByRole("article");
     if (withAvatar === undefined || withoutAvatar === undefined) throw new Error("want two articles");
-    // The avatar is decorative (alt=""): the name is next to it.
-    expect(within(withAvatar).getByRole("presentation")).toHaveAttribute("src", "https://my.example/media/avatar/full.png");
-    expect(within(withoutAvatar).queryByRole("presentation")).not.toBeInTheDocument();
+    // The avatar is decorative (alt=""), and its link is hidden: the name is next to it.
+    expect(within(withAvatar).getByRole("presentation", { hidden: true })).toHaveAttribute("src", "https://my.example/media/avatar/full.png");
+    expect(within(withoutAvatar).queryByRole("presentation", { hidden: true })).not.toBeInTheDocument();
     expect(within(withoutAvatar).getByText("B")).toBeInTheDocument();
+  });
+
+  test("links the avatar for the pointer only: the name is the one tab stop to the profile", async () => {
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([status(1)]))));
+    const { user } = await renderApp({ path: "/local" });
+
+    const article = await screen.findByRole("article");
+    // Screen readers meet the profile once, on the name, and then the time.
+    const links = within(article).getAllByRole("link");
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAccessibleName("Bob @bob@my.example");
+    expect(links[1]).toHaveAccessibleName("3 hr. ago");
+    // The avatar's link, to the same profile, is out of the tab order inside an element hidden from them.
+    const name = within(article).getByRole("link", { name: "Bob @bob@my.example" });
+    const [avatar] = within(article).getAllByRole("link", { hidden: true });
+    if (avatar === undefined) throw new Error("want the avatar's link");
+    expect(isInaccessible(avatar)).toBe(true);
+    expect(avatar).toHaveAttribute("href", name.getAttribute("href"));
+    expect(avatar).toHaveAttribute("tabindex", "-1");
+
+    // The keyboard goes from the name straight to the time, and back from the name past the avatar.
+    name.focus();
+    await user.tab();
+    expect(within(article).getByRole("link", { name: "3 hr. ago" })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(name).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(avatar).not.toHaveFocus();
   });
 
   test("hides a post behind its content warning, and its sensitive media behind their own toggle", async () => {

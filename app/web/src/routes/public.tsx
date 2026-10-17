@@ -13,7 +13,8 @@ import { RouteError } from "./-layout/RouteStates";
  * servers whose posts this server holds. The navigation offers it only while the instance serves it.
  */
 export const Route = createFileRoute("/public")({
-  staticData: { title: "client:public.title" },
+  // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
+  staticData: { title: "client:public.title", composeButton: true },
   loader: async ({ context: { queryClient, api } }) => {
     // The cached pages are shown as they are; the page refetches them in the background when stale.
     await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "public" }), staleTime: "static" });

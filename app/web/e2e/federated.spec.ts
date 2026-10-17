@@ -96,16 +96,16 @@ test.describe("the federated timeline while the server serves it", () => {
   test("opens from the navigation as a feed named by the page heading", async ({ page, hasTouch }) => {
     const link = federatedLink(page);
     await expect(link).toBeVisible();
+    const heading = page.getByRole("heading", { level: 1 });
+    const home = (await heading.textContent()) ?? "";
     if (hasTouch) await link.tap();
     else await link.click();
 
     await expect(page).toHaveURL(/\/public$/);
     // Where focus goes after a navigation is the shell's, and e2e/shell.spec.ts checks it.
-    const heading = page.getByRole("heading", { level: 1 });
     await expect(link).toHaveAttribute("aria-current", "page");
-    // The address changes before the new page renders (the router keeps the old one during the transition), so
-    // the heading is read once the timeline's feed is there; the home page without a session has none.
-    await expect(page.getByRole("feed")).toBeVisible();
+    // The URL and the navigation can change before the new page renders its heading.
+    await expect(heading).not.toHaveText(home);
     const name = (await heading.textContent()) ?? "";
     const feed = page.getByRole("feed", { name });
     await expect(feed.getByRole("article")).toHaveCount(3);
@@ -113,19 +113,16 @@ test.describe("the federated timeline while the server serves it", () => {
       - feed:
         - article:
           - link /Bob/
-          - link /Bob/
           - link:
             - time
           - paragraph
         - article:
-          - link /Carol/
           - link /Carol/
           - link:
             - time
           - paragraph
           - link /a-rather-long-community-server-name/
         - article:
-          - link /Carol/
           - link /Carol/
           - link:
             - time

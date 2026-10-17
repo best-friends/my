@@ -300,6 +300,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `graph.blocked` / `graph.unblocked`（相手がリモート） | `Block` / `Undo Block` | 相手の inbox |
 | `account.profile_revised`（ローカルのプロフィールの 2 版目以降。最初の版はアカウントの作成で、まだだれもフォローしていない） | `Update`（Actor の文書） | リモートフォロワーの inbox |
 | `account.lifecycle_event_recorded`（ローカルのアカウントの `deleted`） | `Delete`（Actor の `id`） | リモートフォロワーの inbox + 既知の shared inbox（[data-model §8](data-model.md#8-削除と消去)） |
+| `moderation.account_suspension_changed`（ローカルのアカウントの凍結と、その終わり。§11.1） | `Update`（Actor の文書） | リモートフォロワーの inbox + 既知の shared inbox |
 | `moderation.report_filed`（`forwarded` の通報だけ。§11） | `Flag`（主体はインスタンス Actor） | 通報されたアカウントの inbox |
 
 - フォローの活動（`object_type = follow`）の主体は、`Follow` と `Undo` ではフォローした人、`Accept` と `Reject` ではフォローされた人です。`Follow` の `id` はフォローの `uri`（`/ap/activities/{follow_id}`）で、`Accept` / `Reject` / `Undo` はフォローの `Follow`（受け取ったフォローなら相手が送った `id`。送り直された `Follow` への `Accept` はその `id`）を埋め込みます。宛先は相手だけで、`to` に相手を入れます。
@@ -324,7 +325,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Announce` / `Undo Announce` | ブーストした人の承認済みのフォロワー → 元投稿の作者 |
 | `Like` / `Undo Like` | 投稿の作者 |
 | `Update`（Actor） | Actor の承認済みのフォロワー |
-| `Delete`（Actor） | Actor の承認済みのフォロワー → 既知の shared inbox（`account.KnownSharedInboxes`） |
+| `Delete`（Actor）、凍結とその終わりの `Update`（Actor。ペイロードの `shared_inboxes`） | Actor の承認済みのフォロワー → 既知の shared inbox（`account.KnownSharedInboxes`） |
 | `Follow` / `Accept` / `Reject` / `Undo Follow` | フォローの相手（その Actor の inbox。無ければ shared inbox）。公開範囲では判定しない |
 | `Flag` | 通報されたアカウント（その Actor の inbox。shared inbox に集約しない）。公開範囲では判定しない |
 
@@ -373,7 +374,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 - `Create` の `id` は `{object}/activity`、それ以外は `/ap/activities/{uuid}`（ADR-0018）。
 - 宛先: `public` は `to: [Public]`・`cc: [followers, メンション先]`、`unlisted` は `to: [followers]`・`cc: [Public, メンション先]`、`private` と `local` は `to: [followers]`（`private` は加えて `cc: [メンション先]`）、`direct` は `to: [メンション先]`。
-- Actor の `Update` は `to: [Public]` で、`object` に `GET` と同じ Actor の文書（`federation.LocalActorDocument`、`@context` なし）を埋め込みます。文書は展開の始めの時点の Actor から組み立てます（後の版はそれぞれの `Update` を送る）。有効でなくなったアカウントの `Update` は送りません。
+- Actor の `Update` は `to: [Public]` で、`object` に `GET` と同じ Actor の文書（`federation.LocalActorDocument`、`@context` なし）を埋め込みます。文書は展開の始めの時点の Actor から組み立てます（後の版はそれぞれの `Update` を送る）。その時点で凍結中なら、GET と同じ凍結中の文書です（§11.1）。
+  有効でなくなったアカウントの `Update` は送りません。ただし削除済みでない凍結中のアカウント（BAN で削除を予約したものを含む）の `Update` は送ります。
 - Actor の `Delete` は `to: [Public]` で、`object` は Actor の `id` です。
 - `contentMap` は版の言語ごとの本文、`content` は版の既定の言語の本文です（NFR-I18N-5）。言語が `und` の本文は `contentMap` に入れません。`sensitive`・`summary`（CW）・`tag`（`Mention` / `Hashtag` / `Emoji`）・`attachment`（メディアの公開 URL・`mediaType`・`name`・`blurhash`・`focalPoint`・`width` / `height`）を付けます。
   - `sensitive` は CW があれば真です（Mastodon と同じ）。`summary` と `contentMap` は空なら省き、`sensitive`・`content`・`tag`・`attachment` は常に付けます。
@@ -485,14 +487,17 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | 処分 | 送るもの | 宛先 |
 | --- | --- | --- |
 | ローカルの `suspend` / `ban` | `Update(Actor)`（`suspended: true`、名前・アイコン・ヘッダー・自己紹介・プロフィール補足情報を空にする） | `Delete`（Actor）と同じ（§7.2） |
-| ローカルの `suspend` の解除・期限切れ | `Update(Actor)`（元のプロフィール）。期限切れは期限の時刻に定期ジョブが積む | 同上 |
+| ローカルの `suspend` の解除・期限切れ | `Update(Actor)`（元のプロフィール）。期限切れは、期限の後の最初の定期ジョブ（`moderation.expire_restrictions`、5 分ごと）が積む | 同上 |
 | ローカルの `ban` | 上の `Update` と、`deletion_scheduled` の期日の `Delete`（Actor） | 同上 |
 | ローカルの投稿への `delete_statuses` | 投稿ごとの `Delete` | 本人の削除と同じ（§7.2） |
 | リモートのアカウントの `suspend` | そのアカウントのローカルの利用者へのフォローに `Reject(Follow)`、ローカルの利用者からのフォローに `Undo(Follow)` | そのアカウントの inbox |
 | ドメインの `suspend` | 送らない。両方向のフォローを `follow_terminations`（`reason = moderation`）で切り、`relationship_severances` を記録する | — |
 | それ以外（`limit`・`restrict_posting`・`force_sensitive` など） | 送らない | — |
 
-- `suspended` は Mastodon 拡張（`toot:suspended`）で、`@context` は §7.4 の Actor と同じです。
+- `suspended` は Mastodon 拡張（`toot:suspended`）で、`@context` は §7.4 の Actor と同じです。凍結中の文書は `federation.ActorDocument.Suspend` が作り、`id`・コレクション・inbox・鍵は残します。
+- 凍結とその終わりは、`moderation` が処分・解除・期限切れの行の削除のトランザクションで発行する `moderation.account_suspension_changed`（[data-model §4.3](data-model.md#制限投影)）から、`federation.RegisterSuspensionProjectors` が同じトランザクションで `Update`（Actor）を積みます。重なった凍結の 2 つ目と、1 つが残る解除は何も送りません。
+  文書は展開の始めの時点の状態から組み立てるので（§7.4）、凍結と解除が続けて起きても、後から展開した `Update` ほど新しい状態を表します。
+- BAN の `Delete`（Actor）は、削除の予約の期日に `account.execute_deletions` がアカウントの削除（`deleted`）を記録したときに、§7.1 のアカウント削除と同じ経路で送ります。凍結中でも `Delete` は止めません。
 - 処分を解除しても、切ったフォローは戻しません。
 - 受信した Actor の `suspended: true` は、リモートのアカウントの表示に出すだけで、このサーバーの処分にはしません。
 
@@ -504,7 +509,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | 署名のテストベクタ | RFC 9421 付録 B のテストベクタ、Mastodon と同じ形式の draft-cavage の署名、クエリ文字列・ダイジェストの改ざん | `make check` |
 | 順序のテスト | 同じアクティビティ列の順序を入れ替え・重複させて処理し、最終的な行が同じになることを確かめる性質テスト（`testkit.InboxProcessingContract` の `OrderAndDuplicates`。ケースは `inboxOrderCases` で、ハンドラを足すときにケースも足す） | `make check` |
 | SSRF ガード | `testkit.HTTPClientContract`（ADR-0019 §1） | `make check` |
-| ライブの相互運用 | docker compose で Mastodon（secure mode）・GoToSocial・Misskey とこのサーバーを、私設 CA の TLS とコンテナのネットワークの DNS で立て、WebFinger・Actor の署名付き取得・フォロー（承認・解除）・投稿・返信・ブースト・お気に入り・削除・編集・公開範囲ごとの配送先（ADR-0035 の `local` のメンション先を含む）と、ADR-0032 の署名の各方式（プロキシが 401 を返して RFC 9421 への切り替えを起こす）を往復させる（#44）。構成・シナリオ・実装ごとの互換性の差異は `deploy/docker/federation-live/`（README.md） | nightly / 手動（CI ジョブ `federation-live`、`make federation-live`） |
+| ライブの相互運用 | docker compose で Mastodon（secure mode）・GoToSocial・Misskey とこのサーバーを、私設 CA の TLS とコンテナのネットワークの DNS で立て、WebFinger・Actor の署名付き取得・フォロー（承認・解除）・投稿・返信・ブースト・お気に入り・削除・編集・公開範囲ごとの配送先（ADR-0035 の `local` のメンション先を含む）と、ADR-0032 の署名の各方式（プロキシが 401 を返して RFC 9421 への切り替えを起こす）を往復させ、ローカルのアカウントの凍結とその解除が Mastodon に表示されることを確かめる（#44、§11.1）。構成・シナリオ・実装ごとの互換性の差異は `deploy/docker/federation-live/`（README.md） | nightly / 手動（CI ジョブ `federation-live`、`make federation-live`） |
 
 - フィクスチャは採取したときのホスト・名前・本文・鍵を例の値に置き換えて保存し、実装と版をディレクトリ名に残します。新しい不具合を直すときは、その文書をフィクスチャに足します（ADR-0006）。
 - 置き換えと追加の手順は [pkg/testkit/README.md](../../pkg/testkit/README.md#federation-fixtures)、各ファイルの出典とライセンスは `pkg/testkit/fixtures/federation/<実装>/README.md` にあります。正規化の golden は `pkg/testkit/testdata/golden/normalize/` にあり、`go test ./pkg/testkit -update` で書き直します。

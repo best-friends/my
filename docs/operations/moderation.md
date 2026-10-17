@@ -41,6 +41,8 @@ my admin account action lift -reason "appealed" <action id>
 - アカウントは CLI では `@username`（ローカル）、`@username@domain`（リモート）かアカウント ID で、管理 API ではアカウント ID で指定します。
 - 複数の処分は重なります（制限の和集合）。解除はその処分の制限だけを消し、期限付きの処分は期限で自然に終わります（一覧では `expired`）。
 - `disable_login`・`suspend`・`ban` が失効させたセッションとトークンは、解除しても戻りません。本人はもう一度ログインします。
+- ローカルのアカウントの `suspend` と `ban` は、フォロワーのサーバーと既知のサーバーに、プロフィールを空にして凍結を示す Actor の `Update` を送ります（Mastodon では「凍結」と表示される）。
+  解除と期限切れでは元のプロフィールの `Update` を送ります。期限切れは 5 分ごとのジョブが送るので、期限から最大 5 分遅れます（[federation.md §11.1](../architecture/federation.md#111-処分の伝播)）。
 - `delete_statuses` と `mark_statuses_sensitive` は、対象のアカウントの削除されていない投稿を 1〜100 件、`-status`（`status_ids`）で指定します。期限は付けられません。
   `delete_statuses` を解除しても消した投稿は戻りません。`mark_statuses_sensitive` を解除すると元の表示に戻ります。
 - `ban` は期限を付けられず、解除もできません。迷うときは期限付きの `suspend` を使います。

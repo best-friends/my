@@ -23,6 +23,9 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 	})
 	a.ModerationPolicy = moderation.NewFederationPolicy(repo, a.Clock)
 	a.AccountPolicy = moderation.NewAccountPolicy(repo, a.Accounts, a.Clock)
+	// The removal of expired restrictions, which ends expired suspensions on other servers
+	// (federation.md §11.1).
+	a.Moderation.RegisterJobs(a.Handlers, a.Scheduler)
 	a.Accounts.RegisterDeletionJobs(a.Handlers, a.Scheduler)
 }
 

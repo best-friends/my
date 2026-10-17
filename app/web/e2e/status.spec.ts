@@ -130,7 +130,6 @@ test.describe("a post's page", () => {
           - listitem:
             - article:
               - link /Alice/
-              - link /Alice/
               - link:
                 - time
               - paragraph
@@ -140,7 +139,6 @@ test.describe("a post's page", () => {
               - button [pressed=false]
               - button
       - article:
-        - link /Bob/
         - link /Bob/
         - time
         - paragraph

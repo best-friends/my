@@ -28,7 +28,8 @@ This server, Mastodon, GoToSocial, and Misskey federating with each other over H
 
   | User | Role |
   | --- | --- |
-  | `alice@my.test` | The local user of every scenario |
+  | `alice@my.test` | The local user of every scenario, and the moderator of `TestSuspension` |
+  | `frank@my.test` | `TestSuspension`: alice suspends him and lifts it |
   | `bob@mastodon.test`, `carol@gts.test`, `grace@misskey.test` | The peer users that alice follows and that follow her |
   | `dave@mastodon.test`, `erin@gts.test`, `heidi@misskey.test` | Never follow alice: the mentioned non-followers of `TestVisibilityAudiences` |
   | `eve@mastodon.test` | `TestSignatureProfile`: the proxy refuses her draft-cavage POSTs in both directions |
@@ -97,7 +98,8 @@ leave (a scenario that runs alone makes the follows it needs).
 | `TestEdit` / `TestDelete` | An edited post shows the new text / a deleted post is gone on the other side. Misskey, which does not edit, gets the `Update` of alice's edit with a 2xx and keeps the text before it |
 | `TestVisibilityAudiences` | Each visibility reaches exactly its audience in both directions; a `local` post that mentions a non-follower reaches the follower but the mentioned user can neither see it nor is notified ([ADR-0017](../../../docs/adr/0017-visibility-local.md), [ADR-0035](../../../docs/adr/0035-local-visibility-mention-tags.md)) |
 | `TestReportForwarding` | A report of the peer user that alice forwards reaches the moderators' reports of Mastodon and Misskey (a `Flag` of this server's instance actor with the comment); one that she does not forward does not. GoToSocial is skipped: the scenarios have no administrator of it |
-| `TestSignatureProfile` | The rows of [ADR-0032](../../../docs/adr/0032-http-signature-profile.md) that need a real server: draft-cavage from every peer, RFC 9421 from Mastodon after a 401, this server's RFC 9421 resend after a 401 (double-knocking), and `Accept-Signature` on an unsigned POST. It runs last: afterwards this server signs for `mastodon.test` with RFC 9421 first |
+| `TestSignatureProfile` | The rows of [ADR-0032](../../../docs/adr/0032-http-signature-profile.md) that need a real server: draft-cavage from every peer, RFC 9421 from Mastodon after a 401, this server's RFC 9421 resend after a 401 (double-knocking), and `Accept-Signature` on an unsigned POST. It runs after the other scenarios of `scenarios_test.go`: afterwards this server signs for `mastodon.test` with RFC 9421 first |
+| `TestSuspension` | Mastodon only: Mastodon shows a local user that a moderator suspends as suspended (the actor's `Update` with `suspended: true`, through Mastodon's shared inbox), and shows him again once the suspension is lifted ([ADR-0036](../../../docs/adr/0036-moderation-federation-propagation.md)) |
 
 ## Compatibility notes
 
