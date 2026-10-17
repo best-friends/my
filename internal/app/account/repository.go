@@ -78,6 +78,10 @@ type Repository interface {
 	FindAccount(ctx context.Context, id string) (account.Account, error)
 	// Account is FindAccount inside tx.
 	Account(ctx context.Context, tx uow.Tx, id string) (account.Account, error)
+	// FindAccountByURI returns the account with an ActivityPub id.
+	FindAccountByURI(ctx context.Context, uri string) (account.Account, error)
+	// AnyAccountOnDomain reports whether one of the accounts ids is on domain.
+	AnyAccountOnDomain(ctx context.Context, domain string, ids []string) (bool, error)
 	// FindInstanceActor returns the local Application actor.
 	FindInstanceActor(ctx context.Context) (account.Account, error)
 	FindLocalAccount(ctx context.Context, accountID string) (account.LocalAccount, error)

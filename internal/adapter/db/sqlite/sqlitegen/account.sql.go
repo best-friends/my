@@ -12,6 +12,23 @@ import (
 	"database/sql"
 )
 
+const anyAccountOnDomain = `-- name: AnyAccountOnDomain :one
+SELECT EXISTS (SELECT 1 FROM accounts WHERE domain = ?1 AND id IN (SELECT value FROM json_each(?2))) AS found
+`
+
+type AnyAccountOnDomainParams struct {
+	Domain string
+	Ids    interface{}
+}
+
+// AnyAccountOnDomain reports whether one of the accounts ids is on domain. The ids are a JSON array.
+func (q *Queries) AnyAccountOnDomain(ctx context.Context, arg AnyAccountOnDomainParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, anyAccountOnDomain, arg.Domain, arg.Ids)
+	var found bool
+	err := row.Scan(&found)
+	return found, err
+}
+
 const countLocalAccounts = `-- name: CountLocalAccounts :one
 SELECT COUNT(*) FROM local_accounts la
 LEFT JOIN account_lifecycle_states s ON s.account_id = la.account_id
@@ -58,6 +75,23 @@ SELECT id, uri, domain, actor_type, created_at FROM accounts WHERE id = ?
 
 func (q *Queries) GetAccount(ctx context.Context, id string) (Account, error) {
 	row := q.db.QueryRowContext(ctx, getAccount, id)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Uri,
+		&i.Domain,
+		&i.ActorType,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getAccountByURI = `-- name: GetAccountByURI :one
+SELECT id, uri, domain, actor_type, created_at FROM accounts WHERE uri = ?
+`
+
+func (q *Queries) GetAccountByURI(ctx context.Context, uri string) (Account, error) {
+	row := q.db.QueryRowContext(ctx, getAccountByURI, uri)
 	var i Account
 	err := row.Scan(
 		&i.ID,

@@ -12,6 +12,10 @@ import (
 	"strings"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appfederation "github.com/best-friends/my/internal/app/federation"
+	appgraph "github.com/best-friends/my/internal/app/graph"
+	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/best-friends/my/internal/domain/graph"
 )
 
 // Accounts is what the handlers need from the account module; *account.Service implements it.
@@ -20,6 +24,25 @@ type Accounts interface {
 	FindByHandle(ctx context.Context, username, domain string) (appaccount.Actor, error)
 	InstanceActor(ctx context.Context) (appaccount.Actor, error)
 	CountLocalUsers(ctx context.Context) (int, error)
+}
+
+// Objects is what the handlers need from the federation module to serve local statuses and the
+// collections made of them; *appfederation.Objects implements it.
+type Objects interface {
+	Authenticate(ctx context.Context, r *appfederation.SignedRequest) (appfederation.Requester, error)
+	Status(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
+	StatusActivity(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
+	OutboxTotal(ctx context.Context, accountID string) (int64, error)
+	Outbox(ctx context.Context, accountID, before string) (appfederation.OutboxPage, error)
+	Featured(ctx context.Context, accountID string) ([]federation.ObjectDocument, error)
+}
+
+// Graph is what the followers and following collections need from the graph module;
+// *appgraph.Service implements it.
+type Graph interface {
+	Counters(ctx context.Context, accountID string) (graph.Counters, error)
+	Followers(ctx context.Context, accountID string, p appgraph.Page) ([]graph.Edge, error)
+	Following(ctx context.Context, accountID string, p appgraph.Page) ([]graph.Edge, error)
 }
 
 // ProblemWriter writes the error response of an HTTP status, the same one the rest of the
@@ -38,6 +61,8 @@ type Options struct {
 	SourceURL string
 
 	Accounts Accounts
+	Objects  Objects
+	Graph    Graph
 	// HTML serves the web client's page for profile pages (/@alice) and other single-segment
 	// paths when the request does not ask for ActivityPub; nil answers 404.
 	HTML http.Handler
@@ -92,6 +117,8 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathNodeInfo, http.HandlerFunc(h.nodeInfo))
 	r.Handle("GET "+actorsPrefix+"{id}", http.HandlerFunc(h.actor))
 	r.Handle("GET "+actorsPrefix+"{id}/{collection}", http.HandlerFunc(h.collection))
+	r.Handle("GET "+objectsPrefix+"{id}", http.HandlerFunc(h.object))
+	r.Handle("GET "+objectsPrefix+"{id}/"+activitySegment, http.HandlerFunc(h.object))
 	// A wildcard cannot share a path segment with "@", so every single-segment GET that no
 	// more specific pattern serves comes here; profilePage passes those that are not profile
 	// pages to the HTML handler.
@@ -101,6 +128,8 @@ func (h *Handler) Register(r Router) {
 // Response headers.
 const (
 	cachePublic = "public, max-age=60"
+	// cachePrivate marks a document that only its requester may see (ADR-0018).
+	cachePrivate = "private, no-store"
 
 	typeActivityJSON = "application/activity+json"
 	typeJRD          = "application/jrd+json; charset=utf-8"
@@ -116,7 +145,7 @@ func (h *Handler) notFound(w http.ResponseWriter, r *http.Request) {
 
 // fail answers a lookup error: 404 for ErrNotFound, otherwise 500 after logging it.
 func (h *Handler) fail(w http.ResponseWriter, r *http.Request, err error) {
-	if errors.Is(err, appaccount.ErrNotFound) {
+	if errors.Is(err, appaccount.ErrNotFound) || errors.Is(err, appfederation.ErrNotFound) {
 		h.notFound(w, r)
 		return
 	}
@@ -141,9 +170,7 @@ func findVisible(a appaccount.Actor, err error) (appaccount.Actor, error) {
 	return a, nil
 }
 
-// writeJSON writes v as a cacheable public document of the content type ct. Federation
-// documents are fetched by other servers' backends and by browsers on other origins, so they
-// are cross-origin resources (ADR-0019 §9).
+// writeJSON writes v as a cacheable public document of the content type ct.
 func (h *Handler) writeJSON(w http.ResponseWriter, r *http.Request, ct string, v any) {
 	body, err := json.Marshal(v)
 	if err != nil {
@@ -151,10 +178,18 @@ func (h *Handler) writeJSON(w http.ResponseWriter, r *http.Request, ct string, v
 		h.o.Problem(w, r, http.StatusInternalServerError)
 		return
 	}
+	writeBody(w, ct, cachePublic, http.StatusOK, body)
+}
+
+// writeBody writes a document with its status. Federation documents are fetched by other
+// servers' backends and by browsers on other origins, so they are cross-origin resources
+// (ADR-0019 §9).
+func writeBody(w http.ResponseWriter, ct, cacheControl string, status int, body []byte) {
 	hd := w.Header()
 	hd.Set("Content-Type", ct)
-	hd.Set("Cache-Control", cachePublic)
+	hd.Set("Cache-Control", cacheControl)
 	hd.Set("Cross-Origin-Resource-Policy", "cross-origin")
+	w.WriteHeader(status)
 	_, _ = w.Write(append(body, '\n'))
 }
 

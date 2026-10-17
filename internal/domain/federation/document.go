@@ -86,6 +86,18 @@ type ObjectDocument struct {
 	Cc           []IRI      `json:"cc,omitempty"`
 }
 
+// TopLevelObject is an object document served on its own, with its context: the answer to a GET
+// of an object IRI (federation.md §10).
+type TopLevelObject struct {
+	Context []any `json:"@context"`
+	ObjectDocument
+}
+
+// TopLevel returns o as a top-level document.
+func (o ObjectDocument) TopLevel() TopLevelObject {
+	return TopLevelObject{Context: LDContext(), ObjectDocument: o}
+}
+
 // TombstoneOf returns the object of the Delete of id.
 func TombstoneOf(id IRI) ObjectDocument { return ObjectDocument{ID: id, Type: ObjectTombstone} }
 
