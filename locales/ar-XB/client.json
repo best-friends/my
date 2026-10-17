@@ -495,6 +495,10 @@
     "defaultMessage": "‮No uoʇıɟıɔɐʇıous oɟ ʇɥıs ʇʎdǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ʅoɐp ʇɥǝ uoʇıɟıɔɐʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.filter.all": {
     "defaultMessage": "‮∀ʅʅ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -899,6 +903,14 @@
     "defaultMessage": "‮Sǝɐɹɔɥ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "session.account.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ʅoɐp ʎonɹ ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "session.account.retry": {
+    "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "session.account.title": {
     "defaultMessage": "‮∀ɔɔonuʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1223,16 +1235,40 @@
     "defaultMessage": "‮{page} – {instance}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "shell.error.body": {
-    "defaultMessage": "‮⊥ɥıs dɐƃǝ ɔonʅp uoʇ qǝ sɥoʍu. ⊥ɹʎ ɐƃɐıu, oɹ ɔoɯǝ qɐɔʞ ʅɐʇǝɹ.‬",
+  "shell.error.forbidden.heading": {
+    "defaultMessage": "‮⅄on po uoʇ ɥɐʌǝ dǝɹɯıssıou ʇo sǝǝ ʇɥıs dɐƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.network.heading": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔouuǝɔʇ ʇo ʇɥǝ sǝɹʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.network.reason": {
+    "defaultMessage": "‮Ↄɥǝɔʞ ʎonɹ ɔouuǝɔʇıou ɐup ʇɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.not_found.heading": {
+    "defaultMessage": "‮Mɥɐʇ ʇɥıs dɐƃǝ sɥoʍs ʍɐs uoʇ ɟonup‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.error.retry": {
     "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.error.server.heading": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ʅoɐp ʇɥıs dɐƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.error.title": {
     "defaultMessage": "‮Soɯǝʇɥıuƃ ʍǝuʇ ʍɹouƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.unexpected.heading": {
+    "defaultMessage": "‮⊥ɥıs dɐƃǝ ɔonʅp uoʇ qǝ sɥoʍu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.error.unexpected.reason": {
+    "defaultMessage": "‮⊥ɹʎ ɐƃɐıu, oɹ ɔoɯǝ qɐɔʞ ʅɐʇǝɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.loading": {

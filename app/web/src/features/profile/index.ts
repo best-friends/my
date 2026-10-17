@@ -5,3 +5,4 @@
 export { type Account, accountQueryOptions, followListQueryOptions } from "./api/accounts";
 export { FollowListView } from "./components/FollowListView";
 export { ProfileView } from "./components/ProfileView";
+export { isolate } from "./hooks/useProfile";

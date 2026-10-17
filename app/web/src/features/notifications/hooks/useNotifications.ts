@@ -17,8 +17,8 @@ export type NotificationList =
   | { status: "signed-out" }
   /** The session is resuming, or the first page is loading. */
   | { status: "loading" }
-  /** The first page failed; `message` is localized. */
-  | { status: "error"; message: string; retry: () => void }
+  /** The first page failed; `message` is localized. `isRetrying` while `retry` loads it again. */
+  | { status: "error"; message: string; retry: () => void; isRetrying: boolean }
   | {
       status: "loaded";
       items: readonly Notification[];
@@ -93,6 +93,7 @@ export function useNotifications(filter: NotificationFilter): NotificationList {
       retry: () => {
         void list.refetch();
       },
+      isRetrying: list.isFetching,
     };
   }
   if (list.data === undefined) return { status: "loading" };

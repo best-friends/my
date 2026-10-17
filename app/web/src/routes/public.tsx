@@ -13,6 +13,7 @@ import { RouteError } from "./-layout/RouteStates";
  * servers whose posts this server holds. The navigation offers it only while the instance serves it.
  */
 export const Route = createFileRoute("/public")({
+  staticData: { title: "client:public.title" },
   loader: async ({ context: { queryClient, api } }) => {
     // The cached pages are shown as they are; the page refetches them in the background when stale.
     await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "public" }), staleTime: "static" });

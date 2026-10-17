@@ -7,6 +7,7 @@ import { PageHeading } from "./-layout/PageHeading";
 
 /** The home timeline (FR-201): the signed-in user's posts and those of the accounts they follow. */
 export const Route = createFileRoute("/home")({
+  staticData: { title: "client:home.title" },
   loader: async ({ context: { queryClient, api, session } }) => {
     // The home timeline needs a session; without one the page offers to sign in instead.
     await session.restore();

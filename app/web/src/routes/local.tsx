@@ -7,6 +7,7 @@ import { PageHeading } from "./-layout/PageHeading";
 
 /** The local timeline (FR-202): the public posts of this server's accounts, and their local posts for a signed-in user. */
 export const Route = createFileRoute("/local")({
+  staticData: { title: "client:local.title" },
   loader: async ({ context: { queryClient, api } }) => {
     // The cached pages are shown as they are; the page refetches them in the background when stale.
     await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "local" }), staleTime: "static" });

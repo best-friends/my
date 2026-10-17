@@ -224,7 +224,8 @@ describe("the notifications page", () => {
 
     const { user } = await renderApp({ path: "/notifications" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Something went wrong" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Could not load this page" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("feed", { name: "Notifications" })).toBeInTheDocument();

@@ -7,6 +7,7 @@ import { SettingsHeading } from "./-layout/SettingsHeading";
 
 /** The accounts the user blocks (FR-303). */
 export const Route = createFileRoute("/settings/blocks")({
+  staticData: { title: "client:settings.blocks.title" },
   beforeLoad: requireSignIn,
   loader: ({ context }) => context.queryClient.infiniteQuery({ ...blocksQueryOptions(context.api), staleTime: "static" }),
   component: BlocksPage,
