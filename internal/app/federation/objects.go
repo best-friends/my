@@ -73,6 +73,17 @@ type StatusReader interface {
 	Pinned(ctx context.Context, viewer appcontent.Viewer, accountID string) ([]appcontent.StatusView, error)
 }
 
+// FetchSettings reads the instance setting that restricts GETs to signed requests;
+// *appinstance.Service implements it.
+type FetchSettings interface {
+	// AuthorizedFetch reports whether authorized fetch (FR-408) is on.
+	AuthorizedFetch(ctx context.Context) (bool, error)
+}
+
+// AcceptSignatureGET is the Accept-Signature field value of a 401 answer to a GET: the
+// RFC 9421 signature that the profile of ADR-0032 requires.
+const AcceptSignatureGET = acceptSignatureGET
+
 // ObjectsDeps are the ports and settings of Objects.
 type ObjectsDeps struct {
 	Statuses ObjectStatuses
@@ -84,6 +95,8 @@ type ObjectsDeps struct {
 	Signatures *SignatureVerifier
 	// Domains are the domain blocks; nil means NoDomainRestrictions.
 	Domains DomainPolicy
+	// Settings decide authorized fetch; nil keeps it off.
+	Settings FetchSettings
 	// Host is the serving domain of this server (ADR-0018).
 	Host string
 	// Logger logs the signatures that do not verify; nil means slog.Default().
@@ -109,10 +122,22 @@ func NewObjects(d ObjectsDeps) *Objects {
 	return &Objects{d: d}
 }
 
+// AuthorizedFetch reports whether authorized fetch (FR-408, federation.md §10) is on: GETs of
+// objects, collections, and full actor documents need a verified signature, and no answer that
+// depends on the signature may be cached publicly. It is read per request, so that a change of
+// the setting applies at once.
+func (o *Objects) AuthorizedFetch(ctx context.Context) (bool, error) {
+	if o.d.Settings == nil {
+		return false, nil
+	}
+	return o.d.Settings.AuthorizedFetch(ctx)
+}
+
 // Authenticate returns the requester of a GET. A request without a signature, or with one that
-// does not verify, is anonymous: such a request may still read what anyone may read, and only
-// authorized fetch (FR-408) refuses it. A signer on a suspended domain (federation.md §11) or on
-// this server is anonymous too. Only an unexpected failure is an error.
+// does not verify, is anonymous: such a request may still read what anyone may read, unless
+// AuthorizedFetch is on and the caller refuses it. A signer on a suspended domain
+// (federation.md §11) or on this server is anonymous too. Only an unexpected failure is an
+// error.
 func (o *Objects) Authenticate(ctx context.Context, r *SignedRequest) (Requester, error) {
 	if o.d.Signatures == nil {
 		return Requester{}, nil

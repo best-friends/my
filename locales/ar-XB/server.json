@@ -339,6 +339,10 @@
     "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ɔɐuuoʇ nsǝ ʇɥǝ ɐdd ɹıƃɥʇ uoʍ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.bad_gateway": {
+    "defaultMessage": "‮∀ ɹǝɯoʇǝ sǝɹʌǝɹ ɔonʅp uoʇ qǝ ɹǝɐɔɥǝp oɹ ɐusʍǝɹǝp ʍıʇɥ ɐu ǝɹɹoɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.bad_request": {
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ıuʌɐʅıp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -445,6 +449,10 @@
   },
   "errors.self_relationship": {
     "defaultMessage": "‮⅄on ɔɐuuoʇ po ʇɥıs ʇo ʎonɹ oʍu ɐɔɔonuʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.signature_required": {
+    "defaultMessage": "‮⊥ɥıs poɔnɯǝuʇ ıs sǝɹʌǝp ouʅʎ ʇo ɹǝbnǝsʇs ʍıʇɥ ɐ ʌɐʅıp H⊥⊥Ԁ sıƃuɐʇnɹǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.status.already_deleted": {

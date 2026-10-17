@@ -599,6 +599,13 @@ func (l *Localizer) ServerErrorsAccountUnavailable() string {
 	return l.format("server:errors.account_unavailable", nil)
 }
 
+// ServerErrorsBadGateway formats "server:errors.bad_gateway". Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx.
+//
+//	en: A remote server could not be reached or answered with an error.
+func (l *Localizer) ServerErrorsBadGateway() string {
+	return l.format("server:errors.bad_gateway", nil)
+}
+
 // ServerErrorsBadRequest formats "server:errors.bad_request". API error message for HTTP 400 when no more specific message applies.
 //
 //	en: The request is invalid.
@@ -786,6 +793,13 @@ func (l *Localizer) ServerErrorsRequestTooLarge() string {
 //	en: You cannot do this to your own account.
 func (l *Localizer) ServerErrorsSelfRelationship() string {
 	return l.format("server:errors.self_relationship", nil)
+}
+
+// ServerErrorsSignatureRequired formats "server:errors.signature_required". Error title for HTTP 401 when the instance uses authorized fetch and an ActivityPub GET of an object or a collection carries no HTTP signature that verifies. Read by other servers' operators.
+//
+//	en: This document is served only to requests with a valid HTTP signature.
+func (l *Localizer) ServerErrorsSignatureRequired() string {
+	return l.format("server:errors.signature_required", nil)
 }
 
 // ServerErrorsStatusAlreadyDeleted formats "server:errors.status.already_deleted". Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated).

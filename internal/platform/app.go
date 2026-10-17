@@ -170,6 +170,9 @@ type AppOptions struct {
 	// PseudoLocales makes the pseudo-locales en-XA and ar-XB selectable on every surface
 	// (`my serve -pseudo-locales`), for the E2E of the server-rendered pages. Development and tests only.
 	PseudoLocales bool
+	// HTTPClient sends every outbound request; nil builds the SSRF-guarded client from the
+	// configuration. Tests only, to reach other test servers by their public hosts.
+	HTTPClient kernel.HTTPClient
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -369,7 +372,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
-	a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
+	a.HTTPClient = opts.HTTPClient
+	if a.HTTPClient == nil {
+		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
+	}
 	a.setUpDelivery(feds)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
@@ -456,7 +462,9 @@ func (a *App) newObjects(cfg *config.Config) *federation.Objects {
 		Signatures: federation.NewSignatureVerifier(httpsig.New(), a.RemoteActors, a.KV, a.Clock),
 		// No domain blocks exist yet; signers still go through the policy port.
 		Domains: federation.NoDomainRestrictions{},
-		Host:    cfg.Host, Logger: a.Logger,
+		// Authorized fetch (FR-408) is the instance setting, read per request.
+		Settings: a.Instance,
+		Host:     cfg.Host, Logger: a.Logger,
 	})
 }
 
