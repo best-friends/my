@@ -783,6 +783,14 @@
     "defaultMessage": "Mentions",
     "description": "Tab on the notifications page that shows only posts that mention the user."
   },
+  "notifications.group.boost": {
+    "defaultMessage": "{name} and {count, plural, one {# other} other {# others}} boosted your post",
+    "description": "Notification sentence for several boosts of one of the user's posts, grouped in one row. {name} is the display name of the newest account that boosted it; {count} is the number of the other accounts that did (1 or more)."
+  },
+  "notifications.group.favourite": {
+    "defaultMessage": "{name} and {count, plural, one {# other} other {# others}} favourited your post",
+    "description": "Notification sentence for several favourites of one of the user's posts, grouped in one row. {name} is the display name of the newest account that favourited it; {count} is the number of the other accounts that did (1 or more)."
+  },
   "notifications.load_more": {
     "defaultMessage": "Load more notifications",
     "description": "Button at the end of the notifications that loads older ones."

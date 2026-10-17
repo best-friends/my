@@ -783,6 +783,14 @@
     "defaultMessage": "メンション",
     "description": "Tab on the notifications page that shows only posts that mention the user."
   },
+  "notifications.group.boost": {
+    "defaultMessage": "{name}さんほか{count, plural, other {#人}}があなたの投稿をブーストしました",
+    "description": "Notification sentence for several boosts of one of the user's posts, grouped in one row. {name} is the display name of the newest account that boosted it; {count} is the number of the other accounts that did (1 or more)."
+  },
+  "notifications.group.favourite": {
+    "defaultMessage": "{name}さんほか{count, plural, other {#人}}があなたの投稿をお気に入りに登録しました",
+    "description": "Notification sentence for several favourites of one of the user's posts, grouped in one row. {name} is the display name of the newest account that favourited it; {count} is the number of the other accounts that did (1 or more)."
+  },
   "notifications.load_more": {
     "defaultMessage": "さらに通知を読み込む",
     "description": "Button at the end of the notifications that loads older ones."

@@ -394,6 +394,10 @@ export interface MessageArgs {
   "client:notifications.filter.label": {};
   /** Mentions */
   "client:notifications.filter.mentions": {};
+  /** {name} and {count, plural, one {# other} other {# others}} boosted your post */
+  "client:notifications.group.boost": { count: number; name: string };
+  /** {name} and {count, plural, one {# other} other {# others}} favourited your post */
+  "client:notifications.group.favourite": { count: number; name: string };
   /** Load more notifications */
   "client:notifications.load_more": {};
   /** Loading notifications */
