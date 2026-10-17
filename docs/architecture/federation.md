@@ -433,8 +433,9 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | 署名のテストベクタ | RFC 9421 付録 B のテストベクタ、Mastodon と同じ形式の draft-cavage の署名、クエリ文字列・ダイジェストの改ざん | `make check` |
 | 順序のテスト | 同じアクティビティ列の順序を入れ替え・重複させて処理し、最終的な行が同じになることを確かめる性質テスト（`testkit.InboxProcessingContract` の `OrderAndDuplicates`。ケースは `inboxOrderCases` で、ハンドラを足すときにケースも足す） | `make check` |
 | SSRF ガード | `testkit.HTTPClientContract`（ADR-0019 §1） | `make check` |
-| ライブの相互運用 | docker compose で Mastodon・GoToSocial（余力があれば Misskey）とこのサーバーを、私設 CA の TLS とコンテナのネットワークの DNS で立て、フォロー・投稿・返信・ブースト・お気に入り・削除・編集・公開範囲ごとの配送先を往復させる（#44） | nightly / 手動（CI ジョブ `federation-live`） |
+| ライブの相互運用 | docker compose で Mastodon（secure mode）・GoToSocial（余力があれば Misskey）とこのサーバーを、私設 CA の TLS とコンテナのネットワークの DNS で立て、WebFinger・Actor の署名付き取得・フォロー・投稿・返信・ブースト・お気に入り・削除・編集・公開範囲ごとの配送先を往復させる（#44）。構成とシナリオは `deploy/docker/federation-live/`。未実装の処理を待つシナリオは課題の番号を付けて skip する | nightly / 手動（CI ジョブ `federation-live`、`make federation-live`） |
 
 - フィクスチャは採取したときのホスト・名前・本文・鍵を例の値に置き換えて保存し、実装と版をディレクトリ名に残します。新しい不具合を直すときは、その文書をフィクスチャに足します（ADR-0006）。
 - 置き換えと追加の手順は [pkg/testkit/README.md](../../pkg/testkit/README.md#federation-fixtures)、各ファイルの出典とライセンスは `pkg/testkit/fixtures/federation/<実装>/README.md` にあります。正規化の golden は `pkg/testkit/testdata/golden/normalize/` にあり、`go test ./pkg/testkit -update` で書き直します。
-- テストはネットワークを使わず、`HTTPClient` をホスト名で振り分けるインメモリの実装に差し替えます（ADR-0015）。
+- `make check` のテストはネットワークを使わず、`HTTPClient` をホスト名で振り分けるインメモリの実装に差し替えます（ADR-0015）。
+- ライブの相互運用テストは、このサーバーが受信したアクティビティを保存したとおりに成果物へ書き出します。フィクスチャの採取元にする手順は [deploy/docker/federation-live/README.md](../../deploy/docker/federation-live/README.md#adding-a-captured-activity-as-a-fixture) にあります。
