@@ -6,6 +6,8 @@ const link = tv({
   base: [
     "cursor-pointer rounded-sm text-accent underline-offset-2 data-hovered:text-accent-hover data-focus-visible:focus-ring",
     "data-disabled:cursor-not-allowed data-disabled:opacity-50 motion-safe:transition-colors",
+    // The link sizes a child icon next to its text, which sets no size of its own (web-client.md G11).
+    "[&>svg]:size-4 [&>svg]:shrink-0",
   ],
   variants: {
     variant: {

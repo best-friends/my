@@ -157,6 +157,18 @@ test.describe("a post's page", () => {
     `);
   });
 
+  test("shows the icon of every action at one size, also on a post without replies", async ({ page }) => {
+    // The ancestor has no replies, so its reply button holds only its icon.
+    const ancestorPost = page.getByRole("main").getByRole("article").first();
+    for (const article of [ancestorPost, focusedPost(page)]) {
+      for (const key of ["status.action.reply", "status.action.boost", "status.action.favourite", "status.action.bookmark", "status.action.more"]) {
+        const icon = article.getByRole("button", { name: message(key) }).locator("svg");
+        await expect(icon).toBeVisible();
+        expect(await icon.boundingBox(), key).toMatchObject({ width: 20, height: 20 });
+      }
+    }
+  });
+
   test("sets a failed favourite back and keeps the next one, with the menu and the confirmation axe-clean", async ({ page, makeAxeBuilder }) => {
     const article = focusedPost(page);
     const favourite = article.getByRole("button", { name: message("status.action.favourite") });
