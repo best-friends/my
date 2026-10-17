@@ -56,6 +56,9 @@ const (
 	EventAccountRestrictionsChanged = "moderation.account_restrictions_changed"
 	// EventReportFiled follows a new report.
 	EventReportFiled = "moderation.report_filed"
+	// EventReportResolved follows every resolution of a report, the first one and those after
+	// a reopening.
+	EventReportResolved = "moderation.report_resolved"
 )
 
 // DomainRestrictionsChanged carries the restrictions in effect on one domain (not its parents)
@@ -82,6 +85,15 @@ type ReportFiled struct{ Report moderation.Report }
 
 // EventType implements uow.Event.
 func (ReportFiled) EventType() string { return EventReportFiled }
+
+// ReportResolved carries a report and its resolution.
+type ReportResolved struct {
+	Report     moderation.Report
+	Resolution moderation.ReportResolution
+}
+
+// EventType implements uow.Event.
+func (ReportResolved) EventType() string { return EventReportResolved }
 
 // Accounts is the part of the account module's public API that the moderation module reads.
 // *appaccount.Service implements it.

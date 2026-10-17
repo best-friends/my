@@ -71,6 +71,10 @@
     "defaultMessage": "Read your notifications",
     "description": "Permission (OAuth scope read:notifications) listed on the authorization page."
   },
+  "auth.authorize.scope.read_reports": {
+    "defaultMessage": "Read the reports you filed and whether they are resolved",
+    "description": "Permission (OAuth scope read:reports) listed on the authorization page."
+  },
   "auth.authorize.scope.read_statuses": {
     "defaultMessage": "Read posts and timelines",
     "description": "Permission (OAuth scope read:statuses) listed on the authorization page."

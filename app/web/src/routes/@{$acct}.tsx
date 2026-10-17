@@ -5,6 +5,7 @@ import { ProfileView } from "../features/profile";
 import { type AccountTimelineFilter, accountTimelineFilters, timelineQueryOptions } from "../features/timeline";
 import { PageHeading } from "./-layout/PageHeading";
 import { loadAccount, profileParamsSchema } from "./-profile/loadAccount";
+import { ProfileError } from "./-profile/ProfileError";
 import { ProfileNotFound } from "./-profile/ProfileNotFound";
 
 /** `tab`: the posts the profile lists; omitted, or anything unknown, is its posts without replies (web-client.md S3). */
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/@{$acct}")({
   },
   component: ProfilePage,
   notFoundComponent: ProfileNotFound,
+  errorComponent: ProfileError,
 });
 
 function ProfilePage() {

@@ -7,6 +7,7 @@ import { SettingsHeading } from "./-layout/SettingsHeading";
 
 /** The follow requests that await the user's approval (FR-302). */
 export const Route = createFileRoute("/settings/follow-requests")({
+  staticData: { title: "client:settings.follow_requests.title" },
   beforeLoad: requireSignIn,
   loader: ({ context }) => context.queryClient.infiniteQuery({ ...followRequestsQueryOptions(context.api), staleTime: "static" }),
   component: FollowRequestsPage,

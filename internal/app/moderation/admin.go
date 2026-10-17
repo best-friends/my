@@ -183,33 +183,29 @@ func (s *Service) AssignReport(ctx context.Context, reportID, assigneeUserID, by
 }
 
 // ResolveReport resolves an open report with outcome, recording the resolution and, in the same
-// transaction, the report's resolved state and the audit log entry. Resolving a resolved report
-// records nothing and keeps its outcome. It fails with moderation.ErrInvalidReport for an
-// unknown outcome. byUserID is the moderator, "" for the CLI.
+// transaction, the report's resolved state and the audit log entry, and emits ReportResolved.
+// Resolving a resolved report records nothing and keeps its outcome. It fails with
+// moderation.ErrInvalidReport for an unknown outcome. byUserID is the moderator, "" for the CLI.
 func (s *Service) ResolveReport(ctx context.Context, reportID string, outcome moderation.ReportOutcome, byUserID string) (moderation.ReportRecord, error) {
 	if !outcome.Valid() {
 		return moderation.ReportRecord{}, fmt.Errorf("%w: outcome %q", moderation.ErrInvalidReport, outcome)
 	}
+	// A report never changes once filed, so it is read before the transaction.
+	report, err := s.d.Repository.FindReport(ctx, reportID)
+	if err != nil {
+		return moderation.ReportRecord{}, err
+	}
 	now := kernel.Normalize(s.d.Clock.Now())
-	repo := s.d.Repository
-	label, err := s.reportLabel(ctx, reportID)
+	label, err := s.accountLabel(ctx, report.TargetAccountID)
 	if err != nil {
 		return moderation.ReportRecord{}, err
 	}
 	resolutionID, auditID := s.d.IDs.NewID(), s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		st, err := repo.ReportStatusForUpdate(ctx, tx, reportID)
-		if err != nil || st.State == moderation.ReportResolved {
-			return err
-		}
-		err = repo.InsertReportResolution(ctx, tx, moderation.ReportResolution{
+		resolved, err := s.resolveReport(ctx, tx, report, moderation.ReportResolution{
 			ID: resolutionID, ReportID: reportID, Outcome: outcome, ResolvedByUserID: byUserID, ResolvedAt: now,
 		})
-		if err != nil {
-			return err
-		}
-		st.State, st.Outcome, st.Since = moderation.ReportResolved, outcome, now
-		if err := repo.UpsertReportStatus(ctx, tx, st); err != nil {
+		if err != nil || !resolved {
 			return err
 		}
 		return s.emitAudit(ctx, tx, moderation.AuditEntry{
@@ -231,4 +227,22 @@ func (s *Service) reportLabel(ctx context.Context, reportID string) (string, err
 		return "", err
 	}
 	return s.accountLabel(ctx, r.TargetAccountID)
+}
+
+// resolveReport records res and the resolved state of report in tx and emits ReportResolved,
+// unless the report is resolved already; it reports whether it resolved the report.
+func (s *Service) resolveReport(ctx context.Context, tx uow.Tx, report moderation.Report, res moderation.ReportResolution) (bool, error) {
+	repo := s.d.Repository
+	st, err := repo.ReportStatusForUpdate(ctx, tx, report.ID)
+	if err != nil || st.State == moderation.ReportResolved {
+		return false, err
+	}
+	if err := repo.InsertReportResolution(ctx, tx, res); err != nil {
+		return false, err
+	}
+	st.State, st.Outcome, st.Since = moderation.ReportResolved, res.Outcome, res.ResolvedAt
+	if err := repo.UpsertReportStatus(ctx, tx, st); err != nil {
+		return false, err
+	}
+	return true, tx.Emit(ctx, ReportResolved{Report: report, Resolution: res})
 }

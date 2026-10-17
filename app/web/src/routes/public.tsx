@@ -14,7 +14,7 @@ import { RouteError } from "./-layout/RouteStates";
  */
 export const Route = createFileRoute("/public")({
   // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
-  staticData: { composeButton: true },
+  staticData: { title: "client:public.title", composeButton: true },
   loader: async ({ context: { queryClient, api } }) => {
     // The cached pages are shown as they are; the page refetches them in the background when stale.
     await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "public" }), staleTime: "static" });

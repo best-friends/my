@@ -7,6 +7,7 @@ import { SettingsHeading } from "./-layout/SettingsHeading";
 
 /** The accounts the user mutes (FR-303). */
 export const Route = createFileRoute("/settings/mutes")({
+  staticData: { title: "client:settings.mutes.title" },
   beforeLoad: requireSignIn,
   loader: ({ context }) => context.queryClient.infiniteQuery({ ...mutesQueryOptions(context.api), staleTime: "static" }),
   component: MutesPage,

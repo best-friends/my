@@ -20,7 +20,7 @@ type AdminErrorProps = ErrorComponentProps & { permission: Permission; heading: 
 
 /** The error of an admin screen: why the viewer may not use it for a 403 missing-permission, else the usual one. */
 export function AdminError({ permission, heading, ...props }: AdminErrorProps) {
-  if (!isMissingPermission(props.error)) return <RouteError {...props} />;
+  if (!isMissingPermission(props.error)) return <RouteError {...props} heading={heading} />;
   return (
     <>
       <PageHeading>{heading}</PageHeading>

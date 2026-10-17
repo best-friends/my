@@ -430,6 +430,7 @@ type Notification struct {
 	SourceAccountID    sql.NullString
 	StatusID           sql.NullString
 	ModerationActionID sql.NullString
+	ReportID           sql.NullString
 	DedupeKey          string
 	CreatedAt          int64
 }
