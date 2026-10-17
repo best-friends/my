@@ -208,10 +208,14 @@ type CreateInput struct {
 // (data-model §5.4) and stored as capped. A reply must target a status the author may see.
 //
 // Retrying with an IdempotencyKey that the author already used returns the status posted with it
-// and changes nothing; when that status is deleted, it fails with ErrAlreadyDeleted.
+// and changes nothing; when that status is deleted, it fails with ErrAlreadyDeleted. A key that
+// is not valid fails with content.ErrInvalidIdempotencyKey.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 	if !in.Visibility.Valid() {
 		return Post{}, fmt.Errorf("%w: %q", content.ErrInvalidVisibility, in.Visibility)
+	}
+	if err := content.ValidateIdempotencyKey(in.IdempotencyKey); err != nil {
+		return Post{}, err
 	}
 	author, err := s.localActive(ctx, in.AuthorAccountID)
 	if err != nil {
@@ -519,7 +523,7 @@ func CountCharacters(text, spoilerText string) int {
 // handle may fetch it.
 func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in TextInput) (preparedText, error) {
 	for _, v := range []string{in.Text, in.SpoilerText} {
-		if !utf8.ValidString(v) || strings.ContainsRune(v, 0) {
+		if !content.ValidText(v) {
 			return preparedText{}, ErrInvalidText
 		}
 	}
@@ -607,7 +611,7 @@ func (s *Service) attachments(ctx context.Context, authorID string, in []MediaIn
 			return nil, fmt.Errorf("%w: %s is attached twice", ErrTooManyMedia, m.MediaID)
 		}
 		d := m.Description
-		if !utf8.ValidString(d) || strings.ContainsRune(d, 0) || utf8.RuneCountInString(d) > MaxMediaDescription {
+		if !content.ValidText(d) || utf8.RuneCountInString(d) > MaxMediaDescription {
 			return nil, fmt.Errorf("media %s: %w", m.MediaID, ErrInvalidMediaDescription)
 		}
 		if err := s.checkMedia(ctx, authorID, m.MediaID); err != nil {

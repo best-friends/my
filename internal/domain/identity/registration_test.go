@@ -51,6 +51,19 @@ func TestValidateRegistrationReason(t *testing.T) {
 	}
 }
 
+func TestValidateDecisionNote(t *testing.T) {
+	for _, ok := range []string{"", "welcome", strings.Repeat("あ", identity.MaxDecisionNoteLength)} {
+		if err := identity.ValidateDecisionNote(ok); err != nil {
+			t.Errorf("ValidateDecisionNote(%d chars) = %v", len([]rune(ok)), err)
+		}
+	}
+	for _, bad := range []string{strings.Repeat("a", identity.MaxDecisionNoteLength+1), "\xff", "a\x00b"} {
+		if err := identity.ValidateDecisionNote(bad); !errors.Is(err, identity.ErrInvalidNote) {
+			t.Errorf("ValidateDecisionNote(%q...) = %v, want ErrInvalidNote", bad[:1], err)
+		}
+	}
+}
+
 func TestDecisionState(t *testing.T) {
 	if identity.DecisionApproved.State() != identity.RegistrationApproved || identity.DecisionRejected.State() != identity.RegistrationRejected {
 		t.Error("Decision.State maps wrongly")

@@ -1426,7 +1426,8 @@ paths:
         from reaching users who do not follow them; `reject_media` stops fetching its media;
         `reject_reports` drops the reports it sends; `force_sensitive` marks its media
         sensitive. The domain is normalized (IDNA A-labels in lower case, without a trailing
-        dot); one that is not a valid domain is a 422 naming `domain`. Needs the
+        dot); one that is not a valid domain is a 422 naming `domain`. A `public_comment` or
+        `private_note` that is too long or contains U+0000 is a 422 naming it. Needs the
         `manage_domains` permission.
       tags: [admin]
       security:
@@ -1648,7 +1649,8 @@ components:
       in: header
       description: |
         A key the client chooses per new status; a retry with the same key returns the status
-        posted with it instead of posting again.
+        posted with it instead of posting again. A key longer than 256 characters, or one
+        that is not UTF-8 without U+0000, is a 422.
       required: false
       schema:
         type: string
@@ -2205,7 +2207,7 @@ components:
       type: object
       properties:
         description:
-          description: The alternative text; an empty string removes it.
+          description: The alternative text; an empty string removes it. Text with U+0000 is a 422.
           type: string
           maxLength: 1500
         focus:
@@ -2220,7 +2222,7 @@ components:
           type: string
           format: binary
         description:
-          description: The alternative text.
+          description: The alternative text. Text that is not UTF-8 or has U+0000 is a 422.
           type: string
           maxLength: 1500
     MediaVariant:

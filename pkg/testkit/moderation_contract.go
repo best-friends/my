@@ -230,17 +230,67 @@ func moderationRejectsInvalid(t *testing.T, e *moderationEnv) {
 		{Domain: "Bad.Example", Kind: moderation.DomainSuspend},
 		{Domain: "bad..example", Kind: moderation.DomainSuspend},
 		{Domain: "bad.example", Kind: "silence"},
-		{Domain: "bad.example", Kind: moderation.DomainSuspend, PrivateNote: strings.Repeat("あ", moderation.MaxDomainActionText+1)},
+		{Domain: "bad\x00.example", Kind: moderation.DomainSuspend},
+		{Domain: "bad.example", Kind: moderation.DomainSuspend, PrivateNote: strings.Repeat("あ", moderation.MaxActionText+1)},
 	} {
 		if _, err := e.svc.IssueDomainAction(ctx, in); !errors.Is(err, moderation.ErrInvalidAction) {
 			t.Errorf("IssueDomainAction(%q, %q) = %v, want ErrInvalidAction", in.Domain, in.Kind, err)
 		}
 	}
-	in := appmoderation.AccountActionInput{TargetAccountID: e.remote, Kind: moderation.ActionLimit, ReasonCategory: "rude"}
-	if _, err := e.svc.IssueRemoteAccountAction(ctx, in); !errors.Is(err, moderation.ErrInvalidAction) {
-		t.Errorf("IssueRemoteAccountAction(category rude) = %v, want ErrInvalidAction", err)
+	// Text that a dialect cannot store as it is fails alike on every dialect (data-model §1.2),
+	// naming its column.
+	for _, tc := range []struct {
+		field string
+		in    appmoderation.DomainActionInput
+	}{
+		{"public_comment", appmoderation.DomainActionInput{PublicComment: "spam\x00"}},
+		{"private_note", appmoderation.DomainActionInput{PrivateNote: "\x00"}},
+		{"private_note", appmoderation.DomainActionInput{PrivateNote: "a\xffb"}},
+	} {
+		tc.in.Domain, tc.in.Kind = "bad.example", moderation.DomainSuspend
+		_, err := e.svc.IssueDomainAction(ctx, tc.in)
+		if te := (*moderation.TextError)(nil); !errors.Is(err, moderation.ErrInvalidAction) || !errors.As(err, &te) || te.Field != tc.field || te.Max != 0 {
+			t.Errorf("IssueDomainAction(invalid %s) = %v, want ErrInvalidAction and a TextError of %s", tc.field, err, tc.field)
+		}
+	}
+	for _, in := range []appmoderation.AccountActionInput{
+		{ReasonCategory: "rude"},
+		{ReasonCategory: moderation.CategorySpam, PublicReason: "spam\x00"},
+		{ReasonCategory: moderation.CategorySpam, PrivateNote: "\xff"},
+		{ReasonCategory: moderation.CategorySpam, PrivateNote: strings.Repeat("a", moderation.MaxActionText+1)},
+	} {
+		in.TargetAccountID, in.Kind = e.remote, moderation.ActionLimit
+		if _, err := e.svc.IssueRemoteAccountAction(ctx, in); !errors.Is(err, moderation.ErrInvalidAction) {
+			t.Errorf("IssueRemoteAccountAction(%+v) = %v, want ErrInvalidAction", in, err)
+		}
 	}
 	e.checkDomain(t, "bad.example", false, false, false)
+	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		rows, err := e.h.Moderation.AccountRestrictionRows(ctx, tx, e.remote)
+		if err == nil && len(rows) != 0 {
+			t.Errorf("AccountRestrictionRows after invalid actions = %+v, want none", rows)
+		}
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A lift with an invalid reason is refused and leaves the action in effect.
+	a, err := e.svc.IssueRemoteAccountAction(ctx, appmoderation.AccountActionInput{
+		TargetAccountID: e.remote, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, reason := range []string{"done\x00", "\xff", strings.Repeat("a", moderation.MaxActionText+1)} {
+		if err := e.svc.LiftAccountAction(ctx, a.ID, "", reason); !errors.Is(err, moderation.ErrInvalidAction) {
+			t.Errorf("LiftAccountAction(reason %q...) = %v, want ErrInvalidAction", reason[:1], err)
+		}
+	}
+	if err := e.svc.LiftAccountAction(ctx, a.ID, "", "done"); err != nil {
+		t.Errorf("LiftAccountAction(valid reason) after refused lifts = %v", err)
+	}
 }
 
 func moderationLiftsOnce(t *testing.T, e *moderationEnv) {

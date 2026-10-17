@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"unicode/utf8"
 )
 
 // ActionKind is the kind of a moderation action on an account (moderation_actions.kind).
@@ -111,9 +110,16 @@ type Action struct {
 	IssuedAt        time.Time
 }
 
-// Validate checks the invariants of a new action: a known kind, category, and issuer, an end
-// after its start, and no end for a ban.
+// MaxActionText is the number of characters of each text of a moderation action and of a lift:
+// an action's public reason or comment and its private note, and a lift's reason.
+const MaxActionText = 5000
+
+// Validate checks the invariants of a new action: a known kind, category, and issuer, valid
+// texts, an end after its start, and no end for a ban.
 func (a Action) Validate() error {
+	if err := checkTexts(textField{"public_reason", a.PublicReason}, textField{"private_note", a.PrivateNote}); err != nil {
+		return err
+	}
 	switch {
 	case a.ID == "" || a.TargetAccountID == "" || a.IssuedAt.IsZero():
 		return fmt.Errorf("%w: a field is empty", ErrInvalidAction)
@@ -147,6 +153,14 @@ type Lift struct {
 	LiftedByUserID string // "" for the system
 	Reason         string // "" for none
 	LiftedAt       time.Time
+}
+
+// Validate checks the invariants of a new lift: its action, its time, and a valid reason.
+func (l Lift) Validate() error {
+	if l.ActionID == "" || l.LiftedAt.IsZero() {
+		return fmt.Errorf("%w: a field of the lift is empty", ErrInvalidAction)
+	}
+	return checkTexts(textField{"reason", l.Reason})
 }
 
 // DomainActionKind is the kind of a moderation action on a domain
@@ -198,12 +212,11 @@ type DomainAction struct {
 	IssuedAt       time.Time
 }
 
-// MaxDomainActionText is the number of characters of a domain action's public comment and of
-// its private note.
-const MaxDomainActionText = 5000
-
 // Validate checks the invariants of a new domain action.
 func (a DomainAction) Validate() error {
+	if err := checkTexts(textField{"public_comment", a.PublicComment}, textField{"private_note", a.PrivateNote}); err != nil {
+		return err
+	}
 	switch {
 	case a.ID == "" || a.IssuedAt.IsZero():
 		return fmt.Errorf("%w: a field is empty", ErrInvalidAction)
@@ -211,8 +224,6 @@ func (a DomainAction) Validate() error {
 		return fmt.Errorf("%w: domain %q", ErrInvalidAction, a.Domain)
 	case !a.Kind.Valid():
 		return fmt.Errorf("%w: kind %q", ErrInvalidAction, a.Kind)
-	case utf8.RuneCountInString(a.PublicComment) > MaxDomainActionText || utf8.RuneCountInString(a.PrivateNote) > MaxDomainActionText:
-		return fmt.Errorf("%w: a text is longer than %d characters", ErrInvalidAction, MaxDomainActionText)
 	case a.ExpiresAt != nil && !a.ExpiresAt.After(a.IssuedAt):
 		return fmt.Errorf("%w: it must expire after it is issued", ErrInvalidAction)
 	}
@@ -237,9 +248,9 @@ type DomainLift struct {
 }
 
 // ValidDomain reports whether d looks like a canonical host: non-empty, lower case, without a
-// scheme, path, port, or empty label. Callers canonicalize hosts (IDNA A-labels) before.
+// scheme, path, port, NUL, or empty label. Callers canonicalize hosts (IDNA A-labels) before.
 func ValidDomain(d string) bool {
-	if d == "" || len(d) > 253 || d != strings.ToLower(d) || strings.ContainsAny(d, "/:@ \t\n") {
+	if d == "" || len(d) > 253 || !validText(d) || d != strings.ToLower(d) || strings.ContainsAny(d, "/:@ \t\n") {
 		return false
 	}
 	for label := range strings.SplitSeq(d, ".") {

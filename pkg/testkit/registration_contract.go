@@ -206,6 +206,17 @@ func registrationApproval(t *testing.T, e *accountEnv) {
 	}
 
 	e.clock.Advance(time.Minute)
+	// A note that a dialect cannot store as it is fails alike on every dialect (data-model §1.2)
+	// and decides nothing.
+	for _, note := range []string{"wel\x00come", "\xff", strings.Repeat("あ", identity.MaxDecisionNoteLength+1)} {
+		_, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: identity.DecisionApproved, Note: note})
+		if !errors.Is(err, identity.ErrInvalidNote) {
+			t.Errorf("DecideRegistration(note %q...) = %v, want ErrInvalidNote", note[:1], err)
+		}
+	}
+	if a := r.access(t, alice.User.ID); a.Registration != identity.RegistrationPending {
+		t.Errorf("access after invalid decisions = %+v; want pending", a)
+	}
 	d, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: identity.DecisionApproved, DecidedByUserID: "mod", Note: "welcome"})
 	if err != nil || d.DecidedBy != identity.DecidedByModerator || d.ApplicationID != p.Application.ID {
 		t.Fatalf("approve = %+v, %v", d, err)
@@ -443,10 +454,17 @@ func registrationFailureWritesNothing(t *testing.T, e *accountEnv) {
 			t.Errorf("SignUp(%+v) succeeded", bad)
 		}
 	}
-	reason := signUpInput("carol")
-	reason.Reason = strings.Repeat("あ", identity.MaxRegistrationReasonLength+1)
-	if _, err := e.registration(identity.RegistrationApproval, true).SignUp(ctx, reason); !errors.Is(err, identity.ErrInvalidReason) {
-		t.Errorf("SignUp with a long reason = %v, want ErrInvalidReason", err)
+	for _, r := range []string{strings.Repeat("あ", identity.MaxRegistrationReasonLength+1), "ducks\x00", "\xff"} {
+		reason := signUpInput("carol")
+		reason.Reason = r
+		if _, err := e.registration(identity.RegistrationApproval, true).SignUp(ctx, reason); !errors.Is(err, identity.ErrInvalidReason) {
+			t.Errorf("SignUp with the reason %q... = %v, want ErrInvalidReason", r[:1], err)
+		}
+	}
+	nul := signUpInput("carol")
+	nul.Email = "carol\x00@example.com"
+	if _, err := e.registration(identity.RegistrationApproval, true).SignUp(ctx, nul); !errors.Is(err, identity.ErrInvalidEmail) {
+		t.Errorf("SignUp with NUL in the email = %v, want ErrInvalidEmail", err)
 	}
 }
 

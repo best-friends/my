@@ -445,6 +445,16 @@ func TestUpdateMedia(t *testing.T) {
 	if p.Detail == nil || !strings.Contains(*p.Detail, "1,500") {
 		t.Errorf("detail = %v", p.Detail)
 	}
+	// Text that a dialect cannot store as it is (data-model §1.2), sent as JSON or as a form part.
+	for _, res := range []*http.Response{
+		patch("bob-write", `{"description": "a\u0000cat"}`),
+		e.upload(t, "bob-write", png(), part{name: "description", data: []byte("a\xffcat")}),
+	} {
+		p := wantProblem(t, res, http.StatusUnprocessableEntity, clientapi.ProblemTypeBlank)
+		if p.Detail == nil || !strings.Contains(*p.Detail, "description") {
+			t.Errorf("invalid description: detail = %v, want one naming description", p.Detail)
+		}
+	}
 	wantProblem(t, patch("bob-write", `not json`), http.StatusBadRequest, clientapi.ProblemTypeBlank)
 	wantProblem(t, patch("write", `{"description": "mine now"}`), http.StatusNotFound, clientapi.ProblemTypeBlank)
 

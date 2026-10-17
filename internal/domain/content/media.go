@@ -135,6 +135,9 @@ const MaxMediaDescriptionLength = 1500
 // ErrDescriptionTooLong reports a media description longer than MaxMediaDescriptionLength.
 var ErrDescriptionTooLong = errors.New("content: the media description is too long")
 
+// ErrInvalidDescription reports a media description that is not ValidText.
+var ErrInvalidDescription = errors.New("content: the media description is not valid text")
+
 // MediaDescription is the description (alternative text) of an upload that the uploader sets
 // before a post attaches it; the post copies it into its revision's attachment. Text is never
 // empty: removing the description deletes it.
@@ -143,8 +146,11 @@ type MediaDescription struct {
 	Text    string
 }
 
-// ValidateMediaDescription checks the length of a media description.
+// ValidateMediaDescription checks that a media description is ValidText and checks its length.
 func ValidateMediaDescription(text string) error {
+	if !ValidText(text) {
+		return ErrInvalidDescription
+	}
 	if n := utf8.RuneCountInString(text); n > MaxMediaDescriptionLength {
 		return fmt.Errorf("%w: %d characters", ErrDescriptionTooLong, n)
 	}

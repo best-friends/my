@@ -367,6 +367,8 @@ func mediaUpdates(t *testing.T, e *mediaEnv) {
 		want    error
 	}{
 		"too long":      {mediaOwner, appcontent.MediaUpdate{MediaID: id, Description: &long}, content.ErrDescriptionTooLong},
+		"NUL":           {mediaOwner, appcontent.MediaUpdate{MediaID: id, Description: ptr("a\x00b")}, content.ErrInvalidDescription},
+		"invalid UTF-8": {mediaOwner, appcontent.MediaUpdate{MediaID: id, Description: ptr("a\xffb")}, content.ErrInvalidDescription},
 		"bad focus":     {mediaOwner, appcontent.MediaUpdate{MediaID: id, Focus: &content.MediaFocus{X: 2}}, content.ErrInvalidFocus},
 		"other account": {"someone-else", appcontent.MediaUpdate{MediaID: id, Description: ptr("mine")}, appcontent.ErrNotFound},
 		"unknown":       {mediaOwner, appcontent.MediaUpdate{MediaID: "0192f0c1-0000-7000-8000-00000000dead", Description: ptr("x")}, appcontent.ErrNotFound},
@@ -377,6 +379,9 @@ func mediaUpdates(t *testing.T, e *mediaEnv) {
 	}
 	if _, err := e.service.Upload(t.Context(), appcontent.UploadInput{OwnerAccountID: mediaOwner, Content: bytes.NewReader(FixturePNG(4, 3, false)), Description: long}); !errors.Is(err, content.ErrDescriptionTooLong) {
 		t.Errorf("Upload with a long description = %v", err)
+	}
+	if _, err := e.service.Upload(t.Context(), appcontent.UploadInput{OwnerAccountID: mediaOwner, Content: bytes.NewReader(FixturePNG(4, 3, false)), Description: "\x00"}); !errors.Is(err, content.ErrInvalidDescription) {
+		t.Errorf("Upload with NUL in the description = %v", err)
 	}
 	if got := e.media(t, id); got.Description != "" || got.Focus.X != 0.5 {
 		t.Errorf("rejected updates changed the file: %+v", got)

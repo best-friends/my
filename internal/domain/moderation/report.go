@@ -5,7 +5,6 @@ package moderation
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -41,10 +40,9 @@ func (r Report) Validate() error {
 		return fmt.Errorf("%w: a field is empty", ErrInvalidReport)
 	case !r.Category.Valid():
 		return fmt.Errorf("%w: category %q", ErrInvalidReport, r.Category)
-	case !utf8.ValidString(r.Comment) || strings.ContainsRune(r.Comment, 0):
-		return fmt.Errorf("%w: the comment is not valid UTF-8 without NUL", ErrInvalidReport) // data-model §1.2
-	case utf8.RuneCountInString(r.Comment) > MaxReportComment:
-		return fmt.Errorf("%w: the comment is longer than %d characters", ErrInvalidReport, MaxReportComment)
+	}
+	if err := checkText("comment", r.Comment, MaxReportComment); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidReport, err)
 	}
 	return nil
 }

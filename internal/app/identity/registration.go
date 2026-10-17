@@ -514,17 +514,16 @@ type DecideInput struct {
 	Note            string
 }
 
-// MaxDecisionNoteLength bounds DecideInput.Note, in bytes.
-const MaxDecisionNoteLength = 1000
-
-// DecideRegistration approves or rejects a pending registration. It fails with ErrNotFound when
-// the user has no application and with ErrNotPending when the registration is already decided.
+// DecideRegistration approves or rejects a pending registration. It fails with
+// identity.ErrInvalidNote for a note that identity.ValidateDecisionNote rejects, with
+// ErrNotFound when the user has no application, and with ErrNotPending when the registration is
+// already decided.
 func (s *Service) DecideRegistration(ctx context.Context, in DecideInput) (identity.RegistrationDecision, error) {
 	if in.Decision != identity.DecisionApproved && in.Decision != identity.DecisionRejected {
 		return identity.RegistrationDecision{}, fmt.Errorf("identity: unknown decision %q", in.Decision)
 	}
-	if len(in.Note) > MaxDecisionNoteLength {
-		return identity.RegistrationDecision{}, fmt.Errorf("identity: the note must be at most %d bytes", MaxDecisionNoteLength)
+	if err := identity.ValidateDecisionNote(in.Note); err != nil {
+		return identity.RegistrationDecision{}, err
 	}
 	app, err := s.d.Repository.FindRegistrationApplication(ctx, in.UserID)
 	if err != nil {

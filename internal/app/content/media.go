@@ -131,7 +131,8 @@ type UploadInput struct {
 // Upload checks and stores an upload and enqueues its processing. It fails with an error
 // wrapping media.ErrUnsupportedFormat, media.ErrTooLarge, media.ErrDimensions,
 // media.ErrCorrupt, or ErrContentTypeMismatch for content it does not accept, and with
-// content.ErrDescriptionTooLong for a description that is too long.
+// content.ErrDescriptionTooLong or content.ErrInvalidDescription for a description it does not
+// accept.
 func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error) {
 	if err := content.ValidateMediaDescription(in.Description); err != nil {
 		return Media{}, err
@@ -304,9 +305,9 @@ type MediaUpdate struct {
 }
 
 // Update changes the description or focal point of an unattached media file of accountID and
-// returns the file. It fails with content.ErrDescriptionTooLong or content.ErrInvalidFocus for
-// invalid values, ErrNotFound for an unknown file or one of another account, and
-// ErrMediaAttached for a file that a status revision attaches.
+// returns the file. It fails with content.ErrDescriptionTooLong, content.ErrInvalidDescription,
+// or content.ErrInvalidFocus for invalid values, ErrNotFound for an unknown file or one of
+// another account, and ErrMediaAttached for a file that a status revision attaches.
 func (s *MediaService) Update(ctx context.Context, accountID string, u MediaUpdate) (Media, error) {
 	if u.Description != nil {
 		if err := content.ValidateMediaDescription(*u.Description); err != nil {

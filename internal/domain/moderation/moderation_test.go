@@ -101,6 +101,44 @@ func TestReportValidate(t *testing.T) {
 	}
 }
 
+func TestTextsOfActionsAndLifts(t *testing.T) {
+	now := time.Unix(1, 0)
+	action := Action{ID: "a", TargetAccountID: "b", Kind: ActionLimit, ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now}
+	domain := DomainAction{ID: "d", Domain: "bad.example", Kind: DomainSuspend, IssuedAt: now}
+	lift := Lift{ActionID: "a", LiftedAt: now}
+	long := strings.Repeat("あ", MaxActionText+1)
+	for _, tc := range []struct {
+		field    string
+		validate func(text string) error
+	}{
+		{"public_reason", func(s string) error { a := action; a.PublicReason = s; return a.Validate() }},
+		{"private_note", func(s string) error { a := action; a.PrivateNote = s; return a.Validate() }},
+		{"public_comment", func(s string) error { a := domain; a.PublicComment = s; return a.Validate() }},
+		{"private_note", func(s string) error { a := domain; a.PrivateNote = s; return a.Validate() }},
+		{"reason", func(s string) error { l := lift; l.Reason = s; return l.Validate() }},
+	} {
+		if err := tc.validate(long[len("あ"):]); err != nil {
+			t.Errorf("%s of %d characters: %v", tc.field, MaxActionText, err)
+		}
+		for _, bad := range []struct {
+			text string
+			max  int
+		}{{"a\x00b", 0}, {"\xff", 0}, {long, MaxActionText}} {
+			err := tc.validate(bad.text)
+			var te *TextError
+			if !errors.Is(err, ErrInvalidAction) || !errors.As(err, &te) || te.Field != tc.field || te.Max != bad.max {
+				t.Errorf("%s %q...: %v, want ErrInvalidAction and TextError{%s, %d}", tc.field, bad.text[:1], err, tc.field, bad.max)
+			}
+		}
+	}
+	if err := (Lift{LiftedAt: now}).Validate(); !errors.Is(err, ErrInvalidAction) {
+		t.Errorf("a lift without its action: %v", err)
+	}
+	if ValidDomain("bad\x00.example") || ValidDomain("bad\xff.example") {
+		t.Error("ValidDomain accepts NUL or invalid UTF-8")
+	}
+}
+
 func TestDomainActionState(t *testing.T) {
 	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
 	soon, past := now.Add(time.Hour), now.Add(-time.Hour)

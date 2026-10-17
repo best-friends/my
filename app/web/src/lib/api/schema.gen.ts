@@ -1140,7 +1140,8 @@ export interface paths {
          *     from reaching users who do not follow them; `reject_media` stops fetching its media;
          *     `reject_reports` drops the reports it sends; `force_sensitive` marks its media
          *     sensitive. The domain is normalized (IDNA A-labels in lower case, without a trailing
-         *     dot); one that is not a valid domain is a 422 naming `domain`. Needs the
+         *     dot); one that is not a valid domain is a 422 naming `domain`. A `public_comment` or
+         *     `private_note` that is too long or contains U+0000 is a 422 naming it. Needs the
          *     `manage_domains` permission.
          */
         post: operations["createDomainAction"];
@@ -1599,7 +1600,7 @@ export interface components {
         };
         /** @description The changes to a media file; a property left out keeps its value. */
         MediaUpdate: {
-            /** @description The alternative text; an empty string removes it. */
+            /** @description The alternative text; an empty string removes it. Text with U+0000 is a 422. */
             description?: string;
             focus?: components["schemas"]["MediaFocus"];
         };
@@ -1610,7 +1611,7 @@ export interface components {
              * @description The file. Its declared type, if any, must match its content.
              */
             file: string;
-            /** @description The alternative text. */
+            /** @description The alternative text. Text that is not UTF-8 or has U+0000 is a 422. */
             description?: string;
         };
         /** @description A rendition of a media file, without metadata. */
@@ -2270,7 +2271,8 @@ export interface components {
         Limit: number;
         /**
          * @description A key the client chooses per new status; a retry with the same key returns the status
-         *     posted with it instead of posting again.
+         *     posted with it instead of posting again. A key longer than 256 characters, or one
+         *     that is not UTF-8 without U+0000, is a 422.
          */
         IdempotencyKey: string;
         /** @description The ID of the status. */
@@ -2947,7 +2949,8 @@ export interface operations {
             header?: {
                 /**
                  * @description A key the client chooses per new status; a retry with the same key returns the status
-                 *     posted with it instead of posting again.
+                 *     posted with it instead of posting again. A key longer than 256 characters, or one
+                 *     that is not UTF-8 without U+0000, is a 422.
                  */
                 "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
             };

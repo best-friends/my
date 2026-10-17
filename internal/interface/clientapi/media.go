@@ -118,6 +118,8 @@ func (s *Server) mediaProblemOf(ctx context.Context, err error) problem {
 	case errors.Is(err, content.ErrDescriptionTooLong):
 		return s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank,
 			l.ServerErrorsMediaDescriptionTooLong(), l.ServerErrorsMediaDescriptionTooLongDetail(content.MaxMediaDescriptionLength))
+	case errors.Is(err, content.ErrInvalidDescription):
+		return s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank, l.ServerErrorsUnprocessable(), l.ServerErrorsInvalidValue("description"))
 	case errors.Is(err, content.ErrInvalidFocus):
 		return s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank, l.ServerErrorsMediaInvalidFocus(), "")
 	case errors.Is(err, appcontent.ErrMediaAttached):
