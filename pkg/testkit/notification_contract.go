@@ -42,7 +42,8 @@ type NotificationFactory func(t *testing.T, opts uow.Options) NotificationHarnes
 // own actions or a remote recipient; projecting an event again, also concurrently, without
 // duplicates; hiding notifications across blocks and from accounts muted with
 // hide_notifications, also those notified before the block or mute, which a lifted block or
-// mute shows again; leaving out notifications about deleted statuses; listing with a type filter and keyset paging; the read marker,
+// mute shows again; notifying of a source with unsolicited_reach only the accounts that follow
+// it; leaving out notifications about deleted statuses; listing with a type filter and keyset paging; the read marker,
 // unread count, and dismissals; and the moderator notifications of the first open report of an
 // account and of a pending registration, to the holders of the permission they need, emailed by
 // a job to those who want that, and left out once the permission is gone.
@@ -60,6 +61,7 @@ func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 		{"AgreesOnConcurrentProjections", notificationConcurrent},
 		{"HidesBlockedAndMutedSources", notificationHides},
 		{"HidesLaterBlocksAndMutes", notificationHidesLater},
+		{"LimitsUnsolicitedReach", notificationUnsolicitedReach},
 		{"LeavesOutDeletedStatuses", notificationDeletedStatuses},
 		{"ListsWithTypesAndPages", notificationLists},
 		{"TracksReadMarkersAndDismissals", notificationReads},
@@ -77,6 +79,7 @@ type notificationEnv struct {
 	content      *appcontent.Service
 	interactions *appcontent.Interactions
 	svc          *appnotification.Service
+	reach        *contractReach
 	// only holds just the notification projectors, for projecting an event again.
 	only *uow.Projectors
 	// staff stands in for the roles and preferences of the moderators; outbox keeps the jobs
@@ -96,7 +99,9 @@ func newNotificationEnv(t *testing.T, newHarness NotificationFactory) *notificat
 		nh = newHarness(t, opts)
 		return nh.AccountHarness
 	})
-	e := &notificationEnv{accountEnv: ae, nh: nh, only: &uow.Projectors{}, staff: newStubStaff(), outbox: &recordingOutbox{}}
+	e := &notificationEnv{
+		accountEnv: ae, nh: nh, only: &uow.Projectors{}, reach: &contractReach{}, staff: newStubStaff(), outbox: &recordingOutbox{},
+	}
 	e.graph = appgraph.NewService(appgraph.Deps{
 		UnitOfWork: nh.UnitOfWork, Repository: nh.Graph, Accounts: ae.accounts, Clock: ae.clock, IDs: ae.ids, Host: contractHost,
 	})
@@ -104,7 +109,7 @@ func newNotificationEnv(t *testing.T, newHarness NotificationFactory) *notificat
 	appcontent.RegisterProjectors(captured.Projectors, nh.Statuses)
 	appcontent.RegisterInteractionProjectors(captured.Projectors, nh.Interactions)
 	deps := appnotification.ProjectorDeps{
-		Repository: nh.Notifications, Accounts: ae.accounts, Relationships: e.graph, IDs: ae.ids,
+		Repository: nh.Notifications, Accounts: ae.accounts, Relationships: e.graph, Reach: e.reach, IDs: ae.ids,
 	}
 	appnotification.RegisterProjectors(captured.Projectors, deps)
 	appnotification.RegisterProjectors(e.only, deps)
@@ -654,4 +659,64 @@ func notificationDeletedStatuses(t *testing.T, e *notificationEnv) {
 		summary{Type: notification.TypeFollow, Source: carol},
 	)
 	e.checkUnread(t, alice, 3)
+}
+
+// contractReach is an appnotification.ReachPolicy that restricts the accounts it is told to.
+type contractReach struct {
+	mu         sync.Mutex
+	restricted map[string]bool
+}
+
+func (r *contractReach) set(accountID string, restricted bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.restricted == nil {
+		r.restricted = map[string]bool{}
+	}
+	r.restricted[accountID] = restricted
+}
+
+// UnsolicitedReachRestricted implements appnotification.ReachPolicy.
+func (r *contractReach) UnsolicitedReachRestricted(_ context.Context, accountID string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.restricted[accountID], nil
+}
+
+// notificationUnsolicitedReach checks that a source with unsolicited_reach notifies only the
+// accounts that follow it with an accepted follow, of every type, and everyone again once the
+// restriction ends.
+func notificationUnsolicitedReach(t *testing.T, e *notificationEnv) {
+	ctx := t.Context()
+	alice, bob, carol, dave := e.user(t, "alice"), e.user(t, "bob"), e.user(t, "carol"), e.user(t, "dave")
+	e.lock(t, alice)
+	e.lock(t, dave)
+	e.follow(t, bob, alice)
+	if _, err := e.graph.AcceptFollowRequest(ctx, alice, bob); err != nil {
+		t.Fatalf("AcceptFollowRequest = %v", err)
+	}
+	e.follow(t, carol, alice) // pending: carol does not follow alice yet
+	bobPost, carolPost := e.post(t, bob, "from bob"), e.post(t, carol, "from carol")
+	e.reach.set(alice, true)
+
+	p := e.post(t, alice, "hi @bob @carol")
+	e.favourite(t, alice, bobPost.Status.ID)
+	e.favourite(t, alice, carolPost.Status.ID)
+	e.follow(t, alice, carol)
+	e.follow(t, alice, dave)
+	checkSummaries(t, e, bob,
+		summary{Type: notification.TypeFavourite, Source: alice, StatusID: bobPost.Status.ID},
+		summary{Type: notification.TypeMention, Source: alice, StatusID: p.Status.ID},
+		summary{Type: notification.TypeFollowAccepted, Source: alice},
+	)
+	checkSummaries(t, e, carol)
+	checkSummaries(t, e, dave)
+	// The restriction is of the source: alice is still notified of the others.
+	if got := e.list(t, alice, notification.TypeFollowRequest); len(got) != 2 {
+		t.Errorf("follow requests of alice = %+v, want bob's and carol's", got)
+	}
+
+	e.reach.set(alice, false)
+	q := e.post(t, alice, "again @carol")
+	checkSummaries(t, e, carol, summary{Type: notification.TypeMention, Source: alice, StatusID: q.Status.ID})
 }

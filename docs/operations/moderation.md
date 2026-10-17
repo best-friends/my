@@ -20,23 +20,31 @@ CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直�
 | `restrict_interaction` | フォロー・お気に入り・ブースト・返信を禁止する |
 | `disable_login` | ログインと API の利用を禁止し、有効なセッションとトークンを失効させる |
 | `suspend` | 上の制限をすべて課し、プロフィールと投稿を本人以外に見せない |
+| `ban` | `suspend` と同じ制限を課し、30 日後にアカウントを削除する。解除できない |
+| `delete_statuses` | 指定した投稿を削除する。本人にも見えなくなり、連合先には本人の削除と同じ `Delete` を送る |
+| `mark_statuses_sensitive` | 指定した投稿の添付をセンシティブとして表示する |
 
 リモートのアカウントには `limit`・`suspend`・`force_sensitive` だけを出せます。`suspend` はそのアカウントからの受信を捨てます。
-`ban`・`delete_statuses`・`mark_statuses_sensitive` はまだ出せません。
 
 ```sh
 my admin account action issue -kind suspend -category spam -public-reason "spam" -duration 720h @alice
 my admin account action issue -kind limit -report <report id> @bob@remote.example
+my admin account action issue -kind delete_statuses -status <status id> -status <status id> @alice
+my admin account action issue -kind ban -category legal -public-reason "illegal content" @alice
 my admin account action list -active @alice
 my admin account action lift -reason "appealed" <action id>
 ```
 
-管理 API では `POST /api/v1/admin/accounts/{id}/actions`（本文は `kind`・`reason_category`・`public_reason`・`private_note`・`report_id`・`notify_target`・`expires_in` 秒）、
+管理 API では `POST /api/v1/admin/accounts/{id}/actions`（本文は `kind`・`reason_category`・`public_reason`・`private_note`・`report_id`・`notify_target`・`expires_in` 秒・`status_ids`）、
 `GET /api/v1/admin/accounts/{id}/actions`（`active` で絞り込み）、`GET /api/v1/admin/account_actions/{id}`、`POST .../{id}/lift`（本文 `{"reason": "..."}` は省略可）です。
 
 - アカウントは CLI では `@username`（ローカル）、`@username@domain`（リモート）かアカウント ID で、管理 API ではアカウント ID で指定します。
 - 複数の処分は重なります（制限の和集合）。解除はその処分の制限だけを消し、期限付きの処分は期限で自然に終わります（一覧では `expired`）。
-- `disable_login` と `suspend` が失効させたセッションとトークンは、解除しても戻りません。本人はもう一度ログインします。
+- `disable_login`・`suspend`・`ban` が失効させたセッションとトークンは、解除しても戻りません。本人はもう一度ログインします。
+- `delete_statuses` と `mark_statuses_sensitive` は、対象のアカウントの削除されていない投稿を 1〜100 件、`-status`（`status_ids`）で指定します。期限は付けられません。
+  `delete_statuses` を解除しても消した投稿は戻りません。`mark_statuses_sensitive` を解除すると元の表示に戻ります。
+- `ban` は期限を付けられず、解除もできません。迷うときは期限付きの `suspend` を使います。
+  処分から 30 日後に、1 時間ごとのジョブがアカウントを削除します（アカウントと投稿が表示から消え、連合先に `Delete` を送ります）。
 - `report_id`（`-report`）は、対象のアカウントの通報だけを指定できます。
 - `public_reason` は本人に見せる理由、`private_note` はモデレーターだけのメモです。`notify_target`（既定は真、CLI では `-no-notify` で偽）は本人に知らせるかどうかです。
 
