@@ -25,6 +25,11 @@ SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_m
   blurhash, focus_x, focus_y, description
 FROM remote_media WHERE owner_account_id = @owner_account_id AND remote_url = @remote_url;
 
+-- name: GetRemoteMedia :one
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+  blurhash, focus_x, focus_y, description
+FROM remote_media WHERE media_id = @media_id;
+
 -- name: UpsertRemoteMediaCache :exec
 INSERT INTO remote_media_cache (url, blob_key, content_type, file_size, fetched_at, expires_at, last_accessed_at)
 VALUES (@url, @blob_key, @content_type, @file_size, @fetched_at, @expires_at, @last_accessed_at)

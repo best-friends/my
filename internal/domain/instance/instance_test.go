@@ -5,6 +5,7 @@ package instance_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/best-friends/my/internal/domain/instance"
 )
@@ -86,6 +87,36 @@ func TestSettingsFallBackToDefaults(t *testing.T) {
 	}
 	if v, stored := s.Value("retired_key"); v != "" || stored {
 		t.Errorf("unknown key = %q, %v; want ignored", v, stored)
+	}
+}
+
+func TestRemoteMediaSettings(t *testing.T) {
+	var zero instance.Settings
+	if zero.RemoteMediaPolicy() != instance.RemoteMediaNone || zero.RemoteMediaCacheTTL() != 24*time.Hour {
+		t.Errorf("zero Settings = %s, %v; want none and a day", zero.RemoteMediaPolicy(), zero.RemoteMediaCacheTTL())
+	}
+	s := instance.NewSettings([]instance.CurrentSetting{
+		{Key: instance.SettingRemoteMediaPolicy, RevisionID: "r1", Value: "all"},
+		{Key: instance.SettingRemoteMediaCacheTTL, RevisionID: "r2", Value: "3600"},
+	})
+	if s.RemoteMediaPolicy() != instance.RemoteMediaAll || s.RemoteMediaCacheTTL() != time.Hour {
+		t.Errorf("Settings = %s, %v; want all and an hour", s.RemoteMediaPolicy(), s.RemoteMediaCacheTTL())
+	}
+	d, err := instance.Lookup(instance.SettingRemoteMediaCacheTTL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, raw := range []string{"59", "31536001", "1h"} {
+		if _, err := d.Parse(raw); !errors.Is(err, instance.ErrInvalidValue) {
+			t.Errorf("Parse(%q) = %v, want ErrInvalidValue", raw, err)
+		}
+	}
+	p, err := instance.Lookup(instance.SettingRemoteMediaPolicy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Parse("some"); !errors.Is(err, instance.ErrInvalidValue) {
+		t.Errorf("Parse(some) = %v, want ErrInvalidValue", err)
 	}
 }
 
