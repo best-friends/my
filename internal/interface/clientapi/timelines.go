@@ -202,8 +202,14 @@ func (s *Server) GetHomeTimeline(ctx context.Context, req GetHomeTimelineRequest
 }
 
 // GetLocalTimeline serves GET /api/v1/timelines/local. Visitors who are not logged in see only
-// public posts; local posts need a logged-in viewer (ADR-0017).
+// public posts; local posts need a logged-in viewer (ADR-0017). It is a 404 while the instance
+// setting local_timeline_enabled is off (FR-202).
 func (s *Server) GetLocalTimeline(ctx context.Context, req GetLocalTimelineRequestObject) (GetLocalTimelineResponseObject, error) {
+	if on, err := s.timelineEnabled(ctx, instance.Settings.LocalTimelineEnabled); err != nil {
+		return nil, err
+	} else if !on {
+		return GetLocalTimelinedefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
 	cv, v := timelineViewer(ctx)
 	if _, ok := pageLimit(req.Params.Limit); !ok {
 		return GetLocalTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil

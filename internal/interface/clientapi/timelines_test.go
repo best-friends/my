@@ -343,6 +343,23 @@ func TestPublicTimelineCanBeDisabled(t *testing.T) {
 	decodePage(t, te.get(t, "/timelines/local", nil))
 }
 
+func TestLocalTimelineCanBeDisabled(t *testing.T) {
+	te := &timelineEnv{timelines: &fakeTimelines{}, views: &fakeViews{}}
+	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
+		o.Timelines, o.TimelineReader = te.timelines, te.views
+		o.Instance = &fakeInstance{settings: []instance.CurrentSetting{
+			{Key: instance.SettingLocalTimelineEnabled, RevisionID: "r1", Value: "false"},
+		}}
+	})
+	if res := te.get(t, "/timelines/local", nil); res.StatusCode != http.StatusNotFound {
+		t.Errorf("disabled local timeline = %d, want 404", res.StatusCode)
+	}
+	if len(te.timelines.calls) != 0 {
+		t.Errorf("calls = %+v, want none", te.timelines.calls)
+	}
+	decodePage(t, te.get(t, "/timelines/public", nil))
+}
+
 func TestHashtagTimeline(t *testing.T) {
 	e := newTimelineEnv(t)
 	page := decodePage(t, e.get(t, "/timelines/tag/nobody-uses-this", nil))

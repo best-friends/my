@@ -886,7 +886,8 @@ export interface paths {
         /**
          * Get the local timeline
          * @description The public posts of the instance's accounts, newest first, and their local posts for a
-         *     logged-in viewer, in the viewer's timeline languages.
+         *     logged-in viewer, in the viewer's timeline languages. The instance setting
+         *     `local_timeline_enabled` turns it off; it is then a 404.
          */
         get: operations["getLocalTimeline"];
         put?: never;
