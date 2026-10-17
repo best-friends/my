@@ -256,9 +256,13 @@ SELECT emoji_id FROM status_revision_emojis WHERE revision_id = ? ORDER BY emoji
 SELECT status_id, uri, author_account_id, origin, moderation_action_id, deleted_at FROM status_deletions
 WHERE status_id = ?;
 
+-- GetStatusDeletionByURI returns the deletion that keeps a URI from coming back, or else the
+-- latest deletion by retention (a URI may have several, ADR-0034).
 -- name: GetStatusDeletionByURI :one
 SELECT status_id, uri, author_account_id, origin, moderation_action_id, deleted_at FROM status_deletions
-WHERE uri = ?;
+WHERE uri = ?
+ORDER BY CASE WHEN origin = 'retention' THEN 1 ELSE 0 END, deleted_at DESC, status_id DESC
+LIMIT 1;
 
 -- name: GetStatusCounters :one
 SELECT status_id, replies_count, boosts_count, favourites_count FROM status_counters WHERE status_id = ?;

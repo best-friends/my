@@ -65,6 +65,10 @@ type Config struct {
 	Profile string
 	// HTTPAllowPrivateNetworks lets the HTTPClient reach non-public destinations (development only).
 	HTTPAllowPrivateNetworks bool
+	// RemoteStatusRetention is how long an unreferenced remote post is kept after its publication;
+	// RemoteStatusMaxRetention bounds how long any remote post is kept, zero for no bound (ADR-0034).
+	RemoteStatusRetention    time.Duration
+	RemoteStatusMaxRetention time.Duration
 }
 
 // LogValue logs the configuration with its secrets redacted (ADR-0019 §6).
@@ -104,6 +108,8 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("smtp_password", redact(c.SMTPPassword != "")),
 		slog.String("profile", c.Profile),
 		slog.Bool("http_allow_private_networks", c.HTTPAllowPrivateNetworks),
+		slog.Duration("remote_status_retention", c.RemoteStatusRetention),
+		slog.Duration("remote_status_max_retention", c.RemoteStatusMaxRetention),
 	)
 }
 

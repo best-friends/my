@@ -315,6 +315,19 @@ var schema = []field{
 		},
 		set: func(c *Config, v string) { c.HTTPAllowPrivateNetworks = v == "true" },
 	},
+	{
+		key:   "remote_status_retention",
+		doc:   "How long a remote post is kept after its publication when nothing on this instance refers to it (a local reply, boost, favourite, bookmark, notification, or a thread with a local post); the hourly purge then deletes it (ADR-0034, FR-803). A Go duration such as `2160h` (90 days).",
+		def:   "2160h",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.RemoteStatusRetention, _ = time.ParseDuration(v) },
+	},
+	{
+		key:   "remote_status_max_retention",
+		doc:   "The longest a remote post is kept after its publication, even when this instance refers to it; the hourly purge then deletes it, while local accounts' replies, boosts, favourites, and bookmarks stay and show it as deleted (ADR-0034). A Go duration such as `8760h` (365 days); empty keeps referred posts without limit.",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.RemoteStatusMaxRetention, _ = time.ParseDuration(v) },
+	},
 }
 
 // crossChecks rejects missing conditional settings and contradictory combinations.

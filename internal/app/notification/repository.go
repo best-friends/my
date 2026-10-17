@@ -59,4 +59,6 @@ type Repository interface {
 	CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, now time.Time) (int64, error)
 	// FindReadMarker returns an account's read marker; ErrNotFound means it has read nothing.
 	FindReadMarker(ctx context.Context, accountID string) (notification.ReadMarker, error)
+	// StatusHasNotifications reports whether a notification, dismissed or not, is about the status.
+	StatusHasNotifications(ctx context.Context, tx uow.Tx, statusID string) (bool, error)
 }

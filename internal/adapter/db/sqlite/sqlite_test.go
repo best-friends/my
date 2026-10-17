@@ -201,6 +201,28 @@ func TestRemoteStatusContract(t *testing.T) {
 	})
 }
 
+func TestRetentionContract(t *testing.T) {
+	testkit.RetentionContract(t, func(t *testing.T, opts uow.Options) testkit.RetentionHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.RetentionHarness{
+			RemoteStatusHarness: testkit.RemoteStatusHarness{
+				AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+				Graph:          db.GraphRepository(),
+				Statuses:       db.StatusRepository(),
+				Media:          db.MediaRepository(),
+				Timeline:       db.TimelineRepository(),
+				Notifications:  db.NotificationRepository(),
+				Inbox:          db.FederationRepository(),
+			},
+			Interactions: db.InteractionRepository(),
+			Federation:   db.FederationRepository(),
+			Retention:    db.StatusRepository(),
+			Purges:       db.FederationRepository(),
+			Profiles:     db.AccountRepository(),
+		}
+	})
+}
+
 func TestRemoteFollowContract(t *testing.T) {
 	testkit.RemoteFollowContract(t, func(t *testing.T, opts uow.Options) testkit.RemoteFollowHarness {
 		db, _ := newTestDB(t, "", opts)

@@ -314,8 +314,12 @@ func (q *Queries) GetStatusDeletion(ctx context.Context, statusID string) (Statu
 const getStatusDeletionByURI = `-- name: GetStatusDeletionByURI :one
 SELECT status_id, uri, author_account_id, origin, moderation_action_id, deleted_at FROM status_deletions
 WHERE uri = ?
+ORDER BY CASE WHEN origin = 'retention' THEN 1 ELSE 0 END, deleted_at DESC, status_id DESC
+LIMIT 1
 `
 
+// GetStatusDeletionByURI returns the deletion that keeps a URI from coming back, or else the
+// latest deletion by retention (a URI may have several, ADR-0034).
 func (q *Queries) GetStatusDeletionByURI(ctx context.Context, uri string) (StatusDeletion, error) {
 	row := q.db.QueryRowContext(ctx, getStatusDeletionByURI, uri)
 	var i StatusDeletion
