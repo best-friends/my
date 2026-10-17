@@ -303,6 +303,26 @@
     "defaultMessage": "{email} に送ったリンクを開いて、メールアドレスを確認してください。",
     "description": "Asks the user to open the confirmation link. {email} is their email address."
   },
+  "auth.status.action_ends_in": {
+    "defaultMessage": "{days, plural, other {あと # 日で終わります}}",
+    "description": "When a moderation action on the user's account ends, on the page of a signed-in user whose account is restricted. {days} is the time left, rounded up to whole days."
+  },
+  "auth.status.action_reason": {
+    "defaultMessage": "理由: {category}",
+    "description": "The reason category of a moderation action, on the page of a signed-in user whose account is restricted. {category} is the category's label (for example, Spam)."
+  },
+  "auth.status.action_until_lifted": {
+    "defaultMessage": "モデレーターが解除するまで続きます",
+    "description": "Says that a moderation action on the user's account has no end date, on the page of a signed-in user whose account is restricted."
+  },
+  "auth.status.restricted": {
+    "defaultMessage": "モデレーターがアカウントに処分をしたため、アプリを使えません。効いている処分は次のとおりです。",
+    "description": "Explains to a signed-in user that moderation actions (login disabled, suspension) keep them out of the app; the list of the actions follows."
+  },
+  "auth.status.restricted_title": {
+    "defaultMessage": "アカウントは処分を受けています",
+    "description": "Title and heading of the page a signed-in user sees while a moderation action keeps their account out of the app."
+  },
   "auth.verify_email.done": {
     "defaultMessage": "ありがとうございます。メールアドレスを確認しました。",
     "description": "Body of the page after the email address was confirmed."
@@ -570,6 +590,14 @@
   "mail.verify_email.subject": {
     "defaultMessage": "{host} のメールアドレスの確認",
     "description": "Subject of the email that confirms a new account's email address. {host} is the server's domain name."
+  },
+  "moderation.action.category": {
+    "defaultMessage": "{category, select, spam {スパム} legal {法的な理由} violation {サーバーのルール違反} other {その他}}",
+    "description": "Label of the reason category that a moderator chose for an action on the user's own account. {category} is the category."
+  },
+  "moderation.action.kind": {
+    "defaultMessage": "{kind, select, warn {警告} mark_statuses_sensitive {投稿のセンシティブ化} delete_statuses {投稿の削除} force_sensitive {メディアの強制センシティブ} limit {サイレンス（投稿はフォロワー限定になり、公開タイムラインに出ない）} restrict_posting {投稿の禁止（投稿・返信・ブースト・編集ができない）} restrict_interaction {交流の禁止（フォロー・お気に入り・ブースト・返信ができない）} disable_login {ログインの停止} suspend {凍結（アプリを使えず、プロフィールと投稿が隠れる）} ban {BAN（アカウントは削除される）} other {モデレーションの処分}}",
+    "description": "Label of the kind of a moderation action on the user's own account, in the notice of the action and the list of the user's actions. {kind} is the kind; the label must make sense whether or not the action is still in effect."
   },
   "preview.avatar_alt": {
     "defaultMessage": "{name} のアバター",

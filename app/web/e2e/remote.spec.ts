@@ -145,6 +145,11 @@ test.describe("a profile of another server", () => {
     await expectNoHorizontalScroll(page);
   });
 
+  test("names the author's link by the full handle, which is cut on the domain's side when it does not fit", async ({ page }) => {
+    const article = page.getByRole("feed").getByRole("article");
+    await expect(article.getByRole("link", { name: `Carol @${carol.acct}` })).toBeVisible();
+  });
+
   test("shows the post's pictures behind its content warning, marking the one without a description", async ({ page, makeAxeBuilder }) => {
     const article = page.getByRole("feed").getByRole("article");
     // The first collapsed button is the content warning's; the menu button of the actions is collapsed too.

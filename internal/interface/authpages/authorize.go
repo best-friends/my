@@ -121,7 +121,7 @@ func (h *Handler) handleAuthorization(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 	if !access.Allowed() { // no tokens for an account that cannot be used yet
-		h.renderStatus(w, r, http.StatusForbidden, access, "", "")
+		h.renderStatus(w, r, http.StatusForbidden, session.UserID, access, nil, nil)
 		return
 	}
 	switch {

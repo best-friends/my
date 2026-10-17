@@ -4,6 +4,7 @@
 import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
 import { remoteStatusFixture, statusFixture, statusPage, timelineStatusFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
@@ -19,6 +20,13 @@ const reply: Status = {
 };
 
 /** Resumes a session with the token the default handlers accept. */
+/** The announcer's polite live region; the app's offline bar is another status region, empty while online. */
+function politeAnnouncements(): HTMLElement {
+  const region = screen.getAllByRole("status").find((element) => element.hasAttribute("data-live-announcer"));
+  if (region === undefined) throw new Error("the announcer is not rendered");
+  return region;
+}
+
 function signedIn() {
   server.use(http.post(oauthPaths.refresh, () => tokenResponse("test-access-token")));
 }
@@ -127,6 +135,23 @@ describe("a post's page", () => {
     expect(await screen.findByRole("article", { description: "The answer" })).toBeInTheDocument();
   });
 
+  test("shows the post at once and a skeleton in the busy replies section while the thread loads", async () => {
+    const context = deferred();
+    serveThread();
+    server.use(http.get(`${apiBase}/statuses/:id/context`, () => context.response));
+    await renderApp({ path: `/@bob/${postId}` });
+
+    expect(await findFocusedPost()).toBeInTheDocument();
+    const replies = screen.getByRole("region", { name: "Replies" });
+    expect(await findLoadingRegion("Loading the replies")).toBe(replies);
+    expect(replies).toHaveAttribute("aria-busy", "true");
+
+    context.release(HttpResponse.json({ ancestors: [], descendants: [reply] }));
+    expect(await within(replies).findByRole("article", { description: "The answer" })).toBeInTheDocument();
+    expect(replies).toHaveAttribute("aria-busy", "false");
+    expect(screen.queryByText("Loading the replies")).not.toBeInTheDocument();
+  });
+
   test("says so when there are no replies", async () => {
     await renderApp({ path: `/@bob/${postId}` });
 
@@ -179,14 +204,14 @@ describe("the actions on a post", () => {
     expect(favourite).toHaveAttribute("aria-pressed", "true");
     expect(favourite).toHaveAccessibleDescription("3");
     pending.release(HttpResponse.json({ ...post, favourited: true, favourites_count: 5 }));
-    expect(await within(screen.getByRole("status")).findByText("Added to favourites")).toBeInTheDocument();
+    expect(await within(politeAnnouncements()).findByText("Added to favourites")).toBeInTheDocument();
     // The server's count, which includes the others' favourites.
     expect(favourite).toHaveAccessibleDescription("5");
 
     await user.click(favourite);
 
     expect(favourite).toHaveAttribute("aria-pressed", "false");
-    expect(await within(screen.getByRole("status")).findByText("Removed from favourites")).toBeInTheDocument();
+    expect(await within(politeAnnouncements()).findByText("Removed from favourites")).toBeInTheDocument();
     expect(requests).toEqual([`POST ${apiBase}/statuses/${postId}/favourite`, `DELETE ${apiBase}/statuses/${postId}/favourite`]);
   });
 
@@ -251,7 +276,7 @@ describe("the actions on a post", () => {
     await user.click(await within(original).findByRole("button", { name: "Favourite", pressed: false }));
 
     expect(within(boosted).getByRole("button", { name: "Favourite" })).toHaveAttribute("aria-pressed", "true");
-    expect(await within(screen.getByRole("status")).findByText("Added to favourites")).toBeInTheDocument();
+    expect(await within(politeAnnouncements()).findByText("Added to favourites")).toBeInTheDocument();
 
     // The page's own answer comes from the server, which now knows the favourite.
     server.use(http.get(`${apiBase}/statuses/:id`, () => HttpResponse.json({ ...post, favourited: true, favourites_count: 3 })));
@@ -372,6 +397,8 @@ describe("a post of another server", () => {
     const { user } = await renderApp({ path: `/@${remote.account.acct}/${remote.id}` });
 
     const article = await screen.findByRole("article", { name: /^Carol @carol@remote\.example / });
+    // The handle is cut on the domain's side when it does not fit; the link is named by all of it.
+    expect(within(article).getByRole("link", { name: "Carol @carol@remote.example" })).toBeInTheDocument();
     expect(within(article).getByText("@carol@remote.example")).toHaveAttribute("dir", "ltr");
     // The link shows the host and is named by where it leads; the actions stay next to it.
     const original = within(article).getByRole("link", { name: "Open the original post on remote.example" });

@@ -32,6 +32,7 @@ This server, Mastodon, GoToSocial, and Misskey federating with each other over H
   | `bob@mastodon.test`, `carol@gts.test`, `grace@misskey.test` | The peer users that alice follows and that follow her |
   | `dave@mastodon.test`, `erin@gts.test`, `heidi@misskey.test` | Never follow alice: the mentioned non-followers of `TestVisibilityAudiences` |
   | `eve@mastodon.test` | `TestSignatureProfile`: the proxy refuses her draft-cavage POSTs in both directions |
+  | `mod@mastodon.test`, `mkadmin@misskey.test` | The administrators whose tokens read the moderators' reports in `TestReportForwarding` |
 
 - **Signatures**: to exercise RFC 9421, which Mastodon and this server only use after a 401, the proxy answers 401
   to a draft-cavage POST signed by eve (to this server) or addressed to eve's inbox (to Mastodon). The script
@@ -95,6 +96,7 @@ leave (a scenario that runs alone makes the follows it needs).
 | `TestBoost` / `TestFavourite` | A boost / favourite in either direction and its undo change the count on the author's side |
 | `TestEdit` / `TestDelete` | An edited post shows the new text / a deleted post is gone on the other side. Misskey, which does not edit, gets the `Update` of alice's edit with a 2xx and keeps the text before it |
 | `TestVisibilityAudiences` | Each visibility reaches exactly its audience in both directions; a `local` post that mentions a non-follower reaches the follower but the mentioned user can neither see it nor is notified ([ADR-0017](../../../docs/adr/0017-visibility-local.md), [ADR-0035](../../../docs/adr/0035-local-visibility-mention-tags.md)) |
+| `TestReportForwarding` | A report of the peer user that alice forwards reaches the moderators' reports of Mastodon and Misskey (a `Flag` of this server's instance actor with the comment); one that she does not forward does not. GoToSocial is skipped: the scenarios have no administrator of it |
 | `TestSignatureProfile` | The rows of [ADR-0032](../../../docs/adr/0032-http-signature-profile.md) that need a real server: draft-cavage from every peer, RFC 9421 from Mastodon after a 401, this server's RFC 9421 resend after a 401 (double-knocking), and `Accept-Signature` on an unsigned POST. It runs last: afterwards this server signs for `mastodon.test` with RFC 9421 first |
 
 ## Compatibility notes

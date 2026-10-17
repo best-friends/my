@@ -91,7 +91,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | D4 | タップ領域は 24 × 24 px 以上、主要な操作は `pointer-coarse:` で 44 px 以上にする | axe `target-size`、レビュー |
 | D5 | `100vh` を使わない（`svh` / `dvh`）。端に固定する要素には `env(safe-area-inset-*)` を足す | `no-restricted-syntax`（文字列）、`better-tailwindcss/no-restricted-classes`（`h-screen` など）、`make web-lint` の grep（CSS） |
 | D6 | アニメーションは `motion-safe:` の下に置く | `make web-tokens`、`better-tailwindcss/no-restricted-classes`（`animate-*`）、レビュー |
-| D7 | 方向は論理プロパティのユーティリティで書く。`ml-` / `mr-` / `pl-` / `pr-` / `left-` / `right-` / `text-left` / `text-right` / `rounded-l` / `rounded-r` / `border-l` / `border-r` を使わない（方向のあるアイコンの反転だけ `rtl:` / `ltr:` で許可） | `better-tailwindcss/no-restricted-classes` |
+| D7 | 方向は論理プロパティのユーティリティで書く。`ml-` / `mr-` / `pl-` / `pr-` / `left-` / `right-` / `text-left` / `text-right` / `rounded-l` / `rounded-r` / `border-l` / `border-r` / `mask-l-` / `mask-r-` を使わない（方向のあるアイコンの反転と、論理方向の版がない `mask-l-` / `mask-r-`（端のフェード）だけ、`rtl:` / `ltr:` の下で許可） | `better-tailwindcss/no-restricted-classes` |
 | D8 | 色は `@my/ui/theme.css` の意味のトークン（`--color-surface`、`--color-fg-muted` など）だけを使う。生のパレット（`--palette-*`）や任意の色を部品に書かない（`--color-*: initial` で Tailwind の既定の色を消す）。トークンの一覧・コントラストの組・ライト / ダークの切り替えは [app/ui/README.md](../../app/ui/README.md) にある | Tailwind の設定、`make web-tokens`、`better-tailwindcss/no-unknown-classes` |
 | D9 | 部品の見た目の違いは `tailwind-variants` の 1 部品 1 レシピで定義する。クラス名を動的に組み立てない。`className` は `tailwind-merge` で root / スロットにだけ合成する | `better-tailwindcss/no-concatenated-classes`、`better-tailwindcss/no-conflicting-classes`、レビュー |
 | D10 | CSP を壊さない。`setAttribute('style')` や `cssText` を使わない（React の `style={}` は可） | `no-restricted-syntax` |
@@ -239,12 +239,23 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   ナビゲーションは 1 つの `nav` で、今いる区画のリンクに `aria-current="page"` を付ける。画面の端に接する要素は `env(safe-area-inset-*)` を足し、高さは `svh` で指定する。
   ローカル（`/local`）と連合（`/public`）のタイムラインは、インスタンスの設定で無効にでき、そのときは API が 404 を返す（FR-202）。ナビゲーションは `GET /instance` の `timelines` で、
   サーバーが提供するものだけを出す（`features/timeline` の `useTimelineAvailability`）。ローカルはサーバーが無効と答えるまで出し、連合はサーバーが有効と答えてから出すので、無効にしたサーバーでは読み込み中も失敗したときも出ない。
+  最後に受け取った `timelines` は localStorage の `my:instance:timelines` に残し（インスタンスの設定で、利用者のデータではない）、ナビゲーションを置いたときに 1 回だけ読む。
+  オフラインで開いたりリロードしたりして `GET /instance` が届かないときも、前と同じ項目を出す。サーバーの答えが届けばそちらを使う。
   タブバーは項目の数で列を等分する。無効にした連合タイムラインのアドレスを直接開いたときは、「もう一度試す」ではなく無効であることを出す（`routes/public.tsx`）。
   先頭に、フォーカスしたときだけ見える「本文へ移動」のリンクを置く。
 - **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
 - **エラー**（E1）: 画面の失敗はルーターの `defaultErrorComponent`（`RouteError`）がレイアウトの中に出し、「もう一度試す」で Query のエラー境界を戻してから loader を再実行する。
   レイアウト自体の失敗はルートの `errorComponent`（`RootError`）が画面全体に出す。合うルートのないアドレスは `NotFound` を出す。独立した区画（3 列目など）は `react-error-boundary` で囲む。
+- **オフライン**（`lib/network.ts`、G17）: オンラインかどうかは TanStack Query の `onlineManager` 1 つに置き、Query のキャッシュとオフラインの帯が同じ状態を読む。
+  ブラウザが `navigator.onLine` と `offline` / `online` のイベントでネットワークがないと言うとき（起動時も `navigator.onLine` から始める）と、
+  API クライアントの要求が応答を受け取れなかったとき（`NetworkError`。次に応答が届くまで）にオフラインとする。
+  - レイアウトが画面の上端に `OfflineBanner`（`role="status"`）を 1 つ置き、最初から空のまま置いておくので、オフラインになると読み上げられる。安全領域の上の余白は帯が自分で取るので、その余白を取る要素より前に置く。
+  - query と mutation は `networkMode: "always"` にする。オフラインでも止めて待たずにすぐ `NetworkError` で失敗するので、区画は終わらないスピナーではなく読み込めない理由を出し、loader も待ち続けない。
+    ブラウザがオフラインのときの `NetworkError` の文言は「オフラインのため、サーバーに接続できません」（`client:api.error.offline`）になる。`NetworkError` の再試行は待たずにすぐ行い、知らせを遅らせない（`retry` は既定のままにし、loader の `queryClient.query` は再試行しない）。
+  - オンラインに戻ると、失敗していた query（表示中のもの）だけを取り直す（既定の `refetchOnReconnect` が失敗した query にだけ `"always"` を返す）。タイムラインは自分で `refetchOnReconnect: false` にしているので取り直さない（§10）。
+    `NetworkError` で失敗した画面は、`RouteError` がオンラインに戻ったときに「もう一度試す」と同じことをして読み込み直す。
+  - 通知の画面の loader は失敗しても画面を開き、一覧が見出しの下に自分の失敗を出す（`useNotifications`。読み込みの失敗はマウントで再試行しない）。
 
 ## 10. API クライアントと認証
 
@@ -262,7 +273,7 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   - ミドルウェアが、セッションのアクセストークンを `Authorization: Bearer` で付ける。最初の要求は、起動時のセッションの再開（`session.restore()`）を待ってから送る。
   - トークンを付けた要求が 401 になったら、トークンを 1 度だけ更新し、要求の写しを新しいトークンで送り直す。2 度目の 401 はそのまま失敗にする。
   - 失敗した応答は `lib/errors.ts` の `ApiError`（RFC 9457 の problem そのものに `message` を足したもの）に、通信の失敗は `NetworkError` にして投げる。
-    どちらも `message` がローカライズ済みで、そのまま表示できる。problem でない本文（プロキシの HTML など）は、クライアントのカタログの文言（`client:api.error.status`）にする。
+    どちらも `message` がローカライズ済みで、そのまま表示できる（`NetworkError` は、ブラウザがオフラインならそう言う文言になる。§9 のオフライン）。応答が届いたか届かなかったかは `lib/network.ts` に伝える。problem でない本文（プロキシの HTML など）は、クライアントのカタログの文言（`client:api.error.status`）にする。
     生成された型は失敗をすべて problem と呼ぶので、表示する文言は `errorMessage(error)` で取る。
 - **セッション**（`lib/auth/session.ts`）: アクセストークンはこのオブジェクトのメモリにだけ置き、localStorage・sessionStorage・IndexedDB・読める Cookie には書かない。
   リフレッシュトークンは HttpOnly の `__Host-my_rt` Cookie にあり、`POST /oauth/token/refresh`（`X-My-Token-Refresh: 1`、`credentials: "include"`）だけがそれを読む。
@@ -470,7 +481,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 | G14 | **空**は `EmptyState` にする。見出しは事実を短く（「まだ投稿はありません」）、説明はここに何が出るか、操作は次にできること（「ローカルのタイムラインを見る」）にする。絞り込みで空になったときは、絞り込みを外す操作を出す | レビュー |
 | G15 | **読み込み中**は、最初の 1 ページを待つ一覧ではスケルトン（`Skeleton`、見せる項目の形に合わせる）、ボタンや小さな区画ではその場の `Spinner` にし、同じ区画に両方を出さない。読み込みの名前は `aria-busy` と区画のラベル（`role="status"` の `Spinner` か視覚的に隠した文）で 1 回だけ伝える。`defaultPendingMs` より早く終わる読み込みには何も出さない | レビュー、ARIA スナップショット |
 | G16 | **エラー**は、何が起きたか・理由（`errorMessage(error)`）・次にできること（「もう一度試す」）の 3 つを出す。画面の読み込みの失敗は、その画面の `h1` を残したまま本文の位置に出し、`document.title` も画面の名前のままにする。一覧の続きや区画の失敗は、その区画の中に出して、読み込み済みの内容を消さない。利用者の操作の失敗はトースト（E2）、入力の誤りはその入力欄のエラー（`aria-invalid`・`aria-describedby`）にする。`role="alert"` は利用者の操作の結果にだけ使い、画面を開いただけの失敗には使わない | レビュー |
-| G17 | **オフライン**は外枠が 1 か所で扱う。`navigator.onLine` と通信の失敗（`NetworkError`）からオフラインと判断し、画面の上端に「オフライン」の帯（`role="status"`）を出す。オフラインの間は送信する操作を無効にせず、失敗したら下書きと outbox（§12）に残す。オンラインに戻ったら帯を消し、失敗していた区画だけを取り直す（タイムラインは取り直さない。§10） | E2E（`context.setOffline`）、レビュー |
+| G17 | **オフライン**は外枠が 1 か所で扱う。`navigator.onLine` と通信の失敗（`NetworkError`）からオフラインと判断し、画面の上端に「オフライン」の帯（`role="status"`）を出す。オフラインの間は送信する操作を無効にせず、失敗したら下書きと outbox（§12）に残す。オンラインに戻ったら帯を消し、失敗していた区画だけを取り直す（タイムラインは取り直さない。§10）。仕組みは §9 の「オフライン」 | E2E（`context.setOffline`。`e2e/offline.spec.ts`・`e2e/pwa.spec.ts`）、統合テスト（`src/offline.test.tsx`）、レビュー |
 | G18 | 4 つの状態の文言は、同じ種類のものを同じ型にする（「<対象>を読み込めませんでした：{reason}」「もう一度試す」）。新しい区画を作るときは、既存のメッセージ ID の型（`<feature>.empty.*`・`<feature>.loading`・`<feature>.failed`・`<feature>.retry`）に合わせる | レビュー |
 
 ### 16.5 文言のトーン

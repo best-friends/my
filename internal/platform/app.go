@@ -450,6 +450,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
+		Moderation: a.Moderation, UserLocales: a.Identity,
 	}).Register(a)
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {
@@ -470,7 +471,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
 		Moderation: a.Moderation, UserAccounts: a.Accounts,
-		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy,
+		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
 		Rules:       a.Instance,
 		Reports:     a.LocalReports,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
@@ -493,6 +494,10 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) qu
 	federation.RegisterBlockProjectors(a.Projectors, federation.RecorderDeps{
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
 	})
+	// Forwarded reports (FR-709) are Flags of the instance actor.
+	federation.RegisterReportProjectors(a.Projectors, federation.RecorderDeps{
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
+	}, a.Accounts)
 	return outbox
 }
 
@@ -504,6 +509,7 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
 		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph,
 		Blocks:  a.Graph,
+		Reports: a.Moderation,
 		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 	})

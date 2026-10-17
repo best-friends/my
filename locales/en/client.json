@@ -467,6 +467,10 @@
     "defaultMessage": "Could not reach the server. Check your connection and try again.",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."
   },
+  "api.error.offline": {
+    "defaultMessage": "You are offline, so the server cannot be reached. Connect to the internet and try again.",
+    "description": "Error message when a request failed because the device has no network connection. Shown as the reason why something could not load or be sent."
+  },
   "api.error.status": {
     "defaultMessage": "The server could not handle the request (error {status}). Try again later.",
     "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
@@ -789,15 +793,15 @@
   },
   "notifications.loading": {
     "defaultMessage": "Loading notifications",
-    "description": "Accessible name of the progress indicator while notifications load."
+    "description": "Visually hidden text that names the busy list of notifications while its first page loads."
+  },
+  "notifications.post.content_warning": {
+    "defaultMessage": "Content warning: {summary}",
+    "description": "A notification's link to the post it is about, when the post is behind its author's content warning: the warning only. {summary} is the warning's text."
   },
   "notifications.post.open": {
     "defaultMessage": "Open post",
-    "description": "Link in a notification that opens the post it is about."
-  },
-  "notifications.post.show": {
-    "defaultMessage": "Show content",
-    "description": "Button that shows a post hidden behind its author's content warning, in a notification."
+    "description": "A notification's link to the post it is about, when the post has no text to quote (pictures only)."
   },
   "notifications.retry": {
     "defaultMessage": "Try again",
@@ -810,10 +814,6 @@
   "notifications.signed_out": {
     "defaultMessage": "Sign in to see your notifications.",
     "description": "Text on the notifications page when nobody is signed in."
-  },
-  "notifications.time": {
-    "defaultMessage": "{time, date, medium} {time, time, short}",
-    "description": "When a notification happened: its date and time, for example 'Oct 16, 2026 9:41 AM'. {time} is that moment."
   },
   "notifications.title": {
     "defaultMessage": "Notifications",
@@ -1018,6 +1018,10 @@
   "profile.list.load_more_failed": {
     "defaultMessage": "Could not load more accounts: {reason}",
     "description": "Shown and announced when the next page of a follow list failed to load. {reason} is the error message."
+  },
+  "profile.list.loading": {
+    "defaultMessage": "Loading accounts",
+    "description": "Visually hidden text that names the busy follow list while its first page loads."
   },
   "profile.list.retry": {
     "defaultMessage": "Try again",
@@ -1575,6 +1579,10 @@
     "defaultMessage": "Page not found",
     "description": "Heading of the page shown for an address that the web client has no page for."
   },
+  "shell.offline": {
+    "defaultMessage": "You are offline. Anything that failed to load loads again when you are back online.",
+    "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
+  },
   "shell.skip_to_main": {
     "defaultMessage": "Skip to main content",
     "description": "Link at the very start of every page, visible when focused, that moves keyboard focus past the navigation."
@@ -1713,7 +1721,7 @@
   },
   "status.thread.loading": {
     "defaultMessage": "Loading the replies",
-    "description": "Accessible name of the progress indicator while the thread around a post loads."
+    "description": "Visually hidden text that names the busy replies section while the thread around a post loads."
   },
   "status.thread.no_replies": {
     "defaultMessage": "No replies yet.",
@@ -1797,7 +1805,7 @@
   },
   "timeline.loading": {
     "defaultMessage": "Loading posts",
-    "description": "Accessible name of the progress indicator while posts of a timeline load."
+    "description": "Visually hidden text that names the busy region while posts load: the first page of a timeline, or a post page."
   },
   "timeline.media.no_description": {
     "defaultMessage": "No description",
