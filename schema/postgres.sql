@@ -1522,6 +1522,8 @@ CREATE TABLE account_restrictions (
   PRIMARY KEY (account_id, restriction, source_action_id)
 );
 CREATE INDEX account_restrictions_source_action_id ON account_restrictions (source_action_id);
+-- The removal of expired rows, which tells the end of expired suspensions (federation.md §11.1).
+CREATE INDEX account_restrictions_effective_until ON account_restrictions (effective_until);
 
 -- Event: a moderation action on a domain and its subdomains. issued_by_user_id is NULL for the
 -- CLI.

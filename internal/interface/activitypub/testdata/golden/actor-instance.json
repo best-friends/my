@@ -23,6 +23,7 @@
       "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
       "schema": "http://schema.org#",
       "sensitive": "as:sensitive",
+      "suspended": "toot:suspended",
       "toot": "http://joinmastodon.org/ns#",
       "value": "schema:value"
     }
