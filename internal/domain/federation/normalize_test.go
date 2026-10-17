@@ -496,3 +496,69 @@ func TestDomainAndParents(t *testing.T) {
 		equal(t, in, federation.DomainAndParents(in), want)
 	}
 }
+
+// A NUL in any string of a document, keys included, is read as U+FFFD (federation.md §4), so
+// that PostgreSQL text can store every value.
+func TestNormalizeReplacesNUL(t *testing.T) {
+	const n = `\u0000`
+	docs := map[string]string{
+		"post": `{` + ctx + `,"type":"Create","id":"https://a.example/a/1` + n + `","actor":"https://a.example/u/alice","content":"x` + n + `",
+			"object":{"type":"Question","id":"https://a.example/n/1` + n + `","attributedTo":"https://a.example/u/alice",
+			"url":"https://a.example/@alice/1` + n + `","content":"<p>a` + n + `b</p>","contentMap":{"en` + n + `":"<p>c` + n + `</p>","ja":"<p>d` + n + `</p>"},
+			"summary":"cw` + n + `","to":["https://www.w3.org/ns/activitystreams#Public` + n + `","https://a.example/u/alice/followers"],
+			"tag":[{"type":"Hashtag","name":"#go` + n + `"},{"type":"Mention","href":"https://a.example/u/bob` + n + `","name":"@bob` + n + `"},
+				{"type":"Emoji","id":"https://a.example/e/1","name":":blob` + n + `:","icon":{"url":"https://a.example/e` + n + `.png"}}],
+			"attachment":[{"type":"Document","url":"https://a.example/f` + n + `.png","mediaType":"image/png` + n + `","name":"alt` + n + `","blurhash":"U` + n + `"}],
+			"oneOf":[{"type":"Note","name":"yes` + n + `"}]}}`,
+		"converted": `{` + ctx + `,"type":"Article","id":"https://a.example/n/2","name":"title` + n + `","summary":"lead` + n + `","content":"<p>x</p>"}`,
+		"actor": `{` + ctx + `,"type":"Person","id":"https://a.example/u/alice","preferredUsername":"ali` + n + `ce","name":"Alice` + n + `",
+			"summary":"<p>bio` + n + `</p>","url":"https://a.example/@alice` + n + `","inbox":"https://a.example/u/alice/inbox",
+			"icon":"https://a.example/a` + n + `.png","publicKey":{"id":"https://a.example/u/alice#key","owner":"https://a.example/u/alice","publicKeyPem":"pem` + n + `"},
+			"attachment":[{"type":"PropertyValue","name":"Site` + n + `","value":"<p>v` + n + `</p>"}]}`,
+	}
+	for name, doc := range docs {
+		if path := nulPath(reflect.ValueOf(normalize(t, doc)), "Document"); path != "" {
+			t.Errorf("%s: %s has a NUL", name, path)
+		}
+	}
+	o := normalize(t, docs["post"]).Activity.Objects[0].Untrusted().Object
+	equal(t, "Bodies", o.Bodies, []federation.Body{{Language: federation.UndeterminedLang, HTML: "<p>c\uFFFD</p>"}, {Language: "ja", HTML: "<p>d\uFFFD</p>"}})
+	equal(t, "SpoilerText", o.SpoilerText, "cw\uFFFD")
+	equal(t, "Hashtags", o.Hashtags, []string{"go\uFFFD"})
+	equal(t, "Attachment name", o.Attachments[0].Name, "alt\uFFFD")
+	equal(t, "Poll option", o.Poll.Options[0].Name, "yes\uFFFD")
+	equal(t, "URL", o.URL, "https://a.example/@alice/1%EF%BF%BD")
+	equal(t, "PreferredUsername", normalize(t, docs["actor"]).Actor.PreferredUsername, "ali\uFFFDce")
+
+	env, err := federation.ReadEnvelope([]byte(`{"id":"https://a.example/a/1`+n+`","type":"Cre`+n+`ate","actor":"https://a.example/u/1"}`), lowerHost)
+	if err != nil || env.Type != "Cre\uFFFDate" || env.ID != "https://a.example/a/1%EF%BF%BD" {
+		t.Errorf("ReadEnvelope = %+v, %v; want the NUL of the type and the id as U+FFFD", env, err)
+	}
+}
+
+// nulPath returns the path of the first string under v that has a NUL, or "".
+func nulPath(v reflect.Value, path string) string {
+	switch v.Kind() {
+	case reflect.String:
+		if strings.Contains(v.String(), "\x00") {
+			return path
+		}
+	case reflect.Pointer, reflect.Interface:
+		if !v.IsNil() {
+			return nulPath(v.Elem(), path)
+		}
+	case reflect.Struct:
+		for i := range v.NumField() {
+			if p := nulPath(v.Field(i), path+"."+v.Type().Field(i).Name); p != "" {
+				return p
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		for i := range v.Len() {
+			if p := nulPath(v.Index(i), fmt.Sprintf("%s[%d]", path, i)); p != "" {
+				return p
+			}
+		}
+	}
+	return ""
+}
