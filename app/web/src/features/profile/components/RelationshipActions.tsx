@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The buttons of a profile that change the viewer's relationship with its account (FR-301 to FR-303):
 // the follow button, whose label is where the follow stands (Follow, Requested, Following, Blocked), and
-// a menu button (WAI-ARIA APG, menu button pattern) with mute and block. Undoing a follow or a request,
-// blocking and unblocking ask first in an alert dialog (WAI-ARIA APG, alert dialog pattern). A follow
-// request to an account of another server says which server it waits for. A list of accounts (the
-// notifications) can show the follow button alone, and leave mute and block to the profile.
+// a menu button (WAI-ARIA APG, menu button pattern) with mute, block and report (features/report). Undoing
+// a follow or a request, blocking and unblocking ask first in an alert dialog (WAI-ARIA APG, alert dialog
+// pattern). A follow request to an account of another server says which server it waits for. A list of
+// accounts (the notifications) can show the follow button alone, and leave mute, block and report to the
+// profile.
 import { Button, Dialog, Link, Menu, MenuItem, MenuTrigger, MoreIcon } from "@my/ui";
 import { useId, useState } from "react";
 import { type Translate, useT } from "../../../lib/i18n";
+import { ReportDialog } from "../../report";
 import type { Account, RelationshipAction } from "../api/accounts";
 import { isolate } from "../hooks/useProfile";
 import type { RelationshipState } from "../hooks/useRelationship";
@@ -74,6 +76,7 @@ function OtherActions({ account, name, state, showMenu }: OtherActionsProps) {
   const t = useT();
   // The kind stays while the dialog closes, so that it shows what it asked until it is gone.
   const [dialog, setDialog] = useState<{ isOpen: boolean; kind: Confirmable }>({ isOpen: false, kind: "unfollow" });
+  const [isReporting, setIsReporting] = useState(false);
   const confirm = (kind: Confirmable) => {
     setDialog({ isOpen: true, kind });
   };
@@ -112,6 +115,7 @@ function OtherActions({ account, name, state, showMenu }: OtherActionsProps) {
               onAction={(key) => {
                 if (key === "mute") change(relationship.muting ? "unmute" : "mute");
                 if (key === "block") confirm(relationship.blocking ? "unblock" : "block");
+                if (key === "report") setIsReporting(true);
               }}
             >
               {/* The items keep their ids when their action flips: React Aria's collections cannot change an
@@ -120,9 +124,11 @@ function OtherActions({ account, name, state, showMenu }: OtherActionsProps) {
               <MenuItem id="block" intent={relationship.blocking ? "neutral" : "danger"}>
                 {relationship.blocking ? t("client:profile.menu.unblock") : t("client:profile.menu.block")}
               </MenuItem>
+              <MenuItem id="report">{t("client:report.open")}</MenuItem>
             </Menu>
           </MenuTrigger>
         )}
+        {showMenu && <ReportDialog account={account} isOpen={isReporting} onOpenChange={setIsReporting} />}
         <ConfirmDialog
           isOpen={dialog.isOpen}
           kind={dialog.kind}

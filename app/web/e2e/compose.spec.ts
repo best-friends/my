@@ -233,3 +233,103 @@ test.describe("the new-post form", () => {
     await expectNoHorizontalScroll(page);
   });
 });
+
+/** Answers the home timeline with one page of Alice's posts. */
+async function serveHomeTimeline(page: Page): Promise<void> {
+  const post = (n: number) => ({
+    id: `0192f0c4-7a8e-7000-8000-0000000001${String(n).padStart(2, "0")}`,
+    uri: `https://my.example/users/alice/statuses/${String(n)}`,
+    account,
+    content: `<p>Post number ${String(n)} on the home timeline.</p>`,
+    spoiler_text: "",
+    sensitive: false,
+    visibility: "public",
+    language: "en",
+    created_at: "2026-10-16T00:00:00Z",
+    media_attachments: [],
+    mentions: [],
+    tags: [],
+    replies_count: 0,
+    boosts_count: 0,
+    favourites_count: 0,
+  });
+  // Registered after serveApi's route, so Playwright asks this one first.
+  await page.route("**/api/v1/timelines/home*", (route) => route.fulfill({ json: { items: Array.from({ length: 6 }, (_, i) => post(i + 1)) } }));
+}
+
+type Box = { x: number; y: number; width: number; height: number };
+
+function overlaps(a: Box, b: Box): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+
+async function boxOf(locator: ReturnType<Page["getByRole"]>): Promise<Box> {
+  const box = await locator.boundingBox();
+  if (box === null) throw new Error("the element is not visible");
+  return box;
+}
+
+test.describe("the floating new-post button (web-client.md G4)", () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) >= 1280, "from xl the form is a side panel");
+
+  test.beforeEach(async ({ page }) => {
+    await serveApi(page);
+    await serveHomeTimeline(page);
+  });
+
+  test("leaves the actions of the timeline's last post uncovered at the end of the page", async ({ page }) => {
+    await page.goto("/home");
+    const fab = page.getByRole("button", { name: message("compose.open") });
+    await expect(fab).toMatchAriaSnapshot(`- button "${message("compose.open")}"`);
+    const last = page.getByRole("article").last();
+    await expect(last).toBeVisible();
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    });
+
+    const fabBox = await boxOf(fab);
+    const navBox = await boxOf(page.getByRole("navigation", { name: message("shell.nav.label") }));
+    const tabBar = (page.viewportSize()?.width ?? 0) < 768;
+    const actions = await last.getByRole("button").all();
+    expect(actions.length).toBeGreaterThan(0);
+    for (const action of actions) {
+      const box = await boxOf(action);
+      expect(overlaps(box, fabBox), "a post action under the floating button").toBe(false);
+      if (tabBar) expect(overlaps(box, navBox), "a post action under the tab bar").toBe(false);
+    }
+  });
+
+  test("and the tab bar take at most half of a 320 × 225 viewport (400% zoom)", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 225 });
+    await page.goto("/home");
+    const fab = page.getByRole("button", { name: message("compose.open") });
+    await expect(fab).toBeVisible();
+    await expectNoHorizontalScroll(page);
+
+    const fabBox = await boxOf(fab);
+    const navBox = await boxOf(page.getByRole("navigation", { name: message("shell.nav.label") }));
+    expect(225 - Math.min(fabBox.y, navBox.y)).toBeLessThanOrEqual(225 / 2);
+  });
+
+  test("gets focus back when the sheet it opened from the keyboard closes", async ({ page }) => {
+    await page.goto("/home");
+    const fab = page.getByRole("button", { name: message("compose.open") });
+    await fab.focus();
+    await page.keyboard.press("Enter");
+    const sheet = page.getByRole("dialog", { name: message("compose.title") });
+    await expect(sheet).toBeVisible();
+
+    await page.keyboard.press("Escape");
+
+    await expect(sheet).toBeHidden();
+    await expect(fab).toBeFocused();
+  });
+
+  for (const path of ["/notifications", "/search", "/settings"]) {
+    test(`is not on ${path}, which has no feed`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(page.getByRole("button", { name: message("compose.open") })).toHaveCount(0);
+    });
+  }
+});

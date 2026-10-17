@@ -29,6 +29,20 @@ SELECT account_id, restriction, source_action_id, effective_until
 FROM account_restrictions WHERE account_id = $1
 ORDER BY restriction, source_action_id;
 
+-- DeleteExpiredAccountRestrictions deletes at most batch_limit rows of any account that have
+-- expired at now, the earliest expired first, and returns them. A row that another transaction
+-- deletes meanwhile is returned by that one only.
+-- name: DeleteExpiredAccountRestrictions :many
+DELETE FROM account_restrictions
+WHERE effective_until <= sqlc.arg(now)::timestamptz
+  AND (account_id, restriction, source_action_id) IN (
+    SELECT r.account_id, r.restriction, r.source_action_id FROM account_restrictions AS r
+    WHERE r.effective_until <= sqlc.arg(now)::timestamptz
+    ORDER BY r.effective_until
+    LIMIT sqlc.arg(batch_limit)::integer
+  )
+RETURNING account_id, restriction, source_action_id, effective_until;
+
 -- ListAccountRestrictionsInEffect returns the distinct restrictions of an account in effect at now.
 -- name: ListAccountRestrictionsInEffect :many
 SELECT DISTINCT restriction FROM account_restrictions

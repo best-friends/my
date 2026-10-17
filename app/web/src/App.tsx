@@ -78,11 +78,14 @@ export function AppI18nProvider({ i18n, timeZone, children }: AppI18nProviderPro
 
 /**
  * Below md the toasts stand above the navigation's tab bar (routes/-layout/Navigation.tsx), whose links
- * they would otherwise cover: its links are 4rem high, with a 1px border above and the safe-area inset
- * below them. From md the navigation is a side rail and the toasts go back to the bottom edge.
+ * they would otherwise cover: its links are 4rem high (3rem on short screens, index.css), with a 1px border
+ * above and the safe-area inset below them. On pages with the floating new-post button they stand above it
+ * too (web-client.md G4): it is 3rem high, 1rem above the tab bar (0.5rem on short screens). From md the
+ * navigation is a side rail, the button sits in the corner beside the centred toasts, and the toasts go back
+ * to the bottom edge.
  */
 const toastRegionClassName =
-  "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] pb-4 md:bottom-0 md:pb-[max(--spacing(4),env(safe-area-inset-bottom))]";
+  "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] pb-4 short:bottom-[calc(3rem+1px+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[max(--spacing(4),env(safe-area-inset-bottom))] with-compose-fab:bottom-[calc(8rem+env(safe-area-inset-bottom))] with-compose-fab:short:bottom-[calc(6.5rem+env(safe-area-inset-bottom))] with-compose-fab:md:bottom-0";
 
 function Toasts({ children }: { children: ReactNode }) {
   const t = useT();

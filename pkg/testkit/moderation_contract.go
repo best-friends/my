@@ -38,7 +38,8 @@ type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 // its capabilities until it ends and may name a report of the account only, the actions on
 // statuses record and act on statuses of the account only and a ban schedules the deletion of
 // the account and is never lifted, kinds that do not apply to an account are refused, invalid actions are refused, each action is lifted once,
-// every change emits the restrictions in effect afterwards, a received report is filed once,
+// every change emits the restrictions in effect afterwards, a suspension and the lift or the
+// expiry of the last one are told once and the expiry job removes the expired rows, a received report is filed once,
 // open, with its statuses and its comment cut to the limit, a local report is filed open with
 // its statuses and cited rules only when the reporter may see those statuses of the target and
 // the rules are in effect, the actions on domains and on
@@ -67,6 +68,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"ListsPublicDomainActions", moderationListsPublicDomainActions},
 		{"HandlesReports", moderationHandlesReports},
 		{"ListsTheReportsOfAReporter", moderationReportsOfReporter},
+		{"TellsSuspensionsAndTheirEnds", moderationSuspensions},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newModerationEnv(t, newHarness)) })
@@ -86,9 +88,11 @@ type moderationEnv struct {
 	// accounts is the AccountPolicy on the same repository.
 	accounts *appmoderation.AccountPolicy
 	events   *eventLog
-	remote   string
-	local    string
-	reports  string
+	// suspensions logs the AccountSuspensionChanged events apart from events.
+	suspensions *eventLog
+	remote      string
+	local       string
+	reports     string
 	// instance is the instance actor.
 	instance string
 }
@@ -107,6 +111,8 @@ func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv
 	for _, typ := range []string{appmoderation.EventDomainRestrictionsChanged, appmoderation.EventAccountRestrictionsChanged, appmoderation.EventReportFiled, appmoderation.EventReportResolved} {
 		projectors.Register(typ, e.events.record)
 	}
+	e.suspensions = &eventLog{}
+	projectors.Register(appmoderation.EventAccountSuspensionChanged, e.suspensions.record)
 	e.svc = appmoderation.NewService(appmoderation.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Moderation, Accounts: e.actors, Clock: clock, IDs: ids,
 		Statuses: e.statuses, Lifecycles: e.lifecycles,

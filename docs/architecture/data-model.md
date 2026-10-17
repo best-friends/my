@@ -416,10 +416,13 @@ flowchart LR
 
 | テーブル | カラム | 制約 |
 | --- | --- | --- |
-| `account_restrictions` | `account_id`, `restriction`（§5.2 の能力の enum）, `source_action_id`, `effective_until`（NULL 可 = 無期限） | PK `(account_id, restriction, source_action_id)`。読み取りは `WHERE account_id = ? AND (effective_until IS NULL OR effective_until > :now)` |
+| `account_restrictions` | `account_id`, `restriction`（§5.2 の能力の enum）, `source_action_id`, `effective_until`（NULL 可 = 無期限） | PK `(account_id, restriction, source_action_id)`。インデックス `(effective_until)`（期限切れの行の削除）。読み取りは `WHERE account_id = ? AND (effective_until IS NULL OR effective_until > :now)` |
 
 - 1 つの処分は複数の制限を生みます（例: サイレンス → 3 つの制限、§5.2）。
 - 複数の処分が重なった場合は、制限の和集合になります。解除すると、その処分由来の行だけが消えます。期限切れの行は、読み取り時の条件で無効になり、定期ジョブで掃除します。
+  `account_restrictions` の期限切れの行は、5 分ごとのジョブ `moderation.expire_restrictions` が、1 トランザクションあたり件数を区切って消します。
+- アカウントの凍結（`federation` の制限）が効き始めたとき（効いている `federation` の行が無かったアカウントに行ができた）と、終わったとき（`federation` の行が消え、効いている行が残らない）に、`moderation` は同じトランザクションで `moderation.account_suspension_changed` を発行します。
+  終わりは、解除か期限切れの行の削除の、先に行を消した方が 1 回だけ伝えます。ローカルのアカウントなら `federation` がこれを受けて `Update`（Actor）を積みます（[federation.md §11.1](federation.md#111-処分の伝播)）。
 
 #### ドメイン単位の処分
 

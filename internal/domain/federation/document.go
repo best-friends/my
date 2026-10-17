@@ -26,6 +26,7 @@ func LDContext() []any {
 			"featuredTags":              map[string]string{"@id": "toot:featuredTags", "@type": "@id"},
 			"discoverable":              "toot:discoverable",
 			"indexable":                 "toot:indexable",
+			"suspended":                 "toot:suspended",
 			"schema":                    "http://schema.org#",
 			"PropertyValue":             "schema:PropertyValue",
 			"value":                     "schema:value",
@@ -216,11 +217,33 @@ type ActorDocument struct {
 	Tag                       []any              `json:"tag"`
 	Attachment                []PropertyValue    `json:"attachment"`
 	Endpoints                 map[string]IRI     `json:"endpoints"`
+	// Suspended marks an actor that moderation suspended (Mastodon's toot:suspended); it is
+	// left out otherwise.
+	Suspended bool `json:"suspended,omitempty"`
 }
 
 // Embedded returns d without its context, to embed it in an activity.
 func (d ActorDocument) Embedded() ActorDocument {
 	d.Context = nil
+	return d
+}
+
+// Suspend returns d as a suspended actor is published (federation.md §11.1, ADR-0036): marked
+// suspended, with the profile emptied (name, summary, fields, tags) and nothing that invites
+// following or discovery, while the id, the collections, the inboxes, and the key stay, so that
+// servers can still address the actor and verify its signatures.
+func (d ActorDocument) Suspend() ActorDocument {
+	empty, no := "", false
+	d.Name, d.Summary = &empty, &empty
+	d.Tag, d.Attachment = []any{}, []PropertyValue{}
+	d.ManuallyApprovesFollowers = false
+	if d.Discoverable != nil {
+		d.Discoverable = &no
+	}
+	if d.Indexable != nil {
+		d.Indexable = &no
+	}
+	d.Suspended = true
 	return d
 }
 

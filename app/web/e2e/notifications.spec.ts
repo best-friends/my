@@ -213,6 +213,39 @@ test.describe("notifications", () => {
     await expect(page).toHaveURL(/\/@bob$/);
   });
 
+  test("the favourites of one post are one row that counts the people, and the marker moves to the newest", async ({ page, makeAxeBuilder }) => {
+    const carol = { ...bob, id: "0192f0c4-7a8e-7000-8000-000000000003", username: "carol", acct: "carol", display_name: "Carol" };
+    const favourite = (id: string, account: typeof bob) => ({ id, type: "favourite", created_at: "2026-10-16T09:00:00Z", account, status: post });
+    const newest = "0192f0c4-7a8e-7000-8000-0000000000a6";
+    // Registered after the default list, so it answers instead of it (Playwright tries the newest route first).
+    await page.route(
+      (url) => url.pathname === "/api/v1/notifications",
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ items: [favourite(newest, carol), favourite("0192f0c4-7a8e-7000-8000-0000000000a5", bob), notifications[2]] }),
+        }),
+    );
+    await page.goto("/notifications");
+    const feed = page.getByRole("feed");
+    await expect(feed.getByRole("article")).toHaveCount(2);
+    // The others' avatars are hidden links for the pointer: the row has the newest actor's name and the post.
+    await expect(feed.getByRole("article").first()).toMatchAriaSnapshot(`
+      - article:
+        - paragraph:
+          - link:
+            - /url: /@carol
+        - time
+        - link:
+          - /url: /@bob/${postId}
+    `);
+    await expect(feed.getByRole("article").first()).toHaveAccessibleName(/1|١/);
+    await expect.poll(() => server.updates).toEqual([newest]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
   test("the type filter works from the keyboard and lives in the URL", async ({ page }) => {
     await page.goto("/notifications");
     const tabs = page.getByRole("tab");

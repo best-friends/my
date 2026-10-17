@@ -16,6 +16,7 @@ import {
 import { type ReactNode, useId, useState } from "react";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
+import { ReportDialog } from "../../report";
 import type { Status } from "../api/status";
 import { type RelationToggle, useStatusActions } from "../hooks/useStatusActions";
 
@@ -26,8 +27,9 @@ export type StatusActionsProps = {
 };
 
 /**
- * The action bar of a post: reply, boost, favourite, bookmark, and a menu with the link and, for the
- * viewer's own posts, delete behind a confirmation (WAI-ARIA APG, alert dialog pattern). Nothing while
+ * The action bar of a post: reply, boost, favourite, bookmark, and a menu with the link, the report of
+ * another account's post (features/report) and, for the viewer's own posts, delete behind a confirmation
+ * (WAI-ARIA APG, alert dialog pattern). Nothing while
  * nobody is signed in. The toggles keep their names in both states and expose the state with
  * `aria-pressed` (APG, button pattern); a count is the toggle's description.
  */
@@ -36,6 +38,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
   const repliesId = useId();
   const actions = useStatusActions(status);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
   if (actions === null) return null;
   const post = status.boost ?? status;
   const remove = actions.delete;
@@ -62,6 +65,15 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
         </Button>
         <Menu aria-label={t("client:status.action.more")} placement="bottom end">
           <MenuItem onAction={actions.copyLink}>{t("client:status.action.copy_link")}</MenuItem>
+          {actions.canReport && (
+            <MenuItem
+              onAction={() => {
+                setIsReporting(true);
+              }}
+            >
+              {t("client:report.open")}
+            </MenuItem>
+          )}
           {remove !== null && (
             <MenuItem
               intent="danger"
@@ -74,6 +86,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
           )}
         </Menu>
       </MenuTrigger>
+      {actions.canReport && <ReportDialog account={post.account} status={post} isOpen={isReporting} onOpenChange={setIsReporting} />}
       {remove !== null && (
         <Dialog
           role="alertdialog"
