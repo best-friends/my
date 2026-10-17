@@ -63,6 +63,12 @@ func TestActionsAndTheirRestrictions(t *testing.T) {
 			t.Errorf("Validate(%s) = %v, want ErrInvalidAction", name, err)
 		}
 	}
+	if err := ban.Validate(); !errors.Is(err, ErrActionNeverExpires) {
+		t.Errorf("Validate(expiring ban) = %v, want ErrActionNeverExpires", err)
+	}
+	if ActionBan.Liftable() || !ActionSuspend.Liftable() || !ActionDeleteStatuses.Liftable() {
+		t.Error("only a ban should not be liftable")
+	}
 	d := DomainAction{ID: "d", Domain: "bad.example", Kind: DomainSuspend, IssuedAt: now}
 	if err := d.Validate(); err != nil {
 		t.Fatalf("Validate = %v", err)
@@ -74,6 +80,49 @@ func TestActionsAndTheirRestrictions(t *testing.T) {
 		if ValidDomain(domain) {
 			t.Errorf("ValidDomain(%q) = true", domain)
 		}
+	}
+}
+
+func TestActionsOnStatuses(t *testing.T) {
+	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
+	later := now.Add(time.Hour)
+	base := Action{ID: "a", TargetAccountID: "x", ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now}
+	with := func(kind ActionKind, ids []string, expires *time.Time) Action {
+		a := base
+		a.Kind, a.StatusIDs, a.ExpiresAt = kind, ids, expires
+		return a
+	}
+	tooMany := make([]string, MaxActionStatuses+1)
+	for i := range tooMany {
+		tooMany[i] = strings.Repeat("s", i+1)
+	}
+	for _, kind := range []ActionKind{ActionDeleteStatuses, ActionMarkStatusesSensitive} {
+		if !kind.OnStatuses() || len(kind.Restrictions()) != 0 {
+			t.Errorf("%s: OnStatuses = %v, restrictions %v", kind, kind.OnStatuses(), kind.Restrictions())
+		}
+		if err := with(kind, []string{"s1", "s2"}, nil).Validate(); err != nil {
+			t.Errorf("Validate(%s on 2 statuses) = %v", kind, err)
+		}
+		for name, c := range map[string]struct {
+			a    Action
+			want error
+		}{
+			"no statuses":    {with(kind, nil, nil), ErrInvalidActionStatuses},
+			"repeated":       {with(kind, []string{"s1", "s1"}, nil), ErrInvalidActionStatuses},
+			"empty":          {with(kind, []string{""}, nil), ErrInvalidActionStatuses},
+			"too many":       {with(kind, tooMany, nil), ErrInvalidActionStatuses},
+			"with an expiry": {with(kind, []string{"s1"}, &later), ErrActionNeverExpires},
+		} {
+			if err := c.a.Validate(); !errors.Is(err, c.want) || !errors.Is(err, ErrInvalidAction) {
+				t.Errorf("Validate(%s, %s) = %v, want %v", kind, name, err, c.want)
+			}
+		}
+	}
+	if err := with(ActionSuspend, []string{"s1"}, nil).Validate(); !errors.Is(err, ErrInvalidActionStatuses) {
+		t.Errorf("Validate(suspend naming a status) = %v, want ErrInvalidActionStatuses", err)
+	}
+	if ActionSuspend.OnStatuses() || ActionBan.OnStatuses() {
+		t.Error("suspend and ban act on accounts, not statuses")
 	}
 }
 
@@ -98,6 +147,47 @@ func TestReportValidate(t *testing.T) {
 		if err := r.Validate(); !errors.Is(err, ErrInvalidReport) {
 			t.Errorf("Validate(comment %q...) = %v, want ErrInvalidReport", comment[:1], err)
 		}
+	}
+}
+
+func TestReportCitesRulesOnlyForAViolation(t *testing.T) {
+	r := Report{ID: "r", ReporterAccountID: "a", TargetAccountID: "b", Category: CategoryViolation, RuleIDs: []string{"rule"}, FiledAt: time.Unix(1, 0)}
+	if err := r.ValidateLocal(); err != nil {
+		t.Fatalf("ValidateLocal(violation with a rule) = %v", err)
+	}
+	for _, c := range []Category{CategorySpam, CategoryLegal, CategoryOther} {
+		r.Category = c
+		if err := r.Validate(); !errors.Is(err, ErrInvalidReport) {
+			t.Errorf("Validate(%s with a rule) = %v, want ErrInvalidReport", c, err)
+		}
+	}
+}
+
+func TestReportValidateLocal(t *testing.T) {
+	ok := Report{ID: "r", ReporterAccountID: "a", TargetAccountID: "b", Category: CategoryOther, FiledAt: time.Unix(1, 0)}
+	if err := ok.ValidateLocal(); err != nil {
+		t.Fatalf("ValidateLocal = %v", err)
+	}
+	long := ok
+	long.Comment = strings.Repeat("あ", MaxLocalReportComment+1)
+	var textErr *TextError
+	if err := long.ValidateLocal(); !errors.Is(err, ErrInvalidReport) || !errors.As(err, &textErr) || textErr.Max != MaxLocalReportComment {
+		t.Errorf("ValidateLocal(long comment) = %v, want a *TextError of %d", err, MaxLocalReportComment)
+	}
+	long.Comment = strings.Repeat("あ", MaxLocalReportComment)
+	if err := long.ValidateLocal(); err != nil {
+		t.Errorf("ValidateLocal(comment of %d) = %v", MaxLocalReportComment, err)
+	}
+	many := ok
+	many.StatusIDs = make([]string, MaxLocalReportStatuses+1)
+	var countErr *CountError
+	if err := many.ValidateLocal(); !errors.As(err, &countErr) || countErr.Field != "status_ids" {
+		t.Errorf("ValidateLocal(too many statuses) = %v, want a *CountError of status_ids", err)
+	}
+	withURI := ok
+	withURI.URI = "https://remote.example/flag"
+	if err := withURI.ValidateLocal(); !errors.Is(err, ErrInvalidReport) {
+		t.Errorf("ValidateLocal(with a URI) = %v, want ErrInvalidReport", err)
 	}
 }
 

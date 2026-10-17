@@ -6,7 +6,7 @@ import { Button } from "./Button";
 import { ContentWarning } from "./ContentWarning";
 import { BoostIcon } from "./Icons";
 import { MediaGrid } from "./MediaGrid";
-import { PostCard } from "./PostCard";
+import { PostCard, PostCardAuthor } from "./PostCard";
 import { PostContent, serverSanitizedHtml } from "./PostContent";
 
 function picture(fill: string): string {
@@ -16,15 +16,29 @@ function picture(fill: string): string {
 
 function Author({ name, handle }: { name: string; handle: string }) {
   return (
-    <>
-      <a href="#profile" dir="auto" className="font-semibold text-fg hover:underline">
-        {name}
-      </a>{" "}
-      <span dir="ltr" className="text-sm text-fg-muted">
-        {handle}
-      </span>
-    </>
+    <a href="#profile" className="block min-w-0 text-fg hover:underline">
+      <PostCardAuthor name={name} handle={handle} />
+    </a>
   );
+}
+
+/**
+ * Checks that the header of the card takes at most two lines on a 320 px card: the name and the time,
+ * and the handle under them. The frame is the story's container, set back after the check.
+ */
+async function expectHeaderInTwoLines(canvasElement: HTMLElement) {
+  const frame = canvasElement.closest<HTMLElement>("[data-story-frame]") ?? canvasElement;
+  const previous = frame.style.inlineSize;
+  frame.style.inlineSize = "320px";
+  try {
+    const header = canvasElement.querySelector("header");
+    const name = header?.querySelector<HTMLElement>("[dir=auto]");
+    if (header == null || name == null) throw new Error("the card has no header with a name");
+    const lineHeight = Number.parseFloat(getComputedStyle(name).lineHeight);
+    await expect(header.getBoundingClientRect().height).toBeLessThanOrEqual(2 * lineHeight);
+  } finally {
+    frame.style.inlineSize = previous;
+  }
 }
 
 function Actions() {
@@ -123,11 +137,40 @@ export const Boosted: Story = {
   },
 };
 
-/** A long display name and handle wrap inside the card at 320 px. */
+/** A long display name and handle are cut with an ellipsis; the link is still named by both in full. */
 export const LongNames: Story = {
   args: {
     avatar: <Avatar name="Bartholomew" decorative />,
     author: <Author name="Bartholomew Montgomery-Fitzwilliam the Third" handle="@bartholomew_montgomery_fitzwilliam@social.example.com" />,
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(
+      canvas.getByRole("link", { name: "Bartholomew Montgomery-Fitzwilliam the Third @bartholomew_montgomery_fitzwilliam@social.example.com" }),
+    ).toBeInTheDocument();
+    await expectHeaderInTwoLines(canvasElement);
+  },
+};
+
+/** A handle of a server with a long domain: the domain is cut, the user part stays. */
+export const LongDomain: Story = {
+  args: {
+    avatar: <Avatar name="Carol" decorative />,
+    author: <Author name="Carol" handle="@carol@a-rather-long-community-server-name.social.example.com" />,
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByRole("link", { name: "Carol @carol@a-rather-long-community-server-name.social.example.com" })).toBeInTheDocument();
+    await expectHeaderInTwoLines(canvasElement);
+  },
+};
+
+/** A display name in a right-to-left script lines up with the card's direction, not its own. */
+export const RightToLeftName: Story = {
+  args: {
+    avatar: <Avatar name="سارة" decorative />,
+    author: <Author name="سارة الحسيني من مجتمع الرسامين المستقلين" handle="@sara@fann.example" />,
+  },
+  play: async ({ canvasElement }) => {
+    await expectHeaderInTwoLines(canvasElement);
   },
 };
 

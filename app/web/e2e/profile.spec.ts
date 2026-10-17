@@ -6,7 +6,7 @@
 // role and position.
 import type { Page } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, expectTabWhollyVisible, localeDir, test } from "./fixtures";
 
 type Account = components["schemas"]["Account"];
 type Relationship = components["schemas"]["Relationship"];
@@ -248,6 +248,24 @@ test.describe("a profile", () => {
     await expect(page.getByRole("tab").nth(1)).toHaveAttribute("aria-selected", "true");
     await page.reload();
     await expect(page.getByRole("tab").nth(1)).toHaveAttribute("aria-selected", "true");
+  });
+
+  // On a phone the tabs may not all fit: the list scrolls sideways and shows the selected tab whole.
+  test("shows each tab whole once it is selected, also from the URL", async ({ page }) => {
+    const tabs = page.getByRole("tab");
+    await expect(tabs).toHaveCount(3);
+    await tabs.first().focus();
+    const rtl = (await page.locator("html").getAttribute("dir")) === "rtl";
+    for (let index = 1; index < 3; index += 1) {
+      await page.keyboard.press(rtl ? "ArrowLeft" : "ArrowRight");
+      await expect(tabs.nth(index)).toHaveAttribute("aria-selected", "true");
+      await expectTabWhollyVisible(tabs.nth(index));
+    }
+    await expect(page).toHaveURL(/\?tab=no_boosts$/);
+    await page.reload();
+    await expect(tabs.last()).toHaveAttribute("aria-selected", "true");
+    await expectTabWhollyVisible(tabs.last());
+    await expectNoHorizontalScroll(page);
   });
 });
 

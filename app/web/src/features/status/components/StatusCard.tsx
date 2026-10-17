@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, BoostIcon, ContentWarning, ExternalLinkIcon, Link, MediaGrid, PostCard, PostContent } from "@my/ui";
+import { Avatar, BoostIcon, ContentWarning, ExternalLinkIcon, Link, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
@@ -80,15 +80,9 @@ export function StatusCard({ status, variant = "compact", onDeleted }: StatusCar
         </Link>
       }
       author={
-        <Link href={view.author.href} className={nameLink}>
-          <>
-            <span dir="auto" className="font-semibold">
-              {view.author.name}
-            </span>{" "}
-            <span dir="ltr" className="text-sm text-fg-muted">
-              {view.author.handle}
-            </span>
-          </>
+        // A block, so that the name and the handle inside are cut to the room of the header's row.
+        <Link href={view.author.href} className={`${nameLink} block min-w-0`}>
+          <PostCardAuthor name={view.author.name} handle={view.author.handle} />
         </Link>
       }
       time={time}

@@ -414,6 +414,19 @@ func (s *Service) Rule(ctx context.Context, id string) (instance.Rule, error) {
 	return s.d.Repository.FindRule(ctx, id)
 }
 
+// RuleInEffect reports whether id is a rule in effect: one that exists and is not retired, which
+// a new report may cite.
+func (s *Service) RuleInEffect(ctx context.Context, id string) (bool, error) {
+	r, err := s.d.Repository.FindRule(ctx, id)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return !r.Retired(), nil
+}
+
 // Rules returns the rules in effect by position, followed by the retired ones when
 // includeRetired is set.
 func (s *Service) Rules(ctx context.Context, includeRetired bool) ([]instance.Rule, error) {

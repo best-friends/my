@@ -3,7 +3,8 @@
 // the follow button, whose label is where the follow stands (Follow, Requested, Following, Blocked), and
 // a menu button (WAI-ARIA APG, menu button pattern) with mute and block. Undoing a follow or a request,
 // blocking and unblocking ask first in an alert dialog (WAI-ARIA APG, alert dialog pattern). A follow
-// request to an account of another server says which server it waits for.
+// request to an account of another server says which server it waits for. A list of accounts (the
+// notifications) can show the follow button alone, and leave mute and block to the profile.
 import { Button, Dialog, Link, Menu, MenuItem, MenuTrigger, MoreIcon } from "@my/ui";
 import { useId, useState } from "react";
 import { type Translate, useT } from "../../../lib/i18n";
@@ -19,9 +20,11 @@ export type RelationshipActionsProps = {
   /** The account's name in the UI. */
   name: string;
   state: RelationshipState;
+  /** Whether to show the menu with mute and block next to the follow button (the default). */
+  showMenu?: boolean;
 };
 
-export function RelationshipActions({ account, name, state }: RelationshipActionsProps) {
+export function RelationshipActions({ account, name, state, showMenu = true }: RelationshipActionsProps) {
   const t = useT();
   switch (state.kind) {
     case "signed-out":
@@ -41,11 +44,11 @@ export function RelationshipActions({ account, name, state }: RelationshipAction
     case "error":
       return <p className="text-sm text-fg-muted">{t("client:profile.relationship_failed", { reason: state.message })}</p>;
     case "other":
-      return <OtherActions account={account} name={name} state={state} />;
+      return <OtherActions account={account} name={name} state={state} showMenu={showMenu} />;
   }
 }
 
-type OtherActionsProps = { account: Account; name: string; state: Extract<RelationshipState, { kind: "other" }> };
+type OtherActionsProps = { account: Account; name: string; state: Extract<RelationshipState, { kind: "other" }>; showMenu: boolean };
 
 /** The follow button's label and variant, and the change it asks for, for where the follow stands. */
 function followButtonOf(t: Translate, account: Account, state: OtherActionsProps["state"]) {
@@ -67,7 +70,7 @@ function followButtonOf(t: Translate, account: Account, state: OtherActionsProps
   }
 }
 
-function OtherActions({ account, name, state }: OtherActionsProps) {
+function OtherActions({ account, name, state, showMenu }: OtherActionsProps) {
   const t = useT();
   // The kind stays while the dialog closes, so that it shows what it asked until it is gone.
   const [dialog, setDialog] = useState<{ isOpen: boolean; kind: Confirmable }>({ isOpen: false, kind: "unfollow" });
@@ -98,26 +101,28 @@ function OtherActions({ account, name, state }: OtherActionsProps) {
         >
           {followButton.label}
         </Button>
-        <MenuTrigger>
-          <Button variant="ghost" isPending={isPending} aria-label={moreLabel} className="px-2">
-            <MoreIcon />
-          </Button>
-          <Menu
-            aria-label={moreLabel}
-            placement="bottom end"
-            onAction={(key) => {
-              if (key === "mute") change(relationship.muting ? "unmute" : "mute");
-              if (key === "block") confirm(relationship.blocking ? "unblock" : "block");
-            }}
-          >
-            {/* The items keep their ids when their action flips: React Aria's collections cannot change an
-                item's id while the menu is still mounted while it closes. */}
-            <MenuItem id="mute">{relationship.muting ? t("client:profile.menu.unmute") : t("client:profile.menu.mute")}</MenuItem>
-            <MenuItem id="block" intent={relationship.blocking ? "neutral" : "danger"}>
-              {relationship.blocking ? t("client:profile.menu.unblock") : t("client:profile.menu.block")}
-            </MenuItem>
-          </Menu>
-        </MenuTrigger>
+        {showMenu && (
+          <MenuTrigger>
+            <Button variant="ghost" isPending={isPending} aria-label={moreLabel} className="px-2">
+              <MoreIcon />
+            </Button>
+            <Menu
+              aria-label={moreLabel}
+              placement="bottom end"
+              onAction={(key) => {
+                if (key === "mute") change(relationship.muting ? "unmute" : "mute");
+                if (key === "block") confirm(relationship.blocking ? "unblock" : "block");
+              }}
+            >
+              {/* The items keep their ids when their action flips: React Aria's collections cannot change an
+                  item's id while the menu is still mounted while it closes. */}
+              <MenuItem id="mute">{relationship.muting ? t("client:profile.menu.unmute") : t("client:profile.menu.mute")}</MenuItem>
+              <MenuItem id="block" intent={relationship.blocking ? "neutral" : "danger"}>
+                {relationship.blocking ? t("client:profile.menu.unblock") : t("client:profile.menu.block")}
+              </MenuItem>
+            </Menu>
+          </MenuTrigger>
+        )}
         <ConfirmDialog
           isOpen={dialog.isOpen}
           kind={dialog.kind}

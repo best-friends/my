@@ -970,6 +970,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report an account
+         * @description Reports an account, and optionally some of its posts, to the moderators (FR-701). The
+         *     report waits, open, in the moderators' queue; nothing tells the account of it, and
+         *     nothing that the account can read names the reporter. 422 when the account does not
+         *     exist or is the user's own (`account_id`), when a post is not the account's or the
+         *     user may not see it (`status_ids`), when `rule_ids` cite a rule that is not in effect
+         *     or the category is not `violation`, or when the comment is too long. Reports are
+         *     limited to 30 per hour per account (429 beyond).
+         */
+        post: operations["createReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/streaming": {
         parameters: {
             query?: never;
@@ -1372,12 +1398,18 @@ export interface paths {
          *     `restrict_posting` stops it posting, replying, boosting, and editing;
          *     `restrict_interaction` stops it following, favouriting, boosting, and replying;
          *     `disable_login` ends its sessions and tokens and stops it logging in; `suspend` does all
-         *     of these and hides its profile and posts from everyone else. A remote account takes
-         *     `limit`, `suspend`, and `force_sensitive`. Another kind, the instance actor, or a
-         *     `report_id` that is not a report of the account is a 422 naming `kind`, `id`, or
-         *     `report_id`; `ban`, `delete_statuses`, and `mark_statuses_sensitive` are not taken yet.
-         *     A text that is too long or contains U+0000 is a 422 naming it. An unknown account is a
-         *     404. Needs the `manage_accounts` permission.
+         *     of these and hides its profile and posts from everyone else; `ban` is a `suspend` that
+         *     is never lifted and deletes the account 30 days later. `delete_statuses` deletes the
+         *     posts of the account that `status_ids` names, for everyone, the account included, and
+         *     sends their deletion like the account's own; `mark_statuses_sensitive` shows their
+         *     media as sensitive until it is lifted. A remote account takes `limit`, `suspend`, and
+         *     `force_sensitive`. Another kind, the instance actor, or a `report_id` that is not a
+         *     report of the account is a 422 naming `kind`, `id`, or `report_id`. `status_ids` on
+         *     another kind, missing, repeated, or too many on an action on posts, or naming a post
+         *     that does not exist, is deleted, or is of another account is a 422 naming `status_ids`;
+         *     `expires_in` on a `ban` or an action on posts is a 422 naming `expires_in`. A text that
+         *     is too long or contains U+0000 is a 422 naming it. An unknown account is a 404. Needs
+         *     the `manage_accounts` permission.
          */
         post: operations["createAccountAction"];
         delete?: never;
@@ -1418,8 +1450,10 @@ export interface paths {
         /**
          * Lift a moderation action on an account
          * @description Ends the action's restrictions at once; those of other actions on the account stay.
-         *     Sessions and tokens that the action ended stay ended. Lifting a lifted action changes
-         *     nothing and keeps its first reason. A `reason` that is too long or contains U+0000 is a
+         *     Sessions and tokens that the action ended stay ended, and so do the posts that
+         *     `delete_statuses` deleted; the posts that `mark_statuses_sensitive` marked are shown as
+         *     they were. Lifting a lifted action changes nothing and keeps its first reason. A `ban`
+         *     is never lifted: a 422 naming `id`. A `reason` that is too long or contains U+0000 is a
          *     422 naming `reason`. An unknown ID is a 404. Needs the `manage_accounts` permission.
          */
         post: operations["liftAccountAction"];
@@ -2450,6 +2484,11 @@ export interface components {
             target_account?: components["schemas"]["Account"];
             /** @description The IDs of the target's posts that the report points at. */
             status_ids: components["schemas"]["Id"][];
+            /**
+             * @description The IDs of the instance rules that the report cites, retired ones included; only a
+             *     report of the `violation` category cites rules.
+             */
+            rule_ids: components["schemas"]["Id"][];
         };
         /**
          * @description How the report was resolved, present only while it is resolved. `actioned`: a moderator
@@ -2526,6 +2565,11 @@ export interface components {
             lifted_at?: string;
             /** @description Why the action was lifted; omitted until it is or when no reason was given. */
             lift_reason?: string;
+            /**
+             * @description The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+             *     on, in ID order; omitted for the other kinds.
+             */
+            status_ids?: components["schemas"]["Id"][];
         };
         /**
          * @description The kind of reason for an action.
@@ -2568,8 +2612,16 @@ export interface components {
              * @default true
              */
             notify_target: boolean;
-            /** @description The seconds the action lasts; omitted, it lasts until it is lifted. */
+            /**
+             * @description The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
+             *     actions on posts take none.
+             */
             expires_in?: number;
+            /**
+             * @description The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+             *     on; required for them and taken by no other kind.
+             */
+            status_ids?: components["schemas"]["Id"][];
         };
         /** @description Why an action on an account is lifted. */
         LiftAccountActionRequest: {
@@ -2641,6 +2693,48 @@ export interface components {
             /** @description The place among the rules in effect, from 1. */
             position: number;
         };
+        /** @description A report of an account to the moderators. */
+        CreateReportRequest: {
+            /** @description The account reported, local or remote. */
+            account_id: components["schemas"]["Id"];
+            /** @description Posts of the account that the user can see, up to 20. */
+            status_ids?: components["schemas"]["Id"][];
+            category: components["schemas"]["ReportCategory"];
+            /**
+             * @description Instance rules in effect that the account broke, up to 20; only with the
+             *     `violation` category.
+             */
+            rule_ids?: components["schemas"]["Id"][];
+            /** @description A comment for the moderators as plain text. */
+            comment?: string;
+            /**
+             * @description Asks to forward the report to the server of a remote account, without naming the
+             *     reporter. It means nothing for a local account.
+             * @default false
+             */
+            forward: boolean;
+        };
+        /** @description A report that the user filed. It never names the reporter. */
+        Report: {
+            id: components["schemas"]["Id"];
+            category: components["schemas"]["ReportCategory"];
+            /** @description The comment as plain text. */
+            comment: string;
+            /** @description Whether the report is to be forwarded to the target's server. */
+            forwarded: boolean;
+            /** Format: date-time */
+            filed_at: string;
+            target_account: components["schemas"]["Account"];
+            status_ids: components["schemas"]["Id"][];
+            rule_ids: components["schemas"]["Id"][];
+        };
+        /**
+         * @description Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
+         *     is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
+         *     anything else.
+         * @enum {string}
+         */
+        ReportCategory: "spam" | "legal" | "violation" | "other";
     };
     responses: {
         /** @description A page of posts and boosts, newest first. */
@@ -3887,6 +3981,32 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["StatusPage"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReportRequest"];
+            };
+        };
+        responses: {
+            /** @description The filed report. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Report"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

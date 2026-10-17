@@ -111,6 +111,10 @@
     "defaultMessage": "通知の既読化と消去",
     "description": "Permission (OAuth scope write:notifications) listed on the authorization page."
   },
+  "auth.authorize.scope.write_reports": {
+    "defaultMessage": "アカウントと投稿のモデレーターへの通報",
+    "description": "Permission (OAuth scope write:reports) listed on the authorization page."
+  },
   "auth.authorize.scope.write_statuses": {
     "defaultMessage": "投稿の作成・編集・削除・ブースト・ピン留め",
     "description": "Permission (OAuth scope write:statuses) listed on the authorization page."

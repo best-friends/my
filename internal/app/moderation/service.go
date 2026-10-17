@@ -10,6 +10,7 @@ import (
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/moderation"
@@ -17,14 +18,19 @@ import (
 
 var (
 	// ErrUnsupportedAction reports an action on an account that this module does not issue: a
-	// kind that does not apply to the account (login on a remote account), one whose effects
-	// this module does not carry out yet, or an action on the instance actor.
+	// kind that does not apply to the account (login on a remote account), one whose port is
+	// missing from Deps, or an action on the instance actor.
 	ErrUnsupportedAction = errors.New("moderation: the action is not supported")
 	// ErrInvalidReportReference reports an action that names a report that does not exist or
 	// is of another account.
 	ErrInvalidReportReference = errors.New("moderation: the report does not exist or is of another account")
 	// ErrAccountNotFound reports an action or a report on an account that does not exist.
 	ErrAccountNotFound = errors.New("moderation: the account does not exist")
+	// ErrInvalidStatusReference reports an action on statuses that names a status that does
+	// not exist, is deleted, or is of another account.
+	ErrInvalidStatusReference = errors.New("moderation: the status does not exist or is of another account")
+	// ErrNotLiftable reports the lift of a ban, which is not lifted (FR-703).
+	ErrNotLiftable = errors.New("moderation: the action cannot be lifted")
 )
 
 // Report is moderation.Report, a report as other modules file it.
@@ -83,11 +89,32 @@ type Accounts interface {
 	FindByID(ctx context.Context, id string) (appaccount.Actor, error)
 }
 
+// Statuses is the part of the content module's public API that the actions on statuses use.
+// *appcontent.Service implements it.
+type Statuses interface {
+	// Find returns a status that is not deleted; it fails with appcontent.ErrNotFound.
+	Find(ctx context.Context, statusID string) (appcontent.Post, error)
+	DeleteByModeration(ctx context.Context, tx uow.Tx, st appcontent.Status, actionID string, at time.Time) error
+	MarkSensitiveByModeration(ctx context.Context, tx uow.Tx, statusID, actionID string) error
+	ClearSensitivityOf(ctx context.Context, tx uow.Tx, actionID string) error
+}
+
+// Lifecycles is the part of the account module's public API that a ban uses.
+// *appaccount.Service implements it.
+type Lifecycles interface {
+	ScheduleDeletionByModeration(ctx context.Context, tx uow.Tx, accountID, actionID string, due time.Time) error
+}
+
 // Deps are the ports a Service uses.
 type Deps struct {
 	UnitOfWork uow.UnitOfWork
 	Repository Repository
 	Accounts   Accounts
+	// Statuses carries out the actions on statuses; nil refuses them with ErrUnsupportedAction.
+	Statuses Statuses
+	// Lifecycles schedules the deletion of a banned account; nil refuses bans with
+	// ErrUnsupportedAction.
+	Lifecycles Lifecycles
 	Clock      kernel.Clock
 	IDs        kernel.IDGenerator
 }
@@ -197,12 +224,13 @@ func (s *Service) emitDomain(ctx context.Context, tx uow.Tx, domain string, now 
 // restrictions they impose (data-model §5.2: login and post mean nothing for a remote account).
 var remoteActionKinds = []moderation.ActionKind{moderation.ActionLimit, moderation.ActionSuspend, moderation.ActionForceSensitive}
 
-// localActionKinds are the kinds of actions on a local account that this module issues: those
-// whose effects are their restrictions and the notice to the account (data-model §5.2). The
-// other kinds also change statuses or the account's lifecycle.
+// localActionKinds are the kinds of actions on a local account: every kind (data-model §5.2).
+// Besides their restrictions and the notice to the account, the actions on statuses delete or
+// mark the statuses they name, and a ban schedules the deletion of the account.
 var localActionKinds = []moderation.ActionKind{
-	moderation.ActionWarn, moderation.ActionForceSensitive, moderation.ActionLimit, moderation.ActionRestrictPosting,
-	moderation.ActionRestrictInteraction, moderation.ActionDisableLogin, moderation.ActionSuspend,
+	moderation.ActionWarn, moderation.ActionMarkStatusesSensitive, moderation.ActionDeleteStatuses,
+	moderation.ActionForceSensitive, moderation.ActionLimit, moderation.ActionRestrictPosting,
+	moderation.ActionRestrictInteraction, moderation.ActionDisableLogin, moderation.ActionSuspend, moderation.ActionBan,
 }
 
 // AccountActionInput is a moderator's action on an account.
@@ -222,15 +250,26 @@ type AccountActionInput struct {
 	IssuedByUserID string
 	// Duration is how long the action lasts; zero lasts until it is lifted.
 	Duration time.Duration
+	// StatusIDs are the statuses of the target that an action on statuses (delete_statuses,
+	// mark_statuses_sensitive) acts on: from 1 to moderation.MaxActionStatuses of them, and
+	// none for the other kinds.
+	StatusIDs []string
 }
 
 // IssueAccountAction records an action on an account and, in the same transaction, the
-// restrictions it imposes (data-model §5.2), and emits AccountRestrictionsChanged. A local
-// account takes the kinds of localActionKinds, a remote one limit, suspend, and
-// force_sensitive; another kind, or the instance actor, fails with ErrUnsupportedAction, and an
-// unknown kind or an invalid field with moderation.ErrInvalidAction. An unknown account fails
-// with ErrAccountNotFound, and a report that does not exist or is of
-// another account with ErrInvalidReportReference.
+// restrictions it imposes (data-model §5.2) and its other effects, and emits
+// AccountRestrictionsChanged. delete_statuses deletes the statuses it names (origin
+// moderation), mark_statuses_sensitive shows them as sensitive until it is lifted, and ban
+// schedules the deletion of the account moderation.BanDeletionDelay later.
+//
+// A local account takes every kind, a remote one limit, suspend, and force_sensitive; another
+// kind, the instance actor, or a kind whose port is missing from Deps fails with
+// ErrUnsupportedAction, and an unknown kind or an invalid field with
+// moderation.ErrInvalidAction (moderation.ErrActionNeverExpires for an end on a ban or an
+// action on statuses, moderation.ErrInvalidActionStatuses for its statuses). An unknown account
+// fails with ErrAccountNotFound, a report that does not exist or is of another account with
+// ErrInvalidReportReference, and a status that does not exist, is deleted, or is of another
+// account with ErrInvalidStatusReference.
 func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput) (moderation.Action, error) {
 	if !in.Kind.Valid() {
 		return moderation.Action{}, fmt.Errorf("%w: kind %q", moderation.ErrInvalidAction, in.Kind)
@@ -250,7 +289,8 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 	} else {
 		in.NotifyTarget = false
 	}
-	if !slices.Contains(kinds, in.Kind) {
+	if !slices.Contains(kinds, in.Kind) || (in.Kind.OnStatuses() && s.d.Statuses == nil) ||
+		(in.Kind == moderation.ActionBan && s.d.Lifecycles == nil) {
 		return moderation.Action{}, fmt.Errorf("%w: %s on a %s account", ErrUnsupportedAction, in.Kind, where)
 	}
 	if in.ReportID != "" {
@@ -270,7 +310,14 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		PublicReason: in.PublicReason, PrivateNote: in.PrivateNote, ReportID: in.ReportID, Issuer: moderation.IssuerModerator,
 		IssuedByUserID: in.IssuedByUserID, NotifyTarget: in.NotifyTarget, ExpiresAt: expiry(now, in.Duration), IssuedAt: now,
 	}
+	if len(in.StatusIDs) > 0 {
+		a.StatusIDs = slices.Sorted(slices.Values(in.StatusIDs))
+	}
 	if err := a.Validate(); err != nil {
+		return moderation.Action{}, err
+	}
+	statuses, err := s.actionStatuses(ctx, a)
+	if err != nil {
 		return moderation.Action{}, err
 	}
 	repo := s.d.Repository
@@ -284,6 +331,9 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 				return err
 			}
 		}
+		if err := s.carryOut(ctx, tx, a, statuses); err != nil {
+			return err
+		}
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
 		}
@@ -292,14 +342,60 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 			TargetID: a.TargetAccountID, TargetLabel: actorLabel(target), SourceEventID: a.ID, OccurredAt: now,
 		}, in.IssuedByUserID)
 	})
+	if errors.Is(err, appcontent.ErrAlreadyDeleted) {
+		return moderation.Action{}, fmt.Errorf("%w: a status was deleted meanwhile", ErrInvalidStatusReference)
+	}
 	if err != nil {
 		return moderation.Action{}, err
 	}
 	return a, nil
 }
 
+// actionStatuses returns the statuses that an action on statuses names, read before its
+// transaction: each must be a status of the target that is not deleted.
+func (s *Service) actionStatuses(ctx context.Context, a moderation.Action) ([]appcontent.Status, error) {
+	out := make([]appcontent.Status, 0, len(a.StatusIDs))
+	for _, id := range a.StatusIDs {
+		p, err := s.d.Statuses.Find(ctx, id)
+		switch {
+		case errors.Is(err, appcontent.ErrNotFound):
+			return nil, fmt.Errorf("%w: no status %s", ErrInvalidStatusReference, id)
+		case err != nil:
+			return nil, err
+		case p.Status.AuthorAccountID != a.TargetAccountID:
+			return nil, fmt.Errorf("%w: status %s is of another account", ErrInvalidStatusReference, id)
+		}
+		out = append(out, p.Status)
+	}
+	return out, nil
+}
+
+// carryOut records inside tx the effects of a beyond its restrictions (data-model §5.2): the
+// deletion or the sensitivity of its statuses, and the scheduled deletion of a banned account.
+func (s *Service) carryOut(ctx context.Context, tx uow.Tx, a moderation.Action, statuses []appcontent.Status) error {
+	switch a.Kind {
+	case moderation.ActionDeleteStatuses:
+		for _, st := range statuses {
+			if err := s.d.Statuses.DeleteByModeration(ctx, tx, st, a.ID, a.IssuedAt); err != nil {
+				return err
+			}
+		}
+	case moderation.ActionMarkStatusesSensitive:
+		for _, st := range statuses {
+			if err := s.d.Statuses.MarkSensitiveByModeration(ctx, tx, st.ID, a.ID); err != nil {
+				return err
+			}
+		}
+	case moderation.ActionBan:
+		return s.d.Lifecycles.ScheduleDeletionByModeration(ctx, tx, a.TargetAccountID, a.ID, a.IssuedAt.Add(moderation.BanDeletionDelay))
+	}
+	return nil
+}
+
 // LiftAccountAction lifts an action on an account: its restrictions end, while those of other
-// actions on the account stay. Lifting an action that is already lifted changes nothing. An
+// actions on the account stay, and the statuses that a mark_statuses_sensitive action marked are
+// no longer shown as sensitive by it; the statuses that delete_statuses deleted stay deleted.
+// Lifting an action that is already lifted changes nothing. A ban fails with ErrNotLiftable. An
 // invalid reason fails with an error wrapping moderation.ErrInvalidAction and a
 // *moderation.TextError.
 func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserID, reason string) error {
@@ -324,6 +420,9 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if err != nil {
 			return err
 		}
+		if !a.Kind.Liftable() {
+			return fmt.Errorf("%w: %s %s", ErrNotLiftable, a.Kind, a.ID)
+		}
 		err = repo.InsertActionLift(ctx, tx, lift)
 		if errors.Is(err, ErrAlreadyRecorded) {
 			return nil
@@ -333,6 +432,11 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		}
 		if err := repo.DeleteAccountRestrictionsOf(ctx, tx, a.ID); err != nil {
 			return err
+		}
+		if a.Kind == moderation.ActionMarkStatusesSensitive && s.d.Statuses != nil {
+			if err := s.d.Statuses.ClearSensitivityOf(ctx, tx, a.ID); err != nil {
+				return err
+			}
 		}
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
@@ -387,7 +491,7 @@ func (s *Service) FileRemoteReport(ctx context.Context, in RemoteReportInput) (r
 	r = moderation.Report{
 		ID: s.d.IDs.NewID(), URI: in.URI, ReporterAccountID: in.ReporterAccountID, TargetAccountID: in.TargetAccountID,
 		Category: moderation.CategoryOther, Comment: moderation.TruncateComment(in.Comment), FiledAt: now,
-		StatusIDs: uniqueSorted(in.StatusIDs),
+		StatusIDs: uniqueSorted(in.StatusIDs), RuleIDs: []string{},
 	}
 	if err := r.Validate(); err != nil {
 		return moderation.Report{}, false, err
