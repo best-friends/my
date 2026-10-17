@@ -166,6 +166,9 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 	if act.ObjectKind == federation.OutboundBlock {
 		return f.blockDocument(ctx, act, s)
 	}
+	if act.ObjectKind == federation.OutboundReport {
+		return f.flagDocument(ctx, act, s)
+	}
 	if act.ObjectKind == federation.OutboundFollow {
 		return f.followDocument(ctx, s)
 	}

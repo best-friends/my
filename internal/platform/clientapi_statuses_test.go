@@ -35,8 +35,20 @@ type statusesClient struct {
 
 func newStatusesClient(t *testing.T, users ...string) *statusesClient {
 	t.Helper()
-	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin})
-	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
+	return newStatusesClientWith(t, nil, platform.AppOptions{}, users...)
+}
+
+// newStatusesClientWith is newStatusesClient with more configuration variables and the
+// options of the App, whose Logger it discards.
+func newStatusesClientWith(t *testing.T, env map[string]string, opts platform.AppOptions, users ...string) *statusesClient {
+	t.Helper()
+	full := map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin}
+	for k, v := range env {
+		full[k] = v
+	}
+	cfg := loadConfig(t, full)
+	opts.Logger = slog.New(slog.DiscardHandler)
+	app, err := platform.NewApp(t.Context(), cfg, opts)
 	if err != nil {
 		t.Fatalf("NewApp: %v", err)
 	}
