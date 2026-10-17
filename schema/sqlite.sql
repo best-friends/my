@@ -697,8 +697,6 @@ CREATE TABLE sessions (
   id TEXT NOT NULL PRIMARY KEY,
   user_id TEXT NOT NULL,
   token_hash BLOB NOT NULL,
-  user_agent TEXT,
-  ip TEXT,
   created_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL
 ) STRICT;
@@ -1607,3 +1605,30 @@ CREATE TABLE report_resolutions (
   resolved_at INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX report_resolutions_report_id_id ON report_resolutions (report_id, id DESC);
+
+-- ---------------------------------------------------------------------------------------------
+-- identity: where sign-ins and registrations came from (data-model.md §4.1, ADR-0038). Kept
+-- apart from sessions and users so that the purge erases them after their retention.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource (child of a session): the client that started a session. ip and user_agent are NULL
+-- when unknown; a session with neither has no row.
+CREATE TABLE session_origins (
+  session_id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  ip TEXT,
+  user_agent TEXT,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX session_origins_ip ON session_origins (ip);
+CREATE INDEX session_origins_created_at ON session_origins (created_at);
+
+-- Resource: the IP address of a registration from the registration page. A registration from
+-- an unknown address has no row.
+CREATE TABLE registration_origins (
+  user_id TEXT NOT NULL PRIMARY KEY,
+  ip TEXT NOT NULL,
+  recorded_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX registration_origins_ip ON registration_origins (ip);
+CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);

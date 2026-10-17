@@ -13,7 +13,7 @@ import (
 )
 
 const getUnrevokedSessionByTokenHash = `-- name: GetUnrevokedSessionByTokenHash :one
-SELECT s.id, s.user_id, s.token_hash, s.user_agent, s.ip, s.created_at, s.expires_at, a.last_seen_at
+SELECT s.id, s.user_id, s.token_hash, s.created_at, s.expires_at, a.last_seen_at
 FROM sessions s
 LEFT JOIN session_activity a ON a.session_id = s.id
 WHERE s.token_hash = $1
@@ -24,8 +24,6 @@ type GetUnrevokedSessionByTokenHashRow struct {
 	ID         string
 	UserID     string
 	TokenHash  []byte
-	UserAgent  *string
-	Ip         *string
 	CreatedAt  time.Time
 	ExpiresAt  time.Time
 	LastSeenAt *time.Time
@@ -38,8 +36,6 @@ func (q *Queries) GetUnrevokedSessionByTokenHash(ctx context.Context, tokenHash 
 		&i.ID,
 		&i.UserID,
 		&i.TokenHash,
-		&i.UserAgent,
-		&i.Ip,
 		&i.CreatedAt,
 		&i.ExpiresAt,
 		&i.LastSeenAt,
@@ -49,16 +45,14 @@ func (q *Queries) GetUnrevokedSessionByTokenHash(ctx context.Context, tokenHash 
 
 const insertSession = `-- name: InsertSession :exec
 
-INSERT INTO sessions (id, user_id, token_hash, user_agent, ip, created_at, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertSessionParams struct {
 	ID        string
 	UserID    string
 	TokenHash []byte
-	UserAgent *string
-	Ip        *string
 	CreatedAt time.Time
 	ExpiresAt time.Time
 }
@@ -69,8 +63,6 @@ func (q *Queries) InsertSession(ctx context.Context, arg InsertSessionParams) er
 		arg.ID,
 		arg.UserID,
 		arg.TokenHash,
-		arg.UserAgent,
-		arg.Ip,
 		arg.CreatedAt,
 		arg.ExpiresAt,
 	)

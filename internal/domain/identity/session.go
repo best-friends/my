@@ -10,16 +10,34 @@ type Session struct {
 	ID        string
 	UserID    string
 	TokenHash []byte
-	// UserAgent and IP describe the client that signed in, for the user's session list;
-	// "" when unknown.
-	UserAgent string
-	IP        string
 	CreatedAt time.Time
 	ExpiresAt time.Time
 }
 
 // Expired reports whether the session has expired at now.
 func (s Session) Expired(now time.Time) bool { return !now.Before(s.ExpiresAt) }
+
+// SessionOrigin is the client that started a session: its IP address and User-Agent, "" when
+// unknown (data-model §4.1, session_origins). It is kept apart from the session so that it is
+// erased after its retention (ADR-0038) while the session stays.
+type SessionOrigin struct {
+	SessionID string
+	UserID    string
+	IP        string
+	UserAgent string
+	CreatedAt time.Time
+}
+
+// Empty reports whether the origin records nothing; no row is written for it.
+func (o SessionOrigin) Empty() bool { return o.IP == "" && o.UserAgent == "" }
+
+// RegistrationOrigin is the IP address a user registered from on the registration page
+// (data-model §4.1, registration_origins). It is erased after its retention (ADR-0038).
+type RegistrationOrigin struct {
+	UserID     string
+	IP         string
+	RecordedAt time.Time
+}
 
 // MaxUserAgentLength bounds the stored User-Agent in bytes; longer values are cut.
 const MaxUserAgentLength = 512

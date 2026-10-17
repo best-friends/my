@@ -50,6 +50,7 @@ type Repository interface {
 	PreferencesRepository
 	OAuthRepository
 	RegistrationRepository
+	OriginRepository
 
 	InsertSession(ctx context.Context, tx uow.Tx, s identity.Session) error
 	// InsertSessionRevocation records that a session ended; it does nothing when the session

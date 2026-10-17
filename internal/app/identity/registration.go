@@ -121,8 +121,9 @@ type SignUpInput struct {
 	// Reason is why the applicant wants to join; it is kept in approval mode and ignored in
 	// the other modes.
 	Reason string
-	// IP is the client address ("" when unknown); it keys SignUpIPLimit and is stored with
-	// the session.
+	// IP is the client address ("" when unknown); it keys SignUpIPLimit and is recorded as the
+	// registration's origin and, with UserAgent, the session's. An unknown or unparsable
+	// address is not recorded and does not stop the sign-up.
 	IP        string
 	UserAgent string
 	// CurrentToken is the session token the browser already holds, if any; the new user's
@@ -149,7 +150,8 @@ type SignedUp struct {
 //
 // In one transaction it writes the user, password, primary email address, preferences, local
 // account, application, the system's decision, the registration state, the invite's
-// redemption, the email verification token, and a session; then it sends the verification
+// redemption, the email verification token, the registration's origin, and a session with its
+// origin; then it sends the verification
 // email. The invite's redemption takes the next sequence number, so concurrent sign-ups never
 // redeem an invite more than its maximum uses.
 //
@@ -268,6 +270,11 @@ func (s *Service) SignUp(ctx context.Context, in SignUpInput) (SignedUp, error) 
 		}
 		if verification != nil {
 			if err := repo.InsertUserToken(ctx, tx, verification.token); err != nil {
+				return err
+			}
+		}
+		if ip := normalizeIP(in.IP); ip != "" {
+			if err := repo.InsertRegistrationOrigin(ctx, tx, identity.RegistrationOrigin{UserID: p.user.ID, IP: ip, RecordedAt: now}); err != nil {
 				return err
 			}
 		}
