@@ -266,7 +266,7 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) er
 }
 
 const insertAccountKey = `-- name: InsertAccountKey :exec
-INSERT INTO account_keys (id, account_id, key_id, algorithm, public_key_pem, created_at) VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO account_keys (id, account_id, key_id, algorithm, public_key_pem, fingerprint, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertAccountKeyParams struct {
@@ -275,6 +275,7 @@ type InsertAccountKeyParams struct {
 	KeyID        string
 	Algorithm    string
 	PublicKeyPem string
+	Fingerprint  []byte
 	CreatedAt    int64
 }
 
@@ -285,6 +286,7 @@ func (q *Queries) InsertAccountKey(ctx context.Context, arg InsertAccountKeyPara
 		arg.KeyID,
 		arg.Algorithm,
 		arg.PublicKeyPem,
+		arg.Fingerprint,
 		arg.CreatedAt,
 	)
 	return err
@@ -493,7 +495,7 @@ func (q *Queries) ListAccountHandles(ctx context.Context) ([]AccountHandle, erro
 }
 
 const listAccountKeys = `-- name: ListAccountKeys :many
-SELECT id, account_id, key_id, algorithm, public_key_pem, created_at FROM account_keys
+SELECT id, account_id, key_id, algorithm, public_key_pem, fingerprint, created_at FROM account_keys
 WHERE account_id = ? ORDER BY id
 `
 
@@ -512,6 +514,7 @@ func (q *Queries) ListAccountKeys(ctx context.Context, accountID string) ([]Acco
 			&i.KeyID,
 			&i.Algorithm,
 			&i.PublicKeyPem,
+			&i.Fingerprint,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

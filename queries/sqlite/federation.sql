@@ -1,0 +1,152 @@
+-- SPDX-License-Identifier: AGPL-3.0-only
+--
+-- Queries of the inbox, delivery, and remote instances (data-model section 4.8), owned by
+-- internal/app/federation.
+
+-- InsertReceivedActivity records an accepted activity once; zero rows means a duplicate.
+-- name: InsertReceivedActivity :execrows
+INSERT INTO received_activities (activity_uri, actor_uri, type, signature_scheme, trust, received_at)
+VALUES (@activity_uri, @actor_uri, @type, @signature_scheme, @trust, @received_at)
+ON CONFLICT (activity_uri) DO NOTHING;
+
+-- name: GetReceivedActivity :one
+SELECT activity_uri, actor_uri, type, signature_scheme, trust, received_at FROM received_activities
+WHERE activity_uri = @activity_uri;
+
+-- name: InsertReceivedActivityDocument :exec
+INSERT INTO received_activity_documents (activity_uri, document) VALUES (@activity_uri, @document)
+ON CONFLICT (activity_uri) DO NOTHING;
+
+-- name: GetReceivedActivityDocument :one
+SELECT document FROM received_activity_documents WHERE activity_uri = @activity_uri;
+
+-- DeleteReceivedActivityDocumentsBefore removes at most @batch_limit documents of activities
+-- received before @received_before.
+-- name: DeleteReceivedActivityDocumentsBefore :execrows
+DELETE FROM received_activity_documents
+WHERE activity_uri IN (
+  SELECT a.activity_uri FROM received_activities a
+  JOIN received_activity_documents d ON d.activity_uri = a.activity_uri
+  WHERE a.received_at < @received_before ORDER BY a.received_at LIMIT @batch_limit
+);
+
+-- DeleteReceivedActivitiesBefore removes at most @batch_limit activities received before
+-- @received_before.
+-- name: DeleteReceivedActivitiesBefore :execrows
+DELETE FROM received_activities
+WHERE activity_uri IN (
+  SELECT a.activity_uri FROM received_activities a
+  WHERE a.received_at < @received_before ORDER BY a.received_at LIMIT @batch_limit
+);
+
+-- name: InsertRemoteObjectTombstone :execrows
+INSERT INTO remote_object_tombstones (uri, actor_uri, activity_uri, received_at)
+VALUES (@uri, @actor_uri, @activity_uri, @received_at)
+ON CONFLICT (uri) DO NOTHING;
+
+-- name: HasRemoteObjectTombstone :one
+SELECT EXISTS (SELECT 1 FROM remote_object_tombstones WHERE uri = @uri);
+
+-- name: DeleteRemoteObjectTombstonesBefore :execrows
+DELETE FROM remote_object_tombstones
+WHERE uri IN (
+  SELECT t.uri FROM remote_object_tombstones t
+  WHERE t.received_at < @received_before ORDER BY t.received_at LIMIT @batch_limit
+);
+
+-- name: InsertOutboundActivity :exec
+INSERT INTO outbound_activities (id, activity_uri, type, actor_account_id, object_type, object_id, created_at)
+VALUES (@id, @activity_uri, @type, @actor_account_id, @object_type, @object_id, @created_at);
+
+-- name: GetOutboundActivity :one
+SELECT id, activity_uri, type, actor_account_id, object_type, object_id, created_at
+FROM outbound_activities WHERE id = @id;
+
+-- ListOutboundActivitiesOfObject returns the activities sent about an object, oldest first.
+-- name: ListOutboundActivitiesOfObject :many
+SELECT id, activity_uri, type, actor_account_id, object_type, object_id, created_at
+FROM outbound_activities WHERE object_type = @object_type AND object_id = @object_id ORDER BY id;
+
+-- InsertOutboundActivityDocument stores the body once; a repeated fan-out keeps the first.
+-- name: InsertOutboundActivityDocument :execrows
+INSERT INTO outbound_activity_documents (outbound_activity_id, document, built_at)
+VALUES (@outbound_activity_id, @document, @built_at)
+ON CONFLICT (outbound_activity_id) DO NOTHING;
+
+-- name: GetOutboundActivityDocument :one
+SELECT document FROM outbound_activity_documents WHERE outbound_activity_id = @outbound_activity_id;
+
+-- name: DeleteOutboundActivityDocumentsBefore :execrows
+DELETE FROM outbound_activity_documents
+WHERE outbound_activity_id IN (
+  SELECT d.outbound_activity_id FROM outbound_activity_documents d
+  WHERE d.built_at < @built_before ORDER BY d.built_at LIMIT @batch_limit
+);
+
+-- InsertDelivery adds an inbox to an activity once; zero rows means it was already there.
+-- name: InsertDelivery :execrows
+INSERT INTO deliveries (id, outbound_activity_id, inbox_url, domain, created_at)
+VALUES (@id, @outbound_activity_id, @inbox_url, @domain, @created_at)
+ON CONFLICT (outbound_activity_id, inbox_url) DO NOTHING;
+
+-- name: GetDelivery :one
+SELECT id, outbound_activity_id, inbox_url, domain, created_at FROM deliveries WHERE id = @id;
+
+-- ListDeliveriesOfOutboundActivity returns the inboxes of an activity in id order after
+-- @after_id, for the Update and Delete of what it created.
+-- name: ListDeliveriesOfOutboundActivity :many
+SELECT id, outbound_activity_id, inbox_url, domain, created_at FROM deliveries
+WHERE outbound_activity_id = @outbound_activity_id AND id > @after_id ORDER BY id LIMIT @batch_limit;
+
+-- name: InsertDeliveryAttempt :exec
+INSERT INTO delivery_attempts (id, delivery_id, outcome, signature_scheme, http_status, error, attempted_at)
+VALUES (@id, @delivery_id, @outcome, @signature_scheme, @http_status, @error, @attempted_at);
+
+-- name: ListDeliveryAttempts :many
+SELECT id, delivery_id, outcome, signature_scheme, http_status, error, attempted_at FROM delivery_attempts
+WHERE delivery_id = @delivery_id ORDER BY id;
+
+-- name: DeleteDeliveryAttemptsBefore :execrows
+DELETE FROM delivery_attempts
+WHERE id IN (
+  SELECT a.id FROM delivery_attempts a WHERE a.attempted_at < @attempted_before ORDER BY a.id LIMIT @batch_limit
+);
+
+-- name: InsertRemoteInstance :execrows
+INSERT INTO remote_instances (domain, first_seen_at) VALUES (@domain, @first_seen_at)
+ON CONFLICT (domain) DO NOTHING;
+
+-- name: InsertInstanceNodeinfoObservation :exec
+INSERT INTO instance_nodeinfo_observations (id, domain, software_name, software_version, observed_at)
+VALUES (@id, @domain, @software_name, @software_version, @observed_at);
+
+-- name: GetLatestInstanceNodeinfoObservation :one
+SELECT id, domain, software_name, software_version, observed_at FROM instance_nodeinfo_observations
+WHERE domain = @domain ORDER BY id DESC LIMIT 1;
+
+-- name: InsertInstanceAvailabilityEvent :exec
+INSERT INTO instance_availability_events (id, domain, kind, reason, occurred_at)
+VALUES (@id, @domain, @kind, @reason, @occurred_at);
+
+-- ListInstanceAvailabilityEvents returns the availability events of a server, newest first.
+-- name: ListInstanceAvailabilityEvents :many
+SELECT id, domain, kind, reason, occurred_at FROM instance_availability_events
+WHERE domain = @domain ORDER BY id DESC LIMIT @batch_limit;
+
+-- name: UpsertInstanceHealth :exec
+INSERT INTO instance_health (domain, state, since, failure_days, last_failure_day)
+VALUES (@domain, @state, @since, @failure_days, @last_failure_day)
+ON CONFLICT (domain) DO UPDATE SET
+  state = excluded.state,
+  since = excluded.since,
+  failure_days = excluded.failure_days,
+  last_failure_day = excluded.last_failure_day;
+
+-- name: GetInstanceHealth :one
+SELECT domain, state, since, failure_days, last_failure_day FROM instance_health WHERE domain = @domain;
+
+-- ListUnavailableInstances returns the servers that are not delivery targets, in domain order
+-- after @after_domain.
+-- name: ListUnavailableInstances :many
+SELECT domain, state, since, failure_days, last_failure_day FROM instance_health
+WHERE state = 'unavailable' AND domain > @after_domain ORDER BY domain LIMIT @batch_limit;
