@@ -1,0 +1,572 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package federation
+
+import (
+	"encoding/json"
+	"fmt"
+	"slices"
+	"strings"
+	"time"
+)
+
+// Normalize reads a received AS2 document (federation.md §4). The document is read as JSON
+// compacted with the normative ActivityStreams context, never processed as JSON-LD: @context is
+// not interpreted (a missing one means the normative context, AS2 Core §2.1), and a Linked Data
+// signature is ignored. Unknown properties, including dialect extensions such as Misskey's
+// _misskey_content and _misskey_quote, are ignored. now bounds future timestamps.
+//
+// It returns ErrMalformed for a document that is not a JSON object with a type, and
+// ErrLimitExceeded for one over a limit (MaxDepth, MaxTags, MaxRecipients, MaxBodyBytes).
+func Normalize(raw []byte, now time.Time) (*Document, error) {
+	v, err := decode(raw, MaxDepth)
+	if err != nil {
+		return nil, err
+	}
+	o, ok := v.(object)
+	if !ok {
+		return nil, fmt.Errorf("%w: not a JSON object", ErrMalformed)
+	}
+	n := normalizer{now: now.UTC()}
+	return n.document(o)
+}
+
+type normalizer struct {
+	now time.Time
+}
+
+func (n normalizer) document(o object) (*Document, error) {
+	names := strs(o.get("type"))
+	if len(names) == 0 {
+		return nil, fmt.Errorf("%w: no type", ErrMalformed)
+	}
+	for _, t := range names {
+		switch {
+		case slices.Contains(activityTypes, ActivityType(t)):
+			a, err := n.activity(o, ActivityType(t), names[0])
+			return &Document{Activity: a}, err
+		case slices.Contains(objectTypes, ObjectType(t)):
+			obj, err := n.object(o, ObjectType(t), names[0])
+			return &Document{Object: obj}, err
+		case slices.Contains(actorTypes, ActorType(t)):
+			a, err := n.actor(o, ActorType(t))
+			return &Document{Actor: a}, err
+		}
+	}
+	if o.has("actor") {
+		a, err := n.activity(o, ActivityUnknown, names[0])
+		return &Document{Activity: a}, err
+	}
+	obj, err := n.object(o, ObjectUnknown, names[0])
+	return &Document{Object: obj}, err
+}
+
+var (
+	activityTypes = []ActivityType{
+		ActivityCreate, ActivityUpdate, ActivityDelete, ActivityFollow, ActivityAccept, ActivityReject,
+		ActivityUndo, ActivityAnnounce, ActivityLike, ActivityEmojiReact, ActivityBlock, ActivityFlag,
+		ActivityAdd, ActivityRemove, ActivityMove,
+	}
+	objectTypes = []ObjectType{
+		ObjectNote, ObjectQuestion, ObjectArticle, ObjectPage, ObjectEvent, ObjectImage, ObjectVideo,
+		ObjectAudio, ObjectTombstone,
+	}
+	convertedTypes = []ObjectType{ObjectArticle, ObjectPage, ObjectEvent, ObjectImage, ObjectVideo, ObjectAudio}
+	actorTypes     = []ActorType{ActorPerson, ActorService, ActorApplication, ActorGroup, ActorOrganization}
+)
+
+func (n normalizer) activity(o object, t ActivityType, raw string) (*Activity, error) {
+	a := &Activity{
+		ID:        iri(o.get("id")),
+		Type:      t,
+		RawType:   raw,
+		Actor:     firstRef(o.get("actor")),
+		Target:    firstRef(o.get("target")),
+		Published: n.time(o.get("published")),
+	}
+	var err error
+	if a.Audience, err = audience(o); err != nil {
+		return nil, err
+	}
+	container := a.ID
+	if container == "" {
+		container = a.Actor
+	}
+	for _, v := range list(o.get("object")) {
+		r, err := n.ref(v, container)
+		if err != nil {
+			return nil, err
+		}
+		if r.ID != "" || r.embedded != nil {
+			a.Objects = append(a.Objects, r)
+		}
+	}
+	content, err := body(o.get("content"))
+	if err != nil {
+		return nil, err
+	}
+	a.Content = plainText(content)
+	switch t {
+	case ActivityEmojiReact:
+		a.Reaction = a.Content
+	case ActivityLike:
+		a.Reaction = strings.TrimSpace(str(o.get("_misskey_reaction")))
+	}
+	if _, _, a.Emojis, err = tags(o.get("tag")); err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) {
+	obj := &Object{
+		ID:           iri(o.get("id")),
+		Type:         t,
+		RawType:      raw,
+		Converted:    slices.Contains(convertedTypes, t),
+		AttributedTo: firstRef(o.get("attributedTo")),
+		InReplyTo:    firstRef(o.get("inReplyTo")),
+		Published:    n.time(o.get("published")),
+		Updated:      n.time(o.get("updated")),
+		URL:          displayURL(o.get("url")),
+		Sensitive:    o.get("sensitive") == true,
+	}
+	var err error
+	if obj.Audience, err = audience(o); err != nil {
+		return nil, err
+	}
+	if obj.Bodies, err = bodies(o); err != nil {
+		return nil, err
+	}
+	summary, err := body(o.get("summary"))
+	if err != nil {
+		return nil, err
+	}
+	if summary == "" {
+		if summary, err = firstMapValue(o.get("summaryMap")); err != nil {
+			return nil, err
+		}
+	}
+	summary = plainText(summary)
+	if obj.Converted {
+		name := strings.TrimSpace(str(o.get("name")))
+		if name == "" {
+			name, _ = firstMapValue(o.get("nameMap"))
+			name = strings.TrimSpace(name)
+		}
+		link := obj.URL
+		if link == "" {
+			link = obj.ID
+		}
+		lang := UndeterminedLang
+		if len(obj.Bodies) > 0 {
+			lang = obj.Bodies[0].Language
+		}
+		obj.Bodies = []Body{{Language: lang, HTML: convertedBody(name, summary, link)}}
+	} else {
+		obj.SpoilerText = summary
+	}
+	if obj.Mentions, obj.Hashtags, obj.Emojis, err = tags(o.get("tag")); err != nil {
+		return nil, err
+	}
+	obj.Attachments = attachments(o.get("attachment"))
+	if t == ObjectQuestion {
+		obj.Poll = n.poll(o)
+	}
+	return obj, nil
+}
+
+func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
+	a := &Actor{
+		ID:                        iri(o.get("id")),
+		Type:                      t,
+		PreferredUsername:         strings.TrimSpace(str(o.get("preferredUsername"))),
+		Name:                      strings.TrimSpace(str(o.get("name"))),
+		URL:                       displayURL(o.get("url")),
+		Inbox:                     firstRef(o.get("inbox")),
+		Outbox:                    firstRef(o.get("outbox")),
+		Followers:                 firstRef(o.get("followers")),
+		Following:                 firstRef(o.get("following")),
+		Featured:                  firstRef(o.get("featured")),
+		Icon:                      imageURL(o.get("icon")),
+		Image:                     imageURL(o.get("image")),
+		ManuallyApprovesFollowers: o.get("manuallyApprovesFollowers") == true,
+		Discoverable:              o.get("discoverable") == true,
+		Published:                 n.time(o.get("published")),
+	}
+	var err error
+	if a.Summary, err = body(o.get("summary")); err != nil {
+		return nil, err
+	}
+	if ep, ok := o.get("endpoints").(object); ok {
+		a.SharedInbox = firstRef(ep.get("sharedInbox"))
+	}
+	for _, v := range list(o.get("publicKey")) {
+		k, ok := v.(object)
+		if !ok {
+			continue
+		}
+		if pem := str(k.get("publicKeyPem")); pem != "" {
+			a.PublicKeys = append(a.PublicKeys, PublicKey{ID: iri(k.get("id")), Owner: firstRef(k.get("owner")), PEM: pem})
+		}
+	}
+	for _, v := range list(o.get("attachment")) {
+		f, ok := v.(object)
+		if !ok || !slices.Contains(strs(f.get("type")), "PropertyValue") {
+			continue
+		}
+		value, err := body(f.get("value"))
+		if err != nil {
+			return nil, err
+		}
+		a.Fields = append(a.Fields, Field{Name: strings.TrimSpace(str(f.get("name"))), Value: value})
+	}
+	if _, _, a.Emojis, err = tags(o.get("tag")); err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+// ref reads a property that refers to a document: an IRI, a Link, or an embedded document whose
+// contents are trusted only when it has no id or the same origin as container.
+func (n normalizer) ref(v any, container IRI) (Ref, error) {
+	switch v := v.(type) {
+	case string:
+		return Ref{ID: normalizeIRI(v)}, nil
+	case object:
+		names := strs(v.get("type"))
+		if len(names) == 0 || isLink(v) {
+			return Ref{ID: linkIRI(v)}, nil
+		}
+		doc, err := n.document(v)
+		if err != nil {
+			return Ref{}, err
+		}
+		id := doc.ID()
+		return Ref{ID: id, embedded: doc, sameOrigin: id == "" || SameOrigin(id, container)}, nil
+	}
+	return Ref{}, nil
+}
+
+func (n normalizer) poll(o object) *Poll {
+	p := &Poll{EndTime: n.time(o.get("endTime")), Closed: n.time(o.get("closed")), VotersCount: integer(o.get("votersCount"))}
+	choices := o.get("oneOf")
+	if choices == nil {
+		choices = o.get("anyOf")
+		p.Multiple = choices != nil
+	}
+	for _, v := range list(choices) {
+		c, ok := v.(object)
+		if !ok {
+			continue
+		}
+		opt := PollOption{Name: strings.TrimSpace(str(c.get("name")))}
+		if r, ok := c.get("replies").(object); ok {
+			opt.Votes = integer(r.get("totalItems"))
+		}
+		p.Options = append(p.Options, opt)
+	}
+	return p
+}
+
+// time reads an RFC 3339 timestamp; a future one is clamped to now, a malformed one is zero.
+func (n normalizer) time(v any) time.Time {
+	s, ok := v.(string)
+	if !ok {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(s))
+	if err != nil {
+		return time.Time{}
+	}
+	if t.After(n.now) {
+		return n.now
+	}
+	return t.UTC()
+}
+
+// audience reads to and cc, normalizing the spellings of Public and dropping duplicates.
+func audience(o object) (Audience, error) {
+	to, cc := list(o.get("to")), list(o.get("cc"))
+	if len(to)+len(cc) > MaxRecipients {
+		return Audience{}, fmt.Errorf("%w: %d recipients (max %d)", ErrLimitExceeded, len(to)+len(cc), MaxRecipients)
+	}
+	return Audience{To: recipients(to), Cc: recipients(cc)}, nil
+}
+
+func recipients(vs []any) []IRI {
+	var out []IRI
+	for _, v := range vs {
+		var r IRI
+		switch v := v.(type) {
+		case string:
+			r = normalizeIRI(v)
+		case object:
+			r = linkIRI(v)
+		}
+		if r != "" && !slices.Contains(out, r) {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// bodies reads contentMap (one Body per language, in document order) or, without it, content as
+// one Body in UndeterminedLang.
+func bodies(o object) ([]Body, error) {
+	content, err := body(o.get("content"))
+	if err != nil {
+		return nil, err
+	}
+	var out []Body
+	if m, ok := o.get("contentMap").(object); ok {
+		for _, e := range m {
+			h, err := body(e.value)
+			if err != nil {
+				return nil, err
+			}
+			lang := canonicalLanguage(e.key)
+			if h == "" || slices.ContainsFunc(out, func(b Body) bool { return b.Language == lang }) {
+				continue
+			}
+			out = append(out, Body{Language: lang, HTML: h})
+		}
+	}
+	if len(out) == 0 && content != "" {
+		out = []Body{{Language: UndeterminedLang, HTML: content}}
+	}
+	return out, nil
+}
+
+// body reads one HTML value and enforces MaxBodyBytes.
+func body(v any) (string, error) {
+	s := str(v)
+	if len(s) > MaxBodyBytes {
+		return "", fmt.Errorf("%w: a %d-byte HTML value (max %d)", ErrLimitExceeded, len(s), MaxBodyBytes)
+	}
+	return s, nil
+}
+
+func firstMapValue(v any) (string, error) {
+	m, ok := v.(object)
+	if !ok {
+		return "", nil
+	}
+	for _, e := range m {
+		if s, err := body(e.value); err != nil || s != "" {
+			return s, err
+		}
+	}
+	return "", nil
+}
+
+// tags reads the tag property: Mention, Hashtag, and Emoji entries.
+func tags(v any) (mentions []Mention, hashtags []string, emojis []Emoji, err error) {
+	vs := list(v)
+	if len(vs) > MaxTags {
+		return nil, nil, nil, fmt.Errorf("%w: %d tags (max %d)", ErrLimitExceeded, len(vs), MaxTags)
+	}
+	for _, v := range vs {
+		t, ok := v.(object)
+		if !ok {
+			continue
+		}
+		types := strs(t.get("type"))
+		name := strings.TrimSpace(str(t.get("name")))
+		switch {
+		case slices.Contains(types, "Mention"):
+			if href := firstRef(t.get("href")); href != "" {
+				mentions = append(mentions, Mention{Href: href, Name: name})
+			}
+		case slices.Contains(types, "Hashtag"):
+			if h := strings.TrimPrefix(name, "#"); h != "" && !slices.Contains(hashtags, h) {
+				hashtags = append(hashtags, h)
+			}
+		case slices.Contains(types, "Emoji"):
+			code := strings.Trim(name, ":")
+			if icon := imageURL(t.get("icon")); code != "" && icon != "" {
+				emojis = append(emojis, Emoji{ID: iri(t.get("id")), Shortcode: code, IconURL: icon})
+			}
+		}
+	}
+	return mentions, hashtags, emojis, nil
+}
+
+var attachmentTypes = []string{"Document", "Image", "Video", "Audio"}
+
+// attachments reads up to MaxAttachments media attachments. A bare Link is not an attachment.
+func attachments(v any) []Attachment {
+	var out []Attachment
+	for _, v := range list(v) {
+		if len(out) == MaxAttachments {
+			break
+		}
+		o, ok := v.(object)
+		if !ok {
+			continue
+		}
+		i := slices.IndexFunc(strs(o.get("type")), func(t string) bool { return slices.Contains(attachmentTypes, t) })
+		if i < 0 {
+			continue
+		}
+		l := firstLink(o.get("url"))
+		if l.Href == "" {
+			continue
+		}
+		a := Attachment{
+			Type:      strs(o.get("type"))[i],
+			URL:       l.Href,
+			MediaType: strings.TrimSpace(str(o.get("mediaType"))),
+			Name:      strings.TrimSpace(str(o.get("name"))),
+			Blurhash:  str(o.get("blurhash")),
+			Width:     integer(o.get("width")),
+			Height:    integer(o.get("height")),
+		}
+		if a.MediaType == "" {
+			a.MediaType = l.MediaType
+		}
+		if fp := list(o.get("focalPoint")); len(fp) == 2 {
+			x, okX := number(fp[0])
+			y, okY := number(fp[1])
+			if okX && okY {
+				a.FocalPoint = &[2]float64{x, y}
+			}
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
+// links reads a property whose values are IRIs or Links.
+func links(v any) []Link {
+	var out []Link
+	for _, v := range list(v) {
+		switch v := v.(type) {
+		case string:
+			if h := normalizeIRI(v); h != "" {
+				out = append(out, Link{Href: h})
+			}
+		case object:
+			if h := linkIRI(v); h != "" {
+				out = append(out, Link{Href: h, MediaType: strings.TrimSpace(str(v.get("mediaType"))), Name: str(v.get("name"))})
+			}
+		}
+	}
+	return out
+}
+
+func firstLink(v any) Link {
+	if ls := links(v); len(ls) > 0 {
+		return ls[0]
+	}
+	return Link{}
+}
+
+// displayURL returns the first text/html (or untyped) url, else the first url.
+func displayURL(v any) IRI {
+	ls := links(v)
+	for _, l := range ls {
+		if l.MediaType == "" || strings.HasPrefix(l.MediaType, "text/html") {
+			return l.Href
+		}
+	}
+	if len(ls) > 0 {
+		return ls[0].Href
+	}
+	return ""
+}
+
+// imageURL reads an icon or image: an IRI, a Link, or an Image object (or a list of them).
+func imageURL(v any) IRI {
+	for _, v := range list(v) {
+		switch v := v.(type) {
+		case string:
+			if h := normalizeIRI(v); h != "" {
+				return h
+			}
+		case object:
+			if h := firstLink(v.get("url")).Href; h != "" {
+				return h
+			}
+			if h := normalizeIRI(str(v.get("href"))); h != "" {
+				return h
+			}
+		}
+	}
+	return ""
+}
+
+func isLink(o object) bool {
+	types := strs(o.get("type"))
+	return slices.Contains(types, "Link") || slices.Contains(types, "Mention") || (o.has("href") && !o.has("id"))
+}
+
+// linkIRI returns the href of a Link or the id of an object.
+func linkIRI(o object) IRI {
+	if isLink(o) {
+		return normalizeIRI(str(o.get("href")))
+	}
+	return iri(o.get("id"))
+}
+
+// firstRef returns the IRI of the first value of a property that refers to a document.
+func firstRef(v any) IRI {
+	for _, v := range list(v) {
+		var r IRI
+		switch v := v.(type) {
+		case string:
+			r = normalizeIRI(v)
+		case object:
+			r = linkIRI(v)
+		}
+		if r != "" {
+			return r
+		}
+	}
+	return ""
+}
+
+func iri(v any) IRI { return normalizeIRI(str(v)) }
+
+// list reads a property that may be single, an array, or null as a slice.
+func list(v any) []any {
+	switch v := v.(type) {
+	case nil:
+		return nil
+	case []any:
+		return v
+	}
+	return []any{v}
+}
+
+func str(v any) string {
+	s, _ := v.(string)
+	return s
+}
+
+func strs(v any) []string {
+	var out []string
+	for _, v := range list(v) {
+		if s, ok := v.(string); ok && s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func number(v any) (float64, bool) {
+	n, ok := v.(json.Number)
+	if !ok {
+		return 0, false
+	}
+	f, err := n.Float64()
+	return f, err == nil
+}
+
+func integer(v any) int {
+	f, ok := number(v)
+	if !ok || f < 0 || f > 1<<31 {
+		return 0
+	}
+	return int(f)
+}
