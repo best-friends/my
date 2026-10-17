@@ -568,6 +568,90 @@ export interface MessageArgs {
   "client:public.disabled.title": {};
   /** Federated timeline */
   "client:public.title": {};
+  /** Back */
+  "client:report.back": {};
+  /** Why are you reporting this account? */
+  "client:report.category.heading": {};
+  /** Illegal content */
+  "client:report.category.legal": {};
+  /** Content that you think is against the law. */
+  "client:report.category.legal.description": {};
+  /** Something else */
+  "client:report.category.other": {};
+  /** Tell the moderators about it in the comment. */
+  "client:report.category.other.description": {};
+  /** Choose a reason. */
+  "client:report.category.required": {};
+  /** Spam */
+  "client:report.category.spam": {};
+  /** Unwanted ads, links or the same post again and again. */
+  "client:report.category.spam.description": {};
+  /** Breaks the server rules */
+  "client:report.category.violation": {};
+  /** You choose the rules in the next step. */
+  "client:report.category.violation.description": {};
+  /** Close */
+  "client:report.close": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:report.comment.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:report.comment.characters_over": { count: number };
+  /** Optional. Only the moderators read it. */
+  "client:report.comment.description": {};
+  /** Anything else the moderators should know? */
+  "client:report.comment.heading": {};
+  /** Comment */
+  "client:report.comment.label": {};
+  /** Shorten the comment to {max, number} characters or fewer. */
+  "client:report.comment.too_long": { max: number };
+  /** Done */
+  "client:report.done": {};
+  /** The report was not sent: {reason} */
+  "client:report.failed": { reason: string };
+  /** Also send the report to {domain} */
+  "client:report.forward": { domain: string };
+  /** The moderators of {domain} get a copy without your name. */
+  "client:report.forward.description": { domain: string };
+  /** Next */
+  "client:report.next": {};
+  /** Report */
+  "client:report.open": {};
+  /** Content warning: {text} */
+  "client:report.posts.content_warning": { text: string };
+  /** Choose the posts the moderators should look at. You can also report the account without them. */
+  "client:report.posts.description": {};
+  /** This account has no posts that you can choose. */
+  "client:report.posts.empty": {};
+  /** Couldn't load the posts */
+  "client:report.posts.failed": {};
+  /** Which posts are you reporting? */
+  "client:report.posts.heading": {};
+  /** Post of {date} */
+  "client:report.posts.item": { date: string };
+  /** Loading posts */
+  "client:report.posts.loading": {};
+  /** {count, plural, one {# attachment} other {# attachments}} */
+  "client:report.posts.media": { count: number };
+  /** Try again */
+  "client:report.posts.retry": {};
+  /** Choose every rule that applies. */
+  "client:report.rules.description": {};
+  /** Which rules does it break? */
+  "client:report.rules.heading": {};
+  /** Choose at least one rule. */
+  "client:report.rules.required": {};
+  /** The moderators will review it. The account is not told who reported it. */
+  "client:report.sent.body": {};
+  /** A copy without your name goes to {domain}. */
+  "client:report.sent.forwarded": { domain: string };
+  /** Report sent */
+  "client:report.sent.heading": {};
+  /** Step {current, number} of {total, number} */
+  "client:report.step": { current: number; total: number };
+  /** Send report */
+  "client:report.submit": {};
+  /** Report {name} */
+  "client:report.title": { name: string };
   /** Enter @username@server or the address of a profile, on this server or another one. */
   "client:search.description": {};
   /** Enter @username@server or the address of a profile. Only accounts this server already knows are found. */
