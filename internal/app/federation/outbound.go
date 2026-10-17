@@ -90,14 +90,17 @@ type RecorderDeps struct {
 //   - graph.followed / follow_requested / follow_accepted / follow_rejected / follow_terminated
 //     between a local and a remote account: Follow, Accept, Reject, and Undo Follow
 //     (registerFollowProjectors).
+//   - content.favourited / unfavourited of a remote status: Like and Undo Like
+//     (registerFavouriteProjectors).
 //
-// Other activities (Like, Block) are added here, one projector each, with the use cases that
-// send them.
+// Other activities (Block) are added here, one projector each, with the use cases that send
+// them.
 func RegisterOutboundProjectors(r *uow.Projectors, d RecorderDeps) {
 	rec := recorder{d: d}
 	if d.Accounts != nil {
 		registerFollowProjectors(r, rec)
 	}
+	registerFavouriteProjectors(r, rec)
 	r.Register(appcontent.EventStatusCreated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appcontent.StatusCreated)
 		if !ok || !ev.Status.IsLocal {

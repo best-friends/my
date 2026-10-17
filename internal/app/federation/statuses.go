@@ -366,21 +366,29 @@ func (h *StatusHandlers) resolveMentions(ctx context.Context, m *postMentions) e
 
 func (h *StatusHandlers) isLocal(iri federation.IRI) bool { return iri.Origin() == h.origin }
 
-// input maps a normalized post to what the content module stores (federation.md §4).
+// input maps a normalized post that activity a carried to what the content module stores
+// (federation.md §4).
 func (h *StatusHandlers) input(a *InboxActivity, obj *federation.Object, followers federation.IRI, m *postMentions) appcontent.RemoteStatusInput {
+	return h.inputOf(a.Actor, a.Activity.Audience, string(a.Received.ActivityURI), obj, followers, m)
+}
+
+// inputOf maps a normalized post by author to what the content module stores (federation.md
+// §4). A post without addressing takes fallback, the addressing of the activity that carried it;
+// activityURI is that activity, "" for a post fetched by its id.
+func (h *StatusHandlers) inputOf(author appaccount.Actor, fallback federation.Audience, activityURI string, obj *federation.Object, followers federation.IRI, m *postMentions) appcontent.RemoteStatusInput {
 	audience := obj.Audience
 	if len(audience.To) == 0 && len(audience.Cc) == 0 {
-		audience = a.Activity.Audience
+		audience = fallback
 	}
 	in := appcontent.RemoteStatusInput{
 		URI:                 string(obj.ID),
-		AuthorAccountID:     a.Actor.Account.ID,
-		AuthorDomain:        a.Actor.Account.Domain,
+		AuthorAccountID:     author.Account.ID,
+		AuthorDomain:        author.Account.Domain,
 		Visibility:          appcontent.Visibility(audience.Visibility(followers)),
 		InReplyToURI:        string(obj.InReplyTo),
 		PublishedAt:         obj.Published,
 		RevisedAt:           obj.Updated,
-		ActivityURI:         string(a.Received.ActivityURI),
+		ActivityURI:         activityURI,
 		SpoilerText:         obj.SpoilerText,
 		Sensitive:           obj.Sensitive,
 		MentionedAccountIDs: m.accountIDs,

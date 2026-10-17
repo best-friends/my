@@ -21,7 +21,12 @@ type (
 	Revision = content.Revision
 	// Boost is content.Boost.
 	Boost = content.Boost
+	// Favourite is content.Favourite.
+	Favourite = content.Favourite
 )
+
+// ErrNotBoostable is content.ErrNotBoostable: a status the account may not boost.
+var ErrNotBoostable = content.ErrNotBoostable
 
 // The values of the visibility policy's types that delivery and ActivityPub fetches use.
 const (
