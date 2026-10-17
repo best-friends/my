@@ -38,7 +38,7 @@ type ClaimJobParams struct {
 type ClaimJobRow struct {
 	ID             string
 	Type           string
-	Payload        string
+	Payload        []byte
 	IdempotencyKey sql.NullString
 	OrderingKey    sql.NullString
 	Attempt        int64
@@ -146,7 +146,7 @@ ON CONFLICT (idempotency_key) DO NOTHING
 type InsertJobParams struct {
 	ID             string
 	Type           string
-	Payload        string
+	Payload        []byte
 	IdempotencyKey sql.NullString
 	OrderingKey    sql.NullString
 	RunAt          int64
@@ -178,7 +178,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?)
 type InsertOutboxEventParams struct {
 	ID             string
 	JobType        string
-	Payload        string
+	Payload        []byte
 	IdempotencyKey sql.NullString
 	OrderingKey    sql.NullString
 	RunAt          int64

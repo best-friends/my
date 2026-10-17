@@ -258,9 +258,9 @@ const getOutboundActivityDocument = `-- name: GetOutboundActivityDocument :one
 SELECT document FROM outbound_activity_documents WHERE outbound_activity_id = ?1
 `
 
-func (q *Queries) GetOutboundActivityDocument(ctx context.Context, outboundActivityID string) (string, error) {
+func (q *Queries) GetOutboundActivityDocument(ctx context.Context, outboundActivityID string) ([]byte, error) {
 	row := q.db.QueryRowContext(ctx, getOutboundActivityDocument, outboundActivityID)
-	var document string
+	var document []byte
 	err := row.Scan(&document)
 	return document, err
 }
@@ -288,9 +288,9 @@ const getReceivedActivityDocument = `-- name: GetReceivedActivityDocument :one
 SELECT document FROM received_activity_documents WHERE activity_uri = ?1
 `
 
-func (q *Queries) GetReceivedActivityDocument(ctx context.Context, activityUri string) (string, error) {
+func (q *Queries) GetReceivedActivityDocument(ctx context.Context, activityUri string) ([]byte, error) {
 	row := q.db.QueryRowContext(ctx, getReceivedActivityDocument, activityUri)
-	var document string
+	var document []byte
 	err := row.Scan(&document)
 	return document, err
 }
@@ -447,7 +447,7 @@ ON CONFLICT (outbound_activity_id) DO NOTHING
 
 type InsertOutboundActivityDocumentParams struct {
 	OutboundActivityID string
-	Document           string
+	Document           []byte
 	BuiltAt            int64
 }
 
@@ -503,7 +503,7 @@ ON CONFLICT (activity_uri) DO NOTHING
 
 type InsertReceivedActivityDocumentParams struct {
 	ActivityUri string
-	Document    string
+	Document    []byte
 }
 
 func (q *Queries) InsertReceivedActivityDocument(ctx context.Context, arg InsertReceivedActivityDocumentParams) error {

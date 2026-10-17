@@ -44,7 +44,7 @@ func (r *FederationRepository) InsertOutboundDocument(ctx context.Context, tx uo
 		return false, err
 	}
 	n, err := q.InsertOutboundActivityDocument(ctx, sqlitegen.InsertOutboundActivityDocumentParams{
-		OutboundActivityID: outboundActivityID, Document: string(document), BuiltAt: toMillis(builtAt),
+		OutboundActivityID: outboundActivityID, Document: document, BuiltAt: toMillis(builtAt),
 	})
 	return n == 1, wrap(err, "insert outbound activity document")
 }
@@ -113,7 +113,7 @@ func (r *FederationRepository) FindOutboundDocument(ctx context.Context, outboun
 	if err != nil {
 		return nil, notFound(err, appfederation.ErrNotFound, "document of outbound activity "+outboundActivityID)
 	}
-	return []byte(doc), nil
+	return doc, nil
 }
 
 // ListDeliveries implements federation.Repository.

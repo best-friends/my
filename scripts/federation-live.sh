@@ -71,9 +71,11 @@ collect() {
 		"${compose[@]}" logs --no-color --timestamps "$service" >"$out/logs/$service.log" 2>&1 || true
 	done
 	# Every received activity as stored (received_activity_documents), one file per activity under the
-	# sender's host, for adding fixtures (README.md, pkg/testkit/README.md "Federation fixtures").
+	# sender's host with the bytes of the request body, for adding fixtures (README.md,
+	# pkg/testkit/README.md "Federation fixtures"). The document travels base64-encoded on one line.
 	"${compose[@]}" exec -T db psql -U postgres -d my -AtX -c "
-		SELECT json_build_object('actor', a.actor_uri, 'type', a.type, 'document', d.document)
+		SELECT json_build_object('actor', a.actor_uri, 'type', a.type,
+			'document', translate(encode(d.document, 'base64'), E'\\n', ''))
 		FROM received_activities a JOIN received_activity_documents d USING (activity_uri)
 		ORDER BY a.received_at, a.activity_uri" 2>/dev/null |
 		{
@@ -83,7 +85,7 @@ collect() {
 				host="$(jq -r '.actor | sub("^https://"; "") | sub("/.*$"; "")' <<<"$row")"
 				name="$(jq -r '.type | ascii_downcase' <<<"$row")"
 				mkdir -p "$out/captured/$host"
-				jq --indent 2 '.document' <<<"$row" >"$out/captured/$host/$(printf '%03d' "$n")-$name.json"
+				jq -r '.document' <<<"$row" | base64 -d >"$out/captured/$host/$(printf '%03d' "$n")-$name.json"
 			done
 		} || true
 }

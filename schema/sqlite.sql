@@ -461,7 +461,7 @@ CREATE INDEX mutes_expires_at ON mutes (expires_at);
 CREATE TABLE outbox_events (
   id TEXT NOT NULL PRIMARY KEY,
   job_type TEXT NOT NULL,
-  payload TEXT NOT NULL,
+  payload BLOB NOT NULL,
   idempotency_key TEXT,
   ordering_key TEXT,
   run_at INTEGER NOT NULL,
@@ -473,7 +473,7 @@ CREATE TABLE outbox_events (
 CREATE TABLE jobs (
   id TEXT NOT NULL PRIMARY KEY,
   type TEXT NOT NULL,
-  payload TEXT NOT NULL,
+  payload BLOB NOT NULL,
   idempotency_key TEXT,
   ordering_key TEXT,
   attempt INTEGER NOT NULL CHECK (attempt >= 0),
@@ -492,7 +492,7 @@ CREATE INDEX jobs_ordering_key_run_at ON jobs (ordering_key, run_at);
 CREATE TABLE dead_jobs (
   id TEXT NOT NULL PRIMARY KEY,
   type TEXT NOT NULL,
-  payload TEXT NOT NULL,
+  payload BLOB NOT NULL,
   idempotency_key TEXT,
   ordering_key TEXT,
   attempt INTEGER NOT NULL,
@@ -1221,11 +1221,11 @@ CREATE TABLE received_activities (
 ) STRICT;
 CREATE INDEX received_activities_received_at ON received_activities (received_at);
 
--- Event: the received document as it arrived, read by the asynchronous processing and kept
--- briefly for investigation and fixtures.
+-- Event: the received document with the bytes it arrived with, read by the asynchronous
+-- processing and kept briefly for investigation and fixtures.
 CREATE TABLE received_activity_documents (
   activity_uri TEXT NOT NULL PRIMARY KEY,
-  document TEXT NOT NULL
+  document BLOB NOT NULL
 ) STRICT;
 
 -- Event: a Delete of an unknown object or an Undo of an unknown target. A Create, Update, or
@@ -1255,7 +1255,7 @@ CREATE INDEX outbound_activities_object_type_object_id_id ON outbound_activities
 -- and retry sends the same bytes.
 CREATE TABLE outbound_activity_documents (
   outbound_activity_id TEXT NOT NULL PRIMARY KEY,
-  document TEXT NOT NULL,
+  document BLOB NOT NULL,
   built_at INTEGER NOT NULL
 ) STRICT;
 
