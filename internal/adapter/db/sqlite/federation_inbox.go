@@ -35,7 +35,7 @@ func (r *FederationRepository) InsertReceivedDocument(ctx context.Context, tx uo
 		return err
 	}
 	err = q.InsertReceivedActivityDocument(ctx, sqlitegen.InsertReceivedActivityDocumentParams{
-		ActivityUri: string(activityURI), Document: string(document),
+		ActivityUri: string(activityURI), Document: document,
 	})
 	return wrap(err, "insert received activity document")
 }
@@ -58,7 +58,7 @@ func (r *FederationRepository) FindReceivedDocument(ctx context.Context, activit
 	if err != nil {
 		return nil, notFound(err, appfederation.ErrNotFound, "document of received activity "+string(activityURI))
 	}
-	return []byte(doc), nil
+	return doc, nil
 }
 
 // InsertRemoteObjectTombstone implements federation.InboxRepository.

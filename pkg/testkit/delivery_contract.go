@@ -304,6 +304,11 @@ func fedClassifiesResponses(t *testing.T, e *fedEnv) {
 	del := d.delivery(t, federation.ActivityCreate, "body.example")
 	d.deliver(t, del)
 	doc, err := d.h.Federation.FindOutboundDocument(t.Context(), del.OutboundActivityID)
+	// The document reads back with the bytes it was built with, as every retry sends them.
+	want := []byte(`{"id":"https://` + contractHost + `/ap/activities/` + del.OutboundActivityID + `","type":"Create"}`)
+	if !bytes.Equal(doc, want) {
+		t.Errorf("document = %s, want %s", doc, want)
+	}
 	if err != nil || got == nil || got.Method != http.MethodPost || !bytes.Equal(got.Body, doc) ||
 		got.Header.Get("Content-Type") != "application/activity+json" || got.Header.Get("Signature") == "" {
 		t.Errorf("request = %+v (document %s, %v)", got, doc, err)
