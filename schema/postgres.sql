@@ -1679,3 +1679,34 @@ CREATE TABLE registration_origins (
 );
 CREATE INDEX registration_origins_ip ON registration_origins (ip);
 CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);
+
+-- moderation: the audit log (data-model §4.3, ADR-0037). Owned by internal/app/moderation.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: one administrative operation, appended in the transaction of the operation by the
+-- moderation module's projector. Never updated; only the retention cleanup deletes rows
+-- (ADR-0038). target_label copies the target's display name, so that the entry stays readable
+-- after the target is erased. source_event_id is the row of the source event, which holds the
+-- reasons and notes. actor_user_id is set exactly for a user actor (the CLI acts as no user).
+CREATE TABLE audit_log_entries (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  actor_kind text NOT NULL CHECK (actor_kind IN ('user', 'cli', 'system', 'remote')),
+  actor_user_id text COLLATE "C",
+  action text NOT NULL CHECK (action IN (
+    'account_action_issued', 'account_action_lifted', 'domain_action_issued',
+    'domain_action_lifted', 'report_assigned', 'report_unassigned', 'report_resolved',
+    'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
+    'rule_added', 'rule_revised', 'rule_moved', 'rule_retired'
+  )),
+  target_kind text NOT NULL CHECK (target_kind IN (
+    'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
+    'signup_block'
+  )),
+  target_id text COLLATE "C" NOT NULL,
+  target_label text NOT NULL,
+  source_event_id text COLLATE "C",
+  occurred_at timestamptz NOT NULL,
+  CHECK ((actor_kind = 'user') = (actor_user_id IS NOT NULL))
+);
+CREATE INDEX audit_log_entries_target_kind_target_id_id ON audit_log_entries (target_kind, target_id, id DESC);
+CREATE INDEX audit_log_entries_actor_user_id_id ON audit_log_entries (actor_user_id, id DESC);

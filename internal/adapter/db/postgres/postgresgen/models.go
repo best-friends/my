@@ -87,6 +87,18 @@ type AccountRestriction struct {
 	EffectiveUntil *time.Time
 }
 
+type AuditLogEntry struct {
+	ID            string
+	ActorKind     string
+	ActorUserID   *string
+	Action        string
+	TargetKind    string
+	TargetID      string
+	TargetLabel   string
+	SourceEventID *string
+	OccurredAt    time.Time
+}
+
 type Block struct {
 	ID               string
 	Uri              *string

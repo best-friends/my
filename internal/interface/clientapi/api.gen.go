@@ -130,6 +130,129 @@ func (e AdminAccountActionState) Valid() bool {
 	}
 }
 
+// Defines values for AdminAuditAction.
+const (
+	AdminAuditActionAccountActionIssued  AdminAuditAction = "account_action_issued"
+	AdminAuditActionAccountActionLifted  AdminAuditAction = "account_action_lifted"
+	AdminAuditActionDomainActionIssued   AdminAuditAction = "domain_action_issued"
+	AdminAuditActionDomainActionLifted   AdminAuditAction = "domain_action_lifted"
+	AdminAuditActionRegistrationApproved AdminAuditAction = "registration_approved"
+	AdminAuditActionRegistrationRejected AdminAuditAction = "registration_rejected"
+	AdminAuditActionReportAssigned       AdminAuditAction = "report_assigned"
+	AdminAuditActionReportResolved       AdminAuditAction = "report_resolved"
+	AdminAuditActionReportUnassigned     AdminAuditAction = "report_unassigned"
+	AdminAuditActionRuleAdded            AdminAuditAction = "rule_added"
+	AdminAuditActionRuleMoved            AdminAuditAction = "rule_moved"
+	AdminAuditActionRuleRetired          AdminAuditAction = "rule_retired"
+	AdminAuditActionRuleRevised          AdminAuditAction = "rule_revised"
+	AdminAuditActionSettingChanged       AdminAuditAction = "setting_changed"
+	AdminAuditActionTextChanged          AdminAuditAction = "text_changed"
+)
+
+// Valid indicates whether the value is a known member of the AdminAuditAction enum.
+func (e AdminAuditAction) Valid() bool {
+	switch e {
+	case AdminAuditActionAccountActionIssued:
+		return true
+	case AdminAuditActionAccountActionLifted:
+		return true
+	case AdminAuditActionDomainActionIssued:
+		return true
+	case AdminAuditActionDomainActionLifted:
+		return true
+	case AdminAuditActionRegistrationApproved:
+		return true
+	case AdminAuditActionRegistrationRejected:
+		return true
+	case AdminAuditActionReportAssigned:
+		return true
+	case AdminAuditActionReportResolved:
+		return true
+	case AdminAuditActionReportUnassigned:
+		return true
+	case AdminAuditActionRuleAdded:
+		return true
+	case AdminAuditActionRuleMoved:
+		return true
+	case AdminAuditActionRuleRetired:
+		return true
+	case AdminAuditActionRuleRevised:
+		return true
+	case AdminAuditActionSettingChanged:
+		return true
+	case AdminAuditActionTextChanged:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAuditActorKind.
+const (
+	AdminAuditActorKindCli    AdminAuditActorKind = "cli"
+	AdminAuditActorKindRemote AdminAuditActorKind = "remote"
+	AdminAuditActorKindSystem AdminAuditActorKind = "system"
+	AdminAuditActorKindUser   AdminAuditActorKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the AdminAuditActorKind enum.
+func (e AdminAuditActorKind) Valid() bool {
+	switch e {
+	case AdminAuditActorKindCli:
+		return true
+	case AdminAuditActorKindRemote:
+		return true
+	case AdminAuditActorKindSystem:
+		return true
+	case AdminAuditActorKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAuditTargetKind.
+const (
+	AdminAuditTargetKindAccount     AdminAuditTargetKind = "account"
+	AdminAuditTargetKindAppeal      AdminAuditTargetKind = "appeal"
+	AdminAuditTargetKindDomain      AdminAuditTargetKind = "domain"
+	AdminAuditTargetKindReport      AdminAuditTargetKind = "report"
+	AdminAuditTargetKindRole        AdminAuditTargetKind = "role"
+	AdminAuditTargetKindRule        AdminAuditTargetKind = "rule"
+	AdminAuditTargetKindSetting     AdminAuditTargetKind = "setting"
+	AdminAuditTargetKindSignupBlock AdminAuditTargetKind = "signup_block"
+	AdminAuditTargetKindStatus      AdminAuditTargetKind = "status"
+	AdminAuditTargetKindUser        AdminAuditTargetKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the AdminAuditTargetKind enum.
+func (e AdminAuditTargetKind) Valid() bool {
+	switch e {
+	case AdminAuditTargetKindAccount:
+		return true
+	case AdminAuditTargetKindAppeal:
+		return true
+	case AdminAuditTargetKindDomain:
+		return true
+	case AdminAuditTargetKindReport:
+		return true
+	case AdminAuditTargetKindRole:
+		return true
+	case AdminAuditTargetKindRule:
+		return true
+	case AdminAuditTargetKindSetting:
+		return true
+	case AdminAuditTargetKindSignupBlock:
+		return true
+	case AdminAuditTargetKindStatus:
+		return true
+	case AdminAuditTargetKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminAvailabilityEventKind.
 const (
 	AdminAvailabilityEventKindMarkedAvailable   AdminAvailabilityEventKind = "marked_available"
@@ -721,6 +844,78 @@ type AdminAccountActionPage struct {
 // AdminAccountActionState `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
 // lifted it.
 type AdminAccountActionState string
+
+// AdminAuditAction The kind of an audited operation, each on one kind of target. On an `account`:
+// `account_action_issued`, `account_action_lifted`. On a `domain`:
+// `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
+// `report_unassigned`, `report_resolved`. On a `user` (a registration):
+// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
+// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
+// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+type AdminAuditAction string
+
+// AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
+// `cli`: the `my` command line, which acts as no user. `system`: the server itself.
+// `remote`: another server.
+type AdminAuditActorKind string
+
+// AdminAuditEntry One operation of a moderator or an administrator (FR-704).
+type AdminAuditEntry struct {
+	// Action The kind of an audited operation, each on one kind of target. On an `account`:
+	// `account_action_issued`, `account_action_lifted`. On a `domain`:
+	// `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
+	// `report_unassigned`, `report_resolved`. On a `user` (a registration):
+	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
+	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
+	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+	Action AdminAuditAction `json:"action"`
+
+	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
+	ActorAccount *Account `json:"actor_account,omitempty"`
+
+	// ActorAccountId The local account of the user who performed the operation; omitted unless
+	// `actor_kind` is `user`, and when the user has no account.
+	ActorAccountId *Id `json:"actor_account_id,omitempty"`
+
+	// ActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
+	// `cli`: the `my` command line, which acts as no user. `system`: the server itself.
+	// `remote`: another server.
+	ActorKind AdminAuditActorKind `json:"actor_kind"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id         Id        `json:"id"`
+	OccurredAt time.Time `json:"occurred_at"`
+
+	// SourceEventId The ID of the record of the operation (the domain action, the assignment, the
+	// resolution, the decision, the revision), which holds its reasons and notes; omitted
+	// when the operation has none.
+	SourceEventId *string `json:"source_event_id,omitempty"`
+
+	// TargetId The target: the ID of an account, a report, a user, or a rule, the domain of a domain
+	// action, or the key of a setting or a text.
+	TargetId string `json:"target_id"`
+
+	// TargetKind The kind of what an audited operation acted on.
+	TargetKind AdminAuditTargetKind `json:"target_kind"`
+
+	// TargetLabel The target's display name when the operation happened, such as `@alice`,
+	// `@bob@example.com`, a domain, a setting's key, or a rule's text; up to 512
+	// characters.
+	TargetLabel string `json:"target_label"`
+}
+
+// AdminAuditEntryPage A page of the audit log, newest first.
+type AdminAuditEntryPage struct {
+	Items []AdminAuditEntry `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminAuditTargetKind The kind of what an audited operation acted on.
+type AdminAuditTargetKind string
 
 // AdminAvailabilityEvent The time a remote server was marked unavailable or available again, and why.
 type AdminAvailabilityEvent struct {
@@ -2237,6 +2432,28 @@ type ListAccountActionsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListAuditLogParams defines parameters for ListAuditLog.
+type ListAuditLogParams struct {
+	// ActorAccountId Keep only the operations of the user of this local account. An account that is not
+	// local, or not known, has no operations.
+	ActorAccountId *Id `form:"actor_account_id,omitempty" json:"actor_account_id,omitempty"`
+
+	// Action Keep only this kind of operation.
+	Action *AdminAuditAction `form:"action,omitempty" json:"action,omitempty"`
+
+	// TargetKind Keep only the operations on this kind of target.
+	TargetKind *AdminAuditTargetKind `form:"target_kind,omitempty" json:"target_kind,omitempty"`
+
+	// TargetId Keep only the operations on this target, of the kind `target_kind`.
+	TargetId *string `form:"target_id,omitempty" json:"target_id,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListDeadJobsParams defines parameters for ListDeadJobs.
 type ListDeadJobsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -2533,6 +2750,9 @@ type ServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// ListAuditLog List the audit log
+	// (GET /admin/audit_log)
+	ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams)
 	// GetAdminCounts Count what awaits the moderators
 	// (GET /admin/counts)
 	GetAdminCounts(w http.ResponseWriter, r *http.Request)
@@ -3383,6 +3603,104 @@ func (siw *ServerInterfaceWrapper) CreateAccountAction(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateAccountAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAuditLog operation middleware
+func (siw *ServerInterfaceWrapper) ListAuditLog(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditLogParams
+
+	// ------------- Optional query parameter "actor_account_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "actor_account_id", r.URL.Query(), &params.ActorAccountId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "actor_account_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "actor_account_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "action" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "action", r.URL.Query(), &params.Action, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "action"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "action", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "target_kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_kind", r.URL.Query(), &params.TargetKind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "target_kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "target_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_id", r.URL.Query(), &params.TargetId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "target_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAuditLog(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5496,6 +5814,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}", wrapper.GetInstanceHealth)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}/availability_events", wrapper.ListInstanceAvailabilityEvents)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/instances/{domain}/mark_available", wrapper.MarkInstanceAvailable)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/audit_log", wrapper.ListAuditLog)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions", wrapper.ListDomainActions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/domain_actions", wrapper.CreateDomainAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions/{id}", wrapper.GetDomainAction)
@@ -6679,6 +6998,68 @@ type CreateAccountActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateAccountActiondefaultApplicationProblemPlusJSONResponse) VisitCreateAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditLogRequestObject struct {
+	Params ListAuditLogParams
+}
+
+type ListAuditLogResponseObject interface {
+	VisitListAuditLogResponse(w http.ResponseWriter) error
+}
+
+type ListAuditLog200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAuditLog200JSONResponse struct {
+	Body    AdminAuditEntryPage
+	Headers ListAuditLog200ResponseHeaders
+}
+
+func (response ListAuditLog200JSONResponse) VisitListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditLogdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAuditLogdefaultApplicationProblemPlusJSONResponse) VisitListAuditLogResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -10293,6 +10674,9 @@ type StrictServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(ctx context.Context, request CreateAccountActionRequestObject) (CreateAccountActionResponseObject, error)
+	// ListAuditLog List the audit log
+	// (GET /admin/audit_log)
+	ListAuditLog(ctx context.Context, request ListAuditLogRequestObject) (ListAuditLogResponseObject, error)
 	// GetAdminCounts Count what awaits the moderators
 	// (GET /admin/counts)
 	GetAdminCounts(ctx context.Context, request GetAdminCountsRequestObject) (GetAdminCountsResponseObject, error)
@@ -11048,6 +11432,32 @@ func (sh *strictHandler) CreateAccountAction(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateAccountActionResponseObject); ok {
 		if err := validResponse.VisitCreateAccountActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAuditLog operation middleware
+func (sh *strictHandler) ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams) {
+	var request ListAuditLogRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAuditLog(ctx, request.(ListAuditLogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAuditLog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAuditLogResponseObject); ok {
+		if err := validResponse.VisitListAuditLogResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
