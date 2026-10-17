@@ -362,6 +362,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Messages:                 a.Messages,
 		BaseURL:                  "https://" + cfg.Host,
 	})
+	// The sign-in and registration origins are erased after their retention (ADR-0038).
+	identity.NewOriginPurger(identity.OriginPurgeDeps{
+		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock,
+	}).RegisterJobs(a.Handlers, a.Scheduler)
 	graph.RegisterProjectors(a.Projectors, follows)
 	a.Graph = graph.NewService(graph.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,

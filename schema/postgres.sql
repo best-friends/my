@@ -704,8 +704,6 @@ CREATE TABLE sessions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   user_id text COLLATE "C" NOT NULL,
   token_hash bytea NOT NULL,
-  user_agent text,
-  ip text,
   created_at timestamptz NOT NULL,
   expires_at timestamptz NOT NULL
 );
@@ -1643,3 +1641,30 @@ CREATE TABLE status_sensitivity_overrides (
   PRIMARY KEY (status_id, source_action_id)
 );
 CREATE INDEX status_sensitivity_overrides_source_action_id ON status_sensitivity_overrides (source_action_id);
+
+-- ---------------------------------------------------------------------------------------------
+-- identity: where sign-ins and registrations came from (data-model.md §4.1, ADR-0038). Kept
+-- apart from sessions and users so that the purge erases them after their retention.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource (child of a session): the client that started a session. ip and user_agent are NULL
+-- when unknown; a session with neither has no row.
+CREATE TABLE session_origins (
+  session_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  ip text COLLATE "C",
+  user_agent text,
+  created_at timestamptz NOT NULL
+);
+CREATE INDEX session_origins_ip ON session_origins (ip);
+CREATE INDEX session_origins_created_at ON session_origins (created_at);
+
+-- Resource: the IP address of a registration from the registration page. A registration from
+-- an unknown address has no row.
+CREATE TABLE registration_origins (
+  user_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  ip text COLLATE "C" NOT NULL,
+  recorded_at timestamptz NOT NULL
+);
+CREATE INDEX registration_origins_ip ON registration_origins (ip);
+CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);
