@@ -54,6 +54,9 @@ func (n normalizer) document(o object) (*Document, error) {
 		case slices.Contains(actorTypes, ActorType(t)):
 			a, err := n.actor(o, ActorType(t))
 			return &Document{Actor: a}, err
+		case slices.Contains(collectionTypes, t):
+			c, err := n.collection(o, strings.HasSuffix(t, "Page"))
+			return &Document{Collection: c}, err
 		}
 	}
 	if o.has("actor") {
@@ -74,8 +77,9 @@ var (
 		ObjectNote, ObjectQuestion, ObjectArticle, ObjectPage, ObjectEvent, ObjectImage, ObjectVideo,
 		ObjectAudio, ObjectTombstone,
 	}
-	convertedTypes = []ObjectType{ObjectArticle, ObjectPage, ObjectEvent, ObjectImage, ObjectVideo, ObjectAudio}
-	actorTypes     = []ActorType{ActorPerson, ActorService, ActorApplication, ActorGroup, ActorOrganization}
+	convertedTypes  = []ObjectType{ObjectArticle, ObjectPage, ObjectEvent, ObjectImage, ObjectVideo, ObjectAudio}
+	actorTypes      = []ActorType{ActorPerson, ActorService, ActorApplication, ActorGroup, ActorOrganization}
+	collectionTypes = []string{"Collection", "OrderedCollection", "CollectionPage", "OrderedCollectionPage"}
 )
 
 func (n normalizer) activity(o object, t ActivityType, raw string) (*Activity, error) {
@@ -176,7 +180,41 @@ func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) 
 	if t == ObjectQuestion {
 		obj.Poll = n.poll(o)
 	}
+	if obj.Replies, err = n.ref(o.get("replies"), obj.ID); err != nil {
+		return nil, err
+	}
 	return obj, nil
+}
+
+// collection reads a collection or a page of one: its items (orderedItems in an ordered one) up
+// to MaxItems, and the links to its first and next pages. Embedded pages and items are trusted
+// only when they have the collection's origin.
+func (n normalizer) collection(o object, page bool) (*Collection, error) {
+	c := &Collection{ID: n.iri(o.get("id")), Page: page}
+	items := o.get("orderedItems")
+	if items == nil {
+		items = o.get("items")
+	}
+	for _, v := range list(items) {
+		if len(c.Items) == MaxItems {
+			break
+		}
+		r, err := n.ref(v, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		if r.ID != "" {
+			c.Items = append(c.Items, r)
+		}
+	}
+	var err error
+	if c.First, err = n.ref(o.get("first"), c.ID); err != nil {
+		return nil, err
+	}
+	if c.Next, err = n.ref(o.get("next"), c.ID); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
