@@ -264,7 +264,8 @@ func (p loginPolicy) LoginRestricted(_ context.Context, accountID string) (bool,
 }
 
 // sessionModerationEndsLogins checks the login restriction (data-model §5.2): the policy keeps
-// a restricted account from signing in and from using its tokens, and revoking a user's
+// a restricted account from using the app and its tokens while it still signs in to the
+// server-rendered screens, and revoking a user's
 // sessions and tokens ends those of that user only, once.
 func sessionModerationEndsLogins(t *testing.T, e *accountEnv) {
 	ctx := t.Context()
@@ -276,9 +277,16 @@ func sessionModerationEndsLogins(t *testing.T, e *accountEnv) {
 
 	policy := loginPolicy{reg.AccountID: true}
 	e.identity = e.newIdentityWith(func(d *appidentity.Deps) { d.Logins = policy })
-	_, wrongErr := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: "wrong password"})
-	if _, err := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: sessionPassword}); !errors.Is(err, appidentity.ErrInvalidCredentials) || err.Error() != wrongErr.Error() {
-		t.Errorf("SignIn while login is restricted = %v, want the wrong-password error %v", err, wrongErr)
+	// The restricted user signs in to the server-rendered screens only, which show the actions;
+	// the user may not use the app.
+	if _, err := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: sessionPassword}); err != nil {
+		t.Errorf("SignIn while login is restricted = %v, want a session for the screens", err)
+	}
+	if a, err := e.identity.UserAccess(ctx, reg.User.ID); err != nil || a.Allowed() || !a.LoginRestricted || a.AccountID != reg.AccountID || !a.AccountActive {
+		t.Errorf("UserAccess while login is restricted = %+v, %v; want restricted and not allowed", a, err)
+	}
+	if a, err := e.identity.UserAccess(ctx, bob.User.ID); err != nil || !a.Allowed() || a.LoginRestricted {
+		t.Errorf("UserAccess of another user = %+v, %v; want allowed", a, err)
 	}
 	if _, err := e.identity.AuthenticateBearer(ctx, tokens.AccessToken); !errors.Is(err, appidentity.ErrAccountUnavailable) {
 		t.Errorf("AuthenticateBearer while login is restricted = %v, want ErrAccountUnavailable", err)

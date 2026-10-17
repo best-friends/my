@@ -42,6 +42,8 @@ tags:
     description: Media files that the user uploads to attach to posts.
   - name: preferences
     description: The authenticated user's preferences.
+  - name: moderation
+    description: The moderation actions on the authenticated user's own account.
   - name: notifications
     description: The authenticated user's notifications, their read marker, and dismissals.
   - name: statuses
@@ -666,6 +668,42 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of media ------------------------------------------------------------------------
+  # --- moderation: the user's own actions (#336) ---
+  /moderation/actions:
+    get:
+      operationId: listOwnModerationActions
+      summary: List the moderation actions on the authenticated user's account
+      description: |
+        The actions that moderators took on the user's own account (FR-715), newest first,
+        lifted and expired ones included unless `active` is set, also those that the user was
+        not notified of. Each carries what the moderators chose to tell the user; never their
+        private note, the report the action follows from, or who filed it. `kind_label` and
+        `reason_category_label` are in the user's language.
+      tags: [moderation]
+      security:
+        - oauth2: ["read:accounts"]
+      parameters:
+        - name: active
+          in: query
+          required: false
+          description: Keep only the actions in effect now, neither lifted nor expired.
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the actions on the user's account.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationActionPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of moderation: the user's own actions (#336) ---
   # --- notifications (#111) ---
   /notifications:
     get:
@@ -2205,8 +2243,9 @@ components:
         - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
           `WWW-Authenticate` names.
         - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
-          use the app (registration pending or rejected, email unverified, or the account
-          deactivated or deleted).
+          use the app (registration pending or rejected, email unverified, the account
+          deactivated or deleted, or a moderation action that disables its login). The user
+          can still sign in to the server's sign-in page, which says why.
         - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
           from following it. Unblock it first.
         - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
@@ -2692,6 +2731,62 @@ components:
           description: The preview, at most 640 × 360 pixels of area.
           $ref: "#/components/schemas/MediaVariant"
     # --- end of media --------------------------------------------------------------------
+    # --- moderation: the user's own actions (#336) ---
+    ModerationAction:
+      description: |
+        A moderation action on the authenticated user's own account (FR-715, NFR-MOD-6), as the
+        user sees it. It never carries the moderators' private note, the report the action
+        follows from, or who filed the report or issued the action.
+      type: object
+      required: [id, kind, kind_label, reason_category, reason_category_label, status_ids, state, issued_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        kind:
+          $ref: "#/components/schemas/AdminAccountActionKind"
+        kind_label:
+          description: What the action does, in the user's language.
+          type: string
+        reason_category:
+          $ref: "#/components/schemas/AdminAccountActionCategory"
+        reason_category_label:
+          description: The reason category, in the user's language.
+          type: string
+        public_reason:
+          description: |
+            The moderators' explanation to the user, as plain text; omitted when there is none.
+          type: string
+        status_ids:
+          description: |
+            The posts that an action on posts acted on; empty for an action on the whole account.
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+        state:
+          $ref: "#/components/schemas/AdminAccountActionState"
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          description: When the action ends by itself; omitted when it lasts until it is lifted.
+          type: string
+          format: date-time
+        lifted_at:
+          description: When a moderator lifted the action; omitted unless it is lifted.
+          type: string
+          format: date-time
+    ModerationActionPage:
+      description: A page of the actions on the user's own account, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ModerationAction"
+    # --- end of moderation: the user's own actions (#336) ---
     # --- notifications (#111) ---
     Notification:
       description: A notification of something that happened to the authenticated user.
@@ -2713,6 +2808,9 @@ components:
             The post that the notification is about, as the user sees it; omitted when the user
             may not see it.
           $ref: "#/components/schemas/Status"
+        moderation_action:
+          description: The action on the user's account that a `moderation_notice` tells of.
+          $ref: "#/components/schemas/ModerationAction"
     NotificationMarker:
       description: How far the authenticated user has read the notifications.
       type: object
@@ -2750,7 +2848,8 @@ components:
         (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
         (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
         `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-        about. `moderation_notice` comes from the instance and has no `account`.
+        about. `moderation_notice` comes from the instance and has no `account`; its
+        `moderation_action` is the action on the user's account, with its kind, reason, and end.
       type: string
       enum:
         - follow

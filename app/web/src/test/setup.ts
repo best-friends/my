@@ -27,6 +27,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   server.resetHandlers();
+  // What the app keeps for the next start (the instance's timelines) must not leak into the next test.
+  localStorage.clear();
 });
 
 afterAll(() => {

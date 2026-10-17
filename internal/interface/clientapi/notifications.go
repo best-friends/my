@@ -97,7 +97,8 @@ func (s *Server) ListNotifications(ctx context.Context, req ListNotificationsReq
 // newNotifications presents accountID's notifications ns, in order, as the Notification schema.
 // The posts that they are about are read together through the content module, which applies the
 // visibility policy: a post that the user may not see is left out of its notification. The source
-// accounts are read once each; a source account that no longer exists is left out.
+// accounts are read once each; a source account that no longer exists is left out. A moderation
+// notice carries its action as the user sees it (moderation.go).
 func (s *Server) newNotifications(ctx context.Context, accountID string, ns []notification.Notification) ([]Notification, error) {
 	var statusIDs []string
 	seen := map[string]bool{}
@@ -133,6 +134,16 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 			return nil, fmt.Errorf("clientapi: the source account %s of notification %s: %w", n.SourceAccountID, n.ID, err)
 		}
 	}
+	var actionIDs []string
+	for _, n := range ns {
+		if n.ModerationActionID != "" {
+			actionIDs = append(actionIDs, n.ModerationActionID)
+		}
+	}
+	actions, err := s.noticeActions(ctx, accountID, actionIDs)
+	if err != nil {
+		return nil, err
+	}
 	parts, err := s.statusParts(ctx, views, found...)
 	if err != nil {
 		return nil, err
@@ -155,6 +166,9 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 		}
 		if a, ok := accounts[n.SourceAccountID]; ok {
 			item.Account = &a
+		}
+		if a, ok := actions[n.ModerationActionID]; ok {
+			item.ModerationAction = &a
 		}
 		out = append(out, item)
 	}

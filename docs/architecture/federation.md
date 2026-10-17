@@ -300,6 +300,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `graph.blocked` / `graph.unblocked`（相手がリモート） | `Block` / `Undo Block` | 相手の inbox |
 | `account.profile_revised`（ローカルのプロフィールの 2 版目以降。最初の版はアカウントの作成で、まだだれもフォローしていない） | `Update`（Actor の文書） | リモートフォロワーの inbox |
 | `account.lifecycle_event_recorded`（ローカルのアカウントの `deleted`） | `Delete`（Actor の `id`） | リモートフォロワーの inbox + 既知の shared inbox（[data-model §8](data-model.md#8-削除と消去)） |
+| `moderation.report_filed`（`forwarded` の通報だけ。§11） | `Flag`（主体はインスタンス Actor） | 通報されたアカウントの inbox |
 
 - フォローの活動（`object_type = follow`）の主体は、`Follow` と `Undo` ではフォローした人、`Accept` と `Reject` ではフォローされた人です。`Follow` の `id` はフォローの `uri`（`/ap/activities/{follow_id}`）で、`Accept` / `Reject` / `Undo` はフォローの `Follow`（受け取ったフォローなら相手が送った `id`。送り直された `Follow` への `Accept` はその `id`）を埋め込みます。宛先は相手だけで、`to` に相手を入れます。
   相手が送った `Accept` / `Reject` / `Undo` と、どちらかのアカウントの削除（`account_deleted`）による変化は、何も送り返しません。
@@ -325,6 +326,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Update`（Actor） | Actor の承認済みのフォロワー |
 | `Delete`（Actor） | Actor の承認済みのフォロワー → 既知の shared inbox（`account.KnownSharedInboxes`） |
 | `Follow` / `Accept` / `Reject` / `Undo Follow` | フォローの相手（その Actor の inbox。無ければ shared inbox）。公開範囲では判定しない |
+| `Flag` | 通報されたアカウント（その Actor の inbox。shared inbox に集約しない）。公開範囲では判定しない |
 
 1. 宛先のアカウントを集める: 作者の承認済みのフォロワー（`graph` の公開 API をカーソルで）、版のメンション先、元投稿の作者。ローカルのアカウントは inbox を持たないので落ちます。
 2. 公開範囲の規則で絞る: `content.CanView`（`ContextDelivery`、[visibility.md](visibility.md)）を宛先のアカウントごとに判定する。
@@ -473,6 +475,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - `Block` / `Undo Block` の送信（§7.1）は、ローカルのアカウントがリモートのアカウントをブロック・解除したときだけです。`Block` の `id` はブロックの URI（`/ap/activities/{block_id}`）、宛先はブロックした相手だけで、相手の個人の inbox に送ります（shared inbox に集約しない。Mastodon と同じ）。
 - 通報の転送（FR-709）は、ローカルの通報者が転送を選んだリモートのアカウントへの通報だけを、受け付けのトランザクションで outbox に積みます。
   `Flag` の主体はインスタンス Actor、`object` は対象の Actor の `id` と通報した投稿の URI、`content` はコメント、宛先は対象のアカウントの inbox だけです。通報者・IP・メールアドレスは載せません。
+  `Flag` の `id` は `/ap/activities/{id}`（`outbound_activities` の ID）で、Mastodon と同じく `to` / `cc` を持ちません。文書は展開ジョブが組み立てるので、それまでに消えた投稿の URI は入りません。
   返信先の第三者のサーバーへは転送しません（[ADR-0036](../adr/0036-moderation-federation-propagation.md)）。
 
 ### 11.1 処分の伝播

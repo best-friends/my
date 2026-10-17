@@ -242,7 +242,7 @@ type AccountActionInput struct {
 
 // IssueAccountAction records an action on an account and, in the same transaction, the
 // restrictions it imposes (data-model §5.2) and its other effects, and emits
-// AccountRestrictionsChanged. delete_statuses deletes the statuses it names (origin
+// AccountRestrictionsChanged and AccountActionIssued. delete_statuses deletes the statuses it names (origin
 // moderation), mark_statuses_sensitive shows them as sensitive until it is lifted, and ban
 // schedules the deletion of the account moderation.BanDeletionDelay later.
 //
@@ -317,7 +317,10 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		if err := s.carryOut(ctx, tx, a, statuses); err != nil {
 			return err
 		}
-		return s.emitAccount(ctx, tx, a.TargetAccountID, now)
+		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, AccountActionIssued{Action: a})
 	})
 	if errors.Is(err, appcontent.ErrAlreadyDeleted) {
 		return moderation.Action{}, fmt.Errorf("%w: a status was deleted meanwhile", ErrInvalidStatusReference)

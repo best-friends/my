@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -736,6 +737,50 @@ func mentionOf(ctx context.Context, p *peerClient, uri string) (notification, bo
 		}
 	}
 	return notification{}, false
+}
+
+// TestReportForwarding: a report of a peer user that alice asks to forward reaches the moderators'
+// list of the peer as a Flag of this server's instance actor, with the comment; one that she does
+// not ask to forward does not (FR-709, federation.md §11).
+func TestReportForwarding(t *testing.T) {
+	e := stack(t)
+	for _, p := range e.peers {
+		t.Run(p.name, func(t *testing.T) {
+			ctx := t.Context()
+			if _, why, _ := peerReportComments(ctx, e, p); why != "" {
+				t.Skip(why)
+			}
+			actor := followLocalToPeer(t, e, p)
+			posted, err := p.post(ctx, unique("report me on "+p.name), "public")
+			if err != nil {
+				t.Fatal(err)
+			}
+			seen := localSees(t, e, posted.URI)
+
+			kept := unique("kept on " + localHost)
+			if forwarded, err := e.local.report(ctx, actor.ID, []string{seen.ID}, kept, false); err != nil || forwarded {
+				t.Fatalf("report without forwarding = %v, %v", forwarded, err)
+			}
+			sent := unique("forwarded from " + localHost)
+			if forwarded, err := e.local.report(ctx, actor.ID, []string{seen.ID}, sent, true); err != nil || !forwarded {
+				t.Fatalf("report with forwarding = %v, %v", forwarded, err)
+			}
+			has := func(comments []string, text string) bool {
+				return slices.ContainsFunc(comments, func(c string) bool { return strings.Contains(c, text) })
+			}
+			eventually(t, deliveryTimeout, "the forwarded report in the reports of "+p.host, func() (bool, string) {
+				comments, _, err := peerReportComments(ctx, e, p)
+				return err == nil && has(comments, sent), fmt.Sprintf("%q %v", comments, err)
+			})
+			comments, _, err := peerReportComments(ctx, e, p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if has(comments, kept) {
+				t.Errorf("reports of %s = %q, want no report that alice did not forward", p.host, comments)
+			}
+		})
+	}
 }
 
 // TestSignatureProfile checks the rows of ADR-0032 that only a real server shows:

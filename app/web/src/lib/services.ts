@@ -11,6 +11,7 @@ import { forgetUserDataOnUserChange } from "./auth/userData";
 import type { RuntimeConfig } from "./config";
 import type { I18n } from "./i18n";
 import { AppLocale } from "./locale";
+import { startConnectivity } from "./network";
 import { createQueryClient } from "./query";
 
 export type AppServices = { queryClient: QueryClient; api: Api; session: Session; leaveApp: LeaveApp; locale: AppLocale };
@@ -25,6 +26,8 @@ function assignLocation(url: URL): void {
  * their own `leaveApp`, as jsdom cannot load another document.
  */
 export function createAppServices(config: RuntimeConfig, i18n: I18n, leaveApp: LeaveApp = assignLocation): AppServices {
+  // Each app starts from what the browser says about the network (tests make one app per test).
+  startConnectivity();
   const queryClient = createQueryClient();
   const locale = new AppLocale(i18n, { doc: document });
   const session = new Session({ apiOrigin: config.apiOrigin });
