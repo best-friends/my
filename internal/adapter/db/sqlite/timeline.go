@@ -267,6 +267,19 @@ func (r *TimelineRepository) ListLocal(ctx context.Context, lq apptimeline.Local
 	return entriesFrom(rows, err, "list local entries")
 }
 
+// ListPublic implements timeline.Repository.
+func (r *TimelineRepository) ListPublic(ctx context.Context, pq apptimeline.PublicQuery) ([]apptimeline.Entry, error) {
+	all, langs, err := languages(pq.Languages)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListPublicEntries(ctx, sqlitegen.ListPublicEntriesParams{
+		Before: pq.Before, Now: toMillis(pq.Now), Viewer: pq.ViewerAccountID,
+		AllLanguages: all, Languages: langs, PageLimit: int64(pq.Limit),
+	})
+	return entriesFrom(rows, err, "list public entries")
+}
+
 // ListTag implements timeline.Repository.
 func (r *TimelineRepository) ListTag(ctx context.Context, tq apptimeline.TagQuery) ([]apptimeline.Entry, error) {
 	all, langs, err := languages(tq.Languages)

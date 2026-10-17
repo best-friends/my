@@ -205,9 +205,10 @@ func (s *Service) ReviseRemoteStatus(ctx context.Context, tx uow.Tx, in RemoteSt
 func (s *Service) DeleteRemoteStatus(ctx context.Context, tx uow.Tx, uri, authorAccountID string) error {
 	st, err := s.d.Repository.FindLiveStatusByURI(ctx, tx, uri)
 	if errors.Is(err, ErrNotFound) {
-		if _, derr := s.d.Repository.FindDeletionByURI(ctx, uri); derr == nil {
+		// A deletion by retention is not the author's: the Delete still leaves its tombstone.
+		if d, derr := s.d.Repository.FindDeletionByURI(ctx, uri); derr == nil && d.Tombstone() {
 			return nil // deleted before
-		} else if !errors.Is(derr, ErrNotFound) {
+		} else if derr != nil && !errors.Is(derr, ErrNotFound) {
 			return derr
 		}
 		return err

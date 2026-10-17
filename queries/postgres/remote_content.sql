@@ -30,6 +30,13 @@ SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_m
   blurhash, focus_x, focus_y, description
 FROM remote_media WHERE media_id = @media_id;
 
+-- ListRemoteMedia returns the remote media files with an ID in @media_ids, for the images of a
+-- page of accounts.
+-- name: ListRemoteMedia :many
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+  blurhash, focus_x, focus_y, description
+FROM remote_media WHERE media_id = ANY(@media_ids::text[]) ORDER BY media_id;
+
 -- name: UpsertRemoteMediaCache :exec
 INSERT INTO remote_media_cache (url, blob_key, content_type, file_size, fetched_at, expires_at, last_accessed_at)
 VALUES (@url, @blob_key, @content_type, @file_size, @fetched_at, @expires_at, @last_accessed_at)

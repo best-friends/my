@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -1115,6 +1116,11 @@ func remoteResolvesHandlesAndURLs(t *testing.T, e *remoteEnv) {
 	}
 	if _, err := e.accounts.RemoteProfileURL(ctx, e.instance.Account.ID); !errors.Is(err, appaccount.ErrNotFound) {
 		t.Errorf("RemoteProfileURL of a local account = %v, want ErrNotFound", err)
+	}
+	// A page of accounts reads the profile pages together; local accounts have none.
+	urls, err := e.accounts.RemoteProfileURLs(ctx, []string{a.Account.ID, e.instance.Account.ID, "unknown"})
+	if want := map[string]string{a.Account.ID: "https://mastodon.example/@alice"}; err != nil || !maps.Equal(urls, want) {
+		t.Errorf("RemoteProfileURLs = %v, %v; want %v", urls, err, want)
 	}
 
 	// WebFinger names an actor that holds another handle, names no actor, or does not answer.

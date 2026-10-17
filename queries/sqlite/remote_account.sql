@@ -25,6 +25,14 @@ SELECT id, account_id, preferred_username, profile_url, inbox_url, shared_inbox_
   document_digest, fetched_at
 FROM remote_account_snapshots WHERE account_id = @account_id ORDER BY id DESC LIMIT 1;
 
+-- ListRemoteProfileURLs returns the profile page (url) of the current snapshot of each actor in
+-- @account_ids that declares one, for presenting a page of accounts.
+-- name: ListRemoteProfileURLs :many
+SELECT h.account_id, s.profile_url FROM remote_account_heads h
+JOIN remote_account_snapshots s ON s.id = h.snapshot_id
+WHERE h.account_id IN (SELECT value FROM json_each(CAST(@account_ids AS TEXT))) AND s.profile_url IS NOT NULL
+ORDER BY h.account_id;
+
 -- name: UpsertRemoteAccountHead :exec
 INSERT INTO remote_account_heads (
   account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures

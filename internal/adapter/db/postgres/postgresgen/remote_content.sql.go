@@ -580,6 +580,46 @@ func (q *Queries) ListPollTallyObservationCounts(ctx context.Context, observatio
 	return items, nil
 }
 
+const listRemoteMedia = `-- name: ListRemoteMedia :many
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+  blurhash, focus_x, focus_y, description
+FROM remote_media WHERE media_id = ANY($1::text[]) ORDER BY media_id
+`
+
+// ListRemoteMedia returns the remote media files with an ID in @media_ids, for the images of a
+// page of accounts.
+func (q *Queries) ListRemoteMedia(ctx context.Context, mediaIds []string) ([]RemoteMedium, error) {
+	rows, err := q.db.Query(ctx, listRemoteMedia, mediaIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RemoteMedium{}
+	for rows.Next() {
+		var i RemoteMedium
+		if err := rows.Scan(
+			&i.MediaID,
+			&i.OwnerAccountID,
+			&i.RemoteUrl,
+			&i.DeclaredContentType,
+			&i.DeclaredMediaType,
+			&i.Width,
+			&i.Height,
+			&i.Blurhash,
+			&i.FocusX,
+			&i.FocusY,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const sumRemoteMediaCacheSize = `-- name: SumRemoteMediaCacheSize :one
 SELECT CAST(COALESCE(SUM(file_size), 0) AS BIGINT) FROM remote_media_cache
 `

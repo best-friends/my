@@ -229,6 +229,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		medias       content.MediaRepository
 		feds         federationRepository
 		mods         moderation.Repository
+		retention    retentionRepositories
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -244,6 +245,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		notifs = d.NotificationRepository()
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
+		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -262,6 +264,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		notifs = d.NotificationRepository()
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
+		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -384,6 +387,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
 	})
 	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
+	a.setUpRetention(cfg, retention, statuses)
 	a.Streams = stream.NewHub(stream.HubOptions{})
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
@@ -397,11 +401,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
 	}
 	a.setUpDelivery(feds)
-	if err := a.setMedia(cfg, medias); err != nil {
+	// The media service presents remote files with the proxy's signed URLs, so the proxy comes first.
+	if a.MediaProxy, err = newMediaProxy(cfg, medias, a); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
-	if a.MediaProxy, err = newMediaProxy(cfg, medias, a); err != nil {
+	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
@@ -443,7 +448,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
-		Resolver:      a.RemoteActors,
+		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications,
 		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
@@ -580,6 +585,7 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 		UnattachedTTL: cfg.MediaUnattachedTTL,
 		// Avatars and headers refer to media files from the account module.
 		Referrers: []content.MediaReferrer{a.Accounts, a.Instance},
+		Proxy:     a.MediaProxy,
 		Logger:    a.Logger,
 	})
 	a.Media.RegisterJobs(a.Handlers, a.Scheduler)

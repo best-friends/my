@@ -172,6 +172,33 @@ WHERE e.is_local AND e.kind = 'post' AND e.visibility IN ('public', 'local')
 ORDER BY e.id DESC
 LIMIT sqlc.arg(page_limit);
 
+-- ListPublicEntries is the federated timeline (FR-202): the public posts of local and remote
+-- accounts, except those of authors and domains kept from discovery and those the viewer ('' for
+-- none) blocks, is blocked by, or mutes.
+-- name: ListPublicEntries :many
+SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
+FROM feed_entries e
+WHERE e.kind = 'post' AND e.visibility = 'public'
+  AND (sqlc.arg(before)::text = '' OR e.id < sqlc.arg(before)::text)
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_author_restrictions r
+    WHERE r.account_id = e.author_account_id
+      AND r.restriction IN ('public_discovery', 'visibility_ceiling_private', 'profile_view')
+      AND (r.effective_until IS NULL OR r.effective_until > sqlc.arg(now)::timestamptz))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_domain_restrictions dr
+    WHERE dr.restriction IN ('public_discovery', 'visibility_ceiling_private', 'profile_view')
+      AND (dr.effective_until IS NULL OR dr.effective_until > sqlc.arg(now)::timestamptz)
+      AND (dr.domain = e.author_domain OR right(e.author_domain, length(dr.domain) + 1) = '.' || dr.domain))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_exclusions x
+    WHERE x.viewer_account_id = sqlc.arg(viewer) AND x.target_account_id = e.author_account_id
+      AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
+  AND (sqlc.arg(all_languages)::boolean OR e.language = 'und' OR e.language = ANY(sqlc.arg(languages)::text[]))
+ORDER BY e.id DESC
+LIMIT sqlc.arg(page_limit);
+
 -- ListTagEntries is the timeline of a hashtag (FR-203): the public and local posts with the tag
 -- (public only when include_local is 0), with the exclusions of ListLocalEntries and of the
 -- author's domain.

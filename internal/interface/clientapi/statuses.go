@@ -155,43 +155,45 @@ func (s *Server) viewStatus(ctx context.Context, statusID string) (Status, error
 
 // presentStatus presents one status as the Status schema, with its author's images.
 func (s *Server) presentStatus(ctx context.Context, view appcontent.StatusView) (Status, error) {
-	imgs, err := s.statusImages(ctx, []appcontent.StatusView{view})
+	parts, err := s.statusParts(ctx, []appcontent.StatusView{view})
 	if err != nil {
 		return Status{}, err
 	}
-	return s.newStatus(view, imgs), nil
+	return s.newStatus(view, parts), nil
 }
 
 // presentStatuses presents views in order as the Status schema, reading the images of their
 // authors together.
 func (s *Server) presentStatuses(ctx context.Context, views []appcontent.StatusView) ([]Status, error) {
-	imgs, err := s.statusImages(ctx, views)
+	parts, err := s.statusParts(ctx, views)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]Status, 0, len(views))
 	for _, v := range views {
-		out = append(out, s.newStatus(v, imgs))
+		out = append(out, s.newStatus(v, parts))
 	}
 	return out, nil
 }
 
-// statusImages reads the images of the authors of views and of more accounts together
-// (Server.profileImages).
-func (s *Server) statusImages(ctx context.Context, views []appcontent.StatusView, more ...appaccount.Actor) (profileImages, error) {
+// statusParts reads the parts of the authors of views and of more accounts, and the profile
+// pages of the accounts that views mention, together (Server.accountParts).
+func (s *Server) statusParts(ctx context.Context, views []appcontent.StatusView, more ...appaccount.Actor) (accountParts, error) {
 	actors := slices.Clone(more)
+	var mentioned []appaccount.Actor
 	for _, v := range views {
 		actors = append(actors, v.Author)
+		mentioned = append(mentioned, v.Mentions...)
 	}
-	return s.profileImages(ctx, actors...)
+	return s.readAccountParts(ctx, actors, mentioned)
 }
 
-// newStatus presents a status as the Status schema; imgs holds its author's images
-// (statusImages).
-func (s *Server) newStatus(v appcontent.StatusView, imgs profileImages) Status {
+// newStatus presents a status as the Status schema; parts holds its author's images and the
+// profile pages of its author and mentions (statusParts).
+func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 	st, rev := v.Status, v.Revision
 	out := Status{
-		Id: st.ID, Uri: st.URI, Account: s.newAccount(v.Author, imgs),
+		Id: st.ID, Uri: st.URI, Account: s.newAccount(v.Author, parts),
 		SpoilerText: rev.SpoilerText, Sensitive: rev.Sensitive, Visibility: Visibility(st.Visibility),
 		Language: rev.Language, CreatedAt: st.PublishedAt,
 		MediaAttachments: newMediaAttachments(v.Attachments),
@@ -217,7 +219,7 @@ func (s *Server) newStatus(v appcontent.StatusView, imgs profileImages) Status {
 		out.EditedAt = &at
 	}
 	for _, m := range v.Mentions {
-		a := s.newAccount(m, nil)
+		a := s.newAccount(m, parts)
 		out.Mentions = append(out.Mentions, StatusMention{Id: a.Id, Username: a.Username, Acct: a.Acct, Url: a.Url})
 	}
 	for _, t := range v.Tags {
@@ -243,7 +245,12 @@ func newMediaAttachments(in []appcontent.MediaView) []MediaAttachment {
 			}
 			return m.URL
 		}
-		a := newMediaAttachment(m.Media, url)
+		var a MediaAttachment
+		if m.Media.Remote != nil {
+			a = newRemoteAttachment(m.Media, m.URL)
+		} else {
+			a = newMediaAttachment(m.Media, url)
+		}
 		a.Description = nil
 		if m.Description != "" {
 			a.Description = &m.Description
@@ -375,16 +382,16 @@ func (s *Server) GetStatusContext(ctx context.Context, req GetStatusContextReque
 		}
 		return nil, err
 	}
-	imgs, err := s.statusImages(ctx, slices.Concat(thread.Ancestors, thread.Descendants))
+	parts, err := s.statusParts(ctx, slices.Concat(thread.Ancestors, thread.Descendants))
 	if err != nil {
 		return nil, err
 	}
 	out := StatusContext{Ancestors: make([]Status, 0, len(thread.Ancestors)), Descendants: make([]Status, 0, len(thread.Descendants))}
 	for _, v := range thread.Ancestors {
-		out.Ancestors = append(out.Ancestors, s.newStatus(v, imgs))
+		out.Ancestors = append(out.Ancestors, s.newStatus(v, parts))
 	}
 	for _, v := range thread.Descendants {
-		out.Descendants = append(out.Descendants, s.newStatus(v, imgs))
+		out.Descendants = append(out.Descendants, s.newStatus(v, parts))
 	}
 	return GetStatusContext200JSONResponse{
 		Body: out, Headers: GetStatusContext200ResponseHeaders{CacheControl: statusCache(ctx)},

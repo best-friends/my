@@ -133,7 +133,17 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 		return p.mentions(ctx, tx, ev.Status.ID, ev.Status.AuthorAccountID, ev.Revision.MentionedAccountIDs, ev.Revision.RevisedAt)
 	})
 	r.Register(appcontent.EventStatusDeleted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
-		return d.Repository.InsertDeletedStatus(ctx, tx, e.(appcontent.StatusDeleted).Deletion.StatusID)
+		del := e.(appcontent.StatusDeleted).Deletion
+		if !del.Tombstone() {
+			// A deletion that is no tombstone is the retention purge's (ADR-0034). The purge
+			// deletes many remote statuses, almost none of them notified, and a status deleted
+			// without notifications gets none later, so it needs no row.
+			notified, err := d.Repository.StatusHasNotifications(ctx, tx, del.StatusID)
+			if err != nil || !notified {
+				return err
+			}
+		}
+		return d.Repository.InsertDeletedStatus(ctx, tx, del.StatusID)
 	})
 	r.Register(appcontent.EventBoosted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.Boosted)

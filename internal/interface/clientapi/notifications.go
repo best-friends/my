@@ -133,18 +133,18 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 			return nil, fmt.Errorf("clientapi: the source account %s of notification %s: %w", n.SourceAccountID, n.ID, err)
 		}
 	}
-	imgs, err := s.statusImages(ctx, views, found...)
+	parts, err := s.statusParts(ctx, views, found...)
 	if err != nil {
 		return nil, err
 	}
 	statuses := make(map[string]Status, len(views))
 	for _, v := range views {
-		statuses[v.Status.ID] = s.newStatus(v, imgs)
+		statuses[v.Status.ID] = s.newStatus(v, parts)
 	}
 	accounts := make(map[string]Account, len(found))
 	for id, a := range sources {
 		if a != nil {
-			accounts[id] = s.newAccount(*a, imgs)
+			accounts[id] = s.newAccount(*a, parts)
 		}
 	}
 	out := make([]Notification, 0, len(ns))

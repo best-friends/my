@@ -58,6 +58,7 @@ func TimelineContract(t *testing.T, newHarness TimelineFactory) {
 		{"HomeWidensTheReadWindow", timelineHomeWindow},
 		{"ExcludesBlocksAndMutes", timelineExclusions},
 		{"LocalTimeline", timelineLocal},
+		{"PublicTimeline", timelinePublic},
 		{"HashtagTimeline", timelineHashtag},
 		{"ProfileTimeline", timelineProfile},
 		{"ProfileLeavesOutRepliesAndBoosts", timelineProfileFilters},
@@ -457,6 +458,48 @@ func timelineLocal(t *testing.T, e *timelineEnv) {
 		t.Fatalf("UpsertAuthorRestriction: %v", err)
 	}
 	local(anonymous, pub.ID, silenced.ID, hidden.ID)
+}
+
+func timelinePublic(t *testing.T, e *timelineEnv) {
+	alice, bob := e.account(true), e.account(true)
+	remote, other := e.account(false), e.account(false)
+	pub := e.public(t, alice)
+	e.post(t, alice, content.VisibilityLocal, postOpts{})
+	far := e.public(t, remote)
+	for _, v := range []content.Visibility{content.VisibilityUnlisted, content.VisibilityPrivate, content.VisibilityDirect} {
+		e.post(t, alice, v, postOpts{})
+		e.post(t, remote, v, postOpts{})
+	}
+	e.boost(t, bob, far)
+	reply := e.post(t, other, content.VisibilityPublic, postOpts{inReplyTo: far.URI})
+	public := func(viewer appcontent.Viewer, want ...string) {
+		t.Helper()
+		p, err := e.svc.Public(t.Context(), viewer, apptimeline.Query{Limit: apptimeline.MaxLimit})
+		expectPage(t, "Public", p, err, want...)
+	}
+	// Only public posts, local or remote; no local posts even for a logged-in viewer, no boosts.
+	public(viewerOf(bob), pub.ID, far.ID, reply.ID)
+	public(anonymous, pub.ID, far.ID, reply.ID)
+
+	// The viewer's mutes and blocks apply.
+	if _, err := e.graph.Mute(t.Context(), bob, other, appgraph.MuteInput{}); err != nil {
+		t.Fatalf("Mute: %v", err)
+	}
+	public(viewerOf(bob), pub.ID, far.ID)
+	public(anonymous, pub.ID, far.ID, reply.ID)
+
+	// A domain restriction covers the domain and its subdomains; an author restriction the author.
+	err := e.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		return e.h.Timeline.UpsertDomainRestriction(t.Context(), tx, apptimeline.DomainRestriction{
+			Domain: "example", Restriction: timeline.RestrictPublicDiscovery,
+		})
+	})
+	if err != nil {
+		t.Fatalf("UpsertDomainRestriction: %v", err)
+	}
+	public(anonymous, pub.ID)
+	e.restrict(t, alice, timeline.RestrictPublicDiscovery)
+	public(anonymous)
 }
 
 func timelineHashtag(t *testing.T, e *timelineEnv) {
