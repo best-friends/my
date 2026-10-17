@@ -112,6 +112,9 @@ type OAuthRepository interface {
 	InsertTokenRevocation(ctx context.Context, tx uow.Tx, r identity.TokenRevocation) (bool, error)
 	// RevokeTokenFamily revokes every token of a family that has no revocation yet.
 	RevokeTokenFamily(ctx context.Context, tx uow.Tx, familyID string, reason identity.TokenRevocationReason, at time.Time) error
+	// RevokeTokensOfUser revokes every token of a user whose access or refresh token has not
+	// expired at at and that has no revocation yet.
+	RevokeTokensOfUser(ctx context.Context, tx uow.Tx, userID string, reason identity.TokenRevocationReason, at time.Time) error
 	// RevokeSessionOfTokenFamily revokes the browser session that authorized the code a family
 	// started from, unless the session has a revocation already or the code had no session.
 	RevokeSessionOfTokenFamily(ctx context.Context, tx uow.Tx, familyID string, reason identity.RevocationReason, at time.Time) error

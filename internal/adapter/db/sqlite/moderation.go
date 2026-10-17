@@ -433,3 +433,48 @@ func (r *ModerationRepository) ListDomainActions(ctx context.Context, q appmoder
 	}
 	return out, nil
 }
+
+func actionRecordFrom(row sqlitegen.ListModerationActionsRow) moderation.ActionRecord {
+	rec := moderation.ActionRecord{Action: moderation.Action{
+		ID: row.ID, TargetAccountID: row.TargetAccountID, Kind: moderation.ActionKind(row.Kind),
+		ReasonCategory: moderation.Category(row.ReasonCategory), PublicReason: row.PublicReason.String,
+		PrivateNote: row.PrivateNote.String, ReportID: row.ReportID.String, Issuer: moderation.Issuer(row.Issuer),
+		IssuedByUserID: row.IssuedByUserID.String, NotifyTarget: row.NotifyTarget != 0,
+		ExpiresAt: fromNullMillis(row.ExpiresAt), IssuedAt: fromMillis(row.IssuedAt),
+	}}
+	if row.LiftActionID.Valid {
+		rec.Lift = &moderation.Lift{
+			ActionID: row.ID, LiftedByUserID: row.LiftedByUserID.String, Reason: row.LiftReason.String,
+			LiftedAt: fromMillis(row.LiftedAt.Int64),
+		}
+	}
+	return rec
+}
+
+// FindActionRecord implements moderation.Repository.
+func (r *ModerationRepository) FindActionRecord(ctx context.Context, id string) (moderation.ActionRecord, error) {
+	row, err := r.db.reader().GetModerationActionRecord(ctx, id)
+	if err != nil {
+		return moderation.ActionRecord{}, notFound(err, appmoderation.ErrNotFound, "moderation action "+id)
+	}
+	return actionRecordFrom(sqlitegen.ListModerationActionsRow(row)), nil
+}
+
+// ListActions implements moderation.Repository.
+func (r *ModerationRepository) ListActions(ctx context.Context, q appmoderation.ActionQuery, limit int) ([]moderation.ActionRecord, error) {
+	var at int64
+	if q.InEffectAt != nil {
+		at = toMillis(*q.InEffectAt)
+	}
+	rows, err := r.db.reader().ListModerationActions(ctx, sqlitegen.ListModerationActionsParams{
+		AccountID: q.AccountID, InEffectAt: at, Before: q.Before, Lim: int64(limit),
+	})
+	if err != nil {
+		return nil, wrap(err, "list moderation actions")
+	}
+	out := make([]moderation.ActionRecord, len(rows))
+	for i, row := range rows {
+		out[i] = actionRecordFrom(row)
+	}
+	return out, nil
+}

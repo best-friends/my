@@ -73,6 +73,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RateLimitsFailedSignIns", sessionRateLimitsFailures},
 		{"RehashesWeakerPasswordsOnSignIn", sessionRehashes},
 		{"RejectsSignInToInactiveAccounts", sessionRejectsInactiveAccounts},
+		{"EndsTheLoginsOfModeratedAccounts", sessionModerationEndsLogins},
 		{"RegistersTheWebClient", oauthRegistersTheWebClient},
 		{"ValidatesAuthorizationRequests", oauthValidatesAuthorizationRequests},
 		{"ExchangesCodesWithPKCE", oauthExchangesCodesWithPKCE},

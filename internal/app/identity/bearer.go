@@ -12,8 +12,9 @@ import (
 )
 
 // ErrAccountUnavailable reports a valid access token whose user cannot use the app: the user
-// is not Access.Allowed (registration pending or rejected, email unverified) or their local
-// account is not active (deactivated, scheduled for deletion, or deleted).
+// is not Access.Allowed (registration pending or rejected, email unverified), their local
+// account is not active (deactivated, scheduled for deletion, or deleted), or moderation
+// forbids the account to log in (disable_login, suspend).
 var ErrAccountUnavailable = errors.New("identity: account cannot use the app")
 
 // Bearer is who a client API request acts as: an access token that is valid now, of a user
@@ -55,6 +56,11 @@ func (s *Service) AuthenticateBearer(ctx context.Context, accessToken string) (B
 		return Bearer{}, err
 	}
 	if !st.Active() {
+		return Bearer{}, ErrAccountUnavailable
+	}
+	if restricted, err := s.loginRestricted(ctx, st.AccountID); err != nil {
+		return Bearer{}, err
+	} else if restricted {
 		return Bearer{}, ErrAccountUnavailable
 	}
 	return Bearer{

@@ -42,7 +42,7 @@ func (f *fakeModeration) DomainActions(_ context.Context, flt appmoderation.Doma
 	var out []appmoderation.DomainActionView
 	for _, r := range slices.Backward(f.actions) {
 		v := f.view(r)
-		if (flt.Domain == "" || r.Action.Domain == flt.Domain) && (!flt.Active || v.State == moderation.DomainActionActive) &&
+		if (flt.Domain == "" || r.Action.Domain == flt.Domain) && (!flt.Active || v.State == moderation.ActionActive) &&
 			(flt.Before == "" || r.Action.ID < flt.Before) && len(out) < limit {
 			out = append(out, v)
 		}
@@ -163,6 +163,12 @@ const (
 // by a remote server's actor, the second one about a status.
 func newModerationEnv(t *testing.T) (*authEnv, *fakeModeration) {
 	t.Helper()
+	return newModerationEnvWith(t, nil)
+}
+
+// newModerationEnvWith is newModerationEnv whose options change also sets, when not nil.
+func newModerationEnvWith(t *testing.T, change func(*clientapi.Options)) (*authEnv, *fakeModeration) {
+	t.Helper()
 	f := &fakeModeration{now: adminNow}
 	for i, id := range []string{reportOne, reportTwo, reportThree} {
 		r := moderation.Report{
@@ -182,6 +188,9 @@ func newModerationEnv(t *testing.T) (*authEnv, *fakeModeration) {
 		accounts[reporterAccountID] = appaccount.Actor{
 			Account: account.Account{ID: reporterAccountID, Domain: "remote.example", URI: "https://remote.example/actor", CreatedAt: adminNow},
 			Handle:  &account.Handle{Username: "remote.example", Domain: "remote.example"},
+		}
+		if change != nil {
+			change(o)
 		}
 	})
 	e.auth.tokens["admin"] = bearer("admin", aliceAccountID)

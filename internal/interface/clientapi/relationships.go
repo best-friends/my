@@ -76,6 +76,8 @@ func (s *Server) graphProblem(ctx context.Context, err error) (problem, bool) {
 		return s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank, l.ServerErrorsUnprocessable(), l.ServerErrorsSelfRelationship()), true
 	case errors.Is(err, appgraph.ErrRemoteAccount):
 		return s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank, l.ServerErrorsUnprocessable(), l.ServerErrorsRemoteAccount()), true
+	case errors.Is(err, appgraph.ErrInteractionRestricted):
+		return s.problem(ctx, http.StatusForbidden, ProblemTypeBlank, l.ServerErrorsForbidden(), l.ServerErrorsInteractionRestricted()), true
 	case errors.Is(err, appgraph.ErrBlocked):
 		// The target does not block the viewer (relate checked it), so the viewer blocks the target.
 		return s.problem(ctx, http.StatusConflict, ProblemTypeBlocking, l.ServerErrorsBlocking(), ""), true

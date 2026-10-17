@@ -11,8 +11,13 @@ import (
 // Restrictions are the current moderation restrictions of an account that bear on its statuses
 // (data-model §5.2).
 type Restrictions struct {
-	// Post forbids posting, replying, and editing (the post restriction).
+	// Post forbids posting, replying, boosting, and editing (the post restriction).
 	Post bool
+	// Interact forbids favouriting, boosting, and replying (the interact restriction).
+	Interact bool
+	// MediaSensitive shows every attachment of the account's statuses as sensitive (the
+	// media_sensitive restriction).
+	MediaSensitive bool
 	// Author are the restrictions that bear on who sees the account's statuses, the visibility
 	// ceiling among them.
 	Author content.AuthorRestrictions
@@ -20,6 +25,9 @@ type Restrictions struct {
 
 // CanPost reports whether the account may post, reply, and edit.
 func (r Restrictions) CanPost() bool { return !r.Post }
+
+// CanInteract reports whether the account may favourite, boost, and reply.
+func (r Restrictions) CanInteract() bool { return !r.Interact }
 
 // VisibilityCeiling returns the widest visibility the account may post with (data-model §5.4).
 func (r Restrictions) VisibilityCeiling() content.Visibility { return r.Author.VisibilityCeiling() }
@@ -40,9 +48,8 @@ type RestrictionPolicy interface {
 	Restrictions(ctx context.Context, accountID string) (Restrictions, error)
 }
 
-// NoRestrictions is the RestrictionPolicy of an instance whose accounts carry no moderation
-// restrictions: it restricts nobody. It stands in for the policy that the moderation module
-// derives from account_restrictions and domain_restrictions.
+// NoRestrictions is the RestrictionPolicy that restricts nobody, for the services and tests
+// built without the moderation module's policy (moderation.AccountPolicy.Content).
 type NoRestrictions struct{}
 
 // Restrictions implements RestrictionPolicy.

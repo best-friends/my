@@ -87,6 +87,13 @@ type Options struct {
 	// account, and nil leaves it out.
 	Moderation   Moderation
 	UserAccounts UserAccounts
+	// AccountModeration runs the moderators' use cases on the actions on accounts for the admin
+	// operations (admin_account_actions.go).
+	AccountModeration AccountModeration
+	// ProfileRestrictions hides the accounts whose profiles moderation hides (profile_view)
+	// from everyone but themselves; nil hides none. Moderators see them through the admin
+	// operations.
+	ProfileRestrictions ProfileRestrictions
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

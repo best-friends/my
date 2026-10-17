@@ -121,6 +121,58 @@ func (q *Queries) GetModerationAction(ctx context.Context, id string) (Moderatio
 	return i, err
 }
 
+const getModerationActionRecord = `-- name: GetModerationActionRecord :one
+SELECT a.id, a.target_account_id, a.kind, a.reason_category, a.public_reason, a.private_note,
+  a.report_id, a.issuer, a.issued_by_user_id, a.notify_target, a.expires_at, a.issued_at,
+  l.action_id AS lift_action_id, l.lifted_by_user_id, l.reason AS lift_reason, l.lifted_at
+FROM moderation_actions a
+LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
+WHERE a.id = ?
+`
+
+type GetModerationActionRecordRow struct {
+	ID              string
+	TargetAccountID string
+	Kind            string
+	ReasonCategory  string
+	PublicReason    sql.NullString
+	PrivateNote     sql.NullString
+	ReportID        sql.NullString
+	Issuer          string
+	IssuedByUserID  sql.NullString
+	NotifyTarget    int64
+	ExpiresAt       sql.NullInt64
+	IssuedAt        int64
+	LiftActionID    sql.NullString
+	LiftedByUserID  sql.NullString
+	LiftReason      sql.NullString
+	LiftedAt        sql.NullInt64
+}
+
+func (q *Queries) GetModerationActionRecord(ctx context.Context, id string) (GetModerationActionRecordRow, error) {
+	row := q.db.QueryRowContext(ctx, getModerationActionRecord, id)
+	var i GetModerationActionRecordRow
+	err := row.Scan(
+		&i.ID,
+		&i.TargetAccountID,
+		&i.Kind,
+		&i.ReasonCategory,
+		&i.PublicReason,
+		&i.PrivateNote,
+		&i.ReportID,
+		&i.Issuer,
+		&i.IssuedByUserID,
+		&i.NotifyTarget,
+		&i.ExpiresAt,
+		&i.IssuedAt,
+		&i.LiftActionID,
+		&i.LiftedByUserID,
+		&i.LiftReason,
+		&i.LiftedAt,
+	)
+	return i, err
+}
+
 const getReport = `-- name: GetReport :one
 SELECT id, uri, reporter_account_id, target_account_id, category, comment, forwarded, filed_at
 FROM reports WHERE id = ?
@@ -677,6 +729,94 @@ func (q *Queries) ListDomainRestrictionsInEffect(ctx context.Context, arg ListDo
 			return nil, err
 		}
 		items = append(items, restriction)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listModerationActions = `-- name: ListModerationActions :many
+SELECT a.id, a.target_account_id, a.kind, a.reason_category, a.public_reason, a.private_note,
+  a.report_id, a.issuer, a.issued_by_user_id, a.notify_target, a.expires_at, a.issued_at,
+  l.action_id AS lift_action_id, l.lifted_by_user_id, l.reason AS lift_reason, l.lifted_at
+FROM moderation_actions a
+LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
+WHERE (CAST(?1 AS TEXT) = '' OR a.target_account_id = ?1)
+  AND (CAST(?2 AS INTEGER) = 0
+    OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > ?2)))
+  AND (CAST(?3 AS TEXT) = '' OR a.id < ?3)
+ORDER BY a.id DESC
+LIMIT ?4
+`
+
+type ListModerationActionsParams struct {
+	AccountID  string
+	InEffectAt int64
+	Before     string
+	Lim        int64
+}
+
+type ListModerationActionsRow struct {
+	ID              string
+	TargetAccountID string
+	Kind            string
+	ReasonCategory  string
+	PublicReason    sql.NullString
+	PrivateNote     sql.NullString
+	ReportID        sql.NullString
+	Issuer          string
+	IssuedByUserID  sql.NullString
+	NotifyTarget    int64
+	ExpiresAt       sql.NullInt64
+	IssuedAt        int64
+	LiftActionID    sql.NullString
+	LiftedByUserID  sql.NullString
+	LiftReason      sql.NullString
+	LiftedAt        sql.NullInt64
+}
+
+// ListModerationActions returns the actions on accounts with their lifts, newest first: those
+// on an account (empty for every account), only those in effect at in_effect_at unless it is 0,
+// and those before the action before (empty for the first page).
+func (q *Queries) ListModerationActions(ctx context.Context, arg ListModerationActionsParams) ([]ListModerationActionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listModerationActions,
+		arg.AccountID,
+		arg.InEffectAt,
+		arg.Before,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListModerationActionsRow{}
+	for rows.Next() {
+		var i ListModerationActionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TargetAccountID,
+			&i.Kind,
+			&i.ReasonCategory,
+			&i.PublicReason,
+			&i.PrivateNote,
+			&i.ReportID,
+			&i.Issuer,
+			&i.IssuedByUserID,
+			&i.NotifyTarget,
+			&i.ExpiresAt,
+			&i.IssuedAt,
+			&i.LiftActionID,
+			&i.LiftedByUserID,
+			&i.LiftReason,
+			&i.LiftedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
