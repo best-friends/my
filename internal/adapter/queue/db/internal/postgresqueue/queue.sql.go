@@ -15,21 +15,22 @@ import (
 )
 
 const claimJob = `-- name: ClaimJob :one
-UPDATE jobs
-SET locked_by = $1, locked_until = $2, attempt = attempt + 1
-WHERE id = (
-  SELECT j.id FROM jobs AS j
-  WHERE j.run_at <= $3 AND (j.locked_until IS NULL OR j.locked_until <= $3)
-  ORDER BY j.run_at, j.id
-  LIMIT 1
-  FOR UPDATE SKIP LOCKED
-)
-RETURNING id, type, payload, idempotency_key, ordering_key, attempt, run_at, last_error, created_at
+UPDATE jobs AS j
+SET locked_by = $1, locked_until = $2, attempt = j.attempt + 1
+WHERE j.id = $3
+  AND j.run_at <= $4 AND (j.locked_until IS NULL OR j.locked_until <= $4)
+  AND NOT EXISTS (
+    SELECT 1 FROM jobs AS k
+    WHERE k.ordering_key = j.ordering_key AND k.id <> j.id
+      AND (k.locked_until > $4 OR k.created_at < j.created_at OR (k.created_at = j.created_at AND k.id < j.id))
+  )
+RETURNING j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.attempt, j.run_at, j.last_error, j.created_at
 `
 
 type ClaimJobParams struct {
 	Worker      *string
 	LockedUntil pgtype.Timestamptz
+	ID          string
 	Now         time.Time
 }
 
@@ -45,10 +46,13 @@ type ClaimJobRow struct {
 	CreatedAt      time.Time
 }
 
-// ClaimJob leases the due, unleased job with the earliest run_at. FOR UPDATE SKIP LOCKED lets
-// concurrent workers pass over the rows that others are claiming instead of waiting for them.
 func (q *Queries) ClaimJob(ctx context.Context, arg ClaimJobParams) (ClaimJobRow, error) {
-	row := q.db.QueryRow(ctx, claimJob, arg.Worker, arg.LockedUntil, arg.Now)
+	row := q.db.QueryRow(ctx, claimJob,
+		arg.Worker,
+		arg.LockedUntil,
+		arg.ID,
+		arg.Now,
+	)
 	var i ClaimJobRow
 	err := row.Scan(
 		&i.ID,
@@ -263,6 +267,53 @@ func (q *Queries) ListOutboxEvents(ctx context.Context, limit int32) ([]OutboxEv
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockOrderingKey = `-- name: LockOrderingKey :exec
+SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))
+`
+
+func (q *Queries) LockOrderingKey(ctx context.Context, lockKey string) error {
+	_, err := q.db.Exec(ctx, lockOrderingKey, lockKey)
+	return err
+}
+
+const pickJob = `-- name: PickJob :one
+
+SELECT j.id, j.ordering_key FROM jobs AS j
+WHERE j.run_at <= $1 AND (j.locked_until IS NULL OR j.locked_until <= $1)
+  AND NOT EXISTS (
+    SELECT 1 FROM jobs AS k
+    WHERE k.ordering_key = j.ordering_key AND k.id <> j.id
+      AND (k.locked_until > $1 OR k.created_at < j.created_at OR (k.created_at = j.created_at AND k.id < j.id))
+  )
+ORDER BY j.run_at, j.id
+LIMIT 1
+FOR UPDATE SKIP LOCKED
+`
+
+type PickJobRow struct {
+	ID          string
+	OrderingKey *string
+}
+
+// A claim takes three statements in one transaction, because under READ COMMITTED a claim
+// may not see the lease of a job of the same ordering key that another worker is claiming at
+// the same time:
+//
+//  1. PickJob finds a candidate: the due, unleased job with the earliest run_at that its
+//     ordering key does not hold back (no other job of the key leased or enqueued before it, by
+//     (created_at, id)). FOR UPDATE SKIP LOCKED lets concurrent workers pass over the rows that
+//     others are claiming instead of waiting for them.
+//  2. LockOrderingKey, for a candidate with an ordering key, serializes the claims of that key
+//     until the transaction ends.
+//  3. ClaimJob checks the candidate again in a snapshot taken after the lock, so it sees the
+//     leases committed by earlier claims of the key, and leases it.
+func (q *Queries) PickJob(ctx context.Context, now time.Time) (PickJobRow, error) {
+	row := q.db.QueryRow(ctx, pickJob, now)
+	var i PickJobRow
+	err := row.Scan(&i.ID, &i.OrderingKey)
+	return i, err
 }
 
 const releaseJob = `-- name: ReleaseJob :execrows

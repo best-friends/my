@@ -32,7 +32,8 @@ type JobRunner interface {
 // A claim is identified by the job's ID, the worker, and the claimed Attempt. Complete,
 // Release, and Bury act only while that claim still holds and return ErrLeaseLost otherwise.
 type Source interface {
-	// Claim leases the due job (RunAt <= now, not leased) with the earliest RunAt to worker
+	// Claim leases the due job (RunAt <= now, not leased, not held back by its ordering key;
+	// see "Ordering keys" in the package documentation) with the earliest RunAt to worker
 	// until now+lease, increments its Attempt, and returns it. ok is false when no job is due.
 	Claim(ctx context.Context, worker string, now time.Time, lease time.Duration) (j Job, ok bool, err error)
 	// Complete removes the claimed job j.

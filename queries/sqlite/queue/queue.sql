@@ -8,14 +8,21 @@ INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run
 VALUES (?, ?, ?, ?, ?, 0, ?, ?)
 ON CONFLICT (idempotency_key) DO NOTHING;
 
--- ClaimJob leases the due, unleased job with the earliest run_at. BEGIN IMMEDIATE serializes
--- claims, so two workers never claim the same job.
+-- ClaimJob leases the due, unleased job with the earliest run_at that its ordering key does
+-- not hold back: no other job of the key may be leased or enqueued before it, by (created_at,
+-- id). BEGIN IMMEDIATE serializes claims, so two workers never claim the same job or two jobs
+-- of one key.
 -- name: ClaimJob :one
 UPDATE jobs
 SET locked_by = @worker, locked_until = @locked_until, attempt = attempt + 1
 WHERE id = (
   SELECT j.id FROM jobs AS j
   WHERE j.run_at <= @now AND (j.locked_until IS NULL OR j.locked_until <= @now)
+    AND NOT EXISTS (
+      SELECT 1 FROM jobs AS k
+      WHERE k.ordering_key = j.ordering_key AND k.id <> j.id
+        AND (k.locked_until > @now OR k.created_at < j.created_at OR (k.created_at = j.created_at AND k.id < j.id))
+    )
   ORDER BY j.run_at, j.id
   LIMIT 1
 )
