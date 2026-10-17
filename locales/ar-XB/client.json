@@ -1807,6 +1807,10 @@
     "defaultMessage": "‮⅄on ɐɹǝ oɟɟʅıuǝ. ∀uʎʇɥıuƃ ʇɥɐʇ ɟɐıʅǝp ʇo ʅoɐp ʅoɐps ɐƃɐıu ʍɥǝu ʎon ɐɹǝ qɐɔʞ ouʅıuǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.rate_limited": {
+    "defaultMessage": "‮⊥oo ɯɐuʎ ɹǝbnǝsʇs ʍǝɹǝ sǝuʇ ʇo ʇɥǝ sǝɹʌǝɹ. Mɥɐʇ ɟɐıʅǝp ʇo ʅoɐp ʅoɐps ɐƃɐıu ɐʇ {time}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.skip_to_main": {
     "defaultMessage": "‮Sʞıd ʇo ɯɐıu ɔouʇǝuʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
