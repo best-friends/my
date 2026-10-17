@@ -111,6 +111,28 @@ func (r *GraphRepository) Follow(ctx context.Context, tx uow.Tx, id string) (gra
 	return followFrom(row), nil
 }
 
+// FollowByURI implements graph.Repository.
+func (r *GraphRepository) FollowByURI(ctx context.Context, tx uow.Tx, uri string) (graph.Follow, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return graph.Follow{}, err
+	}
+	row, err := q.GetFollowByURI(ctx, uri)
+	if err != nil {
+		return graph.Follow{}, notFound(err, appgraph.ErrNotFound, "follow "+uri)
+	}
+	return followFrom(row), nil
+}
+
+// FindFollow implements graph.Repository.
+func (r *GraphRepository) FindFollow(ctx context.Context, id string) (graph.Follow, error) {
+	row, err := r.db.reader().GetFollow(ctx, id)
+	if err != nil {
+		return graph.Follow{}, notFound(err, appgraph.ErrNotFound, "follow "+id)
+	}
+	return followFrom(row), nil
+}
+
 func preferencesFrom(row postgresgen.FollowPreference) graph.Preferences {
 	return graph.Preferences{FollowID: row.FollowID, ShowBoosts: row.ShowBoosts, Notify: row.Notify}
 }

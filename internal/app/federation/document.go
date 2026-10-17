@@ -162,6 +162,9 @@ func handleOf(a appaccount.Actor, accountDomain string) string {
 // the revision the activity presents. The Delete of a status has no document here: its
 // projector stores it with the deletion (deleteDocument), so document returns nil.
 func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, s subject) ([]byte, error) {
+	if act.ObjectKind == federation.OutboundFollow {
+		return f.followDocument(ctx, s)
+	}
 	if act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete {
 		return nil, nil
 	}

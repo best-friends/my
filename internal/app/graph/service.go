@@ -17,8 +17,9 @@ import (
 var (
 	// ErrAccountUnavailable reports a follower or followee that does not exist or is not active.
 	ErrAccountUnavailable = errors.New("graph: the account does not exist or is not active")
-	// ErrRemoteAccount reports a remote follower or followee: these use cases cover local
-	// accounts only, and federated follows go through the federation module.
+	// ErrRemoteAccount reports a remote account where a use case needs a local one: the account
+	// that follows, blocks, or mutes, and the target of a block. Follows received from remote
+	// accounts go through ReceiveFollow.
 	ErrRemoteAccount = errors.New("graph: the account is not local")
 	// ErrBlocked reports a follow between two accounts when either blocks the other.
 	ErrBlocked = errors.New("graph: one of the accounts blocks the other")
@@ -42,7 +43,8 @@ type Deps struct {
 	Host string
 }
 
-// Service runs the graph module's follow, block, and mute use cases of local accounts.
+// Service runs the graph module's follow, block, and mute use cases: those of local accounts,
+// and the follows with remote accounts that the federation module receives (remote.go).
 type Service struct {
 	d Deps
 }
@@ -83,9 +85,10 @@ func (r Relationship) RequestedFollow() bool { return r.Following == graph.State
 
 // Follow makes followerID follow followeeID. The follow is active at once, unless the followee's
 // current profile is locked: then it is a follow request, pending until the followee accepts it
-// (FR-302). Following an account that the follower already follows or has requested to follow
-// changes nothing. Both accounts must be local and active, and neither may block the other
-// (ErrBlocked).
+// (FR-302). A follow of a remote account is always pending until its server sends an Accept
+// (AcceptRemote). Following an account that the follower already follows or has requested to
+// follow changes nothing. The follower must be local and active, the followee active (local or
+// remote), and neither may block the other (ErrBlocked).
 func (s *Service) Follow(ctx context.Context, followerID, followeeID string) (Relationship, error) {
 	f := graph.Follow{FollowerAccountID: followerID, FolloweeAccountID: followeeID}
 	if err := f.Validate(); err != nil {
@@ -94,11 +97,11 @@ func (s *Service) Follow(ctx context.Context, followerID, followeeID string) (Re
 	if _, err := s.localActive(ctx, followerID); err != nil {
 		return Relationship{}, err
 	}
-	followee, err := s.localActive(ctx, followeeID)
+	followee, err := s.active(ctx, followeeID)
 	if err != nil {
 		return Relationship{}, err
 	}
-	locked := followee.Profile != nil && followee.Profile.Locked
+	locked := !followee.Account.IsLocal() || (followee.Profile != nil && followee.Profile.Locked)
 
 	f.ID = s.d.IDs.NewID()
 	f.URI = graph.FollowURI(s.d.Host, f.ID)
@@ -139,15 +142,24 @@ func (s *Service) Follow(ctx context.Context, followerID, followeeID string) (Re
 
 // localActive returns a local, active account.
 func (s *Service) localActive(ctx context.Context, id string) (appaccount.Actor, error) {
+	a, err := s.active(ctx, id)
+	if err != nil {
+		return appaccount.Actor{}, err
+	}
+	if !a.Account.IsLocal() {
+		return appaccount.Actor{}, fmt.Errorf("account %s: %w", id, ErrRemoteAccount)
+	}
+	return a, nil
+}
+
+// active returns an active account, local or remote.
+func (s *Service) active(ctx context.Context, id string) (appaccount.Actor, error) {
 	a, err := s.d.Accounts.FindByID(ctx, id)
 	if errors.Is(err, appaccount.ErrNotFound) {
 		return appaccount.Actor{}, fmt.Errorf("account %s: %w", id, ErrAccountUnavailable)
 	}
 	if err != nil {
 		return appaccount.Actor{}, err
-	}
-	if !a.Account.IsLocal() {
-		return appaccount.Actor{}, fmt.Errorf("account %s: %w", id, ErrRemoteAccount)
 	}
 	if !a.Lifecycle.Active() {
 		return appaccount.Actor{}, fmt.Errorf("account %s: %w", id, ErrAccountUnavailable)

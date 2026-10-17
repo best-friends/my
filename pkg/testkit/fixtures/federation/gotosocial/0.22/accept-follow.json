@@ -1,0 +1,14 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "actor": "https://gotosocial.example/users/the_mighty_zork",
+  "id": "https://gotosocial.example/users/the_mighty_zork/accepts/01JJYD0B2Y6HZTW8YNH0Z1N8VS",
+  "object": {
+    "actor": "https://remote.example/users/bob",
+    "id": "https://remote.example/users/bob#follows/4",
+    "object": "https://gotosocial.example/users/the_mighty_zork",
+    "to": "https://gotosocial.example/users/the_mighty_zork",
+    "type": "Follow"
+  },
+  "to": "https://remote.example/users/bob",
+  "type": "Accept"
+}

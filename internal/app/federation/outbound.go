@@ -66,6 +66,9 @@ type RecorderDeps struct {
 	IDs    kernel.IDGenerator
 	// Host is the serving domain of the activity URIs (ADR-0018).
 	Host string
+	// Accounts tells local accounts from remote ones in the transaction, for the activities of
+	// follows; nil records none of them.
+	Accounts LocalityReader
 }
 
 // RegisterOutboundProjectors subscribes the federation module to the domain events of other
@@ -77,11 +80,17 @@ type RecorderDeps struct {
 //     Update, and Delete.
 //   - content.boosted / boost_retracted of a boost that federates: Announce and Undo Announce.
 //     A boost of a local status (Boost.Federates is false) is not recorded (ADR-0017).
+//   - graph.followed / follow_requested / follow_accepted / follow_rejected / follow_terminated
+//     between a local and a remote account: Follow, Accept, Reject, and Undo Follow
+//     (registerFollowProjectors).
 //
-// Other activities (Like, Follow, Accept, Block, profile updates, account deletion) are added
-// here, one projector each, with the use cases that send them.
+// Other activities (Like, Block, profile updates, account deletion) are added here, one
+// projector each, with the use cases that send them.
 func RegisterOutboundProjectors(r *uow.Projectors, d RecorderDeps) {
 	rec := recorder{d: d}
+	if d.Accounts != nil {
+		registerFollowProjectors(r, rec)
+	}
 	r.Register(appcontent.EventStatusCreated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appcontent.StatusCreated)
 		if !ok || !ev.Status.IsLocal {

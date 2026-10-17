@@ -48,6 +48,7 @@ func InboxProcessingContract(t *testing.T, newHarness InboxFactory) {
 		{"ConfirmsActivitiesOfOtherSigners", inboxConfirmsRefetched},
 		{"FailsWhatCanNeverBeProcessed", inboxFailsUnprocessable},
 		{"RoutesTheOwnActorsUpdateAndDelete", inboxRoutesOwnActor},
+		{"RoutesUndoByTheUndoneType", inboxRoutesUndo},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -98,7 +99,7 @@ func (e *inboxProcessEnv) wireStandIns() {
 	e.processor.Handle(federation.ActivityCreate, e.notes.create)
 	e.processor.Handle(federation.ActivityDelete, e.notes.delete)
 	e.processor.Handle(federation.ActivityFollow, e.follows.follow)
-	e.processor.Handle(federation.ActivityUndo, e.follows.undo)
+	e.processor.HandleUndo(federation.ActivityFollow, e.follows.undo)
 }
 
 // receive records doc as the synchronous part of the inbox does, with trust, and returns its
@@ -570,6 +571,44 @@ func inboxRoutesOwnActor(t *testing.T, e *inboxProcessEnv) {
 		}
 	}()
 	e.processor.HandleOwnActor(federation.ActivityFollow, func(context.Context, *appfederation.InboxActivity) error { return nil })
+}
+
+func inboxRoutesUndo(t *testing.T, e *inboxProcessEnv) {
+	// The stand-ins take back follows; a second handler takes back likes it knows.
+	var likes []federation.IRI
+	known := federation.IRI(inboxAlice + "#like-1")
+	e.processor.HandleUndo(federation.ActivityLike, func(_ context.Context, a *appfederation.InboxActivity) error {
+		likes = append(likes, a.Activity.Object().ID)
+		if a.Activity.Object().ID != known {
+			return appfederation.ErrUnknownObject
+		}
+		return nil
+	})
+	local := "https://" + contractHost + "/ap/objects/x"
+	// An embedded Like goes to the Like handler alone.
+	embedded := map[string]any{"id": string(known), "type": "Like", "actor": inboxAlice, "object": local}
+	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-like-1", "", embedded)); got != appfederation.InboxHandled || len(likes) != 1 {
+		t.Errorf("Undo of an embedded Like = %q (%d Like calls), want handled by the Like handler", got, len(likes))
+	}
+	// An IRI alone goes to the handlers in order until one knows it.
+	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-like-2", "", string(known))); got != appfederation.InboxHandled || len(likes) != 2 {
+		t.Errorf("Undo of a known IRI = %q (%d Like calls), want handled by the Like handler", got, len(likes))
+	}
+	unknown := inboxAlice + "#like-2"
+	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-like-3", "", unknown)); got != appfederation.InboxTombstoned || !e.tombstoned(t, federation.IRI(unknown)) {
+		t.Errorf("Undo of an IRI no handler knows = %q, want %q", got, appfederation.InboxTombstoned)
+	}
+	// An embedded activity of a type without an Undo handler is unknown.
+	block := inboxAlice + "#block-1"
+	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-block", "", map[string]any{"id": block, "type": "Block", "actor": inboxAlice, "object": local})); got != appfederation.InboxTombstoned || len(likes) != 3 {
+		t.Errorf("Undo of an embedded Block = %q (%d Like calls), want %q without the Like handler", got, len(likes), appfederation.InboxTombstoned)
+	}
+	defer func() {
+		if recover() == nil {
+			t.Error("Handle(Undo) after HandleUndo did not panic")
+		}
+	}()
+	e.processor.Handle(federation.ActivityUndo, func(context.Context, *appfederation.InboxActivity) error { return nil })
 }
 
 // inboxOrderCase is one case of the order and duplicate property test: activities that must
