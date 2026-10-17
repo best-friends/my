@@ -31,6 +31,7 @@ type AccountKey struct {
 	KeyID        string
 	Algorithm    string
 	PublicKeyPem string
+	Fingerprint  []byte
 	CreatedAt    int64
 }
 
@@ -122,6 +123,24 @@ type BoostRetraction struct {
 	RetractedAt int64
 }
 
+type Delivery struct {
+	ID                 string
+	OutboundActivityID string
+	InboxUrl           string
+	Domain             string
+	CreatedAt          int64
+}
+
+type DeliveryAttempt struct {
+	ID              string
+	DeliveryID      string
+	Outcome         string
+	SignatureScheme sql.NullString
+	HttpStatus      sql.NullInt64
+	Error           sql.NullString
+	AttemptedAt     int64
+}
+
 type Favourite struct {
 	AccountID string
 	StatusID  string
@@ -197,6 +216,30 @@ type FollowPreference struct {
 	FollowID   string
 	ShowBoosts int64
 	Notify     int64
+}
+
+type InstanceAvailabilityEvent struct {
+	ID         string
+	Domain     string
+	Kind       string
+	Reason     string
+	OccurredAt int64
+}
+
+type InstanceHealth struct {
+	Domain         string
+	State          string
+	Since          int64
+	FailureDays    int64
+	LastFailureDay string
+}
+
+type InstanceNodeinfoObservation struct {
+	ID              string
+	Domain          string
+	SoftwareName    string
+	SoftwareVersion string
+	ObservedAt      int64
 }
 
 type InstanceSetting struct {
@@ -345,11 +388,30 @@ type OauthClient struct {
 	CreatedAt        int64
 }
 
+type OutboundActivity struct {
+	ID             string
+	ActivityUri    string
+	Type           string
+	ActorAccountID string
+	ObjectType     string
+	ObjectID       string
+	CreatedAt      int64
+}
+
 type PasswordCredential struct {
 	ID           string
 	UserID       string
 	PasswordHash string
 	SetAt        int64
+}
+
+type ReceivedActivity struct {
+	ActivityUri     string
+	ActorUri        string
+	Type            string
+	SignatureScheme string
+	Trust           string
+	ReceivedAt      int64
 }
 
 type RegistrationApplication struct {
@@ -358,6 +420,71 @@ type RegistrationApplication struct {
 	Reason      sql.NullString
 	InviteID    sql.NullString
 	SubmittedAt int64
+}
+
+type RemoteAccountHandleVerification struct {
+	ID         string
+	AccountID  string
+	Username   string
+	Domain     string
+	VerifiedAt int64
+}
+
+type RemoteAccountHead struct {
+	AccountID                string
+	SnapshotID               string
+	InboxUrl                 string
+	SharedInboxUrl           sql.NullString
+	LastFetchedAt            int64
+	ConsecutiveFetchFailures int64
+}
+
+type RemoteAccountSnapshot struct {
+	ID                string
+	AccountID         string
+	PreferredUsername string
+	ProfileUrl        sql.NullString
+	InboxUrl          string
+	SharedInboxUrl    sql.NullString
+	OutboxUrl         sql.NullString
+	FollowersUrl      sql.NullString
+	FollowingUrl      sql.NullString
+	FeaturedUrl       sql.NullString
+	FollowersTotal    sql.NullInt64
+	FollowingTotal    sql.NullInt64
+	StatusesTotal     sql.NullInt64
+	DocumentDigest    []byte
+	FetchedAt         int64
+}
+
+type RemoteMediaCache struct {
+	Url            string
+	BlobKey        string
+	ContentType    string
+	FileSize       int64
+	FetchedAt      int64
+	ExpiresAt      int64
+	LastAccessedAt int64
+}
+
+type RemoteMedium struct {
+	MediaID             string
+	OwnerAccountID      string
+	RemoteUrl           string
+	DeclaredContentType sql.NullString
+	DeclaredMediaType   string
+	Width               sql.NullInt64
+	Height              sql.NullInt64
+	Blurhash            sql.NullString
+	FocusX              sql.NullFloat64
+	FocusY              sql.NullFloat64
+	Description         sql.NullString
+}
+
+type RemoteStatusRevision struct {
+	RevisionID        string
+	ActivityUri       sql.NullString
+	HtmlPolicyVersion int64
 }
 
 type Role struct {

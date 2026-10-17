@@ -31,6 +31,7 @@ type AccountKey struct {
 	KeyID        string
 	Algorithm    string
 	PublicKeyPem string
+	Fingerprint  []byte
 	CreatedAt    time.Time
 }
 
@@ -122,6 +123,24 @@ type BoostRetraction struct {
 	RetractedAt time.Time
 }
 
+type Delivery struct {
+	ID                 string
+	OutboundActivityID string
+	InboxUrl           string
+	Domain             string
+	CreatedAt          time.Time
+}
+
+type DeliveryAttempt struct {
+	ID              string
+	DeliveryID      string
+	Outcome         string
+	SignatureScheme *string
+	HttpStatus      *int32
+	Error           *string
+	AttemptedAt     time.Time
+}
+
 type Favourite struct {
 	AccountID string
 	StatusID  string
@@ -197,6 +216,30 @@ type FollowPreference struct {
 	FollowID   string
 	ShowBoosts bool
 	Notify     bool
+}
+
+type InstanceAvailabilityEvent struct {
+	ID         string
+	Domain     string
+	Kind       string
+	Reason     string
+	OccurredAt time.Time
+}
+
+type InstanceHealth struct {
+	Domain         string
+	State          string
+	Since          time.Time
+	FailureDays    int32
+	LastFailureDay string
+}
+
+type InstanceNodeinfoObservation struct {
+	ID              string
+	Domain          string
+	SoftwareName    string
+	SoftwareVersion string
+	ObservedAt      time.Time
 }
 
 type InstanceSetting struct {
@@ -345,11 +388,30 @@ type OauthClient struct {
 	CreatedAt        time.Time
 }
 
+type OutboundActivity struct {
+	ID             string
+	ActivityUri    string
+	Type           string
+	ActorAccountID string
+	ObjectType     string
+	ObjectID       string
+	CreatedAt      time.Time
+}
+
 type PasswordCredential struct {
 	ID           string
 	UserID       string
 	PasswordHash string
 	SetAt        time.Time
+}
+
+type ReceivedActivity struct {
+	ActivityUri     string
+	ActorUri        string
+	Type            string
+	SignatureScheme string
+	Trust           string
+	ReceivedAt      time.Time
 }
 
 type RegistrationApplication struct {
@@ -358,6 +420,71 @@ type RegistrationApplication struct {
 	Reason      *string
 	InviteID    *string
 	SubmittedAt time.Time
+}
+
+type RemoteAccountHandleVerification struct {
+	ID         string
+	AccountID  string
+	Username   string
+	Domain     string
+	VerifiedAt time.Time
+}
+
+type RemoteAccountHead struct {
+	AccountID                string
+	SnapshotID               string
+	InboxUrl                 string
+	SharedInboxUrl           *string
+	LastFetchedAt            time.Time
+	ConsecutiveFetchFailures int32
+}
+
+type RemoteAccountSnapshot struct {
+	ID                string
+	AccountID         string
+	PreferredUsername string
+	ProfileUrl        *string
+	InboxUrl          string
+	SharedInboxUrl    *string
+	OutboxUrl         *string
+	FollowersUrl      *string
+	FollowingUrl      *string
+	FeaturedUrl       *string
+	FollowersTotal    *int64
+	FollowingTotal    *int64
+	StatusesTotal     *int64
+	DocumentDigest    []byte
+	FetchedAt         time.Time
+}
+
+type RemoteMediaCache struct {
+	Url            string
+	BlobKey        string
+	ContentType    string
+	FileSize       int64
+	FetchedAt      time.Time
+	ExpiresAt      time.Time
+	LastAccessedAt time.Time
+}
+
+type RemoteMedium struct {
+	MediaID             string
+	OwnerAccountID      string
+	RemoteUrl           string
+	DeclaredContentType *string
+	DeclaredMediaType   string
+	Width               *int32
+	Height              *int32
+	Blurhash            *string
+	FocusX              *float64
+	FocusY              *float64
+	Description         *string
+}
+
+type RemoteStatusRevision struct {
+	RevisionID        string
+	ActivityUri       *string
+	HtmlPolicyVersion int32
 }
 
 type Role struct {

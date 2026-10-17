@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	appfederation "github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/domain/federation"
 	"github.com/best-friends/my/pkg/testkit"
 )
@@ -37,13 +38,13 @@ func federationFixtures(t *testing.T) []testkit.FederationFixture {
 	return fixtures
 }
 
-// Every fixture is normalized (federation.md §4) and the result is compared with
+// Every fixture is normalized as the inbox does (federation.md §4, hosts canonicalized) and the result is compared with
 // testdata/golden/normalize/<implementation>/<version>/<name>.json.
 func TestFederationFixturesNormalize(t *testing.T) {
 	for _, f := range federationFixtures(t) {
 		t.Run(f.Path(), func(t *testing.T) {
 			var result any
-			doc, err := federation.Normalize(f.JSON, normalizeNow)
+			doc, err := appfederation.Normalize(f.JSON, normalizeNow)
 			if err != nil {
 				result = map[string]any{"error": err.Error()}
 			} else {

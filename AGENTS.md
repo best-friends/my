@@ -92,7 +92,7 @@ These come from Accepted ADRs and are binding.
   Community Edition; never hand-write migration SQL or rely on Atlas features that need `atlas login` ([ADR-0023](docs/adr/0023-declarative-schema-management.md)).
 - Keep DB transactions short, retryable, and free of external I/O (HTTP, queue, blob); enqueue jobs via the outbox. Make writes safe to repeat with unique constraints, upserts, idempotency keys ([ADR-0003](docs/adr/0003-database-abstraction.md)).
 - Job handlers must be idempotent; delivery is at-least-once ([ADR-0004](docs/adr/0004-job-queue-abstraction.md)).
-- All outbound HTTP goes through the SSRF-guarded `HttpClient` port.
+- All outbound HTTP goes through the SSRF-guarded `kernel.HTTPClient` port; `http.DefaultClient` is banned by lint.
 - Visibility checks go through the single domain policy function; never re-implement them in API or federation code.
   Levels are `public` / `local` / `unlisted` / `private` / `direct`; `local` is never federated beyond the author's followers ([ADR-0017](docs/adr/0017-visibility-local.md)).
 - **i18n**: never hard-code user-facing strings or date/number formats. Add ICU messages to `locales/en` *and* `locales/ja`,

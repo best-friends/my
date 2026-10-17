@@ -16,7 +16,7 @@ INSERT INTO account_profile_revisions (
 INSERT INTO account_profile_fields (revision_id, position, name, value_html) VALUES ($1, $2, $3, $4);
 
 -- name: InsertAccountKey :exec
-INSERT INTO account_keys (id, account_id, key_id, algorithm, public_key_pem, created_at) VALUES ($1, $2, $3, $4, $5, $6);
+INSERT INTO account_keys (id, account_id, key_id, algorithm, public_key_pem, fingerprint, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7);
 
 -- name: InsertLocalAccountPrivateKey :exec
 INSERT INTO local_account_private_keys (account_key_id, private_key_enc) VALUES ($1, $2);
@@ -112,7 +112,7 @@ SELECT revision_id, position, name, value_html FROM account_profile_fields
 WHERE revision_id = $1 ORDER BY position;
 
 -- name: ListAccountKeys :many
-SELECT id, account_id, key_id, algorithm, public_key_pem, created_at FROM account_keys
+SELECT id, account_id, key_id, algorithm, public_key_pem, fingerprint, created_at FROM account_keys
 WHERE account_id = $1 ORDER BY id;
 
 -- name: GetLocalAccountPrivateKey :one
