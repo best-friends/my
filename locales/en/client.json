@@ -203,6 +203,10 @@
     "defaultMessage": "Could not reach the server. Check your connection and try again.",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."
   },
+  "api.error.offline": {
+    "defaultMessage": "You are offline, so the server cannot be reached. Connect to the internet and try again.",
+    "description": "Error message when a request failed because the device has no network connection. Shown as the reason why something could not load or be sent."
+  },
   "api.error.status": {
     "defaultMessage": "The server could not handle the request (error {status}). Try again later.",
     "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
@@ -1286,6 +1290,10 @@
   "shell.not_found.title": {
     "defaultMessage": "Page not found",
     "description": "Heading of the page shown for an address that the web client has no page for."
+  },
+  "shell.offline": {
+    "defaultMessage": "You are offline. Anything that failed to load loads again when you are back online.",
+    "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
   },
   "shell.skip_to_main": {
     "defaultMessage": "Skip to main content",

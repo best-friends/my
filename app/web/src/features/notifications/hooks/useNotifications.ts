@@ -79,7 +79,9 @@ export function useNotifications(filter: NotificationFilter): NotificationList {
   const api = useApi();
   const session = useSessionStatus();
   const signedIn = session === "signed-in";
-  const list = useInfiniteQuery({ ...notificationsQueryOptions(api, filter), enabled: signedIn });
+  // The route's loader has just tried the first page; a failure stays until the retry button or the return
+  // online (lib/query.ts) instead of being tried again as the list mounts.
+  const list = useInfiniteQuery({ ...notificationsQueryOptions(api, filter), enabled: signedIn, retryOnMount: false });
   const marker = useQuery({ ...notificationMarkerQueryOptions(api), enabled: signedIn });
   const markerAtOpen = useMarkerAtOpen(marker.data);
   const items = list.data?.pages.flatMap((page) => page.items) ?? [];

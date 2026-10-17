@@ -19,6 +19,13 @@ const reply: Status = {
 };
 
 /** Resumes a session with the token the default handlers accept. */
+/** The announcer's polite live region; the app's offline bar is another status region, empty while online. */
+function politeAnnouncements(): HTMLElement {
+  const region = screen.getAllByRole("status").find((element) => element.hasAttribute("data-live-announcer"));
+  if (region === undefined) throw new Error("the announcer is not rendered");
+  return region;
+}
+
 function signedIn() {
   server.use(http.post(oauthPaths.refresh, () => tokenResponse("test-access-token")));
 }
@@ -179,14 +186,14 @@ describe("the actions on a post", () => {
     expect(favourite).toHaveAttribute("aria-pressed", "true");
     expect(favourite).toHaveAccessibleDescription("3");
     pending.release(HttpResponse.json({ ...post, favourited: true, favourites_count: 5 }));
-    expect(await within(screen.getByRole("status")).findByText("Added to favourites")).toBeInTheDocument();
+    expect(await within(politeAnnouncements()).findByText("Added to favourites")).toBeInTheDocument();
     // The server's count, which includes the others' favourites.
     expect(favourite).toHaveAccessibleDescription("5");
 
     await user.click(favourite);
 
     expect(favourite).toHaveAttribute("aria-pressed", "false");
-    expect(await within(screen.getByRole("status")).findByText("Removed from favourites")).toBeInTheDocument();
+    expect(await within(politeAnnouncements()).findByText("Removed from favourites")).toBeInTheDocument();
     expect(requests).toEqual([`POST ${apiBase}/statuses/${postId}/favourite`, `DELETE ${apiBase}/statuses/${postId}/favourite`]);
   });
 
@@ -251,7 +258,7 @@ describe("the actions on a post", () => {
     await user.click(await within(original).findByRole("button", { name: "Favourite", pressed: false }));
 
     expect(within(boosted).getByRole("button", { name: "Favourite" })).toHaveAttribute("aria-pressed", "true");
-    expect(await within(screen.getByRole("status")).findByText("Added to favourites")).toBeInTheDocument();
+    expect(await within(politeAnnouncements()).findByText("Added to favourites")).toBeInTheDocument();
 
     // The page's own answer comes from the server, which now knows the favourite.
     server.use(http.get(`${apiBase}/statuses/:id`, () => HttpResponse.json({ ...post, favourited: true, favourites_count: 3 })));
