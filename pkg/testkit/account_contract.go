@@ -283,6 +283,14 @@ func checkKeys(t *testing.T, e *accountEnv, actor appaccount.Actor) {
 	if !seen[account.KeyRSASHA256] || !seen[account.KeyEd25519] {
 		t.Errorf("key algorithms = %v, want rsa_sha256 and ed25519", seen)
 	}
+	// Outbound requests are signed with the RSA key, {actor}#main-key.
+	keyID, signer, err := e.accounts.SigningKey(t.Context(), actor.Account.ID)
+	if _, rsaKey := signer.(*rsa.PrivateKey); err != nil || keyID != account.KeyIRI(actor.Account.URI, account.KeyRSASHA256) || !rsaKey {
+		t.Errorf("SigningKey = %q, %T, %v; want the RSA key", keyID, signer, err)
+	}
+	if _, _, err := e.accounts.SigningKey(t.Context(), "no-such-account"); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("SigningKey(unknown) = %v, want ErrNotFound", err)
+	}
 }
 
 func accountRejectsTakenUsername(t *testing.T, e *accountEnv) {

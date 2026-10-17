@@ -150,3 +150,9 @@ SELECT domain, state, since, failure_days, last_failure_day FROM instance_health
 -- name: ListUnavailableInstances :many
 SELECT domain, state, since, failure_days, last_failure_day FROM instance_health
 WHERE state = 'unavailable' AND domain > @after_domain ORDER BY domain LIMIT @batch_limit;
+
+-- LockInstanceHealth reads the health of a server in the transaction that updates it and locks
+-- the row, so that concurrent deliveries to one server do not lose an update.
+-- name: LockInstanceHealth :one
+SELECT domain, state, since, failure_days, last_failure_day FROM instance_health WHERE domain = @domain
+FOR UPDATE;

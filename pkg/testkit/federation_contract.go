@@ -41,8 +41,11 @@ type FederationFactory func(t *testing.T, opts uow.Options) FederationHarness
 // and their lookups, the first document kept, one delivery per inbox, the state of remote
 // servers, the inboxes each visibility reaches (data-model §7), the Update and Delete that follow
 // the Create, a fan-out run again without a delivery twice, the servers left out, and the boosts
-// that are not recorded. The other modules are in-memory stand-ins; the fan-out reads its
-// recipients in batches of two, so that every source of recipients spans several jobs.
+// that are not recorded. It also covers one delivery (federation.md §7.3): the classification of
+// responses, the circuit breaker, the failure days that make a server unavailable and the
+// successes, signed requests, and probes that bring it back, and the dead job after the retry
+// schedule. The other modules are in-memory stand-ins; the fan-out reads its recipients in
+// batches of two, so that every source of recipients spans several jobs.
 func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -58,6 +61,11 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"FanOutAgainDeliversNothingTwice", fedFanOutAgain},
 		{"LeavesOutSuspendedAndUnavailableServers", fedLeavesOutServers},
 		{"RecordsOnlyWhatFederates", fedRecordsOnlyWhatFederates},
+		{"ClassifiesDeliveryResponses", fedClassifiesResponses},
+		{"BreaksTheCircuitOfAHost", fedBreaksTheCircuit},
+		{"MarksServersUnavailableAndBack", fedMarksServersUnavailable},
+		{"BuriesExhaustedDeliveries", fedBuriesExhaustedDeliveries},
+		{"ProbesUnavailableServers", fedProbesUnavailableServers},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newFedEnv(t, newHarness)) })
@@ -76,6 +84,8 @@ type fedEnv struct {
 	domains  fedDomains
 	// handled are the fan-out jobs run so far, to run them again.
 	handled []queue.Job
+	// projectors are the projectors of the harness's UnitOfWork.
+	projectors *uow.Projectors
 }
 
 func newFedEnv(t *testing.T, newHarness FederationFactory) *fedEnv {
@@ -84,7 +94,7 @@ func newFedEnv(t *testing.T, newHarness FederationFactory) *fedEnv {
 	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
 	clock := NewClock(time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC))
 	e := &fedEnv{
-		h: h, clock: clock, ids: NewIDGenerator(clock), jobs: &fedJobs{seen: map[string]bool{}},
+		h: h, projectors: projectors, clock: clock, ids: NewIDGenerator(clock), jobs: &fedJobs{seen: map[string]bool{}},
 		handlers: &queue.JobHandlerRegistry{},
 		statuses: &fedStatuses{statuses: map[string]content.Status{}, deleted: map[string]bool{}, revisions: map[string]content.Revision{}, boosts: map[string]content.Boost{}},
 		accounts: &fedAccounts{actors: map[string]appaccount.Actor{}, inboxes: map[string]appaccount.RemoteInbox{}},

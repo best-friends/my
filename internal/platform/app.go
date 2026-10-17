@@ -129,6 +129,10 @@ type App struct {
 	// FanOut turns the outbound activities that the federation projectors record into
 	// deliveries (docs/architecture/federation.md §7).
 	FanOut *federation.FanOut
+	// Deliverer sends the deliveries; InstanceHealth records the remote servers that answer
+	// outside deliveries (docs/architecture/federation.md §7.3).
+	Deliverer      *federation.Deliverer
+	InstanceHealth *federation.Health
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -360,6 +364,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		opts.Version = "dev"
 	}
 	a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
+	a.setUpDelivery(feds)
 	if err := a.setMedia(cfg, medias); err != nil {
 		_ = a.Close()
 		return nil, err
