@@ -67,6 +67,10 @@ func (s *Server) newAdminAccountActions(ctx context.Context, vs []appmoderation.
 			t := a.ExpiresAt.UTC()
 			item.ExpiresAt = &t
 		}
+		if len(a.StatusIDs) > 0 {
+			ids := append([]string{}, a.StatusIDs...)
+			item.StatusIds = &ids
+		}
 		if l := v.Lift; l != nil {
 			t := l.LiftedAt.UTC()
 			item.LiftedAt = &t
@@ -180,6 +184,9 @@ func (s *Server) CreateAccountAction(ctx context.Context, req CreateAccountActio
 		}
 		in.Duration = time.Duration(*b.ExpiresIn) * time.Second
 	}
+	if b.StatusIds != nil {
+		in.StatusIDs = *b.StatusIds
+	}
 	target, ok, err := s.adminAccount(ctx, req.Id)
 	switch {
 	case err != nil:
@@ -196,6 +203,10 @@ func (s *Server) CreateAccountAction(ctx context.Context, req CreateAccountActio
 		return CreateAccountActiondefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	case errors.Is(err, appmoderation.ErrInvalidReportReference):
 		return unprocessable(l.ServerErrorsInvalidValue("report_id"))
+	case errors.Is(err, appmoderation.ErrInvalidStatusReference), errors.Is(err, moderation.ErrInvalidActionStatuses):
+		return unprocessable(l.ServerErrorsInvalidValue("status_ids"))
+	case errors.Is(err, moderation.ErrActionNeverExpires):
+		return unprocessable(l.ServerErrorsInvalidValue("expires_in"))
 	case errors.As(err, &textErr) && textErr.Max > 0:
 		return unprocessable(l.ServerErrorsTooLong(textErr.Max, textErr.Field))
 	case errors.As(err, &textErr):
@@ -250,6 +261,9 @@ func (s *Server) LiftAccountAction(ctx context.Context, req LiftAccountActionReq
 	switch {
 	case errors.Is(err, appmoderation.ErrNotFound):
 		return LiftAccountActiondefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	case errors.Is(err, appmoderation.ErrNotLiftable):
+		return LiftAccountActiondefaultApplicationProblemPlusJSONResponse(
+			s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank, l.ServerErrorsUnprocessable(), l.ServerErrorsInvalidValue("id"))), nil
 	case errors.As(err, &textErr):
 		detail := l.ServerErrorsInvalidValue(textErr.Field)
 		if textErr.Max > 0 {

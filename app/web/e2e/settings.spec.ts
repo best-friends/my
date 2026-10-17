@@ -163,4 +163,55 @@ test.describe("profile form", () => {
     await expect(descriptions.last()).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
   });
+
+  test("asks before leaving with unsaved changes", async ({ page, makeAxeBuilder }) => {
+    await signedInServer(page, projectLocale());
+    await page.goto("/settings/profile");
+    const displayName = page.locator('input[autocomplete="nickname"]');
+    await expect(displayName).toBeVisible();
+    await displayName.fill("Alice Liddell");
+    const settingsLink = page.getByRole("navigation").locator('a[href="/settings"]').first();
+
+    await settingsLink.click();
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    // The question, what leaving does, and "Keep editing" (focused) before "Discard changes".
+    await expect(dialog).toMatchAriaSnapshot(`
+      - alertdialog:
+        - heading [level=2]
+        - paragraph
+        - button
+        - button
+    `);
+    await expect(dialog.getByRole("button").first()).toBeFocused();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/settings\/profile$/);
+    await expect(displayName).toHaveValue("Alice Liddell");
+
+    await settingsLink.click();
+    await dialog.getByRole("button").last().click();
+    await expect(page).toHaveURL(/\/settings$/);
+  });
+});
+
+test.describe("time zone", () => {
+  test("names the zones in the display language with their offset, and describes them by their IANA name", async ({ page, makeAxeBuilder }) => {
+    await signedInServer(page, projectLocale());
+    await page.goto("/settings/preferences");
+    const select = page.locator('main button[aria-haspopup="listbox"]').nth(1);
+    // The closed select shows the stored UTC's offset and CLDR name, without the description.
+    await expect(select).toContainText("+00:00");
+
+    await select.click();
+    const tokyo = page.getByRole("option").filter({ hasText: "Asia/Tokyo" });
+    await expect(tokyo).toHaveAccessibleName(/\+09:00/);
+    await expect(tokyo).not.toHaveAccessibleName(/Asia\/Tokyo/);
+    await expect(tokyo).toHaveAccessibleDescription("Asia/Tokyo");
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
 });

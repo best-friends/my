@@ -466,6 +466,30 @@ func (e Permission) Valid() bool {
 	}
 }
 
+// Defines values for ReportCategory.
+const (
+	ReportCategoryLegal     ReportCategory = "legal"
+	ReportCategoryOther     ReportCategory = "other"
+	ReportCategorySpam      ReportCategory = "spam"
+	ReportCategoryViolation ReportCategory = "violation"
+)
+
+// Valid indicates whether the value is a known member of the ReportCategory enum.
+func (e ReportCategory) Valid() bool {
+	switch e {
+	case ReportCategoryLegal:
+		return true
+	case ReportCategoryOther:
+		return true
+	case ReportCategorySpam:
+		return true
+	case ReportCategoryViolation:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Visibility.
 const (
 	VisibilityDirect   Visibility = "direct"
@@ -638,6 +662,10 @@ type AdminAccountAction struct {
 	// State `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
 	// lifted it.
 	State AdminAccountActionState `json:"state"`
+
+	// StatusIds The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+	// on, in ID order; omitted for the other kinds.
+	StatusIds *[]Id `json:"status_ids,omitempty"`
 }
 
 // AdminAccountActionIssuer `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
@@ -845,6 +873,10 @@ type AdminReport struct {
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	ReporterAccountId Id `json:"reporter_account_id"`
 
+	// RuleIds The IDs of the instance rules that the report cites, retired ones included; only a
+	// report of the `violation` category cites rules.
+	RuleIds []Id `json:"rule_ids"`
+
 	// State `open` reports await the moderators; `resolved` ones are handled.
 	State AdminReportState `json:"state"`
 
@@ -928,7 +960,8 @@ type AdminRuleText struct {
 
 // CreateAccountActionRequest A moderation action to take on an account.
 type CreateAccountActionRequest struct {
-	// ExpiresIn The seconds the action lasts; omitted, it lasts until it is lifted.
+	// ExpiresIn The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
+	// actions on posts take none.
 	ExpiresIn *int `json:"expires_in,omitempty"`
 
 	// Kind `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
@@ -951,6 +984,10 @@ type CreateAccountActionRequest struct {
 
 	// ReportId The report of the account that the action follows from.
 	ReportId *Id `json:"report_id,omitempty"`
+
+	// StatusIds The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+	// on; required for them and taken by no other kind.
+	StatusIds *[]Id `json:"status_ids,omitempty"`
 }
 
 // CreateDomainActionRequest A moderation action to take on a domain.
@@ -970,6 +1007,31 @@ type CreateDomainActionRequest struct {
 	Obfuscate     *bool                 `json:"obfuscate,omitempty"`
 	PrivateNote   *string               `json:"private_note,omitempty"`
 	PublicComment *string               `json:"public_comment,omitempty"`
+}
+
+// CreateReportRequest A report of an account to the moderators.
+type CreateReportRequest struct {
+	// AccountId The account reported, local or remote.
+	AccountId Id `json:"account_id"`
+
+	// Category Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
+	// is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
+	// anything else.
+	Category ReportCategory `json:"category"`
+
+	// Comment A comment for the moderators as plain text.
+	Comment *string `json:"comment,omitempty"`
+
+	// Forward Asks to forward the report to the server of a remote account, without naming the
+	// reporter. It means nothing for a local account.
+	Forward *bool `json:"forward,omitempty"`
+
+	// RuleIds Instance rules in effect that the account broke, up to 20; only with the
+	// `violation` category.
+	RuleIds *[]Id `json:"rule_ids,omitempty"`
+
+	// StatusIds Posts of the account that the user can see, up to 20.
+	StatusIds *[]Id `json:"status_ids,omitempty"`
 }
 
 // CreateStatusRequest A new status.
@@ -1599,6 +1661,36 @@ type Relationship struct {
 	ShowBoosts bool `json:"show_boosts"`
 }
 
+// Report A report that the user filed. It never names the reporter.
+type Report struct {
+	// Category Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
+	// is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
+	// anything else.
+	Category ReportCategory `json:"category"`
+
+	// Comment The comment as plain text.
+	Comment string    `json:"comment"`
+	FiledAt time.Time `json:"filed_at"`
+
+	// Forwarded Whether the report is to be forwarded to the target's server.
+	Forwarded bool `json:"forwarded"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id        Id   `json:"id"`
+	RuleIds   []Id `json:"rule_ids"`
+	StatusIds []Id `json:"status_ids"`
+
+	// TargetAccount An account, as clients show it (FR-006).
+	TargetAccount Account `json:"target_account"`
+}
+
+// ReportCategory Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
+// is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
+// anything else.
+type ReportCategory string
+
 // ResolveReportRequest How a report is resolved.
 type ResolveReportRequest struct {
 	// Outcome How the report was resolved, present only while it is resolved. `actioned`: a moderator
@@ -2214,6 +2306,9 @@ type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
 // UpdatePreferencesJSONRequestBody defines body for UpdatePreferences for application/json ContentType.
 type UpdatePreferencesJSONRequestBody = UpdatePreferencesRequest
 
+// CreateReportJSONRequestBody defines body for CreateReport for application/json ContentType.
+type CreateReportJSONRequestBody = CreateReportRequest
+
 // CreateStatusJSONRequestBody defines body for CreateStatus for application/json ContentType.
 type CreateStatusJSONRequestBody = CreateStatusRequest
 
@@ -2393,6 +2488,9 @@ type ServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(w http.ResponseWriter, r *http.Request)
+	// CreateReport Report an account
+	// (POST /reports)
+	CreateReport(w http.ResponseWriter, r *http.Request)
 	// CreateStatus Post a status
 	// (POST /statuses)
 	CreateStatus(w http.ResponseWriter, r *http.Request, params CreateStatusParams)
@@ -4319,6 +4417,20 @@ func (siw *ServerInterfaceWrapper) UpdatePreferences(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// CreateReport operation middleware
+func (siw *ServerInterfaceWrapper) CreateReport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateReport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreateStatus operation middleware
 func (siw *ServerInterfaceWrapper) CreateStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -5088,6 +5200,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/local", wrapper.GetLocalTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/public", wrapper.GetPublicTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/tag/{hashtag}", wrapper.GetHashtagTimeline)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/reports", wrapper.CreateReport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/dead_jobs", wrapper.ListDeadJobs)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/dead_jobs/{id}/retry", wrapper.RetryDeadJob)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances", wrapper.ListInstanceHealth)
@@ -8503,6 +8616,68 @@ func (response UpdatePreferencesdefaultApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type CreateReportRequestObject struct {
+	Body *CreateReportJSONRequestBody
+}
+
+type CreateReportResponseObject interface {
+	VisitCreateReportResponse(w http.ResponseWriter) error
+}
+
+type CreateReport200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type CreateReport200JSONResponse struct {
+	Body    Report
+	Headers CreateReport200ResponseHeaders
+}
+
+func (response CreateReport200JSONResponse) VisitCreateReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateReportdefaultApplicationProblemPlusJSONResponse) VisitCreateReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateStatusRequestObject struct {
 	Params CreateStatusParams
 	Body   *CreateStatusJSONRequestBody
@@ -9757,6 +9932,9 @@ type StrictServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(ctx context.Context, request UpdatePreferencesRequestObject) (UpdatePreferencesResponseObject, error)
+	// CreateReport Report an account
+	// (POST /reports)
+	CreateReport(ctx context.Context, request CreateReportRequestObject) (CreateReportResponseObject, error)
 	// CreateStatus Post a status
 	// (POST /statuses)
 	CreateStatus(ctx context.Context, request CreateStatusRequestObject) (CreateStatusResponseObject, error)
@@ -11422,6 +11600,37 @@ func (sh *strictHandler) UpdatePreferences(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdatePreferencesResponseObject); ok {
 		if err := validResponse.VisitUpdatePreferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateReport operation middleware
+func (sh *strictHandler) CreateReport(w http.ResponseWriter, r *http.Request) {
+	var request CreateReportRequestObject
+
+	var body CreateReportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateReport(ctx, request.(CreateReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateReportResponseObject); ok {
+		if err := validResponse.VisitCreateReportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

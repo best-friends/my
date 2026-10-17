@@ -33,3 +33,24 @@ export const Disabled: Story = { args: { defaultValue: "en", isDisabled: true } 
 
 /** The open list, for the accessibility check of the options; it renders in a popover outside the frame. */
 export const Open: Story = { args: { defaultValue: "ja", defaultOpen: true } };
+
+const zones = [
+  { id: "America/New_York", name: "(UTC−04:00) Eastern Time" },
+  { id: "America/Detroit", name: "(UTC−04:00) Eastern Time" },
+  { id: "Asia/Tokyo", name: "(UTC+09:00) Japan Standard Time" },
+];
+
+/** Options told apart by a description, open; the closed select shows only the label. */
+export const Descriptions: Story = {
+  args: {
+    label: "Time zone",
+    defaultValue: "America/Detroit",
+    defaultOpen: true,
+    items: zones,
+    children: (zone) => (
+      <SelectItem id={zone.id} textValue={zone.name} description={zone.id}>
+        {zone.name}
+      </SelectItem>
+    ),
+  },
+};

@@ -11,6 +11,7 @@ import {
   Select as RACSelect,
   type SelectProps as RACSelectProps,
   SelectValue,
+  Text,
 } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { FieldDescription, FieldError, FieldLabel, type FieldTextProps, fieldControl } from "./Field";
@@ -23,7 +24,8 @@ const select = tv({
       "flex cursor-default items-center justify-between gap-2 text-start",
       "group-data-invalid:border-danger data-focus-visible:focus-ring data-pressed:bg-surface-raised",
     ],
-    value: "truncate data-placeholder:text-fg-muted",
+    // The closed select shows only an option's label: its description is for choosing (as React Aria's Select styles do).
+    value: "truncate data-placeholder:text-fg-muted **:[[slot=description]]:hidden",
     chevron: "size-4 shrink-0 fill-none stroke-current stroke-2 text-fg-muted",
     // overscroll-contain keeps the scroll from chaining to the page on iOS WebKit (web-client.md §9).
     popover: "min-w-(--trigger-width) overflow-auto overscroll-contain rounded-md border border-border bg-surface-raised p-1 shadow-md",
@@ -74,16 +76,23 @@ const selectItem = tv({
     check: "size-4 shrink-0 fill-none stroke-current stroke-3 text-accent",
     // Keeps the label aligned with the selected one, whose check takes this space.
     spacer: "size-4 shrink-0",
+    text: "flex min-w-0 flex-col",
+    description: "text-sm text-fg-muted",
   },
 });
 
 export type SelectItemProps<T extends object> = Omit<ListBoxItemProps<T>, "children"> & {
   /** The option's label. A non-string label needs `textValue` for type-ahead and the closed select. */
   children?: ReactNode;
+  /**
+   * A line under the label that tells options with similar labels apart. The label names the option and this
+   * line describes it; the closed select shows only the label.
+   */
+  description?: ReactNode;
 };
 
 /** One option of a `Select`; its `id` is the select's value when it is chosen. */
-export function SelectItem<T extends object>({ children, className, ...props }: SelectItemProps<T>) {
+export function SelectItem<T extends object>({ children, description, className, ...props }: SelectItemProps<T>) {
   const styles = selectItem();
   const textValue = props.textValue ?? (typeof children === "string" ? children : undefined);
   return (
@@ -97,7 +106,17 @@ export function SelectItem<T extends object>({ children, className, ...props }: 
           ) : (
             <span className={styles.spacer()} />
           )}
-          {children}
+          {description === undefined ? (
+            children
+          ) : (
+            // The label and description slots of React Aria's ListBoxItem (aria-labelledby and aria-describedby).
+            <span className={styles.text()}>
+              <Text slot="label">{children}</Text>
+              <Text slot="description" className={styles.description()}>
+                {description}
+              </Text>
+            </span>
+          )}
         </>
       )}
     </ListBoxItem>

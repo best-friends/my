@@ -50,7 +50,8 @@ export function FollowListView({ acct, list, renderHeading }: FollowListViewProp
               >
                 <>
                   <Avatar name={item.name} decorative className="row-span-2" />
-                  <span dir="auto" className="font-semibold wrap-anywhere">
+                  {/* A right-to-left name lines up with the other rows; only its text runs right to left (web-client.md G9). */}
+                  <span dir="auto" className="font-semibold wrap-anywhere align-match-parent">
                     {item.name}
                   </span>
                   {/* The space keeps the name and the handle apart in the link's name. */}{" "}

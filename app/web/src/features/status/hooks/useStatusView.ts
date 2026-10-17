@@ -2,11 +2,10 @@
 // What a status card shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4): the
 // hook decides what to show and formats it; the component only places it. It returns no JSX.
 import { type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
-import { type IntlShape, useIntl } from "react-intl";
-import { useNow } from "../../../lib/clock";
 import { useConfig } from "../../../lib/config";
 import { hostOf } from "../../../lib/host";
 import { profilePath } from "../../../lib/paths";
+import { type TimeView, useTimeView } from "../../../lib/time";
 import { type MediaAttachment, type Status, statusPath, statusShareUrl } from "../api/status";
 
 export type StatusView = {
@@ -18,7 +17,7 @@ export type StatusView = {
    */
   author: { name: string; handle: string; href: string; avatar: string | undefined };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
-  time: { dateTime: string; relative: string; absolute: string };
+  time: TimeView;
   /** The web client's address of the post (the boosted post for a boost), which its time links to. */
   path: string;
   /**
@@ -37,23 +36,6 @@ export type StatusView = {
   /** Whether the author marked the media sensitive. */
   sensitive: boolean;
 };
-
-const minute = 60_000;
-const hour = 60 * minute;
-const day = 24 * hour;
-
-/**
- * The time from `now` back to `then`, in the largest unit that fits ("now", "5 min. ago", "3 hr. ago",
- * "2 days ago"), or the date for a week or more.
- */
-function relativeTime(intl: IntlShape, then: number, now: number): string {
-  const elapsed = Math.max(0, now - then);
-  if (elapsed < minute) return intl.formatRelativeTime(0, "second", { numeric: "auto" });
-  if (elapsed < hour) return intl.formatRelativeTime(-Math.floor(elapsed / minute), "minute", { style: "short" });
-  if (elapsed < day) return intl.formatRelativeTime(-Math.floor(elapsed / hour), "hour", { style: "short" });
-  if (elapsed < 7 * day) return intl.formatRelativeTime(-Math.floor(elapsed / day), "day", { style: "short" });
-  return intl.formatDate(then, { dateStyle: "medium" });
-}
 
 /**
  * The pictures of a status that are ready to show, at their preview size: `preview_url` is the thumbnail of an
@@ -87,12 +69,10 @@ function handleOf(acct: string, localDomain: string): string {
 
 /** Returns what the card of `status` shows. A boost shows the boosted post, with the booster above it. */
 export function useStatusView(status: Status): StatusView {
-  const intl = useIntl();
-  const now = useNow();
   const { accountDomain } = useConfig();
   const post = status.boost ?? status;
   const lang = post.language === "und" ? undefined : post.language;
-  const writtenAt = Date.parse(post.created_at);
+  const time = useTimeView(post.created_at);
   return {
     boostedBy:
       status.boost === undefined ? null : { name: status.account.display_name || status.account.username, href: profilePath(status.account.acct) },
@@ -102,11 +82,7 @@ export function useStatusView(status: Status): StatusView {
       href: profilePath(post.account.acct),
       avatar: post.account.avatar_url,
     },
-    time: {
-      dateTime: post.created_at,
-      relative: relativeTime(intl, writtenAt, now),
-      absolute: intl.formatDate(writtenAt, { dateStyle: "full", timeStyle: "short" }),
-    },
+    time,
     path: statusPath(post),
     original: originalOf(post),
     // `content` is sanitized HTML (api/openapi.yaml, Status.content).

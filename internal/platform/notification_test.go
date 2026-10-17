@@ -8,8 +8,10 @@ import (
 
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/identity"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	appnotification "github.com/best-friends/my/internal/app/notification"
 	domcontent "github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/domain/notification"
 	"github.com/best-friends/my/internal/platform"
 )
@@ -65,6 +67,49 @@ func TestNotificationsAreWired(t *testing.T) {
 		}
 		if n, err := a.Notifications.UnreadCount(ctx, alice); err != nil || n != 2 {
 			t.Errorf("UnreadCount = %d, %v; want 2", n, err)
+		}
+	})
+}
+
+// TestSilenceLimitsNotifications checks that the composition root hands the moderation policy to
+// the notification projectors: a limited account's mention notifies only the mentioned accounts
+// that follow it.
+func TestSilenceLimitsNotifications(t *testing.T) {
+	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
+	start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
+		ctx := t.Context()
+		var accounts []string
+		for _, name := range []string{"alice", "bob", "carol"} {
+			reg, err := a.Identity.RegisterLocalUser(ctx, identity.RegisterInput{
+				Username: name, Password: "correct horse battery staple", DisplayName: name, Locale: "en",
+			})
+			if err != nil {
+				t.Fatalf("RegisterLocalUser(%s): %v", name, err)
+			}
+			accounts = append(accounts, reg.AccountID)
+		}
+		alice, bob, carol := accounts[0], accounts[1], accounts[2]
+		if _, err := a.Graph.Follow(ctx, bob, alice); err != nil {
+			t.Fatalf("Follow: %v", err)
+		}
+		if _, err := a.Moderation.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+			TargetAccountID: alice, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam,
+		}); err != nil {
+			t.Fatalf("IssueAccountAction(limit): %v", err)
+		}
+		if _, err := a.Content.Create(ctx, appcontent.CreateInput{
+			AuthorAccountID: alice, TextInput: appcontent.TextInput{Text: "hi @bob @carol"}, Visibility: domcontent.VisibilityPrivate,
+		}); err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		for _, c := range []struct {
+			account string
+			want    int
+		}{{bob, 1}, {carol, 0}} {
+			ns, err := a.Notifications.List(ctx, c.account, appnotification.Query{Types: []notification.Type{notification.TypeMention}})
+			if err != nil || len(ns) != c.want {
+				t.Errorf("mentions of %s = %+v, %v; want %d", c.account, ns, err, c.want)
+			}
 		}
 	})
 }

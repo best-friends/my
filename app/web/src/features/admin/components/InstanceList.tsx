@@ -7,7 +7,7 @@ import { DescriptionItem, DescriptionList, EmptyState, Link, Tab, TabList, TabPa
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type InstanceFilter, instanceFilters, type InstanceHealth } from "../api/admin";
 import { useInstances } from "../hooks/useInstances";
-import { Day, DateTime, InstanceStateLabel, RecordList, RequirePermission } from "./parts";
+import { Day, DateTime, DomainName, InstanceStateLabel, RecordList, RequirePermission } from "./parts";
 
 const filterLabels: Readonly<Record<InstanceFilter, ClientMessageKey>> = {
   all: "client:admin.instances.filter.all",
@@ -81,9 +81,8 @@ function InstanceRow({ health }: { health: InstanceHealth }) {
   return (
     <div className="flex flex-col gap-2">
       <h2 className="font-semibold">
-        {/* A domain reads left to right in every locale. */}
         <Link href={instancePath(health.domain)} variant="standalone" className="wrap-anywhere">
-          <span dir="ltr">{health.domain}</span>
+          <DomainName domain={health.domain} />
         </Link>
       </h2>
       <DescriptionList columns={4}>

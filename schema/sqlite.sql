@@ -1575,6 +1575,14 @@ CREATE TABLE report_statuses (
   PRIMARY KEY (report_id, status_id)
 ) STRICT;
 
+-- Resource (child of a report): the instance rules a local report of the violation category
+-- cites. A rule keeps its ID across revisions (instance_rules).
+CREATE TABLE report_rule_citations (
+  report_id TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  PRIMARY KEY (report_id, rule_id)
+) STRICT;
+
 -- Projection: whether a report is open, how it was resolved, and who handles it. outcome is
 -- that of the latest resolution, set exactly when the report is resolved.
 CREATE TABLE report_states (
@@ -1607,6 +1615,25 @@ CREATE TABLE report_resolutions (
   resolved_at INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX report_resolutions_report_id_id ON report_resolutions (report_id, id DESC);
+
+-- moderation and content: actions on statuses (#364, data-model §4.3, §4.4) -------------------
+
+-- Event child: a status that an action on statuses (delete_statuses, mark_statuses_sensitive)
+-- acts on. The status is the target account's.
+CREATE TABLE moderation_action_statuses (
+  action_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  PRIMARY KEY (action_id, status_id)
+) STRICT;
+
+-- Projection (content): a status that a mark_statuses_sensitive action shows as sensitive, until
+-- the action is lifted.
+CREATE TABLE status_sensitivity_overrides (
+  status_id TEXT NOT NULL,
+  source_action_id TEXT NOT NULL,
+  PRIMARY KEY (status_id, source_action_id)
+) STRICT;
+CREATE INDEX status_sensitivity_overrides_source_action_id ON status_sensitivity_overrides (source_action_id);
 
 -- ---------------------------------------------------------------------------------------------
 -- identity: where sign-ins and registrations came from (data-model.md §4.1, ADR-0038). Kept

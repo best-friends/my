@@ -14,7 +14,7 @@ export function ServerInfo() {
         {t("client:shell.about.title")}
       </h2>
       {/* The name is the administrator's text, in any language (web-client.md Y10). */}
-      <p dir="auto" className="text-lg font-semibold">
+      <p dir="auto" className="text-lg font-semibold align-match-parent">
         {instanceName}
       </p>
       <p className="text-sm text-fg-muted">{t("client:shell.about.domain", { domain: accountDomain })}</p>
