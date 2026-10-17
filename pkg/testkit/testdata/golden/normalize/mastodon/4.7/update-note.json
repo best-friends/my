@@ -30,7 +30,7 @@
               }
             ],
             "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454931784872371",
-            "Published": "2026-10-01T00:00:00Z",
+            "Published": "2026-10-17T06:53:48Z",
             "RawType": "Note",
             "Replies": {
               "Embedded": {
@@ -55,14 +55,14 @@
             },
             "Type": "Note",
             "URL": "https://mastodon.example/@bob/117454931784872371",
-            "Updated": "2026-10-01T00:00:00Z"
+            "Updated": "2026-10-17T06:53:50Z"
           }
         },
         "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454931784872371",
         "Trusted": true
       }
     ],
-    "Published": "2026-10-01T00:00:00Z",
+    "Published": "2026-10-17T06:53:50Z",
     "RawType": "Update",
     "Type": "Update"
   }

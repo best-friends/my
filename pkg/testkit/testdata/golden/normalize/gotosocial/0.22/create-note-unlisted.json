@@ -30,7 +30,7 @@
               }
             ],
             "ID": "https://gotosocial.example/users/carol/statuses/01M54AAD0JSBVPEV3CB71D6HK1",
-            "Published": "2026-10-01T00:00:00Z",
+            "Published": "2026-10-17T06:55:48Z",
             "RawType": "Note",
             "Replies": {
               "Embedded": {
@@ -62,7 +62,7 @@
         "Trusted": true
       }
     ],
-    "Published": "2026-10-01T00:00:00Z",
+    "Published": "2026-10-17T06:55:48Z",
     "RawType": "Create",
     "Type": "Create"
   }

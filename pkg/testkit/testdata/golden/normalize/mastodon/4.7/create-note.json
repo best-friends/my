@@ -30,7 +30,7 @@
               }
             ],
             "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168351",
-            "Published": "2026-10-01T00:00:00Z",
+            "Published": "2026-10-17T06:52:12Z",
             "RawType": "Note",
             "Replies": {
               "Embedded": {
@@ -61,7 +61,7 @@
         "Trusted": true
       }
     ],
-    "Published": "2026-10-01T00:00:00Z",
+    "Published": "2026-10-17T06:52:12Z",
     "RawType": "Create",
     "Type": "Create"
   }

@@ -30,7 +30,7 @@
               }
             ],
             "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1",
-            "Published": "2026-10-01T00:00:00Z",
+            "Published": "2026-10-17T06:53:56Z",
             "RawType": "Note",
             "Replies": {
               "Embedded": {
@@ -56,14 +56,14 @@
             },
             "Type": "Note",
             "URL": "https://gotosocial.example/@carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1",
-            "Updated": "2026-10-01T00:00:00Z"
+            "Updated": "2026-10-17T06:54:00Z"
           }
         },
         "ID": "https://gotosocial.example/users/carol/statuses/01M54A6ZTAJ4VE7M3Z7SWZD4E1",
         "Trusted": true
       }
     ],
-    "Published": "2026-10-01T00:00:00Z",
+    "Published": "2026-10-17T06:53:56Z",
     "RawType": "Update",
     "Type": "Update"
   }
