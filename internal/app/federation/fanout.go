@@ -38,6 +38,8 @@ type FanOutDeps struct {
 	IDs     kernel.IDGenerator
 	// Parts resolves the media, mentions, and hashtags of the revisions that Notes present.
 	Parts NoteParts
+	// Blocks reads the local blocks that Block and Undo Block are about.
+	Blocks BlockFinder
 	// Follows reads the follows that Follow, Accept, Reject, and Undo Follow are about; nil
 	// fails those activities.
 	Follows FollowReader
@@ -224,6 +226,8 @@ const (
 	phasePrior phase = "prior"
 	// phaseBoostedAuthor is the author of a boosted status, in one batch.
 	phaseBoostedAuthor phase = "boosted_author"
+	// phaseBlocked is the remote account a block is about, in one batch.
+	phaseBlocked phase = "blocked"
 	// phaseStatusAuthor is the author of a favourited status, in one batch.
 	phaseStatusAuthor phase = "status_author"
 	// phaseCounterpart is the other account of a follow, in one batch.
@@ -250,6 +254,8 @@ type subject struct {
 	status   appcontent.Status
 	revision appcontent.Revision
 	boost    appcontent.Boost
+	// block is the local block a Block or Undo Block is about.
+	block appgraph.Block
 	// follow is the follow of a Follow, Accept, Reject, or Undo Follow, and counterpart the
 	// account on its other side from the actor: the only recipient.
 	follow      appgraph.FollowRecord
@@ -274,6 +280,8 @@ type subject struct {
 //   - Like and Undo Like: the author of the favourited status.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
+	case federation.OutboundBlock:
+		return []phase{phaseBlocked}
 	case federation.OutboundAccount:
 		if s.act.Type == federation.ActivityDelete {
 			return []phase{phaseFollowers, phaseSharedInboxes}
@@ -300,6 +308,9 @@ func (s subject) phases() []phase {
 // subject loads the object of act. An object that is gone fails with errGone.
 func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p fanOutPayload) (subject, error) {
 	s := subject{act: act, actorID: act.ActorAccountID}
+	if act.ObjectKind == federation.OutboundBlock {
+		return f.blockSubject(ctx, s)
+	}
 	if act.ObjectKind == federation.OutboundFollow {
 		s.followURI = federation.IRI(p.FollowURI)
 		return f.followSubject(ctx, s)
@@ -409,6 +420,9 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 		}
 		targets, err = f.resolve(ctx, act, s, ids, true)
 		return targets, next, err
+	case phaseBlocked:
+		targets, err = f.blockedInbox(ctx, s)
+		return targets, "", err
 	case phaseStatusAuthor:
 		targets, err = f.statusAuthorTargets(ctx, s)
 		return targets, "", err

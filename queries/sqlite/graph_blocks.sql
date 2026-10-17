@@ -9,6 +9,13 @@ INSERT INTO block_retractions (block_id, retracted_at) VALUES (?, ?);
 -- name: GetBlock :one
 SELECT id, uri, blocker_account_id, blocked_account_id, created_at FROM blocks WHERE id = ?;
 
+-- GetBlockByURI returns the block with an activity URI and its retraction, if any.
+-- name: GetBlockByURI :one
+SELECT b.id, b.uri, b.blocker_account_id, b.blocked_account_id, b.created_at, r.retracted_at
+FROM blocks b
+LEFT JOIN block_retractions r ON r.block_id = b.id
+WHERE b.uri = ?;
+
 -- name: GetBlockEdge :one
 SELECT blocker_account_id, blocked_account_id, block_id
 FROM block_edges WHERE blocker_account_id = ? AND blocked_account_id = ?;

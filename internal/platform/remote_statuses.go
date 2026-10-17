@@ -7,6 +7,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/federation"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	domaincontent "github.com/best-friends/my/internal/domain/content"
 )
@@ -22,14 +23,22 @@ func (r remoteMediaRecorder) RecordRemoteMedia(ctx context.Context, tx uow.Tx, i
 // registerStatusHandlers registers the inbox handlers of remote posts (Create, Update, and
 // Delete, docs/architecture/federation.md §3.4) on the inbox processor: the posts related to
 // local accounts are ingested through the content module (ADR-0034). The boosts and favourites
-// (Announce, Like, EmojiReact, and their Undo) go through the same posts.
-func (a *App) registerStatusHandlers() {
-	statuses := federation.NewStatusHandlers(federation.StatusHandlersDeps{
+// (Announce, Like, EmojiReact, and their Undo) go through the same posts. It also registers the
+// fetches of remote posts and threads (federation.fetch_object, §6.3) and builds the Resolver.
+func (a *App) registerStatusHandlers(repo federation.InboxRepository) {
+	outbox := a.Outbox
+	if outbox == nil {
+		outbox = queue.AfterCommit(a.Projectors, a.Jobs, a.Logger)
+	}
+	a.RemoteStatuses = federation.NewStatusHandlers(federation.StatusHandlersDeps{
 		UnitOfWork: a.UnitOfWork, Statuses: a.Content, Accounts: a.Accounts, Actors: a.RemoteActors,
-		Fetcher: a.RemoteActors, Followers: a.Graph, Clock: a.Clock, Host: a.Config.Host, Logger: a.Logger,
+		Fetcher: a.RemoteActors, Followers: a.Graph, Tombstones: repo, Outbox: outbox, Jobs: a.Jobs, KV: a.KV,
+		Clock: a.Clock, Host: a.Config.Host, Logger: a.Logger,
 	})
-	statuses.Register(a.InboxProcessor)
+	a.RemoteStatuses.Register(a.InboxProcessor)
+	a.RemoteStatuses.RegisterJobs(a.Handlers)
 	federation.RegisterInteractionHandlers(a.InboxProcessor, federation.InteractionHandlersDeps{
-		Interactions: a.Interactions, Statuses: statuses,
+		Interactions: a.Interactions, Statuses: a.RemoteStatuses,
 	})
+	a.Resolver = federation.NewResolver(a.RemoteActors, a.RemoteStatuses)
 }

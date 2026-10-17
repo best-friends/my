@@ -38,6 +38,7 @@ import (
 	"github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/media"
+	"github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/stream"
@@ -107,6 +108,11 @@ type App struct {
 	Statuses *content.Reader
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
+	// Moderation records the actions on domains and remote accounts and the reports received
+	// from other servers; ModerationPolicy reads the restrictions they impose for federation
+	// and the media proxy (docs/architecture/federation.md §11).
+	Moderation       *moderation.Service
+	ModerationPolicy *moderation.FederationPolicy
 
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
@@ -143,6 +149,11 @@ type App struct {
 	// InboxProcessor processes the recorded activities and dispatches them to the handler of
 	// their type (docs/architecture/federation.md §3.2).
 	InboxProcessor *federation.InboxProcessor
+	// RemoteStatuses ingests remote posts from the inbox and fetches remote posts and threads;
+	// Resolver resolves handles and the URLs of accounts and posts
+	// (docs/architecture/federation.md §6.2, §6.3).
+	RemoteStatuses *federation.StatusHandlers
+	Resolver       *federation.Resolver
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -222,6 +233,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		notifs       notification.Repository
 		medias       content.MediaRepository
 		feds         federationRepository
+		mods         moderation.Repository
 		retention    retentionRepositories
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
@@ -237,6 +249,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs = d.NotificationRepository()
 		feds = d.FederationRepository()
+		mods = d.ModerationRepository()
 		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
@@ -255,6 +268,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs = d.NotificationRepository()
 		feds = d.FederationRepository()
+		mods = d.ModerationRepository()
 		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
@@ -347,6 +361,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
 	a.Graph.RegisterJobs(a.Handlers, a.Scheduler)
+	a.setUpModeration(mods)
 	content.RegisterProjectors(a.Projectors, statuses)
 	a.Content = content.NewService(content.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
@@ -370,6 +385,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	// After the content and graph projectors, which reject the commands that must not reach
 	// the timelines (data-model §4.6).
 	timeline.RegisterProjectors(a.Projectors, feeds)
+	timeline.RegisterModerationProjectors(a.Projectors, feeds, a.Accounts)
 	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
 	// After the graph and content projectors, whose events these projectors turn into notifications.
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
@@ -439,7 +455,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications,
-		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
+		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions, Threads: a.RemoteStatuses,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
@@ -460,6 +476,9 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) qu
 	federation.RegisterOutboundProjectors(a.Projectors, federation.RecorderDeps{
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
 	})
+	federation.RegisterBlockProjectors(a.Projectors, federation.RecorderDeps{
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
+	})
 	return outbox
 }
 
@@ -470,8 +489,8 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox,
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
 		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph,
-		// No domain blocks exist yet; the fan-out still goes through the policy port.
-		Domains: federation.NoDomainRestrictions{},
+		Blocks:  a.Graph,
+		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 	})
 	a.FanOut.RegisterJobs(a.Handlers)
@@ -484,8 +503,7 @@ func (a *App) newObjects(cfg *config.Config) *federation.Objects {
 	return federation.NewObjects(federation.ObjectsDeps{
 		Statuses: a.Content, Accounts: a.Accounts, Graph: a.Graph, Timeline: a.Timeline, Reader: a.Statuses,
 		Signatures: federation.NewSignatureVerifier(httpsig.New(), a.RemoteActors, a.KV, a.Clock),
-		// No domain blocks exist yet; signers still go through the policy port.
-		Domains: federation.NoDomainRestrictions{},
+		Domains:    a.ModerationPolicy,
 		// Authorized fetch (FR-408) is the instance setting, read per request.
 		Settings: a.Instance,
 		Host:     cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
@@ -599,8 +617,7 @@ func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*c
 	}
 	return content.NewMediaProxy(content.ProxyDeps{
 		Repository: repo, HTTP: a.HTTPClient, Accounts: a.Accounts,
-		// The moderation module's domain_restrictions take its place once domain actions exist.
-		Policy: content.NoMediaRestrictions{},
+		Policy: a.ModerationPolicy,
 		CacheTTL: func(ctx context.Context) (time.Duration, error) {
 			s, err := a.Instance.Settings(ctx)
 			return s.RemoteMediaCacheTTL(), err

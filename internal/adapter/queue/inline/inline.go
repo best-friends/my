@@ -41,7 +41,13 @@ type Queue struct {
 	runner   *queue.PullRunner
 	draining bool
 	again    bool
+	// drainMu is held by the Enqueue that runs a drain, so that an Enqueue from another
+	// goroutine waits for it and then runs its own jobs, instead of returning before they ran.
+	drainMu sync.Mutex
 }
+
+// drainKey marks the context of a drain: an Enqueue from a handler of that drain joins it.
+type drainKey struct{ q *Queue }
 
 var (
 	_ queue.JobQueue = (*Queue)(nil)
@@ -58,7 +64,8 @@ func New(opts Options) *Queue {
 }
 
 // RunSynchronously makes every later Enqueue run the due jobs with r (a runner of this queue)
-// before it returns. Jobs enqueued by a handler during such a run join the same run.
+// before it returns. Jobs enqueued by a handler during such a run join the same run; an Enqueue
+// from another goroutine during it waits for the run to end and then runs the due jobs.
 func (q *Queue) RunSynchronously(r *queue.PullRunner) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -93,14 +100,18 @@ func (q *Queue) Enqueue(ctx context.Context, jobs ...queue.NewJob) error {
 		q.mu.Unlock()
 		return nil
 	}
-	if q.draining {
+	if q.draining && ctx.Value(drainKey{q}) != nil {
 		q.again = true
 		q.mu.Unlock()
 		return nil
 	}
+	q.mu.Unlock()
+	q.drainMu.Lock()
+	defer q.drainMu.Unlock()
+	q.mu.Lock()
 	q.draining = true
 	q.mu.Unlock()
-	return q.drain(ctx, r)
+	return q.drain(context.WithValue(ctx, drainKey{q}, true), r)
 }
 
 // drain runs due jobs until a pass ends with no new enqueue in between.

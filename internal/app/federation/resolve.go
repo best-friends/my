@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/domain/federation"
 )
 
@@ -98,4 +99,116 @@ func (r *RemoteActors) ResolveURL(ctx context.Context, uri string) (appaccount.A
 		return appaccount.Actor{}, fmt.Errorf("%w: WebFinger does not confirm the handle of %s", ErrUnresolvable, a.Account.URI)
 	}
 	return a, nil
+}
+
+// Resolved is what Resolver.Resolve found: an account or a status, exactly one of them.
+type Resolved struct {
+	Account *appaccount.Actor
+	Status  *appcontent.Status
+}
+
+// Resolver resolves what a user searches for (FR-305, federation.md §6.2): a handle
+// @username@domain, or the URL of an account or a status.
+type Resolver struct {
+	actors   *RemoteActors
+	statuses *StatusHandlers
+	fetcher  DocumentFetcher
+}
+
+// NewResolver returns a Resolver that resolves accounts with actors, and fetches documents and
+// stores posts with statuses.
+func NewResolver(actors *RemoteActors, statuses *StatusHandlers) *Resolver {
+	return &Resolver{actors: actors, statuses: statuses, fetcher: statuses.d.Fetcher}
+}
+
+// Resolve returns the account or status that query names. A handle ("@username@domain" or
+// "username@domain") is resolved with RemoteActors.ResolveHandle. A URL is looked up among the
+// stored accounts and statuses (its canonical IRI); otherwise its document is fetched once and,
+// by its type, stored as a remote actor with a confirmed handle or as a remote post
+// (StatusHandlers' rules of fetched posts; its parent is fetched one level, as on receipt). URLs
+// of this instance are never fetched. It fails with ErrUnresolvable; other errors come from the
+// stores. It does network I/O, so callers call it outside transactions and bound it with ctx.
+func (r *Resolver) Resolve(ctx context.Context, query string) (Resolved, error) {
+	query = strings.TrimSpace(query)
+	if !strings.HasPrefix(query, "https://") && !strings.HasPrefix(query, "http://") {
+		username, domain, ok := strings.Cut(strings.TrimPrefix(query, "@"), "@")
+		if !ok {
+			return Resolved{}, fmt.Errorf("%w: %q is neither a handle nor a URL", ErrUnresolvable, query)
+		}
+		a, err := r.actors.ResolveHandle(ctx, username, domain)
+		if err != nil {
+			return Resolved{}, err
+		}
+		return Resolved{Account: &a}, nil
+	}
+	target, err := fetchTarget(query)
+	if err != nil {
+		return Resolved{}, fmt.Errorf("%w: %w", ErrUnresolvable, err)
+	}
+	if res, ok, err := r.stored(ctx, target); err != nil || ok {
+		return res, err
+	}
+	got, err := r.fetcher.Fetch(ctx, string(target))
+	if err != nil {
+		if isFetchError(err) {
+			return Resolved{}, fmt.Errorf("%w: %w", ErrUnresolvable, err)
+		}
+		return Resolved{}, err
+	}
+	if id := got.Document.ID(); id != target {
+		// A page of the account or post: the document names its id.
+		if res, ok, err := r.stored(ctx, id); err != nil || ok {
+			return res, err
+		}
+	}
+	switch doc := got.Document; {
+	case doc.Actor != nil:
+		actor, raw, err := usableActor(got)
+		if err != nil {
+			return Resolved{}, fmt.Errorf("%w: %w", ErrUnresolvable, err)
+		}
+		if _, err := r.actors.store(ctx, actor, raw); err != nil {
+			return Resolved{}, err
+		}
+		a, err := r.actors.ResolveURL(ctx, string(actor.ID))
+		if err != nil {
+			return Resolved{}, err
+		}
+		return Resolved{Account: &a}, nil
+	case doc.Object != nil:
+		st, err := r.statuses.fetched(ctx, got, true)
+		switch {
+		case errors.Is(err, ErrNotTaken), isFetchError(err):
+			return Resolved{}, fmt.Errorf("%w: %w", ErrUnresolvable, err)
+		case err != nil:
+			return Resolved{}, err
+		}
+		return Resolved{Status: &st}, nil
+	}
+	return Resolved{}, fmt.Errorf("%w: %s is neither an actor nor a post", ErrUnresolvable, target)
+}
+
+// stored returns the stored account or status with the IRI uri. An account must have a
+// confirmed handle, as ResolveURL requires.
+func (r *Resolver) stored(ctx context.Context, uri federation.IRI) (Resolved, bool, error) {
+	switch _, err := r.actors.d.Accounts.FindByURI(ctx, string(uri)); {
+	case err == nil:
+		a, err := r.actors.ResolveURL(ctx, string(uri))
+		if err != nil {
+			return Resolved{}, false, err
+		}
+		return Resolved{Account: &a}, true, nil
+	case !errors.Is(err, appaccount.ErrNotFound):
+		return Resolved{}, false, err
+	}
+	switch st, err := r.statuses.d.Statuses.FindStatusByURI(ctx, string(uri)); {
+	case err == nil:
+		return Resolved{Status: &st}, true, nil
+	case !errors.Is(err, appcontent.ErrNotFound):
+		return Resolved{}, false, err
+	}
+	if strings.EqualFold(uri.Host(), r.statuses.d.Host) {
+		return Resolved{}, false, fmt.Errorf("%w: %s is not on this server", ErrUnresolvable, uri)
+	}
+	return Resolved{}, false, nil
 }

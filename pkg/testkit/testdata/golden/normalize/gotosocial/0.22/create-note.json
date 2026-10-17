@@ -32,6 +32,28 @@
             "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
             "Published": "2021-10-20T10:40:37Z",
             "RawType": "Note",
+            "Replies": {
+              "Embedded": {
+                "Collection": {
+                  "First": {
+                    "Embedded": {
+                      "Collection": {
+                        "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true",
+                        "Next": {
+                          "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true&only_other_accounts=false"
+                        },
+                        "Page": true
+                      }
+                    },
+                    "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true",
+                    "Trusted": true
+                  },
+                  "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies"
+                }
+              },
+              "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies",
+              "Trusted": true
+            },
             "Sensitive": true,
             "SpoilerText": "introduction post",
             "Type": "Note",

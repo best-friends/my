@@ -144,6 +144,37 @@ func (q *Queries) GetBlock(ctx context.Context, id string) (Block, error) {
 	return i, err
 }
 
+const getBlockByURI = `-- name: GetBlockByURI :one
+SELECT b.id, b.uri, b.blocker_account_id, b.blocked_account_id, b.created_at, r.retracted_at
+FROM blocks b
+LEFT JOIN block_retractions r ON r.block_id = b.id
+WHERE b.uri = $1
+`
+
+type GetBlockByURIRow struct {
+	ID               string
+	Uri              *string
+	BlockerAccountID string
+	BlockedAccountID string
+	CreatedAt        time.Time
+	RetractedAt      *time.Time
+}
+
+// GetBlockByURI returns the block with an activity URI and its retraction, if any.
+func (q *Queries) GetBlockByURI(ctx context.Context, uri *string) (GetBlockByURIRow, error) {
+	row := q.db.QueryRow(ctx, getBlockByURI, uri)
+	var i GetBlockByURIRow
+	err := row.Scan(
+		&i.ID,
+		&i.Uri,
+		&i.BlockerAccountID,
+		&i.BlockedAccountID,
+		&i.CreatedAt,
+		&i.RetractedAt,
+	)
+	return i, err
+}
+
 const getBlockEdge = `-- name: GetBlockEdge :one
 SELECT blocker_account_id, blocked_account_id, block_id
 FROM block_edges WHERE blocker_account_id = $1 AND blocked_account_id = $2

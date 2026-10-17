@@ -89,18 +89,11 @@ type AccountDomains interface {
 
 // MediaFetchPolicy is the port through which the media proxy reads the domain restrictions on
 // fetching media (the media_fetch restriction of a reject_media domain action, data-model §5.2).
+// *moderation.FederationPolicy implements it.
 type MediaFetchPolicy interface {
 	// RejectsMedia reports whether the media of domain, or of a parent domain, are not fetched.
 	RejectsMedia(ctx context.Context, domain string) (bool, error)
 }
-
-// NoMediaRestrictions is the MediaFetchPolicy of an instance without domain restrictions: it
-// rejects no domain. It stands in for the policy that the moderation module derives from
-// domain_restrictions.
-type NoMediaRestrictions struct{}
-
-// RejectsMedia implements MediaFetchPolicy.
-func (NoMediaRestrictions) RejectsMedia(context.Context, string) (bool, error) { return false, nil }
 
 // ProxyDeps are the ports a MediaProxy uses.
 type ProxyDeps struct {

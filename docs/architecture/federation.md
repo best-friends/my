@@ -125,7 +125,7 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 - `orderingKey` は同じ Actor のアクティビティを直列化しますが（#77）、正しさはそれに頼りません（§3.3）。
 - 実装は `federation.InboxProcessor`（`internal/app/federation`）です。
   - 手順 2 の取り直しでは、埋め込みの文書をすべて信用しないものにします。`Create` / `Update` はオブジェクトを `id` から取得し、`attributedTo` が主体のものに差し替えます。`Delete` は対象がオリジンで消えている（404 / 410 / `Tombstone`）ときだけ通します。自分自身の `Update` はハンドラが Actor を取得し直します。それ以外はアクティビティを `id` から取得し、同じ `id`・型・主体のときにその文書を使います。
-  - 主体はポート `InboxActors`（`RemoteActors.Resolve`）で解決し、ローカルの主体は捨てます。制限はポート `DomainPolicy`（主体のホスト）と `AccountPolicy`（主体のアカウント）で判定します。
+  - 主体はポート `InboxActors`（`RemoteActors.Resolve`）で解決し、ローカルの主体は捨てます。制限はポート `DomainPolicy`（主体のホスト）と `AccountPolicy`（主体のアカウント）で判定します（実装は `moderation.FederationPolicy`、§11）。
   - ハンドラは `Handle(型, ハンドラ)` で登録します。主体が自分自身を対象にする `Update` / `Delete` は `HandleOwnActor` で別に登録します（`RemoteActors.RegisterInboxHandlers` が登録する Actor の更新・削除）。登録の無い型は `info` のログを残して完了にします（未知の型・`Move`・まだハンドラの無い型）。
   - `Undo` は取り消す活動の型ごとに `HandleUndo(型, ハンドラ)` で登録します（`Handle(Undo, …)` は使わない）。`object` に活動が埋め込まれていればその型のハンドラだけに、URI だけなら登録順にハンドラを呼び、`ErrUnknownObject` 以外を返したところで止めます。どれも対象を知らなければ tombstone です。埋め込みの型は振り分けにだけ使い、ハンドラは対象が主体のものであることを DB で確かめます。
   - ハンドラは、対象が無いことを `ErrUnknownObject`、捨てることを `ErrDropActivity`、処理できないことを `ErrUnprocessable`（`Fail`）で返します。取得の `ErrFetchNotFound` / `ErrFetchGone` / `ErrFetchRefused` は捨てる、`ErrFetchFailed` / `ErrFetchUnavailable` とその他のエラーは `Retry` です。
@@ -172,8 +172,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Delete` | Actor（自分自身） | `RemoteActors.ReceiveActorDelete`。`account.MarkRemoteDeleted`（`remote_deleted`）で、プロフィールと投稿（タイムラインでは `feed_author_restrictions` の `profile_view`）がすぐに表示されなくなる。未知の Actor なら何もしない。投稿・フォロー・ブーストは消去ジョブが消す |
 | `Announce` | 投稿（URI か埋め込み） | `content.RecordRemoteBoost`。ローカルの投稿と保存済みの投稿は `id` で引く。保存していないリモートの投稿は、ブーストした人をローカルのアカウントがフォローしているときだけ取り込み（ADR-0034）、埋め込みの投稿は、オリジンが主体と同じでなければ `id` から取得し直す。ブーストの公開範囲は、`Announce` の宛先から決めた公開範囲と元投稿の公開範囲の狭いほう（`direct` になるものは捨てる）。`local` の投稿、ほかの人の `private` の投稿、主体が閲覧できないローカルの投稿は捨てる |
 | `Like` / `EmojiReact` | ローカルの投稿 | `content.RecordRemoteFavourite`。Misskey の絵文字リアクション（`_misskey_reaction` 付きの `Like`）と Pleroma / Akkoma の `EmojiReact` もお気に入りとして扱う（絵文字は保存しない）。主体が閲覧できない投稿（`ContextObjectFetch`）は捨てる |
-| `Block` | ローカルの Actor | `graph.ReceiveBlock`。両方向のフォローを終了し、相手の投稿を閲覧者から隠す（`feed_exclusions`） |
-| `Flag` | ローカルの Actor / 投稿 | `moderation.FileRemoteReport`（`reports.uri`）。送信者のドメインに `report_intake` の制限があれば捨てる |
+| `Block` | ローカルの Actor | `graph.ReceiveBlock`。両方向のフォローを終了し、相手の投稿を閲覧者から隠す（`feed_exclusions`）。対象がローカルの利用者の Actor でなければ捨てる |
+| `Flag` | ローカルの Actor / 投稿 | `moderation.FileRemoteReport`（`reports.uri`）。送信者のドメインに `report_intake` の制限があれば捨てる。通報の対象は `object` の最初のローカルの Actor、無ければ最初のローカルの投稿の作者で、その作者の投稿を `report_statuses` に残す。ローカルの対象が無ければ捨てる |
 | `Add` / `Remove` | 主体の `featured` | ピン留めの一覧を取得し直す（C） |
 | `Move` ほか未知の型 | — | ログとメトリクスに残して完了にする（`Move` は v0 の非目標） |
 
@@ -200,6 +200,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `url` | 文字列・`Link`・配列のどれでもよい。`text/html` の最初のものを表示用 URL にする |
 | 時刻 | `published` / `updated` は RFC 3339 として読み、未来の時刻は現在時刻に丸める。投稿の `id`（UUIDv7）は `published` から作る（#71） |
 | 投票 | `Question` の `oneOf` / `anyOf`（各 `name` と `replies.totalItems`）、`endTime`、`votersCount`（FR-112、C） |
+| 返信の一覧 | 投稿の `replies` はコレクションへの参照（IRI か埋め込み）として読む。`Collection` / `OrderedCollection` / `CollectionPage` / `OrderedCollectionPage` は、`items`（順序付きなら `orderedItems`）を 100 件まで、`first` と `next` をページへの参照として読む（Mastodon は最初のページを埋め込む） |
 | 方言 | Misskey の `_misskey_content`（MFM の原文）・`_misskey_summary` は使わず、`content` / `summary` を使う。`_misskey_quote` / `quoteUrl` / `quoteUri` は引用（FR-114 は W）なので、本文に含まれるリンクとしてだけ扱う。`isCat` などの未知のプロパティは無視する |
 | 未知のプロパティ | 無視する（[AS2 Core §5](https://www.w3.org/TR/activitystreams-core/#extensibility)）。原本は `received_activity_documents` に短期間残る |
 | 上限 | 文書のネストの深さ 16、`tag` 100 件、`to` / `cc` 合わせて 1,000 件、本文 HTML 100 KiB。超えたら、その文書を正規化できないものとして扱う |
@@ -249,7 +250,9 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - ハンドルの解決は、返す Actor のハンドルが求めたハンドル（ユーザー名は大文字小文字を区別しない、ホストは正規化）と一致することも確かめます。
   - ローカル投稿のメンション（data-model §4.4）は `ResolveHandle` を、トランザクションの外で、件数と時間に上限を置いて呼びます。
   - クライアント API は `GET /api/v1/accounts/lookup` の `resolve=true` で呼びます（トークン必須、アカウントごとに 30 回 / 5 分）。
-- URL がオブジェクト（投稿）なら投稿として取り込みます。
+- 検索の解決は `federation.Resolver.Resolve` です。ハンドル（`@user@host` / `user@host`）は `ResolveHandle` に渡します。
+  URL は、正規化した IRI で保存済みのアカウント・投稿を引き、無ければ文書を 1 回だけ取得して、Actor なら保存してから `ResolveURL` と同じくハンドルを確かめ、投稿なら §6.3 の取得した投稿として取り込みます（ADR-0034 の「URL の検索で解決した」）。投稿の返信先は受信時と同じく 1 段だけ取得します。
+  自サーバーの URL は取得せず、保存済みのものだけを返します。それ以外（コレクションなど）と取得できないものは `ErrUnresolvable` です。
 - 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します（ジョブ `federation.refresh_actor`、冪等キー `refresh_actor:<account_id>`）。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors`（1 時間ごと）が `remote_account_heads (last_fetched_at)` の古い順に 200 件ずつ読み、フォローされているものを取り直します（ADR-0034）。カーソル（`last_fetched_at` と `account_id`）を持った次のジョブが続きを読みます。
 
 ### 6.3 投稿
@@ -261,6 +264,16 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - どれにも当てはまらない `Create` は `ErrDropActivity` で捨て、受信の記録だけが残ります（`info` のログ）。未知のリモートの Actor へのメンションは、範囲に入ると決まってから取得します。
 - 書き込む行とメンション・ハッシュタグ・カスタム絵文字・添付・投票の扱いは [data-model §4.4 のリモート投稿のコマンド](data-model.md#リモート投稿のコマンド) にあります。コントラクトテストは `testkit.RemoteStatusContract` で、主要実装のフィクスチャの `Note` を取り込みます。
 - 返信先は受信時に 1 段だけ非同期（`federation.fetch_object`、ペイロードに残りの深さ）で取得し、スレッドの祖先と返信の一覧は利用者がスレッドを開いたときに深さ 20・件数 100 まで取得します。
+  - **取得した投稿**: 取得した文書が投稿で、`attributedTo` があり、そのオリジンが投稿の `id` と同じで、作者を解決でき（未知なら取得）、作者が有効なリモートのアカウントで、URI に削除（`status_deletions` の tombstone）も `remote_object_tombstones` も無いときだけ、`content.IngestRemoteStatus`（`activity_uri` は NULL）で取り込みます。取り込み範囲の判定はしません（受信した投稿の返信先・利用者が開いたスレッド・検索で解決した投稿・フォローされている人がブーストした投稿は ADR-0034 の範囲です）。`Announce` の対象・`fetch_object`・`Resolver` は、この取り込み（`StatusHandlers.fetched`）を共有します。`Announce` の対象と検索で解決した投稿は、受信した投稿と同じく返信先を 1 段だけ取得します。
+  - **受信時**: 取り込んだ返信の親が未知（`conversation_uri` が NULL）でリモートなら、取り込みのトランザクションで `federation.fetch_object`（祖先 0）を `queue.Outbox` に投入します。取得した親の親は取得しません。
+  - **スレッドを開いたとき**: `GET /api/v1/statuses/{id}/context` が、閲覧できた投稿について `StatusHandlers.FetchThread` を呼び、応答は待たずに保存済みのものだけを返します（取得したものは次に開いたときに出る）。返信先の無いローカルの投稿は何もしません（返信は配送で届く）。
+    同じ投稿は 1 時間に 1 回だけです（KV の名前空間 `federation.thread_fetch`、キーは URI の SHA-256、`IncrBy` で最初の 1 回だけ投入する）。
+  - `federation.fetch_object` のペイロードは `uri`、スレッドの起点の `thread`（受信時は空）、残りの祖先の深さ `ancestors`、残りの返信の深さ `replies`、祖先の取得の印 `up` で、冪等キーは `fetch_object:<ペイロードの SHA-256>` です。1 つのジョブは 1 つの投稿を扱います。
+    1. 未保存なら取得して取り込む。保存済みのリモートの投稿で `replies` が残っていれば、返信の一覧を読むために文書を取得する。
+    2. `ancestors` が残っていれば、保存済みの祖先をたどり、最初の未知のリモートの祖先の取得を、残りの深さを 1 減らして投入する。
+    3. `replies` が残っていれば、`replies` のコレクション（投稿と同じオリジンのものだけ）とそのページを、埋め込みならそのまま、そうでなければ取得して読み、リモートの返信ごとに、深さを 1 減らした取得を投入する（最後の段で保存済みの返信は投入しない）。
+  - **件数の上限**: スレッドの取得が取得する文書（投稿・コレクション・ページ）は、起点ごとの KV のカウンタ（名前空間 `federation.thread_budget`、1 時間）で数えて合わせて 100 件までです。祖先は深さ 20 までなので 20 件を超えず、返信の側（起点の文書・コレクション・ページ・返信）は 100 − 20 = 80 件で止めて祖先の分を残します。上限を超えた取得はカウンタを戻して何もしません。
+  - 取得できない・取り込まない文書は `info` のログを残してジョブを完了にします。取得の失敗は `Fetcher` が 1 時間記憶するので（§6.1）、同じ URI を別のジョブが取り直しません。ストアの失敗は `Retry` です。
 - 投稿の ID は `published` から作った UUIDv7 です（[data-model §1.3](data-model.md#13-id-とキーセットページング)、#71）。
 - 保持期間を過ぎたリモートの投稿は `content.purge_remote_statuses` が、関係の無くなったリモートのアカウントの過去のプロフィールは `account.prune_remote_profiles` が、受信の原本・記録と配送の記録は `federation.purge` が、件数を区切って消します（ADR-0034、[data-model §4.4 のリモート投稿の保持期間](data-model.md#リモート投稿の保持期間)、§4.2、§4.8）。
   保持期間で消えた投稿（`origin = retention`）は tombstone にならないので、同じ URI の `Create` や取得でまた取り込めます。コントラクトテストは `testkit.RetentionContract` です。
@@ -399,7 +412,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   キャッシュは `remote_media_cache` と Blob（`remote/` のキー）に置き、`media.cleanup_remote` が期限と容量の上限で消します（FR-803）。
   キャッシュはまだ実装していない（#276）ので、プロキシはどの方針でも `none` と同じく毎回中継し、`remote_media_cache_ttl` は `max-age` にだけ効きます。
 - ドメイン単位の `media_fetch` の制限（`reject_media`）は、メディアの所有者のドメインと URL のホストの両方に当て、どちらかが制限されていればプロキシは取得せず 404 を返します。
-  判定はポート `content.MediaFetchPolicy` を通します。`moderation` の投影ができるまでは、どのドメインも制限しない `content.NoMediaRestrictions` を組み込みます。
+  判定はポート `content.MediaFetchPolicy` を通します。実装は `moderation.FederationPolicy` です（§11）。
   `media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。
 - サムネイル・blurhash がない動画は、クライアントが「プレビューなし」として表示します。
 
@@ -446,7 +459,9 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 - 判定はサブドメインにも効きます（[data-model §4.3](data-model.md#ドメイン単位の処分)）。
 - `Block` の受信は `graph` の関係として記録します（相手からのブロックで、モデレーションの処分ではありません）。
-- `Flag` の受信は `reports`（`uri` は送信者のホストのものだけ残す）になり、モデレーターの通報一覧に入ります（FR-701）。コメントは 5,000 文字で切ります。
+- `Flag` の受信は `reports`（`uri` は `Flag` の `id`、`id` が無ければ受信の記録と同じ `urn:my:digest:…`。同じ `Flag` の再処理は何もしない）と `report_states`（`open`）になり、モデレーターの通報一覧に入ります（FR-701）。コメントは 5,000 文字で切ります。
+- `moderation.FederationPolicy` は、呼ばれるたびに期限内の制限を読みます（`DomainPolicy`・`AccountPolicy`・`content.MediaFetchPolicy` と、`Flag` の `RejectsReports`）。処分は `moderation.Service` の `IssueDomainAction` / `LiftDomainAction` と、リモートのアカウントへの `IssueRemoteAccountAction`（制限だけを生む `limit` / `suspend` / `force_sensitive`）/ `LiftAccountAction` が記録します。
+- `Block` / `Undo Block` の送信（§7.1）は、ローカルのアカウントがリモートのアカウントをブロック・解除したときだけです。`Block` の `id` はブロックの URI（`/ap/activities/{block_id}`）、宛先はブロックした相手だけで、相手の個人の inbox に送ります（shared inbox に集約しない。Mastodon と同じ）。
 - 通報の転送（`forwarded`）は、インスタンス Actor から対象のアカウントの inbox へ `Flag` を送ります（FR-701）。
 
 ## 12. テスト

@@ -30,8 +30,8 @@ import (
 )
 
 // RemoteStatusHarness is one database under test: an empty database with the product schema, its
-// UnitOfWork, and the identity, account, graph, content, timeline, notification, and inbox
-// repositories on it.
+// UnitOfWork, and the identity, account, graph, content, timeline, notification, inbox, and
+// federation repositories on it.
 type RemoteStatusHarness struct {
 	AccountHarness
 	Graph         appgraph.Repository
@@ -40,6 +40,9 @@ type RemoteStatusHarness struct {
 	Timeline      apptimeline.Repository
 	Notifications appnotification.Repository
 	Inbox         appfederation.InboxRepository
+	// Federation and Instances serve the fetches of remote posts and threads.
+	Federation appfederation.Repository
+	Instances  appfederation.InstanceRepository
 }
 
 // RemoteStatusFactory returns a harness on a new, empty database whose UnitOfWork uses opts.
@@ -47,15 +50,18 @@ type RemoteStatusHarness struct {
 type RemoteStatusFactory func(t *testing.T, opts uow.Options) RemoteStatusHarness
 
 // RemoteStatusContract verifies the ingestion of remote posts (federation.md §3.3, §3.4,
-// ADR-0034) on a database adapter, through the inbox processor with the real Create, Update, and
-// Delete handlers and the real content, account, graph, timeline, and notification modules:
+// §6.3, ADR-0034) on a database adapter, through the inbox processor with the real Create, Update,
+// and Delete handlers and the real content, account, graph, timeline, and notification modules:
 // the Notes of the major implementations (the federation fixtures) are ingested with IDs whose
 // time is their published time; Creates unrelated to a local account are not stored, while
 // follows, mentions, addressing, and replies into local threads bring posts in; the declared
 // attachments, custom emoji, hashtags, mentions, and polls are recorded and the HTML sanitized;
 // an old Update makes no revision and a recent Update of an unknown post is its Create; Deletes
-// leave tombstones; and the timeline and notification projectors see remote posts. The actors
-// and the fetches are in-memory stand-ins.
+// leave tombstones; and the timeline and notification projectors see remote posts. The parent of a
+// reply is fetched one level; an opened thread fetches its ancestors and replies within
+// ThreadDepth and ThreadMaxItems; fetched posts must be attributed within their origin; failed
+// fetches are not repeated; and Resolver resolves handles and the URLs of accounts and posts. The
+// actors and the fetches are in-memory stand-ins, and the network of the fetch cases is in memory.
 func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 	t.Helper()
 	cases := []struct {
@@ -70,6 +76,11 @@ func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 		{"TakesARecentUpdateAsItsCreate", remoteUpdateAsCreate},
 		{"DeletesIntoATombstone", remoteDeletes},
 		{"FeedsTimelinesAndNotifications", remoteFeeds},
+		{"FetchesTheParentOfAReplyOneLevel", remoteFetchesParents},
+		{"RejectsFetchedPostsOfAnotherOrigin", remoteRejectsForeignAttribution},
+		{"FetchesThreadsWithinBounds", remoteFetchesThreadsWithinBounds},
+		{"RemembersFailedFetches", remoteRemembersFailedFetches},
+		{"ResolvesHandlesAndURLsOfAccountsAndPosts", remoteResolves},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteStatusEnv(t, newHarness)) })
