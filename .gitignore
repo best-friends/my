@@ -18,6 +18,8 @@ build/
 /internal/interface/web/dist/*
 !/internal/interface/web/dist/.gitkeep
 bin/
+# The binary that `go build ./cmd/my` writes to the repository root.
+/my
 coverage/
 *.log
 

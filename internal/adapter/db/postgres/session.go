@@ -4,6 +4,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
 	appidentity "github.com/best-friends/my/internal/app/identity"
@@ -62,4 +63,14 @@ func (r *IdentityRepository) FindUnrevokedSession(ctx context.Context, tokenHash
 		a.LastSeenAt = utc(*row.LastSeenAt)
 	}
 	return s, a, nil
+}
+
+// RevokeSessionsOfUser implements identity.Repository.
+func (r *IdentityRepository) RevokeSessionsOfUser(ctx context.Context, tx uow.Tx, userID string, reason identity.RevocationReason, at time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.RevokeSessionsOfUser(ctx, postgresgen.RevokeSessionsOfUserParams{Reason: string(reason), RevokedAt: at, UserID: userID})
+	return wrap(err, "revoke the sessions of a user")
 }

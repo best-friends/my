@@ -433,6 +433,51 @@ func (r *ModerationRepository) ListDomainActions(ctx context.Context, q appmoder
 	return out, nil
 }
 
+func actionRecordFrom(row postgresgen.ListModerationActionsRow) moderation.ActionRecord {
+	rec := moderation.ActionRecord{Action: moderation.Action{
+		ID: row.ID, TargetAccountID: row.TargetAccountID, Kind: moderation.ActionKind(row.Kind),
+		ReasonCategory: moderation.Category(row.ReasonCategory), PublicReason: fromNullString(row.PublicReason),
+		PrivateNote: fromNullString(row.PrivateNote), ReportID: fromNullString(row.ReportID), Issuer: moderation.Issuer(row.Issuer),
+		IssuedByUserID: fromNullString(row.IssuedByUserID), NotifyTarget: row.NotifyTarget,
+		ExpiresAt: utcPtr(row.ExpiresAt), IssuedAt: utc(row.IssuedAt),
+	}}
+	if row.LiftActionID != nil && row.LiftedAt != nil {
+		rec.Lift = &moderation.Lift{
+			ActionID: row.ID, LiftedByUserID: fromNullString(row.LiftedByUserID), Reason: fromNullString(row.LiftReason),
+			LiftedAt: utc(*row.LiftedAt),
+		}
+	}
+	return rec
+}
+
+// FindActionRecord implements moderation.Repository.
+func (r *ModerationRepository) FindActionRecord(ctx context.Context, id string) (moderation.ActionRecord, error) {
+	row, err := r.db.reader().GetModerationActionRecord(ctx, id)
+	if err != nil {
+		return moderation.ActionRecord{}, notFound(err, appmoderation.ErrNotFound, "moderation action "+id)
+	}
+	return actionRecordFrom(postgresgen.ListModerationActionsRow(row)), nil
+}
+
+// ListActions implements moderation.Repository.
+func (r *ModerationRepository) ListActions(ctx context.Context, q appmoderation.ActionQuery, limit int) ([]moderation.ActionRecord, error) {
+	lim, err := toInt32(limit, "limit")
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListModerationActions(ctx, postgresgen.ListModerationActionsParams{
+		AccountID: q.AccountID, InEffectAt: q.InEffectAt, Before: q.Before, Lim: lim,
+	})
+	if err != nil {
+		return nil, wrap(err, "list moderation actions")
+	}
+	out := make([]moderation.ActionRecord, len(rows))
+	for i, row := range rows {
+		out[i] = actionRecordFrom(row)
+	}
+	return out, nil
+}
+
 // domainActionKindStrings returns the kinds as strings, never nil.
 func domainActionKindStrings(kinds []moderation.DomainActionKind) []string {
 	out := make([]string, len(kinds))

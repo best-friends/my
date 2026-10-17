@@ -72,3 +72,12 @@ FROM oauth_authorization_code_redemptions r
 JOIN oauth_authorization_codes c ON c.code_hash = r.code_hash
 WHERE r.token_id = sqlc.arg(family_id) AND c.session_id IS NOT NULL
 ON CONFLICT (session_id) DO NOTHING;
+
+-- RevokeTokensOfUser revokes every token of a user whose access or refresh token has not expired
+-- at revoked_at and that has no revocation yet.
+-- name: RevokeTokensOfUser :exec
+INSERT INTO oauth_token_revocations (token_id, reason, revoked_at)
+SELECT t.id, sqlc.arg(reason), sqlc.arg(revoked_at) FROM oauth_access_tokens t
+WHERE t.user_id = sqlc.arg(user_id)
+  AND (t.expires_at > sqlc.arg(revoked_at) OR t.refresh_expires_at > sqlc.arg(revoked_at))
+ON CONFLICT (token_id) DO NOTHING;

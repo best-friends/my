@@ -57,8 +57,13 @@ func NewInteractions(d InteractionDeps) *Interactions {
 // Boost makes accountID boost statusID and returns the live boost. Boosting a status that the
 // account already boosts returns the existing boost. The boost copies the status's visibility;
 // a boost of a local status never federates (content.Boost.Federates, ADR-0017). A status whose
-// visibility does not allow the account to boost it fails with content.ErrNotBoostable.
+// visibility does not allow the account to boost it fails with content.ErrNotBoostable, and an
+// account whose restrictions forbid posting or interacting with ErrPostingRestricted or
+// ErrInteractionRestricted.
 func (s *Interactions) Boost(ctx context.Context, accountID, statusID string) (content.Boost, error) {
+	if err := s.checkRestrictions(ctx, accountID, true); err != nil {
+		return content.Boost{}, err
+	}
 	st, err := s.visibleStatus(ctx, accountID, statusID)
 	if err != nil {
 		return content.Boost{}, err
@@ -135,8 +140,12 @@ func (s *Interactions) Unboost(ctx context.Context, accountID, statusID string) 
 }
 
 // Favourite makes accountID favourite statusID and returns the favourite. Favouriting a status
-// that the account already favourites returns the existing favourite.
+// that the account already favourites returns the existing favourite. An account whose
+// restrictions forbid interacting fails with ErrInteractionRestricted.
 func (s *Interactions) Favourite(ctx context.Context, accountID, statusID string) (content.Favourite, error) {
+	if err := s.checkRestrictions(ctx, accountID, false); err != nil {
+		return content.Favourite{}, err
+	}
 	st, err := s.visibleStatus(ctx, accountID, statusID)
 	if err != nil {
 		return content.Favourite{}, err
@@ -274,6 +283,22 @@ func (s *Interactions) visibleStatus(ctx context.Context, accountID, statusID st
 	}
 	st, _, err := s.audience().visibleStatus(ctx, content.Viewer{Kind: content.ViewerLocal, AccountID: accountID}, statusID)
 	return st, err
+}
+
+// checkRestrictions fails with ErrInteractionRestricted when the account may not interact and,
+// for a boost, which is also a post, with ErrPostingRestricted when it may not post
+// (data-model §5.2).
+func (s *Interactions) checkRestrictions(ctx context.Context, accountID string, boost bool) error {
+	r, err := s.d.Restrictions.Restrictions(ctx, accountID)
+	switch {
+	case err != nil:
+		return err
+	case boost && !r.CanPost():
+		return fmt.Errorf("account %s: %w", accountID, ErrPostingRestricted)
+	case !r.CanInteract():
+		return fmt.Errorf("account %s: %w", accountID, ErrInteractionRestricted)
+	}
+	return nil
 }
 
 func (s *Interactions) audience() audience {

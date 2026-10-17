@@ -79,7 +79,7 @@ type SignedIn struct {
 // that a token planted before the sign-in is never promoted (session fixation, ADR-0019 §4).
 //
 // It fails with ErrInvalidCredentials for an unknown address, a wrong password, or a user whose
-// local account is not active (data-model §5.1), after the same amount of password hashing, and with a *kernel.RateLimitedError when too
+// local account is not active or may not log in (data-model §5.1), after the same amount of password hashing, and with a *kernel.RateLimitedError when too
 // many attempts failed from the client's IP address or for the email address (ADR-0019 §5).
 func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) {
 	if s.d.RateLimiter == nil {
@@ -260,9 +260,9 @@ func (s *Service) verifyPassword(ctx context.Context, normalizedEmail, password 
 	return verifiedPassword{cred: cred, needsRehash: rehash}, nil
 }
 
-// checkActive fails with ErrInvalidCredentials unless the user's local account is active, so
-// that a deactivated, deleted, or deletion-scheduled account cannot sign in and the response
-// does not tell that the password was right.
+// checkActive fails with ErrInvalidCredentials unless the user's local account is active and
+// moderation lets it log in, so that a deactivated, deleted, deletion-scheduled, or suspended
+// account cannot sign in and the response does not tell that the password was right.
 func (s *Service) checkActive(ctx context.Context, userID string) error {
 	st, err := s.d.Accounts.UserLifecycle(ctx, userID)
 	if errors.Is(err, account.ErrNotFound) {
@@ -272,6 +272,11 @@ func (s *Service) checkActive(ctx context.Context, userID string) error {
 		return err
 	}
 	if !st.Active() {
+		return ErrInvalidCredentials
+	}
+	if restricted, err := s.loginRestricted(ctx, st.AccountID); err != nil {
+		return err
+	} else if restricted {
 		return ErrInvalidCredentials
 	}
 	return nil

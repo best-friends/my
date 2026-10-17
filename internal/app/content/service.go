@@ -28,6 +28,9 @@ var (
 	ErrRemoteAccount = errors.New("content: the account is not local")
 	// ErrPostingRestricted reports an author whose restrictions forbid posting and editing.
 	ErrPostingRestricted = errors.New("content: the account may not post")
+	// ErrInteractionRestricted reports an account whose restrictions forbid favouriting,
+	// boosting, and replying.
+	ErrInteractionRestricted = errors.New("content: the account may not interact")
 	// ErrNotAuthor reports an edit or deletion of another account's status.
 	ErrNotAuthor = errors.New("content: the status belongs to another account")
 	// ErrReplyTargetNotFound reports a reply to a status that does not exist, is deleted, or
@@ -248,6 +251,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 	}
 	st.ConversationURI = st.URI
 	if in.InReplyToID != "" {
+		if !restrictions.CanInteract() {
+			return Post{}, fmt.Errorf("account %s: %w", in.AuthorAccountID, ErrInteractionRestricted)
+		}
 		parent, err := s.replyTarget(ctx, in.AuthorAccountID, in.InReplyToID)
 		if err != nil {
 			return Post{}, err
