@@ -771,6 +771,10 @@
     "defaultMessage": "この種類の通知はありません",
     "description": "Heading shown on the notifications page when no notification matches the selected type filter."
   },
+  "notifications.failed": {
+    "defaultMessage": "通知を読み込めませんでした",
+    "description": "Heading of the error that replaces the list of notifications when it failed to load; the reason follows."
+  },
   "notifications.filter.all": {
     "defaultMessage": "すべて",
     "description": "Tab on the notifications page that shows notifications of every type."
@@ -866,6 +870,10 @@
   "notifications.type.poll_closed": {
     "defaultMessage": "参加した投票が終了しました",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
+  },
+  "notifications.type.report_resolved": {
+    "defaultMessage": "あなたの通報への対応が完了しました",
+    "description": "Notification sentence: the moderators of the server resolved a report that the user filed. It never says how."
   },
   "notifications.unread": {
     "defaultMessage": "未読:",
@@ -1351,6 +1359,14 @@
     "defaultMessage": "検索",
     "description": "Heading and document title of the page that finds an account by its handle or URL."
   },
+  "session.account.failed": {
+    "defaultMessage": "アカウントを読み込めませんでした",
+    "description": "Heading of the error in the account section of the settings when the signed-in account failed to load; the reason follows."
+  },
+  "session.account.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads the signed-in account again after it failed to load."
+  },
   "session.account.title": {
     "defaultMessage": "アカウント",
     "description": "Heading of the section of the settings page about the signed-in account."
@@ -1699,17 +1715,37 @@
     "defaultMessage": "{page} – {instance}",
     "description": "The browser tab title: the heading of the current page, then the server's name."
   },
-  "shell.error.body": {
-    "defaultMessage": "このページを表示できませんでした。もう一度試すか、しばらくしてから開いてください。",
-    "description": "Text on the page shown when a screen failed to load or broke."
+  "shell.error.forbidden.heading": {
+    "defaultMessage": "このページを見る権限がありません",
+    "description": "Heading of the error that replaces a page's content when the server refused the user (a 403); the server's reason follows."
+  },
+  "shell.error.network.heading": {
+    "defaultMessage": "サーバーに接続できませんでした",
+    "description": "Heading of the error that replaces a page's content when the page got no answer from the server (offline, or the server is down)."
+  },
+  "shell.error.not_found.heading": {
+    "defaultMessage": "このページの内容が見つかりませんでした",
+    "description": "Heading of the error that replaces a page's content when the server found nothing to show (a 404); the server's reason follows."
   },
   "shell.error.retry": {
     "defaultMessage": "もう一度試す",
     "description": "Button that loads the failed page again."
   },
+  "shell.error.server.heading": {
+    "defaultMessage": "このページを読み込めませんでした",
+    "description": "Heading of the error that replaces a page's content when the server failed to answer its request; the server's reason follows."
+  },
   "shell.error.title": {
     "defaultMessage": "問題が発生しました",
     "description": "Heading of the page shown when a screen failed to load or broke."
+  },
+  "shell.error.unexpected.heading": {
+    "defaultMessage": "このページを表示できませんでした",
+    "description": "Heading of the error that replaces a page's content when the page itself broke (not a failed request)."
+  },
+  "shell.error.unexpected.reason": {
+    "defaultMessage": "もう一度試すか、しばらくしてから開いてください。",
+    "description": "Text under the heading of a page's error when the page itself broke."
   },
   "shell.loading": {
     "defaultMessage": "読み込み中",
@@ -1890,6 +1926,18 @@
   "status.favourite.on": {
     "defaultMessage": "お気に入りに追加しました",
     "description": "Read out by screen readers after the user favourited a post."
+  },
+  "status.focused.boosts": {
+    "defaultMessage": "{count, plural, other {ブースト # 件}}",
+    "description": "Under the body of the post a page is about: how many times it was boosted. Shown only when it was."
+  },
+  "status.focused.favourites": {
+    "defaultMessage": "{count, plural, other {お気に入り # 件}}",
+    "description": "Under the body of the post a page is about: how many people favourited it. Shown only when someone did."
+  },
+  "status.focused.label": {
+    "defaultMessage": "開いている投稿",
+    "description": "Not shown: read out by screen readers before the author and time of the post a page is about, to tell it apart from the posts of its thread."
   },
   "status.link.copied": {
     "defaultMessage": "リンクをコピーしました",

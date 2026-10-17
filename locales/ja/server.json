@@ -71,6 +71,10 @@
     "defaultMessage": "通知の読み取り",
     "description": "Permission (OAuth scope read:notifications) listed on the authorization page."
   },
+  "auth.authorize.scope.read_reports": {
+    "defaultMessage": "自分の通報と、その対応状況の読み取り",
+    "description": "Permission (OAuth scope read:reports) listed on the authorization page."
+  },
   "auth.authorize.scope.read_statuses": {
     "defaultMessage": "投稿とタイムラインの読み取り",
     "description": "Permission (OAuth scope read:statuses) listed on the authorization page."

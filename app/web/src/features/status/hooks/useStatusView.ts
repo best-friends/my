@@ -35,6 +35,8 @@ export type StatusView = {
   media: MediaItem[];
   /** Whether the author marked the media sensitive. */
   sensitive: boolean;
+  /** How many times the post was boosted and favourited. */
+  counts: { boosts: number; favourites: number };
 };
 
 /**
@@ -91,5 +93,6 @@ export function useStatusView(status: Status): StatusView {
     contentWarning: post.spoiler_text === "" ? null : post.spoiler_text,
     media: mediaItems(post.media_attachments, lang),
     sensitive: post.sensitive,
+    counts: { boosts: post.boosts_count, favourites: post.favourites_count },
   };
 }

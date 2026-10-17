@@ -38,7 +38,7 @@ import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
-import { profilePath } from "../../lib/paths";
+import { followListPath, profilePath } from "../../lib/paths";
 
 type Section = "/home" | "/timelines" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/settings";
 
@@ -99,12 +99,15 @@ function isUnder(pathname: string, path: string): boolean {
 
 /**
  * Whether `pathname` is in `section`: the page itself or one below it. "/profile" redirects to the viewer's own
- * profile page, so that page and the pages below it are its section too. The timelines of the tab bar are the
- * local and the federated timeline.
+ * profile page, so that page and its lists of followers and follows are its section too. The viewer's own posts
+ * (`/@acct/{id}`) are below the profile's address but are pages of posts, not of the profile. The timelines of
+ * the tab bar are the local and the federated timeline.
  */
-function inSection(pathname: string, section: Section, ownProfile: string | null): boolean {
+function inSection(pathname: string, section: Section, ownAcct: string | null): boolean {
   if (section === "/timelines") return isUnder(pathname, "/local") || isUnder(pathname, "/public");
-  return isUnder(pathname, section) || (section === "/profile" && ownProfile !== null && isUnder(pathname, ownProfile));
+  if (isUnder(pathname, section)) return true;
+  if (section !== "/profile" || ownAcct === null) return false;
+  return [profilePath(ownAcct), followListPath(ownAcct, "followers"), followListPath(ownAcct, "following")].includes(pathname);
 }
 
 /** Where the tab bar's Timelines goes: the local timeline, or the federated one where only it is served. */
@@ -117,10 +120,10 @@ export function Navigation() {
   const pathname = useLocation({ select: (location) => location.pathname });
   const unread = useUnreadNotificationCount();
   const viewer = useViewer();
-  const ownProfile = viewer.status === "signed-in" ? profilePath(viewer.account.acct) : null;
+  const ownAcct = viewer.status === "signed-in" ? viewer.account.acct : null;
   const timelines = useTimelineAvailability();
   const shown = items.filter((item) => item.timeline === undefined || timelines[item.timeline]);
-  const current = (section: Section) => (inSection(pathname, section, ownProfile) ? "page" : undefined);
+  const current = (section: Section) => (inSection(pathname, section, ownAcct) ? "page" : undefined);
   return (
     <nav
       aria-label={t("client:shell.nav.label")}

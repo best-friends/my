@@ -33,6 +33,23 @@ describe("PostCard", () => {
     );
     expect(screen.getByRole("article", { name: "Bob boosted Alice @alice 2h" })).toHaveAccessibleDescription("Hello");
   });
+
+  it("starts its name with its label, and shows its details outside the description", () => {
+    render(
+      <PostCard
+        label="Selected post"
+        highlighted
+        lineAbove
+        author="Alice @alice"
+        time={<time dateTime="2026-10-16T09:00:00Z">2h</time>}
+        content={<PostContent html={serverSanitizedHtml("<p>Hello</p>")} lang="en" />}
+        details="3 boosts"
+      />,
+    );
+    const article = screen.getByRole("article", { name: "Selected post Alice @alice 2h" });
+    expect(article).toHaveAccessibleDescription("Hello");
+    expect(screen.getByText("3 boosts")).toBeInTheDocument();
+  });
 });
 
 describe("PostCardAuthor", () => {

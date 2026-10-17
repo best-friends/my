@@ -60,6 +60,10 @@ type ProjectorDeps struct {
 //     mentions; an edit notifies only the accounts it newly mentions.
 //   - content.boosted: boost, to the status's author.
 //   - content.favourited: favourite, to the status's author.
+//   - moderation.report_resolved: report_resolved, to the reporter when the reporter is a local
+//     account. It comes from the instance and has no source account. Its dedupe key is the
+//     report's (notification.ReportResolvedKey), so only the first resolution notifies: a
+//     report reopened and resolved again does not notify again.
 //   - moderation.account_action_issued: moderation_notice, to the account the action is on when
 //     the action notifies it. It comes from the instance and has no source account.
 //
@@ -170,6 +174,13 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 	r.Register(appcontent.EventFavourited, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.Favourited)
 		return p.interaction(ctx, tx, notification.TypeFavourite, ev.Status, ev.Favourite.AccountID, ev.Favourite.CreatedAt)
+	})
+	r.Register(appmoderation.EventReportResolved, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appmoderation.ReportResolved)
+		return p.notify(ctx, tx, notification.Notification{
+			RecipientAccountID: ev.Report.ReporterAccountID, Type: notification.TypeReportResolved, ReportID: ev.Report.ID,
+			DedupeKey: notification.ReportResolvedKey(ev.Report.ID), CreatedAt: ev.Resolution.ResolvedAt,
+		})
 	})
 	r.Register(appmoderation.EventAccountActionIssued, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		a := e.(appmoderation.AccountActionIssued).Action

@@ -388,6 +388,8 @@ export interface MessageArgs {
   "client:notifications.empty.description": {};
   /** No notifications of this type */
   "client:notifications.empty.filtered": {};
+  /** Could not load the notifications */
+  "client:notifications.failed": {};
   /** All */
   "client:notifications.filter.all": {};
   /** Boosts */
@@ -436,6 +438,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** A report you filed has been resolved */
+  "client:notifications.type.report_resolved": {};
   /** Unread: */
   "client:notifications.unread": {};
   /** {count, plural, one {# unread} other {# unread}} */
@@ -678,6 +682,10 @@ export interface MessageArgs {
   "client:search.submit": {};
   /** Search */
   "client:search.title": {};
+  /** Could not load your account */
+  "client:session.account.failed": {};
+  /** Try again */
+  "client:session.account.retry": {};
   /** Account */
   "client:session.account.title": {};
   /** Sign in */
@@ -852,12 +860,22 @@ export interface MessageArgs {
   "client:shell.about.title": {};
   /** {page} – {instance} */
   "client:shell.document_title": { instance: string; page: string };
-  /** This page could not be shown. Try again, or come back later. */
-  "client:shell.error.body": {};
+  /** You do not have permission to see this page */
+  "client:shell.error.forbidden.heading": {};
+  /** Could not connect to the server */
+  "client:shell.error.network.heading": {};
+  /** What this page shows was not found */
+  "client:shell.error.not_found.heading": {};
   /** Try again */
   "client:shell.error.retry": {};
+  /** Could not load this page */
+  "client:shell.error.server.heading": {};
   /** Something went wrong */
   "client:shell.error.title": {};
+  /** This page could not be shown */
+  "client:shell.error.unexpected.heading": {};
+  /** Try again, or come back later. */
+  "client:shell.error.unexpected.reason": {};
   /** Loading */
   "client:shell.loading": {};
   /** Close */
@@ -948,6 +966,12 @@ export interface MessageArgs {
   "client:status.favourite.off": {};
   /** Added to favourites */
   "client:status.favourite.on": {};
+  /** {count, plural, one {# boost} other {# boosts}} */
+  "client:status.focused.boosts": { count: number };
+  /** {count, plural, one {# favourite} other {# favourites}} */
+  "client:status.focused.favourites": { count: number };
+  /** Opened post */
+  "client:status.focused.label": {};
   /** Link copied */
   "client:status.link.copied": {};
   /** Could not copy the link. */
@@ -1064,6 +1088,8 @@ export interface MessageArgs {
   "server:auth.authorize.scope.read_mutes": {};
   /** Read your notifications */
   "server:auth.authorize.scope.read_notifications": {};
+  /** Read the reports you filed and whether they are resolved */
+  "server:auth.authorize.scope.read_reports": {};
   /** Read posts and timelines */
   "server:auth.authorize.scope.read_statuses": {};
   /** Post and change things for you */

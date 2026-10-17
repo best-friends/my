@@ -102,6 +102,9 @@ type Options struct {
 	Rules InstanceRules
 	// Reports files the reports of local users (reports.go).
 	Reports Reports
+	// FiledReports reads the reports that the viewer filed (listOwnReports) and that their
+	// report_resolved notifications tell of; nil leaves the report out of the notifications.
+	FiledReports FiledReports
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

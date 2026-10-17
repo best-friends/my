@@ -1001,7 +1001,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the reports that the authenticated user filed
+         * @description The reports that the user filed, newest first, each with whether it is still open or
+         *     resolved (FR-711). A report reopened by the moderators is open again. It never tells how
+         *     a report was resolved, which actions it led to, the reasons given to the account, or
+         *     who handles it.
+         */
+        get: operations["listOwnReports"];
         put?: never;
         /**
          * Report an account
@@ -1995,6 +2002,8 @@ export interface components {
              *     may not see it.
              */
             status?: components["schemas"]["Status"];
+            /** @description The user's report that a `report_resolved` tells of. */
+            report?: components["schemas"]["Report"];
             /** @description The action on the user's account that a `moderation_notice` tells of. */
             moderation_action?: components["schemas"]["ModerationAction"];
         };
@@ -2023,9 +2032,12 @@ export interface components {
          *     `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
          *     about. `moderation_notice` comes from the instance and has no `account`; its
          *     `moderation_action` is the action on the user's account, with its kind, reason, and end.
+         *     `report_resolved` also comes from the instance: its `report` is the user's report that
+         *     the moderators resolved, without how they resolved it. It is sent once per report, even
+         *     when the report is reopened and resolved again.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved";
         /** @description A new status. */
         CreateStatusRequest: {
             text: components["schemas"]["StatusText"];
@@ -2692,7 +2704,10 @@ export interface components {
              */
             forward: boolean;
         };
-        /** @description A report that the user filed. It never names the reporter. */
+        /**
+         * @description A report that the user filed. It never names the reporter, and tells only whether the
+         *     moderators resolved it, never how.
+         */
         Report: {
             id: components["schemas"]["Id"];
             category: components["schemas"]["ReportCategory"];
@@ -2705,6 +2720,7 @@ export interface components {
             target_account: components["schemas"]["Account"];
             status_ids: components["schemas"]["Id"][];
             rule_ids: components["schemas"]["Id"][];
+            state: components["schemas"]["ReportState"];
         };
         /**
          * @description Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
@@ -2713,6 +2729,15 @@ export interface components {
          * @enum {string}
          */
         ReportCategory: "spam" | "legal" | "violation" | "other";
+        /** @description A page of the user's reports, newest first. */
+        ReportPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["Report"][];
+        };
+        /**
+         * @description `open`: the report awaits the moderators. `resolved`: the moderators handled it.
+         * @enum {string}
+         */
+        ReportState: "open" | "resolved";
     };
     responses: {
         /** @description A page of posts and boosts, newest first. */
@@ -3988,6 +4013,33 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["StatusPage"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listOwnReports: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the user's reports. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportPage"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

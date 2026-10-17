@@ -26,15 +26,22 @@ export const Route = createFileRoute("/admin/instances_/$domain")({
   errorComponent: InstanceError,
 });
 
+/** The page's name: the domain from its address. */
+function PageName() {
+  const { domain } = Route.useParams();
+  return (
+    <span className="wrap-anywhere">
+      <DomainName domain={domain} />
+    </span>
+  );
+}
+
 function InstanceHeading() {
   const t = useT();
-  const { domain } = Route.useParams();
   return (
     <div className="flex flex-col items-start gap-1">
       <PageHeading>
-        <span className="wrap-anywhere">
-          <DomainName domain={domain} />
-        </span>
+        <PageName />
       </PageHeading>
       <Link href="/admin/instances" variant="standalone" className="text-sm">
         {t("client:admin.instance.back")}
@@ -54,7 +61,7 @@ function InstancePage() {
   );
 }
 
+/** The page keeps its name, the domain, when it fails (web-client.md G16). */
 function InstanceError(props: ErrorComponentProps) {
-  const t = useT();
-  return <AdminError {...props} permission="manage_domains" heading={t("client:admin.instances.title")} />;
+  return <AdminError {...props} permission="manage_domains" heading={<PageName />} />;
 }

@@ -14,6 +14,7 @@ const searchSchema = z.object({
 
 /** The health of the remote servers that deliveries failed to reach (federation.md §7.3), for manage_domains. */
 export const Route = createFileRoute("/admin/instances")({
+  staticData: { title: "client:admin.instances.title" },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { state } }): { filter: InstanceFilter } => ({ filter: state ?? "all" }),
   beforeLoad: requireSignIn,

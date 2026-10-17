@@ -71,6 +71,10 @@
     "defaultMessage": "[Řḗḗȧȧḓ ẏǿǿŭŭř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.authorize.scope.read_reports": {
+    "defaultMessage": "[Řḗḗȧȧḓ ŧħḗḗ řḗḗƥǿǿřŧş ẏǿǿŭŭ ƒīŀḗḗḓ ȧȧƞḓ ẇħḗḗŧħḗḗř ŧħḗḗẏ ȧȧřḗḗ řḗḗşǿǿŀṽḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.authorize.scope.read_statuses": {
     "defaultMessage": "[Řḗḗȧȧḓ ƥǿǿşŧş ȧȧƞḓ ŧīḿḗḗŀīƞḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."

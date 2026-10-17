@@ -167,31 +167,44 @@ func (s *Service) AssignReport(ctx context.Context, reportID, assigneeUserID, by
 }
 
 // ResolveReport resolves an open report with outcome, recording the resolution and, in the same
-// transaction, the report's resolved state. Resolving a resolved report records nothing and
-// keeps its outcome. It fails with moderation.ErrInvalidReport for an unknown outcome. byUserID
-// is the moderator, "" for the CLI.
+// transaction, the report's resolved state, and emits ReportResolved. Resolving a resolved
+// report records nothing and keeps its outcome. It fails with moderation.ErrInvalidReport for
+// an unknown outcome. byUserID is the moderator, "" for the CLI.
 func (s *Service) ResolveReport(ctx context.Context, reportID string, outcome moderation.ReportOutcome, byUserID string) (moderation.ReportRecord, error) {
 	if !outcome.Valid() {
 		return moderation.ReportRecord{}, fmt.Errorf("%w: outcome %q", moderation.ErrInvalidReport, outcome)
 	}
+	// A report never changes once filed, so it is read before the transaction.
+	report, err := s.d.Repository.FindReport(ctx, reportID)
+	if err != nil {
+		return moderation.ReportRecord{}, err
+	}
 	now := kernel.Normalize(s.d.Clock.Now())
-	repo := s.d.Repository
-	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		st, err := repo.ReportStatusForUpdate(ctx, tx, reportID)
-		if err != nil || st.State == moderation.ReportResolved {
-			return err
-		}
-		err = repo.InsertReportResolution(ctx, tx, moderation.ReportResolution{
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		return s.resolveReport(ctx, tx, report, moderation.ReportResolution{
 			ID: s.d.IDs.NewID(), ReportID: reportID, Outcome: outcome, ResolvedByUserID: byUserID, ResolvedAt: now,
 		})
-		if err != nil {
-			return err
-		}
-		st.State, st.Outcome, st.Since = moderation.ReportResolved, outcome, now
-		return repo.UpsertReportStatus(ctx, tx, st)
 	})
 	if err != nil {
 		return moderation.ReportRecord{}, err
 	}
 	return s.ReportRecord(ctx, reportID)
+}
+
+// resolveReport records res and the resolved state of report in tx and emits ReportResolved,
+// unless the report is resolved already.
+func (s *Service) resolveReport(ctx context.Context, tx uow.Tx, report moderation.Report, res moderation.ReportResolution) error {
+	repo := s.d.Repository
+	st, err := repo.ReportStatusForUpdate(ctx, tx, report.ID)
+	if err != nil || st.State == moderation.ReportResolved {
+		return err
+	}
+	if err := repo.InsertReportResolution(ctx, tx, res); err != nil {
+		return err
+	}
+	st.State, st.Outcome, st.Since = moderation.ReportResolved, res.Outcome, res.ResolvedAt
+	if err := repo.UpsertReportStatus(ctx, tx, st); err != nil {
+		return err
+	}
+	return tx.Emit(ctx, ReportResolved{Report: report, Resolution: res})
 }
