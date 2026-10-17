@@ -28,6 +28,9 @@ type RemoteRepository interface {
 	// ListStaleRemoteHeads returns at most limit heads last fetched before before, ordered by
 	// LastFetchedAt and AccountID, starting after the head after (the zero value for the first).
 	ListStaleRemoteHeads(ctx context.Context, before time.Time, after account.RemoteHead, limit int) ([]account.RemoteHead, error)
+	// ListKnownSharedInboxes returns at most limit distinct shared inboxes of the heads of
+	// remote actors that are not deleted, ordered, after the shared inbox after.
+	ListKnownSharedInboxes(ctx context.Context, after string, limit int) ([]string, error)
 
 	// LatestHandleVerification returns the newest handle check of a remote actor.
 	LatestHandleVerification(ctx context.Context, tx uow.Tx, accountID string) (account.HandleVerification, error)

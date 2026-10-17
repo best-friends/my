@@ -49,7 +49,8 @@ type FanOutDeps struct {
 //  1. It builds the activity's document once, on the first batch, and stores it
 //     (outbound_activity_documents), so that every delivery and retry sends the same bytes.
 //  2. It reads up to Batch recipients: the author's active followers through the graph module,
-//     the accounts the object mentions, or the inboxes an earlier activity went to.
+//     the accounts the object mentions, the inboxes an earlier activity went to, or, for the
+//     Delete of an actor, the shared inboxes known to the instance.
 //  3. It keeps the accounts that content.CanView admits in ContextDelivery, one account at a
 //     time, and turns them into their shared inbox, or their own inbox without one. Local
 //     accounts have no inbox and drop out.
@@ -210,6 +211,8 @@ const (
 	phasePrior phase = "prior"
 	// phaseBoostedAuthor is the author of a boosted status, in one batch.
 	phaseBoostedAuthor phase = "boosted_author"
+	// phaseSharedInboxes are the shared inboxes known to the instance, in batches.
+	phaseSharedInboxes phase = "shared_inboxes"
 )
 
 // subject is what the fan-out of one activity needs to know about its object.
@@ -230,6 +233,8 @@ type subject struct {
 	status   appcontent.Status
 	revision appcontent.Revision
 	boost    appcontent.Boost
+	// actor is the local actor an account activity is about.
+	actor appaccount.Actor
 }
 
 // phases returns the sources of recipients of the activity, in order (data-model §7,
@@ -239,8 +244,15 @@ type subject struct {
 //   - Update and Delete: the inboxes of the Create, then, for a public or unlisted status, the
 //     followers at that time.
 //   - Announce and Undo Announce: the booster's followers, then the boosted status's author.
+//   - Update of an actor: its followers. Delete of an actor: its followers, then every shared
+//     inbox known to the instance (data-model §8).
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
+	case federation.OutboundAccount:
+		if s.act.Type == federation.ActivityDelete {
+			return []phase{phaseFollowers, phaseSharedInboxes}
+		}
+		return []phase{phaseFollowers}
 	case federation.OutboundStatus:
 		if s.act.Type == federation.ActivityCreate {
 			return []phase{phaseMentions, phaseFollowers}
@@ -258,6 +270,9 @@ func (s subject) phases() []phase {
 // subject loads the object of act. An object that is gone fails with errGone.
 func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, revisionID string) (subject, error) {
 	s := subject{act: act, actorID: act.ActorAccountID}
+	if act.ObjectKind == federation.OutboundAccount {
+		return f.accountSubject(ctx, s)
+	}
 	var err error
 	switch {
 	case act.ObjectKind == federation.OutboundStatus && (act.Type == federation.ActivityCreate || act.Type == federation.ActivityUpdate):
@@ -305,6 +320,30 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, r
 	return s, nil
 }
 
+// accountSubject loads the local actor of an Update or a Delete of an actor. The Update of an
+// actor that is no longer active, or no longer local, has nothing to send: a later Delete
+// supersedes it. The Delete of an actor goes out whatever its state, since the account row
+// stays after the purge (data-model §8).
+func (f *FanOut) accountSubject(ctx context.Context, s subject) (subject, error) {
+	act := s.act
+	if act.ObjectID != act.ActorAccountID || (act.Type != federation.ActivityUpdate && act.Type != federation.ActivityDelete) {
+		return subject{}, fmt.Errorf("%w: %s of the account %s by %s", federation.ErrInvalidOutbound, act.Type, act.ObjectID, act.ActorAccountID)
+	}
+	a, err := f.d.Accounts.FindByID(ctx, act.ObjectID)
+	switch {
+	case errors.Is(err, appaccount.ErrNotFound):
+		return subject{}, fmt.Errorf("%w: account %s", errGone, act.ObjectID)
+	case err != nil:
+		return subject{}, err
+	case !a.Account.IsLocal() || a.IsInstanceActor():
+		return subject{}, fmt.Errorf("%w: %s of the account %s, which is not a local user's", federation.ErrInvalidOutbound, act.Type, act.ObjectID)
+	case act.Type == federation.ActivityUpdate && !a.Lifecycle.Active():
+		return subject{}, fmt.Errorf("%w: account %s is not active", errGone, act.ObjectID)
+	}
+	s.actor = a
+	return s, nil
+}
+
 // batch reads one batch of the phase after the cursor and resolves it to inboxes. next is the
 // cursor of the following batch of the same phase, "" when the phase is done.
 func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s subject, ph phase, after string) (targets []target, next string, err error) {
@@ -335,6 +374,20 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 	case phaseMentions, phaseBoostedAuthor:
 		targets, err = f.resolve(ctx, act, s, s.mentioned, false)
 		return targets, "", err
+	case phaseSharedInboxes:
+		inboxes, err := f.d.Accounts.KnownSharedInboxes(ctx, after, f.d.Batch)
+		if err != nil {
+			return nil, "", err
+		}
+		for _, inbox := range inboxes {
+			if t, ok := targetOf(federation.IRI(inbox)); ok {
+				targets = append(targets, t)
+			}
+		}
+		if len(inboxes) == f.d.Batch {
+			next = inboxes[len(inboxes)-1]
+		}
+		return targets, next, nil
 	}
 	return nil, "", fmt.Errorf("%w: phase %q", federation.ErrInvalidOutbound, ph)
 }
@@ -358,8 +411,10 @@ func (f *FanOut) createOf(ctx context.Context, act federation.OutboundActivity) 
 // actor.
 //
 // A Delete reveals nothing but that the object is gone, so its recipients are not judged: they
-// are the followers of a status that every follower could see.
+// are the followers of a status that every follower could see. Neither are the followers of an
+// actor's Update: a profile is public.
 func (f *FanOut) resolve(ctx context.Context, act federation.OutboundActivity, s subject, accountIDs []string, followers bool) ([]target, error) {
+	judged := act.Type != federation.ActivityDelete && act.ObjectKind != federation.OutboundAccount
 	var out []target
 	for _, id := range accountIDs {
 		if id == s.actorID {
@@ -372,7 +427,7 @@ func (f *FanOut) resolve(ctx context.Context, act federation.OutboundActivity, s
 		if err != nil {
 			return nil, err
 		}
-		if act.Type != federation.ActivityDelete {
+		if judged {
 			ok, err := f.admits(ctx, s, id, followers)
 			if err != nil {
 				return nil, err

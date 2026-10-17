@@ -149,9 +149,9 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Undo` | `Follow` / `Like` / `Announce` / `Block` / `Accept` | 対象の取り消し。`Undo Accept` はフォローの終了として扱う。対象が URI だけなら、主体が作った同じ URI の `follows` / `favourites` / `boosts` / `blocks` を順に引く |
 | `Create` | `Note` / `Question`。`Article` / `Page` / `Event` / `Image` / `Video` / `Audio` は変換して取り込む | 取り込み範囲（ADR-0034）に入れば `content.IngestRemoteStatus`。オブジェクトの `id` のホストは `actor` のホストと一致しなければならない |
 | `Update` | 投稿 | `content.ReviseRemoteStatus`（新しい版）。投稿の作者とアクティビティの主体が一致し、オリジンが同じであること（[ActivityPub §7.3](https://www.w3.org/TR/activitypub/#update-activity-inbox)） |
-| `Update` | Actor（自分自身） | 埋め込みの文書で `account.UpsertRemoteActor`。`id` が主体と一致しなければ取得し直す |
+| `Update` | Actor（自分自身） | `RemoteActors.ReceiveActorUpdate`。オリジンが同じ埋め込みの文書で `account.UpsertRemoteActor`（内容が変わればプロフィールの版が増える）。埋め込みが無い・`id` が主体と一致しなければ取得し直す。削除済みの Actor の `Update` は捨てる |
 | `Delete` | 投稿・`Tombstone` | `content.DeleteRemoteStatus`（`origin = remote`）。未知なら tombstone |
-| `Delete` | Actor（自分自身） | `account.MarkRemoteDeleted`（`remote_deleted`）。投稿・フォロー・ブーストは消去ジョブが消す |
+| `Delete` | Actor（自分自身） | `RemoteActors.ReceiveActorDelete`。`account.MarkRemoteDeleted`（`remote_deleted`）で、プロフィールと投稿（タイムラインでは `feed_author_restrictions` の `profile_view`）がすぐに表示されなくなる。未知の Actor なら何もしない。投稿・フォロー・ブーストは消去ジョブが消す |
 | `Announce` | 投稿（URI か埋め込み） | `content.RecordRemoteBoost`。埋め込みの投稿は、オリジンが主体と同じでなければ `id` から取得し直す |
 | `Like` / `EmojiReact` | ローカルの投稿 | `content.RecordRemoteFavourite`。Misskey の絵文字リアクション（`_misskey_reaction` 付きの `Like`）と Pleroma / Akkoma の `EmojiReact` もお気に入りとして扱う |
 | `Block` | ローカルの Actor | `graph.ReceiveBlock`。両方向のフォローを終了し、相手の投稿を閲覧者から隠す（`feed_exclusions`） |
@@ -249,8 +249,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `graph.follow_accepted` / `graph.follow_rejected`（フォローした人がリモート） | `Accept` / `Reject` | フォローした人の inbox |
 | `graph.follow_terminated`（`removed_by_followee`、フォローした人がリモート） | `Reject` | フォローした人の inbox |
 | `graph.blocked` / `graph.unblocked`（相手がリモート） | `Block` / `Undo Block` | 相手の inbox |
-| プロフィールの版（`account`） | `Update`（`Person`） | リモートフォロワーの inbox |
-| アカウントの削除（`deleted`） | `Delete`（`Person`） | リモートフォロワーの inbox + 既知のドメインの shared inbox（[data-model §8](data-model.md#8-削除と消去)） |
+| `account.profile_revised`（ローカルのプロフィールの 2 版目以降。最初の版はアカウントの作成で、まだだれもフォローしていない） | `Update`（Actor の文書） | リモートフォロワーの inbox |
+| `account.lifecycle_event_recorded`（ローカルのアカウントの `deleted`） | `Delete`（Actor の `id`） | リモートフォロワーの inbox + 既知の shared inbox（[data-model §8](data-model.md#8-削除と消去)） |
 
 - 記録するのはローカルの投稿・ブーストの活動だけです。リモートの投稿のイベントと、`local` 投稿のブースト（`Boost.Federates` が偽）は記録しません（ADR-0017）。
 - projector は表の 1 行につき 1 つです（`federation.RegisterOutboundProjectors`）。送信する活動を増やすときは、その活動を送るユースケースと一緒に projector を足します。
@@ -268,12 +268,14 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Create` | 版のメンション先 → 作者の承認済みのフォロワー |
 | `Update` / `Delete` | 元の `Create` の `deliveries` → （`public` / `unlisted` だけ）その時点のフォロワー |
 | `Announce` / `Undo Announce` | ブーストした人の承認済みのフォロワー → 元投稿の作者 |
+| `Update`（Actor） | Actor の承認済みのフォロワー |
+| `Delete`（Actor） | Actor の承認済みのフォロワー → 既知の shared inbox（`account.KnownSharedInboxes`） |
 
 1. 宛先のアカウントを集める: 作者の承認済みのフォロワー（`graph` の公開 API をカーソルで）、版のメンション先、元投稿の作者。ローカルのアカウントは inbox を持たないので落ちます。
 2. 公開範囲の規則で絞る: `content.CanView`（`ContextDelivery`、[visibility.md](visibility.md)）を宛先のアカウントごとに判定する。
    - フォロワーは `Follow = active` として判定します（ブロックは両方向のフォローを同じトランザクションで終わらせるので、承認済みのフォロワーとの間にブロックはありません）。メンション先は `graph` の公開 API から関係（フォロー・ブロック）を読みます。
    - ブーストは「ブーストした人の、ブーストの公開範囲の投稿」として判定し、元投稿の作者をメンション先として扱います。
-   - `Delete` は対象が消えたことしか伝えないので判定しません。
+   - `Delete` は対象が消えたことしか伝えないので判定しません。Actor の `Update` も、プロフィールは公開なので判定しません。
    - `local` は承認済みのフォロワーだけで、**フォロワーでないリモートのメンション先には送りません**（ADR-0017）。
    - `local` 投稿の文書の `tag` には、フォロワーでないリモートのアカウントへの `Mention` を入れません（ADR-0035）。本文のリンクは残します。
 3. inbox を決める: アカウントの `shared_inbox_url`（無ければ `inbox_url`）。同じ inbox は 1 つにまとめます（shared inbox への集約、NFR-COST-5、[ActivityPub §7.1.3](https://www.w3.org/TR/activitypub/#shared-inbox-delivery)）。
@@ -312,6 +314,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 - `Create` の `id` は `{object}/activity`、それ以外は `/ap/activities/{uuid}`（ADR-0018）。
 - 宛先: `public` は `to: [Public]`・`cc: [followers, メンション先]`、`unlisted` は `to: [followers]`・`cc: [Public, メンション先]`、`private` と `local` は `to: [followers]`（`private` は加えて `cc: [メンション先]`）、`direct` は `to: [メンション先]`。
+- Actor の `Update` は `to: [Public]` で、`object` に `GET` と同じ Actor の文書（`federation.LocalActorDocument`、`@context` なし）を埋め込みます。文書は展開の始めの時点の Actor から組み立てます（後の版はそれぞれの `Update` を送る）。有効でなくなったアカウントの `Update` は送りません。
+- Actor の `Delete` は `to: [Public]` で、`object` は Actor の `id` です。
 - `contentMap` は版の言語ごとの本文、`content` は版の既定の言語の本文です（NFR-I18N-5）。`sensitive`・`summary`（CW）・`tag`（`Mention` / `Hashtag` / `Emoji`）・`attachment`（メディアの公開 URL・`mediaType`・`name`・`blurhash`・`focalPoint`・`width` / `height`）を付けます。
 - `@context` は AS2・security・Mastodon 拡張（`toot:`）の既存の Actor の文脈と同じものです。
 

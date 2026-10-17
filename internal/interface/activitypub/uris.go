@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	appfederation "github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/domain/account"
 )
 
@@ -26,22 +27,19 @@ var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89a
 // strictly, so a UUID in another case or form does not name anything.
 func validID(s string) bool { return uuidPattern.MatchString(s) }
 
-// Collections of an actor, the last path segment under {actor}/ (ADR-0018). The inbox is
-// named in actor documents but not served yet.
+// Collections of an actor, the last path segment under {actor}/ (ADR-0018), as the actor
+// documents name them. The inbox is named in actor documents but not served yet.
 const (
-	collInbox       = "inbox"
-	collOutbox      = "outbox"
-	collFollowers   = "followers"
-	collFollowing   = "following"
-	collFeatured    = "featured"
-	collFeaturedTag = "featured-tags"
+	collInbox       = appfederation.CollectionInbox
+	collOutbox      = appfederation.CollectionOutbox
+	collFollowers   = appfederation.CollectionFollowers
+	collFollowing   = appfederation.CollectionFollowing
+	collFeatured    = appfederation.CollectionFeatured
+	collFeaturedTag = appfederation.CollectionFeaturedTags
 )
 
-// sharedInboxURI returns the shared inbox of the instance on host.
-func sharedInboxURI(host string) string { return "https://" + host + "/ap/inbox" }
-
 // profileURL returns the human-readable profile URL of a local username on host.
-func profileURL(host, username string) string { return "https://" + host + "/@" + username }
+func profileURL(host, username string) string { return appfederation.ProfileURL(host, username) }
 
 // parseLocalURI returns the actor id or the username that a local https URI names: an actor
 // id (https://{host}/ap/actors/{uuid}) or a profile URL (https://{host}/@{username}).

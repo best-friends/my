@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -40,8 +41,9 @@ type FederationFactory func(t *testing.T, opts uow.Options) FederationHarness
 // and through the outbound use cases that drive it (federation.md §7): the outbound activities
 // and their lookups, the first document kept, one delivery per inbox, the state of remote
 // servers, the inboxes each visibility reaches (data-model §7), the Update and Delete that follow
-// the Create, a fan-out run again without a delivery twice, the servers left out, and the boosts
-// that are not recorded. It also covers one delivery (federation.md §7.3): the classification of
+// the Create, a fan-out run again without a delivery twice, the servers left out, the boosts that
+// are not recorded, and the Update and Delete of a local actor (to its followers, and for the
+// Delete to every known shared inbox). It also covers one delivery (federation.md §7.3): the classification of
 // responses, the circuit breaker, the failure days that make a server unavailable and the
 // successes, signed requests, and probes that bring it back, and the dead job after the retry
 // schedule. The other modules are in-memory stand-ins; the fan-out reads its recipients in
@@ -61,6 +63,7 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"FanOutAgainDeliversNothingTwice", fedFanOutAgain},
 		{"LeavesOutSuspendedAndUnavailableServers", fedLeavesOutServers},
 		{"RecordsOnlyWhatFederates", fedRecordsOnlyWhatFederates},
+		{"UpdatesAndDeletesActors", fedUpdatesAndDeletesActors},
 		{"ClassifiesDeliveryResponses", fedClassifiesResponses},
 		{"BreaksTheCircuitOfAHost", fedBreaksTheCircuit},
 		{"MarksServersUnavailableAndBack", fedMarksServersUnavailable},
@@ -257,6 +260,19 @@ func (a *fedAccounts) RemoteInbox(_ context.Context, id string) (appaccount.Remo
 		return appaccount.RemoteInbox{}, fmt.Errorf("remote inbox of %s: %w", id, appaccount.ErrNotFound)
 	}
 	return in, nil
+}
+
+func (a *fedAccounts) KnownSharedInboxes(_ context.Context, after string, limit int) ([]string, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	var all []string
+	for _, in := range a.inboxes {
+		if in.SharedInboxURL != "" && in.SharedInboxURL > after && !slices.Contains(all, in.SharedInboxURL) {
+			all = append(all, in.SharedInboxURL)
+		}
+	}
+	slices.Sort(all)
+	return all[:min(limit, len(all))], nil
 }
 
 // fedGraph stands in for the graph module. followers are newest first; the cursor of a batch is
@@ -763,6 +779,109 @@ func fedLeavesOutServers(t *testing.T, e *fedEnv) {
 	create := e.activity(t, federation.OutboundStatus, s.ID, federation.ActivityCreate)
 	if got, want := e.inboxes(t, create.ID), []string{"https://a.example/inbox"}; !slices.Equal(got, want) {
 		t.Errorf("inboxes = %v, want only %v: b.example is unavailable and c.example suspended", got, want)
+	}
+}
+
+// reviseProfile emits the revision seq of an account's profile, of a remote actor when remote.
+func (e *fedEnv) reviseProfile(t *testing.T, accountID string, seq int, remote bool) {
+	t.Helper()
+	e.clock.Advance(time.Second)
+	rev := account.ProfileRevision{ID: e.ids.NewID(), AccountID: accountID, Seq: seq, DisplayName: "Author", RevisedAt: e.clock.Now()}
+	if remote {
+		rev.Remote = &account.RemoteProfileSource{SnapshotID: e.ids.NewID(), HTMLPolicyVersion: 1}
+	}
+	e.emit(t, appaccount.ProfileRevised{Revision: rev})
+}
+
+// lifecycle emits a lifecycle event of an account.
+func (e *fedEnv) lifecycle(t *testing.T, accountID string, kind account.LifecycleKind) {
+	t.Helper()
+	e.clock.Advance(time.Second)
+	e.emit(t, appaccount.LifecycleEventRecorded{Event: account.LifecycleEvent{
+		ID: e.ids.NewID(), AccountID: accountID, Kind: kind, InitiatedBy: account.InitiatedBySelf, OccurredAt: e.clock.Now(),
+	}})
+}
+
+func fedUpdatesAndDeletesActors(t *testing.T, e *fedEnv) {
+	author := e.local()
+	e.accounts.mu.Lock()
+	actor := e.accounts.actors[author]
+	actor.Local = &account.LocalAccount{AccountID: author, Username: "author"}
+	actor.Profile = &account.ProfileRevision{AccountID: author, Seq: 2, DisplayName: "Author", NoteHTML: "<p>bio</p>"}
+	e.accounts.actors[author] = actor
+	e.accounts.mu.Unlock()
+	for _, f := range []string{e.remote("a.example", true), e.remote("a.example", true), e.remote("b.example", false), e.remote("c.example", true), e.local()} {
+		e.follow(f, author)
+	}
+	// Servers that no follower is on: d.example has a shared inbox, e.example does not.
+	e.remote("d.example", true)
+	e.remote("e.example", false)
+	followerInboxes := []string{"https://a.example/inbox", "https://b.example/users/" + e.graph.followers[author][2] + "/inbox", "https://c.example/inbox"}
+	slices.Sort(followerInboxes)
+
+	// The first revision, which a new account is created with, and remote revisions send nothing.
+	e.reviseProfile(t, author, 1, false)
+	e.reviseProfile(t, e.graph.followers[author][1], 2, true)
+	e.lifecycle(t, e.graph.followers[author][1], account.LifecycleRemoteDeleted)
+	e.drain(t)
+	if all, err := e.h.Federation.ListOutboundActivitiesOf(t.Context(), federation.OutboundAccount, author); err != nil || len(all) != 0 {
+		t.Fatalf("activities about the author = %+v, %v; want none", all, err)
+	}
+
+	// A profile revision sends the actor's document to its followers, shared inboxes merged.
+	e.reviseProfile(t, author, 2, false)
+	e.drain(t)
+	update := e.activity(t, federation.OutboundAccount, author, federation.ActivityUpdate)
+	if update.ActorAccountID != author || !strings.HasPrefix(string(update.ActivityURI), "https://"+contractHost+"/ap/activities/") {
+		t.Errorf("Update = %+v, want the author's /ap/activities/{id}", update)
+	}
+	if got := e.inboxes(t, update.ID); !slices.Equal(got, followerInboxes) {
+		t.Errorf("Update inboxes = %v, want %v", got, followerInboxes)
+	}
+	doc := e.document(t, update.ID)
+	person, _ := doc["object"].(map[string]any)
+	if doc["type"] != "Update" || doc["actor"] != e.uri(author) || !slices.Equal(strs(doc["to"]), []string{string(federation.PublicIRI)}) {
+		t.Errorf("Update document = %v, want the author's Update to the public", doc)
+	}
+	if person["type"] != "Person" || person["id"] != e.uri(author) || person["name"] != "Author" || person["summary"] != "<p>bio</p>" ||
+		person["preferredUsername"] != "author" || person["inbox"] != e.uri(author)+"/inbox" || person["@context"] != nil {
+		t.Errorf("Update object = %v, want the author's embedded actor document", person)
+	}
+
+	// The account's deletion reaches its followers and every known shared inbox.
+	e.lifecycle(t, author, account.LifecycleDeleted)
+	e.drain(t)
+	del := e.activity(t, federation.OutboundAccount, author, federation.ActivityDelete)
+	want := append(slices.Clone(followerInboxes), "https://d.example/inbox")
+	slices.Sort(want)
+	if got := e.inboxes(t, del.ID); !slices.Equal(got, want) {
+		t.Errorf("Delete inboxes = %v, want %v", got, want)
+	}
+	doc = e.document(t, del.ID)
+	if doc["type"] != "Delete" || doc["actor"] != e.uri(author) || doc["object"] != e.uri(author) || !slices.Equal(strs(doc["to"]), []string{string(federation.PublicIRI)}) {
+		t.Errorf("Delete document = %v, want the Delete of the author's id to the public", doc)
+	}
+
+	// An Update of an account that is no longer active has nothing to send.
+	e.accounts.mu.Lock()
+	actor = e.accounts.actors[author]
+	actor.Lifecycle.State = account.StateDeleted
+	e.accounts.actors[author] = actor
+	e.accounts.mu.Unlock()
+	e.reviseProfile(t, author, 3, false)
+	e.drain(t)
+	var updates []federation.OutboundActivity
+	all, _ := e.h.Federation.ListOutboundActivitiesOf(t.Context(), federation.OutboundAccount, author)
+	for _, a := range all {
+		if a.Type == federation.ActivityUpdate && a.ID != update.ID {
+			updates = append(updates, a)
+		}
+	}
+	if len(updates) != 1 {
+		t.Fatalf("updates = %+v, want the new one recorded", updates)
+	}
+	if got := e.inboxes(t, updates[0].ID); len(got) != 0 {
+		t.Errorf("Update of a deleted account delivered to %v, want nowhere", got)
 	}
 }
 

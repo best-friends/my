@@ -50,6 +50,16 @@ WHERE last_fetched_at < @fetched_before
   AND (last_fetched_at > @after_fetched_at OR (last_fetched_at = @after_fetched_at AND account_id > @after_account_id))
 ORDER BY last_fetched_at, account_id LIMIT @batch_limit;
 
+-- ListKnownSharedInboxes returns the distinct shared inboxes that the heads of remote actors not
+-- deleted declare, in order, after @after, for the Delete of a local actor (data-model section 8).
+-- name: ListKnownSharedInboxes :many
+SELECT DISTINCT h.shared_inbox_url FROM remote_account_heads h
+WHERE h.shared_inbox_url IS NOT NULL AND h.shared_inbox_url > CAST(@after AS TEXT)
+  AND NOT EXISTS (
+    SELECT 1 FROM account_lifecycle_states s WHERE s.account_id = h.account_id AND s.state = 'deleted'
+  )
+ORDER BY h.shared_inbox_url LIMIT @batch_limit;
+
 -- name: InsertRemoteAccountHandleVerification :exec
 INSERT INTO remote_account_handle_verifications (id, account_id, username, domain, outcome, checked_at)
 VALUES (@id, @account_id, @username, @domain, @outcome, @checked_at);

@@ -48,8 +48,9 @@ type RemoteActorFactory func(t *testing.T, opts uow.Options) RemoteActorHarness
 // implementations (snapshots, sanitized profile revisions, keys, handles, the server seen), key
 // rotation under the same key ID, handles that WebFinger does not confirm, documents whose id has
 // another origin, the fetch rules (signed GET, Content-Type, failures remembered, 410 Gone), the
-// periodic refresh of followed stale actors, NodeInfo observations, the public key resolver, and
-// that the handle projection equals a rebuild. The network is an in-memory HTTPClient.
+// periodic refresh of followed stale actors, NodeInfo observations, the public key resolver, that
+// the handle projection equals a rebuild, the Update and Delete that remote actors send of
+// themselves (federation.md §3.4), and the shared inboxes known to the instance. The network is an in-memory HTTPClient.
 func RemoteActorContract(t *testing.T, newHarness RemoteActorFactory) {
 	t.Helper()
 	cases := []struct {
@@ -68,6 +69,9 @@ func RemoteActorContract(t *testing.T, newHarness RemoteActorFactory) {
 		{"ObservesNodeInfo", remoteObservesNodeInfo},
 		{"ResolvesPublicKeys", remoteResolvesPublicKeys},
 		{"RebuildsHandles", remoteRebuildsHandles},
+		{"ReceivesUpdatesOfActors", remoteReceivesActorUpdates},
+		{"ReceivesDeletesOfActors", remoteReceivesActorDeletes},
+		{"ListsKnownSharedInboxes", remoteListsKnownSharedInboxes},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteEnv(t, newHarness)) })
@@ -886,4 +890,156 @@ func remoteRebuildsHandles(t *testing.T, e *remoteEnv) {
 	if got, err := e.h.Accounts.ListHandles(ctx); err != nil || !reflect.DeepEqual(got, want) {
 		t.Errorf("rebuilt handles = %+v, %v; want %+v", got, err, want)
 	}
+}
+
+// receivedActivity normalizes an inbound activity document as the inbox job does.
+func (e *remoteEnv) receivedActivity(t *testing.T, raw []byte) *federation.Activity {
+	t.Helper()
+	doc, err := appfederation.Normalize(raw, e.clock.Now())
+	if err != nil || doc.Activity == nil {
+		t.Fatalf("Normalize(%s) = %+v, %v; want an activity", raw, doc, err)
+	}
+	return doc.Activity
+}
+
+// renamedUpdate returns the GoToSocial Update of the actor of "gotosocial/0.22/actor" with the
+// display name changed to name.
+func renamedUpdate(t *testing.T, name string) []byte {
+	t.Helper()
+	return bytes.ReplaceAll(fixtureActor(t, "gotosocial/0.22/update-person"), []byte(`"name": "original zork (he/they)"`), []byte(`"name": "`+name+`"`))
+}
+
+func remoteReceivesActorUpdates(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	id, _, _ := e.serveActor(fixtureActor(t, "gotosocial/0.22/actor"))
+	first := e.resolve(t, id)
+	if first.Profile == nil || first.Profile.Seq != 1 {
+		t.Fatalf("profile = %+v, want revision 1", first.Profile)
+	}
+
+	// An Update with the actor's own document embedded makes a new profile revision from it,
+	// without fetching the actor.
+	update := renamedUpdate(t, "renamed zork")
+	fetches := e.net.count(id)
+	act := e.receivedActivity(t, update)
+	if !appfederation.IsOwnActorActivity(act) {
+		t.Fatalf("IsOwnActorActivity(%+v) = false", act)
+	}
+	for range 2 { // handling it again changes nothing
+		if err := e.actors.ReceiveActorUpdate(ctx, act, update); err != nil {
+			t.Fatalf("ReceiveActorUpdate: %v", err)
+		}
+		got, err := e.accounts.FindByID(ctx, first.Account.ID)
+		if err != nil || got.Profile == nil || got.Profile.Seq != 2 || got.Profile.DisplayName != "renamed zork" {
+			t.Errorf("profile = %+v, %v; want revision 2 renamed", got.Profile, err)
+		}
+		if len(got.Keys) != 1 || got.Keys[0].KeyID != "https://gotosocial.example/users/the_mighty_zork/main-key" {
+			t.Errorf("keys = %+v, want the embedded key", got.Keys)
+		}
+	}
+	if n := e.net.count(id); n != fetches {
+		t.Errorf("%d fetches of the actor, want none for an embedded document", n-fetches)
+	}
+
+	// An Update that names the actor only makes it be fetched again.
+	e.clock.Advance(time.Minute)
+	byIRI := []byte(`{"@context":"https://www.w3.org/ns/activitystreams","id":"` + id + `#updates/2","type":"Update","actor":"` + id + `","object":"` + id + `"}`)
+	if err := e.actors.ReceiveActorUpdate(ctx, e.receivedActivity(t, byIRI), byIRI); err != nil {
+		t.Fatalf("ReceiveActorUpdate(IRI): %v", err)
+	}
+	if n := e.net.count(id); n != fetches+1 {
+		t.Errorf("%d fetches of the actor, want 1 for an Update without its document", n-fetches)
+	}
+	got, _ := e.accounts.FindByID(ctx, first.Account.ID)
+	if got.Profile == nil || got.Profile.Seq != 3 || got.Profile.DisplayName != "original zork (he/they)" {
+		t.Errorf("profile after the fetch = %+v, want revision 3 from the served document", got.Profile)
+	}
+
+	// Activities about other objects are not the actor handlers'.
+	note := []byte(`{"@context":"https://www.w3.org/ns/activitystreams","id":"` + id + `/statuses/1#update","type":"Update","actor":"` + id + `",` +
+		`"object":{"id":"` + id + `/statuses/1","type":"Note","attributedTo":"` + id + `","content":"<p>hi</p>","to":["https://www.w3.org/ns/activitystreams#Public"]}}`)
+	act = e.receivedActivity(t, note)
+	if appfederation.IsOwnActorActivity(act) {
+		t.Errorf("IsOwnActorActivity(Update of a Note) = true")
+	}
+	if err := e.actors.ReceiveActorUpdate(ctx, act, note); !errors.Is(err, appfederation.ErrNotOwnActor) {
+		t.Errorf("ReceiveActorUpdate(Note) = %v, want ErrNotOwnActor", err)
+	}
+}
+
+func remoteReceivesActorDeletes(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	id, _, _ := e.serveActor(fixtureActor(t, "gotosocial/0.22/actor"))
+	a := e.resolve(t, id)
+
+	del := []byte(`{"@context":"https://www.w3.org/ns/activitystreams","id":"` + id + `#delete","type":"Delete","actor":"` + id + `",` +
+		`"object":"` + id + `","to":["https://www.w3.org/ns/activitystreams#Public"]}`)
+	act := e.receivedActivity(t, del)
+	if !appfederation.IsOwnActorActivity(act) {
+		t.Fatalf("IsOwnActorActivity(%+v) = false", act)
+	}
+	for range 2 { // handling it again changes nothing
+		if err := e.actors.ReceiveActorDelete(ctx, act); err != nil {
+			t.Fatalf("ReceiveActorDelete: %v", err)
+		}
+	}
+	got, err := e.accounts.FindByID(ctx, a.Account.ID)
+	if err != nil || got.Lifecycle.State != account.StateDeleted || !got.Deleted() {
+		t.Errorf("lifecycle = %+v, %v; want deleted", got.Lifecycle, err)
+	}
+	e.tx(t, func(tx uow.Tx) error {
+		events, err := e.h.Accounts.ListLifecycleEvents(ctx, tx)
+		var kinds []account.LifecycleKind
+		for _, ev := range events {
+			if ev.AccountID == a.Account.ID {
+				kinds = append(kinds, ev.Kind)
+			}
+		}
+		if err != nil || !reflect.DeepEqual(kinds, []account.LifecycleKind{account.LifecycleRemoteDeleted}) {
+			t.Errorf("lifecycle events = %v, %v; want one remote_deleted", kinds, err)
+		}
+		return nil
+	})
+
+	// A later Update does not bring the actor back.
+	update := renamedUpdate(t, "back again")
+	if err := e.actors.ReceiveActorUpdate(ctx, e.receivedActivity(t, update), update); err != nil {
+		t.Fatalf("ReceiveActorUpdate after the Delete: %v", err)
+	}
+	if got, _ := e.accounts.FindByID(ctx, a.Account.ID); got.Profile == nil || got.Profile.Seq != 1 || !got.Deleted() {
+		t.Errorf("after the Update: profile %+v, lifecycle %+v; want revision 1, deleted", got.Profile, got.Lifecycle)
+	}
+
+	// The Delete of an actor this server never knew is a no-op.
+	unknown := bytes.ReplaceAll(fixtureActor(t, "mastodon/circa-2018/delete-person"), []byte("http://mastodon.example.org"), []byte("https://mastodon.example.org"))
+	if err := e.actors.ReceiveActorDelete(ctx, e.receivedActivity(t, unknown)); err != nil {
+		t.Errorf("ReceiveActorDelete(unknown) = %v", err)
+	}
+	if _, err := e.accounts.FindByURI(ctx, "https://mastodon.example.org/users/admin"); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("FindByURI(unknown) = %v, want ErrNotFound", err)
+	}
+}
+
+func remoteListsKnownSharedInboxes(t *testing.T, e *remoteEnv) {
+	ctx := t.Context()
+	ids := map[string]string{}
+	for _, p := range []string{"mastodon/4.8/actor", "misskey/2025.4/actor", "gotosocial/0.22/actor"} {
+		id, _, _ := e.serveActor(fixtureActor(t, p))
+		ids[p] = e.resolve(t, id).Account.ID
+	}
+	list := func(after string, limit int, want ...string) {
+		t.Helper()
+		got, err := e.accounts.KnownSharedInboxes(ctx, after, limit)
+		if err != nil || len(got) != len(want) || (len(want) > 0 && !reflect.DeepEqual(got, want)) {
+			t.Errorf("KnownSharedInboxes(%q, %d) = %v, %v; want %v", after, limit, got, err, want)
+		}
+	}
+	// GoToSocial declares no shared inbox.
+	list("", 10, "https://mastodon.example/inbox", "https://misskey.example/inbox")
+	list("", 1, "https://mastodon.example/inbox")
+	list("https://mastodon.example/inbox", 1, "https://misskey.example/inbox")
+	list("https://misskey.example/inbox", 1)
+	// The shared inbox of a deleted actor is not known any more.
+	e.tx(t, func(tx uow.Tx) error { return e.accounts.MarkRemoteDeleted(ctx, tx, ids["misskey/2025.4/actor"]) })
+	list("", 10, "https://mastodon.example/inbox")
 }

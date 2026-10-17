@@ -347,6 +347,44 @@ type Actor struct {
 	Lifecycle account.LifecycleState
 }
 
+// Deleted reports whether a is deleted, locally or on its own server. Deletion is final.
+func (a Actor) Deleted() bool { return a.Lifecycle.State == account.StateDeleted }
+
+// IsInstanceActor reports whether a is the instance actor.
+func (a Actor) IsInstanceActor() bool {
+	return a.Account.IsLocal() && a.Account.ActorType == account.ActorApplication
+}
+
+// ActivityStreamsType returns the AS2 type a is published as: its actor type, except that a
+// person whose profile is a bot's is a Service (Mastodon's bot flag).
+func (a Actor) ActivityStreamsType() string {
+	t := a.Account.ActorType
+	if t == account.ActorPerson && a.Profile != nil && a.Profile.Bot {
+		t = account.ActorService
+	}
+	return activityStreamsTypes[t]
+}
+
+// activityStreamsTypes maps actor types to AS2 types, the inverse of ActorTypeOf.
+var activityStreamsTypes = map[account.ActorType]string{
+	account.ActorPerson:       "Person",
+	account.ActorService:      "Service",
+	account.ActorApplication:  "Application",
+	account.ActorGroup:        "Group",
+	account.ActorOrganization: "Organization",
+}
+
+// PublishedKey returns the key that a's document publishes as publicKey: its RSA key at
+// {actor}#main-key (ADR-0032), false when it has none.
+func (a Actor) PublishedKey() (account.Key, bool) {
+	for _, k := range a.Keys {
+		if k.Algorithm == account.KeyRSASHA256 && k.KeyID == account.KeyIRI(a.Account.URI, account.KeyRSASHA256) {
+			return k, true
+		}
+	}
+	return account.Key{}, false
+}
+
 // FindByID returns the actor with an account ID. It fails with ErrNotFound when there is none.
 func (s *Service) FindByID(ctx context.Context, id string) (Actor, error) {
 	a, err := s.d.Repository.FindAccount(ctx, id)
@@ -372,6 +410,14 @@ func (s *Service) RemoteInbox(ctx context.Context, accountID string) (RemoteInbo
 		return RemoteInbox{}, err
 	}
 	return RemoteInbox{InboxURL: h.InboxURL, SharedInboxURL: h.SharedInboxURL}, nil
+}
+
+// KnownSharedInboxes returns at most limit distinct shared inboxes that remote actors not
+// deleted declare in their newest documents, in order, after the shared inbox after ("" for
+// the first batch). A local account's deletion reaches every known server through them
+// (data-model §8).
+func (s *Service) KnownSharedInboxes(ctx context.Context, after string, limit int) ([]string, error) {
+	return s.d.Repository.ListKnownSharedInboxes(ctx, after, limit)
 }
 
 // AccountDomain returns the domain of an account (account.LocalDomain for a local one). It

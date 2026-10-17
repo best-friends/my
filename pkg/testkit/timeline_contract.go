@@ -42,7 +42,7 @@ type TimelineFactory func(t *testing.T, opts uow.Options) TimelineHarness
 // and its widening), the local and hashtag timelines (local and anonymous viewers, discovery
 // restrictions of accounts and domains), the profile timeline (the visibilities each relation
 // allows), blocks and mutes (with expiry) everywhere, the language filter, keyset paging,
-// deletions, and the property that incrementally updated projections equal a rebuild from the
+// deletions of statuses and of accounts (local and remote), and the property that incrementally updated projections equal a rebuild from the
 // events the content and graph modules replay.
 func TimelineContract(t *testing.T, newHarness TimelineFactory) {
 	t.Helper()
@@ -61,6 +61,7 @@ func TimelineContract(t *testing.T, newHarness TimelineFactory) {
 		{"FiltersLanguages", timelineLanguages},
 		{"PagesByKeyset", timelinePaging},
 		{"ForgetsDeletedStatuses", timelineDeletes},
+		{"HidesDeletedAuthors", timelineHidesDeletedAuthors},
 		{"IncrementalProjectionEqualsRebuild", timelineProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
@@ -624,6 +625,52 @@ func timelineDeletes(t *testing.T, e *timelineEnv) {
 	if snap, err := e.h.Timeline.Snapshot(t.Context()); err != nil || len(snap.Entries)+len(snap.TagEntries) != 0 {
 		t.Errorf("Snapshot after a late revision = %+v, %v; want no entries", snap, err)
 	}
+}
+
+// deleteAccount records the deletion of an account, local or on its own server.
+func (e *timelineEnv) deleteAccount(t *testing.T, accountID string, kind account.LifecycleKind) {
+	t.Helper()
+	e.clock.Advance(time.Millisecond)
+	err := e.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		return tx.Emit(t.Context(), appaccount.LifecycleEventRecorded{Event: account.LifecycleEvent{
+			ID: e.ids.NewID(), AccountID: accountID, Kind: kind, InitiatedBy: account.InitiatedByRemote, OccurredAt: e.clock.Now(),
+		}})
+	})
+	if err != nil {
+		t.Fatalf("delete account %s: %v", accountID, err)
+	}
+}
+
+func timelineHidesDeletedAuthors(t *testing.T, e *timelineEnv) {
+	alice, bob, carol := e.account(true), e.account(true), e.account(true)
+	remote := e.account(false)
+	e.follow(t, alice, bob)
+	e.follow(t, alice, carol)
+	bobs, carols, remotes := e.public(t, bob), e.public(t, carol), e.public(t, remote)
+	boost := e.boost(t, carol, remotes)
+	profile := func(author string, want ...string) {
+		t.Helper()
+		p, err := e.svc.Profile(t.Context(), anonymous, author, apptimeline.ProfileFilter{}, apptimeline.Query{Limit: apptimeline.MaxLimit})
+		expectPage(t, "Profile", p, err, want...)
+	}
+	e.home(t, alice, bobs.ID, carols.ID, boost.ID)
+	profile(remote, remotes.ID)
+
+	// A remote actor's deletion hides its posts and the boosts of them at once.
+	e.deleteAccount(t, remote, account.LifecycleRemoteDeleted)
+	e.home(t, alice, bobs.ID, carols.ID)
+	profile(remote)
+	profile(carol, carols.ID)
+	// So does a local account's deletion, and a deletion recorded again changes nothing.
+	for range 2 {
+		e.deleteAccount(t, bob, account.LifecycleDeleted)
+		e.home(t, alice, carols.ID)
+		p, err := e.svc.Local(t.Context(), anonymous, apptimeline.Query{Limit: apptimeline.MaxLimit})
+		expectPage(t, "Local", p, err, carols.ID)
+	}
+	// Other lifecycle events leave the timelines as they are.
+	e.deleteAccount(t, carol, account.LifecycleDeactivated)
+	e.home(t, alice, carols.ID)
 }
 
 func timelineProjectionEqualsRebuild(t *testing.T, e *timelineEnv) {
