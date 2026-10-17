@@ -2,7 +2,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
 import { Button } from "./Button";
-import { CloseIcon, PlusIcon } from "./Icons";
+import { CloseIcon, MoreIcon, PlusIcon, ReplyIcon, StarIcon } from "./Icons";
+import { ToggleButton } from "./ToggleButton";
 
 const meta = {
   title: "Forms/Button",
@@ -92,6 +93,36 @@ export const WithIcon: Story = {
       const icon = iconOf(name);
       await expect(icon?.width, name).toBe(size);
       await expect(icon?.height, name).toBe(size);
+    }
+  },
+};
+
+/**
+ * In a row of actions next to `ToggleButton`s (a post's), a `toolbar` button is as tall as they are and
+ * sizes its icon as they do (`size-5`).
+ */
+export const InToolbar: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-1 text-fg-muted">
+      <Button variant="ghost" size="toolbar" aria-label="Reply" className="text-fg-muted">
+        <ReplyIcon />
+        <span className="tabular-nums">3</span>
+      </Button>
+      <ToggleButton aria-label="Favourite">
+        <StarIcon />
+      </ToggleButton>
+      <Button variant="ghost" size="toolbar" aria-label="More" className="text-fg-muted">
+        <MoreIcon />
+      </Button>
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const boxOf = (name: string) => canvas.getByRole("button", { name }).getBoundingClientRect();
+    const iconOf = (name: string) => canvas.getByRole("button", { name }).querySelector("svg")?.getBoundingClientRect();
+    for (const name of ["Reply", "Favourite", "More"]) {
+      await expect(iconOf(name)?.width, name).toBe(20);
+      await expect(iconOf(name)?.height, name).toBe(20);
+      await expect(boxOf(name).height, name).toBe(boxOf("Favourite").height);
     }
   },
 };

@@ -155,8 +155,10 @@ Icons are part of the kit, so that every screen draws the same shapes at the sam
   A screen never writes SVG paths of its own; a missing icon is added to the kit, with a story.
 - They are decorative: `aria-hidden="true"` and `focusable="false"`. The meaning is in the visible label or the accessible
   name of the control. An icon-only control has an `aria-label` and a `Tooltip` with the same text.
-- The control sizes its icon: `Button`, `ToggleButton` and `Link` size a child `svg` (`size-5` in buttons, `size-4` next to
-  `text-sm`), and the navigation uses `size-6`. An icon sets no size of its own, so it never renders at 0 × 0.
+- The control sizes its icon: `Button`, `ToggleButton` and `Link` size a child `svg` (`size-5` in buttons, also in a
+  `toolbar` button among toggles, `size-4` in a small button and next to a link's text), and a `navigation` link sizes
+  every `svg` in it at `size-6`. An icon sets no size of its own, and neither does the screen that places it, so it never
+  renders at 0 × 0.
 - A toggle shows its state by the icon's shape (filled, or a heavier stroke) as well as its color.
 - Icons with a direction (reply, back, forward) mirror in right-to-left text with `rtl:-scale-x-100`.
 

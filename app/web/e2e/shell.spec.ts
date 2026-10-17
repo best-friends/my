@@ -106,6 +106,14 @@ test.describe("layout", () => {
     }
   });
 
+  test("shows the icon of every navigation item at one size", async ({ page }) => {
+    const icons = page.getByRole("navigation").getByRole("link").locator("svg");
+    await expect(icons).toHaveCount(6);
+    for (const icon of await icons.all()) {
+      expect(await icon.boundingBox()).toMatchObject({ width: 24, height: 24 });
+    }
+  });
+
   test("shows the column about the server only on wide screens", async ({ page }) => {
     const wide = (page.viewportSize()?.width ?? 0) >= 1280;
     await expect(page.getByRole("complementary")).toHaveCount(wide ? 1 : 0);

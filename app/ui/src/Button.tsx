@@ -23,6 +23,8 @@ const button = tv({
     size: {
       sm: "min-h-8 px-3 text-sm [&>svg]:size-4",
       md: "min-h-10 px-4 text-base [&>svg]:size-5",
+      /** Among `ToggleButton`s in a row of actions (a post's): as tall as they are, with its icon as large. */
+      toolbar: "min-h-8 px-2 text-sm [&>svg]:size-5",
     },
   },
   defaultVariants: { variant: "secondary", size: "md" },
