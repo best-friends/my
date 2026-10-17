@@ -1,0 +1,23 @@
+{
+  "Object": {
+    "AttributedTo": "https://misskey.example/users/93492q0ip0",
+    "Audience": {
+      "Cc": [
+        "https://misskey.example/users/93492q0ip0/followers"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "Bodies": [
+      {
+        "HTML": "<p><span>i quompt u<br><br>RE: </span><a href=\"https://remote.example/objects/30c543fb-a165-40dd-87fd-4e249ec5a40b\">https://remote.example/objects/30c543fb-a165-40dd-87fd-4e249ec5a40b</a></p>",
+        "Language": "und"
+      }
+    ],
+    "ID": "https://misskey.example/notes/934gok3482",
+    "Published": "2022-07-25T15:21:48.208Z",
+    "RawType": "Note",
+    "Type": "Note"
+  }
+}

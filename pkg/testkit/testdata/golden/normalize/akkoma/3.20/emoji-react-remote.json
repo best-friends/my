@@ -1,0 +1,31 @@
+{
+  "Activity": {
+    "Actor": "https://example.org/users/akko",
+    "Audience": {
+      "Cc": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "To": [
+        "https://remote.example/users/diana",
+        "https://example.org/users/akko/followers"
+      ]
+    },
+    "Content": ":hug:",
+    "Emojis": [
+      {
+        "ID": "https://other.example/emojis/hug",
+        "IconURL": "https://other.example/files/b71cea432b3fad67.webp",
+        "Shortcode": "hug"
+      }
+    ],
+    "ID": "https://example.org/activities/7993dcae98d8d5ec",
+    "Objects": [
+      {
+        "ID": "https://remote.example/objects/9f0e93499d8314a9"
+      }
+    ],
+    "RawType": "EmojiReact",
+    "Reaction": ":hug:",
+    "Type": "EmojiReact"
+  }
+}

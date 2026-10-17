@@ -1,0 +1,10 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "actor": "http://gotosocial.example/users/the_mighty_zork",
+  "cc": "http://gotosocial.example/users/the_mighty_zork",
+  "id": "http://gotosocial.example/users/the_mighty_zork/statuses/01G74JJ1KS331G2JXHRMZCE0ER",
+  "object": "http://gotosocial.example/users/the_mighty_zork/statuses/01FCTA44PW9H1TB328S9AQXKDS",
+  "published": "2022-06-09T13:12:00Z",
+  "to": "http://gotosocial.example/users/the_mighty_zork/followers",
+  "type": "Announce"
+}

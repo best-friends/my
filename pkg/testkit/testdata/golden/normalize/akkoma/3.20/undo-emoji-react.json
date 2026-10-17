@@ -1,0 +1,22 @@
+{
+  "Activity": {
+    "Actor": "https://example.org/users/akko",
+    "Audience": {
+      "Cc": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "To": [
+        "https://remote.example/users/diana",
+        "https://example.org/users/akko/followers"
+      ]
+    },
+    "ID": "http://example.org/activities/4685792e-efb6-4309-b508-ae4f355dd695",
+    "Objects": [
+      {
+        "ID": "https://example.org/activities/23143872a0346141"
+      }
+    ],
+    "RawType": "Undo",
+    "Type": "Undo"
+  }
+}

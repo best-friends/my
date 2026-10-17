@@ -1,0 +1,49 @@
+{
+  "Activity": {
+    "Actor": "http://gotosocial.example/users/the_mighty_zork",
+    "Audience": {
+      "Cc": [
+        "http://gotosocial.example/users/the_mighty_zork/followers"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/activity#Create",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "http://gotosocial.example/users/the_mighty_zork",
+            "Audience": {
+              "Cc": [
+                "http://gotosocial.example/users/the_mighty_zork/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<p>hello everyone!</p>",
+                "Language": "en"
+              }
+            ],
+            "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
+            "Published": "2021-10-20T10:40:37Z",
+            "RawType": "Note",
+            "Sensitive": true,
+            "SpoilerText": "introduction post",
+            "Type": "Note",
+            "URL": "http://gotosocial.example/@the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY"
+          }
+        },
+        "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
+        "Trusted": true
+      }
+    ],
+    "Published": "2021-10-20T10:40:37Z",
+    "RawType": "Create",
+    "Type": "Create"
+  }
+}

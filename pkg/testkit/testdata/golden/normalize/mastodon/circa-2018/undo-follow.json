@@ -1,0 +1,27 @@
+{
+  "Activity": {
+    "Actor": "http://mastodon.example.org/users/admin",
+    "ID": "http://mastodon.example.org/users/admin#follow/2/undo",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "http://mastodon.example.org/users/admin",
+            "ID": "http://mastodon.example.org/users/admin#follows/2",
+            "Objects": [
+              {
+                "ID": "http://remote.example/users/bob"
+              }
+            ],
+            "RawType": "Follow",
+            "Type": "Follow"
+          }
+        },
+        "ID": "http://mastodon.example.org/users/admin#follows/2",
+        "Trusted": true
+      }
+    ],
+    "RawType": "Undo",
+    "Type": "Undo"
+  }
+}

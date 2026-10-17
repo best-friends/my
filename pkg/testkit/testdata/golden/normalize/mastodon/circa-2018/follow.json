@@ -1,0 +1,13 @@
+{
+  "Activity": {
+    "Actor": "http://mastodon.example.org/users/admin",
+    "ID": "http://mastodon.example.org/users/admin#follows/2",
+    "Objects": [
+      {
+        "ID": "http://remote.example/users/bob"
+      }
+    ],
+    "RawType": "Follow",
+    "Type": "Follow"
+  }
+}

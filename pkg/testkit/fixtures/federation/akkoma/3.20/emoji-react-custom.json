@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://example.org/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ],
+  "type": "EmojiReact",
+  "id": "https://example.org/activities/d75586dec0541650",
+  "actor": "https://example.org/users/akko",
+  "nickname": "akko",
+  "to": [
+    "https://remote.example/users/diana",
+    "https://example.org/users/akko/followers"
+  ],
+  "cc": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "content": ":mouse:",
+  "object": "https://remote.example/objects/9f0e93499d8314a9",
+  "tag": [
+    {
+      "type": "Emoji",
+      "id": null,
+      "name": "mouse",
+      "icon": {
+        "type": "Image",
+        "url": "https://example.org/emoji/mouse/mouse.png"
+      }
+    }
+  ]
+}

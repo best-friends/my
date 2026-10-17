@@ -1,0 +1,45 @@
+{
+  "Activity": {
+    "Actor": "http://gotosocial.example/users/the_mighty_zork",
+    "Audience": {
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "http://gotosocial.example/users/the_mighty_zork#updates/01JABCDEFGHJKMNPQRSTVWXYZ0",
+    "Objects": [
+      {
+        "Embedded": {
+          "Actor": {
+            "Discoverable": true,
+            "Featured": "http://gotosocial.example/users/the_mighty_zork/collections/featured",
+            "Followers": "http://gotosocial.example/users/the_mighty_zork/followers",
+            "Following": "http://gotosocial.example/users/the_mighty_zork/following",
+            "ID": "http://gotosocial.example/users/the_mighty_zork",
+            "Icon": "http://gotosocial.example/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg",
+            "Image": "http://gotosocial.example/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg",
+            "Inbox": "http://gotosocial.example/users/the_mighty_zork/inbox",
+            "Name": "original zork (he/they)",
+            "Outbox": "http://gotosocial.example/users/the_mighty_zork/outbox",
+            "PreferredUsername": "the_mighty_zork",
+            "PublicKeys": [
+              {
+                "ID": "http://gotosocial.example/users/the_mighty_zork/main-key",
+                "Owner": "http://gotosocial.example/users/the_mighty_zork",
+                "PEM": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n"
+              }
+            ],
+            "Published": "2022-05-20T11:09:18Z",
+            "Summary": "<p>hey yo this is my profile!</p>",
+            "Type": "Person",
+            "URL": "http://gotosocial.example/@the_mighty_zork"
+          }
+        },
+        "ID": "http://gotosocial.example/users/the_mighty_zork",
+        "Trusted": true
+      }
+    ],
+    "RawType": "Update",
+    "Type": "Update"
+  }
+}

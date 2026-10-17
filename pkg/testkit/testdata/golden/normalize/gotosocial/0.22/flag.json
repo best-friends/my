@@ -1,0 +1,17 @@
+{
+  "Activity": {
+    "Actor": "http://gotosocial.example/users/gotosocial.example",
+    "Content": "dark souls sucks, please yeet this nerd",
+    "ID": "http://gotosocial.example/reports/01GP3AWY4CRDVRNZKW0TEAMB5R",
+    "Objects": [
+      {
+        "ID": "http://remote.example/users/foss_satan"
+      },
+      {
+        "ID": "http://remote.example/users/foss_satan/statuses/01FVW7JHQFSFK166WWKR8CBA6M"
+      }
+    ],
+    "RawType": "Flag",
+    "Type": "Flag"
+  }
+}

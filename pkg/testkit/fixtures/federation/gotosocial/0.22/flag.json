@@ -1,0 +1,11 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "actor": "http://gotosocial.example/users/gotosocial.example",
+  "content": "dark souls sucks, please yeet this nerd",
+  "id": "http://gotosocial.example/reports/01GP3AWY4CRDVRNZKW0TEAMB5R",
+  "object": [
+    "http://remote.example/users/foss_satan",
+    "http://remote.example/users/foss_satan/statuses/01FVW7JHQFSFK166WWKR8CBA6M"
+  ],
+  "type": "Flag"
+}

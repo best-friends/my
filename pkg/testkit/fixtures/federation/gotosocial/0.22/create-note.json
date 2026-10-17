@@ -1,0 +1,62 @@
+{
+  "@context": [
+    "https://gotosocial.org/ns",
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "sensitive": "as:sensitive"
+    }
+  ],
+  "actor": "http://gotosocial.example/users/the_mighty_zork",
+  "cc": "http://gotosocial.example/users/the_mighty_zork/followers",
+  "id": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/activity#Create",
+  "object": {
+    "attributedTo": "http://gotosocial.example/users/the_mighty_zork",
+    "cc": "http://gotosocial.example/users/the_mighty_zork/followers",
+    "content": "<p>hello everyone!</p>",
+    "contentMap": {
+      "en": "<p>hello everyone!</p>"
+    },
+    "id": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
+    "interactionPolicy": {
+      "canAnnounce": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "canLike": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "canQuote": {
+        "automaticApproval": [
+          "http://gotosocial.example/users/the_mighty_zork"
+        ]
+      },
+      "canReply": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      }
+    },
+    "published": "2021-10-20T12:40:37+02:00",
+    "replies": {
+      "first": {
+        "id": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true",
+        "next": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true&only_other_accounts=false",
+        "partOf": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies",
+        "type": "CollectionPage"
+      },
+      "id": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies",
+      "type": "Collection"
+    },
+    "sensitive": true,
+    "summary": "introduction post",
+    "to": "https://www.w3.org/ns/activitystreams#Public",
+    "type": "Note",
+    "url": "http://gotosocial.example/@the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY"
+  },
+  "published": "2021-10-20T12:40:37+02:00",
+  "to": "https://www.w3.org/ns/activitystreams#Public",
+  "type": "Create"
+}

@@ -1,0 +1,41 @@
+{
+  "Object": {
+    "AttributedTo": "https://misskey.example/users/7v1w1r8ce6",
+    "Audience": {
+      "Cc": [
+        "https://misskey.example/users/7v1w1r8ce6/followers",
+        "https://remote.example/users/bob"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "Bodies": [
+      {
+        "HTML": "<p><a href=\"https://remote.example/users/bob\" class=\"mention\">@bob@remote.example</a><span> How are your notifications now?<br></span><a href=\"https://misskey.example/notes/7x9tmrp97i\"><span>リモートで結果を表示</span></a></p>",
+        "Language": "und"
+      }
+    ],
+    "ID": "https://misskey.example/notes/7x9tmrp97i",
+    "Mentions": [
+      {
+        "Href": "https://remote.example/users/bob",
+        "Name": "@bob@remote.example"
+      }
+    ],
+    "Poll": {
+      "Options": [
+        {
+          "Name": "Working"
+        },
+        {
+          "Name": "Broken af",
+          "Votes": 1
+        }
+      ]
+    },
+    "Published": "2019-09-05T05:35:32.541Z",
+    "RawType": "Question",
+    "Type": "Question"
+  }
+}
