@@ -1,7 +1,7 @@
 # 連合の設計（ActivityPub S2S）
 
 > 前提にしている ADR: [ADR-0002](../adr/0002-modular-monolith-hexagonal.md)、[ADR-0003](../adr/0003-database-abstraction.md)、[ADR-0004](../adr/0004-job-queue-abstraction.md)、[ADR-0005](../adr/0005-blob-storage-and-media.md)、[ADR-0006](../adr/0006-federation-protocol-scope.md)、[ADR-0017](../adr/0017-visibility-local.md)、[ADR-0018](../adr/0018-federated-uris.md)、[ADR-0019](../adr/0019-security-baseline.md)、[ADR-0020](../adr/0020-data-modeling-principles.md)。
-> Proposed の [ADR-0032](../adr/0032-http-signature-profile.md)（署名）、[ADR-0033](../adr/0033-inbox-processing-model.md)（受信処理）、[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)（取り込み範囲と保持）、[ADR-0035](../adr/0035-local-visibility-mention-tags.md)（`local` 投稿のメンション）の推奨案に従っています。決定で推奨案が変われば、この文書を直します。
+> 署名は [ADR-0032](../adr/0032-http-signature-profile.md)、受信処理は [ADR-0033](../adr/0033-inbox-processing-model.md)、取り込み範囲と保持は [ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、`local` 投稿のメンションは [ADR-0035](../adr/0035-local-visibility-mention-tags.md) に従います。
 > 要件: FR-305、FR-401〜410、FR-701〜702、NFR-SEC-1〜2、NFR-SEC-4〜5、NFR-PERF-4、NFR-REL-1〜2、NFR-COST-4〜5。テーブルは [論理データモデル](data-model.md) §4.8 ほかにあります。
 
 ## 1. 構成
