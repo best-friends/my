@@ -1,0 +1,30 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/asfo7no84zv70002",
+    "ID": "https://misskey.example/likes/asfoaqef4zv7000t/undo",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://misskey.example/users/asfo7no84zv70002",
+            "Content": "👍",
+            "ID": "https://misskey.example/likes/asfoaqef4zv7000t",
+            "Objects": [
+              {
+                "ID": "https://remote.example/ap/objects/01a148e2-4400-7a88-ba6a-6710b1274540"
+              }
+            ],
+            "RawType": "Like",
+            "Reaction": "👍",
+            "Type": "Like"
+          }
+        },
+        "ID": "https://misskey.example/likes/asfoaqef4zv7000t",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-17T08:02:32.594Z",
+    "RawType": "Undo",
+    "Type": "Undo"
+  }
+}

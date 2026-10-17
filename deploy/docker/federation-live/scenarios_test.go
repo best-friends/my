@@ -480,13 +480,18 @@ func interactionScenario(t *testing.T, action string, count func(status) int) {
 	}
 }
 
-// TestEdit: an edited post (Update) shows the new text on the other side.
+// TestEdit: an edited post (Update) shows the new text on the other side. A peer that does not
+// edit (noEdits) gets the Update and keeps the text.
 func TestEdit(t *testing.T) {
 	e := stack(t)
 	for _, p := range e.peers {
 		t.Run(p.name, func(t *testing.T) {
 			ctx := t.Context()
 			mutual(t, e, p)
+			if p.noEdits != "" {
+				editIgnored(t, e, p)
+				return
+			}
 
 			t.Run("from peer", func(t *testing.T) {
 				original, err := p.post(ctx, unique("before the edit on "+p.name), "public")
@@ -521,6 +526,45 @@ func TestEdit(t *testing.T) {
 			})
 		})
 	}
+}
+
+// editIgnored is TestEdit for a peer that does not edit: the Update of alice's edit is delivered to
+// the peer's shared inbox (/inbox, as Misskey names it) and accepted, and the peer still shows the
+// text before the edit.
+func editIgnored(t *testing.T, e *env, p *peerClient) {
+	t.Helper()
+	t.Run("from peer", func(t *testing.T) { t.Skip(p.noEdits) })
+	t.Run("from local", func(t *testing.T) {
+		ctx := t.Context()
+		before := unique("before the edit on " + localHost)
+		original, err := e.local.post(ctx, before, "public")
+		if err != nil {
+			t.Fatal(err)
+		}
+		onPeer := peerSees(t, p, original.URI)
+		inbox := "https://" + p.host + "/inbox"
+		succeeded := func() int {
+			n := 0
+			for _, a := range e.deliveryAttempts(t, inbox) {
+				if a.Outcome == "succeeded" {
+					n++
+				}
+			}
+			return n
+		}
+		delivered := succeeded()
+		if _, err := e.local.edit(ctx, original.ID, unique("after the edit on "+localHost)); err != nil {
+			t.Fatal(err)
+		}
+		eventually(t, deliveryTimeout, "the Update of "+original.URI+" delivered to "+inbox, func() (bool, string) {
+			n := succeeded()
+			return n > delivered, fmt.Sprintf("%d succeeded deliveries, %d before the edit", n, delivered)
+		})
+		s, err := p.status(ctx, onPeer.ID)
+		if err != nil || s.Content != before {
+			t.Errorf("after the edit %s shows %q %v, want the text before the edit %q", p.host, s.Content, err, before)
+		}
+	})
 }
 
 // TestDelete: a deleted post (Delete) disappears on the other side.

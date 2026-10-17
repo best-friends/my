@@ -169,8 +169,8 @@ docker-smoke: ## Start deploy/docker/compose.yaml, create an admin, check WebFin
 
 .PHONY: federation-live
 
-# Not part of `make check`: it pulls Mastodon and GoToSocial and takes minutes (CI job federation-live, nightly).
-federation-live: ## Run the live interoperability scenarios against Mastodon and GoToSocial (deploy/docker/federation-live)
+# Not part of `make check`: it pulls Mastodon, GoToSocial, and Misskey and takes minutes (CI job federation-live, nightly).
+federation-live: ## Run the live interoperability scenarios against Mastodon, GoToSocial, and Misskey (deploy/docker/federation-live)
 	MY_VERSION=$(VERSION) scripts/federation-live.sh $(FEDERATION_LIVE_FLAGS)
 
 dockerfile-check: ## Fail if the Dockerfile's Go, Node.js, or Bun image differs from the version in .tool-versions

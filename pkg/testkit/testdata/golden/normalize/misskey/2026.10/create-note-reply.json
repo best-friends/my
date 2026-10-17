@@ -1,0 +1,55 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/asfo7no84zv70002",
+    "Audience": {
+      "Cc": [
+        "https://misskey.example/users/asfo7no84zv70002/followers",
+        "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "https://misskey.example/notes/asfo9e964zv7000k/activity",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://misskey.example/users/asfo7no84zv70002",
+            "Audience": {
+              "Cc": [
+                "https://misskey.example/users/asfo7no84zv70002/followers",
+                "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<a href=\"https://remote.example/@alice\" class=\"u-url mention\">@alice@remote.example</a> a reply from misskey 1792224088169529597",
+                "Language": "und"
+              }
+            ],
+            "ID": "https://misskey.example/notes/asfo9e964zv7000k",
+            "InReplyTo": "https://remote.example/ap/objects/01a148e1-502c-7f77-b5ca-5cef75200a1a",
+            "Mentions": [
+              {
+                "Href": "https://remote.example/ap/actors/01a148df-c147-75dd-836c-e3d7c5cb0999",
+                "Name": "@alice@remote.example"
+              }
+            ],
+            "Published": "2026-10-17T08:01:28.17Z",
+            "RawType": "Note",
+            "Type": "Note"
+          }
+        },
+        "ID": "https://misskey.example/notes/asfo9e964zv7000k",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-17T08:01:28.17Z",
+    "RawType": "Create",
+    "Type": "Create"
+  }
+}

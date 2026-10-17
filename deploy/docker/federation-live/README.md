@@ -1,34 +1,36 @@
 # Live interoperability test
 
-This server, Mastodon, and GoToSocial federating with each other over HTTPS, for the live test of
+This server, Mastodon, GoToSocial, and Misskey federating with each other over HTTPS, for the live test of
 [federation.md §12](../../../docs/architecture/federation.md#12-テスト) ([ADR-0006](../../../docs/adr/0006-federation-protocol-scope.md),
 [ADR-0015](../../../docs/adr/0015-testing-strategy.md)). CI runs it nightly (job `federation-live` in
 `.github/workflows/nightly.yml`); it is not part of `make check`.
 
 | File | What it is |
 | --- | --- |
-| `compose.yaml` | The stack: the TLS proxy, PostgreSQL (this server and Mastodon), Redis, this server built from the checkout, Mastodon (web and Sidekiq), and GoToSocial |
-| `Caddyfile` | The proxy: one certificate of the private CA for `my.test`, `mastodon.test`, and `gts.test`, forwarded by host name |
-| `postgres-init.sh` | The role and databases of this server, prepared with `schema/postgres.bootstrap.sql` |
-| `*_test.go` | The scenarios (`go test -tags federationlive`), black-box clients of the three client APIs |
+| `compose.yaml` | The stack: the TLS proxy, PostgreSQL (this server, Mastodon, and Misskey), Redis, this server built from the checkout, Mastodon (web and Sidekiq), GoToSocial, and Misskey with its configuration file |
+| `Caddyfile` | The proxy: one certificate of the private CA for `my.test`, `mastodon.test`, `gts.test`, and `misskey.test`, forwarded by host name |
+| `postgres-init.sh` | The roles and databases of this server, prepared with `schema/postgres.bootstrap.sql`, and of Misskey |
+| `*_test.go` | The scenarios (`go test -tags federationlive`), black-box clients of this server's client API, the Mastodon client API (Mastodon and GoToSocial), and the Misskey API (`misskey_test.go`) |
 | `../../../scripts/federation-live.sh` | Generates the CA and the secrets, starts the stack, creates the users, runs the scenarios, collects the logs, and removes the stack |
 
 ## How it works
 
-- **TLS**: the script creates a private CA and one certificate for the three hosts. Every server trusts only that CA
-  (`SSL_CERT_FILE`).
-- **DNS**: the proxy holds the network aliases `my.test`, `mastodon.test`, and `gts.test`, so each server reaches
-  the others, and itself, through the proxy, as on the internet. The servers may reach the private addresses of the
-  compose network only (`MY_HTTP_ALLOW_PRIVATE_NETWORKS` in the `development` profile, Mastodon's
-  `ALLOWED_PRIVATE_ADDRESSES`, GoToSocial's `http-client.allow-ips`).
-- **Users**: created with each server's admin CLI. The scenarios sign in to this server and GoToSocial through
-  their OAuth screens; the script issues the Mastodon tokens with a Rails runner.
+- **TLS**: the script creates a private CA and one certificate for the four hosts. Every server trusts only that CA
+  (`SSL_CERT_FILE`; Misskey's `NODE_EXTRA_CA_CERTS`).
+- **DNS**: the proxy holds the network aliases `my.test`, `mastodon.test`, `gts.test`, and `misskey.test`, so each
+  server reaches the others, and itself, through the proxy, as on the internet. The servers may reach the private
+  addresses of the compose network only (`MY_HTTP_ALLOW_PRIVATE_NETWORKS` in the `development` profile, Mastodon's
+  `ALLOWED_PRIVATE_ADDRESSES`, GoToSocial's `http-client.allow-ips`, Misskey's `allowedPrivateNetworks`).
+- **Users**: created with each server's admin CLI, and on Misskey with its API (`admin/accounts/create`: the first
+  account, `mkadmin`, is the administrator and creates the others). The scenarios sign in to this server and GoToSocial
+  through their OAuth screens; the script issues the Mastodon tokens with a Rails runner, and Misskey returns each
+  user's API token when it creates the user.
 
   | User | Role |
   | --- | --- |
   | `alice@my.test` | The local user of every scenario |
-  | `bob@mastodon.test`, `carol@gts.test` | The peer users that alice follows and that follow her |
-  | `dave@mastodon.test`, `erin@gts.test` | Never follow alice: the mentioned non-followers of `TestVisibilityAudiences` |
+  | `bob@mastodon.test`, `carol@gts.test`, `grace@misskey.test` | The peer users that alice follows and that follow her |
+  | `dave@mastodon.test`, `erin@gts.test`, `heidi@misskey.test` | Never follow alice: the mentioned non-followers of `TestVisibilityAudiences` |
   | `eve@mastodon.test` | `TestSignatureProfile`: the proxy refuses her draft-cavage POSTs in both directions |
 
 - **Signatures**: to exercise RFC 9421, which Mastodon and this server only use after a 401, the proxy answers 401
@@ -36,6 +38,12 @@ This server, Mastodon, and GoToSocial federating with each other over HTTPS, for
   recreates the proxy with eve's actor URI once Mastodon has numbered her (`FEDERATION_LIVE_SIGNER_ACTOR`,
   `FEDERATION_LIVE_SIGNER_INBOX`).
 - **Mastodon** runs in secure mode (`AUTHORIZED_FETCH`), so every fetch this server makes from it must be signed.
+- **Misskey** federates with no one until its administrator sets `federation` to `all` (`admin/update-meta`), and
+  its API limits how often a user may call an endpoint (`ap/show` 30 times an hour); the script sets both, the
+  latter with a rate limit factor of 0 for every user (`admin/roles/update-default-policies`).
+- **The Misskey API** is driven in the terms of the Mastodon client API (`misskeyAPI` in `misskey_test.go`):
+  `home` / `followers` / `specified` are `unlisted` / `private` / `direct` (a `specified` note is for the users
+  that its text mentions), a renote is a boost, and a reaction (👍) is a favourite.
 - The scenarios reach the servers through the proxy's published port and read what this server recorded
   (`received_activities`) from the published PostgreSQL port.
 
@@ -71,7 +79,7 @@ CA (`.tmp/federation-live/certs/ca.pem`) is trusted.
 
 ## Scenarios
 
-Each scenario runs against both peers, in this order: the later ones start from the follows that the earlier ones
+Each scenario runs against every peer, in this order: the later ones start from the follows that the earlier ones
 leave (a scenario that runs alone makes the follows it needs).
 
 | Scenario | Checks |
@@ -85,9 +93,9 @@ leave (a scenario that runs alone makes the follows it needs).
 | `TestFollowApproval` | A follow of a locked account waits until its user approves it, in either direction |
 | `TestReply` | A reply in either direction is among the descendants of the status it replies to; the reply to alice notifies her |
 | `TestBoost` / `TestFavourite` | A boost / favourite in either direction and its undo change the count on the author's side |
-| `TestEdit` / `TestDelete` | An edited post shows the new text / a deleted post is gone on the other side |
+| `TestEdit` / `TestDelete` | An edited post shows the new text / a deleted post is gone on the other side. Misskey, which does not edit, gets the `Update` of alice's edit with a 2xx and keeps the text before it |
 | `TestVisibilityAudiences` | Each visibility reaches exactly its audience in both directions; a `local` post that mentions a non-follower reaches the follower but the mentioned user can neither see it nor is notified ([ADR-0017](../../../docs/adr/0017-visibility-local.md), [ADR-0035](../../../docs/adr/0035-local-visibility-mention-tags.md)) |
-| `TestSignatureProfile` | The rows of [ADR-0032](../../../docs/adr/0032-http-signature-profile.md) that need a real server: draft-cavage from both peers, RFC 9421 from Mastodon after a 401, this server's RFC 9421 resend after a 401 (double-knocking), and `Accept-Signature` on an unsigned POST. It runs last: afterwards this server signs for `mastodon.test` with RFC 9421 first |
+| `TestSignatureProfile` | The rows of [ADR-0032](../../../docs/adr/0032-http-signature-profile.md) that need a real server: draft-cavage from every peer, RFC 9421 from Mastodon after a 401, this server's RFC 9421 resend after a 401 (double-knocking), and `Accept-Signature` on an unsigned POST. It runs last: afterwards this server signs for `mastodon.test` with RFC 9421 first |
 
 ## Compatibility notes
 
@@ -102,17 +110,25 @@ What the scenarios show about the pinned peers, and how this server and the scen
 | GoToSocial 0.22 | Accounts that `admin account create` makes are locked | The scenarios unlock carol and erin, and `TestFollowApproval` locks them itself |
 | GoToSocial 0.22 | The first page of the home timeline comes from a cache that does not always take a status that arrives after the cache was filled; the status is in the database | The scenarios read GoToSocial's home timeline with a `max_id`, which reads the database |
 | GoToSocial 0.22 | Logs `error fetching account featured collection … empty url host` for this server's instance actor, which has no `featured` | Harmless: the actor is still stored and the signature verified |
-| Both | Neither learns that alice locked her account while she has no follower there (the actor `Update` goes to followers only) | Expected: the follow request still waits for her approval on this server |
+| Misskey 2026.10 | Signs with draft-cavage only (`rsa-sha256`, `{actor}#main-key`); delivers to this server's shared inbox | Nothing to do |
+| Misskey 2026.10 | A new server federates with no one (`federation: none`) and limits the API calls of each user | The script opens federation and lifts the limits (How it works) |
+| Misskey 2026.10 | A favourite is a reaction: a `Like` with the emoji in `content` and `_misskey_reaction`; a `Like` without one shows as Misskey's default reaction | This server counts it as a favourite, without the emoji ([federation.md §3](../../../docs/architecture/federation.md#3-受信inbox)) |
+| Misskey 2026.10 | Cannot edit a note, and its inbox skips an `Update` of a `Note` (`skip: Unknown type: Note`, answered 202) | `TestEdit` checks that the `Update` is delivered and that the text stays |
+| Misskey 2026.10 | `renoteCount` never goes down: deleting a renote, also on an `Undo Announce`, leaves it as it was | The scenarios count the renotes that exist (`notes/renotes`) |
+| Misskey 2026.10 | Answers an `Undo Follow` with a `Reject` of the follow (`UserFollowingService.unfollow`), whose `Follow` has the id `/follows/{follower}/{followee}` | This server drops it (`inbox activity dropped`, the follow has already ended) |
+| Misskey 2026.10 | A `followers` note is visible to every user its `tag` mentions, addressed or not (`NoteEntityService.isVisibleForMe` reads the `mentions` that `ApNoteService` takes from `tag`), and each of them gets a `mention` notification (`NoteCreateService.createMentionedEvents`) | This server leaves such mentions out of the `tag` of a `local` post ([ADR-0035](../../../docs/adr/0035-local-visibility-mention-tags.md)); `TestVisibilityAudiences` checks that heidi neither sees it nor is notified |
+| Misskey 2026.10 | The API answers a missing note with a 400 and the code `NO_SUCH_NOTE` | The scenarios read it as a 404 |
+| Every peer | None learns that alice locked her account while she has no follower there (the actor `Update` goes to followers only) | Expected: the follow request still waits for her approval on this server |
 
 ## Adding a captured activity as a fixture
 
 The activities under `captured/` (also in the `federation-live` artifact of every CI run) are real documents of the
-pinned Mastodon and GoToSocial versions, so they can become fixtures of the regression tests
+pinned Mastodon, GoToSocial, and Misskey versions, so they can become fixtures of the regression tests
 ([pkg/testkit/README.md](../../../pkg/testkit/README.md#federation-fixtures)):
 
 1. Pick the document, for example `captured/mastodon.test/001-follow.json`.
 2. Follow "Adding a fixture" in `pkg/testkit/README.md`: replace the hosts (`mastodon.test` → `mastodon.example`,
-   `my.test` → `remote.example`, `gts.test` → `gotosocial.example`), the keys, and the texts, and save it as
+   `my.test` → `remote.example`, `gts.test` → `gotosocial.example`, `misskey.test` → `misskey.example`), the keys, and the texts, and save it as
    `pkg/testkit/fixtures/federation/<implementation>/<version>/<name>.json` with the version of the image in
    `compose.yaml` (`mastodon/4.7/follow.json`).
 3. Record it in `pkg/testkit/fixtures/federation/<implementation>/README.md` as a capture from that server version, with
@@ -123,6 +139,6 @@ included; reformat it (`jq --indent 2 .`) before saving it as a fixture.
 
 ## Updating the peers
 
-The images are pinned by tag and digest in `compose.yaml`. To move to a new Mastodon or GoToSocial release, take a tag
+The images are pinned by tag and digest in `compose.yaml`. To move to a new Mastodon, GoToSocial, or Misskey release, take a tag
 at least two weeks old, put its multi-arch digest (`docker buildx imagetools inspect <image>:<tag>`) next to it, and
 run `make federation-live` to see what changed.

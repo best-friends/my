@@ -13,6 +13,10 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
   `addContext`, which adds `CONTEXT` of `misc/contexts.ts` and a random-UUID `id`. The ids of users and follows are example values;
   `remote.example` is the server Misskey talks to. The `Undo` names the follow by `/follows/{follower}/{followee}`, not by
   the id of the `Follow` it sent.
+- `2026.10/` was captured from Misskey 2026.10.0 by the live interoperability test
+  ([deploy/docker/federation-live](../../../../../deploy/docker/federation-live/README.md)) on 2026-10-17: what Misskey
+  delivered to this server, as this server stored it. Replaced: `misskey.test` → `misskey.example`, `my.test` →
+  `remote.example`, and `publicKeyPem`. The users (`alice`, `grace`) and the texts are the test's own.
 
 | File | Source | License |
 | --- | --- | --- |
@@ -24,3 +28,21 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
 | `circa-2022/create-note.json` | [test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg-activity.json](https://akkoma.dev/AkkomaGang/akkoma/src/commit/98dd958886a8b0ef65d5bd827aba3789f1dc5116/test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg-activity.json) | AGPL-3.0 |
 | `circa-2022/like-reaction.json` | [test/fixtures/custom-emoji-reaction.json](https://akkoma.dev/AkkomaGang/akkoma/src/commit/98dd958886a8b0ef65d5bd827aba3789f1dc5116/test/fixtures/custom-emoji-reaction.json) | AGPL-3.0 |
 | `circa-2022/note-quote.json` | [test/fixtures/misskey/quote.json](https://akkoma.dev/AkkomaGang/akkoma/src/commit/98dd958886a8b0ef65d5bd827aba3789f1dc5116/test/fixtures/misskey/quote.json) | AGPL-3.0 |
+
+| File | Source | License |
+| --- | --- | --- |
+| `2026.10/follow.json` | capture of Misskey 2026.10.0, 2026-10-17: grace's `Follow` of alice | capture |
+| `2026.10/accept-follow.json` | capture of Misskey 2026.10.0, 2026-10-17: grace's `Accept` of alice's `Follow`, which embeds it | capture |
+| `2026.10/reject-follow.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Reject` that answers alice's `Undo Follow`; the embedded `Follow` has the id `/follows/{follower}/{followee}` | capture |
+| `2026.10/undo-follow.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Undo` of grace's `Follow` | capture |
+| `2026.10/update-person.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Update` of grace's actor when she unlocks her account | capture |
+| `2026.10/create-note.json` | capture of Misskey 2026.10.0, 2026-10-17: a public note | capture |
+| `2026.10/create-note-reply.json` | capture of Misskey 2026.10.0, 2026-10-17: a public reply to a post of alice, mentioning her | capture |
+| `2026.10/create-note-unlisted.json` | capture of Misskey 2026.10.0, 2026-10-17: a `home` note | capture |
+| `2026.10/create-note-private.json` | capture of Misskey 2026.10.0, 2026-10-17: a `followers` note | capture |
+| `2026.10/create-note-direct.json` | capture of Misskey 2026.10.0, 2026-10-17: a `specified` note for alice | capture |
+| `2026.10/announce.json` | capture of Misskey 2026.10.0, 2026-10-17: a renote of a post of alice | capture |
+| `2026.10/undo-announce.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Undo` of that renote | capture |
+| `2026.10/like-reaction.json` | capture of Misskey 2026.10.0, 2026-10-17: a 👍 reaction to a post of alice (`Like` with `content` and `_misskey_reaction`) | capture |
+| `2026.10/undo-like-reaction.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Undo` of that reaction | capture |
+| `2026.10/delete-note.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Delete` of a note | capture |
