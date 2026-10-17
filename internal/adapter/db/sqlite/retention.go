@@ -116,6 +116,18 @@ func (r *FederationRepository) DeleteReceivedActivitiesBefore(ctx context.Contex
 	return n, wrap(err, "delete received activities")
 }
 
+// DeleteRemoteFollowTombstonesBefore implements federation.PurgeRepository.
+func (r *FederationRepository) DeleteRemoteFollowTombstonesBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := q.DeleteRemoteFollowTombstonesBefore(ctx, sqlitegen.DeleteRemoteFollowTombstonesBeforeParams{
+		ReceivedBefore: toMillis(t), BatchLimit: int64(limit),
+	})
+	return n, wrap(err, "delete remote follow tombstones")
+}
+
 // DeleteRemoteObjectTombstonesBefore implements federation.PurgeRepository.
 func (r *FederationRepository) DeleteRemoteObjectTombstonesBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error) {
 	q, err := queries(tx)

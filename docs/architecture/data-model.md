@@ -767,8 +767,9 @@ flowchart LR
   `permanent_failure` と `skipped` は `instance_health` を変えません。projector は同じドメインへの同時の更新を失わないよう、行を読んでから書くまで行ロックを取ります（PostgreSQL は `SELECT ... FOR UPDATE`、SQLite は書き込みが直列）。
 - `delivery_attempts.signature_scheme` が NULL の行は、応答を得ていない試行です（送らなかった `skipped` とサーキットブレーカーが開いていた `retryable_failure`、接続・TLS・タイムアウトの失敗、`HTTPClient` が拒否した宛先）。
 - 受信の記録（`received_activities`）は 30 日、原本は 7 日で削除します（[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、FR-803）。
-  1 時間ごとの消去ジョブ `federation.purge` が、原本、受信の記録、`remote_object_tombstones`（30 日）、`outbound_activity_documents`（30 日）、`delivery_attempts`（30 日）の順に、1 文あたり 1,000 行・1 テーブルあたり 20 文まで、古い順に消します。続きは次の回が消します。
+  1 時間ごとの消去ジョブ `federation.purge` が、原本、受信の記録、`remote_follow_tombstones`（30 日）、`remote_object_tombstones`（30 日）、`outbound_activity_documents`（30 日）、`delivery_attempts`（30 日）の順に、1 文あたり 1,000 行・1 テーブルあたり 20 文まで、古い順に消します。続きは次の回が消します。
   受信の記録は原本が消えたものだけを消すので、原本が受信の記録より長く残ることはありません。`outbound_activity_documents` と `delivery_attempts` の走査は、主キーの UUIDv7 の範囲（期限の下限より前）で止まります。
+  `remote_follow_tombstones` を `remote_object_tombstones` より先に消すので、使い終えた tombstone が、使い終えた印（同じ `activity_uri` の `remote_object_tombstones`。tombstone より新しい）より長く残って `Follow` をもう一度捨てることはありません。
 
 ### 4.9 instance
 
@@ -1069,7 +1070,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-704 監査ログ | S | 処分・解除・通報対応・設定の版（各イベントテーブル） |
 | FR-705 インスタンス設定 | M | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules` とその版 |
 | FR-801 CLI | M | `dead_jobs`, §9 の再構築、管理者作成（`users`, `user_primary_emails`, `user_role_grants`） |
-| FR-803 定期クリーンアップ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `outbound_activity_documents`, 保持期間を過ぎたリモートの投稿, `delivery_attempts`, `remote_media_cache`, 未添付の `media_files`, `kv_entries`, 期限切れの制限 |
+| FR-803 定期クリーンアップ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activity_documents`, 保持期間を過ぎたリモートの投稿, `delivery_attempts`, `remote_media_cache`, 未添付の `media_files`, `kv_entries`, 期限切れの制限 |
 
 ## 11. 未決事項
 
