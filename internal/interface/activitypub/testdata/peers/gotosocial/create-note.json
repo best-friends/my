@@ -1,0 +1,102 @@
+{
+  "@context": [
+    "https://gotosocial.org/ns",
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "sensitive": "as:sensitive",
+      "Hashtag": "as:Hashtag",
+      "blurhash": "toot:blurhash",
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
+      "toot": "http://joinmastodon.org/ns#"
+    }
+  ],
+  "actor": "https://gotosocial.example/users/alice",
+  "cc": [
+    "https://gotosocial.example/users/alice/followers",
+    "https://remote.example/users/bob"
+  ],
+  "id": "https://gotosocial.example/users/alice/statuses/01K6E2Z3M4N5P6Q7R8S9T0V1W2/activity#Create",
+  "object": {
+    "attachment": [
+      {
+        "blurhash": "UFHV6nWB2yk8pyo0adR*.7kCMdnjt7jtxuWB",
+        "focalPoint": [
+          0.5,
+          -0.25
+        ],
+        "mediaType": "image/jpeg",
+        "name": "A cat on a sofa",
+        "type": "Image",
+        "url": "https://gotosocial.example/fileserver/01K6E2Z3M4N5P6Q7R8S9T0V1W3/attachment/original/01K6E2Z3M4N5P6Q7R8S9T0V1W4.jpg"
+      },
+      {
+        "blurhash": "UEHV6nWB2yk8pyo0adR*.7kCMdnjt7jtxuWC",
+        "mediaType": "image/png",
+        "name": "A dog in a garden",
+        "type": "Image",
+        "url": "https://gotosocial.example/fileserver/01K6E2Z3M4N5P6Q7R8S9T0V1W3/attachment/original/01K6E2Z3M4N5P6Q7R8S9T0V1W5.png"
+      }
+    ],
+    "attributedTo": "https://gotosocial.example/users/alice",
+    "cc": [
+      "https://gotosocial.example/users/alice/followers",
+      "https://remote.example/users/bob"
+    ],
+    "content": "<p><span class=\"h-card\"><a href=\"https://remote.example/@bob\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>bob</span></a></span> hello <a href=\"https://gotosocial.example/tags/fediverse\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>fediverse</span></a></p>",
+    "contentMap": {
+      "en": "<p><span class=\"h-card\"><a href=\"https://remote.example/@bob\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>bob</span></a></span> hello <a href=\"https://gotosocial.example/tags/fediverse\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>fediverse</span></a></p>"
+    },
+    "id": "https://gotosocial.example/users/alice/statuses/01K6E2Z3M4N5P6Q7R8S9T0V1W2",
+    "interactionPolicy": {
+      "canAnnounce": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "canLike": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "canReply": {
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      }
+    },
+    "published": "2026-10-01T09:00:00Z",
+    "replies": {
+      "first": {
+        "id": "https://gotosocial.example/users/alice/statuses/01K6E2Z3M4N5P6Q7R8S9T0V1W2/replies?page=true",
+        "next": "https://gotosocial.example/users/alice/statuses/01K6E2Z3M4N5P6Q7R8S9T0V1W2/replies?page=true&only_other_accounts=false",
+        "partOf": "https://gotosocial.example/users/alice/statuses/01K6E2Z3M4N5P6Q7R8S9T0V1W2/replies",
+        "type": "CollectionPage"
+      },
+      "id": "https://gotosocial.example/users/alice/statuses/01K6E2Z3M4N5P6Q7R8S9T0V1W2/replies",
+      "type": "Collection"
+    },
+    "sensitive": true,
+    "summary": "a content warning",
+    "tag": [
+      {
+        "href": "https://remote.example/users/bob",
+        "name": "@bob@remote.example",
+        "type": "Mention"
+      },
+      {
+        "href": "https://gotosocial.example/tags/fediverse",
+        "name": "#fediverse",
+        "type": "Hashtag"
+      }
+    ],
+    "to": "https://www.w3.org/ns/activitystreams#Public",
+    "type": "Note",
+    "url": "https://gotosocial.example/@alice/statuses/01K6E2Z3M4N5P6Q7R8S9T0V1W2"
+  },
+  "published": "2026-10-01T09:00:00Z",
+  "to": "https://www.w3.org/ns/activitystreams#Public",
+  "type": "Create"
+}

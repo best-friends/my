@@ -3,7 +3,9 @@
     "https://www.w3.org/ns/activitystreams",
     "https://w3id.org/security/v1",
     {
+      "Hashtag": "as:Hashtag",
       "PropertyValue": "schema:PropertyValue",
+      "blurhash": "toot:blurhash",
       "discoverable": "toot:discoverable",
       "featured": {
         "@id": "toot:featured",
@@ -13,9 +15,14 @@
         "@id": "toot:featuredTags",
         "@type": "@id"
       },
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
       "indexable": "toot:indexable",
       "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
       "schema": "http://schema.org#",
+      "sensitive": "as:sensitive",
       "toot": "http://joinmastodon.org/ns#",
       "value": "schema:value"
     }

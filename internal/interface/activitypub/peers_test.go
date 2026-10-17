@@ -16,8 +16,12 @@ import (
 // serve, with hosts, names, and texts replaced by example values. The Mastodon and Misskey
 // documents were fetched from running servers (Mastodon 4.8, Misskey 2025.4); the GoToSocial
 // actor follows its documented shape, since GoToSocial serves actors only to signed requests.
-// They show the shape each implementation publishes and therefore parses; the tests below
-// check that our documents have the same shape where they carry the same properties.
+// The create-note.json documents are the Create of a public Note with a content warning, a
+// mention, a hashtag, and an image, written after each implementation's serializer
+// (Mastodon's ActivityPub::NoteSerializer, GoToSocial's internal/typeutils/internaltoas.go,
+// Misskey's ApRendererService.renderNote). They show the shape each implementation publishes and
+// therefore parses; the tests below check that our documents have the same shape where they
+// carry the same properties.
 
 var peers = []string{"mastodon", "gotosocial", "misskey"}
 
@@ -76,7 +80,9 @@ func readPeer(t *testing.T, peer, name string) map[string]any {
 
 // checkShape fails for every path that both documents have with different JSON types, and for
 // every required path that ours lacks. "@context" is exempt: its array elements differ in
-// kind (strings, then an object) in every implementation.
+// kind (strings, then an object) in every implementation. Where theirs has a single value and
+// ours an array of such values, the shapes agree: JSON-LD compaction writes a one-element array
+// as its element (GoToSocial's "to").
 func checkShape(t *testing.T, peer string, ours, theirs map[string]any, required []string) {
 	t.Helper()
 	got, want := kinds("", ours, nil), kinds("", theirs, nil)
@@ -84,7 +90,7 @@ func checkShape(t *testing.T, peer string, ours, theirs map[string]any, required
 		if strings.HasPrefix(path, "@context") {
 			continue
 		}
-		if g, ok := got[path]; ok && g != k && k != "null" {
+		if g, ok := got[path]; ok && g != k && k != "null" && (g != "array" || got[path+"[]"] != k) {
 			t.Errorf("%s: %s is a %s, %s publishes a %s", peer, path, g, peer, k)
 		}
 	}
