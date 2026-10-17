@@ -14,10 +14,12 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	apptimeline "github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/domain/timeline"
 )
 
@@ -40,7 +42,8 @@ type TimelineFactory func(t *testing.T, opts uow.Options) TimelineHarness
 // timeline module's projectors and Service, driven by the content and graph modules' commands:
 // the home timeline (follows, own posts and boosts, show_boosts, direct posts, the read window
 // and its widening), the local and hashtag timelines (local and anonymous viewers, discovery
-// restrictions of accounts and domains), the profile timeline (the visibilities each relation
+// restrictions of accounts and domains, projected from the moderation module's events), the
+// profile timeline (the visibilities each relation
 // allows), blocks and mutes (with expiry) everywhere, the language filter, keyset paging,
 // deletions, and the property that incrementally updated projections equal a rebuild from the
 // events the content and graph modules replay.
@@ -59,6 +62,7 @@ func TimelineContract(t *testing.T, newHarness TimelineFactory) {
 		{"ProfileTimeline", timelineProfile},
 		{"ProfileLeavesOutRepliesAndBoosts", timelineProfileFilters},
 		{"FiltersLanguages", timelineLanguages},
+		{"AppliesModerationRestrictions", timelineModeration},
 		{"PagesByKeyset", timelinePaging},
 		{"ForgetsDeletedStatuses", timelineDeletes},
 		{"IncrementalProjectionEqualsRebuild", timelineProjectionEqualsRebuild},
@@ -88,6 +92,7 @@ func newTimelineEnv(t *testing.T, newHarness TimelineFactory) *timelineEnv {
 	appcontent.RegisterInteractionProjectors(projectors, h.Interactions)
 	appgraph.RegisterProjectors(projectors, h.Graph)
 	apptimeline.RegisterProjectors(projectors, h.Timeline)
+	apptimeline.RegisterModerationProjectors(projectors, h.Timeline)
 	clock := NewClock(time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC))
 	ids := NewIDGenerator(clock)
 	e := &timelineEnv{
@@ -732,4 +737,51 @@ func timelineProjectionEqualsRebuild(t *testing.T, e *timelineEnv) {
 			t.Fatalf("rebuilt projection differs from the incremental one:\n rebuilt:     %+v\n incremental: %+v", rebuilt, incremental)
 		}
 	}
+}
+
+// moderate emits the restrictions in effect on an account or a domain, as the moderation module
+// does after an action or a lift.
+func (e *timelineEnv) moderate(t *testing.T, ev uow.Event) {
+	t.Helper()
+	if err := e.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error { return tx.Emit(t.Context(), ev) }); err != nil {
+		t.Fatalf("emit %s: %v", ev.EventType(), err)
+	}
+}
+
+func timelineModeration(t *testing.T, e *timelineEnv) {
+	alice, carol := e.account(true), e.account(true)
+	remote := e.account(false)
+	pub := e.public(t, carol)
+	far := e.public(t, remote)
+	local := func(want ...string) {
+		t.Helper()
+		p, err := e.svc.Local(t.Context(), anonymous, apptimeline.Query{Limit: apptimeline.MaxLimit})
+		expectPage(t, "Local", p, err, want...)
+	}
+	profile := func(want ...string) {
+		t.Helper()
+		p, err := e.svc.Profile(t.Context(), viewerOf(alice), remote, apptimeline.ProfileFilter{}, apptimeline.Query{Limit: apptimeline.MaxLimit})
+		expectPage(t, "Profile", p, err, want...)
+	}
+	local(pub.ID)
+	profile(far.ID)
+
+	// A limit of carol keeps her posts off the local timeline until it is lifted; the
+	// restrictions that do not bear on timelines are left out.
+	until := e.clock.Now().Add(time.Hour)
+	e.moderate(t, appmoderation.AccountRestrictionsChanged{AccountID: carol, Effects: []appmoderation.Effect{
+		{Restriction: moderation.RestrictFederation},
+		{Restriction: moderation.RestrictPublicDiscovery, Until: &until},
+	}})
+	local()
+	e.moderate(t, appmoderation.AccountRestrictionsChanged{AccountID: carol})
+	local(pub.ID)
+
+	// A suspension of the remote account's parent domain hides its profile.
+	e.moderate(t, appmoderation.DomainRestrictionsChanged{Domain: "example", Effects: []appmoderation.Effect{
+		{Restriction: moderation.RestrictProfileView}, {Restriction: moderation.RestrictFederation},
+	}})
+	profile()
+	e.moderate(t, appmoderation.DomainRestrictionsChanged{Domain: "example"})
+	profile(far.ID)
 }

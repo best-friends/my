@@ -80,6 +80,13 @@ type AccountProfileRevision struct {
 	RevisedAt     int64
 }
 
+type AccountRestriction struct {
+	AccountID      string
+	Restriction    string
+	SourceActionID string
+	EffectiveUntil sql.NullInt64
+}
+
 type Block struct {
 	ID               string
 	Uri              sql.NullString
@@ -139,6 +146,25 @@ type DeliveryAttempt struct {
 	HttpStatus      sql.NullInt64
 	Error           sql.NullString
 	AttemptedAt     int64
+}
+
+type DomainModerationAction struct {
+	ID             string
+	Domain         string
+	Kind           string
+	PublicComment  sql.NullString
+	PrivateNote    sql.NullString
+	Obfuscate      int64
+	IssuedByUserID sql.NullString
+	ExpiresAt      sql.NullInt64
+	IssuedAt       int64
+}
+
+type DomainRestriction struct {
+	Domain         string
+	Restriction    string
+	SourceActionID string
+	EffectiveUntil sql.NullInt64
 }
 
 type Favourite struct {
@@ -334,6 +360,21 @@ type MediaVariant struct {
 	Height      int64
 }
 
+type ModerationAction struct {
+	ID              string
+	TargetAccountID string
+	Kind            string
+	ReasonCategory  string
+	PublicReason    sql.NullString
+	PrivateNote     sql.NullString
+	ReportID        sql.NullString
+	Issuer          string
+	IssuedByUserID  sql.NullString
+	NotifyTarget    int64
+	ExpiresAt       sql.NullInt64
+	IssuedAt        int64
+}
+
 type Mute struct {
 	AccountID         string
 	TargetAccountID   string
@@ -486,6 +527,24 @@ type RemoteStatusRevision struct {
 	RevisionID        string
 	ActivityUri       sql.NullString
 	HtmlPolicyVersion int64
+}
+
+type Report struct {
+	ID                string
+	Uri               sql.NullString
+	ReporterAccountID string
+	TargetAccountID   string
+	Category          string
+	Comment           string
+	Forwarded         int64
+	FiledAt           int64
+}
+
+type ReportState struct {
+	ReportID       string
+	State          string
+	AssigneeUserID sql.NullString
+	Since          int64
 }
 
 type Role struct {

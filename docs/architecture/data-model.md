@@ -395,18 +395,20 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `domain_moderation_actions` | イベント | `id`, `domain`, `kind`（`enum(limit, suspend, reject_media, reject_reports, force_sensitive)`）, `public_comment` / `private_note`（NULL 可）, `obfuscate`（`bool`）, `issued_by_user_id`, `expires_at`（NULL 可）, `issued_at` | インデックス `(domain, id DESC)` |
-| `domain_moderation_action_lifts` | イベント | `action_id`（PK）, `lifted_by_user_id`, `lifted_at` | |
+| `domain_moderation_actions` | イベント | `id`, `domain`, `kind`（`enum(limit, suspend, reject_media, reject_reports, force_sensitive)`）, `public_comment` / `private_note`（NULL 可）, `obfuscate`（`bool`）, `issued_by_user_id`（NULL 可 = CLI）, `expires_at`（NULL 可）, `issued_at` | インデックス `(domain, id DESC)` |
+| `domain_moderation_action_lifts` | イベント | `action_id`（PK）, `lifted_by_user_id`（NULL 可 = CLI）, `lifted_at` | |
 | `domain_restrictions` | 投影 | `domain`, `restriction`, `source_action_id`, `effective_until`（NULL 可） | PK `(domain, restriction, source_action_id)` |
 
+- `domain` は正規化したホスト（IDNA の A-label、[federation.md §1.2](federation.md#ホスト名の正規化idn)）です。
 - サブドメインにも効きます。判定は、対象ドメインとその親ドメイン群を列挙して `domain IN (…)` で引きます。
+- 処分と同じトランザクションで、その処分が生む制限の行を `account_restrictions` / `domain_restrictions` に書きます。解除は同じトランザクションでその処分の行（`source_action_id`）を消します。解除の再実行は何もしません。
 - ドメイン単位の制限を各アカウントの行に展開することはしません（件数が膨らむため）。判定時に `account_restrictions` と合成します（§5.3）。
 
 #### 通報
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `reports` | リソース | `id`, `uri`（NULL 可。受信した `Flag`）, `reporter_account_id`, `target_account_id`, `category`（`enum(spam, legal, violation, other)`）, `comment`, `forwarded`（`bool`）, `filed_at` | 一意 `(uri)`。インデックス `(target_account_id, id)` |
+| `reports` | リソース | `id`, `uri`（NULL 可。受信した `Flag` の `id`、`id` の無い `Flag` は受信の記録と同じ `urn:my:digest:…`）, `reporter_account_id`, `target_account_id`, `category`（`enum(spam, legal, violation, other)`）, `comment`（5,000 文字まで）, `forwarded`（`bool`）, `filed_at` | 一意 `(uri)`。インデックス `(target_account_id, id)` |
 | `report_statuses` | リソース（子） | `report_id`, `status_id` | PK `(report_id, status_id)` |
 | `report_rule_citations` | リソース（子） | `report_id`, `rule_id` | PK `(report_id, rule_id)`。ルールの文言が改訂されても `rule_id` は変わらない（§4.9） |
 | `report_assignments` | イベント | `id`, `report_id`, `assignee_user_id`（NULL 可 = 担当解除）, `assigned_by_user_id`, `assigned_at` | インデックス `(report_id, id DESC)` |
@@ -623,7 +625,8 @@ flowchart LR
 - フォローとブロックは、2 人の組（順序なし）単位でトランザクションを直列化します（`Repository.LockPair`）。
   PostgreSQL は READ COMMITTED なので、トランザクションスコープのアドバイザリロックを取ります。SQLite は書き込みトランザクションが `BEGIN IMMEDIATE` で直列なので何もしません。
   これが無いと、同時に走ったフォローとブロックが互いを見落とし、ブロック中のフォローが残ります。
-- ブロックの対象はローカルのアカウントだけです（存在すれば有効でなくてもよい）。リモートとのブロックは連合（`federation`）から記録します。
+- ローカルのアカウントは、ローカルのアカウントもリモートのアカウントもブロックできます（存在すれば有効でなくてもよい）。リモートのアカウントへのブロックは `federation` が `Block` / `Undo Block` として配送します。
+- リモートのアカウントがローカルのアカウントをブロックしたことは、受信した `Block` から `graph.ReceiveBlock` が記録します（`blocks.uri` は `Block` の `id`）。同じ `uri` の `Block` の再受信と、ブロックが有効な組への `Block` は何もしません。`Undo Block` は `graph.RetractRemoteBlock` が、`uri`（`id` の無い `Block` は 2 人の組）で引いて取り消します。
 - ミュートは本人だけに効き、履歴にも意味がないので現在値です（ADR-0020 規約 5）。ミュートし直すと設定・期限・`created_at` を置き換えます。
 - 期限付きのミュートは、読み取り時に `expires_at > 現在時刻` で絞り込むので、期限が来た時点で書き込み無しに無効になります。
   期限切れの行は、1 時間ごとの消去ジョブ `graph.cleanup_mutes` が、1 トランザクションあたり件数を区切って削除し、削除した行ごとに `graph.unmuted` を発行します（FR-803）。
@@ -649,7 +652,8 @@ flowchart LR
 - `feed_entries` の挿入は、同じ `id` があれば失敗させます（投稿とブーストの ID は一度しか挿入されないので、projector の二重登録を検出できます）。
 - `feed_entries` は元の公開範囲を持ちます。サイレンスによる上限（§5.4）は、読み取り時に `feed_author_restrictions` と合成して適用します。
   データを書き換えないので、解除すれば元に戻ります。
-- `feed_author_restrictions` / `feed_domain_restrictions` は、`moderation` の投影ができるまで行を持ちません。テーブルと読み取り時の絞り込みは先に用意しています。
+- `feed_author_restrictions` / `feed_domain_restrictions` の処分による行は、`moderation` のイベント `moderation.account_restrictions_changed` / `moderation.domain_restrictions_changed` から作ります。
+  イベントは処分と解除のたびに、その後に有効な制限（制限ごとに最も遅い期限）を載せるので、projector はそのアカウント・ドメインの 3 つの制限を、載っているものは書き、載っていないものは消します。
 - 将来 fan-out-on-write に切り替える場合も、`home_feed`（閲覧者 × エントリ）をこのモジュールの投影として追加するだけで済みます（ADR-0013）。
 
 ### 4.7 notification

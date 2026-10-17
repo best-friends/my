@@ -125,8 +125,9 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 - `orderingKey` は同じ Actor のアクティビティを直列化しますが（#77）、正しさはそれに頼りません（§3.3）。
 - 実装は `federation.InboxProcessor`（`internal/app/federation`）です。
   - 手順 2 の取り直しでは、埋め込みの文書をすべて信用しないものにします。`Create` / `Update` はオブジェクトを `id` から取得し、`attributedTo` が主体のものに差し替えます。`Delete` は対象がオリジンで消えている（404 / 410 / `Tombstone`）ときだけ通します。自分自身の `Update` はハンドラが Actor を取得し直します。それ以外はアクティビティを `id` から取得し、同じ `id`・型・主体のときにその文書を使います。
-  - 主体はポート `InboxActors`（`RemoteActors.Resolve`）で解決し、ローカルの主体は捨てます。制限はポート `DomainPolicy`（主体のホスト）と `AccountPolicy`（主体のアカウント）で判定します。
-  - ハンドラは `Handle(型, ハンドラ)` で登録します。主体が自分自身を対象にする `Update` / `Delete` は `HandleOwnActor` で別に登録します（`RemoteActors` の Actor の更新・削除）。登録の無い型は `info` のログを残して完了にします（未知の型・`Move`・まだハンドラの無い型）。
+  - 主体はポート `InboxActors`（`RemoteActors.Resolve`）で解決し、ローカルの主体は捨てます。制限はポート `DomainPolicy`（主体のホスト）と `AccountPolicy`（主体のアカウント）で判定します（実装は `moderation.FederationPolicy`、§11）。
+  - ハンドラは `Handle(型, ハンドラ)` で登録します。主体が自分自身を対象にする `Update` / `Delete` は `HandleOwnActor` で別に登録します（`RemoteActors` の Actor の更新・削除）。
+  - `Undo` は、取り消す対象の型ごとに `HandleUndo(型, ハンドラ)` で登録します（取り消すものを記録したモジュールのハンドラが、それぞれの `Undo` を処理する）。対象が埋め込みのアクティビティならその型のハンドラに、URI だけなら登録順に各ハンドラに渡し、最初に `ErrUnknownObject` 以外を返したものの結果にします。どれも知らない `Undo` は tombstone を残します。登録の無い型は `info` のログを残して完了にします（未知の型・`Move`・まだハンドラの無い型）。
   - ハンドラは、対象が無いことを `ErrUnknownObject`、捨てることを `ErrDropActivity`、処理できないことを `ErrUnprocessable`（`Fail`）で返します。取得の `ErrFetchNotFound` / `ErrFetchGone` / `ErrFetchRefused` は捨てる、`ErrFetchFailed` / `ErrFetchUnavailable` とその他のエラーは `Retry` です。
   - 記録や原本が無い・正規化できない・記録と主体が違うジョブは `Fail` です。
   - 結果は `InboxOutcome`（`handled` / `unhandled` / `tombstoned` / `dropped`）です。コントラクトテストは `testkit.InboxProcessingContract` です。
@@ -166,8 +167,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Delete` | Actor（自分自身） | `account.MarkRemoteDeleted`（`remote_deleted`）。投稿・フォロー・ブーストは消去ジョブが消す |
 | `Announce` | 投稿（URI か埋め込み） | `content.RecordRemoteBoost`。埋め込みの投稿は、オリジンが主体と同じでなければ `id` から取得し直す |
 | `Like` / `EmojiReact` | ローカルの投稿 | `content.RecordRemoteFavourite`。Misskey の絵文字リアクション（`_misskey_reaction` 付きの `Like`）と Pleroma / Akkoma の `EmojiReact` もお気に入りとして扱う |
-| `Block` | ローカルの Actor | `graph.ReceiveBlock`。両方向のフォローを終了し、相手の投稿を閲覧者から隠す（`feed_exclusions`） |
-| `Flag` | ローカルの Actor / 投稿 | `moderation.FileRemoteReport`（`reports.uri`）。送信者のドメインに `report_intake` の制限があれば捨てる |
+| `Block` | ローカルの Actor | `graph.ReceiveBlock`。両方向のフォローを終了し、相手の投稿を閲覧者から隠す（`feed_exclusions`）。対象がローカルの利用者の Actor でなければ捨てる |
+| `Flag` | ローカルの Actor / 投稿 | `moderation.FileRemoteReport`（`reports.uri`）。送信者のドメインに `report_intake` の制限があれば捨てる。通報の対象は `object` の最初のローカルの Actor、無ければ最初のローカルの投稿の作者で、その作者の投稿を `report_statuses` に残す。ローカルの対象が無ければ捨てる |
 | `Add` / `Remove` | 主体の `featured` | ピン留めの一覧を取得し直す（C） |
 | `Move` ほか未知の型 | — | ログとメトリクスに残して完了にする（`Move` は v0 の非目標） |
 
@@ -375,7 +376,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   キャッシュは `remote_media_cache` と Blob（`remote/` のキー）に置き、`media.cleanup_remote` が期限と容量の上限で消します（FR-803）。
   キャッシュはまだ実装していない（#276）ので、プロキシはどの方針でも `none` と同じく毎回中継し、`remote_media_cache_ttl` は `max-age` にだけ効きます。
 - ドメイン単位の `media_fetch` の制限（`reject_media`）は、メディアの所有者のドメインと URL のホストの両方に当て、どちらかが制限されていればプロキシは取得せず 404 を返します。
-  判定はポート `content.MediaFetchPolicy` を通します。`moderation` の投影ができるまでは、どのドメインも制限しない `content.NoMediaRestrictions` を組み込みます。
+  判定はポート `content.MediaFetchPolicy` を通します。実装は `moderation.FederationPolicy` です（§11）。
   `media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。
 - サムネイル・blurhash がない動画は、クライアントが「プレビューなし」として表示します。
 
@@ -422,7 +423,9 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 - 判定はサブドメインにも効きます（[data-model §4.3](data-model.md#ドメイン単位の処分)）。
 - `Block` の受信は `graph` の関係として記録します（相手からのブロックで、モデレーションの処分ではありません）。
-- `Flag` の受信は `reports`（`uri` は送信者のホストのものだけ残す）になり、モデレーターの通報一覧に入ります（FR-701）。コメントは 5,000 文字で切ります。
+- `Flag` の受信は `reports`（`uri` は `Flag` の `id`、`id` が無ければ受信の記録と同じ `urn:my:digest:…`。同じ `Flag` の再処理は何もしない）と `report_states`（`open`）になり、モデレーターの通報一覧に入ります（FR-701）。コメントは 5,000 文字で切ります。
+- `moderation.FederationPolicy` は、呼ばれるたびに期限内の制限を読みます（`DomainPolicy`・`AccountPolicy`・`content.MediaFetchPolicy` と、`Flag` の `RejectsReports`）。処分は `moderation.Service` の `IssueDomainAction` / `LiftDomainAction` と、リモートのアカウントへの `IssueRemoteAccountAction`（制限だけを生む `limit` / `suspend` / `force_sensitive`）/ `LiftAccountAction` が記録します。
+- `Block` / `Undo Block` の送信（§7.1）は、ローカルのアカウントがリモートのアカウントをブロック・解除したときだけです。`Block` の `id` はブロックの URI（`/ap/activities/{block_id}`）、宛先はブロックした相手だけで、相手の個人の inbox に送ります（shared inbox に集約しない。Mastodon と同じ）。
 - 通報の転送（`forwarded`）は、インスタンス Actor から対象のアカウントの inbox へ `Flag` を送ります（FR-701）。
 
 ## 12. テスト

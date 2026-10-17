@@ -80,6 +80,13 @@ type AccountProfileRevision struct {
 	RevisedAt     time.Time
 }
 
+type AccountRestriction struct {
+	AccountID      string
+	Restriction    string
+	SourceActionID string
+	EffectiveUntil *time.Time
+}
+
 type Block struct {
 	ID               string
 	Uri              *string
@@ -139,6 +146,25 @@ type DeliveryAttempt struct {
 	HttpStatus      *int32
 	Error           *string
 	AttemptedAt     time.Time
+}
+
+type DomainModerationAction struct {
+	ID             string
+	Domain         string
+	Kind           string
+	PublicComment  *string
+	PrivateNote    *string
+	Obfuscate      bool
+	IssuedByUserID *string
+	ExpiresAt      *time.Time
+	IssuedAt       time.Time
+}
+
+type DomainRestriction struct {
+	Domain         string
+	Restriction    string
+	SourceActionID string
+	EffectiveUntil *time.Time
 }
 
 type Favourite struct {
@@ -334,6 +360,21 @@ type MediaVariant struct {
 	Height      int32
 }
 
+type ModerationAction struct {
+	ID              string
+	TargetAccountID string
+	Kind            string
+	ReasonCategory  string
+	PublicReason    *string
+	PrivateNote     *string
+	ReportID        *string
+	Issuer          string
+	IssuedByUserID  *string
+	NotifyTarget    bool
+	ExpiresAt       *time.Time
+	IssuedAt        time.Time
+}
+
 type Mute struct {
 	AccountID         string
 	TargetAccountID   string
@@ -486,6 +527,24 @@ type RemoteStatusRevision struct {
 	RevisionID        string
 	ActivityUri       *string
 	HtmlPolicyVersion int32
+}
+
+type Report struct {
+	ID                string
+	Uri               *string
+	ReporterAccountID string
+	TargetAccountID   string
+	Category          string
+	Comment           string
+	Forwarded         bool
+	FiledAt           time.Time
+}
+
+type ReportState struct {
+	ReportID       string
+	State          string
+	AssigneeUserID *string
+	Since          time.Time
 }
 
 type Role struct {

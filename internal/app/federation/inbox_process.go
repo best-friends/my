@@ -116,6 +116,13 @@ type inboxRoute struct {
 type InboxProcessor struct {
 	d        InboxProcessorDeps
 	handlers map[inboxRoute]InboxHandler
+	// undo are the handlers of Undo by the type of the activity undone, in registration order.
+	undo []undoRoute
+}
+
+type undoRoute struct {
+	typ federation.ActivityType
+	h   InboxHandler
 }
 
 // NewInboxProcessor returns the InboxProcessor on d, without handlers.
@@ -148,9 +155,51 @@ func (p *InboxProcessor) HandleOwnActor(t federation.ActivityType, h InboxHandle
 	p.register(inboxRoute{typ: t, ownActor: true}, h)
 }
 
+// HandleUndo sets the handler of the Undo of activities of type t (federation.md §3.4), so that
+// each module that takes back what it records handles its own Undo. An Undo whose object embeds
+// an activity goes to the handler of that activity's type; one whose object is only a URI goes
+// to each handler in registration order until one knows the object (does not return
+// ErrUnknownObject). An Undo that no handler knows leaves a tombstone. It panics when t is not a
+// known type, is Undo, already has a handler, or when a handler of every Undo is set with Handle.
+func (p *InboxProcessor) HandleUndo(t federation.ActivityType, h InboxHandler) {
+	if t == federation.ActivityUnknown || t == federation.ActivityUndo || h == nil {
+		panic(fmt.Sprintf("federation: HandleUndo of %q", t))
+	}
+	if _, all := p.handlers[inboxRoute{typ: federation.ActivityUndo}]; all {
+		panic("federation: HandleUndo after Handle(Undo)")
+	}
+	for _, r := range p.undo {
+		if r.typ == t {
+			panic(fmt.Sprintf("federation: the Undo of %s registered twice", t))
+		}
+	}
+	p.undo = append(p.undo, undoRoute{typ: t, h: h})
+}
+
+// undone hands an Undo to the handler of the type of the activity it undoes (HandleUndo).
+func (p *InboxProcessor) undone(ctx context.Context, in *InboxActivity) error {
+	if doc := in.Activity.Object().Untrusted(); doc != nil && doc.Activity != nil && doc.Activity.Type != federation.ActivityUnknown {
+		for _, r := range p.undo {
+			if r.typ == doc.Activity.Type {
+				return r.h(ctx, in)
+			}
+		}
+		return ErrUnknownObject
+	}
+	for _, r := range p.undo {
+		if err := r.h(ctx, in); !errors.Is(err, ErrUnknownObject) {
+			return err
+		}
+	}
+	return ErrUnknownObject
+}
+
 func (p *InboxProcessor) register(r inboxRoute, h InboxHandler) {
 	if r.typ == federation.ActivityUnknown || h == nil {
 		panic("federation: an inbox handler needs a known activity type and a function")
+	}
+	if r == (inboxRoute{typ: federation.ActivityUndo}) && len(p.undo) > 0 {
+		panic("federation: Handle(Undo) after HandleUndo")
 	}
 	if _, dup := p.handlers[r]; dup {
 		panic(fmt.Sprintf("federation: inbox handler for %s (own actor %t) registered twice", r.typ, r.ownActor))
@@ -350,6 +399,9 @@ func (p *InboxProcessor) dispatch(ctx context.Context, in *InboxActivity) (Inbox
 	act := in.Activity
 	route := inboxRoute{typ: act.Type, ownActor: ownActorActivity(act)}
 	h, ok := p.handlers[route]
+	if !ok && act.Type == federation.ActivityUndo && len(p.undo) > 0 {
+		h, ok = p.undone, true
+	}
 	takesBack := !route.ownActor && (act.Type == federation.ActivityDelete || act.Type == federation.ActivityUndo)
 	var err error
 	switch {

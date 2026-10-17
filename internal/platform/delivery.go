@@ -15,10 +15,9 @@ func (a *App) setUpDelivery(repo federation.Repository) {
 	a.InstanceHealth = federation.NewHealth(federation.HealthDeps{UnitOfWork: a.UnitOfWork, Repository: repo, Clock: a.Clock})
 	a.Deliverer = federation.NewDeliverer(federation.DeliverDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo,
-		Client: federation.NewSignedHTTPClient(a.HTTPClient, httpsig.New(), a.KV, a.Clock),
-		Keys:   federation.AccountSigningKeys{Accounts: a.Accounts},
-		// No domain blocks exist yet; the delivery still goes through the policy port.
-		Domains: federation.NoDomainRestrictions{},
+		Client:  federation.NewSignedHTTPClient(a.HTTPClient, httpsig.New(), a.KV, a.Clock),
+		Keys:    federation.AccountSigningKeys{Accounts: a.Accounts},
+		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Logger: a.Logger,
 	})
 	a.Deliverer.RegisterJobs(a.Handlers)

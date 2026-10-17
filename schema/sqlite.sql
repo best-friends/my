@@ -1313,3 +1313,123 @@ CREATE TABLE instance_health (
   last_failure_day TEXT NOT NULL CHECK (length(last_failure_day) IN (0, 8))
 ) STRICT;
 CREATE INDEX instance_health_state ON instance_health (state);
+
+-- ---------------------------------------------------------------------------------------------
+-- moderation: actions on accounts and domains, the restrictions they impose, and reports
+-- (data-model §4.3, §5.2, docs/architecture/federation.md §11). Owned by internal/app/moderation.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: a moderation action on an account. A ban never expires.
+CREATE TABLE moderation_actions (
+  id TEXT NOT NULL PRIMARY KEY,
+  target_account_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN (
+    'warn', 'mark_statuses_sensitive', 'delete_statuses', 'force_sensitive', 'limit',
+    'restrict_posting', 'restrict_interaction', 'disable_login', 'suspend', 'ban'
+  )),
+  reason_category TEXT NOT NULL CHECK (reason_category IN ('spam', 'legal', 'violation', 'other')),
+  public_reason TEXT,
+  private_note TEXT,
+  report_id TEXT,
+  issuer TEXT NOT NULL CHECK (issuer IN ('moderator', 'system', 'remote')),
+  issued_by_user_id TEXT,
+  notify_target INTEGER NOT NULL CHECK (notify_target IN (0, 1)),
+  expires_at INTEGER,
+  issued_at INTEGER NOT NULL,
+  CHECK (kind <> 'ban' OR expires_at IS NULL),
+  CHECK (expires_at IS NULL OR expires_at > issued_at)
+) STRICT;
+CREATE INDEX moderation_actions_target_account_id_id ON moderation_actions (target_account_id, id DESC);
+CREATE INDEX moderation_actions_report_id ON moderation_actions (report_id);
+
+-- Event: a moderation action on an account was lifted. Expiry is not a lift.
+-- lifted_by_user_id is NULL for the system.
+CREATE TABLE moderation_action_lifts (
+  action_id TEXT NOT NULL PRIMARY KEY,
+  lifted_by_user_id TEXT,
+  reason TEXT,
+  lifted_at INTEGER NOT NULL
+) STRICT;
+
+-- Projection: the restrictions that the actions on an account impose, one row per restriction
+-- and action, until effective_until (NULL: until lifted).
+CREATE TABLE account_restrictions (
+  account_id TEXT NOT NULL,
+  restriction TEXT NOT NULL CHECK (restriction IN (
+    'login', 'post', 'interact', 'visibility_ceiling_private', 'public_discovery',
+    'unsolicited_reach', 'media_sensitive', 'profile_view', 'federation', 'media_fetch',
+    'report_intake'
+  )),
+  source_action_id TEXT NOT NULL,
+  effective_until INTEGER,
+  PRIMARY KEY (account_id, restriction, source_action_id)
+) STRICT;
+CREATE INDEX account_restrictions_source_action_id ON account_restrictions (source_action_id);
+
+-- Event: a moderation action on a domain and its subdomains. issued_by_user_id is NULL for the
+-- CLI.
+CREATE TABLE domain_moderation_actions (
+  id TEXT NOT NULL PRIMARY KEY,
+  domain TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('limit', 'suspend', 'reject_media', 'reject_reports', 'force_sensitive')),
+  public_comment TEXT,
+  private_note TEXT,
+  obfuscate INTEGER NOT NULL CHECK (obfuscate IN (0, 1)),
+  issued_by_user_id TEXT,
+  expires_at INTEGER,
+  issued_at INTEGER NOT NULL,
+  CHECK (expires_at IS NULL OR expires_at > issued_at)
+) STRICT;
+CREATE INDEX domain_moderation_actions_domain_id ON domain_moderation_actions (domain, id DESC);
+
+-- Event: a domain action was lifted. lifted_by_user_id is NULL for the CLI.
+CREATE TABLE domain_moderation_action_lifts (
+  action_id TEXT NOT NULL PRIMARY KEY,
+  lifted_by_user_id TEXT,
+  lifted_at INTEGER NOT NULL
+) STRICT;
+
+-- Projection: the restrictions that the actions on a domain impose on it and its subdomains,
+-- until effective_until (NULL: until lifted).
+CREATE TABLE domain_restrictions (
+  domain TEXT NOT NULL,
+  restriction TEXT NOT NULL CHECK (restriction IN (
+    'public_discovery', 'unsolicited_reach', 'profile_view', 'federation', 'media_fetch',
+    'report_intake', 'media_sensitive'
+  )),
+  source_action_id TEXT NOT NULL,
+  effective_until INTEGER,
+  PRIMARY KEY (domain, restriction, source_action_id)
+) STRICT;
+CREATE INDEX domain_restrictions_source_action_id ON domain_restrictions (source_action_id);
+
+-- Resource: a report of an account. uri is the id of a received Flag (or the URI synthesized
+-- for a Flag without one), NULL for a local report.
+CREATE TABLE reports (
+  id TEXT NOT NULL PRIMARY KEY,
+  uri TEXT,
+  reporter_account_id TEXT NOT NULL,
+  target_account_id TEXT NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('spam', 'legal', 'violation', 'other')),
+  comment TEXT NOT NULL,
+  forwarded INTEGER NOT NULL CHECK (forwarded IN (0, 1)),
+  filed_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX reports_uri ON reports (uri);
+CREATE INDEX reports_target_account_id_id ON reports (target_account_id, id);
+
+-- Resource (child of a report): the statuses a report points at.
+CREATE TABLE report_statuses (
+  report_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  PRIMARY KEY (report_id, status_id)
+) STRICT;
+
+-- Projection: whether a report is open, and who handles it.
+CREATE TABLE report_states (
+  report_id TEXT NOT NULL PRIMARY KEY,
+  state TEXT NOT NULL CHECK (state IN ('open', 'resolved')),
+  assignee_user_id TEXT,
+  since INTEGER NOT NULL
+) STRICT;
+CREATE INDEX report_states_state_report_id ON report_states (state, report_id);

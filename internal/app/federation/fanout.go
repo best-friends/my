@@ -13,6 +13,7 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
+	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
@@ -37,6 +38,8 @@ type FanOutDeps struct {
 	IDs     kernel.IDGenerator
 	// Parts resolves the media, mentions, and hashtags of the revisions that Notes present.
 	Parts NoteParts
+	// Blocks reads the local blocks that Block and Undo Block are about.
+	Blocks BlockFinder
 	// Host is the serving domain of the activity and object URIs (ADR-0018).
 	Host string
 	// AccountDomain is the domain of local handles in mentions; empty means Host.
@@ -219,6 +222,8 @@ const (
 	phasePrior phase = "prior"
 	// phaseBoostedAuthor is the author of a boosted status, in one batch.
 	phaseBoostedAuthor phase = "boosted_author"
+	// phaseBlocked is the remote account a block is about, in one batch.
+	phaseBlocked phase = "blocked"
 )
 
 // subject is what the fan-out of one activity needs to know about its object.
@@ -239,6 +244,8 @@ type subject struct {
 	status   appcontent.Status
 	revision appcontent.Revision
 	boost    appcontent.Boost
+	// block is the local block a Block or Undo Block is about.
+	block appgraph.Block
 }
 
 // phases returns the sources of recipients of the activity, in order (data-model §7,
@@ -250,6 +257,8 @@ type subject struct {
 //   - Announce and Undo Announce: the booster's followers, then the boosted status's author.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
+	case federation.OutboundBlock:
+		return []phase{phaseBlocked}
 	case federation.OutboundStatus:
 		if s.act.Type == federation.ActivityCreate {
 			return []phase{phaseMentions, phaseFollowers}
@@ -267,6 +276,9 @@ func (s subject) phases() []phase {
 // subject loads the object of act. An object that is gone fails with errGone.
 func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, revisionID string) (subject, error) {
 	s := subject{act: act, actorID: act.ActorAccountID}
+	if act.ObjectKind == federation.OutboundBlock {
+		return f.blockSubject(ctx, s)
+	}
 	var err error
 	switch {
 	case act.ObjectKind == federation.OutboundStatus && (act.Type == federation.ActivityCreate || act.Type == federation.ActivityUpdate):
@@ -341,6 +353,9 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 		}
 		targets, err = f.resolve(ctx, act, s, ids, true)
 		return targets, next, err
+	case phaseBlocked:
+		targets, err = f.blockedInbox(ctx, s)
+		return targets, "", err
 	case phaseMentions, phaseBoostedAuthor:
 		targets, err = f.resolve(ctx, act, s, s.mentioned, false)
 		return targets, "", err
