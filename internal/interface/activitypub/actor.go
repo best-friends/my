@@ -28,17 +28,17 @@ func (h *Handler) actorDocument(a appaccount.Actor) federation.ActorDocument {
 // with the properties Mastodon keeps in the same case (id, type, preferredUsername, inbox,
 // publicKey, endpoints).
 type keyDocument struct {
-	Context           []any             `json:"@context"`
-	ID                string            `json:"id"`
-	Type              string            `json:"type"`
-	PreferredUsername string            `json:"preferredUsername"`
-	Inbox             string            `json:"inbox"`
-	PublicKey         *publicKey        `json:"publicKey,omitempty"`
-	Endpoints         map[string]string `json:"endpoints"`
+	Context           []any                         `json:"@context"`
+	ID                federation.IRI                `json:"id"`
+	Type              federation.ActorType          `json:"type"`
+	PreferredUsername string                        `json:"preferredUsername"`
+	Inbox             federation.IRI                `json:"inbox"`
+	PublicKey         *federation.PublicKeyDocument `json:"publicKey,omitempty"`
+	Endpoints         map[string]federation.IRI     `json:"endpoints"`
 }
 
 // keyDocumentOf returns the minimal document of a full actor document.
-func keyDocumentOf(doc actorDocument) keyDocument {
+func keyDocumentOf(doc federation.ActorDocument) keyDocument {
 	return keyDocument{
 		Context: doc.Context, ID: doc.ID, Type: doc.Type, PreferredUsername: doc.PreferredUsername,
 		Inbox: doc.Inbox, PublicKey: doc.PublicKey, Endpoints: doc.Endpoints,
