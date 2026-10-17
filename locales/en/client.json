@@ -1,4 +1,204 @@
 {
+  "admin.dead_jobs.attempts": {
+    "defaultMessage": "Attempts",
+    "description": "Term in a failed job's details: how many times the job ran."
+  },
+  "admin.dead_jobs.created_at": {
+    "defaultMessage": "Created",
+    "description": "Term in a failed job's details: when the job was enqueued first."
+  },
+  "admin.dead_jobs.empty": {
+    "defaultMessage": "No failed jobs",
+    "description": "Heading of the failed jobs screen when no job failed for good."
+  },
+  "admin.dead_jobs.failed_at": {
+    "defaultMessage": "Failed",
+    "description": "Term in a failed job's details: when the job failed for good."
+  },
+  "admin.dead_jobs.idempotency_key": {
+    "defaultMessage": "Idempotency key",
+    "description": "Term in a failed job's details: the key that keeps the job from being enqueued twice."
+  },
+  "admin.dead_jobs.last_error": {
+    "defaultMessage": "Last error",
+    "description": "Term in a failed job's details: why the job's last run failed."
+  },
+  "admin.dead_jobs.ordering_key": {
+    "defaultMessage": "Ordering key",
+    "description": "Term in a failed job's details: the key that runs the jobs with the same key one after another."
+  },
+  "admin.dead_jobs.payload": {
+    "defaultMessage": "Payload",
+    "description": "Term in a failed job's details: the job's input data, as JSON."
+  },
+  "admin.dead_jobs.retried": {
+    "defaultMessage": "The job {type} is queued to run again.",
+    "description": "Announcement after an operator ran a failed job again. {type} is the job type, such as federation.deliver."
+  },
+  "admin.dead_jobs.retry": {
+    "defaultMessage": "Run again",
+    "description": "Button of a failed job that runs it again."
+  },
+  "admin.dead_jobs.retry_failed": {
+    "defaultMessage": "Could not run the job again: {reason}",
+    "description": "Error toast when a failed job could not be run again. {reason} is the server's localized reason."
+  },
+  "admin.dead_jobs.retry_job": {
+    "defaultMessage": "Run again: {type}, failed {date}",
+    "description": "Accessible name of the run-again button of a failed job, which names the job. {type} is the job type; {date} is when it failed, formatted."
+  },
+  "admin.dead_jobs.summary": {
+    "defaultMessage": "Background jobs that failed for good, and running them again.",
+    "description": "Description of the failed jobs screen in the administration menu of the settings."
+  },
+  "admin.dead_jobs.title": {
+    "defaultMessage": "Failed jobs",
+    "description": "Heading of the screen of background jobs that failed for good, and its link in the administration menu."
+  },
+  "admin.instance.back": {
+    "defaultMessage": "Back to remote servers",
+    "description": "Link under the heading of a remote server's page that opens the list of remote servers."
+  },
+  "admin.instance.event.marked_available": {
+    "defaultMessage": "Deliveries resumed",
+    "description": "Heading of an entry of a remote server's history: deliveries to it resumed."
+  },
+  "admin.instance.event.marked_unavailable": {
+    "defaultMessage": "Deliveries paused",
+    "description": "Heading of an entry of a remote server's history: deliveries to it were paused."
+  },
+  "admin.instance.failure_days": {
+    "defaultMessage": "Days with failed deliveries",
+    "description": "Term in a remote server's details: on how many different days deliveries to it failed in a row."
+  },
+  "admin.instance.failure_days.value": {
+    "defaultMessage": "{count, plural, one {# day} other {# days}}",
+    "description": "The number of days with failed deliveries to a remote server."
+  },
+  "admin.instance.history.empty": {
+    "defaultMessage": "Deliveries to this server were never paused",
+    "description": "Text of a remote server's history when deliveries to it were never paused or resumed."
+  },
+  "admin.instance.history.title": {
+    "defaultMessage": "History",
+    "description": "Heading of the history of a remote server: when deliveries to it were paused and resumed, and why."
+  },
+  "admin.instance.last_failure": {
+    "defaultMessage": "Last failed delivery",
+    "description": "Term in a remote server's details: the last day a delivery to it failed."
+  },
+  "admin.instance.last_resumed": {
+    "defaultMessage": "Deliveries last resumed",
+    "description": "Term in a remote server's details: the last time deliveries to it resumed after a pause."
+  },
+  "admin.instance.mark_available": {
+    "defaultMessage": "Resume deliveries",
+    "description": "Button on a remote server's page that clears its failures and resumes deliveries to it."
+  },
+  "admin.instance.mark_available.description": {
+    "defaultMessage": "Clears the failed days, so that the server gets every delivery again.",
+    "description": "Description under the button that resumes deliveries to a remote server."
+  },
+  "admin.instance.mark_failed": {
+    "defaultMessage": "Could not resume deliveries: {reason}",
+    "description": "Error toast when deliveries to a remote server could not be resumed. {reason} is the server's localized reason."
+  },
+  "admin.instance.marked_available": {
+    "defaultMessage": "Deliveries to {domain} resume.",
+    "description": "Announcement after an operator resumed deliveries to a remote server. {domain} is its domain."
+  },
+  "admin.instance.none": {
+    "defaultMessage": "None",
+    "description": "Value of a term in a remote server's details that has nothing to show, such as the last failure of a server without failures."
+  },
+  "admin.instance.reason": {
+    "defaultMessage": "Reason",
+    "description": "Term in a remote server's details: why deliveries to it were last paused or resumed."
+  },
+  "admin.instance.reason.delivery_succeeded": {
+    "defaultMessage": "A delivery to the server succeeded.",
+    "description": "Why deliveries to a remote server resumed: a delivery to it succeeded."
+  },
+  "admin.instance.reason.failure_days": {
+    "defaultMessage": "Deliveries failed on 7 different days.",
+    "description": "Why deliveries to a remote server were paused: they failed on 7 different days."
+  },
+  "admin.instance.reason.inbound_request": {
+    "defaultMessage": "The server sent a signed request.",
+    "description": "Why deliveries to a remote server resumed: it sent this server a signed request."
+  },
+  "admin.instance.reason.operator": {
+    "defaultMessage": "An operator resumed deliveries.",
+    "description": "Why deliveries to a remote server resumed: an operator resumed them."
+  },
+  "admin.instance.reason.probe_succeeded": {
+    "defaultMessage": "The daily check reached the server.",
+    "description": "Why deliveries to a remote server resumed: the daily check reached it."
+  },
+  "admin.instance.since": {
+    "defaultMessage": "Since",
+    "description": "Term in a remote server's details: since when it is in its state."
+  },
+  "admin.instance.state": {
+    "defaultMessage": "State",
+    "description": "Term in a remote server's details: whether deliveries go to it."
+  },
+  "admin.instance.state.available": {
+    "defaultMessage": "Delivering",
+    "description": "State of a remote server that gets every delivery."
+  },
+  "admin.instance.state.unavailable": {
+    "defaultMessage": "Paused",
+    "description": "State of a remote server that gets only follow requests and their answers, because deliveries to it kept failing."
+  },
+  "admin.instances.empty": {
+    "defaultMessage": "No servers with failed deliveries",
+    "description": "Heading of the remote servers screen when no server has failed deliveries."
+  },
+  "admin.instances.empty.description": {
+    "defaultMessage": "Servers that are not listed get every delivery.",
+    "description": "Text under the heading of the empty remote servers screen."
+  },
+  "admin.instances.filter.all": {
+    "defaultMessage": "All",
+    "description": "Tab of the remote servers screen that shows every listed server."
+  },
+  "admin.instances.filter.available": {
+    "defaultMessage": "Delivering",
+    "description": "Tab of the remote servers screen that shows the servers that get every delivery, though some deliveries failed."
+  },
+  "admin.instances.filter.label": {
+    "defaultMessage": "Server state",
+    "description": "Accessible name of the tabs that filter the remote servers by state."
+  },
+  "admin.instances.filter.unavailable": {
+    "defaultMessage": "Paused",
+    "description": "Tab of the remote servers screen that shows the servers whose deliveries are paused."
+  },
+  "admin.instances.summary": {
+    "defaultMessage": "Servers that deliveries failed to reach, and why deliveries to some are paused.",
+    "description": "Description of the remote servers screen in the administration menu of the settings."
+  },
+  "admin.instances.title": {
+    "defaultMessage": "Remote servers",
+    "description": "Heading of the screen of the remote servers that deliveries failed to reach, and its link in the administration menu."
+  },
+  "admin.list.more": {
+    "defaultMessage": "Show more",
+    "description": "Button under a list of an admin screen that loads more of it."
+  },
+  "admin.menu.title": {
+    "defaultMessage": "Administration",
+    "description": "Heading of the links to the admin screens on the settings page, shown only to operators."
+  },
+  "admin.missing_permission.description": {
+    "defaultMessage": "Your roles do not have the permission {permission}. Ask an administrator of this server for it.",
+    "description": "Text of an admin screen for a user whose roles lack its permission. {permission} is the permission's code, such as manage_jobs."
+  },
+  "admin.missing_permission.heading": {
+    "defaultMessage": "You cannot use this screen",
+    "description": "Heading of an admin screen for a user whose roles lack its permission."
+  },
   "api.error.network": {
     "defaultMessage": "Could not reach the server. Check your connection and try again.",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."

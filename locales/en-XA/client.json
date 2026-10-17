@@ -1,4 +1,204 @@
 {
+  "admin.dead_jobs.attempts": {
+    "defaultMessage": "[Ȧŧŧḗḗḿƥŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.created_at": {
+    "defaultMessage": "[Ƈřḗḗȧȧŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.empty": {
+    "defaultMessage": "[Ƞǿǿ ƒȧȧīŀḗḗḓ ĵǿǿƀş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.failed_at": {
+    "defaultMessage": "[Ƒȧȧīŀḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.idempotency_key": {
+    "defaultMessage": "[Īḓḗḗḿƥǿǿŧḗḗƞƈẏ ķḗḗẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.last_error": {
+    "defaultMessage": "[Ŀȧȧşŧ ḗḗřřǿǿř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.ordering_key": {
+    "defaultMessage": "[Ǿřḓḗḗřīƞɠ ķḗḗẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.payload": {
+    "defaultMessage": "[Ƥȧȧẏŀǿǿȧȧḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.retried": {
+    "defaultMessage": "[Ŧħḗḗ ĵǿǿƀ {type} īş ɋŭŭḗḗŭŭḗḗḓ ŧǿǿ řŭŭƞ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.retry": {
+    "defaultMessage": "[Řŭŭƞ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.retry_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řŭŭƞ ŧħḗḗ ĵǿǿƀ ȧȧɠȧȧīƞ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.retry_job": {
+    "defaultMessage": "[Řŭŭƞ ȧȧɠȧȧīƞ: {type}, ƒȧȧīŀḗḗḓ {date}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.summary": {
+    "defaultMessage": "[Ɓȧȧƈķɠřǿǿŭŭƞḓ ĵǿǿƀş ŧħȧȧŧ ƒȧȧīŀḗḗḓ ƒǿǿř ɠǿǿǿǿḓ, ȧȧƞḓ řŭŭƞƞīƞɠ ŧħḗḗḿ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.dead_jobs.title": {
+    "defaultMessage": "[Ƒȧȧīŀḗḗḓ ĵǿǿƀş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.back": {
+    "defaultMessage": "[Ɓȧȧƈķ ŧǿǿ řḗḗḿǿǿŧḗḗ şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.event.marked_available": {
+    "defaultMessage": "[Ḓḗḗŀīṽḗḗřīḗḗş řḗḗşŭŭḿḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.event.marked_unavailable": {
+    "defaultMessage": "[Ḓḗḗŀīṽḗḗřīḗḗş ƥȧȧŭŭşḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.failure_days": {
+    "defaultMessage": "[Ḓȧȧẏş ẇīŧħ ƒȧȧīŀḗḗḓ ḓḗḗŀīṽḗḗřīḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.failure_days.value": {
+    "defaultMessage": "[{count,plural,one{# ḓȧȧẏ} other{# ḓȧȧẏş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.history.empty": {
+    "defaultMessage": "[Ḓḗḗŀīṽḗḗřīḗḗş ŧǿǿ ŧħīş şḗḗřṽḗḗř ẇḗḗřḗḗ ƞḗḗṽḗḗř ƥȧȧŭŭşḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.history.title": {
+    "defaultMessage": "[Ħīşŧǿǿřẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.last_failure": {
+    "defaultMessage": "[Ŀȧȧşŧ ƒȧȧīŀḗḗḓ ḓḗḗŀīṽḗḗřẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.last_resumed": {
+    "defaultMessage": "[Ḓḗḗŀīṽḗḗřīḗḗş ŀȧȧşŧ řḗḗşŭŭḿḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.mark_available": {
+    "defaultMessage": "[Řḗḗşŭŭḿḗḗ ḓḗḗŀīṽḗḗřīḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.mark_available.description": {
+    "defaultMessage": "[Ƈŀḗḗȧȧřş ŧħḗḗ ƒȧȧīŀḗḗḓ ḓȧȧẏş, şǿǿ ŧħȧȧŧ ŧħḗḗ şḗḗřṽḗḗř ɠḗḗŧş ḗḗṽḗḗřẏ ḓḗḗŀīṽḗḗřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.mark_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗşŭŭḿḗḗ ḓḗḗŀīṽḗḗřīḗḗş: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.marked_available": {
+    "defaultMessage": "[Ḓḗḗŀīṽḗḗřīḗḗş ŧǿǿ {domain} řḗḗşŭŭḿḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.none": {
+    "defaultMessage": "[Ƞǿǿƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.reason": {
+    "defaultMessage": "[Řḗḗȧȧşǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.reason.delivery_succeeded": {
+    "defaultMessage": "[Ȧ ḓḗḗŀīṽḗḗřẏ ŧǿǿ ŧħḗḗ şḗḗřṽḗḗř şŭŭƈƈḗḗḗḗḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.reason.failure_days": {
+    "defaultMessage": "[Ḓḗḗŀīṽḗḗřīḗḗş ƒȧȧīŀḗḗḓ ǿǿƞ 7 ḓīƒƒḗḗřḗḗƞŧ ḓȧȧẏş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.reason.inbound_request": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř şḗḗƞŧ ȧȧ şīɠƞḗḗḓ řḗḗɋŭŭḗḗşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.reason.operator": {
+    "defaultMessage": "[Ȧƞ ǿǿƥḗḗřȧȧŧǿǿř řḗḗşŭŭḿḗḗḓ ḓḗḗŀīṽḗḗřīḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.reason.probe_succeeded": {
+    "defaultMessage": "[Ŧħḗḗ ḓȧȧīŀẏ ƈħḗḗƈķ řḗḗȧȧƈħḗḗḓ ŧħḗḗ şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.since": {
+    "defaultMessage": "[Şīƞƈḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.state": {
+    "defaultMessage": "[Şŧȧȧŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.state.available": {
+    "defaultMessage": "[Ḓḗḗŀīṽḗḗřīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.state.unavailable": {
+    "defaultMessage": "[Ƥȧȧŭŭşḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instances.empty": {
+    "defaultMessage": "[Ƞǿǿ şḗḗřṽḗḗřş ẇīŧħ ƒȧȧīŀḗḗḓ ḓḗḗŀīṽḗḗřīḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instances.empty.description": {
+    "defaultMessage": "[Şḗḗřṽḗḗřş ŧħȧȧŧ ȧȧřḗḗ ƞǿǿŧ ŀīşŧḗḗḓ ɠḗḗŧ ḗḗṽḗḗřẏ ḓḗḗŀīṽḗḗřẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instances.filter.all": {
+    "defaultMessage": "[Ȧŀŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instances.filter.available": {
+    "defaultMessage": "[Ḓḗḗŀīṽḗḗřīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instances.filter.label": {
+    "defaultMessage": "[Şḗḗřṽḗḗř şŧȧȧŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instances.filter.unavailable": {
+    "defaultMessage": "[Ƥȧȧŭŭşḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instances.summary": {
+    "defaultMessage": "[Şḗḗřṽḗḗřş ŧħȧȧŧ ḓḗḗŀīṽḗḗřīḗḗş ƒȧȧīŀḗḗḓ ŧǿǿ řḗḗȧȧƈħ, ȧȧƞḓ ẇħẏ ḓḗḗŀīṽḗḗřīḗḗş ŧǿǿ şǿǿḿḗḗ ȧȧřḗḗ ƥȧȧŭŭşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instances.title": {
+    "defaultMessage": "[Řḗḗḿǿǿŧḗḗ şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.list.more": {
+    "defaultMessage": "[Şħǿǿẇ ḿǿǿřḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.menu.title": {
+    "defaultMessage": "[Ȧḓḿīƞīşŧřȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.missing_permission.description": {
+    "defaultMessage": "[Ẏǿǿŭŭř řǿǿŀḗḗş ḓǿǿ ƞǿǿŧ ħȧȧṽḗḗ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞ {permission}. Ȧşķ ȧȧƞ ȧȧḓḿīƞīşŧřȧȧŧǿǿř ǿǿƒ ŧħīş şḗḗřṽḗḗř ƒǿǿř īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.missing_permission.heading": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ŭŭşḗḗ ŧħīş şƈřḗḗḗḗƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "api.error.network": {
     "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗȧȧƈħ ŧħḗḗ şḗḗřṽḗḗř. Ƈħḗḗƈķ ẏǿǿŭŭř ƈǿǿƞƞḗḗƈŧīǿǿƞ ȧȧƞḓ ŧřẏ ȧȧɠȧȧīƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."

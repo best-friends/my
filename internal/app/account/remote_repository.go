@@ -21,6 +21,8 @@ type RemoteRepository interface {
 	InsertRemoteAccount(ctx context.Context, tx uow.Tx, ra account.RemoteAccount) (bool, error)
 	// LatestRemoteSnapshot returns the newest snapshot of a remote actor.
 	LatestRemoteSnapshot(ctx context.Context, tx uow.Tx, accountID string) (account.RemoteSnapshot, error)
+	// FindLatestRemoteSnapshot is LatestRemoteSnapshot outside any transaction.
+	FindLatestRemoteSnapshot(ctx context.Context, accountID string) (account.RemoteSnapshot, error)
 	InsertRemoteSnapshot(ctx context.Context, tx uow.Tx, s account.RemoteSnapshot) error
 	// RecordRemoteFetchFailure counts a failed fetch in the actor's head and sets its
 	// LastFetchedAt to at; it reports whether the actor has a head.

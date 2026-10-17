@@ -1,0 +1,103 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package content
+
+import (
+	"cmp"
+	"context"
+	"errors"
+	"strings"
+
+	appaccount "github.com/best-friends/my/internal/app/account"
+)
+
+// mentionResolver resolves the mentions of one text (data-model §4.4, federation.md §6.2):
+//
+//   - @user, @user@{account_domain}, and @user@{host} are local, active accounts, linked to
+//     their profile page on host.
+//   - @user@domain of another domain is a stored remote account with that handle, or else one
+//     that RemoteMentions resolves: at most MaxResolvedMentions unknown handles per text, all
+//     within MentionResolveTimeout. It links to the account's url, or its URI when it has none.
+//
+// Any other handle, and one whose resolution fails, stays text.
+type mentionResolver struct {
+	s *Service
+	// resolved counts the unknown handles given to RemoteMentions.
+	resolved int
+	// budget bounds the resolutions of the text; nil until the first one.
+	budget context.Context
+	cancel context.CancelFunc
+}
+
+func (r *mentionResolver) close() {
+	if r.cancel != nil {
+		r.cancel()
+	}
+}
+
+// resolve returns the target and the account ID of a mention, or false when it stays text.
+func (r *mentionResolver) resolve(ctx context.Context, h MentionHandle) (MentionTarget, string, bool, error) {
+	d := r.s.d
+	if h.Domain == "" || h.Domain == strings.ToLower(d.AccountDomain) || h.Domain == strings.ToLower(d.Host) {
+		// "" is account.LocalDomain, the domain of local handles.
+		a, found, err := r.find(ctx, h.Username, "")
+		if err != nil || !found || !usable(a) || !a.Account.IsLocal() {
+			return MentionTarget{}, "", false, err
+		}
+		return MentionTarget{Username: a.Handle.Username, URL: profileURL(d.Host, a.Handle.Username)}, a.Account.ID, true, nil
+	}
+	a, found, err := r.find(ctx, h.Username, h.Domain)
+	if err != nil {
+		return MentionTarget{}, "", false, err
+	}
+	if !found {
+		if a, found, err = r.fetch(ctx, h); err != nil || !found {
+			return MentionTarget{}, "", false, err
+		}
+	}
+	if !usable(a) || a.Account.IsLocal() {
+		return MentionTarget{}, "", false, nil
+	}
+	u := ""
+	if d.RemoteMentions != nil {
+		u, err = d.RemoteMentions.RemoteProfileURL(ctx, a.Account.ID)
+		if err != nil && !errors.Is(err, appaccount.ErrNotFound) {
+			return MentionTarget{}, "", false, err
+		}
+	}
+	return MentionTarget{Username: a.Handle.Username, URL: cmp.Or(u, a.Account.URI)}, a.Account.ID, true, nil
+}
+
+// find returns the stored account with a handle, and whether there is one.
+func (r *mentionResolver) find(ctx context.Context, username, domain string) (appaccount.Actor, bool, error) {
+	a, err := r.s.d.Accounts.FindByHandle(ctx, username, domain)
+	if errors.Is(err, appaccount.ErrNotFound) {
+		return appaccount.Actor{}, false, nil
+	}
+	return a, err == nil, err
+}
+
+// usable reports whether a mention of a links to it: an active account with a handle.
+func usable(a appaccount.Actor) bool { return a.Lifecycle.Active() && a.Handle != nil }
+
+// fetch resolves an unknown remote handle through RemoteMentions, within the text's bounds, and
+// reports whether it resolved. A handle that does not resolve stays text; only the caller's own
+// cancellation fails the text.
+func (r *mentionResolver) fetch(ctx context.Context, h MentionHandle) (appaccount.Actor, bool, error) {
+	rm := r.s.d.RemoteMentions
+	if rm == nil || r.resolved >= MaxResolvedMentions {
+		return appaccount.Actor{}, false, nil
+	}
+	if r.budget == nil {
+		r.budget, r.cancel = context.WithTimeout(ctx, MentionResolveTimeout)
+	}
+	if r.budget.Err() != nil {
+		return appaccount.Actor{}, false, ctx.Err()
+	}
+	r.resolved++
+	a, err := rm.ResolveHandle(r.budget, h.Username, h.Domain)
+	if err != nil {
+		return appaccount.Actor{}, false, ctx.Err()
+	}
+	return a, true, nil
+}

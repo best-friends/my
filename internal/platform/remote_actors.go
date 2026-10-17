@@ -7,6 +7,7 @@ import (
 
 	"github.com/best-friends/my/internal/adapter/htmlsanitizer"
 	"github.com/best-friends/my/internal/adapter/httpsig"
+	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/app/kernel"
@@ -17,10 +18,11 @@ import (
 )
 
 // federationRepository is what the database adapters provide to the federation module: the
-// outbound side and the remote servers seen.
+// outbound side, the remote servers seen, and the received activities.
 type federationRepository interface {
 	federation.Repository
 	federation.InstanceRepository
+	federation.InboxRepository
 }
 
 // newHTMLSanitizer returns the sanitizer of remote HTML (ADR-0019 §2).
@@ -55,4 +57,17 @@ func (a *App) setUpRemoteActors(cfg *config.Config, repo federationRepository) {
 		Jobs: a.Jobs, Outbox: outbox, Followers: a.Graph, Clock: a.Clock, IDs: a.IDs, Logger: a.Logger,
 	})
 	a.RemoteActors.RegisterJobs(a.Handlers, a.Scheduler)
+}
+
+// remoteMentions resolves the remote handles of local posts for the content module: handles
+// through RemoteActors, profile pages through the account module. It reads a.RemoteActors per
+// call, since the content module is built before setUpRemoteActors.
+type remoteMentions struct{ a *App }
+
+func (m remoteMentions) ResolveHandle(ctx context.Context, username, domain string) (account.Actor, error) {
+	return m.a.RemoteActors.ResolveHandle(ctx, username, domain)
+}
+
+func (m remoteMentions) RemoteProfileURL(ctx context.Context, accountID string) (string, error) {
+	return m.a.Accounts.RemoteProfileURL(ctx, accountID)
 }

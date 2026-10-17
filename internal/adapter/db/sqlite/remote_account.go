@@ -105,6 +105,19 @@ func (r *AccountRepository) LatestRemoteSnapshot(ctx context.Context, tx uow.Tx,
 	if err != nil {
 		return account.RemoteSnapshot{}, notFound(err, appaccount.ErrNotFound, "snapshot of "+accountID)
 	}
+	return remoteSnapshotFrom(row), nil
+}
+
+// FindLatestRemoteSnapshot implements account.Repository.
+func (r *AccountRepository) FindLatestRemoteSnapshot(ctx context.Context, accountID string) (account.RemoteSnapshot, error) {
+	row, err := r.db.reader().GetLatestRemoteAccountSnapshot(ctx, accountID)
+	if err != nil {
+		return account.RemoteSnapshot{}, notFound(err, appaccount.ErrNotFound, "snapshot of "+accountID)
+	}
+	return remoteSnapshotFrom(row), nil
+}
+
+func remoteSnapshotFrom(row sqlitegen.RemoteAccountSnapshot) account.RemoteSnapshot {
 	return account.RemoteSnapshot{
 		ID: row.ID, AccountID: row.AccountID, PreferredUsername: row.PreferredUsername,
 		ProfileURL: row.ProfileUrl.String, InboxURL: row.InboxUrl, SharedInboxURL: row.SharedInboxUrl.String,
@@ -112,7 +125,7 @@ func (r *AccountRepository) LatestRemoteSnapshot(ctx context.Context, tx uow.Tx,
 		FeaturedURL: row.FeaturedUrl.String, FollowersTotal: fromNullInt64(row.FollowersTotal),
 		FollowingTotal: fromNullInt64(row.FollowingTotal), StatusesTotal: fromNullInt64(row.StatusesTotal),
 		DocumentDigest: row.DocumentDigest, FetchedAt: fromMillis(row.FetchedAt),
-	}, nil
+	}
 }
 
 // InsertRemoteSnapshot implements account.Repository.

@@ -142,10 +142,20 @@ func (a *App) writeStatusProblem(w http.ResponseWriter, r *http.Request, status 
 		title = l.ServerErrorsBadRequest()
 	case http.StatusUnauthorized:
 		title = l.ServerErrorsSignatureRequired()
+	case http.StatusForbidden:
+		title = l.ServerErrorsForbidden()
 	case http.StatusNotFound:
 		title = l.ServerErrorsNotFound()
+	case http.StatusRequestEntityTooLarge:
+		title = l.ServerErrorsRequestTooLarge()
+	case http.StatusUnsupportedMediaType:
+		title = l.ServerErrorsUnsupportedMediaType()
+	case http.StatusTooManyRequests:
+		title = l.ServerErrorsRateLimited()
 	case http.StatusBadGateway:
 		title = l.ServerErrorsBadGateway()
+	case http.StatusServiceUnavailable:
+		title = l.ServerErrorsServiceUnavailable()
 	default:
 		status, title = http.StatusInternalServerError, l.ServerErrorsInternal()
 	}

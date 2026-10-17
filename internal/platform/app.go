@@ -137,6 +137,9 @@ type App struct {
 	// outside deliveries (docs/architecture/federation.md §7.3).
 	Deliverer      *federation.Deliverer
 	InstanceHealth *federation.Health
+	// Inbox verifies and records the activities POSTed to the inboxes
+	// (docs/architecture/federation.md §3.1).
+	Inbox *federation.Inbox
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -344,6 +347,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// No moderation restrictions exist yet; posting still goes through the policy port.
 		Restrictions:    content.NoRestrictions{},
 		Media:           medias,
+		RemoteMentions:  remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
 		MaxStatusLength: a.Instance.MaxStatusLength,
 		DefaultLanguage: a.defaultPostLanguage,
 		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
@@ -386,6 +390,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, err
 	}
 	a.setUpRemoteActors(cfg, feds)
+	a.setUpInbox(feds)
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: content.NoRestrictions{}, Media: a.Media,
@@ -401,7 +406,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph,
+		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph, Inbox: a.Inbox,
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
