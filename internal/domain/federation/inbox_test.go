@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/best-friends/my/internal/domain/federation"
 )
@@ -103,6 +104,42 @@ func TestEnvelopeTrustAndSelfRemoval(t *testing.T) {
 		e := federation.Envelope{Type: tt.typ, Actor: actor, Object: tt.object}
 		if got := e.SelfRemoval(); got != tt.want {
 			t.Errorf("SelfRemoval(%s %s) = %t, want %t", tt.typ, tt.object, got, tt.want)
+		}
+	}
+}
+
+func TestTombstoneFor(t *testing.T) {
+	const actor = federation.IRI("https://remote.example/users/alice")
+	const activity = federation.IRI("https://remote.example/activities/1")
+	at := time.Date(2026, 10, 17, 0, 0, 0, 0, time.UTC)
+	of := func(typ federation.ActivityType, object federation.IRI) *federation.Activity {
+		a := &federation.Activity{Type: typ, Actor: actor}
+		if object != "" {
+			a.Objects = []federation.Ref{{ID: object}}
+		}
+		return a
+	}
+	tests := []struct {
+		name string
+		act  *federation.Activity
+		want federation.IRI // "" when the activity leaves no tombstone
+	}{
+		{"Delete of an object of the actor", of(federation.ActivityDelete, actor+"/notes/1"), actor + "/notes/1"},
+		{"Undo of an activity of the actor", of(federation.ActivityUndo, actor+"#follow-1"), actor + "#follow-1"},
+		{"Delete of an object of another origin", of(federation.ActivityDelete, "https://other.example/notes/1"), ""},
+		{"Delete of the actor itself", of(federation.ActivityDelete, actor), ""},
+		{"Delete without an object", of(federation.ActivityDelete, ""), ""},
+		{"Create", of(federation.ActivityCreate, actor+"/notes/1"), ""},
+		{"nil", nil, ""},
+	}
+	for _, tt := range tests {
+		got, ok := federation.TombstoneFor(tt.act, activity, at)
+		if ok != (tt.want != "") || got.URI != tt.want {
+			t.Errorf("%s: TombstoneFor = %+v, %t; want %q", tt.name, got, ok, tt.want)
+			continue
+		}
+		if ok && (got.ActorURI != actor || got.ActivityURI != activity || !got.ReceivedAt.Equal(at)) {
+			t.Errorf("%s: TombstoneFor = %+v, want the actor, the activity URI, and the time", tt.name, got)
 		}
 	}
 }

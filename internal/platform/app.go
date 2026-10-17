@@ -140,6 +140,9 @@ type App struct {
 	// Inbox verifies and records the activities POSTed to the inboxes
 	// (docs/architecture/federation.md §3.1).
 	Inbox *federation.Inbox
+	// InboxProcessor processes the recorded activities and dispatches them to the handler of
+	// their type (docs/architecture/federation.md §3.2).
+	InboxProcessor *federation.InboxProcessor
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
