@@ -105,7 +105,7 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 
 | 対象 | キー | 用途 |
 | --- | --- | --- |
-| 受信アクティビティ | `received_activities (activity_uri)` | Inbox の受信時の重複排除（[ADR-0033](../adr/0033-inbox-processing-model.md)）。`id` を持たないものは本文ダイジェストから合成する |
+| 受信アクティビティ | `received_activities (activity_uri)` | Inbox の受信時の重複排除（[ADR-0033](../adr/0033-inbox-processing-model.md)）。`id` を持たないものは `actor` と本文の SHA-256 から `urn:my:digest:<hex>` を合成する（[federation §3.1](federation.md#31-同期の部分)） |
 | 順序の入れ替わり | `remote_object_tombstones (uri)`、`status_deletions (uri)` | 先に届いた `Delete` / `Undo` の後に届いた `Create` / `Follow` などを捨てる |
 | AP オブジェクト | `accounts (uri)`, `statuses (uri)`, `boosts (uri)`, `follows (uri)`, `blocks (uri)`, `reports (uri)`, `poll_votes (uri)`, `custom_emojis (uri)` | 受信・取得の重複排除 |
 | 版 | `status_revisions (status_id, seq)`, `account_profile_revisions (account_id, seq)` | 同じ `Update` の再処理を no-op にする。リモートの `updated` が現在版以下なら版を作らない |
@@ -698,7 +698,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `received_activities` | イベント | `activity_uri`（PK）, `actor_uri`, `type`, `signature_scheme`（`enum(rfc9421, cavage)`）, `trust`（`enum(signed, refetch)`。署名者と `actor` が一致しなければ `refetch`）, `received_at` | インデックス `(received_at)`（保持期間後に削除） |
+| `received_activities` | イベント | `activity_uri`（PK）, `actor_uri`, `type`, `signature_scheme`（`enum(rfc9421, cavage)`）, `trust`（`enum(signed, refetch)`。署名者と `actor` が一致しない、または `id` のホストが `actor` のホストと異なれば `refetch`）, `received_at` | インデックス `(received_at)`（保持期間後に削除） |
 | `received_activity_documents` | イベント | `activity_uri`（PK）, `document`（`document`） | 原本。非同期の処理が読む。障害調査とフィクスチャ採取のため短期保持（#44） |
 | `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除） |
 | `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report)`）, `object_id`, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
