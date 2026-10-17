@@ -107,7 +107,7 @@ type DomainActionInput struct {
 
 // IssueDomainAction records an action on a domain and, in the same transaction, the
 // restrictions it imposes on the domain and its subdomains (data-model §5.2), and emits
-// DomainRestrictionsChanged.
+// DomainRestrictionsChanged and its audit log entry.
 func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (moderation.DomainAction, error) {
 	now := kernel.Normalize(s.d.Clock.Now())
 	a := moderation.DomainAction{
@@ -119,6 +119,7 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 		return moderation.DomainAction{}, err
 	}
 	repo := s.d.Repository
+	auditID := s.d.IDs.NewID()
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := repo.InsertDomainAction(ctx, tx, a); err != nil {
 			return err
@@ -128,7 +129,13 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 				return err
 			}
 		}
-		return s.emitDomain(ctx, tx, a.Domain, now)
+		if err := s.emitDomain(ctx, tx, a.Domain, now); err != nil {
+			return err
+		}
+		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+			ID: auditID, Action: moderation.AuditDomainActionIssued, TargetKind: moderation.AuditTargetDomain,
+			TargetID: a.Domain, TargetLabel: a.Domain, SourceEventID: a.ID, OccurredAt: now,
+		}, in.IssuedByUserID)
 	})
 	if err != nil {
 		return moderation.DomainAction{}, err
@@ -137,10 +144,12 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 }
 
 // LiftDomainAction lifts an action on a domain: its restrictions end, while those of other
-// actions on the domain stay. Lifting an action that is already lifted changes nothing.
+// actions on the domain stay, and the lift is audited. Lifting an action that is already lifted
+// changes nothing.
 func (s *Service) LiftDomainAction(ctx context.Context, actionID, liftedByUserID string) error {
 	now := kernel.Normalize(s.d.Clock.Now())
 	repo := s.d.Repository
+	auditID := s.d.IDs.NewID()
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		a, err := repo.DomainAction(ctx, tx, actionID)
 		if err != nil {
@@ -156,7 +165,14 @@ func (s *Service) LiftDomainAction(ctx context.Context, actionID, liftedByUserID
 		if err := repo.DeleteDomainRestrictionsOf(ctx, tx, a.ID); err != nil {
 			return err
 		}
-		return s.emitDomain(ctx, tx, a.Domain, now)
+		if err := s.emitDomain(ctx, tx, a.Domain, now); err != nil {
+			return err
+		}
+		// The lift's row is keyed by the action's ID.
+		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+			ID: auditID, Action: moderation.AuditDomainActionLifted, TargetKind: moderation.AuditTargetDomain,
+			TargetID: a.Domain, TargetLabel: a.Domain, SourceEventID: a.ID, OccurredAt: now,
+		}, liftedByUserID)
 	})
 }
 

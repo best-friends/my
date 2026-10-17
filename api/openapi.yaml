@@ -1404,6 +1404,65 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin (#261) ---
+  # --- admin: audit log (#330) ---
+  /admin/audit_log:
+    get:
+      operationId: listAuditLog
+      summary: List the audit log
+      description: |
+        The operations of the moderators and administrators (FR-704), newest first: who did
+        what to which target and when. Each entry keeps the target's display name as it was
+        (`target_label`), so it stays readable after the target is gone; the reasons and notes
+        stay with the operation itself (`source_event_id`). The audit log cannot be changed or
+        deleted through the API. An unknown `action` or `target_kind`, or a `target_id`
+        without its `target_kind`, is a 400. Needs the `view_audit` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: actor_account_id
+          in: query
+          required: false
+          description: |
+            Keep only the operations of the user of this local account. An account that is not
+            local, or not known, has no operations.
+          schema:
+            $ref: "#/components/schemas/Id"
+        - name: action
+          in: query
+          required: false
+          description: Keep only this kind of operation.
+          schema:
+            $ref: "#/components/schemas/AdminAuditAction"
+        - name: target_kind
+          in: query
+          required: false
+          description: Keep only the operations on this kind of target.
+          schema:
+            $ref: "#/components/schemas/AdminAuditTargetKind"
+        - name: target_id
+          in: query
+          required: false
+          description: Keep only the operations on this target, of the kind `target_kind`.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the audit log.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuditEntryPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: audit log (#330) ---
   # --- admin: domain actions and reports (#296) ---
   /admin/domain_actions:
     get:
@@ -3157,6 +3216,96 @@ components:
       type: string
       enum: [available, unavailable]
     # --- end of admin (#261) ---
+    # --- admin: audit log (#330) ---
+    AdminAuditAction:
+      description: |
+        The kind of an audited operation, each on one kind of target. On a `domain`:
+        `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
+        `report_unassigned`, `report_resolved`. On a `user` (a registration):
+        `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
+        (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
+        `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+      type: string
+      enum:
+        - domain_action_issued
+        - domain_action_lifted
+        - report_assigned
+        - report_unassigned
+        - report_resolved
+        - registration_approved
+        - registration_rejected
+        - setting_changed
+        - text_changed
+        - rule_added
+        - rule_revised
+        - rule_moved
+        - rule_retired
+    AdminAuditActorKind:
+      description: |
+        Who performed the operation. `user`: a signed-in moderator or administrator.
+        `cli`: the `my` command line, which acts as no user. `system`: the server itself.
+        `remote`: another server.
+      type: string
+      enum: [user, cli, system, remote]
+    AdminAuditEntry:
+      description: One operation of a moderator or an administrator (FR-704).
+      type: object
+      required: [id, actor_kind, action, target_kind, target_id, target_label, occurred_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        actor_kind:
+          $ref: "#/components/schemas/AdminAuditActorKind"
+        actor_account_id:
+          description: |
+            The local account of the user who performed the operation; omitted unless
+            `actor_kind` is `user`, and when the user has no account.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        actor_account:
+          description: The account of `actor_account_id`; omitted when it is gone.
+          allOf:
+            - $ref: "#/components/schemas/Account"
+        action:
+          $ref: "#/components/schemas/AdminAuditAction"
+        target_kind:
+          $ref: "#/components/schemas/AdminAuditTargetKind"
+        target_id:
+          description: |
+            The target: the ID of a report, a user, or a rule, the domain of a domain action, or
+            the key of a setting or a text.
+          type: string
+        target_label:
+          description: |
+            The target's display name when the operation happened, such as `@alice`,
+            `@bob@example.com`, a domain, a setting's key, or a rule's text; up to 512
+            characters.
+          type: string
+        source_event_id:
+          description: |
+            The ID of the record of the operation (the domain action, the assignment, the
+            resolution, the decision, the revision), which holds its reasons and notes; omitted
+            when the operation has none.
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+    AdminAuditEntryPage:
+      description: A page of the audit log, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminAuditEntry"
+    AdminAuditTargetKind:
+      description: The kind of what an audited operation acted on.
+      type: string
+      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block]
+    # --- end of admin: audit log (#330) ---
     # --- admin: domain actions and reports (#296) ---
     AdminDomainAction:
       description: A moderation action on a remote domain and its subdomains (FR-702).

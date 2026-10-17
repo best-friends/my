@@ -12,6 +12,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/i18n"
@@ -517,7 +518,7 @@ type DecideInput struct {
 // DecideRegistration approves or rejects a pending registration. It fails with
 // identity.ErrInvalidNote for a note that identity.ValidateDecisionNote rejects, with
 // ErrNotFound when the user has no application, and with ErrNotPending when the registration is
-// already decided.
+// already decided. The decision is audited in its transaction (ADR-0037).
 func (s *Service) DecideRegistration(ctx context.Context, in DecideInput) (identity.RegistrationDecision, error) {
 	if in.Decision != identity.DecisionApproved && in.Decision != identity.DecisionRejected {
 		return identity.RegistrationDecision{}, fmt.Errorf("identity: unknown decision %q", in.Decision)
@@ -541,16 +542,46 @@ func (s *Service) DecideRegistration(ctx context.Context, in DecideInput) (ident
 		ID: s.d.IDs.NewID(), ApplicationID: app.ID, Decision: in.Decision, DecidedBy: identity.DecidedByModerator,
 		DecidedByUserID: in.DecidedByUserID, Note: in.Note, DecidedAt: now,
 	}
+	audit, err := s.registrationAudit(ctx, in, d)
+	if err != nil {
+		return identity.RegistrationDecision{}, err
+	}
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := s.d.Repository.InsertRegistrationDecision(ctx, tx, d); err != nil {
 			return err
 		}
-		return s.d.Repository.UpsertRegistrationState(ctx, tx, identity.UserRegistrationState{
+		err := s.d.Repository.UpsertRegistrationState(ctx, tx, identity.UserRegistrationState{
 			UserID: in.UserID, State: in.Decision.State(), Since: now,
 		})
+		if err != nil {
+			return err
+		}
+		return tx.Emit(ctx, audit)
 	})
 	if err != nil {
 		return identity.RegistrationDecision{}, err
 	}
 	return d, nil
+}
+
+// registrationAudit returns the audit log entry of a decision on a registration. Its target is
+// the user, labeled with the username of the user's local account.
+func (s *Service) registrationAudit(ctx context.Context, in DecideInput, d identity.RegistrationDecision) (appmoderation.AuditRecorded, error) {
+	label := in.UserID
+	la, err := s.d.Accounts.LocalAccountOfUser(ctx, in.UserID)
+	switch {
+	case err == nil:
+		label = "@" + la.Username
+	case !errors.Is(err, account.ErrNotFound):
+		return appmoderation.AuditRecorded{}, err
+	}
+	action := appmoderation.AuditRegistrationApproved
+	if d.Decision == identity.DecisionRejected {
+		action = appmoderation.AuditRegistrationRejected
+	}
+	actor, user := appmoderation.AuditActor(in.DecidedByUserID)
+	return appmoderation.AuditRecorded{Entry: appmoderation.AuditEntry{
+		ID: s.d.IDs.NewID(), ActorKind: actor, ActorUserID: user, Action: action, TargetKind: appmoderation.AuditTargetUser,
+		TargetID: in.UserID, TargetLabel: label, SourceEventID: d.ID, OccurredAt: d.DecidedAt,
+	}}, nil
 }

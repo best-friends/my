@@ -87,6 +87,9 @@ type Repository interface {
 	// effect at q.InEffectAt when it is set, whose ID is below q.Before (from the newest when
 	// empty).
 	ListDomainActions(ctx context.Context, q DomainActionQuery, limit int) ([]moderation.DomainActionRecord, error)
+
+	// The audit log (audit.go).
+	AuditRepository
 }
 
 // ReportQuery selects the reports of a list.

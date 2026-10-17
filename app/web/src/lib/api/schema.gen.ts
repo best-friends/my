@@ -1143,6 +1143,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/audit_log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the audit log
+         * @description The operations of the moderators and administrators (FR-704), newest first: who did
+         *     what to which target and when. Each entry keeps the target's display name as it was
+         *     (`target_label`), so it stays readable after the target is gone; the reasons and notes
+         *     stay with the operation itself (`source_event_id`). The audit log cannot be changed or
+         *     deleted through the API. An unknown `action` or `target_kind`, or a `target_id`
+         *     without its `target_kind`, is a 400. Needs the `view_audit` permission.
+         */
+        get: operations["listAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/domain_actions": {
         parameters: {
             query?: never;
@@ -2207,6 +2232,65 @@ export interface components {
          * @enum {string}
          */
         AdminInstanceState: "available" | "unavailable";
+        /**
+         * @description The kind of an audited operation, each on one kind of target. On a `domain`:
+         *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
+         *     `report_unassigned`, `report_resolved`. On a `user` (a registration):
+         *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
+         *     (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
+         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+         * @enum {string}
+         */
+        AdminAuditAction: "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired";
+        /**
+         * @description Who performed the operation. `user`: a signed-in moderator or administrator.
+         *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
+         *     `remote`: another server.
+         * @enum {string}
+         */
+        AdminAuditActorKind: "user" | "cli" | "system" | "remote";
+        /** @description One operation of a moderator or an administrator (FR-704). */
+        AdminAuditEntry: {
+            id: components["schemas"]["Id"];
+            actor_kind: components["schemas"]["AdminAuditActorKind"];
+            /**
+             * @description The local account of the user who performed the operation; omitted unless
+             *     `actor_kind` is `user`, and when the user has no account.
+             */
+            actor_account_id?: components["schemas"]["Id"];
+            /** @description The account of `actor_account_id`; omitted when it is gone. */
+            actor_account?: components["schemas"]["Account"];
+            action: components["schemas"]["AdminAuditAction"];
+            target_kind: components["schemas"]["AdminAuditTargetKind"];
+            /**
+             * @description The target: the ID of a report, a user, or a rule, the domain of a domain action, or
+             *     the key of a setting or a text.
+             */
+            target_id: string;
+            /**
+             * @description The target's display name when the operation happened, such as `@alice`,
+             *     `@bob@example.com`, a domain, a setting's key, or a rule's text; up to 512
+             *     characters.
+             */
+            target_label: string;
+            /**
+             * @description The ID of the record of the operation (the domain action, the assignment, the
+             *     resolution, the decision, the revision), which holds its reasons and notes; omitted
+             *     when the operation has none.
+             */
+            source_event_id?: string;
+            /** Format: date-time */
+            occurred_at: string;
+        };
+        /** @description A page of the audit log, newest first. */
+        AdminAuditEntryPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAuditEntry"][];
+        };
+        /**
+         * @description The kind of what an audited operation acted on.
+         * @enum {string}
+         */
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block";
         /** @description A moderation action on a remote domain and its subdomains (FR-702). */
         AdminDomainAction: {
             id: components["schemas"]["Id"];
@@ -3779,6 +3863,44 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminInstanceHealth"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAuditLog: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Keep only the operations of the user of this local account. An account that is not
+                 *     local, or not known, has no operations.
+                 */
+                actor_account_id?: components["schemas"]["Id"];
+                /** @description Keep only this kind of operation. */
+                action?: components["schemas"]["AdminAuditAction"];
+                /** @description Keep only the operations on this kind of target. */
+                target_kind?: components["schemas"]["AdminAuditTargetKind"];
+                /** @description Keep only the operations on this target, of the kind `target_kind`. */
+                target_id?: string;
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the audit log. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuditEntryPage"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

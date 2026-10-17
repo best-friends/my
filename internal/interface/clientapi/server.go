@@ -87,6 +87,8 @@ type Options struct {
 	// account, and nil leaves it out.
 	Moderation   Moderation
 	UserAccounts UserAccounts
+	// AuditLog lists the audit log for the admin operations (admin_audit.go).
+	AuditLog AuditLog
 	// Rules runs the use cases of the instance rules: the admin operations (admin_rules.go)
 	// and the rules of GET /instance, which lists none when it is nil.
 	Rules InstanceRules

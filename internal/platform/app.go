@@ -463,6 +463,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
 		Moderation: a.Moderation, UserAccounts: a.Accounts,
+		AuditLog:    a.Moderation,
 		Rules:       a.Instance,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
