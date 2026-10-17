@@ -21,10 +21,15 @@ func (r remoteMediaRecorder) RecordRemoteMedia(ctx context.Context, tx uow.Tx, i
 
 // registerStatusHandlers registers the inbox handlers of remote posts (Create, Update, and
 // Delete, docs/architecture/federation.md §3.4) on the inbox processor: the posts related to
-// local accounts are ingested through the content module (ADR-0034).
+// local accounts are ingested through the content module (ADR-0034). The boosts and favourites
+// (Announce, Like, EmojiReact, and their Undo) go through the same posts.
 func (a *App) registerStatusHandlers() {
-	federation.NewStatusHandlers(federation.StatusHandlersDeps{
+	statuses := federation.NewStatusHandlers(federation.StatusHandlersDeps{
 		UnitOfWork: a.UnitOfWork, Statuses: a.Content, Accounts: a.Accounts, Actors: a.RemoteActors,
 		Fetcher: a.RemoteActors, Followers: a.Graph, Clock: a.Clock, Host: a.Config.Host, Logger: a.Logger,
-	}).Register(a.InboxProcessor)
+	})
+	statuses.Register(a.InboxProcessor)
+	federation.RegisterInteractionHandlers(a.InboxProcessor, federation.InteractionHandlersDeps{
+		Interactions: a.Interactions, Statuses: statuses,
+	})
 }

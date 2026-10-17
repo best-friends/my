@@ -228,6 +228,8 @@ const (
 	phaseBoostedAuthor phase = "boosted_author"
 	// phaseBlocked is the remote account a block is about, in one batch.
 	phaseBlocked phase = "blocked"
+	// phaseStatusAuthor is the author of a favourited status, in one batch.
+	phaseStatusAuthor phase = "status_author"
 	// phaseCounterpart is the other account of a follow, in one batch.
 	phaseCounterpart phase = "counterpart"
 	// phaseSharedInboxes are the shared inboxes known to the instance, in batches.
@@ -272,6 +274,7 @@ type subject struct {
 //   - Update of an actor: its followers. Delete of an actor: its followers, then every shared
 //     inbox known to the instance (data-model §8).
 //   - Follow, Accept, Reject, and Undo Follow: the other account of the follow.
+//   - Like and Undo Like: the author of the favourited status.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
 	case federation.OutboundBlock:
@@ -283,6 +286,8 @@ func (s subject) phases() []phase {
 		return []phase{phaseFollowers}
 	case federation.OutboundFollow:
 		return []phase{phaseCounterpart}
+	case federation.OutboundFavourite:
+		return []phase{phaseStatusAuthor}
 	case federation.OutboundStatus:
 		if s.act.Type == federation.ActivityCreate {
 			return []phase{phaseMentions, phaseFollowers}
@@ -308,6 +313,9 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, r
 	}
 	if act.ObjectKind == federation.OutboundAccount {
 		return f.accountSubject(ctx, s)
+	}
+	if act.ObjectKind == federation.OutboundFavourite {
+		return f.favouriteSubject(ctx, s)
 	}
 	var err error
 	switch {
@@ -409,6 +417,9 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 		return targets, next, err
 	case phaseBlocked:
 		targets, err = f.blockedInbox(ctx, s)
+		return targets, "", err
+	case phaseStatusAuthor:
+		targets, err = f.statusAuthorTargets(ctx, s)
 		return targets, "", err
 	case phaseCounterpart:
 		targets, err = f.counterpartTargets(ctx, s)

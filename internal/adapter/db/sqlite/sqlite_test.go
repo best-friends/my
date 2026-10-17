@@ -388,3 +388,23 @@ func TestReady(t *testing.T) {
 		t.Error("Ready on a closed database = nil, want an error")
 	}
 }
+
+func TestRemoteInteractionContract(t *testing.T) {
+	testkit.RemoteInteractionContract(t, func(t *testing.T, opts uow.Options) testkit.RemoteInteractionHarness {
+		db, _ := newTestDB(t, "", opts)
+		feds := db.FederationRepository()
+		return testkit.RemoteInteractionHarness{
+			RemoteStatusHarness: testkit.RemoteStatusHarness{
+				AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+				Graph:          db.GraphRepository(),
+				Statuses:       db.StatusRepository(),
+				Media:          db.MediaRepository(),
+				Timeline:       db.TimelineRepository(),
+				Notifications:  db.NotificationRepository(),
+				Inbox:          feds,
+			},
+			Interactions: db.InteractionRepository(),
+			Federation:   feds,
+		}
+	})
+}

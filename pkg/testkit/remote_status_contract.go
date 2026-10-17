@@ -87,6 +87,9 @@ type remoteStatusEnv struct {
 	timeline      *apptimeline.Service
 	notifications *appnotification.Service
 	processor     *appfederation.InboxProcessor
+	statuses      *appfederation.StatusHandlers
+	// projectors are the projectors of the harness's UnitOfWork.
+	projectors *uow.Projectors
 }
 
 func newRemoteStatusEnv(t *testing.T, newHarness RemoteStatusFactory) *remoteStatusEnv {
@@ -101,7 +104,7 @@ func newRemoteStatusEnv(t *testing.T, newHarness RemoteStatusFactory) *remoteSta
 		return h.AccountHarness
 	})
 	ae.clock.Set(remoteNow)
-	e := &remoteStatusEnv{accountEnv: ae, h: h}
+	e := &remoteStatusEnv{accountEnv: ae, h: h, projectors: captured.Projectors}
 	e.remote = appaccount.NewService(appaccount.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Accounts, Clock: ae.clock, IDs: ae.ids,
 		Sealer: kernel.NewSealer(NewKeyManager("remote-status")), Host: contractHost, Sanitizer: remoteSanitizer{},
@@ -131,10 +134,11 @@ func newRemoteStatusEnv(t *testing.T, newHarness RemoteStatusFactory) *remoteSta
 	e.processor = appfederation.NewInboxProcessor(appfederation.InboxProcessorDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Inbox, Actors: e.actors, Fetcher: e.fetcher, Clock: ae.clock,
 	})
-	appfederation.NewStatusHandlers(appfederation.StatusHandlersDeps{
+	e.statuses = appfederation.NewStatusHandlers(appfederation.StatusHandlersDeps{
 		UnitOfWork: h.UnitOfWork, Statuses: e.content, Accounts: e.remote, Actors: e.actors, Fetcher: e.fetcher,
 		Followers: e.graph, Clock: ae.clock, Host: contractHost,
-	}).Register(e.processor)
+	})
+	e.statuses.Register(e.processor)
 	return e
 }
 
@@ -225,8 +229,8 @@ func (e *remoteStatusEnv) follow(t *testing.T, follower, followee string) {
 	}
 }
 
-// deliver records doc as received, signed by its actor, and processes it.
-func (e *remoteStatusEnv) deliver(t *testing.T, doc []byte) appfederation.InboxOutcome {
+// record records doc as received, signed by its actor, without processing it.
+func (e *remoteStatusEnv) record(t *testing.T, doc []byte) federation.IRI {
 	t.Helper()
 	ctx := t.Context()
 	env, err := federation.ReadEnvelope(doc, appfederation.CanonicalHost)
@@ -247,9 +251,16 @@ func (e *remoteStatusEnv) deliver(t *testing.T, doc []byte) appfederation.InboxO
 	if err != nil {
 		t.Fatalf("record %s: %v", a.ActivityURI, err)
 	}
-	got, err := e.processor.Process(ctx, a.ActivityURI, federation.TrustSigned)
+	return a.ActivityURI
+}
+
+// deliver records doc as received, signed by its actor, and processes it.
+func (e *remoteStatusEnv) deliver(t *testing.T, doc []byte) appfederation.InboxOutcome {
+	t.Helper()
+	uri := e.record(t, doc)
+	got, err := e.processor.Process(t.Context(), uri, federation.TrustSigned)
 	if err != nil {
-		t.Fatalf("Process(%s): %v", a.ActivityURI, err)
+		t.Fatalf("Process(%s): %v", uri, err)
 	}
 	return got
 }

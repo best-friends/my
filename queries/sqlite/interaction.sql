@@ -73,6 +73,9 @@ RETURNING account_id, status_id, uri, created_at, id;
 -- name: GetFavourite :one
 SELECT account_id, status_id, uri, created_at, id FROM favourites WHERE account_id = ? AND status_id = ?;
 
+-- name: GetFavouriteByURI :one
+SELECT account_id, status_id, uri, created_at, id FROM favourites WHERE uri = ?;
+
 -- name: ListFavourites :many
 SELECT account_id, status_id, uri, created_at, id FROM favourites
 WHERE account_id = sqlc.arg(account_id) AND (CAST(sqlc.arg(before) AS TEXT) = '' OR id < CAST(sqlc.arg(before) AS TEXT))
