@@ -160,7 +160,7 @@ type DomainActionInput struct {
 
 // IssueDomainAction records an action on a domain and, in the same transaction, the
 // restrictions it imposes on the domain and its subdomains (data-model §5.2), and emits
-// DomainRestrictionsChanged.
+// DomainRestrictionsChanged and its audit log entry.
 func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (moderation.DomainAction, error) {
 	now := kernel.Normalize(s.d.Clock.Now())
 	a := moderation.DomainAction{
@@ -172,6 +172,7 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 		return moderation.DomainAction{}, err
 	}
 	repo := s.d.Repository
+	auditID := s.d.IDs.NewID()
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := repo.InsertDomainAction(ctx, tx, a); err != nil {
 			return err
@@ -181,7 +182,13 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 				return err
 			}
 		}
-		return s.emitDomain(ctx, tx, a.Domain, now)
+		if err := s.emitDomain(ctx, tx, a.Domain, now); err != nil {
+			return err
+		}
+		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+			ID: auditID, Action: moderation.AuditDomainActionIssued, TargetKind: moderation.AuditTargetDomain,
+			TargetID: a.Domain, TargetLabel: a.Domain, SourceEventID: a.ID, OccurredAt: now,
+		}, in.IssuedByUserID)
 	})
 	if err != nil {
 		return moderation.DomainAction{}, err
@@ -190,10 +197,12 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 }
 
 // LiftDomainAction lifts an action on a domain: its restrictions end, while those of other
-// actions on the domain stay. Lifting an action that is already lifted changes nothing.
+// actions on the domain stay, and the lift is audited. Lifting an action that is already lifted
+// changes nothing.
 func (s *Service) LiftDomainAction(ctx context.Context, actionID, liftedByUserID string) error {
 	now := kernel.Normalize(s.d.Clock.Now())
 	repo := s.d.Repository
+	auditID := s.d.IDs.NewID()
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		a, err := repo.DomainAction(ctx, tx, actionID)
 		if err != nil {
@@ -209,7 +218,14 @@ func (s *Service) LiftDomainAction(ctx context.Context, actionID, liftedByUserID
 		if err := repo.DeleteDomainRestrictionsOf(ctx, tx, a.ID); err != nil {
 			return err
 		}
-		return s.emitDomain(ctx, tx, a.Domain, now)
+		if err := s.emitDomain(ctx, tx, a.Domain, now); err != nil {
+			return err
+		}
+		// The lift's row is keyed by the action's ID.
+		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+			ID: auditID, Action: moderation.AuditDomainActionLifted, TargetKind: moderation.AuditTargetDomain,
+			TargetID: a.Domain, TargetLabel: a.Domain, SourceEventID: a.ID, OccurredAt: now,
+		}, liftedByUserID)
 	})
 }
 
@@ -324,6 +340,7 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		return moderation.Action{}, err
 	}
 	repo := s.d.Repository
+	auditID := s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
 		if err != nil {
@@ -346,7 +363,13 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, AccountActionIssued{Action: a})
+		if err := tx.Emit(ctx, AccountActionIssued{Action: a}); err != nil {
+			return err
+		}
+		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+			ID: auditID, Action: moderation.AuditAccountActionIssued, TargetKind: moderation.AuditTargetAccount,
+			TargetID: a.TargetAccountID, TargetLabel: actorLabel(target), SourceEventID: a.ID, OccurredAt: now,
+		}, in.IssuedByUserID)
 	})
 	if errors.Is(err, appcontent.ErrAlreadyDeleted) {
 		return moderation.Action{}, fmt.Errorf("%w: a status was deleted meanwhile", ErrInvalidStatusReference)
@@ -412,6 +435,16 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		return err
 	}
 	repo := s.d.Repository
+	// The target of an action never changes, so its label is read before the transaction.
+	rec, err := repo.FindActionRecord(ctx, actionID)
+	if err != nil {
+		return err
+	}
+	label, err := s.accountLabel(ctx, rec.Action.TargetAccountID)
+	if err != nil {
+		return err
+	}
+	auditID := s.d.IDs.NewID()
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		a, err := repo.Action(ctx, tx, actionID)
 		if err != nil {
@@ -442,7 +475,14 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
 		}
-		return s.emitSuspension(ctx, tx, a.TargetAccountID, before, now)
+		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
+			return err
+		}
+		// The lift's row is keyed by the action's ID.
+		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+			ID: auditID, Action: moderation.AuditAccountActionLifted, TargetKind: moderation.AuditTargetAccount,
+			TargetID: a.TargetAccountID, TargetLabel: label, SourceEventID: a.ID, OccurredAt: now,
+		}, liftedByUserID)
 	})
 }
 

@@ -9,8 +9,11 @@ import {
   BoostIcon,
   CloseIcon,
   ExternalLinkIcon,
+  EyeIcon,
   FederatedIcon,
   HomeIcon,
+  ImageIcon,
+  LanguageIcon,
   LocalIcon,
   MoreIcon,
   NotificationsIcon,
@@ -21,6 +24,7 @@ import {
   SettingsIcon,
   StarIcon,
   type ToggleIconProps,
+  WarningIcon,
 } from "./Icons";
 import { Link } from "./Link";
 
@@ -40,6 +44,10 @@ const icons: readonly (readonly [string, ComponentType<ToggleIconProps>])[] = [
   ["BoostIcon", BoostIcon],
   ["StarIcon", StarIcon],
   ["BookmarkIcon", BookmarkIcon],
+  ["ImageIcon", ImageIcon],
+  ["WarningIcon", WarningIcon],
+  ["EyeIcon", EyeIcon],
+  ["LanguageIcon", LanguageIcon],
   ["HomeIcon", HomeIcon],
   ["LocalIcon", LocalIcon],
   ["FederatedIcon", FederatedIcon],
@@ -54,6 +62,7 @@ const toggleIcons: readonly (readonly [string, ComponentType<ToggleIconProps>])[
   ["BoostIcon", BoostIcon],
   ["StarIcon", StarIcon],
   ["BookmarkIcon", BookmarkIcon],
+  ["WarningIcon", WarningIcon],
 ];
 
 /**

@@ -69,7 +69,10 @@ describe("the new-post form", () => {
     expect(text).toHaveFocus();
     await user.type(text, "Hello, world");
     expect(within(sheet).getByText("488 characters left")).toBeInTheDocument();
-    await user.click(within(sheet).getByRole("checkbox", { name: "Add a content warning" }));
+    const warning = within(sheet).getByRole("button", { name: "Add a content warning" });
+    expect(warning).toHaveAttribute("aria-pressed", "false");
+    await user.click(warning);
+    expect(warning).toHaveAttribute("aria-pressed", "true");
     await user.type(within(sheet).getByRole("textbox", { name: "Content warning" }), "Spoilers");
     // The warning counts toward the instance's limit.
     expect(within(sheet).getByText("480 characters left")).toBeInTheDocument();
@@ -86,8 +89,9 @@ describe("the new-post form", () => {
       expect(within(sheet).getByRole("button", { name: "Visibility: Followers" })).toHaveFocus();
     });
 
-    await user.click(within(sheet).getByRole("button", { name: /Language/ }));
+    await user.click(within(sheet).getByRole("button", { name: "English Language" }));
     await user.click(await screen.findByRole("option", { name: "Japanese" }));
+    expect(within(sheet).getByRole("button", { name: "Japanese Language" })).toBeInTheDocument();
 
     await user.click(within(sheet).getByRole("button", { name: "Post" }));
 
@@ -103,6 +107,37 @@ describe("the new-post form", () => {
     const next = await openSheet(user);
     expect(within(next).getByRole("textbox", { name: "Your post" })).toHaveValue("");
     expect(within(next).getByRole("button", { name: "Visibility: Followers" })).toBeInTheDocument();
+  });
+
+  test("puts images, the content warning, visibility and language in one row of tools under the text, each with its current value", async () => {
+    signedIn();
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+    const text = await within(sheet).findByRole("textbox", { name: "Your post" });
+
+    const images = within(sheet).getByRole("button", { name: "Add images" });
+    expect(images).toHaveAccessibleDescription(
+      "Up to 4 images: JPEG, PNG, GIF or WebP. Location and other metadata are removed before upload.",
+    );
+    expect(within(sheet).getByRole("button", { name: "Add a content warning" })).toHaveAttribute("aria-pressed", "false");
+    const visibility = within(sheet).getByRole("button", { name: "Visibility: Public" });
+    expect(visibility).toHaveTextContent("Public");
+    expect(visibility).toHaveAccessibleDescription("Anyone, here and on other servers. Shown on the public timelines.");
+    expect(within(sheet).getByRole("button", { name: "English Language" })).toHaveTextContent("English");
+    // In the order of reading: the text, then the tools, then the submit button.
+    const follows = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    expect(follows(text, images)).toBe(true);
+    expect(follows(visibility, within(sheet).getByRole("button", { name: "Post" }))).toBe(true);
+
+    // Keyboard focus shows the tooltip of an icon-only button, and the button keeps its description. React
+    // Aria hides what is outside the modal sheet from the accessibility tree, the tooltip's container with it.
+    expect(text).toHaveFocus();
+    await user.tab();
+    expect(images).toHaveFocus();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add images");
+    expect(images).toHaveAccessibleDescription(/^Up to 4 images/);
+    await user.tab();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add a content warning");
   });
 
   test("opens the sheet with focus on the text, never on the dialog itself, while the form's data is slow", async () => {
@@ -396,6 +431,7 @@ describe("images", () => {
 
     const description = await within(sheet).findByRole("textbox", { name: "Description of image 1" });
     expect(description).toHaveAccessibleDescription(/Describe the image for people who cannot see it\./);
+    expect(within(sheet).getByRole("button", { name: "Add images" })).toHaveAccessibleDescription(/^1 image attached Up to 4 images/);
     expect(within(sheet).getByRole("button", { name: "Post" })).toBeDisabled();
     // 6000 × 4000 is more than 3840 × 2160 pixels of area: scaled to fit, with the aspect ratio kept.
     await waitFor(() => {

@@ -87,6 +87,18 @@ type AccountRestriction struct {
 	EffectiveUntil sql.NullInt64
 }
 
+type AuditLogEntry struct {
+	ID            string
+	ActorKind     string
+	ActorUserID   sql.NullString
+	Action        string
+	TargetKind    string
+	TargetID      string
+	TargetLabel   string
+	SourceEventID sql.NullString
+	OccurredAt    int64
+}
+
 type Block struct {
 	ID               string
 	Uri              sql.NullString

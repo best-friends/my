@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
@@ -102,7 +104,7 @@ type SetSettingInput struct {
 // revision, which becomes the current value. A locale value is canonicalized first
 // ("ja_jp" becomes "ja-JP"). It fails with an error wrapping instance.ErrUnknownKey or
 // instance.ErrInvalidValue for bad input. Setting the current value again still records a
-// revision.
+// revision. The change is audited in the same transaction.
 func (s *Service) SetSetting(ctx context.Context, in SetSettingInput) (instance.SettingRevision, error) {
 	def, err := instance.Lookup(in.Key)
 	if err != nil {
@@ -124,11 +126,15 @@ func (s *Service) SetSetting(ctx context.Context, in SetSettingInput) (instance.
 	rev := instance.SettingRevision{
 		ID: s.d.IDs.NewID(), Key: in.Key, Value: value, RevisedByUserID: in.RevisedByUserID, RevisedAt: s.d.Clock.Now(),
 	}
+	audit := s.audit(appmoderation.AuditSettingChanged, appmoderation.AuditTargetSetting, string(in.Key), string(in.Key), rev.ID, in.RevisedByUserID, rev.RevisedAt)
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := s.d.Repository.InsertSettingRevision(ctx, tx, rev); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, SettingRevised{Revision: rev})
+		if err := tx.Emit(ctx, SettingRevised{Revision: rev}); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, audit)
 	})
 	if err != nil {
 		return instance.SettingRevision{}, err
@@ -174,8 +180,8 @@ type SetTextInput struct {
 }
 
 // SetText records a new revision of a text in one locale, which becomes its current text.
-// The locale is canonicalized first. It fails with an error wrapping instance.ErrUnknownKey or
-// instance.ErrInvalidValue for bad input.
+// The locale is canonicalized first, and the change is audited in the same transaction. It fails
+// with an error wrapping instance.ErrUnknownKey or instance.ErrInvalidValue for bad input.
 func (s *Service) SetText(ctx context.Context, in SetTextInput) (instance.TextRevision, error) {
 	def, err := instance.LookupText(in.Key)
 	if err != nil {
@@ -192,11 +198,17 @@ func (s *Service) SetText(ctx context.Context, in SetTextInput) (instance.TextRe
 		ID: s.d.IDs.NewID(), Key: in.Key, Locale: locale, Body: in.Body,
 		RevisedByUserID: in.RevisedByUserID, RevisedAt: s.d.Clock.Now(),
 	}
+	// The texts of a key in every locale are one target; the label names the locale.
+	audit := s.audit(appmoderation.AuditTextChanged, appmoderation.AuditTargetSetting, string(in.Key),
+		string(in.Key)+" ["+locale+"]", rev.ID, in.RevisedByUserID, rev.RevisedAt)
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := s.d.Repository.InsertTextRevision(ctx, tx, rev); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, TextRevised{Revision: rev})
+		if err := tx.Emit(ctx, TextRevised{Revision: rev}); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, audit)
 	})
 	if err != nil {
 		return instance.TextRevision{}, err
@@ -303,4 +315,14 @@ func checkLimit(limit int) error {
 		return fmt.Errorf("history limit %d is outside 1..%d: %w", limit, MaxHistoryLimit, instance.ErrInvalidValue)
 	}
 	return nil
+}
+
+// audit returns the audit log entry of one of this module's operations (ADR-0037), with a new
+// ID, performed by byUserID ("" for the CLI). The operation emits it in its transaction.
+func (s *Service) audit(action appmoderation.AuditAction, kind appmoderation.AuditTargetKind, targetID, label, sourceID, byUserID string, at time.Time) appmoderation.AuditRecorded {
+	actor, user := appmoderation.AuditActor(byUserID)
+	return appmoderation.AuditRecorded{Entry: appmoderation.AuditEntry{
+		ID: s.d.IDs.NewID(), ActorKind: actor, ActorUserID: user, Action: action, TargetKind: kind,
+		TargetID: targetID, TargetLabel: label, SourceEventID: sourceID, OccurredAt: at,
+	}}
 }

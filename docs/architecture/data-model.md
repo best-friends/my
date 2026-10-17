@@ -478,9 +478,25 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | インデックス `(id DESC)`, `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)` |
+| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
 
-- 各モジュールの管理のユースケースが元のイベントと同じトランザクションで発行するドメインイベントを、`moderation` の同期の購読者が書きます。理由とメモの本文は写さず、`source_event_id` で元のイベントから引きます。
+- 各モジュールの管理のユースケースが元のイベントと同じトランザクションで発行するドメインイベント（`moderation.audit_recorded`）を、`moderation` の同期の購読者が書きます。理由とメモの本文は写さず、`source_event_id` で元のイベントから引きます。
+  記録の ID はトランザクションの前に作り、再試行しても同じ行を書きます。何も変えなかった操作（解除済みの処分の解除など）は記録しません。
+- `action` と対象の種類の対応、`target_id` と `target_label` の値は次のとおりです。CLI の操作は `actor_kind = cli` で、`actor_user_id` は NULL です。
+
+  | `action` | `target_kind` | `target_id` | `target_label` | `source_event_id` |
+  | --- | --- | --- | --- | --- |
+  | `account_action_issued`, `account_action_lifted` | `account` | `accounts.id` | アカウントのハンドル | `moderation_actions.id`（解除の行もこの ID が PK） |
+  | `domain_action_issued`, `domain_action_lifted` | `domain` | ドメイン | ドメイン | `domain_moderation_actions.id`（解除の行もこの ID が PK） |
+  | `report_assigned`, `report_unassigned`, `report_resolved` | `report` | `reports.id` | 通報されたアカウントのハンドル | `report_assignments.id` / `report_resolutions.id` |
+  | `registration_approved`, `registration_rejected` | `user` | `users.id` | ローカルアカウントのハンドル（`@alice`） | `registration_decisions.id` |
+  | `setting_changed` | `setting` | 設定のキー | 設定のキー | `instance_setting_revisions.id` |
+  | `text_changed` | `setting` | 文章のキー | キーとロケール（`terms [ja]`） | `instance_text_revisions.id` |
+  | `rule_added`, `rule_revised`, `rule_moved` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_revisions.id`（移動は動かしたルールの版。動かしたルールの位置が変わらないときは最初に記録した版） |
+  | `rule_retired` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_retirements.rule_id` |
+
+- ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
+- 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。
 - 更新・削除の API と CLI はありません。保持期間（ADR-0038、既定 730 日）を過ぎた行だけを消去ジョブが消します。
 
 #### 切れた関係【イベント】
