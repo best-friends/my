@@ -40,7 +40,8 @@ type MediaFactory func(t *testing.T, opts uow.Options) MediaHarness
 // result with its variants and deletes the file as received, failures recorded as results,
 // focal points and descriptions as current values that only the uploader reads and changes
 // until a status attaches the file, the cleanup of old unattached uploads that keeps attached
-// and referenced ones, and remote media files recorded once per owner and URL.
+// and referenced ones, remote media files recorded once per owner and URL, and the media
+// proxy's remote media cache with its cleanup.
 func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 	t.Helper()
 	cases := []struct {
@@ -59,6 +60,8 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"CleansUpOldUnattachedUploads", mediaCleansUp},
 		{"CleanupPagesPastReferencedUploads", mediaCleanupPages},
 		{"RecordsRemoteMediaOnce", mediaRecordsRemoteMedia},
+		{"CachesRemoteMediaUnderThePolicy", mediaCachesRemoteMedia},
+		{"CleansUpTheRemoteMediaCache", mediaCleansUpRemoteMediaCache},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newMediaEnv(t, newHarness)) })

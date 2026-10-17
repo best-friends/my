@@ -207,6 +207,13 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.MediaUnattachedTTL, _ = time.ParseDuration(v) },
 	},
 	{
+		key:   "remote_media_cache_max_bytes",
+		doc:   "Size limit in bytes of the copies of remote media that the media proxy keeps when the instance setting `remote_media_policy` is `avatars` or `all` (FR-409). The hourly cleanup deletes the expired copies, then the least recently accessed ones over this limit (FR-803).",
+		def:   strconv.Itoa(1 << 30),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.RemoteMediaCacheMaxBytes, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
 		key: "kv",
 		doc: "Key-value store adapter for caches and rate limits (ADR-0003, ADR-0019 §5).",
 		def: "db",

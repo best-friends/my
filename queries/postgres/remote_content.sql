@@ -58,19 +58,23 @@ UPDATE remote_media_cache SET last_accessed_at = @last_accessed_at WHERE url = @
 -- ListExpiredRemoteMediaCache returns at most @batch_limit entries past their expiry, the
 -- earliest expired first, for the cleanup to delete with their blobs.
 -- name: ListExpiredRemoteMediaCache :many
-SELECT url, blob_key FROM remote_media_cache WHERE expires_at <= @now
-ORDER BY expires_at LIMIT @batch_limit;
+SELECT url, blob_key, content_type, file_size, fetched_at, expires_at, last_accessed_at
+FROM remote_media_cache WHERE expires_at <= @now
+ORDER BY expires_at, url LIMIT @batch_limit;
 
 -- ListLeastRecentlyAccessedRemoteMediaCache returns the least recently accessed entries, for the
 -- cleanup to bring the cache under its size limit.
 -- name: ListLeastRecentlyAccessedRemoteMediaCache :many
-SELECT url, blob_key, file_size FROM remote_media_cache ORDER BY last_accessed_at LIMIT @batch_limit;
+SELECT url, blob_key, content_type, file_size, fetched_at, expires_at, last_accessed_at
+FROM remote_media_cache ORDER BY last_accessed_at, url LIMIT @batch_limit;
 
 -- name: SumRemoteMediaCacheSize :one
 SELECT CAST(COALESCE(SUM(file_size), 0) AS BIGINT) FROM remote_media_cache;
 
--- name: DeleteRemoteMediaCache :exec
-DELETE FROM remote_media_cache WHERE url = @url;
+-- DeleteRemoteMediaCache deletes the entry of @url unless it was fetched again after the
+-- cleanup read it (its fetched_at differs).
+-- name: DeleteRemoteMediaCache :execrows
+DELETE FROM remote_media_cache WHERE url = @url AND fetched_at = @fetched_at;
 
 -- ExistsLocalStatusInConversation reports whether a local status that is not deleted belongs to
 -- the conversation, for the scope of remote content (ADR-0034: replies in a thread that has a
@@ -81,6 +85,11 @@ SELECT EXISTS (
   WHERE s.conversation_uri = @conversation_uri AND s.is_local = true
     AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
 );
+
+-- IsCustomEmojiImage reports whether any revision of a custom emoji, current or not, uses the
+-- media file as its image, for the avatars policy of the remote media cache.
+-- name: IsCustomEmojiImage :one
+SELECT EXISTS (SELECT 1 FROM custom_emoji_images WHERE media_id = @media_id);
 
 -- name: InsertCustomEmojiIfAbsent :exec
 INSERT INTO custom_emojis (id, shortcode, domain, uri, created_at)

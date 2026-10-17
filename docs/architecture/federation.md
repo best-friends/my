@@ -409,8 +409,15 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   長さのない画像は上限まで読んでから返し、長さのない動画・音声は中継の途中で上限を超えたらレスポンスを中断します（CDN が途中までのファイルをキャッシュしないように）。
 - 署名がない・合わない URL、記録のないメディア、`media_fetch` の制限、SSRF ガードが拒否した宛先、リモートの 4xx、許可リストにない形式、上限を超えるものは、どれも 404 です。リモートに届かないときと 5xx は 502 です。エラーのレスポンスは `Cache-Control: no-store` です。
 - インスタンス設定 `remote_media_policy`（`none` / `avatars` / `all`、既定 `none`）と `remote_media_cache_ttl`（秒、既定 86400）で、TTL 付きのキャッシュを選べます（FR-409）。
-  キャッシュは `remote_media_cache` と Blob（`remote/` のキー）に置き、`media.cleanup_remote` が期限と容量の上限で消します（FR-803）。
-  キャッシュはまだ実装していない（#276）ので、プロキシはどの方針でも `none` と同じく毎回中継し、`remote_media_cache_ttl` は `max-age` にだけ効きます。
+  - `none` では、プロキシは毎回取得して中継し、キャッシュを読みも書きもしません。
+  - `all` ではすべてのリモートのメディアを、`avatars` ではプロフィールのアバター・ヘッダー（`account` モジュールの `IsMediaReferenced`）とカスタム絵文字の画像（`custom_emoji_images`）だけを、キャッシュします。
+  - キャッシュは URL ごとに 1 つで、Blob の非公開のキー `remote/{URL の SHA-256 の 16 進}` に置き、`remote_media_cache` に記録します。
+    期限（`expires_at` = 取得時刻 + `remote_media_cache_ttl`）の内はそこから返し、期限切れ・行がない・Blob がないときは取得し直します。
+    取得したファイルは中身で判定した形式とサイズの上限の検査を通したうえで Blob に最後まで書いてから返すので、上限を超えるもの・途中で切れたものは残りも返りもしません。
+  - 返した時刻（`last_accessed_at`）は 1 時間より細かくは書きません。返すたびにデータベースへ書かないためです。
+  - 1 時間ごとのジョブ `media.cleanup_remote` が、期限切れのものを消し、続けて合計サイズが設定 `remote_media_cache_max_bytes`（既定 1 GiB）を超える分を `last_accessed_at` の古い順に消します（FR-803）。
+    容量の上限は Blob の費用に効くので、インスタンス設定ではなく運用者の設定です。1 回の実行で見る行数には上限があり、残りは次の実行が消します。
+    Blob を先に消してから行を消すので、途中で失敗しても行が残って次の実行が消し直し、どこからも指されない Blob は残りません。行は読んだときの `fetched_at` のままのときだけ消すので、その間に取得し直したものは残ります。
 - ドメイン単位の `media_fetch` の制限（`reject_media`）は、メディアの所有者のドメインと URL のホストの両方に当て、どちらかが制限されていればプロキシは取得せず 404 を返します。
   判定はポート `content.MediaFetchPolicy` を通します。実装は `moderation.FederationPolicy` です（§11）。
   `media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。

@@ -50,10 +50,12 @@ type Config struct {
 	MediaMaxImageSide   int
 	MediaMaxImagePixels int64
 	MediaUnattachedTTL  time.Duration
-	KV                  string
-	KeyManager          string
-	KEK                 []byte
-	PreviousKEKs        [][]byte
+	// RemoteMediaCacheMaxBytes bounds the total size of the remote media cache.
+	RemoteMediaCacheMaxBytes int64
+	KV                       string
+	KeyManager               string
+	KEK                      []byte
+	PreviousKEKs             [][]byte
 	// Mail is the Mailer adapter; MailFrom and the SMTP fields configure it.
 	Mail         string
 	MailFrom     string
@@ -96,6 +98,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.Int("media_max_image_side", c.MediaMaxImageSide),
 		slog.Int64("media_max_image_pixels", c.MediaMaxImagePixels),
 		slog.Duration("media_unattached_ttl", c.MediaUnattachedTTL),
+		slog.Int64("remote_media_cache_max_bytes", c.RemoteMediaCacheMaxBytes),
 		slog.String("kv", c.KV),
 		slog.String("key_manager", c.KeyManager),
 		slog.String("kek", redact(len(c.KEK) > 0)),

@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/content"
@@ -101,9 +102,21 @@ type ProxyDeps struct {
 	HTTP       kernel.HTTPClient
 	Accounts   AccountDomains
 	Policy     MediaFetchPolicy
-	// CacheTTL returns the current remote_media_cache_ttl instance setting: the max-age of the
-	// proxy's responses.
-	CacheTTL func(ctx context.Context) (time.Duration, error)
+	// Settings returns the current remote_media_policy and remote_media_cache_ttl instance
+	// settings.
+	Settings func(ctx context.Context) (ProxySettings, error)
+	// UnitOfWork, Blobs, and Clock keep the copies of the remote media cache; without Blobs the
+	// proxy never caches, whatever the policy.
+	UnitOfWork uow.UnitOfWork
+	Blobs      blob.Store
+	Clock      kernel.Clock
+	// ProfileImages tells the avatars and headers of profiles, which the avatars policy caches
+	// with the custom emoji images; nil caches only the custom emoji images under it.
+	ProfileImages MediaReferrer
+	// MaxCacheSize bounds the total size of the cache in bytes; zero means
+	// DefaultRemoteMediaCacheMaxSize. The cleanup deletes the least recently accessed copies
+	// over it.
+	MaxCacheSize int64
 	// Keys are the HMAC-SHA256 keys of the proxy URLs' signatures. The first signs; every one
 	// verifies, so that URLs signed before a key rotation keep working while the old key is kept.
 	Keys [][]byte
@@ -120,8 +133,10 @@ type ProxyDeps struct {
 // instance has recorded, never an arbitrary URL. The file is fetched through the SSRF-guarded
 // HTTPClient, its format is detected from its content (ADR-0019 §8: SVG and anything outside
 // the allow list is refused), and its size is bounded: 16 MiB for images and 100 MiB for video
-// and audio (ADR-0019 §1). The instance keeps no copy; a CDN in front of it caches the
-// responses for remote_media_cache_ttl.
+// and audio (ADR-0019 §1). A CDN in front of the instance caches the responses for
+// remote_media_cache_ttl. Under the remote_media_policy none the instance keeps no copy; under
+// avatars and all it also keeps one in blob storage for remote_media_cache_ttl
+// (remote_media_cache.go).
 type MediaProxy struct {
 	d ProxyDeps
 }
@@ -138,6 +153,9 @@ func NewMediaProxy(d ProxyDeps) (*MediaProxy, error) {
 	}
 	if d.Logger == nil {
 		d.Logger = slog.Default()
+	}
+	if d.MaxCacheSize <= 0 {
+		d.MaxCacheSize = DefaultRemoteMediaCacheMaxSize
 	}
 	d.BaseURL = strings.TrimSuffix(d.BaseURL, "/")
 	return &MediaProxy{d: d}, nil
@@ -223,14 +241,61 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 			return nil, notFound("media of " + domain + " are rejected")
 		}
 	}
-	maxAge, err := p.d.CacheTTL(ctx)
+	settings, err := p.d.Settings(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return p.fetch(ctx, m, maxAge)
+	cache, err := p.cacheable(ctx, m, settings.Policy)
+	if err != nil {
+		return nil, err
+	}
+	if cache {
+		return p.openCached(ctx, m, settings.CacheTTL)
+	}
+	return p.relay(ctx, m, settings.CacheTTL)
 }
 
-func (p *MediaProxy) fetch(ctx context.Context, m content.RemoteMedia, maxAge time.Duration) (*ProxiedMedia, error) {
+// relay fetches a remote media file and relays it without keeping a copy.
+func (p *MediaProxy) relay(ctx context.Context, m content.RemoteMedia, maxAge time.Duration) (*ProxiedMedia, error) {
+	f, err := p.fetch(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	if f.length < 0 && f.kind == content.MediaTypeImage {
+		// An image without a length is read whole (at most 16 MiB), so that the response has
+		// one and a file over the limit is refused before anything is sent.
+		data, err := io.ReadAll(f.body)
+		_ = f.body.Close()
+		if err != nil {
+			return nil, readError(m, err)
+		}
+		return &ProxiedMedia{ContentType: f.contentType, Length: int64(len(data)), MaxAge: maxAge, Body: io.NopCloser(bytes.NewReader(data))}, nil
+	}
+	return &ProxiedMedia{ContentType: f.contentType, Length: f.length, MaxAge: maxAge, Body: f.body}, nil
+}
+
+// readError classifies an error reading the body of a remote media file: a file over the size
+// limit is not found, and anything else is an upstream failure.
+func readError(m content.RemoteMedia, err error) error {
+	if errors.Is(err, kernel.ErrResponseTooLarge) {
+		return fmt.Errorf("proxy media %s: %w: %w", m.MediaID, ErrNotFound, err)
+	}
+	return fmt.Errorf("proxy media %s: read: %w: %w", m.MediaID, ErrProxyUpstream, err)
+}
+
+// fetchedMedia is the response of a remote media file in an allowed format.
+type fetchedMedia struct {
+	contentType string
+	kind        content.MediaType
+	// length is the declared length of the body, or -1.
+	length int64
+	// body reads the whole file and fails past the size limit of its kind; the caller closes
+	// it.
+	body *limitedBody
+}
+
+// fetch requests a remote media file and checks its status, format, and declared length.
+func (p *MediaProxy) fetch(ctx context.Context, m content.RemoteMedia) (*fetchedMedia, error) {
 	purpose := kernel.HTTPPurposeVideo
 	if m.DeclaredMediaType == content.MediaTypeImage {
 		purpose = kernel.HTTPPurposeImage
@@ -288,23 +353,11 @@ func (p *MediaProxy) fetch(ctx context.Context, m content.RemoteMedia, maxAge ti
 	if length > limits.MaxBodyBytes {
 		return nil, fmt.Errorf("proxy media %s: %d bytes: %w: %w", m.MediaID, length, ErrNotFound, kernel.ErrResponseTooLarge)
 	}
-	body := &limitedBody{r: io.MultiReader(bytes.NewReader(head), resp.Body), c: resp.Body, left: limits.MaxBodyBytes}
-	if length < 0 && kind == content.MediaTypeImage {
-		// An image without a length is read whole (at most 16 MiB), so that the response has
-		// one and a file over the limit is refused before anything is sent.
-		data, err := io.ReadAll(body)
-		_ = resp.Body.Close()
-		switch {
-		case errors.Is(err, kernel.ErrResponseTooLarge):
-			return nil, fmt.Errorf("proxy media %s: %w: %w", m.MediaID, ErrNotFound, err)
-		case err != nil:
-			return nil, fmt.Errorf("proxy media %s: read: %w: %w", m.MediaID, ErrProxyUpstream, err)
-		}
-		ok = true
-		return &ProxiedMedia{ContentType: contentType, Length: int64(len(data)), MaxAge: maxAge, Body: io.NopCloser(bytes.NewReader(data))}, nil
-	}
 	ok = true
-	return &ProxiedMedia{ContentType: contentType, Length: length, MaxAge: maxAge, Body: body}, nil
+	return &fetchedMedia{
+		contentType: contentType, kind: kind, length: length,
+		body: &limitedBody{r: io.MultiReader(bytes.NewReader(head), resp.Body), c: resp.Body, left: limits.MaxBodyBytes},
+	}, nil
 }
 
 // limitedBody reads at most left bytes and fails with kernel.ErrResponseTooLarge past them.

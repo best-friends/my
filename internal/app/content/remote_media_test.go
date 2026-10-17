@@ -126,8 +126,10 @@ func newProxyEnv(t *testing.T, keys ...[]byte) *proxyEnv {
 	}
 	p, err := content.NewMediaProxy(content.ProxyDeps{
 		Repository: e.repo, HTTP: e.http, Accounts: domains{ownerID: "remote.example"}, Policy: e.rej,
-		CacheTTL: func(context.Context) (time.Duration, error) { return time.Hour, nil },
-		Keys:     keys, BaseURL: "https://social.example/",
+		Settings: func(context.Context) (content.ProxySettings, error) {
+			return content.ProxySettings{Policy: content.RemoteMediaCacheAll, CacheTTL: time.Hour}, nil
+		},
+		Keys: keys, BaseURL: "https://social.example/",
 	})
 	if err != nil {
 		t.Fatal(err)

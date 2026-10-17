@@ -1,0 +1,106 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package postgres
+
+import (
+	"context"
+	"time"
+
+	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
+	appcontent "github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/content"
+)
+
+// UpsertRemoteMediaCache implements content.MediaRepository.
+func (r *MediaRepository) UpsertRemoteMediaCache(ctx context.Context, tx uow.Tx, e content.RemoteMediaCacheEntry) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.UpsertRemoteMediaCache(ctx, postgresgen.UpsertRemoteMediaCacheParams{
+		Url: e.URL, BlobKey: e.BlobKey, ContentType: e.ContentType, FileSize: e.FileSize,
+		FetchedAt: e.FetchedAt, ExpiresAt: e.ExpiresAt, LastAccessedAt: e.LastAccessedAt,
+	}), "upsert remote media cache")
+}
+
+// TouchRemoteMediaCache implements content.MediaRepository.
+func (r *MediaRepository) TouchRemoteMediaCache(ctx context.Context, tx uow.Tx, url string, at time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.TouchRemoteMediaCache(ctx, postgresgen.TouchRemoteMediaCacheParams{Url: url, LastAccessedAt: at}), "touch remote media cache")
+}
+
+// DeleteRemoteMediaCache implements content.MediaRepository.
+func (r *MediaRepository) DeleteRemoteMediaCache(ctx context.Context, tx uow.Tx, url string, fetchedAt time.Time) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := q.DeleteRemoteMediaCache(ctx, postgresgen.DeleteRemoteMediaCacheParams{Url: url, FetchedAt: fetchedAt})
+	return n > 0, wrap(err, "delete remote media cache")
+}
+
+// FindRemoteMediaCache implements content.MediaRepository.
+func (r *MediaRepository) FindRemoteMediaCache(ctx context.Context, url string) (content.RemoteMediaCacheEntry, error) {
+	row, err := r.db.reader().GetRemoteMediaCache(ctx, url)
+	if err != nil {
+		return content.RemoteMediaCacheEntry{}, notFound(err, appcontent.ErrNotFound, "remote media cache "+url)
+	}
+	return remoteMediaCacheEntry(row), nil
+}
+
+// ListExpiredRemoteMediaCache implements content.MediaRepository.
+func (r *MediaRepository) ListExpiredRemoteMediaCache(ctx context.Context, now time.Time, limit int) ([]content.RemoteMediaCacheEntry, error) {
+	n, err := toInt32(limit, "limit")
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListExpiredRemoteMediaCache(ctx, postgresgen.ListExpiredRemoteMediaCacheParams{Now: now, BatchLimit: n})
+	if err != nil {
+		return nil, wrap(err, "list expired remote media cache")
+	}
+	return remoteMediaCacheEntries(rows), nil
+}
+
+// ListLeastRecentlyAccessedRemoteMediaCache implements content.MediaRepository.
+func (r *MediaRepository) ListLeastRecentlyAccessedRemoteMediaCache(ctx context.Context, limit int) ([]content.RemoteMediaCacheEntry, error) {
+	n, err := toInt32(limit, "limit")
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListLeastRecentlyAccessedRemoteMediaCache(ctx, n)
+	if err != nil {
+		return nil, wrap(err, "list least recently accessed remote media cache")
+	}
+	return remoteMediaCacheEntries(rows), nil
+}
+
+// RemoteMediaCacheSize implements content.MediaRepository.
+func (r *MediaRepository) RemoteMediaCacheSize(ctx context.Context) (int64, error) {
+	n, err := r.db.reader().SumRemoteMediaCacheSize(ctx)
+	return n, wrap(err, "sum remote media cache size")
+}
+
+// IsCustomEmojiImage implements content.MediaRepository.
+func (r *MediaRepository) IsCustomEmojiImage(ctx context.Context, mediaID string) (bool, error) {
+	ok, err := r.db.reader().IsCustomEmojiImage(ctx, mediaID)
+	return ok, wrap(err, "is custom emoji image")
+}
+
+func remoteMediaCacheEntries(rows []postgresgen.RemoteMediaCache) []content.RemoteMediaCacheEntry {
+	out := make([]content.RemoteMediaCacheEntry, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, remoteMediaCacheEntry(row))
+	}
+	return out
+}
+
+func remoteMediaCacheEntry(row postgresgen.RemoteMediaCache) content.RemoteMediaCacheEntry {
+	return content.RemoteMediaCacheEntry{
+		URL: row.Url, BlobKey: row.BlobKey, ContentType: row.ContentType, FileSize: row.FileSize,
+		FetchedAt: utc(row.FetchedAt), ExpiresAt: utc(row.ExpiresAt), LastAccessedAt: utc(row.LastAccessedAt),
+	}
+}

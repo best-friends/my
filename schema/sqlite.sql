@@ -1346,6 +1346,8 @@ CREATE TABLE custom_emoji_images (
   revised_at INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX custom_emoji_images_emoji_id_id ON custom_emoji_images (emoji_id, id DESC);
+-- The remote media cache looks up whether a media file is a custom emoji image (avatars policy).
+CREATE INDEX custom_emoji_images_media_id ON custom_emoji_images (media_id);
 
 -- Event (child of a revision): the poll of a status revision (FR-112). closes_at is NULL for a
 -- poll without an end.
