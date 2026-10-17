@@ -844,6 +844,7 @@ flowchart LR
 
 - **配送先の記録** は `deliveries` が兼ねます。
   - 投稿の `Update` / `Delete` は、その投稿の `Create` の `outbound_activities` に紐づく `deliveries` の inbox に送ります（§7）。
+- `report` の活動は通報の転送の `Flag` です。主体（`actor_account_id`）はインスタンス Actor、`object_id` は通報（`reports`）の ID で、`forwarded` の通報だけが持ちます（[federation §11](federation.md#11-モデレーションとの連携)）。
 - お気に入りは現在値で、取り消すと行が消えます。そこで `favourite` の活動は、お気に入りを決める組（`actor_account_id` と投稿）で記録し、`object_id` は投稿の ID です。
   `Like` / `Undo Like` の本文はイベントの値（お気に入りの `uri`・投稿の `uri`）から記録のトランザクションで組み立てるので、行が消えた後の `Undo Like` も `Like` の `id` を埋め込めます。
 - `instance_health` は、`retryable_failure` を記録した日が `last_failure_day` と違えば `failure_days` を 1 増やし、7 に達したら `instance_availability_events`（`marked_unavailable`）を記録して `unavailable` にします。

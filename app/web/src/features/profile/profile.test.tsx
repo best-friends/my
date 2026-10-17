@@ -5,6 +5,7 @@
 import { fireEvent, isInaccessible, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
 import { otherAccountFixture, relationshipFixture, statusPage, timelineStatusFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
@@ -306,6 +307,32 @@ describe("the follow lists", () => {
     expect(await within(main()).findByRole("link", { name: "carol @carol@remote.example" })).toHaveAttribute("href", "/@carol@remote.example");
     expect(cursors).toEqual([null, "page-2"]);
     expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+  });
+
+  test("show the heading and a skeleton of rows while the first page loads", async () => {
+    bobServer();
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get(`${apiBase}/accounts/:id/followers`, async () => {
+        await released;
+        return HttpResponse.json({ accounts: [viewerFixture] });
+      }),
+    );
+    const { user } = await renderApp({ path: "/@bob" });
+    await user.click(await within(await screen.findByRole("main")).findByRole("link", { name: "12 followers" }));
+
+    // After the router's pending delay, the heading names the account by the handle in the address.
+    await findLoadingRegion("Loading accounts");
+    expect(screen.getByRole("heading", { level: 1, name: "Followers of ⁨@bob⁩" })).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    release();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Followers of ⁨Bob⁩" })).toBeInTheDocument();
+    expect(within(main()).getByRole("link", { name: "Alice @alice@my.example" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading accounts")).not.toBeInTheDocument();
   });
 
   test("say so when an account follows nobody", async () => {

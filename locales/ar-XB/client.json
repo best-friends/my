@@ -1015,6 +1015,10 @@
     "defaultMessage": "‮Ↄonʅp uoʇ ʅoɐp ɯoɹǝ ɐɔɔonuʇs: {reason}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "profile.list.loading": {
+    "defaultMessage": "‮⅂oɐpıuƃ ɐɔɔonuʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "profile.list.retry": {
     "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -2,7 +2,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useId } from "react";
 import { z } from "zod";
-import { type NotificationFilter, notificationFilters, notificationMarkerQueryOptions, notificationsQueryOptions, NotificationsView } from "../features/notifications";
+import { type NotificationFilter, notificationFilters, notificationMarkerQueryOptions, notificationsQueryOptions, NotificationsSkeleton, NotificationsView } from "../features/notifications";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/notifications")({
     ]);
   },
   component: NotificationsPage,
+  pendingComponent: NotificationsPending,
 });
 
 function NotificationsPage() {
@@ -40,6 +41,16 @@ function NotificationsPage() {
     <>
       <PageHeading id={headingId}>{t("client:notifications.title")}</PageHeading>
       <NotificationsView filter={filter} onFilterChange={changeFilter} headingId={headingId} />
+    </>
+  );
+}
+
+function NotificationsPending() {
+  const t = useT();
+  return (
+    <>
+      <PageHeading>{t("client:notifications.title")}</PageHeading>
+      <NotificationsSkeleton />
     </>
   );
 }
