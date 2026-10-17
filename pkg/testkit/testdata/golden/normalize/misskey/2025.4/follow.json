@@ -1,0 +1,13 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/9tjlknm0fl",
+    "ID": "https://misskey.example/follows/9tjlko2b5x",
+    "Objects": [
+      {
+        "ID": "https://remote.example/users/bob"
+      }
+    ],
+    "RawType": "Follow",
+    "Type": "Follow"
+  }
+}

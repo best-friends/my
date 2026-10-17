@@ -17,6 +17,7 @@ import (
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/federation"
 	"github.com/best-friends/my/internal/platform"
 )
 
@@ -117,5 +118,27 @@ func TestInbox(t *testing.T) {
 				t.Errorf("401 without Accept-Signature: %v", resp.Header)
 			}
 		})
+	}
+}
+
+// TestInboxHandlers builds the composition root, so that a handler registered twice (a panic in
+// NewApp) fails the test, and checks that every activity type with a handler is routed.
+func TestInboxHandlers(t *testing.T) {
+	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
+	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{})
+	if err != nil {
+		t.Fatalf("NewApp: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+	for _, typ := range []federation.ActivityType{
+		federation.ActivityFollow, federation.ActivityAccept, federation.ActivityReject,
+		federation.ActivityCreate, federation.ActivityUpdate, federation.ActivityDelete,
+	} {
+		if !app.InboxProcessor.Handles(typ) {
+			t.Errorf("no inbox handler of %s", typ)
+		}
+	}
+	if !app.InboxProcessor.Handles(federation.ActivityUndo, federation.ActivityFollow, federation.ActivityAccept) {
+		t.Error("no Undo handler of Follow and Accept")
 	}
 }

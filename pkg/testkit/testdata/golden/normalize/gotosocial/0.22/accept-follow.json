@@ -1,0 +1,37 @@
+{
+  "Activity": {
+    "Actor": "https://gotosocial.example/users/the_mighty_zork",
+    "Audience": {
+      "To": [
+        "https://remote.example/users/bob"
+      ]
+    },
+    "ID": "https://gotosocial.example/users/the_mighty_zork/accepts/01JJYD0B2Y6HZTW8YNH0Z1N8VS",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://remote.example/users/bob",
+            "Audience": {
+              "To": [
+                "https://gotosocial.example/users/the_mighty_zork"
+              ]
+            },
+            "ID": "https://remote.example/users/bob#follows/4",
+            "Objects": [
+              {
+                "ID": "https://gotosocial.example/users/the_mighty_zork"
+              }
+            ],
+            "RawType": "Follow",
+            "Type": "Follow"
+          }
+        },
+        "ID": "https://remote.example/users/bob#follows/4",
+        "Trusted": false
+      }
+    ],
+    "RawType": "Accept",
+    "Type": "Accept"
+  }
+}

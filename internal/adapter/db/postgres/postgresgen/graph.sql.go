@@ -110,6 +110,23 @@ func (q *Queries) GetFollow(ctx context.Context, id string) (Follow, error) {
 	return i, err
 }
 
+const getFollowByURI = `-- name: GetFollowByURI :one
+SELECT id, uri, follower_account_id, followee_account_id, requested_at FROM follows WHERE uri = $1
+`
+
+func (q *Queries) GetFollowByURI(ctx context.Context, uri string) (Follow, error) {
+	row := q.db.QueryRow(ctx, getFollowByURI, uri)
+	var i Follow
+	err := row.Scan(
+		&i.ID,
+		&i.Uri,
+		&i.FollowerAccountID,
+		&i.FolloweeAccountID,
+		&i.RequestedAt,
+	)
+	return i, err
+}
+
 const getFollowCounters = `-- name: GetFollowCounters :one
 SELECT account_id, followers_count, following_count FROM follow_counters WHERE account_id = $1
 `

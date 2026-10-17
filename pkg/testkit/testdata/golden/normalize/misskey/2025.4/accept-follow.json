@@ -1,0 +1,27 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/9tjlknm0fl",
+    "ID": "https://misskey.example/2f4f0b54-5c2e-4c1e-9a63-0a7c3d0f6a51",
+    "Objects": [
+      {
+        "Embedded": {
+          "Activity": {
+            "Actor": "https://remote.example/users/bob",
+            "ID": "https://remote.example/users/bob#follows/4",
+            "Objects": [
+              {
+                "ID": "https://misskey.example/users/9tjlknm0fl"
+              }
+            ],
+            "RawType": "Follow",
+            "Type": "Follow"
+          }
+        },
+        "ID": "https://remote.example/users/bob#follows/4",
+        "Trusted": false
+      }
+    ],
+    "RawType": "Accept",
+    "Type": "Accept"
+  }
+}
