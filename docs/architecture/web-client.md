@@ -404,9 +404,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 ## 14. 管理画面
 
-`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
+`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログの画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
@@ -426,6 +426,17 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
   「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
   複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
+- **監査ログ**（`/admin/audit-log`、FR-704）: 「絞り込み」と「操作」の 2 つの区画。操作は新しい順で、各行は操作の種類の見出しと、操作者・対象・日時の説明リストにする。
+  - **絞り込み**: 操作の種類（`?action=`）と対象の種類（`?target_kind=`）は `Select`（APG の select-only combobox）で選び、変えるとすぐに URL を変える（S3）。対象の種類を変えると 1 つの対象の絞り込みは外れる。
+    操作者（`?actor=`、アカウントの ID）と 1 つの対象（`?target=`、`target_kind` と組でだけ効く）は、行のリンク（「{名前}の操作だけを表示」「{対象}への操作だけを表示」）で選ぶ。
+    絞り込んだ行はそのまま残るので、同じ位置のリンクを「すべての操作者の操作を表示」「すべての対象への操作を表示」に変えてフォーカスを保つ。
+    絞り込みの区画に、選んだ操作者と対象（読み込んだ行にある名前）とそれを外すリンク、「絞り込みを外す」を出す。外すリンクが消えたときは、区画の最初の `Select` にフォーカスを移す。
+  - **ページの読み足し**: 読み込んだページ数を `?pages=`（2〜25）に置く。「さらに表示」で次のページが届いたら、履歴を増やさずスクロールも動かさずに（`replace`・`resetScroll: false`）URL を変える。
+    ルートの loader は TanStack Query の `infiniteQuery` の `pages` で、そのページ数を新しい方から順に読む。キャッシュに読み込み済みのページはそのまま使う。絞り込みを変えると 1 ページ目からになる。
+    次のページの失敗は、一覧の下に `RegionError` で理由を出し、読み込み済みの行を残す。もう一度「さらに表示」を押すと読み直す。
+  - **操作者**: アカウントの表示名（`dir="auto"`）とハンドル。アカウントが消えた利用者は「削除されたアカウント」、CLI・サーバー自身・ほかのサーバーはそれぞれの名前にする。
+  - **対象**: 項目名を対象の種類にし、値は記録時の `target_label` にする。対象の種類に管理画面があるものはそこへリンクする（アカウントは `/admin/accounts/{id}`、通報は `/admin/reports/{id}`、ドメインは `/admin/domain-actions?filter=all&domain=…`、ドメインは `DomainName` で 2 つの形を出す）。
+    設定・ルール・登録など画面のない種類は `target_label` だけを出す。API は対象が今もあるかを返さないので、消えた対象へのリンクは、リンク先の画面が見つからないことを示す。
 - **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection` にし（`features/admin/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
@@ -433,7 +444,8 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   操作で開いたボタンが消えるとき（一覧から行が消えるなど）は、`lib/useFocusAfterRemoval.ts` でフォーカスの行き先を決める。
 - **テスト**: `features/admin/admin.test.tsx` が出し分け・一覧と絞り込み・ページの読み足し・再開・再実行・失敗・403 を MSW で検査する。既定の閲覧者は権限を持たないので、テストは `operatorHandler()` で権限を与える。
   `features/admin/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
-  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動を検査する。
+  `features/admin/auditLog.test.tsx` は、監査ログの行と対象へのリンク、`Select` と行のリンクでの絞り込みと URL、絞り込みのあとのフォーカス、`?pages=` の書き込みと読み込み、URL の不正な値、次のページの失敗、空の状態、権限のない閲覧者と 403 を検査する。
+  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL を検査する。
 
 ## 15. 検索とほかのサーバーのアカウントのフォロー
 
