@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Popover, PopoverTrigger, Radio, RadioGroup } from "@my/ui";
+import { Button, EyeIcon, Popover, PopoverTrigger, Radio, RadioGroup, VisuallyHidden } from "@my/ui";
+import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import type { PostingLimits, Visibility } from "../api/compose";
 import { visibilities } from "../hooks/policy";
@@ -18,7 +19,8 @@ function isVisibility(value: string): value is Visibility {
 }
 
 /**
- * The visibility of the post: a button that names the current choice and opens a popover with the five
+ * The visibility of the post: a button of the form's tools that shows the current choice (named "Visibility:
+ * <choice>" and described by who can see it) and opens a popover with the five
  * visibilities as a radio group, each with who can see it (ADR-0017; WAI-ARIA APG radio group and dialog
  * patterns). Choosing does not close the popover, because the arrow keys choose as they move.
  * While a restriction narrows what the account can post, the wider visibilities are disabled and the
@@ -26,14 +28,23 @@ function isVisibility(value: string): value is Visibility {
  */
 export function VisibilityPicker({ value, onChange, limits, isDisabled = false }: VisibilityPickerProps) {
   const t = useT();
+  const descriptionId = useId();
   const title = t("client:compose.visibility.title");
   const ceilingHint =
     limits === null ? undefined : t("client:compose.visibility.ceiling", { visibility: t(visibilityLabel[limits.visibility_ceiling]) });
   return (
     <PopoverTrigger>
-      <Button size="sm" isDisabled={isDisabled}>
-        {t("client:compose.visibility.button", { visibility: t(visibilityLabel[value]) })}
+      <Button
+        variant="ghost"
+        size="toolbar"
+        aria-label={t("client:compose.visibility.button", { visibility: t(visibilityLabel[value]) })}
+        aria-describedby={descriptionId}
+        isDisabled={isDisabled}
+      >
+        <EyeIcon />
+        {t(visibilityLabel[value])}
       </Button>
+      <VisuallyHidden id={descriptionId}>{t(visibilityDescription[value])}</VisuallyHidden>
       <Popover aria-label={title} placement="bottom start">
         {({ close }) => (
           <>

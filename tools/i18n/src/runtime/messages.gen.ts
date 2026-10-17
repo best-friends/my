@@ -250,6 +250,8 @@ export interface MessageArgs {
   "client:compose.language.und": {};
   /** Add images */
   "client:compose.media.add": {};
+  /** {count, plural, one {# image attached} other {# images attached}} */
+  "client:compose.media.count": { count: number };
   /** Describe the image for people who cannot see it. */
   "client:compose.media.description.hint": {};
   /** Description of image {position} */

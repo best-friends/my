@@ -19,11 +19,7 @@ import { FieldDescription, FieldError, FieldLabel, type FieldTextProps, fieldCon
 const select = tv({
   slots: {
     root: "group flex flex-col gap-1",
-    trigger: [
-      fieldControl(),
-      "flex cursor-default items-center justify-between gap-2 text-start",
-      "group-data-invalid:border-danger data-focus-visible:focus-ring data-pressed:bg-surface-raised",
-    ],
+    trigger: "flex cursor-default items-center gap-2 text-start data-focus-visible:focus-ring",
     // The closed select shows only an option's label: its description is for choosing (as React Aria's Select styles do).
     value: "truncate data-placeholder:text-fg-muted **:[[slot=description]]:hidden",
     chevron: "size-4 shrink-0 fill-none stroke-current stroke-2 text-fg-muted",
@@ -31,6 +27,23 @@ const select = tv({
     popover: "min-w-(--trigger-width) overflow-auto overscroll-contain rounded-md border border-border bg-surface-raised p-1 shadow-md",
     listBox: "outline-hidden",
   },
+  variants: {
+    variant: {
+      field: { trigger: [fieldControl(), "justify-between group-data-invalid:border-danger data-pressed:bg-surface-raised"] },
+      // Looks like a ghost Button of the `toolbar` size, with its icon as large, so that it lines up with the buttons beside it.
+      toolbar: {
+        root: "min-w-0 flex-row items-center",
+        trigger: [
+          "min-h-8 min-w-0 rounded-md px-2 text-sm font-medium text-fg select-none",
+          "data-disabled:opacity-50 data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken pointer-coarse:min-h-11 motion-safe:transition-colors",
+          "[&>svg:first-child]:size-5 [&>svg:first-child]:shrink-0",
+        ],
+        // Like the other buttons of the row that open a popup, it has no chevron, which also keeps the row short enough for 320 px.
+        chevron: "hidden",
+      },
+    },
+  },
+  defaultVariants: { variant: "field" },
 });
 
 export interface SelectProps<T extends object> extends Omit<RACSelectProps<T>, "children" | "selectionMode">, FieldTextProps {
@@ -38,6 +51,14 @@ export interface SelectProps<T extends object> extends Omit<RACSelectProps<T>, "
   items?: ListBoxProps<T>["items"];
   /** `SelectItem`s, or a function from an item of `items` to its `SelectItem`. */
   children: ReactNode | ((item: T) => ReactNode);
+  /**
+   * `field` (the default) is a form field under its label. `toolbar` is a small button in a row of tools that
+   * shows the chosen option after `icon`; it has no visible label, so name it with `aria-label` (the button's
+   * name is then the chosen option followed by that label).
+   */
+  variant?: "field" | "toolbar";
+  /** A decorative icon before the value, for the `toolbar` variant. */
+  icon?: ReactNode;
 }
 
 /**
@@ -45,12 +66,13 @@ export interface SelectProps<T extends object> extends Omit<RACSelectProps<T>, "
  * list, typing jumps to an option. Controlled with `value` / `onChange` or uncontrolled with `defaultValue`;
  * the value is the selected `SelectItem`'s `id`.
  */
-export function Select<T extends object>({ label, description, errorMessage, items, children, className, ...props }: SelectProps<T>) {
-  const styles = select();
+export function Select<T extends object>({ label, description, errorMessage, items, children, className, variant, icon, ...props }: SelectProps<T>) {
+  const styles = select({ variant });
   return (
     <RACSelect {...props} className={composeRenderProps(className, (className) => styles.root({ className }))}>
       {label !== undefined && <FieldLabel>{label}</FieldLabel>}
       <Button className={styles.trigger()}>
+        {icon}
         <SelectValue className={styles.value()} />
         <svg viewBox="0 0 24 24" aria-hidden className={styles.chevron()}>
           <path d="m6 9 6 6 6-6" />

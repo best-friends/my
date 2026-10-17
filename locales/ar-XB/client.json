@@ -495,6 +495,10 @@
     "defaultMessage": "‮∀pp ıɯɐƃǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.media.count": {
+    "defaultMessage": "‮{count,plural,one{# ıɯɐƃǝ ɐʇʇɐɔɥǝp} other{# ıɯɐƃǝs ɐʇʇɐɔɥǝp}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.media.description.hint": {
     "defaultMessage": "‮ᗡǝsɔɹıqǝ ʇɥǝ ıɯɐƃǝ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ ıʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
