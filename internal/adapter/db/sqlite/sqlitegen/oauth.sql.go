@@ -390,3 +390,24 @@ func (q *Queries) RevokeTokenFamily(ctx context.Context, arg RevokeTokenFamilyPa
 	_, err := q.db.ExecContext(ctx, revokeTokenFamily, arg.Reason, arg.RevokedAt, arg.FamilyID)
 	return err
 }
+
+const revokeTokensOfUser = `-- name: RevokeTokensOfUser :exec
+INSERT INTO oauth_token_revocations (token_id, reason, revoked_at)
+SELECT t.id, ?1, ?2 FROM oauth_access_tokens t
+WHERE t.user_id = ?3
+  AND (t.expires_at > ?2 OR t.refresh_expires_at > ?2)
+ON CONFLICT (token_id) DO NOTHING
+`
+
+type RevokeTokensOfUserParams struct {
+	Reason    string
+	RevokedAt int64
+	UserID    string
+}
+
+// RevokeTokensOfUser revokes every token of a user whose access or refresh token has not expired
+// at revoked_at and that has no revocation yet.
+func (q *Queries) RevokeTokensOfUser(ctx context.Context, arg RevokeTokensOfUserParams) error {
+	_, err := q.db.ExecContext(ctx, revokeTokensOfUser, arg.Reason, arg.RevokedAt, arg.UserID)
+	return err
+}

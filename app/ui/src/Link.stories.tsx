@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ExternalLinkIcon } from "./ExternalLinkIcon";
+import { ExternalLinkIcon } from "./Icons";
 import { Link } from "./Link";
 
 const meta = {

@@ -76,6 +76,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RejectsSignInToInactiveAccounts", sessionRejectsInactiveAccounts},
 		{"RecordsSignInOrigins", originRecordsSignIns},
 		{"PurgesSessionOriginsAfterTheRetention", originPurgesSessionOrigins},
+		{"EndsTheLoginsOfModeratedAccounts", sessionModerationEndsLogins},
 		{"RegistersTheWebClient", oauthRegistersTheWebClient},
 		{"ValidatesAuthorizationRequests", oauthValidatesAuthorizationRequests},
 		{"ExchangesCodesWithPKCE", oauthExchangesCodesWithPKCE},

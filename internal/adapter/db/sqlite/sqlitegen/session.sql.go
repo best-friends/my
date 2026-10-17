@@ -85,6 +85,26 @@ func (q *Queries) InsertSessionRevocationIfAbsent(ctx context.Context, arg Inser
 	return err
 }
 
+const revokeSessionsOfUser = `-- name: RevokeSessionsOfUser :exec
+INSERT INTO session_revocations (session_id, reason, revoked_at)
+SELECT s.id, ?1, ?2 FROM sessions s
+WHERE s.user_id = ?3 AND s.expires_at > ?2
+ON CONFLICT (session_id) DO NOTHING
+`
+
+type RevokeSessionsOfUserParams struct {
+	Reason    string
+	RevokedAt int64
+	UserID    string
+}
+
+// RevokeSessionsOfUser revokes every session of a user that has not expired at revoked_at and
+// has no revocation yet.
+func (q *Queries) RevokeSessionsOfUser(ctx context.Context, arg RevokeSessionsOfUserParams) error {
+	_, err := q.db.ExecContext(ctx, revokeSessionsOfUser, arg.Reason, arg.RevokedAt, arg.UserID)
+	return err
+}
+
 const upsertSessionActivity = `-- name: UpsertSessionActivity :exec
 INSERT INTO session_activity (session_id, last_seen_at) VALUES (?, ?)
 ON CONFLICT (session_id) DO UPDATE SET last_seen_at = excluded.last_seen_at

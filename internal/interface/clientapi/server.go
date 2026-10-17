@@ -87,6 +87,13 @@ type Options struct {
 	// account, and nil leaves it out.
 	Moderation   Moderation
 	UserAccounts UserAccounts
+	// AccountModeration runs the moderators' use cases on the actions on accounts for the admin
+	// operations (admin_account_actions.go).
+	AccountModeration AccountModeration
+	// ProfileRestrictions hides the accounts whose profiles moderation hides (profile_view)
+	// from everyone but themselves; nil hides none. Moderators see them through the admin
+	// operations.
+	ProfileRestrictions ProfileRestrictions
 	// Rules runs the use cases of the instance rules: the admin operations (admin_rules.go)
 	// and the rules of GET /instance, which lists none when it is nil.
 	Rules InstanceRules

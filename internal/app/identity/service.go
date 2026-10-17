@@ -25,6 +25,9 @@ type Deps struct {
 	Passwords  *PasswordHasher
 	// Accounts creates the local account a new user logs in as.
 	Accounts *account.Service
+	// Logins keeps the accounts that moderation forbids to log in from signing in and from
+	// using their tokens; nil forbids nobody.
+	Logins LoginPolicy
 	// DefaultLocale returns the instance's default locale, which a new user gets unless the
 	// registration names one. It is called once per registration, before the transaction, so a
 	// change of the instance setting applies to the next registration. Nil or an empty result

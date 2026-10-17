@@ -80,6 +80,12 @@ type Repository interface {
 	// those in q.State (any state when empty) whose ID is below q.Before (from the newest when
 	// empty).
 	ListReports(ctx context.Context, q ReportQuery, limit int) ([]moderation.ReportRecord, error)
+	// FindActionRecord returns an action on an account with its lift.
+	FindActionRecord(ctx context.Context, id string) (moderation.ActionRecord, error)
+	// ListActions returns up to limit actions on accounts with their lifts, newest first: those
+	// on q.AccountID (every account when empty), only those in effect at q.InEffectAt when it
+	// is set, whose ID is below q.Before (from the newest when empty).
+	ListActions(ctx context.Context, q ActionQuery, limit int) ([]moderation.ActionRecord, error)
 	// FindDomainActionRecord returns a domain action with its lift.
 	FindDomainActionRecord(ctx context.Context, id string) (moderation.DomainActionRecord, error)
 	// ListDomainActions returns up to limit domain actions with their lifts, newest first: those
@@ -93,6 +99,13 @@ type Repository interface {
 type ReportQuery struct {
 	State  moderation.ReportState // "" for any
 	Before string                 // a report ID; "" for the first page
+}
+
+// ActionQuery selects the actions on accounts of a list.
+type ActionQuery struct {
+	AccountID  string     // "" for every account
+	InEffectAt *time.Time // nil for every action, ended ones included
+	Before     string     // an action ID; "" for the first page
 }
 
 // DomainActionQuery selects the domain actions of a list.

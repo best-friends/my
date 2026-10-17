@@ -701,6 +701,7 @@ CREATE TABLE sessions (
   expires_at INTEGER NOT NULL
 ) STRICT;
 CREATE UNIQUE INDEX sessions_token_hash ON sessions (token_hash);
+CREATE INDEX sessions_user_id ON sessions (user_id);
 
 -- Event: a session ended before it expired.
 CREATE TABLE session_revocations (
@@ -783,6 +784,7 @@ CREATE TABLE oauth_access_tokens (
 CREATE UNIQUE INDEX oauth_access_tokens_access_token_hash ON oauth_access_tokens (access_token_hash);
 CREATE UNIQUE INDEX oauth_access_tokens_refresh_token_hash ON oauth_access_tokens (refresh_token_hash);
 CREATE INDEX oauth_access_tokens_family_id ON oauth_access_tokens (family_id);
+CREATE INDEX oauth_access_tokens_user_id ON oauth_access_tokens (user_id);
 
 -- Event: a token row (its access and refresh token) stopped working.
 CREATE TABLE oauth_token_revocations (
