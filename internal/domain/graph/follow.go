@@ -38,6 +38,15 @@ func (f Follow) Validate() error {
 	return nil
 }
 
+// Resend is the event that a remote follower sent a Follow again, under another URI, while its
+// follow is active (data-model §4.5, follow_resends): its server does not count the follow as
+// established. The follow keeps its row, and its Accept is sent again for URI.
+type Resend struct {
+	URI        string // the IRI of the Follow received again
+	FollowID   string
+	ReceivedAt time.Time
+}
+
 // Acceptor says who accepted a follow.
 type Acceptor string
 

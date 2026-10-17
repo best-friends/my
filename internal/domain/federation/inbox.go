@@ -165,3 +165,35 @@ func TombstoneFor(act *Activity, activityURI IRI, receivedAt time.Time) (RemoteO
 	}
 	return RemoteObjectTombstone{URI: obj, ActorURI: act.Actor, ActivityURI: activityURI, ReceivedAt: receivedAt}, true
 }
+
+// RemoteFollowTombstone records an Undo of an unknown Follow by the pair that the embedded
+// Follow names, so that the first Follow of the pair arriving later is dropped
+// (remote_follow_tombstones, federation.md §3.3). Misskey's Undo names its Follow by an id other
+// than the one the Follow was sent with, so the URI alone would not stop it.
+type RemoteFollowTombstone struct {
+	// ActivityURI is the Undo.
+	ActivityURI IRI
+	// ActorURI is the follower, the actor of the Undo; ObjectURI is the followee.
+	ActorURI   IRI
+	ObjectURI  IRI
+	ReceivedAt time.Time
+}
+
+// FollowTombstoneFor returns the tombstone that the Undo act, received as activityURI, leaves
+// for the pair of an embedded Follow when that Follow is unknown, and whether it leaves one: the
+// Follow must be the actor's own and name an object other than the actor. Such a tombstone only
+// ever drops the actor's own Follows.
+func FollowTombstoneFor(act *Activity, activityURI IRI, receivedAt time.Time) (RemoteFollowTombstone, bool) {
+	if act == nil || act.Type != ActivityUndo {
+		return RemoteFollowTombstone{}, false
+	}
+	doc := act.Object().Untrusted()
+	if doc == nil || doc.Activity == nil || doc.Activity.Type != ActivityFollow || doc.Activity.Actor != act.Actor {
+		return RemoteFollowTombstone{}, false
+	}
+	obj := doc.Activity.Object().ID
+	if obj == "" || obj == act.Actor {
+		return RemoteFollowTombstone{}, false
+	}
+	return RemoteFollowTombstone{ActivityURI: activityURI, ActorURI: act.Actor, ObjectURI: obj, ReceivedAt: receivedAt}, true
+}

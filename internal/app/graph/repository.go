@@ -40,6 +40,11 @@ type Repository interface {
 	Follow(ctx context.Context, tx uow.Tx, id string) (graph.Follow, error)
 	// FollowByURI returns the follow whose Follow activity has the IRI uri.
 	FollowByURI(ctx context.Context, tx uow.Tx, uri string) (graph.Follow, error)
+	// InsertResend records a Follow received again for an active follow, and reports false,
+	// writing nothing, when its URI is already recorded.
+	InsertResend(ctx context.Context, tx uow.Tx, r graph.Resend) (bool, error)
+	// FollowByResendURI returns the follow that a Follow received again with the IRI uri names.
+	FollowByResendURI(ctx context.Context, tx uow.Tx, uri string) (graph.Follow, error)
 	// Preferences returns the preferences of a follow.
 	Preferences(ctx context.Context, tx uow.Tx, followID string) (graph.Preferences, error)
 	// LockPair serializes the transactions that follow or block between accountA and accountB

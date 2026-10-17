@@ -130,7 +130,7 @@ func (f *FanOut) Run(ctx context.Context, p fanOutPayload) error {
 	if err != nil {
 		return err
 	}
-	subj, err := f.subject(ctx, act, p.RevisionID)
+	subj, err := f.subject(ctx, act, p)
 	if err != nil {
 		return err
 	}
@@ -161,13 +161,13 @@ func (f *FanOut) Run(ctx context.Context, p fanOutPayload) error {
 	var nextJob *queue.NewJob
 	switch {
 	case next != "":
-		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, Phase: string(phases[idx]), After: next}.job()
+		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, Phase: string(phases[idx]), After: next}.job()
 		if err != nil {
 			return err
 		}
 		nextJob = &j
 	case idx+1 < len(phases):
-		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, Phase: string(phases[idx+1])}.job()
+		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, Phase: string(phases[idx+1])}.job()
 		if err != nil {
 			return err
 		}
@@ -254,6 +254,9 @@ type subject struct {
 	// account on its other side from the actor: the only recipient.
 	follow      appgraph.FollowRecord
 	counterpart string
+	// followURI is the Follow that an Accept answers when it is not the follow's own (a Follow
+	// the follower sent again), "" otherwise.
+	followURI federation.IRI
 	// actor is the local actor an account activity is about.
 	actor appaccount.Actor
 }
@@ -295,11 +298,13 @@ func (s subject) phases() []phase {
 }
 
 // subject loads the object of act. An object that is gone fails with errGone.
-func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, revisionID string) (subject, error) {
+func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p fanOutPayload) (subject, error) {
 	s := subject{act: act, actorID: act.ActorAccountID}
 	if act.ObjectKind == federation.OutboundFollow {
+		s.followURI = federation.IRI(p.FollowURI)
 		return f.followSubject(ctx, s)
 	}
+	revisionID := p.RevisionID
 	if act.ObjectKind == federation.OutboundAccount {
 		return f.accountSubject(ctx, s)
 	}

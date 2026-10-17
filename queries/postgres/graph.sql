@@ -109,3 +109,12 @@ WHERE follower_account_id = sqlc.arg(account_id) AND state = sqlc.arg(state)
   AND (sqlc.arg(before)::text = '' OR follow_id < sqlc.arg(before)::text)
 ORDER BY follow_id DESC
 LIMIT sqlc.arg(page_limit);
+
+-- InsertFollowResend inserts nothing when the URI is already recorded.
+-- name: InsertFollowResend :execrows
+INSERT INTO follow_resends (uri, follow_id, received_at) VALUES ($1, $2, $3)
+ON CONFLICT (uri) DO NOTHING;
+
+-- name: GetFollowByResendURI :one
+SELECT f.id, f.uri, f.follower_account_id, f.followee_account_id, f.requested_at
+FROM follow_resends r JOIN follows f ON f.id = r.follow_id WHERE r.uri = $1;

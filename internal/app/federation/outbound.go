@@ -31,8 +31,11 @@ type fanOutPayload struct {
 	// RevisionID is the revision a Create or Update presents (federation.md §7.1), "" for other
 	// activities.
 	RevisionID string `json:"revision_id,omitempty"`
-	Phase      string `json:"phase,omitempty"`
-	After      string `json:"after,omitempty"`
+	// FollowURI is the Follow that an Accept answers when it is not the follow's own: one that
+	// the follower sent again (graph.follow_resent). "" for other activities.
+	FollowURI string `json:"follow_uri,omitempty"`
+	Phase     string `json:"phase,omitempty"`
+	After     string `json:"after,omitempty"`
 }
 
 func (p fanOutPayload) job() (queue.NewJob, error) {
@@ -140,7 +143,7 @@ func RegisterOutboundProjectors(r *uow.Projectors, d RecorderDeps) {
 		if _, err := d.Repository.InsertOutboundDocument(ctx, tx, act.ID, doc, act.CreatedAt); err != nil {
 			return err
 		}
-		return rec.enqueue(ctx, tx, act, "")
+		return rec.enqueue(ctx, tx, act, fanOutPayload{})
 	})
 	r.Register(appcontent.EventBoosted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appcontent.Boosted)
@@ -191,11 +194,16 @@ type recorder struct{ d RecorderDeps }
 // /ap/activities/{id} (ADR-0018). The ID is generated here, in the transaction: a retried
 // attempt starts over with a new one, and nothing of the rolled-back attempt remains.
 func (r recorder) record(ctx context.Context, tx uow.Tx, a federation.OutboundActivity, revisionID string) error {
+	return r.recordWith(ctx, tx, a, fanOutPayload{RevisionID: revisionID})
+}
+
+// recordWith is record with the fan-out payload p, whose OutboundActivityID it sets.
+func (r recorder) recordWith(ctx context.Context, tx uow.Tx, a federation.OutboundActivity, p fanOutPayload) error {
 	a, err := r.insert(ctx, tx, a)
 	if err != nil {
 		return err
 	}
-	return r.enqueue(ctx, tx, a, revisionID)
+	return r.enqueue(ctx, tx, a, p)
 }
 
 // insert gives a its ID and URI and inserts it in tx.
@@ -214,9 +222,10 @@ func (r recorder) insert(ctx context.Context, tx uow.Tx, a federation.OutboundAc
 	return a, nil
 }
 
-// enqueue enqueues the first fan-out batch of a in tx.
-func (r recorder) enqueue(ctx context.Context, tx uow.Tx, a federation.OutboundActivity, revisionID string) error {
-	job, err := fanOutPayload{OutboundActivityID: a.ID, RevisionID: revisionID}.job()
+// enqueue enqueues the first fan-out batch of a in tx, with the payload p of a.
+func (r recorder) enqueue(ctx context.Context, tx uow.Tx, a federation.OutboundActivity, p fanOutPayload) error {
+	p.OutboundActivityID = a.ID
+	job, err := p.job()
 	if err != nil {
 		return err
 	}

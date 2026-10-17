@@ -16,7 +16,8 @@ import (
 // the local use cases, so that the projectors (and the federation module's outbound projectors,
 // which send Accept, Reject, and Undo) see every change. Every one of them is safe to repeat and
 // to run in any order with the others (NFR-REL-1): a Follow is recorded once per URI, and the
-// acceptance, rejection, or termination of a follow that already has one changes nothing.
+// acceptance, rejection, or termination of a follow that already has one changes nothing. A
+// Follow received again under another URI is known by that URI too (follow_resends).
 
 // ReceiveFollowInput is a Follow activity received from a remote account.
 type ReceiveFollowInput struct {
@@ -33,8 +34,12 @@ type ReceiveFollowInput struct {
 // follow request pending until the followee accepts it (FR-302). When either account blocks the
 // other, the follow is recorded and rejected by the system at once, so that the follower's
 // server gets a Reject. Receiving a Follow whose URI is already recorded, or one between a pair
-// that already has a pending or active follow, changes nothing. The follower must be an active
-// remote account and the followee an active local one (ErrAccountUnavailable, ErrRemoteAccount).
+// that already has a pending follow, changes nothing. A Follow under a new URI for a follow that
+// is already active means that the follower's server does not count the follow as established
+// (Mastodon sends its Follow again until it gets an Accept): it is recorded as a Resend of the
+// follow, which keeps its row, and FollowResent sends the Accept again. The follower must be an
+// active remote account and the followee an active local one (ErrAccountUnavailable,
+// ErrRemoteAccount).
 func (s *Service) ReceiveFollow(ctx context.Context, in ReceiveFollowInput) error {
 	f := graph.Follow{URI: in.URI, FollowerAccountID: in.FollowerID, FolloweeAccountID: in.FolloweeID}
 	if err := f.Validate(); err != nil {
@@ -61,7 +66,7 @@ func (s *Service) ReceiveFollow(ctx context.Context, in ReceiveFollowInput) erro
 	prefs := graph.DefaultPreferences(f.ID)
 	repo := s.d.Repository
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if _, err := repo.FollowByURI(ctx, tx, f.URI); !errors.Is(err, ErrNotFound) {
+		if _, err := s.followByAnyURI(ctx, tx, f.URI); !errors.Is(err, ErrNotFound) {
 			return err // nil: this Follow is recorded already
 		}
 		if err := repo.LockPair(ctx, tx, f.FollowerAccountID, f.FolloweeAccountID); err != nil {
@@ -72,8 +77,13 @@ func (s *Service) ReceiveFollow(ctx context.Context, in ReceiveFollowInput) erro
 			return blocked
 		}
 		if blocked == nil {
-			if _, err := repo.Edge(ctx, tx, f.FollowerAccountID, f.FolloweeAccountID); !errors.Is(err, ErrNotFound) {
-				return err // nil: already following or requested
+			edge, err := repo.Edge(ctx, tx, f.FollowerAccountID, f.FolloweeAccountID)
+			switch {
+			case errors.Is(err, ErrNotFound):
+			case err != nil || edge.State != graph.StateActive:
+				return err // nil: already requested
+			default:
+				return s.resend(ctx, tx, edge.FollowID, f)
 			}
 		}
 		if err := repo.InsertFollow(ctx, tx, f); err != nil {
@@ -99,6 +109,30 @@ func (s *Service) ReceiveFollow(ctx context.Context, in ReceiveFollowInput) erro
 		}
 		return tx.Emit(ctx, Followed{Follow: f, Acceptance: a, Preferences: prefs})
 	})
+}
+
+// resend records f, a Follow received again, as a Resend of the active follow followID.
+func (s *Service) resend(ctx context.Context, tx uow.Tx, followID string, f graph.Follow) error {
+	existing, err := s.d.Repository.Follow(ctx, tx, followID)
+	if err != nil {
+		return err
+	}
+	r := graph.Resend{URI: f.URI, FollowID: followID, ReceivedAt: f.RequestedAt}
+	inserted, err := s.d.Repository.InsertResend(ctx, tx, r)
+	if err != nil || !inserted {
+		return err
+	}
+	return tx.Emit(ctx, FollowResent{Follow: existing, Resend: r})
+}
+
+// followByAnyURI returns the follow whose Follow, or a Follow received again for it, has the
+// IRI uri.
+func (s *Service) followByAnyURI(ctx context.Context, tx uow.Tx, uri string) (graph.Follow, error) {
+	f, err := s.d.Repository.FollowByURI(ctx, tx, uri)
+	if errors.Is(err, ErrNotFound) {
+		return s.d.Repository.FollowByResendURI(ctx, tx, uri)
+	}
+	return f, err
 }
 
 // RemoteResponse is an Accept or Reject that a remote followee sent about a follow of it by a
@@ -210,8 +244,8 @@ var errFollowEnded = errors.New("graph: the follow has ended")
 
 // remoteFollow returns the live follow that an activity of a remote account names, with its
 // edge, after locking its pair. The remote account is the sender: the follower of the follow when
-// byFollower, its followee otherwise. The follow is the one with uri whose sender side is the
-// sender; when there is none, it is the live follow between the sender and the hint (the other
+// byFollower, its followee otherwise. The follow is the one with uri, as its Follow or one
+// received again, whose sender side is the sender; when there is none, it is the live follow between the sender and the hint (the other
 // side, "" for none). A follow with uri that is no longer live fails with errFollowEnded, and no
 // follow at all with ErrNotFound.
 func (s *Service) remoteFollow(ctx context.Context, tx uow.Tx, uri, followerID, followeeID string, byFollower bool) (graph.Edge, graph.Follow, error) {
@@ -220,7 +254,7 @@ func (s *Service) remoteFollow(ctx context.Context, tx uow.Tx, uri, followerID, 
 	if byFollower {
 		sender = followerID
 	}
-	f, err := repo.FollowByURI(ctx, tx, uri)
+	f, err := s.followByAnyURI(ctx, tx, uri)
 	switch {
 	case err == nil && (byFollower && f.FollowerAccountID == sender || !byFollower && f.FolloweeAccountID == sender):
 		if err := repo.LockPair(ctx, tx, f.FollowerAccountID, f.FolloweeAccountID); err != nil {

@@ -110,6 +110,24 @@ func (q *Queries) GetFollow(ctx context.Context, id string) (Follow, error) {
 	return i, err
 }
 
+const getFollowByResendURI = `-- name: GetFollowByResendURI :one
+SELECT f.id, f.uri, f.follower_account_id, f.followee_account_id, f.requested_at
+FROM follow_resends r JOIN follows f ON f.id = r.follow_id WHERE r.uri = $1
+`
+
+func (q *Queries) GetFollowByResendURI(ctx context.Context, uri string) (Follow, error) {
+	row := q.db.QueryRow(ctx, getFollowByResendURI, uri)
+	var i Follow
+	err := row.Scan(
+		&i.ID,
+		&i.Uri,
+		&i.FollowerAccountID,
+		&i.FolloweeAccountID,
+		&i.RequestedAt,
+	)
+	return i, err
+}
+
 const getFollowByURI = `-- name: GetFollowByURI :one
 SELECT id, uri, follower_account_id, followee_account_id, requested_at FROM follows WHERE uri = $1
 `
@@ -265,6 +283,26 @@ func (q *Queries) InsertFollowRejection(ctx context.Context, arg InsertFollowRej
 		arg.RejectedAt,
 	)
 	return err
+}
+
+const insertFollowResend = `-- name: InsertFollowResend :execrows
+INSERT INTO follow_resends (uri, follow_id, received_at) VALUES ($1, $2, $3)
+ON CONFLICT (uri) DO NOTHING
+`
+
+type InsertFollowResendParams struct {
+	Uri        string
+	FollowID   string
+	ReceivedAt time.Time
+}
+
+// InsertFollowResend inserts nothing when the URI is already recorded.
+func (q *Queries) InsertFollowResend(ctx context.Context, arg InsertFollowResendParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertFollowResend, arg.Uri, arg.FollowID, arg.ReceivedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const insertFollowTermination = `-- name: InsertFollowTermination :exec
