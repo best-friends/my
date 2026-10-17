@@ -41,13 +41,22 @@ type orderedCollection struct {
 
 // collection serves GET /ap/actors/{id}/{collection} for the collections an actor document
 // names, except the inbox. Every collection lists only what anyone may see, so the answer is
-// the same for every requester.
+// the same for every requester; under authorized fetch (FR-408) a request without a verified
+// signature gets 401 instead.
 func (h *Handler) collection(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("collection")
 	switch name {
 	case collOutbox, collFollowers, collFollowing, collFeatured, collFeaturedTag:
 	default:
 		h.notFound(w, r)
+		return
+	}
+	acc, ok := h.authorize(w, r, false)
+	if !ok {
+		return
+	}
+	if acc.refused() {
+		h.unauthorized(w, r)
 		return
 	}
 	a, err := h.lookupID(r, r.PathValue("id"))
@@ -86,7 +95,7 @@ func (h *Handler) collection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.Context = contextActivityStreams
-	h.writeJSON(w, r, typeActivityJSON, c)
+	h.writeJSONCache(w, r, typeActivityJSON, acc.cache(true), c)
 }
 
 // pageURI returns the IRI of the page of collection id that starts after the cursor before (""

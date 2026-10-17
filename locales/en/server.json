@@ -427,6 +427,10 @@
     "defaultMessage": "The request is too large.",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
+  "errors.signature_required": {
+    "defaultMessage": "This document is served only to requests with a valid HTTP signature.",
+    "description": "Error title for HTTP 401 when the instance uses authorized fetch and an ActivityPub GET of an object or a collection carries no HTTP signature that verifies. Read by other servers' operators."
+  },
   "errors.self_relationship": {
     "defaultMessage": "You cannot do this to your own account.",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."

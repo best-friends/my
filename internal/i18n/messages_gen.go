@@ -760,6 +760,13 @@ func (l *Localizer) ServerErrorsSelfRelationship() string {
 	return l.format("server:errors.self_relationship", nil)
 }
 
+// ServerErrorsSignatureRequired formats "server:errors.signature_required". Error title for HTTP 401 when the instance uses authorized fetch and an ActivityPub GET of an object or a collection carries no HTTP signature that verifies. Read by other servers' operators.
+//
+//	en: This document is served only to requests with a valid HTTP signature.
+func (l *Localizer) ServerErrorsSignatureRequired() string {
+	return l.format("server:errors.signature_required", nil)
+}
+
 // ServerErrorsStatusAlreadyDeleted formats "server:errors.status.already_deleted". Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated).
 //
 //	en: The post created with this Idempotency-Key has been deleted.

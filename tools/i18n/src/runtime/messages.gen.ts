@@ -848,6 +848,8 @@ export interface MessageArgs {
   "server:errors.request_too_large": {};
   /** You cannot do this to your own account. */
   "server:errors.self_relationship": {};
+  /** This document is served only to requests with a valid HTTP signature. */
+  "server:errors.signature_required": {};
   /** The post created with this Idempotency-Key has been deleted. */
   "server:errors.status.already_deleted": {};
   /** The post has no text. */

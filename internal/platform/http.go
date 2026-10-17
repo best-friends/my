@@ -140,6 +140,8 @@ func (a *App) writeStatusProblem(w http.ResponseWriter, r *http.Request, status 
 	switch status {
 	case http.StatusBadRequest:
 		title = l.ServerErrorsBadRequest()
+	case http.StatusUnauthorized:
+		title = l.ServerErrorsSignatureRequired()
 	case http.StatusNotFound:
 		title = l.ServerErrorsNotFound()
 	default:

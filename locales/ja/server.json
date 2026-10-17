@@ -427,6 +427,10 @@
     "defaultMessage": "リクエストが大きすぎます。",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
+  "errors.signature_required": {
+    "defaultMessage": "この文書は、正しい HTTP 署名のあるリクエストにだけ返します。",
+    "description": "Error title for HTTP 401 when the instance uses authorized fetch and an ActivityPub GET of an object or a collection carries no HTTP signature that verifies. Read by other servers' operators."
+  },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."

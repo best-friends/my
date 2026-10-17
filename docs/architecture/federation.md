@@ -359,7 +359,20 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   - outbox は、未ログインの閲覧者がプロフィールで見られる投稿（`public` / `unlisted`）の `Create` を、新しい順に 20 件ずつ返します。ブーストは載せません。`totalItems` は削除されていない投稿の数です（Mastodon と同じ）。
   - followers / following は、承認済みのフォローの相手の Actor の `id` を、新しいフォロー順に 40 件ずつ返します。有効でないアカウントは省き、`totalItems` はフォローの件数です。
   - featured は、ピン留めした投稿のうち未ログインで閲覧できるもの（`public` / `unlisted`）の `Note` を `orderedItems` に並べます。featured-tags は空の `Collection` です。
-- Authorized Fetch（FR-408、S）は設定 `authorized_fetch` で有効にし、署名のない GET を Actor（鍵の取得のための最小の文書を除く）とオブジェクトで 401 にします。
+- Authorized Fetch（FR-408、S）はインスタンス設定 `authorized_fetch`（既定 `false`、[data-model §4.9](data-model.md#49-instance)）で有効にします。設定はリクエストごとに読むので、変更はすぐに効きます。
+  有効なときは、検証できる署名の無い GET（署名なし・検証できない・未ログインとして扱う署名者）に次のように答えます。
+
+  | 対象 | 署名なし | 検証できる署名 |
+  | --- | --- | --- |
+  | 利用者の Actor | 鍵の取得のための最小の文書（`@context`・`id`・`type`・`preferredUsername`・`inbox`・`publicKey`・`endpoints`。Mastodon と同じ項目） | Actor の文書全体 |
+  | インスタンス Actor | 文書全体（もともと最小の文書） | 文書全体 |
+  | オブジェクト（`/activity` を含む）・コレクション | `401` | 無効なときと同じ判定 |
+  | WebFinger・NodeInfo・host-meta・HTML を求めるリクエスト | 無効なときと同じ | 無効なときと同じ |
+
+  - `401` は、存在するかどうかを確かめる前に返します（存在が漏れない）。ADR-0032 の GET の署名を求める `Accept-Signature: sig1=("@method" "@target-uri");created` を付けるので、double-knocking のクライアントは RFC 9421 で再送します。
+  - 応答は署名によって変わるので、すべて `private, no-store` です。だれにも同じ文書を返すインスタンス Actor だけは `public, max-age=60` のままです。
+  - インスタンス Actor（と利用者の Actor の最小の文書）は署名なしで取得できるので、Authorized Fetch を使うサーバーどうしでも、インスタンス Actor の鍵で署名した取得を、相手がその鍵を署名なしで取得して検証できます（鍵の取得が鍵の取得を待つ循環にならない）。
+  - 無効なとき、Actor とコレクションの GET は署名を検証しません（だれにも同じ応答なので）。
 
 ## 11. モデレーションとの連携
 

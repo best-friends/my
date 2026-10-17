@@ -167,6 +167,9 @@ type AppOptions struct {
 	// PseudoLocales makes the pseudo-locales en-XA and ar-XB selectable on every surface
 	// (`my serve -pseudo-locales`), for the E2E of the server-rendered pages. Development and tests only.
 	PseudoLocales bool
+	// PublicKeys resolves the keys of the HTTP signatures on ActivityPub GETs; nil knows no key,
+	// so that every signed GET is anonymous.
+	PublicKeys federation.PublicKeyResolver
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -389,7 +392,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph,
+		Accounts: a.Accounts, Objects: a.newObjects(cfg, opts.PublicKeys), Graph: a.Graph,
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
@@ -441,15 +444,21 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) {
 }
 
 // newObjects builds the use case behind the ActivityPub objects and collections of local
-// statuses (federation.md §10). Signed GETs are verified with the HTTP signature adapter; no
-// remote key can be resolved yet, so every requester is anonymous.
-func (a *App) newObjects(cfg *config.Config) *federation.Objects {
+// statuses (federation.md §10). Signed GETs are verified with the HTTP signature adapter and
+// the keys that keys resolves; with nil keys no remote key resolves, so every requester is
+// anonymous.
+func (a *App) newObjects(cfg *config.Config, keys federation.PublicKeyResolver) *federation.Objects {
+	if keys == nil {
+		keys = federation.UnknownPublicKeys{}
+	}
 	return federation.NewObjects(federation.ObjectsDeps{
 		Statuses: a.Content, Accounts: a.Accounts, Graph: a.Graph, Timeline: a.Timeline, Reader: a.Statuses,
-		Signatures: federation.NewSignatureVerifier(httpsig.New(), federation.UnknownPublicKeys{}, a.KV, a.Clock),
+		Signatures: federation.NewSignatureVerifier(httpsig.New(), keys, a.KV, a.Clock),
 		// No domain blocks exist yet; signers still go through the policy port.
 		Domains: federation.NoDomainRestrictions{},
-		Host:    cfg.Host, Logger: a.Logger,
+		// Authorized fetch (FR-408) is the instance setting, read per request.
+		Settings: a.Instance,
+		Host:     cfg.Host, Logger: a.Logger,
 	})
 }
 

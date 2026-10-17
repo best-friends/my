@@ -431,6 +431,10 @@
     "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ḓǿǿ ŧħīş ŧǿǿ ẏǿǿŭŭř ǿǿẇƞ ȧȧƈƈǿǿŭŭƞŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.signature_required": {
+    "defaultMessage": "[Ŧħīş ḓǿǿƈŭŭḿḗḗƞŧ īş şḗḗřṽḗḗḓ ǿǿƞŀẏ ŧǿǿ řḗḗɋŭŭḗḗşŧş ẇīŧħ ȧȧ ṽȧȧŀīḓ ĦŦŦƤ şīɠƞȧȧŧŭŭřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.status.already_deleted": {
     "defaultMessage": "[Ŧħḗḗ ƥǿǿşŧ ƈřḗḗȧȧŧḗḗḓ ẇīŧħ ŧħīş Īḓḗḗḿƥǿǿŧḗḗƞƈẏ-Ķḗḗẏ ħȧȧş ƀḗḗḗḗƞ ḓḗḗŀḗḗŧḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
