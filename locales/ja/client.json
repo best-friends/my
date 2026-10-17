@@ -783,6 +783,10 @@
     "defaultMessage": "アカウントが見つかりません",
     "description": "Heading and document title of a profile address that names no account the user may see."
   },
+  "profile.original": {
+    "defaultMessage": "{host} で元のプロフィールを開く",
+    "description": "Link on the profile of an account of another server to its profile page on that server. {host} is that server's host name, for example 'mastodon.social'."
+  },
   "profile.relationship_failed": {
     "defaultMessage": "フォローの状態を読み込めませんでした: {reason}",
     "description": "Shown on a profile instead of the follow button when the relationship failed to load. {reason} is the error message."
@@ -1338,6 +1342,10 @@
   "status.not_found.title": {
     "defaultMessage": "投稿が見つかりません",
     "description": "Heading of the page of a post that does not exist or that the user may not see."
+  },
+  "status.original": {
+    "defaultMessage": "{host} で元の投稿を開く",
+    "description": "Accessible name of the link on a post of another server to its page on that server; the link shows only {host}, that server's host name, for example 'mastodon.social'."
   },
   "status.thread.ancestors": {
     "defaultMessage": "スレッドの前の投稿",

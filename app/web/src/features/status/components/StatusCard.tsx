@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, ContentWarning, Link, MediaGrid, PostCard, PostContent } from "@my/ui";
+import { Avatar, ContentWarning, ExternalLinkIcon, Link, MediaGrid, PostCard, PostContent } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
@@ -104,7 +104,27 @@ export function StatusCard({ status, variant = "compact", onDeleted }: StatusCar
         )
       }
       {...(view.contentWarning === null && media !== undefined && { media })}
-      actions={<StatusActions status={status} {...(onDeleted !== undefined && { onDeleted })} />}
+      actions={
+        <>
+          <StatusActions status={status} {...(onDeleted !== undefined && { onDeleted })} />
+          {view.original !== null && (
+            // The post's page on its own server, shown also while nobody is signed in. The host is what it
+            // shows; the name says where it leads, and contains the host (WCAG 2.5.3, label in name).
+            <Link
+              href={view.original.href}
+              rel="noreferrer"
+              variant="standalone"
+              aria-label={t("client:status.original", { host: view.original.host })}
+              className="ms-auto min-w-0 gap-1 text-sm font-normal text-fg-muted data-hovered:text-fg"
+            >
+              <span dir="ltr" className="min-w-0 truncate">
+                {view.original.host}
+              </span>
+              <ExternalLinkIcon />
+            </Link>
+          )}
+        </>
+      }
     />
   );
 }

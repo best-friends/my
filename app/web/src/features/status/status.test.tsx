@@ -5,7 +5,7 @@ import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
-import { statusFixture, statusPage, timelineStatusFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
+import { remoteStatusFixture, statusFixture, statusPage, timelineStatusFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Status } from "./api/status";
@@ -358,5 +358,58 @@ describe("deleting a post", () => {
     expect(await findToast("Post deleted")).toBeInTheDocument();
     expect(within(feed).getAllByRole("article")).toHaveLength(1);
     expect(within(feed).getByRole("article", { description: "The post" })).toBeInTheDocument();
+  });
+});
+
+describe("a post of another server", () => {
+  const remote = remoteStatusFixture;
+
+  test("shows the author's full handle, its content warning, its proxied pictures, and a link to its page there", async () => {
+    signedIn();
+    serveThread(remote);
+    const { user } = await renderApp({ path: `/@${remote.account.acct}/${remote.id}` });
+
+    const article = await screen.findByRole("article", { name: /^Carol @carol@remote\.example / });
+    expect(within(article).getByText("@carol@remote.example")).toHaveAttribute("dir", "ltr");
+    // The link shows the host and is named by where it leads; the actions stay next to it.
+    const original = within(article).getByRole("link", { name: "Open the original post on remote.example" });
+    expect(original).toHaveAttribute("href", "https://remote.example/@carol/1");
+    expect(original).toHaveTextContent("remote.example");
+    expect(await within(article).findByRole("button", { name: "Reply" })).toBeInTheDocument();
+
+    expect(within(article).getByText("Cats")).toBeVisible();
+    expect(within(article).getByText("Hello from another server!")).not.toBeVisible();
+    await user.click(within(article).getByRole("button", { name: "Show content", expanded: false }));
+
+    expect(within(article).getByText("Hello from another server!")).toBeVisible();
+    // Remote files have no renditions here: the card loads the media proxy's preview_url.
+    expect(within(article).getByRole("img", { name: "A cat on a sofa" })).toHaveAttribute(
+      "src",
+      "https://my.example/media/proxy/0192f0c4-7a8e-7000-8000-0000000003d1",
+    );
+    expect(within(article).getByRole("img", { name: "No description" })).toHaveAttribute(
+      "src",
+      "https://my.example/media/proxy/0192f0c4-7a8e-7000-8000-0000000003d2",
+    );
+    // The badge says so to the eye (web-client.md Y9); to a screen reader it is the picture's name.
+    expect(within(article).getByText("No description", { selector: "span" })).toBeVisible();
+  });
+
+  test("is the only kind of post with a link to another server", async () => {
+    serveThread();
+    await renderApp({ path: `/@bob/${postId}` });
+
+    const article = await findFocusedPost();
+    expect(within(article).queryByRole("link", { name: /^Open the original/ })).not.toBeInTheDocument();
+  });
+
+  test("links to its ActivityPub ID when it has no page", async () => {
+    const withoutPage: Status = { ...remote };
+    delete withoutPage.url;
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([withoutPage]))));
+    await renderApp({ path: "/local" });
+
+    const article = await screen.findByRole("article", { name: "Carol @carol@remote.example 3 hr. ago" });
+    expect(within(article).getByRole("link", { name: "Open the original post on remote.example" })).toHaveAttribute("href", remote.uri);
   });
 });

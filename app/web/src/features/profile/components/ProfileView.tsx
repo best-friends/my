@@ -2,7 +2,7 @@
 // A profile (FR-204): the header with the account's picture, name, handle, profile text, metadata fields,
 // follow counts and the relationship buttons, then its posts in tabs (WAI-ARIA APG, tabs pattern) whose
 // selection the route keeps in the URL (web-client.md S3).
-import { Avatar, Link, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
+import { Avatar, ExternalLinkIcon, Link, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
 import { type ReactNode, useId, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed } from "../../timeline";
@@ -58,6 +58,15 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
             <p className="text-fg-muted">
               <span dir="ltr">{profile.handle}</span>
             </p>
+            {profile.original !== null && (
+              <p>
+                {/* The profile on the account's own server, which may show more than this instance knows. */}
+                <Link href={profile.original.href} rel="noreferrer" variant="standalone" className="gap-1">
+                  {t("client:profile.original", { host: isolate(profile.original.host) })}
+                  <ExternalLinkIcon />
+                </Link>
+              </p>
+            )}
           </div>
           {tags.length > 0 && (
             <ul className="flex flex-wrap gap-2">

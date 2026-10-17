@@ -96,8 +96,8 @@ export const preferencesFixture: Schemas["Preferences"] = {
 };
 
 /**
- * A `MediaAttachment` with `id` in `state`; a ready one has its renditions and blurhash, as GET /media/{id}
- * answers once the server has processed the file.
+ * A `MediaAttachment` with `id` in `state`; a ready one has its renditions, their URLs as `url` and
+ * `preview_url`, and its blurhash, as GET /media/{id} answers once the server has processed the file.
  */
 export function mediaFixture(id: string, state: Schemas["MediaAttachment"]["state"] = "ready", description?: string): Schemas["MediaAttachment"] {
   const variant = (size: string) => ({ url: `https://my.example/media/${id}/${size}.jpg`, content_type: "image/jpeg", width: 640, height: 360, size: 1000 });
@@ -106,7 +106,32 @@ export function mediaFixture(id: string, state: Schemas["MediaAttachment"]["stat
     type: "image",
     state,
     meta: { width: 640, height: 360, focus: { x: 0, y: 0 } },
-    ...(state === "ready" ? { blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj", variants: { full: variant("full"), thumbnail: variant("thumbnail") } } : {}),
+    ...(state === "ready"
+      ? {
+          blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
+          variants: { full: variant("full"), thumbnail: variant("thumbnail") },
+          url: variant("full").url,
+          preview_url: variant("thumbnail").url,
+        }
+      : {}),
+    ...(description === undefined ? {} : { description }),
+  };
+}
+
+/**
+ * An image of a remote status: always ready, with no renditions of this instance; `url` and `preview_url` are
+ * its media proxy URL and `remote_url` its URL on the remote server (api/openapi.yaml, MediaAttachment).
+ */
+function remoteMediaFixture(id: string, description?: string): Schemas["MediaAttachment"] {
+  const proxied = `https://my.example/media/proxy/${id}`;
+  return {
+    id,
+    type: "image",
+    state: "ready",
+    meta: { focus: { x: 0, y: 0 } },
+    url: proxied,
+    preview_url: proxied,
+    remote_url: `https://remote.example/files/${id}.png`,
     ...(description === undefined ? {} : { description }),
   };
 }
@@ -158,3 +183,15 @@ export const timelineStatusFixture: Schemas["Status"] = postFixture(otherAccount
 export function statusPage(items: Schemas["Status"][], nextCursor?: string): Schemas["StatusPage"] {
   return nextCursor === undefined ? { items } : { items, next_cursor: nextCursor };
 }
+
+/**
+ * A post of Carol on another server: its page is on that server, it has a content warning, and its two
+ * pictures come through the media proxy, the second without a description.
+ */
+export const remoteStatusFixture: Schemas["Status"] = postFixture(remoteAccountFixture, "0192f0c4-7a8e-7000-8000-0000000003c1", {
+  uri: "https://remote.example/users/carol/statuses/1",
+  url: "https://remote.example/@carol/1",
+  content: "<p>Hello from another server!</p>",
+  spoiler_text: "Cats",
+  media_attachments: [remoteMediaFixture("0192f0c4-7a8e-7000-8000-0000000003d1", "A cat on a sofa"), remoteMediaFixture("0192f0c4-7a8e-7000-8000-0000000003d2")],
+});

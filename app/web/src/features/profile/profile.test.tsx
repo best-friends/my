@@ -318,6 +318,41 @@ describe("the follow lists", () => {
   });
 });
 
+describe("a profile of another server", () => {
+  test("shows the full handle, links to the profile on its server, and shows the account's posts", async () => {
+    const { user } = await renderApp({ path: "/@carol@remote.example" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Carol" })).toBeInTheDocument();
+    expect(within(main()).getAllByText("@carol@remote.example")[0]).toHaveAttribute("dir", "ltr");
+    // The host inside the sentence is isolated, as names are (web-client.md Y10); the link leaves the app.
+    expect(within(main()).getByRole("link", { name: "Open the original profile on ⁨remote.example⁩" })).toHaveAttribute(
+      "href",
+      "https://remote.example/@carol",
+    );
+
+    const feed = await screen.findByRole("feed", { name: "Posts" });
+    const article = within(feed).getByRole("article", { name: /^Carol @carol@remote\.example / });
+    // Signed out: no actions, but the link to the post on its server.
+    expect(within(article).getByRole("link", { name: "Open the original post on remote.example" })).toHaveAttribute(
+      "href",
+      "https://remote.example/@carol/1",
+    );
+    expect(within(article).getByText("Cats")).toBeVisible();
+    await user.click(within(article).getByRole("button", { name: "Show content", expanded: false }));
+    expect(within(article).getByText("Hello from another server!")).toBeVisible();
+    expect(within(article).getByRole("img", { name: "No description" })).toBeInTheDocument();
+  });
+
+  test("is not offered for an account of this instance", async () => {
+    bobServer();
+    await renderApp({ path: "/@bob" });
+
+    // Neither on the profile nor on its post.
+    expect(await screen.findByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
+    expect(within(main()).queryByRole("link", { name: /^Open the original/ })).not.toBeInTheDocument();
+  });
+});
+
 describe("a timeline's post", () => {
   test("links its author's name and picture to the author's profile", async () => {
     await renderApp({ path: "/local" });
