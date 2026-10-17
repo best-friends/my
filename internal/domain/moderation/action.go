@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // ActionKind is the kind of a moderation action on an account (moderation_actions.kind).
@@ -197,6 +198,10 @@ type DomainAction struct {
 	IssuedAt       time.Time
 }
 
+// MaxDomainActionText is the number of characters of a domain action's public comment and of
+// its private note.
+const MaxDomainActionText = 5000
+
 // Validate checks the invariants of a new domain action.
 func (a DomainAction) Validate() error {
 	switch {
@@ -206,6 +211,8 @@ func (a DomainAction) Validate() error {
 		return fmt.Errorf("%w: domain %q", ErrInvalidAction, a.Domain)
 	case !a.Kind.Valid():
 		return fmt.Errorf("%w: kind %q", ErrInvalidAction, a.Kind)
+	case utf8.RuneCountInString(a.PublicComment) > MaxDomainActionText || utf8.RuneCountInString(a.PrivateNote) > MaxDomainActionText:
+		return fmt.Errorf("%w: a text is longer than %d characters", ErrInvalidAction, MaxDomainActionText)
 	case a.ExpiresAt != nil && !a.ExpiresAt.After(a.IssuedAt):
 		return fmt.Errorf("%w: it must expire after it is issued", ErrInvalidAction)
 	}
@@ -241,4 +248,32 @@ func ValidDomain(d string) bool {
 		}
 	}
 	return true
+}
+
+// DomainActionState is whether a domain action is in effect at some time.
+type DomainActionState string
+
+// States of a domain action.
+const (
+	DomainActionActive  DomainActionState = "active"
+	DomainActionExpired DomainActionState = "expired"
+	DomainActionLifted  DomainActionState = "lifted"
+)
+
+// DomainActionRecord is a domain action with its lift, as the moderators list it.
+type DomainActionRecord struct {
+	Action DomainAction
+	Lift   *DomainLift // nil until lifted
+}
+
+// State returns whether the action is in effect at now. A lifted action is lifted even after
+// it would have expired.
+func (r DomainActionRecord) State(now time.Time) DomainActionState {
+	switch {
+	case r.Lift != nil:
+		return DomainActionLifted
+	case r.Action.ExpiresAt != nil && !r.Action.ExpiresAt.After(now):
+		return DomainActionExpired
+	}
+	return DomainActionActive
 }

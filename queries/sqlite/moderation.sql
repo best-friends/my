@@ -84,9 +84,10 @@ INSERT INTO report_statuses (report_id, status_id) VALUES (?, ?)
 ON CONFLICT (report_id, status_id) DO NOTHING;
 
 -- name: UpsertReportState :exec
-INSERT INTO report_states (report_id, state, assignee_user_id, since) VALUES (?, ?, ?, ?)
+INSERT INTO report_states (report_id, state, outcome, assignee_user_id, since) VALUES (?, ?, ?, ?, ?)
 ON CONFLICT (report_id) DO UPDATE SET
-  state = excluded.state, assignee_user_id = excluded.assignee_user_id, since = excluded.since;
+  state = excluded.state, outcome = excluded.outcome, assignee_user_id = excluded.assignee_user_id,
+  since = excluded.since;
 
 -- name: GetReport :one
 SELECT id, uri, reporter_account_id, target_account_id, category, comment, forwarded, filed_at
@@ -100,9 +101,56 @@ FROM reports WHERE uri = ?;
 SELECT status_id FROM report_statuses WHERE report_id = ? ORDER BY status_id;
 
 -- name: GetReportState :one
-SELECT report_id, state, assignee_user_id, since FROM report_states WHERE report_id = ?;
+SELECT report_id, state, outcome, assignee_user_id, since FROM report_states WHERE report_id = ?;
 
 -- ListReportsOfTarget returns the reports of a target account, oldest first.
 -- name: ListReportsOfTarget :many
 SELECT id, uri, reporter_account_id, target_account_id, category, comment, forwarded, filed_at
 FROM reports WHERE target_account_id = ? ORDER BY id;
+
+-- Moderators' handling of reports and domain actions -----------------------------------------
+
+-- name: InsertReportAssignment :exec
+INSERT INTO report_assignments (id, report_id, assignee_user_id, assigned_by_user_id, assigned_at)
+VALUES (?, ?, ?, ?, ?);
+
+-- name: InsertReportResolution :exec
+INSERT INTO report_resolutions (id, report_id, outcome, resolved_by_user_id, resolved_at)
+VALUES (?, ?, ?, ?, ?);
+
+-- GetReportStateForUpdate reads the state of a report inside the transaction that changes it.
+-- name: GetReportStateForUpdate :one
+SELECT report_id, state, outcome, assignee_user_id, since FROM report_states WHERE report_id = ?;
+
+-- ListReports returns the reports in a state (empty for any) with their state, newest first,
+-- those before the report before (empty for the first page).
+-- name: ListReports :many
+SELECT r.id, r.uri, r.reporter_account_id, r.target_account_id, r.category, r.comment, r.forwarded,
+  r.filed_at, s.state, s.outcome, s.assignee_user_id, s.since
+FROM reports r JOIN report_states s ON s.report_id = r.id
+WHERE (CAST(sqlc.arg(state) AS TEXT) = '' OR s.state = sqlc.arg(state))
+  AND (CAST(sqlc.arg(before) AS TEXT) = '' OR r.id < sqlc.arg(before))
+ORDER BY r.id DESC
+LIMIT sqlc.arg(lim);
+
+-- ListDomainModerationActions returns the domain actions with their lifts, newest first: those
+-- of a domain (empty for every domain), only those in effect at in_effect_at unless it is 0, and
+-- those before the action before (empty for the first page).
+-- name: ListDomainModerationActions :many
+SELECT a.id, a.domain, a.kind, a.public_comment, a.private_note, a.obfuscate, a.issued_by_user_id,
+  a.expires_at, a.issued_at, l.action_id AS lift_action_id, l.lifted_by_user_id, l.lifted_at
+FROM domain_moderation_actions a
+LEFT JOIN domain_moderation_action_lifts l ON l.action_id = a.id
+WHERE (CAST(sqlc.arg(domain) AS TEXT) = '' OR a.domain = sqlc.arg(domain))
+  AND (CAST(sqlc.arg(in_effect_at) AS INTEGER) = 0
+    OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > sqlc.arg(in_effect_at))))
+  AND (CAST(sqlc.arg(before) AS TEXT) = '' OR a.id < sqlc.arg(before))
+ORDER BY a.id DESC
+LIMIT sqlc.arg(lim);
+
+-- name: GetDomainModerationActionRecord :one
+SELECT a.id, a.domain, a.kind, a.public_comment, a.private_note, a.obfuscate, a.issued_by_user_id,
+  a.expires_at, a.issued_at, l.action_id AS lift_action_id, l.lifted_by_user_id, l.lifted_at
+FROM domain_moderation_actions a
+LEFT JOIN domain_moderation_action_lifts l ON l.action_id = a.id
+WHERE a.id = ?;
