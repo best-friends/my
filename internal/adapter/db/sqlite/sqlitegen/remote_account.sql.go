@@ -415,6 +415,43 @@ func (q *Queries) ListLatestRemoteAccountHandleVerifications(ctx context.Context
 	return items, nil
 }
 
+const listRemoteProfileURLs = `-- name: ListRemoteProfileURLs :many
+SELECT h.account_id, s.profile_url FROM remote_account_heads h
+JOIN remote_account_snapshots s ON s.id = h.snapshot_id
+WHERE h.account_id IN (SELECT value FROM json_each(CAST(?1 AS TEXT))) AND s.profile_url IS NOT NULL
+ORDER BY h.account_id
+`
+
+type ListRemoteProfileURLsRow struct {
+	AccountID  string
+	ProfileUrl sql.NullString
+}
+
+// ListRemoteProfileURLs returns the profile page (url) of the current snapshot of each actor in
+// @account_ids that declares one, for presenting a page of accounts.
+func (q *Queries) ListRemoteProfileURLs(ctx context.Context, accountIds string) ([]ListRemoteProfileURLsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRemoteProfileURLs, accountIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRemoteProfileURLsRow{}
+	for rows.Next() {
+		var i ListRemoteProfileURLsRow
+		if err := rows.Scan(&i.AccountID, &i.ProfileUrl); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStaleRemoteAccountHeads = `-- name: ListStaleRemoteAccountHeads :many
 SELECT account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures
 FROM remote_account_heads

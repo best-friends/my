@@ -53,6 +53,26 @@ func (r *MediaRepository) FindRemoteMedia(ctx context.Context, mediaID string) (
 	return remoteMedia(row), nil
 }
 
+// ListRemoteMedia implements content.MediaRepository.
+func (r *MediaRepository) ListRemoteMedia(ctx context.Context, ids []string) ([]content.RemoteMedia, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	list, err := jsonList(ids)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListRemoteMedia(ctx, list)
+	if err != nil {
+		return nil, wrap(err, "list remote media")
+	}
+	out := make([]content.RemoteMedia, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, remoteMedia(row))
+	}
+	return out, nil
+}
+
 func remoteMedia(row sqlitegen.RemoteMedium) content.RemoteMedia {
 	m := content.RemoteMedia{
 		MediaID: row.MediaID, OwnerAccountID: row.OwnerAccountID, RemoteURL: row.RemoteUrl,

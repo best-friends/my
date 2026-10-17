@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
@@ -26,6 +27,13 @@ type Accounts interface {
 	// FindByURI returns the actor with an ActivityPub id, failing with appaccount.ErrNotFound
 	// when there is none.
 	FindByURI(ctx context.Context, uri string) (appaccount.Actor, error)
+}
+
+// RemoteProfiles reads the profile pages of remote accounts. *appaccount.Service implements it.
+type RemoteProfiles interface {
+	// RemoteProfileURLs returns the profile pages of the remote accounts in accountIDs, keyed by
+	// account ID; accounts without one are absent.
+	RemoteProfileURLs(ctx context.Context, accountIDs []string) (map[string]string, error)
 }
 
 // AccountResolver fetches the remote accounts that the instance does not know yet, by handle
@@ -50,52 +58,74 @@ func cacheFor(v *Viewer) *string {
 	return &c
 }
 
-// profileImages are the URLs of the avatars and headers of the accounts of one response, read
-// together by Server.profileImages; a nil value has none.
-type profileImages map[appcontent.ImageRef]string
+// accountParts are what the accounts of one response show beyond their own rows, read together
+// by Server.accountParts: the URLs of their avatars and headers, and the profile pages of the
+// remote ones. The zero value has none.
+type accountParts struct {
+	images map[appcontent.ImageRef]string
+	// profiles are the profile pages of remote accounts, by account ID.
+	profiles map[string]string
+}
 
 // url returns the URL of an account's image, or nil when it has none to show.
-func (p profileImages) url(accountID, mediaID string) *string {
+func (p accountParts) url(accountID, mediaID string) *string {
 	if mediaID == "" {
 		return nil
 	}
-	if u, ok := p[appcontent.ImageRef{AccountID: accountID, MediaID: mediaID}]; ok {
+	if u, ok := p.images[appcontent.ImageRef{AccountID: accountID, MediaID: mediaID}]; ok {
 		return &u
 	}
 	return nil
 }
 
-// profileImages reads the avatars and headers of actors with one call of the media use cases,
-// so that a response presents a page of accounts without a lookup per account.
-func (s *Server) profileImages(ctx context.Context, actors ...appaccount.Actor) (profileImages, error) {
-	if s.o.Media == nil {
-		return nil, nil
-	}
+// accountParts reads the parts of actors (accountParts) with one call of the media use cases
+// and one of the account use cases, so that a response presents a page of accounts without a
+// lookup per account.
+func (s *Server) accountParts(ctx context.Context, actors ...appaccount.Actor) (accountParts, error) {
+	return s.readAccountParts(ctx, actors, nil)
+}
+
+// readAccountParts reads the images and profile pages of actors, and only the profile pages of
+// linked (accounts that a response links to without showing them, such as mentions).
+func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccount.Actor) (accountParts, error) {
+	var parts accountParts
 	var refs []appcontent.ImageRef
+	var remote []string
 	for _, a := range actors {
-		p := a.Profile
-		if p == nil {
-			continue
-		}
-		for _, id := range []string{p.AvatarMediaID, p.HeaderMediaID} {
-			if id != "" {
-				refs = append(refs, appcontent.ImageRef{AccountID: a.Account.ID, MediaID: id})
+		if p := a.Profile; p != nil {
+			for _, id := range []string{p.AvatarMediaID, p.HeaderMediaID} {
+				if id != "" {
+					refs = append(refs, appcontent.ImageRef{AccountID: a.Account.ID, MediaID: id})
+				}
 			}
 		}
 	}
-	if len(refs) == 0 {
-		return nil, nil
+	for _, a := range slices.Concat(actors, linked) {
+		if !a.Account.IsLocal() && !slices.Contains(remote, a.Account.ID) {
+			remote = append(remote, a.Account.ID)
+		}
 	}
-	urls, err := s.o.Media.ImageURLs(ctx, refs)
-	if err != nil {
-		return nil, fmt.Errorf("clientapi: the profile images: %w", err)
+	if s.o.Media != nil && len(refs) > 0 {
+		urls, err := s.o.Media.ImageURLs(ctx, refs)
+		if err != nil {
+			return accountParts{}, fmt.Errorf("clientapi: the profile images: %w", err)
+		}
+		parts.images = urls
 	}
-	return urls, nil
+	if s.o.RemoteProfiles != nil && len(remote) > 0 {
+		urls, err := s.o.RemoteProfiles.RemoteProfileURLs(ctx, remote)
+		if err != nil {
+			return accountParts{}, fmt.Errorf("clientapi: the remote profile pages: %w", err)
+		}
+		parts.profiles = urls
+	}
+	return parts, nil
 }
 
-// newAccount presents an actor as the Account schema, without the follow counts. imgs holds the
-// actor's images (Server.profileImages).
-func (s *Server) newAccount(a appaccount.Actor, imgs profileImages) Account {
+// newAccount presents an actor as the Account schema, without the follow counts. parts holds the
+// actor's images and, for a remote actor, its profile page (Server.accountParts); a remote actor
+// without one links to its uri.
+func (s *Server) newAccount(a appaccount.Actor, parts accountParts) Account {
 	out := Account{
 		Id: a.Account.ID, CreatedAt: a.Account.CreatedAt, Uri: a.Account.URI, Url: a.Account.URI,
 		Domain: a.Account.Domain, Fields: []ProfileField{},
@@ -115,25 +145,28 @@ func (s *Server) newAccount(a appaccount.Actor, imgs profileImages) Account {
 			out.Domain = a.Handle.Domain
 		}
 	}
+	if u, ok := parts.profiles[a.Account.ID]; ok && !a.Account.IsLocal() {
+		out.Url = u
+	}
 	if p := a.Profile; p != nil {
 		out.DisplayName, out.Note, out.Locked, out.Bot = p.DisplayName, p.NoteHTML, p.Locked, p.Bot
 		for _, f := range p.Fields {
 			out.Fields = append(out.Fields, ProfileField{Name: f.Name, Value: f.ValueHTML})
 		}
-		out.AvatarUrl, out.HeaderUrl = imgs.url(a.Account.ID, p.AvatarMediaID), imgs.url(a.Account.ID, p.HeaderMediaID)
+		out.AvatarUrl, out.HeaderUrl = parts.url(a.Account.ID, p.AvatarMediaID), parts.url(a.Account.ID, p.HeaderMediaID)
 	}
 	return out
 }
 
 // newAccounts presents actors in order as the Account schema, reading their images together.
 func (s *Server) newAccounts(ctx context.Context, actors []appaccount.Actor) ([]Account, error) {
-	imgs, err := s.profileImages(ctx, actors...)
+	parts, err := s.accountParts(ctx, actors...)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]Account, 0, len(actors))
 	for _, a := range actors {
-		out = append(out, s.newAccount(a, imgs))
+		out = append(out, s.newAccount(a, parts))
 	}
 	return out, nil
 }
@@ -141,11 +174,11 @@ func (s *Server) newAccounts(ctx context.Context, actors []appaccount.Actor) ([]
 // newProfile presents an actor as the Account schema with its follow counts, the answer of
 // the account's own endpoints.
 func (s *Server) newProfile(ctx context.Context, a appaccount.Actor) (Account, error) {
-	imgs, err := s.profileImages(ctx, a)
+	parts, err := s.accountParts(ctx, a)
 	if err != nil {
 		return Account{}, err
 	}
-	out := s.newAccount(a, imgs)
+	out := s.newAccount(a, parts)
 	c, err := s.o.Graph.Counters(ctx, a.Account.ID)
 	if err != nil {
 		return Account{}, fmt.Errorf("clientapi: the follow counts of %s: %w", a.Account.ID, err)

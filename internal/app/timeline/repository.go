@@ -124,6 +124,11 @@ type LocalQuery struct {
 	IncludeLocal bool
 }
 
+// PublicQuery selects a page of the federated timeline.
+type PublicQuery struct {
+	Window
+}
+
 // TagQuery selects a page of the timeline of a hashtag.
 type TagQuery struct {
 	Window
@@ -211,6 +216,7 @@ type Repository interface {
 
 	ListHome(ctx context.Context, q HomeQuery) ([]Entry, error)
 	ListLocal(ctx context.Context, q LocalQuery) ([]Entry, error)
+	ListPublic(ctx context.Context, q PublicQuery) ([]Entry, error)
 	ListTag(ctx context.Context, q TagQuery) ([]Entry, error)
 	ListProfile(ctx context.Context, q ProfileQuery) ([]Entry, error)
 	// Facts returns what holds between a viewer and the accounts, domains, and entries of q.

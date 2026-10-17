@@ -131,3 +131,9 @@ func (s *Service) own(ctx context.Context, tx uow.Tx, accountID, id string) (not
 	}
 	return n, nil
 }
+
+// StatusNotified reports inside tx whether a notification is about a status, which keeps a
+// remote status from the retention purge (ADR-0034).
+func (s *Service) StatusNotified(ctx context.Context, tx uow.Tx, statusID string) (bool, error) {
+	return s.d.Repository.StatusHasNotifications(ctx, tx, statusID)
+}

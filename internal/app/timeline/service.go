@@ -110,6 +110,19 @@ func (s *Service) Local(ctx context.Context, viewer appcontent.Viewer, q Query) 
 	return s.page(ctx, appcontent.ContextLocalTimeline, viewer, w, rows)
 }
 
+// Public returns the federated timeline (FR-202): the public posts of local and remote accounts
+// that the instance holds, except those of authors and domains kept from public discovery and of
+// accounts the viewer blocks, is blocked by, or mutes. Posts of visibility local never appear on it
+// (ADR-0017).
+func (s *Service) Public(ctx context.Context, viewer appcontent.Viewer, q Query) (Page, error) {
+	w := s.window(viewer, q)
+	rows, err := s.d.Repository.ListPublic(ctx, PublicQuery{Window: w})
+	if err != nil {
+		return Page{}, err
+	}
+	return s.page(ctx, appcontent.ContextFederatedTimeline, viewer, w, rows)
+}
+
 // Hashtag returns the timeline of the hashtag tagID (FR-203): the public posts with the tag, and
 // its local posts for a logged-in viewer, with the exclusions of Local.
 func (s *Service) Hashtag(ctx context.Context, viewer appcontent.Viewer, tagID string, q Query) (Page, error) {

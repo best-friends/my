@@ -165,6 +165,29 @@ func newMediaAttachment(m appcontent.Media, url func(content.MediaVariant) strin
 	thumb, okThumb := r.Variant(content.VariantThumbnail)
 	if okFull && okThumb {
 		out.Variants = &MediaVariants{Full: newMediaVariant(full, url), Thumbnail: newMediaVariant(thumb, url)}
+		out.Url, out.PreviewUrl = &out.Variants.Full.Url, &out.Variants.Thumbnail.Url
+	}
+	return out
+}
+
+// newRemoteAttachment presents a remote media file (appcontent.MediaView of a Media with Remote)
+// as the MediaAttachment schema: ready, with what the remote server declared and the file served
+// through the media proxy at proxyURL (federation.md §9). The instance does not process it, so it
+// has no variants.
+func newRemoteAttachment(m appcontent.Media, proxyURL string) MediaAttachment {
+	r := m.Remote
+	out := MediaAttachment{
+		Id: m.File.ID, State: MediaAttachmentState("ready"), Type: MediaAttachmentType(r.DeclaredMediaType),
+		Url: &proxyURL, PreviewUrl: &proxyURL, RemoteUrl: &r.RemoteURL,
+	}
+	if r.Width > 0 && r.Height > 0 {
+		out.Meta.Width, out.Meta.Height = &r.Width, &r.Height
+	}
+	if r.Blurhash != "" {
+		out.Blurhash = &r.Blurhash
+	}
+	if r.Focus != nil {
+		out.Meta.Focus = MediaFocus{X: r.Focus.X, Y: r.Focus.Y}
 	}
 	return out
 }

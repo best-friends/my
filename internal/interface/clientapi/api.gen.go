@@ -310,7 +310,8 @@ type Account struct {
 	// Uri The ActivityPub id of the account's actor, on the server it belongs to.
 	Uri string `json:"uri"`
 
-	// Url The account's profile page.
+	// Url The account's profile page: on this instance for a local account, and for a remote
+	// one the page its actor declares (`url`), or its `uri` when it declares none.
 	Url string `json:"url"`
 
 	// Username The username, without the domain.
@@ -541,7 +542,8 @@ type CredentialAccount struct {
 	// Uri The ActivityPub id of the account's actor, on the server it belongs to.
 	Uri string `json:"uri"`
 
-	// Url The account's profile page.
+	// Url The account's profile page: on this instance for a local account, and for a remote
+	// one the page its actor declares (`url`), or its `uri` when it declares none.
 	Url string `json:"url"`
 
 	// Username The username, without the domain.
@@ -628,9 +630,15 @@ type InstanceRegistrations struct {
 type InstanceRegistrationsMode string
 
 // MediaAttachment A media file, as an upload of the user (the media operations) or as an attachment of
-// a status (`Status.media_attachments`). `variants` and `blurhash` are present once the
-// file is `ready`; statuses attach only ready files. In a status, `description` is the
-// status revision's own copy of the alternative text.
+// a status (`Status.media_attachments`). `url`, `preview_url`, `variants`, and `blurhash`
+// are present once the file is `ready`; statuses attach only ready files. In a status,
+// `description` is the status revision's own copy of the alternative text, absent when the
+// attachment has none.
+//
+// A file of a remote status is always `ready`: the instance does not process it, so it has
+// no `variants`; `url` and `preview_url` are its media proxy URL (federation.md §9),
+// `remote_url` its URL on the remote server, and `meta`, `blurhash`, and `type` what the
+// remote server declared.
 type MediaAttachment struct {
 	// Blurhash The blurhash (https://blurha.sh) of the image, to show while it loads.
 	Blurhash *string `json:"blurhash,omitempty"`
@@ -646,12 +654,21 @@ type MediaAttachment struct {
 	// Meta What the server knows about the media file.
 	Meta MediaMeta `json:"meta"`
 
+	// PreviewUrl Where its preview is served; for an upload, `variants.thumbnail.url`.
+	PreviewUrl *string `json:"preview_url,omitempty"`
+
+	// RemoteUrl The file's URL on the remote server, for a file of a remote status; clients load `url` instead.
+	RemoteUrl *string `json:"remote_url,omitempty"`
+
 	// State The processing state: `processing` until the server has re-encoded the file,
 	// then `ready`, or `failed` when the content could not be processed.
 	State MediaAttachmentState `json:"state"`
 
 	// Type The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
 	Type MediaAttachmentType `json:"type"`
+
+	// Url Where the file is served on this instance; for an upload, `variants.full.url`.
+	Url *string `json:"url,omitempty"`
 
 	// Variants The renditions of a ready media file.
 	Variants *MediaVariants `json:"variants,omitempty"`
@@ -677,10 +694,10 @@ type MediaMeta struct {
 	// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
 	Focus MediaFocus `json:"focus"`
 
-	// Height The height of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+	// Height The height of the original image in pixels, after its EXIF orientation; absent until the file is ready, and for a remote file whose server declared none.
 	Height *int `json:"height,omitempty"`
 
-	// Width The width of the original image in pixels, after its EXIF orientation; absent until the file is ready.
+	// Width The width of the original image in pixels, after its EXIF orientation; absent until the file is ready, and for a remote file whose server declared none.
 	Width *int `json:"width,omitempty"`
 }
 
@@ -994,7 +1011,8 @@ type Status struct {
 	// BoostsCount The number of boosts.
 	BoostsCount int `json:"boosts_count"`
 
-	// Content The text as sanitized HTML, with mentions, hashtags, and URLs linked.
+	// Content The text as sanitized HTML, with mentions, hashtags, and URLs linked. The HTML of a
+	// remote status is what the server's sanitizer kept of the received document (ADR-0019 §2).
 	Content string `json:"content"`
 
 	// CreatedAt When the status was posted.
@@ -1051,7 +1069,8 @@ type Status struct {
 	// Uri The ActivityPub ID of the status.
 	Uri string `json:"uri"`
 
-	// Url The HTML page of the status; omitted when it has none.
+	// Url The HTML page of the status, on the server it belongs to for a remote status; omitted
+	// when it has none.
 	Url *string `json:"url,omitempty"`
 
 	// Visibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
@@ -1423,6 +1442,15 @@ type GetLocalTimelineParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// GetPublicTimelineParams defines parameters for GetPublicTimeline.
+type GetPublicTimelineParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // GetHashtagTimelineParams defines parameters for GetHashtagTimeline.
 type GetHashtagTimelineParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -1623,6 +1651,9 @@ type ServerInterface interface {
 	// GetLocalTimeline Get the local timeline
 	// (GET /timelines/local)
 	GetLocalTimeline(w http.ResponseWriter, r *http.Request, params GetLocalTimelineParams)
+	// GetPublicTimeline Get the federated timeline
+	// (GET /timelines/public)
+	GetPublicTimeline(w http.ResponseWriter, r *http.Request, params GetPublicTimelineParams)
 	// GetHashtagTimeline Get the timeline of a hashtag
 	// (GET /timelines/tag/{hashtag})
 	GetHashtagTimeline(w http.ResponseWriter, r *http.Request, hashtag string, params GetHashtagTimelineParams)
@@ -3348,6 +3379,52 @@ func (siw *ServerInterfaceWrapper) GetLocalTimeline(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// GetPublicTimeline operation middleware
+func (siw *ServerInterfaceWrapper) GetPublicTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPublicTimelineParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPublicTimeline(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHashtagTimeline operation middleware
 func (siw *ServerInterfaceWrapper) GetHashtagTimeline(w http.ResponseWriter, r *http.Request) {
 
@@ -3571,6 +3648,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}/statuses", wrapper.ListAccountStatuses)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/home", wrapper.GetHomeTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/local", wrapper.GetLocalTimeline)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/public", wrapper.GetPublicTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/tag/{hashtag}", wrapper.GetHashtagTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/dead_jobs", wrapper.ListDeadJobs)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/dead_jobs/{id}/retry", wrapper.RetryDeadJob)
@@ -6761,6 +6839,61 @@ func (response GetLocalTimelinedefaultApplicationProblemPlusJSONResponse) VisitG
 	return err
 }
 
+type GetPublicTimelineRequestObject struct {
+	Params GetPublicTimelineParams
+}
+
+type GetPublicTimelineResponseObject interface {
+	VisitGetPublicTimelineResponse(w http.ResponseWriter) error
+}
+
+type GetPublicTimeline200JSONResponse struct{ StatusPageJSONResponse }
+
+func (response GetPublicTimeline200JSONResponse) VisitGetPublicTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicTimelinedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetPublicTimelinedefaultApplicationProblemPlusJSONResponse) VisitGetPublicTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHashtagTimelineRequestObject struct {
 	Hashtag string `json:"hashtag"`
 	Params  GetHashtagTimelineParams
@@ -6981,6 +7114,9 @@ type StrictServerInterface interface {
 	// GetLocalTimeline Get the local timeline
 	// (GET /timelines/local)
 	GetLocalTimeline(ctx context.Context, request GetLocalTimelineRequestObject) (GetLocalTimelineResponseObject, error)
+	// GetPublicTimeline Get the federated timeline
+	// (GET /timelines/public)
+	GetPublicTimeline(ctx context.Context, request GetPublicTimelineRequestObject) (GetPublicTimelineResponseObject, error)
 	// GetHashtagTimeline Get the timeline of a hashtag
 	// (GET /timelines/tag/{hashtag})
 	GetHashtagTimeline(ctx context.Context, request GetHashtagTimelineRequestObject) (GetHashtagTimelineResponseObject, error)
@@ -8479,6 +8615,32 @@ func (sh *strictHandler) GetLocalTimeline(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLocalTimelineResponseObject); ok {
 		if err := validResponse.VisitGetLocalTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPublicTimeline operation middleware
+func (sh *strictHandler) GetPublicTimeline(w http.ResponseWriter, r *http.Request, params GetPublicTimelineParams) {
+	var request GetPublicTimelineRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPublicTimeline(ctx, request.(GetPublicTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPublicTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPublicTimelineResponseObject); ok {
+		if err := validResponse.VisitGetPublicTimelineResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

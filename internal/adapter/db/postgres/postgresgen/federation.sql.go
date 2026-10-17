@@ -15,17 +15,22 @@ import (
 const deleteDeliveryAttemptsBefore = `-- name: DeleteDeliveryAttemptsBefore :execrows
 DELETE FROM delivery_attempts
 WHERE id IN (
-  SELECT a.id FROM delivery_attempts a WHERE a.attempted_at < $1 ORDER BY a.id LIMIT $2
+  SELECT a.id FROM delivery_attempts a WHERE a.id < $1 AND a.attempted_at < $2
+  ORDER BY a.id LIMIT $3
 )
 `
 
 type DeleteDeliveryAttemptsBeforeParams struct {
+	IDBefore        string
 	AttemptedBefore time.Time
 	BatchLimit      int32
 }
 
+// DeleteDeliveryAttemptsBefore removes at most @batch_limit attempts made before
+// @attempted_before; @id_before (the UUIDv7 floor of @attempted_before) bounds the scan of the
+// primary key.
 func (q *Queries) DeleteDeliveryAttemptsBefore(ctx context.Context, arg DeleteDeliveryAttemptsBeforeParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteDeliveryAttemptsBefore, arg.AttemptedBefore, arg.BatchLimit)
+	result, err := q.db.Exec(ctx, deleteDeliveryAttemptsBefore, arg.IDBefore, arg.AttemptedBefore, arg.BatchLimit)
 	if err != nil {
 		return 0, err
 	}
@@ -36,17 +41,22 @@ const deleteOutboundActivityDocumentsBefore = `-- name: DeleteOutboundActivityDo
 DELETE FROM outbound_activity_documents
 WHERE outbound_activity_id IN (
   SELECT d.outbound_activity_id FROM outbound_activity_documents d
-  WHERE d.built_at < $1 ORDER BY d.built_at LIMIT $2
+  WHERE d.outbound_activity_id < $1 AND d.built_at < $2
+  ORDER BY d.outbound_activity_id LIMIT $3
 )
 `
 
 type DeleteOutboundActivityDocumentsBeforeParams struct {
+	IDBefore    string
 	BuiltBefore time.Time
 	BatchLimit  int32
 }
 
+// DeleteOutboundActivityDocumentsBefore removes at most @batch_limit documents built before
+// @built_before. The activity's ID is a UUIDv7 no later than its document, so @id_before (the
+// UUIDv7 floor of @built_before) bounds the scan of the primary key.
 func (q *Queries) DeleteOutboundActivityDocumentsBefore(ctx context.Context, arg DeleteOutboundActivityDocumentsBeforeParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteOutboundActivityDocumentsBefore, arg.BuiltBefore, arg.BatchLimit)
+	result, err := q.db.Exec(ctx, deleteOutboundActivityDocumentsBefore, arg.IDBefore, arg.BuiltBefore, arg.BatchLimit)
 	if err != nil {
 		return 0, err
 	}
@@ -57,7 +67,9 @@ const deleteReceivedActivitiesBefore = `-- name: DeleteReceivedActivitiesBefore 
 DELETE FROM received_activities
 WHERE activity_uri IN (
   SELECT a.activity_uri FROM received_activities a
-  WHERE a.received_at < $1 ORDER BY a.received_at LIMIT $2
+  WHERE a.received_at < $1
+    AND NOT EXISTS (SELECT 1 FROM received_activity_documents d WHERE d.activity_uri = a.activity_uri)
+  ORDER BY a.received_at LIMIT $2
 )
 `
 
@@ -67,7 +79,7 @@ type DeleteReceivedActivitiesBeforeParams struct {
 }
 
 // DeleteReceivedActivitiesBefore removes at most @batch_limit activities received before
-// @received_before.
+// @received_before whose documents are gone, so that no document outlives its activity.
 func (q *Queries) DeleteReceivedActivitiesBefore(ctx context.Context, arg DeleteReceivedActivitiesBeforeParams) (int64, error) {
 	result, err := q.db.Exec(ctx, deleteReceivedActivitiesBefore, arg.ReceivedBefore, arg.BatchLimit)
 	if err != nil {

@@ -298,7 +298,10 @@ CREATE TABLE status_deletions (
   moderation_action_id text COLLATE "C",
   deleted_at timestamptz NOT NULL
 );
-CREATE UNIQUE INDEX status_deletions_uri ON status_deletions (uri);
+CREATE INDEX status_deletions_uri ON status_deletions (uri);
+-- A deletion other than by retention keeps its URI from coming back, so there is at most one.
+-- A remote status deleted by retention may be fetched again and deleted again (ADR-0034).
+CREATE UNIQUE INDEX status_deletions_tombstone_uri ON status_deletions (uri) WHERE origin <> 'retention';
 
 -- Resource: a hashtag, unique by its normalized name.
 CREATE TABLE tags (
@@ -914,6 +917,8 @@ CREATE TABLE bookmarks (
   PRIMARY KEY (account_id, status_id)
 );
 CREATE INDEX bookmarks_account_id_id ON bookmarks (account_id, id);
+-- The retention purge keeps a bookmarked remote status (ADR-0034).
+CREATE INDEX bookmarks_status_id ON bookmarks (status_id);
 
 -- Current value: a status its author pinned to the profile (the Featured collection). Each pin
 -- holds one of the account's slots 1..5 (content.MaxPins), so the unique slot index caps the pins
@@ -1037,6 +1042,8 @@ CREATE TABLE notifications (
 CREATE UNIQUE INDEX notifications_recipient_account_id_dedupe_key ON notifications (recipient_account_id, dedupe_key);
 CREATE INDEX notifications_recipient_account_id_id ON notifications (recipient_account_id, id);
 CREATE INDEX notifications_recipient_account_id_type_id ON notifications (recipient_account_id, type, id);
+-- The retention purge keeps a remote status that a notification is about (ADR-0034).
+CREATE INDEX notifications_status_id ON notifications (status_id);
 
 -- Event: the recipient dismissed a notification. A notification is dismissed at most once.
 CREATE TABLE notification_dismissals (

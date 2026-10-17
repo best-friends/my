@@ -15,6 +15,7 @@ import (
 	apptimeline "github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/domain/timeline"
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
@@ -52,6 +53,10 @@ func (f *fakeTimelines) Home(_ context.Context, v appcontent.Viewer, q apptimeli
 
 func (f *fakeTimelines) Local(_ context.Context, v appcontent.Viewer, q apptimeline.Query) (apptimeline.Page, error) {
 	return f.record(timelineCall{timeline: "local", viewer: v, query: q})
+}
+
+func (f *fakeTimelines) Public(_ context.Context, v appcontent.Viewer, q apptimeline.Query) (apptimeline.Page, error) {
+	return f.record(timelineCall{timeline: "public", viewer: v, query: q})
 }
 
 func (f *fakeTimelines) Hashtag(_ context.Context, v appcontent.Viewer, tagID string, q apptimeline.Query) (apptimeline.Page, error) {
@@ -291,6 +296,68 @@ func TestLocalTimelineForVisitors(t *testing.T) {
 	if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
 		t.Errorf("logged-in Cache-Control = %q, want no-store", cc)
 	}
+}
+
+func TestPublicTimeline(t *testing.T) {
+	e := newTimelineEnv(t)
+	res := e.get(t, "/timelines/public?limit=2", nil)
+	page := decodePage(t, res)
+	want := []timelineCall{{timeline: "public", viewer: appcontent.Viewer{Kind: appcontent.ViewerAnonymous}, query: apptimeline.Query{Limit: 2}}}
+	if !slices.EqualFunc(e.timelines.calls, want, equalCall) || len(page.Items) != 2 {
+		t.Errorf("calls = %+v with %d items, want an anonymous page", e.timelines.calls, len(page.Items))
+	}
+	if cc := res.Header.Get("Cache-Control"); cc != "public, max-age=60" {
+		t.Errorf("Cache-Control = %q, want public, max-age=60", cc)
+	}
+	res = e.get(t, "/timelines/public", map[string]string{"Authorization": "Bearer read"})
+	decodePage(t, res)
+	if c := e.timelines.calls[1]; c.viewer.AccountID != aliceAccountID || !slices.Equal(c.query.Languages, []string{"ja"}) {
+		t.Errorf("logged-in call = %+v, want alice in her timeline languages", c)
+	}
+	if res := e.get(t, "/timelines/public?limit=41", nil); res.StatusCode != http.StatusBadRequest {
+		t.Errorf("limit=41 = %d, want 400", res.StatusCode)
+	}
+}
+
+func TestPublicTimelineCanBeDisabled(t *testing.T) {
+	te := &timelineEnv{timelines: &fakeTimelines{}, views: &fakeViews{}}
+	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
+		o.Timelines, o.TimelineReader = te.timelines, te.views
+		o.Instance = &fakeInstance{settings: []instance.CurrentSetting{
+			{Key: instance.SettingFederatedTimelineEnabled, RevisionID: "r1", Value: "false"},
+		}}
+	})
+	for _, auth := range []map[string]string{{"Accept-Language": "ja"}, {"Authorization": "Bearer read"}} {
+		res := te.get(t, "/timelines/public", auth)
+		if res.StatusCode != http.StatusNotFound {
+			t.Fatalf("disabled federated timeline = %d, want 404", res.StatusCode)
+		}
+		if p := decodeProblem(t, res); p.Type != clientapi.ProblemTypeBlank || p.Title != "指定されたリソースが見つかりません。" {
+			t.Errorf("problem = %+v", p)
+		}
+	}
+	if len(te.timelines.calls) != 0 {
+		t.Errorf("calls = %+v, want none", te.timelines.calls)
+	}
+	// The local timeline has its own setting.
+	decodePage(t, te.get(t, "/timelines/local", nil))
+}
+
+func TestLocalTimelineCanBeDisabled(t *testing.T) {
+	te := &timelineEnv{timelines: &fakeTimelines{}, views: &fakeViews{}}
+	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
+		o.Timelines, o.TimelineReader = te.timelines, te.views
+		o.Instance = &fakeInstance{settings: []instance.CurrentSetting{
+			{Key: instance.SettingLocalTimelineEnabled, RevisionID: "r1", Value: "false"},
+		}}
+	})
+	if res := te.get(t, "/timelines/local", nil); res.StatusCode != http.StatusNotFound {
+		t.Errorf("disabled local timeline = %d, want 404", res.StatusCode)
+	}
+	if len(te.timelines.calls) != 0 {
+		t.Errorf("calls = %+v, want none", te.timelines.calls)
+	}
+	decodePage(t, te.get(t, "/timelines/public", nil))
 }
 
 func TestHashtagTimeline(t *testing.T) {

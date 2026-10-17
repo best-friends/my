@@ -36,6 +36,9 @@ type Options struct {
 	Authenticator Authenticator
 	// Accounts reads accounts.
 	Accounts Accounts
+	// RemoteProfiles reads the profile pages of remote accounts for Account.url; nil links
+	// remote accounts to their uri.
+	RemoteProfiles RemoteProfiles
 	// Resolver fetches unknown remote accounts for lookupAccount's resolve; nil resolves none
 	// (lookups find only stored accounts).
 	Resolver AccountResolver
