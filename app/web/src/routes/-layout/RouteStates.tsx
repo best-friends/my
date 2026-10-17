@@ -7,6 +7,7 @@ import { type ErrorComponentProps, useMatch, useRouter } from "@tanstack/react-r
 import { type ReactNode, useState } from "react";
 import { type ErrorKind, errorKind, errorMessage } from "../../lib/errors";
 import { type PlainClientMessageKey, useT } from "../../lib/i18n";
+import { useOnReconnect } from "../../lib/network";
 import { PageHeading } from "./PageHeading";
 
 /** The router's defaultPendingComponent: shown only when a page takes longer than defaultPendingMs to load. */
@@ -77,6 +78,10 @@ export function RouteError({ error: pageError, reset, heading }: RouteErrorProps
     // navigation (web-client.md Y5); the button that had focus is gone.
     document.querySelector<HTMLElement>("main h1")?.focus();
   };
+  // A page that failed for the network loads again by itself when the app is back online (web-client.md G17).
+  useOnReconnect(() => {
+    void retry();
+  }, kind === "network" && !isRetrying);
 
   return (
     <>
@@ -84,9 +89,9 @@ export function RouteError({ error: pageError, reset, heading }: RouteErrorProps
       <RegionError
         headingLevel={2}
         heading={t(errorHeadings[kind])}
-        // A failed request's message is localized and says why; anything else is a fault of the page, and its
-        // message is not for the user. The network's message would repeat the heading.
-        reason={kind === "network" || kind === "unexpected" ? t(`client:shell.error.${kind}.reason`) : errorMessage(error)}
+        // A failed request's message is localized and says why (for the network, whether the app is offline);
+        // anything else is a fault of the page, and its message is not for the user.
+        reason={kind === "unexpected" ? t("client:shell.error.unexpected.reason") : errorMessage(error)}
         {...(retryableKinds.has(kind) && {
           retryLabel: t("client:shell.error.retry"),
           onRetry: () => {

@@ -467,6 +467,10 @@
     "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɐɔɥ ʇɥǝ sǝɹʌǝɹ. Ↄɥǝɔʞ ʎonɹ ɔouuǝɔʇıou ɐup ʇɹʎ ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "api.error.offline": {
+    "defaultMessage": "‮⅄on ɐɹǝ oɟɟʅıuǝ, so ʇɥǝ sǝɹʌǝɹ ɔɐuuoʇ qǝ ɹǝɐɔɥǝp. Ↄouuǝɔʇ ʇo ʇɥǝ ıuʇǝɹuǝʇ ɐup ʇɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "api.error.status": {
     "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ ɔonʅp uoʇ ɥɐupʅǝ ʇɥǝ ɹǝbnǝsʇ (ǝɹɹoɹ {status}). ⊥ɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1531,10 +1535,6 @@
     "defaultMessage": "‮Ↄonʅp uoʇ ɔouuǝɔʇ ʇo ʇɥǝ sǝɹʌǝɹ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "shell.error.network.reason": {
-    "defaultMessage": "‮Ↄɥǝɔʞ ʎonɹ ɔouuǝɔʇıou ɐup ʇɹʎ ɐƃɐıu.‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "shell.error.not_found.heading": {
     "defaultMessage": "‮Mɥɐʇ ʇɥıs dɐƃǝ sɥoʍs ʍɐs uoʇ ɟonup‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1609,6 +1609,10 @@
   },
   "shell.not_found.title": {
     "defaultMessage": "‮Ԁɐƃǝ uoʇ ɟonup‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.offline": {
+    "defaultMessage": "‮⅄on ɐɹǝ oɟɟʅıuǝ. ∀uʎʇɥıuƃ ʇɥɐʇ ɟɐıʅǝp ʇo ʅoɐp ʅoɐps ɐƃɐıu ʍɥǝu ʎon ɐɹǝ qɐɔʞ ouʅıuǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.skip_to_main": {

@@ -467,6 +467,10 @@
     "defaultMessage": "サーバーに接続できませんでした。接続を確かめて、もう一度試してください。",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."
   },
+  "api.error.offline": {
+    "defaultMessage": "オフラインのため、サーバーに接続できません。インターネットに接続して、もう一度試してください。",
+    "description": "Error message when a request failed because the device has no network connection. Shown as the reason why something could not load or be sent."
+  },
   "api.error.status": {
     "defaultMessage": "サーバーが要求を処理できませんでした（エラー {status}）。しばらくしてから試してください。",
     "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
@@ -1531,10 +1535,6 @@
     "defaultMessage": "サーバーに接続できませんでした",
     "description": "Heading of the error that replaces a page's content when the page got no answer from the server (offline, or the server is down)."
   },
-  "shell.error.network.reason": {
-    "defaultMessage": "接続を確かめて、もう一度試してください。",
-    "description": "Text under the heading of a page's error when the page got no answer from the server."
-  },
   "shell.error.not_found.heading": {
     "defaultMessage": "このページの内容が見つかりませんでした",
     "description": "Heading of the error that replaces a page's content when the server found nothing to show (a 404); the server's reason follows."
@@ -1610,6 +1610,10 @@
   "shell.not_found.title": {
     "defaultMessage": "ページが見つかりません",
     "description": "Heading of the page shown for an address that the web client has no page for."
+  },
+  "shell.offline": {
+    "defaultMessage": "オフラインです。読み込めなかったものは、オンラインに戻ると読み込み直します。",
+    "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
   },
   "shell.skip_to_main": {
     "defaultMessage": "本文へ移動",

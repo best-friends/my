@@ -108,7 +108,7 @@ describe("a page whose API fails", () => {
       kind: "no response",
       respond: () => HttpResponse.error(),
       heading: "Could not connect to the server",
-      reason: "Check your connection and try again.",
+      reason: "Could not reach the server. Check your connection and try again.",
       retry: true,
     },
     {
@@ -150,7 +150,7 @@ describe("a page whose API fails", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "ホーム" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { level: 2, name: "サーバーに接続できませんでした" })).toBeInTheDocument();
-    expect(screen.getByText("接続を確かめて、もう一度試してください。")).toBeInTheDocument();
+    expect(screen.getByText("サーバーに接続できませんでした。接続を確かめて、もう一度試してください。")).toBeInTheDocument();
     expect(document.title).toBe("ホーム – my example");
   });
 
@@ -170,7 +170,7 @@ describe("a page whose API fails", () => {
     // The result of the user's action: an alert in place of the error, with the button still focused.
     const alert = await within(screen.getByRole("main")).findByRole("alert");
     expect(within(alert).getByRole("heading", { level: 2, name: "Could not connect to the server" })).toBeInTheDocument();
-    expect(within(alert).getByText("Check your connection and try again.")).toBeInTheDocument();
+    expect(within(alert).getByText("Could not reach the server. Check your connection and try again.")).toBeInTheDocument();
     expect(retry).toHaveFocus();
 
     await user.click(retry);

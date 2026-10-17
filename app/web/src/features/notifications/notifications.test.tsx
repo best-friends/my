@@ -290,7 +290,10 @@ describe("the notifications page", () => {
 
     const { user } = await renderApp({ path: "/notifications" });
 
-    expect(await screen.findByRole("heading", { level: 2, name: "Could not load this page" })).toBeInTheDocument();
+    // The page keeps its heading; the list shows what failed and why, without interrupting as an alert (G16).
+    expect(await screen.findByText("Service Unavailable")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Could not load the notifications" })).toBeInTheDocument();
+    expect(within(screen.getByRole("main")).queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole("button", { name: "Try again" }));

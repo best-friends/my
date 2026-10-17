@@ -17,11 +17,12 @@ export const Route = createFileRoute("/notifications")({
   validateSearch: searchSchema,
   loaderDeps: ({ search: { filter } }): { filter: NotificationFilter } => ({ filter: filter ?? "all" }),
   // The first page and the read marker load with the page; without a session there is nothing to load,
-  // and the page offers to sign in.
+  // and the page offers to sign in. A failure (offline, say) is the list's own, shown below the page's
+  // heading with what to do (useNotifications), so the loader lets the page open.
   loader: async ({ context: { queryClient, api, session }, deps: { filter } }) => {
     if (session.status === "unknown") await session.restore();
     if (session.status !== "signed-in") return;
-    await Promise.all([
+    await Promise.allSettled([
       queryClient.infiniteQuery({ ...notificationsQueryOptions(api, filter), staleTime: "static" }),
       queryClient.query({ ...notificationMarkerQueryOptions(api), staleTime: "static" }),
     ]);

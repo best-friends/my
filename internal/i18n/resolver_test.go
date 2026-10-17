@@ -87,3 +87,14 @@ func TestResolverReadsInstanceDefaultPerRequest(t *testing.T) {
 		t.Errorf("Locale(en) = %q with %d reads of the default, want en with none", got, reads)
 	}
 }
+
+func TestResolverUserLocalizer(t *testing.T) {
+	r := &Resolver{Bundle: load(t), InstanceDefault: func(context.Context) string { return "ja" }}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Language", "en")
+	for user, want := range map[string]string{"ja": "ja", "": "en", "zh-Hant-TW": "en", "!!": "en"} {
+		if got := r.UserLocalizer(req, user).Locale(); got != want {
+			t.Errorf("UserLocalizer(Accept-Language en, user %q) = %q, want %q", user, got, want)
+		}
+	}
+}
