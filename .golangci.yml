@@ -4,6 +4,10 @@ version: "2"
 run:
   modules-download-mode: readonly
   tests: true
+  # The live interoperability scenarios (deploy/docker/federation-live) build only with this tag, so that
+  # `go test ./...` never runs them; linting them keeps them compiling between nightly runs.
+  build-tags:
+    - federationlive
 
 linters:
   default: standard
@@ -319,6 +323,15 @@ linters:
               desc: testkit depends only on application ports and domain types
             - pkg: github.com/best-friends/my/internal/platform
               desc: testkit depends only on application ports and domain types
+        # The live interoperability scenarios are black-box clients of running servers (federation.md §12):
+        # HTTP to the client APIs and a read of this server's database (pgx), nothing of this module.
+        federation-live:
+          list-mode: strict
+          files:
+            - "**/deploy/docker/federation-live/**"
+          allow:
+            - $gostd
+            - github.com/jackc/pgx/v5
     # Every outbound request goes through the SSRF-guarded kernel.HTTPClient (ADR-0019 §1);
     # http.DefaultClient and the package-level helpers that use it bypass the guard.
     forbidigo:

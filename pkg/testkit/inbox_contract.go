@@ -30,11 +30,14 @@ import (
 )
 
 // InboxHarness is one database under test: an empty database with the product schema, its
-// UnitOfWork, and the federation module's repositories on it.
+// UnitOfWork, the federation module's repositories on it, and the account repository that the
+// handlers of the own actor's Update and Delete write through.
 type InboxHarness struct {
 	UnitOfWork uow.UnitOfWork
 	Inbox      appfederation.InboxRepository
 	Federation appfederation.Repository
+	Instances  appfederation.InstanceRepository
+	Accounts   appaccount.Repository
 	// Statuses is the content module's repository, which the handlers of remote posts write in
 	// their cases of the order and duplicate property test (inboxOrderCases).
 	Statuses appcontent.Repository

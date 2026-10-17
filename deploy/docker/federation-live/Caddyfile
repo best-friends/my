@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# TLS front of the live interoperability stack (compose.yaml): one certificate of the private CA for every host,
+# forwarded by host name. The Host header passes through unchanged, so HTTP signatures that cover it verify.
+
+{
+	admin off
+	auto_https disable_redirects
+	skip_install_trust
+}
+
+(site) {
+	tls /certs/server.pem /certs/server.key
+	log {
+		output stdout
+		format json
+	}
+}
+
+https://my.test {
+	import site
+	reverse_proxy my:8080
+}
+
+https://mastodon.test {
+	import site
+	reverse_proxy mastodon-web:3000
+}
+
+https://gts.test {
+	import site
+	reverse_proxy gotosocial:8080
+}

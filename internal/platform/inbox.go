@@ -38,6 +38,7 @@ func (a *App) setUpInboxProcessor(repo federation.InboxRepository) {
 		Domains: federation.NoDomainRestrictions{}, Accounts: federation.NoAccountRestrictions{},
 		Clock: a.Clock, Logger: a.Logger,
 	})
+	a.RemoteActors.RegisterInboxHandlers(a.InboxProcessor)
 	a.InboxProcessor.RegisterJobs(a.Handlers)
 	a.registerStatusHandlers()
 }

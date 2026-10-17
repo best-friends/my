@@ -165,6 +165,54 @@ type TagDocument struct {
 // TombstoneOf returns the object of the Delete of id.
 func TombstoneOf(id IRI) ObjectDocument { return ObjectDocument{ID: id, Type: ObjectTombstone} }
 
+// ActorDocument is a local actor as it is published: the answer to a GET of its id and the
+// object of its Update (federation.md §7.1). It has the shape Mastodon publishes, which Misskey,
+// GoToSocial, and Akkoma also read, with the fields in Mastodon's order. Context is set on the
+// top-level document only.
+type ActorDocument struct {
+	Context                   []any              `json:"@context,omitempty"`
+	ID                        IRI                `json:"id"`
+	Type                      ActorType          `json:"type"`
+	Following                 IRI                `json:"following"`
+	Followers                 IRI                `json:"followers"`
+	Inbox                     IRI                `json:"inbox"`
+	Outbox                    IRI                `json:"outbox"`
+	Featured                  IRI                `json:"featured,omitempty"`
+	FeaturedTags              IRI                `json:"featuredTags,omitempty"`
+	PreferredUsername         string             `json:"preferredUsername"`
+	Name                      *string            `json:"name,omitempty"`
+	Summary                   *string            `json:"summary,omitempty"`
+	URL                       string             `json:"url,omitempty"`
+	ManuallyApprovesFollowers bool               `json:"manuallyApprovesFollowers"`
+	Discoverable              *bool              `json:"discoverable,omitempty"`
+	Indexable                 *bool              `json:"indexable,omitempty"`
+	Published                 string             `json:"published"`
+	PublicKey                 *PublicKeyDocument `json:"publicKey,omitempty"`
+	Tag                       []any              `json:"tag"`
+	Attachment                []PropertyValue    `json:"attachment"`
+	Endpoints                 map[string]IRI     `json:"endpoints"`
+}
+
+// Embedded returns d without its context, to embed it in an activity.
+func (d ActorDocument) Embedded() ActorDocument {
+	d.Context = nil
+	return d
+}
+
+// PublicKeyDocument is the publicKey of an actor document (ADR-0032).
+type PublicKeyDocument struct {
+	ID           string `json:"id"`
+	Owner        IRI    `json:"owner"`
+	PublicKeyPEM string `json:"publicKeyPem"`
+}
+
+// PropertyValue is a profile field (FR-006) as Mastodon's schema:PropertyValue.
+type PropertyValue struct {
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 func nonNil(s []IRI) []IRI {
 	if s == nil {
 		return []IRI{}
