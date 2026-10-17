@@ -37,6 +37,8 @@ type FollowReader interface {
 //     whose IRI is the follow's URI, so that the Accept answering it names it.
 //   - graph.followed of a remote follower of a local account (accepted at once), and
 //     graph.follow_accepted of one that the local followee accepted: Accept.
+//   - graph.follow_resent of a remote follower whose server sent its Follow again for an active
+//     follow: Accept of that Follow.
 //   - graph.follow_rejected of a remote follower that the local followee or the system (a
 //     block) rejected, and graph.follow_terminated of a remote follower that the local followee
 //     removed: Reject.
@@ -53,7 +55,9 @@ func registerFollowProjectors(r *uow.Projectors, rec recorder) {
 		followeeLocal, err = rec.d.Accounts.IsLocal(ctx, tx, f.FolloweeAccountID)
 		return followerLocal, followeeLocal, err
 	}
-	send := func(ctx context.Context, tx uow.Tx, t federation.ActivityType, f appgraph.FollowRecord, at time.Time) error {
+	// send records the activity t about f; followURI is the Follow that an Accept answers
+	// when it is not f's own.
+	send := func(ctx context.Context, tx uow.Tx, t federation.ActivityType, f appgraph.FollowRecord, at time.Time, followURI string) error {
 		a := federation.OutboundActivity{
 			Type: t, ActorAccountID: f.FolloweeAccountID, ObjectKind: federation.OutboundFollow, ObjectID: f.ID, CreatedAt: at,
 		}
@@ -63,7 +67,7 @@ func registerFollowProjectors(r *uow.Projectors, rec recorder) {
 		case federation.ActivityUndo:
 			a.ActorAccountID = f.FollowerAccountID
 		}
-		return rec.record(ctx, tx, a, "")
+		return rec.recordWith(ctx, tx, a, fanOutPayload{FollowURI: followURI})
 	}
 	// requested sends the Follow of a local follower of a remote account.
 	requested := func(ctx context.Context, tx uow.Tx, f appgraph.FollowRecord) error {
@@ -71,15 +75,19 @@ func registerFollowProjectors(r *uow.Projectors, rec recorder) {
 		if err != nil || !followerLocal || followeeLocal {
 			return err
 		}
-		return send(ctx, tx, federation.ActivityFollow, f, f.RequestedAt)
+		return send(ctx, tx, federation.ActivityFollow, f, f.RequestedAt, "")
 	}
-	// answered sends the Accept or Reject of a local followee to a remote follower.
-	answered := func(ctx context.Context, tx uow.Tx, t federation.ActivityType, f appgraph.FollowRecord, at time.Time) error {
+	// answer sends the Accept or Reject of a local followee to a remote follower.
+	answer := func(ctx context.Context, tx uow.Tx, t federation.ActivityType, f appgraph.FollowRecord, at time.Time, followURI string) error {
 		followerLocal, followeeLocal, err := sides(ctx, tx, f)
 		if err != nil || followerLocal || !followeeLocal {
 			return err
 		}
-		return send(ctx, tx, t, f, at)
+		return send(ctx, tx, t, f, at, followURI)
+	}
+	// answered is answer of the follow's own Follow.
+	answered := func(ctx context.Context, tx uow.Tx, t federation.ActivityType, f appgraph.FollowRecord, at time.Time) error {
+		return answer(ctx, tx, t, f, at, "")
 	}
 
 	r.Register(appgraph.EventFollowed, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
@@ -113,6 +121,13 @@ func registerFollowProjectors(r *uow.Projectors, rec recorder) {
 		}
 		return answered(ctx, tx, federation.ActivityReject, ev.Follow, ev.Rejection.RejectedAt)
 	})
+	r.Register(appgraph.EventFollowResent, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev, ok := e.(appgraph.FollowResent)
+		if !ok {
+			return nil
+		}
+		return answer(ctx, tx, federation.ActivityAccept, ev.Follow, ev.Resend.ReceivedAt, ev.Resend.URI)
+	})
 	r.Register(appgraph.EventFollowTerminated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appgraph.FollowTerminated)
 		if !ok {
@@ -127,7 +142,7 @@ func registerFollowProjectors(r *uow.Projectors, rec recorder) {
 			if err != nil || !followerLocal || followeeLocal {
 				return err
 			}
-			return send(ctx, tx, federation.ActivityUndo, ev.Follow, at)
+			return send(ctx, tx, federation.ActivityUndo, ev.Follow, at, "")
 		}
 		return nil
 	})
@@ -182,7 +197,8 @@ func (f *FanOut) counterpartTargets(ctx context.Context, s subject) ([]target, e
 
 // followDocument builds a Follow, or the Accept, Reject, or Undo that embeds it, addressed to
 // the other account of the follow (federation.md §7.4). The Follow's id is the follow's URI, so
-// the Accept of a remote follower names the Follow that its server sent.
+// the Accept of a remote follower names the Follow that its server sent; the Accept of a Follow
+// sent again names that one (subject.followURI).
 func (f *FanOut) followDocument(ctx context.Context, s subject) ([]byte, error) {
 	act, fl := s.act, s.follow
 	follower, err := f.actorIRI(ctx, fl.FollowerAccountID)
@@ -193,7 +209,11 @@ func (f *FanOut) followDocument(ctx context.Context, s subject) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
-	follow := federation.NewActivityDocument(federation.IRI(fl.URI), federation.ActivityFollow, follower, fl.RequestedAt,
+	uri := federation.IRI(fl.URI)
+	if s.followURI != "" {
+		uri = s.followURI
+	}
+	follow := federation.NewActivityDocument(uri, federation.ActivityFollow, follower, fl.RequestedAt,
 		federation.Audience{To: []federation.IRI{followee}}, followee)
 	switch act.Type {
 	case federation.ActivityFollow:

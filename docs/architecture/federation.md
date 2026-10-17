@@ -138,18 +138,22 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 | 状況 | 振る舞い |
 | --- | --- |
-| 同じアクティビティの再処理 | 対象テーブルの一意制約（`statuses (uri)`、`boosts (uri)`、`follows (uri)`、`favourites (uri)`、`blocks (uri)`、`reports (uri)`、版の `(status_id, seq)`）で no-op |
+| 同じアクティビティの再処理 | 対象テーブルの一意制約（`statuses (uri)`、`boosts (uri)`、`follows (uri)`、`follow_resends (uri)`、`favourites (uri)`、`blocks (uri)`、`reports (uri)`、版の `(status_id, seq)`）で no-op |
 | `Create` より先に `Delete` | `remote_object_tombstones` に URI を記録する。後から届いた `Create` / `Update` / 取得は、tombstone があれば捨てる |
 | `Create` より先に `Update` | 取り込み範囲（ADR-0034）に入るなら `Create` として扱う。`published` が 1 日より古いものは取り込まない（Mastodon と同じ） |
 | 古い `Update` が後から届く | `updated`（無ければ `published`）が現在版の `revised_at` 以下なら版を作らない |
-| `Follow` より先に `Undo Follow` | `Undo` の対象の URI を tombstone に記録し、後から届いた `Follow` を捨てる |
+| `Follow` より先に `Undo Follow` | 埋め込みの `Follow` があれば、主体とその `object` の組を `remote_follow_tombstones` に記録し、後から届いた同じ組の最初の `Follow` を捨てる（Misskey の `Undo` は送った `Follow` と違う `id` を持つ）。`object` が URI だけなら、その URI を tombstone に記録して同じ URI の `Follow` を捨てる |
+| 承認済みのフォローに別の `id` の `Follow` | フォローの行は増やさず、その `id` を `follow_resends` に記録して `Accept` を送り直す（Mastodon は `Accept` が届くまで `Follow` を送り直す） |
 | 対象が無い `Accept` / `Reject` / `Undo Like` / `Undo Announce` | 何もせず完了にする |
 | `Like` / `Announce` の対象のローカルの投稿が無い・削除済み | 何もせず完了にする |
 | 同じ投稿への同時の `Create` と `Update` | `statuses (uri)` と版の `(status_id, seq)` の一意制約で後の方が再実行され、既存の行を使う |
 
-- tombstone は `origin = remote` の `status_deletions` と、未知の URI のための `remote_object_tombstones`（30 日で消す）の 2 つです。
+- tombstone は `origin = remote` の `status_deletions`、未知の URI のための `remote_object_tombstones`、未知の `Follow` の組のための `remote_follow_tombstones`（後の 2 つは 30 日で消す）の 3 つです。
 - `remote_object_tombstones` は `InboxProcessor` が書きます。`Delete` / `Undo` のハンドラが無いか、ハンドラが `ErrUnknownObject` を返したとき、対象の URI が主体と同じオリジンで主体自身でなければ記録します（ほかのサーバーのオブジェクトを封じさせない。`federation.TombstoneFor`）。
+  `Undo` が主体自身の `Follow` を埋め込んでいれば、URI の代わりに組を `remote_follow_tombstones` に記録します（`federation.FollowTombstoneFor`。主体自身の `Follow` しか封じない）。
 - `Delete` / `Undo` 以外のアクティビティは、ハンドラを呼ぶ前に、アクティビティの URI に tombstone があれば捨てます。`Create` / `Update`（自分自身の Actor 以外）は、オブジェクトの URI の tombstone でも捨てます。
+  `Follow` は、主体と `object` の組に使い終えていない `remote_follow_tombstones` があれば捨て、同じトランザクションで自分の URI を `Undo` の `activity_uri` で `remote_object_tombstones` に記録します。
+  これで組の tombstone は使い終わり、同じ `Follow` の再処理は URI の tombstone で捨てられ、その次の `Follow` は通ります。
 - アクティビティの `object` が URI だけのとき、受信した文書の中に埋め込まれていない対象は、ローカルの DB から引くか、取り込み範囲に入るときだけ取得します。
   `Create` / `Update` の投稿が URI だけなら、作者をローカルのアカウントがフォローしているときだけ取得します（投稿が無いと、メンションや返信先で範囲を判定できない）。
 
@@ -157,7 +161,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 | アクティビティ | 対象 | 処理 |
 | --- | --- | --- |
-| `Follow` | ローカルの Actor | `graph.ReceiveFollow`。鍵アカウントでなければ承認し、`Accept` を配送する。鍵アカウントなら承認待ち + 通知。ブロック関係があれば `Reject` を配送する |
+| `Follow` | ローカルの Actor | `graph.ReceiveFollow`。鍵アカウントでなければ承認し、`Accept` を配送する。鍵アカウントなら承認待ち + 通知。ブロック関係があれば `Reject` を配送する。承認済みのフォローがあれば `follow_resends` に記録して `Accept` を送り直す |
 | `Accept` | 自分が送った `Follow`（URI か埋め込み） | `graph.AcceptRemote`（`follow_acceptances`、`accepted_by = remote`）。`object` の `id` が主体をフォローされる側とするフォローに無ければ、埋め込みの `object.actor`（ローカル）と `actor`（相手）の承認待ち・承認済みのフォローで照合する。埋め込みが `Follow` 以外（GoToSocial の返信の承認など）なら捨てる |
 | `Reject` | 自分が送った `Follow`、または承認済みのフォロー | `graph.RejectRemote`。照合は `Accept` と同じ。承認待ちなら `follow_rejections`（`rejected_by = remote`）、承認済みなら `follow_terminations`（`removed_by_followee`） |
 | `Undo` | `Follow` / `Like` / `Announce` / `Block` / `Accept` | 対象の取り消し。`Undo Follow` は `graph.TerminateRemote`（`unfollowed`）で、`object` の `id` が主体のフォローに無ければ、埋め込みの `object.object`（ローカル）とのフォローで照合する（Misskey の `Undo` は送った `Follow` と違う `id` を持つ）。`Undo Accept` は `graph.RejectRemote` でフォローの終了として扱う。対象が URI だけなら、主体が作った同じ URI の `follows` / `favourites` / `boosts` / `blocks` を順に引く |
@@ -290,12 +294,13 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `graph.follow_requested` / `graph.followed`（相手がリモート） | `Follow` | 相手の inbox |
 | `graph.follow_terminated`（`unfollowed` / `blocked` / `moderation`、自分がフォローした相手がリモート） | `Undo Follow` | 相手の inbox |
 | `graph.followed` / `graph.follow_accepted` / `graph.follow_rejected`（フォローした人がリモート。相手の `Accept` / `Reject` によるものを除く） | `Accept` / `Reject` | フォローした人の inbox |
+| `graph.follow_resent`（フォローした人がリモート） | `Accept`（もう一度届いた `Follow` を埋め込む） | フォローした人の inbox |
 | `graph.follow_terminated`（`removed_by_followee`、フォローした人がリモート） | `Reject` | フォローした人の inbox |
 | `graph.blocked` / `graph.unblocked`（相手がリモート） | `Block` / `Undo Block` | 相手の inbox |
 | `account.profile_revised`（ローカルのプロフィールの 2 版目以降。最初の版はアカウントの作成で、まだだれもフォローしていない） | `Update`（Actor の文書） | リモートフォロワーの inbox |
 | `account.lifecycle_event_recorded`（ローカルのアカウントの `deleted`） | `Delete`（Actor の `id`） | リモートフォロワーの inbox + 既知の shared inbox（[data-model §8](data-model.md#8-削除と消去)） |
 
-- フォローの活動（`object_type = follow`）の主体は、`Follow` と `Undo` ではフォローした人、`Accept` と `Reject` ではフォローされた人です。`Follow` の `id` はフォローの `uri`（`/ap/activities/{follow_id}`）で、`Accept` / `Reject` / `Undo` はフォローの `Follow`（受け取ったフォローなら相手が送った `id`）を埋め込みます。宛先は相手だけで、`to` に相手を入れます。
+- フォローの活動（`object_type = follow`）の主体は、`Follow` と `Undo` ではフォローした人、`Accept` と `Reject` ではフォローされた人です。`Follow` の `id` はフォローの `uri`（`/ap/activities/{follow_id}`）で、`Accept` / `Reject` / `Undo` はフォローの `Follow`（受け取ったフォローなら相手が送った `id`。送り直された `Follow` への `Accept` はその `id`）を埋め込みます。宛先は相手だけで、`to` に相手を入れます。
   相手が送った `Accept` / `Reject` / `Undo` と、どちらかのアカウントの削除（`account_deleted`）による変化は、何も送り返しません。
 - 記録するのはローカルの投稿・ブーストの活動だけです。リモートの投稿のイベントと、`local` 投稿のブースト（`Boost.Federates` が偽）は記録しません（ADR-0017）。
 - projector は表の 1 行につき 1 つです（`federation.RegisterOutboundProjectors`）。送信する活動を増やすときは、その活動を送るユースケースと一緒に projector を足します。
