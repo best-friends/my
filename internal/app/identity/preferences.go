@@ -47,6 +47,8 @@ type PreferencesInput struct {
 	DefaultVisibility       identity.Visibility
 	DefaultPostLanguage     string
 	RequireMediaDescription bool
+	// EmailModeratorNotifications sends the user's moderator notifications also by email.
+	EmailModeratorNotifications bool
 }
 
 // Preferences returns the preferences of a user. It fails with an error wrapping ErrNotFound
@@ -84,13 +86,14 @@ func (s *Service) SetPreferences(ctx context.Context, userID string, in Preferen
 		return identity.Preferences{}, err
 	}
 	p := identity.Preferences{
-		UserID:                  userID,
-		Locale:                  locale,
-		TimeZone:                in.TimeZone,
-		DefaultVisibility:       in.DefaultVisibility,
-		DefaultPostLanguage:     postLang,
-		RequireMediaDescription: in.RequireMediaDescription,
-		UpdatedAt:               s.d.Clock.Now(),
+		UserID:                      userID,
+		Locale:                      locale,
+		TimeZone:                    in.TimeZone,
+		DefaultVisibility:           in.DefaultVisibility,
+		DefaultPostLanguage:         postLang,
+		RequireMediaDescription:     in.RequireMediaDescription,
+		EmailModeratorNotifications: in.EmailModeratorNotifications,
+		UpdatedAt:                   s.d.Clock.Now(),
 	}
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.d.Repository.UpdatePreferences(ctx, tx, p) })
 	if err != nil {
@@ -128,6 +131,8 @@ type PreferencesUpdate struct {
 	DefaultVisibility       *identity.Visibility
 	DefaultPostLanguage     *string
 	RequireMediaDescription *bool
+	// EmailModeratorNotifications sends the user's moderator notifications also by email.
+	EmailModeratorNotifications *bool
 	// TimelineLanguages replace the languages timelines show; empty shows every language.
 	TimelineLanguages *[]string
 }
@@ -180,6 +185,9 @@ func (s *Service) UpdatePreferences(ctx context.Context, userID string, in Prefe
 	}
 	if in.RequireMediaDescription != nil {
 		p.RequireMediaDescription = *in.RequireMediaDescription
+	}
+	if in.EmailModeratorNotifications != nil {
+		p.EmailModeratorNotifications = *in.EmailModeratorNotifications
 	}
 	langs := cur.TimelineLanguages
 	if in.TimelineLanguages != nil {

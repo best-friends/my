@@ -190,6 +190,37 @@ func ids(page clientapi.NotificationPage) []string {
 	return out
 }
 
+// TestListModeratorNotifications checks the moderator notifications: an admin_report names its
+// report and no account, and an admin_sign_up presents the account of the user who signed up.
+func TestListModeratorNotifications(t *testing.T) {
+	const reportID = "01890a5d-ac96-774b-bcce-b302099a9100"
+	at := time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)
+	f := &fakeNotifications{dismissed: map[string]bool{}, markers: map[string]string{}, ns: []notification.Notification{
+		{ID: notificationID(1), RecipientAccountID: aliceAccountID, Type: notification.TypeAdminReport, ReportID: reportID, CreatedAt: at},
+		{ID: notificationID(2), RecipientAccountID: aliceAccountID, Type: notification.TypeAdminSignUp, SubjectUserID: "user-" + bobAccountID, CreatedAt: at},
+	}}
+	e := newAuthEnv(t, func(o *clientapi.Options) {
+		o.Notifications = f
+		o.UserAccounts = fakeUserAccounts{}
+		o.Accounts.(fakeAccounts)[bobAccountID] = o.Accounts.(fakeAccounts)[aliceAccountID]
+	})
+	res := e.send(t, http.MethodGet, "/notifications", "read", "")
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.StatusCode)
+	}
+	page := decode[clientapi.NotificationPage](t, res)
+	if len(page.Items) != 2 {
+		t.Fatalf("items = %+v, want 2", page.Items)
+	}
+	signUp, report := page.Items[0], page.Items[1]
+	if signUp.Type != clientapi.NotificationTypeAdminSignUp || signUp.Account == nil || signUp.ReportId != nil {
+		t.Errorf("admin_sign_up = %+v, want the account of the user who signed up", signUp)
+	}
+	if report.Type != clientapi.NotificationTypeAdminReport || report.Account != nil || report.ReportId == nil || *report.ReportId != reportID {
+		t.Errorf("admin_report = %+v, want report %s and no account", report, reportID)
+	}
+}
+
 func TestListNotifications(t *testing.T) {
 	e, f, views := newNotificationEnvWithViews(t)
 

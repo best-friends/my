@@ -21,7 +21,8 @@ func (q *Queries) DeleteUserTimelineLanguages(ctx context.Context, userID string
 }
 
 const getUserPreferences = `-- name: GetUserPreferences :one
-SELECT user_id, locale, time_zone, default_visibility, default_post_language, require_media_description, updated_at
+SELECT user_id, locale, time_zone, default_visibility, default_post_language, require_media_description,
+  email_moderator_notifications, updated_at
 FROM user_preferences WHERE user_id = ?
 `
 
@@ -35,6 +36,7 @@ func (q *Queries) GetUserPreferences(ctx context.Context, userID string) (UserPr
 		&i.DefaultVisibility,
 		&i.DefaultPostLanguage,
 		&i.RequireMediaDescription,
+		&i.EmailModeratorNotifications,
 		&i.UpdatedAt,
 	)
 	return i, err
@@ -43,18 +45,20 @@ func (q *Queries) GetUserPreferences(ctx context.Context, userID string) (UserPr
 const insertUserPreferences = `-- name: InsertUserPreferences :exec
 
 INSERT INTO user_preferences (
-  user_id, locale, time_zone, default_visibility, default_post_language, require_media_description, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?)
+  user_id, locale, time_zone, default_visibility, default_post_language, require_media_description,
+  email_moderator_notifications, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertUserPreferencesParams struct {
-	UserID                  string
-	Locale                  string
-	TimeZone                string
-	DefaultVisibility       string
-	DefaultPostLanguage     string
-	RequireMediaDescription int64
-	UpdatedAt               int64
+	UserID                      string
+	Locale                      string
+	TimeZone                    string
+	DefaultVisibility           string
+	DefaultPostLanguage         string
+	RequireMediaDescription     int64
+	EmailModeratorNotifications int64
+	UpdatedAt                   int64
 }
 
 // SPDX-License-Identifier: AGPL-3.0-only
@@ -66,6 +70,7 @@ func (q *Queries) InsertUserPreferences(ctx context.Context, arg InsertUserPrefe
 		arg.DefaultVisibility,
 		arg.DefaultPostLanguage,
 		arg.RequireMediaDescription,
+		arg.EmailModeratorNotifications,
 		arg.UpdatedAt,
 	)
 	return err
@@ -115,18 +120,19 @@ func (q *Queries) ListUserTimelineLanguages(ctx context.Context, userID string) 
 const updateUserPreferences = `-- name: UpdateUserPreferences :execrows
 UPDATE user_preferences SET
   locale = ?, time_zone = ?, default_visibility = ?, default_post_language = ?,
-  require_media_description = ?, updated_at = ?
+  require_media_description = ?, email_moderator_notifications = ?, updated_at = ?
 WHERE user_id = ?
 `
 
 type UpdateUserPreferencesParams struct {
-	Locale                  string
-	TimeZone                string
-	DefaultVisibility       string
-	DefaultPostLanguage     string
-	RequireMediaDescription int64
-	UpdatedAt               int64
-	UserID                  string
+	Locale                      string
+	TimeZone                    string
+	DefaultVisibility           string
+	DefaultPostLanguage         string
+	RequireMediaDescription     int64
+	EmailModeratorNotifications int64
+	UpdatedAt                   int64
+	UserID                      string
 }
 
 func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPreferencesParams) (int64, error) {
@@ -136,6 +142,7 @@ func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPrefe
 		arg.DefaultVisibility,
 		arg.DefaultPostLanguage,
 		arg.RequireMediaDescription,
+		arg.EmailModeratorNotifications,
 		arg.UpdatedAt,
 		arg.UserID,
 	)

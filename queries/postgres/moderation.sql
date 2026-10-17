@@ -189,3 +189,16 @@ SELECT a.id, a.target_account_id, a.kind, a.reason_category, a.public_reason, a.
 FROM moderation_actions a
 LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
 WHERE a.id = $1;
+
+-- Moderator notifications and counts (#338) ---------------------------------------------------
+
+-- CountReportsInState counts the reports in a state.
+-- name: CountReportsInState :one
+SELECT COUNT(*) FROM report_states WHERE state = $1;
+
+-- HasOtherOpenReportOf reports whether a report of the target other than the one given is open.
+-- name: HasOtherOpenReportOf :one
+SELECT EXISTS (
+  SELECT 1 FROM reports r JOIN report_states s ON s.report_id = r.id
+  WHERE r.target_account_id = sqlc.arg(target_account_id)::text AND r.id <> sqlc.arg(report_id)::text AND s.state = 'open'
+);

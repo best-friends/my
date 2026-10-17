@@ -99,6 +99,10 @@ type Options struct {
 	Rules InstanceRules
 	// Reports files the reports of local users (reports.go).
 	Reports Reports
+	// ReportCounts and RegistrationCounts count what awaits the moderators (admin_counts.go);
+	// nil leaves the count out.
+	ReportCounts       ReportCounts
+	RegistrationCounts RegistrationCounts
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

@@ -60,6 +60,9 @@ type Repository interface {
 	// ReportStatusForUpdate returns the state of a report inside the transaction that changes
 	// it, locking it where the database can.
 	ReportStatusForUpdate(ctx context.Context, tx uow.Tx, reportID string) (moderation.ReportStatus, error)
+	// HasOtherOpenReportOf reports inside tx whether a report of the target other than reportID
+	// is open.
+	HasOtherOpenReportOf(ctx context.Context, tx uow.Tx, targetAccountID, reportID string) (bool, error)
 
 	// Lookups.
 
@@ -74,6 +77,8 @@ type Repository interface {
 	// FindReportByURI returns the report of a received Flag with its statuses.
 	FindReportByURI(ctx context.Context, uri string) (moderation.Report, error)
 	FindReportStatus(ctx context.Context, reportID string) (moderation.ReportStatus, error)
+	// CountReports counts the reports in a state.
+	CountReports(ctx context.Context, state moderation.ReportState) (int64, error)
 	// ListReportsOf returns the reports of a target account with their statuses, oldest first.
 	ListReportsOf(ctx context.Context, targetAccountID string) ([]moderation.Report, error)
 	// ListReports returns up to limit reports with their statuses and states, newest first:

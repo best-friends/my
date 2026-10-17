@@ -521,6 +521,8 @@ CREATE TABLE user_preferences (
   default_visibility text NOT NULL CHECK (default_visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
   default_post_language text NOT NULL,
   require_media_description boolean NOT NULL,
+  -- Whether the moderator notifications (admin_report, admin_sign_up) also come by email.
+  email_moderator_notifications boolean NOT NULL,
   updated_at timestamptz NOT NULL
 );
 
@@ -1078,11 +1080,16 @@ CREATE TABLE notifications (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   recipient_account_id text COLLATE "C" NOT NULL,
   type text NOT NULL CHECK (type IN (
-    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice'
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
+    'admin_report', 'admin_sign_up'
   )),
   source_account_id text COLLATE "C",
   status_id text COLLATE "C",
   moderation_action_id text COLLATE "C",
+  -- admin_report: the report filed.
+  report_id text COLLATE "C",
+  -- admin_sign_up: the user whose registration awaits approval.
+  subject_user_id text COLLATE "C",
   dedupe_key text NOT NULL,
   created_at timestamptz NOT NULL,
   -- nobody is notified of their own actions.

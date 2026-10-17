@@ -563,6 +563,22 @@
     "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ ıs uoʇ ɹǝɐpʎ ʇo ɐɔɔǝdʇ ɹǝbnǝsʇs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "mail.admin_report.body": {
+    "defaultMessage": "‮∀ uǝʍ ɹǝdoɹʇ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs oɟ {host}.\n\nOdǝu ʎonɹ uoʇıɟıɔɐʇıous ʇo ɹǝʌıǝʍ ıʇ:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon ɔɥosǝ ʇo ƃǝʇ ɯopǝɹɐʇoɹ uoʇıɟıɔɐʇıous qʎ ǝɯɐıʅ. ⅄on ɔɐu ʇnɹu ıʇ oɟɟ ıu ʎonɹ dɹǝɟǝɹǝuɔǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_report.subject": {
+    "defaultMessage": "‮∀ uǝʍ ɹǝdoɹʇ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs oɟ {host}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_sign_up.body": {
+    "defaultMessage": "‮∀ uǝʍ nsǝɹ sıƃuǝp nd ou {host} ɐup ɐʍɐıʇs ɐddɹoʌɐʅ.\n\nOdǝu ʎonɹ uoʇıɟıɔɐʇıous ʇo ɹǝʌıǝʍ ʇɥǝ ɹǝƃısʇɹɐʇıou:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon ɔɥosǝ ʇo ƃǝʇ ɯopǝɹɐʇoɹ uoʇıɟıɔɐʇıous qʎ ǝɯɐıʅ. ⅄on ɔɐu ʇnɹu ıʇ oɟɟ ıu ʎonɹ dɹǝɟǝɹǝuɔǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_sign_up.subject": {
+    "defaultMessage": "‮∀ uǝʍ sıƃu-nd ɐʍɐıʇs ɐddɹoʌɐʅ ou {host}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "mail.verify_email.body": {
     "defaultMessage": "‮Mǝʅɔoɯǝ ʇo {host}.\n\nOdǝu ʇɥıs ʅıuʞ ʇo ɔouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss:\n\n{url}\n\n{hours,plural,one{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹ.} other{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹs.}} Iɟ ʎon pıp uoʇ sıƃu nd ɐʇ {host}, ıƃuoɹǝ ʇɥıs ǝɯɐıʅ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -102,3 +102,20 @@ my admin report resolve -outcome dismissed <report id>
 - 担当（`assign`）は、ロールが `manage_reports` を持つローカルの利用者にだけ割り当てられます。管理 API では自分を担当にします。
 - 解決（`resolve`）の結果は、対象に処分をした `actioned` か、処分の必要がなかった `dismissed` です。解決済みの通報をもう一度解決しても結果は変わりません。
 - 担当・解決はイベント（`report_assignments`・`report_resolutions`）として残り、現在の状態は `report_states` が持ちます。
+
+## モデレーターへの通知と未対応の件数
+
+新しい通報と承認待ちの登録は、権限を持つ利用者にアプリ内の通知で届きます（FR-712）。
+
+| 通知 | 届くとき | 届く人 |
+| --- | --- | --- |
+| `admin_report` | 通報の対象に、ほかの未解決の通報が無いとき（同じアカウントへの 2 件目以降の通報では届かない） | ロールが `manage_reports` を持つ人。通報者と通報の対象は除く |
+| `admin_sign_up` | 登録が承認待ちで始まったとき（承認制、またはメールを送れない構成の `open`） | ロールが `manage_accounts` を持つ人 |
+
+- 届く人は、通知を作るときの権限で決まります。後から権限を失った人の一覧と未読数からは、その種類の通知が消えます。権限を戻せばまた見えます。
+- 利用者設定 `email_moderator_notifications`（`PATCH /api/v1/preferences`、既定は無効）を有効にした人には、同じ通知をメールでも送ります。
+  メールは通知を記録したトランザクションでジョブを積み、コミット後にジョブが送ります。送る時点で権限か設定を失っていれば送りません。
+  メールは通知の種類と通知の画面へのリンクだけを書き、通報やアカウントの中身は書きません。`mail = none` ではメールを送りません。
+
+`GET /api/v1/admin/counts` は、未解決の通報の数（`open_reports`、`manage_reports` が要る）と承認待ちの登録の数（`pending_registrations`、`manage_accounts` が要る）を返します。
+権限の無い項目は返しません。

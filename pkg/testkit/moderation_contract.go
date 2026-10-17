@@ -43,7 +43,8 @@ type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 // the rules are in effect, the actions on domains and on
 // accounts list newest first with their lifts and filters, the public list keeps only the
 // limits and suspensions in effect without their private notes, and moderators list, assign,
-// and resolve reports. The accounts are in-memory stand-ins.
+// and resolve reports, a filed report tells whether it is the target's only open one, and the
+// open reports are counted. The accounts are in-memory stand-ins.
 func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -63,6 +64,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"ListsDomainActions", moderationListsDomainActions},
 		{"ListsPublicDomainActions", moderationListsPublicDomainActions},
 		{"HandlesReports", moderationHandlesReports},
+		{"FlagsTheFirstOpenReportAndCounts", moderationFirstOpenReport},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newModerationEnv(t, newHarness)) })
@@ -926,4 +928,55 @@ func moderationHandlesReports(t *testing.T, e *moderationEnv) {
 	if _, err := e.svc.Reports(ctx, appmoderation.ReportQuery{State: "closed"}, 10); !errors.Is(err, appmoderation.ErrInvalidQuery) {
 		t.Errorf("Reports(closed) = %v, want ErrInvalidQuery", err)
 	}
+}
+
+// moderationFirstOpenReport checks that ReportFiled tells whether no other report of the target
+// was open, which decides whether the moderators are notified, and the count of open reports.
+func moderationFirstOpenReport(t *testing.T, e *moderationEnv) {
+	ctx := t.Context()
+	file := func(n string) (moderation.Report, bool) {
+		t.Helper()
+		e.clock.Advance(time.Second)
+		r, _, err := e.svc.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
+			URI: "https://remote.example/flags/first-" + n, ReporterAccountID: e.reports, TargetAccountID: e.local,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		events := e.events.take()
+		if len(events) != 1 {
+			t.Fatalf("events of report %s = %+v, want one ReportFiled", n, events)
+		}
+		ev, ok := events[0].(appmoderation.ReportFiled)
+		if !ok || ev.Report.ID != r.ID {
+			t.Fatalf("event = %+v, want ReportFiled of %s", events[0], r.ID)
+		}
+		return r, ev.FirstOpen
+	}
+	count := func(want int64) {
+		t.Helper()
+		if n, err := e.svc.CountOpenReports(ctx); err != nil || n != want {
+			t.Errorf("CountOpenReports = %d, %v; want %d", n, err, want)
+		}
+	}
+	count(0)
+	a, first := file("a")
+	if !first {
+		t.Error("the first report of the account is not FirstOpen")
+	}
+	b, first := file("b")
+	if first {
+		t.Error("a second open report of the account is FirstOpen")
+	}
+	count(2)
+	for _, r := range []moderation.Report{a, b} {
+		if _, err := e.svc.ResolveReport(ctx, r.ID, moderation.OutcomeDismissed, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	count(0)
+	if _, first := file("c"); !first {
+		t.Error("a report after the others are resolved is not FirstOpen")
+	}
+	count(1)
 }

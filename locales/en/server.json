@@ -455,10 +455,6 @@
     "defaultMessage": "The request is too large.",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
-  "errors.signature_required": {
-    "defaultMessage": "This request needs a valid HTTP signature.",
-    "description": "Error title for HTTP 401 when an ActivityPub request carries no HTTP signature that verifies: a POST to an inbox, or a GET of an object or a collection when the instance uses authorized fetch. Read by other servers' operators."
-  },
   "errors.self_relationship": {
     "defaultMessage": "You cannot do this to your own account.",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."
@@ -466,6 +462,10 @@
   "errors.service_unavailable": {
     "defaultMessage": "The service is temporarily unavailable. Please try again later.",
     "description": "Error title for HTTP 503 when the server cannot handle the request for now, e.g. another server it needs to reach is not responding."
+  },
+  "errors.signature_required": {
+    "defaultMessage": "This request needs a valid HTTP signature.",
+    "description": "Error title for HTTP 401 when an ActivityPub request carries no HTTP signature that verifies: a POST to an inbox, or a GET of an object or a collection when the instance uses authorized fetch. Read by other servers' operators."
   },
   "errors.status.already_deleted": {
     "defaultMessage": "The post created with this Idempotency-Key has been deleted.",
@@ -562,6 +562,22 @@
   "health.unavailable": {
     "defaultMessage": "The server is not ready to accept requests.",
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  },
+  "mail.admin_report.body": {
+    "defaultMessage": "A new report awaits the moderators of {host}.\n\nOpen your notifications to review it:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
+    "description": "Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_report.subject": {
+    "defaultMessage": "A new report awaits the moderators of {host}",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {host} is the server's domain name."
+  },
+  "mail.admin_sign_up.body": {
+    "defaultMessage": "A new user signed up on {host} and awaits approval.\n\nOpen your notifications to review the registration:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
+    "description": "Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_sign_up.subject": {
+    "defaultMessage": "A new sign-up awaits approval on {host}",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {host} is the server's domain name."
   },
   "mail.verify_email.body": {
     "defaultMessage": "Welcome to {host}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.",
