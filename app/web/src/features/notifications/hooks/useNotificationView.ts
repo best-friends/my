@@ -5,16 +5,25 @@ import type { ClientMessageKey } from "../../../lib/i18n";
 import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { statusPath } from "../../status";
-import type { Notification, NotificationAccount, NotificationStatus, NotificationType } from "../api/notifications";
+import type { NotificationAccount, NotificationStatus, NotificationType } from "../api/notifications";
+import type { NotificationGroup } from "./groupNotifications";
+
+/** An account in a row: its name in the UI (the username when it has no display name), profile page, and avatar URL. */
+export type NotificationActor = { name: string; href: string; avatar: string | undefined };
 
 export type NotificationView = {
-  /** The sentence that says what happened; `{name}` in it is the actor's name, for the types that have an actor. */
-  sentence: ClientMessageKey;
   /**
-   * The account that did it: its name in the UI (the username when it has no display name), its profile
-   * page, and its avatar URL (undefined when it has none); null for the types without an actor.
+   * The sentence that says what happened; `{name}` in it is the actor's name, for the types that have an
+   * actor, and `{count}` the number of the other actors of a group.
    */
-  actor: { name: string; href: string; avatar: string | undefined } | null;
+  sentence: ClientMessageKey;
+  /** The account that did it, the newest of a group; null for the types without an actor. */
+  actor: NotificationActor | null;
+  /**
+   * The other accounts of a group, newest first, each once: the people who also favourited or boosted the
+   * post. Empty for a row of one notification.
+   */
+  others: readonly NotificationActor[];
   /** When it happened, relative to now as in the timelines (web-client.md G8). */
   time: TimeView;
   /**
@@ -38,6 +47,16 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   moderation_notice: "client:notifications.type.moderation_notice",
 };
 
+/** The sentences of a group of the types that rows group (groupNotifications). */
+const groupSentences: Readonly<Partial<Record<NotificationType, ClientMessageKey>>> = {
+  boost: "client:notifications.group.boost",
+  favourite: "client:notifications.group.favourite",
+};
+
+function actorOf(account: NotificationAccount): NotificationActor {
+  return { name: account.display_name || account.username, href: profilePath(account.acct), avatar: account.avatar_url };
+}
+
 /**
  * The text of sanitized post HTML (api/openapi.yaml, Status.content), with its paragraphs and line breaks
  * kept as line breaks. The parsed document is inert: nothing in it loads or runs.
@@ -60,16 +79,24 @@ function postOf(status: NotificationStatus): NonNullable<NotificationView["post"
   };
 }
 
-/** Returns what the row of `notification` shows. */
-export function useNotificationView(notification: Notification): NotificationView {
+/** Returns what the row of `group` shows: one notification, or the favourites or the boosts of one post. */
+export function useNotificationView(group: NotificationGroup): NotificationView {
+  const [notification] = group.notifications;
   const time = useTimeView(notification.created_at);
   const { account, status } = notification;
+  // The same account can favourite a post again after taking it back: it counts once.
+  const seen = new Set(account === undefined ? [] : [account.id]);
+  const others: NotificationActor[] = [];
+  for (const { account: other } of group.notifications) {
+    if (other === undefined || seen.has(other.id)) continue;
+    seen.add(other.id);
+    others.push(actorOf(other));
+  }
+  const groupSentence = groupSentences[notification.type];
   return {
-    sentence: sentences[notification.type],
-    actor:
-      account === undefined
-        ? null
-        : { name: account.display_name || account.username, href: profilePath(account.acct), avatar: account.avatar_url },
+    sentence: others.length > 0 && groupSentence !== undefined ? groupSentence : sentences[notification.type],
+    actor: account === undefined ? null : actorOf(account),
+    others,
     time,
     post: status === undefined ? null : postOf(status),
     followBack: notification.type === "follow" && account !== undefined ? account : null,
