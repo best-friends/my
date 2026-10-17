@@ -26,7 +26,8 @@ import (
 // InboxProcessingContract verifies the asynchronous part of the inbox (federation.md §3.2,
 // §3.3) on the inbox repository of a database adapter: activities of unknown types complete, a
 // Delete or Undo of an unknown target leaves a tombstone (only for objects of the actor's origin)
-// that drops the Create or Follow arriving later, restricted actors are dropped except for what
+// that drops the Create or Follow arriving later (for an Undo of an embedded Follow, the next
+// Follow of its pair), restricted actors are dropped except for what
 // takes something back, activities of other signers are confirmed at their origin, activities
 // that can never be processed fail, and the own-actor Update and Delete have their own route.
 //
@@ -44,6 +45,7 @@ func InboxProcessingContract(t *testing.T, newHarness InboxFactory) {
 		{"CompletesUnknownTypes", inboxCompletesUnknownTypes},
 		{"DropsACreateAfterItsDelete", inboxDropsCreateAfterDelete},
 		{"DropsAFollowAfterItsUndo", inboxDropsFollowAfterUndo},
+		{"DropsTheNextFollowOfAnUndonePair", inboxDropsFollowOfUndonePair},
 		{"TombstonesOnlyObjectsOfTheActor", inboxTombstonesOnlyOwnObjects},
 		{"DropsRestrictedActors", inboxDropsRestrictedActors},
 		{"ConfirmsActivitiesOfOtherSigners", inboxConfirmsRefetched},
@@ -383,6 +385,51 @@ func inboxDropsFollowAfterUndo(t *testing.T, e *inboxProcessEnv) {
 	}
 	if e.follows.active[federation.IRI(follow)] {
 		t.Errorf("%s is active after its Undo", follow)
+	}
+}
+
+// inboxDropsFollowOfUndonePair checks the tombstone of the pair that an Undo of an unknown
+// Follow names: Misskey's Undo names its Follow by another id than the Follow it sent.
+func inboxDropsFollowOfUndonePair(t *testing.T, e *inboxProcessEnv) {
+	local := "https://" + contractHost + "/ap/actors/x"
+	undone := map[string]any{"id": inboxAlice + "/follows/x", "type": "Follow", "actor": inboxAlice, "object": local}
+	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"/follows/x/undo", "", undone)); got != appfederation.InboxTombstoned {
+		t.Errorf("Undo of an unknown Follow = %q, want %q", got, appfederation.InboxTombstoned)
+	}
+	// Bob's Follow of the same actor, and alice's of another, go through.
+	if got := e.process(t, inboxDoc(t, "Follow", inboxBob+"#follow", inboxBob, local)); got != appfederation.InboxHandled {
+		t.Errorf("bob's Follow = %q, want %q", got, appfederation.InboxHandled)
+	}
+	other := "https://" + contractHost + "/ap/actors/y"
+	if got := e.process(t, inboxDoc(t, "Follow", inboxAlice+"#follow-y", "", other)); got != appfederation.InboxHandled {
+		t.Errorf("alice's Follow of another actor = %q, want %q", got, appfederation.InboxHandled)
+	}
+	// The first Follow of the pair is dropped, also when it is processed again.
+	first := federation.IRI(inboxAlice + "#follow-1")
+	doc := inboxDoc(t, "Follow", string(first), "", local)
+	for i := range 2 {
+		if got := e.process(t, doc); got != appfederation.InboxDropped {
+			t.Errorf("Follow after the Undo of its pair (run %d) = %q, want %q", i+1, got, appfederation.InboxDropped)
+		}
+	}
+	if e.follows.active[first] || !e.tombstoned(t, first) {
+		t.Errorf("%s: active %t, tombstoned %t; want dropped with a tombstone", first, e.follows.active[first], e.tombstoned(t, first))
+	}
+	// The Undo again does not bring the tombstone of the pair back.
+	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"/follows/x/undo", "", undone)); got != appfederation.InboxTombstoned {
+		t.Errorf("Undo again = %q, want %q", got, appfederation.InboxTombstoned)
+	}
+	// The tombstone is used up: a later Follow of the pair goes through.
+	later := federation.IRI(inboxAlice + "#follow-2")
+	if got := e.process(t, inboxDoc(t, "Follow", string(later), "", local)); got != appfederation.InboxHandled || !e.follows.active[later] {
+		t.Errorf("a later Follow of the pair = %q, want it handled", got)
+	}
+	// An Undo of a Follow of someone else leaves no tombstone of a pair.
+	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-bob", "", map[string]any{"id": inboxBob + "#follow-z", "type": "Follow", "actor": inboxBob, "object": local})); got == appfederation.InboxHandled {
+		t.Errorf("Undo of bob's Follow by alice = %q, want it not handled", got)
+	}
+	if got := e.process(t, inboxDoc(t, "Follow", inboxBob+"#follow-z2", inboxBob, other)); got != appfederation.InboxHandled {
+		t.Errorf("bob's Follow after alice's Undo of one of his = %q, want %q", got, appfederation.InboxHandled)
 	}
 }
 

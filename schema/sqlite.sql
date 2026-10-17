@@ -1384,3 +1384,26 @@ CREATE TABLE poll_tallies (
   voters_count INTEGER CHECK (voters_count >= 0),
   PRIMARY KEY (poll_id, position)
 ) STRICT;
+
+-- graph and federation: re-sent Follows and early Undo Follows (data-model §4.5, §4.8) ----------
+
+-- Event: a Follow received again, under another URI, for a follow that is already active. The
+-- follow keeps its row; its Accept is sent again for the new URI.
+CREATE TABLE follow_resends (
+  uri TEXT NOT NULL PRIMARY KEY,
+  follow_id TEXT NOT NULL,
+  received_at INTEGER NOT NULL
+) STRICT;
+
+-- Event: an Undo of an unknown Follow, by the pair of its actor and the object that the embedded
+-- Follow names. The first Follow of the pair that arrives later is dropped, and its URI recorded
+-- in remote_object_tombstones with this activity_uri.
+CREATE TABLE remote_follow_tombstones (
+  activity_uri TEXT NOT NULL PRIMARY KEY,
+  actor_uri TEXT NOT NULL,
+  object_uri TEXT NOT NULL,
+  received_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX remote_follow_tombstones_actor_uri_object_uri ON remote_follow_tombstones (actor_uri, object_uri, received_at);
+CREATE INDEX remote_follow_tombstones_received_at ON remote_follow_tombstones (received_at);
+CREATE INDEX remote_object_tombstones_activity_uri ON remote_object_tombstones (activity_uri);

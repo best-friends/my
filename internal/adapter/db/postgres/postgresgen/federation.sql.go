@@ -173,6 +173,34 @@ func (q *Queries) GetLatestInstanceNodeinfoObservation(ctx context.Context, doma
 	return i, err
 }
 
+const getLiveRemoteFollowTombstone = `-- name: GetLiveRemoteFollowTombstone :one
+SELECT t.activity_uri, t.actor_uri, t.object_uri, t.received_at
+FROM remote_follow_tombstones t
+WHERE t.actor_uri = $1 AND t.object_uri = $2
+  AND NOT EXISTS (SELECT 1 FROM remote_object_tombstones o WHERE o.activity_uri = t.activity_uri)
+ORDER BY t.received_at, t.activity_uri
+LIMIT 1
+`
+
+type GetLiveRemoteFollowTombstoneParams struct {
+	ActorUri  string
+	ObjectUri string
+}
+
+// GetLiveRemoteFollowTombstone returns the oldest tombstone of the pair that has not dropped a
+// Follow yet: no remote_object_tombstones row was recorded with its activity_uri.
+func (q *Queries) GetLiveRemoteFollowTombstone(ctx context.Context, arg GetLiveRemoteFollowTombstoneParams) (RemoteFollowTombstone, error) {
+	row := q.db.QueryRow(ctx, getLiveRemoteFollowTombstone, arg.ActorUri, arg.ObjectUri)
+	var i RemoteFollowTombstone
+	err := row.Scan(
+		&i.ActivityUri,
+		&i.ActorUri,
+		&i.ObjectUri,
+		&i.ReceivedAt,
+	)
+	return i, err
+}
+
 const getOutboundActivity = `-- name: GetOutboundActivity :one
 SELECT id, activity_uri, type, actor_account_id, object_type, object_id, created_at
 FROM outbound_activities WHERE id = $1
@@ -448,6 +476,33 @@ type InsertReceivedActivityDocumentParams struct {
 func (q *Queries) InsertReceivedActivityDocument(ctx context.Context, arg InsertReceivedActivityDocumentParams) error {
 	_, err := q.db.Exec(ctx, insertReceivedActivityDocument, arg.ActivityUri, arg.Document)
 	return err
+}
+
+const insertRemoteFollowTombstone = `-- name: InsertRemoteFollowTombstone :execrows
+INSERT INTO remote_follow_tombstones (activity_uri, actor_uri, object_uri, received_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (activity_uri) DO NOTHING
+`
+
+type InsertRemoteFollowTombstoneParams struct {
+	ActivityUri string
+	ActorUri    string
+	ObjectUri   string
+	ReceivedAt  time.Time
+}
+
+// InsertRemoteFollowTombstone inserts nothing when the Undo is already recorded.
+func (q *Queries) InsertRemoteFollowTombstone(ctx context.Context, arg InsertRemoteFollowTombstoneParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertRemoteFollowTombstone,
+		arg.ActivityUri,
+		arg.ActorUri,
+		arg.ObjectUri,
+		arg.ReceivedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const insertRemoteInstance = `-- name: InsertRemoteInstance :execrows

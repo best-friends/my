@@ -43,7 +43,9 @@ type RemoteFollowFactory func(t *testing.T, opts uow.Options) RemoteFollowHarnes
 // GoToSocial set up a follow in both directions, and the Follow, Accept, Reject, and Undo
 // recorded and delivered back carry the follow's URI; a locked account holds a remote follow
 // as a request with a notification until it answers; Reject and Undo end follows, by URI or by
-// the pair they name; a blocked follower gets a Reject; and the final follows do not depend on
+// the pair they name; a blocked follower gets a Reject; a Follow sent again for an active follow
+// gets its own Accept without a new follow; an Undo that arrives before its Follow, even one
+// that names the follow by the pair (Misskey), drops that Follow; and the final follows do not depend on
 // the order or repetition of the activities (NFR-REL-1). Remote actors are stored accounts,
 // and nothing is fetched or sent over the network.
 func RemoteFollowContract(t *testing.T, newHarness RemoteFollowFactory) {
@@ -56,6 +58,8 @@ func RemoteFollowContract(t *testing.T, newHarness RemoteFollowFactory) {
 		{"HoldsFollowsOfLockedAccounts", remoteFollowsLocked},
 		{"EndsFollowsByRejectAndUndo", remoteFollowsEnd},
 		{"RejectsBlockedFollowers", remoteFollowsBlocked},
+		{"AcceptsAFollowSentAgain", remoteFollowsResent},
+		{"DropsAFollowAfterAnEarlyUndo", remoteFollowsEarlyUndo},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteFollowEnv(t, newHarness)) })
@@ -640,6 +644,115 @@ func remoteFollowsBlocked(t *testing.T, e *remoteFollowEnv) {
 	}
 }
 
+// histories returns the number of follows recorded.
+func (e *remoteFollowEnv) histories(t *testing.T) int {
+	t.Helper()
+	var n int
+	err := e.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		hs, err := e.h.Graph.ListHistories(t.Context(), tx)
+		n = len(hs)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("ListHistories: %v", err)
+	}
+	return n
+}
+
+// remoteFollowsResent checks a Follow that the follower's server sends again, under a new id,
+// for a follow that is already active (Mastodon does until it gets an Accept): its Accept is
+// sent again, and the follow keeps its one row.
+func remoteFollowsResent(t *testing.T, e *remoteFollowEnv) {
+	alice := e.register(t, "alice").AccountID
+	mastodon := remotePeers[0]
+	peer := e.remote(t, mastodon.actor)
+	follow := mastodon.fixture(t, "follow", e.actorURI(alice), "")
+	e.receive(t, follow)
+	f := e.followOf(t, activityID(t, follow))
+
+	again := renamed(t, follow, "-again")
+	for i := range 2 {
+		if got := e.receive(t, again); got != appfederation.InboxHandled {
+			t.Fatalf("Follow sent again (run %d) = %q, want handled", i+1, got)
+		}
+	}
+	sent := e.sent(t, f.ID)
+	if !reflect.DeepEqual(types(sent), []federation.ActivityType{federation.ActivityAccept, federation.ActivityAccept}) {
+		t.Fatalf("sent %v about the follow, want an Accept per Follow", types(sent))
+	}
+	if got := embeddedFollowOf(t, sent[1].Document)["id"]; got != activityID(t, again) {
+		t.Errorf("the second Accept embeds %v, want the Follow sent again %s", got, activityID(t, again))
+	}
+	if sent[1].Document["id"] == sent[0].Document["id"] || !reflect.DeepEqual(sent[1].Inboxes, []string{mastodon.actor + "/inbox"}) {
+		t.Errorf("the second Accept is %v to %v, want a new Accept to the peer", sent[1].Document["id"], sent[1].Inboxes)
+	}
+	if n := e.histories(t); n != 1 {
+		t.Errorf("%d follows recorded, want 1", n)
+	}
+	if got := e.liveFollow(t, peer, alice); got.ID != f.ID {
+		t.Errorf("live follow %s, want %s", got.ID, f.ID)
+	}
+	if c, _ := e.graph.Counters(t.Context(), alice); c.FollowersCount != 1 {
+		t.Errorf("followers of alice = %d, want 1", c.FollowersCount)
+	}
+	// An Undo of the Follow sent again, by its id alone, ends the follow.
+	undo := fmt.Appendf(nil, `{"@context":"https://www.w3.org/ns/activitystreams","id":"%s/undo","type":"Undo","actor":"%s","object":"%s"}`,
+		activityID(t, again), mastodon.actor, activityID(t, again))
+	if got := e.receive(t, undo); got != appfederation.InboxHandled {
+		t.Errorf("Undo of the Follow sent again = %q, want handled", got)
+	}
+	if r := e.relationship(t, alice, peer); r.FollowedBy != graph.StateNone {
+		t.Errorf("FollowedBy = %q after the Undo, want none", r.FollowedBy)
+	}
+
+	// A Follow sent again for a pending follow request changes nothing until alice answers.
+	bob := e.register(t, "bob").AccountID
+	if _, err := e.accounts.ReviseProfile(t.Context(), bob, appaccount.ProfileInput{DisplayName: "bob", Locked: true}); err != nil {
+		t.Fatal(err)
+	}
+	request := renamed(t, mastodon.fixture(t, "follow", e.actorURI(bob), ""), "-bob")
+	e.receive(t, request)
+	if got := e.receive(t, renamed(t, request, "-again")); got != appfederation.InboxHandled {
+		t.Errorf("Follow request sent again = %q, want handled", got)
+	}
+	r := e.followOf(t, activityID(t, request))
+	if sent := e.sent(t, r.ID); len(sent) != 0 {
+		t.Errorf("sent %v about a pending request, want nothing", types(sent))
+	}
+	if n := e.histories(t); n != 2 {
+		t.Errorf("%d follows recorded, want 2", n)
+	}
+}
+
+// remoteFollowsEarlyUndo checks Misskey's Undo arriving before its Follow: the Undo names the
+// follow by the pair, with an id other than the Follow's, and the Follow arriving later is
+// dropped. The next Follow of the pair goes through.
+func remoteFollowsEarlyUndo(t *testing.T, e *remoteFollowEnv) {
+	alice := e.register(t, "alice").AccountID
+	misskey := remotePeers[1]
+	peer := e.remote(t, misskey.actor)
+	follow := misskey.fixture(t, "follow", e.actorURI(alice), "")
+	if got := e.receive(t, misskey.fixture(t, "undo-follow", e.actorURI(alice), "")); got != appfederation.InboxTombstoned {
+		t.Errorf("Undo before its Follow = %q, want tombstoned", got)
+	}
+	if got := e.receive(t, follow); got != appfederation.InboxDropped {
+		t.Errorf("Follow after its Undo = %q, want dropped", got)
+	}
+	if r := e.relationship(t, alice, peer); r.FollowedBy != graph.StateNone {
+		t.Errorf("FollowedBy = %q, want none", r.FollowedBy)
+	}
+	if n := e.histories(t); n != 0 {
+		t.Errorf("%d follows recorded, want none", n)
+	}
+	later := renamed(t, follow, "-later")
+	if got := e.receive(t, later); got != appfederation.InboxHandled {
+		t.Errorf("a later Follow = %q, want handled", got)
+	}
+	if r := e.relationship(t, alice, peer); r.FollowedBy != graph.StateActive {
+		t.Errorf("FollowedBy = %q after a later Follow, want active", r.FollowedBy)
+	}
+}
+
 // remoteOrderCase is a set of activities about follows whose final follows must not depend on
 // the order or repetition of their jobs.
 type remoteOrderCase struct {
@@ -655,6 +768,16 @@ var remoteOrderCases = []remoteOrderCase{
 		name: "FollowAndUndo",
 		setUp: func(t *testing.T, e *remoteFollowEnv) ([][]byte, string, string) {
 			p := remotePeers[0]
+			alice, peer := e.register(t, "alice").AccountID, e.remote(t, p.actor)
+			return [][]byte{p.fixture(t, "follow", e.actorURI(alice), ""), p.fixture(t, "undo-follow", e.actorURI(alice), "")}, peer, alice
+		},
+		want: graph.StateNone,
+	},
+	{
+		// Misskey's Undo names the follow by the pair, not by the id of its Follow.
+		name: "MisskeyFollowAndUndo",
+		setUp: func(t *testing.T, e *remoteFollowEnv) ([][]byte, string, string) {
+			p := remotePeers[1]
 			alice, peer := e.register(t, "alice").AccountID, e.remote(t, p.actor)
 			return [][]byte{p.fixture(t, "follow", e.actorURI(alice), ""), p.fixture(t, "undo-follow", e.actorURI(alice), "")}, peer, alice
 		},
