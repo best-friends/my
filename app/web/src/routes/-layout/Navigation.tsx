@@ -16,7 +16,7 @@ import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
-import { profilePath } from "../../lib/paths";
+import { followListPath, profilePath } from "../../lib/paths";
 
 type NavigationItem = {
   to: "/home" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/settings";
@@ -43,10 +43,14 @@ function isUnder(pathname: string, path: string): boolean {
 
 /**
  * Whether `pathname` is in the section of `to`: the page itself or one below it. "/profile" redirects to
- * the viewer's own profile page, so that page and the pages below it are its section too.
+ * the viewer's own profile page, so that page and its lists of followers and follows are its section too.
+ * The viewer's own posts (`/@acct/{id}`) are below the profile's address but are pages of posts, not of
+ * the profile.
  */
-function inSection(pathname: string, to: NavigationItem["to"], ownProfile: string | null): boolean {
-  return isUnder(pathname, to) || (to === "/profile" && ownProfile !== null && isUnder(pathname, ownProfile));
+function inSection(pathname: string, to: NavigationItem["to"], ownAcct: string | null): boolean {
+  if (isUnder(pathname, to)) return true;
+  if (to !== "/profile" || ownAcct === null) return false;
+  return [profilePath(ownAcct), followListPath(ownAcct, "followers"), followListPath(ownAcct, "following")].includes(pathname);
 }
 
 export function Navigation() {
@@ -54,7 +58,7 @@ export function Navigation() {
   const pathname = useLocation({ select: (location) => location.pathname });
   const unread = useUnreadNotificationCount();
   const viewer = useViewer();
-  const ownProfile = viewer.status === "signed-in" ? profilePath(viewer.account.acct) : null;
+  const ownAcct = viewer.status === "signed-in" ? viewer.account.acct : null;
   const timelines = useTimelineAvailability();
   const shown = items.filter((item) => item.timeline === undefined || timelines[item.timeline]);
   return (
@@ -70,7 +74,7 @@ export function Navigation() {
               <Link
                 href={item.to}
                 {...(badge ? { "aria-label": t("client:shell.nav.notifications_unread", { count: unread }) } : {})}
-                aria-current={inSection(pathname, item.to, ownProfile) ? "page" : undefined}
+                aria-current={inSection(pathname, item.to, ownAcct) ? "page" : undefined}
                 variant="navigation"
                 className="group flex min-h-16 flex-col justify-center gap-1 px-1 text-xs font-normal text-fg-muted data-hovered:bg-surface-sunken pointer-coarse:min-h-16 aria-[current=page]:font-semibold aria-[current=page]:text-accent md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base"
               >
