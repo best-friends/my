@@ -636,6 +636,18 @@ func postingDeletes(t *testing.T, e *postingEnv) {
 	if _, err := e.content.Find(ctx, p.Status.ID); !errors.Is(err, appcontent.ErrNotFound) {
 		t.Errorf("Find after deletion = %v, want ErrNotFound", err)
 	}
+	if _, _, err := e.content.LiveRevision(ctx, keep.Status.ID, keep.Revision.ID); err != nil {
+		t.Errorf("LiveRevision of a live status = %v", err)
+	}
+	if _, _, err := e.content.LiveRevision(ctx, keep.Status.ID, p.Revision.ID); !errors.Is(err, appcontent.ErrNotFound) {
+		t.Errorf("LiveRevision with another status's revision = %v, want ErrNotFound", err)
+	}
+	if _, _, err := e.content.LiveRevision(ctx, p.Status.ID, p.Revision.ID); !errors.Is(err, appcontent.ErrNotFound) {
+		t.Errorf("LiveRevision after deletion = %v, want ErrNotFound", err)
+	}
+	if st, err := e.content.FindStatus(ctx, p.Status.ID); err != nil || st.URI != p.Status.URI {
+		t.Errorf("FindStatus after deletion = %+v, %v; want the status", st, err)
+	}
 	if m := e.mentionsOf(t, p.Status.ID); len(m) != 0 {
 		t.Errorf("mention index = %v after deletion, want none", m)
 	}

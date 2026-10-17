@@ -10,25 +10,8 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/domain/account"
+	"github.com/best-friends/my/internal/domain/federation"
 )
-
-// actorContext is the JSON-LD context of actor documents: ActivityStreams, the security
-// vocabulary of publicKey, and the Mastodon extensions in use (ADR-0006).
-var actorContext = []any{
-	"https://www.w3.org/ns/activitystreams",
-	"https://w3id.org/security/v1",
-	map[string]any{
-		"manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
-		"toot":                      "http://joinmastodon.org/ns#",
-		"featured":                  map[string]string{"@id": "toot:featured", "@type": "@id"},
-		"featuredTags":              map[string]string{"@id": "toot:featuredTags", "@type": "@id"},
-		"discoverable":              "toot:discoverable",
-		"indexable":                 "toot:indexable",
-		"schema":                    "http://schema.org#",
-		"PropertyValue":             "schema:PropertyValue",
-		"value":                     "schema:value",
-	},
-}
 
 // actorDocument is an ActivityStreams actor in the shape Mastodon publishes, which Misskey,
 // GoToSocial, and Akkoma also read. Fields are in Mastodon's order.
@@ -87,7 +70,7 @@ func (h *Handler) instanceActorUsername() string { return h.o.AccountDomain }
 func (h *Handler) actorDocument(a appaccount.Actor) actorDocument {
 	id := a.Account.URI
 	doc := actorDocument{
-		Context:   actorContext,
+		Context:   federation.LDContext(),
 		ID:        id,
 		Type:      activityTypes[a.Account.ActorType],
 		Following: id + "/" + collFollowing,

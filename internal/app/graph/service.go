@@ -369,6 +369,29 @@ func (s *Service) Followers(ctx context.Context, accountID string, p Page) ([]gr
 	return s.d.Repository.ListFollowers(ctx, accountID, graph.StateActive, p.Before, p.limit())
 }
 
+// MaxFollowerBatch caps the batch size of ActiveFollowerIDs.
+const MaxFollowerBatch = 1000
+
+// ActiveFollowerIDs returns a batch of accountID's active followers, local and remote, newest
+// follow first, for the jobs that walk all of them (the delivery fan-out, data-model §2.1). It
+// starts after the follow ID before ("" for the newest) and returns at most limit accounts
+// (capped at MaxFollowerBatch), with the cursor of the next batch, "" after the last one.
+func (s *Service) ActiveFollowerIDs(ctx context.Context, accountID, before string, limit int) (ids []string, next string, err error) {
+	limit = min(max(limit, 1), MaxFollowerBatch)
+	edges, err := s.d.Repository.ListFollowers(ctx, accountID, graph.StateActive, before, limit)
+	if err != nil {
+		return nil, "", err
+	}
+	ids = make([]string, len(edges))
+	for i, e := range edges {
+		ids[i] = e.FollowerAccountID
+	}
+	if len(edges) == limit {
+		next = edges[len(edges)-1].FollowID
+	}
+	return ids, next, nil
+}
+
 // Following returns the accounts accountID actively follows, newest follow first.
 func (s *Service) Following(ctx context.Context, accountID string, p Page) ([]graph.Edge, error) {
 	return s.d.Repository.ListFollowing(ctx, accountID, graph.StateActive, p.Before, p.limit())

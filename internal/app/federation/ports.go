@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package federation
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
+	appgraph "github.com/best-friends/my/internal/app/graph"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/federation"
+)
+
+// ErrNotFound reports that no row matches a lookup.
+var ErrNotFound = errors.New("federation: not found")
+
+// Repository is the persistence port of the federation module's outbound side: outbound
+// activities, their documents, their deliveries, and the health of remote servers
+// (data-model §4.8). The database adapters implement it and pass
+// testkit.FederationRepositoryContract.
+//
+// Methods that take a uow.Tx run inside that transaction; the others read committed data outside
+// any transaction. Lookups that find nothing return an error wrapping ErrNotFound.
+type Repository interface {
+	// InsertOutboundActivity records an outbound activity.
+	InsertOutboundActivity(ctx context.Context, tx uow.Tx, a federation.OutboundActivity) error
+	// InsertOutboundDocument stores the body of an outbound activity unless it has one, and
+	// reports whether it did: the first body stays.
+	InsertOutboundDocument(ctx context.Context, tx uow.Tx, outboundActivityID string, document []byte, builtAt time.Time) (bool, error)
+	// InsertDelivery adds an inbox to an outbound activity unless it has it, and reports whether
+	// it did.
+	InsertDelivery(ctx context.Context, tx uow.Tx, d federation.Delivery) (bool, error)
+	// UpsertInstanceHealth replaces the health of a remote server; only this module's
+	// projector of delivery results writes it.
+	UpsertInstanceHealth(ctx context.Context, tx uow.Tx, h federation.InstanceHealth) error
+
+	FindOutboundActivity(ctx context.Context, id string) (federation.OutboundActivity, error)
+	// ListOutboundActivitiesOf returns the activities sent about an object, oldest first.
+	ListOutboundActivitiesOf(ctx context.Context, kind federation.OutboundObjectKind, objectID string) ([]federation.OutboundActivity, error)
+	FindOutboundDocument(ctx context.Context, outboundActivityID string) ([]byte, error)
+	// ListDeliveries returns the deliveries of an outbound activity in ID order, starting after
+	// the delivery ID after ("" for the first) and returning at most limit deliveries.
+	ListDeliveries(ctx context.Context, outboundActivityID, after string, limit int) ([]federation.Delivery, error)
+	// InstanceState returns the health state of a remote server; a server without a row is
+	// available.
+	InstanceState(ctx context.Context, domain string) (federation.InstanceState, error)
+}
+
+// Statuses is the part of the content module's public API that delivery reads: the local
+// statuses and boosts that outbound activities are about, and the visibility facts of their
+// authors. *appcontent.Service and *appcontent.Interactions implement it together
+// (ContentStatuses).
+type Statuses interface {
+	FindStatus(ctx context.Context, id string) (appcontent.Status, error)
+	LiveRevision(ctx context.Context, statusID, revisionID string) (appcontent.Status, appcontent.Revision, error)
+	AuthorRestrictions(ctx context.Context, accountID string) (appcontent.AuthorRestrictions, error)
+	FindBoost(ctx context.Context, id string) (appcontent.Boost, error)
+}
+
+// ContentStatuses joins the content module's services into Statuses.
+type ContentStatuses struct {
+	*appcontent.Service
+	Interactions *appcontent.Interactions
+}
+
+// FindBoost implements Statuses.
+func (c ContentStatuses) FindBoost(ctx context.Context, id string) (appcontent.Boost, error) {
+	return c.Interactions.FindBoost(ctx, id)
+}
+
+// Accounts is the part of the account module's public API that delivery reads: the IRIs of
+// actors and the inboxes of remote ones. *appaccount.Service implements it.
+type Accounts interface {
+	FindByID(ctx context.Context, id string) (appaccount.Actor, error)
+	// RemoteInbox fails with appaccount.ErrNotFound for a local account.
+	RemoteInbox(ctx context.Context, accountID string) (appaccount.RemoteInbox, error)
+}
+
+// Graph is the part of the graph module's public API that delivery reads: an author's active
+// followers in batches, and the relationship of a mentioned account with the author.
+// *appgraph.Service implements it.
+type Graph interface {
+	ActiveFollowerIDs(ctx context.Context, accountID, before string, limit int) (ids []string, next string, err error)
+	Relationship(ctx context.Context, accountID, targetID string) (appgraph.Relationship, error)
+}
+
+// DomainPolicy says whether a domain block keeps activities from a remote server: the
+// federation restriction (suspend) of a domain or one of its parents (federation.md §11). The
+// moderation module provides it.
+type DomainPolicy interface {
+	FederationSuspended(ctx context.Context, domain string) (bool, error)
+}
+
+// NoDomainRestrictions is the DomainPolicy of an instance without domain blocks: it suspends
+// no server. It stands in for the policy that the moderation module derives from
+// domain_restrictions.
+type NoDomainRestrictions struct{}
+
+// FederationSuspended implements DomainPolicy.
+func (NoDomainRestrictions) FederationSuspended(context.Context, string) (bool, error) {
+	return false, nil
+}

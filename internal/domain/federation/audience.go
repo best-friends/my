@@ -4,13 +4,16 @@ package federation
 
 import "slices"
 
-// Visibility is the visibility a remote post maps to. The values equal the content module's
-// visibilities; a remote post is never "local" (ADR-0017, federation.md §4).
+// Visibility is the visibility of a post as federation sees it. The values equal the content
+// module's visibilities. A received post maps to every value but local: a remote post is never
+// local (ADR-0017, federation.md §4); only a local post is, and Address keeps it to the author's
+// followers.
 type Visibility string
 
-// Visibilities of remote posts.
+// Visibilities.
 const (
 	VisibilityPublic   Visibility = "public"
+	VisibilityLocal    Visibility = "local"
 	VisibilityUnlisted Visibility = "unlisted"
 	VisibilityPrivate  Visibility = "private"
 	VisibilityDirect   Visibility = "direct"
