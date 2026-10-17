@@ -90,6 +90,25 @@ func (r *RemoteActors) ReceiveActorDelete(ctx context.Context, act *federation.A
 	return r.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return r.d.Accounts.MarkRemoteDeleted(ctx, tx, a.Account.ID) })
 }
 
+// RegisterInboxHandlers registers ReceiveActorUpdate and ReceiveActorDelete as the handlers of
+// the Update and Delete of an actor by itself (federation.md §3.4).
+func (r *RemoteActors) RegisterInboxHandlers(p *InboxProcessor) {
+	p.HandleOwnActor(federation.ActivityUpdate, func(ctx context.Context, a *InboxActivity) error {
+		return inboxError(r.ReceiveActorUpdate(ctx, a.Activity, a.Document))
+	})
+	p.HandleOwnActor(federation.ActivityDelete, func(ctx context.Context, a *InboxActivity) error {
+		return inboxError(r.ReceiveActorDelete(ctx, a.Activity))
+	})
+}
+
+// inboxError maps the errors of the actor handlers to those of an InboxHandler.
+func inboxError(err error) error {
+	if errors.Is(err, ErrNotOwnActor) {
+		return fmt.Errorf("%w: %w", ErrUnprocessable, err)
+	}
+	return err
+}
+
 // objectOf returns the JSON of the object of an activity document, nil when it has none. The
 // keys of an embedded actor are read from it.
 func objectOf(raw []byte) []byte {

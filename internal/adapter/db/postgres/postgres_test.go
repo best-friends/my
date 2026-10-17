@@ -276,7 +276,7 @@ func TestInboxContract(t *testing.T) {
 	testkit.InboxContract(t, func(t *testing.T, opts uow.Options) testkit.InboxHarness {
 		db := newTestDB(t, opts)
 		feds := db.FederationRepository()
-		return testkit.InboxHarness{UnitOfWork: db, Inbox: feds, Federation: feds}
+		return testkit.InboxHarness{UnitOfWork: db, Inbox: feds, Federation: feds, Instances: feds, Accounts: db.AccountRepository()}
 	})
 }
 
@@ -284,7 +284,7 @@ func TestInboxProcessingContract(t *testing.T) {
 	testkit.InboxProcessingContract(t, func(t *testing.T, opts uow.Options) testkit.InboxHarness {
 		db := newTestDB(t, opts)
 		feds := db.FederationRepository()
-		return testkit.InboxHarness{UnitOfWork: db, Inbox: feds, Federation: feds}
+		return testkit.InboxHarness{UnitOfWork: db, Inbox: feds, Federation: feds, Instances: feds, Accounts: db.AccountRepository()}
 	})
 }
 
