@@ -325,6 +325,26 @@ func moderationLocalAccountActions(t *testing.T, e *moderationEnv) {
 		t.Errorf("AccountAction(expired) = %+v, %v", v, err)
 	}
 
+	// A limit keeps the account's notifications from the accounts that do not follow it, and so
+	// does a limit on its domain.
+	reach := func(when, accountID string, want bool) {
+		t.Helper()
+		if got, err := e.accounts.UnsolicitedReachRestricted(ctx, accountID); err != nil || got != want {
+			t.Errorf("%s: UnsolicitedReachRestricted = %v, %v; want %v", when, got, err, want)
+		}
+	}
+	limit := issue(moderation.ActionLimit, 0)
+	reach("limit", e.local, true)
+	lift(limit)
+	reach("limit lifted", e.local, false)
+	domainLimit := e.domainAction(t, "remote.example", moderation.DomainLimit, 0)
+	reach("domain limit", e.remote, true)
+	reach("local after a domain limit", e.local, false)
+	if err := e.svc.LiftDomainAction(ctx, domainLimit.ID, "user-1"); err != nil {
+		t.Fatalf("LiftDomainAction(limit) = %v", err)
+	}
+	reach("domain limit lifted", e.remote, false)
+
 	// The restrictions of the account's domain apply to a remote account.
 	e.domainAction(t, "remote.example", moderation.DomainSuspend, 0)
 	if hidden, err := e.accounts.ProfileHidden(ctx, e.remote); err != nil || !hidden {
