@@ -1147,6 +1147,22 @@
     "defaultMessage": "Use at most {max} characters.",
     "description": "Error of a profile field whose text is longer than its limit. {max} is the limit."
   },
+  "settings.profile.unsaved.description": {
+    "defaultMessage": "Your changes to your profile will be lost.",
+    "description": "Body of the dialog shown when the user leaves the profile settings with unsaved changes: what happens if they leave."
+  },
+  "settings.profile.unsaved.leave": {
+    "defaultMessage": "Discard changes",
+    "description": "Button of the unsaved-changes dialog that leaves the profile settings and drops the changes."
+  },
+  "settings.profile.unsaved.stay": {
+    "defaultMessage": "Keep editing",
+    "description": "Button of the unsaved-changes dialog that stays on the profile settings with the changes kept."
+  },
+  "settings.profile.unsaved.title": {
+    "defaultMessage": "Leave without saving your profile?",
+    "description": "Title (a question) of the dialog shown when the user leaves the profile settings with changes that are not saved."
+  },
   "settings.saved": {
     "defaultMessage": "Saved",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
@@ -1158,6 +1174,14 @@
   "settings.time_zone.label": {
     "defaultMessage": "Time zone",
     "description": "Label of the select of the user's time zone."
+  },
+  "settings.time_zone.offset": {
+    "defaultMessage": "UTC{offset}",
+    "description": "Option of the time zone select for a zone that has no name, only its difference from UTC. {offset} is like +05:00 or −05:00."
+  },
+  "settings.time_zone.option": {
+    "defaultMessage": "(UTC{offset}) {name}",
+    "description": "Option of the time zone select. {offset} is the zone's difference from UTC, like +09:00 or −05:00; {name} is the zone's name in the display language, like Japan Standard Time."
   },
   "settings.timeline_languages.description": {
     "defaultMessage": "Timelines show posts in the languages you check. Check none to see every language.",

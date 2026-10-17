@@ -1147,6 +1147,22 @@
     "defaultMessage": "[Ŭşḗḗ ȧȧŧ ḿǿǿşŧ {max} ƈħȧȧřȧȧƈŧḗḗřş.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.profile.unsaved.description": {
+    "defaultMessage": "[Ẏǿǿŭŭř ƈħȧȧƞɠḗḗş ŧǿǿ ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ ẇīŀŀ ƀḗḗ ŀǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.unsaved.leave": {
+    "defaultMessage": "[Ḓīşƈȧȧřḓ ƈħȧȧƞɠḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.unsaved.stay": {
+    "defaultMessage": "[Ķḗḗḗḗƥ ḗḗḓīŧīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.unsaved.title": {
+    "defaultMessage": "[Ŀḗḗȧȧṽḗḗ ẇīŧħǿǿŭŭŧ şȧȧṽīƞɠ ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.saved": {
     "defaultMessage": "[Şȧȧṽḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1157,6 +1173,14 @@
   },
   "settings.time_zone.label": {
     "defaultMessage": "[Ŧīḿḗḗ ẑǿǿƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.time_zone.offset": {
+    "defaultMessage": "[ŬŦƇ{offset}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.time_zone.option": {
+    "defaultMessage": "[(ŬŦƇ{offset}) {name}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.timeline_languages.description": {

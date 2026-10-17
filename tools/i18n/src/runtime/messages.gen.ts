@@ -576,12 +576,24 @@ export interface MessageArgs {
   "client:settings.profile.title": {};
   /** Use at most {max} characters. */
   "client:settings.profile.too_long": { max: string };
+  /** Your changes to your profile will be lost. */
+  "client:settings.profile.unsaved.description": {};
+  /** Discard changes */
+  "client:settings.profile.unsaved.leave": {};
+  /** Keep editing */
+  "client:settings.profile.unsaved.stay": {};
+  /** Leave without saving your profile? */
+  "client:settings.profile.unsaved.title": {};
   /** Saved */
   "client:settings.saved": {};
   /** Dates and times are shown in this time zone. */
   "client:settings.time_zone.description": {};
   /** Time zone */
   "client:settings.time_zone.label": {};
+  /** UTC{offset} */
+  "client:settings.time_zone.offset": { offset: string };
+  /** (UTC{offset}) {name} */
+  "client:settings.time_zone.option": { name: string; offset: string };
   /** Timelines show posts in the languages you check. Check none to see every language. */
   "client:settings.timeline_languages.description": {};
   /** Languages of your timelines */

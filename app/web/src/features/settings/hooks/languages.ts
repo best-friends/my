@@ -46,9 +46,3 @@ export function timelineLanguageOptions(chosen: readonly string[], displayLocale
   const collator = new Intl.Collator(displayLocale);
   return tags.map((tag) => ({ id: tag, name: languageName(tag, displayLocale) })).toSorted((a, b) => collator.compare(a.name, b.name));
 }
-
-/** The IANA time zones the browser knows, with the stored one when it is missing (UTC often is). */
-export function timeZoneOptions(current: string): string[] {
-  const zones = Intl.supportedValuesOf("timeZone");
-  return zones.includes(current) ? zones : [current, ...zones];
-}

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, Button, Checkbox, FileTrigger, TextArea, TextField } from "@my/ui";
+import { Avatar, Button, Checkbox, ConfirmDialog, FileTrigger, TextArea, TextField } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { acceptedImageTypes } from "../api/media";
 import { characterCount, type FieldDraft, type ImageControl, profileLimits, useProfileForm } from "../hooks/useProfileForm";
+import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
 
 /**
  * The profile editor (FR-006). React Aria's native validation shows each error under its field, links it with
@@ -19,60 +20,86 @@ export function ProfileForm() {
   const lengthCheck: LengthCheck = (value, max) =>
     characterCount(value) > max ? { isInvalid: true, errorMessage: t("client:settings.profile.too_long", { max: String(max) }) } : {};
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6">
-      <ImageSection
-        titleKey="client:settings.profile.avatar"
-        control={form.avatar}
-        preview={<Avatar src={form.avatar.url} name={form.displayName.value || form.account.username} decorative size="xl" />}
-      />
-      <ImageSection
-        titleKey="client:settings.profile.header"
-        control={form.header}
-        preview={
-          form.header.url === undefined ? null : (
-            <img src={form.header.url} alt="" className="aspect-3/1 w-full rounded-md bg-surface-sunken object-cover" />
-          )
-        }
-      />
-      <TextField
-        label={t("client:settings.profile.display_name")}
-        description={t("client:settings.profile.display_name.description", { max: String(profileLimits.displayName) })}
-        value={form.displayName.value}
-        onChange={form.displayName.onChange}
-        {...lengthCheck(form.displayName.value, profileLimits.displayName)}
-        autoComplete="nickname"
-      />
-      <TextArea
-        label={t("client:settings.profile.note")}
-        value={form.note.value}
-        onChange={form.note.onChange}
-        characterLimit={profileLimits.note}
-        formatRemaining={(remaining) =>
-          remaining < 0 ? t("client:settings.profile.characters_over", { count: -remaining }) : t("client:settings.profile.characters_left", { count: remaining })
-        }
-        errorMessage={t("client:settings.profile.too_long", { max: String(profileLimits.note) })}
-        rows={4}
-      />
-      <ProfileFields fields={form.fields} lengthCheck={lengthCheck} />
-      <div className="flex flex-col gap-2">
-        <Checkbox {...form.locked} description={t("client:settings.profile.locked.description")}>
-          {t("client:settings.profile.locked")}
-        </Checkbox>
-        <Checkbox {...form.bot} description={t("client:settings.profile.bot.description")}>
-          {t("client:settings.profile.bot")}
-        </Checkbox>
-      </div>
-      {form.saveError !== undefined && (
-        <p role="alert" className="text-danger">
-          {form.saveError}
-        </p>
-      )}
-      <div>
-        <Button type="submit" variant="primary" isPending={form.isSaving} isDisabled={form.isBusy && !form.isSaving}>
-          {t("client:settings.profile.save")}
-        </Button>
-      </div>
-    </form>
+    <>
+      <form onSubmit={form.submit} className="flex flex-col gap-6">
+        <ImageSection
+          titleKey="client:settings.profile.avatar"
+          control={form.avatar}
+          preview={<Avatar src={form.avatar.url} name={form.displayName.value || form.account.username} decorative size="xl" />}
+        />
+        <ImageSection
+          titleKey="client:settings.profile.header"
+          control={form.header}
+          preview={
+            form.header.url === undefined ? null : (
+              <img src={form.header.url} alt="" className="aspect-3/1 w-full rounded-md bg-surface-sunken object-cover" />
+            )
+          }
+        />
+        <TextField
+          label={t("client:settings.profile.display_name")}
+          description={t("client:settings.profile.display_name.description", { max: String(profileLimits.displayName) })}
+          value={form.displayName.value}
+          onChange={form.displayName.onChange}
+          {...lengthCheck(form.displayName.value, profileLimits.displayName)}
+          autoComplete="nickname"
+        />
+        <TextArea
+          label={t("client:settings.profile.note")}
+          value={form.note.value}
+          onChange={form.note.onChange}
+          characterLimit={profileLimits.note}
+          formatRemaining={(remaining) =>
+            remaining < 0 ? t("client:settings.profile.characters_over", { count: -remaining }) : t("client:settings.profile.characters_left", { count: remaining })
+          }
+          errorMessage={t("client:settings.profile.too_long", { max: String(profileLimits.note) })}
+          rows={4}
+        />
+        <ProfileFields fields={form.fields} lengthCheck={lengthCheck} />
+        <div className="flex flex-col gap-2">
+          <Checkbox {...form.locked} description={t("client:settings.profile.locked.description")}>
+            {t("client:settings.profile.locked")}
+          </Checkbox>
+          <Checkbox {...form.bot} description={t("client:settings.profile.bot.description")}>
+            {t("client:settings.profile.bot")}
+          </Checkbox>
+        </div>
+        {form.saveError !== undefined && (
+          <p role="alert" className="text-danger">
+            {form.saveError}
+          </p>
+        )}
+        <div>
+          <Button type="submit" variant="primary" isPending={form.isSaving} isDisabled={form.isBusy && !form.isSaving}>
+            {t("client:settings.profile.save")}
+          </Button>
+        </div>
+      </form>
+      {/* Outside the form: React bubbles the dialog's own submit event through its portal to an enclosing form. */}
+      <UnsavedChangesDialog hasChanges={form.hasChanges} />
+    </>
+  );
+}
+
+/**
+ * Asks before another page replaces a profile with unsaved changes (the APG alert dialog pattern): focus
+ * starts on "Keep editing", which stays on the form like Esc does, and returns to the link that was pressed.
+ */
+function UnsavedChangesDialog({ hasChanges }: { hasChanges: boolean }) {
+  const t = useT();
+  const guard = useUnsavedChangesGuard(hasChanges);
+  return (
+    <ConfirmDialog
+      isOpen={guard.isAsking}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) guard.stay();
+      }}
+      title={t("client:settings.profile.unsaved.title")}
+      description={t("client:settings.profile.unsaved.description")}
+      confirmLabel={t("client:settings.profile.unsaved.leave")}
+      cancelLabel={t("client:settings.profile.unsaved.stay")}
+      onConfirm={guard.leave}
+    />
   );
 }
 
