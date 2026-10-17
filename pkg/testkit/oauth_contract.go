@@ -190,7 +190,7 @@ func oauthValidatesAuthorizationRequests(t *testing.T, e *accountEnv) {
 		{"no PKCE method", func(r *appidentity.AuthorizationRequest) { r.CodeChallengeMethod = "" }, nil, appidentity.OAuthInvalidRequest},
 		{"no PKCE", func(r *appidentity.AuthorizationRequest) { r.CodeChallenge, r.CodeChallengeMethod = "", "" }, nil, appidentity.OAuthInvalidRequest},
 		{"malformed challenge", func(r *appidentity.AuthorizationRequest) { r.CodeChallenge = "too-short" }, nil, appidentity.OAuthInvalidRequest},
-		{"unknown scope", func(r *appidentity.AuthorizationRequest) { r.Scope = "read admin" }, nil, appidentity.OAuthInvalidScope},
+		{"unknown scope", func(r *appidentity.AuthorizationRequest) { r.Scope = "read superuser" }, nil, appidentity.OAuthInvalidScope},
 		{"long state", func(r *appidentity.AuthorizationRequest) { r.State = strings.Repeat("s", 1025) }, nil, appidentity.OAuthInvalidRequest},
 	}
 	for _, tc := range cases {

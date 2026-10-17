@@ -60,11 +60,15 @@ type Repository interface {
 	// ListDeliveryAttempts returns the attempts of a delivery, oldest first.
 	ListDeliveryAttempts(ctx context.Context, deliveryID string) ([]federation.DeliveryAttempt, error)
 	FindInstanceHealth(ctx context.Context, domain string) (federation.InstanceHealth, error)
-	// ListAvailabilityEvents returns at most limit availability events of a server, newest first.
-	ListAvailabilityEvents(ctx context.Context, domain string, limit int) ([]federation.AvailabilityEvent, error)
+	// ListAvailabilityEvents returns at most limit availability events of a server, newest first,
+	// starting before the event ID before ("" for the newest).
+	ListAvailabilityEvents(ctx context.Context, domain, before string, limit int) ([]federation.AvailabilityEvent, error)
 	// ListUnavailableInstances returns at most limit unavailable servers in domain order,
 	// starting after the domain after ("" for the first).
 	ListUnavailableInstances(ctx context.Context, after string, limit int) ([]federation.InstanceHealth, error)
+	// ListInstanceHealth returns at most limit servers with a health row in domain order, starting
+	// after the domain after ("" for the first): those in state, or every one when state is "".
+	ListInstanceHealth(ctx context.Context, state federation.InstanceState, after string, limit int) ([]federation.InstanceHealth, error)
 }
 
 // Statuses is the part of the content module's public API that delivery reads: the local

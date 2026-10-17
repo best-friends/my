@@ -62,11 +62,16 @@ SELECT j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.attempt, sq
 FROM jobs AS j
 WHERE j.id = sqlc.arg(id) AND j.locked_by = sqlc.arg(worker) AND j.attempt = sqlc.arg(attempt);
 
+-- ListDeadJobs returns the dead jobs most recently failed first, after the position
+-- (@after_failed_at, @after_id); an empty @after_id starts at the first.
 -- name: ListDeadJobs :many
 SELECT id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at
 FROM dead_jobs
+WHERE sqlc.arg(after_id)::text = ''
+  OR failed_at < sqlc.arg(after_failed_at)::timestamptz
+  OR (failed_at = sqlc.arg(after_failed_at)::timestamptz AND id < sqlc.arg(after_id)::text)
 ORDER BY failed_at DESC, id DESC
-LIMIT $1;
+LIMIT sqlc.arg(batch_limit);
 
 -- name: RequeueDeadJob :execrows
 INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run_at, created_at)

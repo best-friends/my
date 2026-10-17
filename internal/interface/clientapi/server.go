@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/i18n"
 )
@@ -66,6 +67,12 @@ type Options struct {
 	Streams         stream.Subscriber
 	HomeEntries     HomeEntries
 	StreamHeartbeat time.Duration
+	// Permissions reads the permissions of the viewer's roles, which the admin operations need
+	// (admin.go); nil grants none. InstanceHealth reads and clears the health of remote servers,
+	// and DeadJobs lists and requeues the dead jobs, for the admin operations.
+	Permissions    Permissions
+	InstanceHealth InstanceHealth
+	DeadJobs       queue.DeadJobs
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

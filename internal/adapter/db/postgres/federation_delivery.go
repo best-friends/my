@@ -102,13 +102,13 @@ func (r *FederationRepository) FindInstanceHealth(ctx context.Context, domain st
 }
 
 // ListAvailabilityEvents implements federation.Repository.
-func (r *FederationRepository) ListAvailabilityEvents(ctx context.Context, domain string, limit int) ([]federation.AvailabilityEvent, error) {
+func (r *FederationRepository) ListAvailabilityEvents(ctx context.Context, domain, before string, limit int) ([]federation.AvailabilityEvent, error) {
 	n, err := toInt32(limit, "batch limit")
 	if err != nil {
 		return nil, err
 	}
 	rows, err := r.db.reader().ListInstanceAvailabilityEvents(ctx, postgresgen.ListInstanceAvailabilityEventsParams{
-		Domain: domain, BatchLimit: n,
+		Domain: domain, Before: before, BatchLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list instance availability events")
@@ -134,6 +134,25 @@ func (r *FederationRepository) ListUnavailableInstances(ctx context.Context, aft
 	})
 	if err != nil {
 		return nil, wrap(err, "list unavailable instances")
+	}
+	out := make([]federation.InstanceHealth, len(rows))
+	for i, row := range rows {
+		out[i] = instanceHealth(row)
+	}
+	return out, nil
+}
+
+// ListInstanceHealth implements federation.Repository.
+func (r *FederationRepository) ListInstanceHealth(ctx context.Context, state federation.InstanceState, after string, limit int) ([]federation.InstanceHealth, error) {
+	n, err := toInt32(limit, "batch limit")
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListInstanceHealth(ctx, postgresgen.ListInstanceHealthParams{
+		State: string(state), AfterDomain: after, BatchLimit: n,
+	})
+	if err != nil {
+		return nil, wrap(err, "list instance health")
 	}
 	out := make([]federation.InstanceHealth, len(rows))
 	for i, row := range rows {

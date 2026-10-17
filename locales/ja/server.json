@@ -19,6 +19,18 @@
     "defaultMessage": "選ぶと {host} に戻ります。",
     "description": "Note under the permissions on the authorization (consent) page. {host} is the host name the application receives the answer at."
   },
+  "auth.authorize.scope.admin": {
+    "defaultMessage": "ロールで許される範囲でのインスタンスの管理",
+    "description": "Permission (OAuth scope admin) listed on the authorization page."
+  },
+  "auth.authorize.scope.admin_read": {
+    "defaultMessage": "ロールで許される範囲での管理用データの閲覧",
+    "description": "Permission (OAuth scope admin:read) listed on the authorization page."
+  },
+  "auth.authorize.scope.admin_write": {
+    "defaultMessage": "ロールで許される範囲での管理用データの変更",
+    "description": "Permission (OAuth scope admin:write) listed on the authorization page."
+  },
   "auth.authorize.scope.follow": {
     "defaultMessage": "アカウントのフォロー・ブロック・ミュート",
     "description": "Permission (OAuth scope follow) listed on the authorization page."
@@ -406,6 +418,10 @@
   "errors.method_not_allowed": {
     "defaultMessage": "このリソースでは {method} メソッドを使用できません。",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
+  },
+  "errors.missing_permission_detail": {
+    "defaultMessage": "ロールに権限 {permission} が必要です。",
+    "description": "Detail of the HTTP 403 missing-permission API error of an admin operation. {permission} is the missing role permission, e.g. manage_jobs (not translated)."
   },
   "errors.not_found": {
     "defaultMessage": "指定されたリソースが見つかりません。",

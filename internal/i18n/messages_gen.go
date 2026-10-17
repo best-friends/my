@@ -39,6 +39,27 @@ func (l *Localizer) ServerAuthAuthorizeRedirectNotice(host string) string {
 	return l.format("server:auth.authorize.redirect_notice", map[string]any{"host": host})
 }
 
+// ServerAuthAuthorizeScopeAdmin formats "server:auth.authorize.scope.admin". Permission (OAuth scope admin) listed on the authorization page.
+//
+//	en: Administer the instance, as far as your roles allow
+func (l *Localizer) ServerAuthAuthorizeScopeAdmin() string {
+	return l.format("server:auth.authorize.scope.admin", nil)
+}
+
+// ServerAuthAuthorizeScopeAdminRead formats "server:auth.authorize.scope.admin_read". Permission (OAuth scope admin:read) listed on the authorization page.
+//
+//	en: Read the instance's administration data, as far as your roles allow
+func (l *Localizer) ServerAuthAuthorizeScopeAdminRead() string {
+	return l.format("server:auth.authorize.scope.admin_read", nil)
+}
+
+// ServerAuthAuthorizeScopeAdminWrite formats "server:auth.authorize.scope.admin_write". Permission (OAuth scope admin:write) listed on the authorization page.
+//
+//	en: Change the instance's administration data, as far as your roles allow
+func (l *Localizer) ServerAuthAuthorizeScopeAdminWrite() string {
+	return l.format("server:auth.authorize.scope.admin_write", nil)
+}
+
 // ServerAuthAuthorizeScopeFollow formats "server:auth.authorize.scope.follow". Permission (OAuth scope follow) listed on the authorization page.
 //
 //	en: Follow, block, and mute accounts
@@ -716,6 +737,13 @@ func (l *Localizer) ServerErrorsMediaUnsupportedFormat() string {
 //	en: The {method} method is not allowed for this resource.
 func (l *Localizer) ServerErrorsMethodNotAllowed(method string) string {
 	return l.format("server:errors.method_not_allowed", map[string]any{"method": method})
+}
+
+// ServerErrorsMissingPermissionDetail formats "server:errors.missing_permission_detail". Detail of the HTTP 403 missing-permission API error of an admin operation. {permission} is the missing role permission, e.g. manage_jobs (not translated).
+//
+//	en: Your roles need the permission {permission}.
+func (l *Localizer) ServerErrorsMissingPermissionDetail(permission string) string {
+	return l.format("server:errors.missing_permission_detail", map[string]any{"permission": permission})
 }
 
 // ServerErrorsNotFound formats "server:errors.not_found". API error message for HTTP 404.

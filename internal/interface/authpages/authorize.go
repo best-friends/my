@@ -202,6 +202,9 @@ func redirectSource(u *url.URL) string {
 // scopeDescriptions word each scope on the consent screen; TestScopeDescriptions checks that
 // every scope the server knows has one.
 var scopeDescriptions = map[string]func(*i18n.Localizer) string{
+	identity.ScopeAdmin:              (*i18n.Localizer).ServerAuthAuthorizeScopeAdmin,
+	identity.ScopeAdminRead:          (*i18n.Localizer).ServerAuthAuthorizeScopeAdminRead,
+	identity.ScopeAdminWrite:         (*i18n.Localizer).ServerAuthAuthorizeScopeAdminWrite,
 	identity.ScopeRead:               (*i18n.Localizer).ServerAuthAuthorizeScopeRead,
 	identity.ScopeWrite:              (*i18n.Localizer).ServerAuthAuthorizeScopeWrite,
 	identity.ScopeFollow:             (*i18n.Localizer).ServerAuthAuthorizeScopeFollow,

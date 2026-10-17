@@ -19,6 +19,18 @@
     "defaultMessage": "[Ȧƒŧḗḗř ẏǿǿŭŭ ƈħǿǿǿǿşḗḗ, ẏǿǿŭŭ ẇīŀŀ ƀḗḗ şḗḗƞŧ ƀȧȧƈķ ŧǿǿ {host}.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.authorize.scope.admin": {
+    "defaultMessage": "[Ȧḓḿīƞīşŧḗḗř ŧħḗḗ īƞşŧȧȧƞƈḗḗ, ȧȧş ƒȧȧř ȧȧş ẏǿǿŭŭř řǿǿŀḗḗş ȧȧŀŀǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.admin_read": {
+    "defaultMessage": "[Řḗḗȧȧḓ ŧħḗḗ īƞşŧȧȧƞƈḗḗ'ş ȧȧḓḿīƞīşŧřȧȧŧīǿǿƞ ḓȧȧŧȧȧ, ȧȧş ƒȧȧř ȧȧş ẏǿǿŭŭř řǿǿŀḗḗş ȧȧŀŀǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.admin_write": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗ ŧħḗḗ īƞşŧȧȧƞƈḗḗ'ş ȧȧḓḿīƞīşŧřȧȧŧīǿǿƞ ḓȧȧŧȧȧ, ȧȧş ƒȧȧř ȧȧş ẏǿǿŭŭř řǿǿŀḗḗş ȧȧŀŀǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.authorize.scope.follow": {
     "defaultMessage": "[Ƒǿǿŀŀǿǿẇ, ƀŀǿǿƈķ, ȧȧƞḓ ḿŭŭŧḗḗ ȧȧƈƈǿǿŭŭƞŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -405,6 +417,10 @@
   },
   "errors.method_not_allowed": {
     "defaultMessage": "[Ŧħḗḗ {method} ḿḗḗŧħǿǿḓ īş ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ƒǿǿř ŧħīş řḗḗşǿǿŭŭřƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.missing_permission_detail": {
+    "defaultMessage": "[Ẏǿǿŭŭř řǿǿŀḗḗş ƞḗḗḗḗḓ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞ {permission}.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.not_found": {
