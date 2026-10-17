@@ -107,4 +107,15 @@ describe("Select", () => {
     expect(options[0]).toHaveAccessibleDescription("America/New_York");
     expect(options[1]).toHaveAccessibleDescription("America/Detroit");
   });
+
+  it("in a toolbar, shows the chosen option after its icon and names the button by the option and the aria-label", () => {
+    render(
+      <Select variant="toolbar" aria-label="Language" icon={<span aria-hidden="true">★</span>} items={languages} defaultValue="ja">
+        {(language) => <SelectItem id={language.id}>{language.name}</SelectItem>}
+      </Select>,
+    );
+    const trigger = screen.getByRole("button", { name: "日本語 Language" });
+    // The icon comes first and stays out of the name.
+    expect(trigger).toHaveTextContent(/^★日本語/);
+  });
 });

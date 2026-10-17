@@ -244,7 +244,7 @@ test.describe("the main flow", () => {
 
     await test.step("the first user posts with a content warning and an image with a description", async () => {
       const form = await openComposer(page);
-      await form.getByText(message("compose.warning.toggle")).click();
+      await form.getByRole("button", { name: message("compose.warning.toggle") }).click();
       await form.getByRole("textbox", { name: message("compose.warning.label") }).fill(warning);
       await form.getByRole("textbox", { name: message("compose.text.label") }).fill(text);
       const chooser = page.waitForEvent("filechooser");

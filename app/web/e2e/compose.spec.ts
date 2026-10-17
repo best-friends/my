@@ -21,6 +21,19 @@ function message(key: string, values: Record<string, string> = {}): string {
   return text.replaceAll(/\{(\w+)\}/g, (_, name: string) => values[name] ?? `{${name}}`);
 }
 
+/**
+ * A regular expression source that matches a name ending with `text`: the language select's button, named by
+ * the chosen language and then its label. The pseudo-locales' brackets are escaped.
+ */
+function endingWith(text: string): string {
+  return `${text.replaceAll(/[\\^$.*+?()[\]{}|/]/g, "\\$&")}$`;
+}
+
+/** A node of an ARIA snapshot template as a quoted YAML scalar, since the names have colons ("Visibility: Public"). */
+function ariaNode(node: string): string {
+  return `'${node.replaceAll("'", "''")}'`;
+}
+
 /** The client message `key` in the project's locale, formatted with `values` as the app formats it (ICU). */
 function formatted(key: string, values: Record<string, string | number>): string {
   const locale = test.info().project.use.locale ?? "en";
@@ -165,8 +178,7 @@ test.describe("the new-post form", () => {
     const posted = await serveApi(page);
     await page.goto("/");
     const form = await openForm(page, hasTouch);
-    // React Aria hides the native checkbox under its drawing; the label is what the user presses.
-    await form.getByText(message("compose.warning.toggle")).click();
+    await form.getByRole("button", { name: message("compose.warning.toggle") }).click();
     await expect(form.getByRole("textbox", { name: message("compose.warning.label") })).toBeVisible();
 
     await expectNoAxeViolations(makeAxeBuilder);
@@ -179,19 +191,41 @@ test.describe("the new-post form", () => {
     expect(posted).toEqual([]);
   });
 
-  test("exposes the fields in order", async ({ page, hasTouch }) => {
+  test("exposes the text, then the tools with their current values, then the submit button", async ({ page, hasTouch }) => {
     await serveApi(page);
     await page.goto("/");
     const form = await openForm(page, hasTouch);
 
     await expect(form).toMatchAriaSnapshot(`
       - form:
-        - checkbox
-        - textbox
-        - button
-        - button
-        - button
+        - ${ariaNode(`textbox ${JSON.stringify(message("compose.text.label"))}`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.media.add"))}`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.warning.toggle"))} [pressed=false]`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.visibility.button", { visibility: message("compose.visibility.public") }))}`)}
+        - ${ariaNode(`button /${endingWith(message("compose.language.label"))}/`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.submit"))} [disabled]`)}
     `);
+  });
+
+  test("keeps its tools level, and the submit button on the first screen of a 320 × 568 sheet", async ({ page, hasTouch }) => {
+    await serveApi(page);
+    await page.goto("/");
+    const form = await openForm(page, hasTouch);
+
+    // Every tool is as tall as the others at the project's width (no field with a label beside one without).
+    const tools = [
+      form.getByRole("button", { name: message("compose.media.add") }),
+      form.getByRole("button", { name: message("compose.warning.toggle") }),
+      form.getByRole("button", { name: message("compose.visibility.button", { visibility: message("compose.visibility.public") }) }),
+      form.getByRole("button", { name: new RegExp(endingWith(message("compose.language.label"))) }),
+    ];
+    const heights = await Promise.all(tools.map(async (tool) => (await boxOf(tool)).height));
+    expect(new Set(heights).size).toBe(1);
+
+    if (isWide(page)) return;
+    await page.setViewportSize({ width: 320, height: 568 });
+    await expect(form.getByRole("button", { name: message("compose.submit") })).toBeInViewport({ ratio: 1 });
+    await expectNoHorizontalScroll(page);
   });
 
   test("keeps the draft when posting fails and posts it again with the same Idempotency-Key", async ({ page, hasTouch }) => {

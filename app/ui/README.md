@@ -222,7 +222,7 @@ string through props or children.
 | `Checkbox` | `CheckboxField` + `CheckboxButton` | children as the label, `description`, `errorMessage`, `isIndeterminate` |
 | `Switch` | `SwitchField` + `SwitchButton` | children as the label, `description`, `errorMessage` |
 | `RadioGroup`, `Radio` | `RadioGroup`, `RadioField` + `RadioButton` | `orientation`: `vertical` (default) / `horizontal`; a `description` per `Radio` |
-| `Select`, `SelectItem` | `Select` + `Popover` + `ListBox`, `ListBoxItem` | `items` with a render function, or `SelectItem` children; single selection. `SelectItem`'s `description` adds a line under the label (the option's accessible description) that the closed select does not show |
+| `Select`, `SelectItem` | `Select` + `Popover` + `ListBox`, `ListBoxItem` | `items` with a render function, or `SelectItem` children; single selection. `SelectItem`'s `description` adds a line under the label (the option's accessible description) that the closed select does not show. `variant="toolbar"` (with `aria-label` and an `icon`) is a ghost `toolbar`-sized button for a row of tools that shows the chosen option |
 | `ReasonField` | `TextArea` | The reason for an operator's action: three rows and a required character count (`characterLimit`, `formatRemaining`) |
 | `DurationSelect` | `Select` | `durations` in seconds with `formatDuration`; `indefiniteLabel` adds "no end", last; the value is seconds or `null` for no end |
 

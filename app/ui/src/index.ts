@@ -66,8 +66,11 @@ export {
   BoostIcon,
   CloseIcon,
   ExternalLinkIcon,
+  EyeIcon,
   FederatedIcon,
   HomeIcon,
+  ImageIcon,
+  LanguageIcon,
   LocalIcon,
   MenuIcon,
   MoreIcon,
@@ -80,6 +83,7 @@ export {
   StarIcon,
   TimelinesIcon,
   type ToggleIconProps,
+  WarningIcon,
 } from "./Icons";
 
 // Timeline.

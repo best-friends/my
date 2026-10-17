@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Checkbox, Dialog, FileTrigger, Select, SelectItem, Spinner, TextArea, TextField } from "@my/ui";
+import { Button, Checkbox, Dialog, Spinner, TextArea, TextField } from "@my/ui";
 import type { SubmitEvent } from "react";
 import { useLocale, useT } from "../../../lib/i18n";
-import { acceptedImageTypes, maxAttachments } from "../hooks/policy";
+import { maxAttachments } from "../hooks/policy";
 import { type ComposeController, composeTextId } from "../hooks/useCompose";
 import { type ReadyComposeForm, useComposeForm } from "../hooks/useComposeForm";
 import { useFormatRemaining } from "../hooks/useFormatRemaining";
 import { AttachmentList } from "./AttachmentList";
+import { ComposeTools } from "./ComposeTools";
 import { Outbox } from "./Outbox";
 import { ReplyContext } from "./ReplyContext";
-import { VisibilityPicker } from "./VisibilityPicker";
 
 export type ComposeFormProps = {
   controller: ComposeController;
@@ -55,14 +55,6 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
     <div className="flex flex-col gap-4 @container">
       <form aria-labelledby={labelledBy} onSubmit={onSubmit} className="flex flex-col gap-3">
         {form.replyTo.status !== "none" && <ReplyContext replyTo={form.replyTo} onCancel={form.cancelReply} />}
-        <Checkbox
-          isSelected={draft.hasWarning}
-          onChange={(hasWarning) => {
-            form.edit({ hasWarning });
-          }}
-        >
-          {t("client:compose.warning.toggle")}
-        </Checkbox>
         {draft.hasWarning && (
           <TextField
             label={t("client:compose.warning.label")}
@@ -91,20 +83,9 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
           onRemove={attachments.remove}
           requireDescriptions={form.requireDescriptions}
         />
-        <div className="flex flex-col items-start gap-1">
-          <FileTrigger
-            acceptedFileTypes={acceptedImageTypes}
-            allowsMultiple
-            onSelect={(files) => {
-              attachments.add(files === null ? [] : Array.from(files));
-            }}
-          >
-            <Button size="sm" isDisabled={!attachments.canAdd}>
-              {t("client:compose.media.add")}
-            </Button>
-          </FileTrigger>
+        {attachments.items.length > 0 && (
           <p className="text-sm text-fg-muted">{t("client:compose.media.hint", { max: maxAttachments })}</p>
-        </div>
+        )}
         {attachments.items.length > 0 && (
           <Checkbox
             isSelected={draft.sensitive}
@@ -115,30 +96,6 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
             {t("client:compose.sensitive")}
           </Checkbox>
         )}
-        <div className="flex flex-col gap-3 @sm:flex-row @sm:flex-wrap @sm:items-end">
-          <VisibilityPicker
-            value={form.visibility}
-            limits={form.limits}
-            onChange={(visibility) => {
-              form.edit({ visibility });
-            }}
-          />
-          <Select
-            label={t("client:compose.language.label")}
-            items={form.languages}
-            value={form.language}
-            onChange={(language) => {
-              if (typeof language === "string") form.edit({ language });
-            }}
-            className="min-w-40"
-          >
-            {(option) => (
-              <SelectItem id={option.id} textValue={option.name}>
-                {option.name}
-              </SelectItem>
-            )}
-          </Select>
-        </div>
         {form.unreachedMentions.length > 0 && (
           <p className="text-sm text-warning">
             {t("client:compose.mention.unreached", {
@@ -148,9 +105,13 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
           </p>
         )}
         {form.error !== null && <p className="text-danger">{form.error}</p>}
-        <Button type="submit" variant="primary" className="self-end" isDisabled={!form.canSubmit}>
-          {t(form.replyTo.status === "none" ? "client:compose.submit" : "client:compose.submit.reply")}
-        </Button>
+        {/* The tools and the submit button share the row under the text, so that the button stays on the first screen at 320 px. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <ComposeTools form={form} />
+          <Button type="submit" variant="primary" className="ms-auto" isDisabled={!form.canSubmit}>
+            {t(form.replyTo.status === "none" ? "client:compose.submit" : "client:compose.submit.reply")}
+          </Button>
+        </div>
       </form>
       <Outbox items={form.outbox} onRetry={form.retry} onEdit={form.editOutbox} canEdit={form.canEditOutbox} onDiscard={form.discard} />
       <Dialog

@@ -130,6 +130,52 @@ export function BookmarkIcon({ filled = false }: ToggleIconProps) {
   );
 }
 
+// The new-post form.
+
+/** A framed picture with a sun and a hill, for attaching images. */
+export function ImageIcon() {
+  return (
+    <Icon>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-5-5L5 21" />
+    </Icon>
+  );
+}
+
+/**
+ * A triangle with an exclamation mark, for a content warning. A warning that is on draws it bolder: filled,
+ * the mark would vanish into the triangle.
+ */
+export function WarningIcon({ filled = false }: ToggleIconProps) {
+  return (
+    <Icon bold={filled}>
+      <path d="M10.3 4.2 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z" />
+      <path d="M12 9v4M12 17h.01" />
+    </Icon>
+  );
+}
+
+/** An eye, for who can see a post (its visibility). */
+export function EyeIcon() {
+  return (
+    <Icon>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </Icon>
+  );
+}
+
+/** A Latin letter beside a speech bubble, for the language of a post. */
+export function LanguageIcon() {
+  return (
+    <Icon>
+      <path d="m3 20 5-14 5 14M5 15h6" />
+      <path d="M15 4h6v7h-2l-2 2v-2h-2z" />
+    </Icon>
+  );
+}
+
 // Navigation.
 
 /** A house, for the home timeline. */

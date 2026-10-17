@@ -495,6 +495,10 @@
     "defaultMessage": "画像を追加",
     "description": "Button that opens the file picker to attach images to a post."
   },
+  "compose.media.count": {
+    "defaultMessage": "{count, plural, other {# 枚の画像を添付しています}}",
+    "description": "Description of the button that attaches images, while the post has some. {count} is how many."
+  },
   "compose.media.description.hint": {
     "defaultMessage": "画像を見られない人のために、画像の内容を書いてください。",
     "description": "Help text under the alternative text field of an attached image."
@@ -709,7 +713,7 @@
   },
   "compose.warning.toggle": {
     "defaultMessage": "注意書き（CW）を付ける",
-    "description": "Checkbox that adds a content warning: a short text shown instead of the post until the reader opens it."
+    "description": "Toggle button (an icon) that adds a content warning: a short text shown instead of the post until the reader opens it."
   },
   "home.title": {
     "defaultMessage": "ホーム",
