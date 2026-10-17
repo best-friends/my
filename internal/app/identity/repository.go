@@ -47,6 +47,8 @@ type Repository interface {
 	FindCurrentPasswordCredential(ctx context.Context, userID string) (identity.PasswordCredential, error)
 	// FindRole returns a role by key with its permissions, sorted.
 	FindRole(ctx context.Context, key string) (identity.Role, []identity.Permission, error)
+	// ListUserIDsWithPermission returns inside tx the users whose current roles grant p, by ID.
+	ListUserIDsWithPermission(ctx context.Context, tx uow.Tx, p identity.Permission) ([]string, error)
 
 	PreferencesRepository
 	OAuthRepository

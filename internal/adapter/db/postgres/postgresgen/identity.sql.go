@@ -241,6 +241,36 @@ func (q *Queries) ListRolePermissions(ctx context.Context, roleID string) ([]str
 	return items, nil
 }
 
+const listUserIDsWithPermission = `-- name: ListUserIDsWithPermission :many
+
+SELECT DISTINCT ur.user_id FROM user_roles ur
+JOIN role_permissions rp ON rp.role_id = ur.role_id
+WHERE rp.permission = $1
+ORDER BY ur.user_id
+`
+
+// Moderator notifications (#338) --------------------------------------------------------------
+// ListUserIDsWithPermission returns the users whose current roles grant a permission, by ID.
+func (q *Queries) ListUserIDsWithPermission(ctx context.Context, permission string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listUserIDsWithPermission, permission)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var user_id string
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUserRoles = `-- name: ListUserRoles :many
 SELECT r.id, r.key, r.position, r.created_at FROM user_roles ur
 JOIN roles r ON r.id = ur.role_id

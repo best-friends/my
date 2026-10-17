@@ -1033,6 +1033,34 @@ func (l *Localizer) ServerHealthUnavailable() string {
 	return l.format("server:health.unavailable", nil)
 }
 
+// ServerMailAdminReportBody formats "server:mail.admin_report.body". Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line).
+//
+//	en: A new report awaits the moderators of {host}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
+func (l *Localizer) ServerMailAdminReportBody(host string, url string) string {
+	return l.format("server:mail.admin_report.body", map[string]any{"host": host, "url": url})
+}
+
+// ServerMailAdminReportSubject formats "server:mail.admin_report.subject". Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {host} is the server's domain name.
+//
+//	en: A new report awaits the moderators of {host}
+func (l *Localizer) ServerMailAdminReportSubject(host string) string {
+	return l.format("server:mail.admin_report.subject", map[string]any{"host": host})
+}
+
+// ServerMailAdminSignUpBody formats "server:mail.admin_sign_up.body". Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line).
+//
+//	en: A new user signed up on {host} and awaits approval.  Open your notifications to review the registration:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
+func (l *Localizer) ServerMailAdminSignUpBody(host string, url string) string {
+	return l.format("server:mail.admin_sign_up.body", map[string]any{"host": host, "url": url})
+}
+
+// ServerMailAdminSignUpSubject formats "server:mail.admin_sign_up.subject". Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {host} is the server's domain name.
+//
+//	en: A new sign-up awaits approval on {host}
+func (l *Localizer) ServerMailAdminSignUpSubject(host string) string {
+	return l.format("server:mail.admin_sign_up.subject", map[string]any{"host": host})
+}
+
 // ServerMailVerifyEmailBody formats "server:mail.verify_email.body". Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works.
 //
 //	en: Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.

@@ -31,7 +31,8 @@ func (r *NotificationRepository) InsertNotification(ctx context.Context, tx uow.
 	rows, err := q.InsertNotification(ctx, sqlitegen.InsertNotificationParams{
 		ID: n.ID, RecipientAccountID: n.RecipientAccountID, Type: string(n.Type),
 		SourceAccountID: toNullString(n.SourceAccountID), StatusID: toNullString(n.StatusID),
-		ModerationActionID: toNullString(n.ModerationActionID), ReportID: toNullString(n.ReportID), DedupeKey: n.DedupeKey, CreatedAt: toMillis(n.CreatedAt),
+		ModerationActionID: toNullString(n.ModerationActionID), ReportID: toNullString(n.ReportID),
+		SubjectUserID: toNullString(n.SubjectUserID), DedupeKey: n.DedupeKey, CreatedAt: toMillis(n.CreatedAt),
 	})
 	if err != nil {
 		return false, wrap(err, "insert notification")
@@ -114,16 +115,9 @@ func (r *NotificationRepository) InsertDeletedStatus(ctx context.Context, tx uow
 }
 
 // ListNotifications implements notification.Repository.
-func (r *NotificationRepository) ListNotifications(ctx context.Context, recipientAccountID string, types []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error) {
-	set := ""
-	if len(types) > 0 {
-		set = ","
-		for _, t := range types {
-			set += string(t) + ","
-		}
-	}
+func (r *NotificationRepository) ListNotifications(ctx context.Context, recipientAccountID string, types, hidden []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error) {
 	rows, err := r.db.reader().ListNotifications(ctx, sqlitegen.ListNotificationsParams{
-		RecipientAccountID: recipientAccountID, Before: before, Types: set, Now: toMillis(now), PageLimit: int64(limit),
+		RecipientAccountID: recipientAccountID, Before: before, Types: typeSet(types), HiddenTypes: typeSet(hidden), Now: toMillis(now), PageLimit: int64(limit),
 	})
 	if err != nil {
 		return nil, wrap(err, "list notifications")
@@ -136,9 +130,9 @@ func (r *NotificationRepository) ListNotifications(ctx context.Context, recipien
 }
 
 // CountNotificationsAfter implements notification.Repository.
-func (r *NotificationRepository) CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, now time.Time) (int64, error) {
+func (r *NotificationRepository) CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, hidden []notification.Type, now time.Time) (int64, error) {
 	n, err := r.db.reader().CountNotificationsAfter(ctx, sqlitegen.CountNotificationsAfterParams{
-		RecipientAccountID: recipientAccountID, After: after, Now: toMillis(now),
+		RecipientAccountID: recipientAccountID, After: after, HiddenTypes: typeSet(hidden), Now: toMillis(now),
 	})
 	return n, wrap(err, "count notifications")
 }
@@ -156,6 +150,20 @@ func notificationFrom(row sqlitegen.Notification) notification.Notification {
 	return notification.Notification{
 		ID: row.ID, RecipientAccountID: row.RecipientAccountID, Type: notification.Type(row.Type),
 		SourceAccountID: row.SourceAccountID.String, StatusID: row.StatusID.String,
-		ModerationActionID: row.ModerationActionID.String, ReportID: row.ReportID.String, DedupeKey: row.DedupeKey, CreatedAt: fromMillis(row.CreatedAt),
+		ModerationActionID: row.ModerationActionID.String, ReportID: row.ReportID.String,
+		SubjectUserID: row.SubjectUserID.String, DedupeKey: row.DedupeKey, CreatedAt: fromMillis(row.CreatedAt),
 	}
+}
+
+// typeSet returns the types as the queries take them: each followed by a comma, after a leading
+// comma (",follow,mention,"), or "" for none.
+func typeSet(types []notification.Type) string {
+	if len(types) == 0 {
+		return ""
+	}
+	set := ","
+	for _, t := range types {
+		set += string(t) + ","
+	}
+	return set
 }

@@ -47,6 +47,9 @@ func (f *fakePreferences) UpdatePreferences(ctx context.Context, userID string, 
 	if in.TimelineLanguages != nil {
 		p.TimelineLanguages = *in.TimelineLanguages
 	}
+	if in.EmailModeratorNotifications != nil {
+		p.EmailModeratorNotifications = *in.EmailModeratorNotifications
+	}
 	f.p = p
 	return p, nil
 }
@@ -89,7 +92,7 @@ func TestGetPreferences(t *testing.T) {
 
 func TestUpdatePreferences(t *testing.T) {
 	e, prefs := newPreferencesEnv(t)
-	res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","timeline_languages":["en","ja"]}`)
+	res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","timeline_languages":["en","ja"],"email_moderator_notifications":true}`)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", res.StatusCode)
 	}
@@ -97,7 +100,8 @@ func TestUpdatePreferences(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
-	if got.DefaultVisibility != clientapi.VisibilityLocal || !reflect.DeepEqual(got.TimelineLanguages, []string{"en", "ja"}) || got.Locale != "ja" {
+	if got.DefaultVisibility != clientapi.VisibilityLocal || !reflect.DeepEqual(got.TimelineLanguages, []string{"en", "ja"}) || got.Locale != "ja" ||
+		!got.EmailModeratorNotifications {
 		t.Errorf("preferences = %+v, want the change applied to the rest", got)
 	}
 	if prefs.p.DefaultVisibility != "local" {

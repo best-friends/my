@@ -576,7 +576,8 @@ export interface paths {
          * @description The user's notifications, newest first. Dismissed notifications, notifications about
          *     deleted posts, and notifications from accounts that the user blocks, is blocked by, or
          *     mutes with notifications hidden are left out, also those that came before the block or
-         *     mute.
+         *     mute. The moderator notifications (`admin_report`, `admin_sign_up`) are left out once
+         *     the user's roles no longer grant the permission they need.
          */
         get: operations["listNotifications"];
         put?: never;
@@ -1595,6 +1596,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count what awaits the moderators
+         * @description The number of open reports (with the `manage_reports` permission) and of registrations
+         *     that await approval (with the `manage_accounts` permission), for the badges of the
+         *     admin menu (FR-712). A count whose permission the user's roles lack is omitted, so a
+         *     user without either gets an empty object.
+         */
+        get: operations["getAdminCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2031,6 +2055,8 @@ export interface components {
             report?: components["schemas"]["Report"];
             /** @description The action on the user's account that a `moderation_notice` tells of. */
             moderation_action?: components["schemas"]["ModerationAction"];
+            /** @description The report that an `admin_report` is about. */
+            report_id?: components["schemas"]["Id"];
         };
         /** @description How far the authenticated user has read the notifications. */
         NotificationMarker: {
@@ -2060,9 +2086,14 @@ export interface components {
          *     `report_resolved` also comes from the instance: its `report` is the user's report that
          *     the moderators resolved, without how they resolved it. It is sent once per report, even
          *     when the report is reopened and resolved again.
+         *     about. `moderation_notice` comes from the instance and has no `account`.
+         *     The moderator notifications come from the instance too: `admin_report` (an account
+         *     that had no open report was reported; `report_id` is the report) goes to the users
+         *     with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
+         *     approval; `account` is the new user's account) to those with `manage_accounts`.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up";
         /** @description A new status. */
         CreateStatusRequest: {
             text: components["schemas"]["StatusText"];
@@ -2324,6 +2355,11 @@ export interface components {
             default_post_language: string;
             /** @description Whether clients ask for a description before posting media without one. */
             require_media_description: boolean;
+            /**
+             * @description Whether the moderator notifications (`admin_report`, `admin_sign_up`) also come by
+             *     email, to the primary address. Off for a new user.
+             */
+            email_moderator_notifications: boolean;
             /** @description The languages that timelines show, sorted; empty shows every language. */
             timeline_languages: string[];
         };
@@ -2338,6 +2374,8 @@ export interface components {
             default_post_language?: string;
             /** @description Whether clients ask for a description before posting media without one. */
             require_media_description?: boolean;
+            /** @description Whether the moderator notifications also come by email. */
+            email_moderator_notifications?: boolean;
             /** @description The languages that timelines show, at most 64; empty shows every language. */
             timeline_languages?: string[];
         };
@@ -2767,6 +2805,19 @@ export interface components {
         MoveInstanceRuleRequest: {
             /** @description The place among the rules in effect, from 1. */
             position: number;
+        };
+        /** @description What awaits the moderators; a count whose permission the user lacks is omitted. */
+        AdminCounts: {
+            /**
+             * Format: int64
+             * @description The reports that are open. Needs `manage_reports`.
+             */
+            open_reports?: number;
+            /**
+             * Format: int64
+             * @description The registrations that await approval. Needs `manage_accounts`.
+             */
+            pending_registrations?: number;
         };
         /** @description A report of an account to the moderators. */
         CreateReportRequest: {
@@ -4733,6 +4784,28 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAdminCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The counts that the user may see. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCounts"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

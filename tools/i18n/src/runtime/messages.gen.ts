@@ -418,6 +418,10 @@ export interface MessageArgs {
   "client:notifications.signed_out": {};
   /** Notifications */
   "client:notifications.title": {};
+  /** A new report awaits the moderators */
+  "client:notifications.type.admin_report": {};
+  /** {name} signed up and awaits approval */
+  "client:notifications.type.admin_sign_up": { name: string };
   /** {name} boosted your post */
   "client:notifications.type.boost": { name: string };
   /** {name} favourited your post */
@@ -954,6 +958,12 @@ export interface MessageArgs {
   "client:status.favourite.off": {};
   /** Added to favourites */
   "client:status.favourite.on": {};
+  /** {count, plural, one {# boost} other {# boosts}} */
+  "client:status.focused.boosts": { count: number };
+  /** {count, plural, one {# favourite} other {# favourites}} */
+  "client:status.focused.favourites": { count: number };
+  /** Opened post */
+  "client:status.focused.label": {};
   /** Link copied */
   "client:status.link.copied": {};
   /** Could not copy the link. */
@@ -1322,6 +1332,14 @@ export interface MessageArgs {
   "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
+  /** A new report awaits the moderators of {host}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_report.body": { host: string; url: string };
+  /** A new report awaits the moderators of {host} */
+  "server:mail.admin_report.subject": { host: string };
+  /** A new user signed up on {host} and awaits approval.  Open your notifications to review the registration:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_sign_up.body": { host: string; url: string };
+  /** A new sign-up awaits approval on {host} */
+  "server:mail.admin_sign_up.subject": { host: string };
   /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
   "server:mail.verify_email.body": { host: string; hours: number; url: string };
   /** Confirm your email address for {host} */

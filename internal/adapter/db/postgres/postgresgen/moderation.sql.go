@@ -12,6 +12,20 @@ import (
 	"time"
 )
 
+const countReportsInState = `-- name: CountReportsInState :one
+
+SELECT COUNT(*) FROM report_states WHERE state = $1
+`
+
+// Moderator notifications and counts (#338) ---------------------------------------------------
+// CountReportsInState counts the reports in a state.
+func (q *Queries) CountReportsInState(ctx context.Context, state string) (int64, error) {
+	row := q.db.QueryRow(ctx, countReportsInState, state)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteAccountRestrictionsOfAction = `-- name: DeleteAccountRestrictionsOfAction :exec
 DELETE FROM account_restrictions WHERE source_action_id = $1
 `
@@ -295,6 +309,26 @@ func (q *Queries) GetReportStateForUpdate(ctx context.Context, reportID string) 
 		&i.Since,
 	)
 	return i, err
+}
+
+const hasOtherOpenReportOf = `-- name: HasOtherOpenReportOf :one
+SELECT EXISTS (
+  SELECT 1 FROM reports r JOIN report_states s ON s.report_id = r.id
+  WHERE r.target_account_id = $1::text AND r.id <> $2::text AND s.state = 'open'
+)
+`
+
+type HasOtherOpenReportOfParams struct {
+	TargetAccountID string
+	ReportID        string
+}
+
+// HasOtherOpenReportOf reports whether a report of the target other than the one given is open.
+func (q *Queries) HasOtherOpenReportOf(ctx context.Context, arg HasOtherOpenReportOfParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasOtherOpenReportOf, arg.TargetAccountID, arg.ReportID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const insertAccountRestriction = `-- name: InsertAccountRestriction :exec

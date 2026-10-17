@@ -2,6 +2,7 @@
 import { type ReactNode, useId } from "react";
 import { tv } from "tailwind-variants";
 import { FeedArticle, type FeedArticleProps } from "./Feed";
+import { VisuallyHidden } from "./VisuallyHidden";
 
 const postCard = tv({
   slots: {
@@ -10,7 +11,8 @@ const postCard = tv({
     context: "mb-2 flex min-w-0 items-center gap-2 text-sm wrap-anywhere text-fg-muted [&>svg]:size-4 [&>svg]:shrink-0",
     grid: "grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2",
     // Narrow: the avatar sits beside the header and the body spans the card. Wide: the avatar has its own column.
-    avatar: "row-span-1 @md:row-span-5",
+    // Positioned, so that the avatar is drawn over the thread's line.
+    avatar: "relative row-span-1 @md:row-span-5",
     // One row: the author takes the room the time leaves. Below `@sm` a PostCardAuthor puts its handle on a
     // second line and the author fills the row, so the time stays at the end of the name's line. A long time
     // (a full date) wraps inside at most half of the row instead of pushing the card wider.
@@ -18,7 +20,31 @@ const postCard = tv({
     author: "min-w-0 flex-1 wrap-anywhere @sm:flex-initial",
     time: "max-w-1/2 shrink-0 text-sm text-fg-muted",
     body: "col-span-2 min-w-0 @md:col-span-1 @md:col-start-2",
+    details: "col-span-2 flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-sm text-fg-muted @md:col-span-1 @md:col-start-2",
     actions: "col-span-2 flex min-w-0 flex-wrap items-center gap-1 @md:col-span-1 @md:col-start-2",
+    // The thread's line, down the middle of the avatar (1rem of padding and half of its 2.5rem), behind it.
+    // It reaches from the card's top or from the avatar's middle (2rem down) to the card's bottom edge or
+    // to the avatar's middle. It is decorative: the order of the posts and the headings around them carry
+    // the thread.
+    line: "pointer-events-none absolute inset-s-[calc(2.25rem-1px)] w-0.5 bg-border-strong",
+  },
+  variants: {
+    // Told apart by its surface and a bar on its start edge, not by a color alone. The bar's width comes
+    // out of the start padding, so the content lines up with the cards around it.
+    highlighted: { true: { base: "border-s-4 border-s-accent bg-surface-raised ps-3", line: "inset-s-[calc(2rem-1px)]" } },
+    lineAbove: { true: { base: "relative", line: "top-0" }, false: { line: "top-8" } },
+    // Below the avatar the line runs down the card, so on a narrow card the body, details and actions under
+    // the header move clear of it; from `@md` they are in the avatar's next column anyway.
+    lineBelow: {
+      true: {
+        base: "relative",
+        line: "-bottom-px",
+        body: "ps-8 @md:ps-0",
+        details: "ps-8 @md:ps-0",
+        actions: "ps-8 @md:ps-0",
+      },
+      false: { line: "h-8" },
+    },
   },
 });
 
@@ -41,8 +67,24 @@ export type PostCardProps = Omit<FeedArticleProps, "children" | "content" | "ari
   content: ReactNode;
   /** The attachments (MediaGrid). */
   media?: ReactNode;
+  /**
+   * More about the post, between the body and the actions: items of one wrapping line of secondary text,
+   * such as the full date and the counts in words of the post a page is about.
+   */
+  details?: ReactNode;
   /** The actions on the post: reply, boost, favourite, the overflow menu. */
   actions?: ReactNode;
+  /**
+   * A name that starts the article's accessible name, before the context, author and time, for the card
+   * that stands apart from the others ("Selected post"). It is not shown: `highlighted` shows the same.
+   */
+  label?: string;
+  /** Whether the card stands apart from the cards around it, as the post a page is about does. */
+  highlighted?: boolean;
+  /** Whether the post continues a thread from the card above: a line from the card's top to the avatar. */
+  lineAbove?: boolean;
+  /** Whether the thread continues in the card below: a line from the avatar to the card's bottom. */
+  lineBelow?: boolean;
 };
 
 /**
@@ -52,17 +94,40 @@ export type PostCardProps = Omit<FeedArticleProps, "children" | "content" | "ari
  * articles. The header is one row of the author and the time (with a PostCardAuthor, the handle goes to a
  * second line below the `@sm` container width). On a narrow card the body spans the full width under the
  * header; from the `@md` container width the avatar gets its own column.
+ *
+ * In a thread, `lineAbove` and `lineBelow` join the avatars of consecutive cards with a line (thread cards
+ * have no context line, which would move the avatar down); on a narrow card with a line below, the rest
+ * of the card is indented clear of it. The post a page is about is `highlighted`, with a `label` that
+ * starts its name and its `details`.
  */
-export function PostCard({ context, avatar, author, time, content, media, actions, className, ...props }: PostCardProps) {
-  const slots = postCard();
+export function PostCard({
+  context,
+  avatar,
+  author,
+  time,
+  content,
+  media,
+  details,
+  actions,
+  label,
+  highlighted = false,
+  lineAbove = false,
+  lineBelow = false,
+  className,
+  ...props
+}: PostCardProps) {
+  const slots = postCard({ highlighted, lineAbove, lineBelow });
   const id = useId();
+  const labelId = `${id}-label`;
   const contextId = `${id}-context`;
   const authorId = `${id}-author`;
   const timeId = `${id}-time`;
   const contentId = `${id}-content`;
-  const labelledBy = context === undefined ? `${authorId} ${timeId}` : `${contextId} ${authorId} ${timeId}`;
+  const labelledBy = [...(label === undefined ? [] : [labelId]), ...(context === undefined ? [] : [contextId]), authorId, timeId].join(" ");
   return (
     <FeedArticle {...props} aria-labelledby={labelledBy} aria-describedby={contentId} className={slots.base({ className })}>
+      {label !== undefined && <VisuallyHidden id={labelId}>{label}</VisuallyHidden>}
+      {(lineAbove || lineBelow) && <span aria-hidden="true" className={slots.line()} />}
       {context !== undefined && (
         <p id={contextId} className={slots.context()}>
           {context}
@@ -82,6 +147,7 @@ export function PostCard({ context, avatar, author, time, content, media, action
           {content}
         </div>
         {media !== undefined && <div className={slots.body()}>{media}</div>}
+        {details !== undefined && <div className={slots.details()}>{details}</div>}
         {actions !== undefined && <div className={slots.actions()}>{actions}</div>}
       </div>
     </FeedArticle>
