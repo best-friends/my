@@ -5,7 +5,7 @@
 
 どちらも管理 API（`/api/v1/admin/...`、スコープ `admin:read` / `admin:write`）と CLI（`my admin domain` / `my admin report`）で行えます。
 管理 API はロールの権限を要します。ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。
-CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直接つなぎ、操作者を記録しません（`issued_by_user_id` などは NULL）。
+CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直接つなぎ、操作者の利用者を記録しません（`issued_by_user_id` などは NULL、[監査ログ](#監査ログ)の操作者は `cli`）。
 
 ローカルのアカウントへの処分（FR-703。警告・サイレンス・凍結・BAN など、セッションの失効や本人への通知を伴うもの）は、この手順の範囲外です。
 
@@ -71,3 +71,31 @@ my admin report resolve -outcome dismissed <report id>
 - 担当（`assign`）は、ロールが `manage_reports` を持つローカルの利用者にだけ割り当てられます。管理 API では自分を担当にします。
 - 解決（`resolve`）の結果は、対象に処分をした `actioned` か、処分の必要がなかった `dismissed` です。解決済みの通報をもう一度解決しても結果は変わりません。
 - 担当・解決はイベント（`report_assignments`・`report_resolutions`）として残り、現在の状態は `report_states` が持ちます。
+
+## 監査ログ
+
+モデレーターと管理者の操作は、操作と同じトランザクションで監査ログ（`audit_log_entries`）に 1 行ずつ記録されます（FR-704、[ADR-0037](../adr/0037-audit-log.md)）。
+失敗した操作と、何も変えなかった操作（解除済みの処分の解除、解決済みの通報の解決、同じ担当への割り当て、廃止済みのルールの廃止、位置の変わらない移動）は記録しません。
+
+| 対象の種類 | 操作 |
+| --- | --- |
+| `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除） |
+| `report` | `report_assigned`・`report_unassigned`・`report_resolved`（通報の担当・担当の解除・解決） |
+| `user` | `registration_approved`・`registration_rejected`（登録審査） |
+| `setting` | `setting_changed`（インスタンス設定）・`text_changed`（インスタンスの文章。1 ロケールの変更） |
+| `rule` | `rule_added`・`rule_revised`・`rule_moved`・`rule_retired`（インスタンスのルール） |
+
+```sh
+my admin audit list
+my admin audit list -actor alice -action domain_action_issued
+my admin audit list -target-kind domain -target-id spam.example
+```
+
+管理 API では `GET /api/v1/admin/audit_log`（`actor_account_id`・`action`・`target_kind`・`target_id` で絞り込み）で、権限 `view_audit` を要します。
+
+- 1 行は操作者（`user` ならその利用者、CLI なら `cli`）・操作・対象の種類と ID・対象の表示名・元の記録の ID・日時です。
+  対象の ID は、通報・利用者・ルールの ID、ドメイン単位の処分ではドメイン、設定と文章ではキーです。
+- 対象の表示名（`@alice`・`@bob@example.com`・ドメイン・設定のキー・ルールの文。文章はキーとロケール）は記録したときの写しなので、対象が消えた後も読めます。
+- 理由とメモの本文は写しません。元の記録（処分・担当・解決・審査・設定やルールの版）の ID から引きます。
+- 一覧は新しい順のキーセットページングです（CLI は `-before <entry id>`）。
+- 監査ログを更新・削除する API と CLI はありません。
