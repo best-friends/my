@@ -263,11 +263,10 @@ test.describe("the main flow", () => {
         await article.getByRole("button", { name: message("timeline.content_warning.toggle") }).click();
         await expect(article.getByText(text)).toBeVisible();
         await expect(article.getByRole("img", { name: description })).toBeVisible();
-        // The author's picture and name, the time, the warning and its toggle, the post, its image named
-        // by the description, and the five actions.
+        // The author's name (the picture's link is hidden), the time, the warning and its toggle, the post,
+        // its image named by the description, and the five actions.
         await expect(article).toMatchAriaSnapshot(`
           - article:
-            - link
             - link
             - link:
               - time

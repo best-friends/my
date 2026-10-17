@@ -449,6 +449,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph, Inbox: a.Inbox,
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
+		Suspensions: a.ModerationPolicy,
 	}).Register(a)
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{
@@ -499,6 +500,9 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) qu
 	federation.RegisterBlockProjectors(a.Projectors, federation.RecorderDeps{
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
 	})
+	federation.RegisterSuspensionProjectors(a.Projectors, federation.RecorderDeps{
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
+	})
 	// Forwarded reports (FR-709) are Flags of the instance actor.
 	federation.RegisterReportProjectors(a.Projectors, federation.RecorderDeps{
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
@@ -517,6 +521,7 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		Reports: a.Moderation,
 		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
+		Suspensions: a.ModerationPolicy,
 	})
 	a.FanOut.RegisterJobs(a.Handlers)
 }

@@ -122,11 +122,11 @@ test.describe("the local timeline", () => {
     const articles = page.getByRole("feed").getByRole("article");
     // The second page may have loaded already (its end is in view on tall screens); the first page comes first.
     await expect(articles.first()).toHaveAttribute("aria-posinset", "1");
-    // Each post links its author's picture and name to the author's profile, and a boost its booster's name.
+    // Each post links its author's name to the author's profile (the picture's link to it is hidden), and
+    // a boost its booster's name.
     await expect(page.getByRole("feed")).toMatchAriaSnapshot(`
       - feed:
         - article:
-          - link /Bartholomew/
           - link /Bartholomew/
           - link:
             - time
@@ -135,12 +135,10 @@ test.describe("the local timeline", () => {
           - paragraph:
             - link /Carol/
           - link /Bob/
-          - link /Bob/
           - link:
             - time
           - paragraph
         - article:
-          - link /Bob/
           - link /Bob/
           - link:
             - time
@@ -148,14 +146,12 @@ test.describe("the local timeline", () => {
           - button [expanded=false]
         - article:
           - link /Bob/
-          - link /Bob/
           - link:
             - time
           - paragraph
           - img "A blue square"
           - img
         - article:
-          - link /Bob/
           - link /Bob/
           - link:
             - time
@@ -165,12 +161,27 @@ test.describe("the local timeline", () => {
 
   test("shows the author's avatar, and the first letter of the name without one", async ({ page }) => {
     const articles = page.getByRole("feed").getByRole("article");
-    // The avatar is decorative (alt=""), named by the author's name next to it.
-    const image = articles.nth(4).getByRole("presentation");
+    // The avatar is decorative (alt="") inside a link hidden from the tree: the author's name is next to it.
+    const image = articles.nth(4).getByRole("presentation", { includeHidden: true });
     await expect(image).toHaveAttribute("src", avatar);
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
-    await expect(articles.nth(0).getByRole("presentation")).toHaveCount(0);
+    await expect(articles.nth(0).getByRole("presentation", { includeHidden: true })).toHaveCount(0);
     await expect(articles.nth(0).getByText("B", { exact: true })).toBeVisible();
+  });
+
+  test("stops the keyboard once per profile: the avatar is out of the tab order", async ({ page }) => {
+    const article = page.getByRole("feed").getByRole("article").nth(1);
+    const links = article.getByRole("link");
+    // After the article itself (the feed pattern): the booster's name, the author's name, the time.
+    await article.focus();
+    for (const n of [0, 1, 2]) {
+      await page.keyboard.press("Tab");
+      await expect(links.nth(n)).toBeFocused();
+    }
+    await expect(links).toHaveCount(3);
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expect(links.nth(0)).toBeFocused();
   });
 
   test("loads the next page at the end, and then knows its size", async ({ page }) => {

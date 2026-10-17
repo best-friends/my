@@ -176,7 +176,6 @@ test.describe("a profile of another server", () => {
       - tabpanel:
         - feed:
           - article:
-            - link "Carol"
             - link /Carol/
             - link:
               - time

@@ -7,6 +7,14 @@
 @source "../../ui/src";
 @source not "../../ui/src/**/*.stories.tsx";
 
+/* A short screen below md, such as a phone in landscape or a 320 × 225 viewport at 400% zoom: the tab bar
+   and the floating new-post button shrink so that the fixed elements stay within half the screen's height.
+   The app shell only (web-client.md D2). */
+@custom-variant short (@media (width < 48rem) and (height <= 32rem));
+/* While the page floats the new-post button (data-compose-fab on main, routes/-layout/AppLayout.tsx), for
+   the other elements fixed to the bottom edge that must stand clear of it (web-client.md G4). */
+@custom-variant with-compose-fab (:root:has([data-compose-fab]) &);
+
 @layer base {
   /* The rule React Aria's usePress would inject as an inline <style>, which the shell's CSP blocks
      (src/lib/csp.ts): pressable elements react to taps without the double-tap-to-zoom delay. */
@@ -14,12 +22,34 @@
     touch-action: pan-x pan-y pinch-zoom;
   }
   /* Below md the navigation is a tab bar fixed to the bottom edge: scroll focused elements clear of it
-     (web-client.md Y4). Its height is the min-h-16 of its links plus the safe-area inset. */
+     (web-client.md Y4). Its height is the min-h-16 of its links (min-h-12 on short screens) plus the
+     safe-area inset. On pages with the floating new-post button (data-compose-fab, routes/-layout/AppLayout.tsx)
+     they also clear the button: 3rem above the tab bar with a 1rem gap (0.5rem on short screens), or in the
+     corner from md. From xl the form is a side panel and nothing floats. */
   :root {
     scroll-padding-block-end: calc(4rem + env(safe-area-inset-bottom));
   }
+  :root:has([data-compose-fab]) {
+    scroll-padding-block-end: calc(8.5rem + env(safe-area-inset-bottom));
+  }
+  @variant short {
+    :root {
+      scroll-padding-block-end: calc(3rem + env(safe-area-inset-bottom));
+    }
+    :root:has([data-compose-fab]) {
+      scroll-padding-block-end: calc(7rem + env(safe-area-inset-bottom));
+    }
+  }
   @variant md {
     :root {
+      scroll-padding-block-end: 0;
+    }
+    :root:has([data-compose-fab]) {
+      scroll-padding-block-end: calc(5rem + env(safe-area-inset-bottom));
+    }
+  }
+  @variant xl {
+    :root:has([data-compose-fab]) {
       scroll-padding-block-end: 0;
     }
   }

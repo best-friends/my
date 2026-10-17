@@ -42,4 +42,10 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: ReturnType<typeof createAppRouter>;
   }
+  // What a route tells the app shell about itself, read from the current matches (TanStack Router's
+  // static route data).
+  interface StaticDataRouteOption {
+    /** The shell floats the button that opens the new-post sheet over this page (timelines and profiles; web-client.md G4). */
+    composeButton?: boolean;
+  }
 }

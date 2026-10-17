@@ -258,7 +258,9 @@ type AccountActionInput struct {
 
 // IssueAccountAction records an action on an account and, in the same transaction, the
 // restrictions it imposes (data-model §5.2) and its other effects, and emits
-// AccountRestrictionsChanged and AccountActionIssued. delete_statuses deletes the statuses it names (origin
+// AccountRestrictionsChanged and AccountActionIssued, and AccountSuspensionChanged when the
+// action (suspend, ban) suspends an account that was not suspended. delete_statuses deletes the
+// statuses it names (origin
 // moderation), mark_statuses_sensitive shows them as sensitive until it is lifted, and ban
 // schedules the deletion of the account moderation.BanDeletionDelay later.
 //
@@ -323,6 +325,10 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 	repo := s.d.Repository
 	auditID := s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
+		if err != nil {
+			return err
+		}
 		if err := repo.InsertAction(ctx, tx, a); err != nil {
 			return err
 		}
@@ -335,6 +341,9 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 			return err
 		}
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
+			return err
+		}
+		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
 			return err
 		}
 		if err := tx.Emit(ctx, AccountActionIssued{Action: a}); err != nil {
@@ -398,7 +407,8 @@ func (s *Service) carryOut(ctx context.Context, tx uow.Tx, a moderation.Action, 
 // LiftAccountAction lifts an action on an account: its restrictions end, while those of other
 // actions on the account stay, and the statuses that a mark_statuses_sensitive action marked are
 // no longer shown as sensitive by it; the statuses that delete_statuses deleted stay deleted.
-// Lifting an action that is already lifted changes nothing. A ban fails with ErrNotLiftable. An
+// Lifting the account's last suspension emits AccountSuspensionChanged. Lifting an action that
+// is already lifted changes nothing. A ban fails with ErrNotLiftable. An
 // invalid reason fails with an error wrapping moderation.ErrInvalidAction and a
 // *moderation.TextError.
 func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserID, reason string) error {
@@ -433,6 +443,10 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if err != nil {
 			return err
 		}
+		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
+		if err != nil {
+			return err
+		}
 		if err := repo.DeleteAccountRestrictionsOf(ctx, tx, a.ID); err != nil {
 			return err
 		}
@@ -442,6 +456,9 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 			}
 		}
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
+			return err
+		}
+		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
 			return err
 		}
 		// The lift's row is keyed by the action's ID.

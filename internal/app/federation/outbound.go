@@ -34,8 +34,12 @@ type fanOutPayload struct {
 	// FollowURI is the Follow that an Accept answers when it is not the follow's own: one that
 	// the follower sent again (graph.follow_resent). "" for other activities.
 	FollowURI string `json:"follow_uri,omitempty"`
-	Phase     string `json:"phase,omitempty"`
-	After     string `json:"after,omitempty"`
+	// SharedInboxes sends the Update of an actor to every known shared inbox after its
+	// followers, as the Delete of an actor goes: the Update of a suspension and of its end
+	// (federation.md §11.1). false for other activities.
+	SharedInboxes bool   `json:"shared_inboxes,omitempty"`
+	Phase         string `json:"phase,omitempty"`
+	After         string `json:"after,omitempty"`
 }
 
 func (p fanOutPayload) job() (queue.NewJob, error) {
