@@ -143,6 +143,8 @@ string through props or children.
 | `Switch` | `SwitchField` + `SwitchButton` | children as the label, `description`, `errorMessage` |
 | `RadioGroup`, `Radio` | `RadioGroup`, `RadioField` + `RadioButton` | `orientation`: `vertical` (default) / `horizontal`; a `description` per `Radio` |
 | `Select`, `SelectItem` | `Select` + `Popover` + `ListBox`, `ListBoxItem` | `items` with a render function, or `SelectItem` children; single selection |
+| `ReasonField` | `TextArea` | The reason for an operator's action: three rows and a required character count (`characterLimit`, `formatRemaining`) |
+| `DurationSelect` | `Select` | `durations` in seconds with `formatDuration`; `indefiniteLabel` adds "no end", last; the value is seconds or `null` for no end |
 
 - Each component has one `tailwind-variants` recipe; its variant props are typed from the recipe (`VariantProps`).
   `className` (a string or RAC's function of the render props) is merged into the root with `tailwind-merge`, so a later class wins.
@@ -166,12 +168,14 @@ The overlay components wrap React Aria Components, which handle focus, Esc and t
 | Component | Pattern | Notes |
 | --- | --- | --- |
 | `Dialog` / `Sheet` in a `DialogTrigger` | Modal dialog | Traps focus, closes on Esc, returns focus to the trigger. `closeLabel` adds the × button; `role="alertdialog"` for confirmations; `isOpen` / `onOpenChange` without a trigger. `Sheet` sits on the bottom edge below a 32rem container width, with safe-area padding and a height capped in `svh`. |
+| `ConfirmDialog` in a `DialogTrigger` | Alert dialog | The confirmation before an action that cannot be undone (see below). |
 | `Popover` in a `PopoverTrigger` | Non-modal dialog | Named by `title` or `aria-label`. |
 | `Menu`, `MenuItem`, `MenuSeparator` in a `MenuTrigger`; `SubmenuTrigger` | Menu button | `intent="danger"` for destructive items. Submenus open towards the inline end. |
 | `Tooltip` in a `TooltipTrigger` | Tooltip | Describes its trigger; never the trigger's only name. |
 | `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. |
 | `AnnouncerProvider`, `useAnnouncer` | Live regions | One polite `role="status"` and one assertive `role="alert"` region for the app. |
 | `ToastProvider`, `useToast` | Toasts | Announced through the Announcer; the visible list is a labelled region. |
+| `StatusMessage` | Status | The result of an action that stays on the page: a `role="status"` region, empty until it has a message. |
 
 Mount `AnnouncerProvider` once at the app root and `ToastProvider` inside it. `announce(message, politeness)` and
 `toast.show(...)` are called from event handlers and mutation callbacks, and never move focus. Each announcement is a new node in its
@@ -179,6 +183,27 @@ region, so a repeated message is read again, and it is removed after `clearAfter
 stay exposed while a modal hides the rest of the page. The kit has its own regions and toast queue because React Aria Components' Toast is
 `UNSTABLE_` and its live announcer is internal to react-aria. A toast without an action closes after `defaultTimeout` (5 s), but not
 while the pointer is over the toasts or focus is in them; a toast with an action stays until it is dismissed.
+
+`ConfirmDialog` follows the [APG alert dialog](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/) on `Dialog`
+(`role="alertdialog"`, named by `title`, described by `description`):
+
+- the title is a question, the description says what happens and whether it can be undone, and the buttons are verbs
+  (G22 in [web-client.md](../../docs/architecture/web-client.md)); `tone` is `danger` (default) or `primary`;
+- on open, focus moves to the first field of `children` (a `ReasonField`, a `DurationSelect`), or else to the cancel button, never to the
+  destructive one ([APG dialog, initial focus](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)); Esc and cancel close it and focus
+  returns to the trigger; there is no × button and a press outside does not close it;
+- the body is a form: the confirm button submits it, the fields' constraints (`isRequired`) are checked first, and only then
+  `onConfirm(close)` runs. The dialog stays open until `close` is called, `isPending` makes the confirm button wait, and `errorMessage`
+  shows a failure in the dialog (`role="alert"`) so that the action can be tried again.
+
+`StatusMessage` is rendered before the action, empty, and gets the result as children once the action has succeeded: a live region
+announces only changes made after it is in the page. A failure is not a status; it goes to `ConfirmDialog`'s `errorMessage` or a toast.
+
+## Display
+
+| Component | Notes |
+| --- | --- |
+| `DescriptionList`, `DescriptionItem` | The facts of a record: a `<dl>` that is its own size container, with up to `columns` (1–4) columns as it widens; values wrap anywhere. |
 
 ## Component tests
 

@@ -33,6 +33,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/bookmarks":                                    {Operation: "listBookmarks", Scopes: []string{"read:bookmarks"}},
 	"GET /api/v1/follow_requests":                              {Operation: "listFollowRequests", Scopes: []string{"read:follows"}},
 	"GET /api/v1/instance":                                     {Operation: "getInstance", Anonymous: true},
+	"GET /api/v1/instance/domain_actions":                      {Operation: "listInstanceDomainActions", Anonymous: true},
 	"GET /api/v1/media/{id}":                                   {Operation: "getMedia", Scopes: []string{"write:media"}},
 	"GET /api/v1/mutes":                                        {Operation: "listMutes", Scopes: []string{"read:mutes"}},
 	"GET /api/v1/notifications":                                {Operation: "listNotifications", Scopes: []string{"read:notifications"}},

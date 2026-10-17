@@ -34,7 +34,8 @@ type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 // accounts are refused, invalid actions are refused, each action is lifted once, every change
 // emits the restrictions in effect afterwards, a received report is filed once, open, with its
 // statuses and its comment cut to the limit, the domain actions list newest first with their
-// lifts and filters, and moderators list, assign, and resolve reports. The accounts are
+// lifts and filters, the public list keeps only the limits and suspensions in effect without
+// their private notes, and moderators list, assign, and resolve reports. The accounts are
 // in-memory stand-ins.
 func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 	t.Helper()
@@ -50,6 +51,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"EmitsTheRestrictionsInEffect", moderationEmits},
 		{"FilesARemoteReportOnce", moderationReports},
 		{"ListsDomainActions", moderationListsDomainActions},
+		{"ListsPublicDomainActions", moderationListsPublicDomainActions},
 		{"HandlesReports", moderationHandlesReports},
 	}
 	for _, tc := range cases {
@@ -478,6 +480,57 @@ func moderationListsDomainActions(t *testing.T, e *moderationEnv) {
 	}
 	if _, err := e.svc.DomainAction(ctx, e.ids.NewID()); !errors.Is(err, appmoderation.ErrNotFound) {
 		t.Errorf("DomainAction(unknown) = %v, want ErrNotFound", err)
+	}
+}
+
+func moderationListsPublicDomainActions(t *testing.T, e *moderationEnv) {
+	ctx := t.Context()
+	issue := func(in appmoderation.DomainActionInput) moderation.DomainAction {
+		t.Helper()
+		e.clock.Advance(time.Second)
+		a, err := e.svc.IssueDomainAction(ctx, in)
+		if err != nil {
+			t.Fatalf("IssueDomainAction(%+v) = %v", in, err)
+		}
+		return a
+	}
+	suspended := issue(appmoderation.DomainActionInput{Domain: "bad.example", Kind: moderation.DomainSuspend, PublicComment: "spam", PrivateNote: "see #12"})
+	issue(appmoderation.DomainActionInput{Domain: "media.example", Kind: moderation.DomainRejectMedia})
+	expiring := issue(appmoderation.DomainActionInput{Domain: "brief.example", Kind: moderation.DomainLimit, Duration: time.Hour})
+	lifted := issue(appmoderation.DomainActionInput{Domain: "lifted.example", Kind: moderation.DomainSuspend})
+	if err := e.svc.LiftDomainAction(ctx, lifted.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	limited := issue(appmoderation.DomainActionInput{Domain: "spam.example.com", Kind: moderation.DomainLimit, Obfuscate: true})
+	issue(appmoderation.DomainActionInput{Domain: "reports.example", Kind: moderation.DomainRejectReports})
+
+	list := func(before string, limit int, want ...moderation.DomainAction) {
+		t.Helper()
+		got, err := e.svc.PublicDomainActions(ctx, before, limit)
+		wantPublic := []moderation.PublicDomainAction{}
+		for _, a := range want {
+			wantPublic = append(wantPublic, a.Public())
+		}
+		if err != nil || !reflect.DeepEqual(append([]moderation.PublicDomainAction{}, got...), wantPublic) {
+			t.Errorf("PublicDomainActions(%q, %d) = %+v, %v; want %+v", before, limit, got, err, wantPublic)
+		}
+	}
+	list("", 10, limited, expiring, suspended)
+	list("", 2, limited, expiring)
+	list(expiring.ID, 2, suspended)
+	e.clock.Advance(time.Hour)
+	list("", 10, limited, suspended)
+
+	// The repository filters by kind for any query.
+	rs, err := e.h.Moderation.ListDomainActions(ctx, appmoderation.DomainActionQuery{
+		Kinds: []moderation.DomainActionKind{moderation.DomainRejectMedia, moderation.DomainRejectReports},
+	}, 10)
+	kinds := []moderation.DomainActionKind{}
+	for _, r := range rs {
+		kinds = append(kinds, r.Action.Kind)
+	}
+	if want := []moderation.DomainActionKind{moderation.DomainRejectReports, moderation.DomainRejectMedia}; err != nil || !reflect.DeepEqual(kinds, want) {
+		t.Errorf("ListDomainActions(reject_media, reject_reports) = %v, %v; want %v", kinds, err, want)
 	}
 }
 

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A remote server's page below its heading (federation.md §7.3): its health, why it is in its state, when
 // deliveries last resumed, the button that resumes them, and the history of its availability, newest first.
-import { Button, EmptyState } from "@my/ui";
+import { Button, DescriptionItem, DescriptionList, EmptyState } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { AvailabilityEvent } from "../api/admin";
 import { useInstance } from "../hooks/useInstances";
-import { useHasPermission } from "../hooks/usePermissions";
-import { Day, DateTime, Detail, InstanceStateLabel, MissingPermission, MoreButton } from "./parts";
+import { Day, DateTime, DetailSection, InstanceStateLabel, RecordList, RequirePermission } from "./parts";
 
 const eventLabels: Readonly<Record<AvailabilityEvent["kind"], ClientMessageKey>> = {
   marked_unavailable: "client:admin.instance.event.marked_unavailable",
@@ -25,14 +24,15 @@ const reasonLabels: Readonly<Record<AvailabilityEvent["reason"], ClientMessageKe
 export type InstanceDetailProps = { domain: string };
 
 export function InstanceDetail({ domain }: InstanceDetailProps) {
-  const allowed = useHasPermission("manage_domains");
-  if (!allowed) return <MissingPermission permission="manage_domains" />;
-  return <InstanceView domain={domain} />;
+  return (
+    <RequirePermission permission="manage_domains">
+      <InstanceView domain={domain} />
+    </RequirePermission>
+  );
 }
 
 function InstanceView({ domain }: InstanceDetailProps) {
   const t = useT();
-  const headingId = useId();
   const descriptionId = useId();
   const view = useInstance(domain);
   const { health, events } = view;
@@ -42,19 +42,19 @@ function InstanceView({ domain }: InstanceDetailProps) {
   const resumed = events.items.find((event) => event.kind === "marked_available");
   return (
     <div className="flex flex-col gap-6">
-      <div className="@container flex flex-col gap-4">
-        <dl className="grid grid-cols-1 gap-3 @sm:grid-cols-2 @2xl:grid-cols-3">
-          <Detail term={t("client:admin.instance.state")}>
+      <div className="flex flex-col gap-4">
+        <DescriptionList columns={3}>
+          <DescriptionItem term={t("client:admin.instance.state")}>
             <InstanceStateLabel state={health.state} />
-          </Detail>
-          <Detail term={t("client:admin.instance.since")}>{health.since === undefined ? t("client:admin.instance.none") : <DateTime value={health.since} />}</Detail>
-          <Detail term={t("client:admin.instance.reason")}>{latest === undefined ? t("client:admin.instance.none") : t(reasonLabels[latest.reason])}</Detail>
-          <Detail term={t("client:admin.instance.failure_days")}>{t("client:admin.instance.failure_days.value", { count: health.failure_days })}</Detail>
-          <Detail term={t("client:admin.instance.last_failure")}>
+          </DescriptionItem>
+          <DescriptionItem term={t("client:admin.instance.since")}>{health.since === undefined ? t("client:admin.instance.none") : <DateTime value={health.since} />}</DescriptionItem>
+          <DescriptionItem term={t("client:admin.instance.reason")}>{latest === undefined ? t("client:admin.instance.none") : t(reasonLabels[latest.reason])}</DescriptionItem>
+          <DescriptionItem term={t("client:admin.instance.failure_days")}>{t("client:admin.instance.failure_days.value", { count: health.failure_days })}</DescriptionItem>
+          <DescriptionItem term={t("client:admin.instance.last_failure")}>
             {health.last_failure_day === undefined ? t("client:admin.instance.none") : <Day value={health.last_failure_day} />}
-          </Detail>
-          <Detail term={t("client:admin.instance.last_resumed")}>{resumed === undefined ? t("client:admin.instance.none") : <DateTime value={resumed.occurred_at} />}</Detail>
-        </dl>
+          </DescriptionItem>
+          <DescriptionItem term={t("client:admin.instance.last_resumed")}>{resumed === undefined ? t("client:admin.instance.none") : <DateTime value={resumed.occurred_at} />}</DescriptionItem>
+        </DescriptionList>
         {view.canMarkAvailable && (
           <div className="flex flex-col items-start gap-1">
             <Button variant="primary" isPending={view.isMarking} onPress={view.markAvailable} aria-describedby={descriptionId}>
@@ -66,27 +66,19 @@ function InstanceView({ domain }: InstanceDetailProps) {
           </div>
         )}
       </div>
-      <section aria-labelledby={headingId} className="flex flex-col gap-3">
-        <h2 id={headingId} className="text-lg font-semibold">
-          {t("client:admin.instance.history.title")}
-        </h2>
-        {events.items.length === 0 ? (
-          <EmptyState headingLevel={3} heading={t("client:admin.instance.history.empty")} />
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {events.items.map((event) => (
-              <li key={event.id} className="flex flex-col py-3">
-                <h3 className="font-semibold">{t(eventLabels[event.kind])}</h3>
-                <span className="text-sm text-fg-muted">
-                  <DateTime value={event.occurred_at} />
-                </span>
-                <span>{t(reasonLabels[event.reason])}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <MoreButton list={events} />
-      </section>
+      <DetailSection title={t("client:admin.instance.history.title")}>
+        <RecordList list={events} getId={(event) => event.id} empty={<EmptyState headingLevel={3} heading={t("client:admin.instance.history.empty")} />}>
+          {(event) => (
+            <div className="flex flex-col">
+              <h3 className="font-semibold">{t(eventLabels[event.kind])}</h3>
+              <span className="text-sm text-fg-muted">
+                <DateTime value={event.occurred_at} />
+              </span>
+              <span>{t(reasonLabels[event.reason])}</span>
+            </div>
+          )}
+        </RecordList>
+      </DetailSection>
     </div>
   );
 }

@@ -136,14 +136,16 @@ ORDER BY r.id DESC
 LIMIT sqlc.arg(lim);
 
 -- ListDomainModerationActions returns the domain actions with their lifts, newest first: those
--- of a domain (empty for every domain), only those in effect at in_effect_at unless it is NULL, and
--- those before the action before (empty for the first page).
+-- of a domain (empty for every domain), of the kinds (empty for every kind), only those in effect
+-- at in_effect_at unless it is NULL, and those before the action before (empty for the first
+-- page).
 -- name: ListDomainModerationActions :many
 SELECT a.id, a.domain, a.kind, a.public_comment, a.private_note, a.obfuscate, a.issued_by_user_id,
   a.expires_at, a.issued_at, l.action_id AS lift_action_id, l.lifted_by_user_id, l.lifted_at
 FROM domain_moderation_actions a
 LEFT JOIN domain_moderation_action_lifts l ON l.action_id = a.id
 WHERE (sqlc.arg(domain)::text = '' OR a.domain = sqlc.arg(domain)::text)
+  AND (cardinality(sqlc.arg(kinds)::text[]) = 0 OR a.kind = ANY(sqlc.arg(kinds)::text[]))
   AND (sqlc.narg(in_effect_at)::timestamptz IS NULL
     OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > sqlc.narg(in_effect_at)::timestamptz)))
   AND (sqlc.arg(before)::text = '' OR a.id < sqlc.arg(before)::text)

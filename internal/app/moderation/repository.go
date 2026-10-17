@@ -83,8 +83,9 @@ type Repository interface {
 	// FindDomainActionRecord returns a domain action with its lift.
 	FindDomainActionRecord(ctx context.Context, id string) (moderation.DomainActionRecord, error)
 	// ListDomainActions returns up to limit domain actions with their lifts, newest first: those
-	// of q.Domain (every domain when empty), only those in effect at q.InEffectAt when it is
-	// set, whose ID is below q.Before (from the newest when empty).
+	// of q.Domain (every domain when empty), of q.Kinds (every kind when empty), only those in
+	// effect at q.InEffectAt when it is set, whose ID is below q.Before (from the newest when
+	// empty).
 	ListDomainActions(ctx context.Context, q DomainActionQuery, limit int) ([]moderation.DomainActionRecord, error)
 }
 
@@ -96,7 +97,8 @@ type ReportQuery struct {
 
 // DomainActionQuery selects the domain actions of a list.
 type DomainActionQuery struct {
-	Domain     string     // a canonical host; "" for every domain
-	InEffectAt *time.Time // nil for every action, ended ones included
-	Before     string     // an action ID; "" for the first page
+	Domain     string                        // a canonical host; "" for every domain
+	Kinds      []moderation.DomainActionKind // the kinds to keep; empty for every kind
+	InEffectAt *time.Time                    // nil for every action, ended ones included
+	Before     string                        // an action ID; "" for the first page
 }

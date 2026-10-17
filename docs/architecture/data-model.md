@@ -423,6 +423,9 @@ flowchart LR
 - サブドメインにも効きます。判定は、対象ドメインとその親ドメイン群を列挙して `domain IN (…)` で引きます。
 - 処分と同じトランザクションで、その処分が生む制限の行を `account_restrictions` / `domain_restrictions` に書きます。解除は同じトランザクションでその処分の行（`source_action_id`）を消します。解除の再実行は何もしません。
 - ドメイン単位の制限を各アカウントの行に展開することはしません（件数が膨らむため）。判定時に `account_restrictions` と合成します（§5.3）。
+- 処分したドメインの公開（FR-718）は、効いている `limit` / `suspend` の処分を `domain_moderation_actions` から新しい順に、処分ごとに 1 項目で返します。
+  返すのはドメイン（`obfuscate` なら伏せ字）・ドメインの SHA-256・種類・`public_comment` で、`private_note` は返しません。
+  誰に見せるかはインスタンス設定 `domain_actions_visibility` と `domain_actions_rationale_visibility`（§4.9）で決めます。
 
 #### 通報
 
