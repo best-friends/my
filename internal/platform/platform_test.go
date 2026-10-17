@@ -95,8 +95,15 @@ type server struct {
 // start builds the App for cfg and serves it on a free local port. setup runs before Serve.
 func start(t *testing.T, cfg *config.Config, opts platform.ServeOptions, setup func(*platform.App)) *server {
 	t.Helper()
+	return startApp(t, cfg, platform.AppOptions{}, opts, setup)
+}
+
+// startApp is start with AppOptions; their Logger is replaced by one that the server keeps.
+func startApp(t *testing.T, cfg *config.Config, appOpts platform.AppOptions, opts platform.ServeOptions, setup func(*platform.App)) *server {
+	t.Helper()
 	logs := &syncBuffer{}
-	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: platform.NewLogger(logs, slog.LevelDebug)})
+	appOpts.Logger = platform.NewLogger(logs, slog.LevelDebug)
+	app, err := platform.NewApp(t.Context(), cfg, appOpts)
 	if err != nil {
 		t.Fatalf("NewApp: %v", err)
 	}
@@ -353,7 +360,7 @@ func TestShutdownWaitsForRequestsAndJobs(t *testing.T) {
 	if jobCtxErr != nil {
 		t.Errorf("the job's context ended during the graceful shutdown: %v", jobCtxErr)
 	}
-	dead, err := s.app.DeadJobs.ListDeadJobs(context.Background(), 10)
+	dead, err := s.app.DeadJobs.ListDeadJobs(context.Background(), queue.DeadJobPosition{}, 10)
 	if err != nil || len(dead) != 0 {
 		t.Errorf("dead jobs = %v (%v), want none", dead, err)
 	}

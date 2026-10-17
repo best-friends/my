@@ -167,12 +167,12 @@ func (postgresStore) insertDeadFromClaim(ctx context.Context, tx uow.Tx, id, wor
 	})
 }
 
-func (postgresStore) listDead(ctx context.Context, tx uow.Tx, limit int) ([]queue.DeadJob, error) {
+func (postgresStore) listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
 	q, err := postgresQueries(tx)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := q.ListDeadJobs(ctx, int32Of(limit))
+	rows, err := q.ListDeadJobs(ctx, postgresqueue.ListDeadJobsParams{AfterID: after.ID, AfterFailedAt: after.FailedAt, BatchLimit: int32Of(limit)})
 	if err != nil {
 		return nil, err
 	}

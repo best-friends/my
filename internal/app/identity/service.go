@@ -4,6 +4,7 @@ package identity
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -242,6 +243,24 @@ func (s *Service) builtinRoles() []roleToEnsure {
 		}
 	}
 	return out
+}
+
+// HasPermission reports whether one of the roles that the user userID holds grants p.
+func (s *Service) HasPermission(ctx context.Context, userID string, p identity.Permission) (bool, error) {
+	roles, err := s.d.Repository.ListUserRoles(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	for _, r := range roles {
+		_, perms, err := s.d.Repository.FindRole(ctx, r.Key)
+		if err != nil {
+			return false, err
+		}
+		if slices.Contains(perms, p) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // EnsureBuiltinRoles creates the built-in roles (admin and moderator) with their permissions,

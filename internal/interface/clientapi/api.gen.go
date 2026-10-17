@@ -22,6 +22,69 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AdminAvailabilityEventKind.
+const (
+	AdminAvailabilityEventKindMarkedAvailable   AdminAvailabilityEventKind = "marked_available"
+	AdminAvailabilityEventKindMarkedUnavailable AdminAvailabilityEventKind = "marked_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the AdminAvailabilityEventKind enum.
+func (e AdminAvailabilityEventKind) Valid() bool {
+	switch e {
+	case AdminAvailabilityEventKindMarkedAvailable:
+		return true
+	case AdminAvailabilityEventKindMarkedUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAvailabilityEventReason.
+const (
+	AdminAvailabilityEventReasonDeliverySucceeded AdminAvailabilityEventReason = "delivery_succeeded"
+	AdminAvailabilityEventReasonFailureDays       AdminAvailabilityEventReason = "failure_days"
+	AdminAvailabilityEventReasonInboundRequest    AdminAvailabilityEventReason = "inbound_request"
+	AdminAvailabilityEventReasonOperator          AdminAvailabilityEventReason = "operator"
+	AdminAvailabilityEventReasonProbeSucceeded    AdminAvailabilityEventReason = "probe_succeeded"
+)
+
+// Valid indicates whether the value is a known member of the AdminAvailabilityEventReason enum.
+func (e AdminAvailabilityEventReason) Valid() bool {
+	switch e {
+	case AdminAvailabilityEventReasonDeliverySucceeded:
+		return true
+	case AdminAvailabilityEventReasonFailureDays:
+		return true
+	case AdminAvailabilityEventReasonInboundRequest:
+		return true
+	case AdminAvailabilityEventReasonOperator:
+		return true
+	case AdminAvailabilityEventReasonProbeSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminInstanceState.
+const (
+	AdminInstanceStateAvailable   AdminInstanceState = "available"
+	AdminInstanceStateUnavailable AdminInstanceState = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the AdminInstanceState enum.
+func (e AdminInstanceState) Valid() bool {
+	switch e {
+	case AdminInstanceStateAvailable:
+		return true
+	case AdminInstanceStateUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceRegistrationsMode.
 const (
 	InstanceRegistrationsModeApproval InstanceRegistrationsMode = "approval"
@@ -175,6 +238,11 @@ type Account struct {
 	// DisplayName The display name; empty when the account has none.
 	DisplayName string `json:"display_name"`
 
+	// Domain The domain of the account: the domain of its handle, which for local accounts is the
+	// instance's account domain, or the host of its `uri` when a remote account has no
+	// confirmed handle.
+	Domain string `json:"domain"`
+
 	// Fields The profile's metadata fields, in their order; empty when there are none.
 	Fields []ProfileField `json:"fields"`
 
@@ -199,6 +267,9 @@ type Account struct {
 
 	// Note The profile text as sanitized HTML; empty when there is none.
 	Note string `json:"note"`
+
+	// Uri The ActivityPub id of the account's actor, on the server it belongs to.
+	Uri string `json:"uri"`
 
 	// Url The account's profile page.
 	Url string `json:"url"`
@@ -238,6 +309,99 @@ type AccountSource struct {
 	// Note The profile text as plain text; empty when there is none.
 	Note string `json:"note"`
 }
+
+// AdminAvailabilityEvent The time a remote server was marked unavailable or available again, and why.
+type AdminAvailabilityEvent struct {
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id         Id                         `json:"id"`
+	Kind       AdminAvailabilityEventKind `json:"kind"`
+	OccurredAt time.Time                  `json:"occurred_at"`
+
+	// Reason `failure_days`: deliveries failed on 7 distinct days. `delivery_succeeded`: a delivery
+	// succeeded. `inbound_request`: the server sent a signed request. `probe_succeeded`: the
+	// daily probe fetched its NodeInfo. `operator`: an operator marked it.
+	Reason AdminAvailabilityEventReason `json:"reason"`
+}
+
+// AdminAvailabilityEventKind defines model for AdminAvailabilityEvent.Kind.
+type AdminAvailabilityEventKind string
+
+// AdminAvailabilityEventReason `failure_days`: deliveries failed on 7 distinct days. `delivery_succeeded`: a delivery
+// succeeded. `inbound_request`: the server sent a signed request. `probe_succeeded`: the
+// daily probe fetched its NodeInfo. `operator`: an operator marked it.
+type AdminAvailabilityEventReason string
+
+// AdminAvailabilityEventPage A page of availability events, newest first.
+type AdminAvailabilityEventPage struct {
+	Items []AdminAvailabilityEvent `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminDeadJob A job that failed for good.
+type AdminDeadJob struct {
+	// Attempts The number of runs the job had.
+	Attempts  int       `json:"attempts"`
+	CreatedAt time.Time `json:"created_at"`
+	FailedAt  time.Time `json:"failed_at"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id             Id      `json:"id"`
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+
+	// LastError Why the last run failed.
+	LastError   string  `json:"last_error"`
+	OrderingKey *string `json:"ordering_key,omitempty"`
+
+	// Payload The job's payload, a JSON document as text.
+	Payload string `json:"payload"`
+
+	// Type The job type, such as `federation.deliver`.
+	Type string `json:"type"`
+}
+
+// AdminDeadJobPage A page of dead jobs, most recently failed first.
+type AdminDeadJobPage struct {
+	Items []AdminDeadJob `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminInstanceHealth Whether deliveries go to a remote server (federation.md §7.3).
+type AdminInstanceHealth struct {
+	Domain string `json:"domain"`
+
+	// FailureDays The number of distinct UTC days of the latest run of failed deliveries.
+	FailureDays int `json:"failure_days"`
+
+	// LastFailureDay The latest of those days; omitted without failures.
+	LastFailureDay *openapi_types.Date `json:"last_failure_day,omitempty"`
+
+	// Since When the server entered its state; omitted for a server without failures.
+	Since *time.Time `json:"since,omitempty"`
+
+	// State `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
+	// `Reject`.
+	State AdminInstanceState `json:"state"`
+}
+
+// AdminInstanceHealthPage A page of server health, in domain order.
+type AdminInstanceHealthPage struct {
+	Items []AdminInstanceHealth `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminInstanceState `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
+// `Reject`.
+type AdminInstanceState string
 
 // CreateStatusRequest A new status.
 type CreateStatusRequest struct {
@@ -289,6 +453,11 @@ type CredentialAccount struct {
 	// DisplayName The display name; empty when the account has none.
 	DisplayName string `json:"display_name"`
 
+	// Domain The domain of the account: the domain of its handle, which for local accounts is the
+	// instance's account domain, or the host of its `uri` when a remote account has no
+	// confirmed handle.
+	Domain string `json:"domain"`
+
 	// Fields The profile's metadata fields, in their order; empty when there are none.
 	Fields []ProfileField `json:"fields"`
 
@@ -324,6 +493,9 @@ type CredentialAccount struct {
 
 	// Source The profile as the user typed it, for editing.
 	Source AccountSource `json:"source"`
+
+	// Uri The ActivityPub id of the account's actor, on the server it belongs to.
+	Uri string `json:"uri"`
 
 	// Url The account's profile page.
 	Url string `json:"url"`
@@ -672,6 +844,8 @@ type Preferences struct {
 //     no longer be changed on its own.
 //   - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
 //     (`GET /streaming`) open as the server allows. Close one first.
+//   - `/api/v1/problems/missing-permission` (403): the user's roles lack the permission
+//     that an admin operation needs.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -893,10 +1067,18 @@ type StatusMention struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
 	Acct string `json:"acct"`
 
+	// Domain The domain of the account: the domain of its handle, which for local accounts is the
+	// instance's account domain, or the host of its `uri` when a remote account has no
+	// confirmed handle.
+	Domain *string `json:"domain,omitempty"`
+
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
+
+	// Uri The ActivityPub id of the account's actor, on the server it belongs to.
+	Uri *string `json:"uri,omitempty"`
 
 	// Url The account's profile page.
 	Url string `json:"url"`
@@ -1013,6 +1195,9 @@ type AccountId = Id
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 
+// InstanceDomain defines model for InstanceDomain.
+type InstanceDomain = string
+
 // Limit defines model for Limit.
 type Limit = int
 
@@ -1037,8 +1222,11 @@ type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.
 type LookupAccountParams struct {
-	// Acct The handle, `username` or `username@domain`.
+	// Acct The handle, `username` or `username@domain`, or the `https` URL of an actor.
 	Acct string `form:"acct" json:"acct"`
+
+	// Resolve Fetch a remote account that the instance does not know yet.
+	Resolve *bool `form:"resolve,omitempty" json:"resolve,omitempty"`
 }
 
 // GetRelationshipsParams defines parameters for GetRelationships.
@@ -1076,6 +1264,36 @@ type ListAccountStatusesParams struct {
 	// Pinned List only the account's pinned posts.
 	Pinned *bool `form:"pinned,omitempty" json:"pinned,omitempty"`
 
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListDeadJobsParams defines parameters for ListDeadJobs.
+type ListDeadJobsParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListInstanceHealthParams defines parameters for ListInstanceHealth.
+type ListInstanceHealthParams struct {
+	// State Keep only the servers in this state; omitted keeps both.
+	State *AdminInstanceState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListInstanceAvailabilityEventsParams defines parameters for ListInstanceAvailabilityEvents.
+type ListInstanceAvailabilityEventsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -1194,7 +1412,7 @@ type EditStatusJSONRequestBody = EditStatusRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// LookupAccount Look up an account by its handle
+	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(w http.ResponseWriter, r *http.Request, params LookupAccountParams)
 	// GetRelationships Get the viewer's relationships with accounts
@@ -1239,6 +1457,24 @@ type ServerInterface interface {
 	// UnmuteAccount Unmute an account
 	// (POST /accounts/{id}/unmute)
 	UnmuteAccount(w http.ResponseWriter, r *http.Request, id AccountId)
+	// ListDeadJobs List the dead jobs
+	// (GET /admin/dead_jobs)
+	ListDeadJobs(w http.ResponseWriter, r *http.Request, params ListDeadJobsParams)
+	// RetryDeadJob Run a dead job again
+	// (POST /admin/dead_jobs/{id}/retry)
+	RetryDeadJob(w http.ResponseWriter, r *http.Request, id Id)
+	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
+	// (GET /admin/instances)
+	ListInstanceHealth(w http.ResponseWriter, r *http.Request, params ListInstanceHealthParams)
+	// GetInstanceHealth Get the health of a remote server
+	// (GET /admin/instances/{domain})
+	GetInstanceHealth(w http.ResponseWriter, r *http.Request, domain InstanceDomain)
+	// ListInstanceAvailabilityEvents List the times a remote server was marked unavailable or available
+	// (GET /admin/instances/{domain}/availability_events)
+	ListInstanceAvailabilityEvents(w http.ResponseWriter, r *http.Request, domain InstanceDomain, params ListInstanceAvailabilityEventsParams)
+	// MarkInstanceAvailable Mark a remote server available
+	// (POST /admin/instances/{domain}/mark_available)
+	MarkInstanceAvailable(w http.ResponseWriter, r *http.Request, domain InstanceDomain)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(w http.ResponseWriter, r *http.Request, params ListBlocksParams)
@@ -1370,6 +1606,19 @@ func (siw *ServerInterfaceWrapper) LookupAccount(w http.ResponseWriter, r *http.
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "acct"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "acct", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "resolve" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "resolve", r.URL.Query(), &params.Resolve, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "resolve"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "resolve", Err: err})
 		}
 		return
 	}
@@ -1849,6 +2098,244 @@ func (siw *ServerInterfaceWrapper) UnmuteAccount(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UnmuteAccount(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeadJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListDeadJobs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeadJobsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeadJobs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetryDeadJob operation middleware
+func (siw *ServerInterfaceWrapper) RetryDeadJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryDeadJob(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInstanceHealth operation middleware
+func (siw *ServerInterfaceWrapper) ListInstanceHealth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInstanceHealthParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInstanceHealth(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInstanceHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetInstanceHealth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "domain" -------------
+	var domain InstanceDomain
+
+	err = runtime.BindStyledParameterWithOptions("simple", "domain", r.PathValue("domain"), &domain, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInstanceHealth(w, r, domain)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInstanceAvailabilityEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListInstanceAvailabilityEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "domain" -------------
+	var domain InstanceDomain
+
+	err = runtime.BindStyledParameterWithOptions("simple", "domain", r.PathValue("domain"), &domain, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInstanceAvailabilityEventsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInstanceAvailabilityEvents(w, r, domain, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MarkInstanceAvailable operation middleware
+func (siw *ServerInterfaceWrapper) MarkInstanceAvailable(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "domain" -------------
+	var domain InstanceDomain
+
+	err = runtime.BindStyledParameterWithOptions("simple", "domain", r.PathValue("domain"), &domain, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MarkInstanceAvailable(w, r, domain)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3036,6 +3523,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/home", wrapper.GetHomeTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/local", wrapper.GetLocalTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/tag/{hashtag}", wrapper.GetHashtagTimeline)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/dead_jobs", wrapper.ListDeadJobs)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/dead_jobs/{id}/retry", wrapper.RetryDeadJob)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances", wrapper.ListInstanceHealth)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}", wrapper.GetInstanceHealth)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}/availability_events", wrapper.ListInstanceAvailabilityEvents)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/instances/{domain}/mark_available", wrapper.MarkInstanceAvailable)
 
 	return m
 }
@@ -3056,6 +3549,15 @@ type AccountProfileJSONResponse struct {
 	Body Account
 
 	Headers AccountProfileResponseHeaders
+}
+
+type AdminInstanceHealthResponseHeaders struct {
+	CacheControl *string
+}
+type AdminInstanceHealthJSONResponse struct {
+	Body AdminInstanceHealth
+
+	Headers AdminInstanceHealthResponseHeaders
 }
 
 type ProblemResponseHeaders struct {
@@ -3924,6 +4426,353 @@ type UnmuteAccountdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UnmuteAccountdefaultApplicationProblemPlusJSONResponse) VisitUnmuteAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeadJobsRequestObject struct {
+	Params ListDeadJobsParams
+}
+
+type ListDeadJobsResponseObject interface {
+	VisitListDeadJobsResponse(w http.ResponseWriter) error
+}
+
+type ListDeadJobs200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListDeadJobs200JSONResponse struct {
+	Body    AdminDeadJobPage
+	Headers ListDeadJobs200ResponseHeaders
+}
+
+func (response ListDeadJobs200JSONResponse) VisitListDeadJobsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeadJobsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListDeadJobsdefaultApplicationProblemPlusJSONResponse) VisitListDeadJobsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetryDeadJobRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type RetryDeadJobResponseObject interface {
+	VisitRetryDeadJobResponse(w http.ResponseWriter) error
+}
+
+type RetryDeadJob204Response struct {
+}
+
+func (response RetryDeadJob204Response) VisitRetryDeadJobResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RetryDeadJobdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RetryDeadJobdefaultApplicationProblemPlusJSONResponse) VisitRetryDeadJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceHealthRequestObject struct {
+	Params ListInstanceHealthParams
+}
+
+type ListInstanceHealthResponseObject interface {
+	VisitListInstanceHealthResponse(w http.ResponseWriter) error
+}
+
+type ListInstanceHealth200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListInstanceHealth200JSONResponse struct {
+	Body    AdminInstanceHealthPage
+	Headers ListInstanceHealth200ResponseHeaders
+}
+
+func (response ListInstanceHealth200JSONResponse) VisitListInstanceHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceHealthdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListInstanceHealthdefaultApplicationProblemPlusJSONResponse) VisitListInstanceHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInstanceHealthRequestObject struct {
+	Domain InstanceDomain `json:"domain"`
+}
+
+type GetInstanceHealthResponseObject interface {
+	VisitGetInstanceHealthResponse(w http.ResponseWriter) error
+}
+
+type GetInstanceHealth200JSONResponse struct {
+	AdminInstanceHealthJSONResponse
+}
+
+func (response GetInstanceHealth200JSONResponse) VisitGetInstanceHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInstanceHealthdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetInstanceHealthdefaultApplicationProblemPlusJSONResponse) VisitGetInstanceHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceAvailabilityEventsRequestObject struct {
+	Domain InstanceDomain `json:"domain"`
+	Params ListInstanceAvailabilityEventsParams
+}
+
+type ListInstanceAvailabilityEventsResponseObject interface {
+	VisitListInstanceAvailabilityEventsResponse(w http.ResponseWriter) error
+}
+
+type ListInstanceAvailabilityEvents200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListInstanceAvailabilityEvents200JSONResponse struct {
+	Body    AdminAvailabilityEventPage
+	Headers ListInstanceAvailabilityEvents200ResponseHeaders
+}
+
+func (response ListInstanceAvailabilityEvents200JSONResponse) VisitListInstanceAvailabilityEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceAvailabilityEventsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListInstanceAvailabilityEventsdefaultApplicationProblemPlusJSONResponse) VisitListInstanceAvailabilityEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkInstanceAvailableRequestObject struct {
+	Domain InstanceDomain `json:"domain"`
+}
+
+type MarkInstanceAvailableResponseObject interface {
+	VisitMarkInstanceAvailableResponse(w http.ResponseWriter) error
+}
+
+type MarkInstanceAvailable200JSONResponse struct {
+	AdminInstanceHealthJSONResponse
+}
+
+func (response MarkInstanceAvailable200JSONResponse) VisitMarkInstanceAvailableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse) VisitMarkInstanceAvailableResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -5921,7 +6770,7 @@ func (response GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse) Visi
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// LookupAccount Look up an account by its handle
+	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(ctx context.Context, request LookupAccountRequestObject) (LookupAccountResponseObject, error)
 	// GetRelationships Get the viewer's relationships with accounts
@@ -5966,6 +6815,24 @@ type StrictServerInterface interface {
 	// UnmuteAccount Unmute an account
 	// (POST /accounts/{id}/unmute)
 	UnmuteAccount(ctx context.Context, request UnmuteAccountRequestObject) (UnmuteAccountResponseObject, error)
+	// ListDeadJobs List the dead jobs
+	// (GET /admin/dead_jobs)
+	ListDeadJobs(ctx context.Context, request ListDeadJobsRequestObject) (ListDeadJobsResponseObject, error)
+	// RetryDeadJob Run a dead job again
+	// (POST /admin/dead_jobs/{id}/retry)
+	RetryDeadJob(ctx context.Context, request RetryDeadJobRequestObject) (RetryDeadJobResponseObject, error)
+	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
+	// (GET /admin/instances)
+	ListInstanceHealth(ctx context.Context, request ListInstanceHealthRequestObject) (ListInstanceHealthResponseObject, error)
+	// GetInstanceHealth Get the health of a remote server
+	// (GET /admin/instances/{domain})
+	GetInstanceHealth(ctx context.Context, request GetInstanceHealthRequestObject) (GetInstanceHealthResponseObject, error)
+	// ListInstanceAvailabilityEvents List the times a remote server was marked unavailable or available
+	// (GET /admin/instances/{domain}/availability_events)
+	ListInstanceAvailabilityEvents(ctx context.Context, request ListInstanceAvailabilityEventsRequestObject) (ListInstanceAvailabilityEventsResponseObject, error)
+	// MarkInstanceAvailable Mark a remote server available
+	// (POST /admin/instances/{domain}/mark_available)
+	MarkInstanceAvailable(ctx context.Context, request MarkInstanceAvailableRequestObject) (MarkInstanceAvailableResponseObject, error)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(ctx context.Context, request ListBlocksRequestObject) (ListBlocksResponseObject, error)
@@ -6518,6 +7385,163 @@ func (sh *strictHandler) UnmuteAccount(w http.ResponseWriter, r *http.Request, i
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnmuteAccountResponseObject); ok {
 		if err := validResponse.VisitUnmuteAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeadJobs operation middleware
+func (sh *strictHandler) ListDeadJobs(w http.ResponseWriter, r *http.Request, params ListDeadJobsParams) {
+	var request ListDeadJobsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeadJobs(ctx, request.(ListDeadJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeadJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeadJobsResponseObject); ok {
+		if err := validResponse.VisitListDeadJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetryDeadJob operation middleware
+func (sh *strictHandler) RetryDeadJob(w http.ResponseWriter, r *http.Request, id Id) {
+	var request RetryDeadJobRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetryDeadJob(ctx, request.(RetryDeadJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetryDeadJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetryDeadJobResponseObject); ok {
+		if err := validResponse.VisitRetryDeadJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInstanceHealth operation middleware
+func (sh *strictHandler) ListInstanceHealth(w http.ResponseWriter, r *http.Request, params ListInstanceHealthParams) {
+	var request ListInstanceHealthRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInstanceHealth(ctx, request.(ListInstanceHealthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInstanceHealth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInstanceHealthResponseObject); ok {
+		if err := validResponse.VisitListInstanceHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInstanceHealth operation middleware
+func (sh *strictHandler) GetInstanceHealth(w http.ResponseWriter, r *http.Request, domain InstanceDomain) {
+	var request GetInstanceHealthRequestObject
+
+	request.Domain = domain
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInstanceHealth(ctx, request.(GetInstanceHealthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInstanceHealth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInstanceHealthResponseObject); ok {
+		if err := validResponse.VisitGetInstanceHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInstanceAvailabilityEvents operation middleware
+func (sh *strictHandler) ListInstanceAvailabilityEvents(w http.ResponseWriter, r *http.Request, domain InstanceDomain, params ListInstanceAvailabilityEventsParams) {
+	var request ListInstanceAvailabilityEventsRequestObject
+
+	request.Domain = domain
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInstanceAvailabilityEvents(ctx, request.(ListInstanceAvailabilityEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInstanceAvailabilityEvents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInstanceAvailabilityEventsResponseObject); ok {
+		if err := validResponse.VisitListInstanceAvailabilityEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MarkInstanceAvailable operation middleware
+func (sh *strictHandler) MarkInstanceAvailable(w http.ResponseWriter, r *http.Request, domain InstanceDomain) {
+	var request MarkInstanceAvailableRequestObject
+
+	request.Domain = domain
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MarkInstanceAvailable(ctx, request.(MarkInstanceAvailableRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MarkInstanceAvailable")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MarkInstanceAvailableResponseObject); ok {
+		if err := validResponse.VisitMarkInstanceAvailableResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

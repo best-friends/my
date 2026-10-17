@@ -33,11 +33,19 @@ type fakeObjects struct {
 	requests []*appfederation.SignedRequest
 	outbox   []federation.ActivityDocument
 	featured []federation.ObjectDocument
-	err      error
+	// authorizedFetch is the authorized fetch setting.
+	authorizedFetch bool
+	err             error
 }
 
 func newObjects() *fakeObjects {
 	return &fakeObjects{}
+}
+
+func (f *fakeObjects) AuthorizedFetch(context.Context) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.authorizedFetch, f.err
 }
 
 func (f *fakeObjects) Authenticate(_ context.Context, r *appfederation.SignedRequest) (appfederation.Requester, error) {

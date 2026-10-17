@@ -130,7 +130,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 - 認可応答は `303` のリダイレクトで、`code`（または `error`）・`state`・`iss`（RFC 9207）を付けます。
 - トークンには種別プレフィックス（アクセストークン `my_at_`、リフレッシュトークン `my_rt_`、認可コード `my_ac_`）が付きます。
   期限は認可コード 60 秒、アクセストークン 1 時間、リフレッシュトークン 30 日です。
-- スコープは §4.1 のとおりです。認可リクエストで省くと、クライアントに許されたスコープ全体（ファーストパーティの Web クライアントは `read`・`write`・`follow`・`push`）になります。
+- スコープは §4.1 のとおりです。認可リクエストで省くと、クライアントに許されたスコープ全体（ファーストパーティの Web クライアントは `admin`・`read`・`write`・`follow`・`push`）になります。
 - ファーストパーティの Web クライアントは起動時に登録されます。`client_id` は `my-web`、リダイレクト URI は `<web_origin>/login/callback` です。
   - `POST /oauth/token` での認可コードの交換では、リフレッシュトークンを本文ではなく `__Host-my_rt` Cookie（`HttpOnly`、`Secure`、`SameSite=Strict`、`Path=/`）で返します。
     この交換は `net/http.CrossOriginProtection` を通る要求だけを受け付けます。
@@ -142,10 +142,11 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 
 ### 4.1 スコープ
 
-スコープは広いスコープ（`read`・`write`・`follow`・`push`）と細かいスコープ（`read:accounts`、`write:statuses` など）の 2 段です。
+スコープは広いスコープ（`admin`・`read`・`write`・`follow`・`push`）と細かいスコープ（`read:accounts`、`write:statuses` など）の 2 段です。
 一覧は spec の `#/components/securitySchemes/oauth2` と `internal/domain/identity` の `KnownScopes` で、両者が一致することをテストが確かめます。
 
-- `read` はすべての `read:*` を、`write` はすべての `write:*` を、`follow` は `read:follows`・`read:blocks`・`read:mutes`・`write:follows`・`write:blocks`・`write:mutes` を許します（`identity.Scope.Grants`）。
+- `read` はすべての `read:*` を、`write` はすべての `write:*` を、`follow` は `read:follows`・`read:blocks`・`read:mutes`・`write:follows`・`write:blocks`・`write:mutes` を、`admin` は `admin:read`・`admin:write` を許します（`identity.Scope.Grants`）。
+  `read`・`write` は管理のスコープを許しません。
   `push` は Web Push だけです。
 - 操作には細かいスコープを書きます（`verifyAccountCredentials` は `read:accounts`）。クライアントは広いスコープでも細かいスコープでも要求できます。
 - スコープを増やすときは、`internal/domain/identity` の定数と `knownScopes`（ソート済み）、spec の `scopes`、同意画面の文言（`server:auth.authorize.scope.*` と `authpages` の `scopeDescriptions`）を同時に変えます。
@@ -177,6 +178,10 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 | `security: [{oauth2: [read:accounts]}]` | トークンが必須で、列挙したスコープをすべて要する |
 | `security: [{}, {oauth2: [read:statuses]}]` | 匿名でも使える。トークンが送られたら列挙したスコープを要する |
 
+管理の操作（タグ `admin`、`/admin/...`）は、スコープ（`admin:read` / `admin:write`）に加えて、利用者のロールが操作の権限（`manage_domains`、`manage_jobs` など。[data-model §4.1](data-model.md)）を持つことを要します。
+ハンドラが最初に `Server.requirePermission` で `Options.Permissions`（`identity.Service.HasPermission`）に問い合わせ、持たなければ 403 にします。
+権限は spec の `security` に書けないので、操作の `description` に書きます。
+
 応答:
 
 | 状況 | 状態 | `type` | `WWW-Authenticate`（RFC 6750 §3） |
@@ -185,13 +190,14 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 | `Bearer` でない、形式が違う、未知・失効・期限切れのトークン | 401 | `/api/v1/problems/invalid-token` | `Bearer error="invalid_token"` |
 | トークンは有効だが利用者がアプリを使えない（承認待ち・却下・メール未確認・停止・削除） | 403 | `/api/v1/problems/account-unavailable` | なし |
 | スコープ不足 | 403 | `/api/v1/problems/insufficient-scope` | `Bearer error="insufficient_scope", scope="<操作のスコープ>"` |
+| 管理の操作で、利用者のロールに権限がない | 403 | `/api/v1/problems/missing-permission` | なし |
 | レート制限の超過 | 429 | `about:blank` | なし（`Retry-After` を付ける） |
 
 すべての応答に `RateLimit-Policy` と `RateLimit`（[draft-ietf-httpapi-ratelimit-headers](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/) の Structured Fields 形式）を付けます。
 ポリシー名は `"ip"` と `"account"` で、例えば `RateLimit-Policy: "account";q=1500;w=300` と `RateLimit: "account";r=1499;t=300` です
 （`q` は窓あたりの上限、`w` は窓の秒数、`r` は残り、`t` は窓が終わるまで、超過時は次の要求が通るまでの秒数）。
 
-操作ごとの制限（投稿 300 / 3 時間、アップロード 30 / 30 分など ADR-0019 §5 の表）は、ハンドラが `Server.LimitProblem(ctx, limit, v.AccountID)` を呼び、
+操作ごとの制限（投稿 300 / 3 時間、アップロード 30 / 30 分など ADR-0019 §5 の表と、`lookupAccount` の `resolve` によるリモートのアカウントの取得 30 / 5 分）は、ハンドラが `Server.LimitProblem(ctx, limit, v.AccountID)` を呼び、
 超過なら返された 429 の問題（`Retry-After` 付き）を `default` 応答で返します。制限は `kernel.Limit` の変数として `clientapi` に置きます。
 
 ## 5. ストリーミング

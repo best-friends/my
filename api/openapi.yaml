@@ -17,8 +17,8 @@ info:
       never on the text.
     - Requests authenticate with an OAuth 2.0 access token in `Authorization: Bearer`, never
       with cookies. Each operation lists the scopes it needs under `security`; a broad scope
-      (`read`, `write`, `follow`) grants the fine-grained scopes under it. A missing or invalid
-      token is a 401 with `WWW-Authenticate`, a token without the scope a 403
+      (`read`, `write`, `follow`, `admin`) grants the fine-grained scopes under it. A missing or
+      invalid token is a 401 with `WWW-Authenticate`, a token without the scope a 403
       `insufficient_scope`.
     - Every response carries the `RateLimit` and `RateLimit-Policy` fields
       (draft-ietf-httpapi-ratelimit-headers): anonymous requests share a limit per client IP,
@@ -50,6 +50,10 @@ tags:
     description: The home, local, hashtag, and account timelines.
   - name: streaming
     description: Real-time updates of the home timeline and the notifications.
+  - name: admin
+    description: |
+      Instance administration. The operations need an `admin` scope and a permission of the
+      user's roles; a user without it gets a 403 `/api/v1/problems/missing-permission`.
 paths:
   /instance:
     get:
@@ -175,11 +179,19 @@ paths:
   /accounts/lookup:
     get:
       operationId: lookupAccount
-      summary: Look up an account by its handle
+      summary: Look up or resolve an account by its handle or URL
       description: |
-        Resolves `username` (a local account) or `username@domain` among the accounts that the
-        instance knows, without fetching remote ones. A leading `@` is ignored. An account that
-        blocks the viewer, is deactivated, or is deleted is a 404, the same as an unknown one.
+        Finds `username` (a local account), `username@domain`, or the `https` URL of an actor
+        (its `uri`, or a profile page that serves the actor) among the accounts that the instance
+        knows. A leading `@` of a handle is ignored. An account that blocks the viewer, is
+        deactivated, or is deleted is a 404, the same as an unknown one.
+
+        With `resolve=true`, a remote account that the instance does not know yet is fetched
+        from its server (FR-305): a handle through WebFinger, a URL directly. Only accounts
+        whose handle WebFinger confirms are returned; a handle or URL that does not lead to one
+        is a 404. Resolving needs an access token (anonymous requests get the 401 of
+        `/api/v1/problems/unauthenticated`) and is limited to 30 fetches per account every
+        5 minutes (429 with `Retry-After`); finding a known account is not limited.
       tags: [accounts]
       security:
         - {}
@@ -188,11 +200,18 @@ paths:
         - name: acct
           in: query
           required: true
-          description: The handle, `username` or `username@domain`.
+          description: The handle, `username` or `username@domain`, or the `https` URL of an actor.
           schema:
             type: string
             minLength: 1
-            maxLength: 320
+            maxLength: 2048
+        - name: resolve
+          in: query
+          required: false
+          description: Fetch a remote account that the instance does not know yet.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           $ref: "#/components/responses/AccountProfile"
@@ -1184,21 +1203,172 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of streaming (#116) ---
+  # --- admin: remote servers and dead jobs (#261) ---
+  /admin/dead_jobs:
+    get:
+      operationId: listDeadJobs
+      summary: List the dead jobs
+      description: |
+        The jobs of the job queue that failed for good (their handler gave up, or they used up
+        their attempts), most recently failed first. Needs the `manage_jobs` permission; a user
+        without it gets a 403 `/api/v1/problems/missing-permission`.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of dead jobs.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeadJobPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/dead_jobs/{id}/retry:
+    post:
+      operationId: retryDeadJob
+      summary: Run a dead job again
+      description: |
+        Enqueues the dead job again with a fresh attempt count, to run now, and removes it from
+        the dead jobs. When a pending job has the same idempotency key, that job stands in for
+        it. An unknown ID, or one already retried, is a 404. Needs the `manage_jobs` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the dead job.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "204":
+          description: The job is enqueued.
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/instances:
+    get:
+      operationId: listInstanceHealth
+      summary: List the remote servers with delivery failures or marked unavailable
+      description: |
+        The health of the remote servers that deliveries failed to reach on some days, or that
+        are marked unavailable, in domain order. A server that is not listed is available and
+        has no failures. Unavailable servers are sent only `Follow`, `Accept`, and `Reject`
+        until a delivery succeeds, they send a signed request, the daily probe reaches them, or
+        an operator marks them available. Needs the `manage_domains` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: state
+          in: query
+          required: false
+          description: Keep only the servers in this state; omitted keeps both.
+          schema:
+            $ref: "#/components/schemas/AdminInstanceState"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of server health.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInstanceHealthPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/instances/{domain}:
+    get:
+      operationId: getInstanceHealth
+      summary: Get the health of a remote server
+      description: |
+        The health of the server; one without failures is `available`, without `since`. Needs
+        the `manage_domains` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/InstanceDomain"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminInstanceHealth"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/instances/{domain}/availability_events:
+    get:
+      operationId: listInstanceAvailabilityEvents
+      summary: List the times a remote server was marked unavailable or available
+      description: |
+        Why and when the server was marked unavailable or available again, newest first. Needs
+        the `manage_domains` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/InstanceDomain"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of availability events.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAvailabilityEventPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/instances/{domain}/mark_available:
+    post:
+      operationId: markInstanceAvailable
+      summary: Mark a remote server available
+      description: |
+        Clears the failure days of the server and, when it is unavailable, marks it available
+        again with the reason `operator`, so that deliveries to it resume. A server that is
+        already available without failures stays as it is. Needs the `manage_domains`
+        permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/InstanceDomain"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminInstanceHealth"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin (#261) ---
 components:
   securitySchemes:
     oauth2:
       type: oauth2
       description: |
         An OAuth 2.0 access token (Authorization Code + PKCE S256), sent as
-        `Authorization: Bearer <token>`. `read`, `write`, and `follow` grant every scope under
-        them (`read` grants `read:accounts`; `follow` grants `read:follows`, `read:blocks`,
-        `read:mutes`, `write:follows`, `write:blocks`, and `write:mutes`).
+        `Authorization: Bearer <token>`. `read`, `write`, `follow`, and `admin` grant every scope
+        under them (`read` grants `read:accounts`; `follow` grants `read:follows`, `read:blocks`,
+        `read:mutes`, `write:follows`, `write:blocks`, and `write:mutes`; `admin` grants
+        `admin:read` and `admin:write`). `read` and `write` do not grant the admin scopes.
       flows:
         authorizationCode:
           authorizationUrl: /oauth/authorize
           tokenUrl: /oauth/token
           refreshUrl: /oauth/token
           scopes:
+            admin: Administer the instance, as far as the user's roles allow.
+            "admin:read": Read the instance's administration data, as far as the user's roles allow.
+            "admin:write": Change the instance's administration data, as far as the user's roles allow.
             read: Read everything the user can read.
             write: Change everything the user can change.
             follow: Read and change follows, blocks, and mutes.
@@ -1271,6 +1441,17 @@ components:
       description: The account ID.
       schema:
         $ref: "#/components/schemas/Id"
+    # --- admin (#261) ---
+    InstanceDomain:
+      name: domain
+      in: path
+      required: true
+      description: The domain of the remote server, such as `mastodon.example`.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 253
+    # --- end of admin (#261) ---
   responses:
     StatusPage:
       description: A page of posts and boosts, newest first.
@@ -1346,6 +1527,17 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Relationship"
+    # --- admin (#261) ---
+    AdminInstanceHealth:
+      description: The health of the remote server.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminInstanceHealth"
+    # --- end of admin (#261) ---
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -1392,6 +1584,8 @@ components:
           no longer be changed on its own.
         - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
           (`GET /streaming`) open as the server allows. Close one first.
+        - `/api/v1/problems/missing-permission` (403): the user's roles lack the permission
+          that an admin operation needs.
       type: object
       required: [type, title, status]
       properties:
@@ -1467,7 +1661,7 @@ components:
     Account:
       description: An account, as clients show it (FR-006).
       type: object
-      required: [id, username, acct, display_name, note, fields, url, locked, bot, created_at]
+      required: [id, username, acct, domain, uri, display_name, note, fields, url, locked, bot, created_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -1477,6 +1671,16 @@ components:
         acct:
           description: The username for local accounts, `username@domain` for remote ones.
           type: string
+        domain:
+          description: |
+            The domain of the account: the domain of its handle, which for local accounts is the
+            instance's account domain, or the host of its `uri` when a remote account has no
+            confirmed handle.
+          type: string
+        uri:
+          description: The ActivityPub id of the account's actor, on the server it belongs to.
+          type: string
+          format: uri
         display_name:
           description: The display name; empty when the account has none.
           type: string
@@ -2057,6 +2261,16 @@ components:
         acct:
           description: The username for local accounts, `username@domain` for remote ones.
           type: string
+        domain:
+          description: |
+            The domain of the account: the domain of its handle, which for local accounts is the
+            instance's account domain, or the host of its `uri` when a remote account has no
+            confirmed handle.
+          type: string
+        uri:
+          description: The ActivityPub id of the account's actor, on the server it belongs to.
+          type: string
+          format: uri
         url:
           description: The account's profile page.
           type: string
@@ -2268,3 +2482,115 @@ components:
           items:
             $ref: "#/components/schemas/Visibility"
     # --- end of the viewer's posting limits (#207) ---
+    # --- admin (#261) ---
+    AdminAvailabilityEvent:
+      description: The time a remote server was marked unavailable or available again, and why.
+      type: object
+      required: [id, kind, reason, occurred_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        kind:
+          type: string
+          enum: [marked_unavailable, marked_available]
+        reason:
+          description: |
+            `failure_days`: deliveries failed on 7 distinct days. `delivery_succeeded`: a delivery
+            succeeded. `inbound_request`: the server sent a signed request. `probe_succeeded`: the
+            daily probe fetched its NodeInfo. `operator`: an operator marked it.
+          type: string
+          enum: [failure_days, delivery_succeeded, inbound_request, probe_succeeded, operator]
+        occurred_at:
+          type: string
+          format: date-time
+    AdminAvailabilityEventPage:
+      description: A page of availability events, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminAvailabilityEvent"
+    AdminDeadJob:
+      description: A job that failed for good.
+      type: object
+      required: [id, type, payload, attempts, last_error, created_at, failed_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        type:
+          description: The job type, such as `federation.deliver`.
+          type: string
+        payload:
+          description: The job's payload, a JSON document as text.
+          type: string
+        idempotency_key:
+          type: string
+        ordering_key:
+          type: string
+        attempts:
+          description: The number of runs the job had.
+          type: integer
+          minimum: 0
+        last_error:
+          description: Why the last run failed.
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        failed_at:
+          type: string
+          format: date-time
+    AdminDeadJobPage:
+      description: A page of dead jobs, most recently failed first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminDeadJob"
+    AdminInstanceHealth:
+      description: Whether deliveries go to a remote server (federation.md §7.3).
+      type: object
+      required: [domain, state, failure_days]
+      properties:
+        domain:
+          type: string
+        state:
+          $ref: "#/components/schemas/AdminInstanceState"
+        since:
+          description: When the server entered its state; omitted for a server without failures.
+          type: string
+          format: date-time
+        failure_days:
+          description: The number of distinct UTC days of the latest run of failed deliveries.
+          type: integer
+          minimum: 0
+        last_failure_day:
+          description: The latest of those days; omitted without failures.
+          type: string
+          format: date
+    AdminInstanceHealthPage:
+      description: A page of server health, in domain order.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminInstanceHealth"
+    AdminInstanceState:
+      description: |
+        `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
+        `Reject`.
+      type: string
+      enum: [available, unavailable]
+    # --- end of admin (#261) ---

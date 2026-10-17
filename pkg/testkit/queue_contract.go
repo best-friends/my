@@ -59,7 +59,7 @@ func FixedRandom(v float64) func() float64 { return func() float64 { return v } 
 // contract, driven by queue.PullRunner: due jobs run in RunAt order and delayed jobs not
 // before RunAt; idempotency keys deduplicate pending jobs; failed runs are retried with
 // exponential backoff with jitter or after the requested delay; jobs that fail for good or
-// use up their attempts become dead jobs, which can be requeued; a job whose worker stopped
+// use up their attempts become dead jobs, which are listed in pages and can be requeued; a job whose worker stopped
 // is claimed again once its lease expires (at-least-once), and the stale worker's result is
 // dropped; concurrent workers run each job once; jobs of one ordering key run one at a time,
 // in enqueue order, even across retries, delays, and concurrent workers; and, where the harness enables them,
@@ -80,6 +80,7 @@ func QueueContract(t *testing.T, newHarness QueueFactory) {
 		{"MovesExhaustedJobsToDeadJobs", queueMovesExhaustedJobsToDead},
 		{"RetriesJobsWithoutAHandler", queueRetriesUnknownTypes},
 		{"RequeuesDeadJobs", queueRequeuesDeadJobs},
+		{"PagesDeadJobsInFailureOrder", queuePagesDeadJobs},
 		{"ReclaimsJobsOfAStoppedWorker", queueReclaimsAfterLeaseExpiry},
 		{"RunsEachJobOnceUnderConcurrentWorkers", queueConcurrentWorkers},
 		{"LeasesOneJobPerOrderingKeyAtATime", queueLeasesOnePerOrderingKey},
@@ -180,7 +181,7 @@ func (f *queueFixture) wantRuns(n int) []queue.Job {
 
 func (f *queueFixture) dead() []queue.DeadJob {
 	f.t.Helper()
-	d, err := f.h.DeadJobs.ListDeadJobs(f.t.Context(), 100)
+	d, err := f.h.DeadJobs.ListDeadJobs(f.t.Context(), queue.DeadJobPosition{}, 100)
 	if err != nil {
 		f.t.Fatalf("ListDeadJobs: %v", err)
 	}
@@ -438,6 +439,45 @@ func queueRequeuesDeadJobs(t *testing.T, newHarness QueueFactory) {
 	}
 	if err := f.h.DeadJobs.RequeueDeadJob(t.Context(), dead[0].ID); !errors.Is(err, queue.ErrDeadJobNotFound) {
 		t.Errorf("RequeueDeadJob of a requeued job = %v, want ErrDeadJobNotFound", err)
+	}
+}
+
+func queuePagesDeadJobs(t *testing.T, newHarness QueueFactory) {
+	bug := queue.Fail(errors.New("bug"))
+	f := newQueueFixture(t, newHarness, bug, bug, bug, bug)
+	// Three jobs fail at the same time and one later.
+	f.enqueue(probe(`{"N":"a"}`), probe(`{"N":"b"}`), probe(`{"N":"c"}`))
+	f.drain()
+	f.clock.Advance(time.Minute)
+	f.enqueue(probe(`{"N":"d"}`))
+	f.drain()
+	all := f.dead()
+	if len(all) != 4 || payloadOf(t, queue.Job{Payload: all[0].Payload}) != "d" {
+		t.Fatalf("dead jobs = %+v, want 4, the latest failure first", all)
+	}
+	var paged []queue.DeadJob
+	after := queue.DeadJobPosition{}
+	for range len(all) {
+		page, err := f.h.DeadJobs.ListDeadJobs(t.Context(), after, 2)
+		if err != nil {
+			t.Fatalf("ListDeadJobs(%+v): %v", after, err)
+		}
+		if len(page) == 0 {
+			break
+		}
+		paged = append(paged, page...)
+		after = page[len(page)-1].Position()
+	}
+	if len(paged) != len(all) {
+		t.Fatalf("pages hold %d dead jobs, want %d", len(paged), len(all))
+	}
+	for i := range all {
+		if paged[i].ID != all[i].ID {
+			t.Fatalf("paged order = %+v, want %+v", paged, all)
+		}
+	}
+	if none, err := f.h.DeadJobs.ListDeadJobs(t.Context(), queue.DeadJobPosition{}, 0); err != nil || len(none) != 0 {
+		t.Errorf("ListDeadJobs(limit 0) = %+v, %v; want none", none, err)
 	}
 }
 

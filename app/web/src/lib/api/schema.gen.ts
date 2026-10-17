@@ -93,10 +93,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Look up an account by its handle
-         * @description Resolves `username` (a local account) or `username@domain` among the accounts that the
-         *     instance knows, without fetching remote ones. A leading `@` is ignored. An account that
-         *     blocks the viewer, is deactivated, or is deleted is a 404, the same as an unknown one.
+         * Look up or resolve an account by its handle or URL
+         * @description Finds `username` (a local account), `username@domain`, or the `https` URL of an actor
+         *     (its `uri`, or a profile page that serves the actor) among the accounts that the instance
+         *     knows. A leading `@` of a handle is ignored. An account that blocks the viewer, is
+         *     deactivated, or is deleted is a 404, the same as an unknown one.
+         *
+         *     With `resolve=true`, a remote account that the instance does not know yet is fetched
+         *     from its server (FR-305): a handle through WebFinger, a URL directly. Only accounts
+         *     whose handle WebFinger confirms are returned; a handle or URL that does not lead to one
+         *     is a 404. Resolving needs an access token (anonymous requests get the 401 of
+         *     `/api/v1/problems/unauthenticated`) and is limited to 30 fetches per account every
+         *     5 minutes (429 with `Retry-After`); finding a known account is not limited.
          */
         get: operations["lookupAccount"];
         put?: never;
@@ -951,6 +959,139 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/dead_jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the dead jobs
+         * @description The jobs of the job queue that failed for good (their handler gave up, or they used up
+         *     their attempts), most recently failed first. Needs the `manage_jobs` permission; a user
+         *     without it gets a 403 `/api/v1/problems/missing-permission`.
+         */
+        get: operations["listDeadJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/dead_jobs/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a dead job again
+         * @description Enqueues the dead job again with a fresh attempt count, to run now, and removes it from
+         *     the dead jobs. When a pending job has the same idempotency key, that job stands in for
+         *     it. An unknown ID, or one already retried, is a 404. Needs the `manage_jobs` permission.
+         */
+        post: operations["retryDeadJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the remote servers with delivery failures or marked unavailable
+         * @description The health of the remote servers that deliveries failed to reach on some days, or that
+         *     are marked unavailable, in domain order. A server that is not listed is available and
+         *     has no failures. Unavailable servers are sent only `Follow`, `Accept`, and `Reject`
+         *     until a delivery succeeds, they send a signed request, the daily probe reaches them, or
+         *     an operator marks them available. Needs the `manage_domains` permission.
+         */
+        get: operations["listInstanceHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instances/{domain}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the health of a remote server
+         * @description The health of the server; one without failures is `available`, without `since`. Needs
+         *     the `manage_domains` permission.
+         */
+        get: operations["getInstanceHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instances/{domain}/availability_events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the times a remote server was marked unavailable or available
+         * @description Why and when the server was marked unavailable or available again, newest first. Needs
+         *     the `manage_domains` permission.
+         */
+        get: operations["listInstanceAvailabilityEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instances/{domain}/mark_available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a remote server available
+         * @description Clears the failure days of the server and, when it is unavailable, marks it available
+         *     again with the reason `operator`, so that deliveries to it resume. A server that is
+         *     already available without failures stays as it is. Needs the `manage_domains`
+         *     permission.
+         */
+        post: operations["markInstanceAvailable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -993,6 +1134,8 @@ export interface components {
          *       no longer be changed on its own.
          *     - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
          *       (`GET /streaming`) open as the server allows. Close one first.
+         *     - `/api/v1/problems/missing-permission` (403): the user's roles lack the permission
+         *       that an admin operation needs.
          */
         Problem: {
             /**
@@ -1051,6 +1194,17 @@ export interface components {
             username: string;
             /** @description The username for local accounts, `username@domain` for remote ones. */
             acct: string;
+            /**
+             * @description The domain of the account: the domain of its handle, which for local accounts is the
+             *     instance's account domain, or the host of its `uri` when a remote account has no
+             *     confirmed handle.
+             */
+            domain: string;
+            /**
+             * Format: uri
+             * @description The ActivityPub id of the account's actor, on the server it belongs to.
+             */
+            uri: string;
             /** @description The display name; empty when the account has none. */
             display_name: string;
             /** @description The profile text as sanitized HTML; empty when there is none. */
@@ -1426,6 +1580,17 @@ export interface components {
             /** @description The username for local accounts, `username@domain` for remote ones. */
             acct: string;
             /**
+             * @description The domain of the account: the domain of its handle, which for local accounts is the
+             *     instance's account domain, or the host of its `uri` when a remote account has no
+             *     confirmed handle.
+             */
+            domain?: string;
+            /**
+             * Format: uri
+             * @description The ActivityPub id of the account's actor, on the server it belongs to.
+             */
+            uri?: string;
+            /**
              * Format: uri
              * @description The account's profile page.
              */
@@ -1561,6 +1726,74 @@ export interface components {
              */
             visibilities: components["schemas"]["Visibility"][];
         };
+        /** @description The time a remote server was marked unavailable or available again, and why. */
+        AdminAvailabilityEvent: {
+            id: components["schemas"]["Id"];
+            /** @enum {string} */
+            kind: "marked_unavailable" | "marked_available";
+            /**
+             * @description `failure_days`: deliveries failed on 7 distinct days. `delivery_succeeded`: a delivery
+             *     succeeded. `inbound_request`: the server sent a signed request. `probe_succeeded`: the
+             *     daily probe fetched its NodeInfo. `operator`: an operator marked it.
+             * @enum {string}
+             */
+            reason: "failure_days" | "delivery_succeeded" | "inbound_request" | "probe_succeeded" | "operator";
+            /** Format: date-time */
+            occurred_at: string;
+        };
+        /** @description A page of availability events, newest first. */
+        AdminAvailabilityEventPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAvailabilityEvent"][];
+        };
+        /** @description A job that failed for good. */
+        AdminDeadJob: {
+            id: components["schemas"]["Id"];
+            /** @description The job type, such as `federation.deliver`. */
+            type: string;
+            /** @description The job's payload, a JSON document as text. */
+            payload: string;
+            idempotency_key?: string;
+            ordering_key?: string;
+            /** @description The number of runs the job had. */
+            attempts: number;
+            /** @description Why the last run failed. */
+            last_error: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            failed_at: string;
+        };
+        /** @description A page of dead jobs, most recently failed first. */
+        AdminDeadJobPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminDeadJob"][];
+        };
+        /** @description Whether deliveries go to a remote server (federation.md §7.3). */
+        AdminInstanceHealth: {
+            domain: string;
+            state: components["schemas"]["AdminInstanceState"];
+            /**
+             * Format: date-time
+             * @description When the server entered its state; omitted for a server without failures.
+             */
+            since?: string;
+            /** @description The number of distinct UTC days of the latest run of failed deliveries. */
+            failure_days: number;
+            /**
+             * Format: date
+             * @description The latest of those days; omitted without failures.
+             */
+            last_failure_day?: string;
+        };
+        /** @description A page of server health, in domain order. */
+        AdminInstanceHealthPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminInstanceHealth"][];
+        };
+        /**
+         * @description `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
+         *     `Reject`.
+         * @enum {string}
+         */
+        AdminInstanceState: "available" | "unavailable";
     };
     responses: {
         /** @description A page of posts and boosts, newest first. */
@@ -1633,6 +1866,16 @@ export interface components {
                 "application/json": components["schemas"]["Relationship"];
             };
         };
+        /** @description The health of the remote server. */
+        AdminInstanceHealth: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminInstanceHealth"];
+            };
+        };
     };
     parameters: {
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
@@ -1648,6 +1891,8 @@ export interface components {
         StatusId: components["schemas"]["Id"];
         /** @description The account ID. */
         AccountId: components["schemas"]["Id"];
+        /** @description The domain of the remote server, such as `mastodon.example`. */
+        InstanceDomain: string;
     };
     requestBodies: never;
     headers: {
@@ -1784,8 +2029,10 @@ export interface operations {
     lookupAccount: {
         parameters: {
             query: {
-                /** @description The handle, `username` or `username@domain`. */
+                /** @description The handle, `username` or `username@domain`, or the `https` URL of an actor. */
                 acct: string;
+                /** @description Fetch a remote account that the instance does not know yet. */
+                resolve?: boolean;
             };
             header?: never;
             path?: never;
@@ -2718,6 +2965,146 @@ export interface operations {
                     "text/event-stream": string;
                 };
             };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listDeadJobs: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of dead jobs. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDeadJobPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    retryDeadJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the dead job. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job is enqueued. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInstanceHealth: {
+        parameters: {
+            query?: {
+                /** @description Keep only the servers in this state; omitted keeps both. */
+                state?: components["schemas"]["AdminInstanceState"];
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of server health. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInstanceHealthPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getInstanceHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The domain of the remote server, such as `mastodon.example`. */
+                domain: components["parameters"]["InstanceDomain"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminInstanceHealth"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInstanceAvailabilityEvents: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                /** @description The domain of the remote server, such as `mastodon.example`. */
+                domain: components["parameters"]["InstanceDomain"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of availability events. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAvailabilityEventPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    markInstanceAvailable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The domain of the remote server, such as `mastodon.example`. */
+                domain: components["parameters"]["InstanceDomain"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminInstanceHealth"];
             default: components["responses"]["Problem"];
         };
     };

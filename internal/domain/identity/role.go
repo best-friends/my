@@ -17,13 +17,15 @@ const (
 	PermManageRoles    Permission = "manage_roles"
 	PermManageInvites  Permission = "manage_invites"
 	PermViewAudit      Permission = "view_audit"
+	// PermManageJobs: read and requeue the dead jobs of the job queue.
+	PermManageJobs Permission = "manage_jobs"
 )
 
 // AllPermissions lists every permission.
 func AllPermissions() []Permission {
 	return []Permission{
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
-		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit,
+		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
 	}
 }
 
