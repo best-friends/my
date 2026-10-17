@@ -14,6 +14,7 @@
 | `internal/app/federation` | ユースケース（受信 `Receive`、アクティビティの処理、配送の展開 `FanOut`、配送 `Deliver`、Actor / オブジェクトの取得 `Fetch`、解決 `Resolve`）、ジョブハンドラ、ポート（`Signer`・`Verifier`・リポジトリ） |
 | `internal/app/kernel` | `HTTPClient` ポート（連合のほか、メディアプロキシ・リンクプレビュー・Web Push も使うので全モジュール共通に置く） |
 | `internal/adapter/httpclient` | SSRF ガード付きの `HTTPClient`（ADR-0019 §1）。コントラクトテストは `testkit.HTTPClientContract` |
+| `internal/adapter/htmlsanitizer` | `kernel.HTMLSanitizer` ポートの実装（§5、ADR-0019 §2）。`bluemonday` はこの中に閉じ込める。ポリシーの版は定数 `PolicyVersion`。コントラクトテストは `testkit.HTMLSanitizerContract` |
 | `internal/adapter/httpsig` | `Signer` / `Verifier` の実装。RFC 9421 は `github.com/dadrus/httpsig`、draft-cavage-12 は `code.superseriousbusiness.org/httpsig`（ADR-0006）。ライブラリはこの中に閉じ込める |
 | `internal/interface/activitypub` | HTTP の入口（Inbox の `POST`、Actor・オブジェクト・コレクションの `GET`、WebFinger、NodeInfo）。ユースケースを呼ぶだけ |
 | `internal/interface/media` | メディアプロキシ `/media/proxy/…`（§9） |
