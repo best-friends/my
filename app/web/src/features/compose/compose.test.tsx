@@ -547,6 +547,77 @@ describe("replies", () => {
   });
 });
 
+describe("the floating button (web-client.md G4)", () => {
+  /** Matches the given media queries only, as a viewport of that width would. */
+  function stubViewport(...matching: string[]) {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: matching.includes(query), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  }
+
+  test.each(["/home", "/local", "/tags/hello", "/@bob"])("floats over %s, a feed", async (path) => {
+    signedIn();
+    await renderApp({ path });
+
+    expect(await screen.findByRole("button", { name: "Write a post" })).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveAttribute("data-compose-fab");
+  });
+
+  test.each([
+    ["/notifications", "Notifications"],
+    ["/search", "Search"],
+    ["/settings", "Settings"],
+    ["/@bob/followers", "Followers"],
+  ])("is not on %s", async (path, heading) => {
+    signedIn();
+    await renderApp({ path });
+
+    expect(await screen.findByRole("heading", { level: 1, name: new RegExp(heading) })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Write a post" })).not.toBeInTheDocument();
+    expect(screen.getByRole("main")).not.toHaveAttribute("data-compose-fab");
+  });
+
+  test("below md is only an icon, named by its label and with the label as its tooltip", async () => {
+    signedIn();
+    const { user } = await renderApp({ path: "/home" });
+    const button = await screen.findByRole("button", { name: "Write a post" });
+    expect(button).toHaveTextContent("");
+
+    // The button is the page's last focusable element: Shift+Tab from the start reaches it. On keyboard focus,
+    // React Aria shows the tooltip at once.
+    await user.tab({ shift: true });
+    expect(button).toHaveFocus();
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Write a post");
+  });
+
+  test("from md shows its label", async () => {
+    signedIn();
+    stubViewport("(min-width: 48rem)");
+    await renderApp({ path: "/home" });
+
+    expect(await screen.findByRole("button", { name: "Write a post" })).toHaveTextContent("Write a post");
+  });
+
+  test("gets focus back when the sheet it opened with the keyboard closes", async () => {
+    signedIn();
+    const { user } = await renderApp({ path: "/home" });
+    const button = await screen.findByRole("button", { name: "Write a post" });
+    button.focus();
+
+    await user.keyboard("{Enter}");
+    const sheet = await screen.findByRole("dialog", { name: "New post" });
+    expect(within(sheet).getByRole("textbox", { name: "Your post" })).toHaveFocus();
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "New post" })).not.toBeInTheDocument();
+    });
+    // React Aria's FocusScope restores focus a frame after the dialog unmounts.
+    await waitFor(() => {
+      expect(button).toHaveFocus();
+    });
+  });
+});
+
 describe("on wide screens", () => {
   test("the form is a side panel next to the page", async () => {
     signedIn();

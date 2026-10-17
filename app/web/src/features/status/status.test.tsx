@@ -273,12 +273,14 @@ describe("the actions on a post", () => {
     expect(await navigator.clipboard.readText()).toBe(post.url);
   });
 
-  test("reply: the form names the post", async () => {
+  test("reply: the form names the post, in the sheet even though the page floats no new-post button", async () => {
     signedIn();
     serveThread();
     const { user } = await renderApp({ path: `/@bob/${postId}` });
 
-    await user.click(await within(await findFocusedPost()).findByRole("button", { name: "Reply" }));
+    const replyButton = await within(await findFocusedPost()).findByRole("button", { name: "Reply" });
+    expect(screen.queryByRole("button", { name: "Write a post" })).not.toBeInTheDocument();
+    await user.click(replyButton);
 
     const sheet = await screen.findByRole("dialog", { name: "New post" });
     expect(within(sheet).getByText("Replying to Bob")).toBeInTheDocument();
