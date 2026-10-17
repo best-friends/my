@@ -183,7 +183,7 @@ func TestInboxProcessingContract(t *testing.T) {
 		db, _ := newTestDB(t, "", opts)
 		feds := db.FederationRepository()
 		return testkit.InboxHarness{
-			UnitOfWork: db, Inbox: feds, Federation: feds, Instances: feds, Accounts: db.AccountRepository(),
+			UnitOfWork: db, Inbox: feds, Federation: feds, Instances: feds, Accounts: db.AccountRepository(), Statuses: db.StatusRepository(),
 			Graph: db.GraphRepository(), Moderation: db.ModerationRepository(),
 		}
 	})
@@ -193,6 +193,21 @@ func TestModerationContract(t *testing.T) {
 	testkit.ModerationContract(t, func(t *testing.T, opts uow.Options) testkit.ModerationHarness {
 		db, _ := newTestDB(t, "", opts)
 		return testkit.ModerationHarness{UnitOfWork: db, Moderation: db.ModerationRepository()}
+	})
+}
+
+func TestRemoteStatusContract(t *testing.T) {
+	testkit.RemoteStatusContract(t, func(t *testing.T, opts uow.Options) testkit.RemoteStatusHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.RemoteStatusHarness{
+			AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+			Graph:          db.GraphRepository(),
+			Statuses:       db.StatusRepository(),
+			Media:          db.MediaRepository(),
+			Timeline:       db.TimelineRepository(),
+			Notifications:  db.NotificationRepository(),
+			Inbox:          db.FederationRepository(),
+		}
 	})
 }
 

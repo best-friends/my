@@ -123,6 +123,10 @@ type Deps struct {
 	// RemoteMentions resolves the remote handles that a text mentions; nil leaves every remote
 	// handle text.
 	RemoteMentions RemoteMentions
+	// Sanitizer cleans the HTML of remote statuses (ADR-0019 §2); remote statuses need it.
+	Sanitizer kernel.HTMLSanitizer
+	// RemoteMedia records the attachments and custom emoji images of remote statuses.
+	RemoteMedia RemoteMediaRecorder
 	// MaxStatusLength returns the current max_status_length instance setting (FR-101); it is
 	// read per command, so that changes apply at once.
 	MaxStatusLength func(ctx context.Context) (int, error)

@@ -42,4 +42,5 @@ func (a *App) setUpInboxProcessor(repo federation.InboxRepository) {
 	})
 	a.RemoteActors.RegisterInboxHandlers(a.InboxProcessor)
 	a.InboxProcessor.RegisterJobs(a.Handlers)
+	a.registerStatusHandlers()
 }

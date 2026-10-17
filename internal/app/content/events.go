@@ -47,3 +47,15 @@ type StatusDeleted struct {
 
 // EventType implements uow.Event.
 func (StatusDeleted) EventType() string { return EventStatusDeleted }
+
+// EventPollTallyObserved is emitted when new counts of a remote poll are recorded; the
+// poll_tallies projection follows the newest observation.
+const EventPollTallyObserved = "content.poll_tally_observed"
+
+// PollTallyObserved is emitted when a tally observation of a poll is inserted.
+type PollTallyObserved struct {
+	Observation content.PollTallyObservation
+}
+
+// EventType implements uow.Event.
+func (PollTallyObserved) EventType() string { return EventPollTallyObserved }

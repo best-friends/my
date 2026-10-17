@@ -361,6 +361,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Restrictions:    content.NoRestrictions{},
 		Media:           medias,
 		RemoteMentions:  remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
+		Sanitizer:       newHTMLSanitizer(),
+		RemoteMedia:     remoteMediaRecorder{a}, // reads a.Media, built by setMedia
 		MaxStatusLength: a.Instance.MaxStatusLength,
 		DefaultLanguage: a.defaultPostLanguage,
 		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,

@@ -151,6 +151,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - `remote_object_tombstones` は `InboxProcessor` が書きます。`Delete` / `Undo` のハンドラが無いか、ハンドラが `ErrUnknownObject` を返したとき、対象の URI が主体と同じオリジンで主体自身でなければ記録します（ほかのサーバーのオブジェクトを封じさせない。`federation.TombstoneFor`）。
 - `Delete` / `Undo` 以外のアクティビティは、ハンドラを呼ぶ前に、アクティビティの URI に tombstone があれば捨てます。`Create` / `Update`（自分自身の Actor 以外）は、オブジェクトの URI の tombstone でも捨てます。
 - アクティビティの `object` が URI だけのとき、受信した文書の中に埋め込まれていない対象は、ローカルの DB から引くか、取り込み範囲に入るときだけ取得します。
+  `Create` / `Update` の投稿が URI だけなら、作者をローカルのアカウントがフォローしているときだけ取得します（投稿が無いと、メンションや返信先で範囲を判定できない）。
 
 ### 3.4 アクティビティごとのハンドラ
 
@@ -160,8 +161,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Accept` | 自分が送った `Follow`（URI か埋め込み） | `graph.AcceptRemote`（`follow_acceptances`、`accepted_by = remote`）。`object` の `id` が未知なら、`object.actor`（ローカル）と `actor`（相手）の承認待ちのフォローで照合する |
 | `Reject` | 自分が送った `Follow`、または承認済みのフォロー | 承認待ちなら `follow_rejections`、承認済みなら `follow_terminations`（`removed_by_followee`） |
 | `Undo` | `Follow` / `Like` / `Announce` / `Block` / `Accept` | 対象の取り消し。`Undo Accept` はフォローの終了として扱う。対象が URI だけなら、主体が作った同じ URI の `follows` / `favourites` / `boosts` / `blocks` を順に引く |
-| `Create` | `Note` / `Question`。`Article` / `Page` / `Event` / `Image` / `Video` / `Audio` は変換して取り込む | 取り込み範囲（ADR-0034）に入れば `content.IngestRemoteStatus`。オブジェクトの `id` のホストは `actor` のホストと一致しなければならない |
-| `Update` | 投稿 | `content.ReviseRemoteStatus`（新しい版）。投稿の作者とアクティビティの主体が一致し、オリジンが同じであること（[ActivityPub §7.3](https://www.w3.org/TR/activitypub/#update-activity-inbox)） |
+| `Create` | `Note` / `Question`。`Article` / `Page` / `Event` / `Image` / `Video` / `Audio` は変換して取り込む | 取り込み範囲（ADR-0034）に入れば `content.IngestRemoteStatus`。オブジェクトの `id` は `actor` と同じオリジンで、`attributedTo` は（あれば）`actor` でなければならない。保存済みの投稿は何もせず、削除済みの投稿は捨てる |
+| `Update` | 投稿 | `content.ReviseRemoteStatus`（新しい版）。投稿の作者とアクティビティの主体が一致し、オリジンが同じであること（[ActivityPub §7.3](https://www.w3.org/TR/activitypub/#update-activity-inbox)）。未知の投稿は §3.3 のとおり `Create` として扱う |
 | `Update` | Actor（自分自身） | `RemoteActors.ReceiveActorUpdate`。オリジンが同じ埋め込みの文書で `account.UpsertRemoteActor`（内容が変わればプロフィールの版が増える）。埋め込みが無い・`id` が主体と一致しなければ取得し直す。削除済みの Actor の `Update` は捨てる |
 | `Delete` | 投稿・`Tombstone` | `content.DeleteRemoteStatus`（`origin = remote`）。未知なら tombstone |
 | `Delete` | Actor（自分自身） | `RemoteActors.ReceiveActorDelete`。`account.MarkRemoteDeleted`（`remote_deleted`）で、プロフィールと投稿（タイムラインでは `feed_author_restrictions` の `profile_view`）がすぐに表示されなくなる。未知の Actor なら何もしない。投稿・フォロー・ブーストは消去ジョブが消す |
@@ -247,7 +248,12 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 ### 6.3 投稿
 
-- 取り込み範囲は ADR-0034 に従います（ローカルのアカウントとの関係がある投稿だけ）。
+- 取り込み範囲は ADR-0034 に従います（ローカルのアカウントとの関係がある投稿だけ）。判定は `federation.StatusHandlers`（`internal/app/federation`）が、受信ごとに次の順で行います。
+  1. 保存済みのアカウントのうち、投稿がメンションする・宛先に含めるローカルのアカウント（`active` なもの）がある
+  2. 作者に承認済みのフォロワーがいる（リモートの Actor のフォロワーはローカルのアカウントだけ。`graph` の `ActiveFollowerIDs`）
+  3. 返信先がローカルの投稿か、返信先の `conversation_uri` に削除されていないローカルの投稿がある
+  - どれにも当てはまらない `Create` は `ErrDropActivity` で捨て、受信の記録だけが残ります（`info` のログ）。未知のリモートの Actor へのメンションは、範囲に入ると決まってから取得します。
+- 書き込む行とメンション・ハッシュタグ・カスタム絵文字・添付・投票の扱いは [data-model §4.4 のリモート投稿のコマンド](data-model.md#リモート投稿のコマンド) にあります。コントラクトテストは `testkit.RemoteStatusContract` で、主要実装のフィクスチャの `Note` を取り込みます。
 - 返信先は受信時に 1 段だけ非同期（`federation.fetch_object`、ペイロードに残りの深さ）で取得し、スレッドの祖先と返信の一覧は利用者がスレッドを開いたときに深さ 20・件数 100 まで取得します。
 - 投稿の ID は `published` から作った UUIDv7 です（[data-model §1.3](data-model.md#13-id-とキーセットページング)、#71）。
 

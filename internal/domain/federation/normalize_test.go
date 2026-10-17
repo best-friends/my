@@ -267,8 +267,9 @@ func TestNormalizePoll(t *testing.T) {
 		"anyOf":[{"type":"Note","name":"A","replies":{"type":"Collection","totalItems":5}},{"type":"Note","name":"B","replies":{"totalItems":3}}]}`)
 	equal(t, "Poll", *o.Poll, federation.Poll{Multiple: true, EndTime: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), VotersCount: 7,
 		Options: []federation.PollOption{{Name: "A", Votes: 5}, {Name: "B", Votes: 3}}})
-	o = object(t, `{"type":"Question","id":"https://a.example/q/2","oneOf":[{"name":"X"}]}`)
+	o = object(t, `{"type":"Question","id":"https://a.example/q/2","oneOf":[{"name":"X"}],"endTime":"2030-01-01T00:00:00Z"}`)
 	equal(t, "single choice", o.Poll.Multiple, false)
+	equal(t, "EndTime (future, not clamped)", o.Poll.EndTime, time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC))
 	equal(t, "Note has no poll", object(t, `{"type":"Note","id":"https://a.example/n/1"}`).Poll == nil, true)
 }
 

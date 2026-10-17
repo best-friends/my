@@ -63,6 +63,10 @@ type Revision struct {
 	MentionedAccountIDs []string
 	TagIDs              []string
 	EmojiIDs            []string
+	// Poll is the poll of the revision, nil for none (FR-112).
+	Poll *Poll
+	// Remote is the remote subtype of a remote status's revision, nil for local statuses.
+	Remote *RemoteRevisionSource
 }
 
 // Body is the content of a revision in one language.
@@ -93,7 +97,14 @@ const (
 	DeletedByModeration      DeletionOrigin = "moderation"
 	DeletedByRemote          DeletionOrigin = "remote"
 	DeletedByAccountDeletion DeletionOrigin = "account_deletion"
+	// DeletedByRetention is the purge of an old remote status (ADR-0034). Unlike the others, it
+	// does not stop the same URI from being ingested again.
+	DeletedByRetention DeletionOrigin = "retention"
 )
+
+// Tombstone reports whether d stops a later Create, Update, or fetch of its URI from bringing
+// the status back (data-model §4.4): every deletion but the purge of an old remote status.
+func (d Deletion) Tombstone() bool { return d.Origin != DeletedByRetention }
 
 // Deletion is the deletion of a status. It keeps the URI after the status is purged, as the
 // tombstone that stops a late Create or Update from bringing the status back.

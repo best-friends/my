@@ -39,6 +39,11 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 		ev := e.(StatusDeleted)
 		return projectDeleted(ctx, tx, repo, ev.Status)
 	})
+	// poll_tallies holds the counts of the newest observation of each remote poll.
+	r.Register(EventPollTallyObserved, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		o := e.(PollTallyObserved).Observation
+		return repo.ReplacePollTallies(ctx, tx, o.PollID, o.Tallies())
+	})
 }
 
 func projectRevision(ctx context.Context, tx uow.Tx, repo Repository, rev content.Revision) error {

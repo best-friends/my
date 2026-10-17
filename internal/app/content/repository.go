@@ -128,4 +128,29 @@ type Repository interface {
 	// FindPostCounter returns the post counter of an account; ErrNotFound means it has no
 	// statuses.
 	FindPostCounter(ctx context.Context, accountID string) (content.PostCounter, error)
+
+	// Remote statuses: custom emoji, poll tallies, and the scope of ingestion (ADR-0034).
+	// InsertRevision also writes a revision's Poll and Remote, and FindRevision reads them.
+
+	// LocalStatusInConversation reports whether a local status that is not deleted belongs to
+	// the conversation conversationURI.
+	LocalStatusInConversation(ctx context.Context, conversationURI string) (bool, error)
+	// EnsureCustomEmoji inserts e unless an emoji with its Shortcode and Domain exists, and
+	// returns the stored emoji. A URI that another emoji has is not stored again.
+	EnsureCustomEmoji(ctx context.Context, tx uow.Tx, e content.CustomEmoji) (content.CustomEmoji, error)
+	// CurrentCustomEmojiImage returns the newest image of an emoji.
+	CurrentCustomEmojiImage(ctx context.Context, tx uow.Tx, emojiID string) (content.CustomEmojiImage, error)
+	InsertCustomEmojiImage(ctx context.Context, tx uow.Tx, img content.CustomEmojiImage) error
+	// LatestPollObservation returns the newest tally observation of a poll, with its votes.
+	LatestPollObservation(ctx context.Context, tx uow.Tx, pollID string) (content.PollTallyObservation, error)
+	InsertPollObservation(ctx context.Context, tx uow.Tx, o content.PollTallyObservation) error
+	// ReplacePollTallies makes tallies the poll_tallies of a poll; only projectors call it.
+	ReplacePollTallies(ctx context.Context, tx uow.Tx, pollID string, tallies []content.PollTally) error
+
+	FindCustomEmoji(ctx context.Context, id string) (content.CustomEmoji, error)
+	// FindCustomEmojiImage returns the current image of an emoji.
+	FindCustomEmojiImage(ctx context.Context, emojiID string) (content.CustomEmojiImage, error)
+	// FindPollTallies returns the tallies of a poll ordered by position; a poll without an
+	// observation has none.
+	FindPollTallies(ctx context.Context, pollID string) ([]content.PollTally, error)
 }
