@@ -81,6 +81,15 @@ func (s *Service) MaxStatusLength(ctx context.Context) (int, error) {
 	return settings.MaxStatusLength(), nil
 }
 
+// AuthorizedFetch returns the current value of the authorized_fetch setting (FR-408).
+func (s *Service) AuthorizedFetch(ctx context.Context) (bool, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return false, err
+	}
+	return settings.AuthorizedFetch(), nil
+}
+
 // SetSettingInput describes a change of a setting.
 type SetSettingInput struct {
 	Key   instance.SettingKey

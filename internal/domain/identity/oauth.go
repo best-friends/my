@@ -126,9 +126,11 @@ type TokenRevocation struct {
 }
 
 // Scopes the server grants. The client API checks them per operation (api/openapi.yaml lists
-// the scopes of each operation). The broad scopes read, write, and follow grant the
-// fine-grained scopes under them; push grants Web Push only.
+// the scopes of each operation). The broad scopes read, write, follow, and admin grant the
+// fine-grained scopes under them; push grants Web Push only. read and write do not grant the
+// admin scopes, whose operations also need a permission of the user's roles.
 const (
+	ScopeAdmin  = "admin"
 	ScopeRead   = "read"
 	ScopeWrite  = "write"
 	ScopeFollow = "follow"
@@ -136,8 +138,10 @@ const (
 )
 
 // Fine-grained scopes. "read:x" is granted by read and "write:x" by write; follow grants the
-// scopes of follows, blocks, and mutes.
+// scopes of follows, blocks, and mutes; admin grants "admin:read" and "admin:write".
 const (
+	ScopeAdminRead          = "admin:read"
+	ScopeAdminWrite         = "admin:write"
 	ScopeReadAccounts       = "read:accounts"
 	ScopeReadBlocks         = "read:blocks"
 	ScopeReadBookmarks      = "read:bookmarks"
@@ -158,10 +162,11 @@ const (
 )
 
 // broadScopes are the scopes that AllScopes holds; together they grant every scope.
-var broadScopes = []string{ScopeFollow, ScopePush, ScopeRead, ScopeWrite}
+var broadScopes = []string{ScopeAdmin, ScopeFollow, ScopePush, ScopeRead, ScopeWrite}
 
 // knownScopes lists every scope, sorted.
 var knownScopes = []string{
+	ScopeAdmin, ScopeAdminRead, ScopeAdminWrite,
 	ScopeFollow, ScopePush, ScopeRead,
 	ScopeReadAccounts, ScopeReadBlocks, ScopeReadBookmarks, ScopeReadFavourites, ScopeReadFollows,
 	ScopeReadMutes, ScopeReadNotifications, ScopeReadStatuses,
@@ -217,7 +222,8 @@ func (s Scope) Tokens() []string {
 func (s Scope) Has(t string) bool { return slices.Contains(s.Tokens(), t) }
 
 // Grants reports whether s allows what the scope t allows: s holds t, or a broad scope over it
-// (read over "read:x", write over "write:x", follow over the follow, block, and mute scopes).
+// (read over "read:x", write over "write:x", admin over "admin:x", follow over the follow,
+// block, and mute scopes).
 func (s Scope) Grants(t string) bool {
 	if s.Has(t) {
 		return true

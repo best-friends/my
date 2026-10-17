@@ -642,6 +642,12 @@ export interface MessageArgs {
   "server:auth.authorize.lead": { app: string };
   /** After you choose, you will be sent back to {host}. */
   "server:auth.authorize.redirect_notice": { host: string };
+  /** Administer the instance, as far as your roles allow */
+  "server:auth.authorize.scope.admin": {};
+  /** Read the instance's administration data, as far as your roles allow */
+  "server:auth.authorize.scope.admin_read": {};
+  /** Change the instance's administration data, as far as your roles allow */
+  "server:auth.authorize.scope.admin_write": {};
   /** Follow, block, and mute accounts */
   "server:auth.authorize.scope.follow": {};
   /** Receive push notifications */
@@ -796,6 +802,8 @@ export interface MessageArgs {
   "server:config.missing": { name: string };
   /** Your account cannot use the app right now. */
   "server:errors.account_unavailable": {};
+  /** A remote server could not be reached or answered with an error. */
+  "server:errors.bad_gateway": {};
   /** The request is invalid. */
   "server:errors.bad_request": {};
   /** You block this account. Unblock it first. */
@@ -836,6 +844,8 @@ export interface MessageArgs {
   "server:errors.media_unsupported_format": {};
   /** The {method} method is not allowed for this resource. */
   "server:errors.method_not_allowed": { method: string };
+  /** Your roles need the permission {permission}. */
+  "server:errors.missing_permission_detail": { permission: string };
   /** The requested resource was not found. */
   "server:errors.not_found": {};
   /** Too many requests. */
@@ -848,6 +858,8 @@ export interface MessageArgs {
   "server:errors.request_too_large": {};
   /** You cannot do this to your own account. */
   "server:errors.self_relationship": {};
+  /** This document is served only to requests with a valid HTTP signature. */
+  "server:errors.signature_required": {};
   /** The post created with this Idempotency-Key has been deleted. */
   "server:errors.status.already_deleted": {};
   /** The post has no text. */

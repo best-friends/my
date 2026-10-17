@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -228,7 +229,7 @@ func (d *deliveryEnv) state(t *testing.T, domain string) federation.InstanceStat
 // events returns the availability events of domain, oldest first.
 func (d *deliveryEnv) events(t *testing.T, domain string) []federation.AvailabilityEvent {
 	t.Helper()
-	evs, err := d.h.Federation.ListAvailabilityEvents(t.Context(), domain, 100)
+	evs, err := d.h.Federation.ListAvailabilityEvents(t.Context(), domain, "", 100)
 	if err != nil {
 		t.Fatalf("ListAvailabilityEvents: %v", err)
 	}
@@ -580,5 +581,91 @@ func fedProbesUnavailableServers(t *testing.T, e *fedEnv) {
 	left, err := d.h.Federation.ListUnavailableInstances(ctx, "", 10)
 	if err != nil || len(left) != 2 || left[0].Domain != "b-down.example" || left[1].Domain != "c-elsewhere.example" {
 		t.Errorf("ListUnavailableInstances = %+v, %v", left, err)
+	}
+}
+
+func fedListsServersForOperators(t *testing.T, e *fedEnv) {
+	d := newDeliveryEnv(t, e)
+	ctx := t.Context()
+	e.markUnavailable(t, "a.example")
+	e.markUnavailable(t, "c.example")
+	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		return e.h.Federation.UpsertInstanceHealth(ctx, tx, federation.InstanceHealth{
+			Domain: "b.example", State: federation.InstanceAvailable, Since: e.clock.Now(), FailureDays: 2, LastFailureDay: "20261016",
+		})
+	})
+	if err != nil {
+		t.Fatalf("UpsertInstanceHealth: %v", err)
+	}
+	domains := func(hs []federation.InstanceHealth) []string {
+		out := make([]string, len(hs))
+		for i, h := range hs {
+			out[i] = h.Domain
+		}
+		return out
+	}
+	for _, tc := range []struct {
+		state federation.InstanceState
+		after string
+		limit int
+		want  []string
+	}{
+		{"", "", 2, []string{"a.example", "b.example"}},
+		{"", "b.example", 2, []string{"c.example"}},
+		{federation.InstanceUnavailable, "", 10, []string{"a.example", "c.example"}},
+		{federation.InstanceAvailable, "", 10, []string{"b.example"}},
+	} {
+		hs, err := d.health.List(ctx, tc.state, tc.after, tc.limit)
+		if err != nil || !slices.Equal(domains(hs), tc.want) {
+			t.Errorf("List(%q, %q, %d) = %v, %v; want %v", tc.state, tc.after, tc.limit, domains(hs), err, tc.want)
+		}
+	}
+	if _, err := d.health.List(ctx, "gone", "", 10); !errors.Is(err, appfederation.ErrInvalidInstanceState) {
+		t.Errorf("List(gone) = %v, want ErrInvalidInstanceState", err)
+	}
+
+	var ids []string
+	for i, kind := range []federation.AvailabilityKind{federation.MarkedUnavailable, federation.MarkedAvailable, federation.MarkedUnavailable} {
+		ev := federation.AvailabilityEvent{
+			ID: e.ids.NewID(), Domain: "a.example", Kind: kind, Reason: federation.ReasonFailureDays,
+			OccurredAt: e.clock.Now().Add(time.Duration(i) * time.Hour),
+		}
+		if kind == federation.MarkedAvailable {
+			ev.Reason = federation.ReasonProbeSucceeded
+		}
+		ids = append(ids, ev.ID)
+		if err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return e.h.Federation.InsertAvailabilityEvent(ctx, tx, ev) }); err != nil {
+			t.Fatalf("InsertAvailabilityEvent: %v", err)
+		}
+	}
+	page, err := d.health.Events(ctx, "a.example", "", 2)
+	if err != nil || len(page) != 2 || page[0].ID != ids[2] || page[1].ID != ids[1] || page[1].Reason != federation.ReasonProbeSucceeded {
+		t.Fatalf("Events(first page) = %+v, %v; want %v newest first", page, err, ids[1:])
+	}
+	if rest, err := d.health.Events(ctx, "a.example", page[1].ID, 2); err != nil || len(rest) != 1 || rest[0].ID != ids[0] {
+		t.Errorf("Events(before %s) = %+v, %v; want %s", page[1].ID, rest, err, ids[0])
+	}
+	if none, err := d.health.Events(ctx, "b.example", "", 2); err != nil || len(none) != 0 {
+		t.Errorf("Events(b.example) = %+v, %v; want none", none, err)
+	}
+
+	// An operator clears an unavailable server, and the failure days of an available one.
+	e.clock.Advance(time.Hour)
+	h, err := d.health.MarkAvailable(ctx, "a.example")
+	if err != nil || h.State != federation.InstanceAvailable || h.FailureDays != 0 || h.LastFailureDay != "" || !h.Since.Equal(e.clock.Now()) {
+		t.Fatalf("MarkAvailable(a.example) = %+v, %v", h, err)
+	}
+	if evs, err := d.health.Events(ctx, "a.example", "", 1); err != nil || len(evs) != 1 ||
+		evs[0].Kind != federation.MarkedAvailable || evs[0].Reason != federation.ReasonOperator {
+		t.Errorf("newest event of a.example = %+v, %v; want marked_available (operator)", evs, err)
+	}
+	if h, err := d.health.MarkAvailable(ctx, "b.example"); err != nil || h.State != federation.InstanceAvailable || h.FailureDays != 0 {
+		t.Errorf("MarkAvailable(b.example) = %+v, %v", h, err)
+	}
+	if evs := d.events(t, "b.example"); len(evs) != 0 {
+		t.Errorf("events of b.example = %+v, want none for a server that was available", evs)
+	}
+	if h, err := d.health.Find(ctx, "unknown.example"); err != nil || h.State != federation.InstanceAvailable || !h.Since.IsZero() || h.FailureDays != 0 {
+		t.Errorf("Find(unknown.example) = %+v, %v; want available without a row", h, err)
 	}
 }

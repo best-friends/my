@@ -19,6 +19,18 @@
     "defaultMessage": "選ぶと {host} に戻ります。",
     "description": "Note under the permissions on the authorization (consent) page. {host} is the host name the application receives the answer at."
   },
+  "auth.authorize.scope.admin": {
+    "defaultMessage": "ロールで許される範囲でのインスタンスの管理",
+    "description": "Permission (OAuth scope admin) listed on the authorization page."
+  },
+  "auth.authorize.scope.admin_read": {
+    "defaultMessage": "ロールで許される範囲での管理用データの閲覧",
+    "description": "Permission (OAuth scope admin:read) listed on the authorization page."
+  },
+  "auth.authorize.scope.admin_write": {
+    "defaultMessage": "ロールで許される範囲での管理用データの変更",
+    "description": "Permission (OAuth scope admin:write) listed on the authorization page."
+  },
   "auth.authorize.scope.follow": {
     "defaultMessage": "アカウントのフォロー・ブロック・ミュート",
     "description": "Permission (OAuth scope follow) listed on the authorization page."
@@ -327,6 +339,10 @@
     "defaultMessage": "現在、あなたのアカウントはアプリを使えません。",
     "description": "API error title for HTTP 403 when the access token is valid but its user cannot use the app: the registration is pending or rejected, the email address is unconfirmed, or the account is deactivated or deleted."
   },
+  "errors.bad_gateway": {
+    "defaultMessage": "リモートのサーバーに接続できないか、リモートのサーバーがエラーを返しました。",
+    "description": "Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx."
+  },
   "errors.bad_request": {
     "defaultMessage": "リクエストが正しくありません。",
     "description": "API error message for HTTP 400 when no more specific message applies."
@@ -407,6 +423,10 @@
     "defaultMessage": "このリソースでは {method} メソッドを使用できません。",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
   },
+  "errors.missing_permission_detail": {
+    "defaultMessage": "ロールに権限 {permission} が必要です。",
+    "description": "Detail of the HTTP 403 missing-permission API error of an admin operation. {permission} is the missing role permission, e.g. manage_jobs (not translated)."
+  },
   "errors.not_found": {
     "defaultMessage": "指定されたリソースが見つかりません。",
     "description": "API error message for HTTP 404."
@@ -426,6 +446,10 @@
   "errors.request_too_large": {
     "defaultMessage": "リクエストが大きすぎます。",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
+  },
+  "errors.signature_required": {
+    "defaultMessage": "この文書は、正しい HTTP 署名のあるリクエストにだけ返します。",
+    "description": "Error title for HTTP 401 when the instance uses authorized fetch and an ActivityPub GET of an object or a collection carries no HTTP signature that verifies. Read by other servers' operators."
   },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",

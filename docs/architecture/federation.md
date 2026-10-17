@@ -66,7 +66,7 @@ ADR-0032 のプロファイルに従います。要点:
 | --- | --- |
 | `Verifier` / `Signer`（ポート） | 署名の解析・署名ベースの組み立て・暗号の検証と署名だけを行う。実装は `internal/adapter/httpsig`、コントラクトテストは `testkit.HTTPSignatureContract`（RFC 9421 付録 B のテストベクタ、Mastodon・GoToSocial 形式の draft-cavage の署名、拒否の各条件、double-knocking） |
 | `SignatureVerifier` | 受信のポリシー。`Parse`（署名なし `401`、解析不能 `400`）→ `Check`（必須の対象・時間窓・宣言されたアルゴリズム・ダイジェスト。I/O なし）→ `Verify`（鍵の解決と検証、鍵の取り直し）。拒否は `SignatureError`（`Status` と、`401` なら `Accept-Signature` の値） |
-| `PublicKeyResolver`（ポート） | `keyId` から公開鍵と持ち主（`owner`）を返す。`refresh` で取り直す。取得できなければ `ErrPublicKeyNotFound`（`401`）、取得先が止まっていれば `ErrPublicKeyUnavailable`（`503`） |
+| `PublicKeyResolver`（ポート） | `keyId` から公開鍵と持ち主（`owner`）を返す。`refresh` で取り直す。取得できなければ `ErrPublicKeyNotFound`（`401`）、取得先が止まっていれば `ErrPublicKeyUnavailable`（`503`）。実装は `RemoteActors`（§6） |
 | `SignedHTTPClient` | 送信の double-knocking。`kernel.HTTPClient` の上で署名し、結果の方式（`delivery_attempts.signature_scheme`）を返す |
 
 - `@target-uri` と `(request-target)` は `NewSignedRequest` が設定の公開オリジンとリクエストのパス・クエリから組み立て、`Host` も公開オリジンのホストにします（別のホスト宛ての署名は検証に通らない）。
@@ -209,15 +209,21 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - **同じオリジン**: 最後のリダイレクト先のオリジンと、文書の `id` のオリジンが一致しなければ採用しません。要求した URL と `id` が異なるときは、`id` を 1 回だけ取得し直して一致を確かめます（[ActivityPub 付録 B.2](https://www.w3.org/TR/activitypub/#security-verification)、FEP-fe34）。
 - 投稿は、`attributedTo` のオリジンが投稿の `id` と同じでなければ採用しません。
 - 再帰的な取得（返信先・埋め込み・`Announce` の対象）は、1 回の処理につき深さと件数に上限を置きます（[ActivityPub 付録 B.5](https://www.w3.org/TR/activitypub/#security-recursive-objects)、ADR-0034）。
-- 404 / 410 と取得の失敗は、KV に 1 時間記録して同じ URI の取得を繰り返しません。Actor の 410 は `remote_deleted` にします。
-- ドメイン単位の `federation` の制限があるドメインからは取得しません。
+- 404 / 410 と取得の失敗は、KV に 1 時間記録して同じ URI の取得を繰り返しません（名前空間 `federation.fetch_failure`、キーは URI の SHA-256）。Actor の 410 は `remote_deleted` にし、ほかの失敗は `remote_account_heads.consecutive_fetch_failures` に数えます。
+- ドメイン単位の `federation` の制限があるドメインと、自サーバーの URI からは取得しません。`instance_health` が `unavailable` のドメインからも取得しません（鍵の解決は `503`）。
+- 実装は `internal/app/federation` の `Fetcher`（取得の規則）と `RemoteActors`（Actor の解決・保存・ジョブ、`PublicKeyResolver`）です。コントラクトテストは `testkit.RemoteActorContract` です。
 
 ### 6.2 Actor とハンドル
 
-- Actor の文書から `account.UpsertRemoteActor` が `remote_account_snapshots`（内容が変わったときだけ）、プロフィールの版、公開鍵を書きます。
-- ハンドル（`account_handles`）は WebFinger で確かめたものだけです。`acct:{preferredUsername}@{Actor のホスト}` を引き、`self` リンクが Actor の `id` を指すこと、`subject` のドメインが異なるならそのドメインでも同じことを確かめます（ADR-0018 のドメイン分離に相当する構成）。確かめられなければハンドルを持たないアカウントとして扱います。
+- Actor の文書から `account.UpsertRemoteActor` が `remote_account_snapshots`（内容が変わったときだけ）、プロフィールの版（サニタイズした内容が変わったときだけ）、公開鍵を書きます。アバターとヘッダーは `content.MediaService.RecordRemoteMedia` で記録します。
+- 鍵は、`publicKey` の PEM（PKIX と PKCS #1）、`publicKey` が `id` だけで示す鍵の文書（取得する。2 件まで）、FEP-521a の `assertionMethod` の `Multikey`（Ed25519）から読みます。鍵の `id` は Actor と同じオリジンで、`owner` / `controller` は Actor でなければなりません。
+- `keyId` を取得して `Key` の文書が返ったら、`owner`（または `controller`）の Actor を取得します（ADR-0032）。
+- 初めて文書を保存したドメインは `remote_instances` に記録し、ジョブ `federation.observe_instance` が NodeInfo 2.x（`/.well-known/nodeinfo` が指す同じホストの文書）のソフトウェア名と版を `instance_nodeinfo_observations` に記録します（前回と同じなら記録しない）。
+- ハンドル（`account_handles`）は WebFinger で確かめたものだけです。`acct:{preferredUsername}@{Actor のホスト}` を引き、`self` リンクが Actor の `id` を指すこと、`subject` のドメインが異なるならそのドメインでも同じことを確かめます（ADR-0018 のドメイン分離に相当する構成）。
+  - 答え（404 を含む）が確かめなければ `mismatch` を記録し、ハンドルを持たないアカウントとして扱います。
+  - WebFinger が答えなかった（接続の失敗・429・5xx）ときは何も記録せず、それまでのハンドルを残します。
 - `@user@host` / URL での解決（FR-305）は、`federation.Resolve` が WebFinger → Actor の取得 → 書き込みを行います。URL がオブジェクト（投稿）なら投稿として取り込みます。
-- 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors` が `remote_account_heads (last_fetched_at)` の古い順に取り直します（ADR-0034）。
+- 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します（ジョブ `federation.refresh_actor`、冪等キー `refresh_actor:<account_id>`）。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors`（1 時間ごと）が `remote_account_heads (last_fetched_at)` の古い順に 200 件ずつ読み、フォローされているものを取り直します（ADR-0034）。カーソル（`last_fetched_at` と `account_id`）を持った次のジョブが続きを読みます。
 
 ### 6.3 投稿
 
@@ -295,11 +301,13 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - `Retry-After` は秒数と HTTP の日付のどちらも読み、24 時間で打ち切ります。ジョブの期限（リース）や停止で応答の前に打ち切られた試行は記録せず、そのまま `Retry` にします。
 - 配送や Actor が見つからない、Actor に署名の鍵がないジョブは `Fail` にします（dead job に残る）。
 
-- リトライの間隔は ADR-0004 の配送の例（1 分、5 分、30 分、2 時間、12 時間、24 時間 × 3。最大 9 回、約 4 日）で、ジッタを掛けます（`RegisterWithPolicy`）。使い切ったジョブは dead job になり、管理画面と CLI から再実行できます（NFR-REL-2）。
+- リトライの間隔は ADR-0004 の配送の例（1 分、5 分、30 分、2 時間、12 時間、24 時間 × 3。最大 9 回、約 4 日）で、ジッタを掛けます（`RegisterWithPolicy`）。使い切ったジョブは dead job になり、管理 API（`GET /api/v1/admin/dead_jobs` と `POST /api/v1/admin/dead_jobs/{id}/retry`、権限 `manage_jobs`）から再実行できます（NFR-REL-2）。
 - **短期のサーキットブレーカー**: プロセス内で inbox のホストごとに、`retryable_failure` が連続 10 回続いたら 60 秒間はリクエストせずに `Retry` を返します（Mastodon の `Stoplight` と同じ値）。
   60 秒の後に送った 1 回がまた失敗すると、すぐにまた開きます。成功と `permanent_failure`（相手が答えた）で閉じます。開いている間の `Retry` も試行の 1 回に数え、待ち時間は上のリトライの間隔に従います（60 秒ごとに試行を使い切らない）。
 - **`InstanceHealth`（長期）**: `retryable_failure` を記録した日（UTC の日付）がドメインごとに異なる 7 日に達したら、`instance_availability_events`（`marked_unavailable`）を記録し、`instance_health.state` を `unavailable` にします（Mastodon の `DeliveryFailureTracker` と同じ基準）。
   配送の成功、またはそのドメインから署名付きのリクエストを受けたら `marked_available` を記録して `available` に戻します。`unavailable` のドメインには、定期ジョブ `federation.probe_instances` が 1 日 1 回 NodeInfo を取得し、成功したら戻します。
+  運営者は管理 API（`POST /api/v1/admin/instances/{domain}/mark_available`、権限 `manage_domains`）でも戻せます。理由は `operator` で、失敗の日数も 0 に戻ります。
+  `instance_health` と `instance_availability_events` は管理 API（`GET /api/v1/admin/instances`、`.../{domain}/availability_events`）で読めます。
   - 署名付きの受信と probe の成功は、`federation.Health.Reached`（理由 `inbound_request` / `probe_succeeded`）がイベント `federation.instance_reached` を発行し、配送と同じ projector が `instance_health` を更新します。失敗の記録が無いドメインでは、コミット済みの値を読むだけで書きません。
   - probe は `/.well-known/nodeinfo` と、そこから同じホストの NodeInfo 2.x の文書を署名なしで取得し、どちらも 2xx の JSON なら成功とします。1 つのジョブは 50 ドメインを順に処理し、残りがあれば続きのジョブを投入します。
 - 1 件の配送は 1 つのジョブです。Cloud Tasks / SQS では 1 回の試行が 1 オペレーションとして課金されるので、shared inbox への集約と `unavailable` のドメインの除外で回数を抑えます（NFR-COST-5）。
@@ -365,7 +373,20 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   - outbox は、未ログインの閲覧者がプロフィールで見られる投稿（`public` / `unlisted`）の `Create` を、新しい順に 20 件ずつ返します。ブーストは載せません。`totalItems` は削除されていない投稿の数です（Mastodon と同じ）。
   - followers / following は、承認済みのフォローの相手の Actor の `id` を、新しいフォロー順に 40 件ずつ返します。有効でないアカウントは省き、`totalItems` はフォローの件数です。
   - featured は、ピン留めした投稿のうち未ログインで閲覧できるもの（`public` / `unlisted`）の `Note` を `orderedItems` に並べます。featured-tags は空の `Collection` です。
-- Authorized Fetch（FR-408、S）は設定 `authorized_fetch` で有効にし、署名のない GET を Actor（鍵の取得のための最小の文書を除く）とオブジェクトで 401 にします。
+- Authorized Fetch（FR-408、S）はインスタンス設定 `authorized_fetch`（既定 `false`、[data-model §4.9](data-model.md#49-instance)）で有効にします。設定はリクエストごとに読むので、変更はすぐに効きます。
+  有効なときは、検証できる署名の無い GET（署名なし・検証できない・未ログインとして扱う署名者）に次のように答えます。
+
+  | 対象 | 署名なし | 検証できる署名 |
+  | --- | --- | --- |
+  | 利用者の Actor | 鍵の取得のための最小の文書（`@context`・`id`・`type`・`preferredUsername`・`inbox`・`publicKey`・`endpoints`。Mastodon と同じ項目） | Actor の文書全体 |
+  | インスタンス Actor | 文書全体（もともと最小の文書） | 文書全体 |
+  | オブジェクト（`/activity` を含む）・コレクション | `401` | 無効なときと同じ判定 |
+  | WebFinger・NodeInfo・host-meta・HTML を求めるリクエスト | 無効なときと同じ | 無効なときと同じ |
+
+  - `401` は、存在するかどうかを確かめる前に返します（存在が漏れない）。ADR-0032 の GET の署名を求める `Accept-Signature: sig1=("@method" "@target-uri");created` を付けるので、double-knocking のクライアントは RFC 9421 で再送します。
+  - 応答は署名によって変わるので、すべて `private, no-store` です。だれにも同じ文書を返すインスタンス Actor だけは `public, max-age=60` のままです。
+  - インスタンス Actor の GET は署名を検証せずに答えるので、Authorized Fetch を使うサーバーどうしでも、インスタンス Actor の鍵で署名した取得を、相手がその鍵を取得して（§6 のとおり自分のインスタンス Actor の鍵で署名して）検証できます。鍵の取得が鍵の検証を待つ循環になりません。利用者の Actor の最小の文書は、署名せずに鍵を取得する実装のためのものです。
+  - 無効なとき、Actor とコレクションの GET は署名を検証しません（だれにも同じ応答なので）。
 
 ## 11. モデレーションとの連携
 

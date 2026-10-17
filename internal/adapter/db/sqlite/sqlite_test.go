@@ -170,6 +170,14 @@ func TestFederationRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestRemoteActorContract(t *testing.T) {
+	testkit.RemoteActorContract(t, func(t *testing.T, opts uow.Options) testkit.RemoteActorHarness {
+		db, _ := newTestDB(t, "", opts)
+		feds := db.FederationRepository()
+		return testkit.RemoteActorHarness{UnitOfWork: db, Accounts: db.AccountRepository(), Federation: feds, Instances: feds}
+	})
+}
+
 func TestUnitOfWorkContract(t *testing.T) {
 	testkit.UnitOfWorkContract(t, func(t *testing.T, opts uow.Options) testkit.UnitOfWorkHarness {
 		db, _ := newTestDB(t, "", opts)

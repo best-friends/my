@@ -94,8 +94,8 @@ var (
 )
 
 // UnknownPublicKeys is the PublicKeyResolver that knows no key: every signature fails to
-// verify, and object fetches see every requester as anonymous. It stands in for the resolver
-// that reads account_keys and fetches remote actors.
+// verify, and object fetches see every requester as anonymous. Tests use it where no key
+// should resolve; the server uses RemoteActors.
 type UnknownPublicKeys struct{}
 
 // ResolvePublicKey implements PublicKeyResolver.

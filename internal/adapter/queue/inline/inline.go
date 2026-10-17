@@ -237,7 +237,7 @@ func (q *Queue) Bury(_ context.Context, worker string, j queue.Job, lastErr stri
 }
 
 // ListDeadJobs implements queue.DeadJobs.
-func (q *Queue) ListDeadJobs(_ context.Context, limit int) ([]queue.DeadJob, error) {
+func (q *Queue) ListDeadJobs(_ context.Context, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
@@ -250,6 +250,12 @@ func (q *Queue) ListDeadJobs(_ context.Context, limit int) ([]queue.DeadJob, err
 		}
 		return strings.Compare(b.ID, a.ID)
 	})
+	if after.ID != "" {
+		out = slices.DeleteFunc(out, func(d queue.DeadJob) bool {
+			c := d.FailedAt.Compare(after.FailedAt)
+			return c > 0 || (c == 0 && d.ID >= after.ID)
+		})
+	}
 	if len(out) > limit {
 		out = out[:limit]
 	}

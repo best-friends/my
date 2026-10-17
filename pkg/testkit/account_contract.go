@@ -672,6 +672,9 @@ func accountCreatesAdmin(t *testing.T, e *accountEnv) {
 	if _, perms, err := e.h.Identity.FindRole(ctx, identity.RoleAdmin); err != nil || len(perms) != len(identity.AllPermissions()) {
 		t.Errorf("admin role permissions = %v, %v; want all", perms, err)
 	}
+	if ok, err := e.identity.HasPermission(ctx, reg.User.ID, identity.PermManageJobs); err != nil || !ok {
+		t.Errorf("HasPermission(admin, manage_jobs) = %v, %v; want true", ok, err)
+	}
 	actor, err := e.accounts.FindByHandle(ctx, "root", account.LocalDomain)
 	if err != nil || actor.Account.ID != reg.AccountID || actor.Local == nil || actor.Local.UserID != reg.User.ID {
 		t.Fatalf("FindByHandle(root) = %+v, %v; want the admin's account %s", actor.Local, err, reg.AccountID)
@@ -689,8 +692,12 @@ func accountCreatesAdmin(t *testing.T, e *accountEnv) {
 	if err != nil || len(again) != 1 || again[0].ID != roles[0].ID {
 		t.Errorf("second admin roles = %+v, %v; want the same admin role %s", again, err, roles[0].ID)
 	}
-	if none, err := e.h.Identity.ListUserRoles(ctx, e.register(t, "plain").User.ID); err != nil || len(none) != 0 {
+	plain := e.register(t, "plain").User.ID
+	if none, err := e.h.Identity.ListUserRoles(ctx, plain); err != nil || len(none) != 0 {
 		t.Errorf("roles of a registered user = %+v, %v; want none", none, err)
+	}
+	if ok, err := e.identity.HasPermission(ctx, plain, identity.PermManageJobs); err != nil || ok {
+		t.Errorf("HasPermission(plain, manage_jobs) = %v, %v; want false", ok, err)
 	}
 }
 

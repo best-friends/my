@@ -32,6 +32,7 @@ const (
 	SettingPreviewImage             SettingKey = "preview_image"
 	SettingRemoteMediaPolicy        SettingKey = "remote_media_policy"
 	SettingRemoteMediaCacheTTL      SettingKey = "remote_media_cache_ttl"
+	SettingAuthorizedFetch          SettingKey = "authorized_fetch"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -128,6 +129,10 @@ var definitions = []Definition{
 	{
 		Key: SettingRemoteMediaCacheTTL, Kind: KindInt, Default: "86400", Min: MinRemoteMediaCacheTTL, Max: MaxRemoteMediaCacheTTL,
 		Doc: "How long a fetched remote media file may be kept, in seconds: the max-age of the media proxy's responses for the CDN and browsers (FR-409).",
+	},
+	{
+		Key: SettingAuthorizedFetch, Kind: KindBool, Default: "false",
+		Doc: "Whether ActivityPub objects, collections, and full actor documents are served only to requests with a verified HTTP signature (authorized fetch, FR-408).",
 	},
 }
 
@@ -348,6 +353,9 @@ func (s Settings) RemoteMediaPolicy() RemoteMediaPolicy {
 func (s Settings) RemoteMediaCacheTTL() time.Duration {
 	return time.Duration(s.intValue(SettingRemoteMediaCacheTTL)) * time.Second
 }
+
+// AuthorizedFetch returns the value of SettingAuthorizedFetch.
+func (s Settings) AuthorizedFetch() bool { return s.boolValue(SettingAuthorizedFetch) }
 
 // MediaKeys returns the setting keys whose values are media IDs.
 func MediaKeys() []SettingKey {

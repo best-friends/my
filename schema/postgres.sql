@@ -62,7 +62,7 @@ CREATE TABLE role_permissions (
   role_id text COLLATE "C" NOT NULL,
   permission text NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
-    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit'
+    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs'
   )),
   PRIMARY KEY (role_id, permission)
 );
@@ -540,7 +540,7 @@ CREATE TABLE instance_setting_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   key text COLLATE "C" NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
-    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl'
+    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch'
   )),
   value text NOT NULL,
   revised_by_user_id text COLLATE "C",
@@ -1131,13 +1131,16 @@ CREATE TABLE remote_account_heads (
 );
 CREATE INDEX remote_account_heads_last_fetched_at ON remote_account_heads (last_fetched_at);
 
--- Event: WebFinger confirmed that acct:{username}@{domain} points at the actor's uri.
+-- Event: a WebFinger check of acct:{username}@{domain}. verified means that its self link points
+-- at the actor's uri; mismatch means that it answered otherwise, and the account has no handle
+-- until a later check verifies one.
 CREATE TABLE remote_account_handle_verifications (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   account_id text COLLATE "C" NOT NULL,
   username text NOT NULL,
   domain text NOT NULL,
-  verified_at timestamptz NOT NULL
+  outcome text NOT NULL CHECK (outcome IN ('verified', 'mismatch')),
+  checked_at timestamptz NOT NULL
 );
 CREATE INDEX remote_account_handle_verifications_account_id_id ON remote_account_handle_verifications (account_id, id DESC);
 

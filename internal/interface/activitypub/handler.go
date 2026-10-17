@@ -29,6 +29,7 @@ type Accounts interface {
 // Objects is what the handlers need from the federation module to serve local statuses and the
 // collections made of them; *appfederation.Objects implements it.
 type Objects interface {
+	AuthorizedFetch(ctx context.Context) (bool, error)
 	Authenticate(ctx context.Context, r *appfederation.SignedRequest) (appfederation.Requester, error)
 	Status(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
 	StatusActivity(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
@@ -154,7 +155,6 @@ func (h *Handler) fail(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 // visible reports whether an actor may be presented: only active local actors are.
-// Authorized fetch (FR-408) will add the requester's signature here.
 func visible(a appaccount.Actor) bool {
 	return a.Account.IsLocal() && a.Lifecycle.Active()
 }
@@ -172,13 +172,19 @@ func findVisible(a appaccount.Actor, err error) (appaccount.Actor, error) {
 
 // writeJSON writes v as a cacheable public document of the content type ct.
 func (h *Handler) writeJSON(w http.ResponseWriter, r *http.Request, ct string, v any) {
+	h.writeJSONCache(w, r, ct, cachePublic, v)
+}
+
+// writeJSONCache writes v as a document of the content type ct with the Cache-Control
+// cacheControl.
+func (h *Handler) writeJSONCache(w http.ResponseWriter, r *http.Request, ct, cacheControl string, v any) {
 	body, err := json.Marshal(v)
 	if err != nil {
 		h.o.Logger.ErrorContext(r.Context(), "activitypub encode failed", slog.Any("error", err))
 		h.o.Problem(w, r, http.StatusInternalServerError)
 		return
 	}
-	writeBody(w, ct, cachePublic, http.StatusOK, body)
+	writeBody(w, ct, cacheControl, http.StatusOK, body)
 }
 
 // writeBody writes a document with its status. Federation documents are fetched by other
