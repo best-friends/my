@@ -13,6 +13,7 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
+	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
@@ -37,6 +38,9 @@ type FanOutDeps struct {
 	IDs     kernel.IDGenerator
 	// Parts resolves the media, mentions, and hashtags of the revisions that Notes present.
 	Parts NoteParts
+	// Follows reads the follows that Follow, Accept, Reject, and Undo Follow are about; nil
+	// fails those activities.
+	Follows FollowReader
 	// Host is the serving domain of the activity and object URIs (ADR-0018).
 	Host string
 	// AccountDomain is the domain of local handles in mentions; empty means Host.
@@ -220,6 +224,8 @@ const (
 	phasePrior phase = "prior"
 	// phaseBoostedAuthor is the author of a boosted status, in one batch.
 	phaseBoostedAuthor phase = "boosted_author"
+	// phaseCounterpart is the other account of a follow, in one batch.
+	phaseCounterpart phase = "counterpart"
 	// phaseSharedInboxes are the shared inboxes known to the instance, in batches.
 	phaseSharedInboxes phase = "shared_inboxes"
 )
@@ -242,6 +248,10 @@ type subject struct {
 	status   appcontent.Status
 	revision appcontent.Revision
 	boost    appcontent.Boost
+	// follow is the follow of a Follow, Accept, Reject, or Undo Follow, and counterpart the
+	// account on its other side from the actor: the only recipient.
+	follow      appgraph.FollowRecord
+	counterpart string
 	// actor is the local actor an account activity is about.
 	actor appaccount.Actor
 }
@@ -255,6 +265,7 @@ type subject struct {
 //   - Announce and Undo Announce: the booster's followers, then the boosted status's author.
 //   - Update of an actor: its followers. Delete of an actor: its followers, then every shared
 //     inbox known to the instance (data-model §8).
+//   - Follow, Accept, Reject, and Undo Follow: the other account of the follow.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
 	case federation.OutboundAccount:
@@ -262,6 +273,8 @@ func (s subject) phases() []phase {
 			return []phase{phaseFollowers, phaseSharedInboxes}
 		}
 		return []phase{phaseFollowers}
+	case federation.OutboundFollow:
+		return []phase{phaseCounterpart}
 	case federation.OutboundStatus:
 		if s.act.Type == federation.ActivityCreate {
 			return []phase{phaseMentions, phaseFollowers}
@@ -279,6 +292,9 @@ func (s subject) phases() []phase {
 // subject loads the object of act. An object that is gone fails with errGone.
 func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, revisionID string) (subject, error) {
 	s := subject{act: act, actorID: act.ActorAccountID}
+	if act.ObjectKind == federation.OutboundFollow {
+		return f.followSubject(ctx, s)
+	}
 	if act.ObjectKind == federation.OutboundAccount {
 		return f.accountSubject(ctx, s)
 	}
@@ -380,6 +396,9 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 		}
 		targets, err = f.resolve(ctx, act, s, ids, true)
 		return targets, next, err
+	case phaseCounterpart:
+		targets, err = f.counterpartTargets(ctx, s)
+		return targets, "", err
 	case phaseMentions, phaseBoostedAuthor:
 		targets, err = f.resolve(ctx, act, s, s.mentioned, false)
 		return targets, "", err

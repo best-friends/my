@@ -112,10 +112,13 @@ type inboxRoute struct {
 // tombstones, and dispatches the activity to the handler of its type. Activities of types
 // without a handler complete; a Delete or Undo whose target is unknown leaves a tombstone.
 //
-// Register every handler with Handle and HandleOwnActor before the runners start.
+// Register every handler with Handle, HandleOwnActor, and HandleUndo before the runners start.
 type InboxProcessor struct {
 	d        InboxProcessorDeps
 	handlers map[inboxRoute]InboxHandler
+	// undo are the handlers of Undo by the type of the undone activity, in registration order.
+	undo      map[federation.ActivityType]InboxHandler
+	undoOrder []federation.ActivityType
 }
 
 // NewInboxProcessor returns the InboxProcessor on d, without handlers.
@@ -129,7 +132,7 @@ func NewInboxProcessor(d InboxProcessorDeps) *InboxProcessor {
 	if d.Logger == nil {
 		d.Logger = slog.Default()
 	}
-	return &InboxProcessor{d: d, handlers: map[inboxRoute]InboxHandler{}}
+	return &InboxProcessor{d: d, handlers: map[inboxRoute]InboxHandler{}, undo: map[federation.ActivityType]InboxHandler{}}
 }
 
 // Handle sets the handler of the activities of type t (federation.md §3.4). The Update and
@@ -148,6 +151,45 @@ func (p *InboxProcessor) HandleOwnActor(t federation.ActivityType, h InboxHandle
 	p.register(inboxRoute{typ: t, ownActor: true}, h)
 }
 
+// HandleUndo sets the handler of the Undo of activities of type t (Follow, Like, Announce,
+// Block, Accept; federation.md §3.4). The first call registers the Undo route, so Undo has no
+// handler of its own through Handle. An Undo that embeds the activity it takes back goes to the
+// handler of that activity's type, and to none when its type has no handler. An Undo whose
+// object is an IRI alone goes to every handler in registration order until one knows the
+// target, that is, returns something other than ErrUnknownObject. A handler must check that the
+// target is the actor's own: the embedded activity's type only routes the Undo. It panics when t
+// is unknown, is Undo, or already has a handler.
+func (p *InboxProcessor) HandleUndo(t federation.ActivityType, h InboxHandler) {
+	if t == federation.ActivityUnknown || t == federation.ActivityUndo || h == nil {
+		panic("federation: an Undo handler needs a known activity type other than Undo and a function")
+	}
+	if _, dup := p.undo[t]; dup {
+		panic(fmt.Sprintf("federation: Undo handler for %s registered twice", t))
+	}
+	if len(p.undo) == 0 {
+		p.Handle(federation.ActivityUndo, p.dispatchUndo)
+	}
+	p.undo[t] = h
+	p.undoOrder = append(p.undoOrder, t)
+}
+
+// dispatchUndo is the handler of Undo when HandleUndo set its handlers.
+func (p *InboxProcessor) dispatchUndo(ctx context.Context, in *InboxActivity) error {
+	if doc := in.Activity.Object().Untrusted(); doc != nil && doc.Activity != nil {
+		h, ok := p.undo[doc.Activity.Type]
+		if !ok {
+			return fmt.Errorf("%w: no handler takes back a %s", ErrUnknownObject, doc.Activity.RawType)
+		}
+		return h(ctx, in)
+	}
+	for _, t := range p.undoOrder {
+		if err := p.undo[t](ctx, in); !errors.Is(err, ErrUnknownObject) {
+			return err
+		}
+	}
+	return ErrUnknownObject
+}
+
 func (p *InboxProcessor) register(r inboxRoute, h InboxHandler) {
 	if r.typ == federation.ActivityUnknown || h == nil {
 		panic("federation: an inbox handler needs a known activity type and a function")
@@ -156,6 +198,20 @@ func (p *InboxProcessor) register(r inboxRoute, h InboxHandler) {
 		panic(fmt.Sprintf("federation: inbox handler for %s (own actor %t) registered twice", r.typ, r.ownActor))
 	}
 	p.handlers[r] = h
+}
+
+// Handles reports whether activities of type t have a handler, and, for Undo, which of the
+// undone types have one; it lets the composition root check its wiring.
+func (p *InboxProcessor) Handles(t federation.ActivityType, undone ...federation.ActivityType) bool {
+	if _, ok := p.handlers[inboxRoute{typ: t}]; !ok {
+		return false
+	}
+	for _, u := range undone {
+		if _, ok := p.undo[u]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // RegisterJobs registers the handler of JobInbox.

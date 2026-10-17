@@ -774,7 +774,7 @@ func (l *Localizer) ServerErrorsRateLimitedDetail(seconds int) string {
 	return l.format("server:errors.rate_limited_detail", map[string]any{"seconds": seconds})
 }
 
-// ServerErrorsRemoteAccount formats "server:errors.remote_account". Detail of the HTTP 422 API error when a follow or block targets an account on another server, which the operation does not support.
+// ServerErrorsRemoteAccount formats "server:errors.remote_account". Detail of the HTTP 422 API error when a block targets an account on another server, which the operation does not support.
 //
 //	en: This is not available for accounts on other servers.
 func (l *Localizer) ServerErrorsRemoteAccount() string {

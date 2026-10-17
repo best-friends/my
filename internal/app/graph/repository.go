@@ -38,6 +38,8 @@ type Repository interface {
 	UpsertPreferences(ctx context.Context, tx uow.Tx, p graph.Preferences) error
 	// Follow returns a follow by ID.
 	Follow(ctx context.Context, tx uow.Tx, id string) (graph.Follow, error)
+	// FollowByURI returns the follow whose Follow activity has the IRI uri.
+	FollowByURI(ctx context.Context, tx uow.Tx, uri string) (graph.Follow, error)
 	// Preferences returns the preferences of a follow.
 	Preferences(ctx context.Context, tx uow.Tx, followID string) (graph.Preferences, error)
 	// LockPair serializes the transactions that follow or block between accountA and accountB
@@ -104,6 +106,8 @@ type Repository interface {
 
 	// Lookups.
 
+	// FindFollow returns a follow by ID.
+	FindFollow(ctx context.Context, id string) (graph.Follow, error)
 	FindEdge(ctx context.Context, followerAccountID, followeeAccountID string) (graph.Edge, error)
 	FindPreferences(ctx context.Context, followID string) (graph.Preferences, error)
 	// FindCounters returns an account's counters; ErrNotFound means both are zero.

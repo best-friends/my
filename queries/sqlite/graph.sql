@@ -19,6 +19,9 @@ ON CONFLICT (follow_id) DO UPDATE SET show_boosts = excluded.show_boosts, notify
 -- name: GetFollow :one
 SELECT id, uri, follower_account_id, followee_account_id, requested_at FROM follows WHERE id = ?;
 
+-- name: GetFollowByURI :one
+SELECT id, uri, follower_account_id, followee_account_id, requested_at FROM follows WHERE uri = ?;
+
 -- name: GetFollowPreferences :one
 SELECT follow_id, show_boosts, notify FROM follow_preferences WHERE follow_id = ?;
 

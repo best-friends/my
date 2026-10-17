@@ -604,7 +604,10 @@ flowchart LR
   鍵アカウントでなければ、同じトランザクションで `follow_acceptances`（`accepted_by = auto`）も記録します。
 - 拒否は承認待ちのフォローだけ、フォロワーの削除（`removed_by_followee`）は `active` のフォローだけが対象です。
 - `follow_edges` の行があるペアへのフォローは何もしません。同時に 2 つのフォローが作られた場合は、投影の主キーで後の方を再実行させ、既存のフォローを返します。
-- リモートへのフォローは、`Accept` を受け取ったら `follow_acceptances` を記録し、投影を `active` にします。
+- リモートへのフォローは、相手が鍵アカウントでなくても承認待ち（`graph.follow_requested`）で始まり、`Accept` を受け取ったら `follow_acceptances`（`accepted_by = remote`）を記録して投影を `active` にします。
+- リモートからのフォロー（`graph.ReceiveFollow`）の `uri` は受け取った `Follow` の `id` で、同じ `uri` の `Follow` をもう一度受け取っても何もしません。
+  どちらかがブロックしていれば、`follows` を作って同じトランザクションで `follow_rejections`（`rejected_by = system`）を記録し、相手に `Reject` を送ります。
+- 受け取った `Accept` / `Reject` / `Undo` が指すフォローは、`follows (uri)` で引き、送り主の側が合わなければ、活動が埋め込む `Follow` の 2 人の組の承認待ち・承認済みのフォローで引きます。終了済みのフォローへの `Accept` / `Reject` / `Undo` は何もしません。
 
 フォロー・ブロック・ミュートのコマンドは、記録したイベントや現在値に応じて次のドメインイベントを発行します（`tx.Emit`、§2.1）。
 フォローとミュートのコマンドは 1 つ（ミュートの解除は、ミュートがあったときだけ）、ブロックは終了したフォローごとの `graph.follow_terminated` と `graph.blocked` を発行します。
