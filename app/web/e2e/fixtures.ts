@@ -130,3 +130,22 @@ export async function expectTabWhollyVisible(tab: Locator): Promise<void> {
     )
     .toBe("whole");
 }
+
+/**
+ * Asserts that the header of every post card in `feed` (its author and time) takes at most two lines: the
+ * display name and the time, and the handle under them on a narrow card (web-client.md G7). A line is the
+ * line height of the display name, the header's largest text; a pixel of slack covers fractional layout.
+ */
+export async function expectPostHeadersInTwoLines(feed: Locator): Promise<void> {
+  const tall = await feed.getByRole("article").evaluateAll((articles) =>
+    articles.flatMap((article) => {
+      const header = article.querySelector("header");
+      const name = header?.querySelector<HTMLElement>("[dir=auto]");
+      if (header == null || name == null) return [`article ${article.getAttribute("aria-posinset") ?? "?"}: no header with a name`];
+      const height = header.getBoundingClientRect().height;
+      const lineHeight = Number.parseFloat(getComputedStyle(name).lineHeight);
+      return height <= 2 * lineHeight + 1 ? [] : [`${name.textContent}: ${String(height)}px for a line height of ${String(lineHeight)}px`];
+    }),
+  );
+  expect(tall, "post headers taller than two lines").toEqual([]);
+}
