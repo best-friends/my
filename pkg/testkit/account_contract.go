@@ -114,6 +114,11 @@ func newAccountEnv(t *testing.T, newHarness AccountFactory) *accountEnv {
 	t.Helper()
 	projectors := &uow.Projectors{}
 	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
+	return newAccountEnvOn(h, projectors)
+}
+
+// newAccountEnvOn wires the use cases onto a harness whose UnitOfWork runs projectors.
+func newAccountEnvOn(h AccountHarness, projectors *uow.Projectors) *accountEnv {
 	appaccount.RegisterProjectors(projectors, h.Accounts)
 	clock := NewClock(time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC))
 	ids := NewIDGenerator(clock)
