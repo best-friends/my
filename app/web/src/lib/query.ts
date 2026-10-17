@@ -20,10 +20,11 @@ export function createQueryClient(): QueryClient {
         staleTime: 30_000,
         // Offline, a query fails at once with a NetworkError that says so, instead of pausing until the network
         // is back: a region shows that it cannot load while offline rather than a spinner that never ends, and a
-        // route's loader does not wait forever (web-client.md G17). The app counts as offline after a
-        // NetworkError (lib/network.ts), so retrying one would only delay that message.
+        // route's loader does not wait forever (web-client.md G17). A NetworkError is retried at once, so
+        // that the message is not delayed by the backoff; loaders (`queryClient.query`) do not retry at all.
+        // `retry` keeps its default: setting one here would make the loaders retry too.
         networkMode: "always",
-        retry: (failureCount, error) => !(error instanceof NetworkError) && failureCount < 3,
+        retryDelay: (failureCount, error) => (error instanceof NetworkError ? 0 : Math.min(1000 * 2 ** failureCount, 30_000)),
         // Back online, only the queries that failed fetch again (G17); the others wait until they are stale
         // and used. A query that must not refetch then (a timeline, whose top would change) says so itself.
         refetchOnReconnect: refetchFailed,
