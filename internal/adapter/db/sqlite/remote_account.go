@@ -128,6 +128,28 @@ func remoteSnapshotFrom(row sqlitegen.RemoteAccountSnapshot) account.RemoteSnaps
 	}
 }
 
+// ListRemoteProfileURLs implements account.Repository.
+func (r *AccountRepository) ListRemoteProfileURLs(ctx context.Context, accountIDs []string) (map[string]string, error) {
+	out := map[string]string{}
+	if len(accountIDs) == 0 {
+		return out, nil
+	}
+	list, err := jsonList(accountIDs)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListRemoteProfileURLs(ctx, list)
+	if err != nil {
+		return nil, wrap(err, "list remote profile urls")
+	}
+	for _, row := range rows {
+		if u := row.ProfileUrl.String; u != "" {
+			out[row.AccountID] = u
+		}
+	}
+	return out, nil
+}
+
 // InsertRemoteSnapshot implements account.Repository.
 func (r *AccountRepository) InsertRemoteSnapshot(ctx context.Context, tx uow.Tx, s account.RemoteSnapshot) error {
 	q, err := queries(tx)

@@ -39,6 +39,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/streaming":                                    {Operation: "streamEvents", Scopes: []string{"read:notifications", "read:statuses"}},
 	"GET /api/v1/timelines/home":                               {Operation: "getHomeTimeline", Scopes: []string{"read:statuses"}},
 	"GET /api/v1/timelines/local":                              {Operation: "getLocalTimeline", Anonymous: true, Scopes: []string{"read:statuses"}},
+	"GET /api/v1/timelines/public":                             {Operation: "getPublicTimeline", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"GET /api/v1/timelines/tag/{hashtag}":                      {Operation: "getHashtagTimeline", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"PATCH /api/v1/accounts/update_credentials":                {Operation: "updateAccountCredentials", Scopes: []string{"write:accounts"}},
 	"PATCH /api/v1/media/{id}":                                 {Operation: "updateMedia", Scopes: []string{"write:media"}},

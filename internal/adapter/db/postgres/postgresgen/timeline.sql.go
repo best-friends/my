@@ -862,6 +862,83 @@ func (q *Queries) ListProfileEntries(ctx context.Context, arg ListProfileEntries
 	return items, nil
 }
 
+const listPublicEntries = `-- name: ListPublicEntries :many
+SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
+  e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
+FROM feed_entries e
+WHERE e.kind = 'post' AND e.visibility = 'public'
+  AND ($1::text = '' OR e.id < $1::text)
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_author_restrictions r
+    WHERE r.account_id = e.author_account_id
+      AND r.restriction IN ('public_discovery', 'visibility_ceiling_private', 'profile_view')
+      AND (r.effective_until IS NULL OR r.effective_until > $2::timestamptz))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_domain_restrictions dr
+    WHERE dr.restriction IN ('public_discovery', 'visibility_ceiling_private', 'profile_view')
+      AND (dr.effective_until IS NULL OR dr.effective_until > $2::timestamptz)
+      AND (dr.domain = e.author_domain OR right(e.author_domain, length(dr.domain) + 1) = '.' || dr.domain))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_exclusions x
+    WHERE x.viewer_account_id = $3 AND x.target_account_id = e.author_account_id
+      AND (x.expires_at IS NULL OR x.expires_at > $2::timestamptz))
+  AND ($4::boolean OR e.language = 'und' OR e.language = ANY($5::text[]))
+ORDER BY e.id DESC
+LIMIT $6
+`
+
+type ListPublicEntriesParams struct {
+	Before       string
+	Now          time.Time
+	Viewer       string
+	AllLanguages bool
+	Languages    []string
+	PageLimit    int32
+}
+
+// ListPublicEntries is the federated timeline (FR-202): the public posts of local and remote
+// accounts, except those of authors and domains kept from discovery and those the viewer (” for
+// none) blocks, is blocked by, or mutes.
+func (q *Queries) ListPublicEntries(ctx context.Context, arg ListPublicEntriesParams) ([]FeedEntry, error) {
+	rows, err := q.db.Query(ctx, listPublicEntries,
+		arg.Before,
+		arg.Now,
+		arg.Viewer,
+		arg.AllLanguages,
+		arg.Languages,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FeedEntry{}
+	for rows.Next() {
+		var i FeedEntry
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.StatusID,
+			&i.AuthorAccountID,
+			&i.AuthorDomain,
+			&i.OriginalAuthorAccountID,
+			&i.OriginalAuthorDomain,
+			&i.Visibility,
+			&i.IsLocal,
+			&i.Language,
+			&i.RevisionSeq,
+			&i.IsReply,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTagEntries = `-- name: ListTagEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
   e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply

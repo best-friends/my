@@ -47,6 +47,10 @@ type MediaRepository interface {
 	FindMediaFile(ctx context.Context, id string) (content.MediaFile, error)
 	// FindRemoteMedia returns the remote subtype of a media file; an upload is not found.
 	FindRemoteMedia(ctx context.Context, mediaID string) (content.RemoteMedia, error)
+	// ListRemoteMedia returns the remote subtype of each media file with an ID in ids, ordered
+	// by ID; uploads and unknown IDs are left out. It reads every file in one query, for the
+	// images of a page of accounts.
+	ListRemoteMedia(ctx context.Context, ids []string) ([]content.RemoteMedia, error)
 	FindUploadedMedia(ctx context.Context, mediaID string) (content.UploadedMedia, error)
 	// FindLatestProcessingResult returns the newest processing result of a media file with
 	// its variants: the file's current state.

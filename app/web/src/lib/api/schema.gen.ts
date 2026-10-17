@@ -897,6 +897,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/timelines/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the federated timeline
+         * @description The public posts of the instance's accounts and of the remote accounts whose posts the
+         *     instance holds, newest first, in the viewer's timeline languages (FR-202). Posts of other
+         *     visibilities, `local` ones included, and boosts never appear on it. The instance setting
+         *     `federated_timeline_enabled` turns it off; it is then a 404.
+         */
+        get: operations["getPublicTimeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/timelines/tag/{hashtag}": {
         parameters: {
             query?: never;
@@ -1211,7 +1234,8 @@ export interface components {
             note: string;
             /**
              * Format: uri
-             * @description The account's profile page.
+             * @description The account's profile page: on this instance for a local account, and for a remote
+             *     one the page its actor declares (`url`), or its `uri` when it declares none.
              */
             url: string;
             /** @description Whether follow requests need the account's approval. */
@@ -1318,9 +1342,15 @@ export interface components {
         };
         /**
          * @description A media file, as an upload of the user (the media operations) or as an attachment of
-         *     a status (`Status.media_attachments`). `variants` and `blurhash` are present once the
-         *     file is `ready`; statuses attach only ready files. In a status, `description` is the
-         *     status revision's own copy of the alternative text.
+         *     a status (`Status.media_attachments`). `url`, `preview_url`, `variants`, and `blurhash`
+         *     are present once the file is `ready`; statuses attach only ready files. In a status,
+         *     `description` is the status revision's own copy of the alternative text, absent when the
+         *     attachment has none.
+         *
+         *     A file of a remote status is always `ready`: the instance does not process it, so it has
+         *     no `variants`; `url` and `preview_url` are its media proxy URL (federation.md §9),
+         *     `remote_url` its URL on the remote server, and `meta`, `blurhash`, and `type` what the
+         *     remote server declared.
          */
         MediaAttachment: {
             id: components["schemas"]["Id"];
@@ -1341,6 +1371,21 @@ export interface components {
             blurhash?: string;
             meta: components["schemas"]["MediaMeta"];
             variants?: components["schemas"]["MediaVariants"];
+            /**
+             * Format: uri
+             * @description Where the file is served on this instance; for an upload, `variants.full.url`.
+             */
+            url?: string;
+            /**
+             * Format: uri
+             * @description Where its preview is served; for an upload, `variants.thumbnail.url`.
+             */
+            preview_url?: string;
+            /**
+             * Format: uri
+             * @description The file's URL on the remote server, for a file of a remote status; clients load `url` instead.
+             */
+            remote_url?: string;
         };
         /**
          * @description The focal point that previews keep in view when they crop the image, from -1.0 (left,
@@ -1354,9 +1399,9 @@ export interface components {
         };
         /** @description What the server knows about the media file. */
         MediaMeta: {
-            /** @description The width of the original image in pixels, after its EXIF orientation; absent until the file is ready. */
+            /** @description The width of the original image in pixels, after its EXIF orientation; absent until the file is ready, and for a remote file whose server declared none. */
             width?: number;
-            /** @description The height of the original image in pixels, after its EXIF orientation; absent until the file is ready. */
+            /** @description The height of the original image in pixels, after its EXIF orientation; absent until the file is ready, and for a remote file whose server declared none. */
             height?: number;
             focus: components["schemas"]["MediaFocus"];
         };
@@ -1487,11 +1532,15 @@ export interface components {
             uri: string;
             /**
              * Format: uri
-             * @description The HTML page of the status; omitted when it has none.
+             * @description The HTML page of the status, on the server it belongs to for a remote status; omitted
+             *     when it has none.
              */
             url?: string;
             account: components["schemas"]["Account"];
-            /** @description The text as sanitized HTML, with mentions, hashtags, and URLs linked. */
+            /**
+             * @description The text as sanitized HTML, with mentions, hashtags, and URLs linked. The HTML of a
+             *     remote status is what the server's sanitizer kept of the received document (ADR-0019 §2).
+             */
             content: string;
             /** @description The content warning; empty when there is none. */
             spoiler_text: string;
@@ -2921,6 +2970,24 @@ export interface operations {
         };
     };
     getLocalTimeline: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["StatusPage"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getPublicTimeline: {
         parameters: {
             query?: {
                 /** @description The `next_cursor` of the previous page; omitted for the first page. */

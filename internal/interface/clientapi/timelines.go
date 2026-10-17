@@ -12,6 +12,7 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	apptimeline "github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/domain/timeline"
 )
 
@@ -19,6 +20,7 @@ import (
 type Timelines interface {
 	Home(ctx context.Context, viewer appcontent.Viewer, q apptimeline.Query) (apptimeline.Page, error)
 	Local(ctx context.Context, viewer appcontent.Viewer, q apptimeline.Query) (apptimeline.Page, error)
+	Public(ctx context.Context, viewer appcontent.Viewer, q apptimeline.Query) (apptimeline.Page, error)
 	Hashtag(ctx context.Context, viewer appcontent.Viewer, tagID string, q apptimeline.Query) (apptimeline.Page, error)
 	Profile(ctx context.Context, viewer appcontent.Viewer, authorAccountID string, f apptimeline.ProfileFilter, q apptimeline.Query) (apptimeline.Page, error)
 }
@@ -91,13 +93,13 @@ func (s *Server) statuses(ctx context.Context, viewer appcontent.Viewer, items [
 			}
 		}
 	}
-	imgs, err := s.statusImages(ctx, views, found...)
+	parts, err := s.statusParts(ctx, views, found...)
 	if err != nil {
 		return nil, err
 	}
 	byID := make(map[string]Status, len(views))
 	for _, v := range views {
-		byID[v.Status.ID] = s.newStatus(v, imgs)
+		byID[v.Status.ID] = s.newStatus(v, parts)
 	}
 	out := make([]Status, 0, len(items))
 	for _, it := range items {
@@ -119,7 +121,7 @@ func (s *Server) statuses(ctx context.Context, viewer appcontent.Viewer, items [
 		}
 		boosted := st
 		out = append(out, Status{
-			Id: b.ID, Uri: b.URI, CreatedAt: b.BoostedAt, Account: s.newAccount(*booster, imgs),
+			Id: b.ID, Uri: b.URI, CreatedAt: b.BoostedAt, Account: s.newAccount(*booster, parts),
 			Visibility: st.Visibility, Language: st.Language, Boost: &boosted,
 			MediaAttachments: []MediaAttachment{}, Mentions: []StatusMention{}, Tags: []StatusTag{},
 		})
@@ -216,6 +218,42 @@ func (s *Server) GetLocalTimeline(ctx context.Context, req GetLocalTimelineReque
 	}
 	res, err := s.statusPage(ctx, v, entryItems(p.Entries), p.Next)
 	return GetLocalTimeline200JSONResponse{res}, err
+}
+
+// timelineEnabled reports whether the instance setting enabled turns a timeline on (FR-202).
+func (s *Server) timelineEnabled(ctx context.Context, enabled func(instance.Settings) bool) (bool, error) {
+	var settings instance.Settings
+	if s.o.Instance != nil {
+		var err error
+		if settings, err = s.o.Instance.Settings(ctx); err != nil {
+			return false, fmt.Errorf("clientapi: instance settings: %w", err)
+		}
+	}
+	return enabled(settings), nil
+}
+
+// GetPublicTimeline serves GET /api/v1/timelines/public: the public posts of local and remote
+// accounts. It is a 404 while the instance setting federated_timeline_enabled is off (FR-202).
+func (s *Server) GetPublicTimeline(ctx context.Context, req GetPublicTimelineRequestObject) (GetPublicTimelineResponseObject, error) {
+	if on, err := s.timelineEnabled(ctx, instance.Settings.FederatedTimelineEnabled); err != nil {
+		return nil, err
+	} else if !on {
+		return GetPublicTimelinedefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	cv, v := timelineViewer(ctx)
+	if _, ok := pageLimit(req.Params.Limit); !ok {
+		return GetPublicTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	}
+	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
+	if err != nil {
+		return nil, err
+	}
+	p, err := s.o.Timelines.Public(ctx, cv, q)
+	if err != nil {
+		return nil, err
+	}
+	res, err := s.statusPage(ctx, v, entryItems(p.Entries), p.Next)
+	return GetPublicTimeline200JSONResponse{res}, err
 }
 
 // GetHashtagTimeline serves GET /api/v1/timelines/tag/{hashtag}. A hashtag that no status used

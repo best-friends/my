@@ -37,11 +37,12 @@ const (
 	ViewerAnonymous = content.ViewerAnonymous
 	ViewerLocal     = content.ViewerLocal
 
-	ContextStatus        = content.ContextStatus
-	ContextHome          = content.ContextHome
-	ContextLocalTimeline = content.ContextLocalTimeline
-	ContextHashtag       = content.ContextHashtag
-	ContextProfile       = content.ContextProfile
+	ContextStatus            = content.ContextStatus
+	ContextHome              = content.ContextHome
+	ContextLocalTimeline     = content.ContextLocalTimeline
+	ContextFederatedTimeline = content.ContextFederatedTimeline
+	ContextHashtag           = content.ContextHashtag
+	ContextProfile           = content.ContextProfile
 
 	FollowNone   = content.FollowNone
 	FollowActive = content.FollowActive

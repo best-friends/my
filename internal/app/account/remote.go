@@ -420,6 +420,17 @@ func (s *Service) RemoteProfileURL(ctx context.Context, accountID string) (strin
 	return snap.ProfileURL, nil
 }
 
+// RemoteProfileURLs returns the profile pages of the remote actors in accountIDs, keyed by
+// account ID, from their current snapshots in one repository call, so that a page of accounts
+// is presented without a lookup per account. Local accounts, actors never fetched, and
+// documents without a url are absent.
+func (s *Service) RemoteProfileURLs(ctx context.Context, accountIDs []string) (map[string]string, error) {
+	if len(accountIDs) == 0 {
+		return map[string]string{}, nil
+	}
+	return s.d.Repository.ListRemoteProfileURLs(ctx, accountIDs)
+}
+
 // RemoteFollowersURL returns the followers collection of a remote actor, from its newest
 // document: "" when the document has none. It fails with ErrNotFound for a local account and for
 // a remote one that has never been fetched.
