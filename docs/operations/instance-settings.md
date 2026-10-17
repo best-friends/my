@@ -86,3 +86,26 @@ my instance set preview_image ""                      # 同梱の既定画像に
   CLI からの変更は変更者なし（履歴の `BY` が `cli`）として残ります。
 - 同じ値を設定し直しても版は増えます。
 - 終了コード: 0 は成功、1 は値の拒否や DB のエラー（何も変更しない）、2 は引数の誤り。
+
+## ルール
+
+インスタンスのルール（FR-705）は、`GET /api/v1/instance` の `rules` が並べ、通報が ID で引用します。
+
+- ルールはロケールごとに 1 行の文（300 文字まで）と任意の補足（1,000 文字まで）を持ちます。1 つのルールのロケールは 50 個まで、有効なルールは 100 個までです。
+- 変更（文の改訂・並べ替え）はすべて版（`instance_rule_revisions`）として残り、ルールの ID は変わりません。
+- 廃止したルールは有効なルールの一覧から消えます。元には戻せませんが、通報からは引き続き参照できます。
+- 公開の一覧では、各ルールの文を読み手のロケールのフォールバックチェーン → `default_locale` のチェーン → `en` の順に選びます。
+  どのロケールにも文が無いルールは、ロケール順で最初の文を出します（ルールが読み手によって消えることはありません）。
+
+```sh
+my instance rule add "Be kind"                        # default_locale のロケールで、有効なルールの最後に追加
+my instance rule add -locale ja -hint "嫌がらせをしない" "親切に"
+my instance rule edit -locale ja <rule> "いつも親切に"     # ja の文を変える（無ければ足す）。補足は -hint を付けたときだけ変わる
+my instance rule edit -locale ja <rule> ""            # ja の文を消す（最後のロケールは消せない）
+my instance rule move <rule> 1                        # 1 番目に移し、有効なルールを 1, 2, ... と振り直す
+my instance rule retire <rule>                        # 廃止する
+my instance rule list                                 # 有効なルール（-all で廃止したものも）
+```
+
+- 管理 API は `/api/v1/admin/rules`（一覧・追加・取得・改訂・移動・廃止）で、ロールの権限 `manage_rules` を要します。
+- 終了コードは設定と同じです（0 は成功、1 は値の拒否や DB のエラー、2 は引数の誤り）。

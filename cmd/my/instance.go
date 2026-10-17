@@ -37,6 +37,8 @@ func runInstance(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "-h", "-help", "--help":
 		instanceUsage(stderr)
 		return 0
+	case "rule":
+		return runInstanceRule(args[1:], stdout, stderr)
 	case "list":
 		nargs = 0
 	case "get", "history":
@@ -335,6 +337,7 @@ func instanceUsage(w io.Writer) {
   my instance set [-locale <tag>] [-config <file>] <key> <value>
   my instance set -owner <username> [-config <file>] preview_image <image file>
   my instance history [-locale <tag>] [-limit <n>] [-config <file>] <key>
+  my instance rule <list|add|edit|move|retire> ...  (my instance rule -h)
 
 Reads and changes the instance settings and localized texts stored in the
 database (docs/operations/instance-settings.md). Every change is kept as a

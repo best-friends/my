@@ -82,7 +82,8 @@ Commands:
   admin     Create an administrator, moderate domains, and handle reports
             (my admin create|domain|report)
   config    Check the configuration (my config check)
-  instance  Read and change the instance settings (my instance list|get|set|history)
+  instance  Read and change the instance settings and rules
+            (my instance list|get|set|history|rule)
   invite    Manage invite codes (my invite create|list|revoke)
   registration
             Review sign-ups (my registration list|approve|reject)

@@ -94,6 +94,9 @@ type Options struct {
 	// from everyone but themselves; nil hides none. Moderators see them through the admin
 	// operations.
 	ProfileRestrictions ProfileRestrictions
+	// Rules runs the use cases of the instance rules: the admin operations (admin_rules.go)
+	// and the rules of GET /instance, which lists none when it is nil.
+	Rules InstanceRules
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

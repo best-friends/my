@@ -34,8 +34,9 @@ type TextRevised struct {
 func (TextRevised) EventType() string { return EventTextRevised }
 
 // RegisterProjectors registers the instance module's synchronous projectors (data-model §9):
-// instance_settings from setting revisions and instance_texts from text revisions. Each applies
-// the same rule as RebuildProjections (the revision with the greatest ID wins).
+// instance_settings from setting revisions, instance_texts from text revisions, and
+// instance_rule_heads from rule revisions and retirements. Each applies the same rule as
+// RebuildProjections (the revision with the greatest ID wins; a retired rule has no head).
 func RegisterProjectors(r *uow.Projectors, repo Repository) {
 	r.Register(EventSettingRevised, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		rev := e.(SettingRevised).Revision
@@ -59,6 +60,7 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 		}
 		return repo.UpsertCurrentText(ctx, tx, instance.CurrentText{Key: rev.Key, Locale: rev.Locale, RevisionID: rev.ID})
 	})
+	registerRuleProjectors(r, repo)
 }
 
 // RebuildProjections empties the instance module's projections and derives them again from
@@ -70,6 +72,7 @@ func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) 
 	}{
 		{"instance_settings", func(tx uow.Tx) error { return rebuildSettings(ctx, tx, repo) }},
 		{"instance_texts", func(tx uow.Tx) error { return rebuildTexts(ctx, tx, repo) }},
+		{"instance_rule_heads", func(tx uow.Tx) error { return rebuildRuleHeads(ctx, tx, repo) }},
 	}
 	for _, s := range steps {
 		if err := u.Tx(ctx, s.fn); err != nil {
