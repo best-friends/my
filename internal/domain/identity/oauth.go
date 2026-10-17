@@ -158,6 +158,7 @@ const (
 	ScopeWriteMedia         = "write:media"
 	ScopeWriteMutes         = "write:mutes"
 	ScopeWriteNotifications = "write:notifications"
+	ScopeWriteReports       = "write:reports"
 	ScopeWriteStatuses      = "write:statuses"
 )
 
@@ -172,7 +173,7 @@ var knownScopes = []string{
 	ScopeReadMutes, ScopeReadNotifications, ScopeReadStatuses,
 	ScopeWrite,
 	ScopeWriteAccounts, ScopeWriteBlocks, ScopeWriteBookmarks, ScopeWriteFavourites, ScopeWriteFollows,
-	ScopeWriteMedia, ScopeWriteMutes, ScopeWriteNotifications, ScopeWriteStatuses,
+	ScopeWriteMedia, ScopeWriteMutes, ScopeWriteNotifications, ScopeWriteReports, ScopeWriteStatuses,
 }
 
 // followScopes are the fine-grained scopes that follow grants.

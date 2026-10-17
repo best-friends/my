@@ -2,7 +2,7 @@
 import { Link } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
-import { availabilityEventsQueryOptions, InstanceDetail, instanceQueryOptions } from "../features/admin";
+import { availabilityEventsQueryOptions, DomainName, InstanceDetail, instanceQueryOptions } from "../features/admin";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
@@ -26,12 +26,12 @@ export const Route = createFileRoute("/admin/instances_/$domain")({
   errorComponent: InstanceError,
 });
 
-function DomainName() {
+/** The page's name: the domain from its address. */
+function PageName() {
   const { domain } = Route.useParams();
   return (
-    // A domain reads left to right in every locale.
-    <span dir="ltr" className="wrap-anywhere">
-      {domain}
+    <span className="wrap-anywhere">
+      <DomainName domain={domain} />
     </span>
   );
 }
@@ -41,7 +41,7 @@ function InstanceHeading() {
   return (
     <div className="flex flex-col items-start gap-1">
       <PageHeading>
-        <DomainName />
+        <PageName />
       </PageHeading>
       <Link href="/admin/instances" variant="standalone" className="text-sm">
         {t("client:admin.instance.back")}
@@ -63,5 +63,5 @@ function InstancePage() {
 
 /** The page keeps its name, the domain, when it fails (web-client.md G16). */
 function InstanceError(props: ErrorComponentProps) {
-  return <AdminError {...props} permission="manage_domains" heading={<DomainName />} />;
+  return <AdminError {...props} permission="manage_domains" heading={<PageName />} />;
 }

@@ -213,6 +213,19 @@ func (s *Service) Mutes(ctx context.Context, accountID string, p MutePage) ([]gr
 	return s.d.Repository.ListMutes(ctx, accountID, s.d.Clock.Now(), p.Before, Page{Limit: p.Limit}.limit())
 }
 
+// Follows reports, inside tx, whether followerID follows followeeID with an accepted follow. The
+// notification module's projectors call it in the transaction of the event they project.
+func (s *Service) Follows(ctx context.Context, tx uow.Tx, followerID, followeeID string) (bool, error) {
+	e, err := s.d.Repository.Edge(ctx, tx, followerID, followeeID)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return e.State == graph.StateActive, nil
+}
+
 // HidesNotifications reports, inside tx, whether recipientID is not to be notified of what
 // sourceID does: either account blocks the other, or recipientID mutes sourceID with
 // HideNotifications and the mute has not expired. The notification module's projectors call it
