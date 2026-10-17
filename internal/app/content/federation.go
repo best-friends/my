@@ -23,11 +23,12 @@ type (
 	Boost = content.Boost
 )
 
-// The values of the visibility policy's types that delivery uses.
+// The values of the visibility policy's types that delivery and ActivityPub fetches use.
 const (
-	ViewerRemote    = content.ViewerRemote
-	ContextDelivery = content.ContextDelivery
-	FollowPending   = content.FollowPending
+	ViewerRemote       = content.ViewerRemote
+	ContextDelivery    = content.ContextDelivery
+	ContextObjectFetch = content.ContextObjectFetch
+	FollowPending      = content.FollowPending
 )
 
 // StatusURI returns the ActivityPub id of a local status on host (ADR-0018).
@@ -95,4 +96,44 @@ func (i *Interactions) FindBoost(ctx context.Context, id string) (Boost, error) 
 // addressed by, min(original, the author's ceiling) (data-model §5.4).
 func EffectiveVisibility(original Visibility, author AuthorRestrictions) Visibility {
 	return content.EffectiveVisibility(original, author)
+}
+
+// ObjectStatus returns a status with the revision its ActivityPub object presents, and whether
+// it is deleted (federation.md §10). The revision of a live status is its current one; that of
+// a deleted status is its last one, which still tells whom the status mentioned, and is the zero
+// Revision once the purge has removed it. It fails with ErrNotFound when there is no status.
+func (s *Service) ObjectStatus(ctx context.Context, id string) (Status, Revision, bool, error) {
+	st, err := s.d.Repository.FindStatus(ctx, id)
+	if err != nil {
+		return Status{}, Revision{}, false, err
+	}
+	switch _, err := s.d.Repository.FindDeletion(ctx, id); {
+	case errors.Is(err, ErrNotFound):
+		rev, err := s.d.Repository.FindCurrentRevision(ctx, id)
+		if err != nil {
+			return Status{}, Revision{}, false, err
+		}
+		return st, rev, false, nil
+	case err != nil:
+		return Status{}, Revision{}, false, err
+	}
+	revs, err := s.d.Repository.ListRevisions(ctx, id)
+	if err != nil || len(revs) == 0 {
+		return st, Revision{}, true, err
+	}
+	rev, err := s.d.Repository.FindRevision(ctx, revs[len(revs)-1].ID)
+	if errors.Is(err, ErrNotFound) {
+		return st, Revision{}, true, nil
+	}
+	return st, rev, true, err
+}
+
+// PostCount returns the number of statuses of an account that are not deleted, as its outbox
+// reports it.
+func (s *Service) PostCount(ctx context.Context, accountID string) (int64, error) {
+	c, err := s.d.Repository.FindPostCounter(ctx, accountID)
+	if errors.Is(err, ErrNotFound) {
+		return 0, nil
+	}
+	return c.StatusesCount, err
 }

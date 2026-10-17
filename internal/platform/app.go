@@ -19,6 +19,7 @@ import (
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/httpclient"
+	"github.com/best-friends/my/internal/adapter/httpsig"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
 	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
@@ -383,7 +384,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		Accounts: a.Accounts, HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
+		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph,
+		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 	}).Register(a)
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{
@@ -431,6 +433,19 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) {
 		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, Logger: a.Logger,
 	})
 	a.FanOut.RegisterJobs(a.Handlers)
+}
+
+// newObjects builds the use case behind the ActivityPub objects and collections of local
+// statuses (federation.md §10). Signed GETs are verified with the HTTP signature adapter; no
+// remote key can be resolved yet, so every requester is anonymous.
+func (a *App) newObjects(cfg *config.Config) *federation.Objects {
+	return federation.NewObjects(federation.ObjectsDeps{
+		Statuses: a.Content, Accounts: a.Accounts, Graph: a.Graph, Timeline: a.Timeline, Reader: a.Statuses,
+		Signatures: federation.NewSignatureVerifier(httpsig.New(), federation.UnknownPublicKeys{}, a.KV, a.Clock),
+		// No domain blocks exist yet; signers still go through the policy port.
+		Domains: federation.NoDomainRestrictions{},
+		Host:    cfg.Host, Logger: a.Logger,
+	})
 }
 
 // timelineLanguages returns the languages that a user's timelines show (FR-208); a user without
