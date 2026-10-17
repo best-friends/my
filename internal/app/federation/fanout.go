@@ -40,6 +40,9 @@ type FanOutDeps struct {
 	Parts NoteParts
 	// Blocks reads the local blocks that Block and Undo Block are about.
 	Blocks BlockFinder
+	// Follows reads the follows that Follow, Accept, Reject, and Undo Follow are about; nil
+	// fails those activities.
+	Follows FollowReader
 	// Host is the serving domain of the activity and object URIs (ADR-0018).
 	Host string
 	// AccountDomain is the domain of local handles in mentions; empty means Host.
@@ -225,6 +228,8 @@ const (
 	phaseBoostedAuthor phase = "boosted_author"
 	// phaseBlocked is the remote account a block is about, in one batch.
 	phaseBlocked phase = "blocked"
+	// phaseCounterpart is the other account of a follow, in one batch.
+	phaseCounterpart phase = "counterpart"
 	// phaseSharedInboxes are the shared inboxes known to the instance, in batches.
 	phaseSharedInboxes phase = "shared_inboxes"
 )
@@ -249,6 +254,10 @@ type subject struct {
 	boost    appcontent.Boost
 	// block is the local block a Block or Undo Block is about.
 	block appgraph.Block
+	// follow is the follow of a Follow, Accept, Reject, or Undo Follow, and counterpart the
+	// account on its other side from the actor: the only recipient.
+	follow      appgraph.FollowRecord
+	counterpart string
 	// actor is the local actor an account activity is about.
 	actor appaccount.Actor
 }
@@ -262,6 +271,7 @@ type subject struct {
 //   - Announce and Undo Announce: the booster's followers, then the boosted status's author.
 //   - Update of an actor: its followers. Delete of an actor: its followers, then every shared
 //     inbox known to the instance (data-model §8).
+//   - Follow, Accept, Reject, and Undo Follow: the other account of the follow.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
 	case federation.OutboundBlock:
@@ -271,6 +281,8 @@ func (s subject) phases() []phase {
 			return []phase{phaseFollowers, phaseSharedInboxes}
 		}
 		return []phase{phaseFollowers}
+	case federation.OutboundFollow:
+		return []phase{phaseCounterpart}
 	case federation.OutboundStatus:
 		if s.act.Type == federation.ActivityCreate {
 			return []phase{phaseMentions, phaseFollowers}
@@ -290,6 +302,9 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, r
 	s := subject{act: act, actorID: act.ActorAccountID}
 	if act.ObjectKind == federation.OutboundBlock {
 		return f.blockSubject(ctx, s)
+	}
+	if act.ObjectKind == federation.OutboundFollow {
+		return f.followSubject(ctx, s)
 	}
 	if act.ObjectKind == federation.OutboundAccount {
 		return f.accountSubject(ctx, s)
@@ -394,6 +409,9 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 		return targets, next, err
 	case phaseBlocked:
 		targets, err = f.blockedInbox(ctx, s)
+		return targets, "", err
+	case phaseCounterpart:
+		targets, err = f.counterpartTargets(ctx, s)
 		return targets, "", err
 	case phaseMentions, phaseBoostedAuthor:
 		targets, err = f.resolve(ctx, act, s, s.mentioned, false)

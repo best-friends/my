@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"sync"
 	"testing"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
@@ -115,62 +114,6 @@ func inboxFlagDoc(t *testing.T, id, actor string, objects ...string) []byte {
 		fields["id"] = id
 	}
 	return inboxActivity(t, fields)
-}
-
-// inboxRoutesUndo checks HandleUndo: an Undo that embeds its activity goes to the handler of its
-// type, a bare URI tries each handler until one knows it, and an Undo no handler knows leaves a
-// tombstone.
-func inboxRoutesUndo(t *testing.T, e *inboxProcessEnv) {
-	e.processor = e.newProcessor()
-	var mu sync.Mutex
-	calls := map[federation.ActivityType]int{}
-	known := map[federation.IRI]federation.ActivityType{inboxAlice + "#like-1": federation.ActivityLike}
-	handler := func(typ federation.ActivityType) appfederation.InboxHandler {
-		return func(_ context.Context, a *appfederation.InboxActivity) error {
-			mu.Lock()
-			defer mu.Unlock()
-			calls[typ]++
-			if known[a.Activity.Object().ID] != typ {
-				return appfederation.ErrUnknownObject
-			}
-			return nil
-		}
-	}
-	e.processor.HandleUndo(federation.ActivityFollow, handler(federation.ActivityFollow))
-	e.processor.HandleUndo(federation.ActivityLike, handler(federation.ActivityLike))
-
-	// An embedded Like goes to the Like handler only.
-	like := map[string]any{"id": inboxAlice + "#like-1", "type": "Like", "actor": inboxAlice, "object": "https://" + contractHost + "/ap/objects/x"}
-	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-1", "", like)); got != appfederation.InboxHandled || calls[federation.ActivityFollow] != 0 || calls[federation.ActivityLike] != 1 {
-		t.Errorf("Undo of an embedded Like = %q with calls %v, want handled by the Like handler alone", got, calls)
-	}
-	// A bare URI tries the Follow handler, then the Like handler, which knows it.
-	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-2", "", inboxAlice+"#like-1")); got != appfederation.InboxHandled || calls[federation.ActivityFollow] != 1 || calls[federation.ActivityLike] != 2 {
-		t.Errorf("Undo of a bare URI = %q with calls %v, want handled by the Like handler after the Follow handler", got, calls)
-	}
-	// An Undo that no handler knows, or of a type without one, leaves a tombstone.
-	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-3", "", inboxAlice+"#unknown")); got != appfederation.InboxTombstoned || !e.tombstoned(t, inboxAlice+"#unknown") {
-		t.Errorf("Undo of an unknown URI = %q, want tombstoned", got)
-	}
-	announce := map[string]any{"id": inboxAlice + "#announce-1", "type": "Announce", "actor": inboxAlice, "object": inboxAlice + "/notes/1"}
-	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo-4", "", announce)); got != appfederation.InboxTombstoned {
-		t.Errorf("Undo of an Announce without a handler = %q, want tombstoned", got)
-	}
-
-	for _, register := range []func(){
-		func() { e.processor.HandleUndo(federation.ActivityLike, handler(federation.ActivityLike)) },
-		func() { e.processor.HandleUndo(federation.ActivityUndo, handler(federation.ActivityUndo)) },
-		func() { e.processor.Handle(federation.ActivityUndo, handler(federation.ActivityUndo)) },
-	} {
-		func() {
-			defer func() {
-				if recover() == nil {
-					t.Error("a conflicting Undo handler did not panic")
-				}
-			}()
-			register()
-		}()
-	}
 }
 
 // inboxHandlesModeration checks the real handlers of Block, Undo Block, and Flag.

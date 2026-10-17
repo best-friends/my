@@ -464,11 +464,10 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) qu
 		outbox = queue.AfterCommit(a.Projectors, a.Jobs, a.Logger)
 	}
 	federation.RegisterOutboundProjectors(a.Projectors, federation.RecorderDeps{
-		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
 	})
-	federation.RegisterBlockProjectors(a.Projectors, federation.BlockRecorderDeps{
-		RecorderDeps: federation.RecorderDeps{Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host},
-		Accounts:     a.Accounts,
+	federation.RegisterBlockProjectors(a.Projectors, federation.RecorderDeps{
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
 	})
 	return outbox
 }
@@ -479,7 +478,7 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 	a.FanOut = federation.NewFanOut(federation.FanOutDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox,
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
-		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses,
+		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph,
 		Blocks:  a.Graph,
 		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,

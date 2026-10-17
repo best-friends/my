@@ -19,24 +19,16 @@ type BlockFinder interface {
 	FindBlock(ctx context.Context, id string) (appgraph.Block, error)
 }
 
-// LocalityReader says, inside the transaction of an event, whether an account is local.
-// *appaccount.Service implements it.
-type LocalityReader interface {
-	IsLocal(ctx context.Context, tx uow.Tx, id string) (bool, error)
-}
-
-// BlockRecorderDeps are the ports and settings of the projectors of local blocks.
-type BlockRecorderDeps struct {
-	RecorderDeps
-	Accounts LocalityReader
-}
-
 // RegisterBlockProjectors subscribes the federation module to graph.blocked and graph.unblocked
 // (federation.md §7.1): a local account's block of a remote account, and its lift, are recorded
 // as a Block (whose URI is the block's) and an Undo Block, delivered to the blocked account.
-// Blocks between local accounts, and blocks received from other servers, are not.
-func RegisterBlockProjectors(r *uow.Projectors, d BlockRecorderDeps) {
-	rec := recorder{d: d.RecorderDeps}
+// Blocks between local accounts, and blocks received from other servers, are not. It needs
+// d.Accounts.
+func RegisterBlockProjectors(r *uow.Projectors, d RecorderDeps) {
+	if d.Accounts == nil {
+		panic("federation: the block projectors need RecorderDeps.Accounts")
+	}
+	rec := recorder{d: d}
 	federates := func(ctx context.Context, tx uow.Tx, b appgraph.Block) (bool, error) {
 		local, err := d.Accounts.IsLocal(ctx, tx, b.BlockerAccountID)
 		if err != nil || !local {

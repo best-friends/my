@@ -84,7 +84,6 @@ func TestFollowFromPeer(t *testing.T) {
 			})
 
 			t.Run("accepted", func(t *testing.T) {
-				pending(t, "#248")
 				eventually(t, deliveryTimeout, p.host+" follows "+localHandle, func() (bool, string) {
 					r, err := p.relationship(ctx, alice.ID)
 					return err == nil && r.Following, fmt.Sprintf("%+v %v", r, err)
@@ -104,7 +103,6 @@ func TestFollowFromLocal(t *testing.T) {
 	e := stack(t)
 	for _, p := range e.peers {
 		t.Run(p.name, func(t *testing.T) {
-			pending(t, "#248")
 			ctx := t.Context()
 			followLocalToPeer(t, e, p)
 			alice, err := p.resolve(ctx, localHandle)
@@ -160,7 +158,7 @@ func TestPostFromPeer(t *testing.T) {
 	e := stack(t)
 	for _, p := range e.peers {
 		t.Run(p.name, func(t *testing.T) {
-			pending(t, "#248", "#249")
+			pending(t, "#249")
 			ctx := t.Context()
 			followLocalToPeer(t, e, p)
 			posted, err := p.post(ctx, unique("hello from "+p.name), "public")
@@ -186,7 +184,6 @@ func TestPostFromLocal(t *testing.T) {
 	e := stack(t)
 	for _, p := range e.peers {
 		t.Run(p.name, func(t *testing.T) {
-			pending(t, "#248")
 			ctx := t.Context()
 			followPeerToLocal(t, p)
 			posted, err := e.local.post(ctx, unique("hello to "+p.name), "public")

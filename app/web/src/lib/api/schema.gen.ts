@@ -195,7 +195,8 @@ export interface paths {
          *     then `requested` is true until the account accepts it (FR-301, FR-302). Following an
          *     account that the viewer already follows or has requested to follow changes only the
          *     preferences in the body. Following an account that the viewer blocks is a 409
-         *     `/api/v1/problems/blocking`. Only local accounts can be followed.
+         *     `/api/v1/problems/blocking`. A follow of an account on another server is a request
+         *     until that server accepts it.
          */
         post: operations["followAccount"];
         delete?: never;

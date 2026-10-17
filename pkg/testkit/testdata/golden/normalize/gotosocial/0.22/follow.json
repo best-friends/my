@@ -1,0 +1,18 @@
+{
+  "Activity": {
+    "Actor": "https://gotosocial.example/users/the_mighty_zork",
+    "Audience": {
+      "To": [
+        "https://remote.example/users/bob"
+      ]
+    },
+    "ID": "https://gotosocial.example/users/the_mighty_zork/follow/01F8PY8RHWRQZV038T4E8T9YK8",
+    "Objects": [
+      {
+        "ID": "https://remote.example/users/bob"
+      }
+    ],
+    "RawType": "Follow",
+    "Type": "Follow"
+  }
+}

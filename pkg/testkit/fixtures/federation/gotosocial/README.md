@@ -6,6 +6,9 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
 federation documentation, © GoToSocial Authors, AGPL-3.0. Replaced in all of them: `localhost:8080` → `gotosocial.example`,
 `fossbros-anonymous.io` → `remote.example`, `unknown-instance.com` and `somewhere.com` → `other.example`, and `publicKeyPem`.
 The id of `update-person.json`, which the test generates, is an example value.
+`follow.json` and `accept-follow.json` are what v0.22.2 sends, rendered from its source: `FollowToAS` builds the `Follow`, and
+`AcceptFollow` embeds it in an `Accept` addressed to the follower, whose id has the form of `uris.GenerateURIForAccept`.
+The follow is the one of `NewTestFollows` in `testrig/testmodels.go`; `remote.example` is the server GoToSocial talks to.
 
 | File | Source | License |
 | --- | --- | --- |
@@ -16,3 +19,5 @@ The id of `update-person.json`, which the test generates, is an example value.
 | `0.22/flag.json` | `TestReportToAS` in [internal/typeutils/internaltoas_test.go](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/fb2bf1330c355f19c6f3614d7434c56f8d55aeaf/internal/typeutils/internaltoas_test.go) | AGPL-3.0 |
 | `0.22/accept-reply-request.json` | `TestAcceptRemoteReplyRequest` in [internal/federation/federatingdb/accept_test.go](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/fb2bf1330c355f19c6f3614d7434c56f8d55aeaf/internal/federation/federatingdb/accept_test.go) | AGPL-3.0 |
 | `0.22/delete-note.json` | the first `Delete` example of [docs/federation/posts.md](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/fb2bf1330c355f19c6f3614d7434c56f8d55aeaf/docs/federation/posts.md) | AGPL-3.0 |
+| `0.22/follow.json` | `FollowToAS` in [internal/typeutils/internaltoas.go](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/fb2bf1330c355f19c6f3614d7434c56f8d55aeaf/internal/typeutils/internaltoas.go) | AGPL-3.0 |
+| `0.22/accept-follow.json` | `AcceptFollow` in [internal/processing/workers/federate.go](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/fb2bf1330c355f19c6f3614d7434c56f8d55aeaf/internal/processing/workers/federate.go) and `GenerateURIForAccept` in [internal/uris/uri.go](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/fb2bf1330c355f19c6f3614d7434c56f8d55aeaf/internal/uris/uri.go) | AGPL-3.0 |

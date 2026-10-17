@@ -123,9 +123,8 @@ func newFedEnv(t *testing.T, newHarness FederationFactory) *fedEnv {
 	appfederation.RegisterOutboundProjectors(projectors, appfederation.RecorderDeps{
 		Repository: h.Federation, Outbox: outbox, IDs: e.ids, Host: contractHost,
 	})
-	appfederation.RegisterBlockProjectors(projectors, appfederation.BlockRecorderDeps{
-		RecorderDeps: appfederation.RecorderDeps{Repository: h.Federation, Outbox: outbox, IDs: e.ids, Host: contractHost},
-		Accounts:     e.accounts,
+	appfederation.RegisterBlockProjectors(projectors, appfederation.RecorderDeps{
+		Repository: h.Federation, Outbox: outbox, IDs: e.ids, Host: contractHost, Accounts: e.accounts,
 	})
 	appfederation.NewFanOut(appfederation.FanOutDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Federation, Outbox: outbox,
