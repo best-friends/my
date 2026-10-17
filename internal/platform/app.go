@@ -13,7 +13,6 @@ import (
 	"net"
 	"net/http"
 	"slices"
-	"time"
 
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
@@ -406,6 +405,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
 	}
 	a.setUpDelivery(feds)
+	if err := a.setBlobs(cfg); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	// The media service presents remote files with the proxy's signed URLs, so the proxy comes first.
 	if a.MediaProxy, err = newMediaProxy(cfg, medias, a); err != nil {
 		_ = a.Close()
@@ -565,16 +568,6 @@ func (a *App) setUpWeb(opts AppOptions) error {
 // setMedia builds the blob store, the media processor, and the media use cases, and registers
 // their jobs and schedules.
 func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
-	switch cfg.Blob {
-	case "fs":
-		store, err := blobfs.New(blobfs.Options{Dir: cfg.BlobFSDir, BaseURL: "https://" + cfg.Host})
-		if err != nil {
-			return err
-		}
-		a.Blobs, a.closeBlobs = store, store.Close
-	default:
-		return fmt.Errorf("blob %q is not implemented yet", cfg.Blob)
-	}
 	switch cfg.Media {
 	case "native":
 		a.MediaProcessor = native.New(native.Options{})
@@ -597,6 +590,21 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 	return nil
 }
 
+// setBlobs builds the blob store, which the media proxy's cache and the media use cases share.
+func (a *App) setBlobs(cfg *config.Config) error {
+	switch cfg.Blob {
+	case "fs":
+		store, err := blobfs.New(blobfs.Options{Dir: cfg.BlobFSDir, BaseURL: "https://" + cfg.Host})
+		if err != nil {
+			return err
+		}
+		a.Blobs, a.closeBlobs = store, store.Close
+	default:
+		return fmt.Errorf("blob %q is not implemented yet", cfg.Blob)
+	}
+	return nil
+}
+
 // mediaProxyKeyInfo is the HKDF info that derives the media proxy's URL signing key from a KEK.
 const mediaProxyKeyInfo = "my media proxy url signature v1"
 
@@ -615,15 +623,25 @@ func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*c
 		}
 		keys = append(keys, k)
 	}
-	return content.NewMediaProxy(content.ProxyDeps{
+	p, err := content.NewMediaProxy(content.ProxyDeps{
 		Repository: repo, HTTP: a.HTTPClient, Accounts: a.Accounts,
 		Policy: a.ModerationPolicy,
-		CacheTTL: func(ctx context.Context) (time.Duration, error) {
+		Settings: func(ctx context.Context) (content.ProxySettings, error) {
 			s, err := a.Instance.Settings(ctx)
-			return s.RemoteMediaCacheTTL(), err
+			return content.ProxySettings{
+				Policy: content.RemoteMediaPolicy(s.RemoteMediaPolicy()), CacheTTL: s.RemoteMediaCacheTTL(),
+			}, err
 		},
-		Keys: keys, BaseURL: "https://" + cfg.Host, Logger: a.Logger,
+		// The account module's avatars and headers are what the avatars policy keeps.
+		UnitOfWork: a.UnitOfWork, Blobs: a.Blobs, Clock: a.Clock, ProfileImages: a.Accounts,
+		MaxCacheSize: cfg.RemoteMediaCacheMaxBytes,
+		Keys:         keys, BaseURL: "https://" + cfg.Host, Logger: a.Logger,
 	})
+	if err != nil {
+		return nil, err
+	}
+	p.RegisterJobs(a.Handlers, a.Scheduler)
+	return p, nil
 }
 
 // defaultPostLanguage returns the default post language of a user's preferences, or "" for a

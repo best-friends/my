@@ -44,6 +44,28 @@ type MediaRepository interface {
 	// RemoteMediaByURL returns the remote media file of an owner with a URL.
 	RemoteMediaByURL(ctx context.Context, tx uow.Tx, ownerAccountID, remoteURL string) (content.RemoteMedia, error)
 
+	// UpsertRemoteMediaCache records a copy of a remote file, replacing the entry of its URL.
+	UpsertRemoteMediaCache(ctx context.Context, tx uow.Tx, e content.RemoteMediaCacheEntry) error
+	// TouchRemoteMediaCache sets when the entry of url was last accessed; a missing entry is
+	// not an error.
+	TouchRemoteMediaCache(ctx context.Context, tx uow.Tx, url string, at time.Time) error
+	// DeleteRemoteMediaCache deletes the entry of url if it is still the copy fetched at
+	// fetchedAt, and reports whether it deleted it: an entry fetched again since is kept.
+	DeleteRemoteMediaCache(ctx context.Context, tx uow.Tx, url string, fetchedAt time.Time) (bool, error)
+	// FindRemoteMediaCache returns the cache entry of a remote URL.
+	FindRemoteMediaCache(ctx context.Context, url string) (content.RemoteMediaCacheEntry, error)
+	// ListExpiredRemoteMediaCache returns up to limit entries that expire at or before now,
+	// the earliest expiry first.
+	ListExpiredRemoteMediaCache(ctx context.Context, now time.Time, limit int) ([]content.RemoteMediaCacheEntry, error)
+	// ListLeastRecentlyAccessedRemoteMediaCache returns up to limit entries, the least recently
+	// accessed first.
+	ListLeastRecentlyAccessedRemoteMediaCache(ctx context.Context, limit int) ([]content.RemoteMediaCacheEntry, error)
+	// RemoteMediaCacheSize returns the total file size of the cache entries in bytes.
+	RemoteMediaCacheSize(ctx context.Context) (int64, error)
+	// IsCustomEmojiImage reports whether any revision of a custom emoji uses a media file as
+	// its image.
+	IsCustomEmojiImage(ctx context.Context, mediaID string) (bool, error)
+
 	FindMediaFile(ctx context.Context, id string) (content.MediaFile, error)
 	// FindRemoteMedia returns the remote subtype of a media file; an upload is not found.
 	FindRemoteMedia(ctx context.Context, mediaID string) (content.RemoteMedia, error)

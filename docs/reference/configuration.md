@@ -51,6 +51,7 @@ An instance setting that has never been set reads as its default, which is defin
 | [`media_max_image_side`](#media_max_image_side) | `MY_MEDIA_MAX_IMAGE_SIDE` | `8192` | no | no |
 | [`media_max_image_pixels`](#media_max_image_pixels) | `MY_MEDIA_MAX_IMAGE_PIXELS` | `33177600` | no | no |
 | [`media_unattached_ttl`](#media_unattached_ttl) | `MY_MEDIA_UNATTACHED_TTL` | `24h` | no | no |
+| [`remote_media_cache_max_bytes`](#remote_media_cache_max_bytes) | `MY_REMOTE_MEDIA_CACHE_MAX_BYTES` | `1073741824` | no | no |
 | [`kv`](#kv) | `MY_KV` | `db` | no | no |
 | [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
 | [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
@@ -225,6 +226,14 @@ How long an upload may stay unattached to any post or profile before the hourly 
 
 - Environment variable: `MY_MEDIA_UNATTACHED_TTL`
 - Default: `24h`
+- Required: no
+
+### `remote_media_cache_max_bytes`
+
+Size limit in bytes of the copies of remote media that the media proxy keeps when the instance setting `remote_media_policy` is `avatars` or `all` (FR-409). The hourly cleanup deletes the expired copies, then the least recently accessed ones over this limit (FR-803).
+
+- Environment variable: `MY_REMOTE_MEDIA_CACHE_MAX_BYTES`
+- Default: `1073741824`
 - Required: no
 
 ### `kv`

@@ -21,13 +21,23 @@ func (q *Queries) DeletePollTallies(ctx context.Context, pollID string) error {
 	return err
 }
 
-const deleteRemoteMediaCache = `-- name: DeleteRemoteMediaCache :exec
-DELETE FROM remote_media_cache WHERE url = $1
+const deleteRemoteMediaCache = `-- name: DeleteRemoteMediaCache :execrows
+DELETE FROM remote_media_cache WHERE url = $1 AND fetched_at = $2
 `
 
-func (q *Queries) DeleteRemoteMediaCache(ctx context.Context, url string) error {
-	_, err := q.db.Exec(ctx, deleteRemoteMediaCache, url)
-	return err
+type DeleteRemoteMediaCacheParams struct {
+	Url       string
+	FetchedAt time.Time
+}
+
+// DeleteRemoteMediaCache deletes the entry of @url unless it was fetched again after the
+// cleanup read it (its fetched_at differs).
+func (q *Queries) DeleteRemoteMediaCache(ctx context.Context, arg DeleteRemoteMediaCacheParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteRemoteMediaCache, arg.Url, arg.FetchedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const existsLocalStatusInConversation = `-- name: ExistsLocalStatusInConversation :one
@@ -433,9 +443,23 @@ func (q *Queries) InsertRemoteStatusRevision(ctx context.Context, arg InsertRemo
 	return err
 }
 
+const isCustomEmojiImage = `-- name: IsCustomEmojiImage :one
+SELECT EXISTS (SELECT 1 FROM custom_emoji_images WHERE media_id = $1)
+`
+
+// IsCustomEmojiImage reports whether any revision of a custom emoji, current or not, uses the
+// media file as its image, for the avatars policy of the remote media cache.
+func (q *Queries) IsCustomEmojiImage(ctx context.Context, mediaID string) (bool, error) {
+	row := q.db.QueryRow(ctx, isCustomEmojiImage, mediaID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listExpiredRemoteMediaCache = `-- name: ListExpiredRemoteMediaCache :many
-SELECT url, blob_key FROM remote_media_cache WHERE expires_at <= $1
-ORDER BY expires_at LIMIT $2
+SELECT url, blob_key, content_type, file_size, fetched_at, expires_at, last_accessed_at
+FROM remote_media_cache WHERE expires_at <= $1
+ORDER BY expires_at, url LIMIT $2
 `
 
 type ListExpiredRemoteMediaCacheParams struct {
@@ -443,23 +467,26 @@ type ListExpiredRemoteMediaCacheParams struct {
 	BatchLimit int32
 }
 
-type ListExpiredRemoteMediaCacheRow struct {
-	Url     string
-	BlobKey string
-}
-
 // ListExpiredRemoteMediaCache returns at most @batch_limit entries past their expiry, the
 // earliest expired first, for the cleanup to delete with their blobs.
-func (q *Queries) ListExpiredRemoteMediaCache(ctx context.Context, arg ListExpiredRemoteMediaCacheParams) ([]ListExpiredRemoteMediaCacheRow, error) {
+func (q *Queries) ListExpiredRemoteMediaCache(ctx context.Context, arg ListExpiredRemoteMediaCacheParams) ([]RemoteMediaCache, error) {
 	rows, err := q.db.Query(ctx, listExpiredRemoteMediaCache, arg.Now, arg.BatchLimit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListExpiredRemoteMediaCacheRow{}
+	items := []RemoteMediaCache{}
 	for rows.Next() {
-		var i ListExpiredRemoteMediaCacheRow
-		if err := rows.Scan(&i.Url, &i.BlobKey); err != nil {
+		var i RemoteMediaCache
+		if err := rows.Scan(
+			&i.Url,
+			&i.BlobKey,
+			&i.ContentType,
+			&i.FileSize,
+			&i.FetchedAt,
+			&i.ExpiresAt,
+			&i.LastAccessedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -471,27 +498,30 @@ func (q *Queries) ListExpiredRemoteMediaCache(ctx context.Context, arg ListExpir
 }
 
 const listLeastRecentlyAccessedRemoteMediaCache = `-- name: ListLeastRecentlyAccessedRemoteMediaCache :many
-SELECT url, blob_key, file_size FROM remote_media_cache ORDER BY last_accessed_at LIMIT $1
+SELECT url, blob_key, content_type, file_size, fetched_at, expires_at, last_accessed_at
+FROM remote_media_cache ORDER BY last_accessed_at, url LIMIT $1
 `
-
-type ListLeastRecentlyAccessedRemoteMediaCacheRow struct {
-	Url      string
-	BlobKey  string
-	FileSize int64
-}
 
 // ListLeastRecentlyAccessedRemoteMediaCache returns the least recently accessed entries, for the
 // cleanup to bring the cache under its size limit.
-func (q *Queries) ListLeastRecentlyAccessedRemoteMediaCache(ctx context.Context, batchLimit int32) ([]ListLeastRecentlyAccessedRemoteMediaCacheRow, error) {
+func (q *Queries) ListLeastRecentlyAccessedRemoteMediaCache(ctx context.Context, batchLimit int32) ([]RemoteMediaCache, error) {
 	rows, err := q.db.Query(ctx, listLeastRecentlyAccessedRemoteMediaCache, batchLimit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListLeastRecentlyAccessedRemoteMediaCacheRow{}
+	items := []RemoteMediaCache{}
 	for rows.Next() {
-		var i ListLeastRecentlyAccessedRemoteMediaCacheRow
-		if err := rows.Scan(&i.Url, &i.BlobKey, &i.FileSize); err != nil {
+		var i RemoteMediaCache
+		if err := rows.Scan(
+			&i.Url,
+			&i.BlobKey,
+			&i.ContentType,
+			&i.FileSize,
+			&i.FetchedAt,
+			&i.ExpiresAt,
+			&i.LastAccessedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

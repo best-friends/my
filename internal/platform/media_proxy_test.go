@@ -142,3 +142,35 @@ func TestMediaProxySSRFGuard(t *testing.T) {
 		t.Errorf("the internal server got %d requests", n)
 	}
 }
+
+// Under remote_media_policy all, the proxy keeps a copy in blob storage and serves the second
+// request from it; under none it relays every request.
+func TestMediaProxyCache(t *testing.T) {
+	remote, hits, png := remoteServer(t)
+	cfg := loadConfig(t, map[string]string{
+		"MY_DATABASE_URL": newDatabase(t, true), "MY_PROFILE": "development", "MY_HTTP_ALLOW_PRIVATE_NETWORKS": "true",
+	})
+	s := start(t, cfg, platform.ServeOptions{}, nil)
+	path := recordRemote(t, s.app, remote.URL+"/a.png")
+	get := func() {
+		t.Helper()
+		resp, body := s.do(t, http.MethodGet, path, nil)
+		if resp.StatusCode != http.StatusOK || body != string(png) || resp.Header.Get("Content-Type") != "image/png" {
+			t.Fatalf("GET %s = %d %q, %d bytes", path, resp.StatusCode, resp.Header.Get("Content-Type"), len(body))
+		}
+	}
+
+	get()
+	get()
+	if n := hits.Load(); n != 2 {
+		t.Errorf("none: the remote server got %d requests for 2, want 2", n)
+	}
+	if _, err := s.app.Instance.SetSetting(t.Context(), instance.SetSettingInput{Key: domaininstance.SettingRemoteMediaPolicy, Value: "all"}); err != nil {
+		t.Fatal(err)
+	}
+	get()
+	get()
+	if n := hits.Load(); n != 3 {
+		t.Errorf("all: the remote server got %d requests in total, want 3", n)
+	}
+}

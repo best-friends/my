@@ -5,6 +5,7 @@ package content
 import (
 	"bytes"
 	"slices"
+	"time"
 )
 
 // RemoteMedia is the remote subtype of a media file: a file on another server as the received
@@ -23,6 +24,24 @@ type RemoteMedia struct {
 	Blurhash            string
 	Focus               *MediaFocus
 	Description         string
+}
+
+// RemoteMediaCacheEntry is a remote file that the media proxy copied into blob storage
+// (remote_media_cache): the cache of the remote_media_policy avatars and all (FR-409). It is
+// keyed by the remote URL, so that the media files of several owners with the same URL share
+// one copy. The proxy serves it until ExpiresAt; the cleanup deletes it after ExpiresAt, or
+// earlier, least recently accessed first, when the cache is over its size limit.
+type RemoteMediaCacheEntry struct {
+	URL string
+	// BlobKey is the private key of the copy, under "remote/".
+	BlobKey string
+	// ContentType is the media type detected from the content when it was fetched.
+	ContentType string
+	FileSize    int64
+	FetchedAt   time.Time
+	ExpiresAt   time.Time
+	// LastAccessedAt is when the proxy last served the copy, updated at a coarse granularity.
+	LastAccessedAt time.Time
 }
 
 // SniffHeadLength is how many leading bytes SniffRemoteMedia needs to tell every format apart.
