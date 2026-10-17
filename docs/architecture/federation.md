@@ -308,11 +308,23 @@ ADR-0017 を連合の各経路に当てはめた結果です。
 ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 - リモートの添付・アバター・ヘッダー・カスタム絵文字は、`media_files`（`origin = remote`）と `remote_media` に、受信した文書が宣言した値（URL・`mediaType`・寸法・`blurhash`・焦点・代替テキスト）を記録します。取り込み時にファイルは取得しません。
-- クライアント API は、リモートのメディアの URL を **メディアプロキシの URL** `https://{host}/media/proxy/{media_id}/{variant}?sig=…` で返します。`sig` は `media_id` と `variant` の HMAC で、プロキシを任意の URL の中継に使わせません。
-- プロキシ（`internal/interface/media`）は `HTTPClient` で元の URL を取得し、形式を中身で判定して（ADR-0019 §8。SVG は拒否）、`Cache-Control: public, max-age=…` と `Content-Security-Policy: default-src 'none'; sandbox` を付けて中継します。CDN がキャッシュします（NFR-COST-4）。
-  サイズの上限は画像 16 MiB、動画・音声 100 MiB です（ADR-0019 §1）。
-- インスタンス設定 `remote_media_policy`（`none` / `avatars` / `all`）と `remote_media_cache_ttl` で、TTL 付きのキャッシュを選べます（FR-409）。キャッシュは `remote_media_cache` と Blob（`remote/` のキー）に置き、`media.cleanup_remote` が期限と容量の上限で消します（FR-803）。
-- ドメイン単位の `media_fetch` の制限（`reject_media`）があるドメインのメディアは、プロキシが取得せず 404 を返します。`media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。
+- 取り込みは `content.MediaService.RecordRemoteMedia` を受信のトランザクションの中で呼び、同じ所有者・同じ URL のファイルは最初に記録したものを返します。
+- クライアント API は、リモートのメディアの URL を **メディアプロキシの URL** `https://{host}/media/proxy/{media_id}/{variant}?sig=…`（`content.MediaProxy.URL`）で返します。
+  `sig` は `media_id` と `variant` の HMAC-SHA256（base64url）で、プロキシを任意の URL の中継に使わせません。
+  鍵は設定 `kek` から HKDF-SHA256 で導くので、プロキシに専用の秘密はありません。`kek_previous` から導いた鍵も検証に使うので、KEK のローテーション中も前の URL が使えます。
+  `variant` は元のファイルそのものの `full` だけです。
+- プロキシ（`content.MediaProxy` と `internal/interface/media`）は、`HTTPClient` で元の URL を取得し、形式を中身の先頭のバイトで判定して（ADR-0019 §8。許可リストは JPEG / PNG / GIF / WebP / AVIF / MP4 / WebM / MP3 / Ogg で、SVG は拒否）、
+  判定した `Content-Type`、`Cache-Control: public, max-age={remote_media_cache_ttl}`、`X-Content-Type-Options: nosniff`、`Content-Security-Policy: default-src 'none'; sandbox`、`Cross-Origin-Resource-Policy: cross-origin` を付けて中継します。
+  リモートのヘッダ（`Content-Type` など）と利用者のリクエストのヘッダは使いません。CDN がキャッシュします（NFR-COST-4）。
+- サイズの上限は、中身で判定した種類ごとに画像 16 MiB、動画・音声 100 MiB です（ADR-0019 §1）。`Content-Length` が上限を超えるものは本文を読まずに断ります。
+  長さのない画像は上限まで読んでから返し、長さのない動画・音声は中継の途中で上限を超えたらレスポンスを中断します（CDN が途中までのファイルをキャッシュしないように）。
+- 署名がない・合わない URL、記録のないメディア、`media_fetch` の制限、SSRF ガードが拒否した宛先、リモートの 4xx、許可リストにない形式、上限を超えるものは、どれも 404 です。リモートに届かないときと 5xx は 502 です。エラーのレスポンスは `Cache-Control: no-store` です。
+- インスタンス設定 `remote_media_policy`（`none` / `avatars` / `all`、既定 `none`）と `remote_media_cache_ttl`（秒、既定 86400）で、TTL 付きのキャッシュを選べます（FR-409）。
+  キャッシュは `remote_media_cache` と Blob（`remote/` のキー）に置き、`media.cleanup_remote` が期限と容量の上限で消します（FR-803）。
+  キャッシュはまだ実装していない（#276）ので、プロキシはどの方針でも `none` と同じく毎回中継し、`remote_media_cache_ttl` は `max-age` にだけ効きます。
+- ドメイン単位の `media_fetch` の制限（`reject_media`）は、メディアの所有者のドメインと URL のホストの両方に当て、どちらかが制限されていればプロキシは取得せず 404 を返します。
+  判定はポート `content.MediaFetchPolicy` を通します。`moderation` の投影ができるまでは、どのドメインも制限しない `content.NoMediaRestrictions` を組み込みます。
+  `media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。
 - サムネイル・blurhash がない動画は、クライアントが「プレビューなし」として表示します。
 
 ## 10. コレクションとオブジェクトの GET
