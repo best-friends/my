@@ -24,6 +24,8 @@ const (
 	ReceivedActivityRetention = 30 * 24 * time.Hour
 	// RemoteObjectTombstoneRetention is how long a tombstone of an unknown object is kept.
 	RemoteObjectTombstoneRetention = 30 * 24 * time.Hour
+	// RemoteFollowTombstoneRetention is how long a tombstone of an unknown Follow is kept.
+	RemoteFollowTombstoneRetention = 30 * 24 * time.Hour
 	// OutboundDocumentRetention is how long the body of an outbound activity is kept, well
 	// past the last retry of its deliveries (DeliveryRetryPolicy).
 	OutboundDocumentRetention = 30 * 24 * time.Hour
@@ -45,6 +47,9 @@ type PurgeRepository interface {
 	// DeleteReceivedActivitiesBefore deletes the records of activities received before t whose
 	// documents are gone.
 	DeleteReceivedActivitiesBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error)
+	// DeleteRemoteFollowTombstonesBefore deletes the tombstones of unknown Follows received
+	// before t.
+	DeleteRemoteFollowTombstonesBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error)
 	// DeleteRemoteObjectTombstonesBefore deletes the tombstones received before t.
 	DeleteRemoteObjectTombstonesBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error)
 	// DeleteOutboundDocumentsBefore deletes the outbound documents built before t.
@@ -63,9 +68,12 @@ type PurgeDeps struct {
 }
 
 // Purger runs JobPurge: it deletes received documents after ReceivedDocumentRetention, the
-// records of received activities and the tombstones of unknown objects after 30 days, and the
-// bodies of outbound activities and the delivery attempts after 30 days. Each statement deletes
-// a bounded batch in a transaction of its own; a document always goes before the record of its activity.
+// records of received activities and the tombstones of unknown Follows and objects after 30 days,
+// and the bodies of outbound activities and the delivery attempts after 30 days. Each statement
+// deletes a bounded batch in a transaction of its own; a document always goes before the record
+// of its activity, and a Follow tombstone before the object tombstones, whose row with its
+// activity_uri marks it used: the marker is never older than the tombstone it marks, so a used
+// tombstone never outlives its marker and drops a Follow again.
 type Purger struct{ d PurgeDeps }
 
 // NewPurger returns the purge on d.
@@ -99,6 +107,7 @@ func (p *Purger) Run(ctx context.Context) (int64, error) {
 	}{
 		{"received documents", now.Add(-ReceivedDocumentRetention), r.DeleteReceivedDocumentsBefore},
 		{"received activities", now.Add(-ReceivedActivityRetention), r.DeleteReceivedActivitiesBefore},
+		{"remote follow tombstones", now.Add(-RemoteFollowTombstoneRetention), r.DeleteRemoteFollowTombstonesBefore},
 		{"remote object tombstones", now.Add(-RemoteObjectTombstoneRetention), r.DeleteRemoteObjectTombstonesBefore},
 		{"outbound documents", now.Add(-OutboundDocumentRetention), r.DeleteOutboundDocumentsBefore},
 		{"delivery attempts", now.Add(-DeliveryAttemptRetention), r.DeleteDeliveryAttemptsBefore},

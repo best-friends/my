@@ -112,6 +112,27 @@ func (q *Queries) DeleteReceivedActivityDocumentsBefore(ctx context.Context, arg
 	return result.RowsAffected()
 }
 
+const deleteRemoteFollowTombstonesBefore = `-- name: DeleteRemoteFollowTombstonesBefore :execrows
+DELETE FROM remote_follow_tombstones
+WHERE activity_uri IN (
+  SELECT t.activity_uri FROM remote_follow_tombstones t
+  WHERE t.received_at < ?1 ORDER BY t.received_at LIMIT ?2
+)
+`
+
+type DeleteRemoteFollowTombstonesBeforeParams struct {
+	ReceivedBefore int64
+	BatchLimit     int64
+}
+
+func (q *Queries) DeleteRemoteFollowTombstonesBefore(ctx context.Context, arg DeleteRemoteFollowTombstonesBeforeParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteRemoteFollowTombstonesBefore, arg.ReceivedBefore, arg.BatchLimit)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const deleteRemoteObjectTombstonesBefore = `-- name: DeleteRemoteObjectTombstonesBefore :execrows
 DELETE FROM remote_object_tombstones
 WHERE uri IN (

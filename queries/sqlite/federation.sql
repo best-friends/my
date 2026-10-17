@@ -190,3 +190,10 @@ WHERE t.actor_uri = @actor_uri AND t.object_uri = @object_uri
   AND NOT EXISTS (SELECT 1 FROM remote_object_tombstones o WHERE o.activity_uri = t.activity_uri)
 ORDER BY t.received_at, t.activity_uri
 LIMIT 1;
+
+-- name: DeleteRemoteFollowTombstonesBefore :execrows
+DELETE FROM remote_follow_tombstones
+WHERE activity_uri IN (
+  SELECT t.activity_uri FROM remote_follow_tombstones t
+  WHERE t.received_at < @received_before ORDER BY t.received_at LIMIT @batch_limit
+);
