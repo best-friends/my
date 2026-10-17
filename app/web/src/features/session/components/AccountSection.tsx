@@ -50,7 +50,7 @@ function AccountStatus() {
         <div className="flex flex-col items-start gap-2">
           {/* The display name and handle are the user's text, in any language (web-client.md Y10). */}
           <p className="flex flex-col">
-            <span dir="auto" className="font-semibold">
+            <span dir="auto" className="font-semibold align-match-parent">
               {viewer.account.display_name || viewer.account.username}
             </span>
             <span dir="ltr" className="text-sm text-fg-muted">
