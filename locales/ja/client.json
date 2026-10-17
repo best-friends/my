@@ -715,6 +715,14 @@
     "defaultMessage": "ホーム",
     "description": "Heading and document title of the home timeline page."
   },
+  "local.disabled.body": {
+    "defaultMessage": "このサーバーは、このサーバーのアカウントの公開投稿をまとめたタイムラインを表示していません。",
+    "description": "Text below the heading of the local timeline's page when the server's operators have turned that timeline off."
+  },
+  "local.disabled.title": {
+    "defaultMessage": "ローカルタイムラインは提供されていません",
+    "description": "Heading and document title of the local timeline's page when the server's operators have turned that timeline off."
+  },
   "local.title": {
     "defaultMessage": "ローカルタイムライン",
     "description": "Heading and document title of the page with the public posts of this server's accounts."
@@ -1707,6 +1715,14 @@
     "defaultMessage": "読み込み中",
     "description": "Accessible name of the progress indicator shown while a page loads."
   },
+  "shell.menu.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the × button that closes the navigation menu's sheet."
+  },
+  "shell.menu.title": {
+    "defaultMessage": "メニュー",
+    "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
+  },
   "shell.nav.home": {
     "defaultMessage": "ホーム",
     "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -1717,7 +1733,11 @@
   },
   "shell.nav.local": {
     "defaultMessage": "ローカル",
-    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in the side rail of tablets. On phones the same timeline is a tab of the Timelines screen instead."
+  },
+  "shell.nav.menu": {
+    "defaultMessage": "メニュー",
+    "description": "Button of the bottom tab bar on phones that opens a sheet with the rest of the navigation (profile, settings). Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
   },
   "shell.nav.notifications": {
     "defaultMessage": "通知",
@@ -1729,11 +1749,11 @@
   },
   "shell.nav.profile": {
     "defaultMessage": "プロフィール",
-    "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
   },
   "shell.nav.public": {
     "defaultMessage": "連合",
-    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in the side rail of tablets. On phones the same timeline is a tab of the Timelines screen instead."
   },
   "shell.nav.search": {
     "defaultMessage": "検索",
@@ -1741,7 +1761,11 @@
   },
   "shell.nav.settings": {
     "defaultMessage": "設定",
-    "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
+  "shell.nav.timelines": {
+    "defaultMessage": "タイムライン",
+    "description": "Item of the bottom tab bar on phones that opens the screen with the local and federated timelines as tabs. Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
   },
   "shell.not_found.body": {
     "defaultMessage": "このアドレスのページはありません。",
@@ -2014,5 +2038,17 @@
   "timeline.signed_out.heading": {
     "defaultMessage": "ログインしていません",
     "description": "Heading on the home page when nobody is signed in, shown instead of the home timeline."
+  },
+  "timeline.tabs.label": {
+    "defaultMessage": "タイムライン",
+    "description": "Accessible name of the tabs that switch between the local and the federated timeline."
+  },
+  "timeline.tabs.local": {
+    "defaultMessage": "ローカル",
+    "description": "Tab that opens the local timeline (public posts of this server's accounts)."
+  },
+  "timeline.tabs.public": {
+    "defaultMessage": "連合",
+    "description": "Tab that opens the federated timeline (public posts of this server and of the other servers it knows)."
   }
 }

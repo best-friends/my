@@ -2,7 +2,7 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { Link } from "@my/ui";
 import { useId } from "react";
-import { TimelineFeed, TimelineSkeleton, timelineQueryOptions } from "../features/timeline";
+import { TimelineFeed, TimelineSkeleton, TimelineTabs, timelineQueryOptions } from "../features/timeline";
 import { ApiError } from "../lib/errors";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
@@ -10,7 +10,8 @@ import { RouteError } from "./-layout/RouteStates";
 
 /**
  * The federated timeline (FR-202): the public posts of this server's accounts and of the accounts of other
- * servers whose posts this server holds. The navigation offers it only while the instance serves it.
+ * servers whose posts this server holds. The navigation offers it only while the instance serves it, and the
+ * local timeline's page has it as its other tab (ADR-0039).
  */
 export const Route = createFileRoute("/public")({
   // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
@@ -30,7 +31,9 @@ function PublicPage() {
   return (
     <>
       <PageHeading id={headingId}>{t("client:public.title")}</PageHeading>
-      <TimelineFeed timeline={{ kind: "public" }} aria-labelledby={headingId} />
+      <TimelineTabs current="public">
+        <TimelineFeed timeline={{ kind: "public" }} aria-labelledby={headingId} />
+      </TimelineTabs>
     </>
   );
 }
@@ -40,7 +43,9 @@ function PublicPending() {
   return (
     <>
       <PageHeading>{t("client:public.title")}</PageHeading>
-      <TimelineSkeleton />
+      <TimelineTabs current="public">
+        <TimelineSkeleton />
+      </TimelineTabs>
     </>
   );
 }

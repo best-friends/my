@@ -130,3 +130,27 @@ export async function expectTabWhollyVisible(tab: Locator): Promise<void> {
     )
     .toBe("whole");
 }
+
+/**
+ * Opens the page at `path` from the main navigation as a user of the project's width does (ADR-0039): with the
+ * item of the tab bar or the rail that links to it; below md, with the local or federated timeline's tab on the
+ * Timelines screen, or with the link in the menu's sheet for the items that are not in the tab bar. Call it once
+ * the current page has rendered.
+ */
+export async function openFromNavigation(page: Page, path: string, hasTouch: boolean): Promise<void> {
+  const press = (target: Locator) => (hasTouch ? target.tap() : target.click());
+  const nav = page.getByRole("navigation");
+  // The rail's items stay in the document below md, hidden (display: none), and the other way round.
+  const item = nav.locator(`a[href="${path}"]`).filter({ visible: true });
+  if ((await item.count()) > 0) {
+    await press(item);
+    return;
+  }
+  const tab = page.getByRole("main").getByRole("tab").and(page.locator(`[href="${path}"]`));
+  if ((await tab.count()) > 0) {
+    await press(tab);
+    return;
+  }
+  await press(nav.getByRole("button"));
+  await press(page.getByRole("dialog").locator(`a[href="${path}"]`));
+}

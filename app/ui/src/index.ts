@@ -69,6 +69,7 @@ export {
   FederatedIcon,
   HomeIcon,
   LocalIcon,
+  MenuIcon,
   MoreIcon,
   NotificationsIcon,
   PlusIcon,
@@ -77,6 +78,7 @@ export {
   SearchIcon,
   SettingsIcon,
   StarIcon,
+  TimelinesIcon,
   type ToggleIconProps,
 } from "./Icons";
 

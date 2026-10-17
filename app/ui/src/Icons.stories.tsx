@@ -12,6 +12,7 @@ import {
   FederatedIcon,
   HomeIcon,
   LocalIcon,
+  MenuIcon,
   MoreIcon,
   NotificationsIcon,
   PlusIcon,
@@ -20,6 +21,7 @@ import {
   SearchIcon,
   SettingsIcon,
   StarIcon,
+  TimelinesIcon,
   type ToggleIconProps,
 } from "./Icons";
 import { Link } from "./Link";
@@ -41,12 +43,14 @@ const icons: readonly (readonly [string, ComponentType<ToggleIconProps>])[] = [
   ["StarIcon", StarIcon],
   ["BookmarkIcon", BookmarkIcon],
   ["HomeIcon", HomeIcon],
+  ["TimelinesIcon", TimelinesIcon],
   ["LocalIcon", LocalIcon],
   ["FederatedIcon", FederatedIcon],
   ["SearchIcon", SearchIcon],
   ["NotificationsIcon", NotificationsIcon],
   ["ProfileIcon", ProfileIcon],
   ["SettingsIcon", SettingsIcon],
+  ["MenuIcon", MenuIcon],
 ];
 
 /** The icons of toggles, which show their on state by shape (filled, or a heavier stroke) and not by color alone. */
