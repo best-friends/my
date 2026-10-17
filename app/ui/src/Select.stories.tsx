@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { Button } from "./Button";
+import { ImageIcon, LanguageIcon } from "./Icons";
 import { Select, SelectItem } from "./Select";
 
 const languages = [
@@ -30,6 +32,22 @@ export const Selected: Story = { args: { defaultValue: "ja", description: "Reade
 export const Invalid: Story = { args: { isInvalid: true, errorMessage: "Choose a language." } };
 
 export const Disabled: Story = { args: { defaultValue: "en", isDisabled: true } };
+
+/**
+ * A button in a row of tools, as tall as the ghost `toolbar` Button beside it: no visible label (the
+ * `aria-label` names it), the icon and the chosen option.
+ */
+export const Toolbar: Story = {
+  args: { label: undefined, "aria-label": "Post language", variant: "toolbar", icon: <LanguageIcon />, defaultValue: "ja" },
+  render: (args) => (
+    <div className="flex flex-wrap items-center gap-1">
+      <Button variant="ghost" size="toolbar" aria-label="Add images">
+        <ImageIcon />
+      </Button>
+      <Select {...args} />
+    </div>
+  ),
+};
 
 /** The open list, for the accessibility check of the options; it renders in a popover outside the frame. */
 export const Open: Story = { args: { defaultValue: "ja", defaultOpen: true } };

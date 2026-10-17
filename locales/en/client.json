@@ -495,6 +495,10 @@
     "defaultMessage": "Add images",
     "description": "Button that opens the file picker to attach images to a post."
   },
+  "compose.media.count": {
+    "defaultMessage": "{count, plural, one {# image attached} other {# images attached}}",
+    "description": "Description of the button that attaches images, while the post has some. {count} is how many."
+  },
   "compose.media.description.hint": {
     "defaultMessage": "Describe the image for people who cannot see it.",
     "description": "Help text under the alternative text field of an attached image."
@@ -709,7 +713,7 @@
   },
   "compose.warning.toggle": {
     "defaultMessage": "Add a content warning",
-    "description": "Checkbox that adds a content warning: a short text shown instead of the post until the reader opens it."
+    "description": "Toggle button (an icon) that adds a content warning: a short text shown instead of the post until the reader opens it."
   },
   "home.title": {
     "defaultMessage": "Home",
