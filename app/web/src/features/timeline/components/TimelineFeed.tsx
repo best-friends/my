@@ -68,6 +68,8 @@ function TimelineEmpty({ timeline }: { timeline: Timeline }) {
       );
     case "local":
       return <EmptyState heading={t("client:timeline.empty.local.heading")} description={t("client:timeline.empty.local.description")} />;
+    case "public":
+      return <EmptyState heading={t("client:timeline.empty.public.heading")} description={t("client:timeline.empty.public.description")} />;
     case "tag":
       return (
         <EmptyState

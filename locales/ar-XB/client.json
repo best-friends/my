@@ -843,6 +843,18 @@
     "defaultMessage": "‮Ԁɹoɟıʅǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "public.disabled.body": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ poǝs uoʇ sɥoʍ ʇɥǝ dnqʅıɔ dosʇs oɟ oʇɥǝɹ sǝɹʌǝɹs ıu ouǝ ʇıɯǝʅıuǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "public.disabled.title": {
+    "defaultMessage": "‮⊥ɥǝ ɟǝpǝɹɐʇǝp ʇıɯǝʅıuǝ ıs oɟɟ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "public.title": {
+    "defaultMessage": "‮Ⅎǝpǝɹɐʇǝp ʇıɯǝʅıuǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "search.description": {
     "defaultMessage": "‮Ǝuʇǝɹ @nsǝɹuɐɯǝ@sǝɹʌǝɹ oɹ ʇɥǝ ɐppɹǝss oɟ ɐ dɹoɟıʅǝ, ou ʇɥıs sǝɹʌǝɹ oɹ ɐuoʇɥǝɹ ouǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1251,6 +1263,10 @@
     "defaultMessage": "‮Ԁɹoɟıʅǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.nav.public": {
+    "defaultMessage": "‮Ⅎǝpǝɹɐʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.nav.search": {
     "defaultMessage": "‮Sǝɐɹɔɥ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1460,6 +1476,14 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.empty.local.heading": {
+    "defaultMessage": "‮No dosʇs ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.public.description": {
+    "defaultMessage": "‮Ԁnqʅıɔ dosʇs oɟ dǝodʅǝ ɥǝɹǝ ɐup ou ʇɥǝ sǝɹʌǝɹs ʇɥıs ouǝ ʞuoʍs ʍıʅʅ ɐddǝɐɹ ɥǝɹǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.public.heading": {
     "defaultMessage": "‮No dosʇs ʎǝʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },

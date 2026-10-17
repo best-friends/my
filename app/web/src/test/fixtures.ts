@@ -16,6 +16,7 @@ export const instanceFixture: Schemas["Instance"] = {
   source_url: "https://github.com/best-friends/my",
   registrations: { mode: "approval" },
   limits: { max_post_characters: 500 },
+  timelines: { local: true, federated: true },
 };
 
 /** The signed-in user's `CredentialAccount` for GET /accounts/verify_credentials (operationId verifyAccountCredentials). */

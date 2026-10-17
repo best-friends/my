@@ -57,6 +57,7 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	}
 	out.Registrations = InstanceRegistrations{Mode: InstanceRegistrationsMode(settings.RegistrationMode())}
 	out.Limits = InstanceLimits{MaxPostCharacters: settings.MaxStatusLength()}
+	out.Timelines = InstanceTimelines{Local: settings.LocalTimelineEnabled(), Federated: settings.FederatedTimelineEnabled()}
 
 	cache := cachePublic
 	if _, ok := ViewerFrom(ctx); ok {

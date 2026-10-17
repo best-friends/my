@@ -59,6 +59,7 @@ func TestGetInstance(t *testing.T) {
 		Domain: "social.example", Name: "social.example", Version: "1.2.3", SourceUrl: "https://git.example/my",
 		Registrations: clientapi.InstanceRegistrations{Mode: clientapi.InstanceRegistrationsModeApproval},
 		Limits:        clientapi.InstanceLimits{MaxPostCharacters: 500},
+		Timelines:     clientapi.InstanceTimelines{Local: true, Federated: true},
 	}
 	if got != want {
 		t.Errorf("instance = %+v, want %+v", got, want)
@@ -96,6 +97,7 @@ func TestGetInstanceFromSettings(t *testing.T) {
 		settings: []instance.CurrentSetting{
 			{Key: instance.SettingMaxStatusLength, RevisionID: "r1", Value: "1200"},
 			{Key: instance.SettingRegistrationMode, RevisionID: "r2", Value: "invite"},
+			{Key: instance.SettingFederatedTimelineEnabled, RevisionID: "r3", Value: "false"},
 		},
 		texts: map[instance.TextKey]map[string]string{
 			instance.TextName:             {"en": "Example Social", "ja": "例のソーシャル"},
@@ -126,7 +128,8 @@ func TestGetInstanceFromSettings(t *testing.T) {
 				t.Fatal(err)
 			}
 			if got.Name != tt.wantName || got.ShortDescription == nil || *got.ShortDescription != "A small instance." ||
-				got.Description != nil || got.Limits.MaxPostCharacters != 1200 || got.Registrations.Mode != clientapi.InstanceRegistrationsModeInvite {
+				got.Description != nil || got.Limits.MaxPostCharacters != 1200 || got.Registrations.Mode != clientapi.InstanceRegistrationsModeInvite ||
+				got.Timelines != (clientapi.InstanceTimelines{Local: true, Federated: false}) {
 				t.Errorf("instance = %+v, want name %q and the stored settings", got, tt.wantName)
 			}
 			if cc := res.Header.Get("Cache-Control"); cc != tt.wantCache {

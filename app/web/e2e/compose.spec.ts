@@ -87,7 +87,7 @@ async function serveApi(page: Page): Promise<Posted[]> {
         permissions: [],
       });
     if (path === "/api/v1/instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 } });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true } });
     }
     if (path === "/api/v1/preferences") {
       // The user's locale is the project's: the app displays itself in the signed-in user's locale.

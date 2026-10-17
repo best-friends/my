@@ -16,6 +16,7 @@ import { Route as LocalRouteImport } from './routes/local'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PublicRouteImport } from './routes/public'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as AtChar123acctChar125IdRouteImport } from './routes/@{$acct}_.$id'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
@@ -65,6 +66,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicRoute = PublicRouteImport.update({
+  id: '/public',
+  path: '/public',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/public': typeof PublicRoute
   '/search': typeof SearchRoute
   '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/public': typeof PublicRoute
   '/search': typeof SearchRoute
   '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/public': typeof PublicRoute
   '/search': typeof SearchRoute
   '/@{$acct}_/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
@@ -228,6 +237,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/notifications'
     | '/profile'
+    | '/public'
     | '/search'
     | '/@{$acct}/$id'
     | '/@{$acct}/followers'
@@ -252,6 +262,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/notifications'
     | '/profile'
+    | '/public'
     | '/search'
     | '/@{$acct}/$id'
     | '/@{$acct}/followers'
@@ -276,6 +287,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/notifications'
     | '/profile'
+    | '/public'
     | '/search'
     | '/@{$acct}_/$id'
     | '/@{$acct}_/followers'
@@ -301,6 +313,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
+  PublicRoute: typeof PublicRoute
   SearchRoute: typeof SearchRoute
   AtChar123acctChar125IdRoute: typeof AtChar123acctChar125IdRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
@@ -367,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/public': {
+      id: '/public'
+      path: '/public'
+      fullPath: '/public'
+      preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -485,6 +505,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
+  PublicRoute: PublicRoute,
   SearchRoute: SearchRoute,
   AtChar123acctChar125IdRoute: AtChar123acctChar125IdRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
