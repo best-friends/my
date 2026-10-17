@@ -12,6 +12,7 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/federation"
 )
@@ -35,6 +36,7 @@ type RemoteStatuses interface {
 	IngestRemoteStatus(ctx context.Context, tx uow.Tx, in appcontent.RemoteStatusInput) (appcontent.Post, error)
 	ReviseRemoteStatus(ctx context.Context, tx uow.Tx, in appcontent.RemoteStatusInput) (bool, error)
 	DeleteRemoteStatus(ctx context.Context, tx uow.Tx, uri, authorAccountID string) error
+	FindStatus(ctx context.Context, id string) (appcontent.Status, error)
 	FindStatusByURI(ctx context.Context, uri string) (appcontent.Status, error)
 	Tombstoned(ctx context.Context, uri string) (bool, error)
 	LocalStatusInConversation(ctx context.Context, conversationURI string) (bool, error)
@@ -60,7 +62,17 @@ type StatusHandlersDeps struct {
 	Fetcher DocumentFetcher
 	// Followers tells whether local accounts follow the author (ADR-0034).
 	Followers Followers
-	Clock     kernel.Clock
+	// Tombstones tells which URIs a Delete or Undo of an unknown object left (federation.md
+	// §3.3), so that a fetch does not bring them in; nil knows none.
+	Tombstones RemoteObjectTombstones
+	// Outbox enqueues the fetch of the parent of an ingested reply in its transaction; Jobs
+	// enqueues the fetches of a thread outside transactions; KV keeps the thread fetches of
+	// the last ThreadFetchTTL (federation.md §6.3). Without Outbox, parents are not fetched;
+	// without Jobs and KV, threads are not.
+	Outbox queue.Outbox
+	Jobs   queue.JobQueue
+	KV     kernel.KeyValueStore
+	Clock  kernel.Clock
 	// Host is the serving domain: actors on it are local.
 	Host   string
 	Logger *slog.Logger
@@ -140,7 +152,7 @@ func (h *StatusHandlers) Update(ctx context.Context, a *InboxActivity) error {
 	if err := h.resolveMentions(ctx, mentions); err != nil {
 		return err
 	}
-	in := h.input(a, obj, followers, mentions)
+	in := h.input(a.Actor, a.Received.ActivityURI, a.Activity.Audience, obj, followers, mentions)
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		_, err := h.d.Statuses.ReviseRemoteStatus(ctx, tx, in)
 		return err
@@ -249,10 +261,13 @@ func (h *StatusHandlers) ingest(ctx context.Context, a *InboxActivity, obj *fede
 	if err := h.resolveMentions(ctx, mentions); err != nil {
 		return err
 	}
-	in := h.input(a, obj, followers, mentions)
+	in := h.input(a.Actor, a.Received.ActivityURI, a.Activity.Audience, obj, followers, mentions)
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		_, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, in)
-		return err
+		p, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, in)
+		if err != nil {
+			return err
+		}
+		return h.fetchParentTx(ctx, tx, p.Status)
 	})
 	if errors.Is(err, appcontent.ErrStatusExists) {
 		return nil // a concurrent activity stored it
@@ -366,21 +381,23 @@ func (h *StatusHandlers) resolveMentions(ctx context.Context, m *postMentions) e
 
 func (h *StatusHandlers) isLocal(iri federation.IRI) bool { return iri.Origin() == h.origin }
 
-// input maps a normalized post to what the content module stores (federation.md §4).
-func (h *StatusHandlers) input(a *InboxActivity, obj *federation.Object, followers federation.IRI, m *postMentions) appcontent.RemoteStatusInput {
+// input maps a normalized post of author to what the content module stores (federation.md §4).
+// activityURI is the Create or Update that carried it ("" for a fetched post), whose audience
+// stands in for the post's when it has none.
+func (h *StatusHandlers) input(author appaccount.Actor, activityURI federation.IRI, activityAudience federation.Audience, obj *federation.Object, followers federation.IRI, m *postMentions) appcontent.RemoteStatusInput {
 	audience := obj.Audience
 	if len(audience.To) == 0 && len(audience.Cc) == 0 {
-		audience = a.Activity.Audience
+		audience = activityAudience
 	}
 	in := appcontent.RemoteStatusInput{
 		URI:                 string(obj.ID),
-		AuthorAccountID:     a.Actor.Account.ID,
-		AuthorDomain:        a.Actor.Account.Domain,
+		AuthorAccountID:     author.Account.ID,
+		AuthorDomain:        author.Account.Domain,
 		Visibility:          appcontent.Visibility(audience.Visibility(followers)),
 		InReplyToURI:        string(obj.InReplyTo),
 		PublishedAt:         obj.Published,
 		RevisedAt:           obj.Updated,
-		ActivityURI:         string(a.Received.ActivityURI),
+		ActivityURI:         string(activityURI),
 		SpoilerText:         obj.SpoilerText,
 		Sensitive:           obj.Sensitive,
 		MentionedAccountIDs: m.accountIDs,

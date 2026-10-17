@@ -157,9 +157,14 @@ func (r *RemoteActors) Refresh(ctx context.Context, uri string) (appaccount.Acto
 		r.recordFailure(ctx, uri, err)
 		return appaccount.Actor{}, err
 	}
+	return r.store(ctx, actor, raw)
+}
+
+// store saves a fetched actor in the account module and records its server.
+func (r *RemoteActors) store(ctx context.Context, actor *federation.Actor, raw []byte) (appaccount.Actor, error) {
 	in := r.input(ctx, actor, raw)
 	var stored appaccount.Account
-	err = r.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+	err := r.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		var err error
 		if stored, err = r.d.Accounts.UpsertRemoteActor(ctx, tx, in); err != nil {
 			return err

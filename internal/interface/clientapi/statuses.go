@@ -5,6 +5,7 @@ package clientapi
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
@@ -19,6 +20,12 @@ type Statuses interface {
 	Create(ctx context.Context, in appcontent.CreateInput) (appcontent.Post, error)
 	Edit(ctx context.Context, in appcontent.EditInput) (appcontent.Post, error)
 	Delete(ctx context.Context, accountID, statusID string) (content.Deletion, error)
+}
+
+// ThreadFetcher starts fetching the missing ancestors and the replies of a status from their
+// servers, without waiting for them. *federation.StatusHandlers implements it.
+type ThreadFetcher interface {
+	FetchThread(ctx context.Context, statusID string) error
 }
 
 // StatusReader presents statuses to a viewer. *appcontent.Reader implements it.
@@ -374,6 +381,12 @@ func (s *Server) GetStatusContext(ctx context.Context, req GetStatusContextReque
 			return GetStatusContextdefaultApplicationProblemPlusJSONResponse(p), nil
 		}
 		return nil, err
+	}
+	if s.o.Threads != nil {
+		// The thread shows what is stored now; the fetched parts show the next time.
+		if err := s.o.Threads.FetchThread(ctx, req.Id); err != nil {
+			s.o.Logger.WarnContext(ctx, "fetch remote thread", slog.String("status_id", req.Id), slog.Any("error", err))
+		}
 	}
 	imgs, err := s.statusImages(ctx, slices.Concat(thread.Ancestors, thread.Descendants))
 	if err != nil {

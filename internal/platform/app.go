@@ -143,6 +143,11 @@ type App struct {
 	// InboxProcessor processes the recorded activities and dispatches them to the handler of
 	// their type (docs/architecture/federation.md §3.2).
 	InboxProcessor *federation.InboxProcessor
+	// RemoteStatuses ingests remote posts from the inbox and fetches remote posts and threads;
+	// Resolver resolves handles and the URLs of accounts and posts
+	// (docs/architecture/federation.md §6.2, §6.3).
+	RemoteStatuses *federation.StatusHandlers
+	Resolver       *federation.Resolver
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -434,7 +439,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Resolver:      a.RemoteActors,
 		Notifications: a.Notifications,
-		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions,
+		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions, Threads: a.RemoteStatuses,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,

@@ -58,6 +58,9 @@ type Options struct {
 	Statuses     Statuses
 	StatusReader StatusReader
 	Interactions Interactions
+	// Threads starts fetching the remote parts of a thread that a viewer opens (getStatusContext);
+	// nil fetches none.
+	Threads ThreadFetcher
 	// Timelines reads the timelines, and TimelineReader the statuses they list.
 	Timelines      Timelines
 	TimelineReader TimelineReader
