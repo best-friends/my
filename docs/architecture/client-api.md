@@ -181,6 +181,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 管理の操作（タグ `admin`、`/admin/...`）は、スコープ（`admin:read` / `admin:write`）に加えて、利用者のロールが操作の権限（`manage_domains`、`manage_jobs` など。[data-model §4.1](data-model.md)）を持つことを要します。
 ハンドラが最初に `Server.requirePermission` で `Options.Permissions`（`identity.Service.HasPermission`）に問い合わせ、持たなければ 403 にします。
 権限は spec の `security` に書けないので、操作の `description` に書きます。
+クライアントが管理の画面を出し分けられるように、`GET /accounts/verify_credentials` の `CredentialAccount.permissions` が利用者のロールの権限を返します（`identity.Service.Permissions`。ロールがなければ空）。画面を隠すのは案内のためだけで、守るのは各操作の検査です。
 
 応答:
 

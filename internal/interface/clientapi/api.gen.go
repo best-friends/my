@@ -193,6 +193,45 @@ func (e NotificationType) Valid() bool {
 	}
 }
 
+// Defines values for Permission.
+const (
+	PermissionManageAccounts Permission = "manage_accounts"
+	PermissionManageDomains  Permission = "manage_domains"
+	PermissionManageInvites  Permission = "manage_invites"
+	PermissionManageJobs     Permission = "manage_jobs"
+	PermissionManageReports  Permission = "manage_reports"
+	PermissionManageRoles    Permission = "manage_roles"
+	PermissionManageRules    Permission = "manage_rules"
+	PermissionManageSettings Permission = "manage_settings"
+	PermissionViewAudit      Permission = "view_audit"
+)
+
+// Valid indicates whether the value is a known member of the Permission enum.
+func (e Permission) Valid() bool {
+	switch e {
+	case PermissionManageAccounts:
+		return true
+	case PermissionManageDomains:
+		return true
+	case PermissionManageInvites:
+		return true
+	case PermissionManageJobs:
+		return true
+	case PermissionManageReports:
+		return true
+	case PermissionManageRoles:
+		return true
+	case PermissionManageRules:
+		return true
+	case PermissionManageSettings:
+		return true
+	case PermissionViewAudit:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Visibility.
 const (
 	VisibilityDirect   Visibility = "direct"
@@ -472,6 +511,11 @@ type CredentialAccount struct {
 
 	// Note The profile text as sanitized HTML; empty when there is none.
 	Note string `json:"note"`
+
+	// Permissions The permissions that the user's roles grant, which the admin operations need; empty
+	// for a user without roles. Clients show the admin screens by them; the server checks
+	// the permission of each admin operation regardless.
+	Permissions []Permission `json:"permissions"`
 
 	// Posting What the account's current moderation restrictions let it post (data-model.md §5.4). The
 	// server applies the same policy when it posts: a status asked for with a visibility that is
@@ -763,6 +807,11 @@ type PageInfo struct {
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
+
+// Permission A capability that a role grants. `manage_domains`: the health of remote servers.
+// `manage_jobs`: the dead jobs of the job queue. The others guard no client API operation
+// yet.
+type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
 // server applies the same policy when it posts: a status asked for with a visibility that is

@@ -1627,6 +1627,12 @@ export interface components {
             indexable: boolean;
             source: components["schemas"]["AccountSource"];
             posting: components["schemas"]["PostingLimits"];
+            /**
+             * @description The permissions that the user's roles grant, which the admin operations need; empty
+             *     for a user without roles. Clients show the admin screens by them; the server checks
+             *     the permission of each admin operation regardless.
+             */
+            permissions: components["schemas"]["Permission"][];
         };
         /** @description A change of the profile; properties left out keep their current values. */
         UpdateCredentialsRequest: {
@@ -1764,6 +1770,13 @@ export interface components {
          * @enum {string}
          */
         AdminInstanceState: "available" | "unavailable";
+        /**
+         * @description A capability that a role grants. `manage_domains`: the health of remote servers.
+         *     `manage_jobs`: the dead jobs of the job queue. The others guard no client API operation
+         *     yet.
+         * @enum {string}
+         */
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
     };
     responses: {
         /** @description A page of posts and boosts, newest first. */
