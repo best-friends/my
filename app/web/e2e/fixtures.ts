@@ -54,7 +54,10 @@ export const test = base.extend<Fixtures>({
           await route.fallback();
           return;
         }
-        const response = await route.fetch();
+        // The fetch reuses an idle keep-alive connection, which `vite preview` closes after 5 seconds; a
+        // request sent as the server closes it is reset before any response. A browser sends such a GET
+        // again on a new connection (RFC 9112 §9.3.1), so the fetch does too, once.
+        const response = await route.fetch({ maxRetries: 1 });
         // The build's index.html links its entry relative to itself (base "./"), which resolves under
         // the path of a nested page (/tags/cats). `my serve` never sends that file: it writes the shell's
         // tags from the build manifest as root paths (e2e/deep-links.spec.ts checks it), so only here
