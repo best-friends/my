@@ -21,6 +21,9 @@ var (
 	AccountLimit   = kernel.Limit{Name: "api.account", Max: 1500, Window: 5 * time.Minute}
 	// PostLimit bounds the statuses one account posts (createStatus).
 	PostLimit = kernel.Limit{Name: "api.post", Max: 300, Window: 3 * time.Hour}
+	// ResolveLimit bounds the remote accounts one account fetches with lookupAccount's resolve
+	// (FR-305): each fetch is WebFinger and actor requests to another server.
+	ResolveLimit = kernel.Limit{Name: "api.resolve", Max: 30, Window: 5 * time.Minute}
 )
 
 // Names of the rate-limit policies in the RateLimit and RateLimit-Policy fields.

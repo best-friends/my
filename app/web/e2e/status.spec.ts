@@ -25,6 +25,8 @@ const alice: Status["account"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000001",
   username: "alice",
   acct: "alice",
+  domain: "my.example",
+  uri: "https://my.example/ap/actors/0192f0c4-7a8e-7000-8000-000000000001",
   display_name: "Alice",
   note: "",
   fields: [],

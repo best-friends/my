@@ -68,6 +68,18 @@ func (f fakeAccounts) FindByHandle(_ context.Context, username, domain string) (
 		if a.Local != nil && domain == account.LocalDomain && a.Local.Username == username {
 			return a, nil
 		}
+		if a.Handle != nil && a.Handle.Domain == domain && a.Handle.Username == username {
+			return a, nil
+		}
+	}
+	return appaccount.Actor{}, appaccount.ErrNotFound
+}
+
+func (f fakeAccounts) FindByURI(_ context.Context, uri string) (appaccount.Actor, error) {
+	for _, a := range f {
+		if a.Account.URI == uri {
+			return a, nil
+		}
 	}
 	return appaccount.Actor{}, appaccount.ErrNotFound
 }

@@ -222,7 +222,12 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - ハンドル（`account_handles`）は WebFinger で確かめたものだけです。`acct:{preferredUsername}@{Actor のホスト}` を引き、`self` リンクが Actor の `id` を指すこと、`subject` のドメインが異なるならそのドメインでも同じことを確かめます（ADR-0018 のドメイン分離に相当する構成）。
   - 答え（404 を含む）が確かめなければ `mismatch` を記録し、ハンドルを持たないアカウントとして扱います。
   - WebFinger が答えなかった（接続の失敗・429・5xx）ときは何も記録せず、それまでのハンドルを残します。
-- `@user@host` / URL での解決（FR-305）は、`federation.Resolve` が WebFinger → Actor の取得 → 書き込みを行います。URL がオブジェクト（投稿）なら投稿として取り込みます。
+- `@user@host` / URL での解決（FR-305）は、`RemoteActors.ResolveHandle` と `ResolveURL` が行います。
+  - ハンドルは、保存済みの `account_handles` にあればそれを返します。なければ `https://{domain}` の WebFinger で `acct:{user}@{domain}` を引き、`self` リンクの Actor を `Resolve`（保存済みなら取得しない）で取得・保存します。WebFinger にも §6.1 の取得先の規則（自サーバー・`federation` の制限・`unavailable` のドメインには送らない）が掛かります。
+  - URL は、Actor の `id` か Actor を返す URL（プロフィールのページなど）として `Resolve` します。
+  - どちらも、ハンドルを WebFinger で確かめた Actor だけを返し、それ以外（WebFinger が Actor を示さない・取得できない・ハンドルが `mismatch`）は `ErrUnresolvable` です。
+  - クライアント API は `GET /api/v1/accounts/lookup` の `resolve=true` で呼びます（トークン必須、アカウントごとに 30 回 / 5 分）。
+- URL がオブジェクト（投稿）なら投稿として取り込みます。
 - 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します（ジョブ `federation.refresh_actor`、冪等キー `refresh_actor:<account_id>`）。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors`（1 時間ごと）が `remote_account_heads (last_fetched_at)` の古い順に 200 件ずつ読み、フォローされているものを取り直します（ADR-0034）。カーソル（`last_fetched_at` と `account_id`）を持った次のジョブが続きを読みます。
 
 ### 6.3 投稿

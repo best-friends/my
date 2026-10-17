@@ -23,6 +23,8 @@ export const viewerFixture: Schemas["CredentialAccount"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000001",
   username: "alice",
   acct: "alice",
+  domain: "my.example",
+  uri: "https://my.example/ap/actors/0192f0c4-7a8e-7000-8000-000000000001",
   display_name: "Alice",
   note: "",
   fields: [],
@@ -42,10 +44,13 @@ export const viewerFixture: Schemas["CredentialAccount"] = {
  */
 export function accountFixture(n: number, name: string, domain = "remote.example"): Schemas["Account"] {
   const username = name.toLowerCase();
+  const id = `0192f0c4-7a8e-7000-8000-${String(n).padStart(12, "0")}`;
   return {
-    id: `0192f0c4-7a8e-7000-8000-${String(n).padStart(12, "0")}`,
+    id,
     username,
     acct: domain === instanceFixture.domain ? username : `${username}@${domain}`,
+    domain,
+    uri: domain === instanceFixture.domain ? `https://${domain}/ap/actors/${id}` : `https://${domain}/users/${username}`,
     display_name: name,
     note: "",
     fields: [],
