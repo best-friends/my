@@ -839,6 +839,18 @@
     "defaultMessage": "プロフィール",
     "description": "Heading and document title of the signed-in user's own profile page."
   },
+  "public.disabled.body": {
+    "defaultMessage": "このサーバーは、ほかのサーバーの公開投稿をまとめたタイムラインを表示していません。",
+    "description": "Text below the heading of the federated timeline's page when the server's operators have turned that timeline off."
+  },
+  "public.disabled.title": {
+    "defaultMessage": "連合タイムラインは提供されていません",
+    "description": "Heading and document title of the federated timeline's page when the server's operators have turned that timeline off."
+  },
+  "public.title": {
+    "defaultMessage": "連合タイムライン",
+    "description": "Heading and document title of the page with the public posts of this server's accounts and of the accounts on other servers that this server knows."
+  },
   "session.account.title": {
     "defaultMessage": "アカウント",
     "description": "Heading of the section of the settings page about the signed-in account."
@@ -1203,6 +1215,10 @@
     "defaultMessage": "プロフィール",
     "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in a bottom tab bar."
   },
+  "shell.nav.public": {
+    "defaultMessage": "連合",
+    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in a bottom tab bar."
+  },
   "shell.nav.settings": {
     "defaultMessage": "設定",
     "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -1410,6 +1426,14 @@
   "timeline.empty.local.heading": {
     "defaultMessage": "まだ投稿はありません",
     "description": "Heading shown instead of posts when the local timeline has none."
+  },
+  "timeline.empty.public.description": {
+    "defaultMessage": "このサーバーと、つながりのあるサーバーの人の公開投稿がここに表示されます。",
+    "description": "Text under the heading of the empty federated timeline."
+  },
+  "timeline.empty.public.heading": {
+    "defaultMessage": "まだ投稿はありません",
+    "description": "Heading shown instead of posts when the federated timeline has none."
   },
   "timeline.empty.tag.description": {
     "defaultMessage": "#{tag} の付いた公開投稿がここに表示されます。",

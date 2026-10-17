@@ -28,6 +28,8 @@ export type AccountTimelineFilter = (typeof accountTimelineFilters)[number];
 export type Timeline =
   | { kind: "home" }
   | { kind: "local" }
+  /** The federated timeline (GET /timelines/public): public posts of this server and of the others it knows. */
+  | { kind: "public" }
   | { kind: "tag"; tag: string }
   /** The posts of the account `id` on its profile. */
   | { kind: "account"; id: string; filter: AccountTimelineFilter };
@@ -51,6 +53,8 @@ function timelineQueryKey(timeline: Timeline) {
       return ["get", "/timelines/home", "pages"] as const;
     case "local":
       return ["get", "/timelines/local", "pages"] as const;
+    case "public":
+      return ["get", "/timelines/public", "pages"] as const;
     case "tag":
       return ["get", "/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag } } }, "pages"] as const;
     case "account":
@@ -61,20 +65,34 @@ function timelineQueryKey(timeline: Timeline) {
 /** Fetches one page of `timeline`; `cursor` is the previous page's `next_cursor`, or undefined for the first. */
 async function fetchTimelinePage(api: Api, timeline: Timeline, cursor: string | undefined, signal: AbortSignal): Promise<StatusPage> {
   const query = cursor === undefined ? {} : { cursor };
-  const { data, error } =
-    timeline.kind === "home"
-      ? await api.fetch.GET("/timelines/home", { params: { query }, signal })
-      : timeline.kind === "local"
-        ? await api.fetch.GET("/timelines/local", { params: { query }, signal })
-        : timeline.kind === "tag"
-          ? await api.fetch.GET("/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag }, query }, signal })
-          : await api.fetch.GET("/accounts/{id}/statuses", {
-              params: { path: { id: timeline.id }, query: { ...accountTimelineQuery(timeline.filter), ...query } },
-              signal,
-            });
+  const { data, error } = await (() => {
+    switch (timeline.kind) {
+      case "home":
+        return api.fetch.GET("/timelines/home", { params: { query }, signal });
+      case "local":
+        return api.fetch.GET("/timelines/local", { params: { query }, signal });
+      case "public":
+        return api.fetch.GET("/timelines/public", { params: { query }, signal });
+      case "tag":
+        return api.fetch.GET("/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag }, query }, signal });
+      case "account":
+        return api.fetch.GET("/accounts/{id}/statuses", {
+          params: { path: { id: timeline.id }, query: { ...accountTimelineQuery(timeline.filter), ...query } },
+          signal,
+        });
+    }
+  })();
   // The client's middleware throws an ApiError for every error status (lib/api/client.ts).
   if (data === undefined) throw new ApiError(error);
   return data;
+}
+
+/**
+ * The instance's public information, for which public timelines it serves (`timelines`). The key is
+ * openapi-react-query's, the same as every other reader of GET /instance, so they share one answer.
+ */
+export function instanceQueryOptions(api: Api) {
+  return api.query.queryOptions("get", "/instance");
 }
 
 /** The pages of a timeline, newest first; the last page has no `next_cursor`. */

@@ -839,6 +839,18 @@
     "defaultMessage": "Profile",
     "description": "Heading and document title of the signed-in user's own profile page."
   },
+  "public.disabled.body": {
+    "defaultMessage": "This server does not show the public posts of other servers in one timeline.",
+    "description": "Text below the heading of the federated timeline's page when the server's operators have turned that timeline off."
+  },
+  "public.disabled.title": {
+    "defaultMessage": "The federated timeline is off",
+    "description": "Heading and document title of the federated timeline's page when the server's operators have turned that timeline off."
+  },
+  "public.title": {
+    "defaultMessage": "Federated timeline",
+    "description": "Heading and document title of the page with the public posts of this server's accounts and of the accounts on other servers that this server knows."
+  },
   "session.account.title": {
     "defaultMessage": "Account",
     "description": "Heading of the section of the settings page about the signed-in account."
@@ -1203,6 +1215,10 @@
     "defaultMessage": "Profile",
     "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in a bottom tab bar."
   },
+  "shell.nav.public": {
+    "defaultMessage": "Federated",
+    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in a bottom tab bar."
+  },
   "shell.nav.settings": {
     "defaultMessage": "Settings",
     "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -1410,6 +1426,14 @@
   "timeline.empty.local.heading": {
     "defaultMessage": "No posts yet",
     "description": "Heading shown instead of posts when the local timeline has none."
+  },
+  "timeline.empty.public.description": {
+    "defaultMessage": "Public posts of people here and on the servers this one knows will appear here.",
+    "description": "Text under the heading of the empty federated timeline."
+  },
+  "timeline.empty.public.heading": {
+    "defaultMessage": "No posts yet",
+    "description": "Heading shown instead of posts when the federated timeline has none."
   },
   "timeline.empty.tag.description": {
     "defaultMessage": "Public posts with #{tag} appear here.",

@@ -131,7 +131,12 @@ describe("signing in and out", () => {
     expect(oauth.seen.revoked).toEqual([{ token: "access-2", token_type_hint: "access_token", client_id: "my-web" }]);
     expect(session.status).toBe("signed-out");
     // No query keeps the account (an observer that was still mounted may leave an empty, disabled one).
-    expect(queryClient.getQueryCache().getAll().map((query) => query.state.data)).not.toContainEqual(expect.anything());
+    // The navigation reads the public GET /instance again at once, as anyone may; it holds nothing of the user.
+    const userQueries = queryClient
+      .getQueryCache()
+      .getAll()
+      .filter((query) => query.queryKey[1] !== "/instance");
+    expect(userQueries.map((query) => query.state.data)).not.toContainEqual(expect.anything());
     await waitFor(() => {
       expect([...cacheNames]).toEqual([]);
     });

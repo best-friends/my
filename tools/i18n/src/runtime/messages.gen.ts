@@ -422,6 +422,12 @@ export interface MessageArgs {
   "client:profile.tag.requested_you": {};
   /** Profile */
   "client:profile.title": {};
+  /** This server does not show the public posts of other servers in one timeline. */
+  "client:public.disabled.body": {};
+  /** The federated timeline is off */
+  "client:public.disabled.title": {};
+  /** Federated timeline */
+  "client:public.title": {};
   /** Account */
   "client:session.account.title": {};
   /** Sign in */
@@ -604,6 +610,8 @@ export interface MessageArgs {
   "client:shell.nav.notifications_unread": { count: number };
   /** Profile */
   "client:shell.nav.profile": {};
+  /** Federated */
+  "client:shell.nav.public": {};
   /** Settings */
   "client:shell.nav.settings": {};
   /** There is no page at this address. */
@@ -708,6 +716,10 @@ export interface MessageArgs {
   "client:timeline.empty.local.description": {};
   /** No posts yet */
   "client:timeline.empty.local.heading": {};
+  /** Public posts of people here and on the servers this one knows will appear here. */
+  "client:timeline.empty.public.description": {};
+  /** No posts yet */
+  "client:timeline.empty.public.heading": {};
   /** Public posts with #{tag} appear here. */
   "client:timeline.empty.tag.description": { tag: string };
   /** No posts with #{tag} */

@@ -839,6 +839,18 @@
     "defaultMessage": "[Ƥřǿǿƒīŀḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "public.disabled.body": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ şħǿǿẇ ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş īƞ ǿǿƞḗḗ ŧīḿḗḗŀīƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "public.disabled.title": {
+    "defaultMessage": "[Ŧħḗḗ ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ īş ǿǿƒƒ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "public.title": {
+    "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "session.account.title": {
     "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1203,6 +1215,10 @@
     "defaultMessage": "[Ƥřǿǿƒīŀḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.nav.public": {
+    "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.nav.settings": {
     "defaultMessage": "[Şḗḗŧŧīƞɠş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1408,6 +1424,14 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.empty.local.heading": {
+    "defaultMessage": "[Ƞǿǿ ƥǿǿşŧş ẏḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.public.description": {
+    "defaultMessage": "[Ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ ƥḗḗǿǿƥŀḗḗ ħḗḗřḗḗ ȧȧƞḓ ǿǿƞ ŧħḗḗ şḗḗřṽḗḗřş ŧħīş ǿǿƞḗḗ ķƞǿǿẇş ẇīŀŀ ȧȧƥƥḗḗȧȧř ħḗḗřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.public.heading": {
     "defaultMessage": "[Ƞǿǿ ƥǿǿşŧş ẏḗḗŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
