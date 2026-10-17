@@ -10,6 +10,7 @@ linters:
   enable:
     - depguard
     - errorlint
+    - forbidigo
     - gocritic
     - gosec
     - misspell
@@ -292,6 +293,14 @@ linters:
               desc: testkit depends only on application ports and domain types
             - pkg: github.com/best-friends/my/internal/platform
               desc: testkit depends only on application ports and domain types
+    # Every outbound request goes through the SSRF-guarded kernel.HTTPClient (ADR-0019 §1);
+    # http.DefaultClient and the package-level helpers that use it bypass the guard.
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^http\.(DefaultClient|Get|Head|Post|PostForm)$
+          pkg: ^net/http$
+          msg: send outbound requests through kernel.HTTPClient (ADR-0019 §1)
     nolintlint:
       require-explanation: true
       require-specific: true
