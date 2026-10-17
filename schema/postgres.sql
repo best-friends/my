@@ -543,7 +543,8 @@ CREATE TABLE instance_setting_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   key text COLLATE "C" NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
-    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch'
+    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
+    'domain_actions_visibility', 'domain_actions_rationale_visibility'
   )),
   value text NOT NULL,
   revised_by_user_id text COLLATE "C",

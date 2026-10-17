@@ -193,6 +193,24 @@ func (e AdminReportState) Valid() bool {
 	}
 }
 
+// Defines values for InstanceDomainActionKind.
+const (
+	InstanceDomainActionKindLimit   InstanceDomainActionKind = "limit"
+	InstanceDomainActionKindSuspend InstanceDomainActionKind = "suspend"
+)
+
+// Valid indicates whether the value is a known member of the InstanceDomainActionKind enum.
+func (e InstanceDomainActionKind) Valid() bool {
+	switch e {
+	case InstanceDomainActionKindLimit:
+		return true
+	case InstanceDomainActionKindSuspend:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceRegistrationsMode.
 const (
 	InstanceRegistrationsModeApproval InstanceRegistrationsMode = "approval"
@@ -866,6 +884,35 @@ type Instance struct {
 
 	// Version The server version.
 	Version string `json:"version"`
+}
+
+// InstanceDomainAction A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718).
+type InstanceDomainAction struct {
+	// Comment The public reason for the action; omitted when there is none or the viewer may not read it.
+	Comment *string `json:"comment,omitempty"`
+
+	// Digest The SHA-256 of the domain (not obfuscated) in lower-case hexadecimal, to check a known domain against an obfuscated item.
+	Digest string `json:"digest"`
+
+	// Domain The domain, in IDNA A-labels. When the moderators chose to obfuscate it, the
+	// characters of its middle half other than dots are replaced with `*`.
+	Domain string `json:"domain"`
+
+	// Kind `suspend`: no federation with the domain at all. `limit`: its posts stay off the
+	// public timelines and its accounts reach only their followers.
+	Kind InstanceDomainActionKind `json:"kind"`
+}
+
+// InstanceDomainActionKind `suspend`: no federation with the domain at all. `limit`: its posts stay off the
+// public timelines and its accounts reach only their followers.
+type InstanceDomainActionKind string
+
+// InstanceDomainActionPage A page of public domain actions, newest first.
+type InstanceDomainActionPage struct {
+	Items []InstanceDomainAction `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
 // InstanceLimits Limits that clients check before sending a request.
@@ -1707,6 +1754,15 @@ type ListFollowRequestsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListInstanceDomainActionsParams defines parameters for ListInstanceDomainActions.
+type ListInstanceDomainActionsParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListMutesParams defines parameters for ListMutes.
 type ListMutesParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -1915,6 +1971,9 @@ type ServerInterface interface {
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(w http.ResponseWriter, r *http.Request)
+	// ListInstanceDomainActions List the domains that the instance moderates
+	// (GET /instance/domain_actions)
+	ListInstanceDomainActions(w http.ResponseWriter, r *http.Request, params ListInstanceDomainActionsParams)
 	// UploadMedia Upload a media file
 	// (POST /media)
 	UploadMedia(w http.ResponseWriter, r *http.Request)
@@ -3275,6 +3334,52 @@ func (siw *ServerInterfaceWrapper) GetInstance(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// ListInstanceDomainActions operation middleware
+func (siw *ServerInterfaceWrapper) ListInstanceDomainActions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInstanceDomainActionsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInstanceDomainActions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // UploadMedia operation middleware
 func (siw *ServerInterfaceWrapper) UploadMedia(w http.ResponseWriter, r *http.Request) {
 
@@ -4247,6 +4352,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance", wrapper.GetInstance)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/domain_actions", wrapper.ListInstanceDomainActions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
@@ -6449,6 +6555,68 @@ func (response GetInstancedefaultApplicationProblemPlusJSONResponse) VisitGetIns
 	return err
 }
 
+type ListInstanceDomainActionsRequestObject struct {
+	Params ListInstanceDomainActionsParams
+}
+
+type ListInstanceDomainActionsResponseObject interface {
+	VisitListInstanceDomainActionsResponse(w http.ResponseWriter) error
+}
+
+type ListInstanceDomainActions200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListInstanceDomainActions200JSONResponse struct {
+	Body    InstanceDomainActionPage
+	Headers ListInstanceDomainActions200ResponseHeaders
+}
+
+func (response ListInstanceDomainActions200JSONResponse) VisitListInstanceDomainActionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceDomainActionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListInstanceDomainActionsdefaultApplicationProblemPlusJSONResponse) VisitListInstanceDomainActionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type UploadMediaRequestObject struct {
 	Body *multipart.Reader
 }
@@ -8243,6 +8411,9 @@ type StrictServerInterface interface {
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(ctx context.Context, request GetInstanceRequestObject) (GetInstanceResponseObject, error)
+	// ListInstanceDomainActions List the domains that the instance moderates
+	// (GET /instance/domain_actions)
+	ListInstanceDomainActions(ctx context.Context, request ListInstanceDomainActionsRequestObject) (ListInstanceDomainActionsResponseObject, error)
 	// UploadMedia Upload a media file
 	// (POST /media)
 	UploadMedia(ctx context.Context, request UploadMediaRequestObject) (UploadMediaResponseObject, error)
@@ -9337,6 +9508,32 @@ func (sh *strictHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetInstanceResponseObject); ok {
 		if err := validResponse.VisitGetInstanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInstanceDomainActions operation middleware
+func (sh *strictHandler) ListInstanceDomainActions(w http.ResponseWriter, r *http.Request, params ListInstanceDomainActionsParams) {
+	var request ListInstanceDomainActionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInstanceDomainActions(ctx, request.(ListInstanceDomainActionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInstanceDomainActions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInstanceDomainActionsResponseObject); ok {
+		if err := validResponse.VisitListInstanceDomainActionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

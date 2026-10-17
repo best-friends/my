@@ -22,6 +22,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/instance/domain_actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the domains that the instance moderates
+         * @description The moderation actions in effect on remote domains that the instance lists publicly
+         *     (FR-718): `limit` and `suspend`, one item per action, newest first. The instance
+         *     setting `domain_actions_visibility` decides who may read it: `none` makes it a 404,
+         *     `users` a 401 `/api/v1/problems/unauthenticated` for a request without an access
+         *     token, and `all` serves everyone. The setting `domain_actions_rationale_visibility`
+         *     decides, in the same way, who gets each action's public comment. The moderators'
+         *     private notes are never listed.
+         */
+        get: operations["listInstanceDomainActions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/verify_credentials": {
         parameters: {
             query?: never;
@@ -1403,6 +1429,28 @@ export interface components {
             /** @description Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`). */
             federated: boolean;
         };
+        /** @description A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718). */
+        InstanceDomainAction: {
+            /**
+             * @description The domain, in IDNA A-labels. When the moderators chose to obfuscate it, the
+             *     characters of its middle half other than dots are replaced with `*`.
+             */
+            domain: string;
+            /** @description The SHA-256 of the domain (not obfuscated) in lower-case hexadecimal, to check a known domain against an obfuscated item. */
+            digest: string;
+            /**
+             * @description `suspend`: no federation with the domain at all. `limit`: its posts stay off the
+             *     public timelines and its accounts reach only their followers.
+             * @enum {string}
+             */
+            kind: "limit" | "suspend";
+            /** @description The public reason for the action; omitted when there is none or the viewer may not read it. */
+            comment?: string;
+        };
+        /** @description A page of public domain actions, newest first. */
+        InstanceDomainActionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["InstanceDomainAction"][];
+        };
         /** @description An account, as clients show it (FR-006). */
         Account: {
             id: components["schemas"]["Id"];
@@ -2317,6 +2365,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Instance"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInstanceDomainActions: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of domain actions. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstanceDomainActionPage"];
                 };
             };
             default: components["responses"]["Problem"];
