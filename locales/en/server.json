@@ -327,6 +327,10 @@
     "defaultMessage": "Your account cannot use the app right now.",
     "description": "API error title for HTTP 403 when the access token is valid but its user cannot use the app: the registration is pending or rejected, the email address is unconfirmed, or the account is deactivated or deleted."
   },
+  "errors.bad_gateway": {
+    "defaultMessage": "A remote server could not be reached or answered with an error.",
+    "description": "Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx."
+  },
   "errors.bad_request": {
     "defaultMessage": "The request is invalid.",
     "description": "API error message for HTTP 400 when no more specific message applies."

@@ -796,6 +796,8 @@ export interface MessageArgs {
   "server:config.missing": { name: string };
   /** Your account cannot use the app right now. */
   "server:errors.account_unavailable": {};
+  /** A remote server could not be reached or answered with an error. */
+  "server:errors.bad_gateway": {};
   /** The request is invalid. */
   "server:errors.bad_request": {};
   /** You block this account. Unblock it first. */

@@ -578,6 +578,13 @@ func (l *Localizer) ServerErrorsAccountUnavailable() string {
 	return l.format("server:errors.account_unavailable", nil)
 }
 
+// ServerErrorsBadGateway formats "server:errors.bad_gateway". Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx.
+//
+//	en: A remote server could not be reached or answered with an error.
+func (l *Localizer) ServerErrorsBadGateway() string {
+	return l.format("server:errors.bad_gateway", nil)
+}
+
 // ServerErrorsBadRequest formats "server:errors.bad_request". API error message for HTTP 400 when no more specific message applies.
 //
 //	en: The request is invalid.

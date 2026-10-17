@@ -144,6 +144,8 @@ func (a *App) writeStatusProblem(w http.ResponseWriter, r *http.Request, status 
 		title = l.ServerErrorsSignatureRequired()
 	case http.StatusNotFound:
 		title = l.ServerErrorsNotFound()
+	case http.StatusBadGateway:
+		title = l.ServerErrorsBadGateway()
 	default:
 		status, title = http.StatusInternalServerError, l.ServerErrorsInternal()
 	}
