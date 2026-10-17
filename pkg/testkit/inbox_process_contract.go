@@ -70,11 +70,15 @@ type inboxProcessEnv struct {
 	processor *appfederation.InboxProcessor
 	notes     *inboxNotes
 	follows   *inboxFollows
+
+	// projectors are the projectors of h's UnitOfWork, for the handlers that a case wires.
+	projectors *uow.Projectors
 }
 
 func newInboxProcessEnv(t *testing.T, newHarness InboxFactory) *inboxProcessEnv {
 	t.Helper()
-	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}})
+	projectors := &uow.Projectors{}
+	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
 	e := &inboxProcessEnv{
 		h: h, clock: NewClock(time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)),
 		actors:  &inboxActors{known: map[federation.IRI]bool{inboxAlice: true, inboxBob: true}},
@@ -84,6 +88,7 @@ func newInboxProcessEnv(t *testing.T, newHarness InboxFactory) *inboxProcessEnv 
 		follows: &inboxFollows{active: map[federation.IRI]bool{}, ended: map[federation.IRI]bool{}},
 	}
 	e.fetcher.clock = e.clock
+	e.projectors = projectors
 	e.processor = appfederation.NewInboxProcessor(appfederation.InboxProcessorDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Inbox, Actors: e.actors, Fetcher: e.fetcher,
 		Domains: e.domains, Accounts: e.suspended, Clock: e.clock,
@@ -669,6 +674,23 @@ var inboxOrderCases = []inboxOrderCase{
 		},
 		rows: noteRows(inboxAlice+"/notes/1", inboxAlice+"/notes/2"),
 		want: inboxNoteRows{Live: []federation.IRI{inboxAlice + "/notes/2"}, Gone: []federation.IRI{inboxAlice + "/notes/1"}},
+	},
+	{
+		name:       "RemoteStatusCreateUpdateDelete",
+		activities: remoteStatusActivities("create", "update-1", "delete"),
+		wire:       wireStatusHandlers,
+		rows:       remoteStatusRows(inboxAlice + "/notes/1"),
+		want:       inboxStatusRows{Live: []inboxLiveStatus{}, Gone: []federation.IRI{inboxAlice + "/notes/1"}},
+	},
+	{
+		name:       "RemoteStatusCreateAndUpdates",
+		activities: remoteStatusActivities("create", "update-1", "update-2"),
+		wire:       wireStatusHandlers,
+		rows:       remoteStatusRows(inboxAlice + "/notes/1"),
+		want: inboxStatusRows{
+			Live: []inboxLiveStatus{{URI: inboxAlice + "/notes/1", HTML: "<p>update-2</p>", RevisedAt: remoteOrderPublished.Add(2 * time.Minute)}},
+			Gone: []federation.IRI{},
+		},
 	},
 }
 

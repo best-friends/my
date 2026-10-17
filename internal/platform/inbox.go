@@ -39,4 +39,5 @@ func (a *App) setUpInboxProcessor(repo federation.InboxRepository) {
 		Clock: a.Clock, Logger: a.Logger,
 	})
 	a.InboxProcessor.RegisterJobs(a.Handlers)
+	a.registerStatusHandlers()
 }
