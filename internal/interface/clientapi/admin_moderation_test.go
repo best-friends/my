@@ -267,11 +267,13 @@ func TestCreateAndLiftDomainAction(t *testing.T) {
 func TestCreateDomainActionRejectsInvalidInput(t *testing.T) {
 	e, f := newModerationEnv(t)
 	for body, want := range map[string]string{
-		`{"domain":"https://bad.example/","kind":"suspend"}`:                                                                                                "domain",
-		`{"domain":"bad..example","kind":"suspend"}`:                                                                                                        "domain",
-		`{"domain":"bad.example","kind":"silence","x":"invalid-on-purpose"}`:                                                                                "kind",
-		`{"domain":"bad.example","kind":"suspend","expires_in":0,"x":"invalid-on-purpose"}`:                                                                 "expires_in",
-		`{"domain":"bad.example","kind":"suspend","x":"invalid-on-purpose","private_note":"` + strings.Repeat("a", moderation.MaxDomainActionText+1) + `"}`: "private_note",
+		`{"domain":"https://bad.example/","kind":"suspend"}`:                                                                                          "domain",
+		`{"domain":"bad..example","kind":"suspend"}`:                                                                                                  "domain",
+		`{"domain":"bad.example","kind":"silence","x":"invalid-on-purpose"}`:                                                                          "kind",
+		`{"domain":"bad.example","kind":"suspend","expires_in":0,"x":"invalid-on-purpose"}`:                                                           "expires_in",
+		`{"domain":"bad.example","kind":"suspend","x":"invalid-on-purpose","private_note":"` + strings.Repeat("a", moderation.MaxActionText+1) + `"}`: "private_note",
+		`{"domain":"bad.example","kind":"suspend","public_comment":"spam\u0000"}`:                                                                     "public_comment",
+		`{"domain":"bad.example","kind":"suspend","private_note":"\u0000"}`:                                                                           "private_note",
 	} {
 		res := e.sendJSON(t, http.MethodPost, "/admin/domain_actions", "admin", body)
 		if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, want) {

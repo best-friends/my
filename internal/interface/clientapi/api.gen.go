@@ -969,7 +969,7 @@ type MediaMeta struct {
 
 // MediaUpdate The changes to a media file; a property left out keeps its value.
 type MediaUpdate struct {
-	// Description The alternative text; an empty string removes it.
+	// Description The alternative text; an empty string removes it. Text with U+0000 is a 422.
 	Description *string `json:"description,omitempty"`
 
 	// Focus The focal point that previews keep in view when they crop the image, from -1.0 (left,
@@ -979,7 +979,7 @@ type MediaUpdate struct {
 
 // MediaUpload An upload of a media file.
 type MediaUpload struct {
-	// Description The alternative text.
+	// Description The alternative text. Text that is not UTF-8 or has U+0000 is a 422.
 	Description *string `json:"description,omitempty"`
 
 	// File The file. Its declared type, if any, must match its content.
@@ -1731,7 +1731,8 @@ type ListNotificationsParams struct {
 // CreateStatusParams defines parameters for CreateStatus.
 type CreateStatusParams struct {
 	// IdempotencyKey A key the client chooses per new status; a retry with the same key returns the status
-	// posted with it instead of posting again.
+	// posted with it instead of posting again. A key longer than 256 characters, or one
+	// that is not UTF-8 without U+0000, is a 422.
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 

@@ -8,7 +8,6 @@ import (
 	"net/mail"
 	"strings"
 	"time"
-	"unicode/utf8"
 )
 
 // EmailAddress is an email address a user added (data-model §4.1, user_email_addresses).
@@ -26,11 +25,12 @@ const MaxEmailLength = 320
 // ErrInvalidEmail reports an email address that ValidateEmail rejects.
 var ErrInvalidEmail = errors.New("invalid email address")
 
-// ValidateEmail accepts a bare addr-spec (local@domain) of at most MaxEmailLength bytes, without a
-// display name, angle brackets, comments, or surrounding spaces.
+// ValidateEmail accepts a bare addr-spec (local@domain) of at most MaxEmailLength bytes of valid
+// UTF-8 without NUL (data-model §1.2), without a display name, angle brackets, comments, or
+// surrounding spaces.
 func ValidateEmail(address string) error {
-	if address == "" || len(address) > MaxEmailLength || !utf8.ValidString(address) {
-		return fmt.Errorf("%w: must be 1 to %d bytes of UTF-8", ErrInvalidEmail, MaxEmailLength)
+	if address == "" || len(address) > MaxEmailLength || !validText(address, MaxEmailLength) {
+		return fmt.Errorf("%w: must be 1 to %d bytes of UTF-8 without NUL", ErrInvalidEmail, MaxEmailLength)
 	}
 	parsed, err := mail.ParseAddress(address)
 	if err != nil || parsed.Name != "" || parsed.Address != address {

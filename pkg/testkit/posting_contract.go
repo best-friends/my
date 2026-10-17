@@ -591,6 +591,11 @@ func postingRejectsInvalid(t *testing.T, e *postingEnv) {
 		{"NUL", func(in *appcontent.CreateInput) { in.Text = "a\x00b" }, appcontent.ErrInvalidText},
 		{"invalid UTF-8", func(in *appcontent.CreateInput) { in.Text = "a\xffb" }, appcontent.ErrInvalidText},
 		{"NUL in content warning", func(in *appcontent.CreateInput) { in.SpoilerText = "\x00" }, appcontent.ErrInvalidText},
+		{"NUL in the idempotency key", func(in *appcontent.CreateInput) { in.IdempotencyKey = "k\x00" }, content.ErrInvalidIdempotencyKey},
+		{"invalid UTF-8 in the idempotency key", func(in *appcontent.CreateInput) { in.IdempotencyKey = "k\xff" }, content.ErrInvalidIdempotencyKey},
+		{"long idempotency key", func(in *appcontent.CreateInput) {
+			in.IdempotencyKey = strings.Repeat("k", content.MaxIdempotencyKeyLength+1)
+		}, content.ErrInvalidIdempotencyKey},
 		{"visibility", func(in *appcontent.CreateInput) { in.Visibility = "everyone" }, content.ErrInvalidVisibility},
 		{"language", func(in *appcontent.CreateInput) { in.Language = "not a tag" }, appcontent.ErrInvalidLanguage},
 		{"unknown author", func(in *appcontent.CreateInput) { in.AuthorAccountID = "missing" }, appcontent.ErrAccountUnavailable},

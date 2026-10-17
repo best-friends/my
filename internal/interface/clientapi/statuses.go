@@ -114,6 +114,8 @@ func (s *Server) statusProblem(ctx context.Context, err error) (problem, bool) {
 		return unprocessable(l.ServerErrorsStatusInvalidText())
 	case errors.Is(err, appcontent.ErrInvalidLanguage):
 		return unprocessable(l.ServerErrorsStatusInvalidLanguage())
+	case errors.Is(err, content.ErrInvalidIdempotencyKey):
+		return unprocessable(l.ServerErrorsInvalidValue("Idempotency-Key"))
 	case errors.Is(err, content.ErrInvalidVisibility):
 		return unprocessable("")
 	case errors.Is(err, appcontent.ErrReplyTargetNotFound):

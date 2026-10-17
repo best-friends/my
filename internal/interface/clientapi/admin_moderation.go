@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-	"unicode/utf8"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appfederation "github.com/best-friends/my/internal/app/federation"
@@ -132,14 +131,6 @@ func (s *Server) CreateDomainAction(ctx context.Context, req CreateDomainActionR
 	if in.Domain, err = appfederation.CanonicalHost(b.Domain); err != nil || !moderation.ValidDomain(in.Domain) {
 		return unprocessable(l.ServerErrorsInvalidValue("domain"))
 	}
-	for _, f := range []struct {
-		name string
-		text *string
-	}{{"public_comment", b.PublicComment}, {"private_note", b.PrivateNote}} {
-		if f.text != nil && utf8.RuneCountInString(*f.text) > moderation.MaxDomainActionText {
-			return unprocessable(l.ServerErrorsTooLong(moderation.MaxDomainActionText, f.name))
-		}
-	}
 	if b.PublicComment != nil {
 		in.PublicComment = *b.PublicComment
 	}
@@ -154,7 +145,13 @@ func (s *Server) CreateDomainAction(ctx context.Context, req CreateDomainActionR
 		in.Duration = time.Duration(*b.ExpiresIn) * time.Second
 	}
 	a, err := s.o.Moderation.IssueDomainAction(ctx, in)
-	if err != nil {
+	var textErr *moderation.TextError
+	switch {
+	case errors.As(err, &textErr) && textErr.Max > 0:
+		return unprocessable(l.ServerErrorsTooLong(textErr.Max, textErr.Field))
+	case errors.As(err, &textErr):
+		return unprocessable(l.ServerErrorsInvalidValue(textErr.Field))
+	case err != nil:
 		return nil, fmt.Errorf("clientapi: issue a domain action on %s: %w", in.Domain, err)
 	}
 	view, err := s.o.Moderation.DomainAction(ctx, a.ID)
