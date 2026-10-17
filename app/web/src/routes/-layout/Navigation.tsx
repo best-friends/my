@@ -71,10 +71,10 @@ export function Navigation() {
                 href={item.to}
                 {...(badge ? { "aria-label": t("client:shell.nav.notifications_unread", { count: unread }) } : {})}
                 aria-current={inSection(pathname, item.to, ownProfile) ? "page" : undefined}
-                variant="standalone"
-                className="group flex min-h-16 flex-col justify-center gap-1 px-1 text-xs font-normal text-fg-muted no-underline data-hovered:bg-surface-sunken data-hovered:no-underline pointer-coarse:min-h-16 aria-[current=page]:font-semibold aria-[current=page]:text-accent md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base"
+                variant="navigation"
+                className="group flex min-h-16 flex-col justify-center gap-1 px-1 text-xs font-normal text-fg-muted data-hovered:bg-surface-sunken pointer-coarse:min-h-16 aria-[current=page]:font-semibold aria-[current=page]:text-accent md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base"
               >
-                <span className="relative rounded-full px-2 py-0.5 group-aria-[current=page]:bg-accent [&>svg]:size-6 [&>svg]:shrink-0 group-aria-[current=page]:text-accent-fg md:px-4 lg:px-1">
+                <span className="relative rounded-full px-2 py-0.5 group-aria-[current=page]:bg-accent group-aria-[current=page]:text-accent-fg md:px-4 lg:px-1">
                   {item.icon}
                   {badge && (
                     <Badge
