@@ -200,12 +200,23 @@ func (q *Queries) InsertOutboxEvent(ctx context.Context, arg InsertOutboxEventPa
 const listDeadJobs = `-- name: ListDeadJobs :many
 SELECT id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at
 FROM dead_jobs
+WHERE $1::text = ''
+  OR failed_at < $2::timestamptz
+  OR (failed_at = $2::timestamptz AND id < $1::text)
 ORDER BY failed_at DESC, id DESC
-LIMIT $1
+LIMIT $3
 `
 
-func (q *Queries) ListDeadJobs(ctx context.Context, limit int32) ([]DeadJob, error) {
-	rows, err := q.db.Query(ctx, listDeadJobs, limit)
+type ListDeadJobsParams struct {
+	AfterID       string
+	AfterFailedAt time.Time
+	BatchLimit    int32
+}
+
+// ListDeadJobs returns the dead jobs most recently failed first, after the position
+// (@after_failed_at, @after_id); an empty @after_id starts at the first.
+func (q *Queries) ListDeadJobs(ctx context.Context, arg ListDeadJobsParams) ([]DeadJob, error) {
+	rows, err := q.db.Query(ctx, listDeadJobs, arg.AfterID, arg.AfterFailedAt, arg.BatchLimit)
 	if err != nil {
 		return nil, err
 	}

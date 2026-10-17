@@ -528,7 +528,7 @@ func inboxMarksServerAvailable(t *testing.T, e *inboxEnv) {
 	if s, err := e.h.Federation.InstanceState(ctx, "remote.example"); err != nil || s != federation.InstanceAvailable {
 		t.Errorf("InstanceState after a signed request = %q, %v; want available", s, err)
 	}
-	events, err := e.h.Federation.ListAvailabilityEvents(ctx, "remote.example", 10)
+	events, err := e.h.Federation.ListAvailabilityEvents(ctx, "remote.example", "", 10)
 	if err != nil || len(events) != 1 || events[0].Kind != federation.MarkedAvailable || events[0].Reason != federation.ReasonInboundRequest {
 		t.Errorf("availability events = %+v, %v; want one marked_available for inbound_request", events, err)
 	}

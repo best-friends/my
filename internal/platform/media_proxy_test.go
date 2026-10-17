@@ -20,7 +20,7 @@ import (
 )
 
 // remoteServer serves a PNG at /a.png and an SVG declared as a PNG at /b.png, counting the
-// requests.
+// requests; /error.png fails with 503.
 func remoteServer(t *testing.T) (*httptest.Server, *atomic.Int32, []byte) {
 	t.Helper()
 	png := testkit.FixturePNG(4, 3, false)
@@ -33,6 +33,8 @@ func remoteServer(t *testing.T) (*httptest.Server, *atomic.Int32, []byte) {
 			_, _ = w.Write(png)
 		case "/b.png":
 			_, _ = w.Write([]byte(`<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`))
+		case "/error.png":
+			w.WriteHeader(http.StatusServiceUnavailable)
 		default:
 			http.NotFound(w, r)
 		}
@@ -112,6 +114,15 @@ func TestMediaProxy(t *testing.T) {
 		if resp, _ := s.do(t, http.MethodGet, p, nil); resp.StatusCode != http.StatusNotFound {
 			t.Errorf("GET %s = %d, want 404", p, resp.StatusCode)
 		}
+	}
+
+	// A remote 5xx is a 502 problem.
+	resp, body = s.do(t, http.MethodGet, recordRemote(t, s.app, remote.URL+"/error.png"), nil)
+	if resp.StatusCode != http.StatusBadGateway || resp.Header.Get("Cache-Control") != "no-store" {
+		t.Errorf("GET of a failing remote file = %d Cache-Control %q, want 502 no-store", resp.StatusCode, resp.Header.Get("Cache-Control"))
+	}
+	if p := decodeProblem(t, resp, body); p.Status != http.StatusBadGateway {
+		t.Errorf("problem = %+v, want status 502", p)
 	}
 }
 

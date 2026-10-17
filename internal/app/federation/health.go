@@ -149,7 +149,8 @@ type HealthDeps struct {
 
 // Health records that remote servers are up outside deliveries (federation.md §7.3): the inbox
 // calls Reached with ReasonInboundRequest once a signature from a server verifies (§3.1 step
-// 14), and the probe with ReasonProbeSucceeded.
+// 14), and the probe with ReasonProbeSucceeded. The admin API reads the health and availability
+// events of servers through it and clears a server with MarkAvailable.
 type Health struct{ d HealthDeps }
 
 // NewHealth returns the Health on d.
@@ -175,4 +176,45 @@ func (h *Health) Reached(ctx context.Context, domain string, reason federation.A
 	return h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		return tx.Emit(ctx, InstanceReached{Domain: domain, Reason: reason, At: now})
 	})
+}
+
+// ErrInvalidInstanceState reports a state that is neither available nor unavailable.
+var ErrInvalidInstanceState = errors.New("federation: invalid instance state")
+
+// Find returns the health of the server domain. A server without a row is available and has no
+// failures; its Since is zero.
+func (h *Health) Find(ctx context.Context, domain string) (federation.InstanceHealth, error) {
+	cur, err := h.d.Repository.FindInstanceHealth(ctx, domain)
+	if errors.Is(err, ErrNotFound) {
+		return federation.InstanceHealth{Domain: domain, State: federation.InstanceAvailable}, nil
+	}
+	return cur, err
+}
+
+// List returns at most limit servers that have failures or are unavailable, in domain order
+// after the domain after ("" for the first): those in state, or every one when state is "". It
+// fails with an error wrapping ErrInvalidInstanceState for another state.
+func (h *Health) List(ctx context.Context, state federation.InstanceState, after string, limit int) ([]federation.InstanceHealth, error) {
+	switch state {
+	case "", federation.InstanceAvailable, federation.InstanceUnavailable:
+	default:
+		return nil, fmt.Errorf("%w: %q", ErrInvalidInstanceState, state)
+	}
+	return h.d.Repository.ListInstanceHealth(ctx, state, after, limit)
+}
+
+// Events returns at most limit availability events of the server domain, newest first, before
+// the event ID before ("" for the newest).
+func (h *Health) Events(ctx context.Context, domain, before string, limit int) ([]federation.AvailabilityEvent, error) {
+	return h.d.Repository.ListAvailabilityEvents(ctx, domain, before, limit)
+}
+
+// MarkAvailable is an operator's clearing of the server domain (federation.md §7.3): its failure
+// days go back to zero and, when it was unavailable, it is marked available with
+// federation.ReasonOperator. It returns the health afterwards.
+func (h *Health) MarkAvailable(ctx context.Context, domain string) (federation.InstanceHealth, error) {
+	if err := h.Reached(ctx, domain, federation.ReasonOperator); err != nil {
+		return federation.InstanceHealth{}, err
+	}
+	return h.Find(ctx, domain)
 }

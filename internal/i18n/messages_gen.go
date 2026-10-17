@@ -39,6 +39,27 @@ func (l *Localizer) ServerAuthAuthorizeRedirectNotice(host string) string {
 	return l.format("server:auth.authorize.redirect_notice", map[string]any{"host": host})
 }
 
+// ServerAuthAuthorizeScopeAdmin formats "server:auth.authorize.scope.admin". Permission (OAuth scope admin) listed on the authorization page.
+//
+//	en: Administer the instance, as far as your roles allow
+func (l *Localizer) ServerAuthAuthorizeScopeAdmin() string {
+	return l.format("server:auth.authorize.scope.admin", nil)
+}
+
+// ServerAuthAuthorizeScopeAdminRead formats "server:auth.authorize.scope.admin_read". Permission (OAuth scope admin:read) listed on the authorization page.
+//
+//	en: Read the instance's administration data, as far as your roles allow
+func (l *Localizer) ServerAuthAuthorizeScopeAdminRead() string {
+	return l.format("server:auth.authorize.scope.admin_read", nil)
+}
+
+// ServerAuthAuthorizeScopeAdminWrite formats "server:auth.authorize.scope.admin_write". Permission (OAuth scope admin:write) listed on the authorization page.
+//
+//	en: Change the instance's administration data, as far as your roles allow
+func (l *Localizer) ServerAuthAuthorizeScopeAdminWrite() string {
+	return l.format("server:auth.authorize.scope.admin_write", nil)
+}
+
 // ServerAuthAuthorizeScopeFollow formats "server:auth.authorize.scope.follow". Permission (OAuth scope follow) listed on the authorization page.
 //
 //	en: Follow, block, and mute accounts
@@ -578,6 +599,13 @@ func (l *Localizer) ServerErrorsAccountUnavailable() string {
 	return l.format("server:errors.account_unavailable", nil)
 }
 
+// ServerErrorsBadGateway formats "server:errors.bad_gateway". Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx.
+//
+//	en: A remote server could not be reached or answered with an error.
+func (l *Localizer) ServerErrorsBadGateway() string {
+	return l.format("server:errors.bad_gateway", nil)
+}
+
 // ServerErrorsBadRequest formats "server:errors.bad_request". API error message for HTTP 400 when no more specific message applies.
 //
 //	en: The request is invalid.
@@ -718,6 +746,13 @@ func (l *Localizer) ServerErrorsMethodNotAllowed(method string) string {
 	return l.format("server:errors.method_not_allowed", map[string]any{"method": method})
 }
 
+// ServerErrorsMissingPermissionDetail formats "server:errors.missing_permission_detail". Detail of the HTTP 403 missing-permission API error of an admin operation. {permission} is the missing role permission, e.g. manage_jobs (not translated).
+//
+//	en: Your roles need the permission {permission}.
+func (l *Localizer) ServerErrorsMissingPermissionDetail(permission string) string {
+	return l.format("server:errors.missing_permission_detail", map[string]any{"permission": permission})
+}
+
 // ServerErrorsNotFound formats "server:errors.not_found". API error message for HTTP 404.
 //
 //	en: The requested resource was not found.
@@ -765,6 +800,13 @@ func (l *Localizer) ServerErrorsSelfRelationship() string {
 //	en: The service is temporarily unavailable. Please try again later.
 func (l *Localizer) ServerErrorsServiceUnavailable() string {
 	return l.format("server:errors.service_unavailable", nil)
+}
+
+// ServerErrorsSignatureRequired formats "server:errors.signature_required". Error title for HTTP 401 when an ActivityPub request carries no HTTP signature that verifies: a POST to an inbox, or a GET of an object or a collection when the instance uses authorized fetch. Read by other servers' operators.
+//
+//	en: This request needs a valid HTTP signature.
+func (l *Localizer) ServerErrorsSignatureRequired() string {
+	return l.format("server:errors.signature_required", nil)
 }
 
 // ServerErrorsStatusAlreadyDeleted formats "server:errors.status.already_deleted". Detail of the HTTP 409 API error when a client retries posting with an Idempotency-Key whose post was deleted. Idempotency-Key is a header name (not translated).
@@ -905,13 +947,6 @@ func (l *Localizer) ServerErrorsTooMany(max int, name string) string {
 //	en: Sign in to do this.
 func (l *Localizer) ServerErrorsUnauthenticated() string {
 	return l.format("server:errors.unauthenticated", nil)
-}
-
-// ServerErrorsUnauthorized formats "server:errors.unauthorized". Error title for HTTP 401 when a request from another server has no valid signature.
-//
-//	en: The request could not be authenticated.
-func (l *Localizer) ServerErrorsUnauthorized() string {
-	return l.format("server:errors.unauthorized", nil)
 }
 
 // ServerErrorsUnprocessable formats "server:errors.unprocessable". API error title for HTTP 422; the detail says what is wrong with the request.

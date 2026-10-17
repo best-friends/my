@@ -19,6 +19,18 @@
     "defaultMessage": "After you choose, you will be sent back to {host}.",
     "description": "Note under the permissions on the authorization (consent) page. {host} is the host name the application receives the answer at."
   },
+  "auth.authorize.scope.admin": {
+    "defaultMessage": "Administer the instance, as far as your roles allow",
+    "description": "Permission (OAuth scope admin) listed on the authorization page."
+  },
+  "auth.authorize.scope.admin_read": {
+    "defaultMessage": "Read the instance's administration data, as far as your roles allow",
+    "description": "Permission (OAuth scope admin:read) listed on the authorization page."
+  },
+  "auth.authorize.scope.admin_write": {
+    "defaultMessage": "Change the instance's administration data, as far as your roles allow",
+    "description": "Permission (OAuth scope admin:write) listed on the authorization page."
+  },
   "auth.authorize.scope.follow": {
     "defaultMessage": "Follow, block, and mute accounts",
     "description": "Permission (OAuth scope follow) listed on the authorization page."
@@ -327,6 +339,10 @@
     "defaultMessage": "Your account cannot use the app right now.",
     "description": "API error title for HTTP 403 when the access token is valid but its user cannot use the app: the registration is pending or rejected, the email address is unconfirmed, or the account is deactivated or deleted."
   },
+  "errors.bad_gateway": {
+    "defaultMessage": "A remote server could not be reached or answered with an error.",
+    "description": "Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx."
+  },
   "errors.bad_request": {
     "defaultMessage": "The request is invalid.",
     "description": "API error message for HTTP 400 when no more specific message applies."
@@ -407,6 +423,10 @@
     "defaultMessage": "The {method} method is not allowed for this resource.",
     "description": "API error message for HTTP 405. {method} is the HTTP method, e.g. DELETE (not translated)."
   },
+  "errors.missing_permission_detail": {
+    "defaultMessage": "Your roles need the permission {permission}.",
+    "description": "Detail of the HTTP 403 missing-permission API error of an admin operation. {permission} is the missing role permission, e.g. manage_jobs (not translated)."
+  },
   "errors.not_found": {
     "defaultMessage": "The requested resource was not found.",
     "description": "API error message for HTTP 404."
@@ -426,6 +446,10 @@
   "errors.request_too_large": {
     "defaultMessage": "The request is too large.",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
+  },
+  "errors.signature_required": {
+    "defaultMessage": "This request needs a valid HTTP signature.",
+    "description": "Error title for HTTP 401 when an ActivityPub request carries no HTTP signature that verifies: a POST to an inbox, or a GET of an object or a collection when the instance uses authorized fetch. Read by other servers' operators."
   },
   "errors.self_relationship": {
     "defaultMessage": "You cannot do this to your own account.",
@@ -514,10 +538,6 @@
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
-  },
-  "errors.unauthorized": {
-    "defaultMessage": "The request could not be authenticated.",
-    "description": "Error title for HTTP 401 when a request from another server has no valid signature."
   },
   "errors.unprocessable": {
     "defaultMessage": "The request cannot be processed.",
