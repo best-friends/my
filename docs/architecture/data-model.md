@@ -49,6 +49,10 @@
   検証は入力の種類ごとに 1 か所にあり（`content.ValidText`、`moderation.TextError` を返す処分と解除の検証、`identity` の `Validate…` など）、クライアント API はそれを `422` で返します。
   JSON の本文は不正な UTF-8 を U+FFFD として読みますが、`multipart/form-data` の部分とヘッダー（`Idempotency-Key`）はバイト列のまま届くので、ヌル文字と不正な UTF-8 の両方を検証します。
   リモートの文書の文字列は正規化でヌル文字を U+FFFD に置き換えます（[federation §4](federation.md#4-as2-の正規化)）。
+  検索に使う入力も同じです。PostgreSQL はそのようなパラメーターで検索に失敗し（SQLSTATE 22021）、SQLite は何も見つけないので、検索する前に HTTP の入口で拒否します。
+  リクエストのパス・クエリのパラメーター・`application/x-www-form-urlencoded` の本文のフィールドは `platform` の `rejectInvalidText` が `400` に、
+  クライアント API の JSON の本文の文字列は `clientapi` の `rejectInvalidBodyText`（strict のミドルウェア）がプロパティ名を示す `422` にします。
+  検索に使うヘッダーと Cookie のトークン（アクセストークン・セッション）は、ハッシュにしてから検索します。
 - 表記: カラムは特記がなければ `NOT NULL`。NULL 可のものは「NULL 可」と書きます。
   - **状態を NULL で表すことはしません**（ADR-0020 規約 4）。NULL 可は「任意の関連」（例: 通報に基づかない処分の `report_id`）と「無期限」（`expires_at`）に限ります。
 - 名前: カラム・テーブルは英語スネークケースで、テーブル名は複数形です。

@@ -7,9 +7,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
+	"mime"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/clientapi"
@@ -33,7 +38,8 @@ const readinessTimeout = 3 * time.Second
 // Handler returns the HTTP handler of the App: the routes of its role behind the middleware
 // that every response passes (request ID, access log, security headers, panic recovery, and
 // the CORS of the client API). GET requests that no route serves get the web client's HTML
-// (the SPA routes) unless they ask for ActivityPub.
+// (the SPA routes) unless they ask for ActivityPub. Requests whose target or form holds text
+// that no database can look up are a 400 before any route (rejectInvalidText).
 // The worker role serves only the health checks, for the platform's probes.
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -47,6 +53,7 @@ func (a *App) Handler() http.Handler {
 		page = a.page
 	}
 	h := a.problemFallback(mux, page)
+	h = a.rejectInvalidText(h)
 	h = clientAPICORS(a.Config.WebOrigin, h)
 	h = a.recoverPanics(h)
 	h = securityHeaders(h)
@@ -192,6 +199,71 @@ func (a *App) problemFallback(mux *http.ServeMux, page http.Handler) http.Handle
 			_, _ = w.Write(rec.body.Bytes())
 		}
 	})
+}
+
+// maxCheckedFormBytes bounds the form bodies that rejectInvalidText reads. A longer body passes
+// unchecked: every form handler refuses more than 32 KiB (authpages and oauth maxFormBytes).
+const maxCheckedFormBytes = 64 << 10
+
+// rejectInvalidText answers a request with a 400 problem when its path, a query parameter, or
+// a field of its application/x-www-form-urlencoded body is not valid UTF-8 or holds a NUL,
+// before any handler looks it up: PostgreSQL fails on such a parameter where SQLite finds
+// nothing, so that the dialects would answer differently (data-model §1.2). The client API
+// checks its JSON bodies itself; the other headers and cookies that handlers look up (bearer
+// and session tokens) are hashed first.
+func (a *App) rejectInvalidText(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ok := validText(r.URL.Path) && validValues(r.URL.Query())
+		if ok && isForm(r) {
+			ok = checkForm(r)
+		}
+		if !ok {
+			a.writeStatusProblem(w, r, http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// validText reports whether s is valid UTF-8 without NUL (data-model §1.2).
+func validText(s string) bool { return utf8.ValidString(s) && strings.IndexByte(s, 0) < 0 }
+
+func validValues(values url.Values) bool {
+	for k, vs := range values {
+		if !validText(k) {
+			return false
+		}
+		for _, v := range vs {
+			if !validText(v) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func isForm(r *http.Request) bool {
+	if r.Body == nil || r.Body == http.NoBody {
+		return false
+	}
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	return err == nil && mediaType == "application/x-www-form-urlencoded"
+}
+
+// checkForm reports whether the fields of r's form body are valid text, and puts the body back
+// for the handler, which parses it with its own limit. A body that cannot be read or is longer
+// than maxCheckedFormBytes passes, for the handler to refuse.
+func checkForm(r *http.Request) bool {
+	buf, err := io.ReadAll(io.LimitReader(r.Body, maxCheckedFormBytes+1))
+	r.Body = struct {
+		io.Reader
+		io.Closer
+	}{io.MultiReader(bytes.NewReader(buf), r.Body), r.Body}
+	if err != nil || len(buf) > maxCheckedFormBytes {
+		return true
+	}
+	values, _ := url.ParseQuery(string(buf)) // the handler answers a malformed form
+	return validValues(values)
 }
 
 // bufferedResponse captures a response that problemFallback may replace.

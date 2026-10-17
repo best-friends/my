@@ -145,7 +145,7 @@ type Router interface {
 // the hand-written streaming endpoint (streaming.go), behind authentication and rate limiting, with the security of each operation enforced (auth.go). Requests that
 // match no operation are left to r, which answers them with its own 404 or 405 problem.
 func (s *Server) Register(r Router) {
-	strict := NewStrictHandlerWithOptions(s, nil, StrictHTTPServerOptions{
+	strict := NewStrictHandlerWithOptions(s, []StrictMiddlewareFunc{s.rejectInvalidBodyText}, StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  s.requestError,
 		ResponseErrorHandlerFunc: s.responseError,
 	})
