@@ -178,6 +178,14 @@ func TestInboxContract(t *testing.T) {
 	})
 }
 
+func TestInboxProcessingContract(t *testing.T) {
+	testkit.InboxProcessingContract(t, func(t *testing.T, opts uow.Options) testkit.InboxHarness {
+		db, _ := newTestDB(t, "", opts)
+		feds := db.FederationRepository()
+		return testkit.InboxHarness{UnitOfWork: db, Inbox: feds, Federation: feds}
+	})
+}
+
 func TestRemoteActorContract(t *testing.T) {
 	testkit.RemoteActorContract(t, func(t *testing.T, opts uow.Options) testkit.RemoteActorHarness {
 		db, _ := newTestDB(t, "", opts)

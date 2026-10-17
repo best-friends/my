@@ -162,6 +162,18 @@ func (r Ref) Trusted() *Document {
 // hints that are verified elsewhere, such as matching an Accept to a pending Follow.
 func (r Ref) Untrusted() *Document { return r.embedded }
 
+// Distrusted returns r with its embedded document no longer trusted: the Ref of an activity whose
+// signer is not its actor (Trust TrustRefetch), whose embedded documents nobody vouches for.
+func (r Ref) Distrusted() Ref {
+	r.sameOrigin = false
+	return r
+}
+
+// FetchedRef returns the Ref to a document fetched from its origin, whose contents are trusted.
+func FetchedRef(doc *Document) Ref {
+	return Ref{ID: doc.ID(), embedded: doc, sameOrigin: true}
+}
+
 // Audience is the addressing of an object or activity. bto and bcc are ignored: a sender must
 // strip them before delivery.
 type Audience struct {

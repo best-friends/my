@@ -129,3 +129,20 @@ type NoDomainRestrictions struct{}
 func (NoDomainRestrictions) FederationSuspended(context.Context, string) (bool, error) {
 	return false, nil
 }
+
+// AccountPolicy says whether a restriction of a remote account keeps its activities: the
+// federation restriction (suspend, ban) of the account (federation.md §11). The moderation module
+// provides it.
+type AccountPolicy interface {
+	AccountFederationSuspended(ctx context.Context, accountID string) (bool, error)
+}
+
+// NoAccountRestrictions is the AccountPolicy of an instance without account restrictions: it
+// suspends no account. It stands in for the policy that the moderation module derives from
+// account_restrictions.
+type NoAccountRestrictions struct{}
+
+// AccountFederationSuspended implements AccountPolicy.
+func (NoAccountRestrictions) AccountFederationSuspended(context.Context, string) (bool, error) {
+	return false, nil
+}

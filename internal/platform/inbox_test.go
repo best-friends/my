@@ -33,6 +33,9 @@ func TestInbox(t *testing.T) {
 	var aliceID string
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		ctx := t.Context()
+		if _, _, ok := a.Handlers.Lookup(appfederation.JobInbox); !ok {
+			t.Errorf("no handler of %s is registered", appfederation.JobInbox)
+		}
 		reg, err := a.Identity.RegisterLocalUser(ctx, identity.RegisterInput{
 			Username: "alice", Password: "correct horse battery staple", DisplayName: "Alice",
 		})
