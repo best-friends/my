@@ -93,12 +93,16 @@ func (c ContentStatuses) FindBoost(ctx context.Context, id string) (appcontent.B
 	return c.Interactions.FindBoost(ctx, id)
 }
 
-// Accounts is the part of the account module's public API that delivery reads: the IRIs of
-// actors and the inboxes of remote ones. *appaccount.Service implements it.
+// Accounts is the part of the account module's public API that delivery reads: the IRIs and
+// documents of actors, the inboxes of remote ones, and the shared inboxes known to the
+// instance. *appaccount.Service implements it.
 type Accounts interface {
 	FindByID(ctx context.Context, id string) (appaccount.Actor, error)
 	// RemoteInbox fails with appaccount.ErrNotFound for a local account.
 	RemoteInbox(ctx context.Context, accountID string) (appaccount.RemoteInbox, error)
+	// KnownSharedInboxes returns at most limit distinct shared inboxes that remote actors
+	// declare, in order, after the shared inbox after ("" for the first batch).
+	KnownSharedInboxes(ctx context.Context, after string, limit int) ([]string, error)
 }
 
 // Graph is the part of the graph module's public API that delivery reads: an author's active

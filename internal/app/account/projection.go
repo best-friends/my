@@ -35,6 +35,12 @@ type ProfileRevised struct {
 // EventType implements uow.Event.
 func (ProfileRevised) EventType() string { return EventProfileRevised }
 
+// Federates reports whether the revision is sent to the account's remote followers as an
+// Update (federation.md §7.1): a revision of a local profile after the first one, which the
+// account is created with and no one follows yet. Remote revisions come from the actor's own
+// server.
+func (e ProfileRevised) Federates() bool { return e.Revision.Remote == nil && e.Revision.Seq > 1 }
+
 // LifecycleEventRecorded is emitted when a lifecycle event is inserted.
 type LifecycleEventRecorded struct {
 	Event account.LifecycleEvent
@@ -42,6 +48,18 @@ type LifecycleEventRecorded struct {
 
 // EventType implements uow.Event.
 func (LifecycleEventRecorded) EventType() string { return EventLifecycleEventRecorded }
+
+// Deletes reports whether the event deletes the account: a local account's deletion or a
+// remote actor's deletion on its server. Deletion is final (account.LifecycleState.Apply).
+func (e LifecycleEventRecorded) Deletes() bool {
+	return e.Event.Kind == account.LifecycleDeleted || e.Event.Kind == account.LifecycleRemoteDeleted
+}
+
+// DeletesLocalAccount reports whether the event is a local account's deletion, which is sent
+// to the remote servers as a Delete of the actor (federation.md §7.1).
+func (e LifecycleEventRecorded) DeletesLocalAccount() bool {
+	return e.Event.Kind == account.LifecycleDeleted
+}
 
 // RegisterProjectors registers the account module's synchronous projectors (data-model §9):
 // account_handles from local accounts and the handle checks of remote actors,

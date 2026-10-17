@@ -170,6 +170,19 @@ func (r *AccountRepository) ListStaleRemoteHeads(ctx context.Context, before tim
 	return out, nil
 }
 
+// ListKnownSharedInboxes implements account.Repository.
+func (r *AccountRepository) ListKnownSharedInboxes(ctx context.Context, after string, limit int) ([]string, error) {
+	rows, err := r.db.reader().ListKnownSharedInboxes(ctx, sqlitegen.ListKnownSharedInboxesParams{After: after, BatchLimit: int64(limit)})
+	if err != nil {
+		return nil, wrap(err, "list known shared inboxes")
+	}
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, row.String)
+	}
+	return out, nil
+}
+
 // LatestHandleVerification implements account.Repository.
 func (r *AccountRepository) LatestHandleVerification(ctx context.Context, tx uow.Tx, accountID string) (account.HandleVerification, error) {
 	q, err := queries(tx)

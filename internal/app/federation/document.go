@@ -165,6 +165,9 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 	if act.ObjectKind == federation.OutboundFollow {
 		return f.followDocument(ctx, s)
 	}
+	if act.ObjectKind == federation.OutboundAccount {
+		return accountDocument(f.d.Host, act, s.actor)
+	}
 	if act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete {
 		return nil, nil
 	}
@@ -201,6 +204,20 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 		return nil, fmt.Errorf("%w: %s of a %s", federation.ErrInvalidOutbound, act.Type, act.ObjectKind)
 	}
 	return doc.Marshal()
+}
+
+// accountDocument builds the Update or the Delete of a local actor, addressed to the public as
+// Mastodon addresses them. The Update carries the actor's document as it is when the fan-out
+// starts, the same document a GET of the actor returns; a later revision sends an Update of its
+// own. The Delete names the actor by its id.
+func accountDocument(host string, act federation.OutboundActivity, a appaccount.Actor) ([]byte, error) {
+	actor := federation.IRI(a.Account.URI)
+	aud := federation.Audience{To: []federation.IRI{federation.PublicIRI}}
+	var object any = actor
+	if act.Type == federation.ActivityUpdate {
+		object = LocalActorDocument(host, a, "").Embedded()
+	}
+	return federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, aud, object).Marshal()
 }
 
 // deleteDocument returns the Delete of a local status st, built from the deletion event alone so

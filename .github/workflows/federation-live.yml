@@ -1,0 +1,49 @@
+name: Federation live
+
+# Live interoperability test (ADR-0006, ADR-0015, docs/architecture/federation.md §12): this server federating with
+# Mastodon and GoToSocial in deploy/docker/federation-live, called by nightly.yml and runnable by hand.
+# Not part of `make check`. The logs of every server and the captured activities are kept as artifacts.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      run-pending:
+        description: Also run the scenarios marked pending (FEDERATION_LIVE_RUN_PENDING=1).
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  # Use exactly the Go version from .tool-versions; never auto-download another toolchain.
+  GOTOOLCHAIN: local
+
+jobs:
+  federation-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      FEDERATION_LIVE_OUT: ${{ github.workspace }}/.tmp/federation-live-out
+      FEDERATION_LIVE_RUN_PENDING: ${{ inputs.run-pending && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: .tool-versions
+          cache-dependency-path: |
+            go.mod
+            go.sum
+      - name: Run the live interoperability scenarios
+        run: make federation-live
+      - name: Upload the logs and captured activities
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: federation-live
+          path: ${{ env.FEDERATION_LIVE_OUT }}
+          if-no-files-found: warn
+          retention-days: 14

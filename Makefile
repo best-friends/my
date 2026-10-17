@@ -167,6 +167,12 @@ docker-build: ## Build the server image my:$(VERSION) for the local platform
 docker-smoke: ## Start deploy/docker/compose.yaml, create an admin, check WebFinger / Actor / NodeInfo, tear down
 	MY_VERSION=$(VERSION) scripts/docker-smoke.sh
 
+.PHONY: federation-live
+
+# Not part of `make check`: it pulls Mastodon and GoToSocial and takes minutes (CI job federation-live, nightly).
+federation-live: ## Run the live interoperability scenarios against Mastodon and GoToSocial (deploy/docker/federation-live)
+	MY_VERSION=$(VERSION) scripts/federation-live.sh $(FEDERATION_LIVE_FLAGS)
+
 dockerfile-check: ## Fail if the Dockerfile's Go, Node.js, or Bun image differs from the version in .tool-versions
 	@want="golang:$$(awk '$$1 == "golang" { print $$2 }' .tool-versions)-"; \
 		grep -q "^ARG GO_IMAGE=$$want" Dockerfile || { echo "Dockerfile: GO_IMAGE must start with $$want" >&2; exit 1; }

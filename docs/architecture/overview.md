@@ -212,5 +212,6 @@ app/                 # クライアントの Bun ワークスペース（アプ�
   mobile/            # モバイルアプリ（Tauri 2）
 deploy/
   docker/ k8s/ gcp/ aws/
+  docker/federation-live/  # ライブの相互運用テスト（Mastodon・GoToSocial との compose とシナリオ。federation.md §12）
 docs/
 ```

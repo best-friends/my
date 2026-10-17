@@ -1,6 +1,7 @@
 name: Nightly
 
-# Checks too slow for every PR (ADR-0015): the web E2E over the full width × locale matrix.
+# Checks too slow for every PR (ADR-0015): the web E2E over the full width × locale matrix and the live
+# interoperability test with Mastodon and GoToSocial.
 
 on:
   schedule:
@@ -19,3 +20,6 @@ jobs:
     uses: ./.github/workflows/web-e2e.yml
     with:
       matrix: full
+
+  federation-live:
+    uses: ./.github/workflows/federation-live.yml
