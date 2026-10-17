@@ -10,6 +10,7 @@ export * as compose from "../../features/compose/test/handlers";
 export * as core from "./http";
 export * as notifications from "../../features/notifications/test/handlers";
 export * as profile from "../../features/profile/test/handlers";
+export * as report from "../../features/report/test/handlers";
 export * as session from "../../features/session/test/handlers";
 export * as settings from "../../features/settings/test/handlers";
 export * as status from "../../features/status/test/handlers";

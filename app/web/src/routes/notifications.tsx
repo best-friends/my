@@ -2,7 +2,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useId } from "react";
 import { z } from "zod";
-import { type NotificationFilter, notificationFilters, notificationMarkerQueryOptions, notificationsQueryOptions, NotificationsView } from "../features/notifications";
+import { type NotificationFilter, notificationFilters, notificationMarkerQueryOptions, notificationsQueryOptions, NotificationsSkeleton, NotificationsView } from "../features/notifications";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
@@ -13,19 +13,22 @@ const searchSchema = z.object({
 
 /** The signed-in user's notifications (FR-205). */
 export const Route = createFileRoute("/notifications")({
+  staticData: { title: "client:notifications.title" },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { filter } }): { filter: NotificationFilter } => ({ filter: filter ?? "all" }),
   // The first page and the read marker load with the page; without a session there is nothing to load,
-  // and the page offers to sign in.
+  // and the page offers to sign in. A failure (offline, say) is the list's own, shown below the page's
+  // heading with what to do (useNotifications), so the loader lets the page open.
   loader: async ({ context: { queryClient, api, session }, deps: { filter } }) => {
     if (session.status === "unknown") await session.restore();
     if (session.status !== "signed-in") return;
-    await Promise.all([
+    await Promise.allSettled([
       queryClient.infiniteQuery({ ...notificationsQueryOptions(api, filter), staleTime: "static" }),
       queryClient.query({ ...notificationMarkerQueryOptions(api), staleTime: "static" }),
     ]);
   },
   component: NotificationsPage,
+  pendingComponent: NotificationsPending,
 });
 
 function NotificationsPage() {
@@ -40,6 +43,16 @@ function NotificationsPage() {
     <>
       <PageHeading id={headingId}>{t("client:notifications.title")}</PageHeading>
       <NotificationsView filter={filter} onFilterChange={changeFilter} headingId={headingId} />
+    </>
+  );
+}
+
+function NotificationsPending() {
+  const t = useT();
+  return (
+    <>
+      <PageHeading>{t("client:notifications.title")}</PageHeading>
+      <NotificationsSkeleton />
     </>
   );
 }

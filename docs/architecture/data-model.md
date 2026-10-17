@@ -242,6 +242,7 @@ flowchart LR
 - メールを届けられない構成（`mail = none`）では、メール確認の代わりにモデレーターの承認を求めます（FR-002）。このとき `open` モードの登録も `pending` で始まり、確認済みでないことはアプリの利用を妨げません。
 - アプリ（クライアント API と OAuth の認可）を使えるのは、`user_registration_states` が `approved`（または行が無い）で、メール確認が必要な構成では主アドレスが確認済みの利用者だけです。
   承認待ち・却下・未確認の利用者もサーバーが返す画面にはログインでき、何を待っているかが表示されます。
+  ログインを奪う処分（制限 `login`、§5.2）を受けた利用者も同じで、サーバーが返す画面にはログインでき、効いている処分のうちログインを奪うもの（種類・理由のカテゴリと公開の理由・期限）が本人の UI 言語で表示されます。アクセストークンは得られません。
 - CLI で作った管理者の主アドレスは、作成と同じトランザクションで確認済みにします（運営者が与えたアドレスなので）。
 
 #### 招待・1 回限りのトークン
@@ -284,6 +285,10 @@ flowchart LR
 
 - セッションは、サーバーが返す画面（ログイン・登録・認可同意）の Cookie `__Host-my_session` です（ADR-0019 §4、ADR-0030）。
   ログインのたびに新しいトークンを発行し、ブラウザが持っていた古いセッションは `replaced` で失効させます。
+- ログイン元（`session_origins`）と登録元（`registration_origins`）は、セッション・利用者と同じトランザクションで記録します。
+  - IP アドレスは正規形（IPv4 射影の IPv6 は IPv4、ゾーンは外す）で持ち、同じアドレスが同じ文字列になるようにします。IP アドレスとして読めない値は記録しません。
+  - IP アドレスも User-Agent も分からないログインは `session_origins` の行を作らず、IP アドレスの分からない登録は `registration_origins` の行を作りません。どちらもログインと登録を妨げません。
+  - 1 時間ごとの消去ジョブ `identity.purge_origins` が、保持期間（既定 180 日）を過ぎた行を、1 文あたり 1,000 行・1 テーブルあたり 20 文まで、古い順に消します。セッションと利用者は残ります。
 - `scope` は RFC 6749 の scope 文字列（空白区切り・ソート済みの正規形）です。照合は文字列全体で行い、個々のスコープの検索には使わないため、1 カラムで持ちます。
 - `oauth_clients` 以外のテーブルの `client_id` は `oauth_clients.id` を指します。クライアントが送る公開の識別子は `oauth_clients.client_id` です。
 - ファーストパーティの Web クライアント（`client_id` は `my-web`）は起動時に冪等に登録します。リダイレクト URI は設定 `web_origin` から導くので、`oauth_client_redirect_uris` は起動のたびに設定値へ置き換える【現在値】です。
@@ -411,10 +416,13 @@ flowchart LR
 
 | テーブル | カラム | 制約 |
 | --- | --- | --- |
-| `account_restrictions` | `account_id`, `restriction`（§5.2 の能力の enum）, `source_action_id`, `effective_until`（NULL 可 = 無期限） | PK `(account_id, restriction, source_action_id)`。読み取りは `WHERE account_id = ? AND (effective_until IS NULL OR effective_until > :now)` |
+| `account_restrictions` | `account_id`, `restriction`（§5.2 の能力の enum）, `source_action_id`, `effective_until`（NULL 可 = 無期限） | PK `(account_id, restriction, source_action_id)`。インデックス `(effective_until)`（期限切れの行の削除）。読み取りは `WHERE account_id = ? AND (effective_until IS NULL OR effective_until > :now)` |
 
 - 1 つの処分は複数の制限を生みます（例: サイレンス → 3 つの制限、§5.2）。
 - 複数の処分が重なった場合は、制限の和集合になります。解除すると、その処分由来の行だけが消えます。期限切れの行は、読み取り時の条件で無効になり、定期ジョブで掃除します。
+  `account_restrictions` の期限切れの行は、5 分ごとのジョブ `moderation.expire_restrictions` が、1 トランザクションあたり件数を区切って消します。
+- アカウントの凍結（`federation` の制限）が効き始めたとき（効いている `federation` の行が無かったアカウントに行ができた）と、終わったとき（`federation` の行が消え、効いている行が残らない）に、`moderation` は同じトランザクションで `moderation.account_suspension_changed` を発行します。
+  終わりは、解除か期限切れの行の削除の、先に行を消した方が 1 回だけ伝えます。ローカルのアカウントなら `federation` がこれを受けて `Update`（Actor）を積みます（[federation.md §11.1](federation.md#111-処分の伝播)）。
 
 #### ドメイン単位の処分
 
@@ -436,7 +444,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `reports` | リソース | `id`, `uri`（NULL 可。受信した `Flag` の `id`、`id` の無い `Flag` は受信の記録と同じ `urn:my:digest:…`）, `reporter_account_id`, `target_account_id`, `category`（`enum(spam, legal, violation, other)`）, `comment`（5,000 文字まで）, `forwarded`（`bool`）, `filed_at` | 一意 `(uri)`。インデックス `(target_account_id, id)` |
+| `reports` | リソース | `id`, `uri`（NULL 可。受信した `Flag` の `id`、`id` の無い `Flag` は受信の記録と同じ `urn:my:digest:…`）, `reporter_account_id`, `target_account_id`, `category`（`enum(spam, legal, violation, other)`）, `comment`（5,000 文字まで）, `forwarded`（`bool`）, `filed_at` | 一意 `(uri)`。インデックス `(target_account_id, id)`, `(reporter_account_id, id)`（通報者の一覧） |
 | `report_statuses` | リソース（子） | `report_id`, `status_id` | PK `(report_id, status_id)` |
 | `report_rule_citations` | リソース（子） | `report_id`, `rule_id` | PK `(report_id, rule_id)`。ルールの文言が改訂されても `rule_id` は変わらない（§4.9） |
 | `report_assignments` | イベント | `id`, `report_id`, `assignee_user_id`（NULL 可 = 担当解除）, `assigned_by_user_id`（NULL 可 = CLI）, `assigned_at` | インデックス `(report_id, id DESC)`。担当が変わらない割り当ては記録しない |
@@ -446,6 +454,8 @@ flowchart LR
 | `report_states` | 投影 | `report_id`（PK）, `state`（`enum(open, resolved)`）, `outcome`（`enum(actioned, dismissed)`、NULL 可。最後の解決の結果）, `assignee_user_id`（NULL 可）, `since`（受け付けた時刻か、解決した時刻） | インデックス `(state, report_id)`（未解決一覧）。`outcome` は `state = resolved` のときだけ値を持つ（`CHECK` 制約） |
 
 - 通報者（`reporter_account_id`）は、ローカルの通報ならローカルのアカウント、受信した `Flag` なら送ってきた Actor（多くはリモートのインスタンス Actor）です。通報者は対象に見せません（ADR-0038）。
+- ローカルの通報者は、自分の通報を `(reporter_account_id, id)` のキーセットで新しい順に引けます。見せるのは通報の内容と状態（`open` / `resolved`）だけで、`outcome`・担当・処分・メモは見せません（FR-711）。
+- 解決はすべて、通報と解決を載せたドメインイベント（`moderation.report_resolved`）を同じトランザクションで発行します。`notification` はそこから `report_resolved` を作り、`dedupe_key` が通報ごとなので、再開のあとの解決では通知し直しません（§4.7）。
 - `forwarded` は、ローカルの通報者がリモートのアカウントの通報で相手のサーバーへの転送を求めたかどうかです（受け付けた時点で決まる事実）。対象がローカルのアカウントなら、求めても `false` です。転送は受け付けのトランザクションで outbox に積みます（[ADR-0036](../adr/0036-moderation-federation-propagation.md)）。受信した `Flag` は常に `false` です。
 - ローカルの通報のコメントは 1,000 文字、受信した `Flag` のコメントは 5,000 文字までです。`report_rule_citations` は `category = violation` のときだけ持てます。
 - ローカルの通報が指せる投稿は、対象のアカウントの投稿のうち通報者が見られるもの（単一の閲覧判定 `CanView` を通す）を 20 件まで、引用できるルールは効いているもの（引退していないもの）を 20 件までです。自分自身は通報できません。
@@ -811,7 +821,7 @@ flowchart LR
 
   | ドメインイベント | 種類 | 受け取る人 | `dedupe_key` |
   | --- | --- | --- | --- |
-  | 処分の記録（`notify_target` が真） | `moderation_notice` | 対象のローカルのアカウント | `moderation_notice:<action_id>` |
+  | 処分の記録（`moderation.account_action_issued` のうち `notify_target` が真のもの） | `moderation_notice` | 対象のローカルのアカウント | `moderation_notice:<action_id>` |
   | 異議申し立ての審査 | `appeal_decided` | 申し立てた本人 | `appeal_decided:<appeal_id>` |
   | 通報の解決（最初の解決だけ） | `report_resolved` | ローカルの通報者 | `report_resolved:<report_id>` |
   | 関係の切断 | `relationships_severed` | 関係を失ったローカルのアカウント | `relationships_severed:<severance_id>` |
@@ -820,6 +830,8 @@ flowchart LR
   | 異議申し立て | `admin_appeal` | ロールが `manage_accounts` を持つ人 | `admin_appeal:<appeal_id>` |
 
   - 本人は `moderation_notice` から処分の種類・公開理由・対象の投稿・期限を見られ、異議申し立てに進めます（FR-715）。
+    クライアント API は通知に処分を本人に見せる形（種類と理由のカテゴリは本人の UI 言語の表示名付き）で埋め込み、`GET /api/v1/moderation/actions` は本人への処分を通知の有無に関わらずすべて新しい順に返します。
+    どちらも非公開のメモ・通報・処分した人を含めません（ADR-0038）。`moderation_notice` の行は `moderation_action_id` を必ず持ち、ほかの種類は持ちません。
   - `report_resolved` は解決したことだけを伝え、処分の内容は含めません（FR-711）。
   - `admin_*` の受け取る人は、通知を作るトランザクションでロールの権限から求めます（`identity` の公開 API。ユーザーからローカルのアカウントへは `account` の公開 API で引く）。
     後から権限を失った人の通知は、一覧と未読数から読み取り時に除きます（閲覧者のロールが持たない権限の種類を除く）。権限が戻れば、また見えます。
@@ -850,6 +862,7 @@ flowchart LR
 
 - **配送先の記録** は `deliveries` が兼ねます。
   - 投稿の `Update` / `Delete` は、その投稿の `Create` の `outbound_activities` に紐づく `deliveries` の inbox に送ります（§7）。
+- `report` の活動は通報の転送の `Flag` です。主体（`actor_account_id`）はインスタンス Actor、`object_id` は通報（`reports`）の ID で、`forwarded` の通報だけが持ちます（[federation §11](federation.md#11-モデレーションとの連携)）。
 - お気に入りは現在値で、取り消すと行が消えます。そこで `favourite` の活動は、お気に入りを決める組（`actor_account_id` と投稿）で記録し、`object_id` は投稿の ID です。
   `Like` / `Undo Like` の本文はイベントの値（お気に入りの `uri`・投稿の `uri`）から記録のトランザクションで組み立てるので、行が消えた後の `Undo Like` も `Like` の `id` を埋め込めます。
 - `instance_health` は、`retryable_failure` を記録した日が `last_failure_day` と違えば `failure_days` を 1 増やし、7 に達したら `instance_availability_events`（`marked_unavailable`）を記録して `unavailable` にします。
@@ -950,7 +963,7 @@ flowchart LR
 
 | `restriction` | 意味 | 判定に使う場面 |
 | --- | --- | --- |
-| `login` | ログイン・API 利用の禁止 | 認証。有効なセッションとトークンは処分時に失効させる（`session_revocations` / `oauth_token_revocations`、`reason = moderation`） |
+| `login` | アプリ（認可・API）の利用の禁止 | 認証。有効なセッションとトークンは処分時に失効させる（`session_revocations` / `oauth_token_revocations`、`reason = moderation`）。サーバーが返す画面には処分を確かめるためにログインできる（§4.1） |
 | `post` | 投稿・返信・ブースト・編集の禁止 | 投稿系ユースケース |
 | `interact` | フォロー・お気に入り・ブースト・投票の禁止 | 交流系ユースケース |
 | `visibility_ceiling_private` | 公開範囲の上限を `private` にする | 投稿時の公開範囲の決定、`canView`（§5.4） |
@@ -983,7 +996,7 @@ flowchart LR
 | --- | --- | --- |
 | `content` | `RestrictionPolicy`（`AccountPolicy.Content()`） | 投稿・編集（`post`）、返信・お気に入り・ブースト（`interact`。ブーストは `post` も）、公開範囲の上限、閲覧、添付のセンシティブ表示（`media_sensitive`） |
 | `graph` | `InteractionPolicy` | フォロー（`interact`） |
-| `identity` | `LoginPolicy` | ログインとアクセストークンの照合（`login`。要求ごと） |
+| `identity` | `LoginPolicy` | 認可とアクセストークンの照合（`login`。要求ごと） |
 | `notification` | `ReachPolicy` | 通知の作成（`unsolicited_reach`。受け取る人が差出人をフォローしていなければ作らない） |
 | クライアント API | `ProfileRestrictions` | アカウントの表示（`profile_view`。本人以外には存在しないものと同じ 404） |
 

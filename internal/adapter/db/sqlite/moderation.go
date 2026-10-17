@@ -219,6 +219,23 @@ func (r *ModerationRepository) AccountRestrictionRows(ctx context.Context, tx uo
 	return out, nil
 }
 
+// DeleteExpiredAccountRestrictions implements moderation.Repository.
+func (r *ModerationRepository) DeleteExpiredAccountRestrictions(ctx context.Context, tx uow.Tx, now time.Time, limit int) ([]moderation.RestrictionRow, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.DeleteExpiredAccountRestrictions(ctx, sqlitegen.DeleteExpiredAccountRestrictionsParams{Now: toMillis(now), BatchLimit: int64(limit)})
+	if err != nil {
+		return nil, wrap(err, "delete expired account restrictions")
+	}
+	out := make([]moderation.RestrictionRow, len(rows))
+	for i, row := range rows {
+		out[i] = restrictionRowsFrom(row.AccountID, row.Restriction, row.SourceActionID, row.EffectiveUntil)
+	}
+	return out, nil
+}
+
 // InsertDomainRestriction implements moderation.Repository.
 func (r *ModerationRepository) InsertDomainRestriction(ctx context.Context, tx uow.Tx, row moderation.RestrictionRow) error {
 	q, err := queries(tx)
@@ -414,16 +431,40 @@ func (r *ModerationRepository) ListReports(ctx context.Context, q appmoderation.
 	}
 	out := make([]moderation.ReportRecord, len(rows))
 	for i, row := range rows {
-		rep, err := r.reportFrom(ctx, sqlitegen.Report{
-			ID: row.ID, Uri: row.Uri, ReporterAccountID: row.ReporterAccountID, TargetAccountID: row.TargetAccountID,
-			Category: row.Category, Comment: row.Comment, Forwarded: row.Forwarded, FiledAt: row.FiledAt,
-		})
-		if err != nil {
+		if out[i], err = r.reportRecordFrom(ctx, row); err != nil {
 			return nil, err
 		}
-		out[i] = moderation.ReportRecord{Report: rep, Status: reportStatusFrom(sqlitegen.ReportState{
-			ReportID: row.ID, State: row.State, Outcome: row.Outcome, AssigneeUserID: row.AssigneeUserID, Since: row.Since,
-		})}
+	}
+	return out, nil
+}
+
+// reportRecordFrom reads the statuses and rules of the report of row.
+func (r *ModerationRepository) reportRecordFrom(ctx context.Context, row sqlitegen.ListReportsRow) (moderation.ReportRecord, error) {
+	rep, err := r.reportFrom(ctx, sqlitegen.Report{
+		ID: row.ID, Uri: row.Uri, ReporterAccountID: row.ReporterAccountID, TargetAccountID: row.TargetAccountID,
+		Category: row.Category, Comment: row.Comment, Forwarded: row.Forwarded, FiledAt: row.FiledAt,
+	})
+	if err != nil {
+		return moderation.ReportRecord{}, err
+	}
+	return moderation.ReportRecord{Report: rep, Status: reportStatusFrom(sqlitegen.ReportState{
+		ReportID: row.ID, State: row.State, Outcome: row.Outcome, AssigneeUserID: row.AssigneeUserID, Since: row.Since,
+	})}, nil
+}
+
+// ListReportsByReporter implements moderation.Repository.
+func (r *ModerationRepository) ListReportsByReporter(ctx context.Context, reporterAccountID, before string, limit int) ([]moderation.ReportRecord, error) {
+	rows, err := r.db.reader().ListReportsByReporter(ctx, sqlitegen.ListReportsByReporterParams{
+		ReporterAccountID: reporterAccountID, Before: before, Lim: int64(limit),
+	})
+	if err != nil {
+		return nil, wrap(err, "list reports by reporter")
+	}
+	out := make([]moderation.ReportRecord, len(rows))
+	for i, row := range rows {
+		if out[i], err = r.reportRecordFrom(ctx, sqlitegen.ListReportsRow(row)); err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }

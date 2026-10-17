@@ -48,6 +48,9 @@ type Repository interface {
 	DeleteAccountRestrictionsOf(ctx context.Context, tx uow.Tx, actionID string) error
 	// AccountRestrictionRows returns every row of an account, expired ones included.
 	AccountRestrictionRows(ctx context.Context, tx uow.Tx, accountID string) ([]moderation.RestrictionRow, error)
+	// DeleteExpiredAccountRestrictions deletes at most limit rows of any account that have
+	// expired at now, the earliest expired first, and returns them.
+	DeleteExpiredAccountRestrictions(ctx context.Context, tx uow.Tx, now time.Time, limit int) ([]moderation.RestrictionRow, error)
 	InsertDomainRestriction(ctx context.Context, tx uow.Tx, r moderation.RestrictionRow) error
 	// DeleteDomainRestrictionsOf deletes the rows that an action on a domain imposes.
 	DeleteDomainRestrictionsOf(ctx context.Context, tx uow.Tx, actionID string) error
@@ -85,6 +88,10 @@ type Repository interface {
 	// those in q.State (any state when empty) whose ID is below q.Before (from the newest when
 	// empty).
 	ListReports(ctx context.Context, q ReportQuery, limit int) ([]moderation.ReportRecord, error)
+	// ListReportsByReporter returns up to limit reports that reporterAccountID filed, with their
+	// statuses and states, newest first: those whose ID is below before (from the newest when
+	// empty).
+	ListReportsByReporter(ctx context.Context, reporterAccountID, before string, limit int) ([]moderation.ReportRecord, error)
 	// FindActionRecord returns an action on an account with its lift.
 	FindActionRecord(ctx context.Context, id string) (moderation.ActionRecord, error)
 	// ListActions returns up to limit actions on accounts with their lifts, newest first: those

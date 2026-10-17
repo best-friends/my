@@ -5,6 +5,7 @@ import { ProfileView } from "../features/profile";
 import { type AccountTimelineFilter, accountTimelineFilters, timelineQueryOptions } from "../features/timeline";
 import { PageHeading } from "./-layout/PageHeading";
 import { loadAccount, profileParamsSchema } from "./-profile/loadAccount";
+import { ProfileError } from "./-profile/ProfileError";
 import { ProfileNotFound } from "./-profile/ProfileNotFound";
 
 /** `tab`: the posts the profile lists; omitted, or anything unknown, is its posts without replies (web-client.md S3). */
@@ -14,6 +15,8 @@ const searchSchema = z.object({
 
 /** The profile of an account (FR-204), at the address the server's HTML shell gives it (ADR-0028). */
 export const Route = createFileRoute("/@{$acct}")({
+  // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
+  staticData: { composeButton: true },
   params: { parse: (params) => profileParamsSchema.parse(params) },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { tab } }): { tab: AccountTimelineFilter } => ({ tab: tab ?? "posts" }),
@@ -28,6 +31,7 @@ export const Route = createFileRoute("/@{$acct}")({
   },
   component: ProfilePage,
   notFoundComponent: ProfileNotFound,
+  errorComponent: ProfileError,
 });
 
 function ProfilePage() {

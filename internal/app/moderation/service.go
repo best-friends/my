@@ -56,6 +56,9 @@ const (
 	EventAccountRestrictionsChanged = "moderation.account_restrictions_changed"
 	// EventReportFiled follows a new report.
 	EventReportFiled = "moderation.report_filed"
+	// EventReportResolved follows every resolution of a report, the first one and those after
+	// a reopening.
+	EventReportResolved = "moderation.report_resolved"
 )
 
 // DomainRestrictionsChanged carries the restrictions in effect on one domain (not its parents)
@@ -87,6 +90,15 @@ type ReportFiled struct {
 
 // EventType implements uow.Event.
 func (ReportFiled) EventType() string { return EventReportFiled }
+
+// ReportResolved carries a report and its resolution.
+type ReportResolved struct {
+	Report     moderation.Report
+	Resolution moderation.ReportResolution
+}
+
+// EventType implements uow.Event.
+func (ReportResolved) EventType() string { return EventReportResolved }
 
 // Accounts is the part of the account module's public API that the moderation module reads.
 // *appaccount.Service implements it.
@@ -247,7 +259,9 @@ type AccountActionInput struct {
 
 // IssueAccountAction records an action on an account and, in the same transaction, the
 // restrictions it imposes (data-model §5.2) and its other effects, and emits
-// AccountRestrictionsChanged. delete_statuses deletes the statuses it names (origin
+// AccountRestrictionsChanged and AccountActionIssued, and AccountSuspensionChanged when the
+// action (suspend, ban) suspends an account that was not suspended. delete_statuses deletes the
+// statuses it names (origin
 // moderation), mark_statuses_sensitive shows them as sensitive until it is lifted, and ban
 // schedules the deletion of the account moderation.BanDeletionDelay later.
 //
@@ -311,6 +325,10 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 	}
 	repo := s.d.Repository
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
+		if err != nil {
+			return err
+		}
 		if err := repo.InsertAction(ctx, tx, a); err != nil {
 			return err
 		}
@@ -322,7 +340,13 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		if err := s.carryOut(ctx, tx, a, statuses); err != nil {
 			return err
 		}
-		return s.emitAccount(ctx, tx, a.TargetAccountID, now)
+		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
+			return err
+		}
+		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, AccountActionIssued{Action: a})
 	})
 	if errors.Is(err, appcontent.ErrAlreadyDeleted) {
 		return moderation.Action{}, fmt.Errorf("%w: a status was deleted meanwhile", ErrInvalidStatusReference)
@@ -377,7 +401,8 @@ func (s *Service) carryOut(ctx context.Context, tx uow.Tx, a moderation.Action, 
 // LiftAccountAction lifts an action on an account: its restrictions end, while those of other
 // actions on the account stay, and the statuses that a mark_statuses_sensitive action marked are
 // no longer shown as sensitive by it; the statuses that delete_statuses deleted stay deleted.
-// Lifting an action that is already lifted changes nothing. A ban fails with ErrNotLiftable. An
+// Lifting the account's last suspension emits AccountSuspensionChanged. Lifting an action that
+// is already lifted changes nothing. A ban fails with ErrNotLiftable. An
 // invalid reason fails with an error wrapping moderation.ErrInvalidAction and a
 // *moderation.TextError.
 func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserID, reason string) error {
@@ -402,6 +427,10 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if err != nil {
 			return err
 		}
+		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
+		if err != nil {
+			return err
+		}
 		if err := repo.DeleteAccountRestrictionsOf(ctx, tx, a.ID); err != nil {
 			return err
 		}
@@ -410,7 +439,10 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 				return err
 			}
 		}
-		return s.emitAccount(ctx, tx, a.TargetAccountID, now)
+		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
+			return err
+		}
+		return s.emitSuspension(ctx, tx, a.TargetAccountID, before, now)
 	})
 }
 

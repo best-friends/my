@@ -699,8 +699,6 @@ CREATE TABLE sessions (
   id TEXT NOT NULL PRIMARY KEY,
   user_id TEXT NOT NULL,
   token_hash BLOB NOT NULL,
-  user_agent TEXT,
-  ip TEXT,
   created_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL
 ) STRICT;
@@ -1074,12 +1072,12 @@ CREATE TABLE notifications (
   recipient_account_id TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN (
     'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
-    'admin_report', 'admin_sign_up'
+    'report_resolved', 'admin_report', 'admin_sign_up'
   )),
   source_account_id TEXT,
   status_id TEXT,
   moderation_action_id TEXT,
-  -- admin_report: the report filed.
+  -- admin_report, report_resolved: the report.
   report_id TEXT,
   -- admin_sign_up: the user whose registration awaits approval.
   subject_user_id TEXT,
@@ -1524,6 +1522,8 @@ CREATE TABLE account_restrictions (
   PRIMARY KEY (account_id, restriction, source_action_id)
 ) STRICT;
 CREATE INDEX account_restrictions_source_action_id ON account_restrictions (source_action_id);
+-- The removal of expired rows, which tells the end of expired suspensions (federation.md §11.1).
+CREATE INDEX account_restrictions_effective_until ON account_restrictions (effective_until);
 
 -- Event: a moderation action on a domain and its subdomains. issued_by_user_id is NULL for the
 -- CLI.
@@ -1576,6 +1576,8 @@ CREATE TABLE reports (
 ) STRICT;
 CREATE UNIQUE INDEX reports_uri ON reports (uri);
 CREATE INDEX reports_target_account_id_id ON reports (target_account_id, id);
+-- A reporter lists their own reports.
+CREATE INDEX reports_reporter_account_id_id ON reports (reporter_account_id, id);
 
 -- Resource (child of a report): the statuses a report points at.
 CREATE TABLE report_statuses (
@@ -1643,3 +1645,30 @@ CREATE TABLE status_sensitivity_overrides (
   PRIMARY KEY (status_id, source_action_id)
 ) STRICT;
 CREATE INDEX status_sensitivity_overrides_source_action_id ON status_sensitivity_overrides (source_action_id);
+
+-- ---------------------------------------------------------------------------------------------
+-- identity: where sign-ins and registrations came from (data-model.md §4.1, ADR-0038). Kept
+-- apart from sessions and users so that the purge erases them after their retention.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource (child of a session): the client that started a session. ip and user_agent are NULL
+-- when unknown; a session with neither has no row.
+CREATE TABLE session_origins (
+  session_id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  ip TEXT,
+  user_agent TEXT,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX session_origins_ip ON session_origins (ip);
+CREATE INDEX session_origins_created_at ON session_origins (created_at);
+
+-- Resource: the IP address of a registration from the registration page. A registration from
+-- an unknown address has no row.
+CREATE TABLE registration_origins (
+  user_id TEXT NOT NULL PRIMARY KEY,
+  ip TEXT NOT NULL,
+  recorded_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX registration_origins_ip ON registration_origins (ip);
+CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);

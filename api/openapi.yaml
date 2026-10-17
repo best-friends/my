@@ -42,6 +42,8 @@ tags:
     description: Media files that the user uploads to attach to posts.
   - name: preferences
     description: The authenticated user's preferences.
+  - name: moderation
+    description: The moderation actions on the authenticated user's own account.
   - name: notifications
     description: The authenticated user's notifications, their read marker, and dismissals.
   - name: statuses
@@ -666,6 +668,42 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of media ------------------------------------------------------------------------
+  # --- moderation: the user's own actions (#336) ---
+  /moderation/actions:
+    get:
+      operationId: listOwnModerationActions
+      summary: List the moderation actions on the authenticated user's account
+      description: |
+        The actions that moderators took on the user's own account (FR-715), newest first,
+        lifted and expired ones included unless `active` is set, also those that the user was
+        not notified of. Each carries what the moderators chose to tell the user; never their
+        private note, the report the action follows from, or who filed it. `kind_label` and
+        `reason_category_label` are in the user's language.
+      tags: [moderation]
+      security:
+        - oauth2: ["read:accounts"]
+      parameters:
+        - name: active
+          in: query
+          required: false
+          description: Keep only the actions in effect now, neither lifted nor expired.
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the actions on the user's account.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationActionPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of moderation: the user's own actions (#336) ---
   # --- notifications (#111) ---
   /notifications:
     get:
@@ -689,7 +727,7 @@ paths:
           explode: true
           schema:
             type: array
-            maxItems: 10
+            maxItems: 11
             items:
               $ref: "#/components/schemas/NotificationType"
         - $ref: "#/components/parameters/Cursor"
@@ -1219,6 +1257,32 @@ paths:
           $ref: "#/components/responses/Problem"
   # --- reports (#332) ---
   /reports:
+    get:
+      operationId: listOwnReports
+      summary: List the reports that the authenticated user filed
+      description: |
+        The reports that the user filed, newest first, each with whether it is still open or
+        resolved (FR-711). A report reopened by the moderators is open again. It never tells how
+        a report was resolved, which actions it led to, the reasons given to the account, or
+        who handles it.
+      tags: [reports]
+      security:
+        - oauth2: ["read:reports"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the user's reports.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportPage"
+        default:
+          $ref: "#/components/responses/Problem"
     post:
       operationId: createReport
       summary: Report an account
@@ -1959,6 +2023,7 @@ components:
             "read:follows": Read follows and follow requests.
             "read:mutes": Read the accounts the user mutes.
             "read:notifications": Read the user's notifications.
+            "read:reports": Read the reports the user filed and whether they are resolved.
             "read:statuses": Read posts and timelines.
             "write:accounts": Change the user's profile and preferences.
             "write:blocks": Block and unblock accounts.
@@ -2232,8 +2297,9 @@ components:
         - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
           `WWW-Authenticate` names.
         - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
-          use the app (registration pending or rejected, email unverified, or the account
-          deactivated or deleted).
+          use the app (registration pending or rejected, email unverified, the account
+          deactivated or deleted, or a moderation action that disables its login). The user
+          can still sign in to the server's sign-in page, which says why.
         - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
           from following it. Unblock it first.
         - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
@@ -2719,6 +2785,62 @@ components:
           description: The preview, at most 640 × 360 pixels of area.
           $ref: "#/components/schemas/MediaVariant"
     # --- end of media --------------------------------------------------------------------
+    # --- moderation: the user's own actions (#336) ---
+    ModerationAction:
+      description: |
+        A moderation action on the authenticated user's own account (FR-715, NFR-MOD-6), as the
+        user sees it. It never carries the moderators' private note, the report the action
+        follows from, or who filed the report or issued the action.
+      type: object
+      required: [id, kind, kind_label, reason_category, reason_category_label, status_ids, state, issued_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        kind:
+          $ref: "#/components/schemas/AdminAccountActionKind"
+        kind_label:
+          description: What the action does, in the user's language.
+          type: string
+        reason_category:
+          $ref: "#/components/schemas/AdminAccountActionCategory"
+        reason_category_label:
+          description: The reason category, in the user's language.
+          type: string
+        public_reason:
+          description: |
+            The moderators' explanation to the user, as plain text; omitted when there is none.
+          type: string
+        status_ids:
+          description: |
+            The posts that an action on posts acted on; empty for an action on the whole account.
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+        state:
+          $ref: "#/components/schemas/AdminAccountActionState"
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          description: When the action ends by itself; omitted when it lasts until it is lifted.
+          type: string
+          format: date-time
+        lifted_at:
+          description: When a moderator lifted the action; omitted unless it is lifted.
+          type: string
+          format: date-time
+    ModerationActionPage:
+      description: A page of the actions on the user's own account, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ModerationAction"
+    # --- end of moderation: the user's own actions (#336) ---
     # --- notifications (#111) ---
     Notification:
       description: A notification of something that happened to the authenticated user.
@@ -2740,6 +2862,12 @@ components:
             The post that the notification is about, as the user sees it; omitted when the user
             may not see it.
           $ref: "#/components/schemas/Status"
+        report:
+          description: The user's report that a `report_resolved` tells of.
+          $ref: "#/components/schemas/Report"
+        moderation_action:
+          description: The action on the user's account that a `moderation_notice` tells of.
+          $ref: "#/components/schemas/ModerationAction"
         report_id:
           description: The report that an `admin_report` is about.
           allOf:
@@ -2781,6 +2909,11 @@ components:
         (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
         (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
         `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+        about. `moderation_notice` comes from the instance and has no `account`; its
+        `moderation_action` is the action on the user's account, with its kind, reason, and end.
+        `report_resolved` also comes from the instance: its `report` is the user's report that
+        the moderators resolved, without how they resolved it. It is sent once per report, even
+        when the report is reopened and resolved again.
         about. `moderation_notice` comes from the instance and has no `account`.
         The moderator notifications come from the instance too: `admin_report` (an account
         that had no open report was reported; `report_id` is the report) goes to the users
@@ -2796,6 +2929,7 @@ components:
         - favourite
         - poll_closed
         - moderation_notice
+        - report_resolved
         - admin_report
         - admin_sign_up
     # --- end notifications ---
@@ -3884,9 +4018,11 @@ components:
           type: boolean
           default: false
     Report:
-      description: A report that the user filed. It never names the reporter.
+      description: |
+        A report that the user filed. It never names the reporter, and tells only whether the
+        moderators resolved it, never how.
       type: object
-      required: [id, category, comment, forwarded, filed_at, target_account, status_ids, rule_ids]
+      required: [id, category, comment, forwarded, filed_at, target_account, status_ids, rule_ids, state]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -3911,6 +4047,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Id"
+        state:
+          $ref: "#/components/schemas/ReportState"
     ReportCategory:
       description: |
         Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
@@ -3918,4 +4056,20 @@ components:
         anything else.
       type: string
       enum: [spam, legal, violation, other]
+    ReportPage:
+      description: A page of the user's reports, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Report"
+    ReportState:
+      description: |
+        `open`: the report awaits the moderators. `resolved`: the moderators handled it.
+      type: string
+      enum: [open, resolved]
     # --- end of reports (#332) ---

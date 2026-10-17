@@ -526,6 +526,12 @@ type RegistrationApplication struct {
 	SubmittedAt int64
 }
 
+type RegistrationOrigin struct {
+	UserID     string
+	Ip         string
+	RecordedAt int64
+}
+
 type RemoteAccountHandleVerification struct {
 	ID        string
 	AccountID string
@@ -622,6 +628,14 @@ type Role struct {
 	ID        string
 	Key       string
 	Position  int64
+	CreatedAt int64
+}
+
+type SessionOrigin struct {
+	SessionID string
+	UserID    string
+	Ip        sql.NullString
+	UserAgent sql.NullString
 	CreatedAt int64
 }
 

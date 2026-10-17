@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useId } from "react";
 import { z } from "zod";
 import { TimelineFeed, TimelineSkeleton, timelineQueryOptions } from "../features/timeline";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
+import { RouteError } from "./-layout/RouteStates";
 
 /** The hashtag, without the `#` (api/openapi.yaml, getHashtagTimeline); the hashtag links of posts point here. */
 const paramsSchema = z.object({ tag: z.string().min(1).max(256) });
 
 /** The timeline of one hashtag (FR-203). */
 export const Route = createFileRoute("/tags/$tag")({
+  // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
+  staticData: { composeButton: true },
   params: { parse: (params) => paramsSchema.parse(params) },
   loader: async ({ context: { queryClient, api }, params: { tag } }) => {
     // The cached pages are shown as they are; the page refetches them in the background when stale.
@@ -18,6 +21,7 @@ export const Route = createFileRoute("/tags/$tag")({
   },
   component: TagPage,
   pendingComponent: TagPending,
+  errorComponent: TagError,
 });
 
 function TagHeading({ tag, id }: { tag: string; id?: string }) {
@@ -50,4 +54,11 @@ function TagPending() {
       <TimelineSkeleton />
     </>
   );
+}
+
+/** The page keeps its name, the hashtag, when it fails (web-client.md G16). */
+function TagError(props: ErrorComponentProps) {
+  const t = useT();
+  const { tag } = Route.useParams();
+  return <RouteError {...props} heading={<span dir="auto">{t("client:tag.title", { tag })}</span>} />;
 }

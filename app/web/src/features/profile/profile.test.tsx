@@ -2,9 +2,10 @@
 // The profile pages through the whole app (web-client.md T4): the real router and QueryClient, with MSW as
 // the server (FR-204, FR-301 to FR-303). Each state of the viewer's relationship with the account shows its
 // own buttons; the changes go to the server and the page shows the relationship the server returns.
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, isInaccessible, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
 import { otherAccountFixture, relationshipFixture, statusPage, timelineStatusFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
@@ -308,6 +309,32 @@ describe("the follow lists", () => {
     expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
   });
 
+  test("show the heading and a skeleton of rows while the first page loads", async () => {
+    bobServer();
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get(`${apiBase}/accounts/:id/followers`, async () => {
+        await released;
+        return HttpResponse.json({ accounts: [viewerFixture] });
+      }),
+    );
+    const { user } = await renderApp({ path: "/@bob" });
+    await user.click(await within(await screen.findByRole("main")).findByRole("link", { name: "12 followers" }));
+
+    // After the router's pending delay, the heading names the account by the handle in the address.
+    await findLoadingRegion("Loading accounts");
+    expect(screen.getByRole("heading", { level: 1, name: "Followers of ⁨@bob⁩" })).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    release();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Followers of ⁨Bob⁩" })).toBeInTheDocument();
+    expect(within(main()).getByRole("link", { name: "Alice @alice@my.example" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading accounts")).not.toBeInTheDocument();
+  });
+
   test("say so when an account follows nobody", async () => {
     bobServer();
     server.use(http.get(`${apiBase}/accounts/:id/following`, () => HttpResponse.json({ accounts: [] })));
@@ -354,11 +381,16 @@ describe("a profile of another server", () => {
 });
 
 describe("a timeline's post", () => {
-  test("links its author's name and picture to the author's profile", async () => {
+  test("links its author's name and, for the pointer, picture to the author's profile", async () => {
     await renderApp({ path: "/local" });
 
     const article = await screen.findByRole("article");
     const links = within(article).getAllByRole("link", { name: /^Bob/ });
-    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/@bob", "/@bob"]);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/@bob"]);
+    // The picture's link is hidden from screen readers, which reach the profile by the name.
+    const [avatar] = within(article).getAllByRole("link", { hidden: true });
+    if (avatar === undefined) throw new Error("want the picture's link");
+    expect(isInaccessible(avatar)).toBe(true);
+    expect(avatar).toHaveAttribute("href", "/@bob");
   });
 });

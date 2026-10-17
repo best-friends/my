@@ -15,6 +15,7 @@ import (
 	"time"
 
 	appcontent "github.com/best-friends/my/internal/app/content"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	appnotification "github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/domain/notification"
@@ -134,7 +135,7 @@ func newNotificationEnvWithViews(t *testing.T) (*authEnv, *fakeNotifications, *f
 		case notification.TypeFavourite:
 			n.StatusID = statusID
 		case notification.TypeModerationNotice:
-			n.SourceAccountID = ""
+			n.SourceAccountID, n.ModerationActionID = "", actionID(3)
 		}
 		f.ns = append(f.ns, n)
 	}
@@ -155,6 +156,7 @@ func newNotificationEnvWithViews(t *testing.T) (*authEnv, *fakeNotifications, *f
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Notifications = f
 		o.TimelineReader = views
+		o.OwnModeration = &fakeOwnModeration{on: map[string][]appmoderation.TargetActionView{aliceAccountID: aliceActions()}}
 		o.Accounts.(fakeAccounts)[bobAccountID] = o.Accounts.(fakeAccounts)[aliceAccountID]
 	})
 	return e, f, views
@@ -244,6 +246,14 @@ func TestListNotifications(t *testing.T) {
 	notice, fav, mention := page.Items[0], page.Items[1], page.Items[2]
 	if notice.Type != "moderation_notice" || notice.Account != nil || notice.Status != nil {
 		t.Errorf("moderation notice = %+v, want neither account nor status", notice)
+	}
+	// The notice carries its action, labelled in alice's language.
+	if a := notice.ModerationAction; a == nil || a.Id != actionID(3) || a.Kind != clientapi.AdminAccountActionKindSuspend ||
+		!strings.HasPrefix(a.KindLabel, "凍結") || a.ReasonCategoryLabel != "法的な理由" {
+		t.Errorf("the action of the moderation notice = %+v", notice.ModerationAction)
+	}
+	if fav.ModerationAction != nil {
+		t.Errorf("favourite has the moderation action %+v", fav.ModerationAction)
 	}
 	if fav.Type != "favourite" || fav.Account == nil || fav.Account.Username != "alice" ||
 		!fav.CreatedAt.Equal(time.Date(2026, 10, 15, 0, 2, 0, 0, time.UTC)) {

@@ -142,7 +142,8 @@ describe("signing in and out", () => {
     });
 
     // No token was ever written where a script could read it later.
-    expect(localStorage).toHaveLength(0);
+    // localStorage holds only the instance's public timelines, which the navigation keeps for an offline start.
+    expect(Object.keys(localStorage)).toEqual(["my:instance:timelines"]);
     expect(sessionStorage).toHaveLength(0);
     expect(idb.open).not.toHaveBeenCalled();
     expect(document.cookie).toBe("");

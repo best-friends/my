@@ -104,3 +104,55 @@ func TestReportsThroughTheAPI(t *testing.T) {
 		t.Errorf("reports = %+v, want only the filed one", page.Items)
 	}
 }
+
+// TestReportResolutionReachesTheReporter resolves a local report through the admin API on the
+// real database: the reporter gets one report_resolved and sees the report resolved in their
+// list, neither telling how it was resolved, and resolving it again notifies nobody.
+func TestReportResolutionReachesTheReporter(t *testing.T) {
+	c := newStatusesClient(t, "alice", "bob", "carol")
+	var report clientapi.Report
+	res := c.do("alice", http.MethodPost, "/reports", map[string]any{"account_id": c.ids["bob"], "category": "spam"}, &report)
+	if res.StatusCode != http.StatusOK || report.State != clientapi.ReportStateOpen {
+		t.Fatalf("POST /reports = %d, %+v; want it open", res.StatusCode, report)
+	}
+	for _, outcome := range []string{"actioned", "dismissed"} {
+		if res := c.do("carol", http.MethodPost, "/admin/reports/"+report.Id+"/resolve", map[string]any{"outcome": outcome}, nil); res.StatusCode != http.StatusOK {
+			t.Fatalf("resolve %s = %d", outcome, res.StatusCode)
+		}
+	}
+
+	var raw json.RawMessage
+	if res := c.do("alice", http.MethodGet, "/notifications", nil, &raw); res.StatusCode != http.StatusOK {
+		t.Fatalf("GET /notifications = %d", res.StatusCode)
+	}
+	if strings.Contains(string(raw), "actioned") || strings.Contains(string(raw), "dismissed") {
+		t.Errorf("notifications = %s, want no outcome", raw)
+	}
+	var notifications clientapi.NotificationPage
+	if err := json.Unmarshal(raw, &notifications); err != nil {
+		t.Fatal(err)
+	}
+	if len(notifications.Items) != 1 {
+		t.Fatalf("alice's notifications = %+v, want one report_resolved", notifications.Items)
+	}
+	if n := notifications.Items[0]; n.Type != clientapi.NotificationTypeReportResolved || n.Account != nil || n.Report == nil ||
+		n.Report.Id != report.Id || n.Report.State != clientapi.ReportStateResolved {
+		t.Errorf("notification = %+v, want report_resolved with the resolved report", n)
+	}
+	// Nothing tells the target.
+	var bobs clientapi.NotificationPage
+	if res := c.do("bob", http.MethodGet, "/notifications", nil, &bobs); res.StatusCode != http.StatusOK || len(bobs.Items) != 0 {
+		t.Errorf("bob's notifications = %d %+v, want none", res.StatusCode, bobs.Items)
+	}
+
+	var page clientapi.ReportPage
+	if res := c.do("alice", http.MethodGet, "/reports", nil, &page); res.StatusCode != http.StatusOK {
+		t.Fatalf("GET /reports = %d", res.StatusCode)
+	}
+	if len(page.Items) != 1 || page.Items[0].Id != report.Id || page.Items[0].State != clientapi.ReportStateResolved {
+		t.Errorf("alice's reports = %+v, want the resolved report", page.Items)
+	}
+	if res := c.do("bob", http.MethodGet, "/reports", nil, &page); res.StatusCode != http.StatusOK || len(page.Items) != 0 {
+		t.Errorf("bob's reports = %d %+v, want none", res.StatusCode, page.Items)
+	}
+}

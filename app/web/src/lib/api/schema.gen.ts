@@ -540,6 +540,30 @@ export interface paths {
         patch: operations["updateMedia"];
         trace?: never;
     };
+    "/moderation/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the moderation actions on the authenticated user's account
+         * @description The actions that moderators took on the user's own account (FR-715), newest first,
+         *     lifted and expired ones included unless `active` is set, also those that the user was
+         *     not notified of. Each carries what the moderators chose to tell the user; never their
+         *     private note, the report the action follows from, or who filed it. `kind_label` and
+         *     `reason_category_label` are in the user's language.
+         */
+        get: operations["listOwnModerationActions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications": {
         parameters: {
             query?: never;
@@ -978,7 +1002,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the reports that the authenticated user filed
+         * @description The reports that the user filed, newest first, each with whether it is still open or
+         *     resolved (FR-711). A report reopened by the moderators is open again. It never tells how
+         *     a report was resolved, which actions it led to, the reasons given to the account, or
+         *     who handles it.
+         */
+        get: operations["listOwnReports"];
         put?: never;
         /**
          * Report an account
@@ -1589,8 +1620,9 @@ export interface components {
          *     - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
          *       `WWW-Authenticate` names.
          *     - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
-         *       use the app (registration pending or rejected, email unverified, or the account
-         *       deactivated or deleted).
+         *       use the app (registration pending or rejected, email unverified, the account
+         *       deactivated or deleted, or a moderation action that disables its login). The user
+         *       can still sign in to the server's sign-in page, which says why.
          *     - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
          *       from following it. Unblock it first.
          *     - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
@@ -1944,6 +1976,41 @@ export interface components {
             /** @description The preview, at most 640 × 360 pixels of area. */
             thumbnail: components["schemas"]["MediaVariant"];
         };
+        /**
+         * @description A moderation action on the authenticated user's own account (FR-715, NFR-MOD-6), as the
+         *     user sees it. It never carries the moderators' private note, the report the action
+         *     follows from, or who filed the report or issued the action.
+         */
+        ModerationAction: {
+            id: components["schemas"]["Id"];
+            kind: components["schemas"]["AdminAccountActionKind"];
+            /** @description What the action does, in the user's language. */
+            kind_label: string;
+            reason_category: components["schemas"]["AdminAccountActionCategory"];
+            /** @description The reason category, in the user's language. */
+            reason_category_label: string;
+            /** @description The moderators' explanation to the user, as plain text; omitted when there is none. */
+            public_reason?: string;
+            /** @description The posts that an action on posts acted on; empty for an action on the whole account. */
+            status_ids: components["schemas"]["Id"][];
+            state: components["schemas"]["AdminAccountActionState"];
+            /** Format: date-time */
+            issued_at: string;
+            /**
+             * Format: date-time
+             * @description When the action ends by itself; omitted when it lasts until it is lifted.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When a moderator lifted the action; omitted unless it is lifted.
+             */
+            lifted_at?: string;
+        };
+        /** @description A page of the actions on the user's own account, newest first. */
+        ModerationActionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["ModerationAction"][];
+        };
         /** @description A notification of something that happened to the authenticated user. */
         Notification: {
             id: components["schemas"]["Id"];
@@ -1959,6 +2026,10 @@ export interface components {
              *     may not see it.
              */
             status?: components["schemas"]["Status"];
+            /** @description The user's report that a `report_resolved` tells of. */
+            report?: components["schemas"]["Report"];
+            /** @description The action on the user's account that a `moderation_notice` tells of. */
+            moderation_action?: components["schemas"]["ModerationAction"];
             /** @description The report that an `admin_report` is about. */
             report_id?: components["schemas"]["Id"];
         };
@@ -1985,6 +2056,11 @@ export interface components {
          *     (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
          *     (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
          *     `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
+         *     about. `moderation_notice` comes from the instance and has no `account`; its
+         *     `moderation_action` is the action on the user's account, with its kind, reason, and end.
+         *     `report_resolved` also comes from the instance: its `report` is the user's report that
+         *     the moderators resolved, without how they resolved it. It is sent once per report, even
+         *     when the report is reopened and resolved again.
          *     about. `moderation_notice` comes from the instance and has no `account`.
          *     The moderator notifications come from the instance too: `admin_report` (an account
          *     that had no open report was reported; `report_id` is the report) goes to the users
@@ -1992,7 +2068,7 @@ export interface components {
          *     approval; `account` is the new user's account) to those with `manage_accounts`.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "admin_report" | "admin_sign_up";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up";
         /** @description A new status. */
         CreateStatusRequest: {
             text: components["schemas"]["StatusText"];
@@ -2679,7 +2755,10 @@ export interface components {
              */
             forward: boolean;
         };
-        /** @description A report that the user filed. It never names the reporter. */
+        /**
+         * @description A report that the user filed. It never names the reporter, and tells only whether the
+         *     moderators resolved it, never how.
+         */
         Report: {
             id: components["schemas"]["Id"];
             category: components["schemas"]["ReportCategory"];
@@ -2692,6 +2771,7 @@ export interface components {
             target_account: components["schemas"]["Account"];
             status_ids: components["schemas"]["Id"][];
             rule_ids: components["schemas"]["Id"][];
+            state: components["schemas"]["ReportState"];
         };
         /**
          * @description Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
@@ -2700,6 +2780,15 @@ export interface components {
          * @enum {string}
          */
         ReportCategory: "spam" | "legal" | "violation" | "other";
+        /** @description A page of the user's reports, newest first. */
+        ReportPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["Report"][];
+        };
+        /**
+         * @description `open`: the report awaits the moderators. `resolved`: the moderators handled it.
+         * @enum {string}
+         */
+        ReportState: "open" | "resolved";
     };
     responses: {
         /** @description A page of posts and boosts, newest first. */
@@ -3406,6 +3495,35 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    listOwnModerationActions: {
+        parameters: {
+            query?: {
+                /** @description Keep only the actions in effect now, neither lifted nor expired. */
+                active?: boolean;
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the actions on the user's account. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModerationActionPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     listNotifications: {
         parameters: {
             query?: {
@@ -3946,6 +4064,33 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["StatusPage"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listOwnReports: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the user's reports. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportPage"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

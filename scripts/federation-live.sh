@@ -136,16 +136,20 @@ wait_ready gts.test /readyz
 wait_ready misskey.test /healthz
 
 # --- Users --------------------------------------------------------------------------------------
-# alice@my.test. On Mastodon: bob (alice's follower), dave (never follows alice: the mentioned
-# non-follower of the visibility scenario), and eve (the signature scenario). On GoToSocial: carol
-# (alice's follower) and erin (never follows alice). On Misskey: grace (alice's follower) and heidi (never
-# follows alice), made by its administrator mkadmin.
-log "creating alice@my.test, bob, dave, and eve @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
+# alice@my.test, and frank@my.test (the user that the suspension scenario suspends). On Mastodon: bob
+# (alice's follower), dave (never follows alice: the mentioned non-follower of the visibility scenario),
+# eve (the signature scenario), and the administrator mod. On GoToSocial: carol (alice's follower) and
+# erin (never follows alice). On Misskey: grace (alice's follower) and heidi (never follows alice), made
+# by its administrator mkadmin.
+log "creating alice and frank @my.test, bob, dave, eve, and mod @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username alice -email alice@my.test >/dev/null
+printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username frank -email frank@my.test >/dev/null
 
 for user in bob dave eve; do
 	"${compose[@]}" exec -T mastodon-web bin/tootctl accounts create "$user" --email "$user@mastodon.test" --confirmed --approve >/dev/null
 done
+# mod is the administrator whose token reads the reports (TestReportForwarding).
+"${compose[@]}" exec -T mastodon-web bin/tootctl accounts create mod --email mod@mastodon.test --confirmed --approve --role Owner >/dev/null
 mastodon_tokens="$("${compose[@]}" exec -T mastodon-web bin/rails runner '
 	app = Doorkeeper::Application.create!(name: "federation-live", redirect_uri: "urn:ietf:wg:oauth:2.0:oob", scopes: "read write follow")
 	%w[bob dave eve].each do |name|
@@ -154,12 +158,16 @@ mastodon_tokens="$("${compose[@]}" exec -T mastodon-web bin/rails runner '
 		puts "token_#{name}=#{token.plaintext_token}"
 	end
 	puts "uri_eve=#{ActivityPub::TagManager.instance.uri_for(Account.find_local!("eve"))}"
+	admin = Doorkeeper::Application.create!(name: "federation-live-admin", redirect_uri: "urn:ietf:wg:oauth:2.0:oob", scopes: "admin:read")
+	token = Doorkeeper::AccessToken.create!(application: admin, resource_owner_id: Account.find_local!("mod").user.id, scopes: "admin:read")
+	puts "token_mod=#{token.plaintext_token}"
 ')"
 mastodon_token() { sed -n "s/^token_$1=//p" <<<"$mastodon_tokens"; }
 mastodon_token_bob="$(mastodon_token bob)"
 mastodon_token_dave="$(mastodon_token dave)"
 mastodon_token_eve="$(mastodon_token eve)"
-[[ -n "$mastodon_token_bob" && -n "$mastodon_token_dave" && -n "$mastodon_token_eve" ]] ||
+mastodon_token_mod="$(mastodon_token mod)"
+[[ -n "$mastodon_token_bob" && -n "$mastodon_token_dave" && -n "$mastodon_token_eve" && -n "$mastodon_token_mod" ]] ||
 	fail "could not issue the access tokens of the Mastodon users"
 
 # The proxy refuses eve's draft-cavage POSTs in both directions (Caddyfile, TestSignatureProfile); it
@@ -208,9 +216,11 @@ export FEDERATION_LIVE_MY_PASSWORD="$my_password"
 export FEDERATION_LIVE_MASTODON_TOKEN="$mastodon_token_bob"
 export FEDERATION_LIVE_MASTODON_TOKEN_DAVE="$mastodon_token_dave"
 export FEDERATION_LIVE_MASTODON_TOKEN_EVE="$mastodon_token_eve"
+export FEDERATION_LIVE_MASTODON_ADMIN_TOKEN="$mastodon_token_mod"
 export FEDERATION_LIVE_GTS_PASSWORD="$gts_password"
 export FEDERATION_LIVE_MISSKEY_TOKEN="$misskey_token_grace"
 export FEDERATION_LIVE_MISSKEY_TOKEN_HEIDI="$misskey_token_heidi"
+export FEDERATION_LIVE_MISSKEY_ADMIN_TOKEN="$misskey_token_admin"
 env | grep '^FEDERATION_LIVE_' >"$work/scenarios.env"
 cd "$root"
 go test -tags federationlive -count=1 -v "$@" ./deploy/docker/federation-live 2>&1 | tee "$out/scenarios.log"

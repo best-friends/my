@@ -8,6 +8,7 @@ import { SettingsHeading } from "./-layout/SettingsHeading";
 
 /** The jobs of the job queue that failed for good, and running them again, for manage_jobs. */
 export const Route = createFileRoute("/admin/dead-jobs")({
+  staticData: { title: "client:admin.dead_jobs.title" },
   beforeLoad: requireSignIn,
   loader: ({ context }) =>
     loadWithPermission(context, "manage_jobs", () => context.queryClient.infiniteQuery({ ...deadJobsQueryOptions(context.api), staleTime: "static" })),

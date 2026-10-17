@@ -4,6 +4,7 @@
 // Transitioner), so the current page stays on screen while the next one loads (web-client.md E4); the
 // pending component appears only when a load takes longer than defaultPendingMs.
 import { createRouter, type RouterHistory } from "@tanstack/react-router";
+import type { PlainClientMessageKey } from "./lib/i18n";
 import type { RouterContext } from "./lib/query";
 import { routeTree } from "./routeTree.gen";
 import { RouteError, RoutePending } from "./routes/-layout/RouteStates";
@@ -41,5 +42,17 @@ export function createAppRouter({ queryClient, api, session, history }: AppRoute
 declare module "@tanstack/react-router" {
   interface Register {
     router: ReturnType<typeof createAppRouter>;
+  }
+  // What a route tells the app shell about itself, read from the current matches (TanStack Router's
+  // static route data).
+  interface StaticDataRouteOption {
+    /** The shell floats the button that opens the new-post sheet over this page (timelines and profiles; web-client.md G4). */
+    composeButton?: boolean;
+    /**
+     * The page's name, the text of its h1. RouteError keeps it as the heading when the page fails, so that the
+     * page and the document title stay named after the page (web-client.md G16). A page whose name depends on
+     * its params passes the heading to RouteError from its own errorComponent instead.
+     */
+    title?: PlainClientMessageKey;
   }
 }

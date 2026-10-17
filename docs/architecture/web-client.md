@@ -91,7 +91,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | D4 | タップ領域は 24 × 24 px 以上、主要な操作は `pointer-coarse:` で 44 px 以上にする | axe `target-size`、レビュー |
 | D5 | `100vh` を使わない（`svh` / `dvh`）。端に固定する要素には `env(safe-area-inset-*)` を足す | `no-restricted-syntax`（文字列）、`better-tailwindcss/no-restricted-classes`（`h-screen` など）、`make web-lint` の grep（CSS） |
 | D6 | アニメーションは `motion-safe:` の下に置く | `make web-tokens`、`better-tailwindcss/no-restricted-classes`（`animate-*`）、レビュー |
-| D7 | 方向は論理プロパティのユーティリティで書く。`ml-` / `mr-` / `pl-` / `pr-` / `left-` / `right-` / `text-left` / `text-right` / `rounded-l` / `rounded-r` / `border-l` / `border-r` を使わない（方向のあるアイコンの反転だけ `rtl:` / `ltr:` で許可） | `better-tailwindcss/no-restricted-classes` |
+| D7 | 方向は論理プロパティのユーティリティで書く。`ml-` / `mr-` / `pl-` / `pr-` / `left-` / `right-` / `text-left` / `text-right` / `rounded-l` / `rounded-r` / `border-l` / `border-r` / `mask-l-` / `mask-r-` を使わない（方向のあるアイコンの反転と、論理方向の版がない `mask-l-` / `mask-r-`（端のフェード）だけ、`rtl:` / `ltr:` の下で許可） | `better-tailwindcss/no-restricted-classes` |
 | D8 | 色は `@my/ui/theme.css` の意味のトークン（`--color-surface`、`--color-fg-muted` など）だけを使う。生のパレット（`--palette-*`）や任意の色を部品に書かない（`--color-*: initial` で Tailwind の既定の色を消す）。トークンの一覧・コントラストの組・ライト / ダークの切り替えは [app/ui/README.md](../../app/ui/README.md) にある | Tailwind の設定、`make web-tokens`、`better-tailwindcss/no-unknown-classes` |
 | D9 | 部品の見た目の違いは `tailwind-variants` の 1 部品 1 レシピで定義する。クラス名を動的に組み立てない。`className` は `tailwind-merge` で root / スロットにだけ合成する | `better-tailwindcss/no-concatenated-classes`、`better-tailwindcss/no-conflicting-classes`、レビュー |
 | D10 | CSP を壊さない。`setAttribute('style')` や `cssText` を使わない（React の `style={}` は可） | `no-restricted-syntax` |
@@ -232,15 +232,32 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 - **リンク**: 画面の間のリンクは `@my/ui` の `Link` に `href` を渡す。React Aria の `RouterProvider` が同じオリジンの `href` をルーターの遷移に変える。`#id` の `href`（本文へ移動するリンク）は、その要素にフォーカスを移す。
 - **レイアウト**（`routes/-layout/AppLayout.tsx`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` から投稿フォームとサーバーについての 3 列目を出す。
   `xl` 未満では、投稿フォームはタブバーの上（`md` からは画面の隅）に浮かぶボタンから開くシートになる（§12）。どちらにするかは外枠が `matchMedia` で決め（`useMediaQuery`）、ページに置くフォームは常に 1 つにする。
+  浮かぶボタンは、ルートの静的なデータ（TanStack Router の `staticData`、`composeButton: true`）を持つ画面（タイムラインとプロフィール）にだけ出す（G4）。外枠は今のマッチ（`useMatches`）からそれを読む。
+  ほかの画面でもシートは置いたままにし、返信のボタンはそこで開く。`md` 未満のボタンはアイコンだけで、「投稿を書く」をアクセシブルネーム（`aria-label`）と `Tooltip` にする（G12）。
+  `main` は終わりに、タブバーとボタン（出ているとき、`data-compose-fab`）の高さぶんの余白を取り、`index.css` の `scroll-padding-block-end` もフォーカスした要素を同じだけ避ける。`md` 未満のトーストは、タブバーの上に、ボタンが出ているときはボタンの上に出す（`with-compose-fab:` の variant）。
+  `md` 未満で高さが 32rem 以下の画面（横向きの電話、400% の拡大の 320 × 225 CSS px）は `short:` の variant（`index.css`）で、タブバーの項目を `min-h-12` にし、ボタンとの間を詰めて、固定した要素を画面の高さの半分に収める（WCAG 1.4.10）。
   ナビゲーションは 1 つの `nav` で、今いる区画のリンクに `aria-current="page"` を付ける。画面の端に接する要素は `env(safe-area-inset-*)` を足し、高さは `svh` で指定する。
   ローカル（`/local`）と連合（`/public`）のタイムラインは、インスタンスの設定で無効にでき、そのときは API が 404 を返す（FR-202）。ナビゲーションは `GET /instance` の `timelines` で、
   サーバーが提供するものだけを出す（`features/timeline` の `useTimelineAvailability`）。ローカルはサーバーが無効と答えるまで出し、連合はサーバーが有効と答えてから出すので、無効にしたサーバーでは読み込み中も失敗したときも出ない。
+  最後に受け取った `timelines` は localStorage の `my:instance:timelines` に残し（インスタンスの設定で、利用者のデータではない）、ナビゲーションを置いたときに 1 回だけ読む。
+  オフラインで開いたりリロードしたりして `GET /instance` が届かないときも、前と同じ項目を出す。サーバーの答えが届けばそちらを使う。
   タブバーは項目の数で列を等分する。無効にした連合タイムラインのアドレスを直接開いたときは、「もう一度試す」ではなく無効であることを出す（`routes/public.tsx`）。
   先頭に、フォーカスしたときだけ見える「本文へ移動」のリンクを置く。
 - **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
-- **エラー**（E1）: 画面の失敗はルーターの `defaultErrorComponent`（`RouteError`）がレイアウトの中に出し、「もう一度試す」で Query のエラー境界を戻してから loader を再実行する。
+- **エラー**（E1、G16）: 画面の失敗はルーターの `defaultErrorComponent`（`RouteError`）がレイアウトの中に出す。画面の `h1` はその画面の名前のままにし（ルートの `staticData.title` のメッセージ ID。名前がパラメータで決まる画面は自分の `errorComponent` から `heading` を渡す）、本文の位置に `RegionError` を出す。
+  見出しは失敗の種類（`lib/errors.ts` の `errorKind`: 通信できない・サーバーの失敗・見つからない（404）・権限がない（403）・画面自体の不具合）ごとに分け、理由は `errorMessage(error)`（通信できないときはオフラインかどうかも言う。画面自体の不具合はカタログの文）にする。404 と 403 には「もう一度試す」を出さない。
+  「もう一度試す」は、まずその失敗を起こした query だけをその場で取り直す。また失敗したら、エラーとボタンのフォーカスを残したまま新しい理由を `role="alert"` で出す。取れたら Query のエラー境界を戻して loader を再実行し、画面の `h1` にフォーカスを移す。
   レイアウト自体の失敗はルートの `errorComponent`（`RootError`）が画面全体に出す。合うルートのないアドレスは `NotFound` を出す。独立した区画（3 列目など）は `react-error-boundary` で囲む。
+- **オフライン**（`lib/network.ts`、G17）: オンラインかどうかは TanStack Query の `onlineManager` 1 つに置き、Query のキャッシュとオフラインの帯が同じ状態を読む。
+  ブラウザが `navigator.onLine` と `offline` / `online` のイベントでネットワークがないと言うとき（起動時も `navigator.onLine` から始める）と、
+  API クライアントの要求が応答を受け取れなかったとき（`NetworkError`。次に応答が届くまで）にオフラインとする。
+  - レイアウトが画面の上端に `OfflineBanner`（`role="status"`）を 1 つ置き、最初から空のまま置いておくので、オフラインになると読み上げられる。安全領域の上の余白は帯が自分で取るので、その余白を取る要素より前に置く。
+  - query と mutation は `networkMode: "always"` にする。オフラインでも止めて待たずにすぐ `NetworkError` で失敗するので、区画は終わらないスピナーではなく読み込めない理由を出し、loader も待ち続けない。
+    ブラウザがオフラインのときの `NetworkError` の文言は「オフラインのため、サーバーに接続できません」（`client:api.error.offline`）になる。`NetworkError` の再試行は待たずにすぐ行い、知らせを遅らせない（`retry` は既定のままにし、loader の `queryClient.query` は再試行しない）。
+  - オンラインに戻ると、失敗していた query（表示中のもの）だけを取り直す（既定の `refetchOnReconnect` が失敗した query にだけ `"always"` を返す）。タイムラインは自分で `refetchOnReconnect: false` にしているので取り直さない（§10）。
+    `NetworkError` で失敗した画面は、`RouteError` がオンラインに戻ったときに「もう一度試す」と同じことをして読み込み直す。
+  - 通知の画面の loader は失敗しても画面を開き、一覧が見出しの下に自分の失敗を出す（`useNotifications`。読み込みの失敗はマウントで再試行しない）。
 
 ## 10. API クライアントと認証
 
@@ -258,7 +275,7 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   - ミドルウェアが、セッションのアクセストークンを `Authorization: Bearer` で付ける。最初の要求は、起動時のセッションの再開（`session.restore()`）を待ってから送る。
   - トークンを付けた要求が 401 になったら、トークンを 1 度だけ更新し、要求の写しを新しいトークンで送り直す。2 度目の 401 はそのまま失敗にする。
   - 失敗した応答は `lib/errors.ts` の `ApiError`（RFC 9457 の problem そのものに `message` を足したもの）に、通信の失敗は `NetworkError` にして投げる。
-    どちらも `message` がローカライズ済みで、そのまま表示できる。problem でない本文（プロキシの HTML など）は、クライアントのカタログの文言（`client:api.error.status`）にする。
+    どちらも `message` がローカライズ済みで、そのまま表示できる（`NetworkError` は、ブラウザがオフラインならそう言う文言になる。§9 のオフライン）。応答が届いたか届かなかったかは `lib/network.ts` に伝える。problem でない本文（プロキシの HTML など）は、クライアントのカタログの文言（`client:api.error.status`）にする。
     生成された型は失敗をすべて problem と呼ぶので、表示する文言は `errorMessage(error)` で取る。
 - **セッション**（`lib/auth/session.ts`）: アクセストークンはこのオブジェクトのメモリにだけ置き、localStorage・sessionStorage・IndexedDB・読める Cookie には書かない。
   リフレッシュトークンは HttpOnly の `__Host-my_rt` Cookie にあり、`POST /oauth/token/refresh`（`X-My-Token-Refresh: 1`、`credentials: "include"`）だけがそれを読む。
@@ -466,7 +483,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 | G14 | **空**は `EmptyState` にする。見出しは事実を短く（「まだ投稿はありません」）、説明はここに何が出るか、操作は次にできること（「ローカルのタイムラインを見る」）にする。絞り込みで空になったときは、絞り込みを外す操作を出す | レビュー |
 | G15 | **読み込み中**は、最初の 1 ページを待つ一覧ではスケルトン（`Skeleton`、見せる項目の形に合わせる）、ボタンや小さな区画ではその場の `Spinner` にし、同じ区画に両方を出さない。読み込みの名前は `aria-busy` と区画のラベル（`role="status"` の `Spinner` か視覚的に隠した文）で 1 回だけ伝える。`defaultPendingMs` より早く終わる読み込みには何も出さない | レビュー、ARIA スナップショット |
 | G16 | **エラー**は、何が起きたか・理由（`errorMessage(error)`）・次にできること（「もう一度試す」）の 3 つを出す。画面の読み込みの失敗は、その画面の `h1` を残したまま本文の位置に出し、`document.title` も画面の名前のままにする。一覧の続きや区画の失敗は、その区画の中に出して、読み込み済みの内容を消さない。利用者の操作の失敗はトースト（E2）、入力の誤りはその入力欄のエラー（`aria-invalid`・`aria-describedby`）にする。`role="alert"` は利用者の操作の結果にだけ使い、画面を開いただけの失敗には使わない | レビュー |
-| G17 | **オフライン**は外枠が 1 か所で扱う。`navigator.onLine` と通信の失敗（`NetworkError`）からオフラインと判断し、画面の上端に「オフライン」の帯（`role="status"`）を出す。オフラインの間は送信する操作を無効にせず、失敗したら下書きと outbox（§12）に残す。オンラインに戻ったら帯を消し、失敗していた区画だけを取り直す（タイムラインは取り直さない。§10） | E2E（`context.setOffline`）、レビュー |
+| G17 | **オフライン**は外枠が 1 か所で扱う。`navigator.onLine` と通信の失敗（`NetworkError`）からオフラインと判断し、画面の上端に「オフライン」の帯（`role="status"`）を出す。オフラインの間は送信する操作を無効にせず、失敗したら下書きと outbox（§12）に残す。オンラインに戻ったら帯を消し、失敗していた区画だけを取り直す（タイムラインは取り直さない。§10）。仕組みは §9 の「オフライン」 | E2E（`context.setOffline`。`e2e/offline.spec.ts`・`e2e/pwa.spec.ts`）、統合テスト（`src/offline.test.tsx`）、レビュー |
 | G18 | 4 つの状態の文言は、同じ種類のものを同じ型にする（「<対象>を読み込めませんでした：{reason}」「もう一度試す」）。新しい区画を作るときは、既存のメッセージ ID の型（`<feature>.empty.*`・`<feature>.loading`・`<feature>.failed`・`<feature>.retry`）に合わせる | レビュー |
 
 ### 16.5 文言のトーン
@@ -477,3 +494,19 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 | G20 | 英語は sentence case（`Write a post`、`Follow requests`）、ボタンと項目は動詞で始め、`Click` / `Tap` のような操作の手段を書かない。日本語は です・ます 調、ボタンと項目は「〜する」か名詞で終え（「投稿する」「フォロー」）、文の中の区切りは全角の記号（「：」「、」）にする | `make i18n-check`（カタログの lint）、レビュー |
 | G21 | 同じものは同じ語で呼ぶ。用語（投稿・ブースト・お気に入り・ブックマーク・公開範囲・ローカル・連合・CW）は [vision](../requirements/00-vision.md) と既存のカタログの語に合わせ、画面ごとに言い換えない | レビュー |
 | G22 | 確かめのダイアログは、見出しを問い（「この投稿を削除しますか？」）、本文を結果（取り消せるかどうか）、ボタンを動詞（「削除」「キャンセル」）にし、「はい / いいえ」にしない | レビュー |
+
+## 17. 通報
+
+`features/report` が、アカウントとその投稿をモデレーターに通報するダイアログを受け持つ（FR-701、FR-709）。投稿の「その他の操作」のメニュー（自分の投稿にはない）とプロフィールのメニューの「通報する」が開く。
+
+- **段**: モーダルのダイアログ（APG の dialog パターン、`@my/ui` の `Dialog`）の中で、理由 → ルール（理由がルール違反のときだけ）→ 投稿 → コメントと転送の順に 1 段ずつ出し、送信したら結果の段にする。
+  各段は見出し（`h3`。ダイアログの題が `h2`）が名前を与える `form` で、段の数（「手順 2 / 4」）を見出しの上に出す。「次へ」はブラウザの制約検証が通ってから進み、「戻る」は答えを残す。下書きはダイアログの中にだけあり、閉じると消える。
+- **フォーカス**: 段が変わるたびに、その段の見出し（`tabindex="-1"`）にフォーカスを移す。見出しはマウントしたときに Effect で自分にフォーカスする（段ごとに `key` を変える）。
+  子の Effect はダイアログの Effect より先に動くので、開いたときもダイアログ自身ではなく最初の段の見出しにフォーカスが残る。閉じると、開いたメニューのボタンにフォーカスが戻る。
+- **理由**: `spam`・`legal`・`violation`・`other` を説明付きの `RadioGroup` で選ぶ（必須）。ルール違反は引用するルールが要るので、`GET /instance` の `rules` が空のときは出さない。ルールの段では 1 つ以上を選ぶまで進めず、`role="alert"` の文で知らせる。
+- **投稿**: そのアカウントの最新のページ（`GET /accounts/{id}/statuses`、ブーストを除く）をチェックボックスの一覧にする。投稿から開いたときはその投稿を先頭に置いて選んでおき、プロフィールから開いたときは何も選ばない。
+  チェックボックスの名前は投稿の日時で、本文（CW のある投稿は CW の文だけ）を `aria-describedby` の説明にする。本文の区画は `inert` にして、リンクを Tab の通り道にしない。投稿と引用するルールはそれぞれ 20 件まで（API の上限）。
+- **コメントと転送**: コメントは任意で 1,000 文字まで（`TextArea` の文字数カウンタ）。ほかのサーバーのアカウントでは、そのサーバーにも名前を伏せて送る（`forward`）かを選ぶチェックボックスを出す（既定はオフ）。
+- **送信**: 最後の段の「通報を送信する」が `POST /reports` を送る。失敗はダイアログの中に `role="alert"` で理由を出し、答えを残す（E2）。成功したら結果の段に、モデレーターが確認することと、通報者が相手に知らされないこと、転送したならその送り先を出す。
+- **テスト**: `features/report/report.test.tsx` が、キーボードだけでの全段の操作と見出しへのフォーカス、理由とルールの必須、ルールのないサーバー、投稿の読み込みの失敗と再試行、送信の失敗、自分の投稿に出さないこと、プロフィールからのリモートのアカウントへの通報と転送を MSW で検査する。
+  E2E（`e2e/report.spec.ts`）は、キーボードだけで投稿から通報を送り、各段の見出しへのフォーカス・axe・横スクロールと、投稿の段の ARIA スナップショットを検査する。

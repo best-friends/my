@@ -18,7 +18,7 @@ CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直�
 | `limit` | 投稿（過去の投稿を含む）をフォロワー限定として扱い、公開タイムラインに出さない |
 | `restrict_posting` | 投稿・返信・ブースト・編集を禁止する |
 | `restrict_interaction` | フォロー・お気に入り・ブースト・返信を禁止する |
-| `disable_login` | ログインと API の利用を禁止し、有効なセッションとトークンを失効させる |
+| `disable_login` | アプリと API の利用を禁止し、有効なセッションとトークンを失効させる（ログイン画面では処分を確かめられる） |
 | `suspend` | 上の制限をすべて課し、プロフィールと投稿を本人以外に見せない |
 | `ban` | `suspend` と同じ制限を課し、30 日後にアカウントを削除する。解除できない |
 | `delete_statuses` | 指定した投稿を削除する。本人にも見えなくなり、連合先には本人の削除と同じ `Delete` を送る |
@@ -41,12 +41,21 @@ my admin account action lift -reason "appealed" <action id>
 - アカウントは CLI では `@username`（ローカル）、`@username@domain`（リモート）かアカウント ID で、管理 API ではアカウント ID で指定します。
 - 複数の処分は重なります（制限の和集合）。解除はその処分の制限だけを消し、期限付きの処分は期限で自然に終わります（一覧では `expired`）。
 - `disable_login`・`suspend`・`ban` が失効させたセッションとトークンは、解除しても戻りません。本人はもう一度ログインします。
+- ローカルのアカウントの `suspend` と `ban` は、フォロワーのサーバーと既知のサーバーに、プロフィールを空にして凍結を示す Actor の `Update` を送ります（Mastodon では「凍結」と表示される）。
+  解除と期限切れでは元のプロフィールの `Update` を送ります。期限切れは 5 分ごとのジョブが送るので、期限から最大 5 分遅れます（[federation.md §11.1](../architecture/federation.md#111-処分の伝播)）。
 - `delete_statuses` と `mark_statuses_sensitive` は、対象のアカウントの削除されていない投稿を 1〜100 件、`-status`（`status_ids`）で指定します。期限は付けられません。
   `delete_statuses` を解除しても消した投稿は戻りません。`mark_statuses_sensitive` を解除すると元の表示に戻ります。
 - `ban` は期限を付けられず、解除もできません。迷うときは期限付きの `suspend` を使います。
   処分から 30 日後に、1 時間ごとのジョブがアカウントを削除します（アカウントと投稿が表示から消え、連合先に `Delete` を送ります）。
 - `report_id`（`-report`）は、対象のアカウントの通報だけを指定できます。
 - `public_reason` は本人に見せる理由、`private_note` はモデレーターだけのメモです。`notify_target`（既定は真、CLI では `-no-notify` で偽）は本人に知らせるかどうかです。
+
+### 本人に見えるもの
+
+- `notify_target` が真の処分は、本人に通知（`moderation_notice`）として届きます。通知には処分の種類・理由のカテゴリ・`public_reason`・期限・状態が入り、種類とカテゴリは本人の UI 言語の表示名でも返ります。
+- 本人は `GET /api/v1/moderation/actions`（スコープ `read:accounts`、`active` で絞り込み）で自分への処分を新しい順に確かめられます。`notify_target` が偽の処分も、解除・期限切れの処分も並びます。
+- `private_note`・通報・処分した人・解除の理由は、本人には一切見せません。
+- `disable_login` と `suspend` を受けた本人は、アプリと API を使えませんが、ログイン画面（`/auth/sign_in`）にはログインでき、効いている `disable_login` / `suspend` の種類・理由・期限を確かめられます。認可（`/oauth/authorize`）はこの画面を `403` で返し、トークンを発行しません。
 
 ## ドメイン単位の処分
 
@@ -110,6 +119,8 @@ my admin report resolve -outcome dismissed <report id>
 - 担当（`assign`）は、ロールが `manage_reports` を持つローカルの利用者にだけ割り当てられます。管理 API では自分を担当にします。
 - 解決（`resolve`）の結果は、対象に処分をした `actioned` か、処分の必要がなかった `dismissed` です。解決済みの通報をもう一度解決しても結果は変わりません。
 - 担当・解決はイベント（`report_assignments`・`report_resolutions`）として残り、現在の状態は `report_states` が持ちます。
+- ローカルの通報者には、最初の解決で通知（`report_resolved`）が届きます。再開してもう一度解決しても、通知は増えません。
+  通報者は自分の通報を `GET /api/v1/reports` で一覧でき、未解決か解決済みかだけが見えます。解決の結果・処分の内容・対象への理由・担当は見えません（FR-711）。
 
 ## モデレーターへの通知と未対応の件数
 

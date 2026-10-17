@@ -13,6 +13,7 @@ const searchSchema = z.object({
 
 /** The sign-in page: it sends the browser to the server's sign-in screen (ADR-0030). */
 export const Route = createFileRoute("/login")({
+  staticData: { title: "client:login.title" },
   validateSearch: searchSchema,
   component: LoginPage,
 });

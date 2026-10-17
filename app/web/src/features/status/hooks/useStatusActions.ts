@@ -39,6 +39,8 @@ export type StatusActions = {
   delete: (() => Promise<boolean>) | null;
   /** Whether the post is being deleted. */
   isDeleting: boolean;
+  /** Whether the viewer can report the post's author: anyone's posts but the viewer's own (FR-701). */
+  canReport: boolean;
 };
 
 /** What is announced when the viewer turns `relation` on or off. */
@@ -159,5 +161,6 @@ export function useStatusActions(status: Status): StatusActions | null {
     },
     delete: isAuthor ? () => remove.mutateAsync().then(() => true, () => false) : null,
     isDeleting: remove.isPending,
+    canReport: !isAuthor,
   };
 }

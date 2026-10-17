@@ -9,6 +9,7 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/notification"
 )
@@ -49,8 +50,8 @@ type ProjectorDeps struct {
 }
 
 // RegisterProjectors registers the synchronous projectors that create notifications from the
-// graph and content events, in the transaction of the command that emits them (data-model
-// §2.1, §4.7):
+// graph, content, and moderation events, in the transaction of the command that emits them
+// (data-model §2.1, §4.7):
 //
 //   - graph.followed: follow, to the followee.
 //   - graph.follow_requested: follow_request, to the followee.
@@ -59,11 +60,18 @@ type ProjectorDeps struct {
 //     mentions; an edit notifies only the accounts it newly mentions.
 //   - content.boosted: boost, to the status's author.
 //   - content.favourited: favourite, to the status's author.
+//   - moderation.report_resolved: report_resolved, to the reporter when the reporter is a local
+//     account. It comes from the instance and has no source account. Its dedupe key is the
+//     report's (notification.ReportResolvedKey), so only the first resolution notifies: a
+//     report reopened and resolved again does not notify again.
+//   - moderation.account_action_issued: moderation_notice, to the account the action is on when
+//     the action notifies it. It comes from the instance and has no source account.
 //
 // A notification goes only to a local recipient other than its source, and not when either
 // blocks the other, the recipient mutes the source with hide_notifications, or the source has
 // unsolicited_reach (a limit on it or its domain) and the recipient does not follow it. Each notification
-// has a dedupe key unique per recipient (notification.FollowKey, MentionKey, InteractionKey),
+// has a dedupe key unique per recipient (notification.FollowKey, MentionKey, InteractionKey,
+// ModerationNoticeKey),
 // so projecting an event again, or a repeated boost or favourite, creates nothing more.
 //
 // The exclusion projectors keep notification_exclusions, which the list and the unread count
@@ -81,7 +89,7 @@ type ProjectorDeps struct {
 // notifications about a deleted status no longer appear. Notifications are events and stay
 // until the erasure job deletes them.
 //
-// Register them after the graph and content projectors.
+// Register them after the graph, content, and moderation projectors.
 func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 	p := &projector{d: d}
 	r.Register(appgraph.EventFollowed, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
@@ -166,6 +174,23 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 	r.Register(appcontent.EventFavourited, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.Favourited)
 		return p.interaction(ctx, tx, notification.TypeFavourite, ev.Status, ev.Favourite.AccountID, ev.Favourite.CreatedAt)
+	})
+	r.Register(appmoderation.EventReportResolved, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appmoderation.ReportResolved)
+		return p.notify(ctx, tx, notification.Notification{
+			RecipientAccountID: ev.Report.ReporterAccountID, Type: notification.TypeReportResolved, ReportID: ev.Report.ID,
+			DedupeKey: notification.ReportResolvedKey(ev.Report.ID), CreatedAt: ev.Resolution.ResolvedAt,
+		})
+	})
+	r.Register(appmoderation.EventAccountActionIssued, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		a := e.(appmoderation.AccountActionIssued).Action
+		if !a.NotifyTarget {
+			return nil
+		}
+		return p.notify(ctx, tx, notification.Notification{
+			RecipientAccountID: a.TargetAccountID, Type: notification.TypeModerationNotice, ModerationActionID: a.ID,
+			DedupeKey: notification.ModerationNoticeKey(a.ID), CreatedAt: a.IssuedAt,
+		})
 	})
 }
 

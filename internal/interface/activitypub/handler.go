@@ -46,6 +46,13 @@ type Graph interface {
 	Following(ctx context.Context, accountID string, p appgraph.Page) ([]graph.Edge, error)
 }
 
+// Suspensions tells the local accounts that moderation suspends (suspend, ban), whose actor is
+// served emptied and marked suspended (federation.md §11); *moderation.FederationPolicy
+// implements it.
+type Suspensions interface {
+	AccountFederationSuspended(ctx context.Context, accountID string) (bool, error)
+}
+
 // ProblemWriter writes the error response of an HTTP status, the same one the rest of the
 // server uses for that status.
 type ProblemWriter func(w http.ResponseWriter, r *http.Request, status int)
@@ -64,6 +71,8 @@ type Options struct {
 	Accounts Accounts
 	Objects  Objects
 	Graph    Graph
+	// Suspensions tells the suspended local actors; nil suspends none.
+	Suspensions Suspensions
 	// Inbox receives the activities POSTed to the inboxes; nil serves no inbox.
 	Inbox Inbox
 	// HTML serves the web client's page for profile pages (/@alice) and other single-segment

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Link, Spinner } from "@my/ui";
-import { useId } from "react";
+import { Button, Link, RegionError, Spinner } from "@my/ui";
+import { useId, useState } from "react";
 import { useConfig } from "../../../lib/config";
 import { useT } from "../../../lib/i18n";
 import { useSignOut } from "../hooks/useSignOut";
@@ -25,6 +25,7 @@ function AccountStatus() {
   const { accountDomain } = useConfig();
   const viewer = useViewer();
   const { signOut, isPending } = useSignOut();
+  const [retried, setRetried] = useState(false);
   switch (viewer.status) {
     case "loading":
       return <Spinner label={t("client:shell.loading")} />;
@@ -38,7 +39,19 @@ function AccountStatus() {
     case "error":
       return (
         <div className="flex flex-col items-start gap-2">
-          <p role="alert">{viewer.message}</p>
+          {/* Read with the page, not announced; a retry that fails again is the user's action, and an alert (G16). */}
+          <RegionError
+            headingLevel={3}
+            heading={t("client:session.account.failed")}
+            reason={viewer.message}
+            retryLabel={t("client:session.account.retry")}
+            onRetry={() => {
+              setRetried(true);
+              viewer.retry();
+            }}
+            isRetrying={viewer.isRetrying}
+            alert={retried && !viewer.isRetrying}
+          />
           <Button onPress={signOut} isPending={isPending}>
             {t("client:session.sign_out")}
           </Button>

@@ -28,8 +28,9 @@ import (
 // and closed mode refuses. It also checks that concurrent sign-ups never redeem an invite more
 // than its maximum uses, that an email verification token works exactly once (also when
 // redeemed concurrently), that a failed sign-up writes nothing, that sign-ups are rate-limited
-// per address, the invite listing and revocation, the count of pending registrations, and the
-// holders of a permission with where their moderator notifications are emailed. It uses the same harness as
+// per address, the invite listing and revocation, that a sign-up records its origin, which
+// the purge erases after the retention, the count of pending registrations, and the holders of
+// a permission with where their moderator notifications are emailed. It uses the same harness as
 // AccountRepositoryContract.
 func RegistrationRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
@@ -48,6 +49,7 @@ func RegistrationRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RateLimitsSignUpsPerAddress", registrationRateLimit},
 		{"ListsAndRevokesInvites", registrationInvites},
 		{"AdminsAreApprovedAndVerified", registrationAdmin},
+		{"RecordsAndPurgesRegistrationOrigins", registrationRecordsOrigins},
 		{"CountsPendingAndFindsModerators", registrationModerators},
 	}
 	for _, tc := range cases {

@@ -13,11 +13,13 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	appnotification "github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/domain/graph"
+	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/domain/notification"
 )
 
@@ -39,7 +41,8 @@ type NotificationFactory func(t *testing.T, opts uow.Options) NotificationHarnes
 // with the notification module's projectors and use cases, driven by the real follow, posting,
 // and interaction use cases: follow, follow request, and follow acceptance notifications;
 // mentions, also those an edit adds; boosts and favourites; never notifying an account of its
-// own actions or a remote recipient; projecting an event again, also concurrently, without
+// own actions or a remote recipient; the first resolution of a local reporter's report only;
+// projecting an event again, also concurrently, without
 // duplicates; hiding notifications across blocks and from accounts muted with
 // hide_notifications, also those notified before the block or mute, which a lifted block or
 // mute shows again; notifying of a source with unsolicited_reach only the accounts that follow
@@ -57,6 +60,7 @@ func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 		{"NotifiesMentions", notificationMentions},
 		{"NotifiesBoostsAndFavouritesOnce", notificationInteractions},
 		{"NotifiesLocalRecipientsOnly", notificationLocalOnly},
+		{"NotifiesAResolvedReportOnce", notificationReportResolved},
 		{"ProjectsAnEventOnce", notificationProjectsOnce},
 		{"AgreesOnConcurrentProjections", notificationConcurrent},
 		{"HidesBlockedAndMutedSources", notificationHides},
@@ -659,6 +663,34 @@ func notificationDeletedStatuses(t *testing.T, e *notificationEnv) {
 		summary{Type: notification.TypeFollow, Source: carol},
 	)
 	e.checkUnread(t, alice, 3)
+}
+
+func notificationReportResolved(t *testing.T, e *notificationEnv) {
+	alice, bob := e.user(t, "alice"), e.user(t, "bob")
+	resolved := func(reporter, reportID string, outcome moderation.ReportOutcome) appmoderation.ReportResolved {
+		e.clock.Advance(time.Second)
+		return appmoderation.ReportResolved{
+			Report: moderation.Report{ID: reportID, ReporterAccountID: reporter, TargetAccountID: bob},
+			Resolution: moderation.ReportResolution{
+				ID: e.ids.NewID(), ReportID: reportID, Outcome: outcome, ResolvedAt: e.clock.Now(),
+			},
+		}
+	}
+	report, missing := e.ids.NewID(), e.ids.NewID()
+	first := resolved(alice, report, moderation.OutcomeActioned)
+	// Resolving it again after a reopening, and a report of a reporter that is not a local
+	// account, notify nobody.
+	e.project(t, first, resolved(alice, report, moderation.OutcomeDismissed), resolved(missing, e.ids.NewID(), moderation.OutcomeActioned))
+	ns := e.list(t, alice)
+	if len(ns) != 1 {
+		t.Fatalf("notifications of alice = %+v, want one report_resolved", ns)
+	}
+	if n := ns[0]; n.Type != notification.TypeReportResolved || n.ReportID != report || n.SourceAccountID != "" || n.StatusID != "" ||
+		n.ModerationActionID != "" || !n.CreatedAt.Equal(first.Resolution.ResolvedAt) || n.DedupeKey != notification.ReportResolvedKey(report) {
+		t.Errorf("notification = %+v, want report_resolved of %s at %v", n, report, first.Resolution.ResolvedAt)
+	}
+	checkSummaries(t, e, bob)
+	checkSummaries(t, e, missing)
 }
 
 // contractReach is an appnotification.ReachPolicy that restricts the accounts it is told to.

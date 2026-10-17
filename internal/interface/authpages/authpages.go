@@ -13,8 +13,9 @@
 // exists.
 //
 // A signed-in user whose account cannot be used yet (a registration waiting for approval or
-// rejected, or an email address waiting for confirmation, identity.Access) sees a page that
-// says so instead of continuing to where they were going.
+// rejected, an email address waiting for confirmation, or moderation actions that keep the
+// account out of the app, identity.Access) sees a page that says so, and lists those actions,
+// instead of continuing to where they were going.
 //
 // The authorization endpoint (RFC 6749 §3.1) asks a signed-in user to consent to a third-party
 // client and answers the client by a 303 redirect to its registered redirect URI with the code
@@ -118,6 +119,11 @@ type Options struct {
 	Stylesheet string
 	// Logger logs unexpected errors; nil means slog.Default().
 	Logger *slog.Logger
+	// Moderation lists the actions that keep a signed-in user out of the app on the status
+	// page; nil lists none. UserLocales words the status page in the user's saved locale; nil
+	// words it in the request's.
+	Moderation  Moderation
+	UserLocales UserLocales
 }
 
 // Handler serves the screens.
@@ -251,7 +257,7 @@ func (h *Handler) signInPage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !access.Allowed() {
-			h.renderStatus(w, r, http.StatusOK, access, "", "")
+			h.renderStatus(w, r, http.StatusOK, session.UserID, access, nil, nil)
 			return
 		}
 		h.renderSignedIn(w, r, returnTo)

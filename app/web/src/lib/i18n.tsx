@@ -142,6 +142,9 @@ function formattingLocale(locale: string): string {
 
 type MessageValues<K extends ClientMessageKey> = keyof MessageArgs[K] extends never ? [] : [values: MessageArgs[K]];
 
+/** A client message without arguments, which a value such as a route's static data can name on its own. */
+export type PlainClientMessageKey = { [K in ClientMessageKey]: keyof MessageArgs[K] extends never ? K : never }[ClientMessageKey];
+
 /** Formats a client message to a string, with its arguments type-checked: `t("client:shell.nav.home")`. */
 export type Translate = <K extends ClientMessageKey>(id: K, ...values: MessageValues<K>) => string;
 

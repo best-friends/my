@@ -27,9 +27,32 @@ func TestValidate(t *testing.T) {
 		t.Errorf("Validate(%+v) = %v", ok, err)
 	}
 	fromInstance := ok
-	fromInstance.SourceAccountID, fromInstance.Type = "", TypeModerationNotice
+	fromInstance.SourceAccountID, fromInstance.Type, fromInstance.ModerationActionID = "", TypeModerationNotice, "m"
 	if err := fromInstance.Validate(); err != nil {
 		t.Errorf("Validate(%+v) = %v", fromInstance, err)
+	}
+	resolved := ok
+	resolved.SourceAccountID, resolved.Type, resolved.ReportID = "", TypeReportResolved, "r"
+	if err := resolved.Validate(); err != nil {
+		t.Errorf("Validate(%+v) = %v", resolved, err)
+	}
+	noReport := resolved
+	noReport.ReportID = ""
+	strayReport := ok
+	strayReport.ReportID = "r"
+	for _, n := range []Notification{noReport, strayReport} {
+		if err := n.Validate(); err == nil {
+			t.Errorf("Validate(%+v) = nil, want an error for the report", n)
+		}
+	}
+	noAction := fromInstance
+	noAction.ModerationActionID = ""
+	strayAction := ok
+	strayAction.ModerationActionID = "m"
+	for _, n := range []Notification{noAction, strayAction} {
+		if err := n.Validate(); err == nil {
+			t.Errorf("Validate(%+v) = nil, want an error for the moderation action", n)
+		}
 	}
 	self := ok
 	self.SourceAccountID = "a"
@@ -56,6 +79,8 @@ func TestKeys(t *testing.T) {
 		InteractionKey(TypeBoost, "s1", "a1"):     "boost:s1:a1",
 		AdminReportKey("r1"):                      "admin_report:r1",
 		AdminSignUpKey("u1"):                      "admin_sign_up:u1",
+		ReportResolvedKey("r1"):                   "report_resolved:r1",
+		ModerationNoticeKey("m1"):                 "moderation_notice:m1",
 	} {
 		if got != want {
 			t.Errorf("key = %q, want %q", got, want)

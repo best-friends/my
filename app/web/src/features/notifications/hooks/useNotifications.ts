@@ -4,29 +4,33 @@ import { useEffect, useRef, useState } from "react";
 import { useApi, useSessionStatus } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import {
-  type Notification,
   type NotificationFilter,
   type NotificationMarker,
   notificationMarkerQueryOptions,
   notificationsQueryOptions,
   updateNotificationMarker,
 } from "../api/notifications";
+import { groupNotifications, type NotificationGroup } from "./groupNotifications";
 
 /** The notifications page's list. */
 export type NotificationList =
   | { status: "signed-out" }
   /** The session is resuming, or the first page is loading. */
   | { status: "loading" }
-  /** The first page failed; `message` is localized. */
-  | { status: "error"; message: string; retry: () => void }
+  /** The first page failed; `message` is localized. `isRetrying` while `retry` loads it again. */
+  | { status: "error"; message: string; retry: () => void; isRetrying: boolean }
   | {
       status: "loaded";
-      items: readonly Notification[];
+      /** The rows: the loaded notifications, with the favourites and the boosts of each post grouped. */
+      items: readonly NotificationGroup[];
       hasMore: boolean;
       isLoadingMore: boolean;
       loadMore: () => void;
-      /** Whether a notification was unread when the page opened, so it stays marked as new while the page is open. */
-      isUnread: (notification: Notification) => boolean;
+      /**
+       * Whether a row was unread when the page opened, so it stays marked as new while the page is open: a
+       * group is unread when its newest notification is.
+       */
+      isUnread: (group: NotificationGroup) => boolean;
     };
 
 /** Whether `id` comes after the marker: IDs are UUIDv7 strings, which sort in the order they were made. */
@@ -79,11 +83,14 @@ export function useNotifications(filter: NotificationFilter): NotificationList {
   const api = useApi();
   const session = useSessionStatus();
   const signedIn = session === "signed-in";
-  const list = useInfiniteQuery({ ...notificationsQueryOptions(api, filter), enabled: signedIn });
+  // The route's loader has just tried the first page; a failure stays until the retry button or the return
+  // online (lib/query.ts) instead of being tried again as the list mounts.
+  const list = useInfiniteQuery({ ...notificationsQueryOptions(api, filter), enabled: signedIn, retryOnMount: false });
   const marker = useQuery({ ...notificationMarkerQueryOptions(api), enabled: signedIn });
   const markerAtOpen = useMarkerAtOpen(marker.data);
-  const items = list.data?.pages.flatMap((page) => page.items) ?? [];
-  useMarkRead(signedIn && filter === "all" ? items[0]?.id : undefined, marker.data);
+  const notifications = list.data?.pages.flatMap((page) => page.items) ?? [];
+  // The marker is a position among the notifications, not the rows: it moves to the newest one.
+  useMarkRead(signedIn && filter === "all" ? notifications[0]?.id : undefined, marker.data);
 
   if (session === "signed-out") return { status: "signed-out" };
   if (list.isError && list.data === undefined) {
@@ -93,17 +100,18 @@ export function useNotifications(filter: NotificationFilter): NotificationList {
       retry: () => {
         void list.refetch();
       },
+      isRetrying: list.isFetching,
     };
   }
   if (list.data === undefined) return { status: "loading" };
   return {
     status: "loaded",
-    items,
+    items: groupNotifications(notifications),
     hasMore: list.hasNextPage,
     isLoadingMore: list.isFetchingNextPage,
     loadMore: () => {
       if (!list.isFetchingNextPage) void list.fetchNextPage();
     },
-    isUnread: (notification) => markerAtOpen !== null && isAfter(notification.id, markerAtOpen),
+    isUnread: (group) => markerAtOpen !== null && isAfter(group.notifications[0].id, markerAtOpen),
   };
 }

@@ -130,6 +130,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeReadNotifications() string {
 	return l.format("server:auth.authorize.scope.read_notifications", nil)
 }
 
+// ServerAuthAuthorizeScopeReadReports formats "server:auth.authorize.scope.read_reports". Permission (OAuth scope read:reports) listed on the authorization page.
+//
+//	en: Read the reports you filed and whether they are resolved
+func (l *Localizer) ServerAuthAuthorizeScopeReadReports() string {
+	return l.format("server:auth.authorize.scope.read_reports", nil)
+}
+
 // ServerAuthAuthorizeScopeReadStatuses formats "server:auth.authorize.scope.read_statuses". Permission (OAuth scope read:statuses) listed on the authorization page.
 //
 //	en: Read posts and timelines
@@ -480,6 +487,27 @@ func (l *Localizer) ServerAuthSignedInTitle() string {
 	return l.format("server:auth.signed_in.title", nil)
 }
 
+// ServerAuthStatusActionEndsIn formats "server:auth.status.action_ends_in". When a moderation action on the user's account ends, on the page of a signed-in user whose account is restricted. {days} is the time left, rounded up to whole days.
+//
+//	en: {days, plural, one {Ends in # day} other {Ends in # days}}
+func (l *Localizer) ServerAuthStatusActionEndsIn(days int) string {
+	return l.format("server:auth.status.action_ends_in", map[string]any{"days": days})
+}
+
+// ServerAuthStatusActionReason formats "server:auth.status.action_reason". The reason category of a moderation action, on the page of a signed-in user whose account is restricted. {category} is the category's label (for example, Spam).
+//
+//	en: Reason: {category}
+func (l *Localizer) ServerAuthStatusActionReason(category string) string {
+	return l.format("server:auth.status.action_reason", map[string]any{"category": category})
+}
+
+// ServerAuthStatusActionUntilLifted formats "server:auth.status.action_until_lifted". Says that a moderation action on the user's account has no end date, on the page of a signed-in user whose account is restricted.
+//
+//	en: Lasts until a moderator lifts it
+func (l *Localizer) ServerAuthStatusActionUntilLifted() string {
+	return l.format("server:auth.status.action_until_lifted", nil)
+}
+
 // ServerAuthStatusPending formats "server:auth.status.pending". Explains that a moderator has not yet approved the registration and that the app cannot be used until then.
 //
 //	en: Your registration is waiting for a moderator's approval. You can sign in, but you can use the app only after it is approved.
@@ -520,6 +548,20 @@ func (l *Localizer) ServerAuthStatusResendSubmit() string {
 //	en: We sent a new link to {email}.
 func (l *Localizer) ServerAuthStatusResent(email string) string {
 	return l.format("server:auth.status.resent", map[string]any{"email": email})
+}
+
+// ServerAuthStatusRestricted formats "server:auth.status.restricted". Explains to a signed-in user that moderation actions (login disabled, suspension) keep them out of the app; the list of the actions follows.
+//
+//	en: A moderator has taken action on your account, so you cannot use the app. These actions are in effect:
+func (l *Localizer) ServerAuthStatusRestricted() string {
+	return l.format("server:auth.status.restricted", nil)
+}
+
+// ServerAuthStatusRestrictedTitle formats "server:auth.status.restricted_title". Title and heading of the page a signed-in user sees while a moderation action keeps their account out of the app.
+//
+//	en: Your account is restricted
+func (l *Localizer) ServerAuthStatusRestrictedTitle() string {
+	return l.format("server:auth.status.restricted_title", nil)
 }
 
 // ServerAuthStatusTitle formats "server:auth.status.title". Title and heading of the page a signed-in user sees while their account cannot be used yet (waiting for approval or email confirmation, or rejected).
@@ -1031,6 +1073,20 @@ func (l *Localizer) ServerMailVerifyEmailBody(host string, hours int, url string
 //	en: Confirm your email address for {host}
 func (l *Localizer) ServerMailVerifyEmailSubject(host string) string {
 	return l.format("server:mail.verify_email.subject", map[string]any{"host": host})
+}
+
+// ServerModerationActionCategory formats "server:moderation.action.category". Label of the reason category that a moderator chose for an action on the user's own account. {category} is the category.
+//
+//	en: {category, select, spam {Spam} legal {Legal reasons} violation {Violation of the instance's rules} other {Other}}
+func (l *Localizer) ServerModerationActionCategory(category string) string {
+	return l.format("server:moderation.action.category", map[string]any{"category": category})
+}
+
+// ServerModerationActionKind formats "server:moderation.action.kind". Label of the kind of a moderation action on the user's own account, in the notice of the action and the list of the user's actions. {kind} is the kind; the label must make sense whether or not the action is still in effect.
+//
+//	en: {kind, select, warn {Warning} mark_statuses_sensitive {Posts marked as sensitive} delete_statuses {Posts deleted} force_sensitive {Media always marked as sensitive} limit {Limited: posts shown to followers only and kept off the public timelines} restrict_posting {No posting, replying, boosting, or editing} restrict_interaction {No following, favouriting, boosting, or replying} disable_login {Login disabled} suspend {Suspended: no use of the app, and the profile and posts are hidden} ban {Banned: the account is deleted} other {Moderation action}}
+func (l *Localizer) ServerModerationActionKind(kind string) string {
+	return l.format("server:moderation.action.kind", map[string]any{"kind": kind})
 }
 
 // ServerPreviewAvatarAlt formats "server:preview.avatar_alt". Alt text of a profile's avatar in a link preview (og:image:alt) when the avatar is the preview image. {name} is the display name, or the username when there is none.

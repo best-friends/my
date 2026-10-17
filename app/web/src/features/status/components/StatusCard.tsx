@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, BoostIcon, ContentWarning, ExternalLinkIcon, Link, MediaGrid, PostCard, PostContent } from "@my/ui";
+import { Avatar, BoostIcon, ContentWarning, ExternalLinkIcon, Link, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
@@ -19,6 +19,14 @@ export type StatusCardProps = {
 
 /** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
 const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
+
+/**
+ * A link to the post on its time: muted like the other details of the header (G6) and underlined only on
+ * hover and focus, so that a feed is no column of underlines. It is no running text, so no underline is
+ * needed to tell it from the words around it. It is at least 24 px high (D4).
+ */
+const timeLink =
+  "inline-flex min-h-6 items-center text-fg-muted no-underline data-hovered:text-fg-muted data-hovered:underline data-focus-visible:underline";
 
 /**
  * One status: the hook's view of it placed into the slots of PostCard, with the action bar. Its names link
@@ -43,7 +51,7 @@ export function StatusCard({ status, variant = "compact", onDeleted }: StatusCar
     variant === "focused" ? (
       <time dateTime={view.time.dateTime}>{view.time.absolute}</time>
     ) : (
-      <Link href={view.path} className="text-fg-muted">
+      <Link href={view.path} className={timeLink}>
         <time dateTime={view.time.dateTime} title={view.time.absolute}>
           {view.time.relative}
         </time>
@@ -73,22 +81,19 @@ export function StatusCard({ status, variant = "compact", onDeleted }: StatusCar
         ),
       })}
       avatar={
-        // React Aria's Link cannot leave the tab order, so the picture is a link of its own to the same
-        // profile as the name, and named by it.
-        <Link href={view.author.href} aria-label={view.author.name} className="block rounded-full">
-          <Avatar src={view.author.avatar} name={view.author.name} decorative />
-        </Link>
+        // The same profile as the name, for the pointer: out of the tab order and hidden from screen
+        // readers, which reach it by the name (one tab stop per profile). React Aria's Link does not take
+        // `aria-hidden`, so an element around it hides it.
+        <div aria-hidden="true">
+          <Link href={view.author.href} excludeFromTabOrder className="block rounded-full">
+            <Avatar src={view.author.avatar} name={view.author.name} decorative />
+          </Link>
+        </div>
       }
       author={
-        <Link href={view.author.href} className={nameLink}>
-          <>
-            <span dir="auto" className="font-semibold">
-              {view.author.name}
-            </span>{" "}
-            <span dir="ltr" className="text-sm text-fg-muted">
-              {view.author.handle}
-            </span>
-          </>
+        // A block, so that the name and the handle inside are cut to the room of the header's row.
+        <Link href={view.author.href} className={`${nameLink} block min-w-0`}>
+          <PostCardAuthor name={view.author.name} handle={view.author.handle} />
         </Link>
       }
       time={time}

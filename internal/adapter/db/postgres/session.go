@@ -19,7 +19,7 @@ func (r *IdentityRepository) InsertSession(ctx context.Context, tx uow.Tx, s ide
 		return err
 	}
 	err = q.InsertSession(ctx, postgresgen.InsertSessionParams{
-		ID: s.ID, UserID: s.UserID, TokenHash: s.TokenHash, UserAgent: toNullString(s.UserAgent), Ip: toNullString(s.IP),
+		ID: s.ID, UserID: s.UserID, TokenHash: s.TokenHash,
 		CreatedAt: s.CreatedAt, ExpiresAt: s.ExpiresAt,
 	})
 	return wrap(err, "insert session")
@@ -55,7 +55,6 @@ func (r *IdentityRepository) FindUnrevokedSession(ctx context.Context, tokenHash
 	}
 	s := identity.Session{
 		ID: row.ID, UserID: row.UserID, TokenHash: row.TokenHash,
-		UserAgent: fromNullString(row.UserAgent), IP: fromNullString(row.Ip),
 		CreatedAt: utc(row.CreatedAt), ExpiresAt: utc(row.ExpiresAt),
 	}
 	a := identity.SessionActivity{SessionID: row.ID}

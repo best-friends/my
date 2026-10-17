@@ -4,7 +4,9 @@
 // button that other features show next to an account. Routes and other features use it through this file
 // only (web-client.md A3).
 export { type Account, accountQueryOptions, followListQueryOptions } from "./api/accounts";
+export { FollowListSkeleton } from "./components/FollowListSkeleton";
 export { FollowListView } from "./components/FollowListView";
 export { ProfileView } from "./components/ProfileView";
 export { RelationshipActions } from "./components/RelationshipActions";
+export { isolate } from "./hooks/useProfile";
 export { useRelationship } from "./hooks/useRelationship";

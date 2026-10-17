@@ -26,6 +26,7 @@ func LDContext() []any {
 			"featuredTags":              map[string]string{"@id": "toot:featuredTags", "@type": "@id"},
 			"discoverable":              "toot:discoverable",
 			"indexable":                 "toot:indexable",
+			"suspended":                 "toot:suspended",
 			"schema":                    "http://schema.org#",
 			"PropertyValue":             "schema:PropertyValue",
 			"value":                     "schema:value",
@@ -74,6 +75,31 @@ func (d ActivityDocument) Embedded() ActivityDocument {
 
 // Marshal returns the JSON of d, the bytes every delivery of it sends.
 func (d ActivityDocument) Marshal() ([]byte, error) { return json.Marshal(d) }
+
+// FlagDocument is the Flag that forwards a report to the server of the reported account
+// (federation.md §11), in the shape that Mastodon sends and reads: the instance actor as its
+// actor, the reported actor and statuses as its object, and the comment as plain-text content.
+// It has no audience and names nothing of the reporter.
+type FlagDocument struct {
+	Context []any        `json:"@context"`
+	ID      IRI          `json:"id"`
+	Type    ActivityType `json:"type"`
+	Actor   IRI          `json:"actor"`
+	Content string       `json:"content"`
+	Object  []IRI        `json:"object"`
+}
+
+// NewFlagDocument returns the Flag id of actor about the reported actor target and its
+// statuses, with the comment as its content.
+func NewFlagDocument(id, actor, target IRI, statuses []IRI, comment string) FlagDocument {
+	return FlagDocument{
+		Context: LDContext(), ID: id, Type: ActivityFlag, Actor: actor, Content: comment,
+		Object: append([]IRI{target}, statuses...),
+	}
+}
+
+// Marshal returns the JSON of d, the bytes every delivery of it sends.
+func (d FlagDocument) Marshal() ([]byte, error) { return json.Marshal(d) }
 
 // ObjectDocument is the part of an object document that every kind shares: its identity, author,
 // and addressing. A Note adds its body in NoteDocument.
@@ -191,11 +217,33 @@ type ActorDocument struct {
 	Tag                       []any              `json:"tag"`
 	Attachment                []PropertyValue    `json:"attachment"`
 	Endpoints                 map[string]IRI     `json:"endpoints"`
+	// Suspended marks an actor that moderation suspended (Mastodon's toot:suspended); it is
+	// left out otherwise.
+	Suspended bool `json:"suspended,omitempty"`
 }
 
 // Embedded returns d without its context, to embed it in an activity.
 func (d ActorDocument) Embedded() ActorDocument {
 	d.Context = nil
+	return d
+}
+
+// Suspend returns d as a suspended actor is published (federation.md §11.1, ADR-0036): marked
+// suspended, with the profile emptied (name, summary, fields, tags) and nothing that invites
+// following or discovery, while the id, the collections, the inboxes, and the key stay, so that
+// servers can still address the actor and verify its signatures.
+func (d ActorDocument) Suspend() ActorDocument {
+	empty, no := "", false
+	d.Name, d.Summary = &empty, &empty
+	d.Tag, d.Attachment = []any{}, []PropertyValue{}
+	d.ManuallyApprovesFollowers = false
+	if d.Discoverable != nil {
+		d.Discoverable = &no
+	}
+	if d.Indexable != nil {
+		d.Indexable = &no
+	}
+	d.Suspended = true
 	return d
 }
 

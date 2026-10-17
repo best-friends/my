@@ -12,9 +12,9 @@ import (
 type Type string
 
 // Notification types. The notification module generates follow, follow_request,
-// follow_accepted, mention, boost, and favourite from the graph and content events;
-// poll_closed and moderation_notice belong to the modules that close polls and act on reports.
-// admin_report and admin_sign_up go to the moderators whose roles grant the permission they need
+// follow_accepted, mention, boost, and favourite from the graph and content events, and
+// moderation_notice and report_resolved from the moderation events; poll_closed belongs to the
+// module that closes polls. admin_report and admin_sign_up go to the moderators whose roles grant the permission they need
 // (ModeratorPermission).
 const (
 	TypeFollow           Type = "follow"
@@ -25,6 +25,7 @@ const (
 	TypeFavourite        Type = "favourite"
 	TypePollClosed       Type = "poll_closed"
 	TypeModerationNotice Type = "moderation_notice"
+	TypeReportResolved   Type = "report_resolved"
 	TypeAdminReport      Type = "admin_report"
 	TypeAdminSignUp      Type = "admin_sign_up"
 )
@@ -32,14 +33,14 @@ const (
 // Types are every notification type, in a stable order.
 var Types = []Type{
 	TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
-	TypePollClosed, TypeModerationNotice, TypeAdminReport, TypeAdminSignUp,
+	TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 }
 
 // Valid reports whether t is a known notification type.
 func (t Type) Valid() bool {
 	switch t {
 	case TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
-		TypePollClosed, TypeModerationNotice, TypeAdminReport, TypeAdminSignUp:
+		TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp:
 		return true
 	}
 	return false
@@ -54,10 +55,10 @@ type Notification struct {
 	ID                 string
 	RecipientAccountID string
 	Type               Type
-	SourceAccountID    string // "" for moderation_notice and the admin types, which come from the instance
+	SourceAccountID    string // "" for moderation_notice, report_resolved, and the admin types, which come from the instance
 	StatusID           string // "" unless the notification is about a status
 	ModerationActionID string // "" unless the notification is a moderation_notice
-	ReportID           string // "" unless the notification is an admin_report
+	ReportID           string // "" unless the notification is a report_resolved or an admin_report
 	SubjectUserID      string // "" unless the notification is an admin_sign_up: the user who signed up
 	DedupeKey          string
 	CreatedAt          time.Time
@@ -82,6 +83,12 @@ func (n Notification) Validate() error {
 	if n.SourceAccountID == n.RecipientAccountID {
 		return ErrSelfNotification
 	}
+	if (n.Type == TypeReportResolved || n.Type == TypeAdminReport) != (n.ReportID != "") {
+		return errors.New("notification: a report_resolved or an admin_report, and only they, name a report")
+	}
+	if (n.Type == TypeModerationNotice) != (n.ModerationActionID != "") {
+		return errors.New("notification: a moderation_notice, and only it, names a moderation action")
+	}
 	switch {
 	case n.Type == TypeAdminReport && (n.ReportID == "" || n.SourceAccountID != ""),
 		n.Type == TypeAdminSignUp && (n.SubjectUserID == "" || n.SourceAccountID != ""):
@@ -102,6 +109,15 @@ func MentionKey(statusID string) string { return string(TypeMention) + ":" + sta
 // source account, so that undoing and repeating the interaction does not notify again.
 func InteractionKey(t Type, statusID, sourceAccountID string) string {
 	return string(t) + ":" + statusID + ":" + sourceAccountID
+}
+
+// ReportResolvedKey is the dedupe key of a report_resolved notification: one per report, so
+// that resolving a reopened report again does not notify the reporter again.
+func ReportResolvedKey(reportID string) string { return string(TypeReportResolved) + ":" + reportID }
+
+// ModerationNoticeKey is the dedupe key of a moderation_notice notification: one per action.
+func ModerationNoticeKey(actionID string) string {
+	return string(TypeModerationNotice) + ":" + actionID
 }
 
 // Permission is a permission of the roles of the identity module (role_permissions.permission)

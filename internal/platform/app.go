@@ -362,6 +362,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Messages:                 a.Messages,
 		BaseURL:                  "https://" + cfg.Host,
 	})
+	// The sign-in and registration origins are erased after their retention (ADR-0038).
+	identity.NewOriginPurger(identity.OriginPurgeDeps{
+		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock,
+	}).RegisterJobs(a.Handlers, a.Scheduler)
 	graph.RegisterProjectors(a.Projectors, follows)
 	a.Graph = graph.NewService(graph.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: follows, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
@@ -448,11 +452,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph, Inbox: a.Inbox,
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
+		Suspensions: a.ModerationPolicy,
 	}).Register(a)
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
+		Moderation: a.Moderation, UserLocales: a.Identity,
 	}).Register(a)
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {
@@ -472,8 +478,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
-		Moderation: a.Moderation, UserAccounts: a.Accounts,
-		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy,
+		Moderation: a.Moderation, UserAccounts: a.Accounts, FiledReports: a.Moderation,
+		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
 		Rules:        a.Instance,
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity,
@@ -497,6 +503,13 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) qu
 	federation.RegisterBlockProjectors(a.Projectors, federation.RecorderDeps{
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
 	})
+	federation.RegisterSuspensionProjectors(a.Projectors, federation.RecorderDeps{
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host, Accounts: a.Accounts,
+	})
+	// Forwarded reports (FR-709) are Flags of the instance actor.
+	federation.RegisterReportProjectors(a.Projectors, federation.RecorderDeps{
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
+	}, a.Accounts)
 	return outbox
 }
 
@@ -508,8 +521,10 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
 		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph,
 		Blocks:  a.Graph,
+		Reports: a.Moderation,
 		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
+		Suspensions: a.ModerationPolicy,
 	})
 	a.FanOut.RegisterJobs(a.Handlers)
 }
