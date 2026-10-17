@@ -461,6 +461,23 @@ func followPages(t *testing.T, e *followEnv) {
 			t.Errorf("%s pages = %v, want %v", name, got, fans)
 		}
 	}
+
+	// The batches that jobs walk all followers in end with an empty cursor.
+	var got []string
+	before := ""
+	for range 4 {
+		ids, next, err := e.graph.ActiveFollowerIDs(ctx, star, before, 2)
+		if err != nil {
+			t.Fatalf("ActiveFollowerIDs = %v", err)
+		}
+		got = append(got, ids...)
+		if before = next; next == "" {
+			break
+		}
+	}
+	if !slices.Equal(got, fans) || before != "" {
+		t.Errorf("ActiveFollowerIDs batches = %v (cursor %q), want %v", got, before, fans)
+	}
 }
 
 func followRejectsInvalid(t *testing.T, e *followEnv) {

@@ -349,6 +349,24 @@ func (s *Service) FindByID(ctx context.Context, id string) (Actor, error) {
 	return s.actor(ctx, a)
 }
 
+// RemoteInbox is where a remote actor receives activities, from the newest snapshot of its
+// document.
+type RemoteInbox struct {
+	InboxURL string
+	// SharedInboxURL is "" when the actor declares no shared inbox.
+	SharedInboxURL string
+}
+
+// RemoteInbox returns the inboxes of a remote actor, for delivery. It fails with ErrNotFound
+// for a local account and for a remote one that has never been fetched.
+func (s *Service) RemoteInbox(ctx context.Context, accountID string) (RemoteInbox, error) {
+	h, err := s.d.Repository.FindRemoteHead(ctx, accountID)
+	if err != nil {
+		return RemoteInbox{}, err
+	}
+	return RemoteInbox{InboxURL: h.InboxURL, SharedInboxURL: h.SharedInboxURL}, nil
+}
+
 // AccountDomain returns the domain of an account (account.LocalDomain for a local one). It
 // fails with ErrNotFound when there is none.
 func (s *Service) AccountDomain(ctx context.Context, id string) (string, error) {

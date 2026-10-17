@@ -54,6 +54,8 @@ type Repository interface {
 	LifecycleState(ctx context.Context, tx uow.Tx, accountID string) (account.LifecycleState, error)
 	UpsertLifecycleState(ctx context.Context, tx uow.Tx, s account.LifecycleState) error
 	DeleteAllLifecycleStates(ctx context.Context, tx uow.Tx) error
+	// UpsertRemoteHead points a remote actor's head at its newest snapshot.
+	UpsertRemoteHead(ctx context.Context, tx uow.Tx, h account.RemoteHead) error
 
 	// Projection sources, in a stable order, for rebuilding the projections.
 
@@ -89,6 +91,9 @@ type Repository interface {
 	FindCurrentProfile(ctx context.Context, accountID string) (account.ProfileRevision, error)
 	// FindLifecycleState returns the projected state; ErrNotFound means the account is active.
 	FindLifecycleState(ctx context.Context, accountID string) (account.LifecycleState, error)
+	// FindRemoteHead returns the head of a remote actor; ErrNotFound means the account is local
+	// or has never been fetched.
+	FindRemoteHead(ctx context.Context, accountID string) (account.RemoteHead, error)
 	// ListKeys returns an account's public keys, oldest first.
 	ListKeys(ctx context.Context, accountID string) ([]account.Key, error)
 	// FindSealedPrivateKey returns the sealed private key of a local actor's key.

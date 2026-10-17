@@ -217,7 +217,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | --- | --- | --- |
 | `content.status_created` | `Create` | §7.2 の公開範囲ごとの宛先 |
 | `content.status_revised` | `Update` | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー。[data-model §7](data-model.md#7-公開範囲と配送)） |
-| `content.status_deleted` | `Delete`（`Tombstone`） | 元の `Create` の `deliveries` の inbox |
+| `content.status_deleted` | `Delete`（`Tombstone`） | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー） |
 | `content.boosted` / `content.boost_retracted`（`Federates` のときだけ） | `Announce` / `Undo Announce` | ブーストした人のリモートフォロワー + 元投稿の作者（リモートなら） |
 | `content.favourited` / `content.unfavourited`（リモートの投稿だけ） | `Like` / `Undo Like` | 投稿の作者の inbox |
 | `graph.follow_requested` / `graph.followed`（相手がリモート） | `Follow` | 相手の inbox |
@@ -228,16 +228,28 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | プロフィールの版（`account`） | `Update`（`Person`） | リモートフォロワーの inbox |
 | アカウントの削除（`deleted`） | `Delete`（`Person`） | リモートフォロワーの inbox + 既知のドメインの shared inbox（[data-model §8](data-model.md#8-削除と消去)） |
 
-- `local` 投稿のブースト（`Boost.Federates` が偽）は記録しません（ADR-0017）。
+- 記録するのはローカルの投稿・ブーストの活動だけです。リモートの投稿のイベントと、`local` 投稿のブースト（`Boost.Federates` が偽）は記録しません（ADR-0017）。
+- projector は表の 1 行につき 1 つです（`federation.RegisterOutboundProjectors`）。送信する活動を増やすときは、その活動を送るユースケースと一緒に projector を足します。
+- `inline` のキュー（テストと開発用）はトランザクションでの投入ができないので、`queue.AfterCommit` がコミットの後に投入します。
 - アクティビティの文書は `federation.fanout` が 1 回だけ組み立て、`outbound_activity_documents` に保存します。すべての配送とリトライが同じ本文を送ります（再試行で内容が変わらず、消去後の `Delete` も送れる）。
 - 投稿の文書は、イベントが指す版から組み立てます（後の編集で内容が変わらない）。
 
 ### 7.2 展開（fan-out）
 
-`federation.fanout`（ペイロードは `outbound_activity_id` とカーソル）が、宛先を一定件数（500 アカウント）ずつ算出します。
+`federation.fanout`（ペイロードは `outbound_activity_id`、`Create` / `Update` が示す版の `revision_id`、カーソル）が、宛先を一定件数（500 件）ずつ算出します。
+カーソルは宛先の出どころ（フェーズ）とその中の位置で、1 つのジョブは 1 つのフェーズの 1 回分だけを処理します。
 
-1. 宛先のアカウントを集める: 作者の承認済みのリモートフォロワー（`graph` の公開 API をカーソルで）と、版のメンション先・宛先。
-2. 公開範囲の規則で絞る: `content.CanView`（`ContextDelivery`、[visibility.md](visibility.md)）を、宛先のドメインごとに集約した関係で判定する。
+| アクティビティ | フェーズ（順に） |
+| --- | --- |
+| `Create` | 版のメンション先 → 作者の承認済みのフォロワー |
+| `Update` / `Delete` | 元の `Create` の `deliveries` → （`public` / `unlisted` だけ）その時点のフォロワー |
+| `Announce` / `Undo Announce` | ブーストした人の承認済みのフォロワー → 元投稿の作者 |
+
+1. 宛先のアカウントを集める: 作者の承認済みのフォロワー（`graph` の公開 API をカーソルで）、版のメンション先、元投稿の作者。ローカルのアカウントは inbox を持たないので落ちます。
+2. 公開範囲の規則で絞る: `content.CanView`（`ContextDelivery`、[visibility.md](visibility.md)）を宛先のアカウントごとに判定する。
+   - フォロワーは `Follow = active` として判定します（ブロックは両方向のフォローを同じトランザクションで終わらせるので、承認済みのフォロワーとの間にブロックはありません）。メンション先は `graph` の公開 API から関係（フォロー・ブロック）を読みます。
+   - ブーストは「ブーストした人の、ブーストの公開範囲の投稿」として判定し、元投稿の作者をメンション先として扱います。
+   - `Delete` は対象が消えたことしか伝えないので判定しません。
    - `local` は承認済みのフォロワーだけで、**フォロワーでないリモートのメンション先には送りません**（ADR-0017）。
    - `local` 投稿の文書の `tag` には、フォロワーでないリモートのアカウントへの `Mention` を入れません（ADR-0035）。本文のリンクは残します。
 3. inbox を決める: アカウントの `shared_inbox_url`（無ければ `inbox_url`）。同じ inbox は 1 つにまとめます（shared inbox への集約、NFR-COST-5、[ActivityPub §7.1.3](https://www.w3.org/TR/activitypub/#shared-inbox-delivery)）。

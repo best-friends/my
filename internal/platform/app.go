@@ -31,6 +31,7 @@ import (
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/instance"
@@ -125,6 +126,9 @@ type App struct {
 	Previews *content.Previews
 	// Scheduler enqueues the periodic jobs for the worker role.
 	Scheduler *queue.Scheduler
+	// FanOut turns the outbound activities that the federation projectors record into
+	// deliveries (docs/architecture/federation.md §7).
+	FanOut *federation.FanOut
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -200,6 +204,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feeds        timeline.Repository
 		notifs       notification.Repository
 		medias       content.MediaRepository
+		feds         federation.Repository
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -213,6 +218,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs = d.NotificationRepository()
+		feds = d.FederationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -229,6 +235,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs = d.NotificationRepository()
+		feds = d.FederationRepository()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -347,6 +354,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Streams = stream.NewHub(stream.HubOptions{})
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
+	a.setUpFederation(cfg, feds)
 
 	if opts.Version == "" {
 		opts.Version = "dev"
@@ -401,6 +409,28 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
+}
+
+// setUpFederation registers the projectors that record outbound activities, after those of the
+// modules whose events they follow, and the fan-out of their deliveries (federation.md §7).
+func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) {
+	outbox := a.Outbox
+	if outbox == nil {
+		// The inline queue has no transactional enqueue; its jobs are enqueued after the commit.
+		outbox = queue.AfterCommit(a.Projectors, a.Jobs, a.Logger)
+	}
+	federation.RegisterOutboundProjectors(a.Projectors, federation.RecorderDeps{
+		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
+	})
+	a.FanOut = federation.NewFanOut(federation.FanOutDeps{
+		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox,
+		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
+		Accounts: a.Accounts, Graph: a.Graph,
+		// No domain blocks exist yet; the fan-out still goes through the policy port.
+		Domains: federation.NoDomainRestrictions{},
+		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, Logger: a.Logger,
+	})
+	a.FanOut.RegisterJobs(a.Handlers)
 }
 
 // timelineLanguages returns the languages that a user's timelines show (FR-208); a user without

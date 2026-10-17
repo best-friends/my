@@ -61,6 +61,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"UpdatesLocalProfiles", accountUpdatesLocalProfiles},
 		{"RecordsLifecycleEvents", accountRecordsLifecycle},
 		{"CountsLocalUsers", accountCountsLocalUsers},
+		{"ReadsRemoteInboxes", accountReadsRemoteInboxes},
 		{"EnsuresBuiltinRoles", accountEnsuresBuiltinRoles},
 		{"CreatesAnAdmin", accountCreatesAdmin},
 		{"RejectsATakenAdminUsernameOrEmail", accountRejectsTakenAdmin},
@@ -796,4 +797,34 @@ func snapshotAccountProjections(t *testing.T, repo appaccount.Repository) accoun
 		t.Fatalf("ListLifecycleStates = %v", err)
 	}
 	return p
+}
+
+func accountReadsRemoteInboxes(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	local := e.register(t, "inboxless").AccountID
+	if _, err := e.accounts.RemoteInbox(ctx, local); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("RemoteInbox(local) = %v, want ErrNotFound", err)
+	}
+	remote := e.ids.NewID()
+	upsert := func(h account.RemoteHead) {
+		t.Helper()
+		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return e.h.Accounts.UpsertRemoteHead(ctx, tx, h) })
+		if err != nil {
+			t.Fatalf("UpsertRemoteHead: %v", err)
+		}
+	}
+	head := account.RemoteHead{
+		AccountID: remote, SnapshotID: e.ids.NewID(), InboxURL: "https://remote.example/users/r/inbox",
+		SharedInboxURL: "https://remote.example/inbox", LastFetchedAt: e.clock.Now(),
+	}
+	upsert(head)
+	if got, err := e.accounts.RemoteInbox(ctx, remote); err != nil || got != (appaccount.RemoteInbox{InboxURL: head.InboxURL, SharedInboxURL: head.SharedInboxURL}) {
+		t.Errorf("RemoteInbox = %+v, %v; want the head's inboxes", got, err)
+	}
+	head.SnapshotID, head.SharedInboxURL, head.ConsecutiveFetchFailures = e.ids.NewID(), "", 2
+	head.LastFetchedAt = e.clock.Advance(time.Hour)
+	upsert(head)
+	if got, err := e.h.Accounts.FindRemoteHead(ctx, remote); err != nil || got != head {
+		t.Errorf("FindRemoteHead = %+v, %v; want %+v", got, err, head)
+	}
 }

@@ -265,6 +265,13 @@ func TestInstanceRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestFederationRepositoryContract(t *testing.T) {
+	testkit.FederationRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FederationHarness {
+		db := newTestDB(t, opts)
+		return testkit.FederationHarness{UnitOfWork: db, Federation: db.FederationRepository()}
+	})
+}
+
 func TestUnitOfWorkContract(t *testing.T) {
 	testkit.UnitOfWorkContract(t, func(t *testing.T, opts uow.Options) testkit.UnitOfWorkHarness {
 		db := newTestDB(t, opts)
