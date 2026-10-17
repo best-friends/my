@@ -87,7 +87,6 @@ function authMiddleware(session: Session, locale: Pick<AppLocale, "t">): Middlew
   };
 }
 
-/** Throws an ApiError for every response with an error status, and turns network failures into a NetworkError. */
 /** Sends the locale the app is displayed in at the time of the request. */
 function localeMiddleware(locale: Pick<AppLocale, "locale">): Middleware {
   return {
@@ -98,6 +97,7 @@ function localeMiddleware(locale: Pick<AppLocale, "locale">): Middleware {
   };
 }
 
+/** Throws an ApiError for every response with an error status, and turns network failures into a NetworkError. */
 function errorMiddleware(locale: Pick<AppLocale, "t">): Middleware {
   return {
     async onResponse({ response }) {
