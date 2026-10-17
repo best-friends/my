@@ -19,11 +19,29 @@
 
 https://my.test {
 	import site
+	# The signature scenario (TestSignatureProfile): a draft-cavage POST signed by eve@mastodon.test
+	# (FEDERATION_LIVE_SIGNER_ACTOR, compose.yaml) is refused with 401, so Mastodon resends it with
+	# RFC 9421 (ADR-0032) and this server verifies that.
+	@cavage_from_eve {
+		method POST
+		header Signature `*keyId="{$FEDERATION_LIVE_SIGNER_ACTOR}#*`
+		not header Signature-Input *
+	}
+	respond @cavage_from_eve 401
 	reverse_proxy my:8080
 }
 
 https://mastodon.test {
 	import site
+	# The signature scenario: a draft-cavage POST to eve's inbox (FEDERATION_LIVE_SIGNER_INBOX) is
+	# refused with 401, so this server resends it with RFC 9421, double-knocking (ADR-0032), and
+	# Mastodon verifies that.
+	@cavage_to_eve {
+		method POST
+		path {$FEDERATION_LIVE_SIGNER_INBOX}
+		not header Signature-Input *
+	}
+	respond @cavage_to_eve 401
 	reverse_proxy mastodon-web:3000
 }
 

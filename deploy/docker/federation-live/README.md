@@ -21,9 +21,20 @@ This server, Mastodon, and GoToSocial federating with each other over HTTPS, for
   the others, and itself, through the proxy, as on the internet. The servers may reach the private addresses of the
   compose network only (`MY_HTTP_ALLOW_PRIVATE_NETWORKS` in the `development` profile, Mastodon's
   `ALLOWED_PRIVATE_ADDRESSES`, GoToSocial's `http-client.allow-ips`).
-- **Users**: `alice@my.test`, `bob@mastodon.test`, and `carol@gts.test`, created with each server's admin CLI.
-  The scenarios sign in to this server and GoToSocial through their OAuth screens; the script issues bob's token
-  with a Rails runner.
+- **Users**: created with each server's admin CLI. The scenarios sign in to this server and GoToSocial through
+  their OAuth screens; the script issues the Mastodon tokens with a Rails runner.
+
+  | User | Role |
+  | --- | --- |
+  | `alice@my.test` | The local user of every scenario |
+  | `bob@mastodon.test`, `carol@gts.test` | The peer users that alice follows and that follow her |
+  | `dave@mastodon.test`, `erin@gts.test` | Never follow alice: the mentioned non-followers of `TestVisibilityAudiences` |
+  | `eve@mastodon.test` | `TestSignatureProfile`: the proxy refuses her draft-cavage POSTs in both directions |
+
+- **Signatures**: to exercise RFC 9421, which Mastodon and this server only use after a 401, the proxy answers 401
+  to a draft-cavage POST signed by eve (to this server) or addressed to eve's inbox (to Mastodon). The script
+  recreates the proxy with eve's actor URI once Mastodon has numbered her (`FEDERATION_LIVE_SIGNER_ACTOR`,
+  `FEDERATION_LIVE_SIGNER_INBOX`).
 - **Mastodon** runs in secure mode (`AUTHORIZED_FETCH`), so every fetch this server makes from it must be signed.
 - The scenarios reach the servers through the proxy's published port and read what this server recorded
   (`received_activities`) from the published PostgreSQL port.
@@ -31,9 +42,8 @@ This server, Mastodon, and GoToSocial federating with each other over HTTPS, for
 ## Running it
 
 ```sh
-make federation-live                                    # every scenario that is not pending
+make federation-live                                    # every scenario
 make federation-live FEDERATION_LIVE_FLAGS='-run TestFollowFromPeer'
-FEDERATION_LIVE_RUN_PENDING=1 make federation-live      # also the scenarios that wait for unfinished issues
 FEDERATION_LIVE_KEEP=1 make federation-live             # keep the stack running afterwards
 ```
 
@@ -61,9 +71,8 @@ CA (`.tmp/federation-live/certs/ca.pem`) is trusted.
 
 ## Scenarios
 
-Each scenario runs against both peers. A scenario whose server side is not built yet calls `pending` with the issues
-it waits for and is skipped unless `FEDERATION_LIVE_RUN_PENDING=1`; when those issues land, remove the call in the
-same PR. The scenarios that are only named (`t.Skip("not written yet: …")`) are written when their issues land.
+Each scenario runs against both peers, in this order: the later ones start from the follows that the earlier ones
+leave (a scenario that runs alone makes the follows it needs).
 
 | Scenario | Checks |
 | --- | --- |
@@ -72,7 +81,28 @@ same PR. The scenarios that are only named (`t.Skip("not written yet: …")`) ar
 | `TestFollowFromPeer` | The peer's signed `Follow` reaches this server's inbox and is verified and recorded; then it is accepted |
 | `TestFollowFromLocal` | alice follows the peer user and the peer accepts |
 | `TestPostFromPeer` / `TestPostFromLocal` | A public post reaches the follower's home timeline on the other side |
-| `TestReply`, `TestBoost`, `TestFavourite`, `TestEdit`, `TestDelete`, `TestVisibilityAudiences` | Named only |
+| `TestUnfollow` | An unfollow in either direction (`Undo Follow`) ends the follow on the other side |
+| `TestFollowApproval` | A follow of a locked account waits until its user approves it, in either direction |
+| `TestReply` | A reply in either direction is among the descendants of the status it replies to; the reply to alice notifies her |
+| `TestBoost` / `TestFavourite` | A boost / favourite in either direction and its undo change the count on the author's side |
+| `TestEdit` / `TestDelete` | An edited post shows the new text / a deleted post is gone on the other side |
+| `TestVisibilityAudiences` | Each visibility reaches exactly its audience in both directions; a `local` post that mentions a non-follower reaches the follower but the mentioned user can neither see it nor is notified ([ADR-0017](../../../docs/adr/0017-visibility-local.md), [ADR-0035](../../../docs/adr/0035-local-visibility-mention-tags.md)) |
+| `TestSignatureProfile` | The rows of [ADR-0032](../../../docs/adr/0032-http-signature-profile.md) that need a real server: draft-cavage from both peers, RFC 9421 from Mastodon after a 401, this server's RFC 9421 resend after a 401 (double-knocking), and `Accept-Signature` on an unsigned POST. It runs last: afterwards this server signs for `mastodon.test` with RFC 9421 first |
+
+## Compatibility notes
+
+What the scenarios show about the pinned peers, and how this server and the scenarios deal with it:
+
+| Peer | Behavior | Handling |
+| --- | --- | --- |
+| Mastodon 4.7 | Actors created by 4.7 have numeric URIs (`/ap/users/{id}`, not `/users/{name}`) and sign with the key `{actor}#rsa-{hash}`, not `{actor}#main-key` | Nothing to do: keys are resolved by the `keyId` value itself ([ADR-0032](../../../docs/adr/0032-http-signature-profile.md)); the proxy learns eve's URI from the script |
+| Mastodon 4.7 | Signs deliveries with draft-cavage (`host date content-type digest (request-target)`) and resends them with RFC 9421 (`("@method" "@target-uri" "content-digest");created;keyid`, no `alg` and no `expires`) after a 400 / 401; verifies RFC 9421 by default | Both verify (ADR-0032); `TestSignatureProfile` |
+| Mastodon 4.7 | A mention of a user who is neither addressed nor a follower is filtered (notification requests), not dropped, and lets the user see a `private` post | This server leaves such mentions out of the `tag` of a `local` post ([ADR-0035](../../../docs/adr/0035-local-visibility-mention-tags.md)); the scenario reads the filtered notifications too (`include_filtered`) |
+| GoToSocial 0.22 | Signs with draft-cavage only (`hs2019`); has no shared inbox, so every delivery goes to the user's inbox | Nothing to do |
+| GoToSocial 0.22 | Accounts that `admin account create` makes are locked | The scenarios unlock carol and erin, and `TestFollowApproval` locks them itself |
+| GoToSocial 0.22 | The first page of the home timeline comes from a cache that does not always take a status that arrives after the cache was filled; the status is in the database | The scenarios read GoToSocial's home timeline with a `max_id`, which reads the database |
+| GoToSocial 0.22 | Logs `error fetching account featured collection … empty url host` for this server's instance actor, which has no `featured` | Harmless: the actor is still stored and the signature verified |
+| Both | Neither learns that alice locked her account while she has no follower there (the actor `Update` goes to followers only) | Expected: the follow request still waits for her approval on this server |
 
 ## Adding a captured activity as a fixture
 
@@ -95,4 +125,4 @@ the request body.
 
 The images are pinned by tag and digest in `compose.yaml`. To move to a new Mastodon or GoToSocial release, take a tag
 at least two weeks old, put its multi-arch digest (`docker buildx imagetools inspect <image>:<tag>`) next to it, and
-run `FEDERATION_LIVE_RUN_PENDING=1 make federation-live` to see what changed.
+run `make federation-live` to see what changed.

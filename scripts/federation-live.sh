@@ -131,22 +131,47 @@ wait_ready my.test /readyz
 wait_ready mastodon.test /health
 wait_ready gts.test /readyz
 
-# --- One user on each server --------------------------------------------------------------------
-log "creating alice@my.test, bob@mastodon.test, and carol@gts.test"
+# --- Users --------------------------------------------------------------------------------------
+# alice@my.test. On Mastodon: bob (alice's follower), dave (never follows alice: the mentioned
+# non-follower of the visibility scenario), and eve (the signature scenario). On GoToSocial: carol
+# (alice's follower) and erin (never follows alice).
+log "creating alice@my.test, bob, dave, and eve @mastodon.test, and carol and erin @gts.test"
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username alice -email alice@my.test >/dev/null
 
-"${compose[@]}" exec -T mastodon-web bin/tootctl accounts create bob --email bob@mastodon.test --confirmed --approve >/dev/null
-mastodon_token="$("${compose[@]}" exec -T mastodon-web bin/rails runner '
-	user = Account.find_local!("bob").user
+for user in bob dave eve; do
+	"${compose[@]}" exec -T mastodon-web bin/tootctl accounts create "$user" --email "$user@mastodon.test" --confirmed --approve >/dev/null
+done
+mastodon_tokens="$("${compose[@]}" exec -T mastodon-web bin/rails runner '
 	app = Doorkeeper::Application.create!(name: "federation-live", redirect_uri: "urn:ietf:wg:oauth:2.0:oob", scopes: "read write follow")
-	token = Doorkeeper::AccessToken.create!(application: app, resource_owner_id: user.id, scopes: "read write follow")
-	puts "token=#{token.plaintext_token}"
-' | sed -n 's/^token=//p')"
-[[ -n "$mastodon_token" ]] || fail "could not issue an access token for bob@mastodon.test"
+	%w[bob dave eve].each do |name|
+		user = Account.find_local!(name).user
+		token = Doorkeeper::AccessToken.create!(application: app, resource_owner_id: user.id, scopes: "read write follow")
+		puts "token_#{name}=#{token.plaintext_token}"
+	end
+	puts "uri_eve=#{ActivityPub::TagManager.instance.uri_for(Account.find_local!("eve"))}"
+')"
+mastodon_token() { sed -n "s/^token_$1=//p" <<<"$mastodon_tokens"; }
+mastodon_token_bob="$(mastodon_token bob)"
+mastodon_token_dave="$(mastodon_token dave)"
+mastodon_token_eve="$(mastodon_token eve)"
+[[ -n "$mastodon_token_bob" && -n "$mastodon_token_dave" && -n "$mastodon_token_eve" ]] ||
+	fail "could not issue the access tokens of the Mastodon users"
+
+# The proxy refuses eve's draft-cavage POSTs in both directions (Caddyfile, TestSignatureProfile); it
+# learns her actor URI, which Mastodon numbers when it creates her, by being recreated with it.
+FEDERATION_LIVE_SIGNER_ACTOR="$(sed -n 's/^uri_eve=//p' <<<"$mastodon_tokens")"
+[[ "$FEDERATION_LIVE_SIGNER_ACTOR" == https://mastodon.test/* ]] || fail "could not read the actor URI of eve@mastodon.test"
+FEDERATION_LIVE_SIGNER_INBOX="${FEDERATION_LIVE_SIGNER_ACTOR#https://mastodon.test}/inbox"
+export FEDERATION_LIVE_SIGNER_ACTOR FEDERATION_LIVE_SIGNER_INBOX
+"${compose[@]}" up -d --no-deps --quiet-pull proxy
+wait_ready my.test /readyz
+wait_ready mastodon.test /health
 
 gts=(exec -T gotosocial /gotosocial/gotosocial admin account)
-"${compose[@]}" "${gts[@]}" create --username carol --email carol@gts.test --password "$gts_password" >/dev/null
-"${compose[@]}" "${gts[@]}" confirm --username carol >/dev/null
+for user in carol erin; do
+	"${compose[@]}" "${gts[@]}" create --username "$user" --email "$user@gts.test" --password "$gts_password" >/dev/null
+	"${compose[@]}" "${gts[@]}" confirm --username "$user" >/dev/null
+done
 
 # --- Scenarios ----------------------------------------------------------------------------------
 log "running the scenarios"
@@ -155,7 +180,9 @@ log "running the scenarios"
 export FEDERATION_LIVE_ADDR="127.0.0.1:$port"
 export FEDERATION_LIVE_CA="$certs/ca.pem"
 export FEDERATION_LIVE_MY_PASSWORD="$my_password"
-export FEDERATION_LIVE_MASTODON_TOKEN="$mastodon_token"
+export FEDERATION_LIVE_MASTODON_TOKEN="$mastodon_token_bob"
+export FEDERATION_LIVE_MASTODON_TOKEN_DAVE="$mastodon_token_dave"
+export FEDERATION_LIVE_MASTODON_TOKEN_EVE="$mastodon_token_eve"
 export FEDERATION_LIVE_GTS_PASSWORD="$gts_password"
 env | grep '^FEDERATION_LIVE_' >"$work/scenarios.env"
 cd "$root"

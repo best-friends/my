@@ -7,11 +7,6 @@ name: Federation live
 on:
   workflow_call:
   workflow_dispatch:
-    inputs:
-      run-pending:
-        description: Also run the scenarios marked pending (FEDERATION_LIVE_RUN_PENDING=1).
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -26,7 +21,6 @@ jobs:
     timeout-minutes: 45
     env:
       FEDERATION_LIVE_OUT: ${{ github.workspace }}/.tmp/federation-live-out
-      FEDERATION_LIVE_RUN_PENDING: ${{ inputs.run-pending && '1' || '0' }}
     steps:
       - uses: actions/checkout@v5
         with:
