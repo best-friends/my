@@ -6,7 +6,7 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Status } from "./api/timelines";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
-import { statusPage, timelineStatusFixture } from "../../test/fixtures";
+import { longDomainAccountFixture, longNameAccountFixture, rtlNameAccountFixture, statusPage, timelineStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 
@@ -130,6 +130,21 @@ describe("a status card", () => {
     // A booster without a display name is named by the username; the time is the post's.
     const article = await screen.findByRole("article", { name: "carol boosted Bob @bob@my.example 5 min. ago" });
     expect(article).toHaveAccessibleDescription("Post 1");
+  });
+
+  test("names the author's link by the whole name and handle, however long, in the name's own direction", async () => {
+    const posts = [longNameAccountFixture, rtlNameAccountFixture, longDomainAccountFixture].map((account, n) => status(n + 1, { account }));
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage(posts))));
+    await renderApp({ path: "/local" });
+
+    const feed = await screen.findByRole("feed");
+    // The card cuts the name and the handle to its width (e2e/post-header.spec.ts checks the lines); the
+    // text stays whole, so the link says all of it.
+    for (const account of [longNameAccountFixture, rtlNameAccountFixture, longDomainAccountFixture]) {
+      const link = within(feed).getByRole("link", { name: `${account.display_name} @${account.username}@${account.domain}` });
+      expect(within(link).getByText(account.display_name)).toHaveAttribute("dir", "auto");
+      expect(within(link).getByText(`@${account.username}@${account.domain}`)).toHaveAttribute("dir", "ltr");
+    }
   });
 
   test("shows the author's avatar, and the first letter of the name without one", async () => {
