@@ -1584,6 +1584,14 @@ CREATE TABLE report_statuses (
   PRIMARY KEY (report_id, status_id)
 );
 
+-- Resource (child of a report): the instance rules a local report of the violation category
+-- cites. A rule keeps its ID across revisions (instance_rules).
+CREATE TABLE report_rule_citations (
+  report_id text COLLATE "C" NOT NULL,
+  rule_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (report_id, rule_id)
+);
+
 -- Projection: whether a report is open, how it was resolved, and who handles it. outcome is
 -- that of the latest resolution, set exactly when the report is resolved.
 CREATE TABLE report_states (

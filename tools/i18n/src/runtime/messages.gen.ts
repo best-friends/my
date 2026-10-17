@@ -974,6 +974,8 @@ export interface MessageArgs {
   "server:auth.authorize.scope.write_mutes": {};
   /** Mark notifications as read and dismiss them */
   "server:auth.authorize.scope.write_notifications": {};
+  /** Report accounts and posts to the moderators */
+  "server:auth.authorize.scope.write_reports": {};
   /** Post, edit, delete, boost, and pin posts */
   "server:auth.authorize.scope.write_statuses": {};
   /** Authorize {app} */

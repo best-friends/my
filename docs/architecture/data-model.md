@@ -441,8 +441,9 @@ flowchart LR
 | `report_states` | 投影 | `report_id`（PK）, `state`（`enum(open, resolved)`）, `outcome`（`enum(actioned, dismissed)`、NULL 可。最後の解決の結果）, `assignee_user_id`（NULL 可）, `since`（受け付けた時刻か、解決した時刻） | インデックス `(state, report_id)`（未解決一覧）。`outcome` は `state = resolved` のときだけ値を持つ（`CHECK` 制約） |
 
 - 通報者（`reporter_account_id`）は、ローカルの通報ならローカルのアカウント、受信した `Flag` なら送ってきた Actor（多くはリモートのインスタンス Actor）です。通報者は対象に見せません（ADR-0038）。
-- `forwarded` は、ローカルの通報者が相手のサーバーへの転送を求めたかどうかです（受け付けた時点で決まる事実）。転送は受け付けのトランザクションで outbox に積みます（[ADR-0036](../adr/0036-moderation-federation-propagation.md)）。受信した `Flag` は常に `false` です。
+- `forwarded` は、ローカルの通報者がリモートのアカウントの通報で相手のサーバーへの転送を求めたかどうかです（受け付けた時点で決まる事実）。対象がローカルのアカウントなら、求めても `false` です。転送は受け付けのトランザクションで outbox に積みます（[ADR-0036](../adr/0036-moderation-federation-propagation.md)）。受信した `Flag` は常に `false` です。
 - ローカルの通報のコメントは 1,000 文字、受信した `Flag` のコメントは 5,000 文字までです。`report_rule_citations` は `category = violation` のときだけ持てます。
+- ローカルの通報が指せる投稿は、対象のアカウントの投稿のうち通報者が見られるもの（単一の閲覧判定 `CanView` を通す）を 20 件まで、引用できるルールは効いているもの（引退していないもの）を 20 件までです。自分自身は通報できません。
 - 通報の状態の投影は、受け付けで `open`、解決で `resolved`（`outcome` を写す）、再開で `open` に戻します。処分（`moderation_actions.report_id` を持つもの）を記録すると、同じトランザクションでその通報を `actioned` で解決します。
 - 通報と処分が参照する投稿（`report_statuses`・`moderation_action_statuses`）は、作者が削除しても、参照する記録の保持期間まで消去ジョブの物理削除から外します（表示からは消えます。§8）。
 

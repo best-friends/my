@@ -101,6 +101,47 @@ func TestReportValidate(t *testing.T) {
 	}
 }
 
+func TestReportCitesRulesOnlyForAViolation(t *testing.T) {
+	r := Report{ID: "r", ReporterAccountID: "a", TargetAccountID: "b", Category: CategoryViolation, RuleIDs: []string{"rule"}, FiledAt: time.Unix(1, 0)}
+	if err := r.ValidateLocal(); err != nil {
+		t.Fatalf("ValidateLocal(violation with a rule) = %v", err)
+	}
+	for _, c := range []Category{CategorySpam, CategoryLegal, CategoryOther} {
+		r.Category = c
+		if err := r.Validate(); !errors.Is(err, ErrInvalidReport) {
+			t.Errorf("Validate(%s with a rule) = %v, want ErrInvalidReport", c, err)
+		}
+	}
+}
+
+func TestReportValidateLocal(t *testing.T) {
+	ok := Report{ID: "r", ReporterAccountID: "a", TargetAccountID: "b", Category: CategoryOther, FiledAt: time.Unix(1, 0)}
+	if err := ok.ValidateLocal(); err != nil {
+		t.Fatalf("ValidateLocal = %v", err)
+	}
+	long := ok
+	long.Comment = strings.Repeat("あ", MaxLocalReportComment+1)
+	var textErr *TextError
+	if err := long.ValidateLocal(); !errors.Is(err, ErrInvalidReport) || !errors.As(err, &textErr) || textErr.Max != MaxLocalReportComment {
+		t.Errorf("ValidateLocal(long comment) = %v, want a *TextError of %d", err, MaxLocalReportComment)
+	}
+	long.Comment = strings.Repeat("あ", MaxLocalReportComment)
+	if err := long.ValidateLocal(); err != nil {
+		t.Errorf("ValidateLocal(comment of %d) = %v", MaxLocalReportComment, err)
+	}
+	many := ok
+	many.StatusIDs = make([]string, MaxLocalReportStatuses+1)
+	var countErr *CountError
+	if err := many.ValidateLocal(); !errors.As(err, &countErr) || countErr.Field != "status_ids" {
+		t.Errorf("ValidateLocal(too many statuses) = %v, want a *CountError of status_ids", err)
+	}
+	withURI := ok
+	withURI.URI = "https://remote.example/flag"
+	if err := withURI.ValidateLocal(); !errors.Is(err, ErrInvalidReport) {
+		t.Errorf("ValidateLocal(with a URI) = %v, want ErrInvalidReport", err)
+	}
+}
+
 func TestTextsOfActionsAndLifts(t *testing.T) {
 	now := time.Unix(1, 0)
 	action := Action{ID: "a", TargetAccountID: "b", Kind: ActionLimit, ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now}

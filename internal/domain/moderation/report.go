@@ -13,6 +13,14 @@ import (
 // Flag's longer comment is cut (federation.md §11).
 const MaxReportComment = 5000
 
+// Bounds of a report filed on this server (FR-701): its comment, and how many statuses and
+// rules it points at.
+const (
+	MaxLocalReportComment  = 1000
+	MaxLocalReportStatuses = 20
+	MaxLocalReportRules    = 20
+)
+
 // Report is a report of an account to the moderators (reports, a resource; FR-701).
 type Report struct {
 	ID string
@@ -28,6 +36,9 @@ type Report struct {
 	FiledAt   time.Time
 	// StatusIDs are the statuses of the target that the report points at (report_statuses).
 	StatusIDs []string
+	// RuleIDs are the instance rules that the report cites (report_rule_citations); only a
+	// report of CategoryViolation cites rules.
+	RuleIDs []string
 }
 
 // ErrInvalidReport reports a report with a missing or invalid field.
@@ -40,8 +51,43 @@ func (r Report) Validate() error {
 		return fmt.Errorf("%w: a field is empty", ErrInvalidReport)
 	case !r.Category.Valid():
 		return fmt.Errorf("%w: category %q", ErrInvalidReport, r.Category)
+	case len(r.RuleIDs) > 0 && r.Category != CategoryViolation:
+		return fmt.Errorf("%w: a report of category %q cites rules", ErrInvalidReport, r.Category)
 	}
 	if err := checkText("comment", r.Comment, MaxReportComment); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidReport, err)
+	}
+	return nil
+}
+
+// CountError reports a list of a record with more than Max items.
+type CountError struct {
+	// Field is the list, such as status_ids or rule_ids.
+	Field string
+	Max   int
+}
+
+func (e *CountError) Error() string {
+	return fmt.Sprintf("the %s has more than %d items", e.Field, e.Max)
+}
+
+// ValidateLocal checks the invariants of a new report filed on this server: those of Validate,
+// no URI, a comment of at most MaxLocalReportComment characters, and at most
+// MaxLocalReportStatuses statuses and MaxLocalReportRules rules. A comment that fails fails with
+// a *TextError, a list that is too long with a *CountError, both wrapped with ErrInvalidReport.
+func (r Report) ValidateLocal() error {
+	if err := r.Validate(); err != nil {
+		return err
+	}
+	switch {
+	case r.URI != "":
+		return fmt.Errorf("%w: a local report has a URI", ErrInvalidReport)
+	case len(r.StatusIDs) > MaxLocalReportStatuses:
+		return fmt.Errorf("%w: %w", ErrInvalidReport, &CountError{Field: "status_ids", Max: MaxLocalReportStatuses})
+	case len(r.RuleIDs) > MaxLocalReportRules:
+		return fmt.Errorf("%w: %w", ErrInvalidReport, &CountError{Field: "rule_ids", Max: MaxLocalReportRules})
+	}
+	if err := checkText("comment", r.Comment, MaxLocalReportComment); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidReport, err)
 	}
 	return nil

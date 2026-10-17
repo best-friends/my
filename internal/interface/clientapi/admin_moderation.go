@@ -255,7 +255,7 @@ func (s *Server) newAdminReports(ctx context.Context, recs []moderation.ReportRe
 			FiledAt: r.FiledAt.UTC(), State: AdminReportState(st.State), StateChangedAt: st.Since.UTC(),
 			ReporterAccountId: r.ReporterAccountID, ReporterAccount: accounts[r.ReporterAccountID],
 			TargetAccountId: r.TargetAccountID, TargetAccount: accounts[r.TargetAccountID],
-			StatusIds: append([]string{}, r.StatusIDs...),
+			StatusIds: append([]string{}, r.StatusIDs...), RuleIds: append([]string{}, r.RuleIDs...),
 		}
 		if r.URI != "" {
 			item.Uri = &r.URI
