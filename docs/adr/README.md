@@ -47,4 +47,5 @@
 | [0033](0033-inbox-processing-model.md) | Inbox の受信処理モデル（同期・非同期の境界、重複排除、順序） | Accepted |
 | [0034](0034-remote-content-scope-and-retention.md) | リモートコンテンツの取り込み範囲・リフレッシュ・保持 | Accepted |
 | [0035](0035-local-visibility-mention-tags.md) | 公開範囲 local の投稿は、フォロワーでないリモートのメンション先を tag に入れない | Accepted |
+| [0036](0036-mobile-navigation-and-compose-entry.md) | モバイルのナビゲーションの項目と投稿の入口 | Proposed |
 <!-- adr-index:end -->
