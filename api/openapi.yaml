@@ -1373,6 +1373,212 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin (#261) ---
+  # --- admin: domain actions and reports (#296) ---
+  /admin/domain_actions:
+    get:
+      operationId: listDomainActions
+      summary: List the moderation actions on domains
+      description: |
+        The actions that moderators took on remote domains (FR-702), newest first, lifted and
+        expired ones included unless `active` is set. Needs the `manage_domains` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: domain
+          in: query
+          required: false
+          description: |
+            Keep only the actions on this domain (not those on its parent domains). It is
+            normalized like the domain of a new action.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 253
+        - name: active
+          in: query
+          required: false
+          description: Keep only the actions in effect now, neither lifted nor expired.
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of domain actions.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDomainActionPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createDomainAction
+      summary: Take a moderation action on a domain
+      description: |
+        Records an action on a remote domain and its subdomains (FR-702), in effect at once and
+        until it expires or is lifted. A `suspend` stops every delivery to the domain, every
+        fetch from it, and every activity received from it, and hides its accounts and posts
+        from the timelines; `limit` keeps its posts off the public timelines and its accounts
+        from reaching users who do not follow them; `reject_media` stops fetching its media;
+        `reject_reports` drops the reports it sends; `force_sensitive` marks its media
+        sensitive. The domain is normalized (IDNA A-labels in lower case, without a trailing
+        dot); one that is not a valid domain is a 422 naming `domain`. Needs the
+        `manage_domains` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDomainActionRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminDomainAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/domain_actions/{id}:
+    get:
+      operationId: getDomainAction
+      summary: Get a moderation action on a domain
+      description: An unknown ID is a 404. Needs the `manage_domains` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/DomainActionId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminDomainAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/domain_actions/{id}/lift:
+    post:
+      operationId: liftDomainAction
+      summary: Lift a moderation action on a domain
+      description: |
+        Ends the action's restrictions at once; those of other actions on the domain stay.
+        Lifting a lifted action changes nothing. An unknown ID is a 404. Needs the
+        `manage_domains` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/DomainActionId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminDomainAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/reports:
+    get:
+      operationId: listReports
+      summary: List the reports
+      description: |
+        The reports in the moderators' queue (FR-701), newest first. Needs the `manage_reports`
+        permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: state
+          in: query
+          required: false
+          description: Keep only the reports in this state; omitted keeps both.
+          schema:
+            $ref: "#/components/schemas/AdminReportState"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of reports.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReportPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/reports/{id}:
+    get:
+      operationId: getReport
+      summary: Get a report
+      description: An unknown ID is a 404. Needs the `manage_reports` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminReport"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/reports/{id}/assign_to_self:
+    post:
+      operationId: assignReportToSelf
+      summary: Take a report
+      description: |
+        Makes the authenticated user the moderator who handles the report. An unknown ID is a
+        404. Needs the `manage_reports` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminReport"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/reports/{id}/unassign:
+    post:
+      operationId: unassignReport
+      summary: Leave a report to nobody
+      description: |
+        Removes the moderator who handles the report, whoever it is. An unknown ID is a 404.
+        Needs the `manage_reports` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminReport"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/reports/{id}/resolve:
+    post:
+      operationId: resolveReport
+      summary: Resolve a report
+      description: |
+        Resolves an open report with an outcome. Resolving a resolved report changes nothing
+        and keeps its outcome. An unknown ID is a 404. Needs the `manage_reports` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveReportRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminReport"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: domain actions and reports (#296) ---
 components:
   securitySchemes:
     oauth2:
@@ -1475,6 +1681,22 @@ components:
         minLength: 1
         maxLength: 253
     # --- end of admin (#261) ---
+    # --- admin: domain actions and reports (#296) ---
+    DomainActionId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the domain action.
+      schema:
+        $ref: "#/components/schemas/Id"
+    ReportId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the report.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: domain actions and reports (#296) ---
   responses:
     StatusPage:
       description: A page of posts and boosts, newest first.
@@ -1561,6 +1783,26 @@ components:
           schema:
             $ref: "#/components/schemas/AdminInstanceHealth"
     # --- end of admin (#261) ---
+    # --- admin: domain actions and reports (#296) ---
+    AdminDomainAction:
+      description: The domain action.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminDomainAction"
+    AdminReport:
+      description: The report.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminReport"
+    # --- end of admin: domain actions and reports (#296) ---
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -2649,12 +2891,182 @@ components:
       type: string
       enum: [available, unavailable]
     # --- end of admin (#261) ---
+    # --- admin: domain actions and reports (#296) ---
+    AdminDomainAction:
+      description: A moderation action on a remote domain and its subdomains (FR-702).
+      type: object
+      required: [id, domain, kind, obfuscate, state, issued_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        domain:
+          description: The domain, in IDNA A-labels.
+          type: string
+        kind:
+          $ref: "#/components/schemas/AdminDomainActionKind"
+        public_comment:
+          description: The reason that may be shown publicly; omitted when there is none.
+          type: string
+        private_note:
+          description: The moderators' note; omitted when there is none.
+          type: string
+        obfuscate:
+          description: Whether a public list of the domain actions hides part of the domain.
+          type: boolean
+        state:
+          $ref: "#/components/schemas/AdminDomainActionState"
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          description: When the action ends by itself; omitted for one that lasts until lifted.
+          type: string
+          format: date-time
+        lifted_at:
+          description: When the action was lifted; omitted until it is.
+          type: string
+          format: date-time
+    AdminDomainActionKind:
+      description: |
+        `suspend`: no federation with the domain at all. `limit`: its posts stay off the public
+        timelines and its accounts reach only their followers. `reject_media`: its media are
+        not fetched. `reject_reports`: its reports are dropped. `force_sensitive`: its media
+        are marked sensitive.
+      type: string
+      enum: [limit, suspend, reject_media, reject_reports, force_sensitive]
+    AdminDomainActionPage:
+      description: A page of domain actions, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminDomainAction"
+    AdminDomainActionState:
+      description: |
+        `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+        lifted it.
+      type: string
+      enum: [active, expired, lifted]
+    AdminReport:
+      description: A report of an account to the moderators (FR-701).
+      type: object
+      required: [id, category, comment, forwarded, filed_at, state, state_changed_at, reporter_account_id, target_account_id, status_ids]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        uri:
+          description: |
+            The `id` of the `Flag` activity that another server sent; omitted for a report
+            made on this server.
+          type: string
+        category:
+          type: string
+          enum: [spam, legal, violation, other]
+        comment:
+          description: The reporter's comment as plain text, up to 5,000 characters.
+          type: string
+        forwarded:
+          description: Whether the report was forwarded to the target's server.
+          type: boolean
+        filed_at:
+          type: string
+          format: date-time
+        state:
+          $ref: "#/components/schemas/AdminReportState"
+        outcome:
+          $ref: "#/components/schemas/AdminReportOutcome"
+        state_changed_at:
+          description: When the report was filed or, once resolved, resolved.
+          type: string
+          format: date-time
+        assignee_account_id:
+          description: |
+            The account of the moderator who handles the report; omitted when nobody does.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        reporter_account_id:
+          $ref: "#/components/schemas/Id"
+        reporter_account:
+          description: The reporter, often the instance actor of a remote server; omitted when the account is gone.
+          allOf:
+            - $ref: "#/components/schemas/Account"
+        target_account_id:
+          $ref: "#/components/schemas/Id"
+        target_account:
+          description: The account reported; omitted when the account is gone.
+          allOf:
+            - $ref: "#/components/schemas/Account"
+        status_ids:
+          description: The IDs of the target's posts that the report points at.
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+    AdminReportOutcome:
+      description: |
+        How the report was resolved, present only while it is resolved. `actioned`: a moderator
+        took an action on the target. `dismissed`: there was nothing to act on.
+      type: string
+      enum: [actioned, dismissed]
+    AdminReportPage:
+      description: A page of reports, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminReport"
+    AdminReportState:
+      description: "`open` reports await the moderators; `resolved` ones are handled."
+      type: string
+      enum: [open, resolved]
+    CreateDomainActionRequest:
+      description: A moderation action to take on a domain.
+      type: object
+      required: [domain, kind]
+      properties:
+        domain:
+          description: |
+            The remote domain, such as `spam.example`; a U-label spelling such as `例え.jp` is
+            accepted. The action covers its subdomains.
+          type: string
+          minLength: 1
+          maxLength: 253
+        kind:
+          $ref: "#/components/schemas/AdminDomainActionKind"
+        public_comment:
+          type: string
+          maxLength: 5000
+        private_note:
+          type: string
+          maxLength: 5000
+        obfuscate:
+          type: boolean
+          default: false
+        expires_in:
+          description: The seconds the action lasts; omitted, it lasts until it is lifted.
+          type: integer
+          minimum: 1
+    ResolveReportRequest:
+      description: How a report is resolved.
+      type: object
+      required: [outcome]
+      properties:
+        outcome:
+          $ref: "#/components/schemas/AdminReportOutcome"
+    # --- end of admin: domain actions and reports (#296) ---
     # --- the viewer's permissions (#267) ---
     Permission:
       description: |
-        A capability that a role grants. `manage_domains`: the health of remote servers.
-        `manage_jobs`: the dead jobs of the job queue. The others guard no client API operation
-        yet.
+        A capability that a role grants. `manage_domains`: the health of remote servers and the
+        moderation actions on domains. `manage_reports`: the reports. `manage_jobs`: the dead
+        jobs of the job queue. The others guard no client API operation yet.
       type: string
       enum:
         - manage_reports

@@ -100,3 +100,25 @@ func TestReportValidate(t *testing.T) {
 		}
 	}
 }
+
+func TestDomainActionState(t *testing.T) {
+	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
+	soon, past := now.Add(time.Hour), now.Add(-time.Hour)
+	for _, tc := range []struct {
+		r    DomainActionRecord
+		want DomainActionState
+	}{
+		{DomainActionRecord{}, DomainActionActive},
+		{DomainActionRecord{Action: DomainAction{ExpiresAt: &soon}}, DomainActionActive},
+		{DomainActionRecord{Action: DomainAction{ExpiresAt: &now}}, DomainActionExpired},
+		{DomainActionRecord{Action: DomainAction{ExpiresAt: &past}, Lift: &DomainLift{}}, DomainActionLifted},
+		{DomainActionRecord{Lift: &DomainLift{}}, DomainActionLifted},
+	} {
+		if got := tc.r.State(now); got != tc.want {
+			t.Errorf("State(%+v) = %s, want %s", tc.r, got, tc.want)
+		}
+	}
+	if !OutcomeActioned.Valid() || !OutcomeDismissed.Valid() || ReportOutcome("ignored").Valid() {
+		t.Error("ReportOutcome.Valid accepts the wrong outcomes")
+	}
+}

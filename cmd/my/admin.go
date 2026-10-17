@@ -31,6 +31,10 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case args[0] == "-h" || args[0] == "-help" || args[0] == "--help":
 		adminUsage(stderr)
 		return 0
+	case args[0] == "domain":
+		return runAdminDomain(args[1:], stdout, stderr)
+	case args[0] == "report":
+		return runAdminReport(args[1:], stdout, stderr)
 	case args[0] != "create":
 		_, _ = fmt.Fprintf(stderr, "my admin: unknown subcommand %q\n\n", args[0])
 		adminUsage(stderr)
@@ -163,8 +167,12 @@ func promptPassword(fd int, stderr io.Writer) (string, error) {
 
 func adminUsage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage: my admin create -username <name> -email <address> [-config <file>]
+       my admin domain list|issue|lift ...   (my admin domain -help)
+       my admin report list|show|assign|unassign|resolve ...   (my admin report -help)
 
-Creates an administrator: a user with the password, the email address as primary
+my admin domain and my admin report moderate remote domains and handle reports.
+
+my admin create creates an administrator: a user with the password, the email address as primary
 address, a local account with the username, and the built-in admin role, in one
 transaction. The database schema must already be applied with Atlas.
 

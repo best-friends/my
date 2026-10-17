@@ -598,6 +598,7 @@ type Report struct {
 type ReportState struct {
 	ReportID       string
 	State          string
+	Outcome        *string
 	AssigneeUserID *string
 	Since          time.Time
 }

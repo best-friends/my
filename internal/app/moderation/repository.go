@@ -55,6 +55,11 @@ type Repository interface {
 	// included.
 	DomainRestrictionRows(ctx context.Context, tx uow.Tx, domain string) ([]moderation.RestrictionRow, error)
 	UpsertReportStatus(ctx context.Context, tx uow.Tx, s moderation.ReportStatus) error
+	InsertReportAssignment(ctx context.Context, tx uow.Tx, a moderation.ReportAssignment) error
+	InsertReportResolution(ctx context.Context, tx uow.Tx, r moderation.ReportResolution) error
+	// ReportStatusForUpdate returns the state of a report inside the transaction that changes
+	// it, locking it where the database can.
+	ReportStatusForUpdate(ctx context.Context, tx uow.Tx, reportID string) (moderation.ReportStatus, error)
 
 	// Lookups.
 
@@ -71,4 +76,27 @@ type Repository interface {
 	FindReportStatus(ctx context.Context, reportID string) (moderation.ReportStatus, error)
 	// ListReportsOf returns the reports of a target account with their statuses, oldest first.
 	ListReportsOf(ctx context.Context, targetAccountID string) ([]moderation.Report, error)
+	// ListReports returns up to limit reports with their statuses and states, newest first:
+	// those in q.State (any state when empty) whose ID is below q.Before (from the newest when
+	// empty).
+	ListReports(ctx context.Context, q ReportQuery, limit int) ([]moderation.ReportRecord, error)
+	// FindDomainActionRecord returns a domain action with its lift.
+	FindDomainActionRecord(ctx context.Context, id string) (moderation.DomainActionRecord, error)
+	// ListDomainActions returns up to limit domain actions with their lifts, newest first: those
+	// of q.Domain (every domain when empty), only those in effect at q.InEffectAt when it is
+	// set, whose ID is below q.Before (from the newest when empty).
+	ListDomainActions(ctx context.Context, q DomainActionQuery, limit int) ([]moderation.DomainActionRecord, error)
+}
+
+// ReportQuery selects the reports of a list.
+type ReportQuery struct {
+	State  moderation.ReportState // "" for any
+	Before string                 // a report ID; "" for the first page
+}
+
+// DomainActionQuery selects the domain actions of a list.
+type DomainActionQuery struct {
+	Domain     string     // a canonical host; "" for every domain
+	InEffectAt *time.Time // nil for every action, ended ones included
+	Before     string     // an action ID; "" for the first page
 }

@@ -466,7 +466,7 @@ CREATE INDEX mutes_expires_at ON mutes (expires_at);
 CREATE TABLE outbox_events (
   id text NOT NULL PRIMARY KEY,
   job_type text NOT NULL,
-  payload jsonb NOT NULL,
+  payload bytea NOT NULL,
   idempotency_key text,
   ordering_key text,
   run_at timestamptz NOT NULL,
@@ -478,7 +478,7 @@ CREATE TABLE outbox_events (
 CREATE TABLE jobs (
   id text NOT NULL PRIMARY KEY,
   type text NOT NULL,
-  payload jsonb NOT NULL,
+  payload bytea NOT NULL,
   idempotency_key text,
   ordering_key text,
   attempt integer NOT NULL,
@@ -498,7 +498,7 @@ CREATE INDEX jobs_ordering_key_run_at ON jobs (ordering_key, run_at);
 CREATE TABLE dead_jobs (
   id text NOT NULL PRIMARY KEY,
   type text NOT NULL,
-  payload jsonb NOT NULL,
+  payload bytea NOT NULL,
   idempotency_key text,
   ordering_key text,
   attempt integer NOT NULL,
@@ -1228,11 +1228,11 @@ CREATE TABLE received_activities (
 );
 CREATE INDEX received_activities_received_at ON received_activities (received_at);
 
--- Event: the received document as it arrived, read by the asynchronous processing and kept
--- briefly for investigation and fixtures.
+-- Event: the received document with the bytes it arrived with, read by the asynchronous
+-- processing and kept briefly for investigation and fixtures.
 CREATE TABLE received_activity_documents (
   activity_uri text NOT NULL PRIMARY KEY,
-  document jsonb NOT NULL
+  document bytea NOT NULL
 );
 
 -- Event: a Delete of an unknown object or an Undo of an unknown target. A Create, Update, or
@@ -1262,7 +1262,7 @@ CREATE INDEX outbound_activities_object_type_object_id_id ON outbound_activities
 -- and retry sends the same bytes.
 CREATE TABLE outbound_activity_documents (
   outbound_activity_id text COLLATE "C" NOT NULL PRIMARY KEY,
-  document jsonb NOT NULL,
+  document bytea NOT NULL,
   built_at timestamptz NOT NULL
 );
 
@@ -1533,11 +1533,35 @@ CREATE TABLE report_statuses (
   PRIMARY KEY (report_id, status_id)
 );
 
--- Projection: whether a report is open, and who handles it.
+-- Projection: whether a report is open, how it was resolved, and who handles it. outcome is
+-- that of the latest resolution, set exactly when the report is resolved.
 CREATE TABLE report_states (
   report_id text COLLATE "C" NOT NULL PRIMARY KEY,
   state text NOT NULL CHECK (state IN ('open', 'resolved')),
+  outcome text CHECK (outcome IN ('actioned', 'dismissed')),
   assignee_user_id text COLLATE "C",
-  since timestamptz NOT NULL
+  since timestamptz NOT NULL,
+  CHECK ((state = 'resolved') = (outcome IS NOT NULL))
 );
 CREATE INDEX report_states_state_report_id ON report_states (state, report_id);
+
+-- Event: a moderator took a report, or gave it up (assignee_user_id NULL).
+-- assigned_by_user_id is NULL for the CLI.
+CREATE TABLE report_assignments (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  report_id text COLLATE "C" NOT NULL,
+  assignee_user_id text COLLATE "C",
+  assigned_by_user_id text COLLATE "C",
+  assigned_at timestamptz NOT NULL
+);
+CREATE INDEX report_assignments_report_id_id ON report_assignments (report_id, id DESC);
+
+-- Event: a moderator resolved a report. resolved_by_user_id is NULL for the CLI.
+CREATE TABLE report_resolutions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  report_id text COLLATE "C" NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('actioned', 'dismissed')),
+  resolved_by_user_id text COLLATE "C",
+  resolved_at timestamptz NOT NULL
+);
+CREATE INDEX report_resolutions_report_id_id ON report_resolutions (report_id, id DESC);

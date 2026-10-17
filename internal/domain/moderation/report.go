@@ -75,8 +75,51 @@ const (
 
 // ReportStatus is the current state of a report (the report_states projection).
 type ReportStatus struct {
-	ReportID       string
-	State          ReportState
+	ReportID string
+	State    ReportState
+	// Outcome is that of the latest resolution while the report is resolved, "" while open.
+	Outcome        ReportOutcome
 	AssigneeUserID string // "" for none
-	Since          time.Time
+	// Since is when the report entered its state: when it was filed or resolved.
+	Since time.Time
+}
+
+// ReportOutcome is how a moderator resolved a report (report_resolutions.outcome).
+type ReportOutcome string
+
+// Report outcomes.
+const (
+	// OutcomeActioned: the moderator took an action on the target.
+	OutcomeActioned ReportOutcome = "actioned"
+	// OutcomeDismissed: the moderator found nothing to act on.
+	OutcomeDismissed ReportOutcome = "dismissed"
+)
+
+// Valid reports whether o is one of the report outcomes.
+func (o ReportOutcome) Valid() bool { return o == OutcomeActioned || o == OutcomeDismissed }
+
+// ReportAssignment is the event that a moderator took a report, or gave it up
+// (report_assignments).
+type ReportAssignment struct {
+	ID       string
+	ReportID string
+	// AssigneeUserID is the moderator who handles the report; "" gives it up.
+	AssigneeUserID   string
+	AssignedByUserID string // "" for the CLI
+	AssignedAt       time.Time
+}
+
+// ReportResolution is the event that a moderator resolved a report (report_resolutions).
+type ReportResolution struct {
+	ID               string
+	ReportID         string
+	Outcome          ReportOutcome
+	ResolvedByUserID string // "" for the CLI
+	ResolvedAt       time.Time
+}
+
+// ReportRecord is a report with its current state, as the moderators list it.
+type ReportRecord struct {
+	Report Report
+	Status ReportStatus
 }
