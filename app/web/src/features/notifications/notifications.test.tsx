@@ -4,9 +4,10 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
+import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
 import { notificationsFixture } from "./test/handlers";
-import { otherAccountFixture, relationshipFixture, statusFixture } from "../../test/fixtures";
+import { accountFixture, otherAccountFixture, relationshipFixture, statusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Notification, NotificationMarker, NotificationType } from "./api/notifications";
@@ -177,6 +178,33 @@ describe("the notifications page", () => {
     expect(screen.queryByRole("button", { name: "Load more notifications" })).not.toBeInTheDocument();
   });
 
+  test("shows the heading and a skeleton of notifications while the first page loads", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a2", unread_count: 0 });
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get(`${apiBase}/notifications`, async () => {
+        await released;
+        return HttpResponse.json({ items: notificationsFixture });
+      }),
+    );
+    const { user } = await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    await user.click(notificationsLink());
+
+    // After the router's pending delay, the page has its heading and a skeleton named once.
+    await findLoadingRegion("Loading notifications");
+    expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    release();
+
+    expect(await screen.findByRole("feed", { name: "Notifications" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading notifications")).not.toBeInTheDocument();
+  });
+
   test("says when there is nothing to show", async () => {
     server.use(resumableSession(), http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items: [] })));
 
@@ -262,7 +290,9 @@ describe("the notifications page", () => {
 
     const { user } = await renderApp({ path: "/notifications" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Something went wrong" })).toBeInTheDocument();
+    // The page keeps its heading; the list shows why it failed.
+    expect(await screen.findByText("Service Unavailable")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("feed", { name: "Notifications" })).toBeInTheDocument();
@@ -274,5 +304,84 @@ describe("the notifications page", () => {
     await user.click(await screen.findByRole("link", { name: "Sign in" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
+  });
+});
+
+describe("the favourites and the boosts of one post", () => {
+  const post = statusFixture("0192f0c4-7a8e-7000-8000-0000000000b1");
+  const postPath = "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1";
+  const carol = accountFixture(3, "Carol");
+  const dave = accountFixture(4, "Dave");
+  /** A favourite of the post by `account`. */
+  const favourite = (id: string, account: NonNullable<Notification["account"]>): Notification => ({
+    id,
+    type: "favourite",
+    created_at: "2026-10-16T05:00:00Z",
+    account,
+    status: post,
+  });
+  /** Newest first: Carol's favourite (after the marker), a follow, Bob's favourite and boost, Dave's favourite (read). */
+  const items: Notification[] = [
+    favourite("0192f0c4-7a8e-7000-8000-0000000000d5", carol),
+    { id: "0192f0c4-7a8e-7000-8000-0000000000d4", type: "follow", created_at: "2026-10-16T08:00:00Z", account: dave },
+    favourite("0192f0c4-7a8e-7000-8000-0000000000d3", otherAccountFixture),
+    { id: "0192f0c4-7a8e-7000-8000-0000000000d2", type: "boost", created_at: "2026-10-16T06:00:00Z", account: otherAccountFixture, status: post },
+    favourite("0192f0c4-7a8e-7000-8000-0000000000d1", dave),
+  ];
+
+  test("are one row each that counts the people, and the marker still moves to the newest notification", async () => {
+    server.use(resumableSession(), http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+    const marker = markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000d4", unread_count: 1 });
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    const articles = within(feed).getAllByRole("article");
+    expect(articles).toHaveLength(3);
+    // The row stays where its newest notification is, and is new when that one is.
+    expect(articles[0]).toHaveAccessibleName(/^Unread: Carol and 2 others favourited your post/);
+    expect(articles[1]).toHaveAccessibleName(/^Dave followed you/);
+    expect(articles[2]).toHaveAccessibleName(/^Bob boosted your post/);
+    // The others' avatars are links for the pointer only: the row's links are the newest actor's name and the post.
+    const favourites = articles[0] ?? feed;
+    expect(within(favourites).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/@carol@remote.example", postPath]);
+    const hiddenLinks = within(favourites).getAllByRole("link", { hidden: true }).map((link) => link.getAttribute("href"));
+    expect(hiddenLinks).toEqual(expect.arrayContaining(["/@bob", "/@dave@remote.example"]));
+
+    await waitFor(() => {
+      expect(marker.updates).toEqual(["0192f0c4-7a8e-7000-8000-0000000000d5"]);
+    });
+    expect(articles[0]).toHaveAccessibleName(/^Unread: /);
+    expect(articles[2]).not.toHaveAccessibleName(/^Unread: /);
+  });
+
+  test("join the row of the newest one when an older page loads", async () => {
+    server.use(
+      resumableSession(),
+      http.get(`${apiBase}/notifications`, ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get("cursor");
+        return HttpResponse.json(cursor === null ? { items: items.slice(0, 2), next_cursor: "page-2" } : { items: items.slice(2) });
+      }),
+    );
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000d5", unread_count: 0 });
+
+    const { user } = await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    expect(within(feed).getAllByRole("article")[0]).toHaveAccessibleName(/^Carol favourited your post/);
+    await user.click(screen.getByRole("button", { name: "Load more notifications" }));
+    expect(await within(feed).findByRole("article", { name: /^Carol and 2 others favourited your post/ })).toBeInTheDocument();
+    expect(within(feed).getAllByRole("article")).toHaveLength(3);
+  });
+
+  test("count a person who favourited the post again once", async () => {
+    const again = [favourite("0192f0c4-7a8e-7000-8000-0000000000d5", carol), favourite("0192f0c4-7a8e-7000-8000-0000000000d0", carol)];
+    server.use(resumableSession(), http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items: again })));
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000d5", unread_count: 0 });
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    expect(within(feed).getByRole("article")).toHaveAccessibleName(/^Carol favourited your post/);
   });
 });

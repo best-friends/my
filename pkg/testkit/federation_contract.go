@@ -18,6 +18,7 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appfederation "github.com/best-friends/my/internal/app/federation"
 	appgraph "github.com/best-friends/my/internal/app/graph"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/account"
@@ -44,7 +45,8 @@ type FederationFactory func(t *testing.T, opts uow.Options) FederationHarness
 // the Create, a fan-out run again without a delivery twice, the servers left out, the boosts that
 // are not recorded, the Update and Delete of a local actor (to its followers, and for the
 // Delete to every known shared inbox), and the Block and Undo Block of a local block of a remote
-// account. The documents carry the body of the revision they present
+// account, and the Flag of the instance actor that forwards a report to the reported account's
+// inbox. The documents carry the body of the revision they present
 // (federation.md §7.4); a local status leaves the remote accounts that do not follow its author
 // out of tag (ADR-0035); and the Delete is stored with the deletion, so that it reaches the
 // inboxes of the Create after the status's rows are gone. It also covers one delivery (federation.md §7.3): the classification of
@@ -70,6 +72,7 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"LeavesOutSuspendedAndUnavailableServers", fedLeavesOutServers},
 		{"RecordsOnlyWhatFederates", fedRecordsOnlyWhatFederates},
 		{"DeliversLocalBlocksOfRemoteAccounts", fedDeliversBlocks},
+		{"ForwardsReportsAsFlags", fedForwardsReports},
 		{"UpdatesAndDeletesActors", fedUpdatesAndDeletesActors},
 		{"BuildsTheNoteOfTheRevision", fedBuildsTheNote},
 		{"LeavesNonFollowersOutOfTheTagOfLocalStatuses", fedLeavesNonFollowersOutOfLocalTags},
@@ -97,6 +100,7 @@ type fedEnv struct {
 	accounts *fedAccounts
 	graph    *fedGraph
 	blocks   *fedBlocks
+	reports  *fedReports
 	domains  fedDomains
 	// handled are the fan-out jobs run so far, to run them again.
 	handled []queue.Job
@@ -116,6 +120,7 @@ func newFedEnv(t *testing.T, newHarness FederationFactory) *fedEnv {
 		accounts: &fedAccounts{actors: map[string]appaccount.Actor{}, inboxes: map[string]appaccount.RemoteInbox{}},
 		graph:    &fedGraph{followers: map[string][]string{}, blocks: map[[2]string]bool{}},
 		blocks:   &fedBlocks{blocks: map[string]graph.Block{}},
+		reports:  &fedReports{reports: map[string]appmoderation.Report{}},
 		domains:  fedDomains{},
 	}
 	e.parts = &fedParts{accounts: e.accounts, tags: map[string]content.Tag{}, media: map[string][]appcontent.MediaView{}}
@@ -126,9 +131,12 @@ func newFedEnv(t *testing.T, newHarness FederationFactory) *fedEnv {
 	appfederation.RegisterBlockProjectors(projectors, appfederation.RecorderDeps{
 		Repository: h.Federation, Outbox: outbox, IDs: e.ids, Host: contractHost, Accounts: e.accounts,
 	})
+	appfederation.RegisterReportProjectors(projectors, appfederation.RecorderDeps{
+		Repository: h.Federation, Outbox: outbox, IDs: e.ids, Host: contractHost,
+	}, e.accounts)
 	appfederation.NewFanOut(appfederation.FanOutDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Federation, Outbox: outbox,
-		Statuses: e.statuses, Accounts: e.accounts, Graph: e.graph, Domains: e.domains, Parts: e.parts, Blocks: e.blocks,
+		Statuses: e.statuses, Accounts: e.accounts, Graph: e.graph, Domains: e.domains, Parts: e.parts, Blocks: e.blocks, Reports: e.reports,
 		Clock: clock, IDs: e.ids, Host: contractHost, AccountDomain: contractAccountDomain, Batch: 2,
 	}).RegisterJobs(e.handlers)
 	return e

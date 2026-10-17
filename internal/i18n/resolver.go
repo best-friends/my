@@ -52,3 +52,14 @@ func (r *Resolver) Localizer(ctx context.Context, acceptLanguage string) *Locali
 func (r *Resolver) RequestLocalizer(req *http.Request) *Localizer {
 	return r.Localizer(req.Context(), req.Header.Get("Accept-Language"))
 }
+
+// UserLocalizer is RequestLocalizer for a request of a user whose saved locale is userLocale
+// ("" for none), for the surfaces whose user UserLocale cannot find in the context, such as the
+// server-rendered screens of a browser session: userLocale comes first, then the rest of the
+// order of Locale.
+func (r *Resolver) UserLocalizer(req *http.Request, userLocale string) *Localizer {
+	if l, ok := r.Bundle.match([]string{userLocale}); ok {
+		return r.Bundle.Localizer(l)
+	}
+	return r.RequestLocalizer(req)
+}

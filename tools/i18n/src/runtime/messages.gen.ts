@@ -236,6 +236,8 @@ export interface MessageArgs {
   "client:admin.missing_permission.heading": {};
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
+  /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
+  "client:api.error.offline": {};
   /** The server could not handle the request (error {status}). Try again later. */
   "client:api.error.status": { status: string };
   /** Close */
@@ -394,6 +396,10 @@ export interface MessageArgs {
   "client:notifications.filter.label": {};
   /** Mentions */
   "client:notifications.filter.mentions": {};
+  /** {name} and {count, plural, one {# other} other {# others}} boosted your post */
+  "client:notifications.group.boost": { count: number; name: string };
+  /** {name} and {count, plural, one {# other} other {# others}} favourited your post */
+  "client:notifications.group.favourite": { count: number; name: string };
   /** Load more notifications */
   "client:notifications.load_more": {};
   /** Loading notifications */
@@ -510,6 +516,8 @@ export interface MessageArgs {
   "client:profile.list.load_more": {};
   /** Could not load more accounts: {reason} */
   "client:profile.list.load_more_failed": { reason: string };
+  /** Loading accounts */
+  "client:profile.list.loading": {};
   /** Try again */
   "client:profile.list.retry": {};
   /** Block */
@@ -560,6 +568,90 @@ export interface MessageArgs {
   "client:public.disabled.title": {};
   /** Federated timeline */
   "client:public.title": {};
+  /** Back */
+  "client:report.back": {};
+  /** Why are you reporting this account? */
+  "client:report.category.heading": {};
+  /** Illegal content */
+  "client:report.category.legal": {};
+  /** Content that you think is against the law. */
+  "client:report.category.legal.description": {};
+  /** Something else */
+  "client:report.category.other": {};
+  /** Tell the moderators about it in the comment. */
+  "client:report.category.other.description": {};
+  /** Choose a reason. */
+  "client:report.category.required": {};
+  /** Spam */
+  "client:report.category.spam": {};
+  /** Unwanted ads, links or the same post again and again. */
+  "client:report.category.spam.description": {};
+  /** Breaks the server rules */
+  "client:report.category.violation": {};
+  /** You choose the rules in the next step. */
+  "client:report.category.violation.description": {};
+  /** Close */
+  "client:report.close": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:report.comment.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:report.comment.characters_over": { count: number };
+  /** Optional. Only the moderators read it. */
+  "client:report.comment.description": {};
+  /** Anything else the moderators should know? */
+  "client:report.comment.heading": {};
+  /** Comment */
+  "client:report.comment.label": {};
+  /** Shorten the comment to {max, number} characters or fewer. */
+  "client:report.comment.too_long": { max: number };
+  /** Done */
+  "client:report.done": {};
+  /** The report was not sent: {reason} */
+  "client:report.failed": { reason: string };
+  /** Also send the report to {domain} */
+  "client:report.forward": { domain: string };
+  /** The moderators of {domain} get a copy without your name. */
+  "client:report.forward.description": { domain: string };
+  /** Next */
+  "client:report.next": {};
+  /** Report */
+  "client:report.open": {};
+  /** Content warning: {text} */
+  "client:report.posts.content_warning": { text: string };
+  /** Choose the posts the moderators should look at. You can also report the account without them. */
+  "client:report.posts.description": {};
+  /** This account has no posts that you can choose. */
+  "client:report.posts.empty": {};
+  /** Couldn't load the posts */
+  "client:report.posts.failed": {};
+  /** Which posts are you reporting? */
+  "client:report.posts.heading": {};
+  /** Post of {date} */
+  "client:report.posts.item": { date: string };
+  /** Loading posts */
+  "client:report.posts.loading": {};
+  /** {count, plural, one {# attachment} other {# attachments}} */
+  "client:report.posts.media": { count: number };
+  /** Try again */
+  "client:report.posts.retry": {};
+  /** Choose every rule that applies. */
+  "client:report.rules.description": {};
+  /** Which rules does it break? */
+  "client:report.rules.heading": {};
+  /** Choose at least one rule. */
+  "client:report.rules.required": {};
+  /** The moderators will review it. The account is not told who reported it. */
+  "client:report.sent.body": {};
+  /** A copy without your name goes to {domain}. */
+  "client:report.sent.forwarded": { domain: string };
+  /** Report sent */
+  "client:report.sent.heading": {};
+  /** Step {current, number} of {total, number} */
+  "client:report.step": { current: number; total: number };
+  /** Send report */
+  "client:report.submit": {};
+  /** Report {name} */
+  "client:report.title": { name: string };
   /** Enter @username@server or the address of a profile, on this server or another one. */
   "client:search.description": {};
   /** Enter @username@server or the address of a profile. Only accounts this server already knows are found. */
@@ -788,6 +880,8 @@ export interface MessageArgs {
   "client:shell.not_found.home": {};
   /** Page not found */
   "client:shell.not_found.title": {};
+  /** You are offline. Anything that failed to load loads again when you are back online. */
+  "client:shell.offline": {};
   /** Skip to main content */
   "client:shell.skip_to_main": {};
   /** The server sent settings the app cannot read. Reload the page; if this keeps happening, tell the server's administrator. */
@@ -1052,6 +1146,12 @@ export interface MessageArgs {
   "server:auth.signed_in.continue": {};
   /** You are signed in */
   "server:auth.signed_in.title": {};
+  /** {days, plural, one {Ends in # day} other {Ends in # days}} */
+  "server:auth.status.action_ends_in": { days: number };
+  /** Reason: {category} */
+  "server:auth.status.action_reason": { category: string };
+  /** Lasts until a moderator lifts it */
+  "server:auth.status.action_until_lifted": {};
   /** Your registration is waiting for a moderator's approval. You can sign in, but you can use the app only after it is approved. */
   "server:auth.status.pending": {};
   /** Your registration was not approved, so this account cannot be used. */
@@ -1064,6 +1164,10 @@ export interface MessageArgs {
   "server:auth.status.resend_submit": {};
   /** We sent a new link to {email}. */
   "server:auth.status.resent": { email: string };
+  /** A moderator has taken action on your account, so you cannot use the app. These actions are in effect: */
+  "server:auth.status.restricted": {};
+  /** Your account is restricted */
+  "server:auth.status.restricted_title": {};
   /** Your account is not ready yet */
   "server:auth.status.title": {};
   /** Confirm your email address: open the link we sent to {email}. */
@@ -1202,6 +1306,10 @@ export interface MessageArgs {
   "server:mail.verify_email.body": { host: string; hours: number; url: string };
   /** Confirm your email address for {host} */
   "server:mail.verify_email.subject": { host: string };
+  /** {category, select, spam {Spam} legal {Legal reasons} violation {Violation of the instance's rules} other {Other}} */
+  "server:moderation.action.category": { category: "legal" | "spam" | "violation" | (string & {}) };
+  /** {kind, select, warn {Warning} mark_statuses_sensitive {Posts marked as sensitive} delete_statuses {Posts deleted} force_sensitive {Media always marked as sensitive} limit {Limited: posts shown to followers only and kept off the public timelines} restrict_posting {No posting, replying, boosting, or editing} restrict_interaction {No following, favouriting, boosting, or replying} disable_login {Login disabled} suspend {Suspended: no use of the app, and the profile and posts are hidden} ban {Banned: the account is deleted} other {Moderation action}} */
+  "server:moderation.action.kind": { kind: "ban" | "delete_statuses" | "disable_login" | "force_sensitive" | "limit" | "mark_statuses_sensitive" | "restrict_interaction" | "restrict_posting" | "suspend" | "warn" | (string & {}) };
   /** Avatar of {name} */
   "server:preview.avatar_alt": { name: string };
   /** A speech bubble with three dots on a blue gradient */

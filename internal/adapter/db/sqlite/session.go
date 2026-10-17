@@ -19,7 +19,7 @@ func (r *IdentityRepository) InsertSession(ctx context.Context, tx uow.Tx, s ide
 		return err
 	}
 	err = q.InsertSession(ctx, sqlitegen.InsertSessionParams{
-		ID: s.ID, UserID: s.UserID, TokenHash: s.TokenHash, UserAgent: toNullString(s.UserAgent), Ip: toNullString(s.IP),
+		ID: s.ID, UserID: s.UserID, TokenHash: s.TokenHash,
 		CreatedAt: toMillis(s.CreatedAt), ExpiresAt: toMillis(s.ExpiresAt),
 	})
 	return wrap(err, "insert session")
@@ -54,7 +54,7 @@ func (r *IdentityRepository) FindUnrevokedSession(ctx context.Context, tokenHash
 		return identity.Session{}, identity.SessionActivity{}, notFound(err, appidentity.ErrNotFound, "session")
 	}
 	s := identity.Session{
-		ID: row.ID, UserID: row.UserID, TokenHash: row.TokenHash, UserAgent: row.UserAgent.String, IP: row.Ip.String,
+		ID: row.ID, UserID: row.UserID, TokenHash: row.TokenHash,
 		CreatedAt: fromMillis(row.CreatedAt), ExpiresAt: fromMillis(row.ExpiresAt),
 	}
 	a := identity.SessionActivity{SessionID: row.ID}
