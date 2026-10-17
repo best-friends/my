@@ -209,7 +209,8 @@ type AccountActionInput struct {
 }
 
 // IssueAccountAction records an action on an account and, in the same transaction, the
-// restrictions it imposes (data-model §5.2), and emits AccountRestrictionsChanged. A local
+// restrictions it imposes (data-model §5.2), and emits AccountRestrictionsChanged and
+// AccountActionIssued. A local
 // account takes the kinds of localActionKinds, a remote one limit, suspend, and
 // force_sensitive; another kind, or the instance actor, fails with ErrUnsupportedAction, and an
 // unknown kind or an invalid field with moderation.ErrInvalidAction. An unknown account fails
@@ -267,7 +268,10 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 				return err
 			}
 		}
-		return s.emitAccount(ctx, tx, a.TargetAccountID, now)
+		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, AccountActionIssued{Action: a})
 	})
 	if err != nil {
 		return moderation.Action{}, err

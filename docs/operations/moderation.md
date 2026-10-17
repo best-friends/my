@@ -18,7 +18,7 @@ CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直�
 | `limit` | 投稿（過去の投稿を含む）をフォロワー限定として扱い、公開タイムラインに出さない |
 | `restrict_posting` | 投稿・返信・ブースト・編集を禁止する |
 | `restrict_interaction` | フォロー・お気に入り・ブースト・返信を禁止する |
-| `disable_login` | ログインと API の利用を禁止し、有効なセッションとトークンを失効させる |
+| `disable_login` | アプリと API の利用を禁止し、有効なセッションとトークンを失効させる（ログイン画面では処分を確かめられる） |
 | `suspend` | 上の制限をすべて課し、プロフィールと投稿を本人以外に見せない |
 
 リモートのアカウントには `limit`・`suspend`・`force_sensitive` だけを出せます。`suspend` はそのアカウントからの受信を捨てます。
@@ -39,6 +39,13 @@ my admin account action lift -reason "appealed" <action id>
 - `disable_login` と `suspend` が失効させたセッションとトークンは、解除しても戻りません。本人はもう一度ログインします。
 - `report_id`（`-report`）は、対象のアカウントの通報だけを指定できます。
 - `public_reason` は本人に見せる理由、`private_note` はモデレーターだけのメモです。`notify_target`（既定は真、CLI では `-no-notify` で偽）は本人に知らせるかどうかです。
+
+### 本人に見えるもの
+
+- `notify_target` が真の処分は、本人に通知（`moderation_notice`）として届きます。通知には処分の種類・理由のカテゴリ・`public_reason`・期限・状態が入り、種類とカテゴリは本人の UI 言語の表示名でも返ります。
+- 本人は `GET /api/v1/moderation/actions`（スコープ `read:accounts`、`active` で絞り込み）で自分への処分を新しい順に確かめられます。`notify_target` が偽の処分も、解除・期限切れの処分も並びます。
+- `private_note`・通報・処分した人・解除の理由は、本人には一切見せません。
+- `disable_login` と `suspend` を受けた本人は、アプリと API を使えませんが、ログイン画面（`/auth/sign_in`）にはログインでき、効いている `disable_login` / `suspend` の種類・理由・期限を確かめられます。認可（`/oauth/authorize`）はこの画面を `403` で返し、トークンを発行しません。
 
 ## ドメイン単位の処分
 

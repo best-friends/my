@@ -267,6 +267,18 @@
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ şīɠƞḗḗḓ īƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.status.action_ends_in": {
+    "defaultMessage": "[{days,plural,one{Ḗƞḓş īƞ # ḓȧȧẏ} other{Ḗƞḓş īƞ # ḓȧȧẏş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.action_reason": {
+    "defaultMessage": "[Řḗḗȧȧşǿǿƞ: {category}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.action_until_lifted": {
+    "defaultMessage": "[Ŀȧȧşŧş ŭŭƞŧīŀ ȧȧ ḿǿǿḓḗḗřȧȧŧǿǿř ŀīƒŧş īŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.status.pending": {
     "defaultMessage": "[Ẏǿǿŭŭř řḗḗɠīşŧřȧȧŧīǿǿƞ īş ẇȧȧīŧīƞɠ ƒǿǿř ȧȧ ḿǿǿḓḗḗřȧȧŧǿǿř'ş ȧȧƥƥřǿǿṽȧȧŀ. Ẏǿǿŭŭ ƈȧȧƞ şīɠƞ īƞ, ƀŭŭŧ ẏǿǿŭŭ ƈȧȧƞ ŭŭşḗḗ ŧħḗḗ ȧȧƥƥ ǿǿƞŀẏ ȧȧƒŧḗḗř īŧ īş ȧȧƥƥřǿǿṽḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -289,6 +301,14 @@
   },
   "auth.status.resent": {
     "defaultMessage": "[Ẇḗḗ şḗḗƞŧ ȧȧ ƞḗḗẇ ŀīƞķ ŧǿǿ {email}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.restricted": {
+    "defaultMessage": "[Ȧ ḿǿǿḓḗḗřȧȧŧǿǿř ħȧȧş ŧȧȧķḗḗƞ ȧȧƈŧīǿǿƞ ǿǿƞ ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ, şǿǿ ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ŭŭşḗḗ ŧħḗḗ ȧȧƥƥ. Ŧħḗḗşḗḗ ȧȧƈŧīǿǿƞş ȧȧřḗḗ īƞ ḗḗƒƒḗḗƈŧ:]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.restricted_title": {
+    "defaultMessage": "[Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ īş řḗḗşŧřīƈŧḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.status.title": {
@@ -565,6 +585,14 @@
   },
   "mail.verify_email.subject": {
     "defaultMessage": "[Ƈǿǿƞƒīřḿ ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ƒǿǿř {host}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "moderation.action.category": {
+    "defaultMessage": "[{category,select,legal{Ŀḗḗɠȧȧŀ řḗḗȧȧşǿǿƞş} other{Ǿŧħḗḗř} spam{Şƥȧȧḿ} violation{Ṽīǿǿŀȧȧŧīǿǿƞ ǿǿƒ ŧħḗḗ īƞşŧȧȧƞƈḗḗ'ş řŭŭŀḗḗş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "moderation.action.kind": {
+    "defaultMessage": "[{kind,select,ban{Ɓȧȧƞƞḗḗḓ: ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ īş ḓḗḗŀḗḗŧḗḗḓ} delete_statuses{Ƥǿǿşŧş ḓḗḗŀḗḗŧḗḗḓ} disable_login{Ŀǿǿɠīƞ ḓīşȧȧƀŀḗḗḓ} force_sensitive{Ḿḗḗḓīȧȧ ȧȧŀẇȧȧẏş ḿȧȧřķḗḗḓ ȧȧş şḗḗƞşīŧīṽḗḗ} limit{Ŀīḿīŧḗḗḓ: ƥǿǿşŧş şħǿǿẇƞ ŧǿǿ ƒǿǿŀŀǿǿẇḗḗřş ǿǿƞŀẏ ȧȧƞḓ ķḗḗƥŧ ǿǿƒƒ ŧħḗḗ ƥŭŭƀŀīƈ ŧīḿḗḗŀīƞḗḗş} mark_statuses_sensitive{Ƥǿǿşŧş ḿȧȧřķḗḗḓ ȧȧş şḗḗƞşīŧīṽḗḗ} other{Ḿǿǿḓḗḗřȧȧŧīǿǿƞ ȧȧƈŧīǿǿƞ} restrict_interaction{Ƞǿǿ ƒǿǿŀŀǿǿẇīƞɠ, ƒȧȧṽǿǿŭŭřīŧīƞɠ, ƀǿǿǿǿşŧīƞɠ, ǿǿř řḗḗƥŀẏīƞɠ} restrict_posting{Ƞǿǿ ƥǿǿşŧīƞɠ, řḗḗƥŀẏīƞɠ, ƀǿǿǿǿşŧīƞɠ, ǿǿř ḗḗḓīŧīƞɠ} suspend{Şŭŭşƥḗḗƞḓḗḗḓ: ƞǿǿ ŭŭşḗḗ ǿǿƒ ŧħḗḗ ȧȧƥƥ, ȧȧƞḓ ŧħḗḗ ƥřǿǿƒīŀḗḗ ȧȧƞḓ ƥǿǿşŧş ȧȧřḗḗ ħīḓḓḗḗƞ} warn{Ẇȧȧřƞīƞɠ}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "preview.avatar_alt": {

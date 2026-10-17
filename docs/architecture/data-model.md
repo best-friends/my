@@ -242,6 +242,7 @@ flowchart LR
 - メールを届けられない構成（`mail = none`）では、メール確認の代わりにモデレーターの承認を求めます（FR-002）。このとき `open` モードの登録も `pending` で始まり、確認済みでないことはアプリの利用を妨げません。
 - アプリ（クライアント API と OAuth の認可）を使えるのは、`user_registration_states` が `approved`（または行が無い）で、メール確認が必要な構成では主アドレスが確認済みの利用者だけです。
   承認待ち・却下・未確認の利用者もサーバーが返す画面にはログインでき、何を待っているかが表示されます。
+  ログインを奪う処分（制限 `login`、§5.2）を受けた利用者も同じで、サーバーが返す画面にはログインでき、効いている処分のうちログインを奪うもの（種類・理由のカテゴリと公開の理由・期限）が本人の UI 言語で表示されます。アクセストークンは得られません。
 - CLI で作った管理者の主アドレスは、作成と同じトランザクションで確認済みにします（運営者が与えたアドレスなので）。
 
 #### 招待・1 回限りのトークン
@@ -803,7 +804,7 @@ flowchart LR
 
   | ドメインイベント | 種類 | 受け取る人 | `dedupe_key` |
   | --- | --- | --- | --- |
-  | 処分の記録（`notify_target` が真） | `moderation_notice` | 対象のローカルのアカウント | `moderation_notice:<action_id>` |
+  | 処分の記録（`moderation.account_action_issued` のうち `notify_target` が真のもの） | `moderation_notice` | 対象のローカルのアカウント | `moderation_notice:<action_id>` |
   | 異議申し立ての審査 | `appeal_decided` | 申し立てた本人 | `appeal_decided:<appeal_id>` |
   | 通報の解決（最初の解決だけ） | `report_resolved` | ローカルの通報者 | `report_resolved:<report_id>` |
   | 関係の切断 | `relationships_severed` | 関係を失ったローカルのアカウント | `relationships_severed:<severance_id>` |
@@ -812,6 +813,8 @@ flowchart LR
   | 異議申し立て | `admin_appeal` | ロールが `manage_accounts` を持つ人 | `admin_appeal:<appeal_id>` |
 
   - 本人は `moderation_notice` から処分の種類・公開理由・対象の投稿・期限を見られ、異議申し立てに進めます（FR-715）。
+    クライアント API は通知に処分を本人に見せる形（種類と理由のカテゴリは本人の UI 言語の表示名付き）で埋め込み、`GET /api/v1/moderation/actions` は本人への処分を通知の有無に関わらずすべて新しい順に返します。
+    どちらも非公開のメモ・通報・処分した人を含めません（ADR-0038）。`moderation_notice` の行は `moderation_action_id` を必ず持ち、ほかの種類は持ちません。
   - `report_resolved` は解決したことだけを伝え、処分の内容は含めません（FR-711）。
   - `admin_*` の受け取る人は、通知を作るトランザクションでロールの権限から求めます。後から権限を失った人の通知は一覧から除きます。
 
@@ -936,7 +939,7 @@ flowchart LR
 
 | `restriction` | 意味 | 判定に使う場面 |
 | --- | --- | --- |
-| `login` | ログイン・API 利用の禁止 | 認証。有効なセッションとトークンは処分時に失効させる（`session_revocations` / `oauth_token_revocations`、`reason = moderation`） |
+| `login` | アプリ（認可・API）の利用の禁止 | 認証。有効なセッションとトークンは処分時に失効させる（`session_revocations` / `oauth_token_revocations`、`reason = moderation`）。サーバーが返す画面には処分を確かめるためにログインできる（§4.1） |
 | `post` | 投稿・返信・ブースト・編集の禁止 | 投稿系ユースケース |
 | `interact` | フォロー・お気に入り・ブースト・投票の禁止 | 交流系ユースケース |
 | `visibility_ceiling_private` | 公開範囲の上限を `private` にする | 投稿時の公開範囲の決定、`canView`（§5.4） |
@@ -969,7 +972,7 @@ flowchart LR
 | --- | --- | --- |
 | `content` | `RestrictionPolicy`（`AccountPolicy.Content()`） | 投稿・編集（`post`）、返信・お気に入り・ブースト（`interact`。ブーストは `post` も）、公開範囲の上限、閲覧、添付のセンシティブ表示（`media_sensitive`） |
 | `graph` | `InteractionPolicy` | フォロー（`interact`） |
-| `identity` | `LoginPolicy` | ログインとアクセストークンの照合（`login`。要求ごと） |
+| `identity` | `LoginPolicy` | 認可とアクセストークンの照合（`login`。要求ごと） |
 | クライアント API | `ProfileRestrictions` | アカウントの表示（`profile_view`。本人以外には存在しないものと同じ 404） |
 
 `login` を含む制限の変化（`moderation.account_restrictions_changed`）を受けて、`identity` の同期の購読者が処分と同じトランザクションでその利用者のセッションとトークンを失効させます（`reason = moderation`）。解除しても失効したものは戻りません。

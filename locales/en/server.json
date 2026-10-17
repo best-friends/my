@@ -299,6 +299,26 @@
     "defaultMessage": "Confirm your email address: open the link we sent to {email}.",
     "description": "Asks the user to open the confirmation link. {email} is their email address."
   },
+  "auth.status.action_ends_in": {
+    "defaultMessage": "{days, plural, one {Ends in # day} other {Ends in # days}}",
+    "description": "When a moderation action on the user's account ends, on the page of a signed-in user whose account is restricted. {days} is the time left, rounded up to whole days."
+  },
+  "auth.status.action_reason": {
+    "defaultMessage": "Reason: {category}",
+    "description": "The reason category of a moderation action, on the page of a signed-in user whose account is restricted. {category} is the category's label (for example, Spam)."
+  },
+  "auth.status.action_until_lifted": {
+    "defaultMessage": "Lasts until a moderator lifts it",
+    "description": "Says that a moderation action on the user's account has no end date, on the page of a signed-in user whose account is restricted."
+  },
+  "auth.status.restricted": {
+    "defaultMessage": "A moderator has taken action on your account, so you cannot use the app. These actions are in effect:",
+    "description": "Explains to a signed-in user that moderation actions (login disabled, suspension) keep them out of the app; the list of the actions follows."
+  },
+  "auth.status.restricted_title": {
+    "defaultMessage": "Your account is restricted",
+    "description": "Title and heading of the page a signed-in user sees while a moderation action keeps their account out of the app."
+  },
   "auth.verify_email.done": {
     "defaultMessage": "Thank you. Your email address is confirmed.",
     "description": "Body of the page after the email address was confirmed."
@@ -566,6 +586,14 @@
   "mail.verify_email.subject": {
     "defaultMessage": "Confirm your email address for {host}",
     "description": "Subject of the email that confirms a new account's email address. {host} is the server's domain name."
+  },
+  "moderation.action.category": {
+    "defaultMessage": "{category, select, spam {Spam} legal {Legal reasons} violation {Violation of the instance's rules} other {Other}}",
+    "description": "Label of the reason category that a moderator chose for an action on the user's own account. {category} is the category."
+  },
+  "moderation.action.kind": {
+    "defaultMessage": "{kind, select, warn {Warning} mark_statuses_sensitive {Posts marked as sensitive} delete_statuses {Posts deleted} force_sensitive {Media always marked as sensitive} limit {Limited: posts shown to followers only and kept off the public timelines} restrict_posting {No posting, replying, boosting, or editing} restrict_interaction {No following, favouriting, boosting, or replying} disable_login {Login disabled} suspend {Suspended: no use of the app, and the profile and posts are hidden} ban {Banned: the account is deleted} other {Moderation action}}",
+    "description": "Label of the kind of a moderation action on the user's own account, in the notice of the action and the list of the user's actions. {kind} is the kind; the label must make sense whether or not the action is still in effect."
   },
   "preview.avatar_alt": {
     "defaultMessage": "Avatar of {name}",

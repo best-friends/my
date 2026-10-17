@@ -90,6 +90,9 @@ type Options struct {
 	// AccountModeration runs the moderators' use cases on the actions on accounts for the admin
 	// operations (admin_account_actions.go).
 	AccountModeration AccountModeration
+	// OwnModeration reads the actions on the viewer's own account, for GET /moderation/actions
+	// and the moderation notices (moderation.go); nil leaves the action out of the notices.
+	OwnModeration OwnModeration
 	// ProfileRestrictions hides the accounts whose profiles moderation hides (profile_view)
 	// from everyone but themselves; nil hides none. Moderators see them through the admin
 	// operations.
