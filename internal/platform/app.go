@@ -392,7 +392,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
 	// After the graph and content projectors, whose events these projectors turn into notifications.
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
-		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, IDs: a.IDs,
+		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, Reach: a.AccountPolicy, IDs: a.IDs,
 	})
 	a.Notifications = notification.NewService(notification.Deps{UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock})
 	a.setUpRetention(cfg, retention, statuses)
