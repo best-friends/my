@@ -17,6 +17,8 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   report_assigned: "client:admin.audit_log.action.report_assigned",
   report_unassigned: "client:admin.audit_log.action.report_unassigned",
   report_resolved: "client:admin.audit_log.action.report_resolved",
+  report_reopened: "client:admin.audit_log.action.report_reopened",
+  report_note_added: "client:admin.audit_log.action.report_note_added",
   registration_approved: "client:admin.audit_log.action.registration_approved",
   registration_rejected: "client:admin.audit_log.action.registration_rejected",
   setting_changed: "client:admin.audit_log.action.setting_changed",

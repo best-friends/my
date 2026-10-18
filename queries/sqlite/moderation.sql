@@ -224,3 +224,24 @@ SELECT EXISTS (
   SELECT 1 FROM reports r JOIN report_states s ON s.report_id = r.id
   WHERE r.target_account_id = sqlc.arg(target_account_id) AND r.id <> sqlc.arg(report_id) AND s.state = 'open'
 );
+
+-- Notes on reports and their reopenings (#333) -------------------------------------------------
+
+-- name: InsertReportReopening :exec
+INSERT INTO report_reopenings (id, report_id, reopened_by_user_id, reopened_at) VALUES (?, ?, ?, ?);
+
+-- name: InsertReportNote :exec
+INSERT INTO report_notes (id, report_id, author_user_id, body, written_at) VALUES (?, ?, ?, ?, ?);
+
+-- ListReportNotes returns the notes on a report, oldest first.
+-- name: ListReportNotes :many
+SELECT id, report_id, author_user_id, body, written_at FROM report_notes WHERE report_id = ? ORDER BY id;
+
+-- CountOtherReportsOfTarget counts the reports of a target account other than the one given.
+-- name: CountOtherReportsOfTarget :one
+SELECT COUNT(*) FROM reports
+WHERE target_account_id = sqlc.arg(target_account_id) AND id <> sqlc.arg(report_id);
+
+-- CountModerationActionsOfTarget counts the actions on an account, ended ones included.
+-- name: CountModerationActionsOfTarget :one
+SELECT COUNT(*) FROM moderation_actions WHERE target_account_id = ?;

@@ -27,6 +27,14 @@
     "defaultMessage": "‮ᴚǝdoɹʇ ɐssıƃuǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.report_note_added": {
+    "defaultMessage": "‮Noʇǝ ɐppǝp ʇo ɐ ɹǝdoɹʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.report_reopened": {
+    "defaultMessage": "‮ᴚǝdoɹʇ ɹǝodǝuǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.report_resolved": {
     "defaultMessage": "‮ᴚǝdoɹʇ ɹǝsoʅʌǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."

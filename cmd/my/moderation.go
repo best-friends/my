@@ -174,7 +174,7 @@ func runAdminReport(args []string, stdout, stderr io.Writer) int {
 		adminReportUsage(stderr)
 		return 2
 	}
-	sub, code := dispatch("admin report", args, []string{"list", "show", "assign", "unassign", "resolve"}, stderr, adminReportUsage)
+	sub, code := dispatch("admin report", args, []string{"list", "show", "assign", "unassign", "resolve", "note", "reopen"}, stderr, adminReportUsage)
 	if code >= 0 {
 		return code
 	}
@@ -186,7 +186,7 @@ func runAdminReport(args []string, stdout, stderr io.Writer) int {
 	switch sub {
 	case "list":
 		nargs = 0
-	case "assign":
+	case "assign", "note":
 		nargs = 2
 	}
 	c, code := parseSubcommand("my admin report "+sub, args[1:], nargs, stderr, adminReportUsage, func(fs *flag.FlagSet) {
@@ -232,6 +232,21 @@ func runAdminReport(args []string, stdout, stderr io.Writer) int {
 		rec, err = app.Moderation.ResolveReport(ctx, c.fs.Arg(0), moderation.ReportOutcome(outcome), "")
 		if err == nil {
 			_, _ = fmt.Fprintf(stdout, "report %s is resolved (%s)\n", rec.Report.ID, rec.Status.Outcome)
+		}
+	case "note":
+		var n moderation.ReportNote
+		n, err = app.Moderation.AddReportNote(ctx, c.fs.Arg(0), c.fs.Arg(1), "")
+		if err == nil {
+			_, _ = fmt.Fprintf(stdout, "note %s is added to report %s\n", n.ID, n.ReportID)
+		}
+	case "reopen":
+		var rec moderation.ReportRecord
+		rec, err = app.Moderation.ReopenReport(ctx, c.fs.Arg(0), "")
+		if errors.Is(err, appmoderation.ErrReportNotResolved) {
+			err = fmt.Errorf("report %s is open; only a resolved report can be reopened", c.fs.Arg(0))
+		}
+		if err == nil {
+			_, _ = fmt.Fprintf(stdout, "report %s is open again\n", rec.Report.ID)
 		}
 	}
 	if errors.Is(err, appmoderation.ErrNotFound) {
@@ -299,11 +314,11 @@ func (c reportCommand) list(ctx context.Context, q appmoderation.ReportQuery, li
 }
 
 func (c reportCommand) show(ctx context.Context, id string) error {
-	rec, err := c.app.Moderation.ReportRecord(ctx, id)
+	d, err := c.app.Moderation.ReportDetail(ctx, id)
 	if err != nil {
 		return err
 	}
-	r, st := rec.Report, rec.Status
+	r, st := d.Report, d.Status
 	uri := r.URI
 	if uri == "" {
 		uri = "-"
@@ -320,14 +335,23 @@ func (c reportCommand) show(ctx context.Context, id string) error {
 		{"target", c.handle(ctx, r.TargetAccountID) + " (" + r.TargetAccountID + ")"},
 		{"reporter", c.handle(ctx, r.ReporterAccountID) + " (" + r.ReporterAccountID + ")"},
 		{"statuses", strings.Join(r.StatusIDs, " ")},
+		{"history", fmt.Sprintf("%d other reports, %d actions", d.History.Reports, d.History.Actions)},
 	} {
 		_, _ = fmt.Fprintf(tw, "%s:\t%s\n", row[0], row[1])
 	}
 	if err := tw.Flush(); err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(c.stdout, "\n%s\n", r.Comment)
-	return err
+	if _, err := fmt.Fprintf(c.stdout, "\n%s\n", r.Comment); err != nil {
+		return err
+	}
+	for _, n := range d.Notes {
+		_, err := fmt.Fprintf(c.stdout, "\nnote %s by %s at %s:\n%s\n", n.ID, c.moderator(ctx, n.AuthorUserID), n.WrittenAt.Format(time.RFC3339), n.Body)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // assign makes the local user with username handle the report, or nobody for "". The user's
@@ -370,11 +394,15 @@ func adminReportUsage(w io.Writer) {
   my admin report assign [-config <file>] <report id> <username>
   my admin report unassign [-config <file>] <report id>
   my admin report resolve -outcome actioned|dismissed [-config <file>] <report id>
+  my admin report note [-config <file>] <report id> <text>
+  my admin report reopen [-config <file>] <report id>
 
 The reports in the moderators' queue (FR-701), including those received from
-other servers. list shows them newest first. assign makes a local user whose
-roles grant manage_reports handle a report; unassign leaves it to nobody.
-resolve closes an open report with its outcome; resolving a resolved report
-changes nothing.
+other servers. list shows them newest first; show adds the moderators' notes
+and the number of the target's other reports and actions. assign makes a local
+user whose roles grant manage_reports handle a report; unassign leaves it to
+nobody. resolve closes an open report with its outcome; resolving a resolved
+report changes nothing. note adds an internal note (up to 2,000 characters)
+that only the moderators see. reopen puts a resolved report back in the queue.
 `)
 }
