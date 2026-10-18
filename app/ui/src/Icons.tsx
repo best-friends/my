@@ -196,6 +196,16 @@ export function LocalIcon() {
   );
 }
 
+/** A card with the edge of another behind it, for the screen with the local and federated timelines. */
+export function TimelinesIcon() {
+  return (
+    <Icon>
+      <rect x="4" y="9" width="16" height="11" rx="2" />
+      <path d="M7 5h10" />
+    </Icon>
+  );
+}
+
 /** A globe, for the federated timeline. */
 export function FederatedIcon() {
   return (
@@ -242,6 +252,15 @@ export function SettingsIcon() {
       <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
       <circle cx="15" cy="7" r="2" />
       <circle cx="9" cy="17" r="2" />
+    </Icon>
+  );
+}
+
+/** Three lines, for the button that opens the menu with the rest of the navigation. */
+export function MenuIcon() {
+  return (
+    <Icon>
+      <path d="M4 6h16M4 12h16M4 18h16" />
     </Icon>
   );
 }

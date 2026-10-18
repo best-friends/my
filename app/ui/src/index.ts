@@ -72,6 +72,7 @@ export {
   ImageIcon,
   LanguageIcon,
   LocalIcon,
+  MenuIcon,
   MoreIcon,
   NotificationsIcon,
   PlusIcon,
@@ -80,6 +81,7 @@ export {
   SearchIcon,
   SettingsIcon,
   StarIcon,
+  TimelinesIcon,
   type ToggleIconProps,
   WarningIcon,
 } from "./Icons";

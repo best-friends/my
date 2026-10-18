@@ -193,3 +193,86 @@ export function liftDomainActionMutation(api: Api) {
     },
   };
 }
+
+export type AuditEntry = Schemas["AdminAuditEntry"];
+export type AuditAction = Schemas["AdminAuditAction"];
+export type AuditActorKind = Schemas["AdminAuditActorKind"];
+export type AuditTargetKind = Schemas["AdminAuditTargetKind"];
+
+/** The kinds of audited operation, grouped by the kind of their target, in the order of the filter. */
+export const auditActions = [
+  "account_action_issued",
+  "account_action_lifted",
+  "domain_action_issued",
+  "domain_action_lifted",
+  "report_assigned",
+  "report_unassigned",
+  "report_resolved",
+  "registration_approved",
+  "registration_rejected",
+  "setting_changed",
+  "text_changed",
+  "rule_added",
+  "rule_revised",
+  "rule_moved",
+  "rule_retired",
+] as const satisfies readonly AuditAction[];
+
+/** The kinds of target of an audited operation, in the order of the filter. */
+export const auditTargetKinds = [
+  "account",
+  "status",
+  "domain",
+  "report",
+  "appeal",
+  "user",
+  "role",
+  "setting",
+  "rule",
+  "signup_block",
+] as const satisfies readonly AuditTargetKind[];
+
+/**
+ * Which operations the audit log shows: those of one actor's account, of one kind, on one kind of target, and
+ * on one target of that kind; each left undefined keeps every operation. `target` counts only with `targetKind`.
+ */
+export type AuditLogFilter = {
+  actor?: string | undefined;
+  action?: AuditAction | undefined;
+  targetKind?: AuditTargetKind | undefined;
+  target?: string | undefined;
+};
+
+/** The operations of the moderators and administrators under `filter`, newest first (GET /admin/audit_log). */
+export function auditLogQueryOptions(api: Api, filter: AuditLogFilter) {
+  const params = {
+    actor_account_id: filter.actor,
+    action: filter.action,
+    target_kind: filter.targetKind,
+    target_id: filter.targetKind === undefined ? undefined : filter.target,
+  };
+  return infiniteQueryOptions({
+    queryKey: ["get", "/admin/audit_log", params, "pages"] as const,
+    queryFn: async ({ pageParam, signal }) => {
+      const query = {
+        ...pageQuery(pageParam),
+        ...(params.actor_account_id === undefined ? {} : { actor_account_id: params.actor_account_id }),
+        ...(params.action === undefined ? {} : { action: params.action }),
+        ...(params.target_kind === undefined ? {} : { target_kind: params.target_kind }),
+        ...(params.target_id === undefined ? {} : { target_id: params.target_id }),
+      };
+      const { data, error } = await api.fetch.GET("/admin/audit_log", { params: { query }, signal });
+      // The middleware throws an ApiError for every error status; this narrows the type.
+      if (data === undefined) throw new ApiError(error);
+      return data;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.next_cursor,
+  });
+}
+
+/**
+ * The most pages of the audit log that its address keeps (`?pages=`), 1,000 entries: the list reads them again
+ * after a reload, and loading more than these keeps working without changing the address.
+ */
+export const auditLogMaxPages = 25;

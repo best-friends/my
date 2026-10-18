@@ -6,4 +6,5 @@ export { type AccountTimelineFilter, accountTimelineFilters, timelineQueryOption
 export { HomeTimeline } from "./components/HomeTimeline";
 export { TimelineFeed } from "./components/TimelineFeed";
 export { TimelineSkeleton } from "./components/TimelineSkeleton";
+export { TimelineTabs } from "./components/TimelineTabs";
 export { type TimelineAvailability, useTimelineAvailability } from "./hooks/useTimelineAvailability";
