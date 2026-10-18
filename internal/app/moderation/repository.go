@@ -108,6 +108,8 @@ type Repository interface {
 
 	// The audit log (audit.go).
 	AuditRepository
+	// The appeals (appeal.go).
+	AppealRepository
 }
 
 // ReportQuery selects the reports of a list.

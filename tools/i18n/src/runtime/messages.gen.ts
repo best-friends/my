@@ -420,10 +420,14 @@ export interface MessageArgs {
   "client:notifications.signed_out": {};
   /** Notifications */
   "client:notifications.title": {};
+  /** A new appeal awaits the moderators */
+  "client:notifications.type.admin_appeal": {};
   /** A new report awaits the moderators */
   "client:notifications.type.admin_report": {};
   /** {name} signed up and awaits approval */
   "client:notifications.type.admin_sign_up": { name: string };
+  /** The moderators decided your appeal */
+  "client:notifications.type.appeal_decided": {};
   /** {name} boosted your post */
   "client:notifications.type.boost": { name: string };
   /** {name} favourited your post */
@@ -1224,6 +1228,14 @@ export interface MessageArgs {
   "server:config.missing": { name: string };
   /** Your account cannot use the app right now. */
   "server:errors.account_unavailable": {};
+  /** You have already appealed this action. */
+  "server:errors.appeal.already_appealed": {};
+  /** This appeal has already been decided otherwise. */
+  "server:errors.appeal.decided": {};
+  /** This action cannot be appealed. */
+  "server:errors.appeal.not_appealable": {};
+  /** The time to appeal this action has passed. */
+  "server:errors.appeal.window_closed": {};
   /** A remote server could not be reached or answered with an error. */
   "server:errors.bad_gateway": {};
   /** The request is invalid. */
@@ -1334,6 +1346,10 @@ export interface MessageArgs {
   "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
+  /** A user of {host} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_appeal.body": { host: string; url: string };
+  /** A new appeal awaits the moderators of {host} */
+  "server:mail.admin_appeal.subject": { host: string };
   /** A new report awaits the moderators of {host}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
   "server:mail.admin_report.body": { host: string; url: string };
   /** A new report awaits the moderators of {host} */

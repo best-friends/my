@@ -367,6 +367,22 @@
     "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ɔɐuuoʇ nsǝ ʇɥǝ ɐdd ɹıƃɥʇ uoʍ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.appeal.already_appealed": {
+    "defaultMessage": "‮⅄on ɥɐʌǝ ɐʅɹǝɐpʎ ɐddǝɐʅǝp ʇɥıs ɐɔʇıou.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.appeal.decided": {
+    "defaultMessage": "‮⊥ɥıs ɐddǝɐʅ ɥɐs ɐʅɹǝɐpʎ qǝǝu pǝɔıpǝp oʇɥǝɹʍısǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.appeal.not_appealable": {
+    "defaultMessage": "‮⊥ɥıs ɐɔʇıou ɔɐuuoʇ qǝ ɐddǝɐʅǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.appeal.window_closed": {
+    "defaultMessage": "‮⊥ɥǝ ʇıɯǝ ʇo ɐddǝɐʅ ʇɥıs ɐɔʇıou ɥɐs dɐssǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.bad_gateway": {
     "defaultMessage": "‮∀ ɹǝɯoʇǝ sǝɹʌǝɹ ɔonʅp uoʇ qǝ ɹǝɐɔɥǝp oɹ ɐusʍǝɹǝp ʍıʇɥ ɐu ǝɹɹoɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -585,6 +601,14 @@
   },
   "health.unavailable": {
     "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ ıs uoʇ ɹǝɐpʎ ʇo ɐɔɔǝdʇ ɹǝbnǝsʇs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_appeal.body": {
+    "defaultMessage": "‮∀ nsǝɹ oɟ {host} ɐddǝɐʅǝp ɐ ɯopǝɹɐʇıou ɐɔʇıou, ɐup ʇɥǝ ɐddǝɐʅ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs.\n\nOdǝu ʎonɹ uoʇıɟıɔɐʇıous ʇo ɹǝʌıǝʍ ıʇ:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon ɔɥosǝ ʇo ƃǝʇ ɯopǝɹɐʇoɹ uoʇıɟıɔɐʇıous qʎ ǝɯɐıʅ. ⅄on ɔɐu ʇnɹu ıʇ oɟɟ ıu ʎonɹ dɹǝɟǝɹǝuɔǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_appeal.subject": {
+    "defaultMessage": "‮∀ uǝʍ ɐddǝɐʅ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs oɟ {host}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.admin_report.body": {

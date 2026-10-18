@@ -835,6 +835,10 @@
     "defaultMessage": "Notifications",
     "description": "Heading and document title of the notifications page."
   },
+  "notifications.type.admin_appeal": {
+    "defaultMessage": "A new appeal awaits the moderators",
+    "description": "Notification sentence to a moderator: a user appealed a moderation action on their account."
+  },
   "notifications.type.admin_report": {
     "defaultMessage": "A new report awaits the moderators",
     "description": "Notification sentence to a moderator: someone reported an account that had no open report."
@@ -842,6 +846,10 @@
   "notifications.type.admin_sign_up": {
     "defaultMessage": "{name} signed up and awaits approval",
     "description": "Notification sentence to a moderator. {name} is the display name, or the username, of a new user whose registration waits for a moderator's approval."
+  },
+  "notifications.type.appeal_decided": {
+    "defaultMessage": "The moderators decided your appeal",
+    "description": "Notification sentence: the moderators upheld or overturned the user's appeal of a moderation action on their account."
   },
   "notifications.type.boost": {
     "defaultMessage": "{name} boosted your post",

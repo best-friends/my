@@ -21,7 +21,8 @@ type RegistrationCounts interface {
 	CountPendingRegistrations(ctx context.Context) (int64, error)
 }
 
-// GetAdminCounts serves GET /api/v1/admin/counts: what awaits the moderators (FR-712). Each
+// GetAdminCounts serves GET /api/v1/admin/counts: what awaits the moderators (FR-712): the open
+// reports, and the registrations and appeals pending (AppealModeration, admin_appeals.go). Each
 // count needs its own permission, and a count that the viewer's roles do not allow is omitted
 // rather than refused, so a single request fills the badges of whatever admin menu the viewer
 // has.
@@ -50,6 +51,13 @@ func (s *Server) GetAdminCounts(ctx context.Context, _ GetAdminCountsRequestObje
 			return nil, fmt.Errorf("clientapi: count the pending registrations: %w", err)
 		}
 		body.PendingRegistrations = &n
+	}
+	if slices.Contains(perms, identity.PermManageAccounts) && s.o.AppealModeration != nil {
+		n, err := s.o.AppealModeration.CountPendingAppeals(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("clientapi: count the pending appeals: %w", err)
+		}
+		body.PendingAppeals = &n
 	}
 	cache := cacheNoStore
 	return GetAdminCounts200JSONResponse{Body: body, Headers: GetAdminCounts200ResponseHeaders{CacheControl: &cache}}, nil

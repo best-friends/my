@@ -66,6 +66,9 @@ type ProjectorDeps struct {
 //     report reopened and resolved again does not notify again.
 //   - moderation.account_action_issued: moderation_notice, to the account the action is on when
 //     the action notifies it. It comes from the instance and has no source account.
+//   - moderation.appeal_decided: appeal_decided, to the account that appealed. It comes from
+//     the instance and has no source account; its dedupe key is the appeal's
+//     (notification.AppealDecidedKey).
 //
 // A notification goes only to a local recipient other than its source, and not when either
 // blocks the other, the recipient mutes the source with hide_notifications, or the source has
@@ -190,6 +193,13 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 		return p.notify(ctx, tx, notification.Notification{
 			RecipientAccountID: a.TargetAccountID, Type: notification.TypeModerationNotice, ModerationActionID: a.ID,
 			DedupeKey: notification.ModerationNoticeKey(a.ID), CreatedAt: a.IssuedAt,
+		})
+	})
+	r.Register(appmoderation.EventAppealDecided, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appmoderation.AppealDecided)
+		return p.notify(ctx, tx, notification.Notification{
+			RecipientAccountID: ev.Appeal.AccountID, Type: notification.TypeAppealDecided, AppealID: ev.Appeal.ID,
+			DedupeKey: notification.AppealDecidedKey(ev.Appeal.ID), CreatedAt: ev.Decision.DecidedAt,
 		})
 	})
 }

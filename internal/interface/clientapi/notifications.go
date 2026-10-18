@@ -157,6 +157,10 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 	if err != nil {
 		return nil, err
 	}
+	appealed, err := s.appealActions(ctx, accountID, ns)
+	if err != nil {
+		return nil, err
+	}
 	parts, err := s.statusParts(ctx, views, found...)
 	if err != nil {
 		return nil, err
@@ -185,6 +189,13 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 		}
 		if a, ok := actions[n.ModerationActionID]; ok {
 			item.ModerationAction = &a
+		}
+		if a, ok := appealed[n.AppealID]; ok && n.Type == notification.TypeAppealDecided {
+			item.ModerationAction = &a
+		}
+		if n.Type == notification.TypeAdminAppeal {
+			id := n.AppealID
+			item.AppealId = &id
 		}
 		if n.Type == notification.TypeAdminReport {
 			id := n.ReportID

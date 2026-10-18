@@ -835,12 +835,20 @@
     "defaultMessage": "[Ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.type.admin_appeal": {
+    "defaultMessage": "[Ȧ ƞḗḗẇ ȧȧƥƥḗḗȧȧŀ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.type.admin_report": {
     "defaultMessage": "[Ȧ ƞḗḗẇ řḗḗƥǿǿřŧ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.type.admin_sign_up": {
     "defaultMessage": "[{name} şīɠƞḗḗḓ ŭŭƥ ȧȧƞḓ ȧȧẇȧȧīŧş ȧȧƥƥřǿǿṽȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.appeal_decided": {
+    "defaultMessage": "[Ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ḓḗḗƈīḓḗḗḓ ẏǿǿŭŭř ȧȧƥƥḗḗȧȧŀ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.type.boost": {

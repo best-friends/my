@@ -539,7 +539,7 @@ CREATE TABLE instance_setting_revisions (
   key TEXT NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
     'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
-    'domain_actions_visibility', 'domain_actions_rationale_visibility'
+    'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,
@@ -1072,7 +1072,7 @@ CREATE TABLE notifications (
   recipient_account_id TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN (
     'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
-    'report_resolved', 'admin_report', 'admin_sign_up'
+    'report_resolved', 'admin_report', 'admin_sign_up', 'appeal_decided', 'admin_appeal'
   )),
   source_account_id TEXT,
   status_id TEXT,
@@ -1081,6 +1081,8 @@ CREATE TABLE notifications (
   report_id TEXT,
   -- admin_sign_up: the user whose registration awaits approval.
   subject_user_id TEXT,
+  -- appeal_decided, admin_appeal: the appeal.
+  appeal_id TEXT,
   dedupe_key TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   -- nobody is notified of their own actions.
@@ -1689,7 +1691,8 @@ CREATE TABLE audit_log_entries (
     'account_action_issued', 'account_action_lifted', 'domain_action_issued',
     'domain_action_lifted', 'report_assigned', 'report_unassigned', 'report_resolved',
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
-    'rule_added', 'rule_revised', 'rule_moved', 'rule_retired'
+    'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'appeal_upheld',
+    'appeal_overturned'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
@@ -1703,3 +1706,37 @@ CREATE TABLE audit_log_entries (
 ) STRICT;
 CREATE INDEX audit_log_entries_target_kind_target_id_id ON audit_log_entries (target_kind, target_id, id DESC);
 CREATE INDEX audit_log_entries_actor_user_id_id ON audit_log_entries (actor_user_id, id DESC);
+
+-- ---------------------------------------------------------------------------------------------
+-- moderation: appeals of actions on local accounts (#337, data-model §4.3, FR-707, ADR-0038).
+-- Owned by internal/app/moderation.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a local account's appeal of an action on it, at most one per action, within the
+-- appeal window (instance setting appeal_window) from the action.
+CREATE TABLE moderation_appeals (
+  id TEXT NOT NULL PRIMARY KEY,
+  action_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  body TEXT NOT NULL,
+  submitted_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX moderation_appeals_action_id ON moderation_appeals (action_id);
+
+-- Event: a moderator's decision on an appeal, at most one. An overturned appeal records the
+-- lift of its action in the same transaction. decided_by_user_id is NULL for the CLI.
+CREATE TABLE moderation_appeal_decisions (
+  appeal_id TEXT NOT NULL PRIMARY KEY,
+  decision TEXT NOT NULL CHECK (decision IN ('upheld', 'overturned')),
+  public_reason TEXT,
+  decided_by_user_id TEXT,
+  decided_at INTEGER NOT NULL
+) STRICT;
+
+-- Projection: where each appeal stands, for the queue of pending appeals.
+CREATE TABLE appeal_states (
+  appeal_id TEXT NOT NULL PRIMARY KEY,
+  state TEXT NOT NULL CHECK (state IN ('pending', 'upheld', 'overturned')),
+  since INTEGER NOT NULL
+) STRICT;
+CREATE INDEX appeal_states_state_appeal_id ON appeal_states (state, appeal_id);

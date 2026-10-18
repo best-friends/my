@@ -93,6 +93,12 @@ type Options struct {
 	// OwnModeration reads the actions on the viewer's own account, for GET /moderation/actions
 	// and the moderation notices (moderation.go); nil leaves the action out of the notices.
 	OwnModeration OwnModeration
+	// OwnAppeals files the viewer's appeals of the actions on their account and reads the action
+	// of an appeal_decided notice (appeals.go); nil refuses appeals with 404 and leaves the action
+	// out of those notices. AppealModeration runs the moderators' use cases on the appeals
+	// (admin_appeals.go) and counts the pending ones for GET /admin/counts.
+	OwnAppeals       OwnAppeals
+	AppealModeration AppealModeration
 	// ProfileRestrictions hides the accounts whose profiles moderation hides (profile_view)
 	// from everyone but themselves; nil hides none. Moderators see them through the admin
 	// operations.

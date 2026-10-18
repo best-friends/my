@@ -367,6 +367,22 @@
     "defaultMessage": "Your account cannot use the app right now.",
     "description": "API error title for HTTP 403 when the access token is valid but its user cannot use the app: the registration is pending or rejected, the email address is unconfirmed, or the account is deactivated or deleted."
   },
+  "errors.appeal.already_appealed": {
+    "defaultMessage": "You have already appealed this action.",
+    "description": "API error title for HTTP 422 when the user appeals a moderation action on their account a second time; an action is appealed once."
+  },
+  "errors.appeal.decided": {
+    "defaultMessage": "This appeal has already been decided otherwise.",
+    "description": "API error title for HTTP 409 when a moderator decides an appeal that another decision already settled the other way."
+  },
+  "errors.appeal.not_appealable": {
+    "defaultMessage": "This action cannot be appealed.",
+    "description": "API error title for HTTP 422 when the user appeals a ban, which is never lifted."
+  },
+  "errors.appeal.window_closed": {
+    "defaultMessage": "The time to appeal this action has passed.",
+    "description": "API error title for HTTP 422 when the user appeals a moderation action after the instance's appeal window."
+  },
   "errors.bad_gateway": {
     "defaultMessage": "A remote server could not be reached or answered with an error.",
     "description": "Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx."
@@ -586,6 +602,14 @@
   "health.unavailable": {
     "defaultMessage": "The server is not ready to accept requests.",
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  },
+  "mail.admin_appeal.body": {
+    "defaultMessage": "A user of {host} appealed a moderation action, and the appeal awaits the moderators.\n\nOpen your notifications to review it:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
+    "description": "Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_appeal.subject": {
+    "defaultMessage": "A new appeal awaits the moderators of {host}",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {host} is the server's domain name."
   },
   "mail.admin_report.body": {
     "defaultMessage": "A new report awaits the moderators of {host}.\n\nOpen your notifications to review it:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",

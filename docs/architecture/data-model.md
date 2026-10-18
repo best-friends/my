@@ -408,9 +408,16 @@ flowchart LR
 | `moderation_actions` | イベント | `id`, `target_account_id`, `kind`（§5.2 の enum）, `reason_category`（`enum(spam, legal, violation, other)`）, `public_reason`（`text`、NULL 可。5,000 文字まで。本人に見せる理由）, `private_note`（`text`、NULL 可。5,000 文字まで）, `report_id`（NULL 可）, `issuer`（`enum(moderator, system, remote)`）, `issued_by_user_id`（NULL 可）, `notify_target`（`bool`）, `expires_at`（NULL 可 = 無期限）, `issued_at` | インデックス `(target_account_id, id DESC)`, `(report_id)` |
 | `moderation_action_statuses` | イベント（子） | `action_id`, `status_id` | PK `(action_id, status_id)`。投稿単位の処分（`delete_statuses` / `mark_statuses_sensitive`）の対象。処分 1 件につき 1〜100 件で、処分の対象のアカウントの削除されていない投稿だけ（処分のユースケースが検査する）。ほかの種類の処分は持たない |
 | `moderation_action_lifts` | イベント | `action_id`（PK）, `lifted_by_user_id`（NULL 可 = システム）, `reason`（`text`、NULL 可。5,000 文字まで）, `lifted_at` | 期限切れは「解除」ではないので記録しない（投影の読み取り時に期限で判定） |
-| `moderation_appeals` | リソース | `id`, `action_id`, `account_id`（申し立てた本人 = 処分の対象）, `body`（2,000 文字まで）, `submitted_at` | 一意 `(action_id)`。ローカルのアカウントへの処分だけが対象。期間（ADR-0038、既定は通知から 180 日）を過ぎた処分には申し立てられない |
+| `moderation_appeals` | リソース | `id`, `action_id`, `account_id`（申し立てた本人 = 処分の対象）, `body`（1〜2,000 文字。空白だけは不可）, `submitted_at` | 一意 `(action_id)`。ローカルのアカウントへの処分だけが対象。期間（ADR-0038、インスタンス設定 `appeal_window`、既定は処分から 180 日）を過ぎた処分と、解除できない `ban` には申し立てられない |
 | `moderation_appeal_decisions` | イベント | `appeal_id`（PK）, `decision`（`enum(upheld, overturned)`）, `public_reason`（`text`、NULL 可。2,000 文字まで。本人に見せる）, `decided_by_user_id`（NULL 可 = CLI）, `decided_at` | 覆った場合は同じトランザクションで `moderation_action_lifts` も記録する。`delete_statuses` を覆しても投稿は戻らない |
 | `appeal_states` | 投影 | `appeal_id`（PK）, `state`（`enum(pending, upheld, overturned)`）, `since` | インデックス `(state, appeal_id)`（審査待ち一覧） |
+
+- 異議申し立ては `moderation.Service.FileAppeal` が記録し、同じトランザクションで `appeal_states` に `pending` を書いて `moderation.appeal_filed` を発行します（`admin_appeal` の通知、§4.7）。
+  期限は処分の `issued_at` に、申し立ての時点の `appeal_window` を足した時刻です（期限ちょうどまで申し立てられる）。解除済み・期限切れの処分にも、期限内なら申し立てられます。
+- 審査（`moderation.Service.DecideAppeal`）は、`moderation_appeal_decisions` と `appeal_states` と監査ログ（`appeal_upheld` / `appeal_overturned`）を 1 つのトランザクションで書き、`moderation.appeal_decided` を発行します（`appeal_decided` の通知）。
+  覆す（`overturned`）と、同じトランザクションで処分の解除（`moderation_action_lifts`、`lifted_by_user_id` は審査した人、`reason` は NULL）とその効果と監査ログ（`account_action_lifted`）を記録します。すでに解除されていた処分には何もしません。
+  審査は 1 回で、同じ結果の再審査は何もせず、反対の結果は拒否します（`moderation_appeal_decisions` の PK で、同時の審査も 1 つだけが記録される）。
+- 本人には、自分の処分（§4.7 の `GET /api/v1/moderation/actions` と `moderation_notice`）に申し立ての期限・今申し立てられるか・申し立ての本文と状態・審査の `public_reason` を見せます。審査した人は見せません。
 
 #### 制限【投影】
 
@@ -494,6 +501,7 @@ flowchart LR
   | `text_changed` | `setting` | 文章のキー | キーとロケール（`terms [ja]`） | `instance_text_revisions.id` |
   | `rule_added`, `rule_revised`, `rule_moved` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_revisions.id`（移動は動かしたルールの版。動かしたルールの位置が変わらないときは最初に記録した版） |
   | `rule_retired` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_retirements.rule_id` |
+  | `appeal_upheld`, `appeal_overturned` | `appeal` | `moderation_appeals.id` | 申し立てたアカウントのハンドル | `moderation_appeal_decisions.appeal_id`（= `moderation_appeals.id`） |
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。
@@ -848,6 +856,8 @@ flowchart LR
   - 本人は `moderation_notice` から処分の種類・公開理由・対象の投稿・期限を見られ、異議申し立てに進めます（FR-715）。
     クライアント API は通知に処分を本人に見せる形（種類と理由のカテゴリは本人の UI 言語の表示名付き）で埋め込み、`GET /api/v1/moderation/actions` は本人への処分を通知の有無に関わらずすべて新しい順に返します。
     どちらも非公開のメモ・通報・処分した人を含めません（ADR-0038）。`moderation_notice` の行は `moderation_action_id` を必ず持ち、ほかの種類は持ちません。
+  - `appeal_decided` と `admin_appeal` の行は `appeal_id` を必ず持ち、ほかの種類は持ちません。クライアント API は `appeal_decided` に申し立てた処分を本人に見せる形（申し立てと審査の結果を含む）で埋め込み、`admin_appeal` には `appeal_id` だけを載せます。
+    `admin_appeal` は申し立てた本人には作りません。
   - `report_resolved` は解決したことだけを伝え、処分の内容は含めません（FR-711）。
   - `admin_*` の受け取る人は、通知を作るトランザクションでロールの権限から求めます（`identity` の公開 API。ユーザーからローカルのアカウントへは `account` の公開 API で引く）。
     後から権限を失った人の通知は、一覧と未読数から読み取り時に除きます（閲覧者のロールが持たない権限の種類を除く）。権限が戻れば、また見えます。

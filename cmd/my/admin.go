@@ -33,6 +33,8 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 0
 	case args[0] == "account":
 		return runAdminAccount(args[1:], stdout, stderr)
+	case args[0] == "appeal":
+		return runAdminAppeal(args[1:], stdout, stderr)
 	case args[0] == "audit":
 		return runAdminAudit(args[1:], stdout, stderr)
 	case args[0] == "domain":
@@ -172,12 +174,13 @@ func promptPassword(fd int, stderr io.Writer) (string, error) {
 func adminUsage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage: my admin create -username <name> -email <address> [-config <file>]
        my admin account action list|issue|lift ...   (my admin account action -help)
+       my admin appeal list|uphold|overturn ...   (my admin appeal -help)
        my admin domain list|issue|lift ...   (my admin domain -help)
        my admin report list|show|assign|unassign|resolve ...   (my admin report -help)
        my admin audit list ...   (my admin audit -help)
 
-my admin account, my admin domain, and my admin report moderate accounts and
-remote domains and handle reports.
+my admin account, my admin domain, my admin report, and my admin appeal moderate
+accounts and remote domains and handle reports and appeals.
 my admin audit lists the audit log of the moderators' and administrators' operations.
 
 my admin create creates an administrator: a user with the password, the email address as primary

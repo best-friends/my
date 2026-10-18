@@ -134,6 +134,8 @@ func (e AdminAccountActionState) Valid() bool {
 const (
 	AdminAuditActionAccountActionIssued  AdminAuditAction = "account_action_issued"
 	AdminAuditActionAccountActionLifted  AdminAuditAction = "account_action_lifted"
+	AdminAuditActionAppealOverturned     AdminAuditAction = "appeal_overturned"
+	AdminAuditActionAppealUpheld         AdminAuditAction = "appeal_upheld"
 	AdminAuditActionDomainActionIssued   AdminAuditAction = "domain_action_issued"
 	AdminAuditActionDomainActionLifted   AdminAuditAction = "domain_action_lifted"
 	AdminAuditActionRegistrationApproved AdminAuditAction = "registration_approved"
@@ -155,6 +157,10 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionAccountActionIssued:
 		return true
 	case AdminAuditActionAccountActionLifted:
+		return true
+	case AdminAuditActionAppealOverturned:
+		return true
+	case AdminAuditActionAppealUpheld:
 		return true
 	case AdminAuditActionDomainActionIssued:
 		return true
@@ -514,10 +520,33 @@ func (e MediaAttachmentType) Valid() bool {
 	}
 }
 
+// Defines values for ModerationAppealState.
+const (
+	ModerationAppealStateOverturned ModerationAppealState = "overturned"
+	ModerationAppealStatePending    ModerationAppealState = "pending"
+	ModerationAppealStateUpheld     ModerationAppealState = "upheld"
+)
+
+// Valid indicates whether the value is a known member of the ModerationAppealState enum.
+func (e ModerationAppealState) Valid() bool {
+	switch e {
+	case ModerationAppealStateOverturned:
+		return true
+	case ModerationAppealStatePending:
+		return true
+	case ModerationAppealStateUpheld:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NotificationType.
 const (
+	NotificationTypeAdminAppeal      NotificationType = "admin_appeal"
 	NotificationTypeAdminReport      NotificationType = "admin_report"
 	NotificationTypeAdminSignUp      NotificationType = "admin_sign_up"
+	NotificationTypeAppealDecided    NotificationType = "appeal_decided"
 	NotificationTypeBoost            NotificationType = "boost"
 	NotificationTypeFavourite        NotificationType = "favourite"
 	NotificationTypeFollow           NotificationType = "follow"
@@ -532,9 +561,13 @@ const (
 // Valid indicates whether the value is a known member of the NotificationType enum.
 func (e NotificationType) Valid() bool {
 	switch e {
+	case NotificationTypeAdminAppeal:
+		return true
 	case NotificationTypeAdminReport:
 		return true
 	case NotificationTypeAdminSignUp:
+		return true
+	case NotificationTypeAppealDecided:
 		return true
 	case NotificationTypeBoost:
 		return true
@@ -845,13 +878,56 @@ type AdminAccountActionPage struct {
 // lifted it.
 type AdminAccountActionState string
 
+// AdminAppeal A local user's appeal of an action on their account, as the moderators see it, with the
+// action.
+type AdminAppeal struct {
+	// AccountId The account that appealed, which the action is on.
+	AccountId Id `json:"account_id"`
+
+	// Action A moderation action on an account (FR-703).
+	Action AdminAccountAction `json:"action"`
+
+	// DecidedAt When a moderator decided the appeal; omitted while pending.
+	DecidedAt *time.Time `json:"decided_at,omitempty"`
+
+	// DecidedByAccountId The account of the moderator who decided; omitted while pending and for a decision
+	// from the command line.
+	DecidedByAccountId *Id `json:"decided_by_account_id,omitempty"`
+
+	// DecisionReason The moderators' explanation of the decision to the user; omitted when there is none.
+	DecisionReason *string `json:"decision_reason,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// State Where an appeal stands: `pending` awaits the moderators, `upheld` kept the action, and
+	// `overturned` lifted it.
+	State       ModerationAppealState `json:"state"`
+	SubmittedAt time.Time             `json:"submitted_at"`
+
+	// Text What the user wrote, as plain text.
+	Text string `json:"text"`
+}
+
+// AdminAppealPage A page of appeals, newest first.
+type AdminAppealPage struct {
+	Items []AdminAppeal `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
 // AdminAuditAction The kind of an audited operation, each on one kind of target. On an `account`:
 // `account_action_issued`, `account_action_lifted`. On a `domain`:
 // `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 // `report_unassigned`, `report_resolved`. On a `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 // (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On an `appeal`:
+// `appeal_upheld`, `appeal_overturned` (which also records the action's
+// `account_action_lifted`).
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -867,7 +943,9 @@ type AdminAuditEntry struct {
 	// `report_unassigned`, `report_resolved`. On a `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On an `appeal`:
+	// `appeal_upheld`, `appeal_overturned` (which also records the action's
+	// `account_action_lifted`).
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -952,6 +1030,9 @@ type AdminAvailabilityEventPage struct {
 type AdminCounts struct {
 	// OpenReports The reports that are open. Needs `manage_reports`.
 	OpenReports *int64 `json:"open_reports,omitempty"`
+
+	// PendingAppeals The appeals of moderation actions that await a decision. Needs `manage_accounts`.
+	PendingAppeals *int64 `json:"pending_appeals,omitempty"`
 
 	// PendingRegistrations The registrations that await approval. Needs `manage_accounts`.
 	PendingRegistrations *int64 `json:"pending_registrations,omitempty"`
@@ -1189,6 +1270,12 @@ type AdminRuleText struct {
 	Text string `json:"text"`
 }
 
+// AppealModerationActionRequest An appeal of an action on the user's own account.
+type AppealModerationActionRequest struct {
+	// Text Why the moderators should reconsider the action, as plain text.
+	Text string `json:"text"`
+}
+
 // CreateAccountActionRequest A moderation action to take on an account.
 type CreateAccountActionRequest struct {
 	// ExpiresIn The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
@@ -1374,6 +1461,12 @@ type CredentialAccount struct {
 
 // Cursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 type Cursor = string
+
+// DecideAppealRequest The moderators' explanation of a decision on an appeal.
+type DecideAppealRequest struct {
+	// PublicReason Shown to the user who appealed, as plain text.
+	PublicReason *string `json:"public_reason,omitempty"`
+}
 
 // EditStatusRequest The new content of a status.
 type EditStatusRequest struct {
@@ -1661,6 +1754,16 @@ type MediaVariants struct {
 // user sees it. It never carries the moderators' private note, the report the action
 // follows from, or who filed the report or issued the action.
 type ModerationAction struct {
+	// Appeal The user's appeal of the action; omitted when there is none.
+	Appeal *ModerationAppeal `json:"appeal,omitempty"`
+
+	// AppealDeadline The last moment the action can be appealed; omitted for a `ban`.
+	AppealDeadline *time.Time `json:"appeal_deadline,omitempty"`
+
+	// Appealable Whether the user can appeal the action now (`POST /moderation/actions/{id}/appeal`):
+	// it is not a `ban`, it has no appeal yet, and `appeal_deadline` has not passed.
+	Appealable bool `json:"appealable"`
+
 	// ExpiresAt When the action ends by itself; omitted when it lasts until it is lifted.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
@@ -1709,6 +1812,33 @@ type ModerationActionPage struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
+// ModerationAppeal The authenticated user's appeal of an action on their account. It never names the
+// moderator who decided it.
+type ModerationAppeal struct {
+	// DecidedAt When the moderators decided the appeal; omitted while pending.
+	DecidedAt *time.Time `json:"decided_at,omitempty"`
+
+	// DecisionReason The moderators' explanation of the decision, as plain text; omitted when there is none.
+	DecisionReason *string `json:"decision_reason,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// State Where an appeal stands: `pending` awaits the moderators, `upheld` kept the action, and
+	// `overturned` lifted it.
+	State       ModerationAppealState `json:"state"`
+	SubmittedAt time.Time             `json:"submitted_at"`
+
+	// Text What the user wrote, as plain text.
+	Text string `json:"text"`
+}
+
+// ModerationAppealState Where an appeal stands: `pending` awaits the moderators, `upheld` kept the action, and
+// `overturned` lifted it.
+type ModerationAppealState string
+
 // MoveInstanceRuleRequest The new place of a rule.
 type MoveInstanceRuleRequest struct {
 	// Position The place among the rules in effect, from 1.
@@ -1749,6 +1879,9 @@ type Notification struct {
 	// Account An account, as clients show it (FR-006).
 	Account *Account `json:"account,omitempty"`
 
+	// AppealId The appeal that an `admin_appeal` is about.
+	AppealId *Id `json:"appeal_id,omitempty"`
+
 	// CreatedAt When it happened.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -1757,7 +1890,8 @@ type Notification struct {
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
 
-	// ModerationAction The action on the user's account that a `moderation_notice` tells of.
+	// ModerationAction The action on the user's account that a `moderation_notice` tells of, or whose
+	// appeal an `appeal_decided` tells of, with the appeal.
 	ModerationAction *ModerationAction `json:"moderation_action,omitempty"`
 
 	// Report The user's report that a `report_resolved` tells of.
@@ -1778,12 +1912,15 @@ type Notification struct {
 	// `moderation_action` is the action on the user's account, with its kind, reason, and end.
 	// `report_resolved` also comes from the instance: its `report` is the user's report that
 	// the moderators resolved, without how they resolved it. It is sent once per report, even
-	// when the report is reopened and resolved again.
-	// about. `moderation_notice` comes from the instance and has no `account`.
+	// when the report is reopened and resolved again. `appeal_decided` also comes from the
+	// instance: the moderators decided the user's appeal, and its `moderation_action` is the
+	// action with the appeal and the decision.
 	// The moderator notifications come from the instance too: `admin_report` (an account
 	// that had no open report was reported; `report_id` is the report) goes to the users
-	// with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
-	// approval; `account` is the new user's account) to those with `manage_accounts`.
+	// with the `manage_reports` permission, `admin_sign_up` (a registration awaits
+	// approval; `account` is the new user's account) to those with `manage_accounts`, and
+	// `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
+	// `manage_accounts`.
 	Type NotificationType `json:"type"`
 }
 
@@ -1822,12 +1959,15 @@ type NotificationPage struct {
 // `moderation_action` is the action on the user's account, with its kind, reason, and end.
 // `report_resolved` also comes from the instance: its `report` is the user's report that
 // the moderators resolved, without how they resolved it. It is sent once per report, even
-// when the report is reopened and resolved again.
-// about. `moderation_notice` comes from the instance and has no `account`.
+// when the report is reopened and resolved again. `appeal_decided` also comes from the
+// instance: the moderators decided the user's appeal, and its `moderation_action` is the
+// action with the appeal and the decision.
 // The moderator notifications come from the instance too: `admin_report` (an account
 // that had no open report was reported; `report_id` is the report) goes to the users
-// with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
-// approval; `account` is the new user's account) to those with `manage_accounts`.
+// with the `manage_reports` permission, `admin_sign_up` (a registration awaits
+// approval; `account` is the new user's account) to those with `manage_accounts`, and
+// `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
+// `manage_accounts`.
 type NotificationType string
 
 // PageInfo The pagination of a collection page; collection responses embed it with allOf.
@@ -1913,6 +2053,13 @@ type Preferences struct {
 //     (`GET /streaming`) open as the server allows. Close one first.
 //   - `/api/v1/problems/missing-permission` (403): the user's roles lack the permission
 //     that an admin operation needs.
+//   - `/api/v1/problems/already-appealed` (422): the user already appealed the moderation
+//     action; an action is appealed once.
+//   - `/api/v1/problems/appeal-window-closed` (422): the time to appeal the moderation
+//     action has passed.
+//   - `/api/v1/problems/not-appealable` (422): the moderation action is a ban, which is
+//     never lifted and cannot be appealed.
+//   - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -2326,6 +2473,11 @@ type AccountId = Id
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type AdminAccountId = Id
 
+// AppealId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type AppealId = Id
+
 // DomainActionId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -2424,6 +2576,18 @@ type ListAccountStatusesParams struct {
 type ListAccountActionsParams struct {
 	// Active Keep only the actions in effect now, neither lifted nor expired.
 	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAppealsParams defines parameters for ListAppeals.
+type ListAppealsParams struct {
+	// State Keep only the appeals in this state; omitted keeps every state.
+	State *ModerationAppealState `form:"state,omitempty" json:"state,omitempty"`
 
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -2655,6 +2819,12 @@ type LiftAccountActionJSONRequestBody = LiftAccountActionRequest
 // CreateAccountActionJSONRequestBody defines body for CreateAccountAction for application/json ContentType.
 type CreateAccountActionJSONRequestBody = CreateAccountActionRequest
 
+// OverturnAppealJSONRequestBody defines body for OverturnAppeal for application/json ContentType.
+type OverturnAppealJSONRequestBody = DecideAppealRequest
+
+// UpholdAppealJSONRequestBody defines body for UpholdAppeal for application/json ContentType.
+type UpholdAppealJSONRequestBody = DecideAppealRequest
+
 // CreateDomainActionJSONRequestBody defines body for CreateDomainAction for application/json ContentType.
 type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 
@@ -2675,6 +2845,9 @@ type UploadMediaMultipartRequestBody = MediaUpload
 
 // UpdateMediaJSONRequestBody defines body for UpdateMedia for application/json ContentType.
 type UpdateMediaJSONRequestBody = MediaUpdate
+
+// AppealModerationActionJSONRequestBody defines body for AppealModerationAction for application/json ContentType.
+type AppealModerationActionJSONRequestBody = AppealModerationActionRequest
 
 // UpdateNotificationMarkerJSONRequestBody defines body for UpdateNotificationMarker for application/json ContentType.
 type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
@@ -2750,6 +2923,18 @@ type ServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// ListAppeals List the appeals of moderation actions
+	// (GET /admin/appeals)
+	ListAppeals(w http.ResponseWriter, r *http.Request, params ListAppealsParams)
+	// GetAppeal Get an appeal of a moderation action
+	// (GET /admin/appeals/{id})
+	GetAppeal(w http.ResponseWriter, r *http.Request, id AppealId)
+	// OverturnAppeal Overturn an appeal, lifting its action
+	// (POST /admin/appeals/{id}/overturn)
+	OverturnAppeal(w http.ResponseWriter, r *http.Request, id AppealId)
+	// UpholdAppeal Uphold an appeal, keeping its action
+	// (POST /admin/appeals/{id}/uphold)
+	UpholdAppeal(w http.ResponseWriter, r *http.Request, id AppealId)
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams)
@@ -2852,6 +3037,9 @@ type ServerInterface interface {
 	// ListOwnModerationActions List the moderation actions on the authenticated user's account
 	// (GET /moderation/actions)
 	ListOwnModerationActions(w http.ResponseWriter, r *http.Request, params ListOwnModerationActionsParams)
+	// AppealModerationAction Appeal a moderation action on the authenticated user's account
+	// (POST /moderation/actions/{id}/appeal)
+	AppealModerationAction(w http.ResponseWriter, r *http.Request, id Id)
 	// ListMutes List the accounts that the viewer mutes
 	// (GET /mutes)
 	ListMutes(w http.ResponseWriter, r *http.Request, params ListMutesParams)
@@ -3603,6 +3791,143 @@ func (siw *ServerInterfaceWrapper) CreateAccountAction(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateAccountAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAppeals operation middleware
+func (siw *ServerInterfaceWrapper) ListAppeals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAppealsParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAppeals(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAppeal operation middleware
+func (siw *ServerInterfaceWrapper) GetAppeal(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AppealId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAppeal(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OverturnAppeal operation middleware
+func (siw *ServerInterfaceWrapper) OverturnAppeal(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AppealId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OverturnAppeal(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpholdAppeal operation middleware
+func (siw *ServerInterfaceWrapper) UpholdAppeal(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AppealId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpholdAppeal(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4789,6 +5114,32 @@ func (siw *ServerInterfaceWrapper) ListOwnModerationActions(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// AppealModerationAction operation middleware
+func (siw *ServerInterfaceWrapper) AppealModerationAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AppealModerationAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListMutes operation middleware
 func (siw *ServerInterfaceWrapper) ListMutes(w http.ResponseWriter, r *http.Request) {
 
@@ -5781,6 +6132,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/media/{id}", wrapper.GetMedia)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/media/{id}", wrapper.UpdateMedia)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/moderation/actions", wrapper.ListOwnModerationActions)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/moderation/actions/{id}/appeal", wrapper.AppealModerationAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications", wrapper.ListNotifications)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications/marker", wrapper.GetNotificationMarker)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/notifications/marker", wrapper.UpdateNotificationMarker)
@@ -5835,6 +6187,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/appeals", wrapper.ListAppeals)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/appeals/{id}", wrapper.GetAppeal)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/appeals/{id}/overturn", wrapper.OverturnAppeal)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/appeals/{id}/uphold", wrapper.UpholdAppeal)
 
 	return m
 }
@@ -5864,6 +6220,15 @@ type AdminAccountActionJSONResponse struct {
 	Body AdminAccountAction
 
 	Headers AdminAccountActionResponseHeaders
+}
+
+type AdminAppealResponseHeaders struct {
+	CacheControl *string
+}
+type AdminAppealJSONResponse struct {
+	Body AdminAppeal
+
+	Headers AdminAppealResponseHeaders
 }
 
 type AdminDomainActionResponseHeaders struct {
@@ -6998,6 +7363,235 @@ type CreateAccountActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateAccountActiondefaultApplicationProblemPlusJSONResponse) VisitCreateAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAppealsRequestObject struct {
+	Params ListAppealsParams
+}
+
+type ListAppealsResponseObject interface {
+	VisitListAppealsResponse(w http.ResponseWriter) error
+}
+
+type ListAppeals200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAppeals200JSONResponse struct {
+	Body    AdminAppealPage
+	Headers ListAppeals200ResponseHeaders
+}
+
+func (response ListAppeals200JSONResponse) VisitListAppealsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAppealsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAppealsdefaultApplicationProblemPlusJSONResponse) VisitListAppealsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAppealRequestObject struct {
+	Id AppealId `json:"id"`
+}
+
+type GetAppealResponseObject interface {
+	VisitGetAppealResponse(w http.ResponseWriter) error
+}
+
+type GetAppeal200JSONResponse struct{ AdminAppealJSONResponse }
+
+func (response GetAppeal200JSONResponse) VisitGetAppealResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAppealdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAppealdefaultApplicationProblemPlusJSONResponse) VisitGetAppealResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OverturnAppealRequestObject struct {
+	Id   AppealId `json:"id"`
+	Body *OverturnAppealJSONRequestBody
+}
+
+type OverturnAppealResponseObject interface {
+	VisitOverturnAppealResponse(w http.ResponseWriter) error
+}
+
+type OverturnAppeal200JSONResponse struct{ AdminAppealJSONResponse }
+
+func (response OverturnAppeal200JSONResponse) VisitOverturnAppealResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OverturnAppealdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response OverturnAppealdefaultApplicationProblemPlusJSONResponse) VisitOverturnAppealResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpholdAppealRequestObject struct {
+	Id   AppealId `json:"id"`
+	Body *UpholdAppealJSONRequestBody
+}
+
+type UpholdAppealResponseObject interface {
+	VisitUpholdAppealResponse(w http.ResponseWriter) error
+}
+
+type UpholdAppeal200JSONResponse struct{ AdminAppealJSONResponse }
+
+func (response UpholdAppeal200JSONResponse) VisitUpholdAppealResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpholdAppealdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpholdAppealdefaultApplicationProblemPlusJSONResponse) VisitUpholdAppealResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -8994,6 +9588,69 @@ func (response ListOwnModerationActionsdefaultApplicationProblemPlusJSONResponse
 	return err
 }
 
+type AppealModerationActionRequestObject struct {
+	Id   Id `json:"id"`
+	Body *AppealModerationActionJSONRequestBody
+}
+
+type AppealModerationActionResponseObject interface {
+	VisitAppealModerationActionResponse(w http.ResponseWriter) error
+}
+
+type AppealModerationAction200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type AppealModerationAction200JSONResponse struct {
+	Body    ModerationAction
+	Headers AppealModerationAction200ResponseHeaders
+}
+
+func (response AppealModerationAction200JSONResponse) VisitAppealModerationActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AppealModerationActiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response AppealModerationActiondefaultApplicationProblemPlusJSONResponse) VisitAppealModerationActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListMutesRequestObject struct {
 	Params ListMutesParams
 }
@@ -10674,6 +11331,18 @@ type StrictServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(ctx context.Context, request CreateAccountActionRequestObject) (CreateAccountActionResponseObject, error)
+	// ListAppeals List the appeals of moderation actions
+	// (GET /admin/appeals)
+	ListAppeals(ctx context.Context, request ListAppealsRequestObject) (ListAppealsResponseObject, error)
+	// GetAppeal Get an appeal of a moderation action
+	// (GET /admin/appeals/{id})
+	GetAppeal(ctx context.Context, request GetAppealRequestObject) (GetAppealResponseObject, error)
+	// OverturnAppeal Overturn an appeal, lifting its action
+	// (POST /admin/appeals/{id}/overturn)
+	OverturnAppeal(ctx context.Context, request OverturnAppealRequestObject) (OverturnAppealResponseObject, error)
+	// UpholdAppeal Uphold an appeal, keeping its action
+	// (POST /admin/appeals/{id}/uphold)
+	UpholdAppeal(ctx context.Context, request UpholdAppealRequestObject) (UpholdAppealResponseObject, error)
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(ctx context.Context, request ListAuditLogRequestObject) (ListAuditLogResponseObject, error)
@@ -10776,6 +11445,9 @@ type StrictServerInterface interface {
 	// ListOwnModerationActions List the moderation actions on the authenticated user's account
 	// (GET /moderation/actions)
 	ListOwnModerationActions(ctx context.Context, request ListOwnModerationActionsRequestObject) (ListOwnModerationActionsResponseObject, error)
+	// AppealModerationAction Appeal a moderation action on the authenticated user's account
+	// (POST /moderation/actions/{id}/appeal)
+	AppealModerationAction(ctx context.Context, request AppealModerationActionRequestObject) (AppealModerationActionResponseObject, error)
 	// ListMutes List the accounts that the viewer mutes
 	// (GET /mutes)
 	ListMutes(ctx context.Context, request ListMutesRequestObject) (ListMutesResponseObject, error)
@@ -11432,6 +12104,130 @@ func (sh *strictHandler) CreateAccountAction(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateAccountActionResponseObject); ok {
 		if err := validResponse.VisitCreateAccountActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAppeals operation middleware
+func (sh *strictHandler) ListAppeals(w http.ResponseWriter, r *http.Request, params ListAppealsParams) {
+	var request ListAppealsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAppeals(ctx, request.(ListAppealsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAppeals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAppealsResponseObject); ok {
+		if err := validResponse.VisitListAppealsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAppeal operation middleware
+func (sh *strictHandler) GetAppeal(w http.ResponseWriter, r *http.Request, id AppealId) {
+	var request GetAppealRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAppeal(ctx, request.(GetAppealRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAppeal")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAppealResponseObject); ok {
+		if err := validResponse.VisitGetAppealResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OverturnAppeal operation middleware
+func (sh *strictHandler) OverturnAppeal(w http.ResponseWriter, r *http.Request, id AppealId) {
+	var request OverturnAppealRequestObject
+
+	request.Id = id
+
+	var body OverturnAppealJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OverturnAppeal(ctx, request.(OverturnAppealRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OverturnAppeal")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OverturnAppealResponseObject); ok {
+		if err := validResponse.VisitOverturnAppealResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpholdAppeal operation middleware
+func (sh *strictHandler) UpholdAppeal(w http.ResponseWriter, r *http.Request, id AppealId) {
+	var request UpholdAppealRequestObject
+
+	request.Id = id
+
+	var body UpholdAppealJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpholdAppeal(ctx, request.(UpholdAppealRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpholdAppeal")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpholdAppealResponseObject); ok {
+		if err := validResponse.VisitUpholdAppealResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -12356,6 +13152,39 @@ func (sh *strictHandler) ListOwnModerationActions(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListOwnModerationActionsResponseObject); ok {
 		if err := validResponse.VisitListOwnModerationActionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AppealModerationAction operation middleware
+func (sh *strictHandler) AppealModerationAction(w http.ResponseWriter, r *http.Request, id Id) {
+	var request AppealModerationActionRequestObject
+
+	request.Id = id
+
+	var body AppealModerationActionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AppealModerationAction(ctx, request.(AppealModerationActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AppealModerationAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AppealModerationActionResponseObject); ok {
+		if err := validResponse.VisitAppealModerationActionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

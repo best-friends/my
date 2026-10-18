@@ -132,8 +132,11 @@ type Deps struct {
 	// Lifecycles schedules the deletion of a banned account; nil refuses bans with
 	// ErrUnsupportedAction.
 	Lifecycles Lifecycles
-	Clock      kernel.Clock
-	IDs        kernel.IDGenerator
+	// AppealWindow reads how long an action can be appealed; nil means
+	// moderation.DefaultAppealWindow.
+	AppealWindow AppealWindow
+	Clock        kernel.Clock
+	IDs          kernel.IDGenerator
 }
 
 // Service runs the moderation module's use cases: actions on domains and accounts, their lifts,
@@ -453,37 +456,45 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if !a.Kind.Liftable() {
 			return fmt.Errorf("%w: %s %s", ErrNotLiftable, a.Kind, a.ID)
 		}
-		err = repo.InsertActionLift(ctx, tx, lift)
-		if errors.Is(err, ErrAlreadyRecorded) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
-		if err != nil {
-			return err
-		}
-		if err := repo.DeleteAccountRestrictionsOf(ctx, tx, a.ID); err != nil {
-			return err
-		}
-		if a.Kind == moderation.ActionMarkStatusesSensitive && s.d.Statuses != nil {
-			if err := s.d.Statuses.ClearSensitivityOf(ctx, tx, a.ID); err != nil {
-				return err
-			}
-		}
-		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
-			return err
-		}
-		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
-			return err
-		}
-		// The lift's row is keyed by the action's ID.
-		return s.emitAudit(ctx, tx, moderation.AuditEntry{
-			ID: auditID, Action: moderation.AuditAccountActionLifted, TargetKind: moderation.AuditTargetAccount,
-			TargetID: a.TargetAccountID, TargetLabel: label, SourceEventID: a.ID, OccurredAt: now,
-		}, liftedByUserID)
+		return s.liftAction(ctx, tx, a, lift, label, auditID)
 	})
+}
+
+// liftAction records lift of a inside tx with its effects and its audit log entry, as
+// LiftAccountAction describes; it records nothing when a is already lifted. label is the
+// target's display name for the audit log.
+func (s *Service) liftAction(ctx context.Context, tx uow.Tx, a moderation.Action, lift moderation.Lift, label, auditID string) error {
+	repo := s.d.Repository
+	err := repo.InsertActionLift(ctx, tx, lift)
+	if errors.Is(err, ErrAlreadyRecorded) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
+	if err != nil {
+		return err
+	}
+	if err := repo.DeleteAccountRestrictionsOf(ctx, tx, a.ID); err != nil {
+		return err
+	}
+	if a.Kind == moderation.ActionMarkStatusesSensitive && s.d.Statuses != nil {
+		if err := s.d.Statuses.ClearSensitivityOf(ctx, tx, a.ID); err != nil {
+			return err
+		}
+	}
+	if err := s.emitAccount(ctx, tx, a.TargetAccountID, lift.LiftedAt); err != nil {
+		return err
+	}
+	if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, lift.LiftedAt); err != nil {
+		return err
+	}
+	// The lift's row is keyed by the action's ID.
+	return s.emitAudit(ctx, tx, moderation.AuditEntry{
+		ID: auditID, Action: moderation.AuditAccountActionLifted, TargetKind: moderation.AuditTargetAccount,
+		TargetID: a.TargetAccountID, TargetLabel: label, SourceEventID: a.ID, OccurredAt: lift.LiftedAt,
+	}, lift.LiftedByUserID)
 }
 
 func (s *Service) emitAccount(ctx context.Context, tx uow.Tx, accountID string, now time.Time) error {

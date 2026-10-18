@@ -105,6 +105,11 @@ const (
 	AuditRuleMoved AuditAction = "rule_moved"
 	// AuditRuleRetired: a rule was retired (instance_rule_retirements).
 	AuditRuleRetired AuditAction = "rule_retired"
+	// AuditAppealUpheld: an appeal was decided and its action kept (moderation_appeal_decisions).
+	AuditAppealUpheld AuditAction = "appeal_upheld"
+	// AuditAppealOverturned: an appeal was decided and its action lifted
+	// (moderation_appeal_decisions); the lift has its own account_action_lifted entry.
+	AuditAppealOverturned AuditAction = "appeal_overturned"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -127,6 +132,8 @@ var auditActions = []struct {
 	{AuditRuleRevised, AuditTargetRule},
 	{AuditRuleMoved, AuditTargetRule},
 	{AuditRuleRetired, AuditTargetRule},
+	{AuditAppealUpheld, AuditTargetAppeal},
+	{AuditAppealOverturned, AuditTargetAppeal},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.
