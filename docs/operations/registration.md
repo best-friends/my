@@ -76,3 +76,14 @@ my registration reject -note "spam" bob
 - 引数はローカルアカウントのユーザー名です（先頭の `@` は省けます）。
 - 決定できるのは承認待ちの登録だけです。決定済みの登録や、登録画面を通らずに作られた利用者（`my admin create`）に対しては、何も変更せずに終了コード 1 で終わります。
 - 終了コード 2 は引数の誤りです。
+
+管理画面（クライアント API）からも同じ決定ができます。どれも `manage_accounts` 権限が要ります。
+
+| 操作 | 内容 |
+| --- | --- |
+| `GET /api/v1/admin/registrations` | 承認待ちの登録（待ちが長い順）。登録の理由・メールアドレスと確認の有無・ローカルアカウントを返す |
+| `POST /api/v1/admin/registrations/{user_id}/approve` | 承認する。本文 `{"note": "..."}` は省ける |
+| `POST /api/v1/admin/registrations/{user_id}/reject` | 却下する。本文は `approve` と同じ |
+
+- CLI と同じユースケースで、決定を `registration_decisions` と監査ログ（`registration_approved`・`registration_rejected`）に記録します。CLI の決定の操作者は `cli`、API の決定の操作者は決めたモデレーターです。
+- 決定済みの登録をもう一度決定しても何も変わらず、今の状態を返します（同時に決定しても、決定は 1 つだけです）。登録画面を通らずに作られた利用者は 404 です。
