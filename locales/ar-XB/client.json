@@ -55,6 +55,14 @@
     "defaultMessage": "‮Sǝʇʇıuƃ ɔɥɐuƃǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.signup_block_added": {
+    "defaultMessage": "‮Sıƃu-nd qʅoɔʞ ɐppǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.signup_block_lifted": {
+    "defaultMessage": "‮Sıƃu-nd qʅoɔʞ ʅıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "‮⊥ǝxʇ ɔɥɐuƃǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."

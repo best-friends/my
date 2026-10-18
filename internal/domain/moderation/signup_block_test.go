@@ -116,7 +116,9 @@ func TestSignupDomainsAndEmailHash(t *testing.T) {
 
 func TestSignupBlockSeverityStronger(t *testing.T) {
 	r, a := moderation.SignupReject, moderation.SignupRequireApproval
-	for _, c := range []struct{ s, t, want moderation.SignupBlockSeverity }{
+	for _, c := range []struct {
+		s, t, want moderation.SignupBlockSeverity
+	}{
 		{"", "", ""}, {"", a, a}, {a, "", a}, {a, r, r}, {r, a, r}, {"", r, r},
 	} {
 		if got := c.s.Stronger(c.t); got != c.want {

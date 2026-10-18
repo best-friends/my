@@ -30,6 +30,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.rule_revised": {};
   /** Setting changed */
   "client:admin.audit_log.action.setting_changed": {};
+  /** Sign-up block added */
+  "client:admin.audit_log.action.signup_block_added": {};
+  /** Sign-up block lifted */
+  "client:admin.audit_log.action.signup_block_lifted": {};
   /** Text changed */
   "client:admin.audit_log.action.text_changed": {};
   /** By */
