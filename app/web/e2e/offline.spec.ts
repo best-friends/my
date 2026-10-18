@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, openFromNavigation as openFromNavigationItem, test } from "./fixtures";
 
 type Instance = components["schemas"]["Instance"];
 type Status = components["schemas"]["Status"];
@@ -96,10 +96,7 @@ async function serveApi(page: Page): Promise<void> {
 
 /** Opens a page from the navigation, as the user would. */
 async function openFromNavigation(page: Page, path: string, hasTouch: boolean): Promise<void> {
-  const link = page.getByRole("navigation").locator(`a[href="${path}"]`);
-  await expect(link).toBeVisible();
-  if (hasTouch) await link.tap();
-  else await link.click();
+  await openFromNavigationItem(page, path, hasTouch);
   await expect(page).toHaveURL(new RegExp(`${path}$`));
 }
 

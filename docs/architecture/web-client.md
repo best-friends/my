@@ -236,13 +236,25 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   ほかの画面でもシートは置いたままにし、返信のボタンはそこで開く。`md` 未満のボタンはアイコンだけで、「投稿を書く」をアクセシブルネーム（`aria-label`）と `Tooltip` にする（G12）。
   `main` は終わりに、タブバーとボタン（出ているとき、`data-compose-fab`）の高さぶんの余白を取り、`index.css` の `scroll-padding-block-end` もフォーカスした要素を同じだけ避ける。`md` 未満のトーストは、タブバーの上に、ボタンが出ているときはボタンの上に出す（`with-compose-fab:` の variant）。
   `md` 未満で高さが 32rem 以下の画面（横向きの電話、400% の拡大の 320 × 225 CSS px）は `short:` の variant（`index.css`）で、タブバーの項目を `min-h-12` にし、ボタンとの間を詰めて、固定した要素を画面の高さの半分に収める（WCAG 1.4.10）。
-  ナビゲーションは 1 つの `nav` で、今いる区画のリンクに `aria-current="page"` を付ける。「プロフィール」の区画は自分のプロフィールとそのフォロワー / フォローの一覧で、
+  ナビゲーション（`routes/-layout/Navigation.tsx`）は 1 つの `nav` で、今いる区画のリンクに `aria-current="page"` を付ける。「プロフィール」の区画は自分のプロフィールとそのフォロワー / フォローの一覧で、
   同じ `/@{acct}` の下にある自分の投稿の詳細は含めない。画面の端に接する要素は `env(safe-area-inset-*)` を足し、高さは `svh` で指定する。
-  ローカル（`/local`）と連合（`/public`）のタイムラインは、インスタンスの設定で無効にでき、そのときは API が 404 を返す（FR-202）。ナビゲーションは `GET /instance` の `timelines` で、
-  サーバーが提供するものだけを出す（`features/timeline` の `useTimelineAvailability`）。ローカルはサーバーが無効と答えるまで出し、連合はサーバーが有効と答えてから出すので、無効にしたサーバーでは読み込み中も失敗したときも出ない。
-  最後に受け取った `timelines` は localStorage の `my:instance:timelines` に残し（インスタンスの設定で、利用者のデータではない）、ナビゲーションを置いたときに 1 回だけ読む。
-  オフラインで開いたりリロードしたりして `GET /instance` が届かないときも、前と同じ項目を出す。サーバーの答えが届けばそちらを使う。
-  タブバーは項目の数で列を等分する。無効にした連合タイムラインのアドレスを直接開いたときは、「もう一度試す」ではなく無効であることを出す（`routes/public.tsx`）。
+  - 項目は [ADR-0039](../adr/0039-mobile-navigation-and-compose-entry.md) に従う。`md` 未満のタブバーは、ホーム・タイムライン・通知・検索・メニューの 5 つで、
+    `md` からのレールとサイドバーは、ホーム・ローカル・連合・通知・検索・プロフィール・設定の 7 つにする。どちらも 1 つのリストの同じ順番で、各項目はその幅で出ないときに `display: none`（アクセシビリティツリーからも外れる）にする。
+    jsdom はスタイルを当てないので、統合テストでは両方の項目が文書にあり、どの幅で何が出るかは E2E（`e2e/shell.spec.ts`・`e2e/federated.spec.ts`）で確かめる。
+  - タブバーの各項目は文言の幅を基本にし、残りの幅を等分する（`flex: 1 1 auto`）。長い文言（「Notifications」）が短い文言（「Menu」）の余りを使うので、320 px の `en`・`ja`・`ar-XB` で 1 行に収まる。
+    文言は省略せず、収まらない翻訳では単語の途中でも折り返して、全体を読めるようにする。
+  - 「タイムライン」はローカルのタイムライン（ローカルを無効にし連合を有効にしたサーバーでは連合）へのリンクで、`/local` と `/public` のどちらでも `aria-current="page"` になる。
+    `/local` と `/public` の画面は、見出しの下に 2 つのタイムラインを切り替えるタブ（`features/timeline` の `TimelineTabs`）を持つ。タブは React Aria の Tabs に `href` を付けたリンクで、
+    選択は URL から決まる（S3）。タブを移ると別の画面になり、フォーカスはその画面の `h1` に移るので、矢印キーではフォーカスだけを動かし、Enter / Space で開く（`keyboardActivation="manual"`）。
+    タブはサーバーが提供するタイムラインと今の画面のものだけを出し、`GET /instance` の答えを待たずに最初から置く（答えが後から届いても、下のタイムラインを作り直さない）。
+  - 「メニュー」は場所ではなくボタンなので `aria-current` を持たない。押すと `Sheet`（モーダルのダイアログ）を開き、タブバーにないレールの項目（プロフィール・設定）を並べて、今いる区画のリンクに `aria-current="page"` を付ける。
+    シートはパスの変わる遷移が始まったとき（ルーターの `onBeforeNavigate`）に閉じるので、新しい画面の `h1` がフォーカスを受け取れる。未保存の変更の確かめで止めた遷移は始まらないので、シートは開いたまま残る。
+  - ローカル（`/local`）と連合（`/public`）のタイムラインは、インスタンスの設定で無効にでき、そのときは API が 404 を返す（FR-202）。レールとタイムラインのタブは `GET /instance` の `timelines` で、
+    サーバーが提供するものだけを出す（`features/timeline` の `useTimelineAvailability`）。ローカルはサーバーが無効と答えるまで出し、連合はサーバーが有効と答えてから出すので、無効にしたサーバーでは読み込み中も失敗したときも出ない。
+    タブバーの項目の数は、サーバーが何を提供しても 5 つのまま変わらない。
+  - 最後に受け取った `timelines` は localStorage の `my:instance:timelines` に残し（インスタンスの設定で、利用者のデータではない）、ナビゲーションを置いたときに 1 回だけ読む。
+    オフラインで開いたりリロードしたりして `GET /instance` が届かないときも、前と同じ項目を出す。サーバーの答えが届けばそちらを使う。
+  - 無効にしたタイムラインのアドレスを直接開いたとき（両方を無効にしたサーバーでタブバーの「タイムライン」を開いたときを含む）は、「もう一度試す」ではなく無効であることを出す（`routes/local.tsx`・`routes/public.tsx`）。
   先頭に、フォーカスしたときだけ見える「本文へ移動」のリンクを置く。
 - **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
@@ -404,9 +416,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 ## 14. 管理画面
 
-`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
+`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログの画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
@@ -426,6 +438,17 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
   「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
   複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
+- **監査ログ**（`/admin/audit-log`、FR-704）: 「絞り込み」と「操作」の 2 つの区画。操作は新しい順で、各行は操作の種類の見出しと、操作者・対象・日時の説明リストにする。
+  - **絞り込み**: 操作の種類（`?action=`）と対象の種類（`?target_kind=`）は `Select`（APG の select-only combobox）で選び、変えるとすぐに URL を変える（S3）。対象の種類を変えると 1 つの対象の絞り込みは外れる。
+    操作者（`?actor=`、アカウントの ID）と 1 つの対象（`?target=`、`target_kind` と組でだけ効く）は、行のリンク（「{名前}の操作だけを表示」「{対象}への操作だけを表示」）で選ぶ。
+    絞り込んだ行はそのまま残るので、同じ位置のリンクを「すべての操作者の操作を表示」「すべての対象への操作を表示」に変えてフォーカスを保つ。
+    絞り込みの区画に、選んだ操作者と対象（読み込んだ行にある名前）とそれを外すリンク、「絞り込みを外す」を出す。外すリンクが消えたときは、区画の最初の `Select` にフォーカスを移す。
+  - **ページの読み足し**: 読み込んだページ数を `?pages=`（2〜25）に置く。「さらに表示」で次のページが届いたら、履歴を増やさずスクロールも動かさずに（`replace`・`resetScroll: false`）URL を変える。
+    ルートの loader は TanStack Query の `infiniteQuery` の `pages` で、そのページ数を新しい方から順に読む。キャッシュに読み込み済みのページはそのまま使う。絞り込みを変えると 1 ページ目からになる。
+    次のページの失敗は、一覧の下に `RegionError` で理由を出し、読み込み済みの行を残す。もう一度「さらに表示」を押すと読み直す。
+  - **操作者**: アカウントの表示名（`dir="auto"`）とハンドル。アカウントが消えた利用者は「削除されたアカウント」、CLI・サーバー自身・ほかのサーバーはそれぞれの名前にする。
+  - **対象**: 項目名を対象の種類にし、値は記録時の `target_label` にする。対象の種類に管理画面があるものはそこへリンクする（アカウントは `/admin/accounts/{id}`、通報は `/admin/reports/{id}`、ドメインは `/admin/domain-actions?filter=all&domain=…`、ドメインは `DomainName` で 2 つの形を出す）。
+    設定・ルール・登録など画面のない種類は `target_label` だけを出す。API は対象が今もあるかを返さないので、消えた対象へのリンクは、リンク先の画面が見つからないことを示す。
 - **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection` にし（`features/admin/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
@@ -433,7 +456,8 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   操作で開いたボタンが消えるとき（一覧から行が消えるなど）は、`lib/useFocusAfterRemoval.ts` でフォーカスの行き先を決める。
 - **テスト**: `features/admin/admin.test.tsx` が出し分け・一覧と絞り込み・ページの読み足し・再開・再実行・失敗・403 を MSW で検査する。既定の閲覧者は権限を持たないので、テストは `operatorHandler()` で権限を与える。
   `features/admin/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
-  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動を検査する。
+  `features/admin/auditLog.test.tsx` は、監査ログの行と対象へのリンク、`Select` と行のリンクでの絞り込みと URL、絞り込みのあとのフォーカス、`?pages=` の書き込みと読み込み、URL の不正な値、次のページの失敗、空の状態、権限のない閲覧者と 403 を検査する。
+  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL を検査する。
 
 ## 15. 検索とほかのサーバーのアカウントのフォロー
 
