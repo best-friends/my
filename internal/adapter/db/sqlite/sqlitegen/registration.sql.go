@@ -371,13 +371,17 @@ JOIN registration_applications a ON a.user_id = s.user_id
 LEFT JOIN user_primary_emails p ON p.user_id = s.user_id
 LEFT JOIN user_email_addresses e ON e.id = p.email_address_id
 WHERE s.state = ?1
+  AND (CAST(?2 AS TEXT) = '' OR s.since > ?3
+    OR (s.since = ?3 AND s.user_id > ?2))
 ORDER BY s.since, s.user_id
-LIMIT ?2
+LIMIT ?4
 `
 
 type ListRegistrationsInStateParams struct {
-	State     string
-	PageLimit int64
+	State       string
+	AfterUserID string
+	AfterSince  int64
+	PageLimit   int64
 }
 
 type ListRegistrationsInStateRow struct {
@@ -392,7 +396,12 @@ type ListRegistrationsInStateRow struct {
 }
 
 func (q *Queries) ListRegistrationsInState(ctx context.Context, arg ListRegistrationsInStateParams) ([]ListRegistrationsInStateRow, error) {
-	rows, err := q.db.QueryContext(ctx, listRegistrationsInState, arg.State, arg.PageLimit)
+	rows, err := q.db.QueryContext(ctx, listRegistrationsInState,
+		arg.State,
+		arg.AfterUserID,
+		arg.AfterSince,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -421,6 +430,26 @@ func (q *Queries) ListRegistrationsInState(ctx context.Context, arg ListRegistra
 		return nil, err
 	}
 	return items, nil
+}
+
+const transitionPendingRegistrationState = `-- name: TransitionPendingRegistrationState :execrows
+UPDATE user_registration_states SET state = ?, since = ? WHERE user_id = ? AND state = 'pending'
+`
+
+type TransitionPendingRegistrationStateParams struct {
+	State  string
+	Since  int64
+	UserID string
+}
+
+// TransitionPendingRegistrationState moves a pending registration to a decided state and
+// affects no row when the registration is not pending.
+func (q *Queries) TransitionPendingRegistrationState(ctx context.Context, arg TransitionPendingRegistrationStateParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, transitionPendingRegistrationState, arg.State, arg.Since, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const upsertRegistrationState = `-- name: UpsertRegistrationState :exec

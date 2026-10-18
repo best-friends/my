@@ -170,7 +170,13 @@ test.describe("profile form", () => {
     const displayName = page.locator('input[autocomplete="nickname"]');
     await expect(displayName).toBeVisible();
     await displayName.fill("Alice Liddell");
-    const settingsLink = page.getByRole("navigation").locator('a[href="/settings"]').first();
+    // Phones reach the settings from the menu's sheet (ADR-0039), which stays open while the question is asked.
+    const nav = page.getByRole("navigation");
+    let settingsLink = nav.locator('a[href="/settings"]').filter({ visible: true });
+    if ((await settingsLink.count()) === 0) {
+      await nav.getByRole("button").click();
+      settingsLink = page.getByRole("dialog").locator('a[href="/settings"]');
+    }
 
     await settingsLink.click();
     const dialog = page.getByRole("alertdialog");
