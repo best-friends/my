@@ -94,13 +94,15 @@ export type RecordListProps<T> = {
   empty: ReactNode;
   /** The `<ul>`, for lists whose rows go away (useFocusAfterRemoval). */
   listRef?: Ref<HTMLUListElement>;
+  /** Why the next page failed to load (a `RegionError` without a retry of its own), above "show more", which tries again. */
+  moreError?: ReactNode;
 };
 
 /**
  * A list of records of an admin screen (web-client.md G3): one row per record, divided by lines, each row a
  * size container for its facts, then "show more" while there are more. An empty list shows `empty` instead.
  */
-export function RecordList<T>({ list, getId, children, empty, listRef }: RecordListProps<T>) {
+export function RecordList<T>({ list, getId, children, empty, listRef, moreError }: RecordListProps<T>) {
   if (list.items.length === 0) return empty;
   return (
     <div className="flex flex-col gap-4">
@@ -114,6 +116,7 @@ export function RecordList<T>({ list, getId, children, empty, listRef }: RecordL
           );
         })}
       </ul>
+      {moreError}
       <MoreButton list={list} />
     </div>
   );
