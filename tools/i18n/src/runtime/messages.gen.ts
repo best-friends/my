@@ -20,6 +20,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.report_resolved": {};
   /** Report unassigned */
   "client:admin.audit_log.action.report_unassigned": {};
+  /** Role granted */
+  "client:admin.audit_log.action.role_granted": {};
+  /** Role revoked */
+  "client:admin.audit_log.action.role_revoked": {};
   /** Rule added */
   "client:admin.audit_log.action.rule_added": {};
   /** Rule moved */

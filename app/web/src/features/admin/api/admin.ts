@@ -216,6 +216,8 @@ export const auditActions = [
   "rule_revised",
   "rule_moved",
   "rule_retired",
+  "role_granted",
+  "role_revoked",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */
