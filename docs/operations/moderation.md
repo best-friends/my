@@ -24,7 +24,17 @@ CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直�
 | `delete_statuses` | 指定した投稿を削除する。本人にも見えなくなり、連合先には本人の削除と同じ `Delete` を送る |
 | `mark_statuses_sensitive` | 指定した投稿の添付をセンシティブとして表示する |
 
-リモートのアカウントには `limit`・`suspend`・`force_sensitive` だけを出せます。`suspend` はそのアカウントからの受信を捨てます。
+リモートのアカウントには `limit`・`suspend`・`force_sensitive` だけを出せます（ほかの種類は管理 API では `422`、CLI では失敗）。
+効果はこのサーバーの中だけで、相手のサーバーには何も送りません（[ADR-0036](../adr/0036-moderation-federation-propagation.md)）。
+
+| 種類 | リモートのアカウントへの効果 |
+| --- | --- |
+| `force_sensitive` | 添付をすべてセンシティブとして表示する |
+| `limit` | 投稿（過去の投稿を含む）をフォロワー限定として扱い、公開タイムラインに出さず、フォローしていない利用者への通知を作らない |
+| `suspend` | そのアカウントからの受信を捨て、プロフィールと投稿を見せない。解除すると表示が戻り、また受信する（凍結中に捨てた受信は戻らない） |
+
+- `notify_target`（`-no-notify`）は、リモートのアカウントには意味がありません（通知は届かない）。
+- 発行と解除は、ローカルのアカウントへの処分と同じく[監査ログ](#監査ログ)に残ります。
 
 ```sh
 my admin account action issue -kind suspend -category spam -public-reason "spam" -duration 720h @alice
