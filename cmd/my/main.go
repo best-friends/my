@@ -80,7 +80,7 @@ func usage(w io.Writer) {
 
 Commands:
   admin     Create an administrator, moderate domains, and handle reports
-            (my admin create|domain|report)
+            (my admin create|domain|report|signup-block)
   config    Check the configuration (my config check)
   instance  Read and change the instance settings and rules
             (my instance list|get|set|history|rule)

@@ -108,6 +108,8 @@ type Repository interface {
 
 	// The audit log (audit.go).
 	AuditRepository
+	// The sign-up block list (signup_block.go).
+	SignupBlockRepository
 }
 
 // ReportQuery selects the reports of a list.

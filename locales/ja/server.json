@@ -243,6 +243,10 @@
     "defaultMessage": "参加したい理由（任意）",
     "description": "Label of the free-text field asking why the applicant wants to join, shown when sign-ups need a moderator's approval."
   },
+  "auth.sign_up.refused": {
+    "defaultMessage": "このサーバーでは、この登録を受け付けられません。",
+    "description": "Error (HTTP 403) when the sign-up block list refuses the sign-up. It deliberately does not say why."
+  },
   "auth.sign_up.submit": {
     "defaultMessage": "アカウントを作成",
     "description": "Button that submits the registration form."

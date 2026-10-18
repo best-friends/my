@@ -146,6 +146,8 @@ const (
 	AdminAuditActionRuleRetired          AdminAuditAction = "rule_retired"
 	AdminAuditActionRuleRevised          AdminAuditAction = "rule_revised"
 	AdminAuditActionSettingChanged       AdminAuditAction = "setting_changed"
+	AdminAuditActionSignupBlockAdded     AdminAuditAction = "signup_block_added"
+	AdminAuditActionSignupBlockLifted    AdminAuditAction = "signup_block_lifted"
 	AdminAuditActionTextChanged          AdminAuditAction = "text_changed"
 )
 
@@ -179,6 +181,10 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionRuleRevised:
 		return true
 	case AdminAuditActionSettingChanged:
+		return true
+	case AdminAuditActionSignupBlockAdded:
+		return true
+	case AdminAuditActionSignupBlockLifted:
 		return true
 	case AdminAuditActionTextChanged:
 		return true
@@ -418,6 +424,66 @@ func (e AdminReportState) Valid() bool {
 	case AdminReportStateOpen:
 		return true
 	case AdminReportStateResolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminSignupBlockKind.
+const (
+	AdminSignupBlockKindEmailDomain AdminSignupBlockKind = "email_domain"
+	AdminSignupBlockKindEmailHash   AdminSignupBlockKind = "email_hash"
+	AdminSignupBlockKindIpRange     AdminSignupBlockKind = "ip_range"
+)
+
+// Valid indicates whether the value is a known member of the AdminSignupBlockKind enum.
+func (e AdminSignupBlockKind) Valid() bool {
+	switch e {
+	case AdminSignupBlockKindEmailDomain:
+		return true
+	case AdminSignupBlockKindEmailHash:
+		return true
+	case AdminSignupBlockKindIpRange:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminSignupBlockSeverity.
+const (
+	AdminSignupBlockSeverityReject          AdminSignupBlockSeverity = "reject"
+	AdminSignupBlockSeverityRequireApproval AdminSignupBlockSeverity = "require_approval"
+)
+
+// Valid indicates whether the value is a known member of the AdminSignupBlockSeverity enum.
+func (e AdminSignupBlockSeverity) Valid() bool {
+	switch e {
+	case AdminSignupBlockSeverityReject:
+		return true
+	case AdminSignupBlockSeverityRequireApproval:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminSignupBlockState.
+const (
+	AdminSignupBlockStateActive  AdminSignupBlockState = "active"
+	AdminSignupBlockStateExpired AdminSignupBlockState = "expired"
+	AdminSignupBlockStateLifted  AdminSignupBlockState = "lifted"
+)
+
+// Valid indicates whether the value is a known member of the AdminSignupBlockState enum.
+func (e AdminSignupBlockState) Valid() bool {
+	switch e {
+	case AdminSignupBlockStateActive:
+		return true
+	case AdminSignupBlockStateExpired:
+		return true
+	case AdminSignupBlockStateLifted:
 		return true
 	default:
 		return false
@@ -872,7 +938,8 @@ type AdminAccountActionState string
 // `report_unassigned`, `report_resolved`. On a `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 // (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `signup_block`:
+// `signup_block_added`, `signup_block_lifted`.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -888,7 +955,8 @@ type AdminAuditEntry struct {
 	// `report_unassigned`, `report_resolved`. On a `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `signup_block`:
+	// `signup_block_added`, `signup_block_lifted`.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -914,16 +982,16 @@ type AdminAuditEntry struct {
 	// when the operation has none.
 	SourceEventId *string `json:"source_event_id,omitempty"`
 
-	// TargetId The target: the ID of an account, a report, a user, or a rule, the domain of a domain
-	// action, or the key of a setting or a text.
+	// TargetId The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
+	// domain of a domain action, or the key of a setting or a text.
 	TargetId string `json:"target_id"`
 
 	// TargetKind The kind of what an audited operation acted on.
 	TargetKind AdminAuditTargetKind `json:"target_kind"`
 
 	// TargetLabel The target's display name when the operation happened, such as `@alice`,
-	// `@bob@example.com`, a domain, a setting's key, or a rule's text; up to 512
-	// characters.
+	// `@bob@example.com`, a domain, a setting's key, a rule's text, or a sign-up block's
+	// kind and value (`email_domain spam.example`); up to 512 characters.
 	TargetLabel string `json:"target_label"`
 }
 
@@ -1254,8 +1322,73 @@ type AdminRuleText struct {
 	Text string `json:"text"`
 }
 
+// AdminSignupBlock A block on sign-ups from the registration page (FR-719).
+type AdminSignupBlock struct {
+	// Comment The moderators' comment; omitted when there is none.
+	Comment   *string   `json:"comment,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// ExpiresAt When the block ends by itself; omitted for one that lasts until lifted.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Kind `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
+	// email address, compared in lower case without the part of the local part from its first
+	// `+`. `ip_range`: the client addresses in a CIDR prefix.
+	Kind AdminSignupBlockKind `json:"kind"`
+
+	// LiftedAt When the block was lifted; omitted until it is.
+	LiftedAt *time.Time `json:"lifted_at,omitempty"`
+
+	// ModerationActionId The ban the block was made from; omitted for a block added on its own.
+	ModerationActionId *Id `json:"moderation_action_id,omitempty"`
+
+	// Severity `reject`: the sign-up is refused. `require_approval`: the registration starts pending
+	// for a moderator, whatever the registration mode.
+	Severity AdminSignupBlockSeverity `json:"severity"`
+
+	// State `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+	// lifted it.
+	State AdminSignupBlockState `json:"state"`
+
+	// Value What the block matches, in canonical form: a domain in IDNA A-labels
+	// (`email_domain`), the hex SHA-256 of a canonical email address (`email_hash`), or a
+	// masked CIDR prefix (`ip_range`).
+	Value string `json:"value"`
+}
+
+// AdminSignupBlockKind `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
+// email address, compared in lower case without the part of the local part from its first
+// `+`. `ip_range`: the client addresses in a CIDR prefix.
+type AdminSignupBlockKind string
+
+// AdminSignupBlockPage A page of sign-up blocks, newest first.
+type AdminSignupBlockPage struct {
+	Items []AdminSignupBlock `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminSignupBlockSeverity `reject`: the sign-up is refused. `require_approval`: the registration starts pending
+// for a moderator, whatever the registration mode.
+type AdminSignupBlockSeverity string
+
+// AdminSignupBlockState `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+// lifted it.
+type AdminSignupBlockState string
+
 // CreateAccountActionRequest A moderation action to take on an account.
 type CreateAccountActionRequest struct {
+	// BlockEmail Whether a `ban` also blocks sign-ups with the email address of the account's user (a
+	// `reject` sign-up block of kind `email_hash`, FR-719); only a `ban` of a local
+	// account takes it, and a user without an email address is a 422.
+	BlockEmail *bool `json:"block_email,omitempty"`
+
 	// ExpiresIn The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
 	// actions on posts take none.
 	ExpiresIn *int `json:"expires_in,omitempty"`
@@ -1328,6 +1461,28 @@ type CreateReportRequest struct {
 
 	// StatusIds Posts of the account that the user can see, up to 20.
 	StatusIds *[]Id `json:"status_ids,omitempty"`
+}
+
+// CreateSignupBlockRequest A new block on sign-ups.
+type CreateSignupBlockRequest struct {
+	Comment *string `json:"comment,omitempty"`
+
+	// ExpiresIn The seconds the block lasts; omitted, it lasts until it is lifted.
+	ExpiresIn *int `json:"expires_in,omitempty"`
+
+	// Kind `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
+	// email address, compared in lower case without the part of the local part from its first
+	// `+`. `ip_range`: the client addresses in a CIDR prefix.
+	Kind AdminSignupBlockKind `json:"kind"`
+
+	// Severity `reject`: the sign-up is refused. `require_approval`: the registration starts pending
+	// for a moderator, whatever the registration mode.
+	Severity AdminSignupBlockSeverity `json:"severity"`
+
+	// Value A domain such as `spam.example` or `例え.jp` (`email_domain`), an email address or
+	// the hex SHA-256 of a canonical one (`email_hash`), or a CIDR prefix such as
+	// `192.0.2.0/24` or a single IP address (`ip_range`).
+	Value string `json:"value"`
 }
 
 // CreateStatusRequest A new status.
@@ -2430,6 +2585,11 @@ type ReportId = Id
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type RuleId = Id
 
+// SignupBlockId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type SignupBlockId = Id
+
 // StatusId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -2607,6 +2767,21 @@ type ListInstanceRulesParams struct {
 	IncludeRetired *bool `form:"include_retired,omitempty" json:"include_retired,omitempty"`
 }
 
+// ListSignupBlocksParams defines parameters for ListSignupBlocks.
+type ListSignupBlocksParams struct {
+	// Kind Keep only the blocks of this kind.
+	Kind *AdminSignupBlockKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// Active Keep only the blocks in effect now, neither lifted nor expired.
+	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListBlocksParams defines parameters for ListBlocks.
 type ListBlocksParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -2764,6 +2939,9 @@ type UpdateInstanceRuleJSONRequestBody = InstanceRuleInput
 
 // MoveInstanceRuleJSONRequestBody defines body for MoveInstanceRule for application/json ContentType.
 type MoveInstanceRuleJSONRequestBody = MoveInstanceRuleRequest
+
+// CreateSignupBlockJSONRequestBody defines body for CreateSignupBlock for application/json ContentType.
+type CreateSignupBlockJSONRequestBody = CreateSignupBlockRequest
 
 // UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
 type UploadMediaMultipartRequestBody = MediaUpload
@@ -2923,6 +3101,18 @@ type ServerInterface interface {
 	// RetireInstanceRule Retire an instance rule
 	// (POST /admin/rules/{id}/retire)
 	RetireInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId)
+	// ListSignupBlocks List the sign-up blocks
+	// (GET /admin/signup_blocks)
+	ListSignupBlocks(w http.ResponseWriter, r *http.Request, params ListSignupBlocksParams)
+	// CreateSignupBlock Block sign-ups
+	// (POST /admin/signup_blocks)
+	CreateSignupBlock(w http.ResponseWriter, r *http.Request)
+	// GetSignupBlock Get a sign-up block
+	// (GET /admin/signup_blocks/{id})
+	GetSignupBlock(w http.ResponseWriter, r *http.Request, id SignupBlockId)
+	// LiftSignupBlock Lift a sign-up block
+	// (POST /admin/signup_blocks/{id}/lift)
+	LiftSignupBlock(w http.ResponseWriter, r *http.Request, id SignupBlockId)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(w http.ResponseWriter, r *http.Request, params ListBlocksParams)
@@ -4616,6 +4806,144 @@ func (siw *ServerInterfaceWrapper) RetireInstanceRule(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListSignupBlocks operation middleware
+func (siw *ServerInterfaceWrapper) ListSignupBlocks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSignupBlocksParams
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "active"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSignupBlocks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSignupBlock operation middleware
+func (siw *ServerInterfaceWrapper) CreateSignupBlock(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSignupBlock(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSignupBlock operation middleware
+func (siw *ServerInterfaceWrapper) GetSignupBlock(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id SignupBlockId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSignupBlock(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LiftSignupBlock operation middleware
+func (siw *ServerInterfaceWrapper) LiftSignupBlock(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id SignupBlockId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LiftSignupBlock(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListBlocks operation middleware
 func (siw *ServerInterfaceWrapper) ListBlocks(w http.ResponseWriter, r *http.Request) {
 
@@ -6040,6 +6368,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/registrations", wrapper.ListPendingRegistrations)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/registrations/{user_id}/approve", wrapper.ApproveRegistration)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/registrations/{user_id}/reject", wrapper.RejectRegistration)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/signup_blocks", wrapper.ListSignupBlocks)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks", wrapper.CreateSignupBlock)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/signup_blocks/{id}", wrapper.GetSignupBlock)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks/{id}/lift", wrapper.LiftSignupBlock)
 
 	return m
 }
@@ -6114,6 +6446,15 @@ type AdminRuleJSONResponse struct {
 	Body AdminRule
 
 	Headers AdminRuleResponseHeaders
+}
+
+type AdminSignupBlockResponseHeaders struct {
+	CacheControl *string
+}
+type AdminSignupBlockJSONResponse struct {
+	Body AdminSignupBlock
+
+	Headers AdminSignupBlockResponseHeaders
 }
 
 type ProblemResponseHeaders struct {
@@ -8728,6 +9069,233 @@ func (response RetireInstanceRuledefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type ListSignupBlocksRequestObject struct {
+	Params ListSignupBlocksParams
+}
+
+type ListSignupBlocksResponseObject interface {
+	VisitListSignupBlocksResponse(w http.ResponseWriter) error
+}
+
+type ListSignupBlocks200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListSignupBlocks200JSONResponse struct {
+	Body    AdminSignupBlockPage
+	Headers ListSignupBlocks200ResponseHeaders
+}
+
+func (response ListSignupBlocks200JSONResponse) VisitListSignupBlocksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSignupBlocksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListSignupBlocksdefaultApplicationProblemPlusJSONResponse) VisitListSignupBlocksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSignupBlockRequestObject struct {
+	Body *CreateSignupBlockJSONRequestBody
+}
+
+type CreateSignupBlockResponseObject interface {
+	VisitCreateSignupBlockResponse(w http.ResponseWriter) error
+}
+
+type CreateSignupBlock200JSONResponse struct{ AdminSignupBlockJSONResponse }
+
+func (response CreateSignupBlock200JSONResponse) VisitCreateSignupBlockResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSignupBlockdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateSignupBlockdefaultApplicationProblemPlusJSONResponse) VisitCreateSignupBlockResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSignupBlockRequestObject struct {
+	Id SignupBlockId `json:"id"`
+}
+
+type GetSignupBlockResponseObject interface {
+	VisitGetSignupBlockResponse(w http.ResponseWriter) error
+}
+
+type GetSignupBlock200JSONResponse struct{ AdminSignupBlockJSONResponse }
+
+func (response GetSignupBlock200JSONResponse) VisitGetSignupBlockResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSignupBlockdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetSignupBlockdefaultApplicationProblemPlusJSONResponse) VisitGetSignupBlockResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LiftSignupBlockRequestObject struct {
+	Id SignupBlockId `json:"id"`
+}
+
+type LiftSignupBlockResponseObject interface {
+	VisitLiftSignupBlockResponse(w http.ResponseWriter) error
+}
+
+type LiftSignupBlock200JSONResponse struct{ AdminSignupBlockJSONResponse }
+
+func (response LiftSignupBlock200JSONResponse) VisitLiftSignupBlockResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LiftSignupBlockdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response LiftSignupBlockdefaultApplicationProblemPlusJSONResponse) VisitLiftSignupBlockResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListBlocksRequestObject struct {
 	Params ListBlocksParams
 }
@@ -11140,6 +11708,18 @@ type StrictServerInterface interface {
 	// RetireInstanceRule Retire an instance rule
 	// (POST /admin/rules/{id}/retire)
 	RetireInstanceRule(ctx context.Context, request RetireInstanceRuleRequestObject) (RetireInstanceRuleResponseObject, error)
+	// ListSignupBlocks List the sign-up blocks
+	// (GET /admin/signup_blocks)
+	ListSignupBlocks(ctx context.Context, request ListSignupBlocksRequestObject) (ListSignupBlocksResponseObject, error)
+	// CreateSignupBlock Block sign-ups
+	// (POST /admin/signup_blocks)
+	CreateSignupBlock(ctx context.Context, request CreateSignupBlockRequestObject) (CreateSignupBlockResponseObject, error)
+	// GetSignupBlock Get a sign-up block
+	// (GET /admin/signup_blocks/{id})
+	GetSignupBlock(ctx context.Context, request GetSignupBlockRequestObject) (GetSignupBlockResponseObject, error)
+	// LiftSignupBlock Lift a sign-up block
+	// (POST /admin/signup_blocks/{id}/lift)
+	LiftSignupBlock(ctx context.Context, request LiftSignupBlockRequestObject) (LiftSignupBlockResponseObject, error)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(ctx context.Context, request ListBlocksRequestObject) (ListBlocksResponseObject, error)
@@ -12555,6 +13135,115 @@ func (sh *strictHandler) RetireInstanceRule(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RetireInstanceRuleResponseObject); ok {
 		if err := validResponse.VisitRetireInstanceRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSignupBlocks operation middleware
+func (sh *strictHandler) ListSignupBlocks(w http.ResponseWriter, r *http.Request, params ListSignupBlocksParams) {
+	var request ListSignupBlocksRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSignupBlocks(ctx, request.(ListSignupBlocksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSignupBlocks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSignupBlocksResponseObject); ok {
+		if err := validResponse.VisitListSignupBlocksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSignupBlock operation middleware
+func (sh *strictHandler) CreateSignupBlock(w http.ResponseWriter, r *http.Request) {
+	var request CreateSignupBlockRequestObject
+
+	var body CreateSignupBlockJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSignupBlock(ctx, request.(CreateSignupBlockRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSignupBlock")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSignupBlockResponseObject); ok {
+		if err := validResponse.VisitCreateSignupBlockResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSignupBlock operation middleware
+func (sh *strictHandler) GetSignupBlock(w http.ResponseWriter, r *http.Request, id SignupBlockId) {
+	var request GetSignupBlockRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSignupBlock(ctx, request.(GetSignupBlockRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSignupBlock")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSignupBlockResponseObject); ok {
+		if err := validResponse.VisitGetSignupBlockResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LiftSignupBlock operation middleware
+func (sh *strictHandler) LiftSignupBlock(w http.ResponseWriter, r *http.Request, id SignupBlockId) {
+	var request LiftSignupBlockRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LiftSignupBlock(ctx, request.(LiftSignupBlockRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LiftSignupBlock")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LiftSignupBlockResponseObject); ok {
+		if err := validResponse.VisitLiftSignupBlockResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

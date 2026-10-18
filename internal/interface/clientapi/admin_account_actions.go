@@ -187,6 +187,7 @@ func (s *Server) CreateAccountAction(ctx context.Context, req CreateAccountActio
 	if b.StatusIds != nil {
 		in.StatusIDs = *b.StatusIds
 	}
+	in.BlockEmail = b.BlockEmail != nil && *b.BlockEmail
 	target, ok, err := s.adminAccount(ctx, req.Id)
 	switch {
 	case err != nil:
@@ -207,6 +208,8 @@ func (s *Server) CreateAccountAction(ctx context.Context, req CreateAccountActio
 		return unprocessable(l.ServerErrorsInvalidValue("status_ids"))
 	case errors.Is(err, moderation.ErrActionNeverExpires):
 		return unprocessable(l.ServerErrorsInvalidValue("expires_in"))
+	case errors.Is(err, appmoderation.ErrCannotBlockEmail):
+		return unprocessable(l.ServerErrorsInvalidValue("block_email"))
 	case errors.As(err, &textErr) && textErr.Max > 0:
 		return unprocessable(l.ServerErrorsTooLong(textErr.Max, textErr.Field))
 	case errors.As(err, &textErr):

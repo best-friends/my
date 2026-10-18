@@ -105,6 +105,10 @@ const (
 	AuditRuleMoved AuditAction = "rule_moved"
 	// AuditRuleRetired: a rule was retired (instance_rule_retirements).
 	AuditRuleRetired AuditAction = "rule_retired"
+	// AuditSignupBlockAdded: a new sign-up block (signup_blocks).
+	AuditSignupBlockAdded AuditAction = "signup_block_added"
+	// AuditSignupBlockLifted: a sign-up block was lifted (signup_block_lifts).
+	AuditSignupBlockLifted AuditAction = "signup_block_lifted"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -127,6 +131,8 @@ var auditActions = []struct {
 	{AuditRuleRevised, AuditTargetRule},
 	{AuditRuleMoved, AuditTargetRule},
 	{AuditRuleRetired, AuditTargetRule},
+	{AuditSignupBlockAdded, AuditTargetSignupBlock},
+	{AuditSignupBlockLifted, AuditTargetSignupBlock},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

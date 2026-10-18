@@ -651,6 +651,18 @@ type SessionOrigin struct {
 	CreatedAt int64
 }
 
+type SignupBlock struct {
+	ID                 string
+	Kind               string
+	Value              string
+	Severity           string
+	Comment            sql.NullString
+	ModerationActionID sql.NullString
+	CreatedByUserID    sql.NullString
+	ExpiresAt          sql.NullInt64
+	CreatedAt          int64
+}
+
 type Status struct {
 	ID              string
 	Uri             string

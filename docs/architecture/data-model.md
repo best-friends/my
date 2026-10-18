@@ -471,7 +471,9 @@ flowchart LR
 | `signup_blocks` | イベント | `id`, `kind`（`enum(email_domain, email_hash, ip_range)`）, `value`, `severity`（`enum(reject, require_approval)`）, `comment`（NULL 可。1,000 文字まで）, `moderation_action_id`（NULL 可。BAN から作られた場合）, `created_by_user_id`（NULL 可 = CLI）, `expires_at`（NULL 可）, `created_at` | インデックス `(kind, value)` |
 | `signup_block_lifts` | イベント | `block_id`（PK）, `lifted_by_user_id`（NULL 可 = CLI）, `lifted_at` | |
 
-- `email_domain` の `value` は IDNA の A-label のドメインで、サブドメインにも効きます。`email_hash` はメールアドレスの正規形（小文字にし、ローカル部の `+` 以降を除く）の SHA-256 で、BAN したアカウントのアドレスを平文で残さずに再登録を防ぎます。`ip_range` は CIDR です。
+- `email_domain` の `value` は IDNA の A-label のドメインで、サブドメインにも効きます。`email_hash` はメールアドレスの正規形（ドメインを A-label にしたうえで小文字にし、ローカル部の最初の `+` 以降を除く）の SHA-256（16 進の小文字）で、BAN したアカウントのアドレスを平文で残さずに再登録を防ぎます。`ip_range` はマスク済みの CIDR（IPv4 射影アドレスは IPv4 に直す）で、単一のアドレスはその長さのプレフィックスです。
+- 管理 API・CLI で作る拒否は即時に効き、追加と解除をそれぞれ監査ログに記録します。解除済みの拒否の解除は何も変えず、記録もしません。
+- BAN は、モデレーターが求めたとき（`block_email`）に、対象の利用者の主メールアドレスの `email_hash`・`reject` の拒否を同じトランザクションで作り（`moderation_action_id` は BAN）、その追加も監査ログに記録します。ローカルアカウントの BAN 以外と、メールアドレスのない利用者には作れません。
 - 登録画面からの登録は、効いている拒否（解除も期限切れもしていないもの）に当たれば、`reject` なら受け付けず、`require_approval` なら登録モードに関わらず `pending` で始めます。登録できなかった理由は利用者に詳しく示しません。
 
 #### 監査ログ【イベント】
@@ -496,6 +498,7 @@ flowchart LR
   | `text_changed` | `setting` | 文章のキー | キーとロケール（`terms [ja]`） | `instance_text_revisions.id` |
   | `rule_added`, `rule_revised`, `rule_moved` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_revisions.id`（移動は動かしたルールの版。動かしたルールの位置が変わらないときは最初に記録した版） |
   | `rule_retired` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_retirements.rule_id` |
+  | `signup_block_added`, `signup_block_lifted` | `signup_block` | `signup_blocks.id` | 種類と値（`email_domain spam.example`） | `signup_blocks.id`（解除の行もこの ID が PK） |
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。

@@ -1162,6 +1162,8 @@ export interface MessageArgs {
   "server:auth.sign_up.reason_invalid": { max: number };
   /** Why do you want to join? (optional) */
   "server:auth.sign_up.reason_label": {};
+  /** This server cannot accept this sign-up. */
+  "server:auth.sign_up.refused": {};
   /** Create account */
   "server:auth.sign_up.submit": {};
   /** Create an account */

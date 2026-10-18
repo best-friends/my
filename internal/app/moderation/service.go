@@ -132,8 +132,14 @@ type Deps struct {
 	// Lifecycles schedules the deletion of a banned account; nil refuses bans with
 	// ErrUnsupportedAction.
 	Lifecycles Lifecycles
-	Clock      kernel.Clock
-	IDs        kernel.IDGenerator
+	// Emails reads the email address of a banned account's user for the block the ban makes of
+	// it (AccountActionInput.BlockEmail); nil refuses such bans with ErrCannotBlockEmail.
+	Emails Emails
+	// CanonicalDomain returns a domain in IDNA A-labels, for the email_domain sign-up blocks
+	// and the domains of the addresses they screen; nil only lowers the case.
+	CanonicalDomain func(domain string) (string, error)
+	Clock           kernel.Clock
+	IDs             kernel.IDGenerator
 }
 
 // Service runs the moderation module's use cases: actions on domains and accounts, their lifts,
@@ -271,6 +277,10 @@ type AccountActionInput struct {
 	// mark_statuses_sensitive) acts on: from 1 to moderation.MaxActionStatuses of them, and
 	// none for the other kinds.
 	StatusIDs []string
+	// BlockEmail also blocks sign-ups with the email address of a banned account's user
+	// (an email_hash block with severity reject, data-model §4.3), audited with the action;
+	// only a ban of a local account takes it, and it fails with ErrCannotBlockEmail otherwise.
+	BlockEmail bool
 }
 
 // IssueAccountAction records an action on an account and, in the same transaction, the
@@ -339,8 +349,19 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 	if err != nil {
 		return moderation.Action{}, err
 	}
+	var block *moderation.SignupBlock
+	if in.BlockEmail {
+		if a.Kind != moderation.ActionBan || target.Local == nil {
+			return moderation.Action{}, fmt.Errorf("%w: only a ban of a local account blocks its email address", ErrCannotBlockEmail)
+		}
+		b, err := s.banEmailBlock(ctx, target.Local.UserID, a)
+		if err != nil {
+			return moderation.Action{}, err
+		}
+		block = &b
+	}
 	repo := s.d.Repository
-	auditID := s.d.IDs.NewID()
+	auditID, blockAuditID := s.d.IDs.NewID(), s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
 		if err != nil {
@@ -366,10 +387,16 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		if err := tx.Emit(ctx, AccountActionIssued{Action: a}); err != nil {
 			return err
 		}
-		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+		if err := s.emitAudit(ctx, tx, moderation.AuditEntry{
 			ID: auditID, Action: moderation.AuditAccountActionIssued, TargetKind: moderation.AuditTargetAccount,
 			TargetID: a.TargetAccountID, TargetLabel: actorLabel(target), SourceEventID: a.ID, OccurredAt: now,
-		}, in.IssuedByUserID)
+		}, in.IssuedByUserID); err != nil {
+			return err
+		}
+		if block != nil {
+			return s.insertSignupBlock(ctx, tx, *block, blockAuditID)
+		}
+		return nil
 	})
 	if errors.Is(err, appcontent.ErrAlreadyDeleted) {
 		return moderation.Action{}, fmt.Errorf("%w: a status was deleted meanwhile", ErrInvalidStatusReference)

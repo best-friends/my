@@ -45,7 +45,7 @@ func runAdminAccountAction(args []string, stdout, stderr io.Writer) int {
 	}
 	var (
 		kind, category, publicReason, note, report, reason, before string
-		active, noNotify                                           bool
+		active, noNotify, blockEmail                               bool
 		duration                                                   time.Duration
 		limit                                                      = 50
 		statuses                                                   []string
@@ -63,6 +63,7 @@ func runAdminAccountAction(args []string, stdout, stderr io.Writer) int {
 			fs.StringVar(&note, "private-note", "", "a note for the moderators")
 			fs.StringVar(&report, "report", "", "the ID of the report of the account that the action follows from")
 			fs.BoolVar(&noNotify, "no-notify", false, "do not tell the account of the action")
+			fs.BoolVar(&blockEmail, "block-email", false, "with a ban, also block sign-ups with the email address of the account's user")
 			fs.DurationVar(&duration, "duration", 0, "how long the action lasts, such as 720h; 0 lasts until lifted")
 			fs.Func("status", "the ID of a status of the account that delete_statuses or mark_statuses_sensitive acts on; repeat it for several", func(s string) error {
 				statuses = append(statuses, s)
@@ -110,12 +111,15 @@ func runAdminAccountAction(args []string, stdout, stderr io.Writer) int {
 		a, err = app.Moderation.IssueAccountAction(ctx, appmoderation.AccountActionInput{
 			TargetAccountID: id, Kind: moderation.ActionKind(kind), ReasonCategory: moderation.Category(category),
 			PublicReason: publicReason, PrivateNote: note, ReportID: report, NotifyTarget: !noNotify, Duration: duration,
-			StatusIDs: statuses,
+			StatusIDs: statuses, BlockEmail: blockEmail,
 		})
 		if err == nil {
 			_, _ = fmt.Fprintf(stdout, "issued %s on account %s (action %s, %s)\n", a.Kind, a.TargetAccountID, a.ID, describeExpiry(a.ExpiresAt))
 			if len(a.StatusIDs) > 0 {
 				_, _ = fmt.Fprintf(stdout, "statuses: %s\n", strings.Join(a.StatusIDs, " "))
+			}
+			if blockEmail {
+				_, _ = fmt.Fprintln(stdout, "sign-ups with the account's email address are blocked (my admin signup-block list)")
 			}
 		}
 	case "lift":
@@ -191,8 +195,8 @@ func adminAccountActionUsage(w io.Writer) {
   my admin account action list [-active] [-before <id>] [-limit <n>] [-config <file>] <account>
   my admin account action issue -kind <kind> [-category <category>] [-public-reason <text>]
                                 [-private-note <text>] [-report <report id>] [-no-notify]
-                                [-duration <d>] [-status <status id>]... [-config <file>]
-                                <account>
+                                [-duration <d>] [-status <status id>]... [-block-email]
+                                [-config <file>] <account>
   my admin account action lift [-reason <text>] [-config <file>] <action id>
 
 Moderation actions on accounts (FR-703), in effect at once. <account> is
@@ -216,7 +220,9 @@ ID. Several actions on one account add up. On a local account:
 
 delete_statuses and mark_statuses_sensitive need one -status or more (up to
 100), and take no -duration; nor does ban. A remote account takes limit,
-suspend, and force_sensitive.
+suspend, and force_sensitive. -block-email, only with a ban of a local
+account, also rejects sign-ups with the email address of the account's user
+(a sign-up block of kind email_hash; see my admin signup-block -help).
 
 list shows the actions on the account newest first, lifted and expired ones
 included unless -active is given. lift ends one action; the other actions on

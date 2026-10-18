@@ -431,6 +431,13 @@ func (l *Localizer) ServerAuthSignUpReasonLabel() string {
 	return l.format("server:auth.sign_up.reason_label", nil)
 }
 
+// ServerAuthSignUpRefused formats "server:auth.sign_up.refused". Error (HTTP 403) when the sign-up block list refuses the sign-up. It deliberately does not say why.
+//
+//	en: This server cannot accept this sign-up.
+func (l *Localizer) ServerAuthSignUpRefused() string {
+	return l.format("server:auth.sign_up.refused", nil)
+}
+
 // ServerAuthSignUpSubmit formats "server:auth.sign_up.submit". Button that submits the registration form.
 //
 //	en: Create account
