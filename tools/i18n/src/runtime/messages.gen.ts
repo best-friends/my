@@ -16,6 +16,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.registration_rejected": {};
   /** Report assigned */
   "client:admin.audit_log.action.report_assigned": {};
+  /** Note added to a report */
+  "client:admin.audit_log.action.report_note_added": {};
+  /** Report reopened */
+  "client:admin.audit_log.action.report_reopened": {};
   /** Report resolved */
   "client:admin.audit_log.action.report_resolved": {};
   /** Report unassigned */

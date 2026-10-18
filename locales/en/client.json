@@ -27,6 +27,14 @@
     "defaultMessage": "Report assigned",
     "description": "Heading of an audit log entry: a report was assigned to a moderator."
   },
+  "admin.audit_log.action.report_note_added": {
+    "defaultMessage": "Note added to a report",
+    "description": "Heading of an audit log entry: a moderator wrote an internal note on a report."
+  },
+  "admin.audit_log.action.report_reopened": {
+    "defaultMessage": "Report reopened",
+    "description": "Heading of an audit log entry: a moderator reopened a resolved report."
+  },
   "admin.audit_log.action.report_resolved": {
     "defaultMessage": "Report resolved",
     "description": "Heading of an audit log entry: a moderator resolved a report."
