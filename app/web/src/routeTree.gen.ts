@@ -24,6 +24,7 @@ import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$a
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDomainActionsRouteImport } from './routes/admin.domain-actions'
 import { Route as AdminInstancesRouteImport } from './routes/admin.instances'
+import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
@@ -111,6 +112,11 @@ const AdminInstancesRoute = AdminInstancesRouteImport.update({
   path: '/admin/instances',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRegistrationsRoute = AdminRegistrationsRouteImport.update({
+  id: '/admin/registrations',
+  path: '/admin/registrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
   id: '/login_/callback',
   path: '/login/callback',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/registrations': typeof AdminRegistrationsRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/registrations': typeof AdminRegistrationsRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/registrations': typeof AdminRegistrationsRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/registrations'
     | '/login/callback'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -280,6 +290,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/registrations'
     | '/login/callback'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/registrations'
     | '/login_/callback'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -333,6 +345,7 @@ export interface RootRouteChildren {
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDomainActionsRoute: typeof AdminDomainActionsRoute
   AdminInstancesRoute: typeof AdminInstancesRoute
+  AdminRegistrationsRoute: typeof AdminRegistrationsRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
@@ -451,6 +464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInstancesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/registrations': {
+      id: '/admin/registrations'
+      path: '/admin/registrations'
+      fullPath: '/admin/registrations'
+      preLoaderRoute: typeof AdminRegistrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login_/callback': {
       id: '/login_/callback'
       path: '/login/callback'
@@ -533,6 +553,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDomainActionsRoute: AdminDomainActionsRoute,
   AdminInstancesRoute: AdminInstancesRoute,
+  AdminRegistrationsRoute: AdminRegistrationsRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,

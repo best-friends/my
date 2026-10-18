@@ -404,9 +404,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 ## 14. 管理画面
 
-`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
+`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・登録の審査）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`manage_accounts` が登録の審査の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
@@ -426,6 +426,11 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
   「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
   複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
+- **登録の審査**（`/admin/registrations`、FR-721）: 承認を待つ登録の、待っている長い順の一覧。各登録は見出し（`@username`。アカウントがなければその旨）と、登録日時・メールアドレス・メールの確認・招待の説明リスト、登録の理由にする。
+  理由は申請者が書いた文なので `dir="auto"` で表示する（Y10）。「承認する」「却下する」はアクセシブルネームに `@username` を含める。
+  決定は後から変えられないので、どちらも `ConfirmDialog` で確かめる（NFR-MOD-7。却下は `danger`、承認は `primary`）。ダイアログはモデレーター向けのメモ（`ReasonField`、任意、1,000 文字）を持ち、開くとメモにフォーカスが移る。失敗はダイアログの中に出す。
+  成功したらダイアログを閉じ、キャッシュの一覧から除いてフォーカスを次の行のボタン（なければ見出し）に移し（`lib/useFocusAfterRemoval.ts`）、結果を一覧の上の `StatusMessage` に出す。
+  ほかのモデレーターが先に決めた登録は、サーバーがその決定のまま返すので、一覧から除き、どちらの決定が残ったかを知らせる。
 - **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection` にし（`features/admin/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
@@ -433,7 +438,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   操作で開いたボタンが消えるとき（一覧から行が消えるなど）は、`lib/useFocusAfterRemoval.ts` でフォーカスの行き先を決める。
 - **テスト**: `features/admin/admin.test.tsx` が出し分け・一覧と絞り込み・ページの読み足し・再開・再実行・失敗・403 を MSW で検査する。既定の閲覧者は権限を持たないので、テストは `operatorHandler()` で権限を与える。
   `features/admin/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
+  `features/admin/registrations.test.tsx` は、登録の理由の `dir="auto"`、ページの読み足し、メモ付きの承認と却下・フォーカス・`role="status"` の結果、キャンセルと Esc、メモの上限、ダイアログの中の失敗、先に決められた登録、権限を検査する。
   E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動を検査する。
+  `e2e/registrations.spec.ts` は、登録の審査の画面の axe・横スクロール・ARIA スナップショット、承認の確認のダイアログ、キーボードでの却下とフォーカスの移動を検査する。
 
 ## 15. 検索とほかのサーバーのアカウントのフォロー
 

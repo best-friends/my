@@ -26,7 +26,8 @@ export type InstanceFilter = (typeof instanceFilters)[number];
 /** The page size of the lists. */
 const pageSize = 40;
 
-function pageQuery(cursor: string | undefined): { limit: number; cursor?: string } {
+/** The query of one page of a list: its size and, after the first page, the cursor that continues it. */
+export function pageQuery(cursor: string | undefined): { limit: number; cursor?: string } {
   return cursor === undefined ? { limit: pageSize } : { limit: pageSize, cursor };
 }
 
