@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the admin feature (web-client.md §7): the health of remote servers, the domain
-// actions, the dead jobs and the registrations awaiting approval, all empty and every server available by default. The default viewer has no
+// actions, the dead jobs, the audit log and the registrations awaiting approval, all empty and every server available by default. The default viewer has no
 // permissions, so the admin screens' tests start with `server.use(operatorHandler(...))`.
 import { http, HttpResponse } from "msw";
 import { type Schemas, viewerFixture } from "../../../test/fixtures";
@@ -70,6 +70,8 @@ export const handlers = [
   // operationIds listDeadJobs, retryDeadJob.
   http.get(`${apiBase}/admin/dead_jobs`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.post(`${apiBase}/admin/dead_jobs/:id/retry`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  // operationId listAuditLog.
+  http.get(`${apiBase}/admin/audit_log`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   // operationIds listPendingRegistrations, approveRegistration, rejectRegistration.
   http.get(`${apiBase}/admin/registrations`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.post(`${apiBase}/admin/registrations/:userId/approve`, ({ request, params }) =>
