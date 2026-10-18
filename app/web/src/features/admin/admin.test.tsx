@@ -35,7 +35,7 @@ describe("the administration menu", () => {
 
     expect(await screen.findByRole("region", { name: "Settings pages" })).toBeInTheDocument();
     // The account section loads with the viewer; the menu would be shown by then.
-    expect(await screen.findByText("@alice@my.example")).toBeInTheDocument();
+    expect(await within(screen.getByRole("main")).findByText("@alice@my.example")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Administration" })).not.toBeInTheDocument();
   });
 
