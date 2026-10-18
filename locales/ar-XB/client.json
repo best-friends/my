@@ -1815,6 +1815,10 @@
     "defaultMessage": "‮⊥ıɯǝʅıuǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.nav.viewer": {
+    "defaultMessage": "‮⊥ɥǝ ɐɔɔonuʇ ʎon ɐɹǝ sıƃuǝp ıu ʍıʇɥ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.not_found.body": {
     "defaultMessage": "‮⊥ɥǝɹǝ ıs uo dɐƃǝ ɐʇ ʇɥıs ɐppɹǝss.‬",
     "description": "Generated from en by tools/i18n; do not edit."

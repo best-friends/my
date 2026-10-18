@@ -1815,6 +1815,10 @@
     "defaultMessage": "タイムライン",
     "description": "Item of the bottom tab bar on phones that opens the screen with the local and federated timelines as tabs. Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
   },
+  "shell.nav.viewer": {
+    "defaultMessage": "サインインしているアカウント",
+    "description": "Description read after the name of the link at the bottom of the desktop sidebar that shows the signed-in account (avatar, display name, handle) and opens its profile."
+  },
   "shell.not_found.body": {
     "defaultMessage": "このアドレスのページはありません。",
     "description": "Text on the page shown for an address that the web client has no page for."

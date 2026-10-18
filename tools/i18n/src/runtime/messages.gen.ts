@@ -910,6 +910,8 @@ export interface MessageArgs {
   "client:shell.nav.settings": {};
   /** Timelines */
   "client:shell.nav.timelines": {};
+  /** The account you are signed in with */
+  "client:shell.nav.viewer": {};
   /** There is no page at this address. */
   "client:shell.not_found.body": {};
   /** Go to the home timeline */

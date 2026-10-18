@@ -137,6 +137,74 @@ ${items.map((role) => `          - listitem:\n            - ${role}`).join("\n")
   });
 });
 
+test.describe("the sidebar of desktops", () => {
+  /** A long name, which the sidebar cuts to one line; the link is still named by all of it. */
+  const displayName = "Bartholomew Montgomery-Fitzwilliam the Third";
+  const avatar = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#8f4f6d"/></svg>')}`;
+
+  test.beforeEach(async ({ page }) => {
+    // vite preview has no API: answer the session refresh and the viewer's account as a signed-in user's server.
+    const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+    await page.route("**/oauth/token/refresh", (route) => route.fulfill(json({ access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 })));
+    await page.route("**/api/v1/accounts/verify_credentials", (route) =>
+      route.fulfill(
+        json({
+          id: "0192f0c4-7a8e-7000-8000-000000000001",
+          username: "alice",
+          acct: "alice",
+          domain: "my.example",
+          uri: "https://my.example/ap/actors/0192f0c4-7a8e-7000-8000-000000000001",
+          display_name: displayName,
+          note: "",
+          fields: [],
+          url: "https://my.example/@alice",
+          locked: false,
+          bot: false,
+          created_at: "2026-10-01T00:00:00Z",
+          avatar_url: avatar,
+        }),
+      ),
+    );
+    await page.route("**/api/v1/notifications/marker", (route) => route.fulfill(json({ unread_count: 0 })));
+    await page.goto("/search");
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
+  test("names the server above the list and the signed-in account below it, from lg only", async ({ page, makeAxeBuilder }) => {
+    const viewport = page.viewportSize();
+    const navigation = page.getByRole("navigation");
+    const viewer = navigation.locator('a[href="/@alice"]');
+    if ((viewport?.width ?? 0) < 1024) {
+      await expect(navigation.getByText(instanceName)).toBeHidden();
+      await expect(viewer).toBeHidden();
+      return;
+    }
+    await expect(viewer).toBeVisible();
+    // The list's links keep their order; the server's name comes before the list and the account after it.
+    await expect(navigation).toMatchAriaSnapshot(`
+      - navigation:
+        - paragraph: ${instanceName}
+        - list:
+          - /children: equal
+${Array.from({ length: 6 }, () => "          - listitem:\n            - link").join("\n")}
+        - link /${displayName} @alice@my\\.example/
+    `);
+    await expect(viewer).not.toHaveAttribute("aria-current");
+    // The account is always in view, at the bottom of the sidebar, inside it.
+    const box = await viewer.boundingBox();
+    const nav = await navigation.boundingBox();
+    expect(box).not.toBeNull();
+    expect(nav).not.toBeNull();
+    if (viewport === null || box === null || nav === null) return;
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+    expect(box.y + box.height).toBeGreaterThan(viewport.height - 80);
+    expect(box.x).toBeGreaterThanOrEqual(nav.x);
+    expect(box.x + box.width).toBeLessThanOrEqual(nav.x + nav.width);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+});
+
 test.describe("navigation", () => {
   test("moves focus to the new page's heading and retitles the document", async ({ page, hasTouch }) => {
     await page.goto("/home");
