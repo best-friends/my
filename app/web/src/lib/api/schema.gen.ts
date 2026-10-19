@@ -2945,8 +2945,8 @@ export interface components {
             /** @description Whether clients ask for a description before posting media without one. */
             require_media_description: boolean;
             /**
-             * @description Whether the moderator notifications (`admin_report`, `admin_sign_up`) also come by
-             *     email, to the primary address. Off for a new user.
+             * @description Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
+             *     also come by email, to the primary address. Off for a new user.
              */
             email_moderator_notifications: boolean;
             /** @description The languages that timelines show, sorted; empty shows every language. */

@@ -4255,8 +4255,8 @@ components:
           type: boolean
         email_moderator_notifications:
           description: |
-            Whether the moderator notifications (`admin_report`, `admin_sign_up`) also come by
-            email, to the primary address. Off for a new user.
+            Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
+            also come by email, to the primary address. Off for a new user.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, sorted; empty shows every language.
