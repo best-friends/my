@@ -1,6 +1,6 @@
 # ADR-0048: 型検査を TypeScript 7 にし、コンパイラ API を使うツールには TypeScript 6 を並べる
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #567
@@ -49,9 +49,7 @@ TypeScript の公式は、API が要るツールのために、TS 6.0 の API �
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-選択肢 2 を推奨する。
+選択肢 2 を採る。
 
 - `tsc` で型検査する `app/ui/package.json` と `app/web/package.json` の devDependencies を、次の 2 つの別名にする。
 
@@ -78,7 +76,7 @@ TypeScript の公式は、API が要るツールのために、TS 6.0 の API �
 - 依存に TypeScript が 2 つ入り、`node_modules` が大きくなる（ツールだけで、成果物には入らない）。
 - `@typescript/typescript6` は `typescript@^6` に依存するので、6.0 系の修正版は lockfile の更新で入る。
 - Dependabot は 2 つの別名を別々に上げる。`typescript` の別名を 7 に上げる PR は、上の各ツールが対応するまで閉じる。
-- 受け入れたら、ADR-0025 の Status に、TypeScript の版の部分をこの ADR が置き換えることを書き、ADR-0025 の Open Questions の TypeScript 7 の項目をこの ADR に移す。
+- ADR-0025 の、TypeScript を 6.0 系に固定する部分と、TypeScript 7 への移行時期の Open Question は、この ADR が置き換える。
 
 ## Open Questions / 要検証
 

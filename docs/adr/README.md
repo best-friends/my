@@ -59,5 +59,5 @@
 | [0045](0045-client-server-cache-policy.md) | キャッシュの方針（クライアントとサーバー） | Accepted |
 | [0046](0046-dependabot-vulnerability-detection.md) | 依存関係の脆弱性検知を Dependabot に移す | Accepted |
 | [0047](0047-ci-protection-layers.md) | CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける | Accepted |
-| [0048](0048-typescript-7-with-typescript-6-api.md) | 型検査を TypeScript 7 にし、コンパイラ API を使うツールには TypeScript 6 を並べる | Proposed |
+| [0048](0048-typescript-7-with-typescript-6-api.md) | 型検査を TypeScript 7 にし、コンパイラ API を使うツールには TypeScript 6 を並べる | Accepted |
 <!-- adr-index:end -->

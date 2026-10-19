@@ -1,6 +1,6 @@
 # ADR-0025: Web クライアントの技術スタック
 
-- Status: Accepted
+- Status: Accepted（TypeScript を 6.0 系に固定する部分と、TypeScript 7 への移行時期の Open Question を ADR-0048（型検査を TypeScript 7 にし、コンパイラ API を使うツールには TypeScript 6 を並べる） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #85
