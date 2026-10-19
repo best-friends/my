@@ -152,6 +152,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.report_resolved": {};
   /** Report unassigned */
   "client:admin.audit_log.action.report_unassigned": {};
+  /** Private data shown */
+  "client:admin.audit_log.action.revealed_private_data": {};
   /** Role granted */
   "client:admin.audit_log.action.role_granted": {};
   /** Role revoked */

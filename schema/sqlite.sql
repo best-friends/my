@@ -1689,6 +1689,7 @@ CREATE TABLE session_origins (
 ) STRICT;
 CREATE INDEX session_origins_ip ON session_origins (ip);
 CREATE INDEX session_origins_created_at ON session_origins (created_at);
+CREATE INDEX session_origins_user_id_created_at ON session_origins (user_id, created_at DESC);
 
 -- Resource: the IP address of a registration from the registration page. A registration from
 -- an unknown address has no row.
@@ -1718,7 +1719,8 @@ CREATE TABLE audit_log_entries (
     'report_reopened', 'report_note_added',
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
     'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked', 'appeal_upheld',
-    'appeal_overturned', 'account_deletion_cancelled'
+    'appeal_overturned', 'account_deletion_cancelled',
+    'revealed_private_data'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
