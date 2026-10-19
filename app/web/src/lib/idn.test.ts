@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from "vitest";
-import { domainToUnicode } from "./idn";
+import { domainToAscii, domainToUnicode } from "./idn";
 
 describe("domainToUnicode", () => {
   test.each([
@@ -17,5 +17,24 @@ describe("domainToUnicode", () => {
 
   test.each(["spam.example", "xn--", "xn--abc!.example", "a..b"])("keeps %s as it is", (domain) => {
     expect(domainToUnicode(domain)).toBe(domain);
+  });
+});
+
+describe("domainToAscii", () => {
+  test.each([
+    ["例え.jp", "xn--r8jz45g.jp"],
+    ["München.DE", "xn--mnchen-3ya.de"],
+    ["Spam.Example", "spam.example"],
+    ["xn--r8jz45g.jp", "xn--r8jz45g.jp"],
+  ])("encodes %s to %s", (domain, aLabel) => {
+    expect(domainToAscii(domain)).toBe(aLabel);
+  });
+
+  test.each([
+    ["spam.example/path", "spam.example/path"],
+    ["user@Spam.Example", "user@spam.example"],
+    ["", ""],
+  ])("keeps %s, which is no domain, as %s", (text, kept) => {
+    expect(domainToAscii(text)).toBe(kept);
   });
 });

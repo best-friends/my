@@ -139,14 +139,14 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
       setConfirming(false);
       setDraft(emptyDraft(target));
       onIssued(action);
-      // The account has a new action, the report is resolved (it leaves the open tab), the counts change, and
-      // deleted posts are gone.
+      // The account has a new action and maybe another state and restrictions (its page and the searches), the
+      // report is resolved (it leaves the open tab), the counts change, and deleted posts are gone.
       void queryClient.invalidateQueries({
         predicate: (query) => {
           const path = query.queryKey[1];
           if (typeof path !== "string") return false;
           if (path === "/statuses/{id}") return action.status_ids !== undefined;
-          return path.startsWith("/admin/reports") || path === "/admin/accounts/{id}/actions" || path === "/admin/counts";
+          return path.startsWith("/admin/reports") || path.startsWith("/admin/accounts") || path === "/admin/counts";
         },
       });
     },
