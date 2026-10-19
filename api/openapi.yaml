@@ -3093,7 +3093,7 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, registrations, limits, timelines, rules]
+      required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules]
       properties:
         domain:
           description: The domain that serves the instance.
@@ -3120,6 +3120,12 @@ components:
           $ref: "#/components/schemas/InstanceLimits"
         timelines:
           $ref: "#/components/schemas/InstanceTimelines"
+        sends_email:
+          description: |
+            Whether the instance sends email (the server setting `mail` is not `none`). Without
+            email, the moderator notifications come only in the app, so clients do not offer
+            the preference `email_moderator_notifications`.
+          type: boolean
         rules:
           description: The rules in effect, in order, each in the locale of the request.
           type: array

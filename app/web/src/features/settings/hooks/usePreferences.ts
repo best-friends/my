@@ -7,7 +7,7 @@ import { useT } from "../../../lib/i18n";
 import { type Preferences, preferencesQueryOptions, updatePreferencesMutation } from "../api/me";
 
 /** The preferences that the settings page changes, by their API name. */
-type PreferenceKey = "locale" | "time_zone" | "default_visibility" | "timeline_languages";
+type PreferenceKey = "locale" | "time_zone" | "default_visibility" | "timeline_languages" | "email_moderator_notifications";
 
 /** One preference as a control shows it: it is saved as soon as it changes. */
 export type PreferenceControl<T> = {
@@ -24,6 +24,7 @@ export type PreferencesControls = {
   timeZone: PreferenceControl<string>;
   defaultVisibility: PreferenceControl<Preferences["default_visibility"]>;
   timelineLanguages: PreferenceControl<string[]>;
+  emailModeratorNotifications: PreferenceControl<boolean>;
 };
 
 /**
@@ -39,6 +40,7 @@ export function usePreferences(): PreferencesControls {
     timeZone: usePreferenceControl("time_zone", data.time_zone),
     defaultVisibility: usePreferenceControl("default_visibility", data.default_visibility),
     timelineLanguages: usePreferenceControl("timeline_languages", data.timeline_languages),
+    emailModeratorNotifications: usePreferenceControl("email_moderator_notifications", data.email_moderator_notifications),
   };
 }
 

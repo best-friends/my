@@ -1486,6 +1486,14 @@ export interface MessageArgs {
   "client:settings.locale.label": {};
   /** Settings pages */
   "client:settings.menu.title": {};
+  /** Also send them by email */
+  "client:settings.moderator_notifications.email": {};
+  /** The notifications of new reports, sign-ups awaiting approval and appeals that your role handles also come to your email address. */
+  "client:settings.moderator_notifications.email.description": {};
+  /** This server does not send email, so the moderator notifications come only in the app. */
+  "client:settings.moderator_notifications.no_email": {};
+  /** Moderator notifications */
+  "client:settings.moderator_notifications.title": {};
   /** You have not muted anyone */
   "client:settings.mutes.empty": {};
   /** Notifications hidden too */

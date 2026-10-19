@@ -11,10 +11,16 @@ export type PreferencesChange = Schemas["UpdatePreferencesRequest"];
 export type Visibility = Schemas["Visibility"];
 export type CredentialAccount = Schemas["CredentialAccount"];
 export type ProfileChange = Schemas["UpdateCredentialsRequest"];
+export type Permission = Schemas["Permission"];
 
 /** The signed-in user's preferences (GET /preferences). */
 export function preferencesQueryOptions(api: Api) {
   return api.query.queryOptions("get", "/preferences");
+}
+
+/** The instance (GET /instance), for `sends_email`; the app shell reads the same query on every page. */
+export function instanceQueryOptions(api: Api) {
+  return api.query.queryOptions("get", "/instance");
 }
 
 /** The signed-in user's own account with the source of its profile (GET /accounts/verify_credentials). */

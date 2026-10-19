@@ -440,6 +440,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と異議申し立ての審査、`manage_reports` が通報の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
+- **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
+  「モデレーターへの通知」の区画（`h2` の `section`）を出し、`email_moderator_notifications` の `Switch` を置く。ほかの設定と同じく、変えたとたんに保存する。
+  `GET /instance` の `sends_email` が `false`（サーバーの `mail = none`）なら、切り替えの代わりに、通知がアプリの中にだけ届く理由を出す。
 - **管理の画面**（`/admin`、ナビゲーションの「管理」）: 閲覧者のロールが使える管理の画面へのリンクを、設定の画面の「管理」の区画と同じ一覧（`AdminMenu` の `AdminPages`）で並べる。
   通報（`/admin/reports`）・登録の審査・異議申し立て（`/admin/appeals`）のリンクは、待っている件数（未解決の通報・承認待ちの登録・審査待ちの異議申し立て）の `Badge` を持ち、その文言（「承認待ち 1 件」）はリンクの名前に入る。使える画面がないロールには、その理由を `EmptyState` で出す。
 - **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。

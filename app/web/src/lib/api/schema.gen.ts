@@ -2181,6 +2181,12 @@ export interface components {
             source_url: string;
             limits: components["schemas"]["InstanceLimits"];
             timelines: components["schemas"]["InstanceTimelines"];
+            /**
+             * @description Whether the instance sends email (the server setting `mail` is not `none`). Without
+             *     email, the moderator notifications come only in the app, so clients do not offer
+             *     the preference `email_moderator_notifications`.
+             */
+            sends_email: boolean;
             /** @description The rules in effect, in order, each in the locale of the request. */
             rules: components["schemas"]["InstanceRule"][];
         };

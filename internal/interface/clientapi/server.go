@@ -31,6 +31,9 @@ type Options struct {
 	// Instance reads the instance settings and texts; nil reads every setting as its default
 	// and no text.
 	Instance InstanceInfo
+	// SendsEmail tells whether the instance sends email (the setting mail is not none), for
+	// Instance.sends_email.
+	SendsEmail bool
 
 	// Authenticator authenticates bearer access tokens; nil accepts none.
 	Authenticator Authenticator
