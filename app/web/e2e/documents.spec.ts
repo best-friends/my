@@ -159,6 +159,7 @@ test.describe("the terms and policies screen", () => {
     await expect(main).toMatchAriaSnapshot(`
       - main:
         - heading [level=1]
+        - link
         - button
         - region:
           - heading [level=2]
@@ -166,7 +167,8 @@ test.describe("the terms and policies screen", () => {
           - definition
           - term
           - definition
-          - link
+          - paragraph:
+            - link
           - textbox
           - button
         - region:
