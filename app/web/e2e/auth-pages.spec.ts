@@ -4,9 +4,9 @@
 // autocomplete tokens, which are part of what these pages promise (password managers), and stay the same
 // in every locale.
 import { createHash, randomBytes } from "node:crypto";
-import AxeBuilder from "@axe-core/playwright";
+import type AxeBuilder from "@axe-core/playwright";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { axeTags, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
+import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
 import { ownsServer, runMy } from "./server-cli.ts";
 import { admin, serverURL, thirdPartyClient } from "./server-origin.ts";
 
@@ -65,7 +65,7 @@ async function withJavaScript(
   try {
     const other = await enabled.newPage();
     await other.goto(page.url());
-    await check(other, () => new AxeBuilder({ page: other }).withTags([...axeTags]));
+    await check(other, () => axeBuilder(other));
   } finally {
     await enabled.close();
   }
