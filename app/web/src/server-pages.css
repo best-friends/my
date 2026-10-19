@@ -140,4 +140,18 @@
   .moderation-actions li {
     @apply flex flex-col gap-1 rounded-md bg-surface-sunken px-4 py-3;
   }
+
+  /* An action's appeal, or the form that appeals it, under the action. */
+  .appeal,
+  .appeal-form {
+    @apply mt-2 border-t border-border pt-3;
+  }
+
+  .appeal {
+    @apply flex flex-col gap-1;
+  }
+
+  .moderation-actions textarea {
+    @apply bg-surface-raised;
+  }
 }
