@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/best-friends/my/internal/app/stream"
 	domcontent "github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
@@ -118,7 +119,9 @@ func TestStreamingDeliversHomeEntriesAndNotifications(t *testing.T) {
 		t.Errorf("update = %s by %s, want bob's post %s", st.Id, st.Account.Id, bobsPost)
 	}
 
-	// bob's boost of carol's post reaches alice as the boost.
+	// A cross-process broker may deliver a signal twice: the stream sends the entry once, so the
+	// next update is bob's boost of carol's post, which reaches alice as the boost.
+	e.app.Streams.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: bobsPost})
 	boost := e.boost(t, bob, carolsPost)
 	st = clientapi.Status{}
 	next("update", "Status", &st)

@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strconv"
 	"time"
 
 	appcontent "github.com/best-friends/my/internal/app/content"
@@ -28,6 +29,12 @@ const (
 	// streamWriteTimeout bounds each write to a stream, so that a client that stops reading
 	// releases its stream.
 	streamWriteTimeout = 10 * time.Second
+	// streamRetryAfter is the Retry-After, in seconds, of a stream refused because the broker
+	// is unavailable or shutting down.
+	streamRetryAfter = 5
+	// streamRecentEntries is the number of home timeline entries a stream remembers having
+	// sent, so that a signal that a cross-process broker delivers twice sends its entry once.
+	streamRecentEntries = 512
 )
 
 // ProblemTypeTooManyStreams is the problem type of a stream refused because the user already
@@ -53,8 +60,9 @@ func (s *Server) registerStreaming(r Router) {
 // data a Notification). The stream subscribes to the signals of stream.Subscriber and reads
 // each change back through the use cases, as the viewer would see it in the home timeline or
 // the notification list. It ends when the client goes, the subscription ends (the broker shuts
-// down or the client fell behind), a write times out, or the access token is no longer valid,
-// which every heartbeat checks again.
+// down, the client fell behind, or the broker may have missed signals), a write times out, or
+// the access token is no longer valid, which every heartbeat checks again. A broker that is
+// unavailable or shutting down makes it a 503 with Retry-After.
 func (s *Server) serveStreaming(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	v, ok := ViewerFrom(ctx)
@@ -66,15 +74,21 @@ func (s *Server) serveStreaming(w http.ResponseWriter, r *http.Request) {
 		s.writeProblem(w, r, http.StatusServiceUnavailable, ProblemTypeBlank, s.localizer(r).ServerErrorsStreamingUnavailable(), "")
 		return
 	}
-	sub, err := s.o.Streams.Subscribe(v.AccountID)
+	sub, err := s.o.Streams.Subscribe(ctx, v.AccountID)
 	switch {
 	case errors.Is(err, stream.ErrTooManySubscriptions):
 		l := s.localizer(r)
 		s.writeProblem(w, r, http.StatusTooManyRequests, ProblemTypeTooManyStreams, l.ServerErrorsRateLimited(), l.ServerErrorsStreamingTooMany())
 		return
-	case errors.Is(err, stream.ErrClosed):
+	case errors.Is(err, stream.ErrClosed), errors.Is(err, stream.ErrUnavailable):
+		if errors.Is(err, stream.ErrUnavailable) {
+			s.o.Logger.WarnContext(ctx, "streaming broker unavailable", slog.Any("error", err))
+		}
+		w.Header().Set("Retry-After", strconv.Itoa(streamRetryAfter))
 		s.writeProblem(w, r, http.StatusServiceUnavailable, ProblemTypeBlank, s.localizer(r).ServerErrorsStreamingUnavailable(), "")
 		return
+	case ctx.Err() != nil:
+		return // the client went while the broker got ready
 	case err != nil:
 		s.responseError(w, r, err)
 		return
@@ -88,6 +102,7 @@ func (s *Server) serveStreaming(w http.ResponseWriter, r *http.Request) {
 	}
 	st := &streamState{
 		s: s, w: w, rc: http.NewResponseController(w), viewer: v, home: home,
+		sentEntries: newRecentIDs(streamRecentEntries),
 		// Notifications from the moment the stream opens; earlier ones are in the list.
 		lastNotification: kernel.UUIDv7Floor(time.Now()),
 	}
@@ -151,6 +166,8 @@ type streamState struct {
 	// lastNotification is the ID of the last notification sent, or the floor of the time the
 	// stream opened.
 	lastNotification string
+	// sentEntries holds the IDs of the home timeline entries recently sent.
+	sentEntries *recentIDs
 }
 
 // handle sends what signal e means for the viewer.
@@ -164,8 +181,10 @@ func (st *streamState) handle(ctx context.Context, e stream.Event) error {
 	return nil
 }
 
+// homeEntry sends the entry id when the viewer's home timeline lists it and the stream has not
+// sent it recently: a cross-process broker may deliver its signal twice.
 func (st *streamState) homeEntry(ctx context.Context, id string) error {
-	if st.s.o.HomeEntries == nil {
+	if st.s.o.HomeEntries == nil || st.sentEntries.has(id) {
 		return nil
 	}
 	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: st.viewer.AccountID}
@@ -182,7 +201,39 @@ func (st *streamState) homeEntry(ctx context.Context, id string) error {
 			return err
 		}
 	}
+	st.sentEntries.add(id)
 	return nil
+}
+
+// recentIDs remembers the last IDs added to it, up to its capacity.
+type recentIDs struct {
+	ids  []string
+	next int
+	set  map[string]struct{}
+}
+
+func newRecentIDs(capacity int) *recentIDs {
+	return &recentIDs{ids: make([]string, 0, capacity), set: make(map[string]struct{}, capacity)}
+}
+
+func (r *recentIDs) has(id string) bool {
+	_, ok := r.set[id]
+	return ok
+}
+
+// add remembers id, forgetting the oldest one when it is full.
+func (r *recentIDs) add(id string) {
+	if r.has(id) {
+		return
+	}
+	if len(r.ids) < cap(r.ids) {
+		r.ids = append(r.ids, id)
+	} else {
+		delete(r.set, r.ids[r.next])
+		r.ids[r.next] = id
+		r.next = (r.next + 1) % len(r.ids)
+	}
+	r.set[id] = struct{}{}
 }
 
 // notifications sends the viewer's notifications after the last one sent, oldest first.
