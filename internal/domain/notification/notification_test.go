@@ -98,6 +98,8 @@ func TestKeys(t *testing.T) {
 		AdminSignUpKey("u1"):                      "admin_sign_up:u1",
 		ReportResolvedKey("r1"):                   "report_resolved:r1",
 		ModerationNoticeKey("m1"):                 "moderation_notice:m1",
+		AppealDecidedKey("p1"):                    "appeal_decided:p1",
+		AdminAppealKey("p1"):                      "admin_appeal:p1",
 	} {
 		if got != want {
 			t.Errorf("key = %q, want %q", got, want)
@@ -109,6 +111,8 @@ func TestValidateModeratorNotifications(t *testing.T) {
 	for _, n := range []Notification{
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, ReportID: "r", DedupeKey: AdminReportKey("r")},
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminSignUp, SubjectUserID: "u", DedupeKey: AdminSignUpKey("u")},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, AppealID: "p", DedupeKey: AdminAppealKey("p")},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAppealDecided, AppealID: "p", DedupeKey: AppealDecidedKey("p")},
 	} {
 		if err := n.Validate(); err != nil {
 			t.Errorf("Validate(%+v) = %v", n, err)
@@ -118,6 +122,10 @@ func TestValidateModeratorNotifications(t *testing.T) {
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, DedupeKey: "k"},
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, ReportID: "r", SourceAccountID: "b", DedupeKey: "k"},
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminSignUp, DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, AppealID: "p", SourceAccountID: "b", DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAppealDecided, DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeFollow, SourceAccountID: "b", AppealID: "p", DedupeKey: "k"},
 	} {
 		if err := n.Validate(); err == nil {
 			t.Errorf("Validate(%+v) = nil, want an error", n)
@@ -130,8 +138,8 @@ func TestHiddenTypes(t *testing.T) {
 		granted []Permission
 		want    []Type
 	}{
-		{nil, []Type{TypeAdminReport, TypeAdminSignUp}},
-		{[]Permission{PermissionManageReports}, []Type{TypeAdminSignUp}},
+		{nil, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal}},
+		{[]Permission{PermissionManageReports}, []Type{TypeAdminSignUp, TypeAdminAppeal}},
 		{[]Permission{PermissionManageAccounts}, []Type{TypeAdminReport}},
 		{[]Permission{PermissionManageAccounts, PermissionManageReports, "view_audit"}, nil},
 	} {

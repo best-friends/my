@@ -325,7 +325,7 @@ func instanceProjectionEqualsRebuild(t *testing.T, e *instanceEnv) {
 		case instance.KindBool:
 			return fmt.Sprint(rng.IntN(2) == 0)
 		case instance.KindInt:
-			return fmt.Sprint(d.Min + rng.IntN(1000))
+			return fmt.Sprint(d.Min + rng.IntN(min(1000, d.Max-d.Min+1)))
 		case instance.KindEnum:
 			return d.Choices[rng.IntN(len(d.Choices))]
 		case instance.KindMedia:

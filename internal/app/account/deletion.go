@@ -59,6 +59,37 @@ func (s *Service) ScheduleDeletionByModeration(ctx context.Context, tx uow.Tx, a
 	return tx.Emit(ctx, LifecycleEventRecorded{Event: e})
 }
 
+// ErrAlreadyDeleted reports a change to the lifecycle of an account that is deleted already.
+var ErrAlreadyDeleted = errors.New("account: the account is deleted")
+
+// CancelDeletionByModeration records inside tx that a moderation decision (an overturned appeal
+// of a ban) cancels the scheduled deletion of an account: a deletion_cancelled lifecycle event
+// initiated by a moderator that names the action, with ID eventID (data-model §4.2). It reports
+// whether it recorded one: an account whose deletion is not scheduled is left as it is. A deleted
+// account fails with ErrAlreadyDeleted. The state is read with a lock where the database takes
+// one, so the deletion job and the cancellation never both win.
+func (s *Service) CancelDeletionByModeration(ctx context.Context, tx uow.Tx, accountID, actionID, eventID string) (bool, error) {
+	st, err := s.d.Repository.LifecycleState(ctx, tx, accountID)
+	switch {
+	case errors.Is(err, ErrNotFound):
+		return false, nil
+	case err != nil:
+		return false, err
+	case st.State == account.StateDeleted:
+		return false, fmt.Errorf("account %s: %w", accountID, ErrAlreadyDeleted)
+	case st.State != account.StateDeletionScheduled:
+		return false, nil
+	}
+	e := account.LifecycleEvent{
+		ID: eventID, AccountID: accountID, Kind: account.LifecycleDeletionCancelled,
+		InitiatedBy: account.InitiatedByModerator, ModerationActionID: actionID, OccurredAt: kernel.Normalize(s.d.Clock.Now()),
+	}
+	if err := s.d.Repository.InsertLifecycleEvent(ctx, tx, e); err != nil {
+		return false, err
+	}
+	return true, tx.Emit(ctx, LifecycleEventRecorded{Event: e})
+}
+
 // RegisterDeletionJobs registers the JobExecuteDeletions handler and its hourly schedule.
 func (s *Service) RegisterDeletionJobs(reg *queue.JobHandlerRegistry, sched *queue.Scheduler) {
 	reg.Register(JobExecuteDeletions, func(ctx context.Context, _ queue.Job) queue.Result {

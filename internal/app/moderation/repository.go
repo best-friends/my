@@ -108,6 +108,8 @@ type Repository interface {
 
 	// The audit log (audit.go).
 	AuditRepository
+	// The appeals (appeal.go).
+	AppealRepository
 	// Notes on reports and their reopenings (report_notes.go).
 	ReportNoteRepository
 	// The follows that suspensions cut (severance.go).

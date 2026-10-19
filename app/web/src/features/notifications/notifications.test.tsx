@@ -213,6 +213,24 @@ describe("the notifications page", () => {
     expect(await screen.findByRole("heading", { level: 2, name: "No notifications yet" })).toBeInTheDocument();
   });
 
+  test("words the notifications of the appeals, which come from the instance", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const items: Notification[] = (["appeal_decided", "admin_appeal"] as const).map((type, i) => ({
+      id: `0192f0c4-7a8e-7000-8000-0000000000d${String(i)}`,
+      type,
+      created_at: "2026-10-16T09:00:00Z",
+    }));
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    const decided = within(feed).getByRole("article", { name: /The moderators decided your appeal/ });
+    expect(within(feed).getByRole("article", { name: /A new appeal awaits the moderators/ })).toBeInTheDocument();
+    expect(within(decided).queryAllByRole("link")).toEqual([]);
+  });
+
   test("names the actor of every type and hides a post behind its content warning", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });

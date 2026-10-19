@@ -251,6 +251,18 @@
     "defaultMessage": "アカウントへの処分の解除",
     "description": "Heading of an audit log entry: a moderator lifted an action on an account."
   },
+  "admin.audit_log.action.account_deletion_cancelled": {
+    "defaultMessage": "アカウントの削除の取り消し",
+    "description": "Heading of an audit log entry: overturning a user's appeal of a ban cancelled the scheduled deletion of their account."
+  },
+  "admin.audit_log.action.appeal_overturned": {
+    "defaultMessage": "異議申し立ての容認（処分の解除）",
+    "description": "Heading of an audit log entry: a moderator granted a user's appeal and lifted the action it appealed."
+  },
+  "admin.audit_log.action.appeal_upheld": {
+    "defaultMessage": "異議申し立ての棄却（処分の維持）",
+    "description": "Heading of an audit log entry: a moderator rejected a user's appeal and kept the action it appealed."
+  },
   "admin.audit_log.action.domain_action_issued": {
     "defaultMessage": "ドメインへの処分",
     "description": "Heading of an audit log entry: a moderator took an action on a remote domain."
@@ -1831,6 +1843,10 @@
     "defaultMessage": "通知",
     "description": "Heading and document title of the notifications page."
   },
+  "notifications.type.admin_appeal": {
+    "defaultMessage": "モデレーターに新しい異議申し立てが届きました",
+    "description": "Notification sentence to a moderator: a user appealed a moderation action on their account."
+  },
   "notifications.type.admin_report": {
     "defaultMessage": "モデレーターに新しい通報が届きました",
     "description": "Notification sentence to a moderator: someone reported an account that had no open report."
@@ -1838,6 +1854,10 @@
   "notifications.type.admin_sign_up": {
     "defaultMessage": "{name}さんが登録し、承認を待っています",
     "description": "Notification sentence to a moderator. {name} is the display name, or the username, of a new user whose registration waits for a moderator's approval."
+  },
+  "notifications.type.appeal_decided": {
+    "defaultMessage": "あなたの異議申し立てが審査されました",
+    "description": "Notification sentence: the moderators upheld or overturned the user's appeal of a moderation action on their account."
   },
   "notifications.type.boost": {
     "defaultMessage": "{name}さんがあなたの投稿をブーストしました",
