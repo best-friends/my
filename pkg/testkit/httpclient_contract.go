@@ -236,6 +236,8 @@ func HTTPClientContract(t *testing.T, newClient func(t *testing.T, n HTTPClientN
 		})
 		var bombServed atomic.Bool
 		e.public.handle("/bomb", func(w http.ResponseWriter, _ *http.Request) {
+			// Recorded before writing: the client may give up and return before the write does.
+			bombServed.Store(true)
 			var buf bytes.Buffer
 			gz := gzip.NewWriter(&buf)
 			_, _ = gz.Write(make([]byte, 4*limit))
@@ -243,7 +245,6 @@ func HTTPClientContract(t *testing.T, newClient func(t *testing.T, n HTTPClientN
 			w.Header().Set("Content-Encoding", "gzip")
 			w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 			_, _ = w.Write(buf.Bytes())
-			bombServed.Store(true)
 		})
 		e.public.handle("/declared", func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Length", strconv.Itoa(limit+1))

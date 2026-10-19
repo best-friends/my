@@ -3,7 +3,7 @@
 // actions, the dead jobs, the audit log, the registrations awaiting approval and the reports, all empty and every server available by default. The default viewer has no
 // permissions, so the admin screens' tests start with `server.use(operatorHandler(...))`.
 import { http, HttpResponse } from "msw";
-import { otherAccountFixture, remoteAccountFixture, type Schemas, viewerFixture } from "../../../test/fixtures";
+import { otherAccountFixture, remoteAccountFixture, type Schemas, statusFixture, viewerFixture } from "../../../test/fixtures";
 import { apiBase, withViewer } from "../../../test/msw/http";
 
 /** The viewer's account with the permissions `permissions`, for GET /accounts/verify_credentials. */
@@ -48,11 +48,17 @@ export function registrationFixture(overrides: Partial<Schemas["AdminRegistratio
   };
 }
 
+/** GET /admin/counts answering `counts`, the counts that the viewer's permissions allow. */
+export function countsHandler(counts: Schemas["AdminCounts"]) {
+  return http.get(`${apiBase}/admin/counts`, ({ request }) => withViewer(request, () => HttpResponse.json(counts)));
+}
+
 /**
  * An open report by Carol of another server on Bob, filed on 2026-10-16 with one post and no notes, as the server
  * answers it; `overrides` replace its fields.
  */
 export function reportFixture(overrides: Partial<Schemas["AdminReportDetail"]> = {}): Schemas["AdminReportDetail"] {
+  const statusIds = overrides.status_ids ?? ["0192f0c4-7a8e-7000-8000-0000000000b1"];
   return {
     id: "0192f0c4-7a8e-7000-8000-0000000c0001",
     category: "spam",
@@ -65,8 +71,9 @@ export function reportFixture(overrides: Partial<Schemas["AdminReportDetail"]> =
     reporter_account: remoteAccountFixture,
     target_account_id: otherAccountFixture.id,
     target_account: otherAccountFixture,
-    status_ids: ["0192f0c4-7a8e-7000-8000-0000000000b1"],
+    status_ids: statusIds,
     rule_ids: [],
+    statuses: statusIds.map((id) => ({ status: statusFixture(id) })),
     notes: [],
     target_history: { reports_count: 0, actions_count: 0 },
     ...overrides,
@@ -100,6 +107,8 @@ function isId(segment: string): boolean {
 }
 
 export const handlers = [
+  // operationId getAdminCounts: nothing awaits the moderators.
+  countsHandler({}),
   // operationIds listInstanceHealth, getInstanceHealth, listInstanceAvailabilityEvents, markInstanceAvailable.
   http.get(`${apiBase}/admin/instances`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.get(`${apiBase}/admin/instances/:domain`, ({ request, params }) => withViewer(request, () => HttpResponse.json(availableHealth(String(params["domain"]))))),

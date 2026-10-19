@@ -370,6 +370,15 @@ func TestInboxProcessingContract(t *testing.T) {
 	})
 }
 
+func TestAdminAccountContract(t *testing.T) {
+	testkit.AdminAccountContract(t, func(t *testing.T, opts uow.Options) testkit.AdminAccountHarness {
+		db := newTestDB(t, opts)
+		return testkit.AdminAccountHarness{
+			UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository(), Moderation: db.ModerationRepository(),
+		}
+	})
+}
+
 func TestModerationContract(t *testing.T) {
 	testkit.ModerationContract(t, func(t *testing.T, opts uow.Options) testkit.ModerationHarness {
 		db := newTestDB(t, opts)
