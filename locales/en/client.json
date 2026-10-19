@@ -3588,12 +3588,12 @@
     "description": "Text at the top of the preferences page."
   },
   "settings.preferences.summary": {
-    "defaultMessage": "Language, time zone, who sees your posts by default, and the languages of your timelines",
+    "defaultMessage": "Language, time zone, theme, who sees your posts by default, and the languages of your timelines",
     "description": "Description of the preferences page in the list of settings pages."
   },
   "settings.preferences.title": {
     "defaultMessage": "Preferences",
-    "description": "Heading and document title of the settings page with the language, time zone, default visibility and timeline languages."
+    "description": "Heading and document title of the settings page with the language, time zone, theme, default visibility and timeline languages."
   },
   "settings.profile.avatar": {
     "defaultMessage": "Avatar",
@@ -3722,6 +3722,26 @@
   "settings.saved": {
     "defaultMessage": "Saved",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
+  },
+  "settings.theme.dark": {
+    "defaultMessage": "Dark",
+    "description": "Option of the color theme radio group: always the dark theme."
+  },
+  "settings.theme.description": {
+    "defaultMessage": "Applies at once and is kept on this browser.",
+    "description": "Help text of the color theme radio group on the preferences page."
+  },
+  "settings.theme.label": {
+    "defaultMessage": "Theme",
+    "description": "Label of the radio group that chooses the app's color theme, on the preferences page and in the navigation menu's sheet."
+  },
+  "settings.theme.light": {
+    "defaultMessage": "Light",
+    "description": "Option of the color theme radio group: always the light theme."
+  },
+  "settings.theme.system": {
+    "defaultMessage": "Match the system",
+    "description": "Option of the color theme radio group: follow the device's light or dark setting."
   },
   "settings.time_zone.description": {
     "defaultMessage": "Dates and times are shown in this time zone.",

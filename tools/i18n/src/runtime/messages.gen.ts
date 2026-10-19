@@ -1796,7 +1796,7 @@ export interface MessageArgs {
   "client:settings.mutes.until": { date: string };
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
-  /** Language, time zone, who sees your posts by default, and the languages of your timelines */
+  /** Language, time zone, theme, who sees your posts by default, and the languages of your timelines */
   "client:settings.preferences.summary": {};
   /** Preferences */
   "client:settings.preferences.title": {};
@@ -1864,6 +1864,16 @@ export interface MessageArgs {
   "client:settings.profile.unsaved.title": {};
   /** Saved */
   "client:settings.saved": {};
+  /** Dark */
+  "client:settings.theme.dark": {};
+  /** Applies at once and is kept on this browser. */
+  "client:settings.theme.description": {};
+  /** Theme */
+  "client:settings.theme.label": {};
+  /** Light */
+  "client:settings.theme.light": {};
+  /** Match the system */
+  "client:settings.theme.system": {};
   /** Dates and times are shown in this time zone. */
   "client:settings.time_zone.description": {};
   /** Time zone */

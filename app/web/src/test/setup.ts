@@ -29,6 +29,8 @@ afterEach(() => {
   server.resetHandlers();
   // What the app keeps for the next start (the instance's timelines) must not leak into the next test.
   localStorage.clear();
+  // The tests share one document; a theme chosen in one (lib/theme) must not color the next.
+  delete document.documentElement.dataset["theme"];
 });
 
 afterAll(() => {

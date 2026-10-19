@@ -6,7 +6,7 @@ import { useT } from "../lib/i18n";
 import { SettingsHeading } from "./-layout/SettingsHeading";
 
 /**
- * The display language, time zone, default visibility, timeline languages and, for moderators, the moderator
+ * The display language, time zone, color theme (kept on this browser), default visibility, timeline languages and, for moderators, the moderator
  * notifications by email (FR-007, FR-208, FR-712). The viewer's permissions decide the last one.
  */
 export const Route = createFileRoute("/settings/preferences")({

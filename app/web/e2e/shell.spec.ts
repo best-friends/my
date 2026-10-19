@@ -268,6 +268,10 @@ test.describe("the menu of the phones' tab bar", () => {
             - link
           - listitem:
             - link
+        - radiogroup:
+          - radio [checked]
+          - radio
+          - radio
     `);
     await expect(sheet.getByRole("link")).toHaveText([/./, /./]);
     await expect(sheet.locator('a[href="/profile"]')).toBeVisible();

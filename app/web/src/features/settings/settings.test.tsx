@@ -137,6 +137,43 @@ describe("preferences", () => {
   });
 });
 
+describe("theme", () => {
+  test("applies at once with the arrow keys, is kept on this browser, and sends nothing to the server", async () => {
+    const prefs = preferencesServer();
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    const theme = await screen.findByRole("radiogroup", { name: "Theme" });
+    expect(theme).toHaveAccessibleDescription("Applies at once and is kept on this browser.");
+    const [system, light, dark] = within(theme).getAllByRole("radio");
+    expect(system).toHaveAccessibleName("Match the system");
+    expect(light).toHaveAccessibleName("Light");
+    expect(dark).toHaveAccessibleName("Dark");
+    expect(within(theme).getByRole("radio", { name: "Match the system" })).toBeChecked();
+
+    await user.click(within(theme).getByRole("radio", { name: "Light" }));
+    expect(document.documentElement).toHaveAttribute("data-theme", "light");
+    expect(localStorage.getItem("my:display:theme")).toBe("light");
+    // The APG radio group: an arrow key moves to the next option and checks it.
+    await user.keyboard("{ArrowDown}");
+    expect(within(theme).getByRole("radio", { name: "Dark" })).toBeChecked();
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+    expect(localStorage.getItem("my:display:theme")).toBe("dark");
+
+    await user.click(within(theme).getByRole("radio", { name: "Match the system" }));
+    expect(document.documentElement).not.toHaveAttribute("data-theme");
+    expect(localStorage.getItem("my:display:theme")).toBeNull();
+    expect(prefs.changes).toEqual([]);
+  });
+
+  test("the page opens with the theme the document is displayed in", async () => {
+    preferencesServer();
+    document.documentElement.dataset["theme"] = "dark";
+    await renderApp({ path: "/settings/preferences" });
+
+    const theme = await screen.findByRole("radiogroup", { name: "Theme" });
+    expect(within(theme).getByRole("radio", { name: "Dark" })).toBeChecked();
+  });
+});
+
 describe("moderator notifications by email", () => {
   /** The viewer's account with the permissions `permissions`. */
   function viewerWith(permissions: Schemas["Permission"][]) {
