@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v5
       # setup-go's own cache is keyed on go.sum alone and never refreshed. This one is saved on every push to main
       # and restored by pull requests, so the build and go test results of unchanged packages stay cached.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
           cache: false
@@ -142,7 +142,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       # The same cache as the go job's, of the test builds and results.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
           cache: false
@@ -205,7 +205,7 @@ jobs:
         with:
           node-version-file: .tool-versions
       # oapi-codegen and securitygen are Go: restore the go job's cache from main, without saving one.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
           cache: false
