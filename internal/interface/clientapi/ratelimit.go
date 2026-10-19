@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -67,16 +66,8 @@ func seconds(d time.Duration) int {
 }
 
 // clientKey returns the rate-limit key of the request's client IP.
-func (s *Server) clientKey(r *http.Request) string { return kernel.ClientKey(s.o.ClientIP(r)) }
-
-// remoteIP returns the address of the connection's peer. Forwarding headers are not trusted:
-// reading them needs the trusted proxy setting of ADR-0019 §5.
-func remoteIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
+func (s *Server) clientKey(r *http.Request) string {
+	return kernel.ClientKey(kernel.RequestClientIP(r))
 }
 
 // LimitProblem takes one event of key from an operation's own limit, such as the posting or

@@ -35,7 +35,6 @@ import (
 	"html/template"
 	"log/slog"
 	"math"
-	"net"
 	"net/http"
 	"net/url"
 	"slices"
@@ -383,7 +382,7 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 	signedIn, err := h.o.Identity.SignIn(r.Context(), appidentity.SignInInput{
 		Email:           email,
 		Password:        password,
-		IP:              clientIP(r),
+		IP:              kernel.RequestClientIP(r),
 		UserAgent:       r.UserAgent(),
 		CurrentToken:    cookieValue(r, CookieSession),
 		HumanCheckToken: h.humanCheckToken(r),
@@ -496,16 +495,6 @@ func cookieValue(r *http.Request, name string) string {
 		return ""
 	}
 	return c.Value
-}
-
-// clientIP returns the address of the connection's peer. Forwarding headers are not trusted:
-// reading them needs the trusted proxy setting of ADR-0019 §5.
-func clientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
 }
 
 // safeReturnTo returns s when it is a path on this site to go back to after signing in, and ""

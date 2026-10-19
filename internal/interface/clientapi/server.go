@@ -154,9 +154,6 @@ type Options struct {
 	// their Max is set.
 	AnonymousLimit kernel.Limit
 	AccountLimit   kernel.Limit
-	// ClientIP returns the client IP of a request for its rate limit; nil means the
-	// connection's peer.
-	ClientIP func(r *http.Request) string
 
 	// Locales resolves the locale of problem documents (ADR-0009 §2). Its UserLocale step
 	// finds the authenticated user with ViewerFrom.
@@ -187,9 +184,6 @@ func New(o Options) *Server {
 	}
 	if o.AccountLimit.Max == 0 {
 		o.AccountLimit = AccountLimit
-	}
-	if o.ClientIP == nil {
-		o.ClientIP = remoteIP
 	}
 	if o.Authenticator == nil {
 		o.Authenticator = noTokens{}

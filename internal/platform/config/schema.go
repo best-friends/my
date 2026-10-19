@@ -9,6 +9,7 @@ import (
 	"math"
 	"net"
 	"net/mail"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -118,6 +119,22 @@ var schema = []field{
 		def:   ":8080",
 		check: checkListen,
 		set:   func(c *Config, v string) { c.Listen = v },
+	},
+	{
+		key:   "trusted_proxies",
+		doc:   "Reverse proxies and load balancers in front of the server whose forwarding header (`trusted_proxy_header`) tells the client IP, as comma-separated CIDRs or addresses such as `10.0.0.0/8, 2001:db8::/32, 192.0.2.10` (ADR-0019 §5). The client IP keys the rate limits of sign-in, registration, the client API, and the inbox. When the connection's peer is in this list, the client IP is the rightmost address of the header that is not in it; otherwise the header is ignored and the client IP is the peer. Empty trusts no one: behind a proxy every request then shares the proxy's limits. List only addresses that nothing but your proxies can connect from, and only proxies that append to the header rather than pass a client's value through (docs/architecture/deployment-targets.md).",
+		check: checkTrustedProxies,
+		set:   func(c *Config, v string) { c.TrustedProxies = parseTrustedProxies(v) },
+	},
+	{
+		key: "trusted_proxy_header",
+		doc: "Forwarding header that the `trusted_proxies` append the client IP to. Only this header is read, so that a client cannot add the other one past a proxy that does not know it.",
+		def: "x-forwarded-for",
+		choices: []choice{
+			{value: "x-forwarded-for", inV0: true, doc: "`X-Forwarded-For`, which nginx, Caddy, Traefik, Google Cloud load balancers and Cloud Run, and AWS Application Load Balancers append to."},
+			{value: "forwarded", inV0: true, doc: "The `for` parameters of `Forwarded` (RFC 7239)."},
+		},
+		set: func(c *Config, v string) { c.TrustedProxyHeader = v },
 	},
 	{
 		key: "db",
@@ -561,4 +578,51 @@ func checkPreviousKEKs(v string) error {
 		}
 	}
 	return nil
+}
+
+// parseProxy parses one entry of trusted_proxies: a CIDR, or an address as its single-address
+// prefix. IPv4-mapped IPv6 entries are unmapped, like the addresses they are compared with.
+func parseProxy(v string) (netip.Prefix, error) {
+	if strings.Contains(v, "/") {
+		p, err := netip.ParsePrefix(v)
+		if err != nil {
+			return netip.Prefix{}, err
+		}
+		if a := p.Addr(); a.Is4In6() {
+			bits := p.Bits() - 96
+			if bits < 0 {
+				return netip.Prefix{}, errors.New("an IPv4-mapped prefix must be at least /96")
+			}
+			p = netip.PrefixFrom(a.Unmap(), bits)
+		}
+		return p.Masked(), nil
+	}
+	a, err := netip.ParseAddr(v)
+	if err != nil {
+		return netip.Prefix{}, err
+	}
+	if a.Zone() != "" {
+		return netip.Prefix{}, errors.New("must not have a zone")
+	}
+	a = a.Unmap()
+	return netip.PrefixFrom(a, a.BitLen()), nil
+}
+
+func checkTrustedProxies(v string) error {
+	for i, p := range strings.Split(v, ",") {
+		p = strings.TrimSpace(p)
+		if _, err := parseProxy(p); err != nil {
+			return fmt.Errorf("entry #%d %q must be a CIDR such as 10.0.0.0/8 or an IP address", i+1, p)
+		}
+	}
+	return nil
+}
+
+func parseTrustedProxies(v string) []netip.Prefix {
+	var ps []netip.Prefix
+	for p := range strings.SplitSeq(v, ",") {
+		pfx, _ := parseProxy(strings.TrimSpace(p)) // validated by checkTrustedProxies
+		ps = append(ps, pfx)
+	}
+	return ps
 }
