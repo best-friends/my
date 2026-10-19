@@ -191,7 +191,8 @@ test.describe("status page of a suspended account", () => {
     await passwordField(page, "current-password").fill(user.password);
     await submitButton(page).click();
     await expect(page).toHaveURL(/\/auth\/sign_in$/);
-    await expectPageBasics(page);
+    // The status page is worded in the user's saved locale, not the browser's.
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
     const appeal = page.locator(`[id="appeal-${actionID}"]`);
     await expect(appeal).toHaveAccessibleName(/\S/);
     await expect(appeal).toHaveAccessibleDescription(/\S/);
