@@ -237,7 +237,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   浮かぶボタンは、ルートの静的なデータ（TanStack Router の `staticData`、`composeButton: true`）を持つ画面（タイムラインとプロフィール）にだけ出す（G4）。外枠は今のマッチ（`useMatches`）からそれを読む。
   ほかの画面でもシートは置いたままにし、返信のボタンはそこで開く。`md` 未満のボタンはアイコンだけで、「投稿を書く」をアクセシブルネーム（`aria-label`）と `Tooltip` にする（G12）。
   `main` は終わりに、タブバーとボタン（出ているとき、`data-compose-fab`）の高さぶんの余白を取り、`index.css` の `scroll-padding-block-end` もフォーカスした要素を同じだけ避ける。`md` 未満のトーストは、タブバーの上に、ボタンが出ているときはボタンの上に出す（`with-compose-fab:` の variant）。
-  `md` 未満で高さが 32rem 以下の画面（横向きの電話、400% の拡大の 320 × 225 CSS px）は `short:` の variant（`index.css`）で、タブバーの項目を `min-h-12` にし、ボタンとの間を詰めて、固定した要素を画面の高さの半分に収める（WCAG 1.4.10）。
+  `md` 未満で高さが 32rem 以下の画面（横向きの電話、400% の拡大の 320 × 225 CSS px）は `short:` の variant（`index.css`）で、タブバーの項目を `min-h-12` にし、ボタンとの間を詰め、上端のオフラインの帯（G17）を粘着させずにページと一緒に流して、固定した要素を画面の高さの半分に収める（WCAG 1.4.10）。
   ナビゲーション（`routes/-layout/Navigation.tsx`）は 1 つの `nav` で、今いる区画のリンクに `aria-current="page"` を付ける。「プロフィール」の区画は自分のプロフィールとそのフォロワー / フォローの一覧で、
   同じ `/@{acct}` の下にある自分の投稿の詳細は含めない。画面の端に接する要素は `env(safe-area-inset-*)` を足し、高さは `svh` で指定する。
   - 項目は [ADR-0039](../adr/0039-mobile-navigation-and-compose-entry.md) に従う。`md` 未満のタブバーは、ホーム・タイムライン・通知・検索・メニューの 5 つで、
