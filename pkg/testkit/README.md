@@ -11,6 +11,13 @@ The server is pgmem, PostgreSQL in memory inside the test process, unless `TEST_
 or `TEST_POSTGRES=container` starts a container with testcontainers-go (`make go-test-postgres`). The package's `TestMain`
 calls `os.Exit(pgtest.Main(m))` so that the server stops after the tests.
 
+## Valkey test servers
+
+`valkeytest.New(t)` (package `pkg/testkit/valkeytest`) returns the URL of a Valkey server and a key prefix of the
+test's own, whose keys are deleted when the test ends. The server is a `valkey/valkey` container started with
+testcontainers-go on the first call, unless `TEST_VALKEY_URL` names an existing server; without Docker the tests are
+skipped, or fail when `TEST_VALKEY_REQUIRED` is set (CI). The package's `TestMain` calls `os.Exit(valkeytest.Main(m))`.
+
 ## Federation fixtures
 
 `fixtures/federation/` holds AS2 documents (activities, objects, actors) that other implementations send, for the

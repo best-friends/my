@@ -23,6 +23,7 @@ import (
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
 	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
+	kvvalkey "github.com/best-friends/my/internal/adapter/kv/valkey"
 	mailnone "github.com/best-friends/my/internal/adapter/mail/none"
 	mailsmtp "github.com/best-friends/my/internal/adapter/mail/smtp"
 	"github.com/best-friends/my/internal/adapter/markdown"
@@ -30,6 +31,7 @@ import (
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
+	"github.com/best-friends/my/internal/adapter/valkey"
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/content"
@@ -177,7 +179,10 @@ type App struct {
 	closer func() error
 	// closeBlobs releases the blob store.
 	closeBlobs func() error
-	routes     []route
+	// valkey is the client of the Valkey server that the adapters configured with valkey_url
+	// share, nil until valkeyClient connects it.
+	valkey valkey.Client
+	routes []route
 	// page serves the web client's HTML at the GET paths that no route serves.
 	page http.Handler
 	// webStylesheet is the URL of the server-rendered pages' stylesheet from the web build, empty without one.
@@ -321,6 +326,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// Set with the database above.
 	case "memory":
 		a.KV = kvmemory.New(a.Clock)
+	case "valkey":
+		c, err := a.valkeyClient(ctx)
+		if err != nil {
+			_ = a.Close()
+			return nil, err
+		}
+		a.KV = kvvalkey.New(c, cfg.ValkeyKeyPrefix, a.Clock)
 	default:
 		_ = a.Close()
 		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
@@ -838,12 +850,30 @@ func newKeyManager(cfg *config.Config) (kernel.KeyManager, error) {
 }
 
 // Ready reports whether the App can serve requests: the database is reachable and every table
-// of its schema file exists.
+// of its schema file exists, and the Valkey server, when the App uses one, answers.
 func (a *App) Ready(ctx context.Context) error {
 	if a.ready == nil {
 		return errors.New("no database")
 	}
-	return a.ready(ctx)
+	if err := a.ready(ctx); err != nil {
+		return err
+	}
+	if a.valkey != nil {
+		return valkey.Ping(ctx, a.valkey)
+	}
+	return nil
+}
+
+// valkeyClient returns the client of valkey_url, connecting it on the first call; Close closes it.
+func (a *App) valkeyClient(ctx context.Context) (valkey.Client, error) {
+	if a.valkey == nil {
+		c, err := valkey.Open(ctx, valkey.Options{URL: a.Config.ValkeyURL, TLSCAFile: a.Config.ValkeyTLSCAFile})
+		if err != nil {
+			return nil, err
+		}
+		a.valkey = c
+	}
+	return a.valkey, nil
 }
 
 // Handle registers h for pattern (an http.ServeMux pattern) on the HTTP server of the web role.
@@ -859,6 +889,9 @@ func (a *App) Close() error {
 	}
 	if a.closeBlobs != nil {
 		_ = a.closeBlobs()
+	}
+	if a.valkey != nil {
+		a.valkey.Close()
 	}
 	if a.closer == nil {
 		return nil

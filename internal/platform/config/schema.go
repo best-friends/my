@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/best-friends/my/internal/adapter/valkey"
 )
 
 // EnvPrefix is prepended to the upper-cased key to form a setting's environment variable.
@@ -237,9 +239,30 @@ var schema = []field{
 		choices: []choice{
 			{value: "db", inV0: true, doc: "Table in the database."},
 			{value: "memory", inV0: true, doc: "In-process memory; limits are per process."},
-			{value: "redis", doc: "Redis."},
+			{value: "valkey", inV0: true, doc: "Valkey or another server that speaks the Redis protocol (`valkey_url`); entries are shared by every process on the server."},
 		},
 		set: func(c *Config, v string) { c.KV = v },
+	},
+	{
+		key:          "valkey_url",
+		doc:          "Valkey server of the adapters that use one (`kv = valkey`): `valkey://[user:password@]host[:port][/db]` (`redis://` is the same), `valkeys://` or `rediss://` for TLS, or `unix:///path/to/socket`. The path selects the database number. A cluster is found by itself.",
+		secret:       true,
+		requiredWhen: "when `kv = valkey`",
+		check:        valkey.CheckURL,
+		set:          func(c *Config, v string) { c.ValkeyURL = v },
+	},
+	{
+		key:   "valkey_tls_ca_file",
+		doc:   "PEM file of the certificate authorities that the TLS certificate of `valkey_url` chains to, for a managed service with a private CA. Empty uses the system roots; it needs a `valkeys://` or `rediss://` URL.",
+		check: checkNotBlank,
+		set:   func(c *Config, v string) { c.ValkeyTLSCAFile = v },
+	},
+	{
+		key:   "valkey_key_prefix",
+		doc:   "Prefix of every key that this server writes to `valkey_url`, so that several instances or other applications can share the server.",
+		def:   "my:",
+		check: checkNotBlank,
+		set:   func(c *Config, v string) { c.ValkeyKeyPrefix = v },
 	},
 	{
 		key: "key_manager",
@@ -404,6 +427,12 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 			}
 			seen[k] = true
 		}
+	}
+	if vals["kv"] == "valkey" && !present["valkey_url"] {
+		issues = append(issues, Issue{Key: "valkey_url", Missing: true, Message: "required when kv is valkey"})
+	}
+	if vals["valkey_tls_ca_file"] != "" && vals["valkey_url"] != "" && !strings.HasPrefix(vals["valkey_url"], "valkeys://") && !strings.HasPrefix(vals["valkey_url"], "rediss://") {
+		issues = append(issues, Issue{Key: "valkey_tls_ca_file", Message: "needs a valkeys:// or rediss:// valkey_url"})
 	}
 	if mail, ok := vals["mail"]; ok && mail != "none" && !present["mail_from"] {
 		issues = append(issues, Issue{Key: "mail_from", Missing: true, Message: "required when mail is not none"})

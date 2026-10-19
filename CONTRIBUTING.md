@@ -134,6 +134,9 @@ make sqlc-check  # 生成物が最新でなければ失敗（make check に含�
   - `make go-test-postgres`: `TEST_POSTGRES=container` で testcontainers-go のコンテナ（`TEST_POSTGRES_IMAGE`、既定は `postgres:18-alpine`）を起動します。
     Docker がないと、`TEST_POSTGRES_REQUIRED=1` なので失敗します。
   - `TEST_POSTGRES_URL=postgres://...`（DB を作成できるユーザー）: 既存のサーバーを使います
+- Valkey のテスト（`kv/valkey` など）は `pkg/testkit/valkeytest` でサーバーを得ます。Docker があれば testcontainers-go で
+  `valkey/valkey` のコンテナ（`TEST_VALKEY_IMAGE` で変更可）を起動し、なければ飛ばします。`TEST_VALKEY_URL=valkey://...` は既存のサーバーを使います。
+  CI の go-test は `TEST_VALKEY_REQUIRED=1` で流すので、Docker がないと失敗します。
 
 ## 設計判断
 

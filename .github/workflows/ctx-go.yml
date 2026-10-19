@@ -72,7 +72,7 @@ jobs:
 
   go-test:
     # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); postgres-contract.yml
-    # runs them on a real postgres container after the merge (main.yml) and nightly.
+    # runs them on a real postgres container after the merge (main.yml) and nightly. The Valkey tests run on a container.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -91,5 +91,9 @@ jobs:
           restore-keys: |
             go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
             go-test-${{ runner.os }}-
+      # The Valkey tests (pkg/testkit/valkeytest) start valkey/valkey on the runner's Docker; TEST_VALKEY_REQUIRED
+      # makes a missing Docker fail the job instead of skipping them.
       - name: make go-test
         run: make go-test
+        env:
+          TEST_VALKEY_REQUIRED: "1"
