@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The queries of the user's own profile and preferences (web-client.md S1). Their keys come from the
 // openapi-react-query client, so the account here shares its cache entry with the session's viewer.
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
+import { refreshQueries } from "../../../lib/query";
+import { updateCachedAccount } from "../../profile";
 
 type Schemas = components["schemas"];
 
@@ -43,6 +46,32 @@ export function updatePreferencesMutation(api: Api) {
       return data;
     },
   };
+}
+
+/** Whether `queryKey` is a timeline's (home, local, federated, hashtag): the lists the timeline languages filter. */
+function isTimelineQuery(queryKey: QueryKey): boolean {
+  return typeof queryKey[1] === "string" && queryKey[1].startsWith("/timelines/");
+}
+
+/**
+ * Puts the preferences as the server answered `change` into the cache (web-client.md S1, ADR-0045). A change of
+ * the timeline languages changes what every timeline shows, so the cached timelines are fetched again, also those
+ * no page shows now, and this resolves once they are; a profile shows its posts in every language. A change of
+ * the locale is handled where the app displays it (lib/services.ts marks every query).
+ */
+export async function cacheSavedPreferences(api: Api, queryClient: QueryClient, preferences: Preferences, change: PreferencesChange): Promise<void> {
+  queryClient.setQueryData(preferencesQueryOptions(api).queryKey, preferences);
+  if (change.timeline_languages !== undefined) await refreshQueries(queryClient, { predicate: (query) => isTimelineQuery(query.queryKey) });
+}
+
+/**
+ * Puts the viewer's account as the server answered a change of the profile into the cache: the viewer's own
+ * query, and every cached copy of the account (the profile page, the author of the viewer's posts), so that
+ * each shows the new profile from its first render (web-client.md S1, ADR-0045).
+ */
+export function cacheSavedProfile(api: Api, queryClient: QueryClient, saved: CredentialAccount): void {
+  queryClient.setQueryData(credentialsQueryOptions(api).queryKey, saved);
+  updateCachedAccount(queryClient, saved);
 }
 
 /**

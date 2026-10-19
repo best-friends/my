@@ -2,9 +2,11 @@
 // The server data of the report feature (web-client.md S1): the instance rules a report can cite, the
 // account's recent posts to choose from, and filing the report (POST /reports, FR-701). Types come from the
 // spec (S9).
+import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
 import { ApiError } from "../../../lib/errors";
+import { refreshQueries } from "../../../lib/query";
 
 export type Account = components["schemas"]["Account"];
 export type Status = components["schemas"]["Status"];
@@ -46,4 +48,12 @@ export function createReportMutation(api: Api) {
       return data;
     },
   };
+}
+
+/**
+ * Marks what a new report changes (ADR-0045): for a moderator, the admin screen's lists of reports and its
+ * counts of open work, which are cached only once they have opened it. Resolves once those are fetched again.
+ */
+export function cacheFiledReport(queryClient: QueryClient): Promise<void> {
+  return refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts" });
 }

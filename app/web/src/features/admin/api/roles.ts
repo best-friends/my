@@ -2,10 +2,14 @@
 // The queries and mutations of the roles of users (FR-720, manage_roles): the roles of the instance, the roles that
 // a local account's user holds, and granting and revoking one. The server allows a change only of a role at or
 // below the viewer's highest one (403) and keeps the last admin (409); it records every change in the audit log.
+import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { isMissingPermission } from "./admin";
+import { refreshQueries } from "../../../lib/query";
+import { viewerQueryOptions } from "../../session";
+import { adminAccountQueryOptions } from "./accounts";
+import { isAuditLogQuery, isMissingPermission } from "./admin";
 
 type Schemas = components["schemas"];
 
@@ -47,6 +51,23 @@ export function changeRoleMutation(api: Api) {
       return data;
     },
   };
+}
+
+/**
+ * What a change of the roles of account `accountId` changes (web-client.md S1, ADR-0045): its page shows its role
+ * keys (the searches show none) and the audit log records the change, which are fetched again first, so that the
+ * log shows it at once; then the roles as the server answered go into the cache. A change of the viewer's own
+ * roles (`viewerId`) also marks the viewer, whose permissions decide what the app offers.
+ */
+export async function cacheChangedRoles(api: Api, queryClient: QueryClient, accountId: string, roles: AdminRoleList, viewerId: string): Promise<void> {
+  await refreshQueries(queryClient, { queryKey: adminAccountQueryOptions(api, accountId).queryKey }, { predicate: (query) => isAuditLogQuery(query.queryKey) });
+  queryClient.setQueryData(accountRolesQueryOptions(api, accountId).queryKey, roles);
+  if (accountId === viewerId) void queryClient.invalidateQueries({ queryKey: viewerQueryOptions(api).queryKey });
+}
+
+/** Marks the viewer's own roles, after a refusal that says they changed since they loaded (isRoleOutranked). */
+export function refreshViewerRoles(api: Api, queryClient: QueryClient, viewerId: string): void {
+  void queryClient.invalidateQueries({ queryKey: accountRolesQueryOptions(api, viewerId).queryKey });
 }
 
 /** Whether the server refused a change of a role above every role of the viewer (403, not a missing permission). */

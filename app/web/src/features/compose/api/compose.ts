@@ -29,6 +29,11 @@ export function statusQueryOptions(api: Api, id: string) {
   return api.query.queryOptions("get", "/statuses/{id}", { params: { path: { id } } });
 }
 
+/** Puts the post being replied to, as the screen that offered the reply shows it, into the cache: the form names it without fetching it. */
+export function cacheReplyTarget(api: Api, queryClient: QueryClient, status: Status): void {
+  queryClient.setQueryData(statusQueryOptions(api, status.id).queryKey, status);
+}
+
 /** How often an uploaded file is polled while the server processes it, in ms. */
 const mediaPollInterval = 1000;
 
@@ -78,11 +83,17 @@ export async function createStatus(api: Api, body: CreateStatusRequest, idempote
 
 /**
  * Puts a new post into the cache and fetches again every cached list of posts it can appear in, also those no
- * page shows now (refreshQueries, web-client.md S1): opening one of them afterwards shows the post at once.
+ * page shows now (refreshQueries, web-client.md S1): opening one of them afterwards shows the post at once. A
+ * reply also gives the post it answers one more reply, which its own page shows.
  */
 export async function cachePostedStatus(api: Api, queryClient: QueryClient, status: Status): Promise<void> {
   queryClient.setQueryData(statusQueryOptions(api, status.id).queryKey, status);
-  await refreshQueries(queryClient, { predicate: (query) => isPostListQuery(query.queryKey) });
+  const parentId = status.in_reply_to_id;
+  await refreshQueries(
+    queryClient,
+    { predicate: (query) => isPostListQuery(query.queryKey) },
+    ...(parentId === undefined ? [] : [{ queryKey: statusQueryOptions(api, parentId).queryKey, exact: true }]),
+  );
 }
 
 /**

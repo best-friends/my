@@ -9,16 +9,15 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { viewerQueryOptions } from "../../session";
-import { adminAccountQueryOptions } from "../api/accounts";
-import { refreshQueries } from "../../../lib/query";
-import { isAuditLogQuery } from "../api/admin";
 import {
   accountRolesQueryOptions,
   type AdminRole,
   type AdminRoleList,
+  cacheChangedRoles,
   changeRoleMutation,
   isLastAdmin,
   isRoleOutranked,
+  refreshViewerRoles,
   type RoleChangeKind,
   rolesQueryOptions,
 } from "../api/roles";
@@ -117,26 +116,19 @@ export function useRoleChanges(accountId: string, handle: string, onChanged: () 
   const mutation = useMutation({
     ...changeRoleMutation(api),
     onSuccess: async (roles: AdminRoleList, change) => {
-      // The account's page shows its role keys (the searches show none), and the audit log records the change: the
-      // change is done once they are fetched again (the confirmation stays pending until then), so that the audit
-      // log shows it at once (refreshQueries).
-      await refreshQueries(
-        queryClient,
-        { queryKey: adminAccountQueryOptions(api, accountId).queryKey },
-        { predicate: (query) => isAuditLogQuery(query.queryKey) },
-      );
+      // The change is done once what it changes is in the cache (the confirmation stays pending until then), so
+      // that the audit log shows it at once (cacheChangedRoles).
+      await cacheChangedRoles(api, queryClient, accountId, roles, viewer.id);
       setDialog((current) => current && { ...current, isOpen: false });
-      queryClient.setQueryData(accountRolesQueryOptions(api, accountId).queryKey, roles);
       const role = `⁦${change.role}⁩`;
       setStatus(
         change.kind === "grant" ? t("client:admin.account.roles.granted", { role, handle }) : t("client:admin.account.roles.revoked", { role, handle }),
       );
       onChanged();
-      if (accountId === viewer.id) void queryClient.invalidateQueries({ queryKey: viewerQueryOptions(api).queryKey });
     },
     onError: (error) => {
       // The viewer's roles changed since they loaded: read them again, so that the region shows what is allowed now.
-      if (isRoleOutranked(error)) void queryClient.invalidateQueries({ queryKey: accountRolesQueryOptions(api, viewer.id).queryKey });
+      if (isRoleOutranked(error)) refreshViewerRoles(api, queryClient, viewer.id);
     },
   });
   const isOpen = dialog?.isOpen ?? false;

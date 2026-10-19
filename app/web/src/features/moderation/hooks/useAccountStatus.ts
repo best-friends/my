@@ -3,20 +3,20 @@
 // the past ones (expired or lifted), the posts an action on posts acted on, and the appeal, which the user
 // writes in an alert dialog. An appeal's answer is the action with the appeal, which replaces the action in
 // both lists at once, so the form gives way to the appeal's state on the page.
-import { type InfiniteData, useMutation, useQueries, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { refreshQueries } from "../../../lib/query";
 import { type Status, statusQueryOptions } from "../../status";
 import {
   type ActionScope,
   appealActionMutation,
-  isOwnActionsQuery,
+  cacheAppealedAction,
   isStaleAppealError,
   type ModerationAction,
   ownActionsQueryOptions,
+  refreshOwnActions,
 } from "../api/actions";
 
 /** What a list of actions needs: the actions so far, and loading more. */
@@ -98,12 +98,6 @@ export type AppealForm = {
   status: string | undefined;
 };
 
-/** Replaces the action of `action.id` in the pages of a list of actions. */
-function replaceAction(data: InfiniteData<{ items: ModerationAction[] }> | undefined, action: ModerationAction) {
-  if (data === undefined) return data;
-  return { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.map((item) => (item.id === action.id ? action : item)) })) };
-}
-
 /**
  * Appealing the actions on the user's account. An appeal refused because the action cannot be appealed any
  * more (appealed already, its window closed) reads the lists again, which take the action's form away.
@@ -131,16 +125,12 @@ export function useAppealForm(): AppealForm {
     ...appealActionMutation(api),
     onSuccess: (action) => {
       setDialog((current) => current && { ...current, isOpen: false });
-      for (const scope of ["active", "all"] as const) {
-        queryClient.setQueryData(ownActionsQueryOptions(api, scope).queryKey, (data) => replaceAction(data, action));
-      }
+      cacheAppealedAction(api, queryClient, action);
       focusRef.current = action.id;
       setStatus(t("client:account_status.appeal.sent", { kind: action.kind_label }));
     },
     onError: (error) => {
-      // Both lists (active and all) are fetched again, also the one the page does not show now: the route
-      // reads them from the cache as they are (refreshQueries, web-client.md S1).
-      if (isStaleAppealError(error)) void refreshQueries(queryClient, { predicate: (query) => isOwnActionsQuery(query.queryKey) });
+      if (isStaleAppealError(error)) void refreshOwnActions(queryClient);
     },
   });
   const isOpen = dialog?.isOpen ?? false;

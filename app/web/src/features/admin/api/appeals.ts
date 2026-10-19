@@ -10,7 +10,7 @@ import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
 import { refreshQueries } from "../../../lib/query";
-import { refreshAdminAccount } from "./accounts";
+import { refreshAdminAccount, refreshPublicAccount } from "./accounts";
 import { pageQuery, refreshAuditLog } from "./admin";
 
 type Schemas = components["schemas"];
@@ -96,7 +96,7 @@ export function decideAppealMutation(api: Api) {
  * overturn lifts an action), and the audit log, which records the decision. A list that was only marked stale would show the appeal as it was: a decided appeal
  * among those awaiting review.
  */
-export async function refreshAppealLists(queryClient: QueryClient, api: Api, accountId: string): Promise<void> {
+async function refreshAppealLists(queryClient: QueryClient, api: Api, accountId: string): Promise<void> {
   await Promise.all([
     refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts" }),
     refreshAdminAccount(queryClient, api, accountId, { actions: true }),
@@ -105,10 +105,26 @@ export async function refreshAppealLists(queryClient: QueryClient, api: Api, acc
 }
 
 /**
- * Fetches again what a decision changes (refreshAppealLists), then puts `appeal`, as the decision answered it,
- * into the cache: the appeal's page shows the decision once the list has it too.
+ * Fetches again what a decision changes (refreshAppealLists, and what everyone sees of the account when an
+ * overturn lifts its action, refreshPublicAccount), then puts `appeal`, as the decision answered it, into the
+ * cache: the appeal's page shows the decision once the list has it too.
  */
 export async function storeAppeal(queryClient: QueryClient, api: Api, appeal: Appeal): Promise<void> {
-  await refreshAppealLists(queryClient, api, appeal.account_id);
+  await Promise.all([
+    refreshAppealLists(queryClient, api, appeal.account_id),
+    appeal.state === "overturned" ? refreshPublicAccount(queryClient, appeal.account_id, appeal.action.kind) : undefined,
+  ]);
   queryClient.setQueryData(appealQueryOptions(api, appeal.id).queryKey, appeal);
+}
+
+/**
+ * After a decision refused because another moderator decided appeal `id` first: that decision changed the appeal
+ * and the lists as well, so they are fetched again; resolves once they are.
+ */
+export async function refreshDecidedAppeal(queryClient: QueryClient, api: Api, id: string): Promise<void> {
+  const accountId = queryClient.getQueryData<Appeal>(appealQueryOptions(api, id).queryKey)?.account_id;
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: appealQueryOptions(api, id).queryKey }),
+    accountId === undefined ? undefined : refreshAppealLists(queryClient, api, accountId),
+  ]);
 }

@@ -3,12 +3,13 @@
 // violation), the posts it is about, a comment for the moderators and, for an account of another server,
 // whether to forward the report there. The draft lives here until the last step files it; nothing reaches
 // the server before.
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import {
   type Account,
+  cacheFiledReport,
   createReportMutation,
   type CreateReportRequest,
   type InstanceRule,
@@ -97,6 +98,7 @@ function requestOf(account: Account, draft: ReportDraft, category: ReportCategor
  */
 export function useReportForm(account: Account, status: Status | undefined): ReportForm {
   const api = useApi();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<ReportStep>("category");
   const [draft, setDraft] = useState<ReportDraft>(() => ({
     category: null,
@@ -108,7 +110,7 @@ export function useReportForm(account: Account, status: Status | undefined): Rep
   const [isRuleMissing, setIsRuleMissing] = useState(false);
   const instance = useQuery(instanceQueryOptions(api));
   const latest = useQuery(reportablePostsQueryOptions(api, account.id));
-  const file = useMutation(createReportMutation(api));
+  const file = useMutation({ ...createReportMutation(api), onSuccess: () => cacheFiledReport(queryClient) });
 
   const rules = loadable(instance, instance.data?.rules);
   const latestPosts = latest.data?.items;

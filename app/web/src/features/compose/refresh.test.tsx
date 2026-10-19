@@ -5,7 +5,7 @@
 import { screen, within } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
-import { type Schemas, statusPage, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
+import { type Schemas, statusFixture, statusPage, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
 import { apiBase, resumableSession } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -60,5 +60,44 @@ describe("a new post", () => {
     expect(await screen.findByRole("heading", { level: 1, name: viewerFixture.display_name })).toBeInTheDocument();
     // The profile shows the new post from its first render, not the list from before it.
     expect(within(screen.getByRole("feed", { name: "Posts" })).getByText("Fresh from the oven")).toBeInTheDocument();
+  });
+});
+
+describe("a reply", () => {
+  test("is counted on the post it answers at once when the post's page opens again", async () => {
+    const parent: Schemas["Status"] = { ...statusFixture("0192f0c4-7a8e-7000-8000-0000000000c1"), content: "<p>The question</p>" };
+    const replies: Schemas["Status"][] = [];
+    server.use(
+      resumableSession(),
+      http.get(`${apiBase}/statuses/:id`, async () => {
+        await delay(latency);
+        return HttpResponse.json({ ...parent, replies_count: replies.length });
+      }),
+      http.get(`${apiBase}/statuses/:id/context`, async () => {
+        await delay(latency);
+        return HttpResponse.json({ ancestors: [], descendants: replies });
+      }),
+      http.post(`${apiBase}/statuses`, async ({ request }) => {
+        const body = (await request.json()) as Schemas["CreateStatusRequest"];
+        const reply = { ...viewerStatusFixture({ id: "0192f0c4-7a8e-7000-8000-0000000000c2", content: `<p>${body.text}</p>` }), in_reply_to_id: parent.id };
+        replies.push(reply);
+        return HttpResponse.json(reply);
+      }),
+    );
+    const { user, router } = await renderApp({ path: `/@bob/${parent.id}` });
+    const article = await screen.findByRole("article", { description: "The question" }, { timeout: latency * 5 });
+    await user.click(await within(article).findByRole("button", { name: "Reply" }));
+    const sheet = await screen.findByRole("dialog", { name: "New post" });
+    await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "An answer");
+    await user.click(within(sheet).getByRole("button", { name: "Reply" }));
+    const messages = await screen.findByRole("region", { name: "Messages" }, { timeout: latency * 5 });
+    expect(within(messages).getByText("Posted.")).toBeInTheDocument();
+
+    await user.click(within(navigation()).getByRole("link", { name: "Home" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    await router.navigate({ to: "/@{$acct}/$id", params: { acct: "bob", id: parent.id } });
+    // The post counts the reply from the page's first render, not as it was before the reply.
+    const again = await screen.findByRole("article", { description: "The question" });
+    expect(within(again).getByRole("button", { name: "Reply" })).toHaveAccessibleDescription("1");
   });
 });

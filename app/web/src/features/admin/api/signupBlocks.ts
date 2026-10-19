@@ -3,7 +3,7 @@
 // address, one email address (by its hash) or a range of client addresses, listed newest first, added and
 // lifted by a viewer with manage_accounts. The list follows the API's keyset pagination as a TanStack Query
 // infinite query whose key ends with "pages" (web-client.md §10).
-import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
+import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
@@ -51,12 +51,12 @@ export function signupBlocksQueryOptions(api: Api, filter: SignupBlockFilter) {
 }
 
 /** Whether a query is one of the lists of sign-up blocks, of any filter. */
-export function isSignupBlocksQuery(queryKey: readonly unknown[]): boolean {
+function isSignupBlocksQuery(queryKey: readonly unknown[]): boolean {
   return queryKey[1] === "/admin/signup_blocks";
 }
 
 /** Whether a list of sign-up blocks keeps only those in effect, which a lifted block leaves. */
-export function isActiveSignupBlocksQuery(queryKey: readonly unknown[]): boolean {
+function isActiveSignupBlocksQuery(queryKey: readonly unknown[]): boolean {
   const params = queryKey[2];
   return isSignupBlocksQuery(queryKey) && typeof params === "object" && params !== null && "active" in params && params.active === true;
 }
@@ -90,4 +90,17 @@ export function liftSignupBlockMutation(api: Api) {
       return data;
     },
   };
+}
+
+/**
+ * Writes the lifted block from the answer into the cached lists of sign-up blocks, which show it right
+ * (ADR-0045): those of the blocks in effect drop it, the others show it lifted.
+ */
+export function cacheLiftedSignupBlock(queryClient: QueryClient, lifted: SignupBlock): void {
+  for (const query of queryClient.getQueryCache().findAll({ predicate: (query) => isSignupBlocksQuery(query.queryKey) })) {
+    const keep = isActiveSignupBlocksQuery(query.queryKey) ? [] : [lifted];
+    queryClient.setQueryData<InfiniteData<{ items: SignupBlock[] }>>(query.queryKey, (data) =>
+      data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.flatMap((item) => (item.id === lifted.id ? keep : [item])) })) },
+    );
+  }
 }

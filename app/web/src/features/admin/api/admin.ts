@@ -5,10 +5,10 @@
 // lists follow the API's keyset pagination (each page's `next_cursor` is the `cursor` of the next) as TanStack
 // Query infinite queries on the same client; their keys start like the client's own `[method, path]` and end
 // with "pages", so that they never collide with a plain query of the same operation (web-client.md §10).
-import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
+import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
-import { refreshQueries } from "../../../lib/query";
+import { isPostListQuery, refreshQueries } from "../../../lib/query";
 import type { components } from "../../../lib/api/schema.gen";
 
 type Schemas = components["schemas"];
@@ -50,7 +50,7 @@ export function instancesQueryOptions(api: Api, filter: InstanceFilter) {
 }
 
 /** Fetches again every cached list of remote servers (refreshQueries): marking one available moves it between them. */
-export function refreshInstanceLists(queryClient: QueryClient): Promise<void> {
+function refreshInstanceLists(queryClient: QueryClient): Promise<void> {
   return refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/instances" });
 }
 
@@ -94,6 +94,17 @@ export function markAvailableMutation(api: Api) {
   };
 }
 
+/**
+ * Puts the health of `domain` after it was marked available (`next`) into the cache (web-client.md S1,
+ * ADR-0045), once every cached list of remote servers is fetched again (refreshInstanceLists): marking it moves
+ * it between them. Its history has a new event, which is marked.
+ */
+export async function cacheMarkedAvailable(api: Api, queryClient: QueryClient, domain: string, next: InstanceHealth): Promise<void> {
+  await refreshInstanceLists(queryClient);
+  queryClient.setQueryData(instanceQueryOptions(api, domain).queryKey, next);
+  void queryClient.invalidateQueries({ queryKey: availabilityEventsQueryOptions(api, domain).queryKey });
+}
+
 /** The jobs that failed for good, most recently failed first (GET /admin/dead_jobs). */
 export function deadJobsQueryOptions(api: Api) {
   return infiniteQueryOptions({
@@ -126,6 +137,14 @@ export function retryDeadJobMutation(api: Api) {
       await api.fetch.POST("/admin/dead_jobs/{id}/retry", { params: { path: { id } } });
     },
   };
+}
+
+/** Takes the dead job `id`, enqueued again, off the cached list (ADR-0045); returns it as the list had it. */
+export function removeRetriedDeadJob(api: Api, queryClient: QueryClient, id: string): DeadJob | undefined {
+  const listKey = deadJobsQueryOptions(api).queryKey;
+  const job = queryClient.getQueryData(listKey)?.pages.flatMap((page) => page.items).find((item) => item.id === id);
+  queryClient.setQueryData(listKey, (data) => data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.filter((item) => item.id !== id) })) });
+  return job;
 }
 
 export type DomainAction = Schemas["AdminDomainAction"];
@@ -165,17 +184,17 @@ export function domainActionsQueryOptions(api: Api, { filter, domain }: DomainAc
 }
 
 /** Whether a query is one of the lists of domain actions, of any filter or domain. */
-export function isDomainActionsQuery(queryKey: readonly unknown[]): boolean {
+function isDomainActionsQuery(queryKey: readonly unknown[]): boolean {
   return queryKey[1] === "/admin/domain_actions";
 }
 
 /** Fetches again every cached list of domain actions (refreshQueries), of every filter and domain: a new action is in each. */
-export function refreshDomainActionLists(queryClient: QueryClient): Promise<void> {
+function refreshDomainActionLists(queryClient: QueryClient): Promise<void> {
   return refreshQueries(queryClient, { predicate: (query) => isDomainActionsQuery(query.queryKey) });
 }
 
 /** Whether a list of domain actions keeps only those in effect, which a lifted action leaves. */
-export function isActiveOnlyQuery(queryKey: readonly unknown[]): boolean {
+function isActiveOnlyQuery(queryKey: readonly unknown[]): boolean {
   const params = queryKey[2];
   return isDomainActionsQuery(queryKey) && typeof params === "object" && params !== null && "active" in params && params.active === true;
 }
@@ -204,6 +223,45 @@ export function liftDomainActionMutation(api: Api) {
       return data;
     },
   };
+}
+
+/**
+ * Fetches again the cached lists of posts when a domain action of `kind` starts or ends: a limit or a suspension
+ * changes which posts of the domain's accounts the timelines and threads show.
+ */
+function refreshPostListsAfter(queryClient: QueryClient, kind: DomainActionKind): Promise<void> | undefined {
+  if (kind !== "limit" && kind !== "suspend") return undefined;
+  return refreshQueries(queryClient, { predicate: (query) => isPostListQuery(query.queryKey) });
+}
+
+/**
+ * What a new domain action changes (web-client.md S1, ADR-0045): it is in every list of domain actions, of the
+ * other tabs and domains too, and in the audit log, and a limit or a suspension changes the lists of posts.
+ * Resolves once they are fetched again.
+ */
+export async function cacheIssuedDomainAction(queryClient: QueryClient, action: DomainAction): Promise<void> {
+  await Promise.all([refreshDomainActionLists(queryClient), refreshAuditLog(queryClient), refreshPostListsAfter(queryClient, action.kind)]);
+}
+
+/**
+ * Fetches again what lifting a domain action changes beside the lists of domain actions: the audit log, which
+ * records the lift, and the lists of posts for a limit or a suspension. Resolves once they are fetched.
+ */
+export async function refreshLiftedDomainAction(queryClient: QueryClient, lifted: DomainAction): Promise<void> {
+  await Promise.all([refreshAuditLog(queryClient), refreshPostListsAfter(queryClient, lifted.kind)]);
+}
+
+/**
+ * Writes the lifted action from the answer into the cached lists of domain actions, which show it right
+ * (ADR-0045): those of the actions in effect drop it, the others show it lifted.
+ */
+export function cacheLiftedDomainAction(queryClient: QueryClient, lifted: DomainAction): void {
+  for (const query of queryClient.getQueryCache().findAll({ predicate: (query) => isDomainActionsQuery(query.queryKey) })) {
+    const keep = isActiveOnlyQuery(query.queryKey) ? [] : [lifted];
+    queryClient.setQueryData<InfiniteData<{ items: DomainAction[] }>>(query.queryKey, (data) =>
+      data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.flatMap((item) => (item.id === lifted.id ? keep : [item])) })) },
+    );
+  }
 }
 
 export type AuditEntry = Schemas["AdminAuditEntry"];

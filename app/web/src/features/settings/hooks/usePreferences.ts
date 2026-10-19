@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { type Preferences, preferencesQueryOptions, updatePreferencesMutation } from "../api/me";
+import { cacheSavedPreferences, type Preferences, preferencesQueryOptions, updatePreferencesMutation } from "../api/me";
 
 /** The preferences that the settings page changes, by their API name. */
 type PreferenceKey = "locale" | "time_zone" | "default_visibility" | "timeline_languages" | "email_moderator_notifications";
@@ -51,8 +51,9 @@ function usePreferenceControl<K extends PreferenceKey>(key: K, saved: Preference
   const t = useT();
   const mutation = useMutation({
     ...updatePreferencesMutation(api),
-    onSuccess: (preferences) => {
-      queryClient.setQueryData(preferencesQueryOptions(api).queryKey, preferences);
+    onSuccess: async (preferences, change) => {
+      // Saved once what the change shows elsewhere is in the cache (the control stays pending until then).
+      await cacheSavedPreferences(api, queryClient, preferences, change);
       announce(t("client:settings.saved"));
     },
   });

@@ -3,7 +3,7 @@
 // the lists of the accounts it follows and that follow it (FR-204, FR-301 to FR-303), and the follow
 // button that other features show next to an account. Routes and other features use it through this file
 // only (web-client.md A3).
-export { type Account, accountQueryOptions, followListQueryOptions, refreshRelationship, type RelationshipChange } from "./api/accounts";
+export { type Account, accountQueryOptions, followListQueryOptions, refreshRelationship } from "./api/accounts";
 export { updateCachedAccount } from "./api/cache";
 export { FollowListSkeleton } from "./components/FollowListSkeleton";
 export { FollowListView } from "./components/FollowListView";

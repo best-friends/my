@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useApi, useSessionStatus } from "../../../lib/auth/SessionProvider";
 import { shellQueryRetry } from "../../../lib/query";
 import { useAppLocale } from "../../../lib/locale";
-import { adoptTimeZone, preferencesQueryOptions } from "../api/me";
+import { adoptTimeZone, cacheSavedPreferences, preferencesQueryOptions } from "../api/me";
 import { deviceTimeZone } from "./timeZones";
 
 /**
@@ -39,10 +39,9 @@ export function useUserDisplaySettings(): void {
   useEffect(() => {
     if (!unchosen) return;
     const controller = new AbortController();
-    adoptTimeZone(api, deviceTimeZone(), controller.signal).then(
-      (preferences) => {
-        queryClient.setQueryData(preferencesQueryOptions(api).queryKey, preferences);
-      },
+    const zone = deviceTimeZone();
+    adoptTimeZone(api, zone, controller.signal).then(
+      (preferences) => cacheSavedPreferences(api, queryClient, preferences, { time_zone: zone }),
       () => {
         // Cancelled, or the server does not know the zone: dates stay in the device's time zone.
       },

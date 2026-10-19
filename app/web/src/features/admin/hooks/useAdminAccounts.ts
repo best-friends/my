@@ -4,7 +4,7 @@
 // and lifting the moderation actions on it. Failures of what the moderator does are toasts or stay in the
 // confirmation; a failure to load the results stays in their region (web-client.md E2, G16).
 import { useToast } from "@my/ui";
-import { type InfiniteData, useInfiniteQuery, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
@@ -25,12 +25,13 @@ import {
   adminAccountsQueryOptions,
   type AdminAccountState,
   adminAccountStates,
+  cacheLiftedAccountAction,
   liftAccountActionMutation,
-  refreshAdminAccount,
+  refreshLiftedAccountAction,
   revealAccountMutation,
 } from "../api/accounts";
 import { refreshAuditLog } from "../api/admin";
-import { type AccountAction, accountActionsQueryOptions } from "../api/reports";
+import type { AccountAction } from "../api/reports";
 import type { PagedList } from "./pagedList";
 
 export const adminAccountStateLabels: Readonly<Record<AdminAccountState, ClientMessageKey>> = {
@@ -271,17 +272,13 @@ export function useLiftAccountAction(accountId: string, onLifted: (action: Accou
   const mutation = useMutation({
     ...liftAccountActionMutation(api),
     onSuccess: async (lifted) => {
-      // The account's state and restrictions change, in its page and in the searches, and the audit log records
-      // the lift: the action is lifted once they are fetched again (the confirmation stays pending until then), so
-      // that going back to a search or the log shows them as they are now (refreshAdminAccount, refreshAuditLog).
+      // The action is lifted once what it changes is fetched again (the confirmation stays pending until then), so
+      // that going back to a search, the log or a timeline shows it as it is now (refreshLiftedAccountAction).
       // The row changes from the answer, after onLifted.
-      await Promise.all([refreshAdminAccount(queryClient, api, accountId, { actions: false }), refreshAuditLog(queryClient)]);
+      await refreshLiftedAccountAction(queryClient, api, accountId, lifted);
       setDialog((current) => current && { ...current, isOpen: false });
       onLifted(lifted);
-      queryClient.setQueryData<InfiniteData<{ items: AccountAction[] }>>(
-        accountActionsQueryOptions(api, accountId).queryKey,
-        (data) => data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.map((item) => (item.id === lifted.id ? lifted : item)) })) },
-      );
+      cacheLiftedAccountAction(api, queryClient, accountId, lifted);
     },
   });
   const isOpen = dialog?.isOpen ?? false;

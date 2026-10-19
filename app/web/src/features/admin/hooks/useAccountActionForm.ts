@@ -9,17 +9,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { refreshQueries } from "../../../lib/query";
-import { refreshAdminAccount } from "../api/accounts";
-import { refreshAuditLog } from "../api/admin";
-import {
-  type AccountAction,
-  type AccountActionCategory,
-  type AccountActionKind,
-  createAccountActionMutation,
-  refreshReportLists,
-  type NewAccountAction,
-} from "../api/reports";
+import { cacheIssuedAccountAction, refreshActedReports } from "../api/accounts";
+import { type AccountAction, type AccountActionCategory, type AccountActionKind, createAccountActionMutation, type NewAccountAction } from "../api/reports";
 
 /** The kinds of action, from the lightest to the heaviest, in the order of the form. */
 const accountActionKinds = [
@@ -128,8 +119,8 @@ export type AccountActionForm = {
 /**
  * The form of a moderation action on `target`. `onIssued(action)` is called once the server has taken it and the
  * account, its actions, the searches and the audit log (and, for an action that resolves a report, the lists of
- * reports) are fetched again, after the form is emptied; the caches of the reports and the deleted posts are
- * marked stale.
+ * reports, and for an action that changes what everyone sees of the account, its profile and the lists of posts)
+ * are fetched again, after the form is emptied; the reports and the posts acted on are fetched again after it.
  */
 export function useAccountActionForm(target: ActionTarget, onIssued: (action: AccountAction) => void): AccountActionForm {
   const api = useApi();
@@ -142,26 +133,15 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
   const create = useMutation({
     ...createAccountActionMutation(api),
     onSuccess: async (action, { accountId, body }) => {
-      // The account has a new action and maybe another state and restrictions (its page and the searches), and
-      // the report it follows from is resolved: it leaves the open tab and the counts. The audit log records the
-      // action. The action is done once they are fetched again (the form stays pending until then), so that going
-      // back to a search, the queue or the log shows them as they are now, not as they were (refreshAdminAccount,
-      // refreshReportLists, refreshAuditLog).
-      await Promise.all([
-        refreshAdminAccount(queryClient, api, accountId, { actions: true }),
-        body.report_id === undefined ? undefined : refreshReportLists(queryClient),
-        refreshAuditLog(queryClient),
-      ]);
+      // The action is done once what it changes is fetched again (the form stays pending until then), so that going
+      // back to a search, the queue, the log or a timeline shows it as it is now (cacheIssuedAccountAction).
+      await cacheIssuedAccountAction(queryClient, api, accountId, action, body.report_id);
       setConfirming(false);
       setDraft(emptyDraft(target));
       // Before the report's page reads the report again: the page moves focus once it shows the report resolved
       // (useFocusAfterChange), which must come after this call.
       onIssued(action);
-      // The report is resolved and the others on the account tell of one more action: every cached report is
-      // fetched again, also those no page shows now, which their route reads from the cache as they are
-      // (refreshQueries, web-client.md S1). Deleted posts are gone from the posts on screen.
-      void refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/reports/{id}" });
-      if (action.status_ids !== undefined) void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/statuses/{id}" });
+      refreshActedReports(queryClient, action);
     },
   });
   const chosenStatusIds = target.statusIds.filter((id) => !draft.leftOut.includes(id));
