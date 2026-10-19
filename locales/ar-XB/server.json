@@ -287,6 +287,38 @@
     "defaultMessage": "‮⅂ɐsʇs nuʇıʅ ɐ ɯopǝɹɐʇoɹ ʅıɟʇs ıʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.status.appeal_answer": {
+    "defaultMessage": "‮⊥ɥǝ ɯopǝɹɐʇoɹs' ɐusʍǝɹ:‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_hint": {
+    "defaultMessage": "‮{days,plural,one{⅄on ɔɐu ɐddǝɐʅ ouɔǝ, ʍıʇɥıu # pɐʎ. ∩d ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.} other{⅄on ɔɐu ɐddǝɐʅ ouɔǝ, ʍıʇɥıu # pɐʎs. ∩d ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_label": {
+    "defaultMessage": "‮∀ddǝɐʅ ʇɥıs ɐɔʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_not_sent": {
+    "defaultMessage": "‮⊥ɥǝ ɐddǝɐʅ ʍɐs uoʇ sǝuʇ. Ↄɥǝɔʞ ʇɥǝ ɟıǝʅp ɯɐɹʞǝp qǝʅoʍ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_sent": {
+    "defaultMessage": "‮⅄onɹ ɐddǝɐʅ ʍɐs sǝuʇ. ∀ ɯopǝɹɐʇoɹ ʍıʅʅ ɹǝʌıǝʍ ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_state": {
+    "defaultMessage": "‮{state,select,other{⅄on ɐddǝɐʅǝp ʇɥıs ɐɔʇıou.} overturned{∀ ɯopǝɹɐʇoɹ ɹǝʌıǝʍǝp ʎonɹ ɐddǝɐʅ ɐup ʅıɟʇǝp ʇɥǝ ɐɔʇıou.} pending{⅄onɹ ɐddǝɐʅ ıs ʍɐıʇıuƃ ɟoɹ ɐ ɯopǝɹɐʇoɹ's ɹǝʌıǝʍ.} upheld{∀ ɯopǝɹɐʇoɹ ɹǝʌıǝʍǝp ʎonɹ ɐddǝɐʅ ɐup ʞǝdʇ ʇɥǝ ɐɔʇıou.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_submit": {
+    "defaultMessage": "‮Sǝup ʇɥǝ ɐddǝɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_text_invalid": {
+    "defaultMessage": "‮Mɹıʇǝ ʎonɹ ɐddǝɐʅ ıu nd ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.status.pending": {
     "defaultMessage": "‮⅄onɹ ɹǝƃısʇɹɐʇıou ıs ʍɐıʇıuƃ ɟoɹ ɐ ɯopǝɹɐʇoɹ's ɐddɹoʌɐʅ. ⅄on ɔɐu sıƃu ıu, qnʇ ʎon ɔɐu nsǝ ʇɥǝ ɐdd ouʅʎ ɐɟʇǝɹ ıʇ ıs ɐddɹoʌǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
