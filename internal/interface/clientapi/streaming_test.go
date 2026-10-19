@@ -171,14 +171,7 @@ func TestStreamingBrokerUnavailable(t *testing.T) {
 	if got := relay.Len(); got != 0 {
 		t.Errorf("open subscriptions = %d, want 0", got)
 	}
-
-	// Once the broker answers, the stream opens.
-	broker.SetUnreachable(false)
-	srv := httptest.NewServer(e.h)
-	t.Cleanup(srv.Close)
-	if _, _, r := openStream(t.Context(), t, srv, "read"); readLine(t, r) != ": connected" {
-		t.Error("the stream did not open on a reachable broker")
-	}
+	// The recovery of the broker is Relay's (stream.TestRelayUnavailable, on a fake clock).
 }
 
 func TestStreamingLimitsStreamsPerAccount(t *testing.T) {

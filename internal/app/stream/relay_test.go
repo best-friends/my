@@ -89,6 +89,8 @@ func TestRelayUnavailable(t *testing.T) {
 		if waited := time.Since(start); waited != stream.DefaultReadyTimeout {
 			t.Errorf("Subscribe waited %s, want %s", waited, stream.DefaultReadyTimeout)
 		}
+		// A subscription that gives up leaves the start of the listener in progress, still
+		// waiting for the unreachable broker.
 		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 		defer cancel()
 		if _, err := r.Subscribe(ctx, "alice"); !errors.Is(err, context.DeadlineExceeded) {
@@ -99,12 +101,16 @@ func TestRelayUnavailable(t *testing.T) {
 			t.Errorf("Len = %d, want 0", got)
 		}
 
-		// Once the broker answers again, the next subscription listens.
-		time.Sleep(stream.DefaultReadyTimeout)
+		// Once the broker answers again, the next subscription listens, although it joins that
+		// start, which fails.
 		broker.SetUnreachable(false)
+		start = time.Now()
 		s, err := r.Subscribe(t.Context(), "alice")
 		if err != nil {
 			t.Fatalf("Subscribe on a reachable broker: %v", err)
+		}
+		if waited := time.Since(start); waited >= stream.DefaultReadyTimeout {
+			t.Errorf("Subscribe waited %s, want less than %s", waited, stream.DefaultReadyTimeout)
 		}
 		s.Close()
 	})

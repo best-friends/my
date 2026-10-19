@@ -271,7 +271,8 @@ func (r *Relay) receive(payload []byte) {
 }
 
 // Subscribe implements Subscriber: it starts the listener when none is open and waits for it,
-// up to ReadyTimeout.
+// up to ReadyTimeout. A subscription that joined a start already in progress, which may have
+// begun while the broker was unreachable, starts a fresh one once if that start fails.
 func (r *Relay) Subscribe(ctx context.Context, accountID string) (Subscription, error) {
 	r.mu.Lock()
 	if r.closed {
@@ -280,7 +281,7 @@ func (r *Relay) Subscribe(ctx context.Context, accountID string) (Subscription, 
 	}
 	r.active++
 	r.stopIdleLocked()
-	cur := r.cur
+	cur, joined := r.cur, r.cur != nil
 	if cur == nil {
 		cur = r.startLocked()
 	}
@@ -288,30 +289,47 @@ func (r *Relay) Subscribe(ctx context.Context, accountID string) (Subscription, 
 
 	timer := time.NewTimer(r.o.ReadyTimeout)
 	defer timer.Stop()
-	select {
-	case <-cur.ready:
-	case <-ctx.Done():
-		r.release()
-		return nil, ctx.Err()
-	case <-timer.C:
-		r.release()
-		return nil, fmt.Errorf("%w: the listener was not ready within %s", ErrUnavailable, r.o.ReadyTimeout)
-	}
-	if cur.err != nil {
-		r.release()
-		return nil, fmt.Errorf("%w: %w", ErrUnavailable, cur.err)
-	}
+	for {
+		select {
+		case <-cur.ready:
+		case <-ctx.Done():
+			r.release()
+			return nil, ctx.Err()
+		case <-timer.C:
+			r.release()
+			return nil, fmt.Errorf("%w: the listener was not ready within %s", ErrUnavailable, r.o.ReadyTimeout)
+		}
 
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	switch {
-	case r.closed:
-		r.releaseLocked()
-		return nil, ErrClosed
-	case r.cur != cur:
-		r.releaseLocked()
-		return nil, fmt.Errorf("%w: the listener broke", ErrUnavailable)
+		r.mu.Lock()
+		var failure error
+		switch {
+		case r.closed:
+			r.releaseLocked()
+			r.mu.Unlock()
+			return nil, ErrClosed
+		case cur.err != nil:
+			failure = cur.err
+		case r.cur != cur:
+			failure = errors.New("the listener broke")
+		}
+		if failure == nil {
+			break // r.mu stays locked for the subscription below
+		}
+		if !joined {
+			r.releaseLocked()
+			r.mu.Unlock()
+			return nil, fmt.Errorf("%w: %w", ErrUnavailable, failure)
+		}
+		// Retry once with a start of this subscription's own.
+		joined = false
+		if r.cur == nil || r.cur == cur {
+			cur = r.startLocked()
+		} else {
+			cur = r.cur
+		}
+		r.mu.Unlock()
 	}
+	defer r.mu.Unlock()
 	s, err := r.hub.Subscribe(ctx, accountID)
 	if err != nil {
 		r.releaseLocked()
