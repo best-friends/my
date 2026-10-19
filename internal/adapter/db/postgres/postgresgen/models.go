@@ -432,6 +432,7 @@ type Notification struct {
 	ModerationActionID *string
 	ReportID           *string
 	SubjectUserID      *string
+	SeveranceID        *string
 	DedupeKey          string
 	CreatedAt          time.Time
 }

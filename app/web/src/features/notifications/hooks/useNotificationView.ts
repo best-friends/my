@@ -5,7 +5,7 @@ import type { ClientMessageKey } from "../../../lib/i18n";
 import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { statusPath } from "../../status";
-import type { NotificationAccount, NotificationStatus, NotificationType } from "../api/notifications";
+import type { Notification, NotificationAccount, NotificationStatus, NotificationType } from "../api/notifications";
 import type { NotificationGroup } from "./groupNotifications";
 
 /** An account in a row: its name in the UI (the username when it has no display name), profile page, and avatar URL. */
@@ -34,6 +34,12 @@ export type NotificationView = {
   post: { href: string; text: string; lang: string | undefined; contentWarning: string | null } | null;
   /** The account to offer a follow back to: the follower of a follow notification, else null. */
   followBack: NotificationAccount | null;
+  /**
+   * What a `relationships_severed` tells, for `{domain}`, `{followers}`, and `{following}` in its sentence:
+   * the suspended server (null for an account, which is the actor), and how many followers and follows the
+   * user lost; null for the other types.
+   */
+  severance: { domain: string | null; followers: number; following: number } | null;
 };
 
 const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
@@ -48,6 +54,7 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   report_resolved: "client:notifications.type.report_resolved",
   admin_report: "client:notifications.type.admin_report",
   admin_sign_up: "client:notifications.type.admin_sign_up",
+  relationships_severed: "client:notifications.type.relationships_severed",
 };
 
 /** The sentences of a group of the types that rows group (groupNotifications). */
@@ -82,11 +89,28 @@ function postOf(status: NotificationStatus): NonNullable<NotificationView["post"
   };
 }
 
+/**
+ * The sentence and the values of a `relationships_severed`: the server or the account that the moderators
+ * suspended, with the counts; without its severance, the sentence that says only that follows ended.
+ */
+function severanceOf(notification: Notification): Pick<NotificationView, "sentence" | "severance"> {
+  const severance = notification.relationship_severance;
+  const fallback = { sentence: sentences.relationships_severed, severance: null };
+  if (severance === undefined) return fallback;
+  const counts = { followers: severance.followers_lost, following: severance.following_lost };
+  if (severance.kind === "domain_suspension") {
+    return { sentence: "client:notifications.severed.domain", severance: { domain: severance.domain ?? "", ...counts } };
+  }
+  if (notification.account === undefined) return fallback;
+  return { sentence: "client:notifications.severed.account", severance: { domain: null, ...counts } };
+}
+
 /** Returns what the row of `group` shows: one notification, or the favourites or the boosts of one post. */
 export function useNotificationView(group: NotificationGroup): NotificationView {
   const [notification] = group.notifications;
   const time = useTimeView(notification.created_at);
   const { account, status } = notification;
+  const severed = notification.type === "relationships_severed" ? severanceOf(notification) : null;
   // The same account can favourite a post again after taking it back: it counts once.
   const seen = new Set(account === undefined ? [] : [account.id]);
   const others: NotificationActor[] = [];
@@ -97,11 +121,12 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
   }
   const groupSentence = groupSentences[notification.type];
   return {
-    sentence: others.length > 0 && groupSentence !== undefined ? groupSentence : sentences[notification.type],
+    sentence: severed?.sentence ?? (others.length > 0 && groupSentence !== undefined ? groupSentence : sentences[notification.type]),
     actor: account === undefined ? null : actorOf(account),
     others,
     time,
     post: status === undefined ? null : postOf(status),
     followBack: notification.type === "follow" && account !== undefined ? account : null,
+    severance: severed?.severance ?? null,
   };
 }

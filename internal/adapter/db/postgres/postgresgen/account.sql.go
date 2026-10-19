@@ -558,6 +558,41 @@ func (q *Queries) ListAccountKeys(ctx context.Context, accountID string) ([]Acco
 	return items, nil
 }
 
+const listAccountsOnDomain = `-- name: ListAccountsOnDomain :many
+SELECT id FROM accounts
+WHERE id = ANY($1::text[])
+  AND (domain = $2
+    OR (length(domain) > length($2) AND substr(domain, length(domain) - length($2)) = '.' || $2))
+ORDER BY id
+`
+
+type ListAccountsOnDomainParams struct {
+	Ids    []string
+	Domain string
+}
+
+// ListAccountsOnDomain returns, in ID order, the accounts among ids that are on domain or one
+// of its subdomains.
+func (q *Queries) ListAccountsOnDomain(ctx context.Context, arg ListAccountsOnDomainParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listAccountsOnDomain, arg.Ids, arg.Domain)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLifecycleEvents = `-- name: ListLifecycleEvents :many
 SELECT id, account_id, kind, initiated_by, moderation_action_id, deletion_due_at, occurred_at
 FROM account_lifecycle_events ORDER BY account_id, id
@@ -613,6 +648,37 @@ func (q *Queries) ListLifecycleStates(ctx context.Context) ([]AccountLifecycleSt
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLocalAccountIDsAfter = `-- name: ListLocalAccountIDsAfter :many
+SELECT account_id FROM local_accounts WHERE account_id > $1::text ORDER BY account_id LIMIT $2
+`
+
+type ListLocalAccountIDsAfterParams struct {
+	After     string
+	PageLimit int32
+}
+
+// ListLocalAccountIDsAfter pages the local accounts in ID order after the ID after ("" for the
+// first page).
+func (q *Queries) ListLocalAccountIDsAfter(ctx context.Context, arg ListLocalAccountIDsAfterParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listLocalAccountIDsAfter, arg.After, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var account_id string
+		if err := rows.Scan(&account_id); err != nil {
+			return nil, err
+		}
+		items = append(items, account_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

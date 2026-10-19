@@ -96,6 +96,20 @@ SELECT id, uri, domain, actor_type, created_at FROM accounts WHERE uri = ?;
 -- name: AnyAccountOnDomain :one
 SELECT EXISTS (SELECT 1 FROM accounts WHERE domain = sqlc.arg(domain) AND id IN (SELECT value FROM json_each(sqlc.arg(ids)))) AS found;
 
+-- ListAccountsOnDomain returns, in ID order, the accounts among ids that are on domain or one
+-- of its subdomains. The ids are a JSON array.
+-- name: ListAccountsOnDomain :many
+SELECT id FROM accounts
+WHERE id IN (SELECT value FROM json_each(sqlc.arg(ids)))
+  AND (domain = sqlc.arg(domain)
+    OR (length(domain) > length(sqlc.arg(domain)) AND substr(domain, length(domain) - length(sqlc.arg(domain))) = '.' || sqlc.arg(domain)))
+ORDER BY id;
+
+-- ListLocalAccountIDsAfter pages the local accounts in ID order after the ID after ("" for the
+-- first page).
+-- name: ListLocalAccountIDsAfter :many
+SELECT account_id FROM local_accounts WHERE account_id > CAST(sqlc.arg(after) AS TEXT) ORDER BY account_id LIMIT sqlc.arg(page_limit);
+
 -- name: GetLocalAccount :one
 SELECT account_id, user_id, username, username_normalized FROM local_accounts WHERE account_id = ?;
 

@@ -2249,6 +2249,24 @@ export interface components {
             moderation_action?: components["schemas"]["ModerationAction"];
             /** @description The report that an `admin_report` is about. */
             report_id?: components["schemas"]["Id"];
+            relationship_severance?: components["schemas"]["RelationshipSeverance"];
+        };
+        /**
+         * @description The follows that a `relationships_severed` tells of: the user lost them when the
+         *     moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+         *     account (`account_suspension`, the notification's `account` is the account). Both
+         *     directions end, follow requests too, and lifting the suspension does not restore them;
+         *     the counts are of the accepted follows.
+         */
+        RelationshipSeverance: {
+            /** @enum {string} */
+            kind: "domain_suspension" | "account_suspension";
+            /** @description The suspended server of a `domain_suspension`; omitted otherwise. */
+            domain?: string;
+            /** @description The accounts that followed the user and no longer do. */
+            followers_lost: number;
+            /** @description The accounts that the user followed and no longer does. */
+            following_lost: number;
         };
         /** @description How far the authenticated user has read the notifications. */
         NotificationMarker: {
@@ -2278,14 +2296,16 @@ export interface components {
          *     `report_resolved` also comes from the instance: its `report` is the user's report that
          *     the moderators resolved, without how they resolved it. It is sent once per report, even
          *     when the report is reopened and resolved again.
-         *     about. `moderation_notice` comes from the instance and has no `account`.
+         *     `relationships_severed` also comes from the instance: its `relationship_severance` tells
+         *     how many follows the user lost when the moderators suspended a server or a remote
+         *     account, whose `account` it carries for an account. It is sent once per suspension.
          *     The moderator notifications come from the instance too: `admin_report` (an account
          *     that had no open report was reported; `report_id` is the report) goes to the users
          *     with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
          *     approval; `account` is the new user's account) to those with `manage_accounts`.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed";
         /** @description A new status. */
         CreateStatusRequest: {
             text: components["schemas"]["StatusText"];

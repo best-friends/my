@@ -408,6 +408,35 @@ func (r *AccountRepository) AnyAccountOnDomain(ctx context.Context, domain strin
 	return found, nil
 }
 
+// AccountsOnDomain implements account.Repository.
+func (r *AccountRepository) AccountsOnDomain(ctx context.Context, tx uow.Tx, domain string, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	list, err := jsonList(ids)
+	if err != nil {
+		return nil, err
+	}
+	out, err := q.ListAccountsOnDomain(ctx, sqlitegen.ListAccountsOnDomainParams{Domain: domain, Ids: list})
+	if err != nil {
+		return nil, wrap(err, "list accounts on "+domain)
+	}
+	return out, nil
+}
+
+// ListLocalAccountIDs implements account.Repository.
+func (r *AccountRepository) ListLocalAccountIDs(ctx context.Context, after string, limit int) ([]string, error) {
+	out, err := r.db.reader().ListLocalAccountIDsAfter(ctx, sqlitegen.ListLocalAccountIDsAfterParams{After: after, PageLimit: int64(limit)})
+	if err != nil {
+		return nil, wrap(err, "list local account ids")
+	}
+	return out, nil
+}
+
 // FindInstanceActor implements account.Repository.
 func (r *AccountRepository) FindInstanceActor(ctx context.Context) (account.Account, error) {
 	row, err := r.db.reader().GetInstanceActor(ctx)
