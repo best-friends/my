@@ -78,6 +78,11 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
   {
+    // The classic scripts that the shell loads as they are (web/public/theme.js) run in the browser.
+    files: ["web/public/**/*.js"],
+    languageOptions: { globals: globals.browser },
+  },
+  {
     files: ["web/vite.config.ts", "web/vite-plugins/**/*.ts", "ui/*.config.ts", "ui/.storybook/main.ts", "ui/scripts/**/*.ts"],
     languageOptions: { globals: globals.node },
   },

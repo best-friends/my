@@ -447,7 +447,7 @@ func TestPreviewEscaping(t *testing.T) {
 	for _, path := range []string{"/@alice", "/@alice/" + statusID, "/@alice/" + cw.Post.Status.ID} {
 		body := get(mux, path, nil).Body.String()
 		if strings.Contains(body, "<script>alert") || strings.Contains(body, "pwned\">") || strings.Contains(body, "<!--") ||
-			strings.Count(body, "<script") != 2 || strings.Count(body, "</title>") != 1 || strings.Count(body, `property="og:title"`) != 1 {
+			strings.Count(body, "<script") != 3 || strings.Count(body, "</title>") != 1 || strings.Count(body, `property="og:title"`) != 1 {
 			t.Fatalf("GET %s: the attack escaped its context:\n%s", path, body)
 		}
 		got := metas(t, body)

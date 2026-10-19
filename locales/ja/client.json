@@ -3720,12 +3720,12 @@
     "description": "Text at the top of the preferences page."
   },
   "settings.preferences.summary": {
-    "defaultMessage": "表示言語・タイムゾーン・投稿の既定の公開範囲・タイムラインの言語",
+    "defaultMessage": "表示言語・タイムゾーン・テーマ・投稿の既定の公開範囲・タイムラインの言語",
     "description": "Description of the preferences page in the list of settings pages."
   },
   "settings.preferences.title": {
     "defaultMessage": "表示と投稿",
-    "description": "Heading and document title of the settings page with the language, time zone, default visibility and timeline languages."
+    "description": "Heading and document title of the settings page with the language, time zone, theme, default visibility and timeline languages."
   },
   "settings.profile.avatar": {
     "defaultMessage": "アイコン",
@@ -3854,6 +3854,26 @@
   "settings.saved": {
     "defaultMessage": "保存しました",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
+  },
+  "settings.theme.dark": {
+    "defaultMessage": "ダーク",
+    "description": "Option of the color theme radio group: always the dark theme."
+  },
+  "settings.theme.description": {
+    "defaultMessage": "選ぶとすぐに切り替わり、このブラウザに保存されます。",
+    "description": "Help text of the color theme radio group on the preferences page."
+  },
+  "settings.theme.label": {
+    "defaultMessage": "テーマ",
+    "description": "Label of the radio group that chooses the app's color theme, on the preferences page and in the navigation menu's sheet."
+  },
+  "settings.theme.light": {
+    "defaultMessage": "ライト",
+    "description": "Option of the color theme radio group: always the light theme."
+  },
+  "settings.theme.system": {
+    "defaultMessage": "システムに合わせる",
+    "description": "Option of the color theme radio group: follow the device's light or dark setting."
   },
   "settings.time_zone.device_differs": {
     "defaultMessage": "この端末のタイムゾーンは設定と違います：{zone}",

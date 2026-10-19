@@ -86,6 +86,8 @@ The CSP allows no inline script, and the HTML shell is shared and cached across 
 ([ADR-0028](../../docs/adr/0028-html-shell-link-previews-and-pwa.md)), so the server cannot write a per-viewer attribute (from a cookie) into it.
 The choice is therefore applied by a same-origin, render-blocking classic script (`<script src>` in `<head>`, without `defer`,
 `async` or `type="module"`) that reads it from storage and sets `document.documentElement.dataset.theme`.
+In `app/web` that script is `public/theme.js` (served at `/theme.js`, loaded before the stylesheets), and `src/lib/theme.ts`
+changes the choice and the attribute together; both use the localStorage key `my:display:theme`.
 
 ## Typography
 

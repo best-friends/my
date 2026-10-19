@@ -3720,7 +3720,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.summary": {
-    "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ, ŧīḿḗḗ ẑǿǿƞḗḗ, ẇħǿǿ şḗḗḗḗş ẏǿǿŭŭř ƥǿǿşŧş ƀẏ ḓḗḗƒȧȧŭŭŀŧ, ȧȧƞḓ ŧħḗḗ ŀȧȧƞɠŭŭȧȧɠḗḗş ǿǿƒ ẏǿǿŭŭř ŧīḿḗḗŀīƞḗḗş]",
+    "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ, ŧīḿḗḗ ẑǿǿƞḗḗ, ŧħḗḗḿḗḗ, ẇħǿǿ şḗḗḗḗş ẏǿǿŭŭř ƥǿǿşŧş ƀẏ ḓḗḗƒȧȧŭŭŀŧ, ȧȧƞḓ ŧħḗḗ ŀȧȧƞɠŭŭȧȧɠḗḗş ǿǿƒ ẏǿǿŭŭř ŧīḿḗḗŀīƞḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.title": {
@@ -3853,6 +3853,26 @@
   },
   "settings.saved": {
     "defaultMessage": "[Şȧȧṽḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.dark": {
+    "defaultMessage": "[Ḓȧȧřķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.description": {
+    "defaultMessage": "[Ȧƥƥŀīḗḗş ȧȧŧ ǿǿƞƈḗḗ ȧȧƞḓ īş ķḗḗƥŧ ǿǿƞ ŧħīş ƀřǿǿẇşḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.label": {
+    "defaultMessage": "[Ŧħḗḗḿḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.light": {
+    "defaultMessage": "[Ŀīɠħŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.system": {
+    "defaultMessage": "[Ḿȧȧŧƈħ ŧħḗḗ şẏşŧḗḗḿ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.time_zone.description": {

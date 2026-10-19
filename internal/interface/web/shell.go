@@ -29,6 +29,8 @@ type runtimeConfig struct {
 type shellData struct {
 	Lang, Dir, Title, ThemeColor string
 	HasIcon, HasAppleTouchIcon   bool
+	// HasThemeScript reports whether the build has theme.js, which applies the stored color theme.
+	HasThemeScript bool
 	// ViteClient is the Vite client script of a dev server, empty in production.
 	ViteClient string
 	Entry      entryTags
@@ -93,6 +95,9 @@ const shellSource = `<!doctype html>
 {{- end}}
 {{- if .HasAppleTouchIcon}}
 <link rel="apple-touch-icon" href="/` + appleTouchIconPath + `">
+{{- end}}
+{{- if .HasThemeScript}}
+<script src="/` + themeScriptPath + `"></script>
 {{- end}}
 {{- range .Entry.Stylesheet}}
 <link rel="stylesheet" href="{{.}}">
