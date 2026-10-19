@@ -67,7 +67,7 @@ main の取り消しの割合と main の E2E は、文脈ごとのジョブ分�
   main の run は E2E のため約 30 分かかるので、そのあいだのコミットの CI は丸ごと消える。`web-e2e` の `cancel-in-progress: true` は走っている E2E を一度も取り消していない（取り消されるのは待っている run の側）。
 - main のコミットは Merge Queue で検査したマージグループの head と同じコミットである（push の `headSha` が merge group の `headSha` と一致する）。main への push で `check` の文脈を回し直しても、同じ木を 2 度検査しているだけである。
 - PR の p90 は runner の待ちで延びる。`changes` のあと最後に始まるジョブの待ちは、中央値 75 秒、p90 598 秒。
-  Free プランの同時実行は 20 ジョブ（[Actions の上限](https://docs.github.com/en/actions/reference/limits)、2026-10-19 確認）で、PR の run は 1 回で 15 ジョブ前後、Merge Queue は最大 5 グループを同時に組む（`max_entries_to_build: 5`）。
+  Free プランの同時実行は 20 ジョブ（[Actions の上限](https://docs.github.com/en/actions/reference/limits)、2026-10-19 確認）で、PR の run は 1 回で 15 ジョブ前後、測った期間の Merge Queue は最大 5 グループを同時に組む設定（`max_entries_to_build: 5`）だった。
 - `web-check` の内訳（merge group の 1 回）は tsc 13 秒、ESLint 76 秒、knip 3 秒、Vite のビルド 10 秒、Vitest 129 秒。直列なので `web` が PR と Merge Queue の最長のジョブになる。
 - main の E2E（`matrix: pr`）の最新の 1 回は 1792 テストを 2 worker で 18.0 分。`make web-e2e` のうちビルド（Vite と `bin/my`）は約 16 秒で、Playwright の前のセットアップ（コンテナ、make、Bun、Node.js、Go）が約 74 秒。
   nightly の全体（`matrix: full`）は 10-18 に 3280 テストで 35.8 分だった。いまのテスト数（1 プロジェクト約 224 テスト × 20 プロジェクト、約 4480 テスト）では、1 ジョブで約 45〜49 分になる。
@@ -136,7 +136,7 @@ E2E:
 | Dockerfile と `.tool-versions` の一致 | `docker-check` | （docker）必須 | （docker）必須 | — | — | `.tool-versions` と `Dockerfile` を別々の PR が変えると重ねて壊れる。6 秒 |
 | シェルスクリプト | shellcheck | （shell）必須 | — | — | — | ファイル単位 |
 | `@my/ui` のスクリーンショットと axe | `ui-test` | （ui）必須 | — | （ui） | — | 基準画像は変えた PR の中で直す必要がある。重ねて画像が変わるのは稀で、main で見つければ足りる |
-| イメージのビルドと Compose の起動（amd64） | `docker-smoke` | （docker）必須 | — | ○（docs だけの push を除く） | ○ | Go や Web のコードの変更でイメージが壊れることは稀。Dockerfile・`deploy/` の変更は PR で止める |
+| イメージのビルドと Compose の起動（amd64） | `docker-smoke` | （docker、`cmd/`・`internal/platform`）必須 | — | ○（docs だけの push を除く） | ○ | Dockerfile・`deploy/` の変更と、設定の読み込みや起動を組み立てる `cmd/`・`internal/platform` の変更は PR で止める（起動の失敗は Compose で初めて見つかることがある）。ほかの Go や Web のコードの変更でイメージが壊れることは稀 |
 | arm64 のイメージ（QEMU） | `docker build --platform linux/arm64` | （docker）必須 | — | — | ○ | Go の arm64 のクロスビルドは `CGO_ENABLED=0` で決まり、イメージの差は Dockerfile の変更でしか生まれない |
 | Web の主要な流れ（E2E、部分集合） | `web-e2e`（`matrix: pr`） | 手動（`workflow_dispatch`） | — | ○（シャード分割） | — | ADR-0040 のとおり。待ちの長い検査を毎マージに入れない |
 | Web の全体（E2E、全幅 × 全ロケール） | `web-e2e`（`matrix: full`） | — | — | — | ○（シャード分割） | ADR-0015・ADR-0027 のとおり |
@@ -144,6 +144,10 @@ E2E:
 | PR が使う Go と Bun のキャッシュ | キャッシュの保存 | — | — | ○ | — | PR はキャッシュを復元するだけで、保存は main で行う |
 
 - `schema`・`ui-test`・`docker-smoke` は、PR で動くときは `check` に入れる（いまは入っておらず、落ちてもマージできる）。
+- E2E は PR で自動では回さない（パスやラベルによる起動も持たない）。PR のブランチで確かめたいときは `workflow_dispatch` で手で回す。
+- `docker-smoke` を PR で回す範囲は、Docker の文脈に `cmd/` と `internal/platform` の変更を加えたものにする。`scripts/changed-contexts.sh` はこの 2 つを go の文脈に入れるので、`docker-smoke` の起動はパスで別に判定する。arm64 のイメージのビルドは Docker の文脈だけのまま。
+- Merge Queue が同時に組むグループは最大 2（`max_entries_to_build: 2`）、1 回にマージするのは最大 5（`max_entries_to_merge: 5`）にする。グループが増えると同時 20 ジョブを使い切り、PR の待ちが延びるからである。ルールセットは `.github/rulesets/protect-main.json` に置く。
+- nightly の schedule は 18:00 UTC のままにする。GitHub の混雑で 2 時間ほど遅れて起動することがある（19:47〜20:10 UTC に起動していた）が、main に入ったあと 1 日以内に退行を見つける（判断基準 4）には足りる。
 - Merge Queue で回す範囲は PR より狭いが、Merge Queue に入るのは PR の `check` を通ったものだけなので、PR だけで回す検査も main に入る前に一度は通っている。
 - main への push では Merge Queue で通した検査を回し直さない。main のコミットは Merge Queue で検査したマージグループの head そのものだからである。
 - main の run は新しい push が来たら取り消す（ADR-0040 の意図のとおり、最後のコミットを検査する）。E2E が main で落ちたときの扱いは ADR-0040 のまま。
@@ -194,7 +198,7 @@ report（1 ジョブ、if: always()）: blob を集めて playwright merge-repor
 ### 見込みの効果
 
 - Merge Queue: `ui-test`（204 秒）・`docker-smoke`（179 秒）・PR だけの検査がなくなり、`web` を 2 つに分けるので、最長のジョブは `go`（約 180 秒）になる。`check` まで約 271 秒が約 200 秒に、runner の消費は約 1117 秒が約 750 秒になる。
-- PR: `docker-smoke` は Docker の文脈を変えたときだけになり、`web` の分割で最長のジョブが約 220 秒から約 150〜180 秒になる。
+- PR: `docker-smoke` は Docker の文脈か `cmd/`・`internal/platform` を変えたときだけになり、`web` の分割で最長のジョブが約 220 秒から約 150〜180 秒になる。
 - main: `check` の文脈を回し直さないので、runner の消費は E2E（シャード込みで約 1560 秒）と `docker-smoke`・キャッシュの保存が中心になる。E2E は約 8〜9 分で終わり、新しい push で取り消されるので、待っている run がジョブなしで消えることはなくなる。
 
 ### 覆す条件
@@ -226,7 +230,7 @@ report（1 ジョブ、if: always()）: blob を集めて playwright merge-repor
   - #560: Merge Queue の `scope: queue` で PR だけの検査を飛ばし、`web` を静的検査とテストの 2 ジョブに分ける
   - #561: `main.yml` を作り、main への push で回すものをマージ後の検査とキャッシュの保存だけにする
   - #562: `web-e2e.yml` をビルド・シャード・レポートに分ける
-  - #563: arm64 のイメージのビルドを Docker の文脈を変えた PR と nightly に移し、`docker-smoke` を PR では Docker の文脈で絞る
+  - #563: arm64 のイメージのビルドを Docker の文脈を変えた PR と nightly に移し、`docker-smoke` を PR では Docker の文脈と `cmd/`・`internal/platform` で絞る
   - #564: CONTRIBUTING.md・AGENTS.md・`docs/agents/workflow.md` の CI の説明を新しい振り分けに合わせる
 
 ## Pros and Cons of the Options（詳細比較・任意）
@@ -245,8 +249,4 @@ E1（1 ジョブのまま）の利点は runner の消費が最も少ないこ�
 
 ## Open Questions / 要検証
 
-- Merge Queue の `max_entries_to_build`（いま 5）を下げて、同時に組むグループの数を減らすか。グループが増えると同時 20 ジョブを使い切り、PR の待ちが延びる
-- PR で E2E を手動以外でも回すか（たとえば `app/web/e2e/` を変えた PR だけ、ラベルを付けた PR だけ）
-- `docker-smoke` を Go の `cmd/` や `internal/platform` の変更でも PR で回すか（設定の読み込みや起動の失敗は Compose で初めて見つかることがある）
-- nightly の schedule は 18:00 UTC の指定に対して 19:47〜20:10 UTC に起動していた（GitHub の混雑による遅れ）。時刻をずらすか
 - E2E のシャードの worker 数を 3 にしたときの速さと、フレークの増減
