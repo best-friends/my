@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Real-time updates of the home timeline through the whole app (web-client.md S10, Y7, T4; FR-207): the
 // layout's event stream, MSW as the server's GET /streaming, and the "N new posts" button.
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
 import type { Status } from "./api/timelines";
@@ -71,6 +71,39 @@ describe("new posts in the home timeline", () => {
 
     expect(await screen.findByRole("button", { name: "1 new post" })).toBeInTheDocument();
     expect(within(feed).getAllByRole("article")).toHaveLength(1);
+  });
+
+  test("that arrive while another page is open are on the timeline when it opens again, without the button", async () => {
+    let homeFetches = 0;
+    const streams = streamingServer();
+    server.use(
+      resumableSession(),
+      streams.handler,
+      http.get(`${apiBase}/timelines/home`, () => {
+        homeFetches += 1;
+        return HttpResponse.json(statusPage([timelineStatusFixture]));
+      }),
+    );
+    const { router, queryClient } = await openHome();
+    await waitFor(() => {
+      expect(streams.connections()).toBe(1);
+    });
+    await act(() => router.navigate({ to: "/local" }));
+    await screen.findByRole("feed", { name: "Local timeline" });
+
+    // The cached home timeline is not stale yet, so opening it again does not fetch it.
+    streams.current().send("update", newStatus(1));
+    await waitFor(() => {
+      expect(queryClient.getQueryData(["get", "/timelines/home", "pages"])).toMatchObject({ pages: [{ items: [{ id: newStatus(1).id }, {}] }] });
+    });
+    await act(() => router.navigate({ to: "/home" }));
+
+    const feed = await screen.findByRole("feed", { name: "Home" });
+    const articles = await within(feed).findAllByRole("article");
+    expect(articles).toHaveLength(2);
+    expect(articles[0]).toHaveAccessibleDescription("New post 1");
+    expect(screen.queryByRole("button", { name: /new post/ })).not.toBeInTheDocument();
+    expect(homeFetches).toBe(1);
   });
 });
 
