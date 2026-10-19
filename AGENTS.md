@@ -47,7 +47,12 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 3. Before every commit, run the checks of the contexts you touched (`make go-check`, `make web-check`, ...) or
    `make check-changed`; the CI `check` gate runs every affected context and must pass. Run the full `make check`
    when the change touches shared configuration.
-4. Open a PR using the template, with `Closes #N` and the acceptance criteria checked.
+4. Open a PR using the template, with `Closes #N` and the acceptance criteria checked, and wait for its CI to pass.
+   Pull requests run the `check` gate ([ADR-0047](docs/adr/0047-ci-protection-layers.md)) but not the web E2E: for a change to the web
+   client, run `make web-e2e` or `gh workflow run web-e2e.yml --ref <branch>`.
+   Do not merge or queue the PR yourself: the orchestrator or the decider queues it with `gh pr merge --auto`, and the merge queue
+   runs `check` again on top of the latest `main` before merging. Merge `main` into the branch only when the PR conflicts or the
+   queue drops it. Pushes to `main` and the nightly run the slower suites; the table of what runs where is in the workflow.
 5. If you need a decision that no Accepted ADR covers: small → state the assumption in the PR; large → draft a *Proposed* ADR
    (`make adr-new TITLE=... SLUG=...`), comment on the issue, add `agent:blocked`, and stop.
 
@@ -125,8 +130,8 @@ These come from Accepted ADRs and are binding.
 | `make db-check` [`DB_DIALECT=...`] | Reset the DB, apply the schema, and fail if a diff remains (CI runs it for both dialects) |
 | `make db-up` / `db-down` | Start / remove the dev PostgreSQL container (`my` and dev DB `my_dev`, bootstrapped) |
 | `make docker-build` [`VERSION=...`] | Build the server image `my:<version>` (`Dockerfile` target `app`; target `schema` is the Atlas image) |
-| `make docker-smoke` | Build and start `deploy/docker/compose.yaml`, create an admin, check WebFinger / Actor / NodeInfo, tear down (CI job `docker-smoke`) |
-| `make federation-live` [`FEDERATION_LIVE_FLAGS=...`] | Live interoperability scenarios against Mastodon and GoToSocial in `deploy/docker/federation-live` (private CA, container DNS); logs and captured activities go to `.tmp/federation-live/out`. Not part of `make check` (CI job `federation-live`, nightly) |
+| `make docker-smoke` | Build and start `deploy/docker/compose.yaml`, create an admin, check WebFinger / Actor / NodeInfo, tear down (CI job `docker-smoke`: pull requests that touch the docker context, `cmd/`, or `internal/platform/`, pushes to main that change more than docs, and nightly) |
+| `make federation-live` [`FEDERATION_LIVE_FLAGS=...`] | Live interoperability scenarios against Mastodon, GoToSocial, and Misskey in `deploy/docker/federation-live` (private CA, container DNS); logs and captured activities go to `.tmp/federation-live/out`. Not part of `make check` (CI job `federation-live`, nightly) |
 | `make i18n-gen` | Regenerate pseudo-locales, Go / TS typed accessors, and parity fixtures from `locales/` (commit the result) |
 | `make i18n-check` | Catalog lint (ICU syntax, placeholders, plural categories, shared subset), stale generated files, npm licenses, TS runtime tests |
 | `make ui-check` | `app/ui`: `ui-typecheck` (incremental tsc) and `ui-unit-test` (Vitest in jsdom). A change to `app/ui` also runs `web-check` |
@@ -135,7 +140,7 @@ These come from Accepted ADRs and are binding.
 | `make web-e2e` [`E2E_MATRIX=full`] | Build `app/web` and `bin/my` and run the Playwright E2E (axe, horizontal scroll, ARIA snapshots) against `vite preview`, and for the server-rendered sign-in / sign-up / consent pages against a real `my serve` on SQLite (`app/web/e2e/server.ts`): the default subset of the width × locale matrix, or all of it (CI workflow `web-e2e.yml` on pushes to main only, one build tested by 4 Playwright shards, ADR-0040 / ADR-0047 — run it locally before a PR that touches the web client, or on the PR's branch with `gh workflow run web-e2e.yml --ref <branch>`; nightly runs `full` on 8 shards). `make web-e2e-install` downloads the browser for local runs |
 | `make web-install` | Install the client workspace dependencies from `app/bun.lock` |
 | `make storybook` / `storybook-build` | Start / build the `@my/ui` Storybook (locale and theme toolbars) |
-| `make ui-test` | Run every `@my/ui` story in Chromium: axe violations and screenshots at 3 container widths × light / dark × LTR / RTL. Needs a browser, so not in `make check`; CI job `ui-test` runs it in the pinned Playwright image (`PLAYWRIGHT_IMAGE` in the `Makefile`). Screenshots match only there: use `make ui-test-docker` locally |
+| `make ui-test` | Run every `@my/ui` story in Chromium: axe violations and screenshots at 3 container widths × light / dark × LTR / RTL. Needs a browser, so not in `make check`; CI job `ui-test` runs it on pull requests and pushes to main that touch `app/ui` (not in the merge queue), in the pinned Playwright image (`PLAYWRIGHT_IMAGE` in the `Makefile`). Screenshots match only there: use `make ui-test-docker` locally |
 | `make ui-snapshots-update` | Regenerate the `@my/ui` screenshot baselines in the pinned Playwright image (Docker); never commit screenshots made outside it |
 
 Toolchain versions (Go, golangci-lint, Bun, shellcheck, Node.js) are pinned in `.tool-versions` (asdf / mise).
