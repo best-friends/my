@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Button, EmptyState, Feed, Link, VisuallyHidden } from "@my/ui";
+import type { ReactNode } from "react";
 import { useT } from "../../../lib/i18n";
 import type { Timeline } from "../api/timelines";
 import { useTimeline } from "../hooks/useTimeline";
@@ -9,20 +10,31 @@ export type TimelineFeedProps = {
   timeline: Timeline;
   /** The ID of the page heading that names the timeline. */
   "aria-labelledby": string;
+  /**
+   * What the timeline holds of a source that has more elsewhere, and the link to it (a remote account's
+   * profile, ADR-0044): shown above the posts, and in the empty state when there are none.
+   */
+  origin?: { notice: string; link: ReactNode };
 };
 
 /**
  * A timeline as a feed (web-client.md Y6) with its older pages loaded as the reader nears the end, or an
  * empty state. The first page comes from the route loader; render it inside the route that loads it.
  */
-export function TimelineFeed({ timeline, "aria-labelledby": labelledBy }: TimelineFeedProps) {
+export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin }: TimelineFeedProps) {
   const t = useT();
   const { statuses, hasMore, isLoadingMore, loadMore, loadMoreError } = useTimeline(timeline);
 
-  if (statuses.length === 0 && !hasMore) return <TimelineEmpty timeline={timeline} />;
+  if (statuses.length === 0 && !hasMore) return <TimelineEmpty timeline={timeline} origin={origin} />;
 
   return (
     <div className="flex flex-col">
+      {origin !== undefined && (
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border px-4 py-3 text-sm text-fg-muted">
+          <p>{origin.notice}</p>
+          <p>{origin.link}</p>
+        </div>
+      )}
       {/* The feed role has no keyboard convention, so its keys are told before it (Feed's documentation). */}
       <VisuallyHidden>
         <p>{t("client:timeline.keyboard_hint")}</p>
@@ -51,7 +63,7 @@ export function TimelineFeed({ timeline, "aria-labelledby": labelledBy }: Timeli
   );
 }
 
-function TimelineEmpty({ timeline }: { timeline: Timeline }) {
+function TimelineEmpty({ timeline, origin }: { timeline: Timeline; origin: TimelineFeedProps["origin"] }) {
   const t = useT();
   switch (timeline.kind) {
     case "home":
@@ -79,6 +91,12 @@ function TimelineEmpty({ timeline }: { timeline: Timeline }) {
       );
     case "account":
       // A profile's timeline sits under the level-two heading of its tab.
-      return <EmptyState headingLevel={3} heading={t("client:timeline.empty.account.heading")} />;
+      return (
+        <EmptyState
+          headingLevel={3}
+          heading={t("client:timeline.empty.account.heading")}
+          {...(origin !== undefined && { description: origin.notice, action: origin.link })}
+        />
+      );
   }
 }
