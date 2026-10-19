@@ -32,7 +32,7 @@ const cachePrivate = "private, max-age=60"
 func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (GetInstanceResponseObject, error) {
 	var settings instance.Settings
 	out := Instance{Domain: s.o.Host, Name: s.o.Host, Version: s.o.SoftwareVersion, SourceUrl: s.o.SourceURL}
-	locale := s.Localizer(ctx).Locale()
+	locale := s.Localizer(ctx).RequestedLocale()
 	if s.o.Instance != nil {
 		var err error
 		if settings, err = s.o.Instance.Settings(ctx); err != nil {
