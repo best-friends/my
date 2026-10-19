@@ -125,8 +125,11 @@ func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 		h.renderSignUp(w, r, http.StatusUnprocessableEntity, p)
 		return
 	}
+	// The new account's locale is the browser's language that the page is shown in, never a
+	// pseudo-locale; with none, the identity module gives it the instance's default locale.
+	locale, _ := h.o.Locales.AcceptedLocale(r.Header.Get("Accept-Language"))
 	signedUp, err := h.o.Identity.SignUp(r.Context(), appidentity.SignUpInput{
-		Username: f.Username, Email: f.Email, Password: password, Locale: p.Lang,
+		Username: f.Username, Email: f.Email, Password: password, Locale: locale,
 		InviteCode: f.InviteCode, Reason: f.Reason,
 		IP: clientIP(r), UserAgent: r.UserAgent(), CurrentToken: cookieValue(r, CookieSession),
 	})

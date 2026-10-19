@@ -5,6 +5,7 @@ package authpages_test
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -126,6 +127,30 @@ func TestSignUpSignsTheNewUserIn(t *testing.T) {
 	// The registration page sends a signed-in browser to that page too.
 	if w := b.do(http.MethodGet, authpages.PathSignUp, nil, nil); w.Code != http.StatusSeeOther || w.Header().Get("Location") != authpages.PathSignIn {
 		t.Errorf("signed-in GET sign_up = %d → %q", w.Code, w.Header().Get("Location"))
+	}
+}
+
+// TestSignUpTakesTheBrowserLocale checks that the new account's locale is the supported locale
+// that best matches Accept-Language, and empty (the instance default) when none does.
+func TestSignUpTakesTheBrowserLocale(t *testing.T) {
+	id := newFakeIdentity()
+	h := newServer(t, id)
+	for i, tc := range []struct{ acceptLanguage, want string }{
+		{"ja-JP,ja;q=0.9,en;q=0.8", "ja"},
+		{"en-US,en;q=0.9", "en"},
+		{"fr-FR, de;q=0.5", ""},
+		{"", ""},
+	} {
+		b := newBrowser(t, h)
+		name := "user" + strconv.Itoa(i)
+		form := signUpForm(b, "username", name, "email", name+"@example.com", "password", "correct horse")
+		w := b.do(http.MethodPost, authpages.PathSignUp, form, map[string]string{"Accept-Language": tc.acceptLanguage})
+		if w.Code != http.StatusSeeOther || len(id.signUps) != i+1 {
+			t.Fatalf("Accept-Language %q: POST sign_up = %d with %d sign-ups\n%s", tc.acceptLanguage, w.Code, len(id.signUps), w.Body.String())
+		}
+		if got := id.signUps[i].Locale; got != tc.want {
+			t.Errorf("Accept-Language %q: SignUp locale = %q, want %q", tc.acceptLanguage, got, tc.want)
+		}
 	}
 }
 

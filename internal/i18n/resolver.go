@@ -43,6 +43,20 @@ func (r *Resolver) Locale(ctx context.Context, acceptLanguage string) string {
 	return SourceLocale
 }
 
+// AcceptedLocale returns the locale with a catalog that best matches the Accept-Language
+// header value acceptLanguage, and whether one matches: the Accept-Language step of Locale on
+// its own, leaving out the pseudo-locales. It picks the saved locale of a new account
+// (FR-007), so that the account keeps the language its registration page was shown in; when
+// nothing matches, the account takes the instance's default locale instead.
+func (r *Resolver) AcceptedLocale(acceptLanguage string) (string, bool) {
+	for _, tag := range ParseAcceptLanguage(acceptLanguage) {
+		if l, ok := r.Bundle.match([]string{tag}); ok && !isPseudo(l) {
+			return l, true
+		}
+	}
+	return "", false
+}
+
 // Localizer returns the Localizer of Locale(ctx, acceptLanguage).
 func (r *Resolver) Localizer(ctx context.Context, acceptLanguage string) *Localizer {
 	return r.Bundle.Localizer(r.Locale(ctx, acceptLanguage))
