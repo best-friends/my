@@ -87,15 +87,47 @@ func (r *IdentityRepository) ReplaceTimelineLanguages(ctx context.Context, tx uo
 	return nil
 }
 
+// LockPreferences implements identity.PreferencesRepository with SELECT ... FOR UPDATE on
+// user_preferences: every writer of a user's preferences updates that row, so they wait for tx.
+func (r *IdentityRepository) LockPreferences(ctx context.Context, tx uow.Tx, userID string) (appidentity.UserPreferences, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return appidentity.UserPreferences{}, err
+	}
+	row, err := q.GetUserPreferencesForUpdate(ctx, userID)
+	if err != nil {
+		return appidentity.UserPreferences{}, notFound(err, appidentity.ErrNotFound, "preferences of "+userID)
+	}
+	p, err := userPreferencesFrom(ctx, q, row)
+	if err != nil {
+		return appidentity.UserPreferences{}, err
+	}
+	langs, err := q.ListUserTimelineLanguages(ctx, userID)
+	if err != nil {
+		return appidentity.UserPreferences{}, wrap(err, "list timeline languages")
+	}
+	return appidentity.UserPreferences{Preferences: p, TimelineLanguages: langs}, nil
+}
+
 // FindPreferences implements identity.PreferencesRepository.
 func (r *IdentityRepository) FindPreferences(ctx context.Context, userID string) (identity.Preferences, error) {
-	row, err := r.db.reader().GetUserPreferences(ctx, userID)
+	q := r.db.reader()
+	row, err := q.GetUserPreferences(ctx, userID)
 	if err != nil {
 		return identity.Preferences{}, notFound(err, appidentity.ErrNotFound, "preferences of "+userID)
 	}
-	tz, chosen, err := r.timeZone(ctx, userID)
-	if err != nil {
-		return identity.Preferences{}, err
+	return userPreferencesFrom(ctx, q, row)
+}
+
+// userPreferencesFrom returns the preferences of row with the time zone the user chose, or
+// identity.DefaultTimeZone and TimeZoneChosen false when they have chosen none.
+func userPreferencesFrom(ctx context.Context, q *postgresgen.Queries, row postgresgen.UserPreference) (identity.Preferences, error) {
+	tz, chosen := identity.DefaultTimeZone, false
+	switch got, err := q.GetUserTimeZone(ctx, row.UserID); {
+	case err == nil:
+		tz, chosen = got, true
+	case !errors.Is(err, pgx.ErrNoRows):
+		return identity.Preferences{}, wrap(err, "get time zone")
 	}
 	return identity.Preferences{
 		UserID:                      row.UserID,
@@ -108,19 +140,6 @@ func (r *IdentityRepository) FindPreferences(ctx context.Context, userID string)
 		EmailModeratorNotifications: row.EmailModeratorNotifications,
 		UpdatedAt:                   utc(row.UpdatedAt),
 	}, nil
-}
-
-// timeZone returns the time zone the user chose, or identity.DefaultTimeZone and false when they
-// have chosen none.
-func (r *IdentityRepository) timeZone(ctx context.Context, userID string) (string, bool, error) {
-	tz, err := r.db.reader().GetUserTimeZone(ctx, userID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return identity.DefaultTimeZone, false, nil
-	}
-	if err != nil {
-		return "", false, wrap(err, "get time zone")
-	}
-	return tz, true, nil
 }
 
 // ListTimelineLanguages implements identity.PreferencesRepository.
