@@ -79,6 +79,8 @@ const post: Schemas["Status"] = {
 };
 
 const reportId = "0192f0c4-7a8e-7000-8000-0000000c0002";
+/** Another open report, on the same target, that stays open. */
+const otherReportId = "0192f0c4-7a8e-7000-8000-0000000c0001";
 
 function reportOf(id: string, overrides: Partial<Schemas["AdminReportDetail"]> = {}): Schemas["AdminReportDetail"] {
   return {
@@ -180,11 +182,18 @@ function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
 }
 
+/**
+ * How long the lists of reports take once an action has resolved one: a slow server, so that a queue shown from
+ * its cache before the list comes again would show the resolved report (#464).
+ */
+const slowListMs = 1500;
+
 /** Plays the API of a signed-in moderator with every admin permission; returns the account actions taken. */
 async function moderatorServer(page: Page) {
   const locale = test.info().project.use.locale ?? "en";
-  let reports = [reportOf(reportId), reportOf("0192f0c4-7a8e-7000-8000-0000000c0001", { filed_at: "2026-10-15T09:00:00Z", comment: "" })];
+  let reports = [reportOf(reportId), reportOf(otherReportId, { filed_at: "2026-10-15T09:00:00Z", comment: "" })];
   let actions = [warning];
+  let slowLists = false;
   const issued: string[] = [];
   const adminAccount = (): Schemas["AdminAccountDetail"] => ({
     id: target.id,
@@ -218,6 +227,7 @@ async function moderatorServer(page: Page) {
       return json(route, { open_reports: reports.filter((item) => item.state === "open").length, pending_registrations: 1, pending_appeals: 1 });
     }
     if (key === "GET /admin/reports") {
+      if (slowLists) await new Promise((resolve) => setTimeout(resolve, slowListMs));
       const state = url.searchParams.get("state");
       return json(route, { items: reports.filter((item) => state === null || item.state === state) });
     }
@@ -246,6 +256,7 @@ async function moderatorServer(page: Page) {
       };
       actions = [action, ...actions];
       reports = reports.map((item) => (item.id === body.report_id ? { ...item, state: "resolved", outcome: "actioned", state_changed_at: "2026-10-17T00:00:00Z" } : item));
+      slowLists = true;
       return json(route, action);
     }
     if (key === "GET /admin/appeals") {
@@ -395,10 +406,13 @@ test.describe("handling a report with the keyboard alone", () => {
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
-    // Back on the queue, the report is gone from the open ones.
+    // Back on the queue, the report is gone from the open ones as soon as the queue shows, though the server
+    // answers the lists slowly now: the queue is not shown from a cache older than the action.
     await tabTo(page, main.locator('a[href="/admin/reports"]'), { backward: true });
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/admin\/reports$/);
+    await expect(queue.locator(`a[href="/admin/reports/${otherReportId}"]`)).toBeVisible();
+    expect(await queue.locator(`a[href="/admin/reports/${reportId}"]`).count()).toBe(0);
     await expect(queue.locator('a[href^="/admin/reports/"]')).toHaveCount(1);
     await expect(queue.locator(`a[href="/admin/reports/${reportId}"]`)).toHaveCount(0);
     await expectPageReached(page, makeAxeBuilder);

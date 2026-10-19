@@ -84,12 +84,31 @@ export function accountActionsQueryOptions(api: Api, accountId: string) {
 }
 
 /**
- * Puts `report`, as an operation answered it, into the cache, and marks stale what it changes: the lists of
- * reports (it may move between the tabs) and the moderators' counts of open reports.
+ * Fetches again, at once, what a change of a report changes: the lists of reports (it may move between the tabs)
+ * and the moderators' counts of open reports, even those no page shows now (`refetchType: "all"`). A route loads
+ * its list from the cache as it is (`staleTime: "static"`, web-client.md S7), so a list that was only marked
+ * stale would show the report as it was until its refetch on mount ends: a resolved report in the open tab.
+ * Resolves once every fetch has ended; one that fails leaves its list stale, to be fetched again when shown.
  */
-export function storeReport(queryClient: QueryClient, api: Api, report: ReportDetail): void {
+export function refreshReportLists(queryClient: QueryClient): Promise<void> {
+  return queryClient.invalidateQueries({
+    predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts",
+    refetchType: "all",
+  });
+}
+
+/**
+ * Fetches again the lists that a change of a report changes (refreshReportLists), then puts `report`, as the
+ * operation answered it, into the cache: the page of the report shows the change once the queue has it too.
+ */
+export async function storeReport(queryClient: QueryClient, api: Api, report: ReportDetail): Promise<void> {
+  await refreshReportLists(queryClient);
   queryClient.setQueryData(reportQueryOptions(api, report.id).queryKey, report);
-  void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts" });
+}
+
+/** Puts `report` after a new note into the cache. A note changes no row of the lists of reports. */
+export function storeReportNote(queryClient: QueryClient, api: Api, report: ReportDetail): void {
+  queryClient.setQueryData(reportQueryOptions(api, report.id).queryKey, report);
 }
 
 /** What can be done to a report that takes no input. */

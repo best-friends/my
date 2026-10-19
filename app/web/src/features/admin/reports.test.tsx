@@ -3,7 +3,7 @@
 // manage_reports (and manage_accounts for actions) lists the reports, takes one, writes a note, and handles it
 // by an action on its target, which resolves it, or without one, with MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import { accountFixture, otherAccountFixture, remoteAccountFixture, type Schemas, statusFixture, viewerFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
@@ -333,6 +333,46 @@ describe("a report's page", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { level: 2, name: "Handling" })).toHaveFocus();
     });
+
+    await user.click(screen.getByRole("link", { name: "Back to the reports" }));
+    expect(await screen.findByRole("link", { name: `Report on ${isolated("@carol@remote.example")}` })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: `Report on ${isolated("@bob")}` })).not.toBeInTheDocument();
+  });
+
+  // #464: the queue, shown from its cache as the route loads it, must not show the report as it was before the
+  // action while a slow server answers the list again.
+  test("back on the queue after an action, the resolved report is gone at once, however slowly the lists come", async () => {
+    const api = reportsServer([spam, older]);
+    const { user } = await renderApp({ path: "/admin/reports" });
+    await user.click(await screen.findByRole("link", { name: `Report on ${isolated("@bob")}` }));
+    const handling = region("Handling");
+    await user.click(await within(handling).findByRole("radio", { name: "Limit" }));
+    // From now on every list of reports takes a while; the handler falls through to reportsServer's.
+    server.use(
+      http.get(`${apiBase}/admin/reports`, async () => {
+        await delay(300);
+      }),
+    );
+    await user.click(within(handling).getByRole("button", { name: "Take action and resolve" }));
+    expect(await within(handling).findByText("Action taken (Limit). The report is resolved.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Back to the reports" }));
+    expect(await screen.findByRole("link", { name: `Report on ${isolated("@carol@remote.example")}` })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: `Report on ${isolated("@bob")}` })).not.toBeInTheDocument();
+    expect(api.lists).toEqual(["limit=40&state=open", "limit=40&state=open"]);
+  });
+
+  test("back on the queue after resolving without an action, the report is gone at once, however slowly the lists come", async () => {
+    reportsServer([spam, older]);
+    const { user } = await renderApp({ path: "/admin/reports" });
+    await user.click(await screen.findByRole("link", { name: `Report on ${isolated("@bob")}` }));
+    server.use(
+      http.get(`${apiBase}/admin/reports`, async () => {
+        await delay(300);
+      }),
+    );
+    await user.click(await screen.findByRole("button", { name: "Resolve without action" }));
+    expect(await within(region("Handling")).findByText("The report is resolved: No action.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Back to the reports" }));
     expect(await screen.findByRole("link", { name: `Report on ${isolated("@carol@remote.example")}` })).toBeInTheDocument();

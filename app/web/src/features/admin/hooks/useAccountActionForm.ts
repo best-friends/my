@@ -14,6 +14,7 @@ import {
   type AccountActionCategory,
   type AccountActionKind,
   createAccountActionMutation,
+  refreshReportLists,
   type NewAccountAction,
 } from "../api/reports";
 
@@ -122,8 +123,9 @@ export type AccountActionForm = {
 };
 
 /**
- * The form of a moderation action on `target`. `onIssued(action)` is called once the server has taken it, after
- * the form is emptied; the caches of the account's actions, the report and the lists are marked stale.
+ * The form of a moderation action on `target`. `onIssued(action)` is called once the server has taken it and,
+ * for an action that resolves a report, the lists of reports are fetched again, after the form is emptied; the
+ * caches of the account and its actions, the reports and the deleted posts are marked stale.
  */
 export function useAccountActionForm(target: ActionTarget, onIssued: (action: AccountAction) => void): AccountActionForm {
   const api = useApi();
@@ -135,18 +137,24 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
   const kinds = accountActionKinds.filter((kind) => (target.remote ? remoteKinds.includes(kind) : true) && (target.statusIds.length > 0 || !postKinds.includes(kind)));
   const create = useMutation({
     ...createAccountActionMutation(api),
-    onSuccess: (action) => {
+    onSuccess: async (action, { body }) => {
+      // The report it follows from is resolved: it leaves the open tab and the counts. The action is done once
+      // the lists are fetched again (the form stays pending until then), so that going back to the queue shows
+      // them as they are now, not the report as it was (refreshReportLists).
+      if (body.report_id !== undefined) await refreshReportLists(queryClient);
       setConfirming(false);
       setDraft(emptyDraft(target));
+      // Before the report's page reads the report again: the page moves focus once it shows the report resolved
+      // (useFocusAfterChange), which must come after this call.
       onIssued(action);
       // The account has a new action and maybe another state and restrictions (its page and the searches), the
-      // report is resolved (it leaves the open tab), the counts change, and deleted posts are gone.
+      // report is resolved and the others on the account tell of one more action, and deleted posts are gone.
       void queryClient.invalidateQueries({
         predicate: (query) => {
           const path = query.queryKey[1];
           if (typeof path !== "string") return false;
           if (path === "/statuses/{id}") return action.status_ids !== undefined;
-          return path.startsWith("/admin/reports") || path.startsWith("/admin/accounts") || path === "/admin/counts";
+          return path === "/admin/reports/{id}" || path.startsWith("/admin/accounts");
         },
       });
     },
