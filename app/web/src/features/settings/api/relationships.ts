@@ -3,14 +3,16 @@
 // infinite queries over the API's keyset pagination: each page's `next_cursor` is the `cursor` of the next.
 // openapi-react-query has no infiniteQueryOptions, so these are TanStack Query's, on the same client.
 // Their keys start like the client's own ([method, path]), so invalidating ["get", path] reaches them.
-import { infiniteQueryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
+import { refreshRelationship } from "../../profile";
 
 type Schemas = components["schemas"];
 
 export type Account = Schemas["Account"];
 export type MutedAccount = Schemas["MutedAccount"];
+export type Relationship = Schemas["Relationship"];
 
 /** The page size of the lists. */
 const pageSize = 40;
@@ -80,6 +82,48 @@ export function accountActionMutation(api: Api, path: AccountActionPath) {
       return data;
     },
   };
+}
+
+/** The changes that the lists make, each to the viewer's relationship with one account of a list. */
+export type ListChange = "unblock" | "unmute" | "accept" | "reject";
+
+/**
+ * Takes the account `id` off the cached list that `change` acts on: the blocks, the mutes, or the follow
+ * requests. The screen moves focus to the next row once it is gone.
+ */
+export function removeFromList(queryClient: QueryClient, api: Api, change: ListChange, id: string): void {
+  switch (change) {
+    case "unblock":
+      queryClient.setQueryData(blocksQueryOptions(api).queryKey, (data) =>
+        data && { ...data, pages: data.pages.map((page) => ({ ...page, accounts: page.accounts.filter((account) => account.id !== id) })) },
+      );
+      return;
+    case "unmute":
+      queryClient.setQueryData(mutesQueryOptions(api).queryKey, (data) =>
+        data && { ...data, pages: data.pages.map((page) => ({ ...page, mutes: page.mutes.filter((mute) => mute.account.id !== id) })) },
+      );
+      return;
+    case "accept":
+    case "reject":
+      queryClient.setQueryData(followRequestsQueryOptions(api).queryKey, (data) =>
+        data && { ...data, pages: data.pages.map((page) => ({ ...page, accounts: page.accounts.filter((account) => account.id !== id) })) },
+      );
+  }
+}
+
+/**
+ * What a change from the lists changes elsewhere (web-client.md S1, ADR-0045): the relationship as the server
+ * answered it goes into every cached answer of GET /accounts/relationships that holds the account (the
+ * profile's buttons, the new-post form's mentions), and an unblock, an unmute or an accepted request fetches
+ * again what refreshRelationship names (the follow counts and lists, the lists of posts). A rejected request
+ * changes no list and no count. Resolves once that is done; the list itself is left to removeFromList.
+ */
+export async function cacheListChange(queryClient: QueryClient, change: ListChange, relationship: Relationship, viewerId: string): Promise<void> {
+  queryClient.setQueriesData<Relationship[]>(
+    { predicate: (query) => query.queryKey[0] === "get" && query.queryKey[1] === "/accounts/relationships" && query.state.data !== undefined },
+    (data) => (data?.some((item) => item.id === relationship.id) ? data.map((item) => (item.id === relationship.id ? relationship : item)) : data),
+  );
+  if (change !== "reject") await refreshRelationship(queryClient, change, relationship.id, viewerId);
 }
 
 function pageQuery(cursor: string | undefined): { limit: number; cursor?: string } {

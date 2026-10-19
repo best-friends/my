@@ -11,8 +11,18 @@ import { errorMessage } from "../../../lib/errors";
 import { type Translate, useT } from "../../../lib/i18n";
 import { useReply } from "../../compose";
 import { useViewer } from "../../session";
-import { forPost, hasRelation, relationCount, updateCachedStatuses, withRelation, withRelationFrom } from "../api/cache";
-import { deleteStatus, type Relation, setRelation, type Status, statusContextQueryOptions, statusQueryOptions, statusShareUrl } from "../api/status";
+import { hasRelation, relationCount } from "../api/cache";
+import {
+  cacheDeletedStatus,
+  cacheRelationAnswer,
+  cacheRelationPending,
+  deleteStatus,
+  type Relation,
+  restoreRelation,
+  setRelation,
+  type Status,
+  statusShareUrl,
+} from "../api/status";
 
 /** One toggle of the action bar. */
 export type RelationToggle = {
@@ -65,7 +75,7 @@ function canOfferBoost(visibility: Status["visibility"], isAuthor: boolean): boo
 }
 
 /** The mutation of one relation of post `post`, serialized per post and relation so that the last press wins. */
-function useRelation(post: Status, relation: Relation): RelationToggle {
+function useRelation(post: Status, relation: Relation, viewerId: string): RelationToggle {
   const api = useApi();
   const t = useT();
   const queryClient = useQueryClient();
@@ -77,22 +87,15 @@ function useRelation(post: Status, relation: Relation): RelationToggle {
     // One request at a time per post and relation, in the order pressed (TanStack Query, "Mutation Scopes").
     scope: { id: `status:${post.id}:${relation}` },
     mutationFn: ({ on }: { on: boolean }) => setRelation(api, relation, post.id, on),
-    onMutate: async ({ on }) => {
-      // A refetch of the post that is under way would overwrite the optimistic state with the old one.
-      await queryClient.cancelQueries({ queryKey: statusQueryOptions(api, post.id).queryKey });
-      updateCachedStatuses(queryClient, forPost(post.id, (status) => withRelation(status, relation, on)));
-    },
+    onMutate: ({ on }) => cacheRelationPending(api, queryClient, post.id, relation, on),
     onSuccess: (answer, { on }) => {
-      // The server's count includes others' actions. Take it only from the last press, so that an answer
-      // to an earlier press does not undo a later one that is still on its way.
-      if (queryClient.isMutating({ mutationKey, exact: true }) <= 1) {
-        const from = answer.boost ?? answer;
-        updateCachedStatuses(queryClient, forPost(post.id, (status) => withRelationFrom(status, relation, from)));
-      }
+      // The last press is the only one still running.
+      const last = queryClient.isMutating({ mutationKey, exact: true }) <= 1;
+      cacheRelationAnswer(queryClient, post.id, relation, answer, last, viewerId);
       announce(relationMessage(t, relation, on));
     },
     onError: (error, { on }) => {
-      updateCachedStatuses(queryClient, forPost(post.id, (status) => withRelation(status, relation, !on)));
+      restoreRelation(queryClient, post.id, relation, on);
       toast.show({ message: t("client:status.action.failed", { reason: errorMessage(error) }), tone: "danger" });
     },
   });
@@ -118,20 +121,14 @@ export function useStatusActions(status: Status): StatusActions | null {
   const toast = useToast();
   const viewer = useViewer();
   const reply = useReply();
-  const boost = useRelation(post, "boost");
-  const favourite = useRelation(post, "favourite");
-  const bookmark = useRelation(post, "bookmark");
+  const viewerId = viewer.status === "signed-in" ? viewer.account.id : "";
+  const boost = useRelation(post, "boost", viewerId);
+  const favourite = useRelation(post, "favourite", viewerId);
+  const bookmark = useRelation(post, "bookmark", viewerId);
   const remove = useMutation({
     mutationFn: () => deleteStatus(api, post.id),
     onSuccess: () => {
-      // Its own query and thread go; every list drops it and the boosts of it; its parent has one reply less.
-      queryClient.removeQueries({ queryKey: statusQueryOptions(api, post.id).queryKey, exact: true });
-      queryClient.removeQueries({ queryKey: statusContextQueryOptions(api, post.id).queryKey, exact: true });
-      updateCachedStatuses(queryClient, forPost(post.id, () => null));
-      const parentId = post.in_reply_to_id;
-      if (parentId !== undefined) {
-        updateCachedStatuses(queryClient, forPost(parentId, (parent) => ({ ...parent, replies_count: Math.max(0, parent.replies_count - 1) })));
-      }
+      cacheDeletedStatus(api, queryClient, post);
       toast.show({ message: t("client:status.delete.done"), tone: "success" });
     },
     onError: (error) => {

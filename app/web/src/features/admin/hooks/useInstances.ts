@@ -8,13 +8,13 @@ import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import {
   type AvailabilityEvent,
+  cacheMarkedAvailable,
   availabilityEventsQueryOptions,
   type InstanceFilter,
   type InstanceHealth,
   instanceQueryOptions,
   instancesQueryOptions,
   markAvailableMutation,
-  refreshInstanceLists,
 } from "../api/admin";
 import { type PagedList, toPagedList } from "./pagedList";
 
@@ -46,13 +46,10 @@ export function useInstance(domain: string): InstanceView {
   const mark = useMutation({
     ...markAvailableMutation(api),
     onSuccess: async (next) => {
-      // The lists show the server's state: they are marked stale, so that going back to a list fetches it again
-      // and shows the server as it is now (refreshInstanceLists, web-client.md S7).
-      await refreshInstanceLists(queryClient);
-      queryClient.setQueryData(instanceQueryOptions(api, domain).queryKey, next);
+      // The lists show the server's state: it is marked available once they are fetched again (the button stays
+      // pending until then), so that going back to a list shows the server as it is now (cacheMarkedAvailable).
+      await cacheMarkedAvailable(api, queryClient, domain, next);
       announce(t("client:admin.instance.marked_available", { domain }));
-      // The history, on this page, has a new event.
-      void queryClient.invalidateQueries({ queryKey: availabilityEventsQueryOptions(api, domain).queryKey });
     },
     // The server keeps its state; the failure is shown and the button stays (web-client.md E2).
     onError: (error) => {

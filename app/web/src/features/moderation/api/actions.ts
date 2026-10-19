@@ -2,7 +2,7 @@
 // The queries and the mutation of the user's own account status (FR-715, FR-707): the moderation actions on
 // the user's account, newest first, and appealing one. The lists follow the API's keyset pagination as
 // infinite queries whose keys end with "pages" (web-client.md §10).
-import { infiniteQueryOptions } from "@tanstack/react-query";
+import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
 import { ApiError } from "../../../lib/errors";
@@ -41,7 +41,7 @@ export function ownActionsQueryOptions(api: Api, scope: ActionScope) {
 }
 
 /** Whether a query is one of the lists of the user's own actions, which an appeal changes. */
-export function isOwnActionsQuery(queryKey: readonly unknown[]): boolean {
+function isOwnActionsQuery(queryKey: readonly unknown[]): boolean {
   return queryKey[0] === "get" && queryKey[1] === "/moderation/actions";
 }
 
@@ -62,6 +62,31 @@ export function appealActionMutation(api: Api) {
       return data;
     },
   };
+}
+
+/** Replaces the action of `action.id` in the pages of a list of actions. */
+function replaceAction(data: InfiniteData<{ items: ModerationAction[] }> | undefined, action: ModerationAction) {
+  if (data === undefined) return data;
+  return { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.map((item) => (item.id === action.id ? action : item)) })) };
+}
+
+/**
+ * Puts the action as the server answered its appeal, with the appeal, into both cached lists of the user's own
+ * actions (ADR-0045): the form gives way to the appeal's state on the page at once.
+ */
+export function cacheAppealedAction(api: Api, queryClient: QueryClient, action: ModerationAction): void {
+  for (const scope of ["active", "all"] as const) {
+    queryClient.setQueryData(ownActionsQueryOptions(api, scope).queryKey, (data) => replaceAction(data, action));
+  }
+}
+
+/**
+ * Marks stale both lists of the user's own actions (active and all) after an appeal that the action's state
+ * refused (isStaleAppealError): the one on screen is fetched again at once, the other when the page shows it
+ * (web-client.md S1, S7).
+ */
+export function refreshOwnActions(queryClient: QueryClient): Promise<void> {
+  return queryClient.invalidateQueries({ predicate: (query) => isOwnActionsQuery(query.queryKey) });
 }
 
 /**

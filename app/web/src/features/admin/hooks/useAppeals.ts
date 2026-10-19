@@ -17,7 +17,7 @@ import {
   type AppealState,
   decideAppealMutation,
   isAppealDecided,
-  refreshAppealLists,
+  refreshDecidedAppeal,
   storeAppeal,
 } from "../api/appeals";
 import { type PagedList, toPagedList } from "./pagedList";
@@ -104,11 +104,7 @@ export function useAppealReview(id: string, onDecided: () => void): AppealReview
     onError: async (error) => {
       if (!isAppealDecided(error)) return;
       // The other moderator's decision changed the lists as well as the appeal.
-      const accountId = queryClient.getQueryData<Appeal>(appealQueryOptions(api, id).queryKey)?.account_id;
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: appealQueryOptions(api, id).queryKey }),
-        accountId === undefined ? undefined : refreshAppealLists(queryClient, api, accountId),
-      ]);
+      await refreshDecidedAppeal(queryClient, api, id);
       setDialog((current) => current && { ...current, isOpen: false });
       setStatus(t("client:admin.appeal.already_decided"));
       onDecided();

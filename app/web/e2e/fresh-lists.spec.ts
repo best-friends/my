@@ -57,6 +57,33 @@ async function signIn(page: Page, email: string, password: string): Promise<void
   await expect(pageHeading(page)).toHaveText(message("home.title"));
 }
 
+/** Creates a user new to the test (a random name) with `my admin create`, and signs in as it. */
+async function newUser(page: Page, prefix: string): Promise<string> {
+  const username = `${prefix}_${randomBytes(4).toString("hex")}`;
+  const email = `${username}@example.com`;
+  const password = `e2e-password-${username}`;
+  runMy(["admin", "create", "-username", username, "-email", email], `${password}\n`);
+  await signIn(page, email, password);
+  return username;
+}
+
+/** The Authorization header that the app sends with its next request to the client API. */
+function nextAuthorization(page: Page): Promise<string> {
+  return page
+    .waitForRequest((request) => new URL(request.url()).pathname.startsWith("/api/") && request.headers()["authorization"]?.startsWith("Bearer ") === true)
+    .then((request) => request.headers()["authorization"] ?? "");
+}
+
+/** Makes every GET of the client API but the stream take `latency` ms more. */
+async function slowDown(page: Page): Promise<void> {
+  await page.route("**/api/v1/**", async (route) => {
+    if (route.request().method() === "GET" && !route.request().url().includes("/streaming")) {
+      await new Promise((resolve) => setTimeout(resolve, latency));
+    }
+    await route.continue();
+  });
+}
+
 /** Posts `text` from the new-post form (a sheet below 1280 px, the side panel from there) and waits until it is done. */
 async function post(page: Page, text: string): Promise<void> {
   if ((page.viewportSize()?.width ?? 0) < 1280) {
@@ -98,17 +125,8 @@ test("a new post is on the profile from the moment it opens again", async ({ pag
   test.skip(!ownsServer, "creates its user with bin/my against the server's database");
   test.setTimeout(120_000);
   const touch = info.project.use.hasTouch === true;
-  const username = `e2e_fresh_${randomBytes(4).toString("hex")}`;
-  const email = `${username}@example.com`;
-  const password = `e2e-password-${username}`;
-  runMy(["admin", "create", "-username", username, "-email", email], `${password}\n`);
-  await signIn(page, email, password);
-  await page.route("**/api/v1/**", async (route) => {
-    if (route.request().method() === "GET" && !route.request().url().includes("/streaming")) {
-      await new Promise((resolve) => setTimeout(resolve, latency));
-    }
-    await route.continue();
-  });
+  const username = await newUser(page, "e2e_fresh");
+  await slowDown(page);
 
   // The profile has a post, and its list is cached.
   const first = `first ${username}`;
@@ -150,6 +168,63 @@ test("a new post is on the profile from the moment it opens again", async ({ pag
         - time
       - paragraph: ${third}
   `);
+  await expectNoAxeViolations(() => axeBuilder(page));
+  await expectNoHorizontalScroll(page);
+});
+
+test("a change of the timeline languages is on the local timeline from the moment it opens again", async ({ page }, info) => {
+  test.skip(!ownsServer, "creates its user with bin/my against the server's database");
+  test.setTimeout(120_000);
+  const touch = info.project.use.hasTouch === true;
+  const username = await newUser(page, "e2e_langs");
+  await slowDown(page);
+
+  // The local timeline has the user's post in English, and its list is cached. The post names its language: one
+  // of undetermined language is on every timeline whatever the timeline languages (data-model.md, FR-208).
+  const text = `in English ${username}`;
+  const authorized = nextAuthorization(page);
+  await openFromNavigation(page, "/profile", touch);
+  const authorization = await authorized;
+  const posted = await page.request.post(`${serverURL}/api/v1/statuses`, {
+    headers: { Authorization: authorization, "Idempotency-Key": `e2e-${username}` },
+    data: { text, visibility: "public", language: "en" },
+  });
+  expect(posted.ok(), `POST /api/v1/statuses: ${String(posted.status())}`).toBe(true);
+  await openFromNavigation(page, "/local", touch);
+  await expect(pageHeading(page)).toHaveText(message("local.title"));
+  await expect(page.getByRole("feed").getByRole("article").filter({ hasText: text })).toBeVisible({ timeout: latency * 10 });
+
+  // The timelines show German only from now on.
+  await openFromNavigation(page, "/settings", touch);
+  await page.getByRole("main").locator('a[href="/settings/preferences"]').click();
+  await expect(pageHeading(page)).toHaveText(message("settings.preferences.title"));
+  const german = await page.evaluate(() => new Intl.DisplayNames([document.documentElement.lang], { type: "language" }).of("de") ?? "de");
+  const languages = page.getByRole("group", { name: message("settings.timeline_languages.label") });
+  // The checkbox is visually hidden behind its box; its label is what a pointer presses.
+  await languages.getByText(german, { exact: true }).click();
+  await expect(languages.getByRole("checkbox", { name: german, exact: true })).toBeChecked();
+  await expect(page.getByText(message("settings.saved")).first()).toBeVisible({ timeout: latency * 10 });
+
+  // A render of the local timeline with the English post would be a stale list.
+  await page.evaluate(
+    ([heading, unwanted]) => {
+      const w = window as unknown as { __staleRenders: number };
+      w.__staleRenders = 0;
+      new MutationObserver(() => {
+        const main = document.querySelector("main");
+        if (main?.querySelector("h1")?.textContent === heading && main.textContent.includes(unwanted)) w.__staleRenders += 1;
+      }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    },
+    [message("local.title"), text] as const,
+  );
+  await openFromNavigation(page, "/local", touch);
+  await expect(pageHeading(page)).toHaveText(message("local.title"));
+  // Give a stale list the time it would have taken to be replaced.
+  await page.waitForTimeout(latency * 2);
+  expect(await page.evaluate(() => (window as unknown as { __staleRenders: number }).__staleRenders), "renders of the local timeline with the English post").toBe(0);
+  await expect(page.getByRole("main").getByText(text)).toHaveCount(0);
+
+  await expect(pageHeading(page)).toMatchAriaSnapshot(`- heading "${message("local.title")}" [level=1]`);
   await expectNoAxeViolations(() => axeBuilder(page));
   await expectNoHorizontalScroll(page);
 });

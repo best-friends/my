@@ -3,7 +3,7 @@
 // by type and loaded a page at a time, with the posts that notifications are about embedded; and the read
 // marker with the unread count. Keys follow openapi-react-query's `[method, path, init]`, so a prefix such as
 // `["get", "/notifications"]` matches every filter of the list.
-import { infiniteQueryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
@@ -63,4 +63,12 @@ export async function updateNotificationMarker(api: Api, lastReadId: string): Pr
   const { data, error } = await api.fetch.PUT("/notifications/marker", { body: { last_read_id: lastReadId } });
   if (data === undefined) throw new ApiError(error);
   return data;
+}
+
+/**
+ * Puts the read marker as the server answered a move of it into the cache (ADR-0045): the navigation's unread
+ * count shows it on every page at once. The lists are the same notifications as before, so none is marked.
+ */
+export function cacheReadMarker(api: Api, queryClient: QueryClient, marker: NotificationMarker): void {
+  queryClient.setQueryData(notificationMarkerQueryOptions(api).queryKey, marker);
 }

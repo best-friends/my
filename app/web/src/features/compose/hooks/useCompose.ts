@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createContext, use, useState, useSyncExternalStore } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { useViewer } from "../../session";
-import { type Status, statusQueryOptions } from "../api/compose";
+import { cacheReplyTarget, type Status } from "../api/compose";
 import { type ComposeState, DraftStore, draftStorageKey } from "./draftStore";
 import { replyMentions } from "./policy";
 
@@ -63,7 +63,7 @@ export function useComposeController(layout: ComposeLayout): ComposeController |
         visibility: null,
         text: draft.text.trim() === "" ? replyMentions(status, accountId) : draft.text,
       });
-      queryClient.setQueryData(statusQueryOptions(api, status.id).queryKey, status);
+      cacheReplyTarget(api, queryClient, status);
       if (layout === "sheet") setIsSheetOpen(true);
       else document.getElementById(composeTextId)?.focus();
     },

@@ -3,24 +3,23 @@
 // after its confirmation, NFR-MOD-7), and lifting one. The server keeps domains in IDNA A-labels; the UI shows
 // them with the U-labels they stand for (lib/idn).
 import { useToast } from "@my/ui";
-import { type InfiniteData, useMutation, useMutationState, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useMutation, useMutationState, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { type ClientMessageKey, type Translate, useT } from "../../../lib/i18n";
 import { domainToUnicode } from "../../../lib/idn";
 import {
+  cacheIssuedDomainAction,
+  cacheLiftedDomainAction,
   createDomainActionMutation,
   type DomainAction,
   type DomainActionKind,
   domainActionsQueryOptions,
   type DomainActionScope,
-  isActiveOnlyQuery,
-  isDomainActionsQuery,
   liftDomainActionMutation,
   type NewDomainAction,
-  refreshAuditLog,
-  refreshDomainActionLists,
+  refreshLiftedDomainAction,
 } from "../api/admin";
 import { type PagedList, toPagedList } from "./pagedList";
 
@@ -68,17 +67,11 @@ export function useLiftDomainAction(onLifted: (action: DomainAction) => void): L
   const mutation = useMutation({
     ...options,
     onSuccess: async (lifted) => {
-      // The audit log records the lift: it is marked stale, so that going back to it fetches it again and shows
-      // the lift from the first render (refreshAuditLog, web-client.md S7). The lists change from the answer,
-      // which shows them right.
-      await refreshAuditLog(queryClient);
+      // The action is lifted once the audit log and the posts it changes are fetched again, so that going back to
+      // them shows the lift at once. The lists change from the answer, after focus has moved.
+      await refreshLiftedDomainAction(queryClient, lifted);
       onLifted(lifted);
-      for (const query of queryClient.getQueryCache().findAll({ predicate: (query) => isDomainActionsQuery(query.queryKey) })) {
-        const keep = isActiveOnlyQuery(query.queryKey) ? [] : [lifted];
-        queryClient.setQueryData<InfiniteData<{ items: DomainAction[] }>>(query.queryKey, (data) =>
-          data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.flatMap((item) => (item.id === lifted.id ? keep : [item])) })) },
-        );
-      }
+      cacheLiftedDomainAction(queryClient, lifted);
     },
     // The action stays in effect, and its row and focus stay (web-client.md E2).
     onError: (error) => {
@@ -153,10 +146,9 @@ export function useDomainActionForm(initialDomain: string): DomainActionForm {
   const create = useMutation({
     ...createDomainActionMutation(api),
     onSuccess: async (action) => {
-      // The action is in every list, of the other tabs and domains too, and in the audit log: it is taken once
-      // they are fetched again (the form stays pending until then), so that another tab or the log shows it at
-      // once (refreshDomainActionLists, refreshAuditLog).
-      await Promise.all([refreshDomainActionLists(queryClient), refreshAuditLog(queryClient)]);
+      // The action is taken once what it changes is fetched again (the form stays pending until then), so that
+      // another tab or the log shows it at once (cacheIssuedDomainAction).
+      await cacheIssuedDomainAction(queryClient, action);
       setConfirming(false);
       setDraft(emptyDraft(draft.domain));
       setStatus(t("client:admin.domain_actions.issued", { kind: t(domainActionKindLabels[action.kind]), domain: domainInText(t, action.domain) }));

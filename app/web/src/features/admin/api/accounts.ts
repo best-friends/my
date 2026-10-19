@@ -4,12 +4,13 @@
 // local account (recorded in the audit log, so only on the moderator's explicit action: a mutation, never a
 // query that runs by itself or again), and lifting a moderation action. The search follows the API's keyset
 // pagination as an infinite query whose key ends with "pages" (web-client.md §10).
-import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
+import { type InfiniteData, infiniteQueryOptions, type Query, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { pageQuery } from "./admin";
-import { type AccountAction, accountActionsQueryOptions } from "./reports";
+import { isPostListQuery } from "../../../lib/query";
+import { pageQuery, refreshAuditLog } from "./admin";
+import { type AccountAction, accountActionsQueryOptions, refreshReportLists } from "./reports";
 
 type Schemas = components["schemas"];
 
@@ -122,4 +123,64 @@ export function liftAccountActionMutation(api: Api) {
       return data;
     },
   };
+}
+
+/** Whether `query` is the public profile of account `id` (GET /accounts/lookup, whose key names the handle only). */
+function isProfileOf(query: Query, id: string): boolean {
+  return query.queryKey[1] === "/accounts/lookup" && (query.state.data as { id?: unknown } | undefined)?.id === id;
+}
+
+/** The kinds of moderation action that change what everyone sees of the account: its profile or its posts. */
+const publicKinds: ReadonlySet<AccountAction["kind"]> = new Set(["mark_statuses_sensitive", "delete_statuses", "force_sensitive", "limit", "suspend", "ban"]);
+
+/**
+ * Marks stale what everyone sees of account `id` when a moderation action of `kind` starts or ends (publicKinds):
+ * its profile and the lists of posts. A warning or a restriction of what the account itself may do changes neither.
+ */
+export function refreshPublicAccount(queryClient: QueryClient, id: string, kind: AccountAction["kind"]): Promise<void> | undefined {
+  if (!publicKinds.has(kind)) return undefined;
+  return queryClient.invalidateQueries({ predicate: (query) => isProfileOf(query, id) || isPostListQuery(query.queryKey) });
+}
+
+/**
+ * What a new moderation action on account `accountId` changes (web-client.md S1, ADR-0045): the account's page,
+ * its actions and the searches (refreshAdminAccount), the audit log, the lists of reports when it resolves report
+ * `reportId`, and what everyone sees of the account. They are marked stale; resolves once those on screen are fetched again.
+ */
+export async function cacheIssuedAccountAction(queryClient: QueryClient, api: Api, accountId: string, action: AccountAction, reportId: string | undefined): Promise<void> {
+  await Promise.all([
+    refreshAdminAccount(queryClient, api, accountId, { actions: true }),
+    reportId === undefined ? undefined : refreshReportLists(queryClient),
+    refreshAuditLog(queryClient),
+    refreshPublicAccount(queryClient, accountId, action.kind),
+  ]);
+}
+
+/**
+ * What a new moderation action changes once the screen has shown it: every cached report, which tells of the
+ * account's actions (the one it resolved too), and the posts it acted on are marked stale.
+ */
+export function refreshActedReports(queryClient: QueryClient, action: AccountAction): void {
+  void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/reports/{id}" });
+  if (action.status_ids !== undefined) void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/statuses/{id}" });
+}
+
+/**
+ * Marks stale what lifting `lifted`, an action on account `accountId`, changes beside its row: the account's
+ * state and restrictions (its page and the searches), the audit log, and what everyone sees of the account.
+ */
+export async function refreshLiftedAccountAction(queryClient: QueryClient, api: Api, accountId: string, lifted: AccountAction): Promise<void> {
+  await Promise.all([
+    refreshAdminAccount(queryClient, api, accountId, { actions: false }),
+    refreshAuditLog(queryClient),
+    refreshPublicAccount(queryClient, accountId, lifted.kind),
+  ]);
+}
+
+/** Writes the lifted action from the answer into the cached actions of account `accountId` (ADR-0045). */
+export function cacheLiftedAccountAction(api: Api, queryClient: QueryClient, accountId: string, lifted: AccountAction): void {
+  queryClient.setQueryData<InfiniteData<{ items: AccountAction[] }>>(
+    accountActionsQueryOptions(api, accountId).queryKey,
+    (data) => data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.map((item) => (item.id === lifted.id ? lifted : item)) })) },
+  );
 }

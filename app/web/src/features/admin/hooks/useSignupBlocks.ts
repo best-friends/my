@@ -3,16 +3,15 @@
 // email domain in IDNA A-labels; the UI shows it with the U-labels it stands for (lib/idn), like the domain
 // actions.
 import { useToast } from "@my/ui";
-import { type InfiniteData, useMutation, useMutationState, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useMutation, useMutationState, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { type ClientMessageKey, type Translate, useT } from "../../../lib/i18n";
 import { refreshAuditLog } from "../api/admin";
 import {
+  cacheLiftedSignupBlock,
   createSignupBlockMutation,
-  isActiveSignupBlocksQuery,
-  isSignupBlocksQuery,
   liftSignupBlockMutation,
   type NewSignupBlock,
   refreshSignupBlockLists,
@@ -76,12 +75,7 @@ export function useLiftSignupBlock(onLifted: (block: SignupBlock) => void): Lift
       // The audit log records the lift (refreshAuditLog); the lists change from the answer, which shows them right.
       await refreshAuditLog(queryClient);
       onLifted(lifted);
-      for (const query of queryClient.getQueryCache().findAll({ predicate: (query) => isSignupBlocksQuery(query.queryKey) })) {
-        const keep = isActiveSignupBlocksQuery(query.queryKey) ? [] : [lifted];
-        queryClient.setQueryData<InfiniteData<{ items: SignupBlock[] }>>(query.queryKey, (data) =>
-          data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.flatMap((item) => (item.id === lifted.id ? keep : [item])) })) },
-        );
-      }
+      cacheLiftedSignupBlock(queryClient, lifted);
     },
     // The block stays in effect, and its row and focus stay (web-client.md E2).
     onError: (error) => {

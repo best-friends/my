@@ -7,9 +7,19 @@ import { type InfiniteData, useMutation, useQueryClient, useSuspenseInfiniteQuer
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { refreshRelationship, type RelationshipChange } from "../../profile";
 import { useViewer } from "../../session";
-import { type Account, accountActionMutation, blocksQueryOptions, followRequestsQueryOptions, type MutedAccount, mutesQueryOptions } from "../api/relationships";
+import {
+  type Account,
+  accountActionMutation,
+  blocksQueryOptions,
+  cacheListChange,
+  followRequestsQueryOptions,
+  type ListChange,
+  type MutedAccount,
+  mutesQueryOptions,
+  type Relationship,
+  removeFromList,
+} from "../api/relationships";
 
 /** What a list screen needs from its list: the items so far, and loading more. */
 export type AccountList<T> = {
@@ -51,24 +61,25 @@ type MutationCallbacks = { onSuccess: () => void; onError: (error: unknown) => v
 
 /**
  * The `onSuccess` of a mutation that makes `change` to the viewer's relationship with the account it is given:
- * the action is done once what the change shows elsewhere is fetched again (refreshRelationship; the row stays
+ * the action is done once what the change shows elsewhere is in the cache (cacheListChange; the row stays
  * pending until then), so that a page opened next shows it at once (web-client.md S1). The list itself is
  * updated by the action (useListAction), which then moves focus.
  */
-function useRefreshRelationship(change: RelationshipChange): (data: unknown, id: string) => Promise<void> {
+function useCacheListChange(change: ListChange): (relationship: Relationship) => Promise<void> {
   const queryClient = useQueryClient();
   const viewer = useViewer();
   const viewerId = viewer.status === "signed-in" ? viewer.account.id : "";
-  return (_data, id) => refreshRelationship(queryClient, change, id, viewerId);
+  return (relationship) => cacheListChange(queryClient, change, relationship, viewerId);
 }
 
-/** An AccountAction from a mutation of one account, the update that takes the account off the cached list, and its announcement. */
+/** An AccountAction from a mutation of one account, the change it makes, and its announcement. */
 function useListAction(options: {
   mutate: (id: string, callbacks: MutationCallbacks) => void;
   pendingId: string | undefined;
-  remove: (id: string) => void;
+  change: ListChange;
   done: (name: string) => string;
 }): AccountAction {
+  const api = useApi();
   const queryClient = useQueryClient();
   const announce = useAnnouncer();
   return {
@@ -76,11 +87,9 @@ function useListAction(options: {
     run: (account, onDone) => {
       options.mutate(account.id, {
         onSuccess: () => {
-          options.remove(account.id);
+          removeFromList(queryClient, api, options.change, account.id);
           onDone();
           announce(options.done(account.display_name || account.username));
-          // Other screens show the relationship with the account (getRelationships, under any parameters).
-          void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/accounts/relationships" });
         },
         // A failure keeps the row and its focus, and says why (web-client.md E2).
         onError: (error) => {
@@ -95,10 +104,8 @@ function useListAction(options: {
 export function useBlocks(): { list: AccountList<Account>; unblock: AccountAction } {
   const api = useApi();
   const t = useT();
-  const queryClient = useQueryClient();
-  const options = blocksQueryOptions(api);
-  const query = useSuspenseInfiniteQuery(options);
-  const unblock = useMutation({ ...accountActionMutation(api, "/accounts/{id}/unblock"), onSuccess: useRefreshRelationship("unblock") });
+  const query = useSuspenseInfiniteQuery(blocksQueryOptions(api));
+  const unblock = useMutation({ ...accountActionMutation(api, "/accounts/{id}/unblock"), onSuccess: useCacheListChange("unblock") });
   return {
     list: toList(query, (page) => page.accounts),
     unblock: useListAction({
@@ -106,11 +113,7 @@ export function useBlocks(): { list: AccountList<Account>; unblock: AccountActio
         unblock.mutate(id, callbacks);
       },
       pendingId: unblock.isPending ? unblock.variables : undefined,
-      remove: (id) => {
-        queryClient.setQueryData(options.queryKey, (data) =>
-          data && { ...data, pages: data.pages.map((page) => ({ ...page, accounts: page.accounts.filter((account) => account.id !== id) })) },
-        );
-      },
+      change: "unblock",
       done: (name) => t("client:settings.blocks.unblocked", { name }),
     }),
   };
@@ -120,10 +123,8 @@ export function useBlocks(): { list: AccountList<Account>; unblock: AccountActio
 export function useMutes(): { list: AccountList<MutedAccount>; unmute: AccountAction } {
   const api = useApi();
   const t = useT();
-  const queryClient = useQueryClient();
-  const options = mutesQueryOptions(api);
-  const query = useSuspenseInfiniteQuery(options);
-  const unmute = useMutation({ ...accountActionMutation(api, "/accounts/{id}/unmute"), onSuccess: useRefreshRelationship("unmute") });
+  const query = useSuspenseInfiniteQuery(mutesQueryOptions(api));
+  const unmute = useMutation({ ...accountActionMutation(api, "/accounts/{id}/unmute"), onSuccess: useCacheListChange("unmute") });
   return {
     list: toList(query, (page) => page.mutes),
     unmute: useListAction({
@@ -131,11 +132,7 @@ export function useMutes(): { list: AccountList<MutedAccount>; unmute: AccountAc
         unmute.mutate(id, callbacks);
       },
       pendingId: unmute.isPending ? unmute.variables : undefined,
-      remove: (id) => {
-        queryClient.setQueryData(options.queryKey, (data) =>
-          data && { ...data, pages: data.pages.map((page) => ({ ...page, mutes: page.mutes.filter((mute) => mute.account.id !== id) })) },
-        );
-      },
+      change: "unmute",
       done: (name) => t("client:settings.mutes.unmuted", { name }),
     }),
   };
@@ -145,17 +142,10 @@ export function useMutes(): { list: AccountList<MutedAccount>; unmute: AccountAc
 export function useFollowRequests(): { list: AccountList<Account>; accept: AccountAction; reject: AccountAction } {
   const api = useApi();
   const t = useT();
-  const queryClient = useQueryClient();
-  const options = followRequestsQueryOptions(api);
-  const query = useSuspenseInfiniteQuery(options);
+  const query = useSuspenseInfiniteQuery(followRequestsQueryOptions(api));
   // The viewer has one more follower.
-  const accept = useMutation({ ...accountActionMutation(api, "/follow_requests/{id}/authorize"), onSuccess: useRefreshRelationship("accept") });
-  const reject = useMutation(accountActionMutation(api, "/follow_requests/{id}/reject"));
-  const remove = (id: string) => {
-    queryClient.setQueryData(options.queryKey, (data) =>
-      data && { ...data, pages: data.pages.map((page) => ({ ...page, accounts: page.accounts.filter((account) => account.id !== id) })) },
-    );
-  };
+  const accept = useMutation({ ...accountActionMutation(api, "/follow_requests/{id}/authorize"), onSuccess: useCacheListChange("accept") });
+  const reject = useMutation({ ...accountActionMutation(api, "/follow_requests/{id}/reject"), onSuccess: useCacheListChange("reject") });
   return {
     list: toList(query, (page) => page.accounts),
     accept: useListAction({
@@ -163,7 +153,7 @@ export function useFollowRequests(): { list: AccountList<Account>; accept: Accou
         accept.mutate(id, callbacks);
       },
       pendingId: accept.isPending ? accept.variables : undefined,
-      remove,
+      change: "accept",
       done: (name) => t("client:settings.follow_requests.accepted", { name }),
     }),
     reject: useListAction({
@@ -171,7 +161,7 @@ export function useFollowRequests(): { list: AccountList<Account>; accept: Accou
         reject.mutate(id, callbacks);
       },
       pendingId: reject.isPending ? reject.variables : undefined,
-      remove,
+      change: "reject",
       done: (name) => t("client:settings.follow_requests.rejected", { name }),
     }),
   };

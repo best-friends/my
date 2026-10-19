@@ -83,6 +83,22 @@ ruleTester.run("no-restricted-syntax (SVG, G10)", core.get("no-restricted-syntax
   ],
 });
 
+const featureSyntax = [...restrict.syntax, ...restrict.featureSyntax];
+ruleTester.run("no-restricted-syntax (a feature's hooks and components)", core.get("no-restricted-syntax"), {
+  valid: [
+    { code: "useMutation({ ...createStatusMutation(api), onSuccess: (status) => cachePostedStatus(api, queryClient, status) });", options: featureSyntax },
+    { code: "const job = queryClient.getQueryData(key);", options: featureSyntax },
+    { code: "const last = queryClient.isMutating({ mutationKey }) <= 1;", options: featureSyntax },
+  ],
+  invalid: [
+    // S1
+    { ...fails("queryClient.setQueryData(key, value);"), options: featureSyntax },
+    { ...fails("void queryClient.invalidateQueries({ queryKey });"), options: featureSyntax },
+    { ...fails("client.setQueriesData({ predicate }, update);"), options: featureSyntax },
+    { ...fails("queryClient.removeQueries({ queryKey, exact: true });"), options: featureSyntax },
+  ],
+});
+
 const testSyntax = [...restrict.syntax, ...restrict.testSyntax];
 ruleTester.run("no-restricted-syntax (tests)", core.get("no-restricted-syntax"), {
   valid: [

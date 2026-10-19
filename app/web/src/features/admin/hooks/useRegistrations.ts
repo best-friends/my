@@ -7,8 +7,14 @@ import { useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { type Translate, useT } from "../../../lib/i18n";
-import { refreshAuditLog } from "../api/admin";
-import { decideRegistrationMutation, isAdminCountsQuery, type Registration, type RegistrationDecision, registrationsQueryOptions } from "../api/registrations";
+import {
+  cacheDecidedRegistration,
+  decideRegistrationMutation,
+  refreshDecidedRegistration,
+  type Registration,
+  type RegistrationDecision,
+  registrationsQueryOptions,
+} from "../api/registrations";
 import { type PagedList, toPagedList } from "./pagedList";
 
 /** The registrations that await approval, longest waiting first. */
@@ -76,20 +82,15 @@ export function useRegistrationReview(onDecided: (userId: string) => void): Regi
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [status, setStatus] = useState<string | undefined>(undefined);
-  const listKey = registrationsQueryOptions(api).queryKey;
   const mutation = useMutation({
     ...decideRegistrationMutation(api),
     onSuccess: async (registration, { userId, decision }) => {
-      // The audit log records the decision: it is marked stale, so that going back to the log fetches it again
-      // and shows the decision from the first render (refreshAuditLog, web-client.md S7).
-      await refreshAuditLog(queryClient);
+      // The decision is done once the audit log and the account searches are fetched again (the confirmation
+      // stays pending until then), so that going back to them shows it at once (refreshDecidedRegistration).
+      await refreshDecidedRegistration(queryClient);
       setDialog((current) => current && { ...current, isOpen: false });
       onDecided(userId);
-      queryClient.setQueryData(
-        listKey,
-        (data) => data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.filter((item) => item.user_id !== userId) })) },
-      );
-      void queryClient.invalidateQueries({ predicate: (query) => isAdminCountsQuery(query.queryKey) });
+      cacheDecidedRegistration(api, queryClient, userId);
       setStatus(resultMessage(t, registration, decision));
     },
   });

@@ -2,11 +2,11 @@
 // The queries and mutations of the review of registrations (FR-721): the sign-ups that await a moderator's
 // decision, longest waiting first, and approving or rejecting one with an optional note for the moderators.
 // The list follows the API's keyset pagination as an infinite query whose key ends with "pages" (web-client.md §10).
-import { infiniteQueryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { pageQuery } from "./admin";
+import { pageQuery, refreshAuditLog } from "./admin";
 
 type Schemas = components["schemas"];
 
@@ -58,6 +58,30 @@ export function decideRegistrationMutation(api: Api) {
 }
 
 /** Whether a query is the moderators' counts (GET /admin/counts), which a decision changes. */
-export function isAdminCountsQuery(queryKey: readonly unknown[]): boolean {
+function isAdminCountsQuery(queryKey: readonly unknown[]): boolean {
   return queryKey[1] === "/admin/counts";
+}
+
+/**
+ * Marks stale what a decision on a registration changes beside the list (web-client.md S1, ADR-0045): the audit
+ * log, which records it, and the account searches and the account's page, which show the account's state.
+ * Resolves once those on screen are fetched again.
+ */
+export async function refreshDecidedRegistration(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    refreshAuditLog(queryClient),
+    queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/accounts" || query.queryKey[1] === "/admin/accounts/{id}" }),
+  ]);
+}
+
+/**
+ * Takes the decided registration of `userId` off the cached list, which keeps only those awaiting approval, and
+ * marks the moderators' counts (ADR-0045).
+ */
+export function cacheDecidedRegistration(api: Api, queryClient: QueryClient, userId: string): void {
+  queryClient.setQueryData(
+    registrationsQueryOptions(api).queryKey,
+    (data) => data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.filter((item) => item.user_id !== userId) })) },
+  );
+  void queryClient.invalidateQueries({ predicate: (query) => isAdminCountsQuery(query.queryKey) });
 }

@@ -6,7 +6,7 @@ import { useMutation, useMutationState, useQueryClient, useSuspenseInfiniteQuery
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { type DeadJob, deadJobsQueryOptions, retryDeadJobMutation } from "../api/admin";
+import { type DeadJob, deadJobsQueryOptions, removeRetriedDeadJob, retryDeadJobMutation } from "../api/admin";
 import { type PagedList, toPagedList } from "./pagedList";
 
 /** The dead jobs, most recently failed first. */
@@ -35,13 +35,11 @@ export function useRetryDeadJob(onRetried: (id: string) => void): RetryDeadJob {
   const announce = useAnnouncer();
   const toast = useToast();
   const options = retryDeadJobMutation(api);
-  const listKey = deadJobsQueryOptions(api).queryKey;
   const mutation = useMutation({
     ...options,
     onSuccess: (_, id) => {
       onRetried(id);
-      const job = queryClient.getQueryData(listKey)?.pages.flatMap((page) => page.items).find((item) => item.id === id);
-      queryClient.setQueryData(listKey, (data) => data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.filter((item) => item.id !== id) })) });
+      const job = removeRetriedDeadJob(api, queryClient, id);
       announce(t("client:admin.dead_jobs.retried", { type: job?.type ?? id }));
     },
     // The job stays a dead job, and its row and focus stay (web-client.md E2).

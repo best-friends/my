@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useApi, useSessionStatus } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import {
+  cacheReadMarker,
   type NotificationFilter,
   type NotificationMarker,
   notificationMarkerQueryOptions,
@@ -61,7 +62,7 @@ function useMarkRead(newestId: string | undefined, marker: NotificationMarker | 
   const { mutate } = useMutation({
     mutationFn: (lastReadId: string) => updateNotificationMarker(api, lastReadId),
     onSuccess: (updated) => {
-      queryClient.setQueryData(notificationMarkerQueryOptions(api).queryKey, updated);
+      cacheReadMarker(api, queryClient, updated);
     },
   });
   /** The ID last sent, so that a re-run of the Effect (Strict Mode, a refetch) does not send it again. */
