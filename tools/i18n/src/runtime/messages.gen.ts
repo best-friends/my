@@ -16,6 +16,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.registration_rejected": {};
   /** Report assigned */
   "client:admin.audit_log.action.report_assigned": {};
+  /** Note added to a report */
+  "client:admin.audit_log.action.report_note_added": {};
+  /** Report reopened */
+  "client:admin.audit_log.action.report_reopened": {};
   /** Report resolved */
   "client:admin.audit_log.action.report_resolved": {};
   /** Report unassigned */
@@ -344,6 +348,74 @@ export interface MessageArgs {
   "client:admin.missing_permission.description": { permission: string };
   /** You cannot use this screen */
   "client:admin.missing_permission.heading": {};
+  /** A removed account */
+  "client:admin.registrations.account_gone": {};
+  /** {applicant} was already approved by another moderator. That decision stands. */
+  "client:admin.registrations.already_approved": { applicant: string };
+  /** {applicant} was already rejected by another moderator. That decision stands. */
+  "client:admin.registrations.already_rejected": { applicant: string };
+  /** Approve */
+  "client:admin.registrations.approve": {};
+  /** Approve {applicant} */
+  "client:admin.registrations.approve_applicant": { applicant: string };
+  /** {applicant} is approved and can sign in. */
+  "client:admin.registrations.approved": { applicant: string };
+  /** Cancel */
+  "client:admin.registrations.cancel": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:admin.registrations.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:admin.registrations.characters_over": { count: number };
+  /** {applicant} can sign in and start posting. The decision cannot be changed afterwards. */
+  "client:admin.registrations.confirm_approve.description": { applicant: string };
+  /** Approve {applicant}? */
+  "client:admin.registrations.confirm_approve.title": { applicant: string };
+  /** {applicant} cannot sign in. The decision cannot be changed afterwards. */
+  "client:admin.registrations.confirm_reject.description": { applicant: string };
+  /** Reject {applicant}? */
+  "client:admin.registrations.confirm_reject.title": { applicant: string };
+  /** Could not save the decision: {reason} */
+  "client:admin.registrations.decide_failed": { reason: string };
+  /** Email */
+  "client:admin.registrations.email": {};
+  /** Email confirmed */
+  "client:admin.registrations.email_verified": {};
+  /** Not confirmed */
+  "client:admin.registrations.email_verified.no": {};
+  /** Confirmed */
+  "client:admin.registrations.email_verified.yes": {};
+  /** None */
+  "client:admin.registrations.email.none": {};
+  /** No registrations await approval */
+  "client:admin.registrations.empty": {};
+  /** New sign-ups appear here while registrations need approval. */
+  "client:admin.registrations.empty.description": {};
+  /** Invite */
+  "client:admin.registrations.invite": {};
+  /** None */
+  "client:admin.registrations.invite.none": {};
+  /** Signed up with an invite */
+  "client:admin.registrations.invite.used": {};
+  /** Note for moderators */
+  "client:admin.registrations.note": {};
+  /** Optional. Only moderators see it. */
+  "client:admin.registrations.note.description": {};
+  /** Use at most {max, number} characters */
+  "client:admin.registrations.note.too_long": { max: number };
+  /** Reason for joining */
+  "client:admin.registrations.reason": {};
+  /** No reason given */
+  "client:admin.registrations.reason.none": {};
+  /** Reject */
+  "client:admin.registrations.reject": {};
+  /** Reject {applicant} */
+  "client:admin.registrations.reject_applicant": { applicant: string };
+  /** {applicant} is rejected. */
+  "client:admin.registrations.rejected": { applicant: string };
+  /** Signed up */
+  "client:admin.registrations.submitted_at": {};
+  /** Registrations */
+  "client:admin.registrations.title": {};
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
   /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
@@ -1020,6 +1092,8 @@ export interface MessageArgs {
   "client:shell.nav.settings": {};
   /** Timelines */
   "client:shell.nav.timelines": {};
+  /** The account you are signed in with */
+  "client:shell.nav.viewer": {};
   /** There is no page at this address. */
   "client:shell.not_found.body": {};
   /** Go to the home timeline */
@@ -1408,6 +1482,8 @@ export interface MessageArgs {
   "server:errors.rate_limited_detail": { seconds: number };
   /** This is not available for accounts on other servers. */
   "server:errors.remote_account": {};
+  /** Only a resolved report can be reopened. */
+  "server:errors.report.not_resolved": {};
   /** The request is too large. */
   "server:errors.request_too_large": {};
   /** You cannot do this to your own account. */

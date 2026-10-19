@@ -61,7 +61,7 @@ func runAdminAccountAction(args []string, stdout, stderr io.Writer) int {
 			fs.StringVar(&category, "category", string(moderation.CategoryOther), "spam, legal, violation, or other")
 			fs.StringVar(&publicReason, "public-reason", "", "the reason shown to the account")
 			fs.StringVar(&note, "private-note", "", "a note for the moderators")
-			fs.StringVar(&report, "report", "", "the ID of the report of the account that the action follows from")
+			fs.StringVar(&report, "report", "", "the ID of the report of the account that the action follows from; an open report is resolved as actioned")
 			fs.BoolVar(&noNotify, "no-notify", false, "do not tell the account of the action")
 			fs.BoolVar(&blockEmail, "block-email", false, "with a ban, also block sign-ups with the email address of the account's user")
 			fs.DurationVar(&duration, "duration", 0, "how long the action lasts, such as 720h; 0 lasts until lifted")
@@ -220,9 +220,11 @@ ID. Several actions on one account add up. On a local account:
 
 delete_statuses and mark_statuses_sensitive need one -status or more (up to
 100), and take no -duration; nor does ban. A remote account takes limit,
-suspend, and force_sensitive. -block-email, only with a ban of a local
-account, also rejects sign-ups with the email address of the account's user
-(a sign-up block of kind email_hash; see my admin signup-block -help).
+suspend, and force_sensitive, with the same effects here; suspend also drops
+what the account sends. An action on a remote account is not sent to its
+server, and -no-notify does not apply to it. -block-email, only with a ban of a
+local account, also rejects sign-ups with the email address of the account's
+user (a sign-up block of kind email_hash; see my admin signup-block -help).
 
 list shows the actions on the account newest first, lifted and expired ones
 included unless -active is given. lift ends one action; the other actions on

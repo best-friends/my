@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the admin feature (web-client.md §7): the health of remote servers, the domain
-// actions, the dead jobs and the audit log, all empty and every server available by default. The default viewer has no
+// actions, the dead jobs, the audit log and the registrations awaiting approval, all empty and every server available by default. The default viewer has no
 // permissions, so the admin screens' tests start with `server.use(operatorHandler(...))`.
 import { http, HttpResponse } from "msw";
 import { type Schemas, viewerFixture } from "../../../test/fixtures";
@@ -32,6 +32,22 @@ export function newDomainAction(body: Schemas["CreateDomainActionRequest"]): Sch
   };
 }
 
+/** A registration of `bob` awaiting approval since 2026-10-16, as the server lists it; `overrides` replace its fields. */
+export function registrationFixture(overrides: Partial<Schemas["AdminRegistration"]> = {}): Schemas["AdminRegistration"] {
+  return {
+    user_id: "0192f0c4-7a8e-7000-8000-0000000000b1",
+    account_id: "0192f0c4-7a8e-7000-8000-0000000000c1",
+    username: "bob",
+    state: "pending",
+    since: "2026-10-16T09:00:00Z",
+    email: "bob@example.com",
+    email_verified: true,
+    reason: "I would like to post about birds.",
+    submitted_at: "2026-10-16T09:00:00Z",
+    ...overrides,
+  };
+}
+
 export const handlers = [
   // operationIds listInstanceHealth, getInstanceHealth, listInstanceAvailabilityEvents, markInstanceAvailable.
   http.get(`${apiBase}/admin/instances`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
@@ -56,4 +72,12 @@ export const handlers = [
   http.post(`${apiBase}/admin/dead_jobs/:id/retry`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationId listAuditLog.
   http.get(`${apiBase}/admin/audit_log`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  // operationIds listPendingRegistrations, approveRegistration, rejectRegistration.
+  http.get(`${apiBase}/admin/registrations`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.post(`${apiBase}/admin/registrations/:userId/approve`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(registrationFixture({ user_id: String(params["userId"]), state: "approved", since: "2026-10-17T00:00:00Z" }))),
+  ),
+  http.post(`${apiBase}/admin/registrations/:userId/reject`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(registrationFixture({ user_id: String(params["userId"]), state: "rejected", since: "2026-10-17T00:00:00Z" }))),
+  ),
 ];

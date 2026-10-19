@@ -16,7 +16,12 @@
 //
 // The local and federated timelines appear in the rail only while the instance serves them (FR-202). The tab
 // bar keeps its five items whatever the instance serves: only the Timelines screen's tabs change.
+//
+// The sidebar (lg) also says where and who the user is: the server's name above the list and, below it, the
+// signed-in account (avatar, display name and handle) as a link to its profile. Both are outside the list, so
+// the list's links stay the same and in the same order at every width, and narrower layouts hide both.
 import {
+  Avatar,
   Badge,
   Button,
   DialogTrigger,
@@ -26,6 +31,7 @@ import {
   LocalIcon,
   MenuIcon,
   NotificationsIcon,
+  PostCardAuthor,
   ProfileIcon,
   SearchIcon,
   SettingsIcon,
@@ -33,10 +39,11 @@ import {
   TimelinesIcon,
 } from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
+import { useConfig } from "../../lib/config";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { followListPath, profilePath } from "../../lib/paths";
 
@@ -117,6 +124,7 @@ function timelinesPath(timelines: TimelineAvailability): "/local" | "/public" {
 
 export function Navigation() {
   const t = useT();
+  const { instanceName } = useConfig();
   const pathname = useLocation({ select: (location) => location.pathname });
   const unread = useUnreadNotificationCount();
   const viewer = useViewer();
@@ -127,8 +135,12 @@ export function Navigation() {
   return (
     <nav
       aria-label={t("client:shell.nav.label")}
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface-raised px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:h-svh md:border-t-0 md:border-e md:bg-surface md:px-0 md:pb-0"
+      className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface-raised px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:flex md:h-svh md:flex-col md:overflow-y-auto md:border-t-0 md:border-e md:bg-surface md:px-0 md:pb-0 lg:w-60"
     >
+      {/* The server's name is the administrator's text, in any language (web-client.md Y10, G9). */}
+      <p dir="auto" className="mx-2 hidden px-3 pt-4 pb-2 text-lg font-semibold wrap-anywhere align-match-parent lg:block">
+        {instanceName}
+      </p>
       <ul className="flex md:flex-col md:gap-1 md:p-2 lg:w-60">
         {shown.map((item) => {
           const badge = item.section === "/notifications" && unread > 0;
@@ -160,7 +172,41 @@ export function Navigation() {
           <NavigationMenu current={current} />
         </li>
       </ul>
+      <ViewerLink />
     </nav>
+  );
+}
+
+/**
+ * The sidebar's last item: the signed-in account, a link to its profile named by its display name and handle,
+ * each cut to one line (web-client.md G7). The list's Profile item is the place, so this second link to it has
+ * no aria-current. It shows nothing until the account has loaded, and while signed out.
+ */
+function ViewerLink() {
+  const t = useT();
+  const { accountDomain } = useConfig();
+  const viewer = useViewer();
+  const descriptionId = useId();
+  if (viewer.status !== "signed-in") return null;
+  const { account } = viewer;
+  const name = account.display_name || account.username;
+  return (
+    <>
+      <Link
+        href={profilePath(account.acct)}
+        aria-describedby={descriptionId}
+        variant="navigation"
+        className="mx-2 mt-auto mb-2 hidden min-h-12 min-w-0 gap-3 rounded-lg px-3 py-2 font-normal text-fg data-hovered:bg-surface-sunken lg:flex"
+      >
+        <Avatar src={account.avatar_url} name={name} size="sm" decorative />
+        {/* The display name and the handle a line each (the sidebar is no container), as a post's author shows them. */}
+        <PostCardAuthor name={name} handle={`@${account.acct}@${accountDomain}`} />
+      </Link>
+      {/* A description of a hidden element is still read (accname), and the element stays out of the tree. */}
+      <span id={descriptionId} hidden>
+        {t("client:shell.nav.viewer")}
+      </span>
+    </>
   );
 }
 

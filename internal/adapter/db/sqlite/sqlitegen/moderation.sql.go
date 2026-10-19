@@ -12,6 +12,36 @@ import (
 	"database/sql"
 )
 
+const countModerationActionsOfTarget = `-- name: CountModerationActionsOfTarget :one
+SELECT COUNT(*) FROM moderation_actions WHERE target_account_id = ?
+`
+
+// CountModerationActionsOfTarget counts the actions on an account, ended ones included.
+func (q *Queries) CountModerationActionsOfTarget(ctx context.Context, targetAccountID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countModerationActionsOfTarget, targetAccountID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countOtherReportsOfTarget = `-- name: CountOtherReportsOfTarget :one
+SELECT COUNT(*) FROM reports
+WHERE target_account_id = ?1 AND id <> ?2
+`
+
+type CountOtherReportsOfTargetParams struct {
+	TargetAccountID string
+	ReportID        string
+}
+
+// CountOtherReportsOfTarget counts the reports of a target account other than the one given.
+func (q *Queries) CountOtherReportsOfTarget(ctx context.Context, arg CountOtherReportsOfTargetParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countOtherReportsOfTarget, arg.TargetAccountID, arg.ReportID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countReportsInState = `-- name: CountReportsInState :one
 
 SELECT COUNT(*) FROM report_states WHERE state = ?
@@ -560,6 +590,52 @@ func (q *Queries) InsertReportAssignment(ctx context.Context, arg InsertReportAs
 	return err
 }
 
+const insertReportNote = `-- name: InsertReportNote :exec
+INSERT INTO report_notes (id, report_id, author_user_id, body, written_at) VALUES (?, ?, ?, ?, ?)
+`
+
+type InsertReportNoteParams struct {
+	ID           string
+	ReportID     string
+	AuthorUserID sql.NullString
+	Body         string
+	WrittenAt    int64
+}
+
+func (q *Queries) InsertReportNote(ctx context.Context, arg InsertReportNoteParams) error {
+	_, err := q.db.ExecContext(ctx, insertReportNote,
+		arg.ID,
+		arg.ReportID,
+		arg.AuthorUserID,
+		arg.Body,
+		arg.WrittenAt,
+	)
+	return err
+}
+
+const insertReportReopening = `-- name: InsertReportReopening :exec
+
+INSERT INTO report_reopenings (id, report_id, reopened_by_user_id, reopened_at) VALUES (?, ?, ?, ?)
+`
+
+type InsertReportReopeningParams struct {
+	ID               string
+	ReportID         string
+	ReopenedByUserID sql.NullString
+	ReopenedAt       int64
+}
+
+// Notes on reports and their reopenings (#333) -------------------------------------------------
+func (q *Queries) InsertReportReopening(ctx context.Context, arg InsertReportReopeningParams) error {
+	_, err := q.db.ExecContext(ctx, insertReportReopening,
+		arg.ID,
+		arg.ReportID,
+		arg.ReopenedByUserID,
+		arg.ReopenedAt,
+	)
+	return err
+}
+
 const insertReportResolution = `-- name: InsertReportResolution :exec
 INSERT INTO report_resolutions (id, report_id, outcome, resolved_by_user_id, resolved_at)
 VALUES (?, ?, ?, ?, ?)
@@ -913,6 +989,40 @@ func (q *Queries) ListModerationActions(ctx context.Context, arg ListModerationA
 			&i.LiftedByUserID,
 			&i.LiftReason,
 			&i.LiftedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReportNotes = `-- name: ListReportNotes :many
+SELECT id, report_id, author_user_id, body, written_at FROM report_notes WHERE report_id = ? ORDER BY id
+`
+
+// ListReportNotes returns the notes on a report, oldest first.
+func (q *Queries) ListReportNotes(ctx context.Context, reportID string) ([]ReportNote, error) {
+	rows, err := q.db.QueryContext(ctx, listReportNotes, reportID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ReportNote{}
+	for rows.Next() {
+		var i ReportNote
+		if err := rows.Scan(
+			&i.ID,
+			&i.ReportID,
+			&i.AuthorUserID,
+			&i.Body,
+			&i.WrittenAt,
 		); err != nil {
 			return nil, err
 		}

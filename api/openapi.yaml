@@ -1711,7 +1711,7 @@ paths:
         - $ref: "#/components/parameters/ReportId"
       responses:
         "200":
-          $ref: "#/components/responses/AdminReport"
+          $ref: "#/components/responses/AdminReportDetail"
         default:
           $ref: "#/components/responses/Problem"
   /admin/reports/{id}/assign_to_self:
@@ -1728,7 +1728,7 @@ paths:
         - $ref: "#/components/parameters/ReportId"
       responses:
         "200":
-          $ref: "#/components/responses/AdminReport"
+          $ref: "#/components/responses/AdminReportDetail"
         default:
           $ref: "#/components/responses/Problem"
   /admin/reports/{id}/unassign:
@@ -1745,7 +1745,7 @@ paths:
         - $ref: "#/components/parameters/ReportId"
       responses:
         "200":
-          $ref: "#/components/responses/AdminReport"
+          $ref: "#/components/responses/AdminReportDetail"
         default:
           $ref: "#/components/responses/Problem"
   /admin/reports/{id}/resolve:
@@ -1768,10 +1768,54 @@ paths:
               $ref: "#/components/schemas/ResolveReportRequest"
       responses:
         "200":
-          $ref: "#/components/responses/AdminReport"
+          $ref: "#/components/responses/AdminReportDetail"
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: domain actions and reports (#296) ---
+  # --- admin: report notes and reopenings (#333) ---
+  /admin/reports/{id}/notes:
+    post:
+      operationId: addReportNote
+      summary: Write a note on a report
+      description: |
+        Adds an internal note to the report (FR-710). Notes are shown to the moderators only,
+        never to the target or the reporter, and cannot be edited or removed. An unknown ID is
+        a 404. Needs the `manage_reports` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportNoteRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminReportDetail"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/reports/{id}/reopen:
+    post:
+      operationId: reopenReport
+      summary: Reopen a resolved report
+      description: |
+        Puts a resolved report back in the queue as `open`, keeping its assignee. Resolving it
+        again does not notify the reporter again. An open report is a 409, an unknown ID a
+        404. Needs the `manage_reports` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminReportDetail"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: report notes and reopenings (#333) ---
   # --- admin: account actions (#316) ---
   /admin/accounts/{id}/actions:
     get:
@@ -1822,7 +1866,9 @@ paths:
         posts of the account that `status_ids` names, for everyone, the account included, and
         sends their deletion like the account's own; `mark_statuses_sensitive` shows their
         media as sensitive until it is lifted. A remote account takes `limit`, `suspend`, and
-        `force_sensitive`. Another kind, the instance actor, or a `report_id` that is not a
+        `force_sensitive`, with the same effects here: a `suspend` also drops what the account
+        sends, and its lift brings the profile and posts back. An action on a remote account is
+        not sent to its server, and `notify_target` does not apply to it. Another kind, the instance actor, or a `report_id` that is not a
         report of the account is a 422 naming `kind`, `id`, or `report_id`. `status_ids` on
         another kind, missing, repeated, or too many on an action on posts, or naming a post
         that does not exist, is deleted, or is of another account is a 422 naming `status_ids`;
@@ -2486,15 +2532,15 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/AdminDomainAction"
-    AdminReport:
-      description: The report.
+    AdminReportDetail:
+      description: The report, with its notes and the history of its target.
       headers:
         Cache-Control:
           $ref: "#/components/headers/CacheControl"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/AdminReport"
+            $ref: "#/components/schemas/AdminReportDetail"
     # --- end of admin: domain actions and reports (#296) ---
     # --- admin: account actions (#316) ---
     AdminAccountAction:
@@ -3796,7 +3842,8 @@ components:
         The kind of an audited operation, each on one kind of target. On an `account`:
         `account_action_issued`, `account_action_lifted`. On a `domain`:
         `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
-        `report_unassigned`, `report_resolved`. On a `user` (a registration):
+        `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+        `user` (a registration):
         `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
         (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
         `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `signup_block`:
@@ -3810,6 +3857,8 @@ components:
         - report_assigned
         - report_unassigned
         - report_resolved
+        - report_reopened
+        - report_note_added
         - registration_approved
         - registration_rejected
         - setting_changed
@@ -3864,8 +3913,8 @@ components:
         source_event_id:
           description: |
             The ID of the record of the operation (the domain action, the assignment, the
-            resolution, the decision, the revision), which holds its reasons and notes; omitted
-            when the operation has none.
+            resolution, the reopening, the note, the decision, the revision), which holds its
+            reasons and notes; omitted when the operation has none.
           type: string
         occurred_at:
           type: string
@@ -3975,7 +4024,7 @@ components:
         outcome:
           $ref: "#/components/schemas/AdminReportOutcome"
         state_changed_at:
-          description: When the report was filed or, once resolved, resolved.
+          description: When the report entered its state (when it was filed, resolved, or reopened).
           type: string
           format: date-time
         assignee_account_id:
@@ -4063,6 +4112,68 @@ components:
         outcome:
           $ref: "#/components/schemas/AdminReportOutcome"
     # --- end of admin: domain actions and reports (#296) ---
+    # --- admin: report notes and reopenings (#333) ---
+    AdminReportDetail:
+      description: |
+        A report as a moderator opens it: the report with its internal notes and what the
+        moderators had about its target.
+      allOf:
+        - $ref: "#/components/schemas/AdminReport"
+        - type: object
+          required: [notes, target_history]
+          properties:
+            notes:
+              description: The moderators' notes on the report, oldest first.
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminReportNote"
+            target_history:
+              $ref: "#/components/schemas/AdminReportTargetHistory"
+    AdminReportNote:
+      description: A moderator's internal note on a report; never shown to the target or the reporter.
+      type: object
+      required: [id, body, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        author_account_id:
+          description: |
+            The account of the moderator who wrote the note; omitted for a note from the
+            command line and when the moderator has no account.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        body:
+          description: The note as plain text, up to 2,000 characters.
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    AdminReportTargetHistory:
+      description: What the moderators had about the target of a report.
+      type: object
+      required: [reports_count, actions_count]
+      properties:
+        reports_count:
+          description: The number of the target's other reports, open and resolved.
+          type: integer
+          format: int64
+          minimum: 0
+        actions_count:
+          description: The number of moderation actions on the target, ended ones included.
+          type: integer
+          format: int64
+          minimum: 0
+    CreateReportNoteRequest:
+      description: A note to add to a report.
+      type: object
+      required: [body]
+      properties:
+        body:
+          description: The note as plain text; it may not be blank.
+          type: string
+          minLength: 1
+          maxLength: 2000
+    # --- end of admin: report notes and reopenings (#333) ---
     # --- admin: account actions (#316) ---
     AdminAccountAction:
       description: A moderation action on an account (FR-703).
@@ -4188,7 +4299,9 @@ components:
           type: string
           maxLength: 5000
         report_id:
-          description: The report of the account that the action follows from.
+          description: |
+            The report of the account that the action follows from. The action resolves an open
+            report as `actioned` in the same operation; a resolved report stays as it is.
           allOf:
             - $ref: "#/components/schemas/Id"
         notify_target:

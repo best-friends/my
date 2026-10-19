@@ -129,6 +129,30 @@ func TestAdminReportCommands(t *testing.T) {
 	if _, stdout, _ := runCmd(t, adminCmd, "report", "list", "-state", "resolved"); !regexp.MustCompile(r.ID + ` +resolved \(dismissed\)`).MatchString(stdout) {
 		t.Errorf("report list -state resolved:\n%s", stdout)
 	}
+	if code, stdout, _ := runCmd(t, adminCmd, "report", "note", r.ID, "seen before"); code != 0 ||
+		!regexp.MustCompile(`^note \S+ is added to report `+r.ID+"\n$").MatchString(stdout) {
+		t.Errorf("report note = %d %q", code, stdout)
+	}
+	if code, stdout, _ := runCmd(t, adminCmd, "report", "reopen", r.ID); code != 0 || stdout != "report "+r.ID+" is open again\n" {
+		t.Errorf("report reopen = %d %q", code, stdout)
+	}
+	if code, stdout, _ := runCmd(t, adminCmd, "report", "show", r.ID); code != 0 || !regexp.MustCompile(`state: +open`).MatchString(stdout) ||
+		!regexp.MustCompile(`history: +0 other reports, 0 actions`).MatchString(stdout) ||
+		!regexp.MustCompile(`\nnote \S+ by - at \S+:\nseen before\n$`).MatchString(stdout) {
+		t.Errorf("report show after a note = %d\n%s", code, stdout)
+	}
+	// An action that follows from the report resolves it as actioned.
+	if code, _, stderr := runCmd(t, adminCmd, "account", "action", "issue", "-kind", "warn", "-category", "spam", "-report", r.ID, "@root"); code != 0 {
+		t.Fatalf("account action issue = %d %s", code, stderr)
+	}
+	if _, stdout, _ := runCmd(t, adminCmd, "report", "show", r.ID); !regexp.MustCompile(`state: +resolved \(actioned\)`).MatchString(stdout) ||
+		!regexp.MustCompile(`history: +0 other reports, 1 actions`).MatchString(stdout) {
+		t.Errorf("report show after an action:\n%s", stdout)
+	}
+	if code, stdout, _ := runCmd(t, adminCmd, "audit", "list", "-target-kind", "report", "-target-id", r.ID); code != 0 ||
+		!regexp.MustCompile(`(?s)report_resolved.*report_reopened.*report_note_added.*report_resolved`).MatchString(stdout) {
+		t.Errorf("audit list of the report = %d\n%s", code, stdout)
+	}
 
 	for _, tc := range []struct {
 		args []string

@@ -5,6 +5,7 @@ package moderation
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -124,7 +125,7 @@ type ReportStatus struct {
 	// Outcome is that of the latest resolution while the report is resolved, "" while open.
 	Outcome        ReportOutcome
 	AssigneeUserID string // "" for none
-	// Since is when the report entered its state: when it was filed or resolved.
+	// Since is when the report entered its state: when it was filed, resolved, or reopened.
 	Since time.Time
 }
 
@@ -160,6 +161,64 @@ type ReportResolution struct {
 	Outcome          ReportOutcome
 	ResolvedByUserID string // "" for the CLI
 	ResolvedAt       time.Time
+}
+
+// ReportReopening is the event that a moderator reopened a resolved report
+// (report_reopenings).
+type ReportReopening struct {
+	ID               string
+	ReportID         string
+	ReopenedByUserID string // "" for the CLI
+	ReopenedAt       time.Time
+}
+
+// MaxReportNote is the number of characters of a note on a report.
+const MaxReportNote = 2000
+
+// ReportNote is a moderator's internal note on a report (report_notes, an event). Only the
+// moderators see it: never the target, nor the reporter.
+type ReportNote struct {
+	ID           string
+	ReportID     string
+	AuthorUserID string // "" for the CLI
+	Body         string
+	WrittenAt    time.Time
+}
+
+// ErrInvalidReportNote reports a note with a missing or invalid field.
+var ErrInvalidReportNote = errors.New("moderation: invalid report note")
+
+// Validate checks the invariants of a new note: a body that is not blank, of at most
+// MaxReportNote characters. A body that is too long or not valid text fails with a *TextError
+// wrapped with ErrInvalidReportNote.
+func (n ReportNote) Validate() error {
+	switch {
+	case n.ID == "" || n.ReportID == "" || n.WrittenAt.IsZero():
+		return fmt.Errorf("%w: a field is empty", ErrInvalidReportNote)
+	case strings.TrimSpace(n.Body) == "":
+		return fmt.Errorf("%w: the body is blank", ErrInvalidReportNote)
+	}
+	if err := checkText("body", n.Body, MaxReportNote); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidReportNote, err)
+	}
+	return nil
+}
+
+// TargetHistory counts what the moderators had about the target of a report: the target's
+// other reports, and the actions on the target, lifted and expired ones included.
+type TargetHistory struct {
+	// Reports counts the target's reports other than the one shown.
+	Reports int64
+	// Actions counts the actions on the target.
+	Actions int64
+}
+
+// ReportDetail is a report with its state, its notes oldest first, and its target's history,
+// as a moderator opens it.
+type ReportDetail struct {
+	ReportRecord
+	Notes   []ReportNote
+	History TargetHistory
 }
 
 // ReportRecord is a report with its current state, as the moderators list it.
