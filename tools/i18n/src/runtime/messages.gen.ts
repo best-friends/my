@@ -222,6 +222,8 @@ export interface MessageArgs {
   "client:admin.audit_log.only_actor": { name: string };
   /** Show only operations on {target} */
   "client:admin.audit_log.only_target": { target: string };
+  /** Who did what in the administration, and when. */
+  "client:admin.audit_log.summary": {};
   /** Account */
   "client:admin.audit_log.target_kind.account": {};
   /** Appeal */
@@ -398,6 +400,10 @@ export interface MessageArgs {
   "client:admin.domain.ascii": { domain: string };
   /** {unicode} ({ascii}) */
   "client:admin.domain.both": { ascii: string; unicode: string };
+  /** Your roles grant none of the permissions that the admin screens need. An administrator can grant them. */
+  "client:admin.home.none.description": {};
+  /** No admin screens for your roles */
+  "client:admin.home.none.heading": {};
   /** Back to remote servers */
   "client:admin.instance.back": {};
   /** Deliveries resumed */
@@ -470,12 +476,20 @@ export interface MessageArgs {
   "client:admin.instances.title": {};
   /** Show more */
   "client:admin.list.more": {};
+  /** {count, plural, one {# open report} other {# open reports}} */
+  "client:admin.menu.open_reports": { count: number };
+  /** {count, plural, one {# awaits a decision} other {# await a decision}} */
+  "client:admin.menu.pending_appeals": { count: number };
+  /** {count, plural, one {# awaits approval} other {# await approval}} */
+  "client:admin.menu.pending_registrations": { count: number };
   /** Administration */
   "client:admin.menu.title": {};
   /** Your roles do not have the permission {permission}. Ask an administrator of this server for it. */
   "client:admin.missing_permission.description": { permission: string };
   /** You cannot use this screen */
   "client:admin.missing_permission.heading": {};
+  /** {count, plural, one {# pending} other {# pending}} */
+  "client:admin.pending_count": { count: number };
   /** A removed account */
   "client:admin.registrations.account_gone": {};
   /** {applicant} was already approved by another moderator. That decision stands. */
@@ -542,6 +556,8 @@ export interface MessageArgs {
   "client:admin.registrations.rejected": { applicant: string };
   /** Signed up */
   "client:admin.registrations.submitted_at": {};
+  /** Sign-ups that await approval, and approving or rejecting them. */
+  "client:admin.registrations.summary": {};
   /** Registrations */
   "client:admin.registrations.title": {};
   /** A deleted account */
@@ -880,6 +896,10 @@ export interface MessageArgs {
   "client:login.submit": {};
   /** Sign in */
   "client:login.title": {};
+  /** Your appeal was granted, and the action was lifted. */
+  "client:notifications.appeal.overturned": {};
+  /** Your appeal was not granted, and the action stays. */
+  "client:notifications.appeal.upheld": {};
   /** No notifications yet */
   "client:notifications.empty.all": {};
   /** When someone follows you, mentions you or reacts to your posts, it shows up here. */
@@ -904,14 +924,32 @@ export interface MessageArgs {
   "client:notifications.group.boost": { count: number; name: string };
   /** {name} and {count, plural, one {# other} other {# others}} favourited your post */
   "client:notifications.group.favourite": { count: number; name: string };
+  /** View your account status */
+  "client:notifications.link.account_status": {};
+  /** Open the appeal */
+  "client:notifications.link.appeal": {};
+  /** View your followers */
+  "client:notifications.link.followers": {};
+  /** View the accounts you follow */
+  "client:notifications.link.following": {};
+  /** Review registrations */
+  "client:notifications.link.registrations": {};
+  /** Open the report */
+  "client:notifications.link.report": {};
   /** Load more notifications */
   "client:notifications.load_more": {};
   /** Loading notifications */
   "client:notifications.loading": {};
+  /** {kind}: {category} */
+  "client:notifications.moderation.action": { category: string; kind: string };
+  /** Until {date} */
+  "client:notifications.moderation.until": { date: string };
   /** Content warning: {summary} */
   "client:notifications.post.content_warning": { summary: string };
   /** Open post */
   "client:notifications.post.open": {};
+  /** Your report on {name} has been resolved */
+  "client:notifications.report_resolved.account": { name: string };
   /** Try again */
   "client:notifications.retry": {};
   /** The moderators suspended {name}. You lost {followers, plural, one {# follower} other {# followers}} and {following, plural, one {# account you followed} other {# accounts you followed}}. */
@@ -1394,6 +1432,10 @@ export interface MessageArgs {
   "client:shell.menu.close": {};
   /** Menu */
   "client:shell.menu.title": {};
+  /** Administration */
+  "client:shell.nav.admin": {};
+  /** Administration, {count, plural, one {# pending} other {# pending}} */
+  "client:shell.nav.admin_pending": { count: number };
   /** Home */
   "client:shell.nav.home": {};
   /** Main */
@@ -1402,6 +1444,8 @@ export interface MessageArgs {
   "client:shell.nav.local": {};
   /** Menu */
   "client:shell.nav.menu": {};
+  /** Menu, {count, plural, one {# pending in administration} other {# pending in administration}} */
+  "client:shell.nav.menu_pending": { count: number };
   /** Notifications */
   "client:shell.nav.notifications": {};
   /** Notifications, {count, plural, one {# unread} other {# unread}} */
