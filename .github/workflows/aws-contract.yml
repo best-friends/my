@@ -1,0 +1,41 @@
+name: AWS emulator contract
+
+# The tests of the Amazon SNS / SQS adapters (AWS_TEST_PACKAGES in the Makefile) on the Floci emulator container as well
+# as on the in-memory fake of pkg/testkit/awstest (ADR-0050 §5). Called by main.yml on the pushes to main that touch a
+# path they depend on and by nightly.yml; pull requests and merge groups run the same tests on the fake only in
+# ctx-go.yml's go-test job.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  # Use exactly the Go version from .tool-versions; never auto-download another toolchain.
+  GOTOOLCHAIN: local
+
+jobs:
+  aws-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: .tool-versions
+          cache: false
+      # The go-test cache that main.yml saves, without saving one.
+      - name: Restore the Go module and build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-test-${{ runner.os }}-
+      # testcontainers-go starts the emulator on the runner's Docker; TEST_AWS_REQUIRED makes a missing Docker fail the
+      # job instead of skipping the tests.
+      - name: make go-test-aws
+        run: make go-test-aws

@@ -140,6 +140,13 @@ POSTGRES_TEST_PACKAGES := ./internal/adapter/db/postgres/ ./internal/adapter/kv/
 go-test-postgres: ## Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI on main and nightly)
 	TEST_POSTGRES=container TEST_POSTGRES_REQUIRED=1 go test -count=1 $(POSTGRES_TEST_PACKAGES)
 
+# The packages whose tests use the AWS emulator through pkg/testkit/awstest.
+AWS_TEST_PACKAGES := ./internal/adapter/stream/sns/
+
+.PHONY: go-test-aws
+go-test-aws: ## Run the SNS / SQS tests on the AWS emulator container too, not only the in-memory fake (needs Docker; CI on main and nightly)
+	TEST_AWS=container TEST_AWS_REQUIRED=1 go test -count=1 $(AWS_TEST_PACKAGES)
+
 go-build: ## Build all packages statically (CGO_ENABLED=0)
 	CGO_ENABLED=0 go build ./...
 

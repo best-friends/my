@@ -2,7 +2,8 @@ name: Nightly
 
 # Checks too slow for every PR (ADR-0015, ADR-0047): the web E2E over the full width × locale matrix, the live
 # interoperability test with Mastodon, GoToSocial, and Misskey, the PostgreSQL tests on a real postgres container
-# (ADR-0041), and the Docker Compose smoke test with the linux/arm64 image builds.
+# (ADR-0041), the SNS / SQS tests on the AWS emulator (ADR-0050), and the Docker Compose smoke test with the linux/arm64
+# image builds.
 
 on:
   schedule:
@@ -28,6 +29,9 @@ jobs:
 
   postgres-contract:
     uses: ./.github/workflows/postgres-contract.yml
+
+  aws-contract:
+    uses: ./.github/workflows/aws-contract.yml
 
   docker:
     # Pull requests build the arm64 images only on a change to the docker context; build them every night too, with
