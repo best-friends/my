@@ -61,17 +61,17 @@ async function administratorServer(page: Page) {
     if (key === "GET /preferences") {
       return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "und", require_media_description: false, timeline_languages: [] });
     }
-    if (key === "GET /admin/instance/texts") {
-      return json(route, { items: [...names].map(([textLocale, text]) => ({ key: "name", locale: textLocale, text, revised_at: "2026-10-16T00:00:00Z" })) });
+    if (key === "GET /admin/instance_texts") {
+      return json(route, { items: [...names].map(([textLocale, body]) => ({ key: "name", locale: textLocale, body, revised_at: "2026-10-16T00:00:00Z" })) });
     }
-    const set = /^PUT \/admin\/instance\/texts\/name\/([^/]+)$/.exec(key);
+    const set = /^PUT \/admin\/instance_texts\/name\/([^/]+)$/.exec(key);
     if (set) {
       const textLocale = decodeURIComponent(set[1] ?? "");
-      const { text } = (request.postDataJSON() ?? {}) as { text: string };
-      changes.push(`${textLocale} ${text}`);
-      if (text === "") names.delete(textLocale);
-      else names.set(textLocale, text);
-      return json(route, { key: "name", locale: textLocale, text, revised_at: "2026-10-17T00:00:00Z" });
+      const { body } = (request.postDataJSON() ?? {}) as { body: string };
+      changes.push(`${textLocale} ${body}`);
+      if (body === "") names.delete(textLocale);
+      else names.set(textLocale, body);
+      return json(route, { key: "name", locale: textLocale, body, revised_at: "2026-10-17T00:00:00Z" });
     }
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });

@@ -4,12 +4,12 @@ package clientapi_test
 
 import (
 	"context"
-	"maps"
+	"fmt"
 	"net/http"
 	"reflect"
-	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	appinstance "github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/domain/identity"
@@ -18,22 +18,28 @@ import (
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
 
-// Texts lists the texts of a fakeInstance by key and locale, as appinstance.Service does.
-func (f *fakeInstance) Texts(context.Context) ([]instance.Text, error) {
+// fakeTexts keeps instance texts with the semantics of appinstance.Service, on fakeInstance so
+// that GET /instance reads what the admin operations write.
+type fakeTexts struct {
+	inst *fakeInstance
+	now  time.Time
+	seq  int
+	sets []appinstance.SetTextInput
+}
+
+func (f *fakeTexts) Texts(context.Context) ([]instance.Text, error) {
 	var out []instance.Text
 	for _, d := range instance.TextDefinitions() {
-		for _, locale := range slices.Sorted(maps.Keys(f.texts[d.Key])) {
-			if body := f.texts[d.Key][locale]; body != "" {
-				out = append(out, instance.Text{Key: d.Key, Locale: locale, Body: body, RevisedAt: adminNow})
+		for _, l := range []string{"en", "en-GB", "ja"} {
+			if body := f.inst.texts[d.Key][l]; body != "" {
+				out = append(out, instance.Text{Key: d.Key, Locale: l, Body: body, RevisedAt: f.now})
 			}
 		}
 	}
 	return out, nil
 }
 
-// SetText changes a text of a fakeInstance with the checks of appinstance.Service, and keeps
-// who changed it.
-func (f *fakeInstance) SetText(_ context.Context, in appinstance.SetTextInput) (instance.TextRevision, error) {
+func (f *fakeTexts) SetText(_ context.Context, in appinstance.SetTextInput) (instance.TextRevision, error) {
 	def, err := instance.LookupText(in.Key)
 	if err != nil {
 		return instance.TextRevision{}, err
@@ -45,25 +51,30 @@ func (f *fakeInstance) SetText(_ context.Context, in appinstance.SetTextInput) (
 	if err := def.Validate(in.Body); err != nil {
 		return instance.TextRevision{}, err
 	}
-	if f.texts == nil {
-		f.texts = map[instance.TextKey]map[string]string{}
+	f.sets = append(f.sets, in)
+	f.seq++
+	if f.inst.texts == nil {
+		f.inst.texts = map[instance.TextKey]map[string]string{}
 	}
-	if f.texts[in.Key] == nil {
-		f.texts[in.Key] = map[string]string{}
+	if f.inst.texts[in.Key] == nil {
+		f.inst.texts[in.Key] = map[string]string{}
 	}
-	f.texts[in.Key][locale] = in.Body
-	f.revisedBy = append(f.revisedBy, in.RevisedByUserID)
-	return instance.TextRevision{ID: "rev", Key: in.Key, Locale: locale, Body: in.Body, RevisedByUserID: in.RevisedByUserID, RevisedAt: adminNow}, nil
+	f.inst.texts[in.Key][locale] = in.Body
+	return instance.TextRevision{
+		ID: fmt.Sprintf("01890a5d-ac96-774b-bcce-b302099a7%03d", f.seq), Key: in.Key, Locale: locale, Body: in.Body,
+		RevisedByUserID: in.RevisedByUserID, RevisedAt: f.now,
+	}, nil
 }
 
-// newTextsEnv is newAuthEnv with the instance texts and the admin tokens: alice holds every
-// permission and bob none.
-func newTextsEnv(t *testing.T) (*authEnv, *fakeInstance) {
+// newTextsEnv is newAuthEnv with the tokens of newAdminEnv, the instance texts, and the paths of
+// the document pages: alice holds every permission and bob none.
+func newTextsEnv(t *testing.T) (*authEnv, *fakeTexts) {
 	t.Helper()
-	f := &fakeInstance{}
+	f := &fakeTexts{inst: &fakeInstance{}, now: adminNow}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
-		o.Instance, o.Texts = f, f
+		o.Instance, o.InstanceTexts = f.inst, f
+		o.TermsPath, o.PrivacyPolicyPath = "/auth/terms", "/auth/privacy"
 	})
 	e.auth.tokens["admin"] = bearer("admin", aliceAccountID)
 	e.auth.tokens["admin-read"] = bearer("admin:read", aliceAccountID)
@@ -71,11 +82,11 @@ func newTextsEnv(t *testing.T) (*authEnv, *fakeInstance) {
 	return e, f
 }
 
-func TestInstanceTextOperationsNeedManageSettings(t *testing.T) {
+func TestInstanceTextOperationsNeedAPermission(t *testing.T) {
 	e, f := newTextsEnv(t)
 	for _, op := range []struct{ method, path, body string }{
-		{http.MethodGet, "/admin/instance/texts", ""},
-		{http.MethodPut, "/admin/instance/texts/name/en", `{"text":"Example"}`},
+		{http.MethodGet, "/admin/instance_texts", ""},
+		{http.MethodPut, "/admin/instance_texts/terms/en", `{"body":"Be kind"}`},
 	} {
 		res := e.send(t, op.method, op.path, "bob-admin", op.body)
 		if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
@@ -83,82 +94,77 @@ func TestInstanceTextOperationsNeedManageSettings(t *testing.T) {
 			t.Errorf("%s %s by bob = %d %+v, want 403 for manage_settings", op.method, op.path, res.StatusCode, p)
 		}
 	}
-	res := e.sendJSON(t, http.MethodPut, "/admin/instance/texts/name/en", "admin-read", `{"text":"Example"}`)
+	res := e.sendJSON(t, http.MethodPut, "/admin/instance_texts/terms/en", "admin-read", `{"body":"Be kind"}`)
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeInsufficientScope {
 		t.Errorf("set with admin:read = %d %+v, want 403 insufficient-scope", res.StatusCode, p)
 	}
-	if len(f.texts) != 0 {
-		t.Errorf("a refused operation changed the texts: %v", f.texts)
+	if len(f.sets) != 0 {
+		t.Error("a refused operation set a text")
 	}
 }
 
-// TestSetInstanceName checks that the name set through the admin API names the instance in GET
-// /instance, in the reader's locale, while the domain stays the domain; clearing every locale
-// names it by the domain again.
-func TestSetInstanceName(t *testing.T) {
+func TestManageInstanceTexts(t *testing.T) {
 	e, f := newTextsEnv(t)
-	instanceInfo := func(lang string) clientapi.Instance {
+	instanceLinks := func(header map[string]string) (terms, privacy *string) {
 		t.Helper()
-		res := e.get(t, "/instance", map[string]string{"Accept-Language": lang})
+		res := e.get(t, "/instance", header)
 		if res.StatusCode != http.StatusOK {
 			t.Fatalf("GET /instance = %d", res.StatusCode)
 		}
-		return decodeJSON[clientapi.Instance](t, res)
+		got := decodeJSON[clientapi.Instance](t, res)
+		return got.TermsUrl, got.PrivacyPolicyUrl
 	}
-	if got := instanceInfo("en"); got.Name != "social.example" || got.Domain != "social.example" {
-		t.Fatalf("instance without a name = %+v, want the domain for both", got)
+	if terms, privacy := instanceLinks(nil); terms != nil || privacy != nil {
+		t.Errorf("links without documents = %v %v, want none", terms, privacy)
 	}
 
-	res := e.sendJSON(t, http.MethodPut, "/admin/instance/texts/name/en", "admin", `{"text":"Example Social"}`)
-	set := decodeJSON[clientapi.AdminInstanceText](t, res)
-	want := clientapi.AdminInstanceText{Key: clientapi.AdminInstanceTextKeyName, Locale: "en", Text: "Example Social", RevisedAt: adminNow}
-	if res.StatusCode != http.StatusOK || set != want || res.Header.Get("Cache-Control") != "no-store" {
-		t.Fatalf("set = %d %+v, want %+v", res.StatusCode, set, want)
+	res := e.sendJSON(t, http.MethodPut, "/admin/instance_texts/terms/JA", "admin", `{"body":"# 利用規約\n\n親切に。"}`)
+	got := decodeJSON[clientapi.AdminInstanceText](t, res)
+	want := clientapi.AdminInstanceText{Key: clientapi.InstanceTextKeyTerms, Locale: "ja", Body: "# 利用規約\n\n親切に。", RevisedAt: adminNow}
+	if res.StatusCode != http.StatusOK || !reflect.DeepEqual(got, want) {
+		t.Fatalf("set = %d %+v, want %+v", res.StatusCode, got, want)
 	}
-	if !reflect.DeepEqual(f.revisedBy, []string{"user-" + aliceAccountID}) {
-		t.Errorf("revised by %q, want alice's user", f.revisedBy)
+	if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", cc)
 	}
-	if res := e.sendJSON(t, http.MethodPut, "/admin/instance/texts/name/ja", "admin", `{"text":"例のソーシャル"}`); res.StatusCode != http.StatusOK {
-		t.Errorf("set ja = %d, want 200", res.StatusCode)
+	if by := f.sets[0].RevisedByUserID; by != "user-"+aliceAccountID {
+		t.Errorf("revised by %q, want alice's user", by)
 	}
 	// The locale is canonicalized.
-	if res := e.sendJSON(t, http.MethodPut, "/admin/instance/texts/short_description/ja_jp", "admin", `{"text":"小さなサーバー"}`); res.StatusCode != http.StatusOK ||
-		decodeJSON[clientapi.AdminInstanceText](t, res).Locale != "ja-JP" {
-		t.Errorf("set ja_jp = %d, want 200 in ja-JP", res.StatusCode)
-	}
-	for lang, name := range map[string]string{"en": "Example Social", "ja-JP": "例のソーシャル", "fr": "Example Social"} {
-		if got := instanceInfo(lang); got.Name != name || got.Domain != "social.example" {
-			t.Errorf("instance for %s = name %q domain %q, want %q and the domain", lang, got.Name, got.Domain, name)
-		}
+	if got := decodeJSON[clientapi.AdminInstanceText](t, e.sendJSON(t, http.MethodPut, "/admin/instance_texts/name/en_gb", "admin", `{"body":"Example Social"}`)); got.Locale != "en-GB" {
+		t.Errorf("locale of en_gb = %q, want en-GB", got.Locale)
 	}
 
-	res = e.admin(t, http.MethodGet, "/admin/instance/texts", "admin-read", nil)
+	res = e.admin(t, http.MethodGet, "/admin/instance_texts", "admin-read", nil)
 	list := decodeJSON[clientapi.AdminInstanceTextList](t, res)
 	wantList := []clientapi.AdminInstanceText{
-		{Key: clientapi.AdminInstanceTextKeyName, Locale: "en", Text: "Example Social", RevisedAt: adminNow},
-		{Key: clientapi.AdminInstanceTextKeyName, Locale: "ja", Text: "例のソーシャル", RevisedAt: adminNow},
-		{Key: clientapi.AdminInstanceTextKeyShortDescription, Locale: "ja-JP", Text: "小さなサーバー", RevisedAt: adminNow},
+		{Key: clientapi.InstanceTextKeyName, Locale: "en-GB", Body: "Example Social", RevisedAt: adminNow},
+		want,
 	}
-	if res.StatusCode != http.StatusOK || !reflect.DeepEqual(list.Items, wantList) || res.Header.Get("Cache-Control") != "no-store" {
+	if res.StatusCode != http.StatusOK || !reflect.DeepEqual(list.Items, wantList) {
 		t.Errorf("list = %d %+v, want %+v", res.StatusCode, list.Items, wantList)
 	}
 
-	// An empty text clears the name in its locale.
-	for _, locale := range []string{"en", "ja"} {
-		if res := e.sendJSON(t, http.MethodPut, "/admin/instance/texts/name/"+locale, "admin", `{"text":""}`); res.StatusCode != http.StatusOK {
-			t.Errorf("clear %s = %d", locale, res.StatusCode)
-		}
+	// GET /instance links to the terms for a reader whose chain has them.
+	if terms, privacy := instanceLinks(map[string]string{"Accept-Language": "ja"}); terms == nil ||
+		*terms != "https://social.example/auth/terms" || privacy != nil {
+		t.Errorf("links for ja-JP = %v %v, want the terms only", terms, privacy)
 	}
-	if got := instanceInfo("ja"); got.Name != "social.example" {
-		t.Errorf("instance after clearing = %q, want the domain", got.Name)
+	if terms, _ := instanceLinks(map[string]string{"Accept-Language": "en"}); terms != nil {
+		t.Errorf("terms link for en = %q, want none: the terms are only in ja", *terms)
 	}
-	res = e.admin(t, http.MethodGet, "/admin/instance/texts", "admin-read", nil)
-	if list := decodeJSON[clientapi.AdminInstanceTextList](t, res); len(list.Items) != 1 || list.Items[0].Key != clientapi.AdminInstanceTextKeyShortDescription {
-		t.Errorf("list after clearing = %+v, want only the description", list.Items)
+
+	// Clearing the text removes the link.
+	res = e.sendJSON(t, http.MethodPut, "/admin/instance_texts/terms/ja", "admin", `{"body":""}`)
+	if got := decodeJSON[clientapi.AdminInstanceText](t, res); res.StatusCode != http.StatusOK || got.Body != "" {
+		t.Errorf("clear = %d %+v", res.StatusCode, got)
+	}
+	if terms, _ := instanceLinks(map[string]string{"Accept-Language": "ja"}); terms != nil {
+		t.Errorf("terms link after clearing = %q, want none", *terms)
 	}
 }
 
-func TestSetInstanceTextProblems(t *testing.T) {
+func TestInstanceTextProblems(t *testing.T) {
 	e, f := newTextsEnv(t)
 	for _, tc := range []struct {
 		name, path, body string
@@ -166,23 +172,20 @@ func TestSetInstanceTextProblems(t *testing.T) {
 		// detail is the property that the detail names.
 		detail string
 	}{
-		{"too long", "/admin/instance/texts/name/en", `{"text":"` + strings.Repeat("あ", 101) + `","x":"invalid-on-purpose"}`, http.StatusUnprocessableEntity, "text"},
-		{"line break", "/admin/instance/texts/name/en", `{"text":"a\nb"}`, http.StatusUnprocessableEntity, "text"},
-		{"blank", "/admin/instance/texts/name/en", `{"text":"   "}`, http.StatusUnprocessableEntity, "text"},
-		{"bad locale", "/admin/instance/texts/name/e%20n", `{"text":"Example"}`, http.StatusUnprocessableEntity, "locale"},
-		{"unknown key", "/admin/instance/texts/motto/en", `{"text":"Example","x":"invalid-on-purpose"}`, http.StatusNotFound, ""},
+		{"unknown key", "/admin/instance_texts/motto/en", `{"body":"x"}`, http.StatusNotFound, ""},
+		{"bad locale", "/admin/instance_texts/terms/not%20a%20tag", `{"body":"x"}`, http.StatusUnprocessableEntity, "locale"},
+		{"too long", "/admin/instance_texts/name/en", `{"body":"` + strings.Repeat("a", 101) + `"}`, http.StatusUnprocessableEntity, "body"},
+		{"line break", "/admin/instance_texts/name/en", `{"body":"a\nb"}`, http.StatusUnprocessableEntity, "body"},
+		{"blank name", "/admin/instance_texts/name/en", `{"body":"   "}`, http.StatusUnprocessableEntity, "body"},
+		{"NUL", "/admin/instance_texts/terms/en", `{"body":"a\u0000b"}`, http.StatusUnprocessableEntity, "body"},
 	} {
-		res := e.sendJSON(t, http.MethodPut, tc.path, "admin", tc.body)
+		res := e.send(t, http.MethodPut, tc.path, "admin", tc.body)
 		p := decodeProblem(t, res)
 		if res.StatusCode != tc.status || (tc.detail != "" && (p.Detail == nil || !strings.Contains(*p.Detail, tc.detail))) {
 			t.Errorf("%s: %d %+v, want %d %q", tc.name, res.StatusCode, p, tc.status, tc.detail)
 		}
 	}
-	// A description may have several lines.
-	if res := e.sendJSON(t, http.MethodPut, "/admin/instance/texts/description/en", "admin", `{"text":"a\nb"}`); res.StatusCode != http.StatusOK {
-		t.Errorf("multi-line description = %d, want 200", res.StatusCode)
-	}
-	if len(f.texts[instance.TextName]) != 0 {
-		t.Errorf("a refused change set a name: %v", f.texts[instance.TextName])
+	if len(f.sets) != 0 {
+		t.Errorf("a refused text was set: %+v", f.sets)
 	}
 }

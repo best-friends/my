@@ -926,6 +926,12 @@ export interface paths {
          *     for everyone, its local posts for logged-in viewers, its followers-only posts for its
          *     followers, and its direct posts addressed to the viewer. With `pinned`, the page lists
          *     the account's pinned posts instead, newest pin first, in a single page.
+         *
+         *     The page lists only the posts this server has received. For a remote account, the first
+         *     page (no `cursor`, no `pinned`) of a logged-in viewer may start fetching the account's
+         *     recent public posts from its server in the background; `remote_fetch_started` tells
+         *     that it did. It does at most once a day per account, for at most 30 accounts per viewer
+         *     in 5 minutes, and never for an account that the viewer blocks or that blocks the viewer.
          */
         get: operations["listAccountStatuses"];
         put?: never;
@@ -1571,60 +1577,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/instance/texts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List the instance texts
-         * @description The texts of the instance in every locale that has one, by key and then by locale: its
-         *     display name, its descriptions, its terms of service and privacy policy, and the alt text
-         *     of its link preview image. A key that no locale has a text of is left out, and so is a
-         *     text cleared in a locale. The list is not paginated. Needs the `manage_settings`
-         *     permission.
-         */
-        get: operations["listInstanceTexts"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/instance/texts/{key}/{locale}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Set an instance text in one locale
-         * @description Records a new revision of the text in the locale, which takes effect at once; the change
-         *     is audited. An empty `text` clears the text in that locale, so that its readers get the
-         *     text of the next locale of their fallback chain (the locale's parents, then the
-         *     instance's default locale). The display name (`name`) is what names the instance to
-         *     people: the web client's navigation and tab title, the server-rendered sign-in pages,
-         *     emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`. Where no
-         *     locale of the chain has a name, the instance is named by its domain, which handles and
-         *     URLs always use. A text longer than its key allows (see `AdminInstanceTextKey`) or a
-         *     single-line text with a line break is a 422 naming `text`, a locale that is not a BCP 47
-         *     tag a 422 naming `locale`, and an unknown key a 404. Needs the `manage_settings`
-         *     permission.
-         */
-        put: operations["setInstanceText"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/admin/rules": {
         parameters: {
             query?: never;
@@ -1720,6 +1672,64 @@ export interface paths {
          *     Needs the `manage_rules` permission.
          */
         post: operations["retireInstanceRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instance_texts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the instance texts
+         * @description The current text of every key in every locale that has one (FR-705): the name, the
+         *     descriptions, the terms of service, the privacy policy, and the alternative text of the
+         *     preview image, by key and locale. Cleared texts are not listed. The list is not
+         *     paginated. Needs the `manage_settings` permission.
+         */
+        get: operations["listInstanceTexts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instance_texts/{key}/{locale}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set an instance text in one locale
+         * @description Records a revision of the text of `key` in `locale`, which becomes its current text; an
+         *     empty `body` clears the text in that locale, so that readers get the next locale of
+         *     their fallback chain. The revision and the change are kept (`instance_text_revisions`,
+         *     the audit log's `text_changed`). The locale is canonicalized (`ja_jp` is `ja-JP`).
+         *     The terms of service and the privacy policy are Markdown, which the server renders and
+         *     sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
+         *     the other texts are plain text. The display name (`name`) names the instance to people
+         *     in place of its domain: the web client's navigation and tab title, the server-rendered
+         *     pages, emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`;
+         *     where no locale of the chain has a name, the domain names it, and handles and URLs always
+         *     use the domain. An unknown key is a 404. A locale that is not a BCP 47
+         *     tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
+         *     `name`, 500 for `short_description`, 1,500 for `preview_image_alt`, 20,000 for
+         *     `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
+         *     or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
+         *     permission.
+         */
+        put: operations["setInstanceText"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2243,6 +2253,19 @@ export interface components {
             sends_email: boolean;
             /** @description The rules in effect, in order, each in the locale of the request. */
             rules: components["schemas"]["InstanceRule"][];
+            /**
+             * Format: uri
+             * @description The public page of the instance's terms of service, which needs no sign-in; omitted
+             *     when no locale of the request's fallback chain has them, so that clients do not
+             *     link to it.
+             */
+            terms_url?: string;
+            /**
+             * Format: uri
+             * @description The public page of the instance's privacy policy, which needs no sign-in; omitted
+             *     when no locale of the request's fallback chain has it.
+             */
+            privacy_policy_url?: string;
         };
         /** @description How people sign up on the instance. */
         InstanceRegistrations: {
@@ -2903,6 +2926,16 @@ export interface components {
             /** @description The statuses of the page. */
             items: components["schemas"]["Status"][];
         };
+        /** @description A page of the statuses of an account. */
+        AccountStatusPage: components["schemas"]["StatusPage"] & {
+            /**
+             * @description `true` when this request started fetching the remote account's recent public
+             *     posts from its server (ADR-0044). The fetch runs in the background; read the
+             *     first page again a few seconds later to see what it stored. Absent otherwise,
+             *     including when a fetch started in the last day.
+             */
+            remote_fetch_started?: boolean;
+        };
         /** @description What the author typed, for editing a status. */
         StatusSource: {
             id: components["schemas"]["Id"];
@@ -2997,8 +3030,13 @@ export interface components {
         Preferences: {
             /** @description The UI locale, a BCP 47 language tag. */
             locale: string;
-            /** @description The time zone, an IANA name such as `Asia/Tokyo`. */
+            /** @description The time zone, an IANA name such as `Asia/Tokyo`; `UTC` until one is chosen. */
             time_zone: string;
+            /**
+             * @description Whether a time zone has been chosen: false for a new user until a request sets
+             *     `time_zone`. Clients may then set it to the device's time zone.
+             */
+            time_zone_chosen: boolean;
             default_visibility: components["schemas"]["Visibility"];
             /** @description The language of new posts that name none, a BCP 47 language tag; `und` when undetermined. */
             default_post_language: string;
@@ -3483,37 +3521,6 @@ export interface components {
          */
         Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
         /**
-         * @description The key of an instance text, with the most characters its text may have: `name`, the
-         *     display name of the instance (100, on one line); `short_description`, a one-paragraph
-         *     summary (500); `description`, the full description (20,000); `terms`, the terms of
-         *     service (100,000); `privacy_policy`, the privacy policy (100,000); and
-         *     `preview_image_alt`, the alt text of the instance's link preview image (1,500).
-         * @enum {string}
-         */
-        AdminInstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt";
-        /** @description The text of a key in one locale. */
-        AdminInstanceText: {
-            key: components["schemas"]["AdminInstanceTextKey"];
-            /** @description The locale of the text, a canonical BCP 47 tag. */
-            locale: string;
-            /** @description The text, as plain text; empty when the change cleared it in this locale. */
-            text: string;
-            /**
-             * Format: date-time
-             * @description When the text was last changed in this locale.
-             */
-            revised_at: string;
-        };
-        /** @description The instance texts, by key and then by locale. */
-        AdminInstanceTextList: {
-            items: components["schemas"]["AdminInstanceText"][];
-        };
-        /** @description The new text of a key in one locale. */
-        SetInstanceTextRequest: {
-            /** @description The text, as plain text; empty clears it in the locale. */
-            text: string;
-        };
-        /**
          * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
          *     across revisions, so reports keep citing it.
          */
@@ -3570,6 +3577,38 @@ export interface components {
         MoveInstanceRuleRequest: {
             /** @description The place among the rules in effect, from 1. */
             position: number;
+        };
+        /** @description The current text of a key in one locale. */
+        AdminInstanceText: {
+            key: components["schemas"]["InstanceTextKey"];
+            /** @description The BCP 47 tag of the locale, canonical (`ja-JP`). */
+            locale: string;
+            /**
+             * @description The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
+             *     Empty only in the answer to clearing it.
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the revision was recorded.
+             */
+            revised_at: string;
+        };
+        /** @description The current instance texts, by key and locale. */
+        AdminInstanceTextList: {
+            items: components["schemas"]["AdminInstanceText"][];
+        };
+        /**
+         * @description The key of an instance text: the name (one line), the short and full descriptions,
+         *     the terms of service and the privacy policy (Markdown), and the alternative text of the
+         *     preview image.
+         * @enum {string}
+         */
+        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt";
+        /** @description A new revision of an instance text in one locale. */
+        SetInstanceTextRequest: {
+            /** @description The text; empty clears it in the locale. */
+            body: string;
         };
         /** @description What awaits the moderators; a count whose permission the user lacks is omitted. */
         AdminCounts: {
@@ -3892,6 +3931,16 @@ export interface components {
                 "application/json": components["schemas"]["StatusPage"];
             };
         };
+        /** @description A page of the posts and boosts of an account, newest first. */
+        AccountStatusPage: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AccountStatusPage"];
+            };
+        };
         /** @description An error, as an RFC 9457 problem document. */
         Problem: {
             headers: {
@@ -4072,6 +4121,10 @@ export interface components {
         AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
         RuleId: components["schemas"]["Id"];
+        /** @description The key of the text. */
+        InstanceTextKey: components["schemas"]["InstanceTextKey"];
+        /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
+        InstanceTextLocale: string;
         /** @description The key of the role, such as `moderator`. */
         RoleKey: string;
         /** @description The ID of the user who signed up. */
@@ -5156,7 +5209,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: components["responses"]["StatusPage"];
+            200: components["responses"]["AccountStatusPage"];
             default: components["responses"]["Problem"];
         };
     };
@@ -5792,59 +5845,6 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
-    listInstanceTexts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The texts. */
-            200: {
-                headers: {
-                    "Cache-Control": components["headers"]["CacheControl"];
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminInstanceTextList"];
-                };
-            };
-            default: components["responses"]["Problem"];
-        };
-    };
-    setInstanceText: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The key of the text. */
-                key: components["schemas"]["AdminInstanceTextKey"];
-                /** @description The locale of the text, a BCP 47 tag. It is canonicalized: `ja_jp` is `ja-JP`. */
-                locale: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SetInstanceTextRequest"];
-            };
-        };
-        responses: {
-            /** @description The text as recorded. */
-            200: {
-                headers: {
-                    "Cache-Control": components["headers"]["CacheControl"];
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminInstanceText"];
-                };
-            };
-            default: components["responses"]["Problem"];
-        };
-    };
     listInstanceRules: {
         parameters: {
             query?: {
@@ -5956,6 +5956,59 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInstanceTexts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The texts. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInstanceTextList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    setInstanceText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the text. */
+                key: components["parameters"]["InstanceTextKey"];
+                /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
+                locale: components["parameters"]["InstanceTextLocale"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetInstanceTextRequest"];
+            };
+        };
+        responses: {
+            /** @description The text as recorded; `body` is empty when the text was cleared. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInstanceText"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

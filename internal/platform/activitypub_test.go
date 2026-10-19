@@ -20,6 +20,7 @@ import (
 // TestFederationEndpoints checks that the composition root serves the federation endpoints
 // on the real database adapter: from a handle to the actor and its key, and NodeInfo.
 func TestFederationEndpoints(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	var accountID string
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
@@ -88,6 +89,7 @@ func TestFederationEndpoints(t *testing.T) {
 // gets the others without a signature that this server can verify, a deleted status is gone, and
 // the outbox lists only public and unlisted statuses.
 func TestFederationObjects(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	ids := map[domcontent.Visibility]string{}
 	var accountID, deletedID string

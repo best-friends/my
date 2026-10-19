@@ -1515,6 +1515,126 @@
     "defaultMessage": "Failed jobs",
     "description": "Heading of the screen of background jobs that failed for good, and its link in the administration menu."
   },
+  "admin.documents.body": {
+    "defaultMessage": "Text in {language}",
+    "description": "Label of the text area of a document in the selected language. {language} is the language's name."
+  },
+  "admin.documents.body.description": {
+    "defaultMessage": "Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Save it empty to remove the text in this language.",
+    "description": "Description of the text area of a document: the Markdown it takes, and how to remove the text."
+  },
+  "admin.documents.characters_left": {
+    "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
+    "description": "Character count under the text area of a document."
+  },
+  "admin.documents.characters_over": {
+    "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
+    "description": "Character count under the text area of a document when the text is too long."
+  },
+  "admin.documents.confirm_remove.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button of the dialog that keeps a document in a language."
+  },
+  "admin.documents.confirm_remove.confirm": {
+    "defaultMessage": "Remove",
+    "description": "Button of the dialog that removes a document in a language."
+  },
+  "admin.documents.confirm_remove.description": {
+    "defaultMessage": "People who read this language get the text in another language, or no page when no language has one. You can write it again later.",
+    "description": "Body of the dialog that asks before removing a document in a language."
+  },
+  "admin.documents.confirm_remove.privacy_policy": {
+    "defaultMessage": "Remove the privacy policy in {language}?",
+    "description": "Title of the dialog that asks before removing the privacy policy in a language."
+  },
+  "admin.documents.confirm_remove.terms": {
+    "defaultMessage": "Remove the terms of service in {language}?",
+    "description": "Title of the dialog that asks before removing the terms of service in a language."
+  },
+  "admin.documents.languages": {
+    "defaultMessage": "Written in",
+    "description": "Term of the languages that a document is written in, on the terms and policies screen."
+  },
+  "admin.documents.languages.none": {
+    "defaultMessage": "No language yet, so the page and its links are hidden",
+    "description": "Value of 'Written in' when a document has no text in any language: no page shows it and no link leads to it."
+  },
+  "admin.documents.locale": {
+    "defaultMessage": "Language",
+    "description": "Label of the select of the language whose texts the terms and policies screen edits."
+  },
+  "admin.documents.locale.description": {
+    "defaultMessage": "Each language has its own text. People read the text in their language, or else in the server's default language or English.",
+    "description": "Description of the language select on the terms and policies screen."
+  },
+  "admin.documents.privacy_policy": {
+    "defaultMessage": "Privacy policy",
+    "description": "Heading of the section of the privacy policy on the terms and policies screen."
+  },
+  "admin.documents.removed": {
+    "defaultMessage": "The text in {language} is removed. The audit log records the change.",
+    "description": "Status message after a document's text in a language is removed."
+  },
+  "admin.documents.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the text of a document in the selected language."
+  },
+  "admin.documents.save_failed": {
+    "defaultMessage": "Could not save the text: {reason}",
+    "description": "Error under a document's form when saving failed."
+  },
+  "admin.documents.saved": {
+    "defaultMessage": "The text in {language} is saved. The audit log records the change.",
+    "description": "Status message after a document's text is saved. {language} is the language's name."
+  },
+  "admin.documents.saved_at": {
+    "defaultMessage": "Last saved in {language}",
+    "description": "Term of when the text in the selected language was last saved, on the terms and policies screen."
+  },
+  "admin.documents.saved_at.never": {
+    "defaultMessage": "Not written yet",
+    "description": "Value of 'Last saved in {language}' when the document has no text in that language."
+  },
+  "admin.documents.summary": {
+    "defaultMessage": "The terms of service and the privacy policy that anyone can read and that people agree to when they sign up.",
+    "description": "Description of the terms and policies screen in the admin menu."
+  },
+  "admin.documents.terms": {
+    "defaultMessage": "Terms of service",
+    "description": "Heading of the section of the terms of service on the terms and policies screen."
+  },
+  "admin.documents.title": {
+    "defaultMessage": "Terms and policies",
+    "description": "Title and heading of the admin screen where administrators write the terms of service and the privacy policy, and its link in the admin menu."
+  },
+  "admin.documents.too_long": {
+    "defaultMessage": "Use at most {max, number} characters",
+    "description": "Error of the text area of a document when the text is too long."
+  },
+  "admin.documents.unsaved.description": {
+    "defaultMessage": "Your changes to the terms of service and the privacy policy will be lost.",
+    "description": "Body of the dialog that asks before leaving the terms and policies screen with unsaved texts."
+  },
+  "admin.documents.unsaved.leave": {
+    "defaultMessage": "Discard changes",
+    "description": "Button that leaves the terms and policies screen, losing the unsaved texts."
+  },
+  "admin.documents.unsaved.stay": {
+    "defaultMessage": "Keep editing",
+    "description": "Button that stays on the terms and policies screen with the unsaved texts."
+  },
+  "admin.documents.unsaved.title": {
+    "defaultMessage": "Leave without saving the texts?",
+    "description": "Title of the dialog that asks before leaving the terms and policies screen with unsaved texts."
+  },
+  "admin.documents.view_privacy_policy": {
+    "defaultMessage": "Open the privacy policy page",
+    "description": "Link from the terms and policies screen to the public page of the privacy policy."
+  },
+  "admin.documents.view_terms": {
+    "defaultMessage": "Open the terms of service page",
+    "description": "Link from the terms and policies screen to the public page of the terms of service."
+  },
   "admin.domain.ascii": {
     "defaultMessage": "({domain})",
     "description": "After a domain in non-Latin letters: the same domain as the server keeps it, in ASCII (IDNA A-labels), such as '(xn--r8jz45g.jp)'. {domain} is that ASCII form."
@@ -2755,6 +2875,18 @@
     "defaultMessage": "Add a content warning",
     "description": "Toggle button (an icon) that adds a content warning: a short text shown instead of the post until the reader opens it."
   },
+  "documents.label": {
+    "defaultMessage": "Terms and policies",
+    "description": "Accessible name of the links to the server's terms of service and privacy policy (in the third column, the menu, the settings, and the sign-in page), and the heading of their section in the settings."
+  },
+  "documents.privacy_policy": {
+    "defaultMessage": "Privacy policy",
+    "description": "Link to the server's public page of its privacy policy."
+  },
+  "documents.terms": {
+    "defaultMessage": "Terms of service",
+    "description": "Link to the server's public page of its terms of service."
+  },
   "home.title": {
     "defaultMessage": "Home",
     "description": "Heading and document title of the home timeline page."
@@ -3767,6 +3899,10 @@
     "defaultMessage": "Saved",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
   },
+  "settings.time_zone.device_differs": {
+    "defaultMessage": "This device is in a different time zone: {zone}.",
+    "description": "Note under the time zone select when the chosen zone is not the time zone of the device in use. {zone} is that device zone as the select names it, like (UTC+09:00) Japan Standard Time."
+  },
   "settings.time_zone.description": {
     "defaultMessage": "Dates and times are shown in this time zone.",
     "description": "Help text of the time zone select."
@@ -3782,6 +3918,10 @@
   "settings.time_zone.option": {
     "defaultMessage": "(UTC{offset}) {name}",
     "description": "Option of the time zone select. {offset} is the zone's difference from UTC, like +09:00 or −05:00; {name} is the zone's name in the display language, like Japan Standard Time."
+  },
+  "settings.time_zone.use_device": {
+    "defaultMessage": "Use this device's time zone",
+    "description": "Button under the time zone select that changes the setting to the time zone of the device in use; shown only when they differ."
   },
   "settings.timeline_languages.description": {
     "defaultMessage": "Timelines show posts in the languages you check. Check none to see every language.",

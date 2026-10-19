@@ -4,7 +4,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
 	appidentity "github.com/best-friends/my/internal/app/identity"
@@ -21,14 +24,16 @@ func (r *IdentityRepository) InsertPreferences(ctx context.Context, tx uow.Tx, p
 	err = q.InsertUserPreferences(ctx, postgresgen.InsertUserPreferencesParams{
 		UserID:                      p.UserID,
 		Locale:                      p.Locale,
-		TimeZone:                    p.TimeZone,
 		DefaultVisibility:           string(p.DefaultVisibility),
 		DefaultPostLanguage:         p.DefaultPostLanguage,
 		RequireMediaDescription:     p.RequireMediaDescription,
 		EmailModeratorNotifications: p.EmailModeratorNotifications,
 		UpdatedAt:                   p.UpdatedAt,
 	})
-	return wrap(err, "insert preferences")
+	if err != nil {
+		return wrap(err, "insert preferences")
+	}
+	return setTimeZone(ctx, q, p)
 }
 
 // UpdatePreferences implements identity.PreferencesRepository.
@@ -40,7 +45,6 @@ func (r *IdentityRepository) UpdatePreferences(ctx context.Context, tx uow.Tx, p
 	n, err := q.UpdateUserPreferences(ctx, postgresgen.UpdateUserPreferencesParams{
 		UserID:                      p.UserID,
 		Locale:                      p.Locale,
-		TimeZone:                    p.TimeZone,
 		DefaultVisibility:           string(p.DefaultVisibility),
 		DefaultPostLanguage:         p.DefaultPostLanguage,
 		RequireMediaDescription:     p.RequireMediaDescription,
@@ -53,7 +57,16 @@ func (r *IdentityRepository) UpdatePreferences(ctx context.Context, tx uow.Tx, p
 	if n == 0 {
 		return fmt.Errorf("preferences of %s: %w", p.UserID, appidentity.ErrNotFound)
 	}
-	return nil
+	return setTimeZone(ctx, q, p)
+}
+
+// setTimeZone stores the time zone of p when the user chose one (user_time_zones).
+func setTimeZone(ctx context.Context, q *postgresgen.Queries, p identity.Preferences) error {
+	if !p.TimeZoneChosen {
+		return nil
+	}
+	err := q.UpsertUserTimeZone(ctx, postgresgen.UpsertUserTimeZoneParams{UserID: p.UserID, TimeZone: p.TimeZone})
+	return wrap(err, "set time zone")
 }
 
 // ReplaceTimelineLanguages implements identity.PreferencesRepository.
@@ -80,16 +93,34 @@ func (r *IdentityRepository) FindPreferences(ctx context.Context, userID string)
 	if err != nil {
 		return identity.Preferences{}, notFound(err, appidentity.ErrNotFound, "preferences of "+userID)
 	}
+	tz, chosen, err := r.timeZone(ctx, userID)
+	if err != nil {
+		return identity.Preferences{}, err
+	}
 	return identity.Preferences{
 		UserID:                      row.UserID,
+		TimeZone:                    tz,
+		TimeZoneChosen:              chosen,
 		Locale:                      row.Locale,
-		TimeZone:                    row.TimeZone,
 		DefaultVisibility:           identity.Visibility(row.DefaultVisibility),
 		DefaultPostLanguage:         row.DefaultPostLanguage,
 		RequireMediaDescription:     row.RequireMediaDescription,
 		EmailModeratorNotifications: row.EmailModeratorNotifications,
 		UpdatedAt:                   utc(row.UpdatedAt),
 	}, nil
+}
+
+// timeZone returns the time zone the user chose, or identity.DefaultTimeZone and false when they
+// have chosen none.
+func (r *IdentityRepository) timeZone(ctx context.Context, userID string) (string, bool, error) {
+	tz, err := r.db.reader().GetUserTimeZone(ctx, userID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identity.DefaultTimeZone, false, nil
+	}
+	if err != nil {
+		return "", false, wrap(err, "get time zone")
+	}
+	return tz, true, nil
 }
 
 // ListTimelineLanguages implements identity.PreferencesRepository.

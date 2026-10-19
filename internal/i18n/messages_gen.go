@@ -242,6 +242,48 @@ func (l *Localizer) ServerAuthDocumentTitle(instance string, page string) string
 	return l.format("server:auth.document_title", map[string]any{"instance": instance, "page": page})
 }
 
+// ServerAuthDocumentFooterLabel formats "server:auth.document.footer_label". Accessible name of the navigation in the footer of the server-rendered pages that links to the terms of service and the privacy policy.
+//
+//	en: Terms and policies
+func (l *Localizer) ServerAuthDocumentFooterLabel() string {
+	return l.format("server:auth.document.footer_label", nil)
+}
+
+// ServerAuthDocumentPrivacyMissing formats "server:auth.document.privacy_missing". Error page (HTTP 404) at the privacy policy page when the administrators have not written a privacy policy.
+//
+//	en: This server has not published a privacy policy.
+func (l *Localizer) ServerAuthDocumentPrivacyMissing() string {
+	return l.format("server:auth.document.privacy_missing", nil)
+}
+
+// ServerAuthDocumentPrivacyTitle formats "server:auth.document.privacy_title". Title and heading of the public page of the instance's privacy policy, and the text of links to it.
+//
+//	en: Privacy policy
+func (l *Localizer) ServerAuthDocumentPrivacyTitle() string {
+	return l.format("server:auth.document.privacy_title", nil)
+}
+
+// ServerAuthDocumentTermsMissing formats "server:auth.document.terms_missing". Error page (HTTP 404) at the terms of service page when the administrators have not written terms of service.
+//
+//	en: This server has not published terms of service.
+func (l *Localizer) ServerAuthDocumentTermsMissing() string {
+	return l.format("server:auth.document.terms_missing", nil)
+}
+
+// ServerAuthDocumentTermsTitle formats "server:auth.document.terms_title". Title and heading of the public page of the instance's terms of service, and the text of links to it.
+//
+//	en: Terms of service
+func (l *Localizer) ServerAuthDocumentTermsTitle() string {
+	return l.format("server:auth.document.terms_title", nil)
+}
+
+// ServerAuthDocumentUpdated formats "server:auth.document.updated". Line under the heading of a terms of service or privacy policy page. {date} is the date of the last revision as YYYY-MM-DD.
+//
+//	en: Last updated: {date}
+func (l *Localizer) ServerAuthDocumentUpdated(date string) string {
+	return l.format("server:auth.document.updated", map[string]any{"date": date})
+}
+
 // ServerAuthErrorTitle formats "server:auth.error.title". Title and heading of the sign-in screens' error pages.
 //
 //	en: Something went wrong
@@ -317,6 +359,13 @@ func (l *Localizer) ServerAuthSignInTitle() string {
 //	en: Sign out
 func (l *Localizer) ServerAuthSignOutSubmit() string {
 	return l.format("server:auth.sign_out.submit", nil)
+}
+
+// ServerAuthSignUpAgreement formats "server:auth.sign_up.agreement". Notice above the submit button of the registration form, followed by links to the instance's terms of service and privacy policy (only those it has published).
+//
+//	en: By creating an account, you agree to these documents of this server.
+func (l *Localizer) ServerAuthSignUpAgreement() string {
+	return l.format("server:auth.sign_up.agreement", nil)
 }
 
 // ServerAuthSignUpClosed formats "server:auth.sign_up.closed". Body of the registration page while the server accepts no new accounts.

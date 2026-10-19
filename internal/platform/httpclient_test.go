@@ -18,6 +18,7 @@ import (
 // TestHTTPClientGuard checks that the App's HTTPClient refuses a loopback server by default
 // and reaches it, with a warning at start, when http_allow_private_networks is on.
 func TestHTTPClientGuard(t *testing.T) {
+	t.Parallel()
 	var ua atomic.Value
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ua.Store(r.Header.Get("User-Agent"))

@@ -13,8 +13,8 @@ export const Route = createFileRoute("/admin/settings")({
   loader: ({ context }) =>
     loadWithPermission(context, "manage_settings", () =>
       Promise.all([
-        context.queryClient.query({ ...instanceTextsQueryOptions(context.api), staleTime: "static" }),
-        context.queryClient.query({ ...ownInstanceQueryOptions(context.api), staleTime: "static" }),
+        context.queryClient.query({ ...instanceTextsQueryOptions(context.api), staleTime: Infinity }),
+        context.queryClient.query({ ...ownInstanceQueryOptions(context.api), staleTime: Infinity }),
       ]),
     ),
   component: ServerSettingsPage,

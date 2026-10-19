@@ -806,7 +806,6 @@ type User struct {
 type UserPreference struct {
 	UserID                      string
 	Locale                      string
-	TimeZone                    string
 	DefaultVisibility           string
 	DefaultPostLanguage         string
 	RequireMediaDescription     bool

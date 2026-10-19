@@ -16,7 +16,7 @@ import (
 
 // PreferencesRepositoryContract verifies the user preferences of a database adapter's identity
 // repository (data-model §4.1) through the identity use cases: the defaults written on
-// registration, replacing preferences and timeline languages with canonical tags, partial
+// registration (with no time zone chosen), replacing preferences and timeline languages with canonical tags, partial
 // updates, rejecting invalid language tags, time zones, and visibilities without writing
 // anything, and reporting users without preferences. It uses the same harness as AccountRepositoryContract.
 func PreferencesRepositoryContract(t *testing.T, newHarness AccountFactory) {
@@ -158,6 +158,7 @@ func preferencesSet(t *testing.T, e *accountEnv) {
 			UserID:                  reg.User.ID,
 			Locale:                  "zh-Hant-TW",
 			TimeZone:                "Asia/Tokyo",
+			TimeZoneChosen:          true,
 			DefaultVisibility:       identity.VisibilityUnlisted,
 			DefaultPostLanguage:     "he",
 			RequireMediaDescription: true,
@@ -183,7 +184,10 @@ func preferencesSet(t *testing.T, e *accountEnv) {
 			t.Errorf("DefaultVisibility = %s, want %s", got.DefaultVisibility, v)
 		}
 	}
-	checkPreferences(t, e.preferences(t, reg.User.ID), defaultPreferencesOf(reg.User.ID, "en", e.clock.Now()))
+	// Choosing UTC is a choice: the time zone stays chosen.
+	back := defaultPreferencesOf(reg.User.ID, "en", e.clock.Now())
+	back.TimeZoneChosen = true
+	checkPreferences(t, e.preferences(t, reg.User.ID), back)
 }
 
 func preferencesRejectInvalid(t *testing.T, e *accountEnv) {
@@ -297,6 +301,12 @@ func preferencesReportMissing(t *testing.T, e *accountEnv) {
 func preferencesUpdatePartially(t *testing.T, e *accountEnv) {
 	ctx := t.Context()
 	reg := e.register(t, "alice")
+	// A change that leaves the time zone out does not choose one.
+	public := identity.VisibilityPublic
+	if _, err := e.identity.UpdatePreferences(ctx, reg.User.ID, appidentity.PreferencesUpdate{DefaultVisibility: &public}); err != nil {
+		t.Fatalf("UpdatePreferences(visibility) = %v", err)
+	}
+	checkPreferences(t, e.preferences(t, reg.User.ID), defaultPreferencesOf(reg.User.ID, "en", reg.User.CreatedAt))
 	tz, vis, langs := "Asia/Tokyo", identity.VisibilityPrivate, []string{"ja-jp", "en", "ja-JP"}
 	e.clock.Advance(time.Minute)
 	got, err := e.identity.UpdatePreferences(ctx, reg.User.ID, appidentity.PreferencesUpdate{
@@ -306,7 +316,7 @@ func preferencesUpdatePartially(t *testing.T, e *accountEnv) {
 		t.Fatalf("UpdatePreferences = %v", err)
 	}
 	want := defaultPreferencesOf(reg.User.ID, "en", e.clock.Now())
-	want.TimeZone, want.DefaultVisibility, want.TimelineLanguages = tz, vis, []string{"en", "ja-JP"}
+	want.TimeZone, want.TimeZoneChosen, want.DefaultVisibility, want.TimelineLanguages = tz, true, vis, []string{"en", "ja-JP"}
 	checkPreferences(t, got, want)
 	checkPreferences(t, e.preferences(t, reg.User.ID), want)
 

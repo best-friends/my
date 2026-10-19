@@ -31,6 +31,8 @@ type remoteFetchEnv struct {
 	handlers *queue.JobHandlerRegistry
 	statuses *appfederation.StatusHandlers
 	resolver *appfederation.Resolver
+	// suspended are the accounts with the federation restriction.
+	suspended remoteSuspensions
 }
 
 func newRemoteFetchEnv(t *testing.T, e *remoteStatusEnv) *remoteFetchEnv {
@@ -40,7 +42,7 @@ func newRemoteFetchEnv(t *testing.T, e *remoteStatusEnv) *remoteFetchEnv {
 	}
 	fe := &remoteFetchEnv{
 		remoteStatusEnv: e, net: &remoteNet{routes: map[string]remoteResponse{}},
-		jobs: &remoteJobs{seen: map[string]bool{}}, handlers: &queue.JobHandlerRegistry{},
+		jobs: &remoteJobs{seen: map[string]bool{}}, handlers: &queue.JobHandlerRegistry{}, suspended: remoteSuspensions{},
 	}
 	kv := NewKeyValueStore(e.clock)
 	fetcher := appfederation.NewFetcher(appfederation.FetcherDeps{
@@ -62,6 +64,7 @@ func newRemoteFetchEnv(t *testing.T, e *remoteStatusEnv) *remoteFetchEnv {
 	fe.statuses = appfederation.NewStatusHandlers(appfederation.StatusHandlersDeps{
 		UnitOfWork: e.h.UnitOfWork, Statuses: e.content, Accounts: e.remote, Actors: actors, Fetcher: actors,
 		Followers: e.graph, Tombstones: e.h.Inbox, Outbox: outbox, Jobs: fe.jobs, KV: kv, Clock: e.clock, Host: contractHost,
+		Profiles: e.remote, Relationships: e.graph, Restrictions: fe.suspended,
 	})
 	fe.statuses.Register(e.processor)
 	fe.statuses.RegisterJobs(fe.handlers)

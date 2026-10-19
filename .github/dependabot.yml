@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Dependabot version updates (ADR-0046). Security alerts come from the repository's Dependabot Alerts.
+# The 14-day cooldown matches the rule that no dependency version younger than two weeks is installed
+# (app/bunfig.toml, tools/i18n/bunfig.toml). Cooldown applies to version updates only, so security updates
+# still open immediately.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directories:
+      - /
+      - /tools
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+  # Bun workspaces with a text bun.lock.
+  - package-ecosystem: bun
+    directories:
+      - /app
+      - /tools/i18n
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+  # The Go, Node.js, and Bun image tags in the Dockerfile must match .tool-versions (make docker-check).
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14

@@ -487,36 +487,6 @@ func (e AdminInstanceState) Valid() bool {
 	}
 }
 
-// Defines values for AdminInstanceTextKey.
-const (
-	AdminInstanceTextKeyDescription      AdminInstanceTextKey = "description"
-	AdminInstanceTextKeyName             AdminInstanceTextKey = "name"
-	AdminInstanceTextKeyPreviewImageAlt  AdminInstanceTextKey = "preview_image_alt"
-	AdminInstanceTextKeyPrivacyPolicy    AdminInstanceTextKey = "privacy_policy"
-	AdminInstanceTextKeyShortDescription AdminInstanceTextKey = "short_description"
-	AdminInstanceTextKeyTerms            AdminInstanceTextKey = "terms"
-)
-
-// Valid indicates whether the value is a known member of the AdminInstanceTextKey enum.
-func (e AdminInstanceTextKey) Valid() bool {
-	switch e {
-	case AdminInstanceTextKeyDescription:
-		return true
-	case AdminInstanceTextKeyName:
-		return true
-	case AdminInstanceTextKeyPreviewImageAlt:
-		return true
-	case AdminInstanceTextKeyPrivacyPolicy:
-		return true
-	case AdminInstanceTextKeyShortDescription:
-		return true
-	case AdminInstanceTextKeyTerms:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for AdminReportCategory.
 const (
 	AdminReportCategoryLegal     AdminReportCategory = "legal"
@@ -697,6 +667,36 @@ func (e InstanceRegistrationsMode) Valid() bool {
 	case InstanceRegistrationsModeInvite:
 		return true
 	case InstanceRegistrationsModeOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InstanceTextKey.
+const (
+	InstanceTextKeyDescription      InstanceTextKey = "description"
+	InstanceTextKeyName             InstanceTextKey = "name"
+	InstanceTextKeyPreviewImageAlt  InstanceTextKey = "preview_image_alt"
+	InstanceTextKeyPrivacyPolicy    InstanceTextKey = "privacy_policy"
+	InstanceTextKeyShortDescription InstanceTextKey = "short_description"
+	InstanceTextKeyTerms            InstanceTextKey = "terms"
+)
+
+// Valid indicates whether the value is a known member of the InstanceTextKey enum.
+func (e InstanceTextKey) Valid() bool {
+	switch e {
+	case InstanceTextKeyDescription:
+		return true
+	case InstanceTextKeyName:
+		return true
+	case InstanceTextKeyPreviewImageAlt:
+		return true
+	case InstanceTextKeyPrivacyPolicy:
+		return true
+	case InstanceTextKeyShortDescription:
+		return true
+	case InstanceTextKeyTerms:
 		return true
 	default:
 		return false
@@ -1080,6 +1080,21 @@ type AccountSource struct {
 
 	// Note The profile text as plain text; empty when there is none.
 	Note string `json:"note"`
+}
+
+// AccountStatusPage A page of the statuses of an account.
+type AccountStatusPage struct {
+	// Items The statuses of the page.
+	Items []Status `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+
+	// RemoteFetchStarted `true` when this request started fetching the remote account's recent public
+	// posts from its server (ADR-0044). The fetch runs in the background; read the
+	// first page again a few seconds later to see what it stored. Absent otherwise,
+	// including when a fetch started in the last day.
+	RemoteFetchStarted *bool `json:"remote_fetch_started,omitempty"`
 }
 
 // AdminAccount An account as the moderators see it (FR-714). It never includes an email or IP address.
@@ -1610,33 +1625,25 @@ type AdminInstanceHealthPage struct {
 // `Reject`.
 type AdminInstanceState string
 
-// AdminInstanceText The text of a key in one locale.
+// AdminInstanceText The current text of a key in one locale.
 type AdminInstanceText struct {
-	// Key The key of an instance text, with the most characters its text may have: `name`, the
-	// display name of the instance (100, on one line); `short_description`, a one-paragraph
-	// summary (500); `description`, the full description (20,000); `terms`, the terms of
-	// service (100,000); `privacy_policy`, the privacy policy (100,000); and
-	// `preview_image_alt`, the alt text of the instance's link preview image (1,500).
-	Key AdminInstanceTextKey `json:"key"`
+	// Body The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
+	// Empty only in the answer to clearing it.
+	Body string `json:"body"`
 
-	// Locale The locale of the text, a canonical BCP 47 tag.
+	// Key The key of an instance text: the name (one line), the short and full descriptions,
+	// the terms of service and the privacy policy (Markdown), and the alternative text of the
+	// preview image.
+	Key InstanceTextKey `json:"key"`
+
+	// Locale The BCP 47 tag of the locale, canonical (`ja-JP`).
 	Locale string `json:"locale"`
 
-	// RevisedAt When the text was last changed in this locale.
+	// RevisedAt When the revision was recorded.
 	RevisedAt time.Time `json:"revised_at"`
-
-	// Text The text, as plain text; empty when the change cleared it in this locale.
-	Text string `json:"text"`
 }
 
-// AdminInstanceTextKey The key of an instance text, with the most characters its text may have: `name`, the
-// display name of the instance (100, on one line); `short_description`, a one-paragraph
-// summary (500); `description`, the full description (20,000); `terms`, the terms of
-// service (100,000); `privacy_policy`, the privacy policy (100,000); and
-// `preview_image_alt`, the alt text of the instance's link preview image (1,500).
-type AdminInstanceTextKey string
-
-// AdminInstanceTextList The instance texts, by key and then by locale.
+// AdminInstanceTextList The current instance texts, by key and locale.
 type AdminInstanceTextList struct {
 	Items []AdminInstanceText `json:"items"`
 }
@@ -2281,6 +2288,10 @@ type Instance struct {
 	// Name The display name of the instance; the domain when the instance has none.
 	Name string `json:"name"`
 
+	// PrivacyPolicyUrl The public page of the instance's privacy policy, which needs no sign-in; omitted
+	// when no locale of the request's fallback chain has it.
+	PrivacyPolicyUrl *string `json:"privacy_policy_url,omitempty"`
+
 	// Registrations How people sign up on the instance.
 	Registrations InstanceRegistrations `json:"registrations"`
 
@@ -2297,6 +2308,11 @@ type Instance struct {
 
 	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13).
 	SourceUrl string `json:"source_url"`
+
+	// TermsUrl The public page of the instance's terms of service, which needs no sign-in; omitted
+	// when no locale of the request's fallback chain has them, so that clients do not
+	// link to it.
+	TermsUrl *string `json:"terms_url,omitempty"`
 
 	// Timelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
 	// clients do not offer it.
@@ -2388,6 +2404,11 @@ type InstanceRuleTextInput struct {
 	// Text The rule, on one line, as plain text.
 	Text string `json:"text"`
 }
+
+// InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
+// the terms of service and the privacy policy (Markdown), and the alternative text of the
+// preview image.
+type InstanceTextKey string
 
 // InstanceTimelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
 // clients do not offer it.
@@ -2807,8 +2828,12 @@ type Preferences struct {
 	// RequireMediaDescription Whether clients ask for a description before posting media without one.
 	RequireMediaDescription bool `json:"require_media_description"`
 
-	// TimeZone The time zone, an IANA name such as `Asia/Tokyo`.
+	// TimeZone The time zone, an IANA name such as `Asia/Tokyo`; `UTC` until one is chosen.
 	TimeZone string `json:"time_zone"`
+
+	// TimeZoneChosen Whether a time zone has been chosen: false for a new user until a request sets
+	// `time_zone`. Clients may then set it to the device's time zone.
+	TimeZoneChosen bool `json:"time_zone_chosen"`
 
 	// TimelineLanguages The languages that timelines show, sorted; empty shows every language.
 	TimelineLanguages []string `json:"timeline_languages"`
@@ -2994,10 +3019,10 @@ type ResolveReportRequest struct {
 	Outcome AdminReportOutcome `json:"outcome"`
 }
 
-// SetInstanceTextRequest The new text of a key in one locale.
+// SetInstanceTextRequest A new revision of an instance text in one locale.
 type SetInstanceTextRequest struct {
-	// Text The text, as plain text; empty clears it in the locale.
-	Text string `json:"text"`
+	// Body The text; empty clears it in the locale.
+	Body string `json:"body"`
 }
 
 // SpoilerText The content warning; omitted or empty for none. It counts toward `max_post_characters`.
@@ -3313,6 +3338,9 @@ type IdempotencyKey = string
 
 // InstanceDomain defines model for InstanceDomain.
 type InstanceDomain = string
+
+// InstanceTextLocale defines model for InstanceTextLocale.
+type InstanceTextLocale = string
 
 // Limit defines model for Limit.
 type Limit = int
@@ -3890,11 +3918,11 @@ type ServerInterface interface {
 	// (POST /admin/domain_actions/{id}/lift)
 	LiftDomainAction(w http.ResponseWriter, r *http.Request, id DomainActionId)
 	// ListInstanceTexts List the instance texts
-	// (GET /admin/instance/texts)
+	// (GET /admin/instance_texts)
 	ListInstanceTexts(w http.ResponseWriter, r *http.Request)
 	// SetInstanceText Set an instance text in one locale
-	// (PUT /admin/instance/texts/{key}/{locale})
-	SetInstanceText(w http.ResponseWriter, r *http.Request, key AdminInstanceTextKey, locale string)
+	// (PUT /admin/instance_texts/{key}/{locale})
+	SetInstanceText(w http.ResponseWriter, r *http.Request, key InstanceTextKey, locale InstanceTextLocale)
 	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
 	// (GET /admin/instances)
 	ListInstanceHealth(w http.ResponseWriter, r *http.Request, params ListInstanceHealthParams)
@@ -5531,7 +5559,7 @@ func (siw *ServerInterfaceWrapper) SetInstanceText(w http.ResponseWriter, r *htt
 	_ = err
 
 	// ------------- Path parameter "key" -------------
-	var key AdminInstanceTextKey
+	var key InstanceTextKey
 
 	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
 	if err != nil {
@@ -5540,7 +5568,7 @@ func (siw *ServerInterfaceWrapper) SetInstanceText(w http.ResponseWriter, r *htt
 	}
 
 	// ------------- Path parameter "locale" -------------
-	var locale string
+	var locale InstanceTextLocale
 
 	err = runtime.BindStyledParameterWithOptions("simple", "locale", r.PathValue("locale"), &locale, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
 	if err != nil {
@@ -7784,14 +7812,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/actions", wrapper.CreateAccountAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/account_actions/{id}", wrapper.GetAccountAction)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/account_actions/{id}/lift", wrapper.LiftAccountAction)
-	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instance/texts", wrapper.ListInstanceTexts)
-	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/instance/texts/{key}/{locale}", wrapper.SetInstanceText)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/rules", wrapper.ListInstanceRules)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules", wrapper.CreateInstanceRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/rules/{id}", wrapper.GetInstanceRule)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/rules/{id}", wrapper.UpdateInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instance_texts", wrapper.ListInstanceTexts)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/instance_texts/{key}/{locale}", wrapper.SetInstanceText)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts", wrapper.ListAdminAccounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}", wrapper.GetAdminAccount)
@@ -7831,6 +7859,15 @@ type AccountProfileJSONResponse struct {
 	Body Account
 
 	Headers AccountProfileResponseHeaders
+}
+
+type AccountStatusPageResponseHeaders struct {
+	CacheControl *string
+}
+type AccountStatusPageJSONResponse struct {
+	Body AccountStatusPage
+
+	Headers AccountStatusPageResponseHeaders
 }
 
 type AdminAccountActionResponseHeaders struct {
@@ -8591,7 +8628,7 @@ type ListAccountStatusesResponseObject interface {
 	VisitListAccountStatusesResponse(w http.ResponseWriter) error
 }
 
-type ListAccountStatuses200JSONResponse struct{ StatusPageJSONResponse }
+type ListAccountStatuses200JSONResponse struct{ AccountStatusPageJSONResponse }
 
 func (response ListAccountStatuses200JSONResponse) VisitListAccountStatusesResponse(w http.ResponseWriter) error {
 
@@ -10135,8 +10172,8 @@ func (response ListInstanceTextsdefaultApplicationProblemPlusJSONResponse) Visit
 }
 
 type SetInstanceTextRequestObject struct {
-	Key    AdminInstanceTextKey `json:"key"`
-	Locale string               `json:"locale"`
+	Key    InstanceTextKey    `json:"key"`
+	Locale InstanceTextLocale `json:"locale"`
 	Body   *SetInstanceTextJSONRequestBody
 }
 
@@ -14077,10 +14114,10 @@ type StrictServerInterface interface {
 	// (POST /admin/domain_actions/{id}/lift)
 	LiftDomainAction(ctx context.Context, request LiftDomainActionRequestObject) (LiftDomainActionResponseObject, error)
 	// ListInstanceTexts List the instance texts
-	// (GET /admin/instance/texts)
+	// (GET /admin/instance_texts)
 	ListInstanceTexts(ctx context.Context, request ListInstanceTextsRequestObject) (ListInstanceTextsResponseObject, error)
 	// SetInstanceText Set an instance text in one locale
-	// (PUT /admin/instance/texts/{key}/{locale})
+	// (PUT /admin/instance_texts/{key}/{locale})
 	SetInstanceText(ctx context.Context, request SetInstanceTextRequestObject) (SetInstanceTextResponseObject, error)
 	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
 	// (GET /admin/instances)
@@ -15374,7 +15411,7 @@ func (sh *strictHandler) ListInstanceTexts(w http.ResponseWriter, r *http.Reques
 }
 
 // SetInstanceText operation middleware
-func (sh *strictHandler) SetInstanceText(w http.ResponseWriter, r *http.Request, key AdminInstanceTextKey, locale string) {
+func (sh *strictHandler) SetInstanceText(w http.ResponseWriter, r *http.Request, key InstanceTextKey, locale InstanceTextLocale) {
 	var request SetInstanceTextRequestObject
 
 	request.Key = key

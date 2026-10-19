@@ -81,6 +81,35 @@ export const serverKEK = state.kek;
 /** The seeded admin that the specs sign in as. */
 export const admin = { email: "alice@example.com", password: "e2e-password-alice" } as const;
 
+/**
+ * The terms of service and the privacy policy that e2e/server.ts writes in Markdown, in the default locale, so
+ * that the pages of every project link to them (#489): headings, a list, a long URL, and a table wider than a
+ * phone, which must wrap or scroll inside the document, never the page.
+ */
+export const documents = {
+  terms: [
+    "# Accounts",
+    "",
+    "Be kind. One account per person.",
+    "Report what breaks these terms.",
+    "",
+    "- No spam",
+    "- No harassment",
+    "",
+    "# Contact",
+    "",
+    "Write to https://my.example/contact/a-very-long-path-that-does-not-fit-on-a-narrow-phone-screen-at-all.",
+  ].join("\n"),
+  privacyPolicy: [
+    "# What we keep",
+    "",
+    "| Data | Why | How long |",
+    "| --- | --- | --- |",
+    "| Email address | Signing in and notifications to the account holder | Until the account is deleted |",
+    "| IP address of a sign-in | Finding abuse and keeping the service secure | 180 days |",
+  ].join("\n"),
+} as const;
+
 /** The seeded third-party OAuth client, which gets the consent page. */
 export const thirdPartyClient = {
   clientID: "e2e-third-party",

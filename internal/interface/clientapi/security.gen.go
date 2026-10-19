@@ -32,7 +32,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/admin/dead_jobs":                              {Operation: "listDeadJobs", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/domain_actions":                         {Operation: "listDomainActions", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/domain_actions/{id}":                    {Operation: "getDomainAction", Scopes: []string{"admin:read"}},
-	"GET /api/v1/admin/instance/texts":                         {Operation: "listInstanceTexts", Scopes: []string{"admin:read"}},
+	"GET /api/v1/admin/instance_texts":                         {Operation: "listInstanceTexts", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/instances":                              {Operation: "listInstanceHealth", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/instances/{domain}":                     {Operation: "getInstanceHealth", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/instances/{domain}/availability_events": {Operation: "listInstanceAvailabilityEvents", Scopes: []string{"admin:read"}},
@@ -109,7 +109,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/statuses/{id}/favourite":                     {Operation: "favouriteStatus", Scopes: []string{"write:favourites"}},
 	"POST /api/v1/statuses/{id}/pin":                           {Operation: "pinStatus", Scopes: []string{"write:statuses"}},
 	"PUT /api/v1/admin/accounts/{id}/roles/{role}":             {Operation: "grantAccountRole", Scopes: []string{"admin:write"}},
-	"PUT /api/v1/admin/instance/texts/{key}/{locale}":          {Operation: "setInstanceText", Scopes: []string{"admin:write"}},
+	"PUT /api/v1/admin/instance_texts/{key}/{locale}":          {Operation: "setInstanceText", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/notifications/marker":                         {Operation: "updateNotificationMarker", Scopes: []string{"write:notifications"}},
 	"PUT /api/v1/statuses/{id}":                                {Operation: "editStatus", Scopes: []string{"write:statuses"}},
 }

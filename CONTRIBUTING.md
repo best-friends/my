@@ -17,8 +17,8 @@ make check
 これらはネットワーク不要のチェック（Markdown lint、ADR 索引、Go の `go vet` / golangci-lint / テスト /
 `CGO_ENABLED=0` ビルド / 依存ライセンス検査 / sqlc 生成物の検査、i18n カタログ検査、クライアント API の spec の lint と生成物の検査、`Dockerfile` の Go イメージと `.tool-versions` の一致、Web クライアントの型検査・ビルド・依存ライセンス検査）をすべて実行します。初回のみ Go モジュールとツール、`tools/i18n` と `app/` の npm パッケージのダウンロードが必要です。
 
-- Go ツール（govulncheck, go-licenses, sqlc, oapi-codegen）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
-- 脆弱性検査はネットワークが必要なため `make check` には含めず、`make go-vuln` で実行します（CI では Go のジョブで実行）。
+- Go ツール（go-licenses, sqlc, oapi-codegen）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
+- 依存関係の既知の脆弱性は GitHub の Dependabot Alerts で検知し、版更新の PR は Dependabot が作ります（`.github/dependabot.yml`、ADR-0046）。
 - Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `make check` には含めず、`make docker-smoke` で実行します（CI ではドキュメント以外を変えたときに実行）。
 - Mastodon・GoToSocial とのライブの相互運用テストは `make check` に含めず、`make federation-live` で実行します（CI では nightly。手順は [deploy/docker/federation-live/README.md](deploy/docker/federation-live/README.md)）。
 - 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`。`tools/i18n` と `app/` の npm パッケージも同じ一覧で検査）に限ります。

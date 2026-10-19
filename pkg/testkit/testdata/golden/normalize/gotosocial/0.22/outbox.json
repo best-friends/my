@@ -1,0 +1,8 @@
+{
+  "Collection": {
+    "First": {
+      "ID": "http://gotosocial.example/users/the_mighty_zork/outbox?limit=40"
+    },
+    "ID": "http://gotosocial.example/users/the_mighty_zork/outbox"
+  }
+}

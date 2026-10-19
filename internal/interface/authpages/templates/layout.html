@@ -8,12 +8,19 @@
 {{with .Stylesheet}}<link rel="stylesheet" href="{{.}}">
 {{end}}</head>
 <body>
-<main class="page">
+<main class="page{{if .Document}} page-document{{end}}">
 {{with .InstanceName}}<p class="site-name" dir="auto">{{.}}</p>
 {{end}}<div class="card">
 {{template "content" .}}
 </div>
 </main>
-</body>
+{{with .Documents}}<footer class="footer">
+<nav aria-label="{{$.L.ServerAuthDocumentFooterLabel}}">
+<ul class="footer-links">
+{{range .}}<li><a href="{{.Path}}">{{.Title}}</a></li>
+{{end}}</ul>
+</nav>
+</footer>
+{{end}}</body>
 </html>
 {{end}}

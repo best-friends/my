@@ -24,19 +24,19 @@ type Text = Schemas["AdminInstanceText"];
  */
 function namesServer(initial: Readonly<Record<string, string>>) {
   const names = new Map(Object.entries(initial));
-  const changes: { locale: string; text: string }[] = [];
+  const changes: { locale: string; body: string }[] = [];
   server.use(
     http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, name: names.get("en") ?? instanceFixture.domain })),
-    http.get(`${apiBase}/admin/instance/texts`, () =>
-      HttpResponse.json({ items: [...names].map(([locale, text]): Text => ({ key: "name", locale, text, revised_at: "2026-10-16T00:00:00Z" })) }),
+    http.get(`${apiBase}/admin/instance_texts`, () =>
+      HttpResponse.json({ items: [...names].map(([locale, body]): Text => ({ key: "name", locale, body, revised_at: "2026-10-16T00:00:00Z" })) }),
     ),
-    http.put(`${apiBase}/admin/instance/texts/name/:locale`, async ({ request, params }) => {
+    http.put(`${apiBase}/admin/instance_texts/name/:locale`, async ({ request, params }) => {
       const locale = String(params["locale"]);
-      const { text } = (await request.json()) as Schemas["SetInstanceTextRequest"];
-      changes.push({ locale, text });
-      if (text === "") names.delete(locale);
-      else names.set(locale, text);
-      return HttpResponse.json({ key: "name", locale, text, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
+      const { body } = (await request.json()) as Schemas["SetInstanceTextRequest"];
+      changes.push({ locale, body });
+      if (body === "") names.delete(locale);
+      else names.set(locale, body);
+      return HttpResponse.json({ key: "name", locale, body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
     }),
   );
   return { changes };
@@ -73,8 +73,8 @@ describe("the server's name", () => {
 
     expect(await screen.findByText("Saved the name.")).toBeInTheDocument();
     expect(names.changes.toSorted((a, b) => a.locale.localeCompare(b.locale))).toEqual([
-      { locale: "en", text: "Example Social" },
-      { locale: "ja", text: "例のソーシャル" },
+      { locale: "en", body: "Example Social" },
+      { locale: "ja", body: "例のソーシャル" },
     ]);
     // The tab title and the sidebar take the new name without a reload.
     await waitFor(() => {
@@ -121,9 +121,9 @@ describe("the server's name", () => {
 
   test("shows why a save failed and keeps the names", async () => {
     namesServer({});
-    const refusal: Schemas["Problem"] = { type: "about:blank", title: "Unprocessable", status: 422, detail: "text is invalid" };
+    const refusal: Schemas["Problem"] = { type: "about:blank", title: "Unprocessable", status: 422, detail: "body is invalid" };
     server.use(
-      http.put(`${apiBase}/admin/instance/texts/name/:locale`, () =>
+      http.put(`${apiBase}/admin/instance_texts/name/:locale`, () =>
         HttpResponse.json(refusal, { status: 422, headers: { "Content-Type": "application/problem+json" } }),
       ),
     );
@@ -132,7 +132,7 @@ describe("the server's name", () => {
     await user.type(english, "Example Social");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(await screen.findByText("Could not save the name: text is invalid")).toHaveAttribute("role", "alert");
+    expect(await screen.findByText("Could not save the name: body is invalid")).toHaveAttribute("role", "alert");
     expect(english).toHaveValue("Example Social");
   });
 
@@ -149,7 +149,7 @@ test("a viewer without manage_settings sees why instead of the names, and nothin
   server.use(signedInHandler, operatorHandler(["manage_reports"]));
   let reads = 0;
   server.use(
-    http.get(`${apiBase}/admin/instance/texts`, () => {
+    http.get(`${apiBase}/admin/instance_texts`, () => {
       reads++;
       return HttpResponse.json({ items: [] });
     }),

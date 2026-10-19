@@ -61,6 +61,7 @@ func (r *inboxRecorder) taken() []recordedPost {
 // account and the reported status, with the comment and nothing of the reporter. A report that
 // does not ask, and a report of a local account, send nothing.
 func TestReportForwarding(t *testing.T) {
+	t.Parallel()
 	network := &inboxRecorder{}
 	c := newStatusesClientWith(t, map[string]string{"MY_QUEUE": "inline"}, platform.AppOptions{HTTPClient: network}, "alice", "carol")
 	ctx := t.Context()

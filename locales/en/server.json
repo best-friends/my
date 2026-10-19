@@ -131,6 +131,30 @@
     "defaultMessage": "The request was refused because it came from another site.",
     "description": "Body of the page shown (HTTP 403) when a sign-in or sign-out form was submitted from another origin."
   },
+  "auth.document.footer_label": {
+    "defaultMessage": "Terms and policies",
+    "description": "Accessible name of the navigation in the footer of the server-rendered pages that links to the terms of service and the privacy policy."
+  },
+  "auth.document.privacy_missing": {
+    "defaultMessage": "This server has not published a privacy policy.",
+    "description": "Error page (HTTP 404) at the privacy policy page when the administrators have not written a privacy policy."
+  },
+  "auth.document.privacy_title": {
+    "defaultMessage": "Privacy policy",
+    "description": "Title and heading of the public page of the instance's privacy policy, and the text of links to it."
+  },
+  "auth.document.terms_missing": {
+    "defaultMessage": "This server has not published terms of service.",
+    "description": "Error page (HTTP 404) at the terms of service page when the administrators have not written terms of service."
+  },
+  "auth.document.terms_title": {
+    "defaultMessage": "Terms of service",
+    "description": "Title and heading of the public page of the instance's terms of service, and the text of links to it."
+  },
+  "auth.document.updated": {
+    "defaultMessage": "Last updated: {date}",
+    "description": "Line under the heading of a terms of service or privacy policy page. {date} is the date of the last revision as YYYY-MM-DD."
+  },
   "auth.document_title": {
     "defaultMessage": "{page} – {instance}",
     "description": "The browser tab title of the sign-in, sign-up, email verification, account status and consent pages: the page's title, then the server's name. {instance} is the server's display name, or its domain name when it has none."
@@ -178,6 +202,10 @@
   "auth.sign_out.submit": {
     "defaultMessage": "Sign out",
     "description": "Button that ends the current browser session."
+  },
+  "auth.sign_up.agreement": {
+    "defaultMessage": "By creating an account, you agree to these documents of this server.",
+    "description": "Notice above the submit button of the registration form, followed by links to the instance's terms of service and privacy policy (only those it has published)."
   },
   "auth.sign_up.closed": {
     "defaultMessage": "This server is not accepting new accounts.",

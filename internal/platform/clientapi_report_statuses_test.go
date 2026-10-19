@@ -13,6 +13,7 @@ import (
 // database: followers-only and direct statuses that the moderator may not see elsewhere are in
 // the report's detail, and so is a status that its author deleted afterwards, with when.
 func TestReportedStatusesThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob", "carol")
 	if res := c.do("alice", http.MethodPost, "/accounts/"+c.ids["bob"]+"/follow", nil, nil); res.StatusCode != http.StatusOK {
 		t.Fatalf("follow = %d", res.StatusCode)

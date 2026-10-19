@@ -132,6 +132,9 @@ type Options struct {
 	// words it in the request's.
 	Moderation  Moderation
 	UserLocales UserLocales
+	// Documents serves the pages of the terms of service and the privacy policy (documents.go);
+	// nil leaves them unpublished.
+	Documents Documents
 }
 
 // Handler serves the screens.
@@ -154,6 +157,7 @@ const (
 	pageVerifyEmail = "verify_email"
 	pageVerified    = "verified"
 	pageAuthorize   = "authorize"
+	pageDocument    = "document"
 )
 
 // New returns a Handler on o.
@@ -162,7 +166,7 @@ func New(o Options) *Handler {
 		o.Logger = slog.Default()
 	}
 	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
-	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize} {
+	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize, pageDocument} {
 		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
 	h.cop.SetDenyHandler(http.HandlerFunc(h.crossOrigin))
@@ -185,6 +189,9 @@ func (h *Handler) Register(r Router) {
 	r.Handle("POST "+PathVerifyEmail, h.cop.Handler(http.HandlerFunc(h.verifyEmail)))
 	r.Handle("POST "+PathResendVerification, h.cop.Handler(http.HandlerFunc(h.resendVerification)))
 	r.Handle("POST "+PathAppeal, h.cop.Handler(http.HandlerFunc(h.appeal)))
+	for i, d := range documentPages {
+		r.Handle("GET "+d.path, h.documentPage(i))
+	}
 	if h.o.OAuth != nil {
 		r.Handle("GET "+PathAuthorize, http.HandlerFunc(h.authorizePage))
 		r.Handle("POST "+PathAuthorize, h.cop.Handler(http.HandlerFunc(h.authorize)))
@@ -217,6 +224,13 @@ type page struct {
 	Token string
 	// Consent is the authorization request on the consent page.
 	Consent *consent
+	// Document is the document on its page.
+	Document *documentView
+	// Documents are the links to the published documents, in the footer of every page and on
+	// the registration form; render fills them.
+	Documents []documentLink
+	// cache is the Cache-Control of the page; empty means no-store.
+	cache string
 	// formAction lists origins the page's forms may be redirected to besides
 	// Options.FormActionOrigins.
 	formAction []string
@@ -240,11 +254,16 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 	hd.Set("Content-Type", "text/html; charset=utf-8")
 	hd.Set("Content-Language", p.Lang)
 	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...)))
-	hd.Set("Cache-Control", "no-store")
+	cache := p.cache
+	if cache == "" {
+		cache = "no-store"
+	}
+	hd.Set("Cache-Control", cache)
 	hd.Add("Vary", "Accept-Language, Cookie")
 	if h.o.InstanceName != nil {
 		p.InstanceName = h.o.InstanceName(r.Context(), p.Lang)
 	}
+	p.Documents = h.documentLinks(r, p.L)
 	w.WriteHeader(status)
 	if err := h.pages[name].ExecuteTemplate(w, "layout", p); err != nil {
 		h.o.Logger.ErrorContext(r.Context(), "render auth page", slog.String("page", name), slog.Any("error", err))

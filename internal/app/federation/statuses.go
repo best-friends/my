@@ -72,7 +72,14 @@ type StatusHandlersDeps struct {
 	Outbox queue.Outbox
 	Jobs   queue.JobQueue
 	KV     kernel.KeyValueStore
-	Clock  kernel.Clock
+	// Profiles reads the remote accounts whose outboxes FetchOutbox fetches, Relationships the
+	// blocks between their viewers and them, and Restrictions their federation restriction
+	// (ADR-0044). Without Profiles (and Jobs and KV), outboxes are not fetched; without
+	// Relationships or Restrictions, no block or restriction keeps them.
+	Profiles      OutboxAccounts
+	Relationships Relationships
+	Restrictions  AccountPolicy
+	Clock         kernel.Clock
 	// Host is the serving domain: actors on it are local.
 	Host   string
 	Logger *slog.Logger

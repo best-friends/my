@@ -199,6 +199,11 @@ export const moderatorRoleFixture: Schemas["AdminRole"] = {
 };
 export const rolesFixture: Schemas["AdminRole"][] = [adminRoleFixture, moderatorRoleFixture];
 
+/** An instance text as the server answers it, saved at 2026-10-17T00:00:00Z. */
+export function instanceTextFixture(key: Schemas["InstanceTextKey"], locale: string, body: string): Schemas["AdminInstanceText"] {
+  return { key, locale, body, revised_at: "2026-10-17T00:00:00Z" };
+}
+
 /** Whether a path segment is an ID of the API (a UUID), not the name of another operation under the same path. */
 function isId(segment: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(segment);
@@ -310,24 +315,17 @@ export const handlers = [
       ),
     );
   }),
+  // operationIds listInstanceTexts, setInstanceText: no texts; a new text is recorded as sent, at 2026-10-17T00:00:00Z.
+  http.get(`${apiBase}/admin/instance_texts`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.put(`${apiBase}/admin/instance_texts/:key/:locale`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["SetInstanceTextRequest"];
+    return withViewer(request, () => HttpResponse.json(instanceTextFixture(String(params["key"]) as Schemas["InstanceTextKey"], String(params["locale"]), body.body)));
+  }),
   // operationId getAccount: the moderators of the reports, Bob for any other ID. The path also matches the
   // operations under /accounts with a name (lookup, relationships…), which go on to their own handlers.
   http.get(`${apiBase}/accounts/:id`, ({ request, params }) => {
     const id = String(params["id"]);
     if (!isId(id)) return undefined;
     return withViewer(request, () => HttpResponse.json(id === viewerFixture.id ? viewerFixture : { ...otherAccountFixture, id }));
-  }),
-  // operationIds listInstanceTexts, setInstanceText: no texts; a change answers the text as sent.
-  http.get(`${apiBase}/admin/instance/texts`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
-  http.put(`${apiBase}/admin/instance/texts/:key/:locale`, async ({ request, params }) => {
-    const body = (await request.clone().json()) as Schemas["SetInstanceTextRequest"];
-    return withViewer(request, () =>
-      HttpResponse.json({
-        key: params["key"] as Schemas["AdminInstanceTextKey"],
-        locale: String(params["locale"]),
-        text: body.text,
-        revised_at: "2026-10-17T00:00:00Z",
-      } satisfies Schemas["AdminInstanceText"]),
-    );
   }),
 ];

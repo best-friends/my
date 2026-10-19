@@ -17,6 +17,7 @@ import (
 // grant and revocation change the user's permissions for the next check and record their audit
 // log entries (FR-720, ADR-0037).
 func TestRoleChangesApplyAndAreAudited(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_QUEUE": "inline", "MY_MAIL": "none"})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {

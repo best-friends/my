@@ -48,6 +48,7 @@ import {
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { useAdminEntry } from "../../features/admin";
+import { DocumentLinks } from "../../features/documents";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
@@ -247,7 +248,8 @@ type NavigationMenuProps = {
  * item. A navigation to another page closes the sheet when it starts, so that the new page's heading can take
  * focus (useViewChange); a navigation that the unsaved-changes guard holds does not start, and the sheet stays.
  * The button carries the counts of the sheet's items (what awaits the moderators), so that they show in the tab
- * bar too, and the sheet's items show them as the rail does.
+ * bar too, and the sheet's items show them as the rail does. Under the items, the links to the server's terms of
+ * service and privacy policy, which the third column shows on wide screens, when the server publishes them.
  */
 function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
   const t = useT();
@@ -292,6 +294,7 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
             );
           })}
         </ul>
+        <DocumentLinks placement="sheet" />
       </Sheet>
     </DialogTrigger>
   );

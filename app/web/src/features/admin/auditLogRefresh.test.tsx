@@ -205,7 +205,7 @@ const writes: Write[] = [
   {
     action: "text_changed",
     method: "put",
-    path: "/admin/instance/texts/:key/:locale",
+    path: "/admin/instance_texts/:key/:locale",
     page: "/admin/settings",
     write: async (user) => {
       await user.type(await screen.findByRole("textbox", { name: "Name in English" }), "Example Social");

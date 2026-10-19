@@ -70,7 +70,7 @@ func TestLoadValid(t *testing.T) {
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 			},
 		},
 		{
@@ -89,7 +89,7 @@ listen = "127.0.0.1:9000"
 				Host: "social.example.org", AccountDomain: "example.org", SourceURL: "https://git.example.org/fork/my", WebOrigin: "http://localhost:5173", Role: RoleWeb, Listen: "127.0.0.1:9000",
 				DB: "postgres", DatabaseURL: "file:my.db", Queue: "sqs", Blob: "fs", Media: "native", KV: "db",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 			},
 		},
 		{
@@ -100,7 +100,7 @@ listen = "127.0.0.1:9000"
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "postgres://db/my", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 			},
 		},
 		{
@@ -110,7 +110,7 @@ listen = "127.0.0.1:9000"
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 				PreviousKEKs: [][]byte{bytes.Repeat([]byte{1}, kekSize), bytes.Repeat([]byte{2}, kekSize)},
 			},
 		},
@@ -123,7 +123,19 @@ listen = "127.0.0.1:9000"
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "smtp", MailFrom: "noreply@social.example.org", SMTPHost: "smtp.example.org",
-				SMTPPort: 2525, SMTPUsername: "mailer", SMTPPassword: "hunter3", Profile: "production",
+				SMTPPort: 2525, SMTPUsername: "mailer", SMTPPassword: "hunter3", Captcha: "none", Profile: "production",
+			},
+		},
+		{
+			name:  "captcha with the secret key from _FILE",
+			env:   with(minimal(), "MY_CAPTCHA", "turnstile", "MY_CAPTCHA_SITE_KEY", "0x4AAA-site", "MY_CAPTCHA_SECRET_KEY_FILE", "/mnt/captcha"),
+			files: map[string]string{"/mnt/captcha": "0x4AAA-secret\n"},
+			want: Config{
+				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
+				Captcha: "turnstile", CaptchaSiteKey: "0x4AAA-site", CaptchaSecretKey: "0x4AAA-secret", Profile: "production",
 			},
 		},
 		{
@@ -133,7 +145,7 @@ listen = "127.0.0.1:9000"
 				Host: "localhost:3000", AccountDomain: "localhost:3000", SourceURL: DefaultSourceURL, WebOrigin: "https://localhost:3000", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 			},
 		},
 	}
@@ -249,6 +261,27 @@ func TestLoadInvalid(t *testing.T) {
 			},
 		},
 		{
+			name: "captcha without keys",
+			env:  with(minimal(), "MY_CAPTCHA", "recaptcha"),
+			want: []string{
+				"captcha_site_key (MY_CAPTCHA_SITE_KEY): required when captcha is not none",
+				"captcha_secret_key (MY_CAPTCHA_SECRET_KEY): required when captcha is not none",
+			},
+		},
+		{
+			name:  "captcha secret key in the config file",
+			env:   with(minimal(), "MY_CONFIG", "my.toml"),
+			files: map[string]string{"my.toml": "captcha = \"hcaptcha\"\ncaptcha_site_key = \"site\"\ncaptcha_secret_key = \"0x5eCrE7\"\n"},
+			want: []string{
+				"captcha_secret_key (MY_CAPTCHA_SECRET_KEY): is a secret; set MY_CAPTCHA_SECRET_KEY or MY_CAPTCHA_SECRET_KEY_FILE instead of the config file",
+			},
+		},
+		{
+			name: "unknown captcha service",
+			env:  with(minimal(), "MY_CAPTCHA", "recaptcha-v3"),
+			want: []string{`captcha (MY_CAPTCHA): unknown value "recaptcha-v3"`},
+		},
+		{
 			name: "inline queue with a split role",
 			env:  with(minimal(), "MY_QUEUE", "inline", "MY_ROLE", "worker"),
 			want: []string{"queue (MY_QUEUE): inline runs jobs in the enqueuing process and requires role = all, not worker"},
@@ -323,7 +356,8 @@ kek = "nope"
 }
 
 func TestLoadSettingsRedactSecrets(t *testing.T) {
-	_, settings, err := Load(source(with(minimal(), "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3"), nil))
+	_, settings, err := Load(source(with(minimal(), "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3",
+		"MY_CAPTCHA", "turnstile", "MY_CAPTCHA_SITE_KEY", "site", "MY_CAPTCHA_SECRET_KEY", "0x5eCrE7"), nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -385,19 +419,20 @@ func TestServerOrigin(t *testing.T) {
 }
 
 func TestConfigLogValueRedactsSecrets(t *testing.T) {
-	cfg, _, err := Load(source(with(minimal(), "MY_DATABASE_URL", "postgres://user:hunter2@db/my", "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3"), nil))
+	cfg, _, err := Load(source(with(minimal(), "MY_DATABASE_URL", "postgres://user:hunter2@db/my", "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3",
+		"MY_CAPTCHA", "hcaptcha", "MY_CAPTCHA_SITE_KEY", "site", "MY_CAPTCHA_SECRET_KEY", "0x5eCrE7"), nil))
 	if err != nil {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
 	slog.New(slog.NewTextHandler(&buf, nil)).Info("config", "config", cfg)
 	out := buf.String()
-	for _, secret := range []string{"hunter2", "hunter3", string(cfg.KEK), string(cfg.PreviousKEKs[0]), testKEK, testKEK1} {
+	for _, secret := range []string{"hunter2", "hunter3", "0x5eCrE7", string(cfg.KEK), string(cfg.PreviousKEKs[0]), testKEK, testKEK1} {
 		if strings.Contains(out, secret) {
 			t.Errorf("log output %q contains secret %q", out, secret)
 		}
 	}
-	for _, want := range []string{"config.host=social.example.org", "config.database_url=(redacted)", "config.kek=(redacted)", "config.kek_previous=1"} {
+	for _, want := range []string{"config.host=social.example.org", "config.database_url=(redacted)", "config.kek=(redacted)", "config.kek_previous=1", "config.captcha_secret_key=(redacted)"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("log output %q does not contain %q", out, want)
 		}

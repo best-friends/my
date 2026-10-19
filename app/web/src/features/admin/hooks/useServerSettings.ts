@@ -8,15 +8,8 @@ import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { supportedLocales, useLocale, useT } from "../../../lib/i18n";
-import { refreshAuditLog } from "../api/admin";
-import {
-  type InstanceNameChange,
-  instanceNameLimit,
-  instanceTextsQueryOptions,
-  ownInstanceQueryOptions,
-  refreshInstanceName,
-  setInstanceNamesMutation,
-} from "../api/settings";
+import { instanceQueryOptions, instanceTextsQueryOptions } from "../api/documents";
+import { cacheSavedName, type InstanceNameChange, instanceNameLimit, setInstanceNamesMutation } from "../api/settings";
 
 /** Pseudo-locales are for testing; nobody reads the instance's name in them. */
 const pseudoLocales: ReadonlySet<string> = new Set(["en-XA", "ar-XB"]);
@@ -53,15 +46,15 @@ export function useServerSettings() {
   const t = useT();
   const displayLocale = useLocale();
   const { data } = useSuspenseQuery(instanceTextsQueryOptions(api));
-  const { data: instance } = useSuspenseQuery(ownInstanceQueryOptions(api));
-  const saved = new Map(data.items.filter((text) => text.key === "name").map((text) => [text.locale, text.text]));
+  const { data: instance } = useSuspenseQuery(instanceQueryOptions(api));
+  const saved = new Map(data.items.filter((text) => text.key === "name").map((text) => [text.locale, text.body]));
   // The languages of the app, and any other language a name was saved in (from the CLI).
   const locales = [...new Set([...supportedLocales.filter((locale) => !pseudoLocales.has(locale)), ...saved.keys()])].toSorted();
   const [drafts, setDrafts] = useState<Readonly<Record<string, string>>>({});
   const [status, setStatus] = useState<string | undefined>(undefined);
 
   const valueOf = (locale: string) => drafts[locale] ?? saved.get(locale) ?? "";
-  const changes: InstanceNameChange[] = locales.filter((locale) => valueOf(locale) !== (saved.get(locale) ?? "")).map((locale) => ({ locale, text: valueOf(locale) }));
+  const changes: InstanceNameChange[] = locales.filter((locale) => valueOf(locale) !== (saved.get(locale) ?? "")).map((locale) => ({ locale, body: valueOf(locale) }));
   const errorOf = (value: string): string | undefined => {
     if (characterCount(value) > instanceNameLimit) return t("client:admin.settings.name.too_long", { max: String(instanceNameLimit) });
     if (value !== "" && value.trim() === "") return t("client:admin.settings.name.blank");
@@ -74,15 +67,15 @@ export function useServerSettings() {
       setStatus(undefined);
     },
     onSuccess: async () => {
-      // The navigation, the tab title and the audit log show the change: it is saved once they are fetched
-      // again (the button stays pending until then), so that each shows the new name at once.
-      await Promise.all([refreshInstanceName(queryClient), refreshAuditLog(queryClient)]);
+      // The navigation and the tab title show the new name once GET /instance is fetched again (the button
+      // stays pending until then); the audit log has the change when it is opened next (cacheSavedName).
+      await cacheSavedName(queryClient);
       setDrafts({});
       setStatus(t("client:admin.settings.name.saved"));
     },
     // Some languages may have been saved before one failed: the form compares with what is saved now, and keeps
     // the rest of the drafts to send again (web-client.md E2).
-    onError: () => refreshInstanceName(queryClient),
+    onError: () => cacheSavedName(queryClient),
   });
 
   const fields: NameField[] = locales.map((locale) => {

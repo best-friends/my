@@ -1,0 +1,35 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "http://gotosocial.example/users/the_mighty_zork/outbox?limit=40",
+  "next": "http://gotosocial.example/users/the_mighty_zork/outbox?limit=40\u0026max_id=01F8MHAMCHF6Y650WCRSCP4WMY",
+  "orderedItems": [
+    {
+      "actor": "http://gotosocial.example/users/the_mighty_zork",
+      "cc": "http://gotosocial.example/users/the_mighty_zork/followers",
+      "id": "http://gotosocial.example/users/the_mighty_zork/statuses/01JDPZC707CKDN8N4QVWM4Z1NR/activity#Create",
+      "object": "http://gotosocial.example/users/the_mighty_zork/statuses/01JDPZC707CKDN8N4QVWM4Z1NR",
+      "to": "https://www.w3.org/ns/activitystreams#Public",
+      "type": "Create"
+    },
+    {
+      "actor": "http://gotosocial.example/users/the_mighty_zork",
+      "cc": "http://gotosocial.example/users/the_mighty_zork/followers",
+      "id": "http://gotosocial.example/users/the_mighty_zork/statuses/01HH9KYNQPA416TNJ53NSATP40/activity#Create",
+      "object": "http://gotosocial.example/users/the_mighty_zork/statuses/01HH9KYNQPA416TNJ53NSATP40",
+      "to": "https://www.w3.org/ns/activitystreams#Public",
+      "type": "Create"
+    },
+    {
+      "actor": "http://gotosocial.example/users/the_mighty_zork",
+      "cc": "http://gotosocial.example/users/the_mighty_zork/followers",
+      "id": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/activity#Create",
+      "object": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
+      "to": "https://www.w3.org/ns/activitystreams#Public",
+      "type": "Create"
+    }
+  ],
+  "partOf": "http://gotosocial.example/users/the_mighty_zork/outbox",
+  "prev": "http://gotosocial.example/users/the_mighty_zork/outbox?limit=40\u0026min_id=01JDPZC707CKDN8N4QVWM4Z1NR",
+  "totalItems": 9,
+  "type": "OrderedCollectionPage"
+}
