@@ -97,6 +97,15 @@ function homeShown(queryClient: QueryClient, api: Api): boolean {
 /** New entries wait for the reader while a page shows the timeline, and join its cache otherwise. */
 function receive(queryClient: QueryClient, api: Api, statuses: readonly Status[], gap: boolean): void {
   if (statuses.length > 0 || gap) addWaiting(queryClient, statuses, gap);
+  joinWaitingHomeStatuses(queryClient, api);
+}
+
+/**
+ * Inserts the waiting entries into the cached home timeline unless a page shows it. The home route's loader
+ * calls it too, so that entries that arrived while the timeline was shown, but were not shown when the reader
+ * left it, are on it when it opens again.
+ */
+export function joinWaitingHomeStatuses(queryClient: QueryClient, api: Api): void {
   if (!homeShown(queryClient, api)) insertWaiting(queryClient, api);
 }
 

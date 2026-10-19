@@ -93,9 +93,11 @@ describe("new posts in the home timeline", () => {
 
     // The cached home timeline is not stale yet, so opening it again does not fetch it.
     streams.current().send("update", newStatus(1));
+    // Wait until the app has the entry, waiting or in the timeline's cache.
     await waitFor(() => {
-      expect(queryClient.getQueryData(["get", "/timelines/home", "pages"])).toMatchObject({ pages: [{ items: [{ id: newStatus(1).id }, {}] }] });
-    }, { timeout: 3_000 });
+      const cached = [queryClient.getQueryData(["stream", "home-new-statuses"]), queryClient.getQueryData(["get", "/timelines/home", "pages"])];
+      expect(JSON.stringify(cached)).toContain(newStatus(1).id);
+    });
     await act(() => router.navigate({ to: "/home" }));
 
     const feed = await screen.findByRole("feed", { name: "Home" });
