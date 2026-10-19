@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin feature: the health of remote servers with the reasons of their state and resuming deliveries to
 // them (federation.md §7.3), the moderation actions on domains (FR-702), the dead jobs of the job queue with
-// running them again, the audit log (FR-704), and the review of registrations awaiting approval (FR-721). Each
+// running them again, the audit log (FR-704), the review of registrations awaiting approval (FR-721), and the
+// review of appeals of moderation actions (FR-707). Each
 // screen is for a viewer whose roles have its permission (manage_domains, manage_jobs, view_audit,
 // manage_accounts); the server checks it on every request.
 // Routes and other features use it through this file only (web-client.md A3).
@@ -36,3 +37,7 @@ export { DomainName, MissingPermission } from "./components/parts";
 export { type ReportFilter, reportQueryOptions, reportsQueryOptions } from "./api/reports";
 export { ReportDetailView } from "./components/ReportDetail";
 export { ReportQueue } from "./components/ReportQueue";
+// The review of appeals of moderation actions (FR-707), for manage_accounts.
+export { type AppealFilter, appealQueryOptions, appealsQueryOptions } from "./api/appeals";
+export { AppealDetailView } from "./components/AppealDetail";
+export { AppealQueue } from "./components/AppealQueue";

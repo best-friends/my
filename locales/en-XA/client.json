@@ -243,6 +243,202 @@
     "defaultMessage": "[Ŭşḗḗ ȧȧŧ ḿǿǿşŧ {max, number} ƈħȧȧřȧȧƈŧḗḗřş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.appeal.account": {
+    "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.account.admin": {
+    "defaultMessage": "[Ǿƥḗḗƞ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ īƞ ŧħḗḗ ȧȧḓḿīƞ şƈřḗḗḗḗƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.action.kind": {
+    "defaultMessage": "[Ȧƈŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.action.lifted_at": {
+    "defaultMessage": "[Ŀīƒŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.action.report": {
+    "defaultMessage": "[Ǿƥḗḗƞ ŧħḗḗ řḗḗƥǿǿřŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.action.title": {
+    "defaultMessage": "[Ḿǿǿḓḗḗřȧȧŧīǿǿƞ ȧȧƈŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.action_state": {
+    "defaultMessage": "[Ȧƈŧīǿǿƞ şŧȧȧŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.already_decided": {
+    "defaultMessage": "[Ȧƞǿǿŧħḗḗř ḿǿǿḓḗḗřȧȧŧǿǿř ȧȧŀřḗḗȧȧḓẏ řḗḗṽīḗḗẇḗḗḓ ŧħīş ȧȧƥƥḗḗȧȧŀ. Ŧħȧȧŧ ḓḗḗƈīşīǿǿƞ şŧȧȧƞḓş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.appeal.title": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.back": {
+    "defaultMessage": "[Ɓȧȧƈķ ŧǿǿ ȧȧƥƥḗḗȧȧŀş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.cancel": {
+    "defaultMessage": "[Ƈȧȧƞƈḗḗŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.confirm_overturn.description": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƈŧīǿǿƞ “{kind}” īş ŀīƒŧḗḗḓ ƞǿǿẇ. Ḓḗḗŀḗḗŧḗḗḓ ƥǿǿşŧş şŧȧȧẏ ḓḗḗŀḗḗŧḗḗḓ. Ŧħḗḗ ḓḗḗƈīşīǿǿƞ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ȧȧƒŧḗḗřẇȧȧřḓş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.confirm_overturn.description_ban": {
+    "defaultMessage": "[Ŧħḗḗ ƀȧȧƞ īş ŀīƒŧḗḗḓ ƞǿǿẇ ȧȧƞḓ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ īş ƞǿǿ ŀǿǿƞɠḗḗř ḓḗḗŀḗḗŧḗḗḓ. Ŧħḗḗ ḓḗḗƈīşīǿǿƞ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ȧȧƒŧḗḗřẇȧȧřḓş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.confirm_overturn.title": {
+    "defaultMessage": "[Ǿṽḗḗřŧŭŭřƞ ŧħīş ȧȧƥƥḗḗȧȧŀ?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.confirm_uphold.description": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƈŧīǿǿƞ “{kind}” şŧȧȧẏş. Ŧħḗḗ ḓḗḗƈīşīǿǿƞ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ȧȧƒŧḗḗřẇȧȧřḓş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.confirm_uphold.title": {
+    "defaultMessage": "[Ŭƥħǿǿŀḓ ŧħīş ȧȧƥƥḗḗȧȧŀ?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.decide_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ şȧȧṽḗḗ ŧħḗḗ ḓḗḗƈīşīǿǿƞ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.decided_at": {
+    "defaultMessage": "[Řḗḗṽīḗḗẇḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.decided_by": {
+    "defaultMessage": "[Řḗḗṽīḗḗẇḗḗḓ ƀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.decided_by.cli": {
+    "defaultMessage": "[Ŧħḗḗ ƈǿǿḿḿȧȧƞḓ ŀīƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.decision": {
+    "defaultMessage": "[Ḓḗḗƈīşīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.decision.description": {
+    "defaultMessage": "[Ŭƥħǿǿŀḓīƞɠ ķḗḗḗḗƥş ŧħḗḗ ȧȧƈŧīǿǿƞ. Ǿṽḗḗřŧŭŭřƞīƞɠ ŀīƒŧş īŧ. Ŧħḗḗ ŭŭşḗḗř īş ŧǿǿŀḓ ǿǿƒ ŧħḗḗ ḓḗḗƈīşīǿǿƞ, ẇīŧħ ẏǿǿŭŭř ḗḗẋƥŀȧȧƞȧȧŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.decision.title": {
+    "defaultMessage": "[Řḗḗṽīḗḗẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.decision_reason": {
+    "defaultMessage": "[Ḗẋƥŀȧȧƞȧȧŧīǿǿƞ ŧǿǿ ŧħḗḗ ŭŭşḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.none": {
+    "defaultMessage": "[Ƞǿǿƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.overturn": {
+    "defaultMessage": "[Ǿṽḗḗřŧŭŭřƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.overturned": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƥƥḗḗȧȧŀ īş ǿǿṽḗḗřŧŭŭřƞḗḗḓ ȧȧƞḓ ŧħḗḗ ȧȧƈŧīǿǿƞ īş ŀīƒŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.overturned_ended": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƥƥḗḗȧȧŀ īş ǿǿṽḗḗřŧŭŭřƞḗḗḓ. Ŧħḗḗ ȧȧƈŧīǿǿƞ ħȧȧḓ ȧȧŀřḗḗȧȧḓẏ ḗḗƞḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.reason": {
+    "defaultMessage": "[Ḗẋƥŀȧȧƞȧȧŧīǿǿƞ ŧǿǿ ŧħḗḗ ŭŭşḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.reason.description": {
+    "defaultMessage": "[Ǿƥŧīǿǿƞȧȧŀ. Ŧħḗḗ ŭŭşḗḗř ẇħǿǿ ȧȧƥƥḗḗȧȧŀḗḗḓ şḗḗḗḗş īŧ ẇīŧħ ŧħḗḗ ḓḗḗƈīşīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.reason.too_long": {
+    "defaultMessage": "[Ŭşḗḗ ȧȧŧ ḿǿǿşŧ {max, number} ƈħȧȧřȧȧƈŧḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.state": {
+    "defaultMessage": "[Şŧȧȧŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.submitted_at": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.text": {
+    "defaultMessage": "[Ẇħȧȧŧ ŧħḗḗ ŭŭşḗḗř ẇřǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.title": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.upheld": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƥƥḗḗȧȧŀ īş ŭŭƥħḗḗŀḓ. Ŧħḗḗ ȧȧƈŧīǿǿƞ şŧȧȧẏş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeal.uphold": {
+    "defaultMessage": "[Ŭƥħǿǿŀḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.empty.decided": {
+    "defaultMessage": "[Ƞǿǿ ȧȧƥƥḗḗȧȧŀş ħȧȧṽḗḗ ƀḗḗḗḗƞ řḗḗṽīḗḗẇḗḗḓ ẏḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.empty.pending": {
+    "defaultMessage": "[Ƞǿǿ ȧȧƥƥḗḗȧȧŀş ȧȧẇȧȧīŧ řḗḗṽīḗḗẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.empty.pending.description": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀş ŧħȧȧŧ ŭŭşḗḗřş ḿȧȧķḗḗ ǿǿƒ ŧħḗḗ ȧȧƈŧīǿǿƞş ǿǿƞ ŧħḗḗīř ȧȧƈƈǿǿŭŭƞŧş ȧȧƥƥḗḗȧȧř ħḗḗřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.filter.decided": {
+    "defaultMessage": "[Řḗḗṽīḗḗẇḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.filter.label": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀş ƀẏ şŧȧȧŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.filter.pending": {
+    "defaultMessage": "[Ȧẇȧȧīŧīƞɠ řḗḗṽīḗḗẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.of": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀ ǿǿƒ {kind}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.state.overturned": {
+    "defaultMessage": "[Ǿṽḗḗřŧŭŭřƞḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.state.pending": {
+    "defaultMessage": "[Ȧẇȧȧīŧīƞɠ řḗḗṽīḗḗẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.state.upheld": {
+    "defaultMessage": "[Ŭƥħḗḗŀḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.summary": {
+    "defaultMessage": "[Řḗḗṽīḗḗẇ ȧȧƥƥḗḗȧȧŀş ǿǿƒ ḿǿǿḓḗḗřȧȧŧīǿǿƞ ȧȧƈŧīǿǿƞş ȧȧƞḓ ŭŭƥħǿǿŀḓ ǿǿř ǿǿṽḗḗřŧŭŭřƞ ŧħḗḗḿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.title": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.account_action_issued": {
     "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ ȧȧƈŧīǿǿƞ ŧȧȧķḗḗƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
