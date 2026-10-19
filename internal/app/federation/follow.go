@@ -44,9 +44,12 @@ type FollowReader interface {
 //     removed: Reject.
 //   - graph.follow_terminated of a local follower's follow of a remote account that the
 //     follower ended (unfollowed, or by a block or moderation): Undo Follow.
+//   - graph.follow_terminated of a remote follower's follow of a local account that moderation
+//     ended (the suspension of the follower): Reject.
 //
 // What the remote side did itself (its Accept, Reject, Undo, or the deletion of either account)
-// sends nothing back.
+// sends nothing back, and neither does a termination that is Unannounced (the suspension of a
+// domain, ADR-0036).
 func registerFollowProjectors(r *uow.Projectors, rec recorder) {
 	sides := func(ctx context.Context, tx uow.Tx, f appgraph.FollowRecord) (followerLocal, followeeLocal bool, err error) {
 		if followerLocal, err = rec.d.Accounts.IsLocal(ctx, tx, f.FollowerAccountID); err != nil {
@@ -130,7 +133,7 @@ func registerFollowProjectors(r *uow.Projectors, rec recorder) {
 	})
 	r.Register(appgraph.EventFollowTerminated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appgraph.FollowTerminated)
-		if !ok {
+		if !ok || ev.Unannounced {
 			return nil
 		}
 		at := ev.Termination.TerminatedAt
@@ -139,10 +142,14 @@ func registerFollowProjectors(r *uow.Projectors, rec recorder) {
 			return answered(ctx, tx, federation.ActivityReject, ev.Follow, at)
 		case appgraph.TerminatedUnfollowed, appgraph.TerminatedBlocked, appgraph.TerminatedModeration:
 			followerLocal, followeeLocal, err := sides(ctx, tx, ev.Follow)
-			if err != nil || !followerLocal || followeeLocal {
+			switch {
+			case err != nil:
 				return err
+			case followerLocal && !followeeLocal:
+				return send(ctx, tx, federation.ActivityUndo, ev.Follow, at, "")
+			case !followerLocal && followeeLocal && ev.Termination.Reason == appgraph.TerminatedModeration:
+				return send(ctx, tx, federation.ActivityReject, ev.Follow, at, "")
 			}
-			return send(ctx, tx, federation.ActivityUndo, ev.Follow, at, "")
 		}
 		return nil
 	})

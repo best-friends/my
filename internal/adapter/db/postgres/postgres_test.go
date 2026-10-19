@@ -360,6 +360,25 @@ func TestRemoteFollowContract(t *testing.T) {
 	})
 }
 
+func TestSeveranceContract(t *testing.T) {
+	testkit.SeveranceContract(t, func(t *testing.T, opts uow.Options) testkit.SeveranceHarness {
+		db := newTestDB(t, opts)
+		feds := db.FederationRepository()
+		return testkit.SeveranceHarness{
+			RemoteFollowHarness: testkit.RemoteFollowHarness{
+				FollowHarness: testkit.FollowHarness{
+					AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+					Graph:          db.GraphRepository(),
+				},
+				Notifications: db.NotificationRepository(),
+				Federation:    feds,
+				Inbox:         feds,
+			},
+			Moderation: db.ModerationRepository(),
+		}
+	})
+}
+
 func TestRemoteActorContract(t *testing.T) {
 	testkit.RemoteActorContract(t, func(t *testing.T, opts uow.Options) testkit.RemoteActorHarness {
 		db := newTestDB(t, opts)

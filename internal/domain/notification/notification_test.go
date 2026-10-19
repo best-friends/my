@@ -54,6 +54,22 @@ func TestValidate(t *testing.T) {
 			t.Errorf("Validate(%+v) = nil, want an error for the moderation action", n)
 		}
 	}
+	severed := ok
+	severed.SourceAccountID, severed.Type, severed.SeveranceID = "", TypeRelationshipsSevered, "s"
+	if err := severed.Validate(); err != nil {
+		t.Errorf("Validate(%+v) = %v", severed, err)
+	}
+	noSeverance := severed
+	noSeverance.SeveranceID = ""
+	straySeverance := ok
+	straySeverance.SeveranceID = "s"
+	severedBySomeone := severed
+	severedBySomeone.SourceAccountID = "b"
+	for _, n := range []Notification{noSeverance, straySeverance, severedBySomeone} {
+		if err := n.Validate(); err == nil {
+			t.Errorf("Validate(%+v) = nil, want an error for the severance", n)
+		}
+	}
 	self := ok
 	self.SourceAccountID = "a"
 	if err := self.Validate(); !errors.Is(err, ErrSelfNotification) {
@@ -78,6 +94,7 @@ func TestKeys(t *testing.T) {
 		InteractionKey(TypeFavourite, "s1", "a1"): "favourite:s1:a1",
 		InteractionKey(TypeBoost, "s1", "a1"):     "boost:s1:a1",
 		AdminReportKey("r1"):                      "admin_report:r1",
+		RelationshipsSeveredKey("s1"):             "relationships_severed:s1",
 		AdminSignUpKey("u1"):                      "admin_sign_up:u1",
 		ReportResolvedKey("r1"):                   "report_resolved:r1",
 		ModerationNoticeKey("m1"):                 "moderation_notice:m1",

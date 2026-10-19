@@ -1072,7 +1072,7 @@ CREATE TABLE notifications (
   recipient_account_id TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN (
     'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
-    'report_resolved', 'admin_report', 'admin_sign_up'
+    'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed'
   )),
   source_account_id TEXT,
   status_id TEXT,
@@ -1081,6 +1081,8 @@ CREATE TABLE notifications (
   report_id TEXT,
   -- admin_sign_up: the user whose registration awaits approval.
   subject_user_id TEXT,
+  -- relationships_severed: the relationship_severances row.
+  severance_id TEXT,
   dedupe_key TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   -- nobody is notified of their own actions.
@@ -1727,6 +1729,28 @@ CREATE TABLE audit_log_entries (
 ) STRICT;
 CREATE INDEX audit_log_entries_target_kind_target_id_id ON audit_log_entries (target_kind, target_id, id DESC);
 CREATE INDEX audit_log_entries_actor_user_id_id ON audit_log_entries (actor_user_id, id DESC);
+
+-- ---------------------------------------------------------------------------------------------
+-- moderation: the follows that suspensions cut (data-model §4.3, FR-717, ADR-0036). Owned by
+-- internal/app/moderation.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: the active follows that one local account lost when a domain (domain_action_id) or a
+-- remote account (action_id) was suspended; exactly one of the two is set. One row per account
+-- and action, so that processing the same action again records and notifies nothing more.
+CREATE TABLE relationship_severances (
+  id TEXT NOT NULL PRIMARY KEY,
+  domain_action_id TEXT,
+  action_id TEXT,
+  account_id TEXT NOT NULL,
+  followers_lost INTEGER NOT NULL CHECK (followers_lost >= 0),
+  following_lost INTEGER NOT NULL CHECK (following_lost >= 0),
+  occurred_at INTEGER NOT NULL,
+  CHECK ((domain_action_id IS NULL) <> (action_id IS NULL))
+) STRICT;
+CREATE INDEX relationship_severances_account_id_id ON relationship_severances (account_id, id DESC);
+CREATE UNIQUE INDEX relationship_severances_domain_action_id_account_id ON relationship_severances (domain_action_id, account_id);
+CREATE UNIQUE INDEX relationship_severances_action_id_account_id ON relationship_severances (action_id, account_id);
 
 -- moderation: the sign-up block list (data-model §4.3, FR-719). Owned by internal/app/moderation.
 -- ---------------------------------------------------------------------------------------------

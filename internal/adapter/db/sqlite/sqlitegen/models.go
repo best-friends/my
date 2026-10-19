@@ -432,6 +432,7 @@ type Notification struct {
 	ModerationActionID sql.NullString
 	ReportID           sql.NullString
 	SubjectUserID      sql.NullString
+	SeveranceID        sql.NullString
 	DedupeKey          string
 	CreatedAt          int64
 }
