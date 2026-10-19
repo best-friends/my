@@ -55,6 +55,14 @@
     "defaultMessage": "[Řḗḗƥǿǿřŧ ŭŭƞȧȧşşīɠƞḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "[Řǿǿŀḗḗ ɠřȧȧƞŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "[Řǿǿŀḗḗ řḗḗṽǿǿķḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "[Řŭŭŀḗḗ ȧȧḓḓḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1199,6 +1207,14 @@
     "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.severed.account": {
+    "defaultMessage": "[Ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş şŭŭşƥḗḗƞḓḗḗḓ {name}. Ẏǿǿŭŭ ŀǿǿşŧ {followers,plural,one{# ƒǿǿŀŀǿǿẇḗḗř} other{# ƒǿǿŀŀǿǿẇḗḗřş}} ȧȧƞḓ {following,plural,one{# ȧȧƈƈǿǿŭŭƞŧ ẏǿǿŭŭ ƒǿǿŀŀǿǿẇḗḗḓ} other{# ȧȧƈƈǿǿŭŭƞŧş ẏǿǿŭŭ ƒǿǿŀŀǿǿẇḗḗḓ}}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.severed.domain": {
+    "defaultMessage": "[Ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş şŭŭşƥḗḗƞḓḗḗḓ {domain}. Ẏǿǿŭŭ ŀǿǿşŧ {followers,plural,one{# ƒǿǿŀŀǿǿẇḗḗř} other{# ƒǿǿŀŀǿǿẇḗḗřş}} ȧȧƞḓ {following,plural,one{# ȧȧƈƈǿǿŭŭƞŧ ẏǿǿŭŭ ƒǿǿŀŀǿǿẇḗḗḓ} other{# ȧȧƈƈǿǿŭŭƞŧş ẏǿǿŭŭ ƒǿǿŀŀǿǿẇḗḗḓ}} ŧħḗḗřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.sign_in": {
     "defaultMessage": "[Şīɠƞ īƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1257,6 +1273,10 @@
   },
   "notifications.type.poll_closed": {
     "defaultMessage": "[Ȧ ƥǿǿŀŀ ẏǿǿŭŭ ŧǿǿǿǿķ ƥȧȧřŧ īƞ ħȧȧş ḗḗƞḓḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.relationships_severed": {
+    "defaultMessage": "[Ȧ şŭŭşƥḗḗƞşīǿǿƞ ƀẏ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ḗḗƞḓḗḗḓ şǿǿḿḗḗ ǿǿƒ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.type.report_resolved": {

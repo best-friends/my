@@ -146,6 +146,8 @@ const (
 	AdminAuditActionReportReopened           AdminAuditAction = "report_reopened"
 	AdminAuditActionReportResolved           AdminAuditAction = "report_resolved"
 	AdminAuditActionReportUnassigned         AdminAuditAction = "report_unassigned"
+	AdminAuditActionRoleGranted              AdminAuditAction = "role_granted"
+	AdminAuditActionRoleRevoked              AdminAuditAction = "role_revoked"
 	AdminAuditActionRuleAdded                AdminAuditAction = "rule_added"
 	AdminAuditActionRuleMoved                AdminAuditAction = "rule_moved"
 	AdminAuditActionRuleRetired              AdminAuditAction = "rule_retired"
@@ -184,6 +186,10 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionReportResolved:
 		return true
 	case AdminAuditActionReportUnassigned:
+		return true
+	case AdminAuditActionRoleGranted:
+		return true
+	case AdminAuditActionRoleRevoked:
 		return true
 	case AdminAuditActionRuleAdded:
 		return true
@@ -576,19 +582,20 @@ func (e ModerationAppealState) Valid() bool {
 
 // Defines values for NotificationType.
 const (
-	NotificationTypeAdminAppeal      NotificationType = "admin_appeal"
-	NotificationTypeAdminReport      NotificationType = "admin_report"
-	NotificationTypeAdminSignUp      NotificationType = "admin_sign_up"
-	NotificationTypeAppealDecided    NotificationType = "appeal_decided"
-	NotificationTypeBoost            NotificationType = "boost"
-	NotificationTypeFavourite        NotificationType = "favourite"
-	NotificationTypeFollow           NotificationType = "follow"
-	NotificationTypeFollowAccepted   NotificationType = "follow_accepted"
-	NotificationTypeFollowRequest    NotificationType = "follow_request"
-	NotificationTypeMention          NotificationType = "mention"
-	NotificationTypeModerationNotice NotificationType = "moderation_notice"
-	NotificationTypePollClosed       NotificationType = "poll_closed"
-	NotificationTypeReportResolved   NotificationType = "report_resolved"
+	NotificationTypeAdminAppeal          NotificationType = "admin_appeal"
+	NotificationTypeAdminReport          NotificationType = "admin_report"
+	NotificationTypeAdminSignUp          NotificationType = "admin_sign_up"
+	NotificationTypeAppealDecided        NotificationType = "appeal_decided"
+	NotificationTypeBoost                NotificationType = "boost"
+	NotificationTypeFavourite            NotificationType = "favourite"
+	NotificationTypeFollow               NotificationType = "follow"
+	NotificationTypeFollowAccepted       NotificationType = "follow_accepted"
+	NotificationTypeFollowRequest        NotificationType = "follow_request"
+	NotificationTypeMention              NotificationType = "mention"
+	NotificationTypeModerationNotice     NotificationType = "moderation_notice"
+	NotificationTypePollClosed           NotificationType = "poll_closed"
+	NotificationTypeRelationshipsSevered NotificationType = "relationships_severed"
+	NotificationTypeReportResolved       NotificationType = "report_resolved"
 )
 
 // Valid indicates whether the value is a known member of the NotificationType enum.
@@ -617,6 +624,8 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeModerationNotice:
 		return true
 	case NotificationTypePollClosed:
+		return true
+	case NotificationTypeRelationshipsSevered:
 		return true
 	case NotificationTypeReportResolved:
 		return true
@@ -679,6 +688,24 @@ func (e RegistrationState) Valid() bool {
 	case RegistrationStatePending:
 		return true
 	case RegistrationStateRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RelationshipSeveranceKind.
+const (
+	RelationshipSeveranceKindAccountSuspension RelationshipSeveranceKind = "account_suspension"
+	RelationshipSeveranceKindDomainSuspension  RelationshipSeveranceKind = "domain_suspension"
+)
+
+// Valid indicates whether the value is a known member of the RelationshipSeveranceKind enum.
+func (e RelationshipSeveranceKind) Valid() bool {
+	switch e {
+	case RelationshipSeveranceKindAccountSuspension:
+		return true
+	case RelationshipSeveranceKindDomainSuspension:
 		return true
 	default:
 		return false
@@ -980,7 +1007,8 @@ type AdminAppealPage struct {
 // `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 // (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On an `appeal`:
+// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+// user): `role_granted`, `role_revoked`. On an `appeal`:
 // `appeal_upheld`, `appeal_overturned` (which also records the action's
 // `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
 // `account`).
@@ -1000,7 +1028,8 @@ type AdminAuditEntry struct {
 	// `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On an `appeal`:
+	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+	// user): `role_granted`, `role_revoked`. On an `appeal`:
 	// `appeal_upheld`, `appeal_overturned` (which also records the action's
 	// `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
 	// `account`).
@@ -1420,6 +1449,27 @@ type AdminReportTargetHistory struct {
 
 	// ReportsCount The number of the target's other reports, open and resolved.
 	ReportsCount int64 `json:"reports_count"`
+}
+
+// AdminRole A role (FR-720): a named set of permissions. A higher position outranks a lower one;
+// a user may grant and revoke only the roles at or below their highest one.
+type AdminRole struct {
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Key The name of the role, such as `admin` or `moderator`.
+	Key string `json:"key"`
+
+	// Permissions The permissions that the role grants, in the order of `Permission`.
+	Permissions []Permission `json:"permissions"`
+	Position    int          `json:"position"`
+}
+
+// AdminRoleList Roles, highest position first.
+type AdminRoleList struct {
+	Items []AdminRole `json:"items"`
 }
 
 // AdminRule A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
@@ -2096,6 +2146,13 @@ type Notification struct {
 	// appeal an `appeal_decided` tells of, with the appeal.
 	ModerationAction *ModerationAction `json:"moderation_action,omitempty"`
 
+	// RelationshipSeverance The follows that a `relationships_severed` tells of: the user lost them when the
+	// moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+	// account (`account_suspension`, the notification's `account` is the account). Both
+	// directions end, follow requests too, and lifting the suspension does not restore them;
+	// the counts are of the accepted follows.
+	RelationshipSeverance *RelationshipSeverance `json:"relationship_severance,omitempty"`
+
 	// Report The user's report that a `report_resolved` tells of.
 	Report *Report `json:"report,omitempty"`
 
@@ -2117,6 +2174,9 @@ type Notification struct {
 	// when the report is reopened and resolved again. `appeal_decided` also comes from the
 	// instance: the moderators decided the user's appeal, and its `moderation_action` is the
 	// action with the appeal and the decision.
+	// `relationships_severed` also comes from the instance: its `relationship_severance` tells
+	// how many follows the user lost when the moderators suspended a server or a remote
+	// account, whose `account` it carries for an account. It is sent once per suspension.
 	// The moderator notifications come from the instance too: `admin_report` (an account
 	// that had no open report was reported; `report_id` is the report) goes to the users
 	// with the `manage_reports` permission, `admin_sign_up` (a registration awaits
@@ -2164,6 +2224,9 @@ type NotificationPage struct {
 // when the report is reopened and resolved again. `appeal_decided` also comes from the
 // instance: the moderators decided the user's appeal, and its `moderation_action` is the
 // action with the appeal and the decision.
+// `relationships_severed` also comes from the instance: its `relationship_severance` tells
+// how many follows the user lost when the moderators suspended a server or a remote
+// account, whose `account` it carries for an account. It is sent once per suspension.
 // The moderator notifications come from the instance too: `admin_report` (an account
 // that had no open report was reported; `report_id` is the report) goes to the users
 // with the `manage_reports` permission, `admin_sign_up` (a registration awaits
@@ -2180,8 +2243,9 @@ type PageInfo struct {
 
 // Permission A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
-// `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
-// dead jobs of the job queue. The others guard no client API operation yet.
+// `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+// roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+// log. The others guard no client API operation yet.
 type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
@@ -2334,6 +2398,26 @@ type Relationship struct {
 	// ShowBoosts Whether the viewer's follow shows the account's boosts in the home timeline (true without a follow).
 	ShowBoosts bool `json:"show_boosts"`
 }
+
+// RelationshipSeverance The follows that a `relationships_severed` tells of: the user lost them when the
+// moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+// account (`account_suspension`, the notification's `account` is the account). Both
+// directions end, follow requests too, and lifting the suspension does not restore them;
+// the counts are of the accepted follows.
+type RelationshipSeverance struct {
+	// Domain The suspended server of a `domain_suspension`; omitted otherwise.
+	Domain *string `json:"domain,omitempty"`
+
+	// FollowersLost The accounts that followed the user and no longer do.
+	FollowersLost int `json:"followers_lost"`
+
+	// FollowingLost The accounts that the user followed and no longer does.
+	FollowingLost int                       `json:"following_lost"`
+	Kind          RelationshipSeveranceKind `json:"kind"`
+}
+
+// RelationshipSeveranceKind defines model for RelationshipSeverance.Kind.
+type RelationshipSeveranceKind string
 
 // Report A report that the user filed. It never names the reporter, and tells only whether the
 // moderators resolved it, never how.
@@ -2713,6 +2797,9 @@ type RegistrationUserId = Id
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type ReportId = Id
+
+// RoleKey defines model for RoleKey.
+type RoleKey = string
 
 // RuleId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -3158,6 +3245,15 @@ type ServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// ListAccountRoles List the roles of a local account
+	// (GET /admin/accounts/{id}/roles)
+	ListAccountRoles(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// RevokeAccountRole Revoke a role from a local account
+	// (DELETE /admin/accounts/{id}/roles/{role})
+	RevokeAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey)
+	// GrantAccountRole Grant a role to a local account
+	// (PUT /admin/accounts/{id}/roles/{role})
+	GrantAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey)
 	// ListAppeals List the appeals of moderation actions
 	// (GET /admin/appeals)
 	ListAppeals(w http.ResponseWriter, r *http.Request, params ListAppealsParams)
@@ -3236,6 +3332,9 @@ type ServerInterface interface {
 	// UnassignReport Leave a report to nobody
 	// (POST /admin/reports/{id}/unassign)
 	UnassignReport(w http.ResponseWriter, r *http.Request, id ReportId)
+	// ListRoles List the roles
+	// (GET /admin/roles)
+	ListRoles(w http.ResponseWriter, r *http.Request)
 	// ListInstanceRules List the instance rules
 	// (GET /admin/rules)
 	ListInstanceRules(w http.ResponseWriter, r *http.Request, params ListInstanceRulesParams)
@@ -4041,6 +4140,102 @@ func (siw *ServerInterfaceWrapper) CreateAccountAction(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateAccountAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAccountRoles operation middleware
+func (siw *ServerInterfaceWrapper) ListAccountRoles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAccountRoles(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeAccountRole operation middleware
+func (siw *ServerInterfaceWrapper) RevokeAccountRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role" -------------
+	var role RoleKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role", r.PathValue("role"), &role, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeAccountRole(w, r, id, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GrantAccountRole operation middleware
+func (siw *ServerInterfaceWrapper) GrantAccountRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role" -------------
+	var role RoleKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role", r.PathValue("role"), &role, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GrantAccountRole(w, r, id, role)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4979,6 +5174,20 @@ func (siw *ServerInterfaceWrapper) UnassignReport(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UnassignReport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoles operation middleware
+func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoles(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6589,6 +6798,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/roles", wrapper.ListRoles)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/roles", wrapper.ListAccountRoles)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.RevokeAccountRole)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.GrantAccountRole)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/appeals", wrapper.ListAppeals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/appeals/{id}", wrapper.GetAppeal)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/appeals/{id}/overturn", wrapper.OverturnAppeal)
@@ -6670,6 +6883,15 @@ type AdminReportDetailJSONResponse struct {
 	Body AdminReportDetail
 
 	Headers AdminReportDetailResponseHeaders
+}
+
+type AdminRoleListResponseHeaders struct {
+	CacheControl *string
+}
+type AdminRoleListJSONResponse struct {
+	Body AdminRoleList
+
+	Headers AdminRoleListResponseHeaders
 }
 
 type AdminRuleResponseHeaders struct {
@@ -7777,6 +7999,173 @@ type CreateAccountActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateAccountActiondefaultApplicationProblemPlusJSONResponse) VisitCreateAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountRolesRequestObject struct {
+	Id AdminAccountId `json:"id"`
+}
+
+type ListAccountRolesResponseObject interface {
+	VisitListAccountRolesResponse(w http.ResponseWriter) error
+}
+
+type ListAccountRoles200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response ListAccountRoles200JSONResponse) VisitListAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountRolesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAccountRolesdefaultApplicationProblemPlusJSONResponse) VisitListAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeAccountRoleRequestObject struct {
+	Id   AdminAccountId `json:"id"`
+	Role RoleKey        `json:"role"`
+}
+
+type RevokeAccountRoleResponseObject interface {
+	VisitRevokeAccountRoleResponse(w http.ResponseWriter) error
+}
+
+type RevokeAccountRole200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response RevokeAccountRole200JSONResponse) VisitRevokeAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeAccountRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RevokeAccountRoledefaultApplicationProblemPlusJSONResponse) VisitRevokeAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GrantAccountRoleRequestObject struct {
+	Id   AdminAccountId `json:"id"`
+	Role RoleKey        `json:"role"`
+}
+
+type GrantAccountRoleResponseObject interface {
+	VisitGrantAccountRoleResponse(w http.ResponseWriter) error
+}
+
+type GrantAccountRole200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response GrantAccountRole200JSONResponse) VisitGrantAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GrantAccountRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GrantAccountRoledefaultApplicationProblemPlusJSONResponse) VisitGrantAccountRoleResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -9271,6 +9660,60 @@ type UnassignReportdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UnassignReportdefaultApplicationProblemPlusJSONResponse) VisitUnassignReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesRequestObject struct {
+}
+
+type ListRolesResponseObject interface {
+	VisitListRolesResponse(w http.ResponseWriter) error
+}
+
+type ListRoles200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response ListRoles200JSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListRolesdefaultApplicationProblemPlusJSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -12030,6 +12473,15 @@ type StrictServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(ctx context.Context, request CreateAccountActionRequestObject) (CreateAccountActionResponseObject, error)
+	// ListAccountRoles List the roles of a local account
+	// (GET /admin/accounts/{id}/roles)
+	ListAccountRoles(ctx context.Context, request ListAccountRolesRequestObject) (ListAccountRolesResponseObject, error)
+	// RevokeAccountRole Revoke a role from a local account
+	// (DELETE /admin/accounts/{id}/roles/{role})
+	RevokeAccountRole(ctx context.Context, request RevokeAccountRoleRequestObject) (RevokeAccountRoleResponseObject, error)
+	// GrantAccountRole Grant a role to a local account
+	// (PUT /admin/accounts/{id}/roles/{role})
+	GrantAccountRole(ctx context.Context, request GrantAccountRoleRequestObject) (GrantAccountRoleResponseObject, error)
 	// ListAppeals List the appeals of moderation actions
 	// (GET /admin/appeals)
 	ListAppeals(ctx context.Context, request ListAppealsRequestObject) (ListAppealsResponseObject, error)
@@ -12108,6 +12560,9 @@ type StrictServerInterface interface {
 	// UnassignReport Leave a report to nobody
 	// (POST /admin/reports/{id}/unassign)
 	UnassignReport(ctx context.Context, request UnassignReportRequestObject) (UnassignReportResponseObject, error)
+	// ListRoles List the roles
+	// (GET /admin/roles)
+	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
 	// ListInstanceRules List the instance rules
 	// (GET /admin/rules)
 	ListInstanceRules(ctx context.Context, request ListInstanceRulesRequestObject) (ListInstanceRulesResponseObject, error)
@@ -12818,6 +13273,86 @@ func (sh *strictHandler) CreateAccountAction(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateAccountActionResponseObject); ok {
 		if err := validResponse.VisitCreateAccountActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAccountRoles operation middleware
+func (sh *strictHandler) ListAccountRoles(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request ListAccountRolesRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAccountRoles(ctx, request.(ListAccountRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAccountRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAccountRolesResponseObject); ok {
+		if err := validResponse.VisitListAccountRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeAccountRole operation middleware
+func (sh *strictHandler) RevokeAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey) {
+	var request RevokeAccountRoleRequestObject
+
+	request.Id = id
+	request.Role = role
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeAccountRole(ctx, request.(RevokeAccountRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeAccountRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeAccountRoleResponseObject); ok {
+		if err := validResponse.VisitRevokeAccountRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GrantAccountRole operation middleware
+func (sh *strictHandler) GrantAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey) {
+	var request GrantAccountRoleRequestObject
+
+	request.Id = id
+	request.Role = role
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GrantAccountRole(ctx, request.(GrantAccountRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GrantAccountRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GrantAccountRoleResponseObject); ok {
+		if err := validResponse.VisitGrantAccountRoleResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -13552,6 +14087,30 @@ func (sh *strictHandler) UnassignReport(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnassignReportResponseObject); ok {
 		if err := validResponse.VisitUnassignReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoles operation middleware
+func (sh *strictHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	var request ListRolesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoles(ctx, request.(ListRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRolesResponseObject); ok {
+		if err := validResponse.VisitListRolesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

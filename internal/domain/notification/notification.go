@@ -13,9 +13,10 @@ type Type string
 
 // Notification types. The notification module generates follow, follow_request,
 // follow_accepted, mention, boost, and favourite from the graph and content events, and
-// moderation_notice, appeal_decided, and report_resolved from the moderation events; poll_closed
-// belongs to the module that closes polls. admin_report, admin_sign_up, and admin_appeal go to
-// the moderators whose roles grant the permission they need (ModeratorPermission).
+// moderation_notice, appeal_decided, report_resolved, and relationships_severed from the
+// moderation events; poll_closed belongs to the module that closes polls. admin_report,
+// admin_sign_up, and admin_appeal go to the moderators whose roles grant the permission they
+// need (ModeratorPermission).
 const (
 	TypeFollow           Type = "follow"
 	TypeFollowRequest    Type = "follow_request"
@@ -28,14 +29,18 @@ const (
 	TypeReportResolved   Type = "report_resolved"
 	TypeAdminReport      Type = "admin_report"
 	TypeAdminSignUp      Type = "admin_sign_up"
-	TypeAppealDecided    Type = "appeal_decided"
-	TypeAdminAppeal      Type = "admin_appeal"
+	// TypeRelationshipsSevered tells a local account of the follows that a suspension of a
+	// domain or a remote account cut (FR-717).
+	TypeRelationshipsSevered Type = "relationships_severed"
+	TypeAppealDecided        Type = "appeal_decided"
+	TypeAdminAppeal          Type = "admin_appeal"
 )
 
 // Types are every notification type, in a stable order.
 var Types = []Type{
 	TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
 	TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
+	TypeRelationshipsSevered,
 	TypeAppealDecided, TypeAdminAppeal,
 }
 
@@ -44,7 +49,7 @@ func (t Type) Valid() bool {
 	switch t {
 	case TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
 		TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
-		TypeAppealDecided, TypeAdminAppeal:
+		TypeRelationshipsSevered, TypeAppealDecided, TypeAdminAppeal:
 		return true
 	}
 	return false
@@ -59,11 +64,12 @@ type Notification struct {
 	ID                 string
 	RecipientAccountID string
 	Type               Type
-	SourceAccountID    string // "" for moderation_notice, report_resolved, and the admin types, which come from the instance
+	SourceAccountID    string // "" for moderation_notice, report_resolved, relationships_severed, and the admin types, which come from the instance
 	StatusID           string // "" unless the notification is about a status
 	ModerationActionID string // "" unless the notification is a moderation_notice
 	ReportID           string // "" unless the notification is a report_resolved or an admin_report
 	SubjectUserID      string // "" unless the notification is an admin_sign_up: the user who signed up
+	SeveranceID        string // "" unless the notification is a relationships_severed
 	AppealID           string // "" unless the notification is an appeal_decided or an admin_appeal
 	DedupeKey          string
 	CreatedAt          time.Time
@@ -93,6 +99,9 @@ func (n Notification) Validate() error {
 	}
 	if (n.Type == TypeModerationNotice) != (n.ModerationActionID != "") {
 		return errors.New("notification: a moderation_notice, and only it, names a moderation action")
+	}
+	if (n.Type == TypeRelationshipsSevered) != (n.SeveranceID != "") || (n.Type == TypeRelationshipsSevered && n.SourceAccountID != "") {
+		return errors.New("notification: a relationships_severed, and only it, names a severance, and it has no source account")
 	}
 	if (n.Type == TypeAppealDecided || n.Type == TypeAdminAppeal) != (n.AppealID != "") {
 		return errors.New("notification: an appeal_decided or an admin_appeal, and only they, name an appeal")
@@ -127,6 +136,12 @@ func ReportResolvedKey(reportID string) string { return string(TypeReportResolve
 // ModerationNoticeKey is the dedupe key of a moderation_notice notification: one per action.
 func ModerationNoticeKey(actionID string) string {
 	return string(TypeModerationNotice) + ":" + actionID
+}
+
+// RelationshipsSeveredKey is the dedupe key of a relationships_severed notification: one per
+// severance, so that processing the same suspension again does not notify again.
+func RelationshipsSeveredKey(severanceID string) string {
+	return string(TypeRelationshipsSevered) + ":" + severanceID
 }
 
 // Permission is a permission of the roles of the identity module (role_permissions.permission)

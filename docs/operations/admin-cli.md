@@ -1,6 +1,6 @@
-# 管理者の作成
+# 管理者とロール
 
-運営者向けの手順です。要件は FR-801（[機能要件](../requirements/01-functional.md)）、パスワードの扱いは [ADR-0019 §3](../adr/0019-security-baseline.md) です。
+運営者向けの手順です。要件は FR-801 と FR-720（[機能要件](../requirements/01-functional.md)）、パスワードの扱いは [ADR-0019 §3](../adr/0019-security-baseline.md) です。
 
 ## 前提
 
@@ -27,3 +27,22 @@ my admin create -username alice -email alice@example.com
   何も変更せずに終了コード 1 で終わり、どちらが使われているかを表示する。既存のユーザーのパスワードやロールは変えない。
 - 失敗した実行は何も書き込まないので、原因を直してそのまま再実行してよい。
 - 終了コード 2 は引数の誤り。
+
+## ロールの付与と剥奪
+
+権限はロールが持ちます（[data-model §4.1](../architecture/data-model.md)）。組み込みのロールは `admin`（`position` 1000、すべての権限）と
+`moderator`（`position` 100、`manage_reports`・`manage_accounts`・`view_audit`）です（FR-720）。
+
+```sh
+my admin role list                 # ロールごとの position・権限・持っている利用者
+my admin role list -user alice     # alice のロール
+my admin role grant alice moderator
+my admin role revoke alice moderator
+```
+
+- 変更は利用者の次の要求から効きます。モデレーター向けの通知は、通知を作るときに権限を持つ人に届きます。
+- 付与と剥奪は監査ログに `role_granted`・`role_revoked`（対象の種類 `role`）で残ります。CLI の操作者は `cli` です（`my admin audit list -target-kind role`）。
+- 持っているロールの付与と持っていないロールの剥奪は何も変えず、記録もしません。
+- `admin` を持つ最後の 1 人からは剥奪できません（終了コード 1）。先に別の利用者に `admin` を付与します。
+- 管理 API は `GET /api/v1/admin/roles`、`GET /api/v1/admin/accounts/{id}/roles`、`PUT` / `DELETE /api/v1/admin/accounts/{id}/roles/{role}` で、権限 `manage_roles` を要します。
+  API では、自分のロールの最も高い `position` より上のロールは付与・剥奪できません（403）。最後の `admin` の剥奪は 409 です。

@@ -30,6 +30,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.report_resolved": {};
   /** Report unassigned */
   "client:admin.audit_log.action.report_unassigned": {};
+  /** Role granted */
+  "client:admin.audit_log.action.role_granted": {};
+  /** Role revoked */
+  "client:admin.audit_log.action.role_revoked": {};
   /** Rule added */
   "client:admin.audit_log.action.rule_added": {};
   /** Rule moved */
@@ -602,6 +606,10 @@ export interface MessageArgs {
   "client:notifications.post.open": {};
   /** Try again */
   "client:notifications.retry": {};
+  /** The moderators suspended {name}. You lost {followers, plural, one {# follower} other {# followers}} and {following, plural, one {# account you followed} other {# accounts you followed}}. */
+  "client:notifications.severed.account": { followers: number; following: number; name: string };
+  /** The moderators suspended {domain}. You lost {followers, plural, one {# follower} other {# followers}} and {following, plural, one {# account you followed} other {# accounts you followed}} there. */
+  "client:notifications.severed.domain": { domain: string; followers: number; following: number };
   /** Sign in */
   "client:notifications.sign_in": {};
   /** Sign in to see your notifications. */
@@ -632,6 +640,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** A suspension by the moderators ended some of your follows */
+  "client:notifications.type.relationships_severed": {};
   /** A report you filed has been resolved */
   "client:notifications.type.report_resolved": {};
   /** Unread: */

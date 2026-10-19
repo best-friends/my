@@ -219,6 +219,8 @@ export const auditActions = [
   "rule_revised",
   "rule_moved",
   "rule_retired",
+  "role_granted",
+  "role_revoked",
   "appeal_upheld",
   "appeal_overturned",
   "account_deletion_cancelled",

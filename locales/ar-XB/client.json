@@ -55,6 +55,14 @@
     "defaultMessage": "‮ᴚǝdoɹʇ nuɐssıƃuǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "‮ᴚoʅǝ ƃɹɐuʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "‮ᴚoʅǝ ɹǝʌoʞǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "‮ᴚnʅǝ ɐppǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1199,6 +1207,14 @@
     "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.severed.account": {
+    "defaultMessage": "‮⊥ɥǝ ɯopǝɹɐʇoɹs snsdǝupǝp {name}. ⅄on ʅosʇ {followers,plural,one{# ɟoʅʅoʍǝɹ} other{# ɟoʅʅoʍǝɹs}} ɐup {following,plural,one{# ɐɔɔonuʇ ʎon ɟoʅʅoʍǝp} other{# ɐɔɔonuʇs ʎon ɟoʅʅoʍǝp}}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.severed.domain": {
+    "defaultMessage": "‮⊥ɥǝ ɯopǝɹɐʇoɹs snsdǝupǝp {domain}. ⅄on ʅosʇ {followers,plural,one{# ɟoʅʅoʍǝɹ} other{# ɟoʅʅoʍǝɹs}} ɐup {following,plural,one{# ɐɔɔonuʇ ʎon ɟoʅʅoʍǝp} other{# ɐɔɔonuʇs ʎon ɟoʅʅoʍǝp}} ʇɥǝɹǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.sign_in": {
     "defaultMessage": "‮Sıƃu ıu‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1257,6 +1273,10 @@
   },
   "notifications.type.poll_closed": {
     "defaultMessage": "‮∀ doʅʅ ʎon ʇooʞ dɐɹʇ ıu ɥɐs ǝupǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.relationships_severed": {
+    "defaultMessage": "‮∀ snsdǝusıou qʎ ʇɥǝ ɯopǝɹɐʇoɹs ǝupǝp soɯǝ oɟ ʎonɹ ɟoʅʅoʍs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.type.report_resolved": {

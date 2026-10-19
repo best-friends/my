@@ -109,6 +109,10 @@ const (
 	AuditRuleMoved AuditAction = "rule_moved"
 	// AuditRuleRetired: a rule was retired (instance_rule_retirements).
 	AuditRuleRetired AuditAction = "rule_retired"
+	// AuditRoleGranted: a role was granted to a user (user_role_grants).
+	AuditRoleGranted AuditAction = "role_granted"
+	// AuditRoleRevoked: a role was revoked from a user (user_role_revocations).
+	AuditRoleRevoked AuditAction = "role_revoked"
 	// AuditAppealUpheld: an appeal was decided and its action kept (moderation_appeal_decisions).
 	AuditAppealUpheld AuditAction = "appeal_upheld"
 	// AuditAppealOverturned: an appeal was decided and its action lifted
@@ -141,6 +145,8 @@ var auditActions = []struct {
 	{AuditRuleRevised, AuditTargetRule},
 	{AuditRuleMoved, AuditTargetRule},
 	{AuditRuleRetired, AuditTargetRule},
+	{AuditRoleGranted, AuditTargetRole},
+	{AuditRoleRevoked, AuditTargetRole},
 	{AuditAppealUpheld, AuditTargetAppeal},
 	{AuditAppealOverturned, AuditTargetAppeal},
 	{AuditAccountDeletionCancelled, AuditTargetAccount},

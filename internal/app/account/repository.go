@@ -88,6 +88,12 @@ type Repository interface {
 	FindAccountByURI(ctx context.Context, uri string) (account.Account, error)
 	// AnyAccountOnDomain reports whether one of the accounts ids is on domain.
 	AnyAccountOnDomain(ctx context.Context, domain string, ids []string) (bool, error)
+	// AccountsOnDomain returns inside tx, in ID order, the accounts among ids that are on domain
+	// or one of its subdomains.
+	AccountsOnDomain(ctx context.Context, tx uow.Tx, domain string, ids []string) ([]string, error)
+	// ListLocalAccountIDs returns up to limit local account IDs in order, after the ID after (""
+	// for the first page).
+	ListLocalAccountIDs(ctx context.Context, after string, limit int) ([]string, error)
 	// FindInstanceActor returns the local Application actor.
 	FindInstanceActor(ctx context.Context) (account.Account, error)
 	FindLocalAccount(ctx context.Context, accountID string) (account.LocalAccount, error)

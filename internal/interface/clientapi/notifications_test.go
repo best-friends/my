@@ -18,6 +18,7 @@ import (
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	appnotification "github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/domain/notification"
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
@@ -220,6 +221,59 @@ func TestListModeratorNotifications(t *testing.T) {
 	}
 	if report.Type != clientapi.NotificationTypeAdminReport || report.Account != nil || report.ReportId == nil || *report.ReportId != reportID {
 		t.Errorf("admin_report = %+v, want report %s and no account", report, reportID)
+	}
+}
+
+// fakeSeverances holds severances by ID.
+type fakeSeverances map[string]moderation.SeveranceRecord
+
+func (f fakeSeverances) SeveranceOf(_ context.Context, accountID, id string) (moderation.SeveranceRecord, error) {
+	sv, ok := f[id]
+	if !ok || sv.AccountID != accountID {
+		return moderation.SeveranceRecord{}, appmoderation.ErrNotFound
+	}
+	return sv, nil
+}
+
+// TestListSeveranceNotifications checks the relationships_severed notifications: one of a
+// domain names the domain and has no account, one of an account presents the suspended
+// account, and one whose severance is gone has neither.
+func TestListSeveranceNotifications(t *testing.T) {
+	at := time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)
+	severed := func(i int) notification.Notification {
+		return notification.Notification{
+			ID: notificationID(i), RecipientAccountID: aliceAccountID, Type: notification.TypeRelationshipsSevered,
+			SeveranceID: fmt.Sprintf("severance-%d", i), CreatedAt: at,
+		}
+	}
+	f := &fakeNotifications{dismissed: map[string]bool{}, markers: map[string]string{}, ns: []notification.Notification{severed(1), severed(2), severed(3)}}
+	e := newAuthEnv(t, func(o *clientapi.Options) {
+		o.Notifications = f
+		o.Severances = fakeSeverances{
+			"severance-1": {Severance: moderation.Severance{ID: "severance-1", DomainActionID: "d", AccountID: aliceAccountID, FollowersLost: 2, FollowingLost: 1}, Domain: "bad.example"},
+			"severance-2": {Severance: moderation.Severance{ID: "severance-2", ActionID: "a", AccountID: aliceAccountID, FollowersLost: 1}, TargetAccountID: bobAccountID},
+		}
+		o.Accounts.(fakeAccounts)[bobAccountID] = o.Accounts.(fakeAccounts)[aliceAccountID]
+	})
+	res := e.send(t, http.MethodGet, "/notifications", "read", "")
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.StatusCode)
+	}
+	page := decode[clientapi.NotificationPage](t, res)
+	if len(page.Items) != 3 {
+		t.Fatalf("items = %+v, want 3", page.Items)
+	}
+	gone, ofAccount, ofDomain := page.Items[0], page.Items[1], page.Items[2]
+	if sv := ofDomain.RelationshipSeverance; ofDomain.Account != nil || sv == nil || sv.Kind != clientapi.RelationshipSeveranceKindDomainSuspension ||
+		sv.Domain == nil || *sv.Domain != "bad.example" || sv.FollowersLost != 2 || sv.FollowingLost != 1 {
+		t.Errorf("severance of a domain = %+v (%+v), want bad.example, 2 and 1, and no account", ofDomain, ofDomain.RelationshipSeverance)
+	}
+	if sv := ofAccount.RelationshipSeverance; ofAccount.Account == nil || sv == nil || sv.Kind != clientapi.RelationshipSeveranceKindAccountSuspension ||
+		sv.Domain != nil || sv.FollowersLost != 1 || sv.FollowingLost != 0 {
+		t.Errorf("severance of an account = %+v (%+v), want the account, 1 and 0", ofAccount, ofAccount.RelationshipSeverance)
+	}
+	if gone.Type != clientapi.NotificationTypeRelationshipsSevered || gone.RelationshipSeverance != nil || gone.Account != nil {
+		t.Errorf("severance that is gone = %+v, want neither the severance nor an account", gone)
 	}
 }
 

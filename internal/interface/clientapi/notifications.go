@@ -26,6 +26,12 @@ type Notifications interface {
 	Dismiss(ctx context.Context, accountID, notificationID string) error
 }
 
+// Severances reads the follows that a local account lost to a suspension (FR-717).
+// *appmoderation.Service implements it.
+type Severances interface {
+	SeveranceOf(ctx context.Context, accountID, id string) (moderation.SeveranceRecord, error)
+}
+
 // Page sizes of collections: the default and maximum of the spec's Limit parameter.
 const (
 	defaultPageLimit = 20
@@ -102,9 +108,14 @@ func (s *Server) ListNotifications(ctx context.Context, req ListNotificationsReq
 // accounts are read once each; a source account that no longer exists is left out. A moderation
 // notice carries its action as the user sees it (moderation.go), and a report_resolved the
 // user's report, which tells only that it is resolved. The account of an
-// admin_sign_up is the local account of the user who signed up.
+// admin_sign_up is the local account of the user who signed up, and a relationships_severed
+// carries the follows that the user lost, with the suspended account as its account.
 func (s *Server) newNotifications(ctx context.Context, accountID string, ns []notification.Notification) ([]Notification, error) {
-	presented, err := s.presentedAccounts(ctx, ns)
+	severances, err := s.notifiedSeverances(ctx, accountID, ns)
+	if err != nil {
+		return nil, err
+	}
+	presented, err := s.presentedAccounts(ctx, ns, severances)
 	if err != nil {
 		return nil, err
 	}
@@ -201,18 +212,24 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 			id := n.ReportID
 			item.ReportId = &id
 		}
+		if sv, ok := severances[n.SeveranceID]; ok {
+			item.RelationshipSeverance = newRelationshipSeverance(sv)
+		}
 		out = append(out, item)
 	}
 	return out, nil
 }
 
 // presentedAccounts returns, for each of ns, the ID of the account that its account property
-// presents: the source account, or for an admin_sign_up the local account of the user who signed
-// up; "" for none.
-func (s *Server) presentedAccounts(ctx context.Context, ns []notification.Notification) ([]string, error) {
+// presents: the source account, for an admin_sign_up the local account of the user who signed
+// up, and for a relationships_severed the suspended account of severances; "" for none.
+func (s *Server) presentedAccounts(ctx context.Context, ns []notification.Notification, severances map[string]moderation.SeveranceRecord) ([]string, error) {
 	out := make([]string, len(ns))
 	for i, n := range ns {
 		out[i] = n.SourceAccountID
+		if sv, ok := severances[n.SeveranceID]; ok {
+			out[i] = sv.TargetAccountID
+		}
 		if n.Type != notification.TypeAdminSignUp || n.SubjectUserID == "" || s.o.UserAccounts == nil {
 			continue
 		}
@@ -258,6 +275,44 @@ func (s *Server) notifiedReports(ctx context.Context, accountID string, ns []not
 		out[r.Id] = r
 	}
 	return out, nil
+}
+
+// notifiedSeverances returns, by ID, accountID's severances that the relationships_severed
+// notifications ns tell of; one that no longer exists is left out.
+func (s *Server) notifiedSeverances(ctx context.Context, accountID string, ns []notification.Notification) (map[string]moderation.SeveranceRecord, error) {
+	out := map[string]moderation.SeveranceRecord{}
+	if s.o.Severances == nil {
+		return out, nil
+	}
+	for _, n := range ns {
+		if n.Type != notification.TypeRelationshipsSevered || n.SeveranceID == "" {
+			continue
+		}
+		if _, ok := out[n.SeveranceID]; ok {
+			continue
+		}
+		sv, err := s.o.Severances.SeveranceOf(ctx, accountID, n.SeveranceID)
+		switch {
+		case errors.Is(err, appmoderation.ErrNotFound):
+			continue
+		case err != nil:
+			return nil, fmt.Errorf("clientapi: the severance %s of notification %s: %w", n.SeveranceID, n.ID, err)
+		}
+		out[n.SeveranceID] = sv
+	}
+	return out, nil
+}
+
+// newRelationshipSeverance presents sv as the RelationshipSeverance schema.
+func newRelationshipSeverance(sv moderation.SeveranceRecord) *RelationshipSeverance {
+	out := &RelationshipSeverance{
+		Kind: RelationshipSeveranceKindAccountSuspension, FollowersLost: sv.FollowersLost, FollowingLost: sv.FollowingLost,
+	}
+	if sv.DomainActionID != "" {
+		domain := sv.Domain
+		out.Kind, out.Domain = RelationshipSeveranceKindDomainSuspension, &domain
+	}
+	return out
 }
 
 // GetNotificationMarker serves GET /api/v1/notifications/marker: the viewer's read marker and

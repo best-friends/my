@@ -41,6 +41,8 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runAdminDomain(args[1:], stdout, stderr)
 	case args[0] == "report":
 		return runAdminReport(args[1:], stdout, stderr)
+	case args[0] == "role":
+		return runAdminRole(args[1:], stdout, stderr)
 	case args[0] != "create":
 		_, _ = fmt.Fprintf(stderr, "my admin: unknown subcommand %q\n\n", args[0])
 		adminUsage(stderr)
@@ -178,10 +180,12 @@ func adminUsage(w io.Writer) {
        my admin domain list|issue|lift ...   (my admin domain -help)
        my admin report list|show|assign|unassign|resolve ...   (my admin report -help)
        my admin audit list ...   (my admin audit -help)
+       my admin role list|grant|revoke ...   (my admin role -help)
 
 my admin account, my admin domain, my admin report, and my admin appeal moderate
 accounts and remote domains and handle reports and appeals.
 my admin audit lists the audit log of the moderators' and administrators' operations.
+my admin role grants and revokes the roles of local users.
 
 my admin create creates an administrator: a user with the password, the email address as primary
 address, a local account with the username, and the built-in admin role, in one

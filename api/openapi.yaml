@@ -2143,6 +2143,86 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: moderator counts (#338) ---
+  # --- admin: roles (#348) ---
+  /admin/roles:
+    get:
+      operationId: listRoles
+      summary: List the roles
+      description: |
+        The roles of the instance, highest position first, with the permissions they grant
+        (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
+        (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
+        `manage_roles` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}/roles:
+    get:
+      operationId: listAccountRoles
+      summary: List the roles of a local account
+      description: |
+        The roles that the user of a local account holds, highest position first. An unknown
+        account, or one that is not local, is a 404. Needs the `manage_roles` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}/roles/{role}:
+    put:
+      operationId: grantAccountRole
+      summary: Grant a role to a local account
+      description: |
+        Grants the role to the user of a local account; its permissions apply from the user's
+        next request, and the audit log records `role_granted`. Granting a role that the user
+        holds changes nothing and records nothing. A role whose position is above every role
+        of the viewer is a 403. An unknown account, one that is not local, or an unknown role
+        is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+        permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+        - $ref: "#/components/parameters/RoleKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: revokeAccountRole
+      summary: Revoke a role from a local account
+      description: |
+        Revokes the role from the user of a local account; its permissions stop applying from
+        the user's next request, and the audit log records `role_revoked`. Revoking a role
+        that the user does not hold changes nothing and records nothing. A role whose
+        position is above every role of the viewer is a 403, and revoking `admin` from its
+        only holder is a 409. An unknown account, one that is not local, or an unknown role
+        is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+        permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+        - $ref: "#/components/parameters/RoleKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: roles (#348) ---
   # --- admin: appeals (#337) ---
   /admin/appeals:
     get:
@@ -2479,6 +2559,17 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: roles (#348) ---
+    RoleKey:
+      name: role
+      in: path
+      required: true
+      description: The key of the role, such as `moderator`.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+    # --- end of admin: roles (#348) ---
     # --- admin: registrations (#345) ---
     RegistrationUserId:
       name: user_id
@@ -2627,6 +2718,17 @@ components:
           schema:
             $ref: "#/components/schemas/AdminRule"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: roles (#348) ---
+    AdminRoleList:
+      description: The roles.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminRoleList"
+    # --- end of admin: roles (#348) ---
     # --- admin: registrations (#345) ---
     AdminRegistration:
       description: The registration.
@@ -3368,6 +3470,34 @@ components:
           description: The appeal that an `admin_appeal` is about.
           allOf:
             - $ref: "#/components/schemas/Id"
+        relationship_severance:
+          $ref: "#/components/schemas/RelationshipSeverance"
+    RelationshipSeverance:
+      description: |
+        The follows that a `relationships_severed` tells of: the user lost them when the
+        moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+        account (`account_suspension`, the notification's `account` is the account). Both
+        directions end, follow requests too, and lifting the suspension does not restore them;
+        the counts are of the accepted follows.
+      type: object
+      required: [kind, followers_lost, following_lost]
+      properties:
+        kind:
+          type: string
+          enum:
+            - domain_suspension
+            - account_suspension
+        domain:
+          description: The suspended server of a `domain_suspension`; omitted otherwise.
+          type: string
+        followers_lost:
+          description: The accounts that followed the user and no longer do.
+          type: integer
+          minimum: 0
+        following_lost:
+          description: The accounts that the user followed and no longer does.
+          type: integer
+          minimum: 0
     NotificationMarker:
       description: How far the authenticated user has read the notifications.
       type: object
@@ -3412,6 +3542,9 @@ components:
         when the report is reopened and resolved again. `appeal_decided` also comes from the
         instance: the moderators decided the user's appeal, and its `moderation_action` is the
         action with the appeal and the decision.
+        `relationships_severed` also comes from the instance: its `relationship_severance` tells
+        how many follows the user lost when the moderators suspended a server or a remote
+        account, whose `account` it carries for an account. It is sent once per suspension.
         The moderator notifications come from the instance too: `admin_report` (an account
         that had no open report was reported; `report_id` is the report) goes to the users
         with the `manage_reports` permission, `admin_sign_up` (a registration awaits
@@ -3431,6 +3564,7 @@ components:
         - report_resolved
         - admin_report
         - admin_sign_up
+        - relationships_severed
         - appeal_decided
         - admin_appeal
     # --- end notifications ---
@@ -4028,7 +4162,8 @@ components:
         `user` (a registration):
         `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
         (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-        `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On an `appeal`:
+        `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+        user): `role_granted`, `role_revoked`. On an `appeal`:
         `appeal_upheld`, `appeal_overturned` (which also records the action's
         `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
         `account`).
@@ -4051,6 +4186,8 @@ components:
         - rule_revised
         - rule_moved
         - rule_retired
+        - role_granted
+        - role_revoked
         - appeal_upheld
         - appeal_overturned
         - account_deletion_cancelled
@@ -4522,8 +4659,9 @@ components:
       description: |
         A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
         `manage_domains`: the health of remote servers and the moderation actions on domains.
-        `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
-        dead jobs of the job queue. The others guard no client API operation yet.
+        `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+        roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+        log. The others guard no client API operation yet.
       type: string
       enum:
         - manage_reports
@@ -4653,6 +4791,38 @@ components:
           format: int64
           minimum: 0
     # --- end of admin: moderator counts (#338) ---
+    # --- admin: roles (#348) ---
+    AdminRole:
+      description: |
+        A role (FR-720): a named set of permissions. A higher position outranks a lower one;
+        a user may grant and revoke only the roles at or below their highest one.
+      type: object
+      required: [id, key, position, permissions]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        key:
+          description: The name of the role, such as `admin` or `moderator`.
+          type: string
+          minLength: 1
+          maxLength: 64
+        position:
+          type: integer
+        permissions:
+          description: The permissions that the role grants, in the order of `Permission`.
+          type: array
+          items:
+            $ref: "#/components/schemas/Permission"
+    AdminRoleList:
+      description: Roles, highest position first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRole"
+    # --- end of admin: roles (#348) ---
     # --- admin: registrations (#345) ---
     AdminRegistration:
       description: A user's registration as the moderators review it (FR-721).

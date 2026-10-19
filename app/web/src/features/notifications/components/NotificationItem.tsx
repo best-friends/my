@@ -3,7 +3,8 @@
 // happened ("Alice followed you") with the actor's name as a link to their profile, when, relative to now
 // as in the timelines (G8), and for the types about a post, a quote of the post that links to its page.
 // A follow offers to follow back. PostCard lays it out, so the article is named by the sentence and the
-// time and described by the post.
+// time and described by the post. The follows that a suspension by the moderators ended say which server or
+// account was suspended and how many followers and follows the user lost.
 //
 // A group of the favourites or the boosts of one post is one row: "Alice and 2 others favourited your
 // post", with the avatars of the others in a row above the sentence, so the number of people is in the
@@ -76,6 +77,10 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
                       </Link>
                     ),
                   count: view.others.length,
+                  // The server's name is no running text, isolated from the sentence around it (Y10).
+                  domain: view.severance === null || view.severance.domain === null ? null : <bdi key="domain">{view.severance.domain}</bdi>,
+                  followers: view.severance?.followers ?? 0,
+                  following: view.severance?.following ?? 0,
                 },
               )}
             </span>
