@@ -280,3 +280,49 @@ SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_r
 FROM statuses s
 JOIN status_heads h ON h.status_id = s.id
 ORDER BY s.id;
+
+-- local_post_counters: the posts of each local account that NodeInfo reports (data-model section 4.4).
+-- The status projectors count the statuses and the interaction projectors the boosts.
+
+-- name: AddLocalPosts :exec
+INSERT INTO local_post_counters (account_id, posts_count) VALUES (sqlc.arg(account_id), sqlc.arg(added))
+ON CONFLICT (account_id) DO UPDATE SET posts_count = local_post_counters.posts_count + excluded.posts_count;
+
+-- DeleteSpentLocalPostCounter removes the counter that removing posts would bring to zero, before
+-- SubtractLocalPosts subtracts them from one that stays positive.
+-- name: DeleteSpentLocalPostCounter :exec
+DELETE FROM local_post_counters WHERE account_id = sqlc.arg(account_id) AND posts_count <= sqlc.arg(removed);
+
+-- name: SubtractLocalPosts :exec
+UPDATE local_post_counters SET posts_count = posts_count - sqlc.arg(removed) WHERE account_id = sqlc.arg(account_id);
+
+-- name: SumLocalPosts :one
+SELECT COALESCE(SUM(posts_count), 0)::bigint AS total FROM local_post_counters;
+
+-- name: DeleteAllLocalPostCounters :exec
+DELETE FROM local_post_counters;
+
+-- RebuildLocalPostCounters states the projectors' rules: the local statuses that are not deleted
+-- and not direct, and the local boosts that are not retracted, of statuses that are not deleted.
+-- name: RebuildLocalPostCounters :exec
+INSERT INTO local_post_counters (account_id, posts_count)
+SELECT p.account_id, COUNT(*) FROM (
+  SELECT s.author_account_id AS account_id FROM statuses s
+  WHERE s.is_local AND s.visibility <> 'direct'
+    AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+  UNION ALL
+  SELECT b.booster_account_id AS account_id FROM boosts b
+  WHERE b.is_local
+    AND NOT EXISTS (SELECT 1 FROM boost_retractions r WHERE r.boost_id = b.id)
+    AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = b.status_id)
+) p
+GROUP BY p.account_id;
+
+-- name: ListLocalPostCounters :many
+SELECT account_id, posts_count FROM local_post_counters ORDER BY account_id;
+
+-- ListLocalStatusBoosters returns the local accounts whose live boosts of a status go with it.
+-- name: ListLocalStatusBoosters :many
+SELECT e.booster_account_id FROM boost_edges e JOIN boosts b ON b.id = e.boost_id
+WHERE e.status_id = sqlc.arg(status_id) AND b.is_local
+ORDER BY e.booster_account_id;
