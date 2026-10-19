@@ -160,49 +160,52 @@ describe("a new sign-up block", () => {
   test("blocks an email domain in non-Latin letters, recorded in A-labels and shown in both forms", async () => {
     const api = signupBlocksServer([]);
     const { user } = await renderApp({ path: "/admin/signup-blocks" });
+    const form = within(await screen.findByRole("region", { name: "Add a block" }));
 
     // The domain of the email address is the kind chosen first.
-    expect(await screen.findByRole("radio", { name: "Email domain" })).toBeChecked();
-    await user.type(screen.getByRole("textbox", { name: "Domain" }), "例え.jp");
-    await user.click(screen.getByRole("radio", { name: "Refuse" }));
-    await user.click(screen.getByRole("button", { name: /Duration/ }));
+    expect(form.getByRole("radio", { name: "Email domain" })).toBeChecked();
+    await user.type(form.getByRole("textbox", { name: "Domain" }), "例え.jp");
+    await user.click(form.getByRole("radio", { name: "Refuse" }));
+    await user.click(form.getByRole("button", { name: /Duration/ }));
     await user.click(await screen.findByRole("option", { name: "30 days" }));
-    await user.type(screen.getByRole("textbox", { name: "Comment" }), "Disposable addresses.");
-    await user.click(screen.getByRole("button", { name: "Add block" }));
+    await user.type(form.getByRole("textbox", { name: "Comment" }), "Disposable addresses.");
+    await user.click(form.getByRole("button", { name: "Add block" }));
 
     expect(await screen.findByText(`Refuse is in effect for the Email domain ${isolated("例え.jp (xn--r8jz45g.jp)")}.`)).toBeInTheDocument();
     expect(api.created).toEqual([{ kind: "email_domain", value: "例え.jp", severity: "reject", comment: "Disposable addresses.", expires_in: 30 * 86_400 }]);
     expect(await within(screen.getByRole("tabpanel")).findByRole("heading", { level: 3, name: "例え.jp (xn--r8jz45g.jp)" })).toBeInTheDocument();
     // The form is ready for the next block of the same kind.
-    expect(screen.getByRole("radio", { name: "Email domain" })).toBeChecked();
-    expect(screen.getByRole("textbox", { name: "Domain" })).toHaveValue("");
-    expect(screen.getByRole("radio", { name: "Refuse" })).not.toBeChecked();
-    expect(screen.getByRole("textbox", { name: "Comment" })).toHaveValue("");
+    expect(form.getByRole("radio", { name: "Email domain" })).toBeChecked();
+    expect(form.getByRole("textbox", { name: "Domain" })).toHaveValue("");
+    expect(form.getByRole("radio", { name: "Refuse" })).not.toBeChecked();
+    expect(form.getByRole("textbox", { name: "Comment" })).toHaveValue("");
   });
 
   test("blocks an IP range until it is lifted, with the field named for the kind", async () => {
     const api = signupBlocksServer([]);
     const { user } = await renderApp({ path: "/admin/signup-blocks" });
+    const form = within(await screen.findByRole("region", { name: "Add a block" }));
 
-    await user.click(await screen.findByRole("radio", { name: "IP range" }));
-    await user.type(screen.getByRole("textbox", { name: "IP address or range" }), " 192.0.2.0/24 ");
-    await user.click(screen.getByRole("radio", { name: "Require approval" }));
-    await user.click(screen.getByRole("button", { name: "Add block" }));
+    await user.click(form.getByRole("radio", { name: "IP range" }));
+    await user.type(form.getByRole("textbox", { name: "IP address or range" }), " 192.0.2.0/24 ");
+    await user.click(form.getByRole("radio", { name: "Require approval" }));
+    await user.click(form.getByRole("button", { name: "Add block" }));
 
     expect(await screen.findByText(`Require approval is in effect for the IP range ${isolated("192.0.2.0/24")}.`)).toBeInTheDocument();
     expect(api.created).toEqual([{ kind: "ip_range", value: "192.0.2.0/24", severity: "require_approval" }]);
-    expect(screen.getByRole("radio", { name: "IP range" })).toBeChecked();
+    expect(form.getByRole("radio", { name: "IP range" })).toBeChecked();
   });
 
   test("needs a value and an effect before anything is sent", async () => {
     const api = signupBlocksServer([]);
     const { user } = await renderApp({ path: "/admin/signup-blocks" });
+    const form = within(await screen.findByRole("region", { name: "Add a block" }));
 
-    await user.click(await screen.findByRole("radio", { name: "Email address" }));
-    await user.click(screen.getByRole("button", { name: "Add block" }));
+    await user.click(form.getByRole("radio", { name: "Email address" }));
+    await user.click(form.getByRole("button", { name: "Add block" }));
 
     expect(await screen.findByText("Enter an email address")).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Email address" })).toBeInvalid();
+    expect(form.getByRole("textbox", { name: "Email address" })).toBeInvalid();
     expect(screen.getByText("Choose an effect")).toBeInTheDocument();
     expect(api.created).toEqual([]);
   });
@@ -218,15 +221,16 @@ describe("a new sign-up block", () => {
       ),
     );
     const { user } = await renderApp({ path: "/admin/signup-blocks" });
+    const form = within(await screen.findByRole("region", { name: "Add a block" }));
 
-    await user.click(await screen.findByRole("radio", { name: "IP range" }));
-    await user.type(screen.getByRole("textbox", { name: "IP address or range" }), "192.0.2.0/99");
-    await user.click(screen.getByRole("radio", { name: "Refuse" }));
-    await user.click(screen.getByRole("button", { name: "Add block" }));
+    await user.click(form.getByRole("radio", { name: "IP range" }));
+    await user.type(form.getByRole("textbox", { name: "IP address or range" }), "192.0.2.0/99");
+    await user.click(form.getByRole("radio", { name: "Refuse" }));
+    await user.click(form.getByRole("button", { name: "Add block" }));
 
     expect(await screen.findByText("Could not add the block: value: not a valid CIDR prefix")).toHaveAttribute("role", "alert");
-    expect(screen.getByRole("textbox", { name: "IP address or range" })).toHaveValue("192.0.2.0/99");
-    expect(screen.getByRole("radio", { name: "Refuse" })).toBeChecked();
+    expect(form.getByRole("textbox", { name: "IP address or range" })).toHaveValue("192.0.2.0/99");
+    expect(form.getByRole("radio", { name: "Refuse" })).toBeChecked();
   });
 });
 
