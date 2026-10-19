@@ -35,7 +35,7 @@ jobs:
         run: make federation-live
       - name: Upload the logs and captured activities
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: federation-live
           path: ${{ env.FEDERATION_LIVE_OUT }}

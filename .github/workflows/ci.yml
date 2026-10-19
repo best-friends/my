@@ -356,7 +356,7 @@ jobs:
       # On a visual difference, the actual and diff images are under app/ui/.vitest/attachments/.
       - name: Upload the screenshot diffs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ui-test-screenshots
           path: app/ui/.vitest/
