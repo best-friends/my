@@ -2,11 +2,14 @@
 import { useId } from "react";
 import { useConfig } from "../../lib/config";
 import { useT } from "../../lib/i18n";
+import { useInstanceName } from "../../lib/instanceName";
 
 /** In the third column on wide screens (xl): which server this is. Narrower layouts leave it out. */
 export function ServerInfo() {
   const t = useT();
-  const { instanceName, accountDomain } = useConfig();
+  const instanceName = useInstanceName();
+  // Handles end with the account domain, whatever the instance is named.
+  const { accountDomain } = useConfig();
   const headingId = useId();
   return (
     <aside aria-labelledby={headingId} className="flex flex-col gap-2">

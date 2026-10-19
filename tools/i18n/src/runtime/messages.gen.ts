@@ -1232,6 +1232,28 @@ export interface MessageArgs {
   "client:admin.reports.summary": {};
   /** Reports */
   "client:admin.reports.title": {};
+  /** Enter a name with letters, or leave the field empty. */
+  "client:admin.settings.name.blank": {};
+  /** People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Each language has its own name. A language without one shows the name in the server's default language, and with no name at all the domain shows. Handles and links always use the domain. */
+  "client:admin.settings.name.description": { domain: string };
+  /** Name in {language} */
+  "client:admin.settings.name.field": { language: string };
+  /** Save */
+  "client:admin.settings.name.save": {};
+  /** Could not save the name: {reason} */
+  "client:admin.settings.name.save_failed": { reason: string };
+  /** Saved the name. */
+  "client:admin.settings.name.saved": {};
+  /** Name */
+  "client:admin.settings.name.title": {};
+  /** Use at most {max} characters. */
+  "client:admin.settings.name.too_long": { max: string };
+  /** The names are already saved. */
+  "client:admin.settings.name.unchanged": {};
+  /** The server's name, which people see in place of its domain. */
+  "client:admin.settings.summary": {};
+  /** Server settings */
+  "client:admin.settings.title": {};
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
   /** You are offline, so the server cannot be reached. Connect to the internet and try again. */

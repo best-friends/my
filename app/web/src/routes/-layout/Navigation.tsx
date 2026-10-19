@@ -52,6 +52,7 @@ import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
 import { useConfig } from "../../lib/config";
+import { useInstanceName } from "../../lib/instanceName";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { followListPath, profilePath } from "../../lib/paths";
 
@@ -141,7 +142,7 @@ type ItemBadge = { count: number; badgeLabel: string; name: string } | null;
 
 export function Navigation() {
   const t = useT();
-  const { instanceName } = useConfig();
+  const instanceName = useInstanceName();
   const pathname = useLocation({ select: (location) => location.pathname });
   const unread = useUnreadNotificationCount();
   const adminEntry = useAdminEntry();

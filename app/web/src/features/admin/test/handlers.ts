@@ -317,4 +317,17 @@ export const handlers = [
     if (!isId(id)) return undefined;
     return withViewer(request, () => HttpResponse.json(id === viewerFixture.id ? viewerFixture : { ...otherAccountFixture, id }));
   }),
+  // operationIds listInstanceTexts, setInstanceText: no texts; a change answers the text as sent.
+  http.get(`${apiBase}/admin/instance/texts`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.put(`${apiBase}/admin/instance/texts/:key/:locale`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["SetInstanceTextRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json({
+        key: params["key"] as Schemas["AdminInstanceTextKey"],
+        locale: String(params["locale"]),
+        text: body.text,
+        revised_at: "2026-10-17T00:00:00Z",
+      } satisfies Schemas["AdminInstanceText"]),
+    );
+  }),
 ];

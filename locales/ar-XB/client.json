@@ -2459,6 +2459,50 @@
     "defaultMessage": "‮ᴚǝdoɹʇs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.settings.name.blank": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ uɐɯǝ ʍıʇɥ ʅǝʇʇǝɹs, oɹ ʅǝɐʌǝ ʇɥǝ ɟıǝʅp ǝɯdʇʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.name.description": {
+    "defaultMessage": "‮Ԁǝodʅǝ sǝǝ ʇɥǝ uɐɯǝ ıu dʅɐɔǝ oɟ ʇɥǝ poɯɐıu {domain} ʍɥǝɹǝ ʇɥǝ ɐdd uɐɯǝs ʇɥıs sǝɹʌǝɹ: ʇɥǝ sıpǝqɐɹ, ʇɥǝ qɹoʍsǝɹ ʇɐq, ʇɥǝ sıƃu-ıu dɐƃǝs, ǝɯɐıʅs ɐup ʅıuʞ dɹǝʌıǝʍs. Ǝɐɔɥ ʅɐuƃnɐƃǝ ɥɐs ıʇs oʍu uɐɯǝ. ∀ ʅɐuƃnɐƃǝ ʍıʇɥonʇ ouǝ sɥoʍs ʇɥǝ uɐɯǝ ıu ʇɥǝ sǝɹʌǝɹ's pǝɟɐnʅʇ ʅɐuƃnɐƃǝ, ɐup ʍıʇɥ uo uɐɯǝ ɐʇ ɐʅʅ ʇɥǝ poɯɐıu sɥoʍs. Hɐupʅǝs ɐup ʅıuʞs ɐʅʍɐʎs nsǝ ʇɥǝ poɯɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.name.field": {
+    "defaultMessage": "‮Nɐɯǝ ıu {language}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.name.save": {
+    "defaultMessage": "‮Sɐʌǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.name.save_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ sɐʌǝ ʇɥǝ uɐɯǝ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.name.saved": {
+    "defaultMessage": "‮Sɐʌǝp ʇɥǝ uɐɯǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.name.title": {
+    "defaultMessage": "‮Nɐɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.name.too_long": {
+    "defaultMessage": "‮∩sǝ ɐʇ ɯosʇ {max} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.name.unchanged": {
+    "defaultMessage": "‮⊥ɥǝ uɐɯǝs ɐɹǝ ɐʅɹǝɐpʎ sɐʌǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.summary": {
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ's uɐɯǝ, ʍɥıɔɥ dǝodʅǝ sǝǝ ıu dʅɐɔǝ oɟ ıʇs poɯɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.title": {
+    "defaultMessage": "‮Sǝɹʌǝɹ sǝʇʇıuƃs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "api.error.network": {
     "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɐɔɥ ʇɥǝ sǝɹʌǝɹ. Ↄɥǝɔʞ ʎonɹ ɔouuǝɔʇıou ɐup ʇɹʎ ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
