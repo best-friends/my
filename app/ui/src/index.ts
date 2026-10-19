@@ -61,6 +61,7 @@ export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
 
 // Icons (web-client.md §16.3): decorative, 24 × 24 with a 2px stroke, sized by the control around them.
 export {
+  AdminIcon,
   BackIcon,
   BookmarkIcon,
   BoostIcon,

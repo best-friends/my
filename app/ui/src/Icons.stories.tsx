@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { expect } from "storybook/test";
 import { Button } from "./Button";
 import {
+  AdminIcon,
   BackIcon,
   BookmarkIcon,
   BoostIcon,
@@ -58,6 +59,7 @@ const icons: readonly (readonly [string, ComponentType<ToggleIconProps>])[] = [
   ["NotificationsIcon", NotificationsIcon],
   ["ProfileIcon", ProfileIcon],
   ["SettingsIcon", SettingsIcon],
+  ["AdminIcon", AdminIcon],
   ["MenuIcon", MenuIcon],
 ];
 
