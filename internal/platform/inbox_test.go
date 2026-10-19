@@ -25,6 +25,7 @@ import (
 // adapter and database: a POST signed with the key of a stored remote actor is accepted, also
 // when it is sent again, and the requests that the synchronous part refuses get their status.
 func TestInbox(t *testing.T) {
+	t.Parallel()
 	const actor = "https://remote.example/users/bob"
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -124,6 +125,7 @@ func TestInbox(t *testing.T) {
 // TestInboxHandlers builds the composition root, so that a handler registered twice (a panic in
 // NewApp) fails the test, and checks that every activity type with a handler is routed.
 func TestInboxHandlers(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{})
 	if err != nil {

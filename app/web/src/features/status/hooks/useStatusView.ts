@@ -2,8 +2,8 @@
 // What a status card shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4): the
 // hook decides what to show and formats it; the component only places it. It returns no JSX.
 import { type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
-import { useConfig } from "../../../lib/config";
 import { useContentLinkClick } from "../../../lib/contentLinks";
+import { handleOf, isRemoteAcct } from "../../../lib/handle";
 import { hostOf } from "../../../lib/host";
 import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
@@ -13,7 +13,7 @@ export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
   boostedBy: { name: string; href: string } | null;
   /**
-   * The author's display name (the username when there is none), full handle (`@alice@example.com`),
+   * The author's display name (the username when there is none), handle (`@alice` for a local account, `@bob@example.com` for a remote one),
    * profile page, and avatar URL (undefined when the account has none, and the avatar shows its fallback).
    */
   author: { name: string; handle: string; href: string; avatar: string | undefined };
@@ -54,27 +54,16 @@ function mediaItems(attachments: readonly MediaAttachment[], lang: string | unde
   );
 }
 
-/** Whether an account is on another server: its `acct` has a domain. */
-function isRemote(acct: string): boolean {
-  return acct.includes("@");
-}
-
 /** The page of a remote post on its server and that page's host; null for a local post. */
 function originalOf(post: Status): StatusView["original"] {
-  if (!isRemote(post.account.acct)) return null;
+  if (!isRemoteAcct(post.account.acct)) return null;
   const href = statusShareUrl(post);
   // The server gives absolute URIs (format: uri); the account's domain stands in should one not parse.
   return { href, host: hostOf(href, post.account.domain) };
 }
 
-/** The handle of an account: `acct` is `username` for local accounts and `username@domain` for remote ones. */
-function handleOf(acct: string, localDomain: string): string {
-  return isRemote(acct) ? `@${acct}` : `@${acct}@${localDomain}`;
-}
-
 /** Returns what the card of `status` shows. A boost shows the boosted post, with the booster above it. */
 export function useStatusView(status: Status): StatusView {
-  const { accountDomain } = useConfig();
   const post = status.boost ?? status;
   const lang = post.language === "und" ? undefined : post.language;
   const time = useTimeView(post.created_at);
@@ -84,7 +73,7 @@ export function useStatusView(status: Status): StatusView {
       status.boost === undefined ? null : { name: status.account.display_name || status.account.username, href: profilePath(status.account.acct) },
     author: {
       name: post.account.display_name || post.account.username,
-      handle: handleOf(post.account.acct, accountDomain),
+      handle: handleOf(post.account.acct),
       href: profilePath(post.account.acct),
       avatar: post.account.avatar_url,
     },

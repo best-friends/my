@@ -22,6 +22,7 @@ import (
 // its expiry each record an Update of the actor with its fan-out in the action's transaction,
 // and GET of the actor serves the emptied actor marked suspended while the suspension lasts.
 func TestAccountSuspensionFederates(t *testing.T) {
+	t.Parallel()
 	path := newDatabase(t, true)
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": path, "MY_WEB_ORIGIN": webOrigin})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})

@@ -28,6 +28,7 @@ import (
 // deletes the posts it names for everyone, their author included, and a ban hides the account,
 // schedules its deletion, and is never lifted.
 func TestClientAPIActionsOnStatusesAndBans(t *testing.T) {
+	t.Parallel()
 	// The inline queue processes the upload without a worker.
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline"})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})

@@ -32,13 +32,13 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行い、成功時にキャッシュを無効化または更新する。いま表示していない画面のクエリで、その画面のルートが loader で読むもの（S7 の `staleTime: "static"` は無効化の印を見ずにキャッシュをそのまま返す）は、`invalidateQueries({ ..., refetchType: "all" })` で取り直し、終わるのを待ってから書き込みを成功として表示する（管理画面は `features/admin/api/admin.ts` の `refreshQueries` で行う。例: `refreshReportLists`・`refreshAppealLists`・`refreshAdminAccount`。監査ログに記録される書き込みは `refreshAuditLog` で監査ログも取り直す） | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
+| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行う。成功時に、応答で確かに分かる変化（投稿・閲覧者・関係・設定）は `setQueryData` / `updateCachedStatuses` でキャッシュに書き、並びや件数が変わり得る一覧・件数には `invalidateQueries`（既定の `refetchType: "active"`）で無効化の印を付ける。表示していないクエリは、次にその画面を開いたときに loader が取り直して待つ（S7）ので、取り直さない。書き込みの成功表示は、表示中のクエリの取り直しを待ってから出す（`await invalidateQueries(...)`）。書き込みが変えるクエリは、その書き込みの関数の隣（`features/<x>/api` のキャッシュ更新関数。例: `cachePostedStatus`）に書き、部品の `onSuccess` はそれを呼ぶ。データの種類ごとの方針は [ADR-0045](../adr/0045-client-server-cache-policy.md) | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
 | S2 | サーバーのデータを `useState`・Context・グローバルストアにコピーしない | レビュー |
 | S3 | 共有・リロード・戻る / 進むで保ちたい状態（タイムラインの種類・タブ・検索語・開いているメディア）は URL に置き、Zod で検証する | TanStack Router の型 |
 | S4 | 状態は使う場所の近くに置き、必要なときだけ最も近い共通の親に持ち上げる | レビュー |
 | S5 | 状態は判別可能なユニオンで表す（`{ status: 'idle' } \| { status: 'error'; error: Problem }`）。矛盾し得る真偽値を並べない | レビュー |
 | S6 | Context は、変化の少ない値（閲覧者・ロケール・テーマ・複合部品の内部）にだけ使い、更新頻度ごとに分ける | レビュー |
-| S7 | ルートは薄くする。パラメータと検索条件を取り出し、loader でキャッシュになければ取得して（`queryClient.query({ ...options, staleTime: "static" })`。無限スクロールは `queryClient.infiniteQuery`。非推奨の `ensureQueryData` は使わない）から機能の部品を表示する | `@tanstack/eslint-plugin-router` の `flat/recommended`（`@tanstack/router/create-route-property-order` など）、レビュー |
+| S7 | ルートは薄くする。パラメータと検索条件を取り出し、loader で、キャッシュにないか無効化されていれば取得して待ち（`queryClient.query({ ...options, staleTime: Infinity })`。無限スクロールは `queryClient.infiniteQuery`。無効化の印を見ない `staleTime: "static"` と、非推奨の `ensureQueryData` は使わない）、それから機能の部品を表示する。ルーターは `defaultStaleReloadMode: "blocking"` で、前に訪れたルートでも loader の終わりを待って描画する（ADR-0045） | `@tanstack/eslint-plugin-router` の `flat/recommended`（`@tanstack/router/create-route-property-order` など）、レビュー |
 | S8 | 楽観的更新は、まず保留中の mutation の `variables` を表示する方式にする。複数の画面に反映が要るときだけ、キャッシュを書き換えて失敗時に戻す | レビュー |
 | S9 | API の型は OpenAPI からの生成物だけを使う。同じ型を手で書かない | 生成物の差分検査（ADR-0029） |
 | S10 | SSE の購読は `lib/sse` の 1 つの Effect だけが行い、受け取った内容を Query のキャッシュに書き込む | レビュー |
@@ -428,7 +428,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   見えない投稿と存在しない投稿はどちらも 404 で、ルートの `errorComponent` が「投稿が見つかりません」を出す。
 - **操作**: 返信（`useReply()`、§12）、ブースト・お気に入り・ブックマークのトグル（`@my/ui` の `ToggleButton`。名前は状態で変えず `aria-pressed` で示し、数は説明にする。オンのアイコンは塗りつぶしで、色だけに頼らない）、
   「その他の操作」のメニューの「リンクをコピー」と、自分の投稿だけの「削除」。サインインしていない間は操作を出さない。公開範囲がブーストを許さない投稿（他人のフォロワー限定・ダイレクト）は、ブーストのボタンを無効にする。
-- **ほかのサーバーのアカウントと投稿**（`acct` にドメインがあるもの）: 名前の横のハンドルは `@username@domain` のまま出す。カードの操作の列の末尾に、元のサーバーの投稿のページ（`url`、なければ `uri`）へのリンクを置く。
+- **ハンドル**: アカウントのハンドルは `@{acct}`（`lib/handle.ts` の `handleOf`）で出す。`acct` はこのサーバーのアカウントではユーザー名なので `@username`、ほかのサーバーのアカウントでは `@username@domain` になる。
+  ローカルかどうかは API の `acct` で判断し（`isRemoteAcct`）、ドメインを文字列で比べない。タイムライン・投稿の詳細・通知・プロフィール・フォローの一覧・設定・サイドバーで同じにする。
+- **ほかのサーバーのアカウントと投稿**（`acct` にドメインがあるもの）: 名前の横のハンドルは `@username@domain` で出す。カードの操作の列の末尾に、元のサーバーの投稿のページ（`url`、なければ `uri`）へのリンクを置く。
   リンクはホスト名だけを見せ、アクセシブルネームはそのホスト名を含む文（「{host} で元の投稿を開く」）にする。サインインしていない間も出す。
   プロフィールはハンドルの下に、元のサーバーのプロフィール（`Account.url`）へのリンクを置く。どちらのリンクも外部へのリンクのアイコン（`@my/ui` の `ExternalLinkIcon`）を付け、`rel="noreferrer"` で開く。
   画像は `preview_url` で表示する。アップロードではサムネイル、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。

@@ -84,6 +84,7 @@ func (c *authClient) formAt(path string, fields ...string) url.Values {
 
 // TestSignInScreens drives the sign-in screens on the real database and key-value store.
 func TestSignInScreens(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		_, err := a.Identity.CreateAdmin(t.Context(), identity.CreateAdminInput{

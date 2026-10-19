@@ -56,4 +56,5 @@
 | [0042](0042-captcha-human-verifier.md) | サインインと登録のボット対策に CAPTCHA を設定で使えるようにする | Accepted |
 | [0043](0043-icon-set.md) | UI キットのアイコンを既存のアイコンセット（Phosphor）から使う | Accepted |
 | [0044](0044-remote-profile-recent-posts.md) | リモートのプロフィールを開いたときに最近の投稿を取得する | Accepted |
+| [0045](0045-client-server-cache-policy.md) | キャッシュの方針（クライアントとサーバー） | Accepted |
 <!-- adr-index:end -->

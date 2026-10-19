@@ -169,6 +169,7 @@ func reversed(s []string) []string {
 // every entry appears exactly once, in order, the last page has no next_cursor, and posts that
 // arrive while a client pages do not shift the pages it has yet to read.
 func TestTimelinePagesHaveNoDuplicatesOrGaps(t *testing.T) {
+	t.Parallel()
 	e := newTimelineAPI(t)
 	alice, bob := e.user(t, "alice"), e.user(t, "bob")
 	e.follow(t, bob, alice)
@@ -211,6 +212,7 @@ func TestTimelinePagesHaveNoDuplicatesOrGaps(t *testing.T) {
 // TestTimelinesKeepLocalPostsFromVisitors checks ADR-0017 on the public timelines: a visitor who
 // is not logged in never sees a local post, and a logged-in local user does.
 func TestTimelinesKeepLocalPostsFromVisitors(t *testing.T) {
+	t.Parallel()
 	e := newTimelineAPI(t)
 	alice, bob := e.user(t, "alice"), e.user(t, "bob")
 	pub := e.post(t, alice, "public #cats", domcontent.VisibilityPublic, "en")
@@ -236,6 +238,7 @@ func TestTimelinesKeepLocalPostsFromVisitors(t *testing.T) {
 // TestTimelinesRenderBoostsAndViewerState checks that a boost carries the boosted post, and that
 // timelines apply the viewer's languages and show what the viewer did with each post.
 func TestTimelinesRenderBoostsAndViewerState(t *testing.T) {
+	t.Parallel()
 	e := newTimelineAPI(t)
 	alice, bob, carol := e.user(t, "alice"), e.user(t, "bob"), e.user(t, "carol")
 	e.follow(t, bob, carol)

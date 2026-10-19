@@ -22,6 +22,7 @@ import (
 // a moderator, a lifted or expired block no longer matches, a ban blocks the banned user's email
 // address, and every addition and lift is audited.
 func TestSignupBlocksThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClientWith(t, nil, platform.AppOptions{}, "carol")
 	ctx := t.Context()
 	if _, err := c.app.Instance.SetSetting(ctx, appinstance.SetSettingInput{

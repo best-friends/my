@@ -21,6 +21,7 @@ import (
 // TestPostingIsWired checks that the composition root wires the posting use cases to the
 // database, the account module, the instance settings, and the user's preferences.
 func TestPostingIsWired(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		ctx := t.Context()
@@ -58,6 +59,7 @@ func TestPostingIsWired(t *testing.T) {
 // the timeline projectors exactly once on the content and graph events: a second registration
 // would fail the post on its feed entry, and every timeline lists each entry once.
 func TestTimelinesAreWired(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		ctx := t.Context()
@@ -120,6 +122,7 @@ func TestTimelinesAreWired(t *testing.T) {
 // registers each content projector exactly once: a boost and a favourite count one each, and a
 // repeated command changes nothing.
 func TestInteractionsAreWired(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		ctx := t.Context()

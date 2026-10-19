@@ -94,7 +94,7 @@ describe("a post's page", () => {
     const article = await findFocusedPost();
     // Named apart from the other posts of the thread; the relative time as everywhere, and no link to
     // the page it is on; the full date and the counts in words under the body.
-    expect(article).toHaveAccessibleName("Opened post Bob @bob@my.example 3 hr. ago");
+    expect(article).toHaveAccessibleName("Opened post Bob @bob 3 hr. ago");
     expect(within(article).queryByRole("link", { name: /ago/ })).not.toBeInTheDocument();
     expect(within(article).getByText(/October 16, 2026/)).toHaveAttribute("datetime", post.created_at);
     expect(within(article).getByText("1 boost")).toBeInTheDocument();
