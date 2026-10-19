@@ -52,7 +52,7 @@
 | NFR-SEC-5 | レート制限（API・ログイン・Inbox） |
 | NFR-SEC-6 | アップロード画像の EXIF（位置情報）を除去する |
 | NFR-SEC-7 | 秘密情報（署名鍵・OAuth シークレット）は DB 暗号化 or シークレットストアに置けるようにする |
-| NFR-SEC-8 | 依存関係の脆弱性スキャンを CI で実行する |
+| NFR-SEC-8 | 依存関係の既知の脆弱性を継続的に検知し、更新を自動で提案する（[ADR-0046](../adr/0046-dependabot-vulnerability-detection.md)） |
 
 ## 国際化（NFR-I18N）
 

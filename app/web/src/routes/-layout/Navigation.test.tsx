@@ -225,7 +225,7 @@ describe("the sidebar's server and viewer", () => {
     await screen.findByRole("heading", { level: 1, name: "Alice" });
 
     const nav = navigation();
-    const viewer = await within(nav).findByRole("link", { name: "Alice @alice@my.example" });
+    const viewer = await within(nav).findByRole("link", { name: "Alice @alice" });
     expect(viewer).toHaveAttribute("href", "/@alice");
     expect(viewer).toHaveAccessibleDescription("The account you are signed in with");
     // The list's Profile item marks the place; the viewer's link is a second way there.
@@ -262,7 +262,7 @@ describe("the sidebar's server and viewer", () => {
     server.use(signedInHandler, http.get(`${apiBase}/preferences`, () => HttpResponse.json({ ...preferencesFixture, locale: "ja" })));
     await renderApp({ path: "/home", locale: "ja" });
     const nav = await screen.findByRole("navigation", { name: "メイン" });
-    expect(await within(nav).findByRole("link", { name: "Alice @alice@my.example" })).toHaveAccessibleDescription(
+    expect(await within(nav).findByRole("link", { name: "Alice @alice" })).toHaveAccessibleDescription(
       "サインインしているアカウント",
     );
   });

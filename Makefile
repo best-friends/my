@@ -3,7 +3,7 @@ SHELL := bash
 
 MARKDOWNLINT := bunx --bun markdownlint-cli2@0.23.2
 
-# Go tools (govulncheck, go-licenses) are pinned with `tool` directives in tools/go.mod,
+# Go tools (go-licenses, sqlc, oapi-codegen) are pinned with `tool` directives in tools/go.mod,
 # kept apart from the product module so their dependencies never affect ours.
 # `./...` covers the root module only; the nested tools/ module is excluded.
 GO_TOOL := go tool -modfile=tools/go.mod
@@ -16,7 +16,7 @@ NPM_ALLOWED_LICENSES := $(GO_ALLOWED_LICENSES),BlueOak-1.0.0,MIT-0
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 .PHONY: help check lint-docs lint-shell adr-index adr-index-check adr-new build \
-	go-check go-mod-check go-vet go-lint go-test go-test-postgres go-build go-licenses go-vuln \
+	go-check go-mod-check go-vet go-lint go-test go-test-postgres go-build go-licenses \
 	i18n-install i18n-gen i18n-check
 
 help: ## Show available targets
@@ -145,11 +145,6 @@ go-build: ## Build all packages statically (CGO_ENABLED=0)
 
 go-licenses: ## Fail on dependency licenses incompatible with AGPL-3.0
 	$(GO_TOOL) go-licenses check --allowed_licenses=$(GO_ALLOWED_LICENSES) ./...
-
-# govulncheck scans the code that ships, as it skips _test.go files. pkg/testkit/pgtest is test support that only test
-# binaries link (ADR-0041); scanning it would pull in pgmem, whose generated code needs more than 16 GB to analyze.
-go-vuln: ## Scan for known vulnerabilities with govulncheck (needs network)
-	$(GO_TOOL) govulncheck $$(go list ./... | grep -v '/pkg/testkit/pgtest$$')
 
 # --- Database schema (ADR-0023) ---------------------------------------------------------------
 # Atlas Community Edition, pinned and checksum-verified by scripts/install-atlas.sh.

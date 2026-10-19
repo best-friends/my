@@ -25,6 +25,19 @@ type Deps struct {
 	// Media checks the media files that media settings (preview_image) refer to; nil checks
 	// only the shape of their IDs.
 	Media MediaFiles
+	// Documents renders the document texts (the terms of service and the privacy policy) to
+	// HTML; nil publishes no documents.
+	Documents DocumentRenderer
+}
+
+// DocumentRenderer renders the Markdown of a document text to an HTML fragment that is safe to
+// insert into a page as it is. The adapter lives in internal/adapter/markdown and passes
+// testkit.DocumentRendererContract.
+type DocumentRenderer interface {
+	// RenderDocument returns the HTML of the Markdown src, reduced to the document allowlist:
+	// raw HTML is dropped, links keep only http, https, and mailto URLs, and the headings start
+	// at <h2>, below the page's own <h1>.
+	RenderDocument(src string) string
 }
 
 // MediaFiles checks media files for the media settings. The content module implements it.
@@ -234,6 +247,55 @@ func (s *Service) Text(ctx context.Context, key instance.TextKey, locale string)
 	}
 	t, ok := instance.PickText(texts, TextFallbackChain(locale, settings.DefaultLocale()))
 	return t, ok, nil
+}
+
+// Document is a document text rendered for a reader.
+type Document struct {
+	Key instance.TextKey
+	// Locale is the locale of the text, which may differ from the reader's (the fallback chain).
+	Locale string
+	// HTML is the sanitized HTML of the text (DocumentRenderer).
+	HTML      string
+	RevisedAt time.Time
+}
+
+// Document returns the document text key (instance.TextDefinition.Document) rendered for a
+// reader of locale, along the fallback chain of Text. It reports false when no locale of the
+// chain has the text, and always without Deps.Documents. A key that is not a document is an
+// error wrapping instance.ErrUnknownKey.
+func (s *Service) Document(ctx context.Context, key instance.TextKey, locale string) (Document, bool, error) {
+	def, err := instance.LookupText(key)
+	if err != nil {
+		return Document{}, false, err
+	}
+	if !def.Document {
+		return Document{}, false, fmt.Errorf("text %q is not a document: %w", key, instance.ErrUnknownKey)
+	}
+	if s.d.Documents == nil {
+		return Document{}, false, nil
+	}
+	t, ok, err := s.Text(ctx, key, locale)
+	if err != nil || !ok {
+		return Document{}, false, err
+	}
+	return Document{Key: key, Locale: t.Locale, HTML: s.d.Documents.RenderDocument(t.Body), RevisedAt: t.RevisedAt}, true, nil
+}
+
+// HasDocument reports whether a reader of locale finds the document text key: what Document
+// reports, without rendering it.
+func (s *Service) HasDocument(ctx context.Context, key instance.TextKey, locale string) (bool, error) {
+	def, err := instance.LookupText(key)
+	if err != nil {
+		return false, err
+	}
+	if !def.Document {
+		return false, fmt.Errorf("text %q is not a document: %w", key, instance.ErrUnknownKey)
+	}
+	if s.d.Documents == nil {
+		return false, nil
+	}
+	_, ok, err := s.Text(ctx, key, locale)
+	return ok, err
 }
 
 // PreviewImage is the instance's link preview image (ADR-0028).

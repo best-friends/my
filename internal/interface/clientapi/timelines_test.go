@@ -5,6 +5,7 @@ package clientapi_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"slices"
 	"testing"
@@ -133,7 +134,21 @@ type timelineEnv struct {
 	*authEnv
 	timelines *fakeTimelines
 	views     *fakeViews
+	outboxes  *fakeOutboxes
 	languages []string
+}
+
+// fakeOutboxes records the outbox fetches that profiles start, and starts them when start is
+// set.
+type fakeOutboxes struct {
+	start bool
+	err   error
+	calls [][2]string // viewer, account
+}
+
+func (f *fakeOutboxes) FetchOutbox(_ context.Context, viewerAccountID, accountID string) (bool, error) {
+	f.calls = append(f.calls, [2]string{viewerAccountID, accountID})
+	return f.start && f.err == nil, f.err
 }
 
 func newTimelineEnv(t *testing.T) *timelineEnv {
@@ -172,10 +187,11 @@ func newTimelineEnv(t *testing.T) *timelineEnv {
 			}},
 			tags: map[string]content.Tag{"cats": {ID: tagID, Name: "Cats", NameNormalized: "cats"}},
 		},
+		outboxes:  &fakeOutboxes{},
 		languages: []string{"ja"},
 	}
 	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
-		o.Timelines, o.TimelineReader = te.timelines, te.views
+		o.Timelines, o.TimelineReader, o.Outboxes = te.timelines, te.views, te.outboxes
 		o.TimelineLanguages = func(_ context.Context, userID string) ([]string, error) {
 			if userID != "user-"+aliceAccountID {
 				t.Errorf("TimelineLanguages(%q), want alice's user", userID)
@@ -183,9 +199,15 @@ func newTimelineEnv(t *testing.T) *timelineEnv {
 			return te.languages, nil
 		}
 		o.Accounts.(fakeAccounts)[bobAccountID] = bobActor
+		o.Accounts.(fakeAccounts)[remoteActor.Account.ID] = remoteActor
 	})
 	return te
 }
+
+// remoteActor is a remote account, whose profile may start fetching its recent posts.
+var remoteActor = appaccount.Actor{Account: account.Account{
+	ID: "01890a5d-ac96-774b-bcce-b302099a8110", Domain: "remote.example", URI: "https://remote.example/users/carol", CreatedAt: createdAt,
+}}
 
 func decodePage(t *testing.T, res *http.Response) clientapi.StatusPage {
 	t.Helper()
@@ -430,6 +452,53 @@ func TestListAccountStatuses(t *testing.T) {
 	if p := decodeProblem(t, res); p.Type != clientapi.ProblemTypeBlank || p.Title != "指定されたリソースが見つかりません。" ||
 		res.Header.Get("Content-Language") != "ja" || res.Header.Get("Cache-Control") != "no-store" {
 		t.Errorf("unknown account problem = %+v %v", p, res.Header)
+	}
+}
+
+// The first page of a profile that a logged-in viewer opens starts fetching the account's recent
+// posts, and the page tells when it did; later pages, pinned posts, local accounts, and anonymous
+// viewers start nothing, and a failure to start does not fail the page (ADR-0044).
+func TestListAccountStatusesStartsFetchingRecentPosts(t *testing.T) {
+	e := newTimelineEnv(t)
+	auth := map[string]string{"Authorization": "Bearer read"}
+	remote := remoteActor.Account.ID
+	decode := func(res *http.Response) clientapi.AccountStatusPage {
+		t.Helper()
+		if res.StatusCode != http.StatusOK {
+			t.Fatalf("status = %d, want 200", res.StatusCode)
+		}
+		var p clientapi.AccountStatusPage
+		if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	if p := decode(e.get(t, "/accounts/"+remote+"/statuses", auth)); p.RemoteFetchStarted != nil || len(p.Items) != 2 {
+		t.Errorf("page without a started fetch = %+v, want no remote_fetch_started", p)
+	}
+	e.outboxes.start = true
+	if p := decode(e.get(t, "/accounts/"+remote+"/statuses?exclude_replies=true", auth)); p.RemoteFetchStarted == nil || !*p.RemoteFetchStarted {
+		t.Errorf("page that started a fetch = %+v, want remote_fetch_started", p)
+	}
+	want := [][2]string{{aliceAccountID, remote}, {aliceAccountID, remote}}
+	for _, path := range []string{"/statuses?cursor=" + postID, "/statuses?pinned=true"} {
+		if p := decode(e.get(t, "/accounts/"+remote+path, auth)); p.RemoteFetchStarted != nil {
+			t.Errorf("%s = %+v, want no fetch", path, p)
+		}
+	}
+	if p := decode(e.get(t, "/accounts/"+remote+"/statuses", nil)); p.RemoteFetchStarted != nil {
+		t.Errorf("anonymous page = %+v, want no fetch", p)
+	}
+	// A local account has no outbox to fetch.
+	if p := decode(e.get(t, "/accounts/"+bobAccountID+"/statuses", auth)); p.RemoteFetchStarted != nil {
+		t.Errorf("local profile = %+v, want no fetch", p)
+	}
+	if !slices.Equal(e.outboxes.calls, want) {
+		t.Errorf("fetches = %v, want %v: the first pages of the logged-in viewer only", e.outboxes.calls, want)
+	}
+	e.outboxes.err = errors.New("queue down")
+	if p := decode(e.get(t, "/accounts/"+remote+"/statuses", auth)); p.RemoteFetchStarted != nil || len(p.Items) != 2 {
+		t.Errorf("page while the fetch fails = %+v, want the stored posts", p)
 	}
 }
 

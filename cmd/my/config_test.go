@@ -11,6 +11,8 @@ import (
 	"testing"
 )
 
+const captchaSecret = "0x5eCrE7-captcha-secret" //nolint:gosec // G101: a test secret
+
 func TestRunConfig(t *testing.T) {
 	kek := base64.StdEncoding.EncodeToString(make([]byte, 32))
 	file := filepath.Join(t.TempDir(), "my.toml")
@@ -24,6 +26,8 @@ func TestRunConfig(t *testing.T) {
 		wantCode   int
 		wantStdout []string
 		wantStderr []string
+		// wantAbsent must appear in neither output.
+		wantAbsent []string
 	}{
 		{
 			name:       "valid",
@@ -44,6 +48,17 @@ func TestRunConfig(t *testing.T) {
 				"The required setting MY_DATABASE_URL is not set.",
 			},
 		},
+		{
+			name: "captcha without a site key",
+			args: []string{"config", "check"},
+			env: map[string]string{
+				"MY_HOST": "social.example.org", "MY_DATABASE_URL": "file:my.db", "MY_KEK": kek, "LC_ALL": "C",
+				"MY_CAPTCHA": "turnstile", "MY_CAPTCHA_SECRET_KEY": captchaSecret,
+			},
+			wantCode:   1,
+			wantStderr: []string{"The required setting MY_CAPTCHA_SITE_KEY is not set.", "captcha_site_key: required when captcha is not none"},
+			wantAbsent: []string{captchaSecret},
+		},
 		{name: "no subcommand", args: []string{"config"}, wantCode: 2, wantStderr: []string{"Usage: my config check"}},
 		{name: "unknown subcommand", args: []string{"config", "nope"}, wantCode: 2, wantStderr: []string{`unknown subcommand "nope"`}},
 		{name: "extra argument", args: []string{"config", "check", "x"}, wantCode: 2, wantStderr: []string{`unexpected argument "x"`}},
@@ -51,7 +66,7 @@ func TestRunConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("LANGUAGE", "")
-			for _, k := range []string{"MY_CONFIG", "MY_HOST", "MY_DATABASE_URL", "MY_KEK", "MY_DB", "LC_ALL"} {
+			for _, k := range []string{"MY_CONFIG", "MY_HOST", "MY_DATABASE_URL", "MY_KEK", "MY_DB", "LC_ALL", "MY_CAPTCHA", "MY_CAPTCHA_SITE_KEY", "MY_CAPTCHA_SECRET_KEY"} {
 				t.Setenv(k, tt.env[k]) // restores the original value after the test
 				if _, ok := tt.env[k]; !ok {
 					if err := os.Unsetenv(k); err != nil {
@@ -71,6 +86,11 @@ func TestRunConfig(t *testing.T) {
 			for _, w := range tt.wantStderr {
 				if !strings.Contains(stderr.String(), w) {
 					t.Errorf("stderr = %q, want it to contain %q", stderr.String(), w)
+				}
+			}
+			for _, w := range tt.wantAbsent {
+				if strings.Contains(stdout.String()+stderr.String(), w) {
+					t.Errorf("the output contains %q: %s%s", w, stdout.String(), stderr.String())
 				}
 			}
 		})

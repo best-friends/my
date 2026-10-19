@@ -36,6 +36,7 @@ import (
 // that only a local account takes are a 422; issuing and lifting are audited (ADR-0037), and
 // nothing is sent to the account's server.
 func TestClientAPIRemoteAccountActions(t *testing.T) {
+	t.Parallel()
 	const bob = "https://remote.example/users/bob"
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {

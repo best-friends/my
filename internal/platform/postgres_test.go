@@ -10,7 +10,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	os.Exit(pgtest.Main(m))
+	code := pgtest.Main(m)
+	removeSQLiteTemplate()
+	os.Exit(code)
 }
 
 // newPostgresDatabase returns the URL of a new database with the product schema on the test server

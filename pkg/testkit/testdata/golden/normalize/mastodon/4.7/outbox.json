@@ -1,0 +1,8 @@
+{
+  "Collection": {
+    "First": {
+      "ID": "https://mastodon.example/ap/users/117454922805771612/outbox?page=true"
+    },
+    "ID": "https://mastodon.example/ap/users/117454922805771612/outbox"
+  }
+}

@@ -7,6 +7,24 @@ import { useState } from "react";
 import { useT } from "../../../lib/i18n";
 import { useDisplaySettings } from "../../../lib/locale";
 
+/** The IANA time zone of this device, which is the browser's. */
+export function deviceTimeZone(): string {
+  return new Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+/** Whether two IANA names are one zone, such as Asia/Calcutta and Asia/Kolkata; a name Intl does not know is only itself. */
+export function sameTimeZone(a: string, b: string): boolean {
+  return a === b || canonicalTimeZone(a) === canonicalTimeZone(b);
+}
+
+function canonicalTimeZone(zone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en", { timeZone: zone }).resolvedOptions().timeZone;
+  } catch {
+    return zone;
+  }
+}
+
 /** A time zone, named in the display locale. */
 type TimeZone = {
   /** The IANA name, which the server stores. */

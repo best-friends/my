@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
@@ -289,13 +290,16 @@ func (s *Server) GetHashtagTimeline(ctx context.Context, req GetHashtagTimelineR
 
 // ListAccountStatuses serves GET /api/v1/accounts/{id}/statuses: the account's profile
 // timeline, or its pinned statuses in one page. An unknown account is a 404. The viewer's
-// timeline languages do not apply: a profile shows the account in every language.
+// timeline languages do not apply: a profile shows the account in every language. The first
+// page of a logged-in viewer may start fetching the recent posts of a remote account
+// (Options.Outboxes, ADR-0044).
 func (s *Server) ListAccountStatuses(ctx context.Context, req ListAccountStatusesRequestObject) (ListAccountStatusesResponseObject, error) {
 	cv, v := timelineViewer(ctx)
 	if _, ok := pageLimit(req.Params.Limit); !ok {
 		return ListAccountStatusesdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
 	}
-	if _, err := s.o.Accounts.FindByID(ctx, req.Id); errors.Is(err, appaccount.ErrNotFound) {
+	account, err := s.o.Accounts.FindByID(ctx, req.Id)
+	if errors.Is(err, appaccount.ErrNotFound) {
 		l := s.Localizer(ctx)
 		body, headers := s.NewProblem(ctx, http.StatusNotFound, ProblemTypeBlank, l.ServerErrorsNotFound(), "")
 		return ListAccountStatusesdefaultApplicationProblemPlusJSONResponse{Body: body, Headers: headers, StatusCode: http.StatusNotFound}, nil
@@ -319,7 +323,9 @@ func (s *Server) ListAccountStatuses(ctx context.Context, req ListAccountStatuse
 				return nil, err
 			}
 		}
-		return ListAccountStatuses200JSONResponse{StatusPageJSONResponse{Body: body, Headers: StatusPageResponseHeaders{CacheControl: &cache}}}, nil
+		return ListAccountStatuses200JSONResponse{AccountStatusPageJSONResponse{
+			Body: AccountStatusPage{Items: body.Items}, Headers: AccountStatusPageResponseHeaders{CacheControl: &cache},
+		}}, nil
 	}
 	q, err := s.timelineQuery(ctx, v, params.Cursor, params.Limit, false)
 	if err != nil {
@@ -334,5 +340,21 @@ func (s *Server) ListAccountStatuses(ctx context.Context, req ListAccountStatuse
 		return nil, err
 	}
 	res, err := s.statusPage(ctx, v, entryItems(p.Entries), p.Next)
-	return ListAccountStatuses200JSONResponse{res}, err
+	if err != nil {
+		return nil, err
+	}
+	out := AccountStatusPage{Items: res.Body.Items, NextCursor: res.Body.NextCursor}
+	if params.Cursor == nil && v != nil && s.o.Outboxes != nil && !account.Account.IsLocal() {
+		// The page shows what is stored now; the fetched posts show when it is read again.
+		started, err := s.o.Outboxes.FetchOutbox(ctx, v.AccountID, req.Id)
+		if err != nil {
+			s.o.Logger.WarnContext(ctx, "fetch remote outbox", slog.String("account_id", req.Id), slog.Any("error", err))
+		}
+		if started {
+			out.RemoteFetchStarted = &started
+		}
+	}
+	return ListAccountStatuses200JSONResponse{AccountStatusPageJSONResponse{
+		Body: out, Headers: AccountStatusPageResponseHeaders{CacheControl: res.Headers.CacheControl},
+	}}, nil
 }

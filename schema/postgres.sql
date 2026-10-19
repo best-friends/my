@@ -513,17 +513,23 @@ CREATE INDEX dead_jobs_failed_at ON dead_jobs (failed_at);
 -- ---------------------------------------------------------------------------------------------
 
 -- Current value: a user's settings. locale and default_post_language are canonical BCP 47
--- tags; time_zone is an IANA name.
+-- tags.
 CREATE TABLE user_preferences (
   user_id text COLLATE "C" NOT NULL PRIMARY KEY,
   locale text NOT NULL,
-  time_zone text NOT NULL,
   default_visibility text NOT NULL CHECK (default_visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
   default_post_language text NOT NULL,
   require_media_description boolean NOT NULL,
   -- Whether the moderator notifications (admin_report, admin_sign_up) also come by email.
   email_moderator_notifications boolean NOT NULL,
   updated_at timestamptz NOT NULL
+);
+
+-- Current value: the time zone a user chose, an IANA name. No row means the user has not chosen
+-- one yet: dates are shown in UTC and the web client offers the browser's zone.
+CREATE TABLE user_time_zones (
+  user_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  time_zone text NOT NULL
 );
 
 -- Current value: the languages a user's timelines show; no rows show every language.

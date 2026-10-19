@@ -14,6 +14,7 @@ import (
 // root and the client API (FR-703, data-model §5.2): each takes away its capabilities at once,
 // and lifting it gives them back; a user without manage_accounts may not issue one.
 func TestClientAPIAccountActions(t *testing.T) {
+	t.Parallel()
 	e := newAccountsEnv(t)
 	mod := e.user("mod")
 	member := func(name string) testUser {

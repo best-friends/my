@@ -48,11 +48,13 @@ import {
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { useAdminEntry } from "../../features/admin";
+import { DocumentLinks } from "../../features/documents";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { ThemeRadioGroup } from "../../features/settings";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
 import { useConfig } from "../../lib/config";
+import { handleOf } from "../../lib/handle";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { followListPath, profilePath } from "../../lib/paths";
 
@@ -207,7 +209,6 @@ export function Navigation() {
  */
 function ViewerLink() {
   const t = useT();
-  const { accountDomain } = useConfig();
   const viewer = useViewer();
   const descriptionId = useId();
   if (viewer.status !== "signed-in") return null;
@@ -223,7 +224,7 @@ function ViewerLink() {
       >
         <Avatar src={account.avatar_url} name={name} size="sm" decorative />
         {/* The display name and the handle a line each (the sidebar is no container), as a post's author shows them. */}
-        <PostCardAuthor name={name} handle={`@${account.acct}@${accountDomain}`} />
+        <PostCardAuthor name={name} handle={handleOf(account.acct)} />
       </Link>
       {/* A description of a hidden element is still read (accname), and the element stays out of the tree. */}
       <span id={descriptionId} hidden>
@@ -249,7 +250,8 @@ type NavigationMenuProps = {
  * focus (useViewChange); a navigation that the unsaved-changes guard holds does not start, and the sheet stays.
  * The button carries the counts of the sheet's items (what awaits the moderators), so that they show in the tab
  * bar too, and the sheet's items show them as the rail does. Under the items, the sheet switches the color theme
- * (the same control as the preferences page, in a row).
+ * (the same control as the preferences page, in a row), and under that it links to the server's terms of service
+ * and privacy policy, which the third column shows on wide screens, when the server publishes them.
  */
 function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
   const t = useT();
@@ -298,6 +300,7 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
         <div className="mt-4 border-t border-border px-3 pt-4">
           <ThemeRadioGroup layout="sheet" />
         </div>
+        <DocumentLinks placement="sheet" />
       </Sheet>
     </DialogTrigger>
   );

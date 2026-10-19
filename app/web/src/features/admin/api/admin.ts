@@ -5,9 +5,10 @@
 // lists follow the API's keyset pagination (each page's `next_cursor` is the `cursor` of the next) as TanStack
 // Query infinite queries on the same client; their keys start like the client's own `[method, path]` and end
 // with "pages", so that they never collide with a plain query of the same operation (web-client.md §10).
-import { infiniteQueryOptions, type InvalidateQueryFilters, type QueryClient } from "@tanstack/react-query";
+import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
+import { refreshQueries } from "../../../lib/query";
 import type { components } from "../../../lib/api/schema.gen";
 
 type Schemas = components["schemas"];
@@ -29,17 +30,6 @@ const pageSize = 40;
 /** The query of one page of a list: its size and, after the first page, the cursor that continues it. */
 export function pageQuery(cursor: string | undefined): { limit: number; cursor?: string } {
   return cursor === undefined ? { limit: pageSize } : { limit: pageSize, cursor };
-}
-
-/**
- * Fetches again, at once, the cached queries that any of `filters` matches, even those no page shows now
- * (`refetchType: "all"`). A route loads its query from the cache as it is (`staleTime: "static"`, web-client.md
- * S7), so a query that a write only marked stale would show what it was before the write until its refetch on
- * mount ends (web-client.md S1). A write is shown done once this resolves, after every fetch has ended; one that
- * fails leaves its query stale, to be fetched again when shown.
- */
-export async function refreshQueries(queryClient: QueryClient, ...filters: readonly Omit<InvalidateQueryFilters, "refetchType">[]): Promise<void> {
-  await Promise.all(filters.map((filter) => queryClient.invalidateQueries({ ...filter, refetchType: "all" })));
 }
 
 /** The remote servers with delivery failures or marked unavailable, in domain order (GET /admin/instances). */

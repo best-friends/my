@@ -147,7 +147,11 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
   const send = useMutation({
     mutationKey: createStatusMutationKey,
     mutationFn: ({ idempotencyKey, body }: SendVariables) => createStatus(api, body, idempotencyKey),
-    onSuccess: (status, { idempotencyKey, body }) => {
+    onSuccess: async (status, { idempotencyKey, body }) => {
+      // The post is done once the lists it appears in are fetched again (it stays in the outbox as sending
+      // until then), so that a list opened next shows it at once (web-client.md S1). A failed refetch does
+      // not fail the post: that list fetches again when it is shown.
+      await cachePostedStatus(api, queryClient, status);
       store.remove(idempotencyKey);
       // The server narrows the visibility of a restricted account (data-model.md §5.4); say so.
       const narrowed = status.visibility !== body.visibility;
@@ -159,7 +163,6 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
       if (controller.layout === "sheet" && store.getSnapshot().outbox.length === 0 && isEmptyDraft(store.getSnapshot().draft)) {
         controller.setSheetOpen(false);
       }
-      void cachePostedStatus(api, queryClient, status);
     },
     onError: (error, { idempotencyKey }) => {
       const message = t("client:compose.failed", { reason: errorMessage(error) });
