@@ -683,6 +683,142 @@
     "defaultMessage": "‮⅄on ɔɐuuoʇ nsǝ ʇɥıs sɔɹǝǝu‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.registrations.account_gone": {
+    "defaultMessage": "‮∀ ɹǝɯoʌǝp ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.already_approved": {
+    "defaultMessage": "‮{applicant} ʍɐs ɐʅɹǝɐpʎ ɐddɹoʌǝp qʎ ɐuoʇɥǝɹ ɯopǝɹɐʇoɹ. ⊥ɥɐʇ pǝɔısıou sʇɐups.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.already_rejected": {
+    "defaultMessage": "‮{applicant} ʍɐs ɐʅɹǝɐpʎ ɹǝɾǝɔʇǝp qʎ ɐuoʇɥǝɹ ɯopǝɹɐʇoɹ. ⊥ɥɐʇ pǝɔısıou sʇɐups.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.approve": {
+    "defaultMessage": "‮∀ddɹoʌǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.approve_applicant": {
+    "defaultMessage": "‮∀ddɹoʌǝ {applicant}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.approved": {
+    "defaultMessage": "‮{applicant} ıs ɐddɹoʌǝp ɐup ɔɐu sıƃu ıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.cancel": {
+    "defaultMessage": "‮Ↄɐuɔǝʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.characters_left": {
+    "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʅǝɟʇ} other{# ɔɥɐɹɐɔʇǝɹs ʅǝɟʇ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.characters_over": {
+    "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.confirm_approve.description": {
+    "defaultMessage": "‮{applicant} ɔɐu sıƃu ıu ɐup sʇɐɹʇ dosʇıuƃ. ⊥ɥǝ pǝɔısıou ɔɐuuoʇ qǝ ɔɥɐuƃǝp ɐɟʇǝɹʍɐɹps.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.confirm_approve.title": {
+    "defaultMessage": "‮∀ddɹoʌǝ {applicant}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.confirm_reject.description": {
+    "defaultMessage": "‮{applicant} ɔɐuuoʇ sıƃu ıu. ⊥ɥǝ pǝɔısıou ɔɐuuoʇ qǝ ɔɥɐuƃǝp ɐɟʇǝɹʍɐɹps.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.confirm_reject.title": {
+    "defaultMessage": "‮ᴚǝɾǝɔʇ {applicant}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.decide_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ sɐʌǝ ʇɥǝ pǝɔısıou: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.email": {
+    "defaultMessage": "‮Ǝɯɐıʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.email.none": {
+    "defaultMessage": "‮Nouǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.email_verified": {
+    "defaultMessage": "‮Ǝɯɐıʅ ɔouɟıɹɯǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.email_verified.no": {
+    "defaultMessage": "‮Noʇ ɔouɟıɹɯǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.email_verified.yes": {
+    "defaultMessage": "‮Ↄouɟıɹɯǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.empty": {
+    "defaultMessage": "‮No ɹǝƃısʇɹɐʇıous ɐʍɐıʇ ɐddɹoʌɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.empty.description": {
+    "defaultMessage": "‮Nǝʍ sıƃu-nds ɐddǝɐɹ ɥǝɹǝ ʍɥıʅǝ ɹǝƃısʇɹɐʇıous uǝǝp ɐddɹoʌɐʅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.invite": {
+    "defaultMessage": "‮Iuʌıʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.invite.none": {
+    "defaultMessage": "‮Nouǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.invite.used": {
+    "defaultMessage": "‮Sıƃuǝp nd ʍıʇɥ ɐu ıuʌıʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.note": {
+    "defaultMessage": "‮Noʇǝ ɟoɹ ɯopǝɹɐʇoɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.note.description": {
+    "defaultMessage": "‮Odʇıouɐʅ. Ouʅʎ ɯopǝɹɐʇoɹs sǝǝ ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.note.too_long": {
+    "defaultMessage": "‮∩sǝ ɐʇ ɯosʇ {max, number} ɔɥɐɹɐɔʇǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.reason": {
+    "defaultMessage": "‮ᴚǝɐsou ɟoɹ ɾoıuıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.reason.none": {
+    "defaultMessage": "‮No ɹǝɐsou ƃıʌǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.reject": {
+    "defaultMessage": "‮ᴚǝɾǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.reject_applicant": {
+    "defaultMessage": "‮ᴚǝɾǝɔʇ {applicant}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.rejected": {
+    "defaultMessage": "‮{applicant} ıs ɹǝɾǝɔʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.submitted_at": {
+    "defaultMessage": "‮Sıƃuǝp nd‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.title": {
+    "defaultMessage": "‮ᴚǝƃısʇɹɐʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "api.error.network": {
     "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɐɔɥ ʇɥǝ sǝɹʌǝɹ. Ↄɥǝɔʞ ʎonɹ ɔouuǝɔʇıou ɐup ʇɹʎ ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
