@@ -44,11 +44,13 @@ type OriginRepository interface {
 	// FindRegistrationOrigin returns the origin of a user's registration.
 	FindRegistrationOrigin(ctx context.Context, userID string) (identity.RegistrationOrigin, error)
 	// DeleteSessionOriginsBefore deletes inside tx at most limit session origins created before
-	// t, the oldest first, in one statement, and returns how many it deleted.
-	DeleteSessionOriginsBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error)
+	// t, except those of the users in except, the oldest first, in one statement, and returns
+	// how many it deleted.
+	DeleteSessionOriginsBefore(ctx context.Context, tx uow.Tx, t time.Time, except []string, limit int) (int64, error)
 	// DeleteRegistrationOriginsBefore deletes inside tx at most limit registration origins
-	// recorded before t, the oldest first, in one statement, and returns how many it deleted.
-	DeleteRegistrationOriginsBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error)
+	// recorded before t, except those of the users in except, the oldest first, in one
+	// statement, and returns how many it deleted.
+	DeleteRegistrationOriginsBefore(ctx context.Context, tx uow.Tx, t time.Time, except []string, limit int) (int64, error)
 }
 
 // normalizeIP returns the canonical form of a client address (an IPv4-mapped IPv6 address as
@@ -62,38 +64,66 @@ func normalizeIP(ip string) string {
 	return a.Unmap().WithZone("").String()
 }
 
-// OriginPurgeDeps are the ports of the origin purge.
-type OriginPurgeDeps struct {
-	UnitOfWork uow.UnitOfWork
-	Repository OriginRepository
-	Clock      kernel.Clock
+// OriginRetentionPolicy is what the origin purge keeps: the origins younger than their periods,
+// and every origin of the held users.
+type OriginRetentionPolicy struct {
 	// SessionPeriod is how long a session origin is kept; zero means
 	// DefaultSessionOriginRetention.
 	SessionPeriod time.Duration
 	// RegistrationPeriod is how long a registration origin is kept; zero means
 	// DefaultRegistrationOriginRetention.
 	RegistrationPeriod time.Duration
+	// HeldUserIDs are the users whose local account a retention hold preserves (ADR-0038).
+	HeldUserIDs []string
+}
+
+// OriginRetention reads the policy of the origin purge at each run: the instance settings
+// retention_session_origins and retention_registration_origins and the retention holds of the
+// moderation module. The composition root implements it.
+type OriginRetention interface {
+	OriginRetention(ctx context.Context) (OriginRetentionPolicy, error)
+}
+
+// OriginPurgeDeps are the ports of the origin purge.
+type OriginPurgeDeps struct {
+	UnitOfWork uow.UnitOfWork
+	Repository OriginRepository
+	Clock      kernel.Clock
+	// Policy reads the periods and the held users; nil means the default periods and no hold.
+	Policy OriginRetention
 	// Batch is the number of rows per statement; zero means OriginPurgeBatch.
 	Batch int
 }
 
-// OriginPurger runs JobPurgeOrigins: it deletes the session origins older than SessionPeriod
-// and the registration origins older than RegistrationPeriod (ADR-0038). The sessions and users
-// stay. Each statement deletes a bounded batch in a transaction of its own.
+// OriginPurger runs JobPurgeOrigins: it deletes the session origins and the registration
+// origins older than their periods, except those of held users (ADR-0038). The sessions and
+// users stay. Each statement deletes a bounded batch in a transaction of its own.
 type OriginPurger struct{ d OriginPurgeDeps }
 
 // NewOriginPurger returns the origin purge on d.
 func NewOriginPurger(d OriginPurgeDeps) *OriginPurger {
-	if d.SessionPeriod <= 0 {
-		d.SessionPeriod = DefaultSessionOriginRetention
-	}
-	if d.RegistrationPeriod <= 0 {
-		d.RegistrationPeriod = DefaultRegistrationOriginRetention
-	}
 	if d.Batch <= 0 {
 		d.Batch = OriginPurgeBatch
 	}
 	return &OriginPurger{d: d}
+}
+
+// policy returns the policy of this run, with the defaults filled in.
+func (p *OriginPurger) policy(ctx context.Context) (OriginRetentionPolicy, error) {
+	var pol OriginRetentionPolicy
+	if p.d.Policy != nil {
+		var err error
+		if pol, err = p.d.Policy.OriginRetention(ctx); err != nil {
+			return OriginRetentionPolicy{}, fmt.Errorf("identity: origin retention: %w", err)
+		}
+	}
+	if pol.SessionPeriod <= 0 {
+		pol.SessionPeriod = DefaultSessionOriginRetention
+	}
+	if pol.RegistrationPeriod <= 0 {
+		pol.RegistrationPeriod = DefaultRegistrationOriginRetention
+	}
+	return pol, nil
 }
 
 // RegisterJobs registers the JobPurgeOrigins handler and its hourly schedule.
@@ -110,15 +140,19 @@ func (p *OriginPurger) RegisterJobs(h *queue.JobHandlerRegistry, s *queue.Schedu
 // Run deletes the origins past their retention, at most originPurgeMaxBatches batches per
 // table, and returns how many rows it deleted. It is safe to repeat.
 func (p *OriginPurger) Run(ctx context.Context) (int64, error) {
+	pol, err := p.policy(ctx)
+	if err != nil {
+		return 0, err
+	}
 	now := p.d.Clock.Now()
 	r := p.d.Repository
 	steps := []struct {
 		name   string
 		before time.Time
-		del    func(context.Context, uow.Tx, time.Time, int) (int64, error)
+		del    func(context.Context, uow.Tx, time.Time, []string, int) (int64, error)
 	}{
-		{"session origins", now.Add(-p.d.SessionPeriod), r.DeleteSessionOriginsBefore},
-		{"registration origins", now.Add(-p.d.RegistrationPeriod), r.DeleteRegistrationOriginsBefore},
+		{"session origins", now.Add(-pol.SessionPeriod), r.DeleteSessionOriginsBefore},
+		{"registration origins", now.Add(-pol.RegistrationPeriod), r.DeleteRegistrationOriginsBefore},
 	}
 	var total int64
 	for _, s := range steps {
@@ -126,7 +160,7 @@ func (p *OriginPurger) Run(ctx context.Context) (int64, error) {
 			var n int64
 			err := p.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 				var err error
-				n, err = s.del(ctx, tx, s.before, p.d.Batch)
+				n, err = s.del(ctx, tx, s.before, pol.HeldUserIDs, p.d.Batch)
 				return err
 			})
 			if err != nil {

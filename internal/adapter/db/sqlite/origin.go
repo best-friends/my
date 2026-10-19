@@ -59,25 +59,33 @@ func (r *IdentityRepository) FindRegistrationOrigin(ctx context.Context, userID 
 }
 
 // DeleteSessionOriginsBefore implements identity.OriginRepository.
-func (r *IdentityRepository) DeleteSessionOriginsBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error) {
+func (r *IdentityRepository) DeleteSessionOriginsBefore(ctx context.Context, tx uow.Tx, t time.Time, except []string, limit int) (int64, error) {
 	q, err := queries(tx)
 	if err != nil {
 		return 0, err
 	}
+	ids, err := jsonList(except)
+	if err != nil {
+		return 0, err
+	}
 	n, err := q.DeleteSessionOriginsBefore(ctx, sqlitegen.DeleteSessionOriginsBeforeParams{
-		CreatedBefore: toMillis(t), BatchLimit: int64(limit),
+		CreatedBefore: toMillis(t), ExceptUserIds: ids, BatchLimit: int64(limit),
 	})
 	return n, wrap(err, "delete session origins")
 }
 
 // DeleteRegistrationOriginsBefore implements identity.OriginRepository.
-func (r *IdentityRepository) DeleteRegistrationOriginsBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error) {
+func (r *IdentityRepository) DeleteRegistrationOriginsBefore(ctx context.Context, tx uow.Tx, t time.Time, except []string, limit int) (int64, error) {
 	q, err := queries(tx)
 	if err != nil {
 		return 0, err
 	}
+	ids, err := jsonList(except)
+	if err != nil {
+		return 0, err
+	}
 	n, err := q.DeleteRegistrationOriginsBefore(ctx, sqlitegen.DeleteRegistrationOriginsBeforeParams{
-		RecordedBefore: toMillis(t), BatchLimit: int64(limit),
+		RecordedBefore: toMillis(t), ExceptUserIds: ids, BatchLimit: int64(limit),
 	})
 	return n, wrap(err, "delete registration origins")
 }

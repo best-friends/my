@@ -43,7 +43,8 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // an email address and a role grant while rejecting a taken username or email, signing in and out
 // with browser sessions (new tokens on every sign-in, expiry, activity, the same error for an
 // unknown address, a wrong password, and an inactive account, rate-limited failures, rehashing weaker passwords,
-// the origin of each sign-in and its purge after the retention), the OAuth 2.0
+// the origin of each sign-in and its purge after the configured retention, except for held
+// users), the OAuth 2.0
 // authorization server (registering the web client, exact redirect URIs, PKCE S256 only,
 // one-time codes, refresh token rotation that revokes the whole family on reuse, revocation),
 // and the property that the account module's synchronous projections equal a rebuild from their events.
@@ -77,6 +78,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RejectsSignInToInactiveAccounts", sessionRejectsInactiveAccounts},
 		{"RecordsSignInOrigins", originRecordsSignIns},
 		{"PurgesSessionOriginsAfterTheRetention", originPurgesSessionOrigins},
+		{"OriginPurgeFollowsTheRetentionPolicy", originPurgeFollowsThePolicy},
 		{"EndsTheLoginsOfModeratedAccounts", sessionModerationEndsLogins},
 		{"RegistersTheWebClient", oauthRegistersTheWebClient},
 		{"ValidatesAuthorizationRequests", oauthValidatesAuthorizationRequests},

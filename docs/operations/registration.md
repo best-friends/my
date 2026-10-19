@@ -24,7 +24,7 @@ my instance set registration_mode invite
 
 - 同じネットワーク（IP アドレス。IPv6 は `/64`）からの登録は 30 分に 5 回までです。超えると `429` と `Retry-After` を返します。
 - ユーザー名・メールアドレスが使われていれば、その項目にエラーを表示し、何も書き込みません（招待も消費しません）。
-- 登録とログインのたびに、接続元の IP アドレス（ログインでは User-Agent も）を記録します。記録は 180 日で自動的に消えます（[ADR-0038](../adr/0038-moderation-personal-data-retention.md)）。
+- 登録とログインのたびに、接続元の IP アドレス（ログインでは User-Agent も）を記録します。記録は 180 日（インスタンス設定 `retention_session_origins`・`retention_registration_origins`、90 日以上）で自動的に消えます。保全中のアカウントの記録は残ります（[ADR-0038](../adr/0038-moderation-personal-data-retention.md)、[記録の保持期間と保全](moderation.md#記録の保持期間と保全)）。
   プライバシーポリシーにはこの保持期間を書いてください。
 
 ## アプリを使えるようになる条件

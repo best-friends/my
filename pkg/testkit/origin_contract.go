@@ -3,6 +3,7 @@
 package testkit
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -18,8 +19,22 @@ import (
 // deleted.
 func (e *accountEnv) purgeOrigins(t *testing.T, batch int) int64 {
 	t.Helper()
+	return e.purgeOriginsWith(t, batch, nil)
+}
+
+// stubOriginRetention stands in for the instance settings and the retention holds.
+type stubOriginRetention appidentity.OriginRetentionPolicy
+
+// OriginRetention implements appidentity.OriginRetention.
+func (s stubOriginRetention) OriginRetention(context.Context) (appidentity.OriginRetentionPolicy, error) {
+	return appidentity.OriginRetentionPolicy(s), nil
+}
+
+// purgeOriginsWith runs the origin purge under policy (nil: the defaults).
+func (e *accountEnv) purgeOriginsWith(t *testing.T, batch int, policy appidentity.OriginRetention) int64 {
+	t.Helper()
 	n, err := appidentity.NewOriginPurger(appidentity.OriginPurgeDeps{
-		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Identity, Clock: e.clock, Batch: batch,
+		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Identity, Clock: e.clock, Batch: batch, Policy: policy,
 	}).Run(t.Context())
 	if err != nil {
 		t.Fatalf("purge origins = %v", err)
@@ -126,4 +141,32 @@ func registrationRecordsOrigins(t *testing.T, e *accountEnv) {
 	if _, err := e.h.Identity.FindUser(ctx, alice.User.ID); err != nil {
 		t.Errorf("FindUser after the purge = %v; want the user kept", err)
 	}
+}
+
+// originPurgeFollowsThePolicy checks that the purge uses the configured periods and keeps every
+// origin of a held user (ADR-0038).
+func originPurgeFollowsThePolicy(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	alice := e.sessionUser(t)
+	held := e.signIn(t, appidentity.SignInInput{IP: "192.0.2.1"})
+	period := 90 * 24 * time.Hour
+	e.clock.Advance(period + time.Millisecond)
+	// Within the default period, nothing goes; past the configured one, a held user keeps its
+	// origins.
+	if n := e.purgeOrigins(t, 0); n != 0 {
+		t.Fatalf("purge within the default period = %d, want 0", n)
+	}
+	policy := stubOriginRetention{SessionPeriod: period, RegistrationPeriod: period, HeldUserIDs: []string{alice.User.ID}}
+	if n := e.purgeOriginsWith(t, 0, policy); n != 0 {
+		t.Fatalf("purge of a held user = %d, want 0", n)
+	}
+	if _, err := e.h.Identity.FindSessionOrigin(ctx, held.Session.ID); err != nil {
+		t.Errorf("origin of a held user = %v; want it kept", err)
+	}
+	// Released, the origin goes at the configured period.
+	policy.HeldUserIDs = nil
+	if n := e.purgeOriginsWith(t, 0, policy); n != 1 {
+		t.Fatalf("purge after the release = %d, want 1", n)
+	}
+	e.wantNoSessionOrigin(t, held.Session.ID, "purged after the release")
 }

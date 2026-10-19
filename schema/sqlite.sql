@@ -539,7 +539,9 @@ CREATE TABLE instance_setting_revisions (
   key TEXT NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
     'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
-    'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window'
+    'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
+    'retention_session_origins', 'retention_registration_origins', 'retention_reports',
+    'retention_moderation_actions', 'retention_audit_log'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,
@@ -1788,3 +1790,30 @@ CREATE TABLE appeal_states (
   since INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX appeal_states_state_appeal_id ON appeal_states (state, appeal_id);
+
+-- ---------------------------------------------------------------------------------------------
+-- moderation: retention of the moderation records and the holds that stop it (#349,
+-- data-model §4.3, §8, ADR-0038). Owned by internal/app/moderation.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: an operator's hold on the erasure of an account's records (a court order to preserve
+-- them, a disclosure request in progress). created_by_user_id is NULL for the CLI.
+CREATE TABLE retention_holds (
+  id TEXT NOT NULL PRIMARY KEY,
+  account_id TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  created_by_user_id TEXT,
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX retention_holds_account_id ON retention_holds (account_id);
+
+-- Event: a hold was released, at most once. released_by_user_id is NULL for the CLI.
+CREATE TABLE retention_hold_releases (
+  hold_id TEXT NOT NULL PRIMARY KEY,
+  released_by_user_id TEXT,
+  released_at INTEGER NOT NULL
+) STRICT;
+
+-- The purge of remote statuses keeps the statuses that a report or an action points at.
+CREATE INDEX report_statuses_status_id ON report_statuses (status_id);
+CREATE INDEX moderation_action_statuses_status_id ON moderation_action_statuses (status_id);

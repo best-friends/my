@@ -21,12 +21,14 @@ type retentionRepositories struct {
 
 // setUpRetention registers the purges of federated data and their schedules (ADR-0034, FR-803):
 // the remote statuses past remote_status_retention (or remote_status_max_retention), the inbox
-// and delivery records, and the past profiles of unrelated remote accounts. It comes after the
+// and delivery records, and the past profiles of unrelated remote accounts. The statuses that the
+// moderation records need stay (ADR-0038). It comes after the
 // content, graph, and notification services, which tell what local data refers to.
 func (a *App) setUpRetention(cfg *config.Config, repos retentionRepositories, statuses content.Repository) {
 	content.NewRetention(content.RetentionDeps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Retention: repos.statuses, Notifications: a.Notifications,
-		Jobs: a.Jobs, Clock: a.Clock, Period: cfg.RemoteStatusRetention, MaxPeriod: cfg.RemoteStatusMaxRetention,
+		Evidence: a.Moderation,
+		Jobs:     a.Jobs, Clock: a.Clock, Period: cfg.RemoteStatusRetention, MaxPeriod: cfg.RemoteStatusMaxRetention,
 	}).RegisterJobs(a.Handlers, a.Scheduler)
 	federation.NewPurger(federation.PurgeDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repos.purges, Clock: a.Clock,

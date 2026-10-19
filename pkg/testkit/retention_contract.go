@@ -41,7 +41,8 @@ type RetentionFactory func(t *testing.T, opts uow.Options) RetentionHarness
 // modules: remote statuses past remote_status_retention that nothing local refers to are
 // deleted with origin retention and their rows purged, while those a local reply, thread, boost,
 // favourite, bookmark, or notification refers to stay; past remote_status_max_retention every
-// remote status goes, leaving the local accounts' interactions; each transaction deletes a
+// remote status goes, leaving the local accounts' interactions, except those that the moderation
+// records retain (a reported status, a held author); each transaction deletes a
 // bounded batch; a purged status can be fetched and deleted again; the inbox and delivery records
 // and the tombstones of unknown objects and Follows go after their retention; and unrelated remote accounts keep only their current profile.
 func RetentionContract(t *testing.T, newHarness RetentionFactory) {
@@ -53,6 +54,7 @@ func RetentionContract(t *testing.T, newHarness RetentionFactory) {
 		{"PurgesUnreferencedRemoteStatuses", retentionPurgesUnreferenced},
 		{"KeepsReferencedRemoteStatuses", retentionKeepsReferenced},
 		{"PurgesEveryRemoteStatusPastTheMaximum", retentionMaximum},
+		{"KeepsTheEvidenceOfModeration", retentionKeepsModerationEvidence},
 		{"PurgesInBoundedBatches", retentionBatches},
 		{"IngestsAPurgedStatusAgain", retentionRefetch},
 		{"PurgesInboxAndDeliveryRecords", retentionFederationRecords},
@@ -90,10 +92,48 @@ func newRetentionEnv(t *testing.T, newHarness RetentionFactory) *retentionEnv {
 
 // retention returns the purge of remote statuses with the retention period and maximum.
 func (e *retentionEnv) retention(period, maxPeriod time.Duration, batch int) *appcontent.Retention {
+	return e.retentionWith(period, maxPeriod, batch, nil)
+}
+
+// retentionWith is retention with the moderation records' evidence (nil: none).
+func (e *retentionEnv) retentionWith(period, maxPeriod time.Duration, batch int, evidence appcontent.RetainedStatuses) *appcontent.Retention {
 	return appcontent.NewRetention(appcontent.RetentionDeps{
 		UnitOfWork: e.rh.UnitOfWork, Repository: e.rh.Statuses, Retention: e.rh.Retention, Notifications: e.notifications,
-		Clock: e.clock, Period: period, MaxPeriod: maxPeriod, Batch: batch,
+		Evidence: evidence, Clock: e.clock, Period: period, MaxPeriod: maxPeriod, Batch: batch,
 	})
+}
+
+// stubEvidence stands in for the moderation module: the statuses that a report or an action
+// points at, and the held authors.
+type stubEvidence struct{ statuses, authors map[string]bool }
+
+// StatusRetained implements appcontent.RetainedStatuses.
+func (s stubEvidence) StatusRetained(_ context.Context, _ uow.Tx, statusID, authorAccountID string) (bool, error) {
+	return s.statuses[statusID] || s.authors[authorAccountID], nil
+}
+
+func retentionKeepsModerationEvidence(t *testing.T, e *retentionEnv) {
+	const alice, bob = "https://remote.example/users/alice", "https://remote.example/users/bob"
+	aliceID, bobID := e.actor(t, alice), e.actor(t, bob)
+	reader := e.user(t, "reader")
+	e.follow(t, reader, aliceID)
+	e.follow(t, reader, bobID)
+	reported := e.note(t, alice, alice+"/notes/reported", 400*24*time.Hour, nil)
+	held := e.note(t, bob, bob+"/notes/held", 400*24*time.Hour, nil)
+	plain := e.note(t, alice, alice+"/notes/plain", 400*24*time.Hour, nil)
+	plainRev := e.post(t, plain.URI).Revision.ID
+	evidence := stubEvidence{statuses: map[string]bool{reported.ID: true}, authors: map[string]bool{bobID: true}}
+	// Even past the maximum period, the evidence stays.
+	if n := e.purgeAll(t, e.retentionWith(retentionPeriod, 180*24*time.Hour, 0, evidence)); n != 1 {
+		t.Errorf("purged %d statuses, want 1", n)
+	}
+	e.purged(t, plain, plainRev)
+	e.kept(t, reported)
+	e.kept(t, held)
+	// Once the records are gone, so are the statuses.
+	if n := e.purgeAll(t, e.retentionWith(retentionPeriod, 180*24*time.Hour, 0, stubEvidence{})); n != 2 {
+		t.Errorf("purged %d statuses after the records went, want 2", n)
+	}
 }
 
 // purgeAll runs the purge until it reaches the end and returns how many statuses it purged.

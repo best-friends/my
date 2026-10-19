@@ -114,6 +114,8 @@ type Repository interface {
 	ReportNoteRepository
 	// The follows that suspensions cut (severance.go).
 	SeveranceRepository
+	// The retention of the records and the holds (retention.go).
+	RetentionRepository
 }
 
 // ReportQuery selects the reports of a list.
