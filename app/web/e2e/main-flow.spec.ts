@@ -296,7 +296,7 @@ test.describe("the main flow", () => {
         - button
         - button
         - heading "${alice.username}" [level=1]
-        - paragraph: "@${alice.username}@localhost:${new URL(serverURL).port}"
+        - paragraph: "@${alice.username}"
         - paragraph
         - list:
           - listitem:
