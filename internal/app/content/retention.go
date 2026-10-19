@@ -64,12 +64,22 @@ type NotifiedStatuses interface {
 	StatusNotified(ctx context.Context, tx uow.Tx, statusID string) (bool, error)
 }
 
+// RetainedStatuses tells whether the moderation records keep a status from the purge: a report
+// or an action points at it, or a retention hold preserves its author (ADR-0038). The
+// composition root implements it on the moderation module, which imports this one.
+type RetainedStatuses interface {
+	StatusRetained(ctx context.Context, tx uow.Tx, statusID, authorAccountID string) (bool, error)
+}
+
 // RetentionDeps are the ports of the retention purge.
 type RetentionDeps struct {
 	UnitOfWork    uow.UnitOfWork
 	Repository    Repository
 	Retention     RetentionRepository
 	Notifications NotifiedStatuses
+	// Evidence keeps the statuses that the moderation records need, past the maximum period
+	// too; nil keeps none.
+	Evidence RetainedStatuses
 	// Jobs enqueues the next job of a run, outside any transaction.
 	Jobs  queue.JobQueue
 	Clock kernel.Clock
@@ -87,7 +97,8 @@ type RetentionDeps struct {
 // published longer ago than the retention period that nothing local refers to (a live local
 // reply, a live local status in its thread, an unretracted local boost, a favourite, a bookmark,
 // a pin, or a notification) is deleted with origin retention; with a maximum period, any remote
-// status published longer ago than it is. The deletion leaves every projection as the author's
+// status published longer ago than it is. A status that a report or a moderation action points
+// at, or whose author a retention hold preserves, is kept regardless (ADR-0038). The deletion leaves every projection as the author's
 // deletion would, and its rows are purged in the same transaction; local accounts' boosts,
 // favourites, bookmarks, and pins stay, and readers treat their status as deleted. A deletion by
 // retention does not keep the URI from being fetched again.
@@ -185,6 +196,16 @@ func (r *Retention) purgeBatch(ctx context.Context, tx uow.Tx, q PurgeQuery, now
 	var ids []string
 	for _, st := range statuses {
 		cursor = st.ID
+		// The evidence of a report or an action, and the statuses of a held author, stay.
+		if r.d.Evidence != nil {
+			retained, err := r.d.Evidence.StatusRetained(ctx, tx, st.ID, st.AuthorAccountID)
+			if err != nil {
+				return 0, 0, cursor, err
+			}
+			if retained {
+				continue
+			}
+		}
 		// A notification refers to the status; past the maximum period it does not count.
 		if q.Before.IsZero() || !st.PublishedAt.Before(q.Before) {
 			notified, err := r.d.Notifications.StatusNotified(ctx, tx, st.ID)

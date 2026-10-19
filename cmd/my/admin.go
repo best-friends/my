@@ -41,6 +41,8 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runAdminDomain(args[1:], stdout, stderr)
 	case args[0] == "report":
 		return runAdminReport(args[1:], stdout, stderr)
+	case args[0] == "retention":
+		return runAdminRetention(args[1:], stdout, stderr)
 	case args[0] == "role":
 		return runAdminRole(args[1:], stdout, stderr)
 	case args[0] == "signup-block":
@@ -178,16 +180,20 @@ func promptPassword(fd int, stderr io.Writer) (string, error) {
 func adminUsage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage: my admin create -username <name> -email <address> [-config <file>]
        my admin account action list|issue|lift ...   (my admin account action -help)
+       my admin account export-moderation <account>   (my admin account export-moderation -help)
        my admin appeal list|uphold|overturn ...   (my admin appeal -help)
        my admin domain list|issue|lift ...   (my admin domain -help)
        my admin report list|show|assign|unassign|resolve ...   (my admin report -help)
        my admin audit list ...   (my admin audit -help)
+       my admin retention hold|release|list ...   (my admin retention -help)
        my admin role list|grant|revoke ...   (my admin role -help)
        my admin signup-block add|list|lift ...   (my admin signup-block -help)
 
 my admin account, my admin domain, my admin report, and my admin appeal moderate
 accounts and remote domains and handle reports and appeals.
 my admin audit lists the audit log of the moderators' and administrators' operations.
+my admin retention holds an account's records past their retention, and my admin
+account export-moderation writes them all for a request of access.
 my admin role grants and revokes the roles of local users.
 my admin signup-block blocks sign-ups by email domain, email address, or IP range.
 

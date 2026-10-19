@@ -52,6 +52,17 @@ func TestParse(t *testing.T) {
 		{instance.SettingDefaultLocale, "1a", ""},
 		{instance.SettingDefaultLocale, "en--US", ""},
 		{instance.SettingDefaultLocale, "", ""},
+		// The retention periods may not go below their floors (ADR-0038).
+		{instance.SettingRetentionSessionOrigins, "90", "90"},
+		{instance.SettingRetentionSessionOrigins, "89", ""},
+		{instance.SettingRetentionRegistrationOrigins, "89", ""},
+		{instance.SettingRetentionReports, "180", "180"},
+		{instance.SettingRetentionReports, "179", ""},
+		{instance.SettingRetentionModerationActions, "179", ""},
+		{instance.SettingRetentionAuditLog, "365", "365"},
+		{instance.SettingRetentionAuditLog, "364", ""},
+		{instance.SettingRetentionAuditLog, "3650", "3650"},
+		{instance.SettingRetentionAuditLog, "3651", ""},
 	} {
 		d, err := instance.Lookup(tc.key)
 		if err != nil {

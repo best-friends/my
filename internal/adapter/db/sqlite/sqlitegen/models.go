@@ -630,12 +630,35 @@ type Report struct {
 	FiledAt           int64
 }
 
+type ReportAssignment struct {
+	ID               string
+	ReportID         string
+	AssigneeUserID   sql.NullString
+	AssignedByUserID sql.NullString
+	AssignedAt       int64
+}
+
 type ReportNote struct {
 	ID           string
 	ReportID     string
 	AuthorUserID sql.NullString
 	Body         string
 	WrittenAt    int64
+}
+
+type ReportReopening struct {
+	ID               string
+	ReportID         string
+	ReopenedByUserID sql.NullString
+	ReopenedAt       int64
+}
+
+type ReportResolution struct {
+	ID               string
+	ReportID         string
+	Outcome          string
+	ResolvedByUserID sql.NullString
+	ResolvedAt       int64
 }
 
 type ReportState struct {

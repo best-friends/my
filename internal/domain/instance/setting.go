@@ -40,6 +40,14 @@ const (
 	// SettingAppealWindow is how many days after an action on an account the account may
 	// appeal it (FR-707, ADR-0038).
 	SettingAppealWindow SettingKey = "appeal_window"
+	// The retention periods of the moderation records, in days (ADR-0038): the sign-in and
+	// registration origins, the reports after their last resolution, the actions on accounts
+	// and their appeals after the action ended, and the audit log.
+	SettingRetentionSessionOrigins      SettingKey = "retention_session_origins"
+	SettingRetentionRegistrationOrigins SettingKey = "retention_registration_origins"
+	SettingRetentionReports             SettingKey = "retention_reports"
+	SettingRetentionModerationActions   SettingKey = "retention_moderation_actions"
+	SettingRetentionAuditLog            SettingKey = "retention_audit_log"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -100,6 +108,18 @@ const (
 	MinAppealWindow     = 20
 	MaxAppealWindow     = 365
 	DefaultAppealWindow = 180
+)
+
+// Floors and defaults of the retention settings, in days (ADR-0038). A period may not be set
+// shorter than its floor; MaxRetention bounds every period.
+const (
+	MinRetentionOrigins        = 90
+	DefaultRetentionOrigins    = 180
+	MinRetentionModeration     = 180
+	DefaultRetentionModeration = 365
+	MinRetentionAuditLog       = 365
+	DefaultRetentionAuditLog   = 730
+	MaxRetention               = 3650
 )
 
 // Kind is the scalar type of a setting's value.
@@ -178,6 +198,26 @@ var definitions = []Definition{
 	{
 		Key: SettingAppealWindow, Kind: KindInt, Default: strconv.Itoa(DefaultAppealWindow), Min: MinAppealWindow, Max: MaxAppealWindow,
 		Doc: "How many days after a moderation action a local account may appeal it, once (FR-707, ADR-0038).",
+	},
+	{
+		Key: SettingRetentionSessionOrigins, Kind: KindInt, Default: strconv.Itoa(DefaultRetentionOrigins), Min: MinRetentionOrigins, Max: MaxRetention,
+		Doc: "How many days the IP address and User-Agent of a sign-in are kept after the session started (ADR-0038).",
+	},
+	{
+		Key: SettingRetentionRegistrationOrigins, Kind: KindInt, Default: strconv.Itoa(DefaultRetentionOrigins), Min: MinRetentionOrigins, Max: MaxRetention,
+		Doc: "How many days the IP address of a registration is kept after it (ADR-0038).",
+	},
+	{
+		Key: SettingRetentionReports, Kind: KindInt, Default: strconv.Itoa(DefaultRetentionModeration), Min: MinRetentionModeration, Max: MaxRetention,
+		Doc: "How many days a report is kept after its last resolution; a report that an action follows from is kept as long as the action (ADR-0038).",
+	},
+	{
+		Key: SettingRetentionModerationActions, Kind: KindInt, Default: strconv.Itoa(DefaultRetentionModeration), Min: MinRetentionModeration, Max: MaxRetention,
+		Doc: "How many days an action on an account and its appeal are kept after the action ended: its lift, expiry, or the decision on its appeal, whichever is last (ADR-0038).",
+	},
+	{
+		Key: SettingRetentionAuditLog, Kind: KindInt, Default: strconv.Itoa(DefaultRetentionAuditLog), Min: MinRetentionAuditLog, Max: MaxRetention,
+		Doc: "How many days an audit log entry is kept (ADR-0037, ADR-0038).",
 	},
 }
 
@@ -418,6 +458,13 @@ func (s Settings) DomainActionsRationaleVisibility() Audience {
 // AppealWindow returns the value of SettingAppealWindow as a duration.
 func (s Settings) AppealWindow() time.Duration {
 	return time.Duration(s.intValue(SettingAppealWindow)) * 24 * time.Hour
+}
+
+// Retention returns the value of a retention setting (SettingRetentionSessionOrigins,
+// SettingRetentionRegistrationOrigins, SettingRetentionReports,
+// SettingRetentionModerationActions, SettingRetentionAuditLog) as a duration.
+func (s Settings) Retention(key SettingKey) time.Duration {
+	return time.Duration(s.intValue(key)) * 24 * time.Hour
 }
 
 // MediaKeys returns the setting keys whose values are media IDs.

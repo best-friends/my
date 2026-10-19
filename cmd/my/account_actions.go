@@ -25,8 +25,12 @@ func runAdminAccount(args []string, stdout, stderr io.Writer) int {
 		adminAccountActionUsage(stderr)
 		return 2
 	}
-	if _, code := dispatch("admin account", args, []string{"action"}, stderr, adminAccountActionUsage); code >= 0 {
+	sub, code := dispatch("admin account", args, []string{"action", "export-moderation"}, stderr, adminAccountActionUsage)
+	if code >= 0 {
 		return code
+	}
+	if sub == "export-moderation" {
+		return runAdminAccountExport(args[1:], stdout, stderr)
 	}
 	return runAdminAccountAction(args[1:], stdout, stderr)
 }

@@ -141,6 +141,9 @@ type Deps struct {
 	// AppealWindow reads how long an action can be appealed; nil means
 	// moderation.DefaultAppealWindow.
 	AppealWindow AppealWindow
+	// Retention reads how long the moderation records are kept; nil means
+	// DefaultRetentionPeriods.
+	Retention RetentionSettings
 	// Follows cuts the follows of the remote accounts and domains that are suspended (FR-717);
 	// nil cuts none.
 	Follows Follows
