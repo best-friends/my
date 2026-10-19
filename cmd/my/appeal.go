@@ -106,7 +106,9 @@ func adminAppealUsage(w io.Writer) {
 
 The appeals that local users made of the moderation actions on their accounts
 (FR-707). list shows them newest first. uphold keeps the action; overturn lifts
-it at once (the posts that delete_statuses deleted stay deleted). -reason is
+it at once (the posts that delete_statuses deleted stay deleted); overturning a
+ban, appealed within the 30 days before the account's deletion, also cancels
+that deletion, and fails once the account is deleted. -reason is
 shown to the user, who is notified of the decision. Deciding a decided appeal
 the same way changes nothing; deciding it the other way fails.
 `)

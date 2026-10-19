@@ -20,7 +20,7 @@ CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直�
 | `restrict_interaction` | フォロー・お気に入り・ブースト・返信を禁止する |
 | `disable_login` | アプリと API の利用を禁止し、有効なセッションとトークンを失効させる（ログイン画面では処分を確かめられる） |
 | `suspend` | 上の制限をすべて課し、プロフィールと投稿を本人以外に見せない |
-| `ban` | `suspend` と同じ制限を課し、30 日後にアカウントを削除する。解除できない |
+| `ban` | `suspend` と同じ制限を課し、30 日後にアカウントを削除する。解除できない（その 30 日のあいだの異議申し立てを覆したときだけ取り消される） |
 | `delete_statuses` | 指定した投稿を削除する。本人にも見えなくなり、連合先には本人の削除と同じ `Delete` を送る |
 | `mark_statuses_sensitive` | 指定した投稿の添付をセンシティブとして表示する |
 
@@ -55,7 +55,7 @@ my admin account action lift -reason "appealed" <action id>
   解除と期限切れでは元のプロフィールの `Update` を送ります。期限切れは 5 分ごとのジョブが送るので、期限から最大 5 分遅れます（[federation.md §11.1](../architecture/federation.md#111-処分の伝播)）。
 - `delete_statuses` と `mark_statuses_sensitive` は、対象のアカウントの削除されていない投稿を 1〜100 件、`-status`（`status_ids`）で指定します。期限は付けられません。
   `delete_statuses` を解除しても消した投稿は戻りません。`mark_statuses_sensitive` を解除すると元の表示に戻ります。
-- `ban` は期限を付けられず、解除もできません。迷うときは期限付きの `suspend` を使います。
+- `ban` は期限を付けられず、解除もできません。取り消せるのは、削除までの 30 日のあいだに本人が申し立てた異議を覆したときだけです（[異議申し立て](#異議申し立て)）。迷うときは期限付きの `suspend` を使います。
   処分から 30 日後に、1 時間ごとのジョブがアカウントを削除します（アカウントと投稿が表示から消え、連合先に `Delete` を送ります）。
 - `report_id`（`-report`）は、対象のアカウントの通報だけを指定できます。未解決の通報は、処分と同時に `actioned` で解決されます（監査ログにも解決が残ります）。解決済みの通報は変わりません。
 - `public_reason` は本人に見せる理由、`private_note` はモデレーターだけのメモです。`notify_target`（既定は真、CLI では `-no-notify` で偽）は本人に知らせるかどうかです。
@@ -84,9 +84,10 @@ my admin appeal overturn -reason "Sorry, our mistake." <appeal id>
 
 - 申し立ては処分 1 件につき 1 回、本文は 1〜2,000 文字です。期限は処分からインスタンス設定 `appeal_window` の日数（既定 180 日、20〜365 日、[インスタンス設定](instance-settings.md)）です。
   期限を過ぎた処分と 2 回目の申し立ては `422`（`/api/v1/problems/appeal-window-closed`・`/api/v1/problems/already-appealed`）です。
-- 解除できない `ban` には申し立てられません（`422`、`/api/v1/problems/not-appealable`）。解除済み・期限切れの処分にも、期限内なら申し立てられます。
+- `ban` には、アカウントが削除されるまで（処分から 30 日、`appeal_window` が短ければその期限まで）申し立てられます。削除済みのアカウントの `ban` は `422`（`/api/v1/problems/not-appealable`）です。解除済み・期限切れの処分にも、期限内なら申し立てられます。
 - 申し立てると、`manage_accounts` を持つ人に通知（`admin_appeal`）が届きます。審査すると、本人に通知（`appeal_decided`）が届き、本人は結果と `public_reason` を見られます。審査した人は見えません。
 - 覆すと、同じトランザクションで処分を解除します（`lift` と同じ効果。解除の理由は空）。`delete_statuses` を覆しても消した投稿は戻りません。審査までに解除済みの処分は、そのままです。
+- `ban` を覆すと、予定されていたアカウントの削除も同じトランザクションで取り消し（監査ログは `account_deletion_cancelled`）、凍結が終わって連合先にも元のプロフィールの `Update` を送ります。失効したセッションとトークンは戻らないので、本人はもう一度ログインします。審査までにアカウントが削除されていれば、覆せません（`422`、`/api/v1/problems/not-appealable`。維持はできる）。
 - 審査は 1 回です。同じ結果でもう一度審査しても何も変わらず、反対の結果は `409`（`/api/v1/problems/appeal-decided`）です。
 - `disable_login`・`suspend` を受けた本人は API を使えないので、申し立てられません（ログイン画面からの申し立ては [#427](https://github.com/best-friends/my/issues/427)）。
 
@@ -186,13 +187,13 @@ my admin report reopen <report id>
 
 | 対象の種類 | 操作 |
 | --- | --- |
-| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除） |
+| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`account_deletion_cancelled`（`ban` の異議申し立てを覆したことによる削除の取り消し） |
 | `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除） |
 | `report` | `report_assigned`・`report_unassigned`・`report_resolved`・`report_reopened`・`report_note_added`（通報の担当・担当の解除・解決・再開・メモ） |
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |
 | `setting` | `setting_changed`（インスタンス設定）・`text_changed`（インスタンスの文章。1 ロケールの変更） |
 | `rule` | `rule_added`・`rule_revised`・`rule_moved`・`rule_retired`（インスタンスのルール） |
-| `appeal` | `appeal_upheld`・`appeal_overturned`（異議申し立ての審査。覆したときは処分の `account_action_lifted` も記録する） |
+| `appeal` | `appeal_upheld`・`appeal_overturned`（異議申し立ての審査。覆したときは処分の `account_action_lifted`、`ban` なら `account_deletion_cancelled` も記録する） |
 
 ```sh
 my admin audit list

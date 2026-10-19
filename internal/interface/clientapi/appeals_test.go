@@ -18,7 +18,8 @@ import (
 )
 
 // fakeAppeals keeps the appeals in memory with the rules of the moderation module: one appeal
-// per action, none of a ban or after the deadline, and a decision once.
+// per action, none of the ban of a deleted account (actionID(4)) or after the deadline, and a
+// decision once.
 type fakeAppeals struct {
 	own      *fakeOwnModeration
 	now      time.Time
@@ -27,6 +28,9 @@ type fakeAppeals struct {
 	// actions are the moderators' views of the actions, by ID.
 	actions map[string]appmoderation.AccountActionView
 }
+
+// actionID4 is the ban of alice's account as if it were deleted.
+var actionID4 = actionID(4)
 
 func appealID(i int) string { return fmt.Sprintf("01890a5d-ac96-774b-bcce-b302099c%04d", i) }
 
@@ -76,7 +80,7 @@ func (f *fakeAppeals) FileAppeal(_ context.Context, accountID, actionID, text st
 	switch {
 	case err != nil:
 		return v, err
-	case v.Kind == moderation.ActionBan:
+	case v.Kind == moderation.ActionBan && actionID == actionID4:
 		return v, appmoderation.ErrNotAppealable
 	case v.Appeal != nil:
 		return v, appmoderation.ErrAlreadyAppealed
@@ -189,8 +193,8 @@ func TestAppealModerationAction(t *testing.T) {
 	if a := byID[actionID(2)]; !a.Appealable || a.AppealDeadline == nil || a.Appeal != nil {
 		t.Errorf("limit before the appeal = %+v, want appealable", a)
 	}
-	if a := byID[actionID(4)]; a.Appealable || a.AppealDeadline != nil {
-		t.Errorf("ban = %+v, want no deadline", a)
+	if a := byID[actionID(4)]; a.Appealable {
+		t.Errorf("the ban of a deleted account = %+v, want not appealable", a)
 	}
 
 	res = e.sendJSON(t, http.MethodPost, limit, "write-accounts", `{"text":"I did not spam."}`)
@@ -210,7 +214,7 @@ func TestAppealModerationAction(t *testing.T) {
 	}{
 		{"a second appeal", limit, "write", `{"text":"again"}`, http.StatusUnprocessableEntity, clientapi.ProblemTypeAlreadyAppealed, ""},
 		{"after the deadline", "/moderation/actions/" + actionID(1) + "/appeal", "write", `{"text":"late"}`, http.StatusUnprocessableEntity, clientapi.ProblemTypeAppealWindowClosed, ""},
-		{"a ban", "/moderation/actions/" + actionID(4) + "/appeal", "write", `{"text":"please"}`, http.StatusUnprocessableEntity, clientapi.ProblemTypeNotAppealable, ""},
+		{"the ban of a deleted account", "/moderation/actions/" + actionID(4) + "/appeal", "write", `{"text":"please"}`, http.StatusUnprocessableEntity, clientapi.ProblemTypeNotAppealable, ""},
 		{"an empty text", "/moderation/actions/" + actionID(3) + "/appeal", "write", `{"text":" ","x":"invalid-on-purpose"}`, http.StatusUnprocessableEntity, clientapi.ProblemTypeBlank, "text"},
 		{"a long text", "/moderation/actions/" + actionID(3) + "/appeal", "write", `{"x":"invalid-on-purpose","text":"` + strings.Repeat("a", moderation.MaxAppealText+1) + `"}`, http.StatusUnprocessableEntity, clientapi.ProblemTypeBlank, "text"},
 		{"another account's action", "/moderation/actions/" + actionID(3) + "/appeal", "bob-write", `{"text":"mine"}`, http.StatusNotFound, clientapi.ProblemTypeBlank, ""},

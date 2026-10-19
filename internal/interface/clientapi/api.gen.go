@@ -132,25 +132,26 @@ func (e AdminAccountActionState) Valid() bool {
 
 // Defines values for AdminAuditAction.
 const (
-	AdminAuditActionAccountActionIssued  AdminAuditAction = "account_action_issued"
-	AdminAuditActionAccountActionLifted  AdminAuditAction = "account_action_lifted"
-	AdminAuditActionAppealOverturned     AdminAuditAction = "appeal_overturned"
-	AdminAuditActionAppealUpheld         AdminAuditAction = "appeal_upheld"
-	AdminAuditActionDomainActionIssued   AdminAuditAction = "domain_action_issued"
-	AdminAuditActionDomainActionLifted   AdminAuditAction = "domain_action_lifted"
-	AdminAuditActionRegistrationApproved AdminAuditAction = "registration_approved"
-	AdminAuditActionRegistrationRejected AdminAuditAction = "registration_rejected"
-	AdminAuditActionReportAssigned       AdminAuditAction = "report_assigned"
-	AdminAuditActionReportNoteAdded      AdminAuditAction = "report_note_added"
-	AdminAuditActionReportReopened       AdminAuditAction = "report_reopened"
-	AdminAuditActionReportResolved       AdminAuditAction = "report_resolved"
-	AdminAuditActionReportUnassigned     AdminAuditAction = "report_unassigned"
-	AdminAuditActionRuleAdded            AdminAuditAction = "rule_added"
-	AdminAuditActionRuleMoved            AdminAuditAction = "rule_moved"
-	AdminAuditActionRuleRetired          AdminAuditAction = "rule_retired"
-	AdminAuditActionRuleRevised          AdminAuditAction = "rule_revised"
-	AdminAuditActionSettingChanged       AdminAuditAction = "setting_changed"
-	AdminAuditActionTextChanged          AdminAuditAction = "text_changed"
+	AdminAuditActionAccountActionIssued      AdminAuditAction = "account_action_issued"
+	AdminAuditActionAccountActionLifted      AdminAuditAction = "account_action_lifted"
+	AdminAuditActionAccountDeletionCancelled AdminAuditAction = "account_deletion_cancelled"
+	AdminAuditActionAppealOverturned         AdminAuditAction = "appeal_overturned"
+	AdminAuditActionAppealUpheld             AdminAuditAction = "appeal_upheld"
+	AdminAuditActionDomainActionIssued       AdminAuditAction = "domain_action_issued"
+	AdminAuditActionDomainActionLifted       AdminAuditAction = "domain_action_lifted"
+	AdminAuditActionRegistrationApproved     AdminAuditAction = "registration_approved"
+	AdminAuditActionRegistrationRejected     AdminAuditAction = "registration_rejected"
+	AdminAuditActionReportAssigned           AdminAuditAction = "report_assigned"
+	AdminAuditActionReportNoteAdded          AdminAuditAction = "report_note_added"
+	AdminAuditActionReportReopened           AdminAuditAction = "report_reopened"
+	AdminAuditActionReportResolved           AdminAuditAction = "report_resolved"
+	AdminAuditActionReportUnassigned         AdminAuditAction = "report_unassigned"
+	AdminAuditActionRuleAdded                AdminAuditAction = "rule_added"
+	AdminAuditActionRuleMoved                AdminAuditAction = "rule_moved"
+	AdminAuditActionRuleRetired              AdminAuditAction = "rule_retired"
+	AdminAuditActionRuleRevised              AdminAuditAction = "rule_revised"
+	AdminAuditActionSettingChanged           AdminAuditAction = "setting_changed"
+	AdminAuditActionTextChanged              AdminAuditAction = "text_changed"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditAction enum.
@@ -159,6 +160,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionAccountActionIssued:
 		return true
 	case AdminAuditActionAccountActionLifted:
+		return true
+	case AdminAuditActionAccountDeletionCancelled:
 		return true
 	case AdminAuditActionAppealOverturned:
 		return true
@@ -971,7 +974,7 @@ type AdminAppealPage struct {
 }
 
 // AdminAuditAction The kind of an audited operation, each on one kind of target. On an `account`:
-// `account_action_issued`, `account_action_lifted`. On a `domain`:
+// `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`. On a `domain`:
 // `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 // `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
 // `user` (a registration):
@@ -979,7 +982,8 @@ type AdminAppealPage struct {
 // (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
 // `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On an `appeal`:
 // `appeal_upheld`, `appeal_overturned` (which also records the action's
-// `account_action_lifted`).
+// `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
+// `account`).
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -990,7 +994,7 @@ type AdminAuditActorKind string
 // AdminAuditEntry One operation of a moderator or an administrator (FR-704).
 type AdminAuditEntry struct {
 	// Action The kind of an audited operation, each on one kind of target. On an `account`:
-	// `account_action_issued`, `account_action_lifted`. On a `domain`:
+	// `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`. On a `domain`:
 	// `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 	// `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
 	// `user` (a registration):
@@ -998,7 +1002,8 @@ type AdminAuditEntry struct {
 	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
 	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On an `appeal`:
 	// `appeal_upheld`, `appeal_overturned` (which also records the action's
-	// `account_action_lifted`).
+	// `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
+	// `account`).
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -1952,11 +1957,13 @@ type ModerationAction struct {
 	// Appeal The user's appeal of the action; omitted when there is none.
 	Appeal *ModerationAppeal `json:"appeal,omitempty"`
 
-	// AppealDeadline The last moment the action can be appealed; omitted for a `ban`.
+	// AppealDeadline The last moment the action can be appealed: the instance's appeal window from the
+	// action, and for a `ban` no later than the deletion of the account.
 	AppealDeadline *time.Time `json:"appeal_deadline,omitempty"`
 
 	// Appealable Whether the user can appeal the action now (`POST /moderation/actions/{id}/appeal`):
-	// it is not a `ban`, it has no appeal yet, and `appeal_deadline` has not passed.
+	// it has no appeal yet, `appeal_deadline` has not passed, and for a `ban` the account
+	// is not deleted.
 	Appealable bool `json:"appealable"`
 
 	// ExpiresAt When the action ends by itself; omitted when it lasts until it is lifted.
@@ -2252,8 +2259,8 @@ type Preferences struct {
 //     action; an action is appealed once.
 //   - `/api/v1/problems/appeal-window-closed` (422): the time to appeal the moderation
 //     action has passed.
-//   - `/api/v1/problems/not-appealable` (422): the moderation action is a ban, which is
-//     never lifted and cannot be appealed.
+//   - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
+//     account is deleted, so it can no longer be appealed or overturned.
 //   - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.

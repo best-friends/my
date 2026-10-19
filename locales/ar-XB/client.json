@@ -7,6 +7,10 @@
     "defaultMessage": "‮∀ɔɔonuʇ ɐɔʇıou ʅıɟʇǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.account_deletion_cancelled": {
+    "defaultMessage": "‮∀ɔɔonuʇ pǝʅǝʇıou ɔɐuɔǝʅʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.appeal_overturned": {
     "defaultMessage": "‮∀ddǝɐʅ oʌǝɹʇnɹuǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."

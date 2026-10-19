@@ -194,6 +194,8 @@ func (s *Server) decideAppeal(ctx context.Context, id string, decision moderatio
 	case errors.Is(err, appmoderation.ErrNotFound):
 		p := s.notFoundResponse(ctx)
 		return AdminAppealJSONResponse{}, &p, nil
+	case errors.Is(err, appmoderation.ErrNotAppealable):
+		return refuse(http.StatusUnprocessableEntity, ProblemTypeNotAppealable, l.ServerErrorsAppealNotAppealable(), "")
 	case errors.Is(err, appmoderation.ErrAppealDecided):
 		return refuse(http.StatusConflict, ProblemTypeAppealDecided, l.ServerErrorsAppealDecided(), "")
 	case errors.As(err, &textErr) && textErr.Max > 0:

@@ -4,6 +4,7 @@ package testkit
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,7 +16,9 @@ import (
 // accountExecutesDeletions checks the deletions that moderation schedules and their execution
 // (data-model §4.2, §8): a ban's deletion_scheduled names the action and keeps an earlier due
 // time, a remote account takes none, and ExecuteDueDeletions deletes the accounts whose
-// deletion is due, once, leaving the others and the cancelled ones.
+// deletion is due, once, leaving the others and the cancelled ones; CancelDeletionByModeration
+// cancels a scheduled deletion once, refuses a deleted account, and races the job with exactly
+// one winner.
 func accountExecutesDeletions(t *testing.T, e *accountEnv) {
 	ctx := t.Context()
 	banned, later, cancelled := e.register(t, "banned"), e.register(t, "later"), e.register(t, "cancelled")
@@ -46,10 +49,23 @@ func accountExecutesDeletions(t *testing.T, e *accountEnv) {
 	}
 	schedule(later.AccountID, "action-3", due.Add(day))
 	schedule(cancelled.AccountID, "action-4", due)
-	if _, err := e.accounts.RecordLifecycleEvent(ctx, appaccount.LifecycleInput{
-		AccountID: cancelled.AccountID, Kind: account.LifecycleDeletionCancelled, InitiatedBy: account.InitiatedByModerator,
-	}); err != nil {
-		t.Fatal(err)
+	cancel := func(id string) (bool, error) {
+		t.Helper()
+		var ok bool
+		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			var err error
+			ok, err = e.accounts.CancelDeletionByModeration(ctx, tx, id, "action-4", e.ids.NewID())
+			return err
+		})
+		return ok, err
+	}
+	// An overturned appeal of a ban cancels the deletion once; an account without a scheduled
+	// deletion is left as it is.
+	if ok, err := cancel(cancelled.AccountID); err != nil || !ok {
+		t.Errorf("CancelDeletionByModeration = %v, %v; want true", ok, err)
+	}
+	if ok, err := cancel(cancelled.AccountID); err != nil || ok {
+		t.Errorf("CancelDeletionByModeration again = %v, %v; want false", ok, err)
 	}
 	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		events, err := e.h.Accounts.ListLifecycleEvents(ctx, tx)
@@ -85,10 +101,45 @@ func accountExecutesDeletions(t *testing.T, e *accountEnv) {
 	if s := state(cancelled.AccountID); s.State != account.StateActive {
 		t.Errorf("cancelled account = %+v, want active", s)
 	}
-	// A deleted account stays deleted.
+	// A deleted account stays deleted, and its deletion is not cancelled.
+	if _, err := cancel(banned.AccountID); !errors.Is(err, appaccount.ErrAlreadyDeleted) {
+		t.Errorf("CancelDeletionByModeration(deleted) = %v, want ErrAlreadyDeleted", err)
+	}
 	schedule(banned.AccountID, "action-5", e.clock.Now().Add(day))
 	if s := state(banned.AccountID); s.State != account.StateDeleted {
 		t.Errorf("deleted account after a schedule = %+v, want deleted", s)
+	}
+
+	// A cancellation that races the deletion job: exactly one of them wins.
+	racing := e.register(t, "racing")
+	schedule(racing.AccountID, "action-7", e.clock.Now())
+	var (
+		wg       sync.WaitGroup
+		n        int
+		runErr   error
+		ok       bool
+		cancelEr error
+	)
+	wg.Add(2)
+	go func() { defer wg.Done(); n, runErr = e.accounts.ExecuteDueDeletions(ctx) }()
+	go func() {
+		defer wg.Done()
+		cancelEr = e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			var err error
+			ok, err = e.accounts.CancelDeletionByModeration(ctx, tx, racing.AccountID, "action-7", e.ids.NewID())
+			return err
+		})
+	}()
+	wg.Wait()
+	switch s := state(racing.AccountID); {
+	case runErr != nil:
+		t.Errorf("ExecuteDueDeletions while cancelling = %v", runErr)
+	case s.State == account.StateDeleted && (n != 1 || !errors.Is(cancelEr, appaccount.ErrAlreadyDeleted)):
+		t.Errorf("deleted while cancelling: deleted %d, cancel %v, %v", n, ok, cancelEr)
+	case s.State == account.StateActive && (n != 0 || cancelEr != nil || !ok):
+		t.Errorf("cancelled while deleting: deleted %d, cancel %v, %v", n, ok, cancelEr)
+	case s.State != account.StateDeleted && s.State != account.StateActive:
+		t.Errorf("state after the race = %+v", s)
 	}
 
 	remote := account.Account{

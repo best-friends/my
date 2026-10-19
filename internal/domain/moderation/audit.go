@@ -114,6 +114,9 @@ const (
 	// AuditAppealOverturned: an appeal was decided and its action lifted
 	// (moderation_appeal_decisions); the lift has its own account_action_lifted entry.
 	AuditAppealOverturned AuditAction = "appeal_overturned"
+	// AuditAccountDeletionCancelled: an overturned appeal of a ban cancelled the scheduled
+	// deletion of the account (account_lifecycle_events, deletion_cancelled).
+	AuditAccountDeletionCancelled AuditAction = "account_deletion_cancelled"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -140,6 +143,7 @@ var auditActions = []struct {
 	{AuditRuleRetired, AuditTargetRule},
 	{AuditAppealUpheld, AuditTargetAppeal},
 	{AuditAppealOverturned, AuditTargetAppeal},
+	{AuditAccountDeletionCancelled, AuditTargetAccount},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

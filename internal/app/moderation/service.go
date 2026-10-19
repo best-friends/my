@@ -116,10 +116,15 @@ type Statuses interface {
 	ClearSensitivityOf(ctx context.Context, tx uow.Tx, actionID string) error
 }
 
-// Lifecycles is the part of the account module's public API that a ban uses.
+// Lifecycles is the part of the account module's public API that a ban and an overturned
+// appeal of one use.
 // *appaccount.Service implements it.
 type Lifecycles interface {
 	ScheduleDeletionByModeration(ctx context.Context, tx uow.Tx, accountID, actionID string, due time.Time) error
+	// CancelDeletionByModeration cancels the scheduled deletion of an account (an overturned
+	// appeal of a ban) and reports whether one was scheduled; a deleted account fails with
+	// appaccount.ErrAlreadyDeleted.
+	CancelDeletionByModeration(ctx context.Context, tx uow.Tx, accountID, actionID, eventID string) (bool, error)
 }
 
 // Deps are the ports a Service uses.

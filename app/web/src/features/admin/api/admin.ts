@@ -220,6 +220,7 @@ export const auditActions = [
   "rule_retired",
   "appeal_upheld",
   "appeal_overturned",
+  "account_deletion_cancelled",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */

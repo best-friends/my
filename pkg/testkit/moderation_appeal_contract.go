@@ -21,11 +21,13 @@ import (
 
 // AppealContract verifies the appeals of a database adapter's moderation repository through the
 // moderation use cases (FR-707, ADR-0038): a local account appeals an action on it once, within
-// the instance's appeal window, never a ban or an action on another account, with a text of at
-// most moderation.MaxAppealText characters; its own actions show the appeal, the deadline, and
-// whether it can still appeal; a moderator upholds an appeal, keeping the action, or overturns
-// it, lifting the action in the same transaction (the statuses that delete_statuses deleted stay
-// deleted); each decision is audited and emitted once, and a decided appeal is not decided
+// the instance's appeal window (a ban, also only before the account's deletion: no later than
+// moderation.BanDeletionDelay and never once the account is deleted), never an action on another
+// account, with a text of at most moderation.MaxAppealText characters; its own actions show the
+// appeal, the deadline, and whether it can still appeal; a moderator upholds an appeal, keeping
+// the action, or overturns it, lifting the action in the same transaction (the statuses that
+// delete_statuses deleted stay deleted; a ban's scheduled deletion is cancelled and its
+// suspension ends, and a ban whose account is deleted is not overturned); each decision is audited and emitted once, and a decided appeal is not decided
 // otherwise; the moderators list the appeals newest first by state, in keyset pages, and count
 // the pending ones. The accounts and statuses are in-memory stand-ins.
 func AppealContract(t *testing.T, newHarness ModerationFactory) {
@@ -37,6 +39,7 @@ func AppealContract(t *testing.T, newHarness ModerationFactory) {
 		{"FilesOnceWithinTheWindow", appealFiles},
 		{"UpholdKeepsTheAction", appealUphold},
 		{"OverturnLiftsTheAction", appealOverturn},
+		{"BanIsAppealedUntilTheDeletion", appealBan},
 		{"ListsAndCounts", appealLists},
 	}
 	for _, tc := range cases {
@@ -71,7 +74,10 @@ type appealEnv struct {
 	policy   *appmoderation.AccountPolicy
 	statuses *stubModerationStatuses
 	window   *stubAppealWindow
-	events   *eventLog
+	actors   *stubActors
+	// lifecycles stands in for the account module's deletions.
+	lifecycles *stubLifecycles
+	events     *eventLog
 	// local and other are local accounts; moderator is a moderator's user.
 	local, other, moderator string
 }
@@ -87,9 +93,10 @@ func newAppealEnv(t *testing.T, newHarness ModerationFactory) *appealEnv {
 	e := &appealEnv{
 		h: h, clock: clock, ids: ids, events: &eventLog{}, window: &stubAppealWindow{d: moderation.DefaultAppealWindow},
 		statuses: &stubModerationStatuses{live: map[string]appcontent.Status{}, deleted: map[string]string{}, marked: map[string][]string{}},
-		local:    ids.NewID(), other: ids.NewID(), moderator: ids.NewID(),
+		local:    ids.NewID(), other: ids.NewID(), moderator: ids.NewID(), actors: actors,
+		lifecycles: &stubLifecycles{due: map[string]time.Time{}, deleted: map[string]bool{}},
 	}
-	for _, typ := range []string{appmoderation.EventAppealFiled, appmoderation.EventAppealDecided} {
+	for _, typ := range []string{appmoderation.EventAppealFiled, appmoderation.EventAppealDecided, appmoderation.EventAccountSuspensionChanged} {
 		projectors.Register(typ, e.events.record)
 	}
 	for id, name := range map[string]string{e.local: "alice", e.other: "carol"} {
@@ -100,7 +107,7 @@ func newAppealEnv(t *testing.T, newHarness ModerationFactory) *appealEnv {
 	}
 	e.svc = appmoderation.NewService(appmoderation.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Moderation, Accounts: actors, Clock: clock, IDs: ids,
-		Statuses: e.statuses, Lifecycles: &stubLifecycles{due: map[string]time.Time{}}, AppealWindow: e.window,
+		Statuses: e.statuses, Lifecycles: e.lifecycles, AppealWindow: e.window,
 	})
 	e.policy = appmoderation.NewAccountPolicy(h.Moderation, actors, clock)
 	return e
@@ -148,6 +155,7 @@ func appealFiles(t *testing.T, e *appealEnv) {
 	ctx := t.Context()
 	suspend := e.issue(t, e.local, moderation.ActionSuspend)
 	deadline := suspend.IssuedAt.Add(moderation.DefaultAppealWindow)
+	e.events.take()
 
 	// Before the appeal, the account sees that it can appeal until the deadline.
 	v, err := e.svc.OwnAction(ctx, e.local, suspend.ID)
@@ -202,15 +210,6 @@ func appealFiles(t *testing.T, e *appealEnv) {
 	}
 	if v, err := e.svc.OwnAction(ctx, e.local, warn.ID); err != nil || v.Appealable || v.Appeal != nil {
 		t.Errorf("OwnAction after the window = %+v, %v; want not appealable", v, err)
-	}
-
-	// A ban is never appealed, since it is never lifted.
-	ban := e.issue(t, e.other, moderation.ActionBan)
-	if _, err := e.svc.FileAppeal(ctx, e.other, ban.ID, "please"); !errors.Is(err, appmoderation.ErrNotAppealable) {
-		t.Errorf("FileAppeal(ban) = %v, want ErrNotAppealable", err)
-	}
-	if v, err := e.svc.OwnAction(ctx, e.other, ban.ID); err != nil || v.Appealable || v.AppealDeadline != nil {
-		t.Errorf("OwnAction(ban) = %+v, %v; want no deadline", v, err)
 	}
 
 	// The list of the account's own actions shows the appeals.
@@ -417,5 +416,81 @@ func appealLists(t *testing.T, e *appealEnv) {
 	}
 	if n, err := e.svc.CountPendingAppeals(ctx); err != nil || n != 2 {
 		t.Errorf("CountPendingAppeals = %d, %v; want 2", n, err)
+	}
+}
+
+func appealBan(t *testing.T, e *appealEnv) {
+	ctx := t.Context()
+	ban := e.issue(t, e.local, moderation.ActionBan)
+	deadline := ban.IssuedAt.Add(moderation.BanDeletionDelay)
+
+	// A ban is appealed until the deletion of its account, sooner than the window.
+	v, err := e.svc.OwnAction(ctx, e.local, ban.ID)
+	if err != nil || !v.Appealable || v.AppealDeadline == nil || !v.AppealDeadline.Equal(deadline) {
+		t.Fatalf("OwnAction(ban) = %+v, %v; want appealable until %v", v, err, deadline)
+	}
+	if err := e.svc.LiftAccountAction(ctx, ban.ID, e.moderator, ""); !errors.Is(err, appmoderation.ErrNotLiftable) {
+		t.Errorf("LiftAccountAction(ban) = %v, want ErrNotLiftable", err)
+	}
+	e.clock.Set(deadline)
+	appeal := e.appeal(t, e.local, ban).Appeal
+	e.events.take()
+
+	// Overturning cancels the deletion and ends the suspension, in one transaction.
+	got, err := e.svc.DecideAppeal(ctx, appeal.ID, moderation.AppealDecisionOverturned, "", e.moderator)
+	if err != nil {
+		t.Fatalf("DecideAppeal(overturned ban) = %v", err)
+	}
+	if got.Action.State != moderation.ActionLifted {
+		t.Errorf("the ban after overturning = %+v, want lifted", got.Action)
+	}
+	if e.lifecycles.cancelled[e.local] != ban.ID {
+		t.Errorf("cancelled deletions = %v, want the ban's", e.lifecycles.cancelled)
+	}
+	if restricted, err := e.policy.LoginRestricted(ctx, e.local); err != nil || restricted {
+		t.Errorf("LoginRestricted after overturning the ban = %v, %v; want false", restricted, err)
+	}
+	if s, ok := lastEvent[appmoderation.AccountSuspensionChanged](e.events.take()); !ok || s.Suspended || s.AccountID != e.local {
+		t.Errorf("suspension change = %+v, %v; want the end of the suspension", s, ok)
+	}
+	if got := e.audited(t, moderation.AuditTargetAccount, e.local); len(got) < 2 ||
+		got[0] != moderation.AuditAccountActionLifted || got[1] != moderation.AuditAccountDeletionCancelled {
+		t.Errorf("audit log of the account = %v, want the lift after the cancelled deletion", got)
+	}
+
+	// After the deletion, a ban is not appealed, and a pending appeal of it is not overturned.
+	second := e.issue(t, e.other, moderation.ActionBan)
+	third := e.appeal(t, e.other, second).Appeal
+	e.lifecycles.mu.Lock()
+	e.lifecycles.deleted[e.other] = true
+	e.lifecycles.mu.Unlock()
+	a, err := e.actors.FindByID(ctx, e.other)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.Lifecycle = account.LifecycleState{AccountID: e.other, State: account.StateDeleted}
+	e.actors.set(a)
+	if _, err := e.svc.DecideAppeal(ctx, third.ID, moderation.AppealDecisionOverturned, "", e.moderator); !errors.Is(err, appmoderation.ErrNotAppealable) {
+		t.Errorf("DecideAppeal(overturned) of a deleted account's ban = %v, want ErrNotAppealable", err)
+	}
+	if v, err := e.svc.Appeal(ctx, third.ID); err != nil || v.State() != moderation.AppealPending || v.Action.State != moderation.ActionActive {
+		t.Errorf("the refused overturning = %+v, %v; want the appeal pending and the ban in effect", v, err)
+	}
+	if _, err := e.svc.DecideAppeal(ctx, third.ID, moderation.AppealDecisionUpheld, "", e.moderator); err != nil {
+		t.Errorf("DecideAppeal(upheld) of a deleted account's ban = %v", err)
+	}
+	fourth := e.issue(t, e.other, moderation.ActionBan)
+	if _, err := e.svc.FileAppeal(ctx, e.other, fourth.ID, "please"); !errors.Is(err, appmoderation.ErrNotAppealable) {
+		t.Errorf("FileAppeal(ban of a deleted account) = %v, want ErrNotAppealable", err)
+	}
+	if v, err := e.svc.OwnAction(ctx, e.other, fourth.ID); err != nil || v.Appealable {
+		t.Errorf("OwnAction(ban of a deleted account) = %+v, %v; want not appealable", v, err)
+	}
+
+	// Past the deletion's due time, a ban is not appealed even within the window.
+	late := e.issue(t, e.local, moderation.ActionBan)
+	e.clock.Advance(moderation.BanDeletionDelay + time.Millisecond)
+	if _, err := e.svc.FileAppeal(ctx, e.local, late.ID, "please"); !errors.Is(err, appmoderation.ErrAppealWindowClosed) {
+		t.Errorf("FileAppeal(ban past its deletion) = %v, want ErrAppealWindowClosed", err)
 	}
 }

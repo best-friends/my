@@ -40,11 +40,11 @@ type TargetActionView struct {
 	IssuedAt  time.Time
 	LiftedAt  *time.Time // nil unless lifted
 	State     moderation.ActionState
-	// AppealDeadline is the last moment the action can be appealed; nil for a kind that cannot
-	// be appealed (a ban).
+	// AppealDeadline is the last moment the action can be appealed (moderation.AppealDeadline);
+	// it is set for every action.
 	AppealDeadline *time.Time
-	// Appealable reports whether the account can appeal the action now: a kind that can be
-	// appealed, no appeal yet, and the deadline not passed.
+	// Appealable reports whether the account can appeal the action now: no appeal yet, the
+	// deadline not passed, and for a ban the account not deleted.
 	Appealable bool
 	// Appeal is the account's appeal of the action; nil for none.
 	Appeal *OwnAppeal

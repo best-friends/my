@@ -6,6 +6,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.account_action_issued": {};
   /** Account action lifted */
   "client:admin.audit_log.action.account_action_lifted": {};
+  /** Account deletion cancelled */
+  "client:admin.audit_log.action.account_deletion_cancelled": {};
   /** Appeal overturned */
   "client:admin.audit_log.action.appeal_overturned": {};
   /** Appeal upheld */

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/moderation"
@@ -16,13 +17,15 @@ import (
 // The appeals (FR-707, ADR-0038, data-model §4.3): a local account appeals an action on it once,
 // within the instance's appeal window from the action, and a moderator upholds or overturns the
 // appeal. Overturning lifts the action in the same transaction (LiftAccountAction's effects; the
-// statuses that delete_statuses deleted stay deleted). The account is told of the decision
+// statuses that delete_statuses deleted stay deleted). A ban, which nothing else lifts (FR-703),
+// is appealed while its account awaits deletion (moderation.AppealDeadline), and overturning it
+// also cancels that deletion. The account is told of the decision
 // (appeal_decided) and the moderators of a new appeal (admin_appeal) by the notification module,
 // from the events here.
 
 var (
-	// ErrNotAppealable reports an appeal of an action that cannot be appealed: a ban, which is
-	// never lifted (FR-703).
+	// ErrNotAppealable reports an appeal of an action that cannot be appealed any more, or the
+	// overturning of one: a ban whose account is deleted.
 	ErrNotAppealable = errors.New("moderation: the action cannot be appealed")
 	// ErrAppealWindowClosed reports an appeal after the appeal window of the action.
 	ErrAppealWindowClosed = errors.New("moderation: the appeal window of the action has closed")
@@ -140,12 +143,20 @@ func (s *Service) targetViews(ctx context.Context, rs []moderation.ActionRecord,
 	for _, a := range appeals {
 		byAction[a.Appeal.ActionID] = a
 	}
+	deleted := map[string]bool{}
 	for i, r := range rs {
 		v := targetView(r, now)
-		if r.Action.Kind.Appealable() {
-			deadline := moderation.AppealDeadline(r.Action.IssuedAt, window)
-			v.AppealDeadline = &deadline
-			v.Appealable = !now.After(deadline)
+		deadline := moderation.AppealDeadline(r.Action, window)
+		v.AppealDeadline = &deadline
+		v.Appealable = !now.After(deadline)
+		if v.Appealable && r.Action.Kind == moderation.ActionBan {
+			id := r.Action.TargetAccountID
+			if _, ok := deleted[id]; !ok {
+				if deleted[id], err = s.accountDeleted(ctx, id); err != nil {
+					return nil, err
+				}
+			}
+			v.Appealable = !deleted[id]
 		}
 		if a, ok := byAction[r.Action.ID]; ok {
 			v.Appeal, v.Appealable = ownAppeal(a), false
@@ -170,15 +181,21 @@ func (s *Service) FileAppeal(ctx context.Context, accountID, actionID, text stri
 	if a.TargetAccountID != accountID {
 		return TargetActionView{}, fmt.Errorf("%w: action %s is on another account", ErrNotFound, actionID)
 	}
-	if !a.Kind.Appealable() {
-		return TargetActionView{}, fmt.Errorf("%w: %s %s", ErrNotAppealable, a.Kind, a.ID)
+	if a.Kind == moderation.ActionBan {
+		gone, err := s.accountDeleted(ctx, accountID)
+		if err != nil {
+			return TargetActionView{}, err
+		}
+		if gone {
+			return TargetActionView{}, fmt.Errorf("%w: the account of ban %s is deleted", ErrNotAppealable, a.ID)
+		}
 	}
 	now := kernel.Normalize(s.d.Clock.Now())
 	window, err := s.appealWindow(ctx)
 	if err != nil {
 		return TargetActionView{}, err
 	}
-	if now.After(moderation.AppealDeadline(a.IssuedAt, window)) {
+	if now.After(moderation.AppealDeadline(a, window)) {
 		return TargetActionView{}, fmt.Errorf("%w: action %s", ErrAppealWindowClosed, a.ID)
 	}
 	appeal := moderation.Appeal{ID: s.d.IDs.NewID(), ActionID: a.ID, AccountID: accountID, Text: text, SubmittedAt: now}
@@ -202,6 +219,18 @@ func (s *Service) FileAppeal(ctx context.Context, accountID, actionID, text stri
 		return TargetActionView{}, err
 	}
 	return s.OwnAction(ctx, accountID, actionID)
+}
+
+// accountDeleted reports whether an account is deleted, or gone.
+func (s *Service) accountDeleted(ctx context.Context, accountID string) (bool, error) {
+	a, err := s.d.Accounts.FindByID(ctx, accountID)
+	switch {
+	case errors.Is(err, appaccount.ErrNotFound):
+		return true, nil
+	case err != nil:
+		return false, err
+	}
+	return a.Deleted(), nil
 }
 
 // OwnAppealAction returns the action that accountID's appeal appealID appeals, as the account
@@ -276,8 +305,11 @@ func (s *Service) CountPendingAppeals(ctx context.Context) (int64, error) {
 
 // DecideAppeal records a moderator's decision on a pending appeal, its state, and its audit log
 // entry in one transaction, and emits AppealDecided. Overturning also lifts the action in that
-// transaction, with LiftAccountAction's effects and audit log entry; an action lifted meanwhile
-// stays as it is. Deciding a decided appeal the same way again records nothing; deciding it
+// transaction, with LiftAccountAction's effects and audit log entry, a ban included; an action
+// lifted meanwhile stays as it is. Overturning a ban first cancels the deletion of its account
+// (Lifecycles.CancelDeletionByModeration, audited as account_deletion_cancelled); a ban whose
+// account is deleted fails with ErrNotAppealable, and without Lifecycles with
+// ErrUnsupportedAction. Deciding a decided appeal the same way again records nothing; deciding it
 // otherwise fails with ErrAppealDecided. An unknown appeal fails with ErrNotFound, and an
 // unknown decision or an invalid reason with moderation.ErrInvalidAppeal (with a
 // *moderation.TextError for the reason). byUserID is the moderator, "" for the CLI.
@@ -297,7 +329,8 @@ func (s *Service) DecideAppeal(ctx context.Context, appealID string, decision mo
 	if err != nil {
 		return AppealView{}, err
 	}
-	auditID, liftAuditID := s.d.IDs.NewID(), s.d.IDs.NewID()
+	// The IDs follow the order of the records: the cancelled deletion, the lift, the decision.
+	cancelID, cancelAuditID, liftAuditID, auditID := s.d.IDs.NewID(), s.d.IDs.NewID(), s.d.IDs.NewID(), s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		err := repo.InsertAppealDecision(ctx, tx, d)
 		if errors.Is(err, ErrAlreadyRecorded) {
@@ -321,6 +354,11 @@ func (s *Service) DecideAppeal(ctx context.Context, appealID string, decision mo
 			if err != nil {
 				return err
 			}
+			if a.Kind == moderation.ActionBan {
+				if err := s.cancelBanDeletion(ctx, tx, a, label, cancelID, cancelAuditID, byUserID); err != nil {
+					return err
+				}
+			}
 			lift := moderation.Lift{ActionID: a.ID, LiftedByUserID: byUserID, LiftedAt: now}
 			if err := s.liftAction(ctx, tx, a, lift, label, liftAuditID); err != nil {
 				return err
@@ -343,4 +381,24 @@ func (s *Service) DecideAppeal(ctx context.Context, appealID string, decision mo
 		return AppealView{}, err
 	}
 	return s.Appeal(ctx, appealID)
+}
+
+// cancelBanDeletion cancels inside tx the deletion that ban a scheduled for its account, with
+// the audit log entry of the cancellation; an account whose deletion is not scheduled any more
+// is left as it is.
+func (s *Service) cancelBanDeletion(ctx context.Context, tx uow.Tx, a moderation.Action, label, eventID, auditID, byUserID string) error {
+	if s.d.Lifecycles == nil {
+		return fmt.Errorf("%w: overturning ban %s", ErrUnsupportedAction, a.ID)
+	}
+	cancelled, err := s.d.Lifecycles.CancelDeletionByModeration(ctx, tx, a.TargetAccountID, a.ID, eventID)
+	if errors.Is(err, appaccount.ErrAlreadyDeleted) {
+		return fmt.Errorf("%w: the account of ban %s is deleted", ErrNotAppealable, a.ID)
+	}
+	if err != nil || !cancelled {
+		return err
+	}
+	return s.emitAudit(ctx, tx, moderation.AuditEntry{
+		ID: auditID, Action: moderation.AuditAccountDeletionCancelled, TargetKind: moderation.AuditTargetAccount,
+		TargetID: a.TargetAccountID, TargetLabel: label, SourceEventID: eventID, OccurredAt: kernel.Normalize(s.d.Clock.Now()),
+	}, byUserID)
 }

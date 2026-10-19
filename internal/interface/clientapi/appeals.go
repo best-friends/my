@@ -22,7 +22,8 @@ const (
 	ProblemTypeAlreadyAppealed = "/api/v1/problems/already-appealed"
 	// ProblemTypeAppealWindowClosed is the problem of an appeal after the appeal window.
 	ProblemTypeAppealWindowClosed = "/api/v1/problems/appeal-window-closed"
-	// ProblemTypeNotAppealable is the problem of an appeal of a ban.
+	// ProblemTypeNotAppealable is the problem of an appeal, or the overturning of one, of a ban
+	// whose account is deleted.
 	ProblemTypeNotAppealable = "/api/v1/problems/not-appealable"
 	// ProblemTypeAppealDecided is the problem of a decision on an appeal decided otherwise.
 	ProblemTypeAppealDecided = "/api/v1/problems/appeal-decided"

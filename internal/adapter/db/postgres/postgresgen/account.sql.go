@@ -175,6 +175,24 @@ func (q *Queries) GetLifecycleState(ctx context.Context, accountID string) (Acco
 	return i, err
 }
 
+const getLifecycleStateForUpdate = `-- name: GetLifecycleStateForUpdate :one
+SELECT account_id, state, since, deletion_due_at FROM account_lifecycle_states WHERE account_id = $1
+FOR UPDATE
+`
+
+// GetLifecycleStateForUpdate is GetLifecycleState that locks the row until the transaction ends.
+func (q *Queries) GetLifecycleStateForUpdate(ctx context.Context, accountID string) (AccountLifecycleState, error) {
+	row := q.db.QueryRow(ctx, getLifecycleStateForUpdate, accountID)
+	var i AccountLifecycleState
+	err := row.Scan(
+		&i.AccountID,
+		&i.State,
+		&i.Since,
+		&i.DeletionDueAt,
+	)
+	return i, err
+}
+
 const getLocalAccount = `-- name: GetLocalAccount :one
 SELECT account_id, user_id, username, username_normalized FROM local_accounts WHERE account_id = $1
 `

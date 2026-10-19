@@ -577,11 +577,12 @@ export interface paths {
          * Appeal a moderation action on the authenticated user's account
          * @description Asks the moderators to reconsider an action on the user's own account (FR-707), once
          *     per action and until its `appeal_deadline` (the instance's appeal window from the
-         *     action, 180 days by default). The moderators get an `admin_appeal` notification, and
+         *     action, 180 days by default; for a `ban`, also no later than the deletion of the
+         *     account 30 days after it). The moderators get an `admin_appeal` notification, and
          *     the user an `appeal_decided` one when they decide. A second appeal of the action is a
          *     422 `/api/v1/problems/already-appealed`, an appeal after the deadline a 422
-         *     `/api/v1/problems/appeal-window-closed`, and an appeal of a `ban`, which is never
-         *     lifted, a 422 `/api/v1/problems/not-appealable`. A `text` that is empty, too long, or
+         *     `/api/v1/problems/appeal-window-closed`, and an appeal of a `ban` whose account is
+         *     deleted a 422 `/api/v1/problems/not-appealable`. A `text` that is empty, too long, or
          *     contains U+0000 is a 422 naming `text`. An action that is not on the user's account is a
          *     404.
          */
@@ -1747,7 +1748,9 @@ export interface paths {
          * Overturn an appeal, lifting its action
          * @description Grants the appeal and lifts its action at once, as `POST /admin/account_actions/{id}/lift`
          *     does: the posts that `delete_statuses` deleted stay deleted. An action lifted meanwhile
-         *     stays as it is. The user who appealed gets an `appeal_decided` notification with
+         *     stays as it is. Overturning the appeal of a `ban`, which nothing else lifts, also
+         *     cancels the scheduled deletion of the account; a `ban` whose account is deleted is a
+         *     422 `/api/v1/problems/not-appealable`. The user who appealed gets an `appeal_decided` notification with
          *     `decision_reason`. Deciding a decided appeal the same way again changes nothing and
          *     keeps the first reason; deciding it the other way is a 409
          *     `/api/v1/problems/appeal-decided`. A `public_reason` that is too long or contains
@@ -1902,8 +1905,8 @@ export interface components {
          *       action; an action is appealed once.
          *     - `/api/v1/problems/appeal-window-closed` (422): the time to appeal the moderation
          *       action has passed.
-         *     - `/api/v1/problems/not-appealable` (422): the moderation action is a ban, which is
-         *       never lifted and cannot be appealed.
+         *     - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
+         *       account is deleted, so it can no longer be appealed or overturned.
          *     - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
          */
         Problem: {
@@ -2274,12 +2277,14 @@ export interface components {
             lifted_at?: string;
             /**
              * @description Whether the user can appeal the action now (`POST /moderation/actions/{id}/appeal`):
-             *     it is not a `ban`, it has no appeal yet, and `appeal_deadline` has not passed.
+             *     it has no appeal yet, `appeal_deadline` has not passed, and for a `ban` the account
+             *     is not deleted.
              */
             appealable: boolean;
             /**
              * Format: date-time
-             * @description The last moment the action can be appealed; omitted for a `ban`.
+             * @description The last moment the action can be appealed: the instance's appeal window from the
+             *     action, and for a `ban` no later than the deletion of the account.
              */
             appeal_deadline?: string;
             /** @description The user's appeal of the action; omitted when there is none. */
@@ -2789,7 +2794,7 @@ export interface components {
         AdminInstanceState: "available" | "unavailable";
         /**
          * @description The kind of an audited operation, each on one kind of target. On an `account`:
-         *     `account_action_issued`, `account_action_lifted`. On a `domain`:
+         *     `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`. On a `domain`:
          *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
          *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
          *     `user` (a registration):
@@ -2797,10 +2802,11 @@ export interface components {
          *     (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
          *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On an `appeal`:
          *     `appeal_upheld`, `appeal_overturned` (which also records the action's
-         *     `account_action_lifted`).
+         *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
+         *     `account`).
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "appeal_upheld" | "appeal_overturned";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.

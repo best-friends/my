@@ -10,8 +10,9 @@ import (
 )
 
 // Appeals (FR-707, ADR-0038): a local account disputes an action on it once, within the
-// instance's appeal window from the action, and a moderator upholds or overturns it. Overturning
-// lifts the action; the statuses that delete_statuses deleted stay deleted.
+// instance's appeal window from the action (a ban, also before its account is deleted), and a
+// moderator upholds or overturns it. Overturning lifts the action, a ban included, and cancels
+// the deletion a ban scheduled; the statuses that delete_statuses deleted stay deleted.
 
 // AppealState is where an appeal stands (appeal_states.state).
 type AppealState string
@@ -58,13 +59,15 @@ const MaxAppealText = 2000
 // window: the default of the instance setting appeal_window (ADR-0038).
 const DefaultAppealWindow = 180 * 24 * time.Hour
 
-// Appealable reports whether an action of kind k can be appealed: every kind that can be
-// lifted, since overturning an appeal lifts its action. A ban cannot (FR-703).
-func (k ActionKind) Appealable() bool { return k.Liftable() }
-
-// AppealDeadline returns the last moment an action issued at issuedAt can be appealed in a
-// window of window.
-func AppealDeadline(issuedAt time.Time, window time.Duration) time.Time { return issuedAt.Add(window) }
+// AppealDeadline returns the last moment action a can be appealed in a window of window from the
+// action: for a ban, also no later than the deletion of its account, BanDeletionDelay after it
+// (the decider: 「30 日のあいだは、BAN への異議申し立てを受け付ける」).
+func AppealDeadline(a Action, window time.Duration) time.Time {
+	if a.Kind == ActionBan {
+		window = min(window, BanDeletionDelay)
+	}
+	return a.IssuedAt.Add(window)
+}
 
 // ErrInvalidAppeal reports an appeal or a decision with a missing or invalid field.
 var ErrInvalidAppeal = errors.New("moderation: invalid appeal")
