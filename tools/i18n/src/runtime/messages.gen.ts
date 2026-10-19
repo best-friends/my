@@ -1328,6 +1328,60 @@ export interface MessageArgs {
   "client:admin.signup_blocks.filter.all": {};
   /** Blocks to show */
   "client:admin.signup_blocks.filter.label": {};
+  /** Seen by moderators only. Every block of the list gets this comment. */
+  "client:admin.signup_blocks.import.comment.description": {};
+  /** Add a block for each value of a list, such as a public list of disposable email domains. Every block gets the same kind, effect, duration and comment. */
+  "client:admin.signup_blocks.import.description": {};
+  /** {added, plural, =0 {No block was added} one {# block was added} other {# blocks were added}}: {kind}, {severity}. {skipped, plural, =0 {No line was skipped.} one {# line was skipped.} other {# lines were skipped.}} */
+  "client:admin.signup_blocks.import.done": { added: number; kind: string; severity: string; skipped: number };
+  /** Could not add the blocks: {reason} */
+  "client:admin.signup_blocks.import.failed": { reason: string };
+  /** Choose a text file */
+  "client:admin.signup_blocks.import.file": {};
+  /** A text or CSV file. Its text replaces the list above. */
+  "client:admin.signup_blocks.import.file.description": {};
+  /** Could not read {name}. Choose the file again. */
+  "client:admin.signup_blocks.import.file.failed": { name: string };
+  /** Read {name}: {count, plural, one {# value} other {# values}}. */
+  "client:admin.signup_blocks.import.file.read": { count: number; name: string };
+  /** {name} is larger than {max, number} MB. Split the list into smaller files. */
+  "client:admin.signup_blocks.import.file.too_large": { max: number; name: string };
+  /** List */
+  "client:admin.signup_blocks.import.list": {};
+  /** One value per line, at most {max, number}. In a CSV row, the first field is the value. Blank lines and lines that start with # are ignored. */
+  "client:admin.signup_blocks.import.list.description": { max: number };
+  /** Enter at least one value, or choose a file */
+  "client:admin.signup_blocks.import.list.required": {};
+  /** The list is larger than {max, number} MB. Split it into smaller lists */
+  "client:admin.signup_blocks.import.list.too_large": { max: number };
+  /** The list has {count, number} values. Enter {max, number} or fewer, and add the rest in another import */
+  "client:admin.signup_blocks.import.list.too_many": { count: number; max: number };
+  /** Already blocked */
+  "client:admin.signup_blocks.import.reason.already_blocked": {};
+  /** Same as an earlier line */
+  "client:admin.signup_blocks.import.reason.duplicate": {};
+  /** Not a valid value for the kind */
+  "client:admin.signup_blocks.import.reason.invalid": {};
+  /** Line */
+  "client:admin.signup_blocks.import.skipped.line": {};
+  /** {line, number} */
+  "client:admin.signup_blocks.import.skipped.line_number": { line: number };
+  /** {count, plural, one {# line} other {# lines}} */
+  "client:admin.signup_blocks.import.skipped.lines": { count: number };
+  /** Reason */
+  "client:admin.signup_blocks.import.skipped.reason": {};
+  /** Show all {count, plural, one {# line} other {# lines}} */
+  "client:admin.signup_blocks.import.skipped.show_all": { count: number };
+  /** The first {shown, number} of {count, number} lines are shown. */
+  "client:admin.signup_blocks.import.skipped.shown": { count: number; shown: number };
+  /** Lines not added */
+  "client:admin.signup_blocks.import.skipped.title": {};
+  /** Value */
+  "client:admin.signup_blocks.import.skipped.value": {};
+  /** Add blocks */
+  "client:admin.signup_blocks.import.submit": {};
+  /** Add from a list */
+  "client:admin.signup_blocks.import.title": {};
   /** Match by */
   "client:admin.signup_blocks.kind": {};
   /** Email domain */

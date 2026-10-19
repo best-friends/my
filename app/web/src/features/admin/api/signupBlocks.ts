@@ -17,6 +17,9 @@ export type SignupBlockKind = Schemas["AdminSignupBlockKind"];
 export type SignupBlockSeverity = Schemas["AdminSignupBlockSeverity"];
 export type SignupBlockState = Schemas["AdminSignupBlockState"];
 export type NewSignupBlock = Schemas["CreateSignupBlockRequest"];
+export type SignupBlockImport = Schemas["ImportSignupBlocksRequest"];
+export type SignupBlockImportResult = Schemas["SignupBlockImportResult"];
+export type SignupBlockImportSkipReason = Schemas["SignupBlockImportSkipped"]["reason"];
 
 /** The kinds of sign-up block, in the order of the form: the domain of the email address first, the most used. */
 export const signupBlockKinds = ["email_domain", "email_hash", "ip_range"] as const satisfies readonly SignupBlockKind[];
@@ -27,6 +30,31 @@ export const signupBlockSeverities = ["require_approval", "reject"] as const sat
 /** The most characters of a sign-up block's value and comment (CreateSignupBlockRequest). */
 export const signupBlockValueLimit = 320;
 export const signupBlockCommentLimit = 1000;
+
+/** The reasons a line of an imported list is skipped, in the order the screen counts them. */
+export const signupBlockImportSkipReasons = ["invalid", "duplicate", "already_blocked"] as const satisfies readonly SignupBlockImportSkipReason[];
+
+/** The most values one import may hold (ImportSignupBlocksRequest). */
+export const signupBlockImportValueLimit = 10_000;
+
+/**
+ * The most bytes of a list, in UTF-8: the server reads at most 1 MiB of a request body, and the rest of the
+ * request (kind, severity, comment, JSON escapes) fits in what is left.
+ */
+export const signupBlockImportByteLimit = 1_000_000;
+
+/**
+ * The number of values of a list as the server counts them (ImportSignupBlocksRequest): every line but the blank
+ * ones and those whose first character other than spaces is "#".
+ */
+export function countSignupBlockListValues(text: string): number {
+  let count = 0;
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed !== "" && !trimmed.startsWith("#")) count += 1;
+  }
+  return count;
+}
 
 /** The filters of the list of sign-up blocks, in the order of its tabs; `active` sends `active=true`. */
 export const signupBlockFilters = ["active", "all"] as const;
@@ -85,6 +113,19 @@ export function liftSignupBlockMutation(api: Api) {
     mutationKey: ["post", "/admin/signup_blocks/{id}/lift"] as const,
     mutationFn: async (id: string): Promise<SignupBlock> => {
       const { data, error } = await api.fetch.POST("/admin/signup_blocks/{id}/lift", { params: { path: { id } } });
+      // The middleware throws an ApiError for every error status; this narrows the type.
+      if (data === undefined) throw new ApiError(error);
+      return data;
+    },
+  };
+}
+
+/** Adds a sign-up block for each value of a list (POST /admin/signup_blocks/import), as the options of useMutation. */
+export function importSignupBlocksMutation(api: Api) {
+  return {
+    mutationKey: ["post", "/admin/signup_blocks/import"] as const,
+    mutationFn: async (body: SignupBlockImport): Promise<SignupBlockImportResult> => {
+      const { data, error } = await api.fetch.POST("/admin/signup_blocks/import", { body });
       // The middleware throws an ApiError for every error status; this narrows the type.
       if (data === undefined) throw new ApiError(error);
       return data;
