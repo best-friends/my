@@ -6,7 +6,7 @@ import { test as base, expect, type Locator, type Page } from "@playwright/test"
 import { previewOrigin } from "./server-origin.ts";
 
 /** The axe rule tags for WCAG 2.2 AA (ADR-0027, web-client.md Y1). */
-export const axeTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] as const;
+const axeTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] as const;
 
 type Fixtures = {
   /** Returns an AxeBuilder for the page, limited to `axeTags`; chain `.include()` / `.exclude()` to scope it. */
@@ -28,13 +28,51 @@ const rtlLocales: ReadonlySet<string> = new Set(["ar-XB"]);
 export const localeDir = (locale: string): "ltr" | "rtl" => (rtlLocales.has(locale) ? "rtl" : "ltr");
 
 /**
- * An AxeBuilder for `page`, limited to `axeTags`, without React Aria's live announcer. The announcer is
- * no content of the page: React Aria's Button announces the start and the end of its pending state there
- * with a node that is named by the button (aria-labelledby) and stays for 7 seconds, so a button that a
- * navigation removed in the meantime leaves a nameless node behind until then.
+ * Waits until no finite animation or transition of the document runs. A control that changes its variant
+ * (Follow on the accent becoming Requested on a raised surface) fades its colours over a transition
+ * (`motion-safe:transition-colors`), and axe's `color-contrast` reads the computed colours of the moment:
+ * halfway through, the text and its background are both between their two values and can fail the contrast.
+ * The page is checked as it rests, so the scan waits for the end values; animations that never end (a
+ * spinner, a skeleton's pulse) are left running.
+ */
+async function settleAnimations(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    for (;;) {
+      // getAnimations() brings the styles up to date first, so a transition that a class change starts is listed.
+      const running = document
+        .getAnimations()
+        .filter((animation) => animation.playState === "running" && Number.isFinite(animation.effect?.getComputedTiming().endTime));
+      if (running.length === 0) return;
+      // An animation cancelled on the way (its element removed) rejects `finished`; it no longer runs either.
+      await Promise.allSettled(running.map((animation) => animation.finished));
+    }
+  });
+}
+
+/** An AxeBuilder whose scan starts once the page's animations and transitions have ended (`settleAnimations`). */
+class SettledAxeBuilder extends AxeBuilder {
+  readonly #settledPage: Page;
+
+  constructor(page: Page) {
+    super({ page });
+    this.#settledPage = page;
+  }
+
+  override async analyze(): ReturnType<AxeBuilder["analyze"]> {
+    await settleAnimations(this.#settledPage);
+    return super.analyze();
+  }
+}
+
+/**
+ * An AxeBuilder for `page`, limited to `axeTags`, without React Aria's live announcer, that scans the page
+ * once its animations and transitions have ended (`settleAnimations`). The announcer is no content of the
+ * page: React Aria's Button announces the start and the end of its pending state there with a node that is
+ * named by the button (aria-labelledby) and stays for 7 seconds, so a button that a navigation removed in
+ * the meantime leaves a nameless node behind until then.
  */
 export function axeBuilder(page: Page): AxeBuilder {
-  return new AxeBuilder({ page }).withTags([...axeTags]).exclude("[data-live-announcer]");
+  return new SettledAxeBuilder(page).withTags([...axeTags]).exclude("[data-live-announcer]");
 }
 
 export const test = base.extend<Fixtures>({
