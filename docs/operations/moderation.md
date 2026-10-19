@@ -1,10 +1,10 @@
 # アカウント・ドメインへの処分と通報の対応
 
-運営者・モデレーター向けの手順です。要件は FR-701〜FR-703・FR-718（[機能要件](../requirements/01-functional.md)）、
+運営者・モデレーター向けの手順です。要件は FR-701〜FR-703・FR-707・FR-718（[機能要件](../requirements/01-functional.md)）、
 テーブルは [データモデル §4.3](../architecture/data-model.md#43-moderation)、連合への効き方は [federation.md §11](../architecture/federation.md#11-モデレーションとの連携) です。
 
-どれも管理 API（`/api/v1/admin/...`、スコープ `admin:read` / `admin:write`）と CLI（`my admin account action` / `my admin domain` / `my admin report`）で行えます。
-管理 API はロールの権限を要します。アカウントへの処分は `manage_accounts`、ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。
+どれも管理 API（`/api/v1/admin/...`、スコープ `admin:read` / `admin:write`）と CLI（`my admin account action` / `my admin domain` / `my admin report` / `my admin appeal`）で行えます。
+管理 API はロールの権限を要します。アカウントへの処分と異議申し立ては `manage_accounts`、ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。
 CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直接つなぎ、操作者の利用者を記録しません（`issued_by_user_id` などは NULL、[監査ログ](#監査ログ)の操作者は `cli`）。
 
 ## アカウントへの処分
@@ -20,7 +20,7 @@ CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直�
 | `restrict_interaction` | フォロー・お気に入り・ブースト・返信を禁止する |
 | `disable_login` | アプリと API の利用を禁止し、有効なセッションとトークンを失効させる（ログイン画面では処分を確かめられる） |
 | `suspend` | 上の制限をすべて課し、プロフィールと投稿を本人以外に見せない |
-| `ban` | `suspend` と同じ制限を課し、30 日後にアカウントを削除する。解除できない |
+| `ban` | `suspend` と同じ制限を課し、30 日後にアカウントを削除する。解除できない（その 30 日のあいだの異議申し立てを覆したときだけ取り消される） |
 | `delete_statuses` | 指定した投稿を削除する。本人にも見えなくなり、連合先には本人の削除と同じ `Delete` を送る |
 | `mark_statuses_sensitive` | 指定した投稿の添付をセンシティブとして表示する |
 
@@ -56,7 +56,7 @@ my admin account action lift -reason "appealed" <action id>
   解除と期限切れでは元のプロフィールの `Update` を送ります。期限切れは 5 分ごとのジョブが送るので、期限から最大 5 分遅れます（[federation.md §11.1](../architecture/federation.md#111-処分の伝播)）。
 - `delete_statuses` と `mark_statuses_sensitive` は、対象のアカウントの削除されていない投稿を 1〜100 件、`-status`（`status_ids`）で指定します。期限は付けられません。
   `delete_statuses` を解除しても消した投稿は戻りません。`mark_statuses_sensitive` を解除すると元の表示に戻ります。
-- `ban` は期限を付けられず、解除もできません。迷うときは期限付きの `suspend` を使います。
+- `ban` は期限を付けられず、解除もできません。取り消せるのは、削除までの 30 日のあいだに本人が申し立てた異議を覆したときだけです（[異議申し立て](#異議申し立て)）。迷うときは期限付きの `suspend` を使います。
   処分から 30 日後に、1 時間ごとのジョブがアカウントを削除します（アカウントと投稿が表示から消え、連合先に `Delete` を送ります）。
 - `report_id`（`-report`）は、対象のアカウントの通報だけを指定できます。未解決の通報は、処分と同時に `actioned` で解決されます（監査ログにも解決が残ります）。解決済みの通報は変わりません。
 - `public_reason` は本人に見せる理由、`private_note` はモデレーターだけのメモです。`notify_target`（既定は真、CLI では `-no-notify` で偽）は本人に知らせるかどうかです。
@@ -66,7 +66,31 @@ my admin account action lift -reason "appealed" <action id>
 - `notify_target` が真の処分は、本人に通知（`moderation_notice`）として届きます。通知には処分の種類・理由のカテゴリ・`public_reason`・期限・状態が入り、種類とカテゴリは本人の UI 言語の表示名でも返ります。
 - 本人は `GET /api/v1/moderation/actions`（スコープ `read:accounts`、`active` で絞り込み）で自分への処分を新しい順に確かめられます。`notify_target` が偽の処分も、解除・期限切れの処分も並びます。
 - `private_note`・通報・処分した人・解除の理由は、本人には一切見せません。
+- 本人は自分への処分に、処分ごとに 1 回、異議を申し立てられます（[異議申し立て](#異議申し立て)）。処分の一覧と通知の処分には、申し立てられるか（`appealable`）・期限（`appeal_deadline`）・申し立てとその結果（`appeal`）が入ります。
 - `disable_login` と `suspend` を受けた本人は、アプリと API を使えませんが、ログイン画面（`/auth/sign_in`）にはログインでき、効いている `disable_login` / `suspend` の種類・理由・期限を確かめられます。認可（`/oauth/authorize`）はこの画面を `403` で返し、トークンを発行しません。
+
+### 異議申し立て
+
+ローカルの利用者は、自分への処分に異議を申し立てられます（FR-707、[ADR-0038](../adr/0038-moderation-personal-data-retention.md)）。
+モデレーターはそれを審査し、維持（`uphold`）するか覆す（`overturn`）かを決めます。
+
+```sh
+my admin appeal list -state pending
+my admin appeal uphold -reason "The posts were spam." <appeal id>
+my admin appeal overturn -reason "Sorry, our mistake." <appeal id>
+```
+
+本人は `POST /api/v1/moderation/actions/{id}/appeal`（スコープ `write:accounts`、本文 `{"text": "..."}`）で申し立てます。
+管理 API では `GET /api/v1/admin/appeals`（`state` で絞り込み）、`GET .../{id}`、`POST .../{id}/uphold`・`POST .../{id}/overturn`（本文 `{"public_reason": "..."}` は省略可）で、権限 `manage_accounts` を要します。
+
+- 申し立ては処分 1 件につき 1 回、本文は 1〜2,000 文字です。期限は処分からインスタンス設定 `appeal_window` の日数（既定 180 日、20〜365 日、[インスタンス設定](instance-settings.md)）です。
+  期限を過ぎた処分と 2 回目の申し立ては `422`（`/api/v1/problems/appeal-window-closed`・`/api/v1/problems/already-appealed`）です。
+- `ban` には、アカウントが削除されるまで（処分から 30 日、`appeal_window` が短ければその期限まで）申し立てられます。削除済みのアカウントの `ban` は `422`（`/api/v1/problems/not-appealable`）です。解除済み・期限切れの処分にも、期限内なら申し立てられます。
+- 申し立てると、`manage_accounts` を持つ人に通知（`admin_appeal`）が届きます。審査すると、本人に通知（`appeal_decided`）が届き、本人は結果と `public_reason` を見られます。審査した人は見えません。
+- 覆すと、同じトランザクションで処分を解除します（`lift` と同じ効果。解除の理由は空）。`delete_statuses` を覆しても消した投稿は戻りません。審査までに解除済みの処分は、そのままです。
+- `ban` を覆すと、予定されていたアカウントの削除も同じトランザクションで取り消し（監査ログは `account_deletion_cancelled`）、凍結が終わって連合先にも元のプロフィールの `Update` を送ります。失効したセッションとトークンは戻らないので、本人はもう一度ログインします。審査までにアカウントが削除されていれば、覆せません（`422`、`/api/v1/problems/not-appealable`。維持はできる）。
+- 審査は 1 回です。同じ結果でもう一度審査しても何も変わらず、反対の結果は `409`（`/api/v1/problems/appeal-decided`）です。
+- `disable_login`・`suspend` を受けた本人は API を使えないので、申し立てられません（ログイン画面からの申し立ては [#427](https://github.com/best-friends/my/issues/427)）。
 
 ## ドメイン単位の処分
 
@@ -157,13 +181,14 @@ my admin report reopen <report id>
 | --- | --- | --- |
 | `admin_report` | 通報の対象に、ほかの未解決の通報が無いとき（同じアカウントへの 2 件目以降の通報では届かない） | ロールが `manage_reports` を持つ人。通報者と通報の対象は除く |
 | `admin_sign_up` | 登録が承認待ちで始まったとき（承認制、またはメールを送れない構成の `open`） | ロールが `manage_accounts` を持つ人 |
+| `admin_appeal` | 処分に異議が申し立てられたとき | ロールが `manage_accounts` を持つ人。申し立てた本人は除く |
 
 - 届く人は、通知を作るときの権限で決まります。後から権限を失った人の一覧と未読数からは、その種類の通知が消えます。権限を戻せばまた見えます。
 - 利用者設定 `email_moderator_notifications`（`PATCH /api/v1/preferences`、既定は無効）を有効にした人には、同じ通知をメールでも送ります。
   メールは通知を記録したトランザクションでジョブを積み、コミット後にジョブが送ります。送る時点で権限か設定を失っていれば送りません。
   メールは通知の種類と通知の画面へのリンクだけを書き、通報やアカウントの中身は書きません。`mail = none` ではメールを送りません。
 
-`GET /api/v1/admin/counts` は、未解決の通報の数（`open_reports`、`manage_reports` が要る）と承認待ちの登録の数（`pending_registrations`、`manage_accounts` が要る）を返します。
+`GET /api/v1/admin/counts` は、未解決の通報の数（`open_reports`、`manage_reports` が要る）と、承認待ちの登録の数（`pending_registrations`）と審査待ちの異議申し立ての数（`pending_appeals`）を返します（どちらも `manage_accounts` が要る）。
 権限の無い項目は返しません。
 
 ## 監査ログ
@@ -173,13 +198,14 @@ my admin report reopen <report id>
 
 | 対象の種類 | 操作 |
 | --- | --- |
-| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除） |
+| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`account_deletion_cancelled`（`ban` の異議申し立てを覆したことによる削除の取り消し） |
 | `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除） |
 | `report` | `report_assigned`・`report_unassigned`・`report_resolved`・`report_reopened`・`report_note_added`（通報の担当・担当の解除・解決・再開・メモ） |
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |
 | `setting` | `setting_changed`（インスタンス設定）・`text_changed`（インスタンスの文章。1 ロケールの変更） |
 | `rule` | `rule_added`・`rule_revised`・`rule_moved`・`rule_retired`（インスタンスのルール） |
 | `role` | `role_granted`・`role_revoked`（利用者へのロールの付与・剥奪） |
+| `appeal` | `appeal_upheld`・`appeal_overturned`（異議申し立ての審査。覆したときは処分の `account_action_lifted`、`ban` なら `account_deletion_cancelled` も記録する） |
 
 ```sh
 my admin audit list
@@ -190,7 +216,7 @@ my admin audit list -target-kind domain -target-id spam.example
 管理 API では `GET /api/v1/admin/audit_log`（`actor_account_id`・`action`・`target_kind`・`target_id` で絞り込み）で、権限 `view_audit` を要します。
 
 - 1 行は操作者（`user` ならその利用者、CLI なら `cli`）・操作・対象の種類と ID・対象の表示名・元の記録の ID・日時です。
-  対象の ID は、アカウント・通報・利用者・ルール・ロールの ID、ドメイン単位の処分ではドメイン、設定と文章ではキーです。
+  対象の ID は、アカウント・通報・異議申し立て・利用者・ルール・ロールの ID、ドメイン単位の処分ではドメイン、設定と文章ではキーです。
 - 対象の表示名（`@alice`・`@bob@example.com`・ドメイン・設定のキー・ルールの文。文章はキーとロケール、ロールはキーと利用者のハンドル）は記録したときの写しなので、対象が消えた後も読めます。
 - 理由とメモの本文は写しません。元の記録（処分・担当・解決・再開・メモ・審査・設定やルールの版）の ID から引きます。
 - 一覧は新しい順のキーセットページングです（CLI は `-before <entry id>`）。

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
@@ -74,11 +75,32 @@ func (s *stubModerationStatuses) ClearSensitivityOf(_ context.Context, _ uow.Tx,
 }
 
 // stubLifecycles stands in for the account module in ModerationContract: the due time of each
-// account's scheduled deletion and the action that scheduled it.
+// account's scheduled deletion and the action that scheduled it, the deleted accounts, and the
+// cancellations (account ID -> the action that cancelled).
 type stubLifecycles struct {
-	mu     sync.Mutex
-	due    map[string]time.Time
-	action string
+	mu        sync.Mutex
+	due       map[string]time.Time
+	action    string
+	deleted   map[string]bool
+	cancelled map[string]string
+}
+
+// CancelDeletionByModeration implements appmoderation.Lifecycles.
+func (s *stubLifecycles) CancelDeletionByModeration(_ context.Context, _ uow.Tx, accountID, actionID, _ string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.deleted[accountID] {
+		return false, appaccount.ErrAlreadyDeleted
+	}
+	if _, ok := s.due[accountID]; !ok {
+		return false, nil
+	}
+	delete(s.due, accountID)
+	if s.cancelled == nil {
+		s.cancelled = map[string]string{}
+	}
+	s.cancelled[accountID] = actionID
+	return true, nil
 }
 
 // ScheduleDeletionByModeration implements appmoderation.Lifecycles.

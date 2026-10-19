@@ -213,6 +213,25 @@ describe("the notifications page", () => {
     expect(await screen.findByRole("heading", { level: 2, name: "No notifications yet" })).toBeInTheDocument();
   });
 
+  test("words the notifications of the appeals, which come from the instance", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const items: Notification[] = (["appeal_decided", "admin_appeal"] as const).map((type, i) => ({
+      id: `0192f0c4-7a8e-7000-8000-0000000000d${String(i)}`,
+      type,
+      created_at: "2026-10-16T09:00:00Z",
+    }));
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    const decided = within(feed).getByRole("article", { name: /The moderators decided your appeal/ });
+    expect(within(feed).getByRole("article", { name: /A new appeal awaits the moderators/ })).toBeInTheDocument();
+    // Without the action, the decision still leads to the account status.
+    expect(within(decided).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/settings/account-status"]);
+  });
+
   test("names the actor of every type and hides a post behind its content warning", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
@@ -303,7 +322,7 @@ describe("the notifications page", () => {
     expect(within(feed).getByRole("article", { name: /A suspension by the moderators ended some of your follows/ })).toBeInTheDocument();
   });
 
-  test("tells what a moderation notice and a resolved report are about, and leads to the screens that follow them up", async () => {
+  test("tells what a moderation notice, a resolved report and a decided appeal are about, and leads to the screens that follow them up", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
     const at = "2026-10-16T09:00:00Z";
@@ -324,6 +343,7 @@ describe("the notifications page", () => {
           state: "active",
           issued_at: at,
           expires_at: "2026-10-23T09:00:00Z",
+          appealable: true,
         },
       },
       {
@@ -344,6 +364,25 @@ describe("the notifications page", () => {
       },
       { id: "0192f0c4-7a8e-7000-8000-0000000000e3", type: "admin_report", created_at: at, report_id: reportId },
       { id: "0192f0c4-7a8e-7000-8000-0000000000e4", type: "admin_sign_up", created_at: at, account: otherAccountFixture },
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000e5",
+        type: "appeal_decided",
+        created_at: at,
+        moderation_action: {
+          id: "0192f0c4-7a8e-7000-8000-0000000000f3",
+          kind: "limit",
+          kind_label: "Limit",
+          reason_category: "spam",
+          reason_category_label: "Spam",
+          status_ids: [],
+          state: "lifted",
+          issued_at: at,
+          lifted_at: at,
+          appealable: false,
+          appeal: { id: "0192f0c4-7a8e-7000-8000-0000000000f4", text: "I am not a bot.", state: "overturned", submitted_at: at, decided_at: at, decision_reason: "We were wrong." },
+        },
+      },
+      { id: "0192f0c4-7a8e-7000-8000-0000000000e6", type: "admin_appeal", created_at: at, appeal_id: "0192f0c4-7a8e-7000-8000-0000000000f4" },
     ];
     server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
 
@@ -361,6 +400,12 @@ describe("the notifications page", () => {
     // A moderator's notifications lead to the report and to the registrations.
     const report = within(feed).getByRole("article", { name: /A new report awaits the moderators/ });
     expect(within(report).getByRole("link", { name: "Open the report" })).toHaveAttribute("href", `/admin/reports/${reportId}`);
+    // The decision on an appeal says what was decided and why, and leads to the account status.
+    const decided = within(feed).getByRole("article", { name: /The moderators decided your appeal/ });
+    expect(decided).toHaveAccessibleDescription(/Limit: Spam.*Your appeal was granted, and the action was lifted\..*We were wrong\./);
+    expect(within(decided).getByRole("link", { name: "View your account status" })).toHaveAttribute("href", "/settings/account-status");
+    const appeal = within(feed).getByRole("article", { name: /A new appeal awaits the moderators/ });
+    expect(within(appeal).getByRole("link", { name: "Open the appeal" })).toHaveAttribute("href", "/admin/appeals/0192f0c4-7a8e-7000-8000-0000000000f4");
     const signUp = within(feed).getByRole("article", { name: /Bob signed up and awaits approval/ });
     await user.click(within(signUp).getByRole("link", { name: "Review registrations" }));
     await waitFor(() => {

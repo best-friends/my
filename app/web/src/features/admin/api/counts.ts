@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What awaits the moderators (FR-712): the open reports and the registrations awaiting approval, for the
+// What awaits the moderators (FR-712): the open reports, the registrations awaiting approval, and the appeals
+// awaiting a decision (FR-707), for the
 // badges of the navigation's admin entry and of the admin menu. The server leaves out a count whose
 // permission the viewer's roles lack.
 import type { QueryClient } from "@tanstack/react-query";
@@ -16,6 +17,7 @@ export type AdminCount = keyof AdminCounts;
 export const countPermissions: Readonly<Record<AdminCount, Permission>> = {
   open_reports: "manage_reports",
   pending_registrations: "manage_accounts",
+  pending_appeals: "manage_accounts",
 };
 
 /**
@@ -26,8 +28,8 @@ export function adminCountsQueryOptions(api: Api) {
   return api.query.queryOptions("get", "/admin/counts");
 }
 
-/** The notifications that tell a moderator of one more thing to count: a new report, a new registration. */
-const countedNotifications: ReadonlySet<string> = new Set(["admin_report", "admin_sign_up"]);
+/** The notifications that tell a moderator of one more thing to count: a new report, registration, or appeal. */
+const countedNotifications: ReadonlySet<string> = new Set(["admin_report", "admin_sign_up", "admin_appeal"]);
 
 /**
  * What the streaming API changes in the counts (web-client.md S10): a notification of a new report or

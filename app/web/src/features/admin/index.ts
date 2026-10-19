@@ -35,3 +35,7 @@ export { RegistrationList } from "./components/RegistrationList";
 export { useAdminEntry } from "./hooks/useAdminCounts";
 export { registrationsQueryOptions } from "./api/registrations";
 export { DomainName, MissingPermission } from "./components/parts";
+// The report queue and a report's page (FR-701, FR-710, NFR-MOD-4), for manage_reports.
+export { type ReportFilter, reportQueryOptions, reportsQueryOptions } from "./api/reports";
+export { ReportDetailView } from "./components/ReportDetail";
+export { ReportQueue } from "./components/ReportQueue";

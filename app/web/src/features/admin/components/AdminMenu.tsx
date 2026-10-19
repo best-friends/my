@@ -19,12 +19,16 @@ const pages: readonly { href: string; permission: Permission; label: ClientMessa
   { href: "/admin/dead-jobs", permission: "manage_jobs", label: "client:admin.dead_jobs.title", description: "client:admin.dead_jobs.summary" },
   { href: "/admin/audit-log", permission: "view_audit", label: "client:admin.audit_log.title", description: "client:admin.audit_log.summary" },
   { href: "/admin/registrations", permission: "manage_accounts", label: "client:admin.registrations.title", description: "client:admin.registrations.summary" },
+  { href: "/admin/reports", permission: "manage_reports", label: "client:admin.reports.title", description: "client:admin.reports.summary" },
 ];
 
 /** The count that a screen's link shows, by the screen's address, and the words of its badge. */
-const pageCounts: Readonly<Record<string, { count: AdminCount; label: "client:admin.menu.open_reports" | "client:admin.menu.pending_registrations" }>> = {
+const pageCounts: Readonly<
+  Record<string, { count: AdminCount; label: "client:admin.menu.open_reports" | "client:admin.menu.pending_registrations" | "client:admin.menu.pending_appeals" }>
+> = {
   "/admin/reports": { count: "open_reports", label: "client:admin.menu.open_reports" },
   "/admin/registrations": { count: "pending_registrations", label: "client:admin.menu.pending_registrations" },
+  "/admin/appeals": { count: "pending_appeals", label: "client:admin.menu.pending_appeals" },
 };
 
 /** The admin screens that the viewer's roles allow. */

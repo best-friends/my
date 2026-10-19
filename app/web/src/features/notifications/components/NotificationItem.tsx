@@ -7,7 +7,8 @@
 // account was suspended and how many followers and follows the user lost.
 //
 // The notifications from the instance lead to where the user follows them up, as links in the row's actions:
-// a moderation notice says what the action does, why, and until when, and leads to the account's status; a
+// a moderation notice (and the decision on an appeal of it) says what the action does, why, and until when,
+// and leads to the account's status; an appeal to the moderators leads to the appeal; a
 // resolved report names the reported account; a moderator's new report or registration leads to the report or
 // the registrations; and lost follows lead to the user's lists of followers and follows.
 //
@@ -181,6 +182,12 @@ function ModerationNotice({ notice }: { notice: ModerationNoticeView }) {
       {notice.reason !== null && (
         <p dir="auto" className="whitespace-pre-line wrap-anywhere align-match-parent">
           {notice.reason}
+        </p>
+      )}
+      {notice.decision !== null && <p className="font-semibold">{t(notice.decision.sentence)}</p>}
+      {notice.decision !== null && notice.decision.reason !== null && (
+        <p dir="auto" className="whitespace-pre-line wrap-anywhere align-match-parent">
+          {notice.decision.reason}
         </p>
       )}
       {notice.until !== null && (

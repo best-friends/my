@@ -154,7 +154,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - axe は React Aria のライブアナウンサー（`[data-live-announcer]`）を検査しない（`e2e/fixtures.ts` の `axeBuilder`）。React Aria の Button は待機の始まりと終わりを、ボタンを `aria-labelledby` で指す要素で 7 秒間そこに知らせるので、
     その間に画面の移動でボタンが消えると、名前のない要素が残るため。
   - プロジェクトは画面幅 320 / 390 / 768 / 1024 / 1440 px × ロケール `en` / `ja` / `en-XA` / `ar-XB` の 20 個。768 px 未満はタッチと粗いポインタのスマートフォンとして動かす。
-  - 毎 PR は全ロケールの 320 / 1440 px だけを動かし、nightly（`E2E_MATRIX=full`）は全体を動かす。
+  - main への push では全ロケールの 320 / 1440 px だけを動かし（PR では動かさない、[ADR-0040](../adr/0040-e2e-on-main-only.md)。Web に触れる PR では作者が手元で `make web-e2e` を回す）、nightly（`E2E_MATRIX=full`）は全体を動かす。
   - spec は `e2e/fixtures.ts` から `test` / `expect` を import する。`vite preview` は `index.html`（ランタイム設定の代わりを含む）をそのまま返すので、fixture がプロジェクトのロケールを `<html lang dir>` に書き込み、サーバーの外枠と同じ状態にする。ビルドのファイルへの相対のリンクは、`my serve` と同じくルートからのものにする（ルートより下の画面のため）。ランタイム設定の `apiOrigin` もその回の `vite preview` のオリジンに書き換えるので、クライアントの API と OAuth の要求はプレビューに届き、spec が `page.route` で応答できる（ログイン済みの画面は、`/oauth/token/refresh` と API の操作に応答して作る）。axe は `makeAxeBuilder` と `expectNoAxeViolations`（規則と対象のセレクタの一覧が空であることを検査）、横スクロールは `expectNoHorizontalScroll` で検査する。
   - 構造は `toMatchAriaSnapshot` で検査する。ロケールで変わる名前は、スナップショットから省くか正規表現にする。
   - CI は、digest で固定した Playwright の公式イメージで動かす。イメージの版は `@playwright/test` の版と合わせる。
@@ -254,10 +254,10 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
     選択は URL から決まる（S3）。タブを移ると別の画面になり、フォーカスはその画面の `h1` に移るので、矢印キーではフォーカスだけを動かし、Enter / Space で開く（`keyboardActivation="manual"`）。
     タブはサーバーが提供するタイムラインと今の画面のものだけを出し、`GET /instance` の答えを待たずに最初から置く（答えが後から届いても、下のタイムラインを作り直さない）。
   - 「メニュー」は場所ではなくボタンなので `aria-current` を持たない。押すと `Sheet`（モーダルのダイアログ）を開き、タブバーにないレールの項目（プロフィール・設定、閲覧者によって管理）を並べて、今いる区画のリンクに `aria-current="page"` を付ける。
-  - 件数のバッジ（`@my/ui` の `Badge`）: 「通知」は未読数、「管理」はモデレーターを待つ件数（`GET /admin/counts` の未解決の通報と承認待ちの登録の合計、FR-712）を、アイコンの角に数字で出す。
+  - 件数のバッジ（`@my/ui` の `Badge`）: 「通知」は未読数、「管理」はモデレーターを待つ件数（`GET /admin/counts` の未解決の通報・承認待ちの登録・審査待ちの異議申し立ての合計、FR-712）を、アイコンの角に数字で出す。
     数字はアクセシビリティツリーから隠し、件数はリンクのアクセシブルネーム（見える名前で始まる「通知、未読 3 件」「管理、未対応 3 件」、WCAG 2.5.3）で伝えるので、色だけで示さない（WCAG 1.4.1）。
     シートの「管理」も同じ名前とバッジを持ち、タブバーの「メニュー」のボタンはシートの項目の件数を自分のバッジと名前（「メニュー、管理に未対応 3 件」）で示す。
-    件数は、その件数に要る権限（`manage_reports`・`manage_accounts`）を持つ閲覧者だけが読む。ストリームの `admin_report` / `admin_sign_up` の通知と再接続、登録の決定で読み直す。読めないときはバッジを出さない。
+    件数は、その件数に要る権限（`manage_reports`・`manage_accounts`）を持つ閲覧者だけが読む。ストリームの `admin_report` / `admin_sign_up` / `admin_appeal` の通知と再接続、登録の決定と通報の処理で読み直す。読めないときはバッジを出さない。
     シートはパスの変わる遷移が始まったとき（ルーターの `onBeforeNavigate`）に閉じるので、新しい画面の `h1` がフォーカスを受け取れる。未保存の変更の確かめで止めた遷移は始まらないので、シートは開いたまま残る。
   - ローカル（`/local`）と連合（`/public`）のタイムラインは、インスタンスの設定で無効にでき、そのときは API が 404 を返す（FR-202）。レールとタイムラインのタブは `GET /instance` の `timelines` で、
     サーバーが提供するものだけを出す（`features/timeline` の `useTimelineAvailability`）。ローカルはサーバーが無効と答えるまで出し、連合はサーバーが有効と答えてから出すので、無効にしたサーバーでは読み込み中も失敗したときも出ない。
@@ -435,13 +435,13 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 ## 14. 管理画面
 
-`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ・登録の審査）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
+`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ・登録の審査・通報）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査、`manage_reports` が通報の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **管理の画面**（`/admin`、ナビゲーションの「管理」）: 閲覧者のロールが使える管理の画面へのリンクを、設定の画面の「管理」の区画と同じ一覧（`AdminMenu` の `AdminPages`）で並べる。
-  通報（`/admin/reports`）と登録の審査のリンクは、待っている件数（未解決の通報・承認待ちの登録）の `Badge` を持ち、その文言（「承認待ち 1 件」）はリンクの名前に入る。使える画面がないロールには、その理由を `EmptyState` で出す。
+  通報（`/admin/reports`）・登録の審査・異議申し立て（`/admin/appeals`）のリンクは、待っている件数（未解決の通報・承認待ちの登録・審査待ちの異議申し立て）の `Badge` を持ち、その文言（「承認待ち 1 件」）はリンクの名前に入る。使える画面がないロールには、その理由を `EmptyState` で出す。
 - **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
 - **連合先の詳細**（`/admin/instances/{domain}`）: 状態と、最新の `instance_availability_events` の理由、最後に配送を再開した日時（最新の `marked_available`）、新しい順の履歴。
   データモデルは成功した配送の日時を持たない（`instance_health` は失敗の間だけ更新する。[data-model §4.8](data-model.md#48-federation)）ので、「最後の成功」は配送の再開の日時で示す。
@@ -475,6 +475,17 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   決定は後から変えられないので、どちらも `ConfirmDialog` で確かめる（NFR-MOD-7。却下は `danger`、承認は `primary`）。ダイアログはモデレーター向けのメモ（`ReasonField`、任意、1,000 文字）を持ち、開くとメモにフォーカスが移る。失敗はダイアログの中に出す。
   成功したらダイアログを閉じ、キャッシュの一覧から除いてフォーカスを次の行のボタン（なければ見出し）に移し（`lib/useFocusAfterRemoval.ts`）、結果を一覧の上の `StatusMessage` に出す。
   ほかのモデレーターが先に決めた登録は、サーバーがその決定のまま返すので、一覧から除き、どちらの決定が残ったかを知らせる。
+- **通報の一覧**（`/admin/reports`、FR-701・FR-710）: 「未解決」と「解決済み」のタブ（`?state=resolved`、URL に置く。S3）で、新しい順。各通報は見出し（対象のハンドル、詳細へのリンク）と、カテゴリ・通報者・通報日時・担当・投稿の数（解決済みは結果と解決日時も）の説明リスト、通報者のコメント（`dir="auto"`、2 行に省略）にする。
+  担当はアカウントの ID しか返らないので、閲覧者なら「あなた」、ほかは `GET /accounts/{id}` で名前を出す。
+- **通報の詳細**（`/admin/reports/{id}`、NFR-MOD-4）: 1 つの画面に、通報の内容（状態・カテゴリ・日時・通報者・通報元・転送・引用するルール・コメント）、通報された投稿、通報されたアカウントとその履歴（ほかの通報と処分の件数、`manage_accounts` があれば処分の履歴）、担当、メモ、対応の区画を `h2` の `section` で並べる。
+  - **投稿**: `GET /statuses/{id}` で読み、`StatusCard` を操作の列なし（`withActions={false}`）で出す。モデレーターにも公開範囲が効くので、読めない投稿（削除済み・公開範囲の外）はその旨を出す。
+  - **ルール**: `GET /instance` の `rules` から文を引き、今のルールにないもの（廃止されたもの）はその旨を出す。
+  - **担当とメモ**: 「自分が担当する」（担当がほかの人なら「担当を引き継ぐ」）と「担当を外す」は位置を変えずに名前だけを変え、押したボタンにフォーカスが残る。メモは古い順で、新しいメモは `ReasonField`（必須、2,000 文字）から追加する。空白だけのメモと失敗は入力欄のエラーにして、文を残す。
+  - **対応**: 未解決なら、対象のアカウントへの処分のフォーム（`components/AccountActionForm.tsx`。`manage_accounts` がなければ理由を出す）と、「処分せずに解決する」「処分済みとして解決する」を出す。解決済みなら結果と解決日時と「再開する」を出す。
+    処分は `report_id` 付きで送り、サーバーが同じ操作で通報を処分済みにするので、通報・一覧・件数・処分の履歴を無効にする（一覧の「未解決」から消える）。解決・再開・処分で区画の中身が入れ替わったら、区画の見出しにフォーカスを移し、結果を区画の `StatusMessage` に出す。担当・解決・再開の失敗はトーストで知らせる（E2）。
+  - **処分のフォーム**: 種類（`RadioGroup`、軽いものから BAN まで、効果の説明付き）。ほかのサーバーのアカウントは `force_sensitive`・`limit`・`suspend` だけで、知らせるかのチェックボックスを出さない。投稿への処分（`mark_statuses_sensitive`・`delete_statuses`）は通報の投稿が読めたときだけ出し、その投稿をチェックボックスで選ぶ（最初はすべて選び、1 つもなければ送らずに `role="alert"` で知らせる）。
+    理由の種類（`Select`、最初は通報のカテゴリ）、期間（`DurationSelect`。BAN・投稿への処分・警告は持たない）、公開の理由と非公開のメモ（`ReasonField`、5,000 文字）、アカウントに知らせるか（既定はオン）。取り消せない BAN と `delete_statuses` は `ConfirmDialog` で確かめ、失敗はダイアログの中に、ほかの種類の失敗はフォームの下に出す。
+    詳細の画面は、対象のアカウントの管理画面（`/admin/accounts/{id}`）にリンクする。
 - **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection` にし（`features/admin/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
@@ -484,14 +495,15 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   `features/admin/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
   `features/admin/auditLog.test.tsx` は、監査ログの行と対象へのリンク、`Select` と行のリンクでの絞り込みと URL、絞り込みのあとのフォーカス、`?pages=` の書き込みと読み込み、URL の不正な値、次のページの失敗、空の状態、権限のない閲覧者と 403 を検査する。
   `features/admin/registrations.test.tsx` は、登録の理由の `dir="auto"`、ページの読み足し、メモ付きの承認と却下・フォーカス・`role="status"` の結果、キャンセルと Esc、メモの上限、ダイアログの中の失敗、先に決められた登録、権限を検査する。
-  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL を検査する。
+  `features/admin/reports.test.tsx` は、通報の一覧とタブ、詳細の各区画（読めない投稿・廃止されたルール・処分の履歴）、担当とメモ、処分による解決と一覧から消えること、BAN と投稿の削除の確認、ほかのサーバーのアカウントの種類、処分せずに解決と再開とフォーカス、失敗、権限と 403 を検査する。
+  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`、`e2e/reports.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL・キーボードで通報を開き、BAN の確認のダイアログを経て、処分で通報を解決して一覧から消えるまでを検査する。
   `e2e/registrations.spec.ts` は、登録の審査の画面の axe・横スクロール・ARIA スナップショット、承認の確認のダイアログ、キーボードでの却下とフォーカスの移動を検査する。
   `features/admin/adminEntry.test.tsx` は、ナビゲーションの「管理」の出し分け・レールとメニューのボタンとシートの件数の名前・管理の画面・管理の画面での `aria-current`・ストリームの通知での件数の読み直しを検査し、
   `e2e/admin-entry.spec.ts` は、各幅で「管理」（`md` 未満はメニューのボタンとシート）の件数の名前と数字、管理の画面の ARIA スナップショット、サーバーからの通知の行とそのリンク（ARIA スナップショット）・axe・横スクロールを検査する。
 
 - **サーバーからの通知**（`features/notifications`）: 行為者のいない通知とモデレーターへの通知は、行の操作の列に、その後を確かめる画面へのリンクを置く。
-  `moderation_notice` は処分の種類と理由の区分（サーバーが訳した `kind_label` / `reason_category_label`）・モデレーターの説明（`dir="auto"`）・終わる日時を本文に出し、アカウントの状態の画面（`/settings/account-status`、FR-715）へ、
-  `report_resolved` は通報したアカウントの名前（そのプロフィールへのリンク、アバターなし）を文に入れ、`admin_report` は通報（`/admin/reports/{id}`）へ、`admin_sign_up` は登録の審査（`/admin/registrations`）へ、
+  `moderation_notice` と `appeal_decided` は処分の種類と理由の区分（サーバーが訳した `kind_label` / `reason_category_label`）・モデレーターの説明（`dir="auto"`）・終わる日時（`appeal_decided` は異議申し立てへの決定とその理由も）を本文に出し、アカウントの状態の画面（`/settings/account-status`、FR-715）へ、
+  `report_resolved` は通報したアカウントの名前（そのプロフィールへのリンク、アバターなし）を文に入れ、`admin_report` は通報（`/admin/reports/{id}`）へ、`admin_sign_up` は登録の審査（`/admin/registrations`）へ、`admin_appeal` は異議申し立て（`/admin/appeals/{id}`）へ、
   `relationships_severed` は自分のフォロワーとフォローの一覧へリンクする。
 
 ## 15. 検索とほかのサーバーのアカウントのフォロー

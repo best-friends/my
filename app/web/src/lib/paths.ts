@@ -19,6 +19,11 @@ export function followListPath(acct: string, list: "followers" | "following"): s
  */
 export const accountStatusPath = "/settings/account-status";
 
+/** The admin page of one appeal of a moderation action, which an `admin_appeal` notification leads to. */
+export function adminAppealPath(id: string): string {
+  return `/admin/appeals/${id}`;
+}
+
 /** The admin page of one report, which an `admin_report` notification leads to. */
 export function adminReportPath(id: string): string {
   return `/admin/reports/${id}`;

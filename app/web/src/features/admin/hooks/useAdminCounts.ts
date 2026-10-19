@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The navigation's admin entry and the counts on it (FR-712): whether the viewer may use an admin screen, and
-// how many open reports and registrations awaiting approval wait for them. The counts load only for a viewer
+// how many open reports, registrations awaiting approval, and appeals awaiting a decision wait for them. The counts load only for a viewer
 // whose roles have a permission that one of them needs; the server leaves out the others.
 import { useQuery } from "@tanstack/react-query";
 import { useApi, useSessionStatus } from "../../../lib/auth/SessionProvider";
@@ -33,6 +33,6 @@ export function useAdminEntry(): AdminEntry {
   const counts = useAdminCounts();
   return {
     available: permissions.some((permission) => screenPermissions.has(permission)),
-    pending: (counts.open_reports ?? 0) + (counts.pending_registrations ?? 0),
+    pending: (counts.open_reports ?? 0) + (counts.pending_registrations ?? 0) + (counts.pending_appeals ?? 0),
   };
 }

@@ -54,6 +54,9 @@ type Repository interface {
 	ProfileHead(ctx context.Context, tx uow.Tx, accountID string) (account.ProfileHead, error)
 	UpsertProfileHead(ctx context.Context, tx uow.Tx, h account.ProfileHead) error
 	DeleteAllProfileHeads(ctx context.Context, tx uow.Tx) error
+	// LifecycleState returns the lifecycle state of an account inside tx, locking its row where
+	// the database can, so that two transactions that change the lifecycle (the deletion job and
+	// a cancellation) do not both act on the state they read.
 	LifecycleState(ctx context.Context, tx uow.Tx, accountID string) (account.LifecycleState, error)
 	UpsertLifecycleState(ctx context.Context, tx uow.Tx, s account.LifecycleState) error
 	DeleteAllLifecycleStates(ctx context.Context, tx uow.Tx) error

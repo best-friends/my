@@ -46,7 +46,7 @@ describe("the navigation's admin entry", () => {
   });
 
   test("names the pending count in the rail, the Menu button and the sheet, and opens the administration page", async () => {
-    server.use(operatorHandler(["manage_accounts", "manage_reports"]), countsHandler({ open_reports: 2, pending_registrations: 1 }));
+    server.use(operatorHandler(["manage_accounts", "manage_reports"]), countsHandler({ open_reports: 1, pending_registrations: 1, pending_appeals: 1 }));
     const { user } = await renderApp({ path: "/home" });
     await screen.findByRole("heading", { level: 1, name: "Home" });
 

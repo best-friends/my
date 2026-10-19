@@ -50,6 +50,7 @@ const notifications = [
       state: "active",
       issued_at: at,
       expires_at: "2026-10-23T09:00:00Z",
+      appealable: true,
     },
   },
   {

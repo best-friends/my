@@ -26,8 +26,8 @@ type AccountActionIssued struct{ Action moderation.Action }
 func (AccountActionIssued) EventType() string { return EventAccountActionIssued }
 
 // TargetActionView is an action on an account as the account itself sees it: its kind, the
-// reason meant for it, the statuses it acted on, and whether it is in effect now. It has no
-// private note, report, issuer, or lift reason.
+// reason meant for it, the statuses it acted on, whether it is in effect now, and its appeal
+// (appeal.go). It has no private note, report, issuer, or lift reason.
 type TargetActionView struct {
 	ID             string
 	Kind           moderation.ActionKind
@@ -40,6 +40,14 @@ type TargetActionView struct {
 	IssuedAt  time.Time
 	LiftedAt  *time.Time // nil unless lifted
 	State     moderation.ActionState
+	// AppealDeadline is the last moment the action can be appealed (moderation.AppealDeadline);
+	// it is set for every action.
+	AppealDeadline *time.Time
+	// Appealable reports whether the account can appeal the action now: no appeal yet, the
+	// deadline not passed, and for a ban the account not deleted.
+	Appealable bool
+	// Appeal is the account's appeal of the action; nil for none.
+	Appeal *OwnAppeal
 }
 
 func targetView(r moderation.ActionRecord, now time.Time) TargetActionView {
@@ -76,11 +84,7 @@ func (s *Service) OwnActions(ctx context.Context, accountID string, f OwnActionF
 	if err != nil {
 		return nil, err
 	}
-	out := make([]TargetActionView, len(rs))
-	for i, r := range rs {
-		out[i] = targetView(r, now)
-	}
-	return out, nil
+	return s.targetViews(ctx, rs, now)
 }
 
 // OwnAction returns an action on accountID as the account sees it; an unknown action, or one
@@ -93,5 +97,9 @@ func (s *Service) OwnAction(ctx context.Context, accountID, actionID string) (Ta
 	if r.Action.TargetAccountID != accountID {
 		return TargetActionView{}, fmt.Errorf("%w: action %s is on another account", ErrNotFound, actionID)
 	}
-	return targetView(r, kernel.Normalize(s.d.Clock.Now())), nil
+	vs, err := s.targetViews(ctx, []moderation.ActionRecord{r}, kernel.Normalize(s.d.Clock.Now()))
+	if err != nil {
+		return TargetActionView{}, err
+	}
+	return vs[0], nil
 }

@@ -433,6 +433,7 @@ type Notification struct {
 	ReportID           sql.NullString
 	SubjectUserID      sql.NullString
 	SeveranceID        sql.NullString
+	AppealID           sql.NullString
 	DedupeKey          string
 	CreatedAt          int64
 }

@@ -3,7 +3,7 @@
 // the hook decides what to show and formats it; the component only places it. It returns no JSX.
 import { useIntl } from "react-intl";
 import type { ClientMessageKey } from "../../../lib/i18n";
-import { accountStatusPath, adminReportPath, followListPath, profilePath } from "../../../lib/paths";
+import { accountStatusPath, adminAppealPath, adminReportPath, followListPath, profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { useViewer } from "../../session";
 import { statusPath } from "../../status";
@@ -25,6 +25,11 @@ export type ModerationNoticeView = {
   reason: string | null;
   /** When the action ends by itself, as a date and time in the user's locale; null when it lasts until lifted. */
   until: { dateTime: string; text: string } | null;
+  /**
+   * For an `appeal_decided`: what the moderators decided on the user's appeal, and their explanation (their own
+   * text, null when they gave none). Null for a `moderation_notice`, and while the appeal is pending.
+   */
+  decision: { sentence: ClientMessageKey; reason: string | null } | null;
 };
 
 export type NotificationView = {
@@ -61,7 +66,7 @@ export type NotificationView = {
    * user lost; null for the other types.
    */
   severance: { domain: string | null; followers: number; following: number } | null;
-  /** What a `moderation_notice` tells of the action; null for the other types. */
+  /** What a `moderation_notice` or an `appeal_decided` tells of the action; null for the other types. */
   notice: ModerationNoticeView | null;
   /**
    * The pages the row leads to besides the actor's profile and the post, where the user follows up what it
@@ -83,6 +88,8 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   admin_report: "client:notifications.type.admin_report",
   admin_sign_up: "client:notifications.type.admin_sign_up",
   relationships_severed: "client:notifications.type.relationships_severed",
+  appeal_decided: "client:notifications.type.appeal_decided",
+  admin_appeal: "client:notifications.type.admin_appeal",
 };
 
 /** The sentences of a group of the types that rows group (groupNotifications). */
@@ -133,9 +140,23 @@ function severanceOf(notification: Notification): Pick<NotificationView, "senten
   return { sentence: "client:notifications.severed.account", severance: { domain: null, ...counts } };
 }
 
-/** What a row shows of the action that a `moderation_notice` tells of; `formatDate` formats its end. */
+/** The sentences of the decisions on an appeal. */
+const decisionSentences: Readonly<Record<"upheld" | "overturned", ClientMessageKey>> = {
+  upheld: "client:notifications.appeal.upheld",
+  overturned: "client:notifications.appeal.overturned",
+};
+
+/**
+ * What a row shows of the action that a `moderation_notice` or an `appeal_decided` tells of; `formatDate` formats
+ * its end.
+ */
 function noticeOf(action: ModerationAction, formatDate: (value: string) => string): ModerationNoticeView {
+  const { appeal } = action;
   return {
+    decision:
+      appeal === undefined || appeal.state === "pending"
+        ? null
+        : { sentence: decisionSentences[appeal.state], reason: appeal.decision_reason === undefined || appeal.decision_reason === "" ? null : appeal.decision_reason },
     kind: action.kind_label,
     category: action.reason_category_label,
     reason: action.public_reason === undefined || action.public_reason === "" ? null : action.public_reason,
@@ -147,7 +168,10 @@ function noticeOf(action: ModerationAction, formatDate: (value: string) => strin
 function linksOf(notification: Notification, ownAcct: string | null): NotificationLink[] {
   switch (notification.type) {
     case "moderation_notice":
+    case "appeal_decided":
       return [{ href: accountStatusPath, label: "client:notifications.link.account_status" }];
+    case "admin_appeal":
+      return notification.appeal_id === undefined ? [] : [{ href: adminAppealPath(notification.appeal_id), label: "client:notifications.link.appeal" }];
     case "admin_report":
       return notification.report_id === undefined ? [] : [{ href: adminReportPath(notification.report_id), label: "client:notifications.link.report" }];
     case "admin_sign_up":
@@ -182,7 +206,7 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
   }
   const groupSentence = groupSentences[notification.type];
   const target = notification.type === "report_resolved" ? notification.report?.target_account : undefined;
-  const action = notification.type === "moderation_notice" ? notification.moderation_action : undefined;
+  const action = notification.type === "moderation_notice" || notification.type === "appeal_decided" ? notification.moderation_action : undefined;
   return {
     sentence:
       severed?.sentence ??
