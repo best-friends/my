@@ -109,3 +109,79 @@ func (q *Queries) ListAuditLogEntries(ctx context.Context, arg ListAuditLogEntri
 	}
 	return items, nil
 }
+
+const listExistingAppealIDs = `-- name: ListExistingAppealIDs :many
+SELECT id FROM moderation_appeals WHERE id = ANY($1::text[]) ORDER BY id
+`
+
+func (q *Queries) ListExistingAppealIDs(ctx context.Context, ids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listExistingAppealIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listExistingReportIDs = `-- name: ListExistingReportIDs :many
+
+SELECT id FROM reports WHERE id = ANY($1::text[]) ORDER BY id
+`
+
+// The targets of the entries that still exist, for the audit log to tell those that are gone
+// (erased past their retention, ADR-0038). Each returns, in ID order, the records among ids
+// that exist.
+func (q *Queries) ListExistingReportIDs(ctx context.Context, ids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listExistingReportIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listExistingSignupBlockIDs = `-- name: ListExistingSignupBlockIDs :many
+SELECT id FROM signup_blocks WHERE id = ANY($1::text[]) ORDER BY id
+`
+
+func (q *Queries) ListExistingSignupBlockIDs(ctx context.Context, ids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listExistingSignupBlockIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

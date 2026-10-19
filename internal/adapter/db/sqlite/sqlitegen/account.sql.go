@@ -602,6 +602,34 @@ func (q *Queries) ListAccountsOnDomain(ctx context.Context, arg ListAccountsOnDo
 	return items, nil
 }
 
+const listExistingAccountIDs = `-- name: ListExistingAccountIDs :many
+SELECT id FROM accounts WHERE id IN (SELECT value FROM json_each(CAST(?1 AS TEXT))) ORDER BY id
+`
+
+// ListExistingAccountIDs returns, in ID order, the accounts among ids that exist. The ids are a JSON array.
+func (q *Queries) ListExistingAccountIDs(ctx context.Context, ids string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listExistingAccountIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLifecycleEvents = `-- name: ListLifecycleEvents :many
 SELECT id, account_id, kind, initiated_by, moderation_action_id, deletion_due_at, occurred_at
 FROM account_lifecycle_events ORDER BY account_id, id

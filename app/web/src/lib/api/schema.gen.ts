@@ -3099,6 +3099,13 @@ export interface components {
              */
             target_label: string;
             /**
+             * @description Whether the target is still there to look at. It is `false` for an account, a report,
+             *     an appeal, or a sign-up block that is gone (erased past its retention), which only
+             *     `target_label` names now. It is `true` for the other kinds of targets, which are
+             *     never erased.
+             */
+            target_exists: boolean;
+            /**
              * @description The ID of the record of the operation (the domain action, the assignment, the
              *     resolution, the reopening, the note, the decision, the revision), which holds its
              *     reasons and notes; omitted when the operation has none.

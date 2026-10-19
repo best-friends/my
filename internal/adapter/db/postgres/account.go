@@ -429,6 +429,18 @@ func (r *AccountRepository) AnyAccountOnDomain(ctx context.Context, domain strin
 	return found, nil
 }
 
+// ExistingAccountIDs implements account.Repository.
+func (r *AccountRepository) ExistingAccountIDs(ctx context.Context, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	out, err := r.db.reader().ListExistingAccountIDs(ctx, ids)
+	if err != nil {
+		return nil, wrap(err, "list existing accounts")
+	}
+	return out, nil
+}
+
 // AccountsOnDomain implements account.Repository.
 func (r *AccountRepository) AccountsOnDomain(ctx context.Context, tx uow.Tx, domain string, ids []string) ([]string, error) {
 	if len(ids) == 0 {
