@@ -19,6 +19,11 @@ export type StatusCardProps = {
   thread?: { lineAbove: boolean; lineBelow: boolean };
   /** Called after the viewer deleted the post. */
   onDeleted?: () => void;
+  /**
+   * Whether the card has the viewer's actions on the post (reply, boost, favourite, the menu); true by default.
+   * A moderator's page about the post (a report) shows it without them, so that nothing there acts on it by mistake.
+   */
+  withActions?: boolean;
   /** The card's article, for the page that scrolls it into view. */
   ref?: Ref<HTMLElement>;
 };
@@ -38,7 +43,7 @@ const timeLink =
  * One status: the hook's view of it placed into the slots of PostCard, with the action bar. Its names link
  * to the profiles and its time to the post's page (FR-113).
  */
-export function StatusCard({ status, variant = "compact", thread, onDeleted, ref }: StatusCardProps) {
+export function StatusCard({ status, variant = "compact", thread, onDeleted, withActions = true, ref }: StatusCardProps) {
   const t = useT();
   const intl = useIntl();
   const view = useStatusView(status);
@@ -130,27 +135,29 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, ref
         )
       }
       {...(view.contentWarning === null && media !== undefined && { media })}
-      actions={
-        <>
-          <StatusActions status={status} {...(onDeleted !== undefined && { onDeleted })} />
-          {view.original !== null && (
-            // The post's page on its own server, shown also while nobody is signed in. The host is what it
-            // shows; the name says where it leads, and contains the host (WCAG 2.5.3, label in name).
-            <Link
-              href={view.original.href}
-              rel="noreferrer"
-              variant="standalone"
-              aria-label={t("client:status.original", { host: view.original.host })}
-              className="ms-auto min-w-0 gap-1 text-sm font-normal text-fg-muted data-hovered:text-fg"
-            >
-              <span dir="ltr" className="min-w-0 truncate">
-                {view.original.host}
-              </span>
-              <ExternalLinkIcon />
-            </Link>
-          )}
-        </>
-      }
+      {...((withActions || view.original !== null) && {
+        actions: (
+          <>
+            {withActions && <StatusActions status={status} {...(onDeleted !== undefined && { onDeleted })} />}
+            {view.original !== null && (
+              // The post's page on its own server, shown also while nobody is signed in. The host is what it
+              // shows; the name says where it leads, and contains the host (WCAG 2.5.3, label in name).
+              <Link
+                href={view.original.href}
+                rel="noreferrer"
+                variant="standalone"
+                aria-label={t("client:status.original", { host: view.original.host })}
+                className="ms-auto min-w-0 gap-1 text-sm font-normal text-fg-muted data-hovered:text-fg"
+              >
+                <span dir="ltr" className="min-w-0 truncate">
+                  {view.original.host}
+                </span>
+                <ExternalLinkIcon />
+              </Link>
+            )}
+          </>
+        ),
+      })}
     />
   );
 }

@@ -1,4 +1,248 @@
 {
+  "admin.account_actions.category": {
+    "defaultMessage": "Reason",
+    "description": "Label of the select of the category of the reason for a moderation action on an account."
+  },
+  "admin.account_actions.category.description": {
+    "defaultMessage": "The kind of reason the account is told, with the public reason.",
+    "description": "Help under the select of the category of the reason for an account action."
+  },
+  "admin.account_actions.characters_left": {
+    "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
+    "description": "Character count under a moderator's text field of the report screens."
+  },
+  "admin.account_actions.characters_over": {
+    "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
+    "description": "Character count under a moderator's text field of the report screens, when it is over the limit."
+  },
+  "admin.account_actions.confirm.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the confirmation of an account action without taking it."
+  },
+  "admin.account_actions.confirm_ban.confirm": {
+    "defaultMessage": "Ban",
+    "description": "Button of the confirmation that bans an account."
+  },
+  "admin.account_actions.confirm_ban.description": {
+    "defaultMessage": "The account is suspended for good and deleted 30 days from now. This cannot be undone.",
+    "description": "Description of the confirmation of a ban of an account."
+  },
+  "admin.account_actions.confirm_ban.title": {
+    "defaultMessage": "Ban {handle}?",
+    "description": "Title of the confirmation of a ban; handle is the account's @handle."
+  },
+  "admin.account_actions.confirm_delete_statuses.confirm": {
+    "defaultMessage": "Delete",
+    "description": "Button of the confirmation that deletes posts of an account."
+  },
+  "admin.account_actions.confirm_delete_statuses.description": {
+    "defaultMessage": "The posts are deleted for everyone, the account too, and their deletion is sent to other servers. This cannot be undone.",
+    "description": "Description of the confirmation of deleting posts of an account."
+  },
+  "admin.account_actions.confirm_delete_statuses.title": {
+    "defaultMessage": "{count, plural, one {Delete # post of {handle}?} other {Delete # posts of {handle}?}}",
+    "description": "Title of the confirmation of deleting posts; handle is the account's @handle, count the number of posts."
+  },
+  "admin.account_actions.duration": {
+    "defaultMessage": "Duration",
+    "description": "Label of the select of how long an account action lasts."
+  },
+  "admin.account_actions.duration.days": {
+    "defaultMessage": "{count, plural, one {# day} other {# days}}",
+    "description": "A duration of an account action in days."
+  },
+  "admin.account_actions.duration.description": {
+    "defaultMessage": "The action ends by itself after this.",
+    "description": "Help under the duration of an account action."
+  },
+  "admin.account_actions.duration.indefinite": {
+    "defaultMessage": "Until lifted",
+    "description": "The duration of an account action without an end, and the end of one in a list."
+  },
+  "admin.account_actions.expires_at": {
+    "defaultMessage": "Ends",
+    "description": "Term of a list of account actions: when the action ends."
+  },
+  "admin.account_actions.issue_failed": {
+    "defaultMessage": "The action could not be taken: {reason}",
+    "description": "Error when a moderation action on an account fails; reason is the server's localized message."
+  },
+  "admin.account_actions.issued_at": {
+    "defaultMessage": "Taken",
+    "description": "Term of a list of account actions: when the action was taken."
+  },
+  "admin.account_actions.kind": {
+    "defaultMessage": "Action",
+    "description": "Label of the choice of the kind of moderation action on an account."
+  },
+  "admin.account_actions.kind.ban": {
+    "defaultMessage": "Ban",
+    "description": "Kind of account action: a suspension that never ends, with the deletion of the account."
+  },
+  "admin.account_actions.kind.ban.description": {
+    "defaultMessage": "Suspends the account for good and deletes it 30 days later.",
+    "description": "What a ban does, under its choice."
+  },
+  "admin.account_actions.kind.delete_statuses": {
+    "defaultMessage": "Delete posts",
+    "description": "Kind of account action: deleting chosen posts of the account."
+  },
+  "admin.account_actions.kind.delete_statuses.description": {
+    "defaultMessage": "Deletes the chosen posts for everyone.",
+    "description": "What deleting posts does, under its choice."
+  },
+  "admin.account_actions.kind.disable_login": {
+    "defaultMessage": "Disable login",
+    "description": "Kind of account action: the account cannot log in."
+  },
+  "admin.account_actions.kind.disable_login.description": {
+    "defaultMessage": "Ends the account's sessions and stops it logging in.",
+    "description": "What disabling login does, under its choice."
+  },
+  "admin.account_actions.kind.force_sensitive": {
+    "defaultMessage": "Mark media sensitive",
+    "description": "Kind of account action: all its media are shown as sensitive."
+  },
+  "admin.account_actions.kind.force_sensitive.description": {
+    "defaultMessage": "Every attachment of the account is hidden behind a warning.",
+    "description": "What marking media sensitive does, under its choice."
+  },
+  "admin.account_actions.kind.limit": {
+    "defaultMessage": "Limit",
+    "description": "Kind of account action: posts are followers-only and kept off the public timelines."
+  },
+  "admin.account_actions.kind.limit.description": {
+    "defaultMessage": "Its posts, past ones too, reach only its followers and stay off the public timelines.",
+    "description": "What limiting does, under its choice."
+  },
+  "admin.account_actions.kind.mark_statuses_sensitive": {
+    "defaultMessage": "Mark posts sensitive",
+    "description": "Kind of account action: the media of chosen posts are shown as sensitive."
+  },
+  "admin.account_actions.kind.mark_statuses_sensitive.description": {
+    "defaultMessage": "The media of the chosen posts are hidden behind a warning.",
+    "description": "What marking posts sensitive does, under its choice."
+  },
+  "admin.account_actions.kind.remote": {
+    "defaultMessage": "An account of another server takes only these actions.",
+    "description": "Help of the kinds of action, for an account of another server."
+  },
+  "admin.account_actions.kind.required": {
+    "defaultMessage": "Choose an action.",
+    "description": "Error when no kind of account action is chosen."
+  },
+  "admin.account_actions.kind.restrict_interaction": {
+    "defaultMessage": "Restrict interaction",
+    "description": "Kind of account action: no following, favouriting, boosting, or replying."
+  },
+  "admin.account_actions.kind.restrict_interaction.description": {
+    "defaultMessage": "Stops it following, favouriting, boosting and replying.",
+    "description": "What restricting interaction does, under its choice."
+  },
+  "admin.account_actions.kind.restrict_posting": {
+    "defaultMessage": "Restrict posting",
+    "description": "Kind of account action: no posting, replying, boosting, or editing."
+  },
+  "admin.account_actions.kind.restrict_posting.description": {
+    "defaultMessage": "Stops it posting, replying, boosting and editing.",
+    "description": "What restricting posting does, under its choice."
+  },
+  "admin.account_actions.kind.suspend": {
+    "defaultMessage": "Suspend",
+    "description": "Kind of account action: the account cannot be used and its profile and posts are hidden."
+  },
+  "admin.account_actions.kind.suspend.description": {
+    "defaultMessage": "Does all of these, and hides its profile and posts from everyone else.",
+    "description": "What suspending does, under its choice."
+  },
+  "admin.account_actions.kind.warn": {
+    "defaultMessage": "Warn",
+    "description": "Kind of account action: a notice to the account only."
+  },
+  "admin.account_actions.kind.warn.description": {
+    "defaultMessage": "Only tells the account.",
+    "description": "What a warning does, under its choice."
+  },
+  "admin.account_actions.notify": {
+    "defaultMessage": "Tell the account",
+    "description": "Checkbox of whether the account is told of the action."
+  },
+  "admin.account_actions.notify.description": {
+    "defaultMessage": "The account sees the action, its reason and when it ends.",
+    "description": "Help of the checkbox of telling the account."
+  },
+  "admin.account_actions.posts": {
+    "defaultMessage": "Posts",
+    "description": "Label of the group of the posts an action on posts acts on."
+  },
+  "admin.account_actions.posts.content_warning": {
+    "defaultMessage": "CW: {text}",
+    "description": "Description of a post with a content warning in the choice of posts; text is the warning."
+  },
+  "admin.account_actions.posts.item": {
+    "defaultMessage": "Post from {date}",
+    "description": "Name of the checkbox of a post in the choice of posts; date is when it was posted."
+  },
+  "admin.account_actions.posts.required": {
+    "defaultMessage": "Choose at least one post.",
+    "description": "Error when an action on posts has no post chosen."
+  },
+  "admin.account_actions.private_note": {
+    "defaultMessage": "Private note",
+    "description": "Label of the moderators' note of an account action."
+  },
+  "admin.account_actions.private_note.description": {
+    "defaultMessage": "Only moderators see this.",
+    "description": "Help of the private note of an account action."
+  },
+  "admin.account_actions.public_reason": {
+    "defaultMessage": "Public reason",
+    "description": "Label of the reason of an account action that the account sees."
+  },
+  "admin.account_actions.public_reason.description": {
+    "defaultMessage": "The account sees this with the action.",
+    "description": "Help of the public reason of an account action."
+  },
+  "admin.account_actions.report": {
+    "defaultMessage": "Report",
+    "description": "Term of a list of account actions: the report the action follows from."
+  },
+  "admin.account_actions.report.other": {
+    "defaultMessage": "Open the report",
+    "description": "Link to the report another account action follows from."
+  },
+  "admin.account_actions.report.this": {
+    "defaultMessage": "This report",
+    "description": "The report an account action follows from, when it is the report on screen."
+  },
+  "admin.account_actions.state": {
+    "defaultMessage": "State",
+    "description": "Term of a list of account actions: whether it is in effect."
+  },
+  "admin.account_actions.state.active": {
+    "defaultMessage": "In effect",
+    "description": "State of an account action in effect."
+  },
+  "admin.account_actions.state.expired": {
+    "defaultMessage": "Ended",
+    "description": "State of an account action that ended by itself."
+  },
+  "admin.account_actions.state.lifted": {
+    "defaultMessage": "Lifted",
+    "description": "State of an account action that a moderator lifted."
+  },
+  "admin.account_actions.submit": {
+    "defaultMessage": "Take action",
+    "description": "Button that takes a moderation action on an account."
+  },
+  "admin.account_actions.submit_and_resolve": {
+    "defaultMessage": "Take action and resolve",
+    "description": "Button that takes a moderation action on the reported account and resolves the report."
+  },
+  "admin.account_actions.too_long": {
+    "defaultMessage": "Use at most {max, number} characters",
+    "description": "Error of a text of an account action that is too long."
+  },
   "admin.audit_log.action.account_action_issued": {
     "defaultMessage": "Account action taken",
     "description": "Heading of an audit log entry: a moderator took an action (a suspension, a limit…) on an account."
@@ -826,6 +1070,378 @@
   "admin.registrations.title": {
     "defaultMessage": "Registrations",
     "description": "Title of the admin screen that lists the registrations awaiting approval."
+  },
+  "admin.report.account.deleted": {
+    "defaultMessage": "A deleted account",
+    "description": "An account of a report that no longer exists."
+  },
+  "admin.report.account.loading": {
+    "defaultMessage": "Loading…",
+    "description": "While the name of a moderator loads."
+  },
+  "admin.report.action.deleted": {
+    "defaultMessage": "The account is gone, so no action can be taken on it.",
+    "description": "Instead of the action form when the reported account no longer exists."
+  },
+  "admin.report.action.issued": {
+    "defaultMessage": "Action taken ({kind}). The report is resolved.",
+    "description": "Status message after taking an account action from a report; kind is the kind of action."
+  },
+  "admin.report.action.missing_permission": {
+    "defaultMessage": "Taking an action on the account needs the manage_accounts permission.",
+    "description": "Instead of the action form for a moderator without manage_accounts."
+  },
+  "admin.report.action.title": {
+    "defaultMessage": "Take action on the account",
+    "description": "Heading of the form of an account action on a report's page."
+  },
+  "admin.report.assign": {
+    "defaultMessage": "Assign to me",
+    "description": "Button that makes the viewer the moderator who handles a report."
+  },
+  "admin.report.assign.take_over": {
+    "defaultMessage": "Take over",
+    "description": "Button that makes the viewer the moderator who handles a report that another moderator handles."
+  },
+  "admin.report.assign_failed": {
+    "defaultMessage": "The report could not be assigned to you: {reason}",
+    "description": "Toast when taking a report fails."
+  },
+  "admin.report.assigned": {
+    "defaultMessage": "You handle this report now.",
+    "description": "Status message after taking a report."
+  },
+  "admin.report.assignee": {
+    "defaultMessage": "Assigned to",
+    "description": "Term: the moderator who handles a report."
+  },
+  "admin.report.assignee.none": {
+    "defaultMessage": "Nobody",
+    "description": "Nobody handles the report."
+  },
+  "admin.report.assignee.title": {
+    "defaultMessage": "Assignee",
+    "description": "Heading of the region of a report's page with the moderator who handles it."
+  },
+  "admin.report.assignee.you": {
+    "defaultMessage": "You",
+    "description": "The viewer handles the report, or wrote the note."
+  },
+  "admin.report.back": {
+    "defaultMessage": "Back to the reports",
+    "description": "Link from a report's page back to the queue."
+  },
+  "admin.report.category": {
+    "defaultMessage": "Category",
+    "description": "Term: the category of a report."
+  },
+  "admin.report.comment": {
+    "defaultMessage": "Comment",
+    "description": "Term: the reporter's comment."
+  },
+  "admin.report.comment.none": {
+    "defaultMessage": "No comment",
+    "description": "A report without a comment."
+  },
+  "admin.report.filed_at": {
+    "defaultMessage": "Reported",
+    "description": "Term: when a report was filed."
+  },
+  "admin.report.forwarded": {
+    "defaultMessage": "Forwarded",
+    "description": "Term: whether the report was forwarded to the target's server."
+  },
+  "admin.report.forwarded.no": {
+    "defaultMessage": "No",
+    "description": "The report was not forwarded."
+  },
+  "admin.report.forwarded.yes": {
+    "defaultMessage": "To the account's server",
+    "description": "The report was forwarded to the target's server."
+  },
+  "admin.report.history.empty": {
+    "defaultMessage": "No actions on this account yet",
+    "description": "Empty state of the actions on a report's target."
+  },
+  "admin.report.history.failed": {
+    "defaultMessage": "Could not load the actions",
+    "description": "Error of the list of actions on a report's target."
+  },
+  "admin.report.history.loading": {
+    "defaultMessage": "Loading the actions",
+    "description": "While the actions on a report's target load."
+  },
+  "admin.report.history.title": {
+    "defaultMessage": "Actions on the account",
+    "description": "Heading of the list of moderation actions on a report's target."
+  },
+  "admin.report.notes.added": {
+    "defaultMessage": "Note added.",
+    "description": "Status message after adding a note to a report."
+  },
+  "admin.report.notes.blank": {
+    "defaultMessage": "Write a note.",
+    "description": "Error of an empty note."
+  },
+  "admin.report.notes.cli": {
+    "defaultMessage": "Command line",
+    "description": "The author of a note added from the command line."
+  },
+  "admin.report.notes.empty": {
+    "defaultMessage": "No notes yet.",
+    "description": "A report without notes."
+  },
+  "admin.report.notes.failed": {
+    "defaultMessage": "The note could not be added: {reason}",
+    "description": "Error under the note field when adding fails."
+  },
+  "admin.report.notes.new": {
+    "defaultMessage": "New note",
+    "description": "Label of the field of a new note on a report."
+  },
+  "admin.report.notes.new.description": {
+    "defaultMessage": "Only moderators see notes. They cannot be changed or removed.",
+    "description": "Help of the field of a new note."
+  },
+  "admin.report.notes.submit": {
+    "defaultMessage": "Add note",
+    "description": "Button that adds a note to a report."
+  },
+  "admin.report.notes.title": {
+    "defaultMessage": "Notes",
+    "description": "Heading of the moderators' notes on a report."
+  },
+  "admin.report.notes.too_long": {
+    "defaultMessage": "Use at most {max, number} characters",
+    "description": "Error of a note that is too long."
+  },
+  "admin.report.of": {
+    "defaultMessage": "Report on {target}",
+    "description": "Heading of a report in the queue; target is the reported account's @handle."
+  },
+  "admin.report.of_deleted": {
+    "defaultMessage": "Report on a deleted account",
+    "description": "Heading of a report in the queue whose target no longer exists."
+  },
+  "admin.report.origin": {
+    "defaultMessage": "From",
+    "description": "Term: where the report came from."
+  },
+  "admin.report.origin.local": {
+    "defaultMessage": "This server",
+    "description": "A report filed by a user of this server."
+  },
+  "admin.report.origin.remote": {
+    "defaultMessage": "Another server",
+    "description": "A report sent by another server."
+  },
+  "admin.report.outcome": {
+    "defaultMessage": "Outcome",
+    "description": "Term: how a report was resolved."
+  },
+  "admin.report.posts": {
+    "defaultMessage": "Posts",
+    "description": "Term: the posts a report points at."
+  },
+  "admin.report.posts.count": {
+    "defaultMessage": "{count, plural, =0 {None} one {# post} other {# posts}}",
+    "description": "Number of posts a report points at."
+  },
+  "admin.report.posts.loading": {
+    "defaultMessage": "Loading the post",
+    "description": "While a reported post loads."
+  },
+  "admin.report.posts.missing": {
+    "defaultMessage": "This post cannot be shown: it was deleted, or its visibility does not include you.",
+    "description": "A reported post that the moderator cannot load."
+  },
+  "admin.report.posts.none": {
+    "defaultMessage": "The report points at no posts.",
+    "description": "A report without posts."
+  },
+  "admin.report.posts.title": {
+    "defaultMessage": "Reported posts",
+    "description": "Heading of the posts of a report."
+  },
+  "admin.report.reopen": {
+    "defaultMessage": "Reopen",
+    "description": "Button that puts a resolved report back in the queue."
+  },
+  "admin.report.reopen.description": {
+    "defaultMessage": "Reopening puts the report back among the open ones. The reporter is not told again when it is resolved.",
+    "description": "Help of the reopen button."
+  },
+  "admin.report.reopen_failed": {
+    "defaultMessage": "The report could not be reopened: {reason}",
+    "description": "Toast when reopening fails."
+  },
+  "admin.report.reopened": {
+    "defaultMessage": "The report is open again.",
+    "description": "Status message after reopening."
+  },
+  "admin.report.reporter": {
+    "defaultMessage": "Reported by",
+    "description": "Term: the account that filed the report."
+  },
+  "admin.report.resolution.title": {
+    "defaultMessage": "Handling",
+    "description": "Heading of the region of a report's page where it is resolved or reopened."
+  },
+  "admin.report.resolve.actioned": {
+    "defaultMessage": "Resolve as actioned",
+    "description": "Button that resolves a report as actioned, with the action taken elsewhere."
+  },
+  "admin.report.resolve.description": {
+    "defaultMessage": "Without taking an action here: there was nothing to act on, or the action was taken elsewhere.",
+    "description": "Help of the buttons that resolve a report without an action."
+  },
+  "admin.report.resolve.dismissed": {
+    "defaultMessage": "Resolve without action",
+    "description": "Button that resolves a report as dismissed."
+  },
+  "admin.report.resolve.title": {
+    "defaultMessage": "Resolve without an action",
+    "description": "Heading of the buttons that resolve a report without an action."
+  },
+  "admin.report.resolve_failed": {
+    "defaultMessage": "The report could not be resolved: {reason}",
+    "description": "Toast when resolving fails."
+  },
+  "admin.report.resolved": {
+    "defaultMessage": "The report is resolved: {outcome}.",
+    "description": "Status message after resolving; outcome is how it was resolved."
+  },
+  "admin.report.resolved_at": {
+    "defaultMessage": "Resolved",
+    "description": "Term: when the report was resolved."
+  },
+  "admin.report.rules": {
+    "defaultMessage": "Rules cited",
+    "description": "Term: the instance rules the report cites."
+  },
+  "admin.report.rules.loading": {
+    "defaultMessage": "Loading the rules",
+    "description": "While the cited rules load."
+  },
+  "admin.report.rules.retired": {
+    "defaultMessage": "A rule no longer in effect",
+    "description": "A cited rule that the instance no longer has."
+  },
+  "admin.report.state": {
+    "defaultMessage": "State",
+    "description": "Term: whether the report is open or resolved."
+  },
+  "admin.report.summary.title": {
+    "defaultMessage": "Report",
+    "description": "Heading of the region of a report's page with the report itself."
+  },
+  "admin.report.target.actions": {
+    "defaultMessage": "Actions on the account",
+    "description": "Term: the number of moderation actions on the target."
+  },
+  "admin.report.target.actions.count": {
+    "defaultMessage": "{count, plural, =0 {None} one {# action} other {# actions}}",
+    "description": "Number of moderation actions on the target."
+  },
+  "admin.report.target.admin": {
+    "defaultMessage": "Open the account's admin page",
+    "description": "Link to the target's admin page."
+  },
+  "admin.report.target.audit": {
+    "defaultMessage": "Show operations on the account in the audit log",
+    "description": "Link to the audit log filtered to the target."
+  },
+  "admin.report.target.deleted": {
+    "defaultMessage": "The reported account was deleted.",
+    "description": "A report whose target no longer exists."
+  },
+  "admin.report.target.profile": {
+    "defaultMessage": "Open the profile",
+    "description": "Link to the target's profile."
+  },
+  "admin.report.target.reports": {
+    "defaultMessage": "Other reports",
+    "description": "Term: the number of the target's other reports."
+  },
+  "admin.report.target.reports.count": {
+    "defaultMessage": "{count, plural, =0 {None} one {# report} other {# reports}}",
+    "description": "Number of the target's other reports."
+  },
+  "admin.report.target.title": {
+    "defaultMessage": "Reported account",
+    "description": "Heading of the region of a report's page with its target."
+  },
+  "admin.report.title": {
+    "defaultMessage": "Report",
+    "description": "Heading and title of a report's page."
+  },
+  "admin.report.unassign": {
+    "defaultMessage": "Unassign",
+    "description": "Button that leaves a report to nobody."
+  },
+  "admin.report.unassign_failed": {
+    "defaultMessage": "The report could not be unassigned: {reason}",
+    "description": "Toast when unassigning fails."
+  },
+  "admin.report.unassigned": {
+    "defaultMessage": "Nobody handles this report now.",
+    "description": "Status message after unassigning."
+  },
+  "admin.reports.category.legal": {
+    "defaultMessage": "Illegal content",
+    "description": "Category of a report, and of the reason of an account action: content against the law."
+  },
+  "admin.reports.category.other": {
+    "defaultMessage": "Something else",
+    "description": "Category of a report, and of the reason of an account action: other."
+  },
+  "admin.reports.category.spam": {
+    "defaultMessage": "Spam",
+    "description": "Category of a report, and of the reason of an account action: spam."
+  },
+  "admin.reports.category.violation": {
+    "defaultMessage": "Breaks the server rules",
+    "description": "Category of a report, and of the reason of an account action: a rule violation."
+  },
+  "admin.reports.empty.open": {
+    "defaultMessage": "No open reports",
+    "description": "Empty state of the open reports."
+  },
+  "admin.reports.empty.open.description": {
+    "defaultMessage": "Reports from people here and from other servers show up here.",
+    "description": "Description of the empty state of the open reports."
+  },
+  "admin.reports.empty.resolved": {
+    "defaultMessage": "No resolved reports",
+    "description": "Empty state of the resolved reports."
+  },
+  "admin.reports.filter.label": {
+    "defaultMessage": "Reports",
+    "description": "Accessible name of the tabs of the report queue."
+  },
+  "admin.reports.filter.open": {
+    "defaultMessage": "Open",
+    "description": "Tab of the reports that await the moderators, and that state of a report."
+  },
+  "admin.reports.filter.resolved": {
+    "defaultMessage": "Resolved",
+    "description": "Tab of the handled reports, and that state of a report."
+  },
+  "admin.reports.outcome.actioned": {
+    "defaultMessage": "Action taken",
+    "description": "Outcome of a report: a moderator took an action on the target."
+  },
+  "admin.reports.outcome.dismissed": {
+    "defaultMessage": "No action",
+    "description": "Outcome of a report: there was nothing to act on."
+  },
+  "admin.reports.summary": {
+    "defaultMessage": "Reports of accounts and posts to the moderators, and handling them.",
+    "description": "Description of the report queue in the administration menu of the settings."
+  },
+  "admin.reports.title": {
+    "defaultMessage": "Reports",
+    "description": "Heading and title of the report queue."
   },
   "api.error.network": {
     "defaultMessage": "Could not reach the server. Check your connection and try again.",
