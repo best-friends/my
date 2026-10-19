@@ -102,7 +102,6 @@ test.describe("the federated timeline while the server serves it", () => {
 
   test("opens from the navigation as a feed named by the page heading", async ({ page, hasTouch }) => {
     const heading = page.getByRole("heading", { level: 1 });
-    const home = (await heading.textContent()) ?? "";
     const tabs = page.getByRole("main").getByRole("tab");
     if (hasTabBar(page)) {
       // Phones open the Timelines screen (the local timeline) and then its Federated tab (ADR-0039).
@@ -112,6 +111,8 @@ test.describe("the federated timeline while the server serves it", () => {
     } else {
       await expect(federatedLink(page)).toBeVisible();
     }
+    // The heading of the page the federated timeline opens from (Home, or Local on phones).
+    const previous = (await heading.textContent()) ?? "";
     await openFromNavigation(page, "/public", hasTouch);
 
     await expect(page).toHaveURL(/\/public$/);
@@ -124,7 +125,7 @@ test.describe("the federated timeline while the server serves it", () => {
     }
     await expect(tabs.and(page.locator('[href="/public"]'))).toHaveAttribute("aria-selected", "true");
     // The URL and the navigation can change before the new page renders its heading.
-    await expect(heading).not.toHaveText(home);
+    await expect(heading).not.toHaveText(previous);
     const name = (await heading.textContent()) ?? "";
     const feed = page.getByRole("feed", { name });
     await expect(feed.getByRole("article")).toHaveCount(3);
