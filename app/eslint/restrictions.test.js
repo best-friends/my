@@ -86,17 +86,29 @@ ruleTester.run("no-restricted-imports", core.get("no-restricted-imports"), {
     { code: "import { useState } from 'react';", options: [restrict.apiImports] },
     { code: "import { timeline } from '../api';", options: [restrict.apiImports] },
     // Inside features/<x>/api and lib/
-    { code: "import createClient from 'openapi-fetch';", options: [{ paths: restrict.importPaths }] },
-    { code: "import { client } from '../../../lib/api';", options: [{ paths: restrict.importPaths }] },
+    { code: "import createClient from 'openapi-fetch';", options: [restrict.apiAllowedImports] },
+    { code: "import { client } from '../../../lib/api';", options: [restrict.apiAllowedImports] },
+    // Inside app/ui/src/Icons.tsx
+    { code: "import { PiStar } from 'react-icons/pi';", options: [restrict.iconSetImports] },
+    { code: "import { Button } from './Button';", options: [restrict.iconSetImports] },
   ],
   invalid: [
     // R5
     { ...fails("import { useMemo, useCallback } from 'react';", 2), options: [restrict.apiImports] },
-    { ...fails("import { memo } from 'react';"), options: [{ paths: restrict.importPaths }] },
+    { ...fails("import { memo } from 'react';"), options: [restrict.apiAllowedImports] },
     // S1
     { ...fails("import createClient from 'openapi-fetch';"), options: [restrict.apiImports] },
     { ...fails("import { client } from '../../lib/api';"), options: [restrict.apiImports] },
     { ...fails("import { client } from '../../lib/api/client';"), options: [restrict.apiImports] },
+    { ...fails("import { client } from '../../lib/api';"), options: [restrict.iconSetImports] },
+    // G10: react-icons only in Icons.tsx, and only Phosphor there
+    { ...fails("import { PiStar } from 'react-icons/pi';"), options: [restrict.apiImports] },
+    { ...fails("import type { IconType } from 'react-icons';"), options: [restrict.apiImports] },
+    { ...fails("import { PiStar } from 'react-icons/pi';"), options: [restrict.apiAllowedImports] },
+    { ...fails("import { FaStar } from 'react-icons/fa';"), options: [restrict.iconSetImports] },
+    { ...fails("import type { IconType } from 'react-icons';"), options: [restrict.iconSetImports] },
+    { ...fails("import { IconBase } from 'react-icons/lib';"), options: [restrict.iconSetImports] },
+    { ...fails("import { PiStar } from 'react-icons/pip';"), options: [restrict.iconSetImports] },
   ],
 });
 
