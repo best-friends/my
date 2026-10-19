@@ -303,6 +303,33 @@ var schema = []field{
 		set:    func(c *Config, v string) { c.SMTPPassword = v },
 	},
 	{
+		key: "captcha",
+		doc: "CAPTCHA service that the sign-in and registration forms check (ADR-0042). The service receives the visitor's IP address, browser details, and cookies, and the two pages load its script; say so in the instance's privacy policy. Only `none` keeps every request on this server.",
+		def: "none",
+		choices: []choice{
+			{value: "none", inV0: true, doc: "No CAPTCHA; nothing is sent to a third party."},
+			{value: "turnstile", inV0: true, doc: "Cloudflare Turnstile."},
+			{value: "hcaptcha", inV0: true, doc: "hCaptcha."},
+			{value: "recaptcha", inV0: true, doc: "Google reCAPTCHA v2 with the checkbox (not v3 or Enterprise)."},
+		},
+		set: func(c *Config, v string) { c.Captcha = v },
+	},
+	{
+		key:          "captcha_site_key",
+		doc:          "Public site key of the `captcha` service, which the widget on the forms carries.",
+		requiredWhen: "when `captcha` is not `none`",
+		check:        checkNotBlank,
+		set:          func(c *Config, v string) { c.CaptchaSiteKey = v },
+	},
+	{
+		key:          "captcha_secret_key",
+		doc:          "Secret key of the `captcha` service, which the server sends with each token to the service's siteverify API. The server does not try the key at start: a key that the service refuses is logged as an error on the first check, and until it is fixed registrations are refused and sign-ins skip the CAPTCHA (ADR-0042 §4).",
+		secret:       true,
+		requiredWhen: "when `captcha` is not `none`",
+		check:        checkNotBlank,
+		set:          func(c *Config, v string) { c.CaptchaSecretKey = v },
+	},
+	{
 		key: "profile",
 		doc: "Whether this is a production instance. Settings that weaken a security default for development, such as `http_allow_private_networks`, are refused in the `production` profile (ADR-0019).",
 		def: "production",
@@ -366,6 +393,13 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 	}
 	if vals["mail"] == "smtp" && !present["smtp_host"] {
 		issues = append(issues, Issue{Key: "smtp_host", Missing: true, Message: "required when mail is smtp"})
+	}
+	if captcha, ok := vals["captcha"]; ok && captcha != "none" {
+		for _, k := range []string{"captcha_site_key", "captcha_secret_key"} {
+			if !present[k] {
+				issues = append(issues, Issue{Key: k, Missing: true, Message: "required when captcha is not none"})
+			}
+		}
 	}
 	if vals["http_allow_private_networks"] == "true" && vals["profile"] != "development" {
 		issues = append(issues, Issue{Key: "http_allow_private_networks", Message: "true is refused in the production profile; set profile = development"})

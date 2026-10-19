@@ -15,6 +15,7 @@ import (
 	"slices"
 
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
+	"github.com/best-friends/my/internal/adapter/captcha/siteverify"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/httpclient"
@@ -93,6 +94,11 @@ type App struct {
 	Mailer kernel.Mailer
 	// HTTPClient sends every outbound HTTP request through the SSRF guard (ADR-0019 §1).
 	HTTPClient kernel.HTTPClient
+	// HumanVerifier checks the CAPTCHA token of the sign-in and registration forms, and
+	// HumanCheckWidget is what those pages render for it; both are nil when captcha is none
+	// (ADR-0042).
+	HumanVerifier    kernel.HumanVerifier
+	HumanCheckWidget *kernel.HumanCheckWidget
 
 	Accounts *account.Service
 	Identity *identity.Service
@@ -338,6 +344,18 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	if opts.Version == "" {
+		opts.Version = "dev"
+	}
+	a.HTTPClient = opts.HTTPClient
+	if a.HTTPClient == nil {
+		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
+	}
+	// The identity module's sign-in and registration check the CAPTCHA through it (ADR-0042 §3).
+	if a.HumanVerifier, a.HumanCheckWidget, err = newHumanVerifier(cfg, a.HTTPClient, a.Logger); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	// The user step is the locale of the client API request's authenticated viewer.
 	a.Locales = &i18n.Resolver{Bundle: a.Messages, UserLocale: a.viewerLocale, InstanceDefault: a.instanceDefaultLocale}
 	// Moderation needs only the account module; the modules below read its restrictions.
@@ -419,13 +437,6 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
 	fedOutbox := a.setUpFederation(cfg, feds)
 
-	if opts.Version == "" {
-		opts.Version = "dev"
-	}
-	a.HTTPClient = opts.HTTPClient
-	if a.HTTPClient == nil {
-		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
-	}
 	a.setUpDelivery(feds)
 	if err := a.setBlobs(cfg); err != nil {
 		_ = a.Close()
@@ -757,6 +768,23 @@ func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger) kern
 		opts.AllowPrivateNetworks, opts.AllowHTTP, opts.AnyPort = true, true, true
 	}
 	return httpclient.New(opts)
+}
+
+// newHumanVerifier returns the CAPTCHA verifier and widget that cfg.Captcha selects, and
+// nil for none, which sends nothing to a third party (ADR-0042).
+func newHumanVerifier(cfg *config.Config, client kernel.HTTPClient, logger *slog.Logger) (kernel.HumanVerifier, *kernel.HumanCheckWidget, error) {
+	if cfg.Captcha == "" || cfg.Captcha == "none" {
+		return nil, nil, nil
+	}
+	v, err := siteverify.New(siteverify.Options{
+		Service: kernel.HumanCheckService(cfg.Captcha), SiteKey: cfg.CaptchaSiteKey, SecretKey: siteverify.Secret(cfg.CaptchaSecretKey),
+		Host: cfg.Host, HTTP: client, Logger: logger,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	w := v.Widget()
+	return v, &w, nil
 }
 
 // hostOnly returns host without a port.

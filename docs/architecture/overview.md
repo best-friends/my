@@ -106,6 +106,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `KeyValueStore` | キャッシュ・レート制限・連合ライブラリ用 KV | db | [0003](../adr/0003-database-abstraction.md) |
 | `HTTPClient` | 外部 HTTP（SSRF ガード・用途別の本文上限とタイムアウト・UA 付与） | httpclient（`net/http` + SSRF ガード） | [0006](../adr/0006-federation-protocol-scope.md), [0019](../adr/0019-security-baseline.md) |
 | `Mailer` | メール送信 | none（ログ出力） | [0010](../adr/0010-configuration-and-packaging.md) |
+| `HumanVerifier` | サインインと登録の CAPTCHA のトークンの検証（`HTTPClient` で siteverify に送る）。`captcha = none` では使わない（nil） | なし（`captcha = none`） | [0042](../adr/0042-captcha-human-verifier.md) |
 | `PushSender` | Web Push 送信 | webpush | — |
 | `Publisher` / `Subscriber` | リアルタイム更新の通知と購読（§4.4） | in-process（`stream.Hub`） | [0016](../adr/0016-client-api-style.md) |
 | `Clock` / `IdGenerator` | 時刻（UTC・ミリ秒）・ID 生成（テスト容易性のため注入） | system（システム時計 / `uuid.NewV7()`） | [0003](../adr/0003-database-abstraction.md) |
@@ -174,7 +175,7 @@ cmd/
 internal/
   domain/<module>/   # 純粋なドメイン（identity, account, content, graph, ...）
   app/<module>/      # ユースケースとポート定義
-  app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator / KeyManager / KeyValueStore / Mailer / HTMLSanitizer）、UUIDv7 ヘルパー、Sealer、RateLimiter
+  app/kernel/        # 全モジュール共通のポート（Clock / IDGenerator / KeyManager / KeyValueStore / Mailer / HTMLSanitizer / HTTPClient / HumanVerifier）、UUIDv7 ヘルパー、Sealer、RateLimiter
   app/uow/           # UnitOfWork ポート、トランザクションのリトライ、同期 projector の登録先
   app/queue/         # ジョブキューのポート、ハンドラの登録先、リトライ方針、pull runner、プロセス内 Scheduler
   app/blob/          # BlobStore ポートとキーの構文
@@ -194,6 +195,7 @@ internal/
     media/{native,vips,none}/
     kv/{db,memory}/
     mail/{none,smtp,ses}/
+    captcha/siteverify/ # HumanVerifier の実装（Turnstile / hCaptcha / reCAPTCHA v2 のプリセット。ADR-0042）
     system/          # Clock / IDGenerator の本番実装（システム時計・UUIDv7）
     keymanager/local/ # KeyManager の実装（設定の KEK。KMS アダプタは後続）
     htmlsanitizer/   # HTMLSanitizer の実装（bluemonday。リモート HTML の許可リスト。federation.md §5）
