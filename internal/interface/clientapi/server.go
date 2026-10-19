@@ -129,6 +129,8 @@ type Options struct {
 	RegistrationCounts RegistrationCounts
 	// Registrations runs the registration review (admin_registrations.go).
 	Registrations Registrations
+	// SignupBlocks runs the sign-up block list (admin_signup_blocks.go).
+	SignupBlocks SignupBlocks
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

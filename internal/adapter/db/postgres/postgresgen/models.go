@@ -689,6 +689,18 @@ type SessionOrigin struct {
 	CreatedAt time.Time
 }
 
+type SignupBlock struct {
+	ID                 string
+	Kind               string
+	Value              string
+	Severity           string
+	Comment            *string
+	ModerationActionID *string
+	CreatedByUserID    *string
+	ExpiresAt          *time.Time
+	CreatedAt          time.Time
+}
+
 type Status struct {
 	ID              string
 	Uri             string

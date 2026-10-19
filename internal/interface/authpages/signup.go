@@ -174,6 +174,10 @@ func (h *Handler) signUpFailed(w http.ResponseWriter, r *http.Request, p page, e
 	case errors.Is(err, appidentity.ErrRegistrationClosed):
 		f.Closed = true
 		status = http.StatusForbidden
+	case errors.Is(err, appidentity.ErrSignUpRefused):
+		// The sign-up block list refused it; the page does not say which block or why (FR-719).
+		status = http.StatusForbidden
+		p.Error = l.ServerAuthSignUpRefused()
 	case errors.Is(err, appaccount.ErrUsernameTaken):
 		f.Errors[fieldUsername] = l.ServerAuthSignUpUsernameTaken()
 	case errors.Is(err, appidentity.ErrEmailTaken):

@@ -225,6 +225,8 @@ export const auditActions = [
   "appeal_upheld",
   "appeal_overturned",
   "account_deletion_cancelled",
+  "signup_block_added",
+  "signup_block_lifted",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */

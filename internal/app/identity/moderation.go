@@ -32,6 +32,36 @@ func (s *Service) loginRestricted(ctx context.Context, accountID string) (bool, 
 	return s.d.Logins.LoginRestricted(ctx, accountID)
 }
 
+// SignupScreen matches a sign-up against the sign-up block list (FR-719).
+// *moderation.Service implements it.
+type SignupScreen interface {
+	// ScreenSignup returns the strongest severity of the blocks in effect that match the email
+	// address and the client address ip, "" when none does.
+	ScreenSignup(ctx context.Context, email, ip string) (appmoderation.SignupBlockSeverity, error)
+}
+
+// screenSignup returns the severity of the sign-up blocks that match a sign-up; without a
+// screen, none does.
+func (s *Service) screenSignup(ctx context.Context, email, ip string) (appmoderation.SignupBlockSeverity, error) {
+	if s.d.SignupBlocks == nil {
+		return "", nil
+	}
+	return s.d.SignupBlocks.ScreenSignup(ctx, email, ip)
+}
+
+// PrimaryEmailAddress returns a user's primary email address, "" when the user has none. The
+// moderation module reads it for the sign-up block that a ban makes of it.
+func (s *Service) PrimaryEmailAddress(ctx context.Context, userID string) (string, error) {
+	email, _, err := s.d.Repository.FindPrimaryEmail(ctx, userID)
+	switch {
+	case errors.Is(err, ErrNotFound):
+		return "", nil
+	case err != nil:
+		return "", err
+	}
+	return email.Address, nil
+}
+
 // banned reports whether a ban is in effect on the account; without a policy, on none.
 func (s *Service) banned(ctx context.Context, accountID string) (bool, error) {
 	if s.d.Logins == nil {

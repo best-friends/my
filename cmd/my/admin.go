@@ -45,6 +45,8 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runAdminRetention(args[1:], stdout, stderr)
 	case args[0] == "role":
 		return runAdminRole(args[1:], stdout, stderr)
+	case args[0] == "signup-block":
+		return runAdminSignupBlock(args[1:], stdout, stderr)
 	case args[0] != "create":
 		_, _ = fmt.Fprintf(stderr, "my admin: unknown subcommand %q\n\n", args[0])
 		adminUsage(stderr)
@@ -185,6 +187,7 @@ func adminUsage(w io.Writer) {
        my admin audit list ...   (my admin audit -help)
        my admin retention hold|release|list ...   (my admin retention -help)
        my admin role list|grant|revoke ...   (my admin role -help)
+       my admin signup-block add|list|lift ...   (my admin signup-block -help)
 
 my admin account, my admin domain, my admin report, and my admin appeal moderate
 accounts and remote domains and handle reports and appeals.
@@ -192,6 +195,7 @@ my admin audit lists the audit log of the moderators' and administrators' operat
 my admin retention holds an account's records past their retention, and my admin
 account export-moderation writes them all for a request of access.
 my admin role grants and revokes the roles of local users.
+my admin signup-block blocks sign-ups by email domain, email address, or IP range.
 
 my admin create creates an administrator: a user with the password, the email address as primary
 address, a local account with the username, and the built-in admin role, in one

@@ -719,6 +719,14 @@
     "defaultMessage": "Setting changed",
     "description": "Heading of an audit log entry: an administrator changed an instance setting."
   },
+  "admin.audit_log.action.signup_block_added": {
+    "defaultMessage": "Sign-up block added",
+    "description": "Heading of an audit log entry: a moderator added a block on sign-ups by email domain, email address, or IP range."
+  },
+  "admin.audit_log.action.signup_block_lifted": {
+    "defaultMessage": "Sign-up block lifted",
+    "description": "Heading of an audit log entry: a moderator lifted a block on sign-ups."
+  },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "Text changed",
     "description": "Heading of an audit log entry: an administrator changed an instance text (such as the terms) in one language."

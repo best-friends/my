@@ -2017,6 +2017,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/signup_blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the sign-up blocks
+         * @description The blocks on sign-ups from the registration page (FR-719), newest first, lifted and
+         *     expired ones included unless `active` is set. Needs the `manage_accounts` permission.
+         */
+        get: operations["listSignupBlocks"];
+        put?: never;
+        /**
+         * Block sign-ups
+         * @description Records a block on sign-ups from the registration page (FR-719), in effect at once and
+         *     until it expires or is lifted; the block is audited. A sign-up whose email address or
+         *     client address it matches is refused (`reject`) or starts pending for a moderator
+         *     whatever the registration mode (`require_approval`); the page does not tell the
+         *     applicant why. The value is stored in its canonical form: an `email_domain` in IDNA
+         *     A-labels (it covers the subdomains), an `email_hash` as the hash of the canonical
+         *     address (an email address given is hashed and not kept), an `ip_range` as a masked
+         *     CIDR prefix (a single address is a prefix of its full length). A value that is not
+         *     valid for its kind, or a `comment` that is too long or contains U+0000, is a 422.
+         *     Needs the `manage_accounts` permission.
+         */
+        post: operations["createSignupBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/signup_blocks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a sign-up block
+         * @description An unknown ID is a 404. Needs the `manage_accounts` permission.
+         */
+        get: operations["getSignupBlock"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/signup_blocks/{id}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lift a sign-up block
+         * @description The block stops matching sign-ups at once; the lift is audited. Lifting a lifted block
+         *     changes nothing. An unknown ID is a 404. Needs the `manage_accounts` permission.
+         */
+        post: operations["liftSignupBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2988,10 +3063,10 @@ export interface components {
          *     user): `role_granted`, `role_revoked`. On an `appeal`:
          *     `appeal_upheld`, `appeal_overturned` (which also records the action's
          *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
-         *     `account`).
+         *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -3013,14 +3088,14 @@ export interface components {
             action: components["schemas"]["AdminAuditAction"];
             target_kind: components["schemas"]["AdminAuditTargetKind"];
             /**
-             * @description The target: the ID of an account, a report, a user, or a rule, the domain of a domain
-             *     action, or the key of a setting or a text.
+             * @description The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
+             *     domain of a domain action, or the key of a setting or a text.
              */
             target_id: string;
             /**
              * @description The target's display name when the operation happened, such as `@alice`,
-             *     `@bob@example.com`, a domain, a setting's key, or a rule's text; up to 512
-             *     characters.
+             *     `@bob@example.com`, a domain, a setting's key, a rule's text, or a sign-up block's
+             *     kind and value (`email_domain spam.example`); up to 512 characters.
              */
             target_label: string;
             /**
@@ -3318,6 +3393,13 @@ export interface components {
              *     on; required for them and taken by no other kind.
              */
             status_ids?: components["schemas"]["Id"][];
+            /**
+             * @description Whether a `ban` also blocks sign-ups with the email address of the account's user (a
+             *     `reject` sign-up block of kind `email_hash`, FR-719); only a `ban` of a local
+             *     account takes it, and a user without an email address is a 422. Omitted, nothing is
+             *     blocked.
+             */
+            block_email?: boolean;
         };
         /** @description Why an action on an account is lifted. */
         LiftAccountActionRequest: {
@@ -3579,6 +3661,72 @@ export interface components {
          * @enum {string}
          */
         RegistrationState: "pending" | "approved" | "rejected";
+        /** @description A block on sign-ups from the registration page (FR-719). */
+        AdminSignupBlock: {
+            id: components["schemas"]["Id"];
+            kind: components["schemas"]["AdminSignupBlockKind"];
+            /**
+             * @description What the block matches, in canonical form: a domain in IDNA A-labels
+             *     (`email_domain`), the hex SHA-256 of a canonical email address (`email_hash`), or a
+             *     masked CIDR prefix (`ip_range`).
+             */
+            value: string;
+            severity: components["schemas"]["AdminSignupBlockSeverity"];
+            /** @description The moderators' comment; omitted when there is none. */
+            comment?: string;
+            /** @description The ban the block was made from; omitted for a block added on its own. */
+            moderation_action_id?: components["schemas"]["Id"];
+            state: components["schemas"]["AdminSignupBlockState"];
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the block ends by itself; omitted for one that lasts until lifted.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When the block was lifted; omitted until it is.
+             */
+            lifted_at?: string;
+        };
+        /**
+         * @description `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
+         *     email address, compared in lower case without the part of the local part from its first
+         *     `+`. `ip_range`: the client addresses in a CIDR prefix.
+         * @enum {string}
+         */
+        AdminSignupBlockKind: "email_domain" | "email_hash" | "ip_range";
+        /** @description A page of sign-up blocks, newest first. */
+        AdminSignupBlockPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminSignupBlock"][];
+        };
+        /**
+         * @description `reject`: the sign-up is refused. `require_approval`: the registration starts pending
+         *     for a moderator, whatever the registration mode.
+         * @enum {string}
+         */
+        AdminSignupBlockSeverity: "reject" | "require_approval";
+        /**
+         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+         *     lifted it.
+         * @enum {string}
+         */
+        AdminSignupBlockState: "active" | "expired" | "lifted";
+        /** @description A new block on sign-ups. */
+        CreateSignupBlockRequest: {
+            kind: components["schemas"]["AdminSignupBlockKind"];
+            /**
+             * @description A domain such as `spam.example` or `例え.jp` (`email_domain`), an email address or
+             *     the hex SHA-256 of a canonical one (`email_hash`), or a CIDR prefix such as
+             *     `192.0.2.0/24` or a single IP address (`ip_range`).
+             */
+            value: string;
+            severity: components["schemas"]["AdminSignupBlockSeverity"];
+            comment?: string;
+            /** @description The seconds the block lasts; omitted, it lasts until it is lifted. */
+            expires_in?: number;
+        };
         /** @description A report of an account to the moderators. */
         CreateReportRequest: {
             /** @description The account reported, local or remote. */
@@ -3786,6 +3934,16 @@ export interface components {
                 "application/json": components["schemas"]["AdminRegistration"];
             };
         };
+        /** @description The sign-up block. */
+        AdminSignupBlock: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminSignupBlock"];
+            };
+        };
     };
     parameters: {
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
@@ -3820,6 +3978,8 @@ export interface components {
         RoleKey: string;
         /** @description The ID of the user who signed up. */
         RegistrationUserId: components["schemas"]["Id"];
+        /** @description The ID of the sign-up block. */
+        SignupBlockId: components["schemas"]["Id"];
     };
     requestBodies: never;
     headers: {
@@ -5981,6 +6141,86 @@ export interface operations {
         };
         responses: {
             200: components["responses"]["AdminRegistration"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listSignupBlocks: {
+        parameters: {
+            query?: {
+                /** @description Keep only the blocks of this kind. */
+                kind?: components["schemas"]["AdminSignupBlockKind"];
+                /** @description Keep only the blocks in effect now, neither lifted nor expired. */
+                active?: boolean;
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of sign-up blocks. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSignupBlockPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createSignupBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSignupBlockRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminSignupBlock"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getSignupBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the sign-up block. */
+                id: components["parameters"]["SignupBlockId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminSignupBlock"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    liftSignupBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the sign-up block. */
+                id: components["parameters"]["SignupBlockId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminSignupBlock"];
             default: components["responses"]["Problem"];
         };
     };

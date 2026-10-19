@@ -362,6 +362,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.rule_revised": {};
   /** Setting changed */
   "client:admin.audit_log.action.setting_changed": {};
+  /** Sign-up block added */
+  "client:admin.audit_log.action.signup_block_added": {};
+  /** Sign-up block lifted */
+  "client:admin.audit_log.action.signup_block_lifted": {};
   /** Text changed */
   "client:admin.audit_log.action.text_changed": {};
   /** By */
@@ -1930,6 +1934,8 @@ export interface MessageArgs {
   "server:auth.sign_up.reason_invalid": { max: number };
   /** Why do you want to join? (optional) */
   "server:auth.sign_up.reason_label": {};
+  /** This server cannot accept this sign-up. */
+  "server:auth.sign_up.refused": {};
   /** Create account */
   "server:auth.sign_up.submit": {};
   /** Create an account */

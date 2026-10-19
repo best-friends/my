@@ -166,6 +166,7 @@ func TestSignUpReportsWhatTheServiceRejects(t *testing.T) {
 		{appidentity.ErrEmailTaken, http.StatusUnprocessableEntity, `<p id="sign-up-email-error" class="field-error">This email address is already in use.</p>`},
 		{appidentity.ErrInvalidInvite, http.StatusUnprocessableEntity, `<p id="sign-up-invite-error" class="field-error">This invite code is not valid.`},
 		{appidentity.ErrRegistrationClosed, http.StatusForbidden, "This server is not accepting new accounts."},
+		{appidentity.ErrSignUpRefused, http.StatusForbidden, `<p id="sign-up-error" class="alert" role="alert">This server cannot accept this sign-up.</p>`},
 		{&kernel.RateLimitedError{RetryAfter: 90 * time.Second}, http.StatusTooManyRequests,
 			`<p id="sign-up-error" class="alert" role="alert">Too many sign-up attempts from your network. Try again in 2 minutes.</p>`},
 	} {

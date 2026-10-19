@@ -33,6 +33,8 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   appeal_upheld: "client:admin.audit_log.action.appeal_upheld",
   appeal_overturned: "client:admin.audit_log.action.appeal_overturned",
   account_deletion_cancelled: "client:admin.audit_log.action.account_deletion_cancelled",
+  signup_block_added: "client:admin.audit_log.action.signup_block_added",
+  signup_block_lifted: "client:admin.audit_log.action.signup_block_lifted",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {

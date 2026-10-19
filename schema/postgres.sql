@@ -1729,7 +1729,7 @@ CREATE TABLE audit_log_entries (
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
     'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked', 'appeal_upheld',
     'appeal_overturned', 'account_deletion_cancelled',
-    'revealed_private_data'
+    'revealed_private_data', 'signup_block_added', 'signup_block_lifted'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
@@ -1799,6 +1799,36 @@ CREATE TABLE appeal_states (
   since timestamptz NOT NULL
 );
 CREATE INDEX appeal_states_state_appeal_id ON appeal_states (state, appeal_id);
+
+-- moderation: the sign-up block list (data-model §4.3, FR-719). Owned by internal/app/moderation.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: a block on sign-ups from the registration page. value is an IDNA A-label domain
+-- (email_domain, which covers its subdomains), the hex SHA-256 of a canonical email address
+-- (email_hash), or a masked CIDR prefix (ip_range). moderation_action_id is the ban the block
+-- was made from; created_by_user_id is NULL for the CLI. A block is in effect until it expires
+-- or is lifted.
+CREATE TABLE signup_blocks (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  kind text NOT NULL CHECK (kind IN ('email_domain', 'email_hash', 'ip_range')),
+  value text COLLATE "C" NOT NULL,
+  severity text NOT NULL CHECK (severity IN ('reject', 'require_approval')),
+  comment text,
+  moderation_action_id text COLLATE "C",
+  created_by_user_id text COLLATE "C",
+  expires_at timestamptz,
+  created_at timestamptz NOT NULL,
+  CHECK (expires_at IS NULL OR expires_at > created_at)
+);
+CREATE INDEX signup_blocks_kind_value ON signup_blocks (kind, value);
+
+-- Event: a sign-up block was lifted. Expiry is not a lift. lifted_by_user_id is NULL for the
+-- CLI.
+CREATE TABLE signup_block_lifts (
+  block_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  lifted_by_user_id text COLLATE "C",
+  lifted_at timestamptz NOT NULL
+);
 
 -- ---------------------------------------------------------------------------------------------
 -- moderation: retention of the moderation records and the holds that stop it (#349,

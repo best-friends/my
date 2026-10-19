@@ -124,6 +124,10 @@ const (
 	// AuditRevealedPrivateData: a moderator was shown the email address and the IP addresses of
 	// a local account (FR-714); the operation has no row of its own.
 	AuditRevealedPrivateData AuditAction = "revealed_private_data"
+	// AuditSignupBlockAdded: a new sign-up block (signup_blocks).
+	AuditSignupBlockAdded AuditAction = "signup_block_added"
+	// AuditSignupBlockLifted: a sign-up block was lifted (signup_block_lifts).
+	AuditSignupBlockLifted AuditAction = "signup_block_lifted"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -154,6 +158,8 @@ var auditActions = []struct {
 	{AuditAppealOverturned, AuditTargetAppeal},
 	{AuditAccountDeletionCancelled, AuditTargetAccount},
 	{AuditRevealedPrivateData, AuditTargetAccount},
+	{AuditSignupBlockAdded, AuditTargetSignupBlock},
+	{AuditSignupBlockLifted, AuditTargetSignupBlock},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

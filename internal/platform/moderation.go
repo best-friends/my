@@ -9,6 +9,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/moderation"
@@ -35,6 +36,7 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 		Statuses: moderationStatuses{a}, Lifecycles: a.Accounts, AppealWindow: appealWindow{a},
 		Retention: retentionSettings{a},
 		Follows:   moderationFollows{a}, Directory: a.Accounts, Outbox: outbox,
+		Emails: moderationEmails{a}, CanonicalDomain: federation.CanonicalHost,
 		Evidence: moderationEvidence{a},
 	})
 	a.ModerationPolicy = moderation.NewFederationPolicy(repo, a.Clock)
@@ -147,6 +149,15 @@ func (m moderationFollows) Counterparts(ctx context.Context, tx uow.Tx, accountI
 
 func (m moderationFollows) SeverByModeration(ctx context.Context, tx uow.Tx, accountID string, others []string, announce bool, now time.Time) (graph.Severed, error) {
 	return m.a.Graph.SeverByModeration(ctx, tx, accountID, others, announce, now)
+}
+
+// moderationEmails gives the moderation module the identity module, which is built after it
+// because it reads the moderation restrictions, for the sign-up block that a ban makes of the
+// banned user's email address.
+type moderationEmails struct{ a *App }
+
+func (m moderationEmails) PrimaryEmailAddress(ctx context.Context, userID string) (string, error) {
+	return m.a.Identity.PrimaryEmailAddress(ctx, userID)
 }
 
 // setUpLocalReports builds the filing of local users' reports, which checks the reported

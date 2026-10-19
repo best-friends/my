@@ -2556,6 +2556,105 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: registrations (#345) ---
+  # --- admin: sign-up blocks (#346) ---
+  /admin/signup_blocks:
+    get:
+      operationId: listSignupBlocks
+      summary: List the sign-up blocks
+      description: |
+        The blocks on sign-ups from the registration page (FR-719), newest first, lifted and
+        expired ones included unless `active` is set. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          description: Keep only the blocks of this kind.
+          schema:
+            $ref: "#/components/schemas/AdminSignupBlockKind"
+        - name: active
+          in: query
+          required: false
+          description: Keep only the blocks in effect now, neither lifted nor expired.
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of sign-up blocks.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSignupBlockPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createSignupBlock
+      summary: Block sign-ups
+      description: |
+        Records a block on sign-ups from the registration page (FR-719), in effect at once and
+        until it expires or is lifted; the block is audited. A sign-up whose email address or
+        client address it matches is refused (`reject`) or starts pending for a moderator
+        whatever the registration mode (`require_approval`); the page does not tell the
+        applicant why. The value is stored in its canonical form: an `email_domain` in IDNA
+        A-labels (it covers the subdomains), an `email_hash` as the hash of the canonical
+        address (an email address given is hashed and not kept), an `ip_range` as a masked
+        CIDR prefix (a single address is a prefix of its full length). A value that is not
+        valid for its kind, or a `comment` that is too long or contains U+0000, is a 422.
+        Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSignupBlockRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminSignupBlock"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/signup_blocks/{id}:
+    get:
+      operationId: getSignupBlock
+      summary: Get a sign-up block
+      description: An unknown ID is a 404. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/SignupBlockId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminSignupBlock"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/signup_blocks/{id}/lift:
+    post:
+      operationId: liftSignupBlock
+      summary: Lift a sign-up block
+      description: |
+        The block stops matching sign-ups at once; the lift is audited. Lifting a lifted block
+        changes nothing. An unknown ID is a 404. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/SignupBlockId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminSignupBlock"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: sign-up blocks (#346) ---
 components:
   securitySchemes:
     oauth2:
@@ -2731,6 +2830,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: registrations (#345) ---
+    # --- admin: sign-up blocks (#346) ---
+    SignupBlockId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the sign-up block.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: sign-up blocks (#346) ---
   responses:
     StatusPage:
       description: A page of posts and boosts, newest first.
@@ -2892,6 +3000,17 @@ components:
           schema:
             $ref: "#/components/schemas/AdminRegistration"
     # --- end of admin: registrations (#345) ---
+    # --- admin: sign-up blocks (#346) ---
+    AdminSignupBlock:
+      description: The sign-up block.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminSignupBlock"
+    # --- end of admin: sign-up blocks (#346) ---
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -4320,7 +4439,7 @@ components:
         user): `role_granted`, `role_revoked`. On an `appeal`:
         `appeal_upheld`, `appeal_overturned` (which also records the action's
         `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
-        `account`).
+        `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`.
       type: string
       enum:
         - account_action_issued
@@ -4346,6 +4465,8 @@ components:
         - appeal_overturned
         - account_deletion_cancelled
         - revealed_private_data
+        - signup_block_added
+        - signup_block_lifted
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -4378,14 +4499,14 @@ components:
           $ref: "#/components/schemas/AdminAuditTargetKind"
         target_id:
           description: |
-            The target: the ID of an account, a report, a user, or a rule, the domain of a domain
-            action, or the key of a setting or a text.
+            The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
+            domain of a domain action, or the key of a setting or a text.
           type: string
         target_label:
           description: |
             The target's display name when the operation happened, such as `@alice`,
-            `@bob@example.com`, a domain, a setting's key, or a rule's text; up to 512
-            characters.
+            `@bob@example.com`, a domain, a setting's key, a rule's text, or a sign-up block's
+            kind and value (`email_domain spam.example`); up to 512 characters.
           type: string
         source_event_id:
           description: |
@@ -4823,6 +4944,13 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/Id"
+        block_email:
+          description: |
+            Whether a `ban` also blocks sign-ups with the email address of the account's user (a
+            `reject` sign-up block of kind `email_hash`, FR-719); only a `ban` of a local
+            account takes it, and a user without an email address is a 422. Omitted, nothing is
+            blocked.
+          type: boolean
     LiftAccountActionRequest:
       description: Why an action on an account is lifted.
       type: object
@@ -5241,6 +5369,99 @@ components:
       type: string
       enum: [pending, approved, rejected]
     # --- end of admin: registrations (#345) ---
+    # --- admin: sign-up blocks (#346) ---
+    AdminSignupBlock:
+      description: A block on sign-ups from the registration page (FR-719).
+      type: object
+      required: [id, kind, value, severity, state, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        kind:
+          $ref: "#/components/schemas/AdminSignupBlockKind"
+        value:
+          description: |
+            What the block matches, in canonical form: a domain in IDNA A-labels
+            (`email_domain`), the hex SHA-256 of a canonical email address (`email_hash`), or a
+            masked CIDR prefix (`ip_range`).
+          type: string
+        severity:
+          $ref: "#/components/schemas/AdminSignupBlockSeverity"
+        comment:
+          description: The moderators' comment; omitted when there is none.
+          type: string
+        moderation_action_id:
+          description: The ban the block was made from; omitted for a block added on its own.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        state:
+          $ref: "#/components/schemas/AdminSignupBlockState"
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          description: When the block ends by itself; omitted for one that lasts until lifted.
+          type: string
+          format: date-time
+        lifted_at:
+          description: When the block was lifted; omitted until it is.
+          type: string
+          format: date-time
+    AdminSignupBlockKind:
+      description: |
+        `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
+        email address, compared in lower case without the part of the local part from its first
+        `+`. `ip_range`: the client addresses in a CIDR prefix.
+      type: string
+      enum: [email_domain, email_hash, ip_range]
+    AdminSignupBlockPage:
+      description: A page of sign-up blocks, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminSignupBlock"
+    AdminSignupBlockSeverity:
+      description: |
+        `reject`: the sign-up is refused. `require_approval`: the registration starts pending
+        for a moderator, whatever the registration mode.
+      type: string
+      enum: [reject, require_approval]
+    AdminSignupBlockState:
+      description: |
+        `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+        lifted it.
+      type: string
+      enum: [active, expired, lifted]
+    CreateSignupBlockRequest:
+      description: A new block on sign-ups.
+      type: object
+      required: [kind, value, severity]
+      properties:
+        kind:
+          $ref: "#/components/schemas/AdminSignupBlockKind"
+        value:
+          description: |
+            A domain such as `spam.example` or `例え.jp` (`email_domain`), an email address or
+            the hex SHA-256 of a canonical one (`email_hash`), or a CIDR prefix such as
+            `192.0.2.0/24` or a single IP address (`ip_range`).
+          type: string
+          minLength: 1
+          maxLength: 320
+        severity:
+          $ref: "#/components/schemas/AdminSignupBlockSeverity"
+        comment:
+          type: string
+          maxLength: 1000
+        expires_in:
+          description: The seconds the block lasts; omitted, it lasts until it is lifted.
+          type: integer
+          minimum: 1
+    # --- end of admin: sign-up blocks (#346) ---
     # --- reports (#332) ---
     CreateReportRequest:
       description: A report of an account to the moderators.

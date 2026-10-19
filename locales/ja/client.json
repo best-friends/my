@@ -719,6 +719,14 @@
     "defaultMessage": "設定の変更",
     "description": "Heading of an audit log entry: an administrator changed an instance setting."
   },
+  "admin.audit_log.action.signup_block_added": {
+    "defaultMessage": "登録の拒否の追加",
+    "description": "Heading of an audit log entry: a moderator added a block on sign-ups by email domain, email address, or IP range."
+  },
+  "admin.audit_log.action.signup_block_lifted": {
+    "defaultMessage": "登録の拒否の解除",
+    "description": "Heading of an audit log entry: a moderator lifted a block on sign-ups."
+  },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "文章の変更",
     "description": "Heading of an audit log entry: an administrator changed an instance text (such as the terms) in one language."

@@ -79,8 +79,9 @@ func usage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage: my <command>
 
 Commands:
-  admin     Create an administrator, moderate domains, handle reports, and
-            manage roles (my admin create|account|domain|report|audit|role)
+  admin     Create an administrator, moderate domains, handle reports,
+            manage roles, and block sign-ups
+            (my admin create|account|domain|report|audit|role|signup-block)
   config    Check the configuration (my config check)
   instance  Read and change the instance settings and rules
             (my instance list|get|set|history|rule)

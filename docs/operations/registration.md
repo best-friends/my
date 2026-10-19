@@ -87,3 +87,29 @@ my registration reject -note "spam" bob
 
 - CLI と同じユースケースで、決定を `registration_decisions` と監査ログ（`registration_approved`・`registration_rejected`）に記録します。CLI の決定の操作者は `cli`、API の決定の操作者は決めたモデレーターです。
 - 決定済みの登録をもう一度決定しても何も変わらず、今の状態を返します（同時に決定しても、決定は 1 つだけです）。登録画面を通らずに作られた利用者は 404 です。
+
+## 登録の拒否リスト
+
+メールアドレスのドメイン・メールアドレス・IP の範囲で、登録画面からの登録を拒否するか承認制に切り替えます（FR-719）。
+
+```sh
+my admin signup-block add -kind email_domain spam.example          # サブドメインにも効く。U-label も可
+my admin signup-block add -kind ip_range -severity require_approval -duration 720h 192.0.2.0/24
+my admin signup-block add -kind email_hash spammer@example.com     # アドレスはハッシュだけを残す
+my admin signup-block list -active
+my admin signup-block lift <block id>
+```
+
+- `-severity reject`（既定）に当たる登録は受け付けず、`require_approval` に当たる登録は登録モードに関わらず承認待ちで始まります。複数に当たれば強いほうが効きます。登録画面は拒否の理由を示しません。
+- `email_hash` は小文字にし、ローカル部の最初の `+` 以降を除いたアドレスで照合します。IP の範囲は登録元の IP（`registration_origins` と同じ値）で照合し、IP の分からない登録には効きません。
+- 期限切れ・解除済みの拒否は効きません。追加と解除は監査ログ（`signup_block_added`・`signup_block_lifted`）に残ります。
+- ローカルアカウントの BAN で `-block-email`（API は `block_email: true`）を付けると、その利用者のメールアドレスの `email_hash` の拒否を同時に作ります。
+
+管理画面（クライアント API）からも同じ操作ができます。どれも `manage_accounts` 権限が要ります。
+
+| 操作 | 内容 |
+| --- | --- |
+| `GET /api/v1/admin/signup_blocks` | 拒否の一覧（新しい順）。`kind`・`active` で絞り込める |
+| `POST /api/v1/admin/signup_blocks` | 拒否を追加する。本文は `kind`・`value`・`severity`・`comment`・`expires_in`（秒） |
+| `GET /api/v1/admin/signup_blocks/{id}` | 拒否を 1 件返す |
+| `POST /api/v1/admin/signup_blocks/{id}/lift` | 拒否を解除する。解除済みなら何も変えない |

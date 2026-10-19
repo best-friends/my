@@ -360,6 +360,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			return domainidentity.RegistrationMode(mode), err
 		},
 		Mailer: a.Mailer,
+		// The registration page screens sign-ups against the sign-up block list (FR-719).
+		SignupBlocks: a.Moderation,
 		// mail = none delivers nothing, so a moderator's approval stands in for verification (FR-002).
 		RequireEmailVerification: cfg.Mail != "none",
 		Messages:                 a.Messages,
@@ -493,7 +495,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Roles:        a.Identity,
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
-		OwnAppeals: a.Moderation, AppealModeration: a.Moderation,
+		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil

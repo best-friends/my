@@ -118,6 +118,8 @@ type Repository interface {
 	RetentionRepository
 	// The account management (account_admin.go).
 	AccountAdminRepository
+	// The sign-up block list (signup_block.go).
+	SignupBlockRepository
 }
 
 // ReportQuery selects the reports of a list.

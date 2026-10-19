@@ -243,6 +243,10 @@
     "defaultMessage": "‮Mɥʎ po ʎon ʍɐuʇ ʇo ɾoıu? (odʇıouɐʅ)‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.sign_up.refused": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ɔɐuuoʇ ɐɔɔǝdʇ ʇɥıs sıƃu-nd.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.sign_up.submit": {
     "defaultMessage": "‮Ↄɹǝɐʇǝ ɐɔɔonuʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."

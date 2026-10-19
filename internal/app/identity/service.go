@@ -46,6 +46,9 @@ type Deps struct {
 	// setting). SignUp calls it once per sign-up, so a change applies to the next one. Nil
 	// means identity.RegistrationClosed.
 	RegistrationMode func(ctx context.Context) (identity.RegistrationMode, error)
+	// SignupBlocks screens the sign-ups from the registration page against the sign-up block
+	// list (FR-719); nil screens nothing.
+	SignupBlocks SignupScreen
 	// Mailer sends verification emails; nil sends none and issues no verification tokens.
 	Mailer kernel.Mailer
 	// RequireEmailVerification keeps users whose primary address is unverified from using

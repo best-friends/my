@@ -92,6 +92,9 @@ type RegistrationEntry struct {
 var (
 	// ErrRegistrationClosed reports a sign-up while the registration mode is closed.
 	ErrRegistrationClosed = errors.New("identity: registration is closed")
+	// ErrSignUpRefused reports a sign-up that a sign-up block with severity reject matches
+	// (FR-719). The page does not tell the applicant which block matched, or why.
+	ErrSignUpRefused = errors.New("identity: the sign-up is refused")
 	// ErrInviteRequired reports a sign-up without an invite code in invite mode.
 	ErrInviteRequired = errors.New("identity: an invite is required")
 	// ErrInvalidInvite reports an invite code that is unknown, expired, revoked, or used up.
@@ -167,7 +170,9 @@ type SignedUp struct {
 // (FR-001): open mode approves at once, approval mode leaves the registration pending for a
 // moderator, invite mode needs a valid invite and approves at once, and closed mode refuses.
 // When email verification is not required (no mailer delivers email, FR-002), open mode
-// waits for a moderator as approval mode does.
+// waits for a moderator as approval mode does. The sign-up block list (FR-719) comes on top:
+// a block in effect that matches the email address or the client address refuses the sign-up
+// (severity reject) or leaves it pending for a moderator in every mode (require_approval).
 //
 // In one transaction it writes the user, password, primary email address, preferences, local
 // account, application, the system's decision, the registration state, the invite's
@@ -176,7 +181,7 @@ type SignedUp struct {
 // the verification email. The invite's redemption takes the next sequence number, so concurrent sign-ups never
 // redeem an invite more than its maximum uses.
 //
-// It fails with ErrRegistrationClosed, ErrInviteRequired, ErrInvalidInvite, ErrEmailTaken,
+// It fails with ErrRegistrationClosed, ErrSignUpRefused, ErrInviteRequired, ErrInvalidInvite, ErrEmailTaken,
 // account.ErrUsernameTaken, a *kernel.RateLimitedError (SignUpIPLimit), and errors wrapping
 // identity.ErrInvalidEmail, identity.ErrInvalidPassword, identity.ErrInvalidReason, or
 // account.ErrInvalidUsername for invalid input. A failure writes nothing.
@@ -220,6 +225,13 @@ func (s *Service) SignUp(ctx context.Context, in SignUpInput) (SignedUp, error) 
 			return SignedUp{}, &kernel.RateLimitedError{RetryAfter: d.RetryAfter}
 		}
 	}
+	severity, err := s.screenSignup(ctx, in.Email, in.IP)
+	if err != nil {
+		return SignedUp{}, err
+	}
+	if severity == appmoderation.SignupReject {
+		return SignedUp{}, ErrSignUpRefused
+	}
 	var invite *identity.Invite
 	if mode == identity.RegistrationInvite {
 		inv, err := s.d.Repository.FindInviteByCode(ctx, code)
@@ -249,7 +261,8 @@ func (s *Service) SignUp(ctx context.Context, in SignUpInput) (SignedUp, error) 
 	}
 	state := identity.UserRegistrationState{UserID: p.user.ID, State: identity.RegistrationPending, Since: now}
 	var decision *identity.RegistrationDecision
-	if mode == identity.RegistrationInvite || (mode == identity.RegistrationOpen && s.d.RequireEmailVerification) {
+	approve := mode == identity.RegistrationInvite || (mode == identity.RegistrationOpen && s.d.RequireEmailVerification)
+	if approve && severity != appmoderation.SignupRequireApproval {
 		decision = &identity.RegistrationDecision{
 			ID: s.d.IDs.NewID(), ApplicationID: app.ID, Decision: identity.DecisionApproved,
 			DecidedBy: identity.DecidedBySystem, DecidedAt: now,
