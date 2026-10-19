@@ -12,6 +12,7 @@ const pages: readonly { href: string; permission: Permission; label: ClientMessa
   { href: "/admin/instances", permission: "manage_domains", label: "client:admin.instances.title", description: "client:admin.instances.summary" },
   { href: "/admin/domain-actions", permission: "manage_domains", label: "client:admin.domain_actions.title", description: "client:admin.domain_actions.summary" },
   { href: "/admin/dead-jobs", permission: "manage_jobs", label: "client:admin.dead_jobs.title", description: "client:admin.dead_jobs.summary" },
+  { href: "/admin/reports", permission: "manage_reports", label: "client:admin.reports.title", description: "client:admin.reports.summary" },
 ];
 
 export function AdminMenu() {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the admin feature (web-client.md §7): the health of remote servers, the domain
-// actions, the dead jobs, the audit log and the registrations awaiting approval, all empty and every server available by default. The default viewer has no
+// actions, the dead jobs, the audit log, the registrations awaiting approval and the reports, all empty and every server available by default. The default viewer has no
 // permissions, so the admin screens' tests start with `server.use(operatorHandler(...))`.
 import { http, HttpResponse } from "msw";
-import { type Schemas, viewerFixture } from "../../../test/fixtures";
+import { otherAccountFixture, remoteAccountFixture, type Schemas, viewerFixture } from "../../../test/fixtures";
 import { apiBase, withViewer } from "../../../test/msw/http";
 
 /** The viewer's account with the permissions `permissions`, for GET /accounts/verify_credentials. */
@@ -48,6 +48,57 @@ export function registrationFixture(overrides: Partial<Schemas["AdminRegistratio
   };
 }
 
+/**
+ * An open report by Carol of another server on Bob, filed on 2026-10-16 with one post and no notes, as the server
+ * answers it; `overrides` replace its fields.
+ */
+export function reportFixture(overrides: Partial<Schemas["AdminReportDetail"]> = {}): Schemas["AdminReportDetail"] {
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000c0001",
+    category: "spam",
+    comment: "Posts the same link again and again.",
+    forwarded: false,
+    filed_at: "2026-10-16T09:00:00Z",
+    state: "open",
+    state_changed_at: "2026-10-16T09:00:00Z",
+    reporter_account_id: remoteAccountFixture.id,
+    reporter_account: remoteAccountFixture,
+    target_account_id: otherAccountFixture.id,
+    target_account: otherAccountFixture,
+    status_ids: ["0192f0c4-7a8e-7000-8000-0000000000b1"],
+    rule_ids: [],
+    notes: [],
+    target_history: { reports_count: 0, actions_count: 0 },
+    ...overrides,
+  };
+}
+
+/** The action that POST /admin/accounts/{id}/actions records for `body` on account `accountId`, taken at 2026-10-17T00:00:00Z. */
+export function newAccountAction(accountId: string, body: Schemas["CreateAccountActionRequest"]): Schemas["AdminAccountAction"] {
+  const issuedAt = "2026-10-17T00:00:00Z";
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000d0001",
+    account_id: accountId,
+    kind: body.kind,
+    reason_category: body.reason_category,
+    issuer: "moderator",
+    issued_by_account_id: viewerFixture.id,
+    notify_target: body.notify_target,
+    state: "active",
+    issued_at: issuedAt,
+    ...(body.public_reason === undefined ? {} : { public_reason: body.public_reason }),
+    ...(body.private_note === undefined ? {} : { private_note: body.private_note }),
+    ...(body.report_id === undefined ? {} : { report_id: body.report_id }),
+    ...(body.status_ids === undefined ? {} : { status_ids: body.status_ids }),
+    ...(body.expires_in === undefined ? {} : { expires_at: new Date(Date.parse(issuedAt) + body.expires_in * 1000).toISOString() }),
+  };
+}
+
+/** Whether a path segment is an ID of the API (a UUID), not the name of another operation under the same path. */
+function isId(segment: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(segment);
+}
+
 export const handlers = [
   // operationIds listInstanceHealth, getInstanceHealth, listInstanceAvailabilityEvents, markInstanceAvailable.
   http.get(`${apiBase}/admin/instances`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
@@ -80,4 +131,42 @@ export const handlers = [
   http.post(`${apiBase}/admin/registrations/:userId/reject`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(registrationFixture({ user_id: String(params["userId"]), state: "rejected", since: "2026-10-17T00:00:00Z" }))),
   ),
+  // operationIds listReports, getReport, assignReportToSelf, unassignReport, resolveReport, addReportNote, reopenReport.
+  http.get(`${apiBase}/admin/reports`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.get(`${apiBase}/admin/reports/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(reportFixture({ id: String(params["id"]) })))),
+  http.post(`${apiBase}/admin/reports/:id/assign_to_self`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(reportFixture({ id: String(params["id"]), assignee_account_id: viewerFixture.id }))),
+  ),
+  http.post(`${apiBase}/admin/reports/:id/unassign`, ({ request, params }) => withViewer(request, () => HttpResponse.json(reportFixture({ id: String(params["id"]) })))),
+  http.post(`${apiBase}/admin/reports/:id/resolve`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["ResolveReportRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json(reportFixture({ id: String(params["id"]), state: "resolved", outcome: body.outcome, state_changed_at: "2026-10-17T00:00:00Z" })),
+    );
+  }),
+  http.post(`${apiBase}/admin/reports/:id/notes`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["CreateReportNoteRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json(
+        reportFixture({
+          id: String(params["id"]),
+          notes: [{ id: "0192f0c4-7a8e-7000-8000-0000000e0001", author_account_id: viewerFixture.id, body: body.body, created_at: "2026-10-17T00:00:00Z" }],
+        }),
+      ),
+    );
+  }),
+  http.post(`${apiBase}/admin/reports/:id/reopen`, ({ request, params }) => withViewer(request, () => HttpResponse.json(reportFixture({ id: String(params["id"]) })))),
+  // operationIds listAccountActions, createAccountAction.
+  http.get(`${apiBase}/admin/accounts/:id/actions`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.post(`${apiBase}/admin/accounts/:id/actions`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["CreateAccountActionRequest"];
+    return withViewer(request, () => HttpResponse.json(newAccountAction(String(params["id"]), body)));
+  }),
+  // operationId getAccount: the moderators of the reports, Bob for any other ID. The path also matches the
+  // operations under /accounts with a name (lookup, relationships…), which go on to their own handlers.
+  http.get(`${apiBase}/accounts/:id`, ({ request, params }) => {
+    const id = String(params["id"]);
+    if (!isId(id)) return undefined;
+    return withViewer(request, () => HttpResponse.json(id === viewerFixture.id ? viewerFixture : { ...otherAccountFixture, id }));
+  }),
 ];
