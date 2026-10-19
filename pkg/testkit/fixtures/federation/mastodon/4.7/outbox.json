@@ -1,0 +1,8 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "https://mastodon.example/ap/users/117454922805771612/outbox",
+  "type": "OrderedCollection",
+  "totalItems": 4,
+  "first": "https://mastodon.example/ap/users/117454922805771612/outbox?page=true",
+  "last": "https://mastodon.example/ap/users/117454922805771612/outbox?min_id=0&page=true"
+}

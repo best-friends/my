@@ -488,7 +488,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications,
-		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions, Threads: a.RemoteStatuses,
+		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions, Threads: a.RemoteStatuses, Outboxes: a.RemoteStatuses,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,

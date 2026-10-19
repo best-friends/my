@@ -71,6 +71,9 @@ type Options struct {
 	// Threads starts fetching the remote parts of a thread that a viewer opens (getStatusContext);
 	// nil fetches none.
 	Threads ThreadFetcher
+	// Outboxes starts fetching the recent posts of a remote account whose profile a logged-in
+	// viewer opens (the first page of listAccountStatuses); nil fetches none.
+	Outboxes OutboxFetcher
 	// Timelines reads the timelines, and TimelineReader the statuses they list.
 	Timelines      Timelines
 	TimelineReader TimelineReader

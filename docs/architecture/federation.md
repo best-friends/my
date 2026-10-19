@@ -265,7 +265,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - どれにも当てはまらない `Create` は `ErrDropActivity` で捨て、受信の記録だけが残ります（`info` のログ）。未知のリモートの Actor へのメンションは、範囲に入ると決まってから取得します。
 - 書き込む行とメンション・ハッシュタグ・カスタム絵文字・添付・投票の扱いは [data-model §4.4 のリモート投稿のコマンド](data-model.md#リモート投稿のコマンド) にあります。コントラクトテストは `testkit.RemoteStatusContract` で、主要実装のフィクスチャの `Note` を取り込みます。
 - 返信先は受信時に 1 段だけ非同期（`federation.fetch_object`、ペイロードに残りの深さ）で取得し、スレッドの祖先と返信の一覧は利用者がスレッドを開いたときに深さ 20・件数 100 まで取得します。
-  - **取得した投稿**: 取得した文書が投稿で、`attributedTo` があり、そのオリジンが投稿の `id` と同じで、作者を解決でき（未知なら取得）、作者が有効なリモートのアカウントで、URI に削除（`status_deletions` の tombstone）も `remote_object_tombstones` も無いときだけ、`content.IngestRemoteStatus`（`activity_uri` は NULL）で取り込みます。取り込み範囲の判定はしません（受信した投稿の返信先・利用者が開いたスレッド・検索で解決した投稿・フォローされている人がブーストした投稿は ADR-0034 の範囲です）。`Announce` の対象・`fetch_object`・`Resolver` は、この取り込み（`StatusHandlers.fetched`）を共有します。`Announce` の対象と検索で解決した投稿は、受信した投稿と同じく返信先を 1 段だけ取得します。
+  - **取得した投稿**: 取得した文書が投稿で、`attributedTo` があり、そのオリジンが投稿の `id` と同じで、作者を解決でき（未知なら取得）、作者が有効なリモートのアカウントで、URI に削除（`status_deletions` の tombstone）も `remote_object_tombstones` も無いときだけ、`content.IngestRemoteStatus`（`activity_uri` は NULL）で取り込みます。取り込み範囲の判定はしません（受信した投稿の返信先・利用者が開いたスレッド・検索で解決した投稿・フォローされている人がブーストした投稿は ADR-0034 の範囲、利用者が開いたプロフィールの outbox の最初のページの公開投稿は ADR-0044 の範囲です）。`Announce` の対象・`fetch_object`・`fetch_outbox`・`Resolver` は、この取り込み（`StatusHandlers.fetched`）を共有します。`Announce` の対象と検索で解決した投稿は、受信した投稿と同じく返信先を 1 段だけ取得します。
   - **受信時**: 取り込んだ返信の親が未知（`conversation_uri` が NULL）でリモートなら、取り込みのトランザクションで `federation.fetch_object`（祖先 0）を `queue.Outbox` に投入します。取得した親の親は取得しません。
   - **スレッドを開いたとき**: `GET /api/v1/statuses/{id}/context` が、閲覧できた投稿について `StatusHandlers.FetchThread` を呼び、応答は待たずに保存済みのものだけを返します（取得したものは次に開いたときに出る）。返信先の無いローカルの投稿は何もしません（返信は配送で届く）。
     同じ投稿は 1 時間に 1 回だけです（KV の名前空間 `federation.thread_fetch`、キーは URI の SHA-256、`IncrBy` で最初の 1 回だけ投入する）。
@@ -275,6 +275,19 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
     3. `replies` が残っていれば、`replies` のコレクション（投稿と同じオリジンのものだけ）とそのページを、埋め込みならそのまま、そうでなければ取得して読み、リモートの返信ごとに、深さを 1 減らした取得を投入する（最後の段で保存済みの返信は投入しない）。
   - **件数の上限**: スレッドの取得が取得する文書（投稿・コレクション・ページ）は、起点ごとの KV のカウンタ（名前空間 `federation.thread_budget`、1 時間）で数えて合わせて 100 件までです。祖先は深さ 20 までなので 20 件を超えず、返信の側（起点の文書・コレクション・ページ・返信）は 100 − 20 = 80 件で止めて祖先の分を残します。上限を超えた取得はカウンタを戻して何もしません。
   - 取得できない・取り込まない文書は `info` のログを残してジョブを完了にします。取得の失敗は `Fetcher` が 1 時間記憶するので（§6.1）、同じ URI を別のジョブが取り直しません。ストアの失敗は `Retry` です。
+- リモートのアカウントのプロフィールを開いたときは、outbox の最初のページから最近の公開投稿を非同期で取り込みます（[ADR-0044](../adr/0044-remote-profile-recent-posts.md)）。
+  - **始める条件**: `GET /api/v1/accounts/{id}/statuses` の最初のページ（`cursor` も `pinned` も無い）が `StatusHandlers.FetchOutbox` を呼び、応答は待たずに保存済みの投稿だけを返します。
+    閲覧者がログインしていて、アカウントが有効なリモートのアカウント（`remote_deleted` ではない）で、最新の文書の `outbox` が Actor と同じオリジンにあり、アカウントの `federation` の制限が無く、閲覧者とアカウントの間にどちらの向きのブロックも無いときだけ、次の 2 つの KV のカウンタを `IncrBy` で数えます。
+    アカウントごと（名前空間 `federation.outbox_fetch`、キーは Actor の URI の SHA-256、24 時間）は最初の 1 回だけ、閲覧者ごと（名前空間 `federation.outbox_fetch_user`、キーは閲覧者のアカウント ID、5 分）は 30 アカウントまでです。
+    閲覧者の上限を超えたら、両方のカウンタを戻して投入しません（そのアカウントはほかの閲覧者が始められる）。投入できたら、応答の `remote_fetch_started` を `true` にします（Web クライアントは数秒後に最初のページを 1 回だけ読み直す）。
+    ドメインの `federation` の制限・`unavailable` のドメイン・自サーバーの URI は `Fetcher` が取得しません（§6.1）。ドメインの `public_discovery` の制限は取得を止めません（§11）。
+  - **ジョブ** `federation.fetch_outbox`: ペイロードは `account_id`、冪等キーは `fetch_outbox:<account_id>:<投入した日（UTC）>` です。実行時にもアカウントの条件（有効なリモート・`federation` の制限なし・同じオリジンの outbox）を確かめ直します。
+    1. outbox を取得し、項目があればそれを、無ければ `first`（埋め込みならそのまま、IRI なら取得）のページを読みます。どちらも Actor と同じオリジンのものだけで、2 ページ目（`next`）はたどりません。
+    2. ページの項目のうち、埋め込まれた `Create` で、`actor` がそのアカウント、オブジェクトが埋め込みなら `attributedTo` がそのアカウントで宛先（`to` / `cc`）に `as:Public` を含み、IRI ならアカウントと同じオリジンで `Create` の宛先に `as:Public` を含むものを、新しい順（すべてに `published` があればその順、無ければページの順）に 20 件まで選びます。`Announce` と IRI だけの項目は選びません。
+    3. 選んだ投稿のうち保存済みのものは取得しません。埋め込みのものはその文書を、IRI のものは取得した文書（`attributedTo` がそのアカウントで宛先に `as:Public` を含むものだけ）を、§6.3 の取得した投稿として取り込みます。返信先は取得しません（利用者が投稿を開けばスレッドの取得が補う）。
+  - **件数の上限**: 1 回の取得の文書は、outbox・ページ・投稿 20 件の合わせて 22 件までです（`OutboxMaxDocuments`）。取得の失敗と取り込まない文書は `info` のログを残して次の投稿に進み、outbox やページが取得できなければジョブを完了にします。ストアの失敗は `Retry` です。
+  - 取り込んだ投稿は、ほかの取得した投稿と同じく保持期間（ADR-0034、`content.purge_remote_statuses`）の対象で、プロフィールのタイムラインに出ます。新しいテーブルは使いません。
+  - コントラクトテストは `testkit.RemoteStatusContract` で、Mastodon・Misskey・GoToSocial の outbox のフィクスチャ（`outbox.json`・`outbox-page.json`）を取り込みます。
 - 投稿の ID は `published` から作った UUIDv7 です（[data-model §1.3](data-model.md#13-id-とキーセットページング)、#71）。
 - 保持期間を過ぎたリモートの投稿は `content.purge_remote_statuses` が、関係の無くなったリモートのアカウントの過去のプロフィールは `account.prune_remote_profiles` が、受信の原本・記録と配送の記録は `federation.purge` が、件数を区切って消します（ADR-0034、[data-model §4.4 のリモート投稿の保持期間](data-model.md#リモート投稿の保持期間)、§4.2、§4.8）。
   保持期間で消えた投稿（`origin = retention`）は tombstone にならないので、同じ URI の `Create` や取得でまた取り込めます。コントラクトテストは `testkit.RetentionContract` です。
@@ -470,6 +483,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | アカウントの `federation`（`suspend` / `ban`） | リモートなら `Delete` / `Undo` / `Reject` 以外を捨てる | ローカルなら、下の「処分の伝播」のアクティビティ以外を送らない | ローカルの Actor の GET は、空のプロフィールに `suspended: true` を付けた Actor を返す（鍵は返す）。投稿などのオブジェクトの GET は `404` |
 
 - 判定はサブドメインにも効きます（[data-model §4.3](data-model.md#ドメイン単位の処分)）。
+- プロフィールを開いたときの outbox の取得（§6.3、ADR-0044）は、アカウントの `federation` の制限があれば始めず、ドメインの `federation` の制限は `Fetcher` が止めます。ドメインの `public_discovery` の制限は止めません（利用者が自分で開いたプロフィールで、取り込んだ投稿は連合タイムライン・検索に出ない）。
 - `Block` の受信は `graph` の関係として記録します（相手からのブロックで、モデレーションの処分ではありません）。
 - `Flag` の受信は `reports`（`uri` は `Flag` の `id`、`id` が無ければ受信の記録と同じ `urn:my:digest:…`。同じ `Flag` の再処理は何もしない）と `report_states`（`open`）になり、モデレーターの通報一覧に入ります（FR-701）。コメントは 5,000 文字で切ります。
 - `moderation.FederationPolicy` は、呼ばれるたびに期限内の制限を読みます（`DomainPolicy`・`AccountPolicy`・`content.MediaFetchPolicy` と、`Flag` の `RejectsReports`）。処分は `moderation.Service` の `IssueDomainAction` / `LiftDomainAction` と、アカウントへの `IssueAccountAction`（リモートのアカウントには制限だけを生む `limit` / `suspend` / `force_sensitive`）/ `LiftAccountAction` が記録します。

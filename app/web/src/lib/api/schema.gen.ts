@@ -926,6 +926,12 @@ export interface paths {
          *     for everyone, its local posts for logged-in viewers, its followers-only posts for its
          *     followers, and its direct posts addressed to the viewer. With `pinned`, the page lists
          *     the account's pinned posts instead, newest pin first, in a single page.
+         *
+         *     The page lists only the posts this server has received. For a remote account, the first
+         *     page (no `cursor`, no `pinned`) of a logged-in viewer may start fetching the account's
+         *     recent public posts from its server in the background; `remote_fetch_started` tells
+         *     that it did. It does at most once a day per account, for at most 30 accounts per viewer
+         *     in 5 minutes, and never for an account that the viewer blocks or that blocks the viewer.
          */
         get: operations["listAccountStatuses"];
         put?: never;
@@ -2849,6 +2855,16 @@ export interface components {
             /** @description The statuses of the page. */
             items: components["schemas"]["Status"][];
         };
+        /** @description A page of the statuses of an account. */
+        AccountStatusPage: components["schemas"]["StatusPage"] & {
+            /**
+             * @description `true` when this request started fetching the remote account's recent public
+             *     posts from its server (ADR-0044). The fetch runs in the background; read the
+             *     first page again a few seconds later to see what it stored. Absent otherwise,
+             *     including when a fetch started in the last day.
+             */
+            remote_fetch_started?: boolean;
+        };
         /** @description What the author typed, for editing a status. */
         StatusSource: {
             id: components["schemas"]["Id"];
@@ -3805,6 +3821,16 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["StatusPage"];
+            };
+        };
+        /** @description A page of the posts and boosts of an account, newest first. */
+        AccountStatusPage: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AccountStatusPage"];
             };
         };
         /** @description An error, as an RFC 9457 problem document. */
@@ -5071,7 +5097,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: components["responses"]["StatusPage"];
+            200: components["responses"]["AccountStatusPage"];
             default: components["responses"]["Problem"];
         };
     };
