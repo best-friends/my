@@ -327,6 +327,8 @@ flowchart LR
 | `user_time_zones` | `user_id`（PK）, `time_zone`（IANA 名） | 行が無ければタイムゾーンを選んでいない（日時は UTC。Web クライアントは端末のゾーンを保存する） |
 
 - 登録時に既定値の行を作ります。`locale` は登録時に指定されたロケール、無ければインスタンスの既定（`default_locale`）、それも無ければ `en` です。
+  サーバーで描く登録のページは、要求の `Accept-Language` にいちばん合う、カタログのあるロケール（疑似ロケールは除く。`i18n.Resolver.AcceptedLocale`）を指定します。
+  合うものが無ければ指定せず、インスタンスの既定になります。
   `user_time_zones` の行は作らない（タイムゾーンは選んでいない状態で、`UTC` として扱う）。`default_visibility` は `public`、`default_post_language` は `und`（クライアントに任せる）、`require_media_description` と `email_moderator_notifications` は偽です。
 - `lang` の値は BCP 47 として検証し、正規形（`ja-JP`、`zh-Hant-TW`、`iw` → `he`）で保存します。未知のサブタグ、言語を明示しないタグ（`und-JP`、私用の `x-…`）は拒否します。
   `locale` は `und` も拒否します。
