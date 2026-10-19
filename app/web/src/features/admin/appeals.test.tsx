@@ -3,7 +3,7 @@
 // appeals awaiting review and those reviewed, opens one next to its action, and upholds or overturns it through
 // its confirmation with an explanation to the user, with MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { Schemas } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
@@ -200,6 +200,63 @@ describe("an appeal's page", () => {
     expect(within(review).getByText("Upheld")).toBeInTheDocument();
     expect(within(review).getByText("You")).toBeInTheDocument();
     expect(api.decisions).toEqual([{ id: pending.id, decision: "uphold", body: {} }]);
+  });
+
+  // #468: the list, shown from its cache as the route loads it, must not show the appeal as it was before the
+  // decision while a slow server answers the list again.
+  test("back on the list after a decision, the decided appeal is gone at once, however slowly the lists come", async () => {
+    const api = appealsServer([pending, arabic]);
+    const { user } = await renderApp({ path: "/admin/appeals" });
+    const [link] = await screen.findAllByRole("link", { name: "Appeal of Suspend" });
+    if (link === undefined) throw new Error("an appeal is missing");
+    await user.click(link);
+    await user.click(await screen.findByRole("button", { name: "Overturn" }));
+    // From now on every list of appeals takes a while; the handler falls through to appealsServer's.
+    server.use(
+      http.get(`${apiBase}/admin/appeals`, async () => {
+        await delay(300);
+      }),
+    );
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Overturn" }));
+    const review = await screen.findByRole("region", { name: "Review" });
+    expect(await within(review).findByRole("status")).toHaveTextContent("The appeal is overturned and the action is lifted.");
+    await waitFor(() => {
+      expect(within(review).getByRole("heading", { level: 2, name: "Review" })).toHaveFocus();
+    });
+
+    await user.click(screen.getByRole("link", { name: "Back to appeals" }));
+    expect(await screen.findByText(arabic.text)).toBeInTheDocument();
+    expect(screen.queryByText(pending.text)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Appeal of Suspend" })).toHaveLength(1);
+    expect(api.lists).toEqual(["pending", "pending"]);
+  });
+
+  test("back on the list after another moderator's decision, that appeal is gone at once, however slowly the lists come", async () => {
+    const api = appealsServer([pending, arabic]);
+    const { user } = await renderApp({ path: "/admin/appeals" });
+    const [link] = await screen.findAllByRole("link", { name: "Appeal of Suspend" });
+    if (link === undefined) throw new Error("an appeal is missing");
+    await user.click(link);
+    await user.click(await screen.findByRole("button", { name: "Uphold" }));
+    // Another moderator decides it the other way first; every list of appeals takes a while from now on.
+    const other = decidedAppeal(pending, "overturn", undefined);
+    server.use(
+      http.post(`${apiBase}/admin/appeals/:id/uphold`, () => problem(409, "/api/v1/problems/appeal-decided", "The appeal is already decided")),
+      http.get(`${apiBase}/admin/appeals/:id`, () => HttpResponse.json(other)),
+      http.get(`${apiBase}/admin/appeals`, async ({ request }) => {
+        await delay(300);
+        const state = new URL(request.url).searchParams.get("state");
+        return HttpResponse.json({ items: [other, arabic].filter((appeal) => state === null || appeal.state === state) });
+      }),
+    );
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Uphold" }));
+    const review = await screen.findByRole("region", { name: "Review" });
+    expect(await within(review).findByRole("status")).toHaveTextContent("Another moderator already reviewed this appeal. That decision stands.");
+
+    await user.click(screen.getByRole("link", { name: "Back to appeals" }));
+    expect(await screen.findByText(arabic.text)).toBeInTheDocument();
+    expect(screen.queryByText(pending.text)).not.toBeInTheDocument();
+    expect(api.decisions).toEqual([]);
   });
 
   test("cancel and Esc close the confirmation without deciding", async () => {

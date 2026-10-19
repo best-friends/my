@@ -3,12 +3,15 @@
 // moderation actions on their accounts, awaiting a decision or decided, newest first; one appeal with its action;
 // and upholding or overturning it with an explanation shown to the user. The lists follow the API's keyset
 // pagination as infinite queries whose keys end with "pages" (web-client.md §10). A decision answers the appeal
-// after it, with its action (lifted by an overturn), which replaces the cached appeal.
+// after it, with its action (lifted by an overturn), which replaces the cached appeal once the lists of appeals
+// it changes are fetched again.
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
+import { adminAccountQueryOptions } from "./accounts";
 import { pageQuery } from "./admin";
+import { accountActionsQueryOptions } from "./reports";
 
 type Schemas = components["schemas"];
 
@@ -88,13 +91,26 @@ export function decideAppealMutation(api: Api) {
 }
 
 /**
- * Puts `appeal`, as a decision answered it, into the cache, and marks stale what the decision changes: the
- * lists of appeals (it moves between the tabs), the moderators' counts, and the actions on the account (an
- * overturn lifts one).
+ * Fetches again, at once, what a decision on an appeal of `accountId` changes: the lists of appeals (it moves
+ * between the tabs), the moderators' counts, and that account with its actions (an overturn lifts one), even
+ * those no page shows now (`refetchType: "all"`). A route loads them from the cache as they are (`staleTime:
+ * "static"`, web-client.md S7), so a list that was only marked stale would show the appeal as it was until its
+ * refetch on mount ends: a decided appeal among those awaiting review. Resolves once every fetch has ended; one
+ * that fails leaves its query stale, to be fetched again when shown.
  */
-export function storeAppeal(queryClient: QueryClient, api: Api, appeal: Appeal): void {
+export async function refreshAppealLists(queryClient: QueryClient, api: Api, accountId: string): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts", refetchType: "all" }),
+    queryClient.invalidateQueries({ queryKey: adminAccountQueryOptions(api, accountId).queryKey, refetchType: "all" }),
+    queryClient.invalidateQueries({ queryKey: accountActionsQueryOptions(api, accountId).queryKey, refetchType: "all" }),
+  ]);
+}
+
+/**
+ * Fetches again what a decision changes (refreshAppealLists), then puts `appeal`, as the decision answered it,
+ * into the cache: the appeal's page shows the decision once the list has it too.
+ */
+export async function storeAppeal(queryClient: QueryClient, api: Api, appeal: Appeal): Promise<void> {
+  await refreshAppealLists(queryClient, api, appeal.account_id);
   queryClient.setQueryData(appealQueryOptions(api, appeal.id).queryKey, appeal);
-  void queryClient.invalidateQueries({
-    predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts" || query.queryKey[1] === "/admin/accounts/{id}/actions",
-  });
 }
