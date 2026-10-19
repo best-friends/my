@@ -61,7 +61,7 @@ jobs:
           else
             contexts="$(scripts/changed-contexts.sh --all)"
           fi
-          echo "contexts:" $contexts
+          echo "contexts: ${contexts//$'\n'/ }"
           for c in docs go i18n api ui web docker shell schema; do
             if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
           done
