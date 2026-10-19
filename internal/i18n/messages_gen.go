@@ -718,7 +718,7 @@ func (l *Localizer) ServerErrorsAppealDecided() string {
 	return l.format("server:errors.appeal.decided", nil)
 }
 
-// ServerErrorsAppealNotAppealable formats "server:errors.appeal.not_appealable". API error title for HTTP 422 when the user appeals a ban, which is never lifted.
+// ServerErrorsAppealNotAppealable formats "server:errors.appeal.not_appealable". API error title for HTTP 422 when the user appeals a ban whose account is already deleted; a ban is appealable only until its account is deleted.
 //
 //	en: This action cannot be appealed.
 func (l *Localizer) ServerErrorsAppealNotAppealable() string {

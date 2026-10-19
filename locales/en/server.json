@@ -409,7 +409,7 @@
   },
   "errors.appeal.not_appealable": {
     "defaultMessage": "This action cannot be appealed.",
-    "description": "API error title for HTTP 422 when the user appeals a ban, which is never lifted."
+    "description": "API error title for HTTP 422 when the user appeals a ban whose account is already deleted; a ban is appealable only until its account is deleted."
   },
   "errors.appeal.window_closed": {
     "defaultMessage": "The time to appeal this action has passed.",
