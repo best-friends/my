@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The header of a post card with the names that are hardest to fit, in every width × locale project
 // (ADR-0027, web-client.md G7, G9): a 30-character display name, an Arabic display name and a handle on a
-// long domain, as authors and as a booster. Each header stays within two lines and the page does not scroll
-// sideways; the per-PR 320 px projects are where that breaks first. The accounts are the client's shared
-// test fixtures (src/test/fixtures.ts), and `vite preview` has no client API, so the spec answers the
-// local timeline itself.
+// long domain, as authors and as a booster. Each header stays within two lines, the page does not scroll
+// sideways (the per-PR 320 px projects are where that breaks first), and a local author's handle has no
+// domain while a remote one's has it (web-client.md §13). The accounts are the client's shared test
+// fixtures (src/test/fixtures.ts), and `vite preview` has no client API, so the spec answers the local
+// timeline itself.
 import type { components } from "../src/lib/api/schema.gen.ts";
 import { longDomainAccountFixture, longNameAccountFixture, rtlNameAccountFixture } from "../src/test/fixtures.ts";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, expectPostHeadersInTwoLines, test } from "./fixtures";
@@ -69,8 +70,23 @@ test.describe("a post card's header with long and right-to-left names", () => {
   test("names the author's link by the whole name and handle", async ({ page }) => {
     const feed = page.getByRole("feed");
     for (const account of accounts) {
-      await expect(feed.getByRole("link", { name: `${account.display_name} @${account.username}@${account.domain}` }).first()).toBeVisible();
+      await expect(feed.getByRole("link", { name: `${account.display_name} @${account.acct}` }).first()).toBeVisible();
     }
+  });
+
+  test("shows a local author's handle without the domain and a remote one's with it", async ({ page }) => {
+    const [longName, rtlName, longDomain] = accounts;
+    await expect(page.getByRole("feed")).toMatchAriaSnapshot(`
+      - feed:
+        - article:
+          - link "${longName.display_name} @${longName.username}"
+        - article:
+          - link "${rtlName.display_name} @${rtlName.username}@${rtlName.domain}"
+        - article:
+          - link "${longDomain.display_name} @${longDomain.username}@${longDomain.domain}"
+        - article:
+          - link "${longDomain.display_name} @${longDomain.username}@${longDomain.domain}"
+    `);
   });
 
   test("has no axe violations", async ({ makeAxeBuilder }) => {

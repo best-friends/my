@@ -4,7 +4,7 @@
 import { Avatar, Button, EmptyState } from "@my/ui";
 import { type ReactNode, useRef } from "react";
 import { useIntl } from "react-intl";
-import { useConfig } from "../../../lib/config";
+import { handleOf } from "../../../lib/handle";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { Account } from "../api/relationships";
 import { type AccountAction, type AccountList, useBlocks, useFollowRequests, useMutes } from "../hooks/useAccountLists";
@@ -127,10 +127,8 @@ type AccountRowProps = { account: Account; details: ReactNode; children: ReactNo
 
 /** An account: its avatar, display name and handle, with its buttons after them (below them on narrow rows). */
 function AccountRow({ account, details, children }: AccountRowProps) {
-  const { accountDomain } = useConfig();
   const name = account.display_name || account.username;
-  // Remote accounts' acct has the domain; local ones get this server's.
-  const handle = account.acct.includes("@") ? `@${account.acct}` : `@${account.acct}@${accountDomain}`;
+  const handle = handleOf(account.acct);
   return (
     <div className="flex flex-col gap-3 @md:flex-row @md:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">

@@ -179,7 +179,7 @@ test.describe("a profile", () => {
       - button
       - button
       - heading /Bartholomew/ [level=1]
-      - paragraph: "@bartholomew_montgomery@my.example"
+      - paragraph: "@bartholomew_montgomery"
       - list:
         - listitem
         - listitem

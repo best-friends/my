@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Button, Link, RegionError, Spinner } from "@my/ui";
 import { useId, useState } from "react";
-import { useConfig } from "../../../lib/config";
+import { handleOf } from "../../../lib/handle";
 import { useT } from "../../../lib/i18n";
 import { useSignOut } from "../hooks/useSignOut";
 import { useViewer } from "../hooks/useViewer";
@@ -22,7 +22,6 @@ export function AccountSection() {
 
 function AccountStatus() {
   const t = useT();
-  const { accountDomain } = useConfig();
   const viewer = useViewer();
   const { signOut, isPending } = useSignOut();
   const [retried, setRetried] = useState(false);
@@ -58,7 +57,7 @@ function AccountStatus() {
         </div>
       );
     case "signed-in": {
-      const handle = `@${viewer.account.acct}@${accountDomain}`;
+      const handle = handleOf(viewer.account.acct);
       return (
         <div className="flex flex-col items-start gap-2">
           {/* The display name and handle are the user's text, in any language (web-client.md Y10). */}

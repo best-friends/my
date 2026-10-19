@@ -30,7 +30,7 @@ describe("the local timeline", () => {
     await renderApp({ path: "/local" });
 
     const feed = await screen.findByRole("feed", { name: "Local timeline" });
-    const article = within(feed).getByRole("article", { name: "Bob @bob@my.example 3 hr. ago" });
+    const article = within(feed).getByRole("article", { name: "Bob @bob 3 hr. ago" });
     expect(article).toHaveAccessibleDescription("Hello from the local timeline!");
     expect(article).toHaveAttribute("aria-posinset", "1");
     // The last page: the feed knows its size and offers nothing more.
@@ -128,7 +128,7 @@ describe("a status card", () => {
     await renderApp({ path: "/local" });
 
     // A booster without a display name is named by the username; the time is the post's.
-    const article = await screen.findByRole("article", { name: "carol boosted Bob @bob@my.example 5 min. ago" });
+    const article = await screen.findByRole("article", { name: "carol boosted Bob @bob 5 min. ago" });
     expect(article).toHaveAccessibleDescription("Post 1");
   });
 
@@ -141,9 +141,9 @@ describe("a status card", () => {
     // The card cuts the name and the handle to its width (e2e/post-header.spec.ts checks the lines); the
     // text stays whole, so the link says all of it.
     for (const account of [longNameAccountFixture, rtlNameAccountFixture, longDomainAccountFixture]) {
-      const link = within(feed).getByRole("link", { name: `${account.display_name} @${account.username}@${account.domain}` });
+      const link = within(feed).getByRole("link", { name: `${account.display_name} @${account.acct}` });
       expect(within(link).getByText(account.display_name)).toHaveAttribute("dir", "auto");
-      expect(within(link).getByText(`@${account.username}@${account.domain}`)).toHaveAttribute("dir", "ltr");
+      expect(within(link).getByText(`@${account.acct}`)).toHaveAttribute("dir", "ltr");
     }
   });
 
@@ -169,10 +169,10 @@ describe("a status card", () => {
     // Screen readers meet the profile once, on the name, and then the time.
     const links = within(article).getAllByRole("link");
     expect(links).toHaveLength(2);
-    expect(links[0]).toHaveAccessibleName("Bob @bob@my.example");
+    expect(links[0]).toHaveAccessibleName("Bob @bob");
     expect(links[1]).toHaveAccessibleName("3 hr. ago");
     // The avatar's link, to the same profile, is out of the tab order inside an element hidden from them.
-    const name = within(article).getByRole("link", { name: "Bob @bob@my.example" });
+    const name = within(article).getByRole("link", { name: "Bob @bob" });
     const [avatar] = within(article).getAllByRole("link", { hidden: true });
     if (avatar === undefined) throw new Error("want the avatar's link");
     expect(isInaccessible(avatar)).toBe(true);
@@ -213,7 +213,7 @@ describe("a status card", () => {
     const { user } = await renderApp({ path: "/local" });
 
     // Two weeks ago: the date instead of a relative time.
-    const article = await screen.findByRole("article", { name: "Bob @bob@my.example Oct 1, 2026" });
+    const article = await screen.findByRole("article", { name: "Bob @bob Oct 1, 2026" });
     expect(within(article).getByText("Cake")).toBeVisible();
     expect(within(article).getByText("Post 1")).not.toBeVisible();
 
