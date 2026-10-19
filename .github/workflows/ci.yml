@@ -106,7 +106,7 @@ jobs:
       # The official action installs the prebuilt binary, caches lint results and annotates the PR.
       # It also puts golangci-lint on PATH, so `make go-lint` reuses the binary and the cache.
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@d583c34f0599d37dbac4a198b9c83201be380893 # v9.3.0
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v${{ steps.tools.outputs.golangci-lint }}
       - name: make go-check (except go-test)
