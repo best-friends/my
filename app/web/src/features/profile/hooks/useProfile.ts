@@ -6,6 +6,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { useConfig } from "../../../lib/config";
+import { useContentLinkClick } from "../../../lib/contentLinks";
 import { hostOf } from "../../../lib/host";
 import { followListPath } from "../../../lib/paths";
 import { type Account, accountQueryOptions } from "../api/accounts";
@@ -20,6 +21,8 @@ export type ProfileView = {
   note: SanitizedHtml | null;
   /** The metadata fields: a plain-text name and a sanitized value. */
   fields: { key: string; name: string; value: SanitizedHtml }[];
+  /** Opens the links of the profile text and fields to this instance's pages through the router. */
+  onLinkClick: (event: MouseEvent, link: HTMLAnchorElement) => void;
   /** The follow counts and the pages that list them, or null where the server left a count out. */
   following: { count: number; href: string } | null;
   followers: { count: number; href: string } | null;
@@ -54,6 +57,7 @@ export function useProfile(acct: string): ProfileView {
   const intl = useIntl();
   const { accountDomain } = useConfig();
   const { data: account } = useSuspenseQuery(accountQueryOptions(api, acct));
+  const onLinkClick = useContentLinkClick();
   return {
     account,
     name: nameOf(account),
@@ -62,6 +66,7 @@ export function useProfile(acct: string): ProfileView {
     note: account.note === "" ? null : serverSanitizedHtml(account.note),
     // A profile's fields have no IDs; their order is their identity, and the list only changes as a whole.
     fields: account.fields.map((field, index) => ({ key: `${String(index)}:${field.name}`, name: field.name, value: serverSanitizedHtml(field.value) })),
+    onLinkClick,
     following: account.following_count === undefined ? null : { count: account.following_count, href: followListPath(account.acct, "following") },
     followers: account.followers_count === undefined ? null : { count: account.followers_count, href: followListPath(account.acct, "followers") },
     joined: { dateTime: account.created_at, date: intl.formatDate(account.created_at, { dateStyle: "long" }) },
