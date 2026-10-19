@@ -334,8 +334,60 @@ export interface MessageArgs {
   "client:admin.account.restrictions.title": {};
   /** Roles */
   "client:admin.account.roles": {};
+  /** The account's user gets the role's permissions from their next request. You can revoke it later. */
+  "client:admin.account.roles.confirm_grant.description": {};
+  /** Grant {role} to {handle}? */
+  "client:admin.account.roles.confirm_grant.title": { handle: string; role: string };
+  /** The account's user loses the role's permissions from their next request. You can grant it again later. */
+  "client:admin.account.roles.confirm_revoke.description": {};
+  /** The account's user loses every admin permission from their next request. The server keeps at least one admin, so the role cannot be revoked from its only holder. */
+  "client:admin.account.roles.confirm_revoke.description_admin": {};
+  /** Revoke {role} from {handle}? */
+  "client:admin.account.roles.confirm_revoke.title": { handle: string; role: string };
+  /** Roles give the account's user the permissions of the admin screens. You can grant and revoke the roles at or below your highest role. The audit log records each change. */
+  "client:admin.account.roles.description": {};
+  /** This server has no roles */
+  "client:admin.account.roles.empty": {};
+  /** The role could not be changed: {reason} */
+  "client:admin.account.roles.failed": { reason: string };
+  /** The role could not be revoked: this account is the only admin of this server. Grant admin to another account first. */
+  "client:admin.account.roles.failed.last_admin": {};
+  /** The role could not be changed: it is above your highest role. You can grant and revoke only the roles at or below your highest role. */
+  "client:admin.account.roles.failed.outranked": {};
+  /** Grant */
+  "client:admin.account.roles.grant": {};
+  /** Grant {role} */
+  "client:admin.account.roles.grant_role": { role: string };
+  /** {role} is granted to {handle}. The audit log records the change. */
+  "client:admin.account.roles.granted": { handle: string; role: string };
+  /** This account */
+  "client:admin.account.roles.held": {};
+  /** Does not have the role */
+  "client:admin.account.roles.held.no": {};
+  /** Has the role */
+  "client:admin.account.roles.held.yes": {};
+  /** The roles could not be loaded */
+  "client:admin.account.roles.load_failed": {};
+  /** Loading the roles */
+  "client:admin.account.roles.loading": {};
   /** None */
   "client:admin.account.roles.none": {};
+  /** This role is above your highest role, {role}, so you cannot grant or revoke it. */
+  "client:admin.account.roles.outranked": { role: string };
+  /** Permissions */
+  "client:admin.account.roles.permissions": {};
+  /** None */
+  "client:admin.account.roles.permissions.none": {};
+  /** Try again */
+  "client:admin.account.roles.retry": {};
+  /** Revoke */
+  "client:admin.account.roles.revoke": {};
+  /** Revoke {role} */
+  "client:admin.account.roles.revoke_role": { role: string };
+  /** {role} is revoked from {handle}. The audit log records the change. */
+  "client:admin.account.roles.revoked": { handle: string; role: string };
+  /** Roles */
+  "client:admin.account.roles.title": {};
   /** Account */
   "client:admin.account.summary.title": {};
   /** Account */
