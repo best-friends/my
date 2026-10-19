@@ -2684,7 +2684,7 @@
     "description": "Label of the value field of a new sign-up block on an IP range."
   },
   "admin.signup_blocks.value.ip_range.description": {
-    "defaultMessage": "192.0.2.0/24 や 2001:db8::/32 のような CIDR の範囲か、1 つの IP アドレスを入力します。",
+    "defaultMessage": "192.0.2.0/24 のような CIDR の範囲（IPv6 も使えます）か、1 つの IP アドレスを入力します。",
     "description": "Help text under the IP range field of a new sign-up block."
   },
   "admin.signup_blocks.value.ip_range.required": {
