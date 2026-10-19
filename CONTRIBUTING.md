@@ -137,6 +137,9 @@ make sqlc-check  # 生成物が最新でなければ失敗（make check に含�
 - Valkey のテスト（`kv/valkey` など）は `pkg/testkit/valkeytest` でサーバーを得ます。Docker があれば testcontainers-go で
   `valkey/valkey` のコンテナ（`TEST_VALKEY_IMAGE` で変更可）を起動し、なければ飛ばします。`TEST_VALKEY_URL=valkey://...` は既存のサーバーを使います。
   CI の go-test は `TEST_VALKEY_REQUIRED=1` で流すので、Docker がないと失敗します。
+- Google Cloud Pub/Sub のアダプタ（`stream/pubsub`）のテストは、既定ではプロセスの中の偽サーバー pstest で流すので、Docker は要りません。
+  `make go-test-pubsub-emulator` は `TEST_PUBSUB=emulator` で Pub/Sub エミュレータのコンテナ（`TEST_PUBSUB_IMAGE` で変更可）を起動して同じコントラクトを流します。
+  CI はそれが依存するパスを変えた `main` への push と nightly で流します。
 
 ## 設計判断
 

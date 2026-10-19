@@ -140,6 +140,10 @@ POSTGRES_TEST_PACKAGES := ./internal/adapter/db/postgres/ ./internal/adapter/kv/
 go-test-postgres: ## Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI on main and nightly)
 	TEST_POSTGRES=container TEST_POSTGRES_REQUIRED=1 go test -count=1 $(POSTGRES_TEST_PACKAGES)
 
+.PHONY: go-test-pubsub-emulator
+go-test-pubsub-emulator: ## Run the stream.Bus contract of stream/pubsub on the Pub/Sub emulator container (needs Docker; CI on main and nightly)
+	TEST_PUBSUB=emulator TEST_PUBSUB_REQUIRED=1 go test -count=1 -run Emulator ./internal/adapter/stream/pubsub/
+
 go-build: ## Build all packages statically (CGO_ENABLED=0)
 	CGO_ENABLED=0 go build ./...
 
