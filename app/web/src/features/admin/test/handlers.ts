@@ -48,7 +48,14 @@ export function registrationFixture(overrides: Partial<Schemas["AdminRegistratio
   };
 }
 
+/** GET /admin/counts answering `counts`, the counts that the viewer's permissions allow. */
+export function countsHandler(counts: Schemas["AdminCounts"]) {
+  return http.get(`${apiBase}/admin/counts`, ({ request }) => withViewer(request, () => HttpResponse.json(counts)));
+}
+
 export const handlers = [
+  // operationId getAdminCounts: nothing awaits the moderators.
+  countsHandler({}),
   // operationIds listInstanceHealth, getInstanceHealth, listInstanceAvailabilityEvents, markInstanceAvailable.
   http.get(`${apiBase}/admin/instances`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.get(`${apiBase}/admin/instances/:domain`, ({ request, params }) => withViewer(request, () => HttpResponse.json(availableHealth(String(params["domain"]))))),

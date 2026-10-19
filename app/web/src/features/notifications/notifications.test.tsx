@@ -257,8 +257,9 @@ describe("the notifications page", () => {
     const boost = within(feed).getByRole("article", { name: /bob boosted your post/ });
     expect(within(boost).getByRole("link", { name: "Content warning: spoilers" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b2");
     expect(within(boost).queryByText("the ending", { exact: false })).not.toBeInTheDocument();
-    // The types without an actor link to no profile.
-    expect(within(within(feed).getByRole("article", { name: /The moderators/ })).queryAllByRole("link")).toEqual([]);
+    // The types without an actor link to no profile, only to where the user follows them up.
+    expect(within(within(feed).getByRole("article", { name: /The moderators/ })).getAllByRole("link").map((link) => link.textContent)).toEqual(["View your account status"]);
+    expect(within(within(feed).getByRole("article", { name: /A poll you took part in/ })).queryAllByRole("link")).toEqual([]);
   });
 
   test("says which suspension ended follows and how many the user lost", async () => {
@@ -290,13 +291,81 @@ describe("the notifications page", () => {
     const domain = within(feed).getByRole("article", {
       name: /The moderators suspended bad\.example\. You lost 2 followers and 1 account you followed there\./,
     });
-    // A server has no profile to link to.
-    expect(within(domain).queryAllByRole("link")).toEqual([]);
+    // A server has no profile to link to: the row leads to the user's follow lists.
+    expect((await within(domain).findAllByRole("link")).map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["View your followers", "/@alice/followers"],
+      ["View the accounts you follow", "/@alice/following"],
+    ]);
     const account = within(feed).getByRole("article", {
       name: /The moderators suspended Bob\. You lost 1 follower and 0 accounts you followed\./,
     });
     expect(within(account).getByRole("link", { name: "Bob" })).toHaveAttribute("href", "/@bob");
     expect(within(feed).getByRole("article", { name: /A suspension by the moderators ended some of your follows/ })).toBeInTheDocument();
+  });
+
+  test("tells what a moderation notice and a resolved report are about, and leads to the screens that follow them up", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const at = "2026-10-16T09:00:00Z";
+    const reportId = "0192f0c4-7a8e-7000-8000-0000000000e9";
+    const items: Notification[] = [
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000e1",
+        type: "moderation_notice",
+        created_at: at,
+        moderation_action: {
+          id: "0192f0c4-7a8e-7000-8000-0000000000f1",
+          kind: "limit",
+          kind_label: "Limit",
+          reason_category: "spam",
+          reason_category_label: "Spam",
+          public_reason: "Repeated promotional posts.",
+          status_ids: [],
+          state: "active",
+          issued_at: at,
+          expires_at: "2026-10-23T09:00:00Z",
+        },
+      },
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000e2",
+        type: "report_resolved",
+        created_at: at,
+        report: {
+          id: "0192f0c4-7a8e-7000-8000-0000000000f2",
+          category: "spam",
+          comment: "",
+          forwarded: false,
+          filed_at: at,
+          target_account: otherAccountFixture,
+          status_ids: [],
+          rule_ids: [],
+          state: "resolved",
+        },
+      },
+      { id: "0192f0c4-7a8e-7000-8000-0000000000e3", type: "admin_report", created_at: at, report_id: reportId },
+      { id: "0192f0c4-7a8e-7000-8000-0000000000e4", type: "admin_sign_up", created_at: at, account: otherAccountFixture },
+    ];
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    const { user, router } = await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    // The notice says what the action does, why, and until when; the article is described by it.
+    const notice = within(feed).getByRole("article", { name: /The moderators of this server sent you a notice/ });
+    expect(notice).toHaveAccessibleDescription(/Limit: Spam.*Repeated promotional posts\..*Until Oct 23, 2026/);
+    expect(within(notice).getByText("Repeated promotional posts.")).toHaveAttribute("dir", "auto");
+    expect(within(notice).getByRole("link", { name: "View your account status" })).toHaveAttribute("href", "/settings/account-status");
+    // A resolved report names the reported account, a link to its profile, without its avatar.
+    const resolved = within(feed).getByRole("article", { name: /Your report on Bob has been resolved/ });
+    expect(within(resolved).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/@bob"]);
+    // A moderator's notifications lead to the report and to the registrations.
+    const report = within(feed).getByRole("article", { name: /A new report awaits the moderators/ });
+    expect(within(report).getByRole("link", { name: "Open the report" })).toHaveAttribute("href", `/admin/reports/${reportId}`);
+    const signUp = within(feed).getByRole("article", { name: /Bob signed up and awaits approval/ });
+    await user.click(within(signUp).getByRole("link", { name: "Review registrations" }));
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/admin/registrations");
+    });
   });
 
   test("links the actor to their profile and offers a follow back, one tab stop each", async () => {

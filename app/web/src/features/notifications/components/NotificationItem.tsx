@@ -6,6 +6,11 @@
 // time and described by the post. The follows that a suspension by the moderators ended say which server or
 // account was suspended and how many followers and follows the user lost.
 //
+// The notifications from the instance lead to where the user follows them up, as links in the row's actions:
+// a moderation notice says what the action does, why, and until when, and leads to the account's status; a
+// resolved report names the reported account; a moderator's new report or registration leads to the report or
+// the registrations; and lost follows lead to the user's lists of followers and follows.
+//
 // A group of the favourites or the boosts of one post is one row: "Alice and 2 others favourited your
 // post", with the avatars of the others in a row above the sentence, so the number of people is in the
 // article's name.
@@ -20,7 +25,7 @@ import { useT } from "../../../lib/i18n";
 import { RelationshipActions, useRelationship } from "../../profile";
 import type { NotificationAccount } from "../api/notifications";
 import type { NotificationGroup } from "../hooks/groupNotifications";
-import { type NotificationActor, type NotificationView, useNotificationView } from "../hooks/useNotificationView";
+import { type ModerationNoticeView, type NotificationActor, type NotificationView, useNotificationView } from "../hooks/useNotificationView";
 
 /** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
 const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
@@ -40,6 +45,8 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
   const intl = useIntl();
   const view = useNotificationView(group);
   const { actor } = view;
+  // A row without an actor names the account it is about, without its avatar.
+  const named = actor ?? view.subject;
   return (
     <PostCard
       {...(actor !== null && {
@@ -71,9 +78,9 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
                 { id: view.sentence },
                 {
                   name:
-                    actor === null ? null : (
-                      <Link key="name" href={actor.href} className={nameLink}>
-                        <bdi>{actor.name}</bdi>
+                    named === null ? null : (
+                      <Link key="name" href={named.href} className={nameLink}>
+                        <bdi>{named.name}</bdi>
                       </Link>
                     ),
                   count: view.others.length,
@@ -92,8 +99,19 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
           {view.time.relative}
         </time>
       }
-      content={view.post === null ? null : <PostQuote post={view.post} />}
+      content={view.post !== null ? <PostQuote post={view.post} /> : view.notice !== null ? <ModerationNotice notice={view.notice} /> : null}
       {...(view.followBack !== null && { actions: <FollowBack account={view.followBack} /> })}
+      {...(view.links.length > 0 && {
+        actions: (
+          <div className="flex flex-wrap gap-x-4">
+            {view.links.map((link) => (
+              <Link key={link.href} href={link.href} variant="standalone">
+                {t(link.label)}
+              </Link>
+            ))}
+          </div>
+        ),
+      })}
     />
   );
 }
@@ -147,6 +165,39 @@ function PostQuote({ post }: { post: NonNullable<NotificationView["post"]> }) {
     <Link href={post.href} className="block border-s-2 border-border ps-3 wrap-anywhere text-fg no-underline data-hovered:underline">
       {label}
     </Link>
+  );
+}
+
+/**
+ * What a moderation notice tells of the action on the user's account: what it does and why, the moderators'
+ * explanation (their own text, in its own direction; Y10), and when it ends by itself.
+ */
+function ModerationNotice({ notice }: { notice: ModerationNoticeView }) {
+  const t = useT();
+  const intl = useIntl();
+  return (
+    <div className="flex flex-col gap-1 border-s-2 border-border ps-3">
+      <p className="font-semibold">{t("client:notifications.moderation.action", { kind: notice.kind, category: notice.category })}</p>
+      {notice.reason !== null && (
+        <p dir="auto" className="whitespace-pre-line wrap-anywhere align-match-parent">
+          {notice.reason}
+        </p>
+      )}
+      {notice.until !== null && (
+        <p className="text-sm text-fg-muted">
+          {intl.formatMessage(
+            { id: "client:notifications.moderation.until" },
+            {
+              date: (
+                <time key="until" dateTime={notice.until.dateTime}>
+                  {notice.until.text}
+                </time>
+              ),
+            },
+          )}
+        </p>
+      )}
+    </div>
   );
 }
 

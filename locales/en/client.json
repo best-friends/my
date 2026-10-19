@@ -539,6 +539,14 @@
     "defaultMessage": "Use at most {max, number} characters",
     "description": "Error under the public comment or private note of a domain action when it is too long. {max} is the limit."
   },
+  "admin.home.none.description": {
+    "defaultMessage": "Your roles grant none of the permissions that the admin screens need. An administrator can grant them.",
+    "description": "Description on the administration page of a user whose roles grant none of the admin screens' permissions."
+  },
+  "admin.home.none.heading": {
+    "defaultMessage": "No admin screens for your roles",
+    "description": "Heading on the administration page of a user whose roles grant none of the admin screens' permissions."
+  },
   "admin.instance.back": {
     "defaultMessage": "Back to remote servers",
     "description": "Link under the heading of a remote server's page that opens the list of remote servers."
@@ -683,6 +691,14 @@
     "defaultMessage": "Show more",
     "description": "Button under a list of an admin screen that loads more of it."
   },
+  "admin.menu.open_reports": {
+    "defaultMessage": "{count, plural, one {# open report} other {# open reports}}",
+    "description": "Badge of the reports item of the administration menu: how many reports are open."
+  },
+  "admin.menu.pending_registrations": {
+    "defaultMessage": "{count, plural, one {# awaits approval} other {# await approval}}",
+    "description": "Badge of the registrations item of the administration menu: how many registrations await approval."
+  },
   "admin.menu.title": {
     "defaultMessage": "Administration",
     "description": "Heading of the links to the admin screens on the settings page, shown only to operators."
@@ -694,6 +710,10 @@
   "admin.missing_permission.heading": {
     "defaultMessage": "You cannot use this screen",
     "description": "Heading of an admin screen for a user whose roles lack its permission."
+  },
+  "admin.pending_count": {
+    "defaultMessage": "{count, plural, one {# pending} other {# pending}}",
+    "description": "Badge of the navigation's administration item: how many open reports and registrations await the moderators."
   },
   "admin.registrations.account_gone": {
     "defaultMessage": "A removed account",
@@ -1183,6 +1203,26 @@
     "defaultMessage": "{name} and {count, plural, one {# other} other {# others}} favourited your post",
     "description": "Notification sentence for several favourites of one of the user's posts, grouped in one row. {name} is the display name of the newest account that favourited it; {count} is the number of the other accounts that did (1 or more)."
   },
+  "notifications.link.account_status": {
+    "defaultMessage": "View your account status",
+    "description": "Link in a moderation notice notification to the page with the moderation actions on the user's account."
+  },
+  "notifications.link.followers": {
+    "defaultMessage": "View your followers",
+    "description": "Link in a notification of follows ended by a suspension to the user's list of followers."
+  },
+  "notifications.link.following": {
+    "defaultMessage": "View the accounts you follow",
+    "description": "Link in a notification of follows ended by a suspension to the list of accounts the user follows."
+  },
+  "notifications.link.registrations": {
+    "defaultMessage": "Review registrations",
+    "description": "Link in a moderator's notification of a new sign-up to the registration review screen."
+  },
+  "notifications.link.report": {
+    "defaultMessage": "Open the report",
+    "description": "Link in a moderator's notification of a new report to the report's admin page."
+  },
   "notifications.load_more": {
     "defaultMessage": "Load more notifications",
     "description": "Button at the end of the notifications that loads older ones."
@@ -1191,6 +1231,14 @@
     "defaultMessage": "Loading notifications",
     "description": "Visually hidden text that names the busy list of notifications while its first page loads."
   },
+  "notifications.moderation.action": {
+    "defaultMessage": "{kind}: {category}",
+    "description": "In a moderation notice notification: what the action on the user's account does ({kind}, e.g. 'Suspension') and the reason category ({category}, e.g. 'Spam'), both already translated by the server."
+  },
+  "notifications.moderation.until": {
+    "defaultMessage": "Until {date}",
+    "description": "In a moderation notice notification: when the action on the user's account ends by itself; {date} is a formatted date and time."
+  },
   "notifications.post.content_warning": {
     "defaultMessage": "Content warning: {summary}",
     "description": "A notification's link to the post it is about, when the post is behind its author's content warning: the warning only. {summary} is the warning's text."
@@ -1198,6 +1246,10 @@
   "notifications.post.open": {
     "defaultMessage": "Open post",
     "description": "A notification's link to the post it is about, when the post has no text to quote (pictures only)."
+  },
+  "notifications.report_resolved.account": {
+    "defaultMessage": "Your report on {name} has been resolved",
+    "description": "Notification sentence: the moderators resolved the user's report; {name} is the reported account's name, a link to its profile."
   },
   "notifications.retry": {
     "defaultMessage": "Try again",
@@ -2155,6 +2207,14 @@
     "defaultMessage": "Menu",
     "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
   },
+  "shell.nav.admin": {
+    "defaultMessage": "Administration",
+    "description": "Navigation item to the admin screens, shown only to users whose roles have an admin permission."
+  },
+  "shell.nav.admin_pending": {
+    "defaultMessage": "Administration, {count, plural, one {# pending} other {# pending}}",
+    "description": "Accessible name of the navigation item to the admin screens while open reports or registrations awaiting approval wait for the moderators; starts with the visible label."
+  },
   "shell.nav.home": {
     "defaultMessage": "Home",
     "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -2170,6 +2230,10 @@
   "shell.nav.menu": {
     "defaultMessage": "Menu",
     "description": "Button of the bottom tab bar on phones that opens a sheet with the rest of the navigation (profile, settings). Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
+  },
+  "shell.nav.menu_pending": {
+    "defaultMessage": "Menu, {count, plural, one {# pending in administration} other {# pending in administration}}",
+    "description": "Accessible name of the phone tab bar's Menu button while things await the moderators in the administration, which the menu leads to; starts with the visible label."
   },
   "shell.nav.notifications": {
     "defaultMessage": "Notifications",
