@@ -5,7 +5,7 @@ go 1.27.2
 require (
 	code.superseriousbusiness.org/httpsig v1.5.0
 	github.com/dadrus/httpsig v0.9.0
-	github.com/dunglas/httpsfv v1.1.0
+	github.com/dunglas/httpsfv v1.1.2
 	github.com/getkin/kin-openapi v0.149.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/kaptinlin/messageformat-go/mf1 v0.8.6
