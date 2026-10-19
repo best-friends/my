@@ -1,6 +1,6 @@
 name: Web E2E
 
-# Playwright E2E of the web client (ADR-0015, ADR-0027), called by ci.yml on every push to main (ADR-0040) with the subset
+# Playwright E2E of the web client (ADR-0015, ADR-0027), called by main.yml on every push to main (ADR-0040) with the subset
 # and by nightly.yml with the full width × locale matrix (app/web/playwright.config.ts).
 
 on:

@@ -3,12 +3,10 @@ name: CI
 # The entry of the pull request and merge queue checks (ADR-0047): `changes` selects the contexts of `make check` the
 # change touches, one job per context calls that context's reusable workflow (ctx-<context>.yml), and `check`
 # collects their results into the single required status check. The workflow has no path filter, so it always runs
-# and `check` always reports. Pushes to main also run the post-merge suites (postgres-contract, web-e2e).
+# and `check` always reports. Pushes to main run main.yml instead.
 
 on:
   pull_request:
-  push:
-    branches: [main]
   # The merge queue of main runs the same required `check` on each merge group before it merges the group.
   merge_group:
     types: [checks_requested]
@@ -18,14 +16,13 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A new push to a PR replaces its run; every main commit runs to the end (ADR-0040). Each merge group has a ref of
-  # its own (gh-readonly-queue/main/...) and is never cancelled here: the merge queue replaces the groups it rebuilds.
+  # A new push to a PR replaces its run. Each merge group has a ref of its own (gh-readonly-queue/main/...) and is
+  # never cancelled here: the merge queue replaces the groups it rebuilds.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # `make check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request or
-  # the merge group touches that context or one it depends on. A change to shared configuration and every push to
-  # main run them all.
+  # the merge group touches that context or one it depends on. A change to shared configuration runs them all.
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -38,7 +35,7 @@ jobs:
       docker: ${{ steps.contexts.outputs.docker }}
       shell: ${{ steps.contexts.outputs.shell }}
       schema: ${{ steps.contexts.outputs.schema }}
-      # The input `scope` of the ctx-*.yml: `queue` in the merge queue, `pr` on pull requests and main pushes.
+      # The input `scope` of the ctx-*.yml: `queue` in the merge queue, `pr` on pull requests.
       scope: ${{ github.event_name == 'merge_group' && 'queue' || 'pr' }}
     steps:
       # A pull request checks out its merge commit, whose first parent is the base branch. A merge group checks out
@@ -57,12 +54,10 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed"
             contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
-          elif [ "$EVENT" = merge_group ]; then
+          else
             git fetch --no-tags --depth=1 origin "$MERGE_GROUP_BASE_SHA"
             git diff --name-only "$MERGE_GROUP_BASE_SHA" "$MERGE_GROUP_HEAD_SHA" > "$RUNNER_TEMP/changed"
             contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
-          else
-            contexts="$(scripts/changed-contexts.sh --all)"
           fi
           echo "contexts: ${contexts//$'\n'/ }"
           for c in docs go i18n api ui web docker shell schema; do
@@ -156,20 +151,3 @@ jobs:
         run: |
           jq -r 'to_entries[] | "\(.key)\t\(.value.result)"' <<< "$RESULTS"
           jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$RESULTS" > /dev/null
-
-  postgres-contract:
-    # The PostgreSQL tests on a real postgres container instead of pgmem, on pushes to main only; nightly.yml runs
-    # them too (ADR-0041).
-    if: github.event_name == 'push'
-    uses: ./.github/workflows/postgres-contract.yml
-
-  web-e2e:
-    # Playwright E2E of the web client over the subset of the width × locale matrix, on pushes to main only;
-    # a newer push cancels the run in progress. nightly.yml runs all of it (ADR-0040).
-    if: github.event_name == 'push'
-    concurrency:
-      group: web-e2e-main
-      cancel-in-progress: true
-    uses: ./.github/workflows/web-e2e.yml
-    with:
-      matrix: pr

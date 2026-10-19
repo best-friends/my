@@ -7,13 +7,13 @@ on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips shellcheck."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips shellcheck."
         type: string
         default: pr
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips shellcheck."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips shellcheck."
         type: choice
         options: [pr, queue]
         default: pr

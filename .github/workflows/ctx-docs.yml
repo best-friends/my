@@ -7,13 +7,13 @@ on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips markdownlint."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips markdownlint."
         type: string
         default: pr
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips markdownlint."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips markdownlint."
         type: choice
         options: [pr, queue]
         default: pr

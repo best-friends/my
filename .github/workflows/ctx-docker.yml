@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips the smoke test."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips the smoke test."
         type: string
         default: pr
       check:
@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips the smoke test."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips the smoke test."
         type: choice
         options: [pr, queue]
         default: pr
