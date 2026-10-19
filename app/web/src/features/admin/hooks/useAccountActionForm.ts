@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
+import { refreshAdminAccount } from "../api/accounts";
 import {
   type AccountAction,
   type AccountActionCategory,
@@ -123,9 +124,9 @@ export type AccountActionForm = {
 };
 
 /**
- * The form of a moderation action on `target`. `onIssued(action)` is called once the server has taken it and,
- * for an action that resolves a report, the lists of reports are fetched again, after the form is emptied; the
- * caches of the account and its actions, the reports and the deleted posts are marked stale.
+ * The form of a moderation action on `target`. `onIssued(action)` is called once the server has taken it and the
+ * account, its actions and the searches (and, for an action that resolves a report, the lists of reports) are
+ * fetched again, after the form is emptied; the caches of the reports and the deleted posts are marked stale.
  */
 export function useAccountActionForm(target: ActionTarget, onIssued: (action: AccountAction) => void): AccountActionForm {
   const api = useApi();
@@ -137,24 +138,26 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
   const kinds = accountActionKinds.filter((kind) => (target.remote ? remoteKinds.includes(kind) : true) && (target.statusIds.length > 0 || !postKinds.includes(kind)));
   const create = useMutation({
     ...createAccountActionMutation(api),
-    onSuccess: async (action, { body }) => {
-      // The report it follows from is resolved: it leaves the open tab and the counts. The action is done once
-      // the lists are fetched again (the form stays pending until then), so that going back to the queue shows
-      // them as they are now, not the report as it was (refreshReportLists).
-      if (body.report_id !== undefined) await refreshReportLists(queryClient);
+    onSuccess: async (action, { accountId, body }) => {
+      // The account has a new action and maybe another state and restrictions (its page and the searches), and
+      // the report it follows from is resolved: it leaves the open tab and the counts. The action is done once
+      // they are fetched again (the form stays pending until then), so that going back to a search or the queue
+      // shows them as they are now, not as they were (refreshAdminAccount, refreshReportLists).
+      await Promise.all([
+        refreshAdminAccount(queryClient, api, accountId, { actions: true }),
+        body.report_id === undefined ? undefined : refreshReportLists(queryClient),
+      ]);
       setConfirming(false);
       setDraft(emptyDraft(target));
       // Before the report's page reads the report again: the page moves focus once it shows the report resolved
       // (useFocusAfterChange), which must come after this call.
       onIssued(action);
-      // The account has a new action and maybe another state and restrictions (its page and the searches), the
-      // report is resolved and the others on the account tell of one more action, and deleted posts are gone.
+      // The report is resolved and the others on the account tell of one more action, and deleted posts are gone.
       void queryClient.invalidateQueries({
         predicate: (query) => {
           const path = query.queryKey[1];
-          if (typeof path !== "string") return false;
           if (path === "/statuses/{id}") return action.status_ids !== undefined;
-          return path === "/admin/reports/{id}" || path.startsWith("/admin/accounts");
+          return path === "/admin/reports/{id}";
         },
       });
     },

@@ -9,9 +9,8 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { adminAccountQueryOptions } from "./accounts";
-import { pageQuery } from "./admin";
-import { accountActionsQueryOptions } from "./reports";
+import { refreshAdminAccount } from "./accounts";
+import { pageQuery, refreshQueries } from "./admin";
 
 type Schemas = components["schemas"];
 
@@ -91,18 +90,15 @@ export function decideAppealMutation(api: Api) {
 }
 
 /**
- * Fetches again, at once, what a decision on an appeal of `accountId` changes: the lists of appeals (it moves
- * between the tabs), the moderators' counts, and that account with its actions (an overturn lifts one), even
- * those no page shows now (`refetchType: "all"`). A route loads them from the cache as they are (`staleTime:
- * "static"`, web-client.md S7), so a list that was only marked stale would show the appeal as it was until its
- * refetch on mount ends: a decided appeal among those awaiting review. Resolves once every fetch has ended; one
- * that fails leaves its query stale, to be fetched again when shown.
+ * Fetches again (refreshQueries) what a decision on an appeal of `accountId` changes: the lists of appeals (it
+ * moves between the tabs), the moderators' counts, and that account with its actions and in the searches (an
+ * overturn lifts an action). A list that was only marked stale would show the appeal as it was: a decided appeal
+ * among those awaiting review.
  */
 export async function refreshAppealLists(queryClient: QueryClient, api: Api, accountId: string): Promise<void> {
   await Promise.all([
-    queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts", refetchType: "all" }),
-    queryClient.invalidateQueries({ queryKey: adminAccountQueryOptions(api, accountId).queryKey, refetchType: "all" }),
-    queryClient.invalidateQueries({ queryKey: accountActionsQueryOptions(api, accountId).queryKey, refetchType: "all" }),
+    refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts" }),
+    refreshAdminAccount(queryClient, api, accountId, { actions: true }),
   ]);
 }
 

@@ -4,12 +4,12 @@
 // local account (recorded in the audit log, so only on the moderator's explicit action: a mutation, never a
 // query that runs by itself or again), and lifting a moderation action. The search follows the API's keyset
 // pagination as an infinite query whose key ends with "pages" (web-client.md §10).
-import { infiniteQueryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { pageQuery } from "./admin";
-import type { AccountAction } from "./reports";
+import { pageQuery, refreshQueries } from "./admin";
+import { type AccountAction, accountActionsQueryOptions } from "./reports";
 
 type Schemas = components["schemas"];
 
@@ -76,10 +76,23 @@ export function adminAccountQueryOptions(api: Api, id: string) {
   return api.query.queryOptions("get", "/admin/accounts/{id}", { params: { path: { id } } });
 }
 
-/** Whether a query key is one of the account screens' (the search, one account, its actions). */
-export function isAdminAccountsQuery(queryKey: readonly unknown[]): boolean {
-  const path = queryKey[1];
-  return typeof path === "string" && path.startsWith("/admin/accounts");
+/** Whether a query key is a search of the accounts, of any fields. */
+function isAccountSearchQuery(queryKey: readonly unknown[]): boolean {
+  return queryKey[1] === "/admin/accounts";
+}
+
+/**
+ * Fetches again (refreshQueries) what a change of the state, the restrictions or the roles of account `id`
+ * changes: the searches that are cached (each shows those of its accounts) and the account itself, and with
+ * `actions` its moderation actions too.
+ */
+export function refreshAdminAccount(queryClient: QueryClient, api: Api, id: string, { actions }: { actions: boolean }): Promise<void> {
+  return refreshQueries(
+    queryClient,
+    { predicate: (query) => isAccountSearchQuery(query.queryKey) },
+    { queryKey: adminAccountQueryOptions(api, id).queryKey },
+    ...(actions ? [{ queryKey: accountActionsQueryOptions(api, id).queryKey }] : []),
+  );
 }
 
 /**

@@ -3,7 +3,7 @@
 // manage_accounts searches the local and remote accounts, opens one, shows its email and IP addresses only by
 // pressing "show", and takes and lifts moderation actions on it, with MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import { accountFixture, otherAccountFixture, remoteAccountFixture, type Schemas } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
@@ -184,6 +184,10 @@ function accountServer(initial: Detail, actions: Schemas["AdminAccountAction"][]
   server.use(
     http.get(`${apiBase}/admin/accounts/:id`, ({ params }) => (params["id"] === detail.id ? HttpResponse.json(detail) : problem(404, "about:blank", "Not Found"))),
     http.get(`${apiBase}/admin/accounts/:id/actions`, () => HttpResponse.json({ items: list })),
+    // The search finds the account as it is now.
+    http.get(`${apiBase}/admin/accounts`, () =>
+      HttpResponse.json({ items: [adminAccountFixture(detail.account, { state: detail.state, restrictions: detail.restrictions })] }),
+    ),
     http.post(`${apiBase}/admin/accounts/:id/actions`, async ({ request, params }) => {
       const body = (await request.json()) as Schemas["CreateAccountActionRequest"];
       created.push(body);
@@ -205,6 +209,15 @@ function accountServer(initial: Detail, actions: Schemas["AdminAccountAction"][]
     }),
   );
   return { created, lifts };
+}
+
+/** From now on every search takes a while; the handler falls through to accountServer's. */
+function slowSearches() {
+  server.use(
+    http.get(`${apiBase}/admin/accounts`, async () => {
+      await delay(300);
+    }),
+  );
 }
 
 const bobDetail = adminAccountDetailFixture(otherAccountFixture, {
@@ -394,6 +407,48 @@ describe("an account's admin page", () => {
     await waitFor(() => {
       expect(lift).toHaveFocus();
     });
+  });
+
+  // #471: the search, shown from its cache as the route loads it, must not show the account as it was before
+  // the action or the lift while a slow server answers the search again.
+  test("back on the search after an action, the account shows its new state at once, however slowly the search comes", async () => {
+    const carolDetail = adminAccountDetailFixture(remoteAccountFixture);
+    const api = accountServer(carolDetail);
+    const { user } = await renderApp({ path: "/admin/accounts" });
+    await user.click(await within(await screen.findByRole("region", { name: "Results" })).findByRole("link", { name: /^Carol/ }));
+    const action = await screen.findByRole("region", { name: "Take action" });
+    await user.click(within(action).getByRole("radio", { name: "Suspend" }));
+    slowSearches();
+    await user.click(within(action).getByRole("button", { name: "Take action" }));
+    expect(await within(action).findByText("Action taken (Suspend).")).toBeInTheDocument();
+    expect(api.created).toHaveLength(1);
+
+    await user.click(screen.getByRole("link", { name: "Back to the accounts" }));
+    const results = await screen.findByRole("region", { name: "Results" });
+    expect(await within(results).findByRole("link", { name: /^Carol/ })).toBeInTheDocument();
+    const [row] = rows(results, 3);
+    if (row === undefined) throw new Error("Carol is not listed");
+    expect(within(row).getByText("Suspended")).toBeInTheDocument();
+  });
+
+  test("back on the search after a lift, the account shows its new state at once, however slowly the search comes", async () => {
+    const api = accountServer(bobDetail, [limit]);
+    const { user } = await renderApp({ path: "/admin/accounts" });
+    await user.click(await within(await screen.findByRole("region", { name: "Results" })).findByRole("link", { name: /^Bob/ }));
+    const history = await screen.findByRole("region", { name: "Actions on the account" });
+    await user.click(await within(history).findByRole("button", { name: /^Lift Limit, taken / }));
+    slowSearches();
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Lift" }));
+    expect(await within(history).findByRole("status")).toHaveTextContent("Limit is lifted.");
+    expect(api.lifts).toHaveLength(1);
+
+    await user.click(screen.getByRole("link", { name: "Back to the accounts" }));
+    const results = await screen.findByRole("region", { name: "Results" });
+    expect(await within(results).findByRole("link", { name: /^Bob/ })).toBeInTheDocument();
+    const [row] = rows(results, 3);
+    if (row === undefined) throw new Error("Bob is not listed");
+    expect(within(row).getByText("Active")).toBeInTheDocument();
+    expect(within(row).queryByText("Limited")).not.toBeInTheDocument();
   });
 
   test("an unknown account says it is not found", async () => {

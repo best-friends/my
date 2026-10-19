@@ -4,7 +4,7 @@
 // role after a confirmation, and reads why the others cannot be changed and why the last admin keeps admin, with
 // MSW playing the role API.
 import { screen, waitFor, within } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import { otherAccountFixture, type Schemas, viewerFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
@@ -104,6 +104,52 @@ describe("an account's roles", () => {
     });
     // The account is read again: its summary lists the role.
     expect(await within(screen.getByRole("region", { name: "Account" })).findByText("moderator")).toBeInTheDocument();
+  });
+
+  // #471: the audit log, shown from its cache as the route loads it, must not show the operations as they were
+  // before the change while a slow server answers it again.
+  test("back on the audit log after a grant, the change is in it at once, however slowly the log comes", async () => {
+    const changes = rolesServer([]);
+    let entries: Schemas["AdminAuditEntry"][] = [];
+    server.use(
+      http.get(`${apiBase}/admin/audit_log`, () => HttpResponse.json({ items: entries })),
+      http.put(`${apiBase}/admin/accounts/:id/roles/:role`, () => {
+        entries = [
+          {
+            id: "0192f0c4-7a8e-7000-8000-0000000a0009",
+            actor_kind: "user",
+            actor_account_id: viewerFixture.id,
+            action: "role_granted",
+            target_kind: "user",
+            target_id: otherAccountFixture.id,
+            target_label: "@bob",
+            target_exists: true,
+            occurred_at: "2026-10-17T09:30:00Z",
+          },
+        ];
+        // Falls through to rolesServer's, which grants the role.
+      }),
+    );
+    const { user, router } = await renderApp({ path: "/admin/audit-log" });
+    const operations = await screen.findByRole("region", { name: "Operations" });
+    expect(await within(operations).findByRole("heading", { level: 3 })).toBeInTheDocument();
+    expect(within(operations).queryAllByRole("listitem")).toHaveLength(0);
+    await router.navigate({ to: "/admin/accounts/$id", params: { id: otherAccountFixture.id } });
+    const roles = await screen.findByRole("region", { name: "Roles" });
+    await user.click(await within(roles).findByRole("button", { name: `Grant ${ltr("moderator")}` }));
+    // From now on the audit log takes a while; the handler falls through to the one above.
+    server.use(
+      http.get(`${apiBase}/admin/audit_log`, async () => {
+        await delay(300);
+      }),
+    );
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Grant" }));
+    expect(await within(roles).findByText(`${ltr("moderator")} is granted to ${handle}. The audit log records the change.`)).toBeInTheDocument();
+    expect(changes).toEqual(["PUT moderator"]);
+
+    await router.navigate({ to: "/admin/audit-log" });
+    const after = await screen.findByRole("region", { name: "Operations" });
+    expect(within(after).getAllByRole("listitem").length).toBeGreaterThan(0);
   });
 
   test("revokes a role after its confirmation; cancel changes nothing and returns focus to the button", async () => {

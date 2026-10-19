@@ -2,7 +2,7 @@
 // The admin screens through the whole app (web-client.md T4): a signed-in session from the default handlers,
 // a viewer whose roles have the screen's permission (or not), and MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { Schemas } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
@@ -140,6 +140,39 @@ describe("remote servers", () => {
     expect(screen.queryByRole("button", { name: "Resume deliveries" })).not.toBeInTheDocument();
     expect(await within(history).findByText("An operator resumed deliveries.")).toBeInTheDocument();
     expect(requests).toContain("POST /admin/instances/down.example/mark_available");
+  });
+
+  // #471: the list, shown from its cache as the route loads it, must not show the server as it was before
+  // deliveries resumed while a slow server answers the list again.
+  test("back on the list after resuming deliveries, the server is gone from it at once, however slowly the list comes", async () => {
+    let failing = [paused, flaky];
+    server.use(
+      operatorHandler(["manage_domains"]),
+      http.get(`${apiBase}/admin/instances`, () => HttpResponse.json({ items: failing })),
+      http.get(`${apiBase}/admin/instances/:domain`, ({ params }) => HttpResponse.json(failing.find((health) => health.domain === params.domain))),
+      http.get(`${apiBase}/admin/instances/:domain/availability_events`, () => HttpResponse.json({ items: [] })),
+      http.post(`${apiBase}/admin/instances/:domain/mark_available`, () => {
+        failing = [flaky];
+        return HttpResponse.json({ domain: paused.domain, state: "available", since: "2026-10-17T00:00:00Z", failure_days: 0 });
+      }),
+    );
+    const requests = recordAdminRequests();
+    const { user } = await renderApp({ path: "/admin/instances" });
+    await user.click(await screen.findByRole("link", { name: "down.example" }));
+    const resume = await screen.findByRole("button", { name: "Resume deliveries" });
+    // From now on the list takes a while; the handler falls through to the one above.
+    server.use(
+      http.get(`${apiBase}/admin/instances`, async () => {
+        await delay(300);
+      }),
+    );
+    await user.click(resume);
+    expect(await screen.findByText("Deliveries to down.example resume.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Back to remote servers" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "flaky.example" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "down.example" })).not.toBeInTheDocument();
+    expect(requests.filter((request) => request.startsWith("GET /admin/instances?"))).toEqual(["GET /admin/instances?limit=40", "GET /admin/instances?limit=40"]);
   });
 
   test("a failure to resume deliveries keeps the server's state and says why", async () => {
