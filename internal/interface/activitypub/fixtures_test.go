@@ -173,7 +173,8 @@ func newServer(t *testing.T, accountDomain string) *server {
 	s := &server{mux: http.NewServeMux(), accounts: newAccounts(t), objects: newObjects(), graph: &fakeGraph{}, inbox: &fakeInbox{}, suspended: fakeSuspensions{}}
 	activitypub.New(activitypub.Options{
 		Host: host, AccountDomain: accountDomain, SoftwareVersion: "0.1.0", SourceURL: "https://github.com/best-friends/my",
-		Accounts: s.accounts, Objects: s.objects, Graph: s.graph, Inbox: s.inbox, Problem: problem,
+		InstanceName: func(context.Context) string { return "Example Social" },
+		Accounts:     s.accounts, Objects: s.objects, Graph: s.graph, Inbox: s.inbox, Problem: problem,
 		Suspensions: s.suspended,
 	}).Register(s.mux)
 	return s

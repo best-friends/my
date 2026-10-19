@@ -1571,6 +1571,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/instance/texts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the instance texts
+         * @description The texts of the instance in every locale that has one, by key and then by locale: its
+         *     display name, its descriptions, its terms of service and privacy policy, and the alt text
+         *     of its link preview image. A key that no locale has a text of is left out, and so is a
+         *     text cleared in a locale. The list is not paginated. Needs the `manage_settings`
+         *     permission.
+         */
+        get: operations["listInstanceTexts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instance/texts/{key}/{locale}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set an instance text in one locale
+         * @description Records a new revision of the text in the locale, which takes effect at once; the change
+         *     is audited. An empty `text` clears the text in that locale, so that its readers get the
+         *     text of the next locale of their fallback chain (the locale's parents, then the
+         *     instance's default locale). The display name (`name`) is what names the instance to
+         *     people: the web client's navigation and tab title, the server-rendered sign-in pages,
+         *     emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`. Where no
+         *     locale of the chain has a name, the instance is named by its domain, which handles and
+         *     URLs always use. A text longer than its key allows (see `AdminInstanceTextKey`) or a
+         *     single-line text with a line break is a 422 naming `text`, a locale that is not a BCP 47
+         *     tag a 422 naming `locale`, and an unknown key a 404. Needs the `manage_settings`
+         *     permission.
+         */
+        put: operations["setInstanceText"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/rules": {
         parameters: {
             query?: never;
@@ -3428,6 +3482,37 @@ export interface components {
          * @enum {string}
          */
         Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
+        /**
+         * @description The key of an instance text, with the most characters its text may have: `name`, the
+         *     display name of the instance (100, on one line); `short_description`, a one-paragraph
+         *     summary (500); `description`, the full description (20,000); `terms`, the terms of
+         *     service (100,000); `privacy_policy`, the privacy policy (100,000); and
+         *     `preview_image_alt`, the alt text of the instance's link preview image (1,500).
+         * @enum {string}
+         */
+        AdminInstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt";
+        /** @description The text of a key in one locale. */
+        AdminInstanceText: {
+            key: components["schemas"]["AdminInstanceTextKey"];
+            /** @description The locale of the text, a canonical BCP 47 tag. */
+            locale: string;
+            /** @description The text, as plain text; empty when the change cleared it in this locale. */
+            text: string;
+            /**
+             * Format: date-time
+             * @description When the text was last changed in this locale.
+             */
+            revised_at: string;
+        };
+        /** @description The instance texts, by key and then by locale. */
+        AdminInstanceTextList: {
+            items: components["schemas"]["AdminInstanceText"][];
+        };
+        /** @description The new text of a key in one locale. */
+        SetInstanceTextRequest: {
+            /** @description The text, as plain text; empty clears it in the locale. */
+            text: string;
+        };
         /**
          * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
          *     across revisions, so reports keep citing it.
@@ -5704,6 +5789,59 @@ export interface operations {
         };
         responses: {
             200: components["responses"]["AdminAccountAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInstanceTexts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The texts. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInstanceTextList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    setInstanceText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the text. */
+                key: components["schemas"]["AdminInstanceTextKey"];
+                /** @description The locale of the text, a BCP 47 tag. It is canonicalized: `ja_jp` is `ja-JP`. */
+                locale: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetInstanceTextRequest"];
+            };
+        };
+        responses: {
+            /** @description The text as recorded. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInstanceText"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

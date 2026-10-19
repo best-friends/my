@@ -80,8 +80,8 @@ func previewHandler(t *testing.T, p *fakePreviews, o web.Options) http.Handler {
 	if o.AccountDomain == "" {
 		o.AccountDomain = "example.org"
 	}
-	if o.InstanceName == "" {
-		o.InstanceName = "Example Social"
+	if o.InstanceName == nil {
+		o.InstanceName = named("Example Social")
 	}
 	_, mux := newHandler(t, o)
 	return mux
@@ -156,6 +156,26 @@ func TestProfilePreview(t *testing.T) {
 			h.Get("ETag") == "" || h.Get("X-Robots-Tag") != "" || !strings.Contains(h.Get("Content-Security-Policy"), "script-src 'self';") {
 			t.Errorf("GET %s headers = %v", path, h)
 		}
+	}
+}
+
+// TestPreviewSiteName checks that a preview names the instance in the preview's language, the
+// runtime config in the default locale, and that the handle keeps the account domain.
+func TestPreviewSiteName(t *testing.T) {
+	names := map[string]string{"ja": "例のサーバー", "en": "Example Social"}
+	p := &fakePreviews{profiles: map[string]appcontent.ProfilePreview{"alice": alice("Alice", "")}}
+	mux := previewHandler(t, p, web.Options{InstanceName: func(_ context.Context, locale string) string { return names[locale] }})
+	rec := get(mux, "/@alice", nil)
+	body := rec.Body.String()
+	got := metas(t, body)
+	if got["og:site_name"] != "例のサーバー" || got["fediverse:creator"] != "@alice@example.org" || !strings.Contains(body, `"instanceName":"Example Social"`) {
+		t.Errorf("site name %q, creator %q:\n%s", got["og:site_name"], got["fediverse:creator"], body)
+	}
+	// A new name is a new version of the page.
+	names["ja"] = ""
+	again := get(mux, "/@alice", nil)
+	if got := metas(t, again.Body.String()); got["og:site_name"] != "social.example" || again.Header().Get("ETag") == rec.Header().Get("ETag") {
+		t.Errorf("without a ja name: site name %q, ETag %q (was %q); want the host and a new ETag", got["og:site_name"], again.Header().Get("ETag"), rec.Header().Get("ETag"))
 	}
 }
 
@@ -442,7 +462,7 @@ func TestPreviewEscaping(t *testing.T) {
 		profiles: map[string]appcontent.ProfilePreview{"alice": a},
 		statuses: map[string]appcontent.StatusPreview{statusID: s, cw.Post.Status.ID: cw},
 	}
-	mux := previewHandler(t, p, web.Options{InstanceName: attack})
+	mux := previewHandler(t, p, web.Options{InstanceName: named(attack)})
 
 	for _, path := range []string{"/@alice", "/@alice/" + statusID, "/@alice/" + cw.Post.Status.ID} {
 		body := get(mux, path, nil).Body.String()

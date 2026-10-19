@@ -49,6 +49,11 @@ func locale(l string) func(context.Context) string {
 	return func(context.Context) string { return l }
 }
 
+// named names the instance n in every locale.
+func named(n string) func(context.Context, string) string {
+	return func(context.Context, string) string { return n }
+}
+
 func newHandler(t *testing.T, o web.Options) (*web.Handler, *http.ServeMux) {
 	t.Helper()
 	if o.Build == nil {
@@ -78,7 +83,7 @@ func get(mux http.Handler, target string, header map[string]string) *httptest.Re
 }
 
 func TestShellLoadsTheBuildFromTheManifest(t *testing.T) {
-	_, mux := newHandler(t, web.Options{InstanceName: "Example Social"})
+	_, mux := newHandler(t, web.Options{InstanceName: named("Example Social")})
 	rec := get(mux, "/@alice/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f", nil)
 	if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "text/html; charset=utf-8" {
 		t.Fatalf("shell = %d %q", rec.Code, rec.Header().Get("Content-Type"))
@@ -173,7 +178,7 @@ func TestShellCSP(t *testing.T) {
 // data block through html/template, which must keep them from ending the script element.
 func TestRuntimeConfigIsEscaped(t *testing.T) {
 	name := `</script><script>alert(1)</script><!-- "quoted" & 'single' \ ` + "\u2028"
-	_, mux := newHandler(t, web.Options{InstanceName: name, Host: "social.example", AccountDomain: "example.org", DefaultLocale: locale("ja")})
+	_, mux := newHandler(t, web.Options{InstanceName: named(name), Host: "social.example", AccountDomain: "example.org", DefaultLocale: locale("ja")})
 	body := get(mux, "/", nil).Body.String()
 	if strings.Count(body, "</script>") != 2 || strings.Contains(body, "<script>alert") || strings.Contains(body, "<!--") {
 		t.Fatalf("the instance name escaped the data block:\n%s", body)
@@ -319,7 +324,7 @@ func TestStaticFiles(t *testing.T) {
 }
 
 func TestWebManifest(t *testing.T) {
-	_, mux := newHandler(t, web.Options{InstanceName: "Example Social", DefaultLocale: locale("ar")})
+	_, mux := newHandler(t, web.Options{InstanceName: named("Example Social"), DefaultLocale: locale("ar")})
 	rec := get(mux, web.PathWebManifest, nil)
 	if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "application/manifest+json" || rec.Header().Get("ETag") == "" {
 		t.Fatalf("manifest = %d %v", rec.Code, rec.Header())
@@ -352,6 +357,48 @@ func TestWebManifest(t *testing.T) {
 	}
 	if !slices.Equal(m.Icons, want) {
 		t.Errorf("icons = %+v, want the icons the build has: %+v", m.Icons, want)
+	}
+}
+
+// TestInstanceName checks that the shell and the manifest name the instance by its display name
+// in the default locale, read per request so that a change applies at once, and by its host
+// when it has none; the handle domain stays in the runtime config either way.
+func TestInstanceName(t *testing.T) {
+	var name string
+	var asked []string
+	_, mux := newHandler(t, web.Options{
+		Host: "social.example", AccountDomain: "example.org", DefaultLocale: locale("ja"),
+		InstanceName: func(_ context.Context, locale string) string {
+			asked = append(asked, locale)
+			return name
+		},
+	})
+	check := func(want string) {
+		t.Helper()
+		body := get(mux, "/", nil).Body.String()
+		if !strings.Contains(body, "<title>"+want+"</title>") {
+			t.Errorf("shell title, want %q:\n%s", want, body)
+		}
+		m := regexp.MustCompile(`<script type="application/json" id="config">([^<]*)</script>`).FindStringSubmatch(body)
+		var cfg map[string]string
+		if m == nil || json.Unmarshal([]byte(m[1]), &cfg) != nil || cfg["instanceName"] != want || cfg["accountDomain"] != "example.org" {
+			t.Errorf("runtime config = %v, want the name %q and the account domain", cfg, want)
+		}
+		var manifest struct {
+			Name      string
+			ShortName string `json:"short_name"`
+		}
+		if err := json.Unmarshal(get(mux, web.PathWebManifest, nil).Body.Bytes(), &manifest); err != nil || manifest.Name != want || manifest.ShortName != want {
+			t.Errorf("manifest = %+v (%v), want the name %q", manifest, err, want)
+		}
+	}
+	check("social.example")
+	name = "Example Social"
+	check("Example Social")
+	name = "例のサーバー"
+	check("例のサーバー")
+	if len(asked) == 0 || slices.ContainsFunc(asked, func(l string) bool { return l != "ja" }) {
+		t.Errorf("asked for the name in %q, want the default locale ja", asked)
 	}
 }
 

@@ -57,7 +57,8 @@ func LookupText(key TextKey) (TextDefinition, error) {
 }
 
 // Validate checks body against d. An empty body is valid: it clears the text in its locale,
-// so lookups fall back to the next locale of the chain.
+// so lookups fall back to the next locale of the chain. A SingleLine text of only spaces is
+// not: it would name the instance with nothing visible (TextName).
 func (d TextDefinition) Validate(body string) error {
 	invalid := func(why string) error { return fmt.Errorf("text %s: %s: %w", d.Key, why, ErrInvalidValue) }
 	switch {
@@ -69,6 +70,8 @@ func (d TextDefinition) Validate(body string) error {
 		return invalid(fmt.Sprintf("longer than %d characters", d.MaxLength))
 	case d.SingleLine && strings.ContainsAny(body, "\r\n"):
 		return invalid("contains a line break")
+	case d.SingleLine && body != "" && strings.TrimSpace(body) == "":
+		return invalid("is blank")
 	}
 	return nil
 }

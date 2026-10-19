@@ -119,6 +119,9 @@ type Options struct {
 	// Rules runs the use cases of the instance rules: the admin operations (admin_rules.go)
 	// and the rules of GET /instance, which lists none when it is nil.
 	Rules InstanceRules
+	// Texts lists and changes the instance texts for the admin operations
+	// (admin_instance_texts.go).
+	Texts InstanceTexts
 	// Roles lists, grants, and revokes the roles of users for the admin operations
 	// (admin_roles.go).
 	Roles Roles

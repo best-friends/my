@@ -29,6 +29,7 @@ func (a *App) setUpModeratorNotifications(cfg *config.Config, repo notification.
 		}
 		notification.RegisterModeratorJobs(a.Handlers, notification.MailDeps{
 			Staff: staff, Mailer: a.Mailer, Messages: a.Messages, Host: cfg.Host, WebOrigin: cfg.WebOrigin,
+			InstanceName: a.instanceName,
 		})
 	}
 	notification.RegisterModeratorProjectors(a.Projectors, deps)

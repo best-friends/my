@@ -180,7 +180,7 @@ func (h *Handler) serveHidden(w http.ResponseWriter, r *http.Request) {
 // renderProfile renders the shell of a profile page.
 func (h *Handler) renderProfile(ctx context.Context, p appcontent.ProfilePreview) (document, error) {
 	lang := h.previewLanguage(ctx, p.Language)
-	meta, version := h.authorMeta(lang, p)
+	meta, version := h.authorMeta(ctx, lang, p)
 	meta.Type = ogTypeProfile
 	meta.URL = profileURL(h.o.Host, p.Username())
 	meta.ActivityPubID = p.Actor.Account.URI
@@ -201,7 +201,7 @@ func (h *Handler) renderProfile(ctx context.Context, p appcontent.ProfilePreview
 // renderStatus renders the shell of a post page.
 func (h *Handler) renderStatus(ctx context.Context, s appcontent.StatusPreview) (document, error) {
 	lang := h.previewLanguage(ctx, s.Language)
-	meta, version := h.authorMeta(lang, s.Author)
+	meta, version := h.authorMeta(ctx, lang, s.Author)
 	st, rev := s.Post.Status, s.Post.Revision
 	meta.Type = ogTypeArticle
 	meta.URL = content.StatusURL(h.o.Host, s.Author.Username(), st.ID)
@@ -227,20 +227,21 @@ func (h *Handler) renderStatus(ctx context.Context, s appcontent.StatusPreview) 
 }
 
 // authorMeta fills the meta tags that a profile page and its posts share, and returns them
-// with the parts of the ETag they depend on.
-func (h *Handler) authorMeta(lang string, p appcontent.ProfilePreview) (previewMeta, []string) {
+// with the parts of the ETag they depend on. The site is the instance's name in the preview's
+// language; the handle keeps the account domain.
+func (h *Handler) authorMeta(ctx context.Context, lang string, p appcontent.ProfilePreview) (previewMeta, []string) {
 	username, profileRevision := p.Username(), ""
 	if prof := p.Actor.Profile; prof != nil {
 		profileRevision = prof.ID
 	}
 	handle := username + "@" + h.o.AccountDomain
 	meta := previewMeta{
-		SiteName: h.o.InstanceName,
+		SiteName: h.instanceName(ctx, lang),
 		Title:    h.o.Messages.Localizer(lang).ServerPreviewTitle(handle, displayName(p)),
 		Locale:   ogLocale(lang),
 		Creator:  "@" + handle,
 	}
-	return meta, []string{p.Actor.Account.ID, username, profileRevision}
+	return meta, []string{p.Actor.Account.ID, username, profileRevision, meta.SiteName}
 }
 
 // displayName returns the display name of a profile, or its username when it has none.
@@ -276,7 +277,7 @@ func (h *Handler) profileImage(ctx context.Context, lang string, p appcontent.Pr
 	}
 	out := *img
 	if out.Alt == "" {
-		out.Alt = l.ServerPreviewDefaultImageAlt(h.o.InstanceName)
+		out.Alt = l.ServerPreviewDefaultImageAlt(h.instanceName(ctx, lang))
 	}
 	return &out, nil
 }
@@ -319,16 +320,17 @@ func (h *Handler) previewLanguage(ctx context.Context, lang string) string {
 // default locale.
 func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMeta, version []string) (document, error) {
 	locale := h.instanceLocale(ctx)
+	name := h.instanceName(ctx, locale)
 	d, err := renderShell(shellData{
 		Lang: lang, Dir: i18n.Direction(lang), Title: meta.Title, ThemeColor: h.o.ThemeColor,
 		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
-		Config:  h.runtimeConfig(locale),
+		Config:  h.runtimeConfig(locale, name),
 		Preview: &meta,
 	})
 	if err != nil {
 		return document{}, err
 	}
-	key := append([]string{h.previewVersion, lang, locale}, version...)
+	key := append([]string{h.previewVersion, lang, locale, name}, version...)
 	d.etag = etag([]byte(strings.Join(key, "\x00")))
 	d.noIndex = meta.NoIndex
 	return d, nil

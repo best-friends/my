@@ -61,6 +61,14 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 		h.o.Problem(w, r, http.StatusInternalServerError)
 		return
 	}
+	// nodeName is the name that Mastodon and other servers read from NodeInfo's free-form
+	// metadata to show the instance by.
+	name := h.o.Host
+	if h.o.InstanceName != nil {
+		if n := h.o.InstanceName(r.Context()); n != "" {
+			name = n
+		}
+	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	h.writeJSON(w, r, typeNodeInfo, nodeInfo{
 		Version:   "2.1",
@@ -68,6 +76,6 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 		Protocols: []string{"activitypub"},
 		Services:  nodeInfoServices{Inbound: []string{}, Outbound: []string{}},
 		Usage:     nodeInfoUsage{Users: nodeInfoUsers{Total: users}},
-		Metadata:  map[string]any{},
+		Metadata:  map[string]any{"nodeName": name},
 	})
 }

@@ -79,6 +79,8 @@ type fakeInstance struct {
 	settings []instance.CurrentSetting
 	texts    map[instance.TextKey]map[string]string
 	err      error
+	// revisedBy are the users who changed the texts, in order (admin_instance_texts_test.go).
+	revisedBy []string
 }
 
 func (f *fakeInstance) Settings(context.Context) (instance.Settings, error) {

@@ -118,6 +118,10 @@ type Options struct {
 	FormActionOrigins []string
 	// Locales resolves the locale of the screens (ADR-0009 §2).
 	Locales *i18n.Resolver
+	// InstanceName returns the name of the instance for readers of locale: its display name, or
+	// its domain when it has none. The pages show it above their card and in their title; nil
+	// leaves it out.
+	InstanceName func(ctx context.Context, locale string) string
 	// Stylesheet is the URL of the pages' stylesheet, the web build's server pages entry
 	// (web.Handler.Stylesheet); empty leaves the pages unstyled.
 	Stylesheet string
@@ -189,13 +193,16 @@ func (h *Handler) Register(r Router) {
 
 // page is the data of a template.
 type page struct {
-	L          *i18n.Localizer
-	Lang, Dir  string
-	Title      string
-	Stylesheet string
-	CSRFToken  string
-	ReturnTo   string
-	Email      string
+	L         *i18n.Localizer
+	Lang, Dir string
+	// Title is the page's title; DocumentTitle adds the instance's name to it.
+	Title string
+	// InstanceName names the instance in the page's locale; "" leaves it out.
+	InstanceName string
+	Stylesheet   string
+	CSRFToken    string
+	ReturnTo     string
+	Email        string
 	// Error is an alert about the whole form; Notice reports success.
 	Error  string
 	Notice string
@@ -215,6 +222,14 @@ type page struct {
 	formAction []string
 }
 
+// DocumentTitle is the <title> of the page: its title and the instance's name.
+func (p page) DocumentTitle() string {
+	if p.InstanceName == "" {
+		return p.Title
+	}
+	return p.L.ServerAuthDocumentTitle(p.InstanceName, p.Title)
+}
+
 func (h *Handler) newPage(r *http.Request, title func(*i18n.Localizer) string) page {
 	l := h.o.Locales.RequestLocalizer(r)
 	return page{L: l, Lang: l.Locale(), Dir: l.Direction(), Title: title(l), Stylesheet: h.o.Stylesheet}
@@ -227,6 +242,9 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...)))
 	hd.Set("Cache-Control", "no-store")
 	hd.Add("Vary", "Accept-Language, Cookie")
+	if h.o.InstanceName != nil {
+		p.InstanceName = h.o.InstanceName(r.Context(), p.Lang)
+	}
 	w.WriteHeader(status)
 	if err := h.pages[name].ExecuteTemplate(w, "layout", p); err != nil {
 		h.o.Logger.ErrorContext(r.Context(), "render auth page", slog.String("page", name), slog.Any("error", err))

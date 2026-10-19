@@ -46,8 +46,11 @@ type Options struct {
 	WebOrigin string
 	// AccountDomain is the domain of handles; empty means Host.
 	AccountDomain string
-	// InstanceName is the name the shell and the Web App Manifest show.
-	InstanceName string
+	// InstanceName returns the instance's display name for readers of locale, which the shell,
+	// the Web App Manifest, and link previews show; nil or "" names the instance by Host. It is
+	// called per request, so that a change of the name applies without a restart. Handles and
+	// URLs always use the domains.
+	InstanceName func(ctx context.Context, locale string) string
 	// DefaultLocale returns the instance's current default locale, for <html lang dir>, the
 	// runtime config, and the manifest; nil means the source locale. It is read per request so
 	// that a change of the setting applies without a restart. The HTML never depends on
@@ -114,7 +117,8 @@ type Handler struct {
 	// icons are the manifest icons whose files the build has.
 	icons []manifestIcon
 	csp   string
-	// localized holds the shell and the manifest of each default locale seen, rendered once.
+	// localized holds the shell and the manifest of each default locale seen, rendered once
+	// for the instance name they show.
 	localized sync.Map // locale -> *localizedDocuments
 	// files are the servable files of the build, by path, with their ETags.
 	files map[string]string
@@ -123,8 +127,10 @@ type Handler struct {
 	previewVersion string
 }
 
-// localizedDocuments are the documents that depend on the default locale.
+// localizedDocuments are the documents that depend on the default locale, and the instance
+// name they show.
 type localizedDocuments struct {
+	name            string
 	shell, manifest document
 }
 
@@ -145,9 +151,6 @@ func New(o Options) (*Handler, error) {
 	}
 	if o.AccountDomain == "" {
 		o.AccountDomain = o.Host
-	}
-	if o.InstanceName == "" {
-		o.InstanceName = o.Host
 	}
 	if o.DefaultLocale == nil {
 		o.DefaultLocale = func(context.Context) string { return i18n.SourceLocale }
@@ -220,13 +223,13 @@ func New(o Options) (*Handler, error) {
 
 	h.tags, h.apiOrigin = tags, apiOrigin
 	version := []string{
-		shellSource, h.o.DevViteOrigin, h.apiOrigin, h.o.Host, h.o.AccountDomain, h.o.InstanceName, h.o.ThemeColor,
+		shellSource, h.o.DevViteOrigin, h.apiOrigin, h.o.Host, h.o.AccountDomain, h.o.ThemeColor,
 		strconv.FormatBool(h.hasIcon), strconv.FormatBool(h.hasAppleTouchIcon), tags.Script,
 	}
 	version = append(append(version, tags.Stylesheet...), tags.Preload...)
 	h.previewVersion = etag([]byte(strings.Join(version, "\x00")))
 	// Render once now, so that a template or encoding error fails the start.
-	if _, err := h.render(i18n.SourceLocale); err != nil {
+	if _, err := h.render(i18n.SourceLocale, o.Host); err != nil {
 		return nil, err
 	}
 	return h, nil
@@ -256,37 +259,53 @@ func (h *Handler) instanceLocale(ctx context.Context) string {
 	return i18n.SourceLocale
 }
 
-// documents returns the shell and the manifest for the current default locale.
-func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
-	locale := h.instanceLocale(ctx)
-	if d, ok := h.localized.Load(locale); ok {
-		return d.(*localizedDocuments), nil
+// instanceName returns the instance's display name for readers of locale, or its host when it
+// has none.
+func (h *Handler) instanceName(ctx context.Context, locale string) string {
+	if h.o.InstanceName != nil {
+		if name := h.o.InstanceName(ctx, locale); name != "" {
+			return name
+		}
 	}
-	return h.render(locale)
+	return h.o.Host
 }
 
-// render renders and caches the documents of a default locale.
-func (h *Handler) render(locale string) (*localizedDocuments, error) {
+// documents returns the shell and the manifest for the current default locale and the
+// instance's name in it.
+func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
+	locale := h.instanceLocale(ctx)
+	name := h.instanceName(ctx, locale)
+	if d, ok := h.localized.Load(locale); ok && d.(*localizedDocuments).name == name {
+		return d.(*localizedDocuments), nil
+	}
+	return h.render(locale, name)
+}
+
+// render renders the documents of a default locale that show the instance name, and caches
+// them in place of those of an earlier name.
+func (h *Handler) render(locale, name string) (*localizedDocuments, error) {
 	shell, err := renderShell(shellData{
-		Lang: locale, Dir: i18n.Direction(locale), Title: h.o.InstanceName, ThemeColor: h.o.ThemeColor,
+		Lang: locale, Dir: i18n.Direction(locale), Title: name, ThemeColor: h.o.ThemeColor,
 		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
-		Config: h.runtimeConfig(locale),
+		Config: h.runtimeConfig(locale, name),
 	})
 	if err != nil {
 		return nil, err
 	}
-	manifest, err := renderWebManifest(&h.o, locale, h.icons)
+	manifest, err := renderWebManifest(&h.o, locale, name, h.icons)
 	if err != nil {
 		return nil, err
 	}
-	d, _ := h.localized.LoadOrStore(locale, &localizedDocuments{shell: shell, manifest: manifest})
-	return d.(*localizedDocuments), nil
+	d := &localizedDocuments{name: name, shell: shell, manifest: manifest}
+	h.localized.Store(locale, d)
+	return d, nil
 }
 
-// runtimeConfig returns the runtime config of the shell for the default locale.
-func (h *Handler) runtimeConfig(locale string) runtimeConfig {
+// runtimeConfig returns the runtime config of the shell for the default locale and the
+// instance's name in it.
+func (h *Handler) runtimeConfig(locale, name string) runtimeConfig {
 	return runtimeConfig{
-		APIOrigin: h.apiOrigin, InstanceName: h.o.InstanceName, AccountDomain: h.o.AccountDomain, DefaultLocale: locale,
+		APIOrigin: h.apiOrigin, InstanceName: name, AccountDomain: h.o.AccountDomain, DefaultLocale: locale,
 	}
 }
 
