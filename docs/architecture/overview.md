@@ -201,6 +201,7 @@ internal/
   i18n/              # メッセージ整形・ロケール解決（型付きアクセサは tools/i18n が生成）
 pkg/
   testkit/           # コントラクトテスト・フィクスチャ・決定的なフェイク（独自アダプタ作者向けに公開）
+    pgtest/          # テスト用の PostgreSQL（既定は pgmem、テンプレートの複製。ADR-0041）
 api/                 # openapi.yaml（クライアント API の正）と lint 設定 redocly.yaml。規約は client-api.md
 schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用）と準備 SQL postgres.bootstrap.sql（ADR-0023）
 queries/             # sqlc 用クエリ（方言別。設定は sqlc.yaml、生成先は internal/adapter/db/<dialect>/。queue/ は internal/adapter/queue/db 用）

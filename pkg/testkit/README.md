@@ -3,6 +3,14 @@
 Port contract test suites, deterministic fakes (`Clock`, `IDGenerator`), and fixtures for adapter authors and for this
 repository's own tests ([ADR-0015](../../docs/adr/0015-testing-strategy.md)).
 
+## PostgreSQL test databases
+
+`pgtest.NewDatabase(t)` (package `pkg/testkit/pgtest`) returns the URL of a new database with the product schema, copied
+from a template database on one server per test binary ([ADR-0041](../../docs/adr/0041-postgres-tests-on-pgmem.md)).
+The server is pgmem, PostgreSQL in memory inside the test process, unless `TEST_POSTGRES_URL` names an existing server
+or `TEST_POSTGRES=container` starts a container with testcontainers-go (`make go-test-postgres`). The package's `TestMain`
+calls `os.Exit(pgtest.Main(m))` so that the server stops after the tests.
+
 ## Federation fixtures
 
 `fixtures/federation/` holds AS2 documents (activities, objects, actors) that other implementations send, for the
