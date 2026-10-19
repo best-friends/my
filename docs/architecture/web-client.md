@@ -430,9 +430,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 ## 14. 管理画面
 
-`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ・登録の審査）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
+`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ・登録の審査・通報）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査、`manage_reports` が通報の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
@@ -468,6 +468,17 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   決定は後から変えられないので、どちらも `ConfirmDialog` で確かめる（NFR-MOD-7。却下は `danger`、承認は `primary`）。ダイアログはモデレーター向けのメモ（`ReasonField`、任意、1,000 文字）を持ち、開くとメモにフォーカスが移る。失敗はダイアログの中に出す。
   成功したらダイアログを閉じ、キャッシュの一覧から除いてフォーカスを次の行のボタン（なければ見出し）に移し（`lib/useFocusAfterRemoval.ts`）、結果を一覧の上の `StatusMessage` に出す。
   ほかのモデレーターが先に決めた登録は、サーバーがその決定のまま返すので、一覧から除き、どちらの決定が残ったかを知らせる。
+- **通報の一覧**（`/admin/reports`、FR-701・FR-710）: 「未解決」と「解決済み」のタブ（`?state=resolved`、URL に置く。S3）で、新しい順。各通報は見出し（対象のハンドル、詳細へのリンク）と、カテゴリ・通報者・通報日時・担当・投稿の数（解決済みは結果と解決日時も）の説明リスト、通報者のコメント（`dir="auto"`、2 行に省略）にする。
+  担当はアカウントの ID しか返らないので、閲覧者なら「あなた」、ほかは `GET /accounts/{id}` で名前を出す。
+- **通報の詳細**（`/admin/reports/{id}`、NFR-MOD-4）: 1 つの画面に、通報の内容（状態・カテゴリ・日時・通報者・通報元・転送・引用するルール・コメント）、通報された投稿、通報されたアカウントとその履歴（ほかの通報と処分の件数、`manage_accounts` があれば処分の履歴）、担当、メモ、対応の区画を `h2` の `section` で並べる。
+  - **投稿**: `GET /statuses/{id}` で読み、`StatusCard` を操作の列なし（`withActions={false}`）で出す。モデレーターにも公開範囲が効くので、読めない投稿（削除済み・公開範囲の外）はその旨を出す。
+  - **ルール**: `GET /instance` の `rules` から文を引き、今のルールにないもの（廃止されたもの）はその旨を出す。
+  - **担当とメモ**: 「自分が担当する」（担当がほかの人なら「担当を引き継ぐ」）と「担当を外す」は位置を変えずに名前だけを変え、押したボタンにフォーカスが残る。メモは古い順で、新しいメモは `ReasonField`（必須、2,000 文字）から追加する。空白だけのメモと失敗は入力欄のエラーにして、文を残す。
+  - **対応**: 未解決なら、対象のアカウントへの処分のフォーム（`components/AccountActionForm.tsx`。`manage_accounts` がなければ理由を出す）と、「処分せずに解決する」「処分済みとして解決する」を出す。解決済みなら結果と解決日時と「再開する」を出す。
+    処分は `report_id` 付きで送り、サーバーが同じ操作で通報を処分済みにするので、通報・一覧・件数・処分の履歴を無効にする（一覧の「未解決」から消える）。解決・再開・処分で区画の中身が入れ替わったら、区画の見出しにフォーカスを移し、結果を区画の `StatusMessage` に出す。担当・解決・再開の失敗はトーストで知らせる（E2）。
+  - **処分のフォーム**: 種類（`RadioGroup`、軽いものから BAN まで、効果の説明付き）。ほかのサーバーのアカウントは `force_sensitive`・`limit`・`suspend` だけで、知らせるかのチェックボックスを出さない。投稿への処分（`mark_statuses_sensitive`・`delete_statuses`）は通報の投稿が読めたときだけ出し、その投稿をチェックボックスで選ぶ（最初はすべて選び、1 つもなければ送らずに `role="alert"` で知らせる）。
+    理由の種類（`Select`、最初は通報のカテゴリ）、期間（`DurationSelect`。BAN・投稿への処分・警告は持たない）、公開の理由と非公開のメモ（`ReasonField`、5,000 文字）、アカウントに知らせるか（既定はオン）。取り消せない BAN と `delete_statuses` は `ConfirmDialog` で確かめ、失敗はダイアログの中に、ほかの種類の失敗はフォームの下に出す。
+    詳細の画面は、対象のアカウントの管理画面（`/admin/accounts/{id}`）にリンクする。
 - **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection` にし（`features/admin/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
@@ -477,7 +488,8 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   `features/admin/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
   `features/admin/auditLog.test.tsx` は、監査ログの行と対象へのリンク、`Select` と行のリンクでの絞り込みと URL、絞り込みのあとのフォーカス、`?pages=` の書き込みと読み込み、URL の不正な値、次のページの失敗、空の状態、権限のない閲覧者と 403 を検査する。
   `features/admin/registrations.test.tsx` は、登録の理由の `dir="auto"`、ページの読み足し、メモ付きの承認と却下・フォーカス・`role="status"` の結果、キャンセルと Esc、メモの上限、ダイアログの中の失敗、先に決められた登録、権限を検査する。
-  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL を検査する。
+  `features/admin/reports.test.tsx` は、通報の一覧とタブ、詳細の各区画（読めない投稿・廃止されたルール・処分の履歴）、担当とメモ、処分による解決と一覧から消えること、BAN と投稿の削除の確認、ほかのサーバーのアカウントの種類、処分せずに解決と再開とフォーカス、失敗、権限と 403 を検査する。
+  E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`、`e2e/reports.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL・キーボードで通報を開き、BAN の確認のダイアログを経て、処分で通報を解決して一覧から消えるまでを検査する。
   `e2e/registrations.spec.ts` は、登録の審査の画面の axe・横スクロール・ARIA スナップショット、承認の確認のダイアログ、キーボードでの却下とフォーカスの移動を検査する。
 
 ## 15. 検索とほかのサーバーのアカウントのフォロー

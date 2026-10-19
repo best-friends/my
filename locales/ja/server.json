@@ -371,6 +371,22 @@
     "defaultMessage": "現在、あなたのアカウントはアプリを使えません。",
     "description": "API error title for HTTP 403 when the access token is valid but its user cannot use the app: the registration is pending or rejected, the email address is unconfirmed, or the account is deactivated or deleted."
   },
+  "errors.appeal.already_appealed": {
+    "defaultMessage": "この処分にはすでに異議を申し立てています。",
+    "description": "API error title for HTTP 422 when the user appeals a moderation action on their account a second time; an action is appealed once."
+  },
+  "errors.appeal.decided": {
+    "defaultMessage": "この異議申し立ては、すでに別の結果で審査されています。",
+    "description": "API error title for HTTP 409 when a moderator decides an appeal that another decision already settled the other way."
+  },
+  "errors.appeal.not_appealable": {
+    "defaultMessage": "この処分には異議を申し立てられません。",
+    "description": "API error title for HTTP 422 when the user appeals a ban, which is never lifted."
+  },
+  "errors.appeal.window_closed": {
+    "defaultMessage": "この処分に異議を申し立てられる期間は過ぎています。",
+    "description": "API error title for HTTP 422 when the user appeals a moderation action after the instance's appeal window."
+  },
   "errors.bad_gateway": {
     "defaultMessage": "リモートのサーバーに接続できないか、リモートのサーバーがエラーを返しました。",
     "description": "Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx."
@@ -594,6 +610,14 @@
   "health.unavailable": {
     "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  },
+  "mail.admin_appeal.body": {
+    "defaultMessage": "{host} の利用者が処分に異議を申し立て、モデレーターの審査を待っています。\n\n次のリンクから通知を開いて、確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
+    "description": "Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_appeal.subject": {
+    "defaultMessage": "{host} のモデレーターに新しい異議申し立てが届きました",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {host} is the server's domain name."
   },
   "mail.admin_report.body": {
     "defaultMessage": "{host} のモデレーターに新しい通報が届きました。\n\n次のリンクから通知を開いて、確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",

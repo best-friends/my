@@ -564,6 +564,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moderation/actions/{id}/appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Appeal a moderation action on the authenticated user's account
+         * @description Asks the moderators to reconsider an action on the user's own account (FR-707), once
+         *     per action and until its `appeal_deadline` (the instance's appeal window from the
+         *     action, 180 days by default; for a `ban`, also no later than the deletion of the
+         *     account 30 days after it). The moderators get an `admin_appeal` notification, and
+         *     the user an `appeal_decided` one when they decide. A second appeal of the action is a
+         *     422 `/api/v1/problems/already-appealed`, an appeal after the deadline a 422
+         *     `/api/v1/problems/appeal-window-closed`, and an appeal of a `ban` whose account is
+         *     deleted a 422 `/api/v1/problems/not-appealable`. A `text` that is empty, too long, or
+         *     contains U+0000 is a 422 naming `text`. An action that is not on the user's account is a
+         *     404.
+         */
+        post: operations["appealModerationAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications": {
         parameters: {
             query?: never;
@@ -1651,9 +1680,9 @@ export interface paths {
         };
         /**
          * Count what awaits the moderators
-         * @description The number of open reports (with the `manage_reports` permission) and of registrations
-         *     that await approval (with the `manage_accounts` permission), for the badges of the
-         *     admin menu (FR-712). A count whose permission the user's roles lack is omitted, so a
+         * @description The number of open reports (with the `manage_reports` permission), and of registrations
+         *     that await approval and appeals that await a decision (with the `manage_accounts`
+         *     permission), for the badges of the admin menu (FR-712). A count whose permission the user's roles lack is omitted, so a
          *     user without either gets an empty object.
          */
         get: operations["getAdminCounts"];
@@ -1739,6 +1768,101 @@ export interface paths {
          *     permission.
          */
         delete: operations["revokeAccountRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/appeals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the appeals of moderation actions
+         * @description The appeals that local users made of the actions on their accounts (FR-707), newest
+         *     first, each with its action. Needs the `manage_accounts` permission.
+         */
+        get: operations["listAppeals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/appeals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an appeal of a moderation action
+         * @description An unknown ID is a 404. Needs the `manage_accounts` permission.
+         */
+        get: operations["getAppeal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/appeals/{id}/overturn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Overturn an appeal, lifting its action
+         * @description Grants the appeal and lifts its action at once, as `POST /admin/account_actions/{id}/lift`
+         *     does: the posts that `delete_statuses` deleted stay deleted. An action lifted meanwhile
+         *     stays as it is. Overturning the appeal of a `ban`, which nothing else lifts, also
+         *     cancels the scheduled deletion of the account; a `ban` whose account is deleted is a
+         *     422 `/api/v1/problems/not-appealable`. The user who appealed gets an `appeal_decided` notification with
+         *     `decision_reason`. Deciding a decided appeal the same way again changes nothing and
+         *     keeps the first reason; deciding it the other way is a 409
+         *     `/api/v1/problems/appeal-decided`. A `public_reason` that is too long or contains
+         *     U+0000 is a 422 naming `public_reason`. An unknown ID is a 404. Needs the
+         *     `manage_accounts` permission.
+         */
+        post: operations["overturnAppeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/appeals/{id}/uphold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Uphold an appeal, keeping its action
+         * @description Rejects the appeal; the action stays as it is. The user who appealed gets an `appeal_decided` notification with
+         *     `decision_reason`. Deciding a decided appeal the same way again changes nothing and
+         *     keeps the first reason; deciding it the other way is a 409
+         *     `/api/v1/problems/appeal-decided`. A `public_reason` that is too long or contains
+         *     U+0000 is a 422 naming `public_reason`. An unknown ID is a 404. Needs the
+         *     `manage_accounts` permission.
+         */
+        post: operations["upholdAppeal"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1931,6 +2055,13 @@ export interface components {
          *       (`GET /streaming`) open as the server allows. Close one first.
          *     - `/api/v1/problems/missing-permission` (403): the user's roles lack the permission
          *       that an admin operation needs.
+         *     - `/api/v1/problems/already-appealed` (422): the user already appealed the moderation
+         *       action; an action is appealed once.
+         *     - `/api/v1/problems/appeal-window-closed` (422): the time to appeal the moderation
+         *       action has passed.
+         *     - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
+         *       account is deleted, so it can no longer be appealed or overturned.
+         *     - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
          */
         Problem: {
             /**
@@ -2298,11 +2429,91 @@ export interface components {
              * @description When a moderator lifted the action; omitted unless it is lifted.
              */
             lifted_at?: string;
+            /**
+             * @description Whether the user can appeal the action now (`POST /moderation/actions/{id}/appeal`):
+             *     it has no appeal yet, `appeal_deadline` has not passed, and for a `ban` the account
+             *     is not deleted.
+             */
+            appealable: boolean;
+            /**
+             * Format: date-time
+             * @description The last moment the action can be appealed: the instance's appeal window from the
+             *     action, and for a `ban` no later than the deletion of the account.
+             */
+            appeal_deadline?: string;
+            /** @description The user's appeal of the action; omitted when there is none. */
+            appeal?: components["schemas"]["ModerationAppeal"];
         };
         /** @description A page of the actions on the user's own account, newest first. */
         ModerationActionPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["ModerationAction"][];
         };
+        /**
+         * @description A local user's appeal of an action on their account, as the moderators see it, with the
+         *     action.
+         */
+        AdminAppeal: {
+            id: components["schemas"]["Id"];
+            /** @description The account that appealed, which the action is on. */
+            account_id: components["schemas"]["Id"];
+            /** @description What the user wrote, as plain text. */
+            text: string;
+            state: components["schemas"]["ModerationAppealState"];
+            /** Format: date-time */
+            submitted_at: string;
+            action: components["schemas"]["AdminAccountAction"];
+            /**
+             * Format: date-time
+             * @description When a moderator decided the appeal; omitted while pending.
+             */
+            decided_at?: string;
+            /** @description The moderators' explanation of the decision to the user; omitted when there is none. */
+            decision_reason?: string;
+            /**
+             * @description The account of the moderator who decided; omitted while pending and for a decision
+             *     from the command line.
+             */
+            decided_by_account_id?: components["schemas"]["Id"];
+        };
+        /** @description A page of appeals, newest first. */
+        AdminAppealPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAppeal"][];
+        };
+        /** @description An appeal of an action on the user's own account. */
+        AppealModerationActionRequest: {
+            /** @description Why the moderators should reconsider the action, as plain text. */
+            text: string;
+        };
+        /** @description The moderators' explanation of a decision on an appeal. */
+        DecideAppealRequest: {
+            /** @description Shown to the user who appealed, as plain text. */
+            public_reason?: string;
+        };
+        /**
+         * @description The authenticated user's appeal of an action on their account. It never names the
+         *     moderator who decided it.
+         */
+        ModerationAppeal: {
+            id: components["schemas"]["Id"];
+            /** @description What the user wrote, as plain text. */
+            text: string;
+            state: components["schemas"]["ModerationAppealState"];
+            /** Format: date-time */
+            submitted_at: string;
+            /**
+             * Format: date-time
+             * @description When the moderators decided the appeal; omitted while pending.
+             */
+            decided_at?: string;
+            /** @description The moderators' explanation of the decision, as plain text; omitted when there is none. */
+            decision_reason?: string;
+        };
+        /**
+         * @description Where an appeal stands: `pending` awaits the moderators, `upheld` kept the action, and
+         *     `overturned` lifted it.
+         * @enum {string}
+         */
+        ModerationAppealState: "pending" | "upheld" | "overturned";
         /** @description A notification of something that happened to the authenticated user. */
         Notification: {
             id: components["schemas"]["Id"];
@@ -2320,10 +2531,15 @@ export interface components {
             status?: components["schemas"]["Status"];
             /** @description The user's report that a `report_resolved` tells of. */
             report?: components["schemas"]["Report"];
-            /** @description The action on the user's account that a `moderation_notice` tells of. */
+            /**
+             * @description The action on the user's account that a `moderation_notice` tells of, or whose
+             *     appeal an `appeal_decided` tells of, with the appeal.
+             */
             moderation_action?: components["schemas"]["ModerationAction"];
             /** @description The report that an `admin_report` is about. */
             report_id?: components["schemas"]["Id"];
+            /** @description The appeal that an `admin_appeal` is about. */
+            appeal_id?: components["schemas"]["Id"];
             relationship_severance?: components["schemas"]["RelationshipSeverance"];
         };
         /**
@@ -2370,17 +2586,21 @@ export interface components {
          *     `moderation_action` is the action on the user's account, with its kind, reason, and end.
          *     `report_resolved` also comes from the instance: its `report` is the user's report that
          *     the moderators resolved, without how they resolved it. It is sent once per report, even
-         *     when the report is reopened and resolved again.
+         *     when the report is reopened and resolved again. `appeal_decided` also comes from the
+         *     instance: the moderators decided the user's appeal, and its `moderation_action` is the
+         *     action with the appeal and the decision.
          *     `relationships_severed` also comes from the instance: its `relationship_severance` tells
          *     how many follows the user lost when the moderators suspended a server or a remote
          *     account, whose `account` it carries for an account. It is sent once per suspension.
          *     The moderator notifications come from the instance too: `admin_report` (an account
          *     that had no open report was reported; `report_id` is the report) goes to the users
-         *     with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
-         *     approval; `account` is the new user's account) to those with `manage_accounts`.
+         *     with the `manage_reports` permission, `admin_sign_up` (a registration awaits
+         *     approval; `account` is the new user's account) to those with `manage_accounts`, and
+         *     `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
+         *     `manage_accounts`.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal";
         /** @description A new status. */
         CreateStatusRequest: {
             text: components["schemas"]["StatusText"];
@@ -2749,18 +2969,20 @@ export interface components {
         AdminInstanceState: "available" | "unavailable";
         /**
          * @description The kind of an audited operation, each on one kind of target. On an `account`:
-         *     `account_action_issued`, `account_action_lifted`. On a `domain`:
+         *     `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`. On a `domain`:
          *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
          *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
          *     `user` (a registration):
          *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
          *     (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
          *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
-         *     user): `role_granted`, `role_revoked`. On a `signup_block`: `signup_block_added`,
-         *     `signup_block_lifted`.
+         *     user): `role_granted`, `role_revoked`. On an `appeal`:
+         *     `appeal_upheld`, `appeal_overturned` (which also records the action's
+         *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
+         *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "signup_block_added" | "signup_block_lifted";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "signup_block_added" | "signup_block_lifted";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -3071,10 +3293,10 @@ export interface components {
             /**
              * @description Whether a `ban` also blocks sign-ups with the email address of the account's user (a
              *     `reject` sign-up block of kind `email_hash`, FR-719); only a `ban` of a local
-             *     account takes it, and a user without an email address is a 422.
-             * @default false
+             *     account takes it, and a user without an email address is a 422. Omitted, nothing is
+             *     blocked.
              */
-            block_email: boolean;
+            block_email?: boolean;
         };
         /** @description Why an action on an account is lifted. */
         LiftAccountActionRequest: {
@@ -3159,6 +3381,11 @@ export interface components {
              * @description The registrations that await approval. Needs `manage_accounts`.
              */
             pending_registrations?: number;
+            /**
+             * Format: int64
+             * @description The appeals of moderation actions that await a decision. Needs `manage_accounts`.
+             */
+            pending_appeals?: number;
         };
         /**
          * @description A role (FR-720): a named set of permissions. A higher position outranks a lower one;
@@ -3451,6 +3678,16 @@ export interface components {
                 "application/json": components["schemas"]["AdminAccountAction"];
             };
         };
+        /** @description The appeal. */
+        AdminAppeal: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminAppeal"];
+            };
+        };
         /** @description The rule. */
         AdminRule: {
             headers: {
@@ -3515,6 +3752,8 @@ export interface components {
         ReportId: components["schemas"]["Id"];
         /** @description The ID of the account action. */
         AccountActionId: components["schemas"]["Id"];
+        /** @description The ID of the appeal. */
+        AppealId: components["schemas"]["Id"];
         /** @description The ID of the account, local or remote. */
         AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
@@ -4105,6 +4344,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModerationActionPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    appealModerationAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the action. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppealModerationActionRequest"];
+            };
+        };
+        responses: {
+            /** @description The action, with the appeal. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModerationAction"];
                 };
             };
             default: components["responses"]["Problem"];
@@ -5408,6 +5676,91 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAppeals: {
+        parameters: {
+            query?: {
+                /** @description Keep only the appeals in this state; omitted keeps every state. */
+                state?: components["schemas"]["ModerationAppealState"];
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of appeals. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAppealPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAppeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the appeal. */
+                id: components["parameters"]["AppealId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminAppeal"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    overturnAppeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the appeal. */
+                id: components["parameters"]["AppealId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DecideAppealRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminAppeal"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    upholdAppeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the appeal. */
+                id: components["parameters"]["AppealId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DecideAppealRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminAppeal"];
             default: components["responses"]["Problem"];
         };
     };

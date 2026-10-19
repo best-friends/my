@@ -29,7 +29,7 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 	}
 	a.Moderation = moderation.NewService(moderation.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs,
-		Statuses: moderationStatuses{a}, Lifecycles: a.Accounts,
+		Statuses: moderationStatuses{a}, Lifecycles: a.Accounts, AppealWindow: appealWindow{a},
 		Follows: moderationFollows{a}, Directory: a.Accounts, Outbox: outbox,
 		Emails: moderationEmails{a}, CanonicalDomain: federation.CanonicalHost,
 	})
@@ -42,6 +42,18 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 	// The administrative use cases of every module emit their audit log entries; the projector
 	// writes them in the transaction of the operation (ADR-0037).
 	moderation.RegisterAuditProjector(a.Projectors, repo)
+}
+
+// appealWindow reads the appeal window of the moderation module from the instance setting
+// appeal_window (ADR-0038).
+type appealWindow struct{ a *App }
+
+func (w appealWindow) AppealWindow(ctx context.Context) (time.Duration, error) {
+	settings, err := w.a.Instance.Settings(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return settings.AppealWindow(), nil
 }
 
 // moderationStatuses gives the moderation module the content module, which is built after it

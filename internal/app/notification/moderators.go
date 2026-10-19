@@ -20,7 +20,8 @@ import (
 )
 
 // The moderator notifications (FR-712, data-model §4.7): admin_report of the first open report
-// of an account, and admin_sign_up of a registration that awaits approval, to the local accounts
+// of an account, admin_sign_up of a registration that awaits approval, and admin_appeal of an
+// appeal of a moderation action, to the local accounts
 // whose users' roles grant the permission the type needs (notification.ModeratorPermission).
 // The recipients are those who hold it in the transaction that creates the notifications; the
 // list leaves out the notifications of a recipient who no longer holds it (Service.List). A
@@ -79,8 +80,10 @@ type ModeratorDeps struct {
 //   - moderation.report_filed with FirstOpen: admin_report, to the holders of manage_reports
 //     other than the reporter and the reported account.
 //   - identity.registration_pending: admin_sign_up, to the holders of manage_accounts.
+//   - moderation.appeal_filed: admin_appeal, to the holders of manage_accounts other than the
+//     account that appealed.
 //
-// The dedupe keys (notification.AdminReportKey, AdminSignUpKey) make projecting an event again
+// The dedupe keys (notification.AdminReportKey, AdminSignUpKey, AdminAppealKey) make projecting an event again
 // create nothing more. For each recipient who wants them by email and whose notification is
 // new, the projector enqueues JobModeratorEmail through d.Outbox.
 func RegisterModeratorProjectors(r *uow.Projectors, d ModeratorDeps) {
@@ -100,6 +103,12 @@ func RegisterModeratorProjectors(r *uow.Projectors, d ModeratorDeps) {
 		return p.notify(ctx, tx, notification.Notification{
 			Type: notification.TypeAdminSignUp, SubjectUserID: ev.UserID, DedupeKey: notification.AdminSignUpKey(ev.UserID), CreatedAt: ev.SubmittedAt,
 		}, ev.AccountID)
+	})
+	r.Register(appmoderation.EventAppealFiled, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		a := e.(appmoderation.AppealFiled).Appeal
+		return p.notify(ctx, tx, notification.Notification{
+			Type: notification.TypeAdminAppeal, AppealID: a.ID, DedupeKey: notification.AdminAppealKey(a.ID), CreatedAt: a.SubmittedAt,
+		}, a.AccountID)
 	})
 }
 
@@ -207,6 +216,8 @@ func sendModeratorEmail(ctx context.Context, d MailDeps, job moderatorEmail) err
 		m.Subject, m.Text = l.ServerMailAdminReportSubject(d.Host), l.ServerMailAdminReportBody(d.Host, link)
 	case notification.TypeAdminSignUp:
 		m.Subject, m.Text = l.ServerMailAdminSignUpSubject(d.Host), l.ServerMailAdminSignUpBody(d.Host, link)
+	case notification.TypeAdminAppeal:
+		m.Subject, m.Text = l.ServerMailAdminAppealSubject(d.Host), l.ServerMailAdminAppealBody(d.Host, link)
 	default:
 		return nil
 	}

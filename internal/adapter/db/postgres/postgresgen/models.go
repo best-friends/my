@@ -433,6 +433,7 @@ type Notification struct {
 	ReportID           *string
 	SubjectUserID      *string
 	SeveranceID        *string
+	AppealID           *string
 	DedupeKey          string
 	CreatedAt          time.Time
 }

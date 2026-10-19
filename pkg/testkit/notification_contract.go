@@ -48,8 +48,9 @@ type NotificationFactory func(t *testing.T, opts uow.Options) NotificationHarnes
 // mute shows again; notifying of a source with unsolicited_reach only the accounts that follow
 // it; leaving out notifications about deleted statuses; listing with a type filter and keyset paging; the read marker,
 // unread count, and dismissals; and the moderator notifications of the first open report of an
-// account and of a pending registration, to the holders of the permission they need, emailed by
-// a job to those who want that, and left out once the permission is gone.
+// account, of a pending registration, and of an appeal, to the holders of the permission they
+// need, emailed by a job to those who want that, and left out once the permission is gone; and the
+// decision on an appeal to the account that appealed.
 func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -70,6 +71,7 @@ func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 		{"ListsWithTypesAndPages", notificationLists},
 		{"TracksReadMarkersAndDismissals", notificationReads},
 		{"NotifiesModerators", notificationModerators},
+		{"NotifiesAppeals", notificationAppeals},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newNotificationEnv(t, newHarness)) })

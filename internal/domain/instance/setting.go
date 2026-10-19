@@ -37,6 +37,9 @@ const (
 	// may read the public list of domain actions and their public comments (FR-718).
 	SettingDomainActionsVisibility          SettingKey = "domain_actions_visibility"
 	SettingDomainActionsRationaleVisibility SettingKey = "domain_actions_rationale_visibility"
+	// SettingAppealWindow is how many days after an action on an account the account may
+	// appeal it (FR-707, ADR-0038).
+	SettingAppealWindow SettingKey = "appeal_window"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -90,6 +93,13 @@ const (
 const (
 	MinMaxStatusLength = 1
 	MaxMaxStatusLength = 100000
+)
+
+// Bounds and default of SettingAppealWindow, in days (ADR-0038).
+const (
+	MinAppealWindow     = 20
+	MaxAppealWindow     = 365
+	DefaultAppealWindow = 180
 )
 
 // Kind is the scalar type of a setting's value.
@@ -164,6 +174,10 @@ var definitions = []Definition{
 	{
 		Key: SettingDomainActionsRationaleVisibility, Kind: KindEnum, Default: string(AudienceNone), Choices: audienceChoices,
 		Doc: "Who may read the public comments of the listed domain actions: nobody, logged-in users, or everyone (FR-718).",
+	},
+	{
+		Key: SettingAppealWindow, Kind: KindInt, Default: strconv.Itoa(DefaultAppealWindow), Min: MinAppealWindow, Max: MaxAppealWindow,
+		Doc: "How many days after a moderation action a local account may appeal it, once (FR-707, ADR-0038).",
 	},
 }
 
@@ -399,6 +413,11 @@ func (s Settings) DomainActionsVisibility() Audience {
 func (s Settings) DomainActionsRationaleVisibility() Audience {
 	v, _ := s.Value(SettingDomainActionsRationaleVisibility)
 	return Audience(v)
+}
+
+// AppealWindow returns the value of SettingAppealWindow as a duration.
+func (s Settings) AppealWindow() time.Duration {
+	return time.Duration(s.intValue(SettingAppealWindow)) * 24 * time.Hour
 }
 
 // MediaKeys returns the setting keys whose values are media IDs.

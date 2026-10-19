@@ -117,10 +117,15 @@ type Statuses interface {
 	ClearSensitivityOf(ctx context.Context, tx uow.Tx, actionID string) error
 }
 
-// Lifecycles is the part of the account module's public API that a ban uses.
+// Lifecycles is the part of the account module's public API that a ban and an overturned
+// appeal of one use.
 // *appaccount.Service implements it.
 type Lifecycles interface {
 	ScheduleDeletionByModeration(ctx context.Context, tx uow.Tx, accountID, actionID string, due time.Time) error
+	// CancelDeletionByModeration cancels the scheduled deletion of an account (an overturned
+	// appeal of a ban) and reports whether one was scheduled; a deleted account fails with
+	// appaccount.ErrAlreadyDeleted.
+	CancelDeletionByModeration(ctx context.Context, tx uow.Tx, accountID, actionID, eventID string) (bool, error)
 }
 
 // Deps are the ports a Service uses.
@@ -133,6 +138,9 @@ type Deps struct {
 	// Lifecycles schedules the deletion of a banned account; nil refuses bans with
 	// ErrUnsupportedAction.
 	Lifecycles Lifecycles
+	// AppealWindow reads how long an action can be appealed; nil means
+	// moderation.DefaultAppealWindow.
+	AppealWindow AppealWindow
 	// Follows cuts the follows of the remote accounts and domains that are suspended (FR-717);
 	// nil cuts none.
 	Follows Follows
@@ -510,37 +518,45 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if !a.Kind.Liftable() {
 			return fmt.Errorf("%w: %s %s", ErrNotLiftable, a.Kind, a.ID)
 		}
-		err = repo.InsertActionLift(ctx, tx, lift)
-		if errors.Is(err, ErrAlreadyRecorded) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
-		if err != nil {
-			return err
-		}
-		if err := repo.DeleteAccountRestrictionsOf(ctx, tx, a.ID); err != nil {
-			return err
-		}
-		if a.Kind == moderation.ActionMarkStatusesSensitive && s.d.Statuses != nil {
-			if err := s.d.Statuses.ClearSensitivityOf(ctx, tx, a.ID); err != nil {
-				return err
-			}
-		}
-		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
-			return err
-		}
-		if _, err := s.emitSuspension(ctx, tx, a.TargetAccountID, "", before, now); err != nil {
-			return err
-		}
-		// The lift's row is keyed by the action's ID.
-		return s.emitAudit(ctx, tx, moderation.AuditEntry{
-			ID: auditID, Action: moderation.AuditAccountActionLifted, TargetKind: moderation.AuditTargetAccount,
-			TargetID: a.TargetAccountID, TargetLabel: label, SourceEventID: a.ID, OccurredAt: now,
-		}, liftedByUserID)
+		return s.liftAction(ctx, tx, a, lift, label, auditID)
 	})
+}
+
+// liftAction records lift of a inside tx with its effects and its audit log entry, as
+// LiftAccountAction describes; it records nothing when a is already lifted. label is the
+// target's display name for the audit log.
+func (s *Service) liftAction(ctx context.Context, tx uow.Tx, a moderation.Action, lift moderation.Lift, label, auditID string) error {
+	repo := s.d.Repository
+	err := repo.InsertActionLift(ctx, tx, lift)
+	if errors.Is(err, ErrAlreadyRecorded) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
+	if err != nil {
+		return err
+	}
+	if err := repo.DeleteAccountRestrictionsOf(ctx, tx, a.ID); err != nil {
+		return err
+	}
+	if a.Kind == moderation.ActionMarkStatusesSensitive && s.d.Statuses != nil {
+		if err := s.d.Statuses.ClearSensitivityOf(ctx, tx, a.ID); err != nil {
+			return err
+		}
+	}
+	if err := s.emitAccount(ctx, tx, a.TargetAccountID, lift.LiftedAt); err != nil {
+		return err
+	}
+	if _, err := s.emitSuspension(ctx, tx, a.TargetAccountID, "", before, lift.LiftedAt); err != nil {
+		return err
+	}
+	// The lift's row is keyed by the action's ID.
+	return s.emitAudit(ctx, tx, moderation.AuditEntry{
+		ID: auditID, Action: moderation.AuditAccountActionLifted, TargetKind: moderation.AuditTargetAccount,
+		TargetID: a.TargetAccountID, TargetLabel: label, SourceEventID: a.ID, OccurredAt: lift.LiftedAt,
+	}, lift.LiftedByUserID)
 }
 
 func (s *Service) emitAccount(ctx context.Context, tx uow.Tx, accountID string, now time.Time) error {

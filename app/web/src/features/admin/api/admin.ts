@@ -221,6 +221,9 @@ export const auditActions = [
   "rule_retired",
   "role_granted",
   "role_revoked",
+  "appeal_upheld",
+  "appeal_overturned",
+  "account_deletion_cancelled",
   "signup_block_added",
   "signup_block_lifted",
 ] as const satisfies readonly AuditAction[];
