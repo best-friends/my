@@ -275,6 +275,10 @@
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ şīɠƞḗḗḓ īƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.status.action_deletes_in": {
+    "defaultMessage": "[{days,plural,one{Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ẇīŀŀ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ īƞ # ḓȧȧẏ} other{Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ẇīŀŀ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ īƞ # ḓȧȧẏş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.status.action_ends_in": {
     "defaultMessage": "[{days,plural,one{Ḗƞḓş īƞ # ḓȧȧẏ} other{Ḗƞḓş īƞ # ḓȧȧẏş}}]",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -64,6 +64,9 @@ type LifecycleState struct {
 // scheduled for deletion or deleted are presented to no one.
 func (s LifecycleState) Active() bool { return s.State == StateActive }
 
+// DeletionScheduled reports whether the account is waiting for its scheduled deletion.
+func (s LifecycleState) DeletionScheduled() bool { return s.State == StateDeletionScheduled }
+
 // InitialLifecycleState is the state of an account before its first lifecycle event.
 func InitialLifecycleState(accountID string) LifecycleState {
 	return LifecycleState{AccountID: accountID, State: StateActive}

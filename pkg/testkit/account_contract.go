@@ -78,6 +78,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RecordsSignInOrigins", originRecordsSignIns},
 		{"PurgesSessionOriginsAfterTheRetention", originPurgesSessionOrigins},
 		{"EndsTheLoginsOfModeratedAccounts", sessionModerationEndsLogins},
+		{"SignsInBannedAccountsUntilTheirDeletion", sessionBannedSignsInUntilDeletion},
 		{"RegistersTheWebClient", oauthRegistersTheWebClient},
 		{"ValidatesAuthorizationRequests", oauthValidatesAuthorizationRequests},
 		{"ExchangesCodesWithPKCE", oauthExchangesCodesWithPKCE},
@@ -96,13 +97,14 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 
 // accountEnv wires the use cases onto one harness with deterministic time and IDs.
 type accountEnv struct {
-	h        AccountHarness
-	clock    *Clock
-	ids      *IDGenerator
-	accounts *appaccount.Service
-	identity *appidentity.Service
-	hasher   *appidentity.PasswordHasher
-	limiter  *kernel.RateLimiter
+	h          AccountHarness
+	projectors *uow.Projectors
+	clock      *Clock
+	ids        *IDGenerator
+	accounts   *appaccount.Service
+	identity   *appidentity.Service
+	hasher     *appidentity.PasswordHasher
+	limiter    *kernel.RateLimiter
 }
 
 const contractHost = "social.example"
@@ -141,12 +143,13 @@ func newAccountEnv(t *testing.T, newHarness AccountFactory, register ...func(*uo
 		},
 	})
 	e := &accountEnv{
-		h:        h,
-		clock:    clock,
-		ids:      ids,
-		accounts: accounts,
-		hasher:   appidentity.NewPasswordHasher(cheapArgon2, 0),
-		limiter:  kernel.NewRateLimiter(NewKeyValueStore(clock), clock),
+		h:          h,
+		projectors: projectors,
+		clock:      clock,
+		ids:        ids,
+		accounts:   accounts,
+		hasher:     appidentity.NewPasswordHasher(cheapArgon2, 0),
+		limiter:    kernel.NewRateLimiter(NewKeyValueStore(clock), clock),
 	}
 	e.identity = e.newIdentity(e.hasher)
 	return e

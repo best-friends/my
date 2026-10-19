@@ -315,6 +315,10 @@
     "defaultMessage": "理由: {category}",
     "description": "The reason category of a moderation action, on the page of a signed-in user whose account is restricted. {category} is the category's label (for example, Spam)."
   },
+  "auth.status.action_deletes_in": {
+    "defaultMessage": "{days, plural, other {あと # 日でアカウントが削除されます}}",
+    "description": "When a ban deletes the user's account, in place of its end, on the page of a signed-in user whose account is restricted. {days} is the time left, rounded up to whole days."
+  },
   "auth.status.action_until_lifted": {
     "defaultMessage": "モデレーターが解除するまで続きます",
     "description": "Says that a moderation action on the user's account has no end date, on the page of a signed-in user whose account is restricted."

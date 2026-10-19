@@ -276,8 +276,11 @@ func (s *Service) verifyPassword(ctx context.Context, normalizedEmail, password 
 // checkActive fails with ErrInvalidCredentials unless the user's local account is active, so
 // that a deactivated, deleted, or deletion-scheduled account cannot sign in and the response
 // does not tell that the password was right. An account that moderation forbids to log in
-// (disable_login, suspend) signs in to the server-rendered screens only, which show the user
-// the actions that keep them out (Access.LoginRestricted); it gets no access token.
+// (disable_login, suspend, ban) signs in to the server-rendered screens only, which show the
+// user the actions that keep them out (Access.LoginRestricted); it gets no access token. So
+// does an account whose deletion is scheduled while a ban is in effect on it, until the
+// deletion, so that the user can appeal the ban (FR-707); an account whose owner scheduled
+// its deletion or deactivated it still cannot sign in.
 func (s *Service) checkActive(ctx context.Context, userID string) error {
 	st, err := s.d.Accounts.UserLifecycle(ctx, userID)
 	if errors.Is(err, account.ErrNotFound) {
@@ -286,10 +289,18 @@ func (s *Service) checkActive(ctx context.Context, userID string) error {
 	if err != nil {
 		return err
 	}
-	if !st.Active() {
-		return ErrInvalidCredentials
+	if st.Active() {
+		return nil
 	}
-	return nil
+	if st.DeletionScheduled() {
+		switch banned, err := s.banned(ctx, st.AccountID); {
+		case err != nil:
+			return err
+		case banned:
+			return nil
+		}
+	}
+	return ErrInvalidCredentials
 }
 
 // dummyHash returns a hash of a random password with the current parameters, made once.
