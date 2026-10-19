@@ -1,6 +1,6 @@
 # ADR-0042: サインインと登録のボット対策に CAPTCHA を設定で使えるようにする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #490
@@ -60,9 +60,7 @@ reCAPTCHA v3 は課題を出さずにスコア（0.0〜1.0）だけを返し、E
 
 ## Decision（決定）
 
-> Proposed の間は推奨案。
-
-**選択肢 2 を推奨する。** reCAPTCHA を使えるという要望を満たし、同じ実装で Turnstile と hCaptcha も選べるようにする。
+**選択肢 2 を採用する。** reCAPTCHA を使えるという要望を満たし、同じ実装で Turnstile と hCaptcha も選べるようにする。
 推奨するサービスは Turnstile（無料で上限がなく、多くの利用者に課題を出さない）だが、選ぶのは運営者で、既定は「使わない」。
 
 ### 1. ポートとアダプター
@@ -98,7 +96,8 @@ reCAPTCHA v3 は課題を出さずにスコア（0.0〜1.0）だけを返し、E
 - 検証は `identity` のユースケース（`SignIn`・`SignUp`）の中で、トランザクションの外で行う（ADR-0003）。入力（`SignInInput`・`SignUpInput`）にトークンを足す。
   画面ではなくユースケースで検証するので、別の入口を足しても検査を忘れない。
 - 順序: レート制限 → CAPTCHA の検証 → パスワードの照合（Argon2id）/ 登録の処理。外部の呼び出しより安いレート制限を先にし、高価なハッシュ計算をボットにさせない。
-- 有効な招待コードで登録するときは CAPTCHA を求めない。招待は信頼された利用者が渡すもので、課題を解けない人の経路にもなる。
+- CAPTCHA を有効にすると、サインインと登録の両方で必ず検証する。片方だけにかける設定は持たない。
+- 有効な招待コードでの登録でも検証する。招待コードは漏れたり奪われたりしうるので、それだけでは人であることの証明にならない。
 - 検証の失敗は、サインインでは IP のログイン失敗として数え（アカウントの失敗としては数えない。他人のアカウントをロックさせないため）、登録では登録の試行として数える。
 - 応答の検査: `success` が真、`hostname` が設定の `host` と一致すること。Turnstile ではウィジェットに `data-action`（`sign_in` / `sign_up`）を付け、応答の `action` が一致することも検査する（あるフォームで得たトークンを別のフォームで使わせない）。
 - `remoteip` は送らない。ブラウザはウィジェットを読むときにサービスへ直接つながっているので、サーバーから IP を重ねて渡さない（データの最小化）。hCaptcha には推奨どおり `sitekey` を送る。
@@ -119,7 +118,7 @@ reCAPTCHA v3 は課題を出さずにスコア（0.0〜1.0）だけを返し、E
 ### 5. 画面と CSP
 
 - ウィジェットはサインインと登録のフォームにだけ出す。サーバーが描画するページはいまは JavaScript なしで動くが、CAPTCHA を有効にしたときだけ、この 2 つのページはサービスのスクリプトを読む。
-  `<noscript>` で「この確認には JavaScript が要る」ことと、招待コードでの登録があることを知らせる。
+  `<noscript>` で「この確認には JavaScript が要る」ことを知らせる。
 - ウィジェットの言語はページのロケールに合わせ（Turnstile は `data-language`、hCaptcha と reCAPTCHA はスクリプトの `hl`）、テーマはページに合わせる（`data-theme`）。
 - ウィジェットの近くに「このページは <サービス名> でボットかどうかを確認します。<サービス名> のプライバシーポリシー」の文と、サービスのプライバシーポリシーへのリンクを出す（en / ja のメッセージ、ADR-0009）。
   reCAPTCHA では、バッジの代わりに「This site is protected by reCAPTCHA」と Google のプライバシーポリシー・利用規約を示す表示（reCAPTCHA FAQ）を兼ねる。
@@ -141,15 +140,15 @@ reCAPTCHA v3 は課題を出さずにスコア（0.0〜1.0）だけを返し、E
   - 既定は `none` なので、自前ホストや閉じたネットワークのインスタンスは何も変わらない。データモデル（テーブル）の変更はない。
 - 悪い影響・トレードオフ
   - 有効にすると、サインインと登録のページが第三者のスクリプトに依存し、そのページの CSP が広がる。サービスのスクリプトが侵害されればそのページは影響を受ける。
-  - CAPTCHA を解けない人（視覚・認知の障害、JavaScript を無効にしている人、サービスに届かない国や組織）は、招待コードがなければ登録できない。
+  - CAPTCHA を解けない人（視覚・認知の障害、JavaScript を無効にしている人、サービスに届かない国や組織）は登録できない。招待コードがあっても同じで、運営者に連絡して CAPTCHA を外してもらうほかない。
   - サインインの fail open は、サービスの障害中は CAPTCHA の保護がないことを意味する。
   - サービスの仕様（検証 API・CSP のオリジン）が変わったらプリセットを直す必要がある。
-- 後続で必要になる作業（決定後に Issue 化する）
-  1. **ポートとアダプターと設定**: `kernel.HumanVerifier`、`HTTPPurposeHumanCheck`、`internal/adapter/captcha/siteverify` と 3 つのプリセット、`pkg/testkit.HumanVerifierContract`、
+- 後続で必要になる作業
+  1. **ポートとアダプターと設定**（#499）: `kernel.HumanVerifier`、`HTTPPurposeHumanCheck`、`internal/adapter/captcha/siteverify` と 3 つのプリセット、`pkg/testkit.HumanVerifierContract`、
      設定のキー 3 つと `make config-docs`、`internal/platform` での組み立て
-  2. **サインインと登録での検証と画面**: `identity` の `SignIn` / `SignUp` での検証と失敗の数え方、招待コードでの省略、`authpages` のウィジェット・`<noscript>`・説明文・CSP、en / ja のメッセージ、
+  2. **サインインと登録での検証と画面**（#500）: `identity` の `SignIn` / `SignUp` での検証と失敗の数え方、`authpages` のウィジェット・`<noscript>`・説明文・CSP、en / ja のメッセージ、
      サーバーのテスト（スタブの `HumanVerifier`）。各サービスのテスト用の鍵で、厳しい CSP のもとでウィジェットが動くことをブラウザで確かめる（§Open Questions）
-  3. **運営者の文書**: `docs/operations/captcha.md`（2 と同じ PR でもよい）
+  3. **運営者の文書**: `docs/operations/captcha.md`（#500 に含める）
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
@@ -159,7 +158,7 @@ reCAPTCHA v3 は課題を出さずにスコア（0.0〜1.0）だけを返し、E
 - 悪い: Google への依存とデータ送信を全運営者に強いる。無料枠（月 10,000 評価）を超えると黙って成功を返す。
   選択肢 2 との差はプリセットの表だけなので、縛る理由が小さい。
 
-### 2. `HumanVerifier` ポートと siteverify 互換アダプター（推奨）
+### 2. `HumanVerifier` ポートと siteverify 互換アダプター（採用）
 
 - 良い: 3 つのサービスが同じ形の API なので、追加の実装はほぼ表だけ。ポートがあるので proof-of-work や Enterprise も後から足せる。
 - 悪い: 3 つの CSP・ウィジェットの動作を確かめ続ける必要がある。
@@ -178,6 +177,3 @@ reCAPTCHA v3 は課題を出さずにスコア（0.0〜1.0）だけを返し、E
 ## Open Questions / 要検証
 
 - 3 つのサービスのウィジェットが、`'unsafe-inline'` のない `style-src` と `require-trusted-types-for` のない現在の認証ページの CSP で動くか（各サービスのテスト用の鍵を使い、ブラウザで確かめる。後続の作業 2）
-- CAPTCHA をサインインと登録の両方に必ずかけるか、片方だけにできる設定（例: `captcha_on = sign_up,sign_in`）を足すか。推奨案は両方に必ずかける（決定者の要望）
-- サインインを fail open にする扱いでよいか（推奨案）。fail closed にする場合、管理者が締め出されたときの回復手段（`my` CLI での設定変更と再起動）を文書に書く
-- 有効な招待コードでの登録で CAPTCHA を省く扱いでよいか（推奨案）
