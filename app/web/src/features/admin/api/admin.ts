@@ -8,7 +8,6 @@
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
-import { refreshQueries } from "../../../lib/query";
 import type { components } from "../../../lib/api/schema.gen";
 
 type Schemas = components["schemas"];
@@ -49,9 +48,9 @@ export function instancesQueryOptions(api: Api, filter: InstanceFilter) {
   });
 }
 
-/** Fetches again every cached list of remote servers (refreshQueries): marking one available moves it between them. */
+/** Marks stale every cached list of remote servers (web-client.md S1): marking one available moves it between them. */
 export function refreshInstanceLists(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/instances" });
+  return queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/instances" });
 }
 
 /** The health of one remote server (GET /admin/instances/{domain}). */
@@ -169,9 +168,9 @@ export function isDomainActionsQuery(queryKey: readonly unknown[]): boolean {
   return queryKey[1] === "/admin/domain_actions";
 }
 
-/** Fetches again every cached list of domain actions (refreshQueries), of every filter and domain: a new action is in each. */
+/** Marks stale every cached list of domain actions (web-client.md S1), of every filter and domain: a new action is in each. */
 export function refreshDomainActionLists(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => isDomainActionsQuery(query.queryKey) });
+  return queryClient.invalidateQueries({ predicate: (query) => isDomainActionsQuery(query.queryKey) });
 }
 
 /** Whether a list of domain actions keeps only those in effect, which a lifted action leaves. */
@@ -299,11 +298,12 @@ export function isAuditLogQuery(queryKey: readonly unknown[]): boolean {
 }
 
 /**
- * Fetches again every cached page of the audit log, under any filter (refreshQueries): an audited write adds its
- * operation to it, and going back to the log must show that operation from the start, not the log before it.
+ * Marks stale every cached page of the audit log, under any filter (web-client.md S1): an audited write adds its
+ * operation to it, and going back to the log fetches it again before showing it (S7), so that it shows that
+ * operation from the start, not the log before it.
  */
 export function refreshAuditLog(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => isAuditLogQuery(query.queryKey) });
+  return queryClient.invalidateQueries({ predicate: (query) => isAuditLogQuery(query.queryKey) });
 }
 
 /**

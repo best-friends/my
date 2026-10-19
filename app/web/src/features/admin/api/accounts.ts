@@ -8,7 +8,6 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshQueries } from "../../../lib/query";
 import { pageQuery } from "./admin";
 import { type AccountAction, accountActionsQueryOptions } from "./reports";
 
@@ -83,17 +82,17 @@ function isAccountSearchQuery(queryKey: readonly unknown[]): boolean {
 }
 
 /**
- * Fetches again (refreshQueries) what a change of the state, the restrictions or the roles of account `id`
- * changes: the searches that are cached (each shows those of its accounts) and the account itself, and with
- * `actions` its moderation actions too.
+ * Marks stale what a change of the state, the restrictions or the roles of account `id` changes: the searches
+ * that are cached (each shows those of its accounts) and the account itself, and with `actions` its moderation
+ * actions too. Resolves once those on screen are fetched again; the others are fetched when their page opens
+ * (web-client.md S1, S7).
  */
-export function refreshAdminAccount(queryClient: QueryClient, api: Api, id: string, { actions }: { actions: boolean }): Promise<void> {
-  return refreshQueries(
-    queryClient,
-    { predicate: (query) => isAccountSearchQuery(query.queryKey) },
-    { queryKey: adminAccountQueryOptions(api, id).queryKey },
-    ...(actions ? [{ queryKey: accountActionsQueryOptions(api, id).queryKey }] : []),
-  );
+export async function refreshAdminAccount(queryClient: QueryClient, api: Api, id: string, { actions }: { actions: boolean }): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ predicate: (query) => isAccountSearchQuery(query.queryKey) }),
+    queryClient.invalidateQueries({ queryKey: adminAccountQueryOptions(api, id).queryKey }),
+    ...(actions ? [queryClient.invalidateQueries({ queryKey: accountActionsQueryOptions(api, id).queryKey })] : []),
+  ]);
 }
 
 /**

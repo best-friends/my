@@ -7,7 +7,6 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshQueries } from "../../../lib/query";
 import { pageQuery } from "./admin";
 
 type Schemas = components["schemas"];
@@ -89,9 +88,9 @@ export function isActiveSignupBlocksQuery(queryKey: readonly unknown[]): boolean
   return isSignupBlocksQuery(queryKey) && typeof params === "object" && params !== null && "active" in params && params.active === true;
 }
 
-/** Fetches again every cached list of sign-up blocks (refreshQueries): a new block is in each. */
+/** Marks stale every cached list of sign-up blocks (web-client.md S1): a new block is in each. */
 export function refreshSignupBlockLists(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => isSignupBlocksQuery(query.queryKey) });
+  return queryClient.invalidateQueries({ predicate: (query) => isSignupBlocksQuery(query.queryKey) });
 }
 
 /** Adds a sign-up block (POST /admin/signup_blocks), as the options of useMutation. */

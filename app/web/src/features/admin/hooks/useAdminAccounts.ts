@@ -212,7 +212,7 @@ export type PrivateData = {
  * The email address and IP addresses of local account `id`. Nothing is asked of the server until `reveal()`, the
  * moderator's own action, and the answer is kept by this mutation only: it is not cached, so another visit to
  * the page shows them again only when asked again (and recorded again). They are shown, and `onRevealed()` runs,
- * once the audit log, which records the call, is fetched again (refreshAuditLog).
+ * once the audit log, which records the call, is marked stale (refreshAuditLog).
  */
 export function usePrivateData(id: string, onRevealed: () => void): PrivateData {
   const api = useApi();
@@ -272,8 +272,9 @@ export function useLiftAccountAction(accountId: string, onLifted: (action: Accou
     ...liftAccountActionMutation(api),
     onSuccess: async (lifted) => {
       // The account's state and restrictions change, in its page and in the searches, and the audit log records
-      // the lift: the action is lifted once they are fetched again (the confirmation stays pending until then), so
-      // that going back to a search or the log shows them as they are now (refreshAdminAccount, refreshAuditLog).
+      // the lift: they are marked stale, and the action is lifted once those on screen are fetched again (the
+      // confirmation stays pending until then); going back to a search or the log fetches it again first, so it
+      // shows them as they are now (refreshAdminAccount, refreshAuditLog, web-client.md S7).
       // The row changes from the answer, after onLifted.
       await Promise.all([refreshAdminAccount(queryClient, api, accountId, { actions: false }), refreshAuditLog(queryClient)]);
       setDialog((current) => current && { ...current, isOpen: false });

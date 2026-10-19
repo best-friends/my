@@ -92,8 +92,9 @@ export function useAppealReview(id: string, onDecided: () => void): AppealReview
   const mutation = useMutation({
     ...decideAppealMutation(api),
     onSuccess: async (appeal) => {
-      // The decision is done once the lists are fetched again (the confirmation stays pending until then), so
-      // that going back to the list shows it as it is now, not the appeal as it was (refreshAppealLists). The
+      // The decision marks the lists stale, and is done once those on screen are fetched again (the confirmation
+      // stays pending until then); going back to a list fetches it again first, so it shows the appeal as it is
+      // now, not as it was (refreshAppealLists, web-client.md S7). The
       // confirmation closes as the page shows the decision, and focus then moves to the region's heading.
       await storeAppeal(queryClient, api, appeal);
       setDialog((current) => current && { ...current, isOpen: false });

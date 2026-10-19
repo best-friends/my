@@ -11,7 +11,7 @@ export const Route = createFileRoute("/admin/dead-jobs")({
   staticData: { title: "client:admin.dead_jobs.title" },
   beforeLoad: requireSignIn,
   loader: ({ context }) =>
-    loadWithPermission(context, "manage_jobs", () => context.queryClient.infiniteQuery({ ...deadJobsQueryOptions(context.api), staleTime: "static" })),
+    loadWithPermission(context, "manage_jobs", () => context.queryClient.infiniteQuery({ ...deadJobsQueryOptions(context.api), staleTime: Infinity })),
   component: DeadJobsPage,
   errorComponent: DeadJobsError,
 });

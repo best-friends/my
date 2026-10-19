@@ -14,8 +14,8 @@ export const Route = createFileRoute("/settings/preferences")({
   beforeLoad: requireSignIn,
   loader: ({ context }) =>
     Promise.all([
-      context.queryClient.query({ ...preferencesQueryOptions(context.api), staleTime: "static" }),
-      context.queryClient.query({ ...credentialsQueryOptions(context.api), staleTime: "static" }),
+      context.queryClient.query({ ...preferencesQueryOptions(context.api), staleTime: Infinity }),
+      context.queryClient.query({ ...credentialsQueryOptions(context.api), staleTime: Infinity }),
     ]),
   component: PreferencesPage,
 });

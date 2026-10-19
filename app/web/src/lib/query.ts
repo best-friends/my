@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The TanStack Query client: the only cache of server data (web-client.md S1). Routes reach it through
-// the router context to load what is not cached yet in their loaders (`queryClient.query` with `staleTime: "static"`, S7), with the API client and the session;
-// components use the hooks. Writes fetch again what they change with refreshQueries (S1).
-import { type InvalidateQueryFilters, type Query, QueryClient, type QueryKey } from "@tanstack/react-query";
+// the router context to load, in their loaders, what is not cached or has been marked stale (`queryClient.query`
+// with `staleTime: Infinity`, S7), with the API client and the session; components use the hooks. Writes put
+// what they know for certain into the cache and mark stale the lists they change (`invalidateQueries`, S1).
+import { type Query, QueryClient, type QueryKey } from "@tanstack/react-query";
 import type { Api } from "./api/client";
 import type { Session } from "./auth/session";
 import { ApiError, NetworkError } from "./errors";
@@ -58,17 +59,6 @@ export function shellQueryRetry(failureCount: number, error: unknown): boolean {
  * go and come back; it shows the last value or its defaults instead.
  */
 export const shellQueryReader = { retry: shellQueryRetry, retryOnMount: false } as const;
-
-/**
- * Fetches again, at once, the cached queries that any of `filters` matches, even those no page shows now
- * (`refetchType: "all"`). A route loads its query from the cache as it is (`staleTime: "static"`, web-client.md
- * S7), so a query that a write only marked stale would show what it was before the write until its refetch on
- * mount ends (web-client.md S1). A write is shown done once this resolves, after every fetch has ended; one that
- * fails leaves its query stale, to be fetched again when shown.
- */
-export async function refreshQueries(queryClient: QueryClient, ...filters: readonly Omit<InvalidateQueryFilters, "refetchType">[]): Promise<void> {
-  await Promise.all(filters.map((filter) => queryClient.invalidateQueries({ ...filter, refetchType: "all" })));
-}
 
 /**
  * The paths of the API whose answers are lists of posts: the timelines, an account's posts, and the thread

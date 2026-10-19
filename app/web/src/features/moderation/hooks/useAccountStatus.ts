@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { refreshQueries } from "../../../lib/query";
 import { type Status, statusQueryOptions } from "../../status";
 import {
   type ActionScope,
@@ -138,9 +137,9 @@ export function useAppealForm(): AppealForm {
       setStatus(t("client:account_status.appeal.sent", { kind: action.kind_label }));
     },
     onError: (error) => {
-      // Both lists (active and all) are fetched again, also the one the page does not show now: the route
-      // reads them from the cache as they are (refreshQueries, web-client.md S1).
-      if (isStaleAppealError(error)) void refreshQueries(queryClient, { predicate: (query) => isOwnActionsQuery(query.queryKey) });
+      // Both lists (active and all) are marked stale: the one on screen is fetched again at once, the other
+      // when the page shows it (web-client.md S1, S7).
+      if (isStaleAppealError(error)) void queryClient.invalidateQueries({ predicate: (query) => isOwnActionsQuery(query.queryKey) });
     },
   });
   const isOpen = dialog?.isOpen ?? false;

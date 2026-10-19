@@ -16,8 +16,9 @@ export const Route = createFileRoute("/local")({
   // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
   staticData: { title: "client:local.title", composeButton: true },
   loader: async ({ context: { queryClient, api } }) => {
-    // The cached pages are shown as they are; the page refetches them in the background when stale.
-    await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "local" }), staleTime: "static" });
+    // Cached pages that no write has marked stale are shown at once (and refetched in the background once
+    // old); marked or missing ones are fetched and waited for (web-client.md S7).
+    await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "local" }), staleTime: Infinity });
   },
   component: LocalPage,
   pendingComponent: LocalPending,

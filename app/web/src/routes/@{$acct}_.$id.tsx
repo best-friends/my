@@ -22,7 +22,7 @@ export const Route = createFileRoute("/@{$acct}_/$id")({
     // The thread starts loading with the post but does not hold the page back; its failure shows in its
     // own section (StatusThread), not as the page's error.
     queryClient.query(statusContextQueryOptions(api, id)).catch(() => undefined);
-    await queryClient.query({ ...statusQueryOptions(api, id), staleTime: "static" });
+    await queryClient.query({ ...statusQueryOptions(api, id), staleTime: Infinity });
   },
   component: StatusPage,
   pendingComponent: StatusPending,
