@@ -24,6 +24,7 @@ import (
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
 	mailnone "github.com/best-friends/my/internal/adapter/mail/none"
 	mailsmtp "github.com/best-friends/my/internal/adapter/mail/smtp"
+	"github.com/best-friends/my/internal/adapter/markdown"
 	"github.com/best-friends/my/internal/adapter/media/native"
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
@@ -333,6 +334,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs,
 		// The preview_image setting refers to a media file, which setMedia sets up later.
 		Media: instanceMedia{a},
+		// The terms of service and the privacy policy are Markdown (#489).
+		Documents: markdown.New(),
 	})
 	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
 		_ = a.Close()
@@ -471,7 +474,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: cfg.ServerOrigin(), FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
-		Moderation: a.Moderation, UserLocales: a.Identity,
+		Moderation: a.Moderation, UserLocales: a.Identity, Documents: a.Instance,
 	}).Register(a)
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {
@@ -501,6 +504,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
+		// The instance texts and the public pages of the documents among them (#489).
+		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil

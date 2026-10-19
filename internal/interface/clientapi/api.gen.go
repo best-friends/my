@@ -673,6 +673,36 @@ func (e InstanceRegistrationsMode) Valid() bool {
 	}
 }
 
+// Defines values for InstanceTextKey.
+const (
+	InstanceTextKeyDescription      InstanceTextKey = "description"
+	InstanceTextKeyName             InstanceTextKey = "name"
+	InstanceTextKeyPreviewImageAlt  InstanceTextKey = "preview_image_alt"
+	InstanceTextKeyPrivacyPolicy    InstanceTextKey = "privacy_policy"
+	InstanceTextKeyShortDescription InstanceTextKey = "short_description"
+	InstanceTextKeyTerms            InstanceTextKey = "terms"
+)
+
+// Valid indicates whether the value is a known member of the InstanceTextKey enum.
+func (e InstanceTextKey) Valid() bool {
+	switch e {
+	case InstanceTextKeyDescription:
+		return true
+	case InstanceTextKeyName:
+		return true
+	case InstanceTextKeyPreviewImageAlt:
+		return true
+	case InstanceTextKeyPrivacyPolicy:
+		return true
+	case InstanceTextKeyShortDescription:
+		return true
+	case InstanceTextKeyTerms:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MediaAttachmentState.
 const (
 	MediaAttachmentStateFailed     MediaAttachmentState = "failed"
@@ -1580,6 +1610,29 @@ type AdminInstanceHealthPage struct {
 // `Reject`.
 type AdminInstanceState string
 
+// AdminInstanceText The current text of a key in one locale.
+type AdminInstanceText struct {
+	// Body The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
+	// Empty only in the answer to clearing it.
+	Body string `json:"body"`
+
+	// Key The key of an instance text: the name (one line), the short and full descriptions,
+	// the terms of service and the privacy policy (Markdown), and the alternative text of the
+	// preview image.
+	Key InstanceTextKey `json:"key"`
+
+	// Locale The BCP 47 tag of the locale, canonical (`ja-JP`).
+	Locale string `json:"locale"`
+
+	// RevisedAt When the revision was recorded.
+	RevisedAt time.Time `json:"revised_at"`
+}
+
+// AdminInstanceTextList The current instance texts, by key and locale.
+type AdminInstanceTextList struct {
+	Items []AdminInstanceText `json:"items"`
+}
+
 // AdminRegistration A user's registration as the moderators review it (FR-721).
 type AdminRegistration struct {
 	// AccountId The user's local account; omitted when it is gone.
@@ -2220,6 +2273,10 @@ type Instance struct {
 	// Name The display name of the instance; the domain when the instance has none.
 	Name string `json:"name"`
 
+	// PrivacyPolicyUrl The public page of the instance's privacy policy, which needs no sign-in; omitted
+	// when no locale of the request's fallback chain has it.
+	PrivacyPolicyUrl *string `json:"privacy_policy_url,omitempty"`
+
 	// Registrations How people sign up on the instance.
 	Registrations InstanceRegistrations `json:"registrations"`
 
@@ -2236,6 +2293,11 @@ type Instance struct {
 
 	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13).
 	SourceUrl string `json:"source_url"`
+
+	// TermsUrl The public page of the instance's terms of service, which needs no sign-in; omitted
+	// when no locale of the request's fallback chain has them, so that clients do not
+	// link to it.
+	TermsUrl *string `json:"terms_url,omitempty"`
 
 	// Timelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
 	// clients do not offer it.
@@ -2327,6 +2389,11 @@ type InstanceRuleTextInput struct {
 	// Text The rule, on one line, as plain text.
 	Text string `json:"text"`
 }
+
+// InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
+// the terms of service and the privacy policy (Markdown), and the alternative text of the
+// preview image.
+type InstanceTextKey string
 
 // InstanceTimelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
 // clients do not offer it.
@@ -2933,6 +3000,12 @@ type ResolveReportRequest struct {
 	Outcome AdminReportOutcome `json:"outcome"`
 }
 
+// SetInstanceTextRequest A new revision of an instance text in one locale.
+type SetInstanceTextRequest struct {
+	// Body The text; empty clears it in the locale.
+	Body string `json:"body"`
+}
+
 // SpoilerText The content warning; omitted or empty for none. It counts toward `max_post_characters`.
 type SpoilerText = string
 
@@ -3246,6 +3319,9 @@ type IdempotencyKey = string
 
 // InstanceDomain defines model for InstanceDomain.
 type InstanceDomain = string
+
+// InstanceTextLocale defines model for InstanceTextLocale.
+type InstanceTextLocale = string
 
 // Limit defines model for Limit.
 type Limit = int
@@ -3658,6 +3734,9 @@ type UpholdAppealJSONRequestBody = DecideAppealRequest
 // CreateDomainActionJSONRequestBody defines body for CreateDomainAction for application/json ContentType.
 type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 
+// SetInstanceTextJSONRequestBody defines body for SetInstanceText for application/json ContentType.
+type SetInstanceTextJSONRequestBody = SetInstanceTextRequest
+
 // ApproveRegistrationJSONRequestBody defines body for ApproveRegistration for application/json ContentType.
 type ApproveRegistrationJSONRequestBody = RegistrationDecisionRequest
 
@@ -3819,6 +3898,12 @@ type ServerInterface interface {
 	// LiftDomainAction Lift a moderation action on a domain
 	// (POST /admin/domain_actions/{id}/lift)
 	LiftDomainAction(w http.ResponseWriter, r *http.Request, id DomainActionId)
+	// ListInstanceTexts List the instance texts
+	// (GET /admin/instance_texts)
+	ListInstanceTexts(w http.ResponseWriter, r *http.Request)
+	// SetInstanceText Set an instance text in one locale
+	// (PUT /admin/instance_texts/{key}/{locale})
+	SetInstanceText(w http.ResponseWriter, r *http.Request, key InstanceTextKey, locale InstanceTextLocale)
 	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
 	// (GET /admin/instances)
 	ListInstanceHealth(w http.ResponseWriter, r *http.Request, params ListInstanceHealthParams)
@@ -5425,6 +5510,55 @@ func (siw *ServerInterfaceWrapper) LiftDomainAction(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.LiftDomainAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInstanceTexts operation middleware
+func (siw *ServerInterfaceWrapper) ListInstanceTexts(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInstanceTexts(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetInstanceText operation middleware
+func (siw *ServerInterfaceWrapper) SetInstanceText(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key InstanceTextKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "locale" -------------
+	var locale InstanceTextLocale
+
+	err = runtime.BindStyledParameterWithOptions("simple", "locale", r.PathValue("locale"), &locale, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locale", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetInstanceText(w, r, key, locale)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7665,6 +7799,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/rules/{id}", wrapper.UpdateInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instance_texts", wrapper.ListInstanceTexts)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/instance_texts/{key}/{locale}", wrapper.SetInstanceText)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts", wrapper.ListAdminAccounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}", wrapper.GetAdminAccount)
@@ -9923,6 +10059,131 @@ type LiftDomainActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response LiftDomainActiondefaultApplicationProblemPlusJSONResponse) VisitLiftDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceTextsRequestObject struct {
+}
+
+type ListInstanceTextsResponseObject interface {
+	VisitListInstanceTextsResponse(w http.ResponseWriter) error
+}
+
+type ListInstanceTexts200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListInstanceTexts200JSONResponse struct {
+	Body    AdminInstanceTextList
+	Headers ListInstanceTexts200ResponseHeaders
+}
+
+func (response ListInstanceTexts200JSONResponse) VisitListInstanceTextsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceTextsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListInstanceTextsdefaultApplicationProblemPlusJSONResponse) VisitListInstanceTextsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetInstanceTextRequestObject struct {
+	Key    InstanceTextKey    `json:"key"`
+	Locale InstanceTextLocale `json:"locale"`
+	Body   *SetInstanceTextJSONRequestBody
+}
+
+type SetInstanceTextResponseObject interface {
+	VisitSetInstanceTextResponse(w http.ResponseWriter) error
+}
+
+type SetInstanceText200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type SetInstanceText200JSONResponse struct {
+	Body    AdminInstanceText
+	Headers SetInstanceText200ResponseHeaders
+}
+
+func (response SetInstanceText200JSONResponse) VisitSetInstanceTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetInstanceTextdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SetInstanceTextdefaultApplicationProblemPlusJSONResponse) VisitSetInstanceTextResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -13824,6 +14085,12 @@ type StrictServerInterface interface {
 	// LiftDomainAction Lift a moderation action on a domain
 	// (POST /admin/domain_actions/{id}/lift)
 	LiftDomainAction(ctx context.Context, request LiftDomainActionRequestObject) (LiftDomainActionResponseObject, error)
+	// ListInstanceTexts List the instance texts
+	// (GET /admin/instance_texts)
+	ListInstanceTexts(ctx context.Context, request ListInstanceTextsRequestObject) (ListInstanceTextsResponseObject, error)
+	// SetInstanceText Set an instance text in one locale
+	// (PUT /admin/instance_texts/{key}/{locale})
+	SetInstanceText(ctx context.Context, request SetInstanceTextRequestObject) (SetInstanceTextResponseObject, error)
 	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
 	// (GET /admin/instances)
 	ListInstanceHealth(ctx context.Context, request ListInstanceHealthRequestObject) (ListInstanceHealthResponseObject, error)
@@ -15084,6 +15351,64 @@ func (sh *strictHandler) LiftDomainAction(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(LiftDomainActionResponseObject); ok {
 		if err := validResponse.VisitLiftDomainActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInstanceTexts operation middleware
+func (sh *strictHandler) ListInstanceTexts(w http.ResponseWriter, r *http.Request) {
+	var request ListInstanceTextsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInstanceTexts(ctx, request.(ListInstanceTextsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInstanceTexts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInstanceTextsResponseObject); ok {
+		if err := validResponse.VisitListInstanceTextsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetInstanceText operation middleware
+func (sh *strictHandler) SetInstanceText(w http.ResponseWriter, r *http.Request, key InstanceTextKey, locale InstanceTextLocale) {
+	var request SetInstanceTextRequestObject
+
+	request.Key = key
+	request.Locale = locale
+
+	var body SetInstanceTextJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetInstanceText(ctx, request.(SetInstanceTextRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetInstanceText")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetInstanceTextResponseObject); ok {
+		if err := validResponse.VisitSetInstanceTextResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

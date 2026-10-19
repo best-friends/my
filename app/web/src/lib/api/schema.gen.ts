@@ -1672,6 +1672,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/instance_texts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the instance texts
+         * @description The current text of every key in every locale that has one (FR-705): the name, the
+         *     descriptions, the terms of service, the privacy policy, and the alternative text of the
+         *     preview image, by key and locale. Cleared texts are not listed. The list is not
+         *     paginated. Needs the `manage_settings` permission.
+         */
+        get: operations["listInstanceTexts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instance_texts/{key}/{locale}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set an instance text in one locale
+         * @description Records a revision of the text of `key` in `locale`, which becomes its current text; an
+         *     empty `body` clears the text in that locale, so that readers get the next locale of
+         *     their fallback chain. The revision and the change are kept (`instance_text_revisions`,
+         *     the audit log's `text_changed`). The locale is canonicalized (`ja_jp` is `ja-JP`).
+         *     The terms of service and the privacy policy are Markdown, which the server renders and
+         *     sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
+         *     the other texts are plain text. An unknown key is a 404. A locale that is not a BCP 47
+         *     tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
+         *     `name`, 500 for `short_description`, 1,500 for `preview_image_alt`, 20,000 for
+         *     `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`,
+         *     is a 422 naming `body`. Needs the `manage_settings` permission.
+         */
+        put: operations["setInstanceText"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/counts": {
         parameters: {
             query?: never;
@@ -2189,6 +2242,19 @@ export interface components {
             sends_email: boolean;
             /** @description The rules in effect, in order, each in the locale of the request. */
             rules: components["schemas"]["InstanceRule"][];
+            /**
+             * Format: uri
+             * @description The public page of the instance's terms of service, which needs no sign-in; omitted
+             *     when no locale of the request's fallback chain has them, so that clients do not
+             *     link to it.
+             */
+            terms_url?: string;
+            /**
+             * Format: uri
+             * @description The public page of the instance's privacy policy, which needs no sign-in; omitted
+             *     when no locale of the request's fallback chain has it.
+             */
+            privacy_policy_url?: string;
         };
         /** @description How people sign up on the instance. */
         InstanceRegistrations: {
@@ -3486,6 +3552,38 @@ export interface components {
             /** @description The place among the rules in effect, from 1. */
             position: number;
         };
+        /** @description The current text of a key in one locale. */
+        AdminInstanceText: {
+            key: components["schemas"]["InstanceTextKey"];
+            /** @description The BCP 47 tag of the locale, canonical (`ja-JP`). */
+            locale: string;
+            /**
+             * @description The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
+             *     Empty only in the answer to clearing it.
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the revision was recorded.
+             */
+            revised_at: string;
+        };
+        /** @description The current instance texts, by key and locale. */
+        AdminInstanceTextList: {
+            items: components["schemas"]["AdminInstanceText"][];
+        };
+        /**
+         * @description The key of an instance text: the name (one line), the short and full descriptions,
+         *     the terms of service and the privacy policy (Markdown), and the alternative text of the
+         *     preview image.
+         * @enum {string}
+         */
+        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt";
+        /** @description A new revision of an instance text in one locale. */
+        SetInstanceTextRequest: {
+            /** @description The text; empty clears it in the locale. */
+            body: string;
+        };
         /** @description What awaits the moderators; a count whose permission the user lacks is omitted. */
         AdminCounts: {
             /**
@@ -3987,6 +4085,10 @@ export interface components {
         AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
         RuleId: components["schemas"]["Id"];
+        /** @description The key of the text. */
+        InstanceTextKey: components["schemas"]["InstanceTextKey"];
+        /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
+        InstanceTextLocale: string;
         /** @description The key of the role, such as `moderator`. */
         RoleKey: string;
         /** @description The ID of the user who signed up. */
@@ -5818,6 +5920,59 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInstanceTexts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The texts. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInstanceTextList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    setInstanceText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the text. */
+                key: components["parameters"]["InstanceTextKey"];
+                /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
+                locale: components["parameters"]["InstanceTextLocale"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetInstanceTextRequest"];
+            };
+        };
+        responses: {
+            /** @description The text as recorded; `body` is empty when the text was cleared. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInstanceText"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

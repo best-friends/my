@@ -1515,6 +1515,126 @@
     "defaultMessage": "[Ƒȧȧīŀḗḗḓ ĵǿǿƀş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.documents.body": {
+    "defaultMessage": "[Ŧḗḗẋŧ īƞ {language}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.body.description": {
+    "defaultMessage": "[Ẇřīŧḗḗ īƞ Ḿȧȧřķḓǿǿẇƞ: ħḗḗȧȧḓīƞɠş (#), ŀīşŧş (-), ŀīƞķş ([ŧḗḗẋŧ](ħŧŧƥş://…)) ȧȧƞḓ ḗḗḿƥħȧȧşīş (**ƀǿǿŀḓ**). Ḗȧȧƈħ ŀīƞḗḗ ƀřḗḗȧȧķ şŧȧȧřŧş ȧȧ ƞḗḗẇ ŀīƞḗḗ. Şȧȧṽḗḗ īŧ ḗḗḿƥŧẏ ŧǿǿ řḗḗḿǿǿṽḗḗ ŧħḗḗ ŧḗḗẋŧ īƞ ŧħīş ŀȧȧƞɠŭŭȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.characters_left": {
+    "defaultMessage": "[{count,plural,one{# ƈħȧȧřȧȧƈŧḗḗř ŀḗḗƒŧ} other{# ƈħȧȧřȧȧƈŧḗḗřş ŀḗḗƒŧ}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.characters_over": {
+    "defaultMessage": "[{count,plural,one{# ƈħȧȧřȧȧƈŧḗḗř ŧǿǿǿǿ ḿȧȧƞẏ} other{# ƈħȧȧřȧȧƈŧḗḗřş ŧǿǿǿǿ ḿȧȧƞẏ}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.confirm_remove.cancel": {
+    "defaultMessage": "[Ƈȧȧƞƈḗḗŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.confirm_remove.confirm": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.confirm_remove.description": {
+    "defaultMessage": "[Ƥḗḗǿǿƥŀḗḗ ẇħǿǿ řḗḗȧȧḓ ŧħīş ŀȧȧƞɠŭŭȧȧɠḗḗ ɠḗḗŧ ŧħḗḗ ŧḗḗẋŧ īƞ ȧȧƞǿǿŧħḗḗř ŀȧȧƞɠŭŭȧȧɠḗḗ, ǿǿř ƞǿǿ ƥȧȧɠḗḗ ẇħḗḗƞ ƞǿǿ ŀȧȧƞɠŭŭȧȧɠḗḗ ħȧȧş ǿǿƞḗḗ. Ẏǿǿŭŭ ƈȧȧƞ ẇřīŧḗḗ īŧ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.confirm_remove.privacy_policy": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ŧħḗḗ ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ īƞ {language}?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.confirm_remove.terms": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ŧħḗḗ ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ īƞ {language}?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.languages": {
+    "defaultMessage": "[Ẇřīŧŧḗḗƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.languages.none": {
+    "defaultMessage": "[Ƞǿǿ ŀȧȧƞɠŭŭȧȧɠḗḗ ẏḗḗŧ, şǿǿ ŧħḗḗ ƥȧȧɠḗḗ ȧȧƞḓ īŧş ŀīƞķş ȧȧřḗḗ ħīḓḓḗḗƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.locale": {
+    "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.locale.description": {
+    "defaultMessage": "[Ḗȧȧƈħ ŀȧȧƞɠŭŭȧȧɠḗḗ ħȧȧş īŧş ǿǿẇƞ ŧḗḗẋŧ. Ƥḗḗǿǿƥŀḗḗ řḗḗȧȧḓ ŧħḗḗ ŧḗḗẋŧ īƞ ŧħḗḗīř ŀȧȧƞɠŭŭȧȧɠḗḗ, ǿǿř ḗḗŀşḗḗ īƞ ŧħḗḗ şḗḗřṽḗḗř'ş ḓḗḗƒȧȧŭŭŀŧ ŀȧȧƞɠŭŭȧȧɠḗḗ ǿǿř Ḗƞɠŀīşħ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.privacy_policy": {
+    "defaultMessage": "[Ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.removed": {
+    "defaultMessage": "[Ŧħḗḗ ŧḗḗẋŧ īƞ {language} īş řḗḗḿǿǿṽḗḗḓ. Ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ řḗḗƈǿǿřḓş ŧħḗḗ ƈħȧȧƞɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.save": {
+    "defaultMessage": "[Şȧȧṽḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.save_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ şȧȧṽḗḗ ŧħḗḗ ŧḗḗẋŧ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.saved": {
+    "defaultMessage": "[Ŧħḗḗ ŧḗḗẋŧ īƞ {language} īş şȧȧṽḗḗḓ. Ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ řḗḗƈǿǿřḓş ŧħḗḗ ƈħȧȧƞɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.saved_at": {
+    "defaultMessage": "[Ŀȧȧşŧ şȧȧṽḗḗḓ īƞ {language}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.saved_at.never": {
+    "defaultMessage": "[Ƞǿǿŧ ẇřīŧŧḗḗƞ ẏḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.summary": {
+    "defaultMessage": "[Ŧħḗḗ ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ ȧȧƞḓ ŧħḗḗ ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ ŧħȧȧŧ ȧȧƞẏǿǿƞḗḗ ƈȧȧƞ řḗḗȧȧḓ ȧȧƞḓ ŧħȧȧŧ ƥḗḗǿǿƥŀḗḗ ȧȧɠřḗḗḗḗ ŧǿǿ ẇħḗḗƞ ŧħḗḗẏ şīɠƞ ŭŭƥ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.terms": {
+    "defaultMessage": "[Ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.title": {
+    "defaultMessage": "[Ŧḗḗřḿş ȧȧƞḓ ƥǿǿŀīƈīḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.too_long": {
+    "defaultMessage": "[Ŭşḗḗ ȧȧŧ ḿǿǿşŧ {max, number} ƈħȧȧřȧȧƈŧḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.unsaved.description": {
+    "defaultMessage": "[Ẏǿǿŭŭř ƈħȧȧƞɠḗḗş ŧǿǿ ŧħḗḗ ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ ȧȧƞḓ ŧħḗḗ ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ ẇīŀŀ ƀḗḗ ŀǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.unsaved.leave": {
+    "defaultMessage": "[Ḓīşƈȧȧřḓ ƈħȧȧƞɠḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.unsaved.stay": {
+    "defaultMessage": "[Ķḗḗḗḗƥ ḗḗḓīŧīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.unsaved.title": {
+    "defaultMessage": "[Ŀḗḗȧȧṽḗḗ ẇīŧħǿǿŭŭŧ şȧȧṽīƞɠ ŧħḗḗ ŧḗḗẋŧş?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.view_privacy_policy": {
+    "defaultMessage": "[Ǿƥḗḗƞ ŧħḗḗ ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ ƥȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.view_terms": {
+    "defaultMessage": "[Ǿƥḗḗƞ ŧħḗḗ ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ ƥȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.domain.ascii": {
     "defaultMessage": "[({domain})]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -2709,6 +2829,18 @@
   },
   "compose.warning.toggle": {
     "defaultMessage": "[Ȧḓḓ ȧȧ ƈǿǿƞŧḗḗƞŧ ẇȧȧřƞīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "documents.label": {
+    "defaultMessage": "[Ŧḗḗřḿş ȧȧƞḓ ƥǿǿŀīƈīḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "documents.privacy_policy": {
+    "defaultMessage": "[Ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "documents.terms": {
+    "defaultMessage": "[Ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "home.title": {

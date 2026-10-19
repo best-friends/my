@@ -37,8 +37,14 @@
 {{with .Errors.reason}}<p id="sign-up-reason-error" class="field-error">{{.}}</p>{{end}}
 <textarea id="sign-up-reason" name="reason" rows="4" maxlength="{{.ReasonMax}}" dir="auto" aria-describedby="sign-up-reason-hint{{if .Errors.reason}} sign-up-reason-error{{end}}"{{if .Errors.reason}} aria-invalid="true"{{end}}>{{.Reason}}</textarea>
 </div>{{end}}
+{{with $.Documents}}<div class="agreement">
+<p id="sign-up-agreement">{{$.L.ServerAuthSignUpAgreement}}</p>
+<ul class="links">
+{{range .}}<li><a href="{{.Path}}">{{.Title}}</a></li>
+{{end}}</ul>
+</div>{{end}}
 <div class="actions">
-<button class="button" type="submit">{{$.L.ServerAuthSignUpSubmit}}</button>
+<button class="button" type="submit"{{if $.Documents}} aria-describedby="sign-up-agreement"{{end}}>{{$.L.ServerAuthSignUpSubmit}}</button>
 </div>
 </form>
 <p class="links"><a href="/auth/sign_in">{{$.L.ServerAuthSignInTitle}}</a></p>

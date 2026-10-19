@@ -183,7 +183,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 ## 8. サーバーが描画する画面
 
-ログイン・登録・メール確認・アカウントの状態・OAuth の認可同意の画面は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。
+ログイン・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。
 
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
@@ -193,6 +193,8 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 - ダークモードは `prefers-color-scheme` に従う（トークンの `light-dark()` と `<meta name="color-scheme" content="light dark">`）。フォーカスのリングは `theme.css` の `:focus-visible`、
   タップ領域は `pointer-coarse:` で 44 px 以上、方向は論理プロパティ（`px-`・`ps-`・`pe-`）で書く（D4・D7・Y4）。
 - フォームは `<label for>`、`autocomplete`（`username`・`current-password`・`new-password`）、ヒントとエラーの `aria-describedby`、エラーの `aria-invalid` を持ち、ブラウザの制約検証（`required`・`minlength`）を使う。
+- 利用規約とプライバシーポリシー（#489）: 管理者が Markdown で書いた文書を、サーバーが HTML にしてサニタイズし（`internal/adapter/markdown`）、`.document` の区画に、文書のロケールの `lang` と `dir="auto"` で出す。見出しはページの `h1` の下の `h2` から始まり、幅の広い表は区画の中で横にスクロールして、ページは横にスクロールしない（D3）。
+  サーバーが公開している文書は、すべての画面の `main` の後のフッター（`nav`「規約とポリシー」）と、登録のフォームの作成のボタンの前の同意の文（ボタンの `aria-describedby`）からリンクする。公開していない文書はリンクせず、そのページは 404 にする。
 
 ## 9. アプリの外枠
 
@@ -239,6 +241,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   これを同じタブで開くと（修飾キーのない左クリックか Enter）、`PostContent` の `onLinkClick` に渡した `lib/contentLinks.ts` の `useContentLinkClick()` が、
   ホストが `apiOrigin` のホストと同じ（スキームは問わない）プロフィール・投稿・ハッシュタグのリンク（`/@{acct}`・`/@{acct}/{id}`・`/tags/{tag}`）をルーターの遷移に変える。
   そのため平文 HTTP のローカルの構成（`apiOrigin` が `http://localhost:8080`）でも、TLS のない `https://` に移らずに該当の画面が開く。ほかのリンクと、新しいタブやウィンドウで開くことはブラウザに任せる。
+  サーバー自身のパス（`/auth`・`/oauth`・`/api` などの予約パス、`lib/paths.ts` の `isServerPath`）へのリンクはアプリのルートではないので、外枠の `navigate`（`App.tsx`）がルーターに渡さず、`leaveApp` でページごと開く（利用規約とプライバシーポリシーの公開ページ）。
 - **レイアウト**（`routes/-layout/AppLayout.tsx`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` から投稿フォームとサーバーについての 3 列目を出す。
   `xl` 未満では、投稿フォームはタブバーの上（`md` からは画面の隅）に浮かぶボタンから開くシートになる（§12）。どちらにするかは外枠が `matchMedia` で決め（`useMediaQuery`）、ページに置くフォームは常に 1 つにする。
   浮かぶボタンは、ルートの静的なデータ（TanStack Router の `staticData`、`composeButton: true`）を持つ画面（タイムラインとプロフィール）にだけ出す（G4）。外枠は今のマッチ（`useMatches`）からそれを読む。
@@ -249,7 +252,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   同じ `/@{acct}` の下にある自分の投稿の詳細は含めない。画面の端に接する要素は `env(safe-area-inset-*)` を足し、高さは `svh` で指定する。
   - 項目は [ADR-0039](../adr/0039-mobile-navigation-and-compose-entry.md) に従う。`md` 未満のタブバーは、ホーム・タイムライン・通知・検索・メニューの 5 つで、
     `md` からのレールとサイドバーは、ホーム・ローカル・連合・通知・検索・プロフィール・設定の 7 つにする。どちらも 1 つのリストの同じ順番で、各項目はその幅で出ないときに `display: none`（アクセシビリティツリーからも外れる）にする。
-    ロールが管理の画面の権限（`manage_domains`・`manage_jobs`・`view_audit`・`manage_accounts`・`manage_reports`）を持つ閲覧者には、設定の後に「管理」（`/admin`、§14）を足す。レールとサイドバーとメニューのシートに出し、タブバーには出さない。
+    ロールが管理の画面の権限（`manage_domains`・`manage_jobs`・`view_audit`・`manage_accounts`・`manage_reports`・`manage_settings`）を持つ閲覧者には、設定の後に「管理」（`/admin`、§14）を足す。レールとサイドバーとメニューのシートに出し、タブバーには出さない。
     jsdom はスタイルを当てないので、統合テストでは両方の項目が文書にあり、どの幅で何が出るかは E2E（`e2e/shell.spec.ts`・`e2e/federated.spec.ts`）で確かめる。
   - `lg` からのサイドバーは、リストの上にサーバーの名前（`instanceName`）を、リストの下（`nav` の末尾）にサインインしているアカウントのアバター・表示名・ハンドルを出す。
     アカウントはそのプロフィールへのリンクで、名前は表示名とハンドル（それぞれ 1 行に省略、G7）、説明（`aria-describedby`）は「サインインしているアカウント」にする。
@@ -261,6 +264,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
     選択は URL から決まる（S3）。タブを移ると別の画面になり、フォーカスはその画面の `h1` に移るので、矢印キーではフォーカスだけを動かし、Enter / Space で開く（`keyboardActivation="manual"`）。
     タブはサーバーが提供するタイムラインと今の画面のものだけを出し、`GET /instance` の答えを待たずに最初から置く（答えが後から届いても、下のタイムラインを作り直さない）。
   - 「メニュー」は場所ではなくボタンなので `aria-current` を持たない。押すと `Sheet`（モーダルのダイアログ）を開き、タブバーにないレールの項目（プロフィール・設定、閲覧者によって管理）を並べて、今いる区画のリンクに `aria-current="page"` を付ける。
+  - サーバーの利用規約とプライバシーポリシー（`GET /instance` の `terms_url` / `privacy_policy_url`、`features/documents` の `DocumentLinks`）は、`xl` からの 3 列目（`ServerInfo`）、メニューのシートの項目の下、設定の画面の「規約とポリシー」の区画、サインインの画面（`/login`）にリンクする（`nav`「規約とポリシー」）。サーバーが公開していない文書は出さない。
   - 件数のバッジ（`@my/ui` の `Badge`）: 「通知」は未読数、「管理」はモデレーターを待つ件数（`GET /admin/counts` の未解決の通報・承認待ちの登録・審査待ちの異議申し立ての合計、FR-712）を、アイコンの角に数字で出す。
     数字はアクセシビリティツリーから隠し、件数はリンクのアクセシブルネーム（見える名前で始まる「通知、未読 3 件」「管理、未対応 3 件」、WCAG 2.5.3）で伝えるので、色だけで示さない（WCAG 1.4.1）。
     シートの「管理」も同じ名前とバッジを持ち、タブバーの「メニュー」のボタンはシートの項目の件数を自分のバッジと名前（「メニュー、管理に未対応 3 件」）で示す。
@@ -444,7 +448,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 `features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ・登録の審査・通報・異議申し立ての審査・アカウント）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と異議申し立ての審査とアカウント、`manage_reports` が通報の画面、`manage_roles` がアカウントの管理画面のロールの区画に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と異議申し立ての審査とアカウント、`manage_reports` が通報の画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -525,6 +529,10 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   - **通報**: 新しい 20 件の通報の、通報の日時の見出し（`manage_reports` があれば通報の詳細へのリンク）と、状態（解決済みなら結果）・カテゴリ・通報者の説明リスト、コメント（`dir="auto"`、2 行に省略）。
   - **処分する**: 通報の詳細と同じ処分のフォーム（`AccountActionForm`。通報なし、理由の種類の最初は `other`）。リモートのアカウントには `force_sensitive`・`limit`・`suspend` だけを出し、知らせるかのチェックボックスを出さない。
     投稿への処分は投稿を選ぶ通報の詳細から行うので、この画面では出さず、その旨をフォームの上に書く。成功したら区画の `StatusMessage` に結果を出し、処分の履歴・アカウント・検索・通報を無効にする。削除済みのアカウントにはフォームを出さない。
+- **規約とポリシー**（`/admin/documents`、FR-705、#489）: 言語の `Select`（`?locale=`、URL に置く。S3。カタログのある言語と、文書がすでにある言語）と、利用規約・プライバシーポリシーの 2 つの区画（`h2` の `section`）。
+  各区画は、書かれている言語・選んだ言語で最後に保存した日時の説明リスト、公開ページへのリンク（閲覧者が読めるときだけ）、選んだ言語の本文（Markdown の `TextArea`、100,000 文字）と「保存する」の `form` で、言語ごとに別に保存する。
+  成功したら本文・`GET /instance`（リンク）・監査ログを取り直してから、監査ログに記録したことを区画の `StatusMessage` に出す。失敗はフォームの下（`role="alert"`）に出して入力を残す。保存してある本文を空にして保存すると削除になるので、`ConfirmDialog`（`danger`）で確かめる。
+  下書きは文書と言語ごとに持ち、言語を変えても残る。下書きがあるまま別の画面へ移るときは、`features/settings` の `useUnsavedChangesGuard` で確かめる（§9 の未保存の変更）。
 - **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection`、区画の中身が入れ替わって押したボタンが消えるときに区画の見出しへフォーカスを移すのは `useFocusAfterChange` にし（`features/admin/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
@@ -538,10 +546,13 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   開いただけではメールアドレスと IP アドレスを要求しないことと、押したときに 1 回だけ要求してフォーカスと `role="status"` で知らせること、その失敗、リモートのアカウントの種類、処分の発行と読み直し、確認と理由付きの解除とフォーカス、BAN に解除がないこと、解除の失敗と取り消し、権限を検査する。
   `features/admin/reports.test.tsx` は、通報の一覧とタブ、詳細の各区画（読めない投稿・廃止されたルール・処分の履歴）、担当とメモ、処分による解決と一覧から消えること、BAN と投稿の削除の確認、ほかのサーバーのアカウントの種類、処分せずに解決と再開とフォーカス、失敗、権限と 403 を検査する。
   `features/admin/appeals.test.tsx` は、異議申し立ての一覧とタブと URL、審査済みのタブが審査待ちだけのページを読み進めること、本文の `dir="auto"`、説明付きの撤回で処分が解除と出ることとフォーカス、説明なしの維持、キャンセルと Esc、ダイアログの中の失敗、先に逆の決定をされた申し立て、権限と 403 を検査する。
+  `features/admin/documents.test.tsx` は、表示言語での本文と書かれている言語、公開ページをページごと開くこと、保存と `role="status"` の結果、URL での言語の切り替えと言語ごとの下書き、削除の確認と取り消し、保存の失敗、未保存の変更の確認、権限を検査し、
+  `features/documents/documents.test.tsx` は、サインインの画面・設定・メニューのシートの文書へのリンクと、公開していない文書を出さないことを検査する。
   `features/admin/roles.test.tsx` は、ロールの一覧と持っているか、確認を経た付与と剥奪・`role="status"` の結果・見出しへのフォーカス、キャンセルと Esc、閲覧者より上のロールに操作がなく理由が出ること、403 と 409（最後の管理者）の理由をダイアログの中に出すこと、読み込みの失敗と再試行、`manage_roles` のない閲覧者にロールの区画も要求もないことを検査する。
   E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`、`e2e/reports.spec.ts`、`e2e/accounts.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL・キーボードで通報を開き、BAN の確認のダイアログを経て、処分で通報を解決して一覧から消えるまで・キーボードで検索からアカウントを開き、押したときだけメールアドレスと IP アドレスを出し、解除の確認のダイアログを経てフォーカスが行の見出しに移るまで・リモートのアカウントの処分の種類を検査する。
   `e2e/registrations.spec.ts` は、登録の審査の画面の axe・横スクロール・ARIA スナップショット、承認の確認のダイアログ、キーボードでの却下とフォーカスの移動を検査する。
   `e2e/roles.spec.ts` は、ロールの区画の ARIA スナップショット（閲覧者より上のロールの理由）・axe・横スクロールと、キーボードで付与の確認のダイアログを経て、区画の見出しにフォーカスが移るまでを検査する。
+  `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターから文書の公開ページを開き、Markdown の見出し・箇条書き・表の ARIA スナップショット・両方のテーマの axe・横スクロールを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
   `e2e/appeals.spec.ts` は、異議申し立ての一覧の axe・横スクロール・ARIA スナップショットと、キーボードで申し立てを開き、撤回の確認のダイアログを経て処分が解除と出て、審査の見出しにフォーカスが移るまでを検査する。
   `features/admin/adminEntry.test.tsx` は、ナビゲーションの「管理」の出し分け・レールとメニューのボタンとシートの件数の名前・管理の画面・管理の画面での `aria-current`・ストリームの通知での件数の読み直しを検査し、
   `e2e/admin-entry.spec.ts` は、各幅で「管理」（`md` 未満はメニューのボタンとシート）の件数の名前と数字、管理の画面の ARIA スナップショット、サーバーからの通知の行とそのリンク（ARIA スナップショット）・axe・横スクロールを検査する。

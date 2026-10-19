@@ -974,6 +974,9 @@ flowchart LR
 - メディアを指す設定（`preview_image`）の値は `media_files.id` の論理参照で、空文字は未設定です。
   どれかの版（現在値でなくても）が指すメディアは、`content` モジュールの未添付アップロードの消去（§4.4）から外れます。
 - 文章は読み手のロケールのフォールバックチェーン、`default_locale` のチェーン、`en` の順に探し、空の文章は飛ばします。
+- `terms`（利用規約）と `privacy_policy`（プライバシーポリシー）は Markdown の文書で、ほかの文章はプレーンテキストです。
+  文書は版に Markdown のまま記録し、公開ページ（`/auth/terms`・`/auth/privacy`）が読むたびに HTML にしてサニタイズします（`instance.DocumentRenderer`）。HTML は保存しません。
+  読み手のチェーンのどのロケールにも文書が無ければ、公開ページは 404 で、登録の画面・各画面のフッター・`GET /api/v1/instance` の `terms_url` / `privacy_policy_url` もそれを指しません。
 - 環境変数・設定ファイルによる設定（ADR-0010）とインスタンス設定は、同じキーを持ちません。
   再起動で反映するデプロイの構成（アダプタ・接続先・ホスト名・秘密情報）は設定に、運営者が稼働中に変える方針と文章はこの表に置きます。
   どちらかがもう一方を上書きすることはありません（[設定リファレンス](../reference/configuration.md)、[運用手順](../operations/instance-settings.md)）。
