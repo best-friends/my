@@ -1,6 +1,6 @@
 # ADR-0050: リアルタイム更新のプロセス間 Pub/Sub
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #196
@@ -16,7 +16,7 @@
 
 決定者は「PubSub のアダプタを増やして設計し、実装しなさい。対象は AWS の Queue や GCP 上の類似サービス、あるいは valkey とします。」と指示している。
 アダプタの選び方は ADR-0002（ポートとアダプタ）、ADR-0004（クラウドのマネージドサービスへの切り替え）、NFR-COST-1 / NFR-COST-2（scale to zero、常駐ミドルウェアを必須にしない）に従う必要がある。
-Valkey の接続設定は、並行する #582（KV の Valkey アダプタ）と共有する。
+Valkey の接続（`internal/adapter/valkey`）と設定は、KV の Valkey アダプタ（`kv = valkey`、#582）と共有する。
 
 知らせの性質は次のとおりで、これが要件の上限を決める。
 
@@ -59,8 +59,6 @@ Valkey の接続設定は、並行する #582（KV の Valkey アダプタ）と
 | NATS core | 各プロセスが subject を購読 | Self-hosted は 0 | 採らない。Valkey と役割が重なる（コミュニティアダプタは受け入れる） |
 
 ## Decision（決定）
-
-> 推奨案。Accepted にするのは人間の Decider のみ。
 
 選択肢 1（`stream.Bus` + `stream.Relay`）を採り、`Bus` のアダプタとして `postgres`、`valkey`、`sns`（SNS + SQS）、`pubsub`（Google Cloud Pub/Sub）を用意する。
 SQLite（単一プロセス）と `role = all` の 1 プロセス構成は、今の `Hub` のまま。
@@ -125,8 +123,8 @@ type Listener interface {
 - 1 つのチャネル `<valkey_key_prefix>stream` に `PUBLISH` し、専用の接続で `SUBSCRIBE` する。クラスタモードでも通常の `PUBLISH` はクラスタ全体に届く。ElastiCache Serverless は内部で sharded Pub/Sub を使うが、1 チャネルなので影響しない
 - Valkey の Pub/Sub は at-most-once で、切断中の知らせは失われる。valkey-go は自動で再接続・再購読するが、その間の損失は分からないので、切断（`SetPubSubHooks` の待ちチャネルが閉じる）を `Broken` として扱う
 - 知らせは小さく、`client-output-buffer-limit pubsub 32mb 8mb 60`（既定）に当たるのは、受信の goroutine が止まったときだけ。そのときは Valkey が切断し、`Broken` になる
-- 接続設定は #582 と共有する: `valkey_url`（`valkey://` / `valkeys://`、認証と DB 番号を含む）と `valkey_key_prefix`
-- クライアント: valkey-go（Apache-2.0、pure Go）。版は公開から 2 週間を過ぎたもの（2026-10-19 時点で v1.0.78）。#582 と同じ版にそろえる
+- 接続は KV と同じ `internal/adapter/valkey` で作り、設定 `valkey_url`（`valkey://` / `valkeys://`、認証と DB 番号を含む）・`valkey_tls_ca_file`・`valkey_key_prefix` を共有する
+- クライアント: valkey-go（Apache-2.0、pure Go）。版は公開から 2 週間を過ぎたもの（2026-10-19 時点で v1.0.78）。KV のアダプタと同じ版を使う
 - クラウドでは既定にしない
   - ElastiCache Serverless for Valkey は最小 100 MB の課金で約 $6.13 / 月（$0.084 / GB 時間、us-east-1）。VPC のエンドポイントでは Lambda を VPC に入れる必要があり、外向きに NAT が要るうえ、**VPC の中の Lambda の Function URL はレスポンスストリーミングに対応しない**。
     公開エンドポイント（Valkey 9.0 以上、IAM 認証のみ、追加料金なし）なら VPC は要らないが、提供リージョンと valkey-go の IAM 認証の対応は要検証
@@ -177,7 +175,7 @@ type Listener interface {
 | ターゲット | `stream` |
 | --- | --- |
 | Self-hosted（SQLite、または 1 プロセスの `role = all`） | `hub` |
-| Self-hosted（PostgreSQL で複数プロセス・レプリカ） | `postgres`。Valkey を動かしている構成（#582）は `valkey` も可 |
+| Self-hosted（PostgreSQL で複数プロセス・レプリカ） | `postgres`。Valkey を動かしている構成（`kv = valkey`）は `valkey` も可 |
 | Google Cloud（Cloud Run） | `pubsub` |
 | AWS（Lambda） | `sns` |
 
@@ -187,7 +185,7 @@ type Listener interface {
 | --- | --- |
 | `stream` | `hub`（既定）/ `postgres` / `valkey` / `sns` / `pubsub` |
 | `stream_postgres_url` | `LISTEN` に使う直接の接続先（既定は `database_url`）。`stream = postgres` は `db = postgres` のときだけ |
-| `valkey_url`（`_FILE` 可）、`valkey_key_prefix` | #582 の KV と共有 |
+| `valkey_url`（`_FILE` 可）、`valkey_tls_ca_file`、`valkey_key_prefix` | `kv = valkey` と共有（必須の条件に `stream = valkey` を足す） |
 | `stream_sns_topic_arn`、`stream_sqs_queue_prefix` | AWS。認証とリージョンは SDK の既定の連鎖 |
 | `stream_pubsub_topic`、`stream_pubsub_subscription_prefix` | GCP（`projects/<p>/topics/<t>`） |
 
@@ -225,7 +223,7 @@ type Listener interface {
 - 後続で必要になる作業（#196 の実装として PR を分ける）
   1. ポート: `stream.Bus` / `Listener`、知らせの符号化、`stream.Relay`、`Subscribe(ctx, ...)` と `ErrUnavailable`（503）、ストリームでのホームの新着の重複排除、メモリの `Bus`、`StreamBusContract` と `StreamBrokerContract`
   2. `stream/postgres` とそのテスト
-  3. `stream/valkey` とそのテスト（#582 と接続設定を共有）
+  3. `stream/valkey` とそのテスト（`internal/adapter/valkey` の接続と設定を共有）
   4. `stream/pubsub` とそのテスト
   5. `stream/sns` とそのテスト、`stream.sweep` ジョブ
   6. 設定（スキーマ、`make config-docs`）、`internal/platform` の組み立て、`hub` で `role` が `all` 以外のときの警告
