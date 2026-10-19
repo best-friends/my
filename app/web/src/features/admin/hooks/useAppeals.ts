@@ -17,6 +17,7 @@ import {
   type AppealState,
   decideAppealMutation,
   isAppealDecided,
+  refreshAppealLists,
   storeAppeal,
 } from "../api/appeals";
 import { type PagedList, toPagedList } from "./pagedList";
@@ -77,9 +78,10 @@ export type AppealReview = {
 };
 
 /**
- * Deciding one appeal. `onDecided()` is called once the cache has the appeal after it, when the region's buttons
- * go away (the page moves focus to the region's heading). An appeal that another moderator decided the other way
- * first (409 appeal-decided) closes the confirmation, is read again, and the status says so.
+ * Deciding one appeal. `onDecided()` is called once the cache has the appeal after it and the lists of appeals
+ * are fetched again (the decision stays pending until then), when the region's buttons go away (the page moves
+ * focus to the region's heading). An appeal that another moderator decided the other way first (409
+ * appeal-decided) is read again with the lists, then closes the confirmation, and the status says so.
  */
 export function useAppealReview(id: string, onDecided: () => void): AppealReview {
   const api = useApi();
@@ -89,16 +91,24 @@ export function useAppealReview(id: string, onDecided: () => void): AppealReview
   const [status, setStatus] = useState<string | undefined>(undefined);
   const mutation = useMutation({
     ...decideAppealMutation(api),
-    onSuccess: (appeal) => {
+    onSuccess: async (appeal) => {
+      // The decision is done once the lists are fetched again (the confirmation stays pending until then), so
+      // that going back to the list shows it as it is now, not the appeal as it was (refreshAppealLists). The
+      // confirmation closes as the page shows the decision, and focus then moves to the region's heading.
+      await storeAppeal(queryClient, api, appeal);
       setDialog((current) => current && { ...current, isOpen: false });
-      storeAppeal(queryClient, api, appeal);
       setStatus(decidedMessage(t, appeal));
       onDecided();
     },
     onError: async (error) => {
       if (!isAppealDecided(error)) return;
+      // The other moderator's decision changed the lists as well as the appeal.
+      const accountId = queryClient.getQueryData<Appeal>(appealQueryOptions(api, id).queryKey)?.account_id;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: appealQueryOptions(api, id).queryKey }),
+        accountId === undefined ? undefined : refreshAppealLists(queryClient, api, accountId),
+      ]);
       setDialog((current) => current && { ...current, isOpen: false });
-      await queryClient.invalidateQueries({ queryKey: appealQueryOptions(api, id).queryKey });
       setStatus(t("client:admin.appeal.already_decided"));
       onDecided();
     },

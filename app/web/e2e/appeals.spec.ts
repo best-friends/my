@@ -48,6 +48,8 @@ const longText = `I only posted the link to my own blog: https://birds.example/$
 const arabicText = "لم أنشر أي إعلانات";
 
 const appealId = "0192f0c4-7a8e-7000-8000-0000000f0001";
+/** Another appeal awaiting review, which stays so. */
+const otherAppealId = "0192f0c4-7a8e-7000-8000-0000000f0002";
 
 function appealOf(overrides: Partial<Appeal>): Appeal {
   return {
@@ -77,11 +79,18 @@ function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
 }
 
+/**
+ * How long the lists of appeals take once a decision is made: a slow server, so that a list shown from its cache
+ * before the list comes again would show the decided appeal (#468).
+ */
+const slowListMs = 1500;
+
 /** Plays the admin API of a signed-in moderator; returns the decisions taken. */
 async function moderatorServer(page: Page) {
   const locale = test.info().project.use.locale ?? "en";
-  let appeals: Appeal[] = [appealOf({}), appealOf({ id: "0192f0c4-7a8e-7000-8000-0000000f0002", text: arabicText, submitted_at: "2026-10-16T08:00:00Z" })];
+  let appeals: Appeal[] = [appealOf({}), appealOf({ id: otherAppealId, text: arabicText, submitted_at: "2026-10-16T08:00:00Z" })];
   const decisions: string[] = [];
+  let slowLists = false;
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow admin" }));
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
@@ -98,6 +107,7 @@ async function moderatorServer(page: Page) {
     }
     if (key === `GET /accounts/${appellant.id}`) return json(route, appellant);
     if (key === "GET /admin/appeals") {
+      if (slowLists) await new Promise((resolve) => setTimeout(resolve, slowListMs));
       const state = url.searchParams.get("state");
       return json(route, { items: state === null ? appeals : appeals.filter((appeal) => appeal.state === state) });
     }
@@ -124,6 +134,7 @@ async function moderatorServer(page: Page) {
               action: decision === "overturn" ? { ...appeal.action, state: "lifted", lifted_at: decidedAt } : appeal.action,
             },
       );
+      slowLists = true;
       return json(route, appeals.find((appeal) => appeal.id === id));
     }
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
@@ -216,5 +227,13 @@ test.describe("appeals", () => {
     expect(decisions).toEqual([`overturn ${appealId} The link was to your own blog.`]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+
+    // Back on the list, the appeal is gone from those awaiting review as soon as the list shows, though the
+    // server answers the lists slowly now: the list is not shown from a cache older than the decision.
+    await main.locator('a[href="/admin/appeals"]').click();
+    await expect(page).toHaveURL(/\/admin\/appeals$/);
+    await expect(panel.locator(`a[href="/admin/appeals/${otherAppealId}"]`)).toBeVisible();
+    expect(await panel.locator(`a[href="/admin/appeals/${appealId}"]`).count()).toBe(0);
+    await expect(panel.locator('a[href^="/admin/appeals/"]')).toHaveCount(1);
   });
 });
