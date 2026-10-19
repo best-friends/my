@@ -327,6 +327,38 @@
     "defaultMessage": "Your account is restricted",
     "description": "Title and heading of the page a signed-in user sees while a moderation action keeps their account out of the app."
   },
+  "auth.status.appeal_answer": {
+    "defaultMessage": "The moderators' answer:",
+    "description": "Label before the moderators' explanation of their decision on the user's appeal, on the status page of a signed-in user whose account is restricted."
+  },
+  "auth.status.appeal_hint": {
+    "defaultMessage": "{days, plural, one {You can appeal once, within # day. Up to {max, number} characters.} other {You can appeal once, within # days. Up to {max, number} characters.}}",
+    "description": "Hint under the appeal field of a moderation action on the status page. {days} is the time left to appeal, rounded up to whole days; {max} is the longest allowed appeal in characters."
+  },
+  "auth.status.appeal_label": {
+    "defaultMessage": "Appeal this action",
+    "description": "Label of the field in which a user whose account is restricted writes their appeal of a moderation action (why a moderator should reconsider it)."
+  },
+  "auth.status.appeal_not_sent": {
+    "defaultMessage": "The appeal was not sent. Check the field marked below.",
+    "description": "Alert on the status page when the appeal form was sent with an empty or too long appeal; the field's own error follows below."
+  },
+  "auth.status.appeal_sent": {
+    "defaultMessage": "Your appeal was sent. A moderator will review it.",
+    "description": "Notice on the status page after the user appealed a moderation action on their account."
+  },
+  "auth.status.appeal_state": {
+    "defaultMessage": "{state, select, pending {Your appeal is waiting for a moderator's review.} upheld {A moderator reviewed your appeal and kept the action.} overturned {A moderator reviewed your appeal and lifted the action.} other {You appealed this action.}}",
+    "description": "Where the user's appeal of a moderation action stands, on the status page. {state} is pending, upheld (the action stays), or overturned (the action is lifted)."
+  },
+  "auth.status.appeal_submit": {
+    "defaultMessage": "Send the appeal",
+    "description": "Button that sends the user's appeal of a moderation action on their account."
+  },
+  "auth.status.appeal_text_invalid": {
+    "defaultMessage": "Write your appeal in up to {max, number} characters.",
+    "description": "Error under the appeal field when it is empty or too long. {max} is the longest allowed appeal in characters."
+  },
   "auth.verify_email.done": {
     "defaultMessage": "Thank you. Your email address is confirmed.",
     "description": "Body of the page after the email address was confirmed."
@@ -377,7 +409,7 @@
   },
   "errors.appeal.not_appealable": {
     "defaultMessage": "This action cannot be appealed.",
-    "description": "API error title for HTTP 422 when the user appeals a ban, which is never lifted."
+    "description": "API error title for HTTP 422 when the user appeals a ban whose account is already deleted; a ban is appealable only until its account is deleted."
   },
   "errors.appeal.window_closed": {
     "defaultMessage": "The time to appeal this action has passed.",
