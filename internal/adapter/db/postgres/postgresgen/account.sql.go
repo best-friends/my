@@ -611,6 +611,31 @@ func (q *Queries) ListAccountsOnDomain(ctx context.Context, arg ListAccountsOnDo
 	return items, nil
 }
 
+const listExistingAccountIDs = `-- name: ListExistingAccountIDs :many
+SELECT id FROM accounts WHERE id = ANY($1::text[]) ORDER BY id
+`
+
+// ListExistingAccountIDs returns, in ID order, the accounts among ids that exist.
+func (q *Queries) ListExistingAccountIDs(ctx context.Context, ids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listExistingAccountIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLifecycleEvents = `-- name: ListLifecycleEvents :many
 SELECT id, account_id, kind, initiated_by, moderation_action_id, deletion_due_at, occurred_at
 FROM account_lifecycle_events ORDER BY account_id, id

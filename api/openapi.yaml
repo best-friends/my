@@ -4477,7 +4477,7 @@ components:
     AdminAuditEntry:
       description: One operation of a moderator or an administrator (FR-704).
       type: object
-      required: [id, actor_kind, action, target_kind, target_id, target_label, occurred_at]
+      required: [id, actor_kind, action, target_kind, target_id, target_label, target_exists, occurred_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -4508,6 +4508,13 @@ components:
             `@bob@example.com`, a domain, a setting's key, a rule's text, or a sign-up block's
             kind and value (`email_domain spam.example`); up to 512 characters.
           type: string
+        target_exists:
+          description: |
+            Whether the target is still there to look at. It is `false` for an account, a report,
+            an appeal, or a sign-up block that is gone (erased past its retention), which only
+            `target_label` names now. It is `true` for the other kinds of targets, which are
+            never erased.
+          type: boolean
         source_event_id:
           description: |
             The ID of the record of the operation (the domain action, the assignment, the

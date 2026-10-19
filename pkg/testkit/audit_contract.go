@@ -23,7 +23,8 @@ import (
 // record none; an entry rolls back with its transaction and an invalid one fails it; the schema
 // accepts every action and kind of target; and the log lists newest first, filtered by actor,
 // action, kind of target, and target, in keyset pages, with the labels it recorded whether the
-// targets still exist or not.
+// targets still exist or not; and it tells which accounts, reports, appeals, and sign-up blocks
+// of its entries are gone.
 func AuditLogContract(t *testing.T, newHarness ModerationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -33,6 +34,7 @@ func AuditLogContract(t *testing.T, newHarness ModerationFactory) {
 		{"RecordsTheModeratorsOperations", auditRecordsOperations},
 		{"RollsBackWithItsTransaction", auditRollsBack},
 		{"ListsWithFiltersAndPages", auditLists},
+		{"TellsTheTargetsThatAreGone", auditTellsGoneTargets},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newAuditEnv(t, newHarness)) })
@@ -316,5 +318,51 @@ func auditLists(t *testing.T, e *auditEnv) {
 		if _, err := e.svc.AuditLog(t.Context(), q, 10); !errors.Is(err, appmoderation.ErrInvalidQuery) {
 			t.Errorf("AuditLog(%+v) = %v, want ErrInvalidQuery", q, err)
 		}
+	}
+}
+
+func auditTellsGoneTargets(t *testing.T, e *auditEnv) {
+	ctx := t.Context()
+	report, _, err := e.svc.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
+		URI: "https://remote.example/flags/2", ReporterAccountID: e.remote, TargetAccountID: e.remote,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	block, err := e.svc.AddSignupBlock(ctx, appmoderation.SignupBlockInput{
+		Kind: moderation.SignupBlockEmailDomain, Value: "spam.example", Severity: moderation.SignupReject,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := func(kind moderation.AuditTargetKind, id string) moderation.AuditEntry {
+		return moderation.AuditEntry{TargetKind: kind, TargetID: id}
+	}
+	missing := e.ids.NewID()
+	entries := []moderation.AuditEntry{
+		entry(moderation.AuditTargetAccount, e.remote), entry(moderation.AuditTargetAccount, missing),
+		entry(moderation.AuditTargetReport, report.ID), entry(moderation.AuditTargetReport, missing),
+		entry(moderation.AuditTargetReport, missing), // a target of two entries is looked up once
+		entry(moderation.AuditTargetAppeal, missing),
+		entry(moderation.AuditTargetSignupBlock, block.ID), entry(moderation.AuditTargetSignupBlock, missing),
+		// Kinds of targets that are never erased are never gone.
+		entry(moderation.AuditTargetDomain, "gone.example"), entry(moderation.AuditTargetSetting, "registration_mode"),
+		entry(moderation.AuditTargetUser, missing), entry(moderation.AuditTargetRule, missing),
+	}
+	got, err := e.svc.GoneAuditTargets(ctx, entries)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[appmoderation.AuditTarget]bool{
+		{Kind: moderation.AuditTargetAccount, ID: missing}:     true,
+		{Kind: moderation.AuditTargetReport, ID: missing}:      true,
+		{Kind: moderation.AuditTargetAppeal, ID: missing}:      true,
+		{Kind: moderation.AuditTargetSignupBlock, ID: missing}: true,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("GoneAuditTargets = %v, want %v", got, want)
+	}
+	if got, err := e.svc.GoneAuditTargets(ctx, nil); err != nil || len(got) != 0 {
+		t.Errorf("GoneAuditTargets(nil) = %v, %v; want none", got, err)
 	}
 }

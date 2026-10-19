@@ -105,6 +105,10 @@ WHERE id IN (SELECT value FROM json_each(sqlc.arg(ids)))
     OR (length(domain) > length(sqlc.arg(domain)) AND substr(domain, length(domain) - length(sqlc.arg(domain))) = '.' || sqlc.arg(domain)))
 ORDER BY id;
 
+-- ListExistingAccountIDs returns, in ID order, the accounts among ids that exist. The ids are a JSON array.
+-- name: ListExistingAccountIDs :many
+SELECT id FROM accounts WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) ORDER BY id;
+
 -- ListLocalAccountIDsAfter pages the local accounts in ID order after the ID after ("" for the
 -- first page).
 -- name: ListLocalAccountIDsAfter :many

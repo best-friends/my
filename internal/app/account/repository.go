@@ -88,6 +88,8 @@ type Repository interface {
 	FindAccountByURI(ctx context.Context, uri string) (account.Account, error)
 	// AnyAccountOnDomain reports whether one of the accounts ids is on domain.
 	AnyAccountOnDomain(ctx context.Context, domain string, ids []string) (bool, error)
+	// ExistingAccountIDs returns, in ID order, the accounts among ids that exist.
+	ExistingAccountIDs(ctx context.Context, ids []string) ([]string, error)
 	// AccountsOnDomain returns inside tx, in ID order, the accounts among ids that are on domain
 	// or one of its subdomains.
 	AccountsOnDomain(ctx context.Context, tx uow.Tx, domain string, ids []string) ([]string, error)

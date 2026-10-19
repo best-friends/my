@@ -110,6 +110,10 @@ WHERE id = ANY(sqlc.arg(ids)::text[])
     OR (length(domain) > length(sqlc.arg(domain)) AND substr(domain, length(domain) - length(sqlc.arg(domain))) = '.' || sqlc.arg(domain)))
 ORDER BY id;
 
+-- ListExistingAccountIDs returns, in ID order, the accounts among ids that exist.
+-- name: ListExistingAccountIDs :many
+SELECT id FROM accounts WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+
 -- ListLocalAccountIDsAfter pages the local accounts in ID order after the ID after ("" for the
 -- first page).
 -- name: ListLocalAccountIDsAfter :many

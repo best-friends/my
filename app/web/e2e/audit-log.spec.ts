@@ -67,6 +67,7 @@ const entries: Entry[] = [
     target_kind: "account",
     target_id: "0192f0c4-7a8e-7000-8000-000000000031",
     target_label: targetHandle,
+    target_exists: true,
     occurred_at: "2026-10-17T09:30:00Z",
   },
   {
@@ -78,6 +79,7 @@ const entries: Entry[] = [
     target_kind: "domain",
     target_id: longDomain,
     target_label: longDomain,
+    target_exists: true,
     occurred_at: "2026-10-16T09:30:00Z",
   },
   {
@@ -87,6 +89,7 @@ const entries: Entry[] = [
     target_kind: "setting",
     target_id: "registration_mode",
     target_label: "registration_mode",
+    target_exists: true,
     occurred_at: "2026-10-15T09:30:00Z",
   },
 ];

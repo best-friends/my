@@ -1390,6 +1390,12 @@ type AdminAuditEntry struct {
 	// reasons and notes; omitted when the operation has none.
 	SourceEventId *string `json:"source_event_id,omitempty"`
 
+	// TargetExists Whether the target is still there to look at. It is `false` for an account, a report,
+	// an appeal, or a sign-up block that is gone (erased past its retention), which only
+	// `target_label` names now. It is `true` for the other kinds of targets, which are
+	// never erased.
+	TargetExists bool `json:"target_exists"`
+
 	// TargetId The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
 	// domain of a domain action, or the key of a setting or a text.
 	TargetId string `json:"target_id"`

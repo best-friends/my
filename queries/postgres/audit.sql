@@ -20,3 +20,16 @@ WHERE (sqlc.arg(actor_user_id)::text = '' OR actor_user_id = sqlc.arg(actor_user
   AND (sqlc.arg(before)::text = '' OR id < sqlc.arg(before)::text)
 ORDER BY id DESC
 LIMIT sqlc.arg(lim);
+
+-- The targets of the entries that still exist, for the audit log to tell those that are gone
+-- (erased past their retention, ADR-0038). Each returns, in ID order, the records among ids
+-- that exist.
+
+-- name: ListExistingReportIDs :many
+SELECT id FROM reports WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+
+-- name: ListExistingAppealIDs :many
+SELECT id FROM moderation_appeals WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+
+-- name: ListExistingSignupBlockIDs :many
+SELECT id FROM signup_blocks WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
