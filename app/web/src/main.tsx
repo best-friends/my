@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+// Temporary change for #448 path-filter test; never merged.
 // Go serves the HTML (ADR-0028), so Vite never transforms an index.html; this sets up React
 // Fast Refresh under `my serve -dev-vite-origin` and is empty in the build.
 import "@vitejs/plugin-react/preamble";
