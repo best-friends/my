@@ -146,8 +146,38 @@ func TestStreamingReleasesOnDisconnectAndShutdown(t *testing.T) {
 
 	// A closed broker refuses new streams.
 	res := e.get(t, "/streaming", map[string]string{"Authorization": "Bearer read"})
+	if res.StatusCode != http.StatusServiceUnavailable || res.Header.Get("Retry-After") == "" {
+		t.Errorf("after shutdown = %d (Retry-After %q), want 503 with Retry-After", res.StatusCode, res.Header.Get("Retry-After"))
+	}
+}
+
+func TestStreamingBrokerUnavailable(t *testing.T) {
+	broker := stream.NewMemoryBroker()
+	broker.SetUnreachable(true)
+	relay := stream.NewRelay(broker.Bus(), stream.RelayOptions{ReadyTimeout: 20 * time.Millisecond})
+	t.Cleanup(func() { _ = relay.Close(context.Background()) })
+	e := newAuthEnv(t, func(o *clientapi.Options) { o.Streams = relay })
+
+	res := e.get(t, "/streaming", map[string]string{"Authorization": "Bearer read"})
 	if res.StatusCode != http.StatusServiceUnavailable {
-		t.Errorf("after shutdown = %d, want 503", res.StatusCode)
+		t.Fatalf("status = %d, want 503", res.StatusCode)
+	}
+	if got := res.Header.Get("Retry-After"); got == "" || got == "0" {
+		t.Errorf("Retry-After = %q, want seconds", got)
+	}
+	if p := decodeProblem(t, res); p.Type != clientapi.ProblemTypeBlank || res.Header.Get("Content-Language") != "ja" {
+		t.Errorf("problem = %+v (%s), want about:blank in alice's locale", p, res.Header.Get("Content-Language"))
+	}
+	if got := relay.Len(); got != 0 {
+		t.Errorf("open subscriptions = %d, want 0", got)
+	}
+
+	// Once the broker answers, the stream opens.
+	broker.SetUnreachable(false)
+	srv := httptest.NewServer(e.h)
+	t.Cleanup(srv.Close)
+	if _, _, r := openStream(t.Context(), t, srv, "read"); readLine(t, r) != ": connected" {
+		t.Error("the stream did not open on a reachable broker")
 	}
 }
 
@@ -170,6 +200,25 @@ func TestStreamingLimitsStreamsPerAccount(t *testing.T) {
 	// Another account has its own streams.
 	if _, _, r := openStream(t.Context(), t, srv, "bob"); readLine(t, r) != ": connected" {
 		t.Error("bob's stream did not open")
+	}
+}
+
+func TestStreamingRemembersRecentEntries(t *testing.T) {
+	r := clientapi.NewRecentIDs(3)
+	for _, id := range []string{"a", "b", "c", "a"} {
+		r.Add(id)
+	}
+	for _, id := range []string{"a", "b", "c"} {
+		if !r.Has(id) {
+			t.Errorf("%s forgotten within the capacity", id)
+		}
+	}
+	r.Add("d") // forgets the oldest, a
+	r.Add("e") // and b
+	for id, want := range map[string]bool{"a": false, "b": false, "c": true, "d": true, "e": true} {
+		if got := r.Has(id); got != want {
+			t.Errorf("Has(%s) = %v, want %v", id, got, want)
+		}
 	}
 }
 

@@ -1088,7 +1088,10 @@ export interface paths {
          *     down; nothing is replayed, so after reconnecting read the home timeline and the
          *     notifications again for what was missed. A user may hold a limited number of streams
          *     open at once; past it the answer is 429 with type
-         *     `/api/v1/problems/too-many-streams`.
+         *     `/api/v1/problems/too-many-streams`. While the server cannot receive updates (its
+         *     broker is not ready, or it is shutting down) the answer is 503 with `Retry-After`; try
+         *     again after that many seconds. The server may also end an open stream when it may have
+         *     missed updates; reconnect and read again, as after any other end.
          *
          *     Each server process delivers only the updates that it produced itself, so a deployment
          *     that runs several web processes, or separate web and worker processes, misses updates
@@ -4019,7 +4022,10 @@ export interface components {
                  *     `error` and, for `insufficient_scope`, the `scope` the operation needs.
                  */
                 "WWW-Authenticate"?: string;
-                /** @description The seconds to wait before retrying, on a 429. */
+                /**
+                 * @description The seconds to wait before retrying, on a 429 and on a 503 of the streaming
+                 *     endpoint.
+                 */
                 "Retry-After"?: number;
                 [name: string]: unknown;
             };

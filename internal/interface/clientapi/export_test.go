@@ -21,5 +21,14 @@ func ResponseErrorHandler(s *Server) func(http.ResponseWriter, *http.Request, er
 // GuardedPatterns returns the sorted patterns of security.gen.go.
 func GuardedPatterns() []string { return slices.Sorted(maps.Keys(operationSecurity)) }
 
+// RecentIDs exposes the memory of the home timeline entries a stream sent.
+type RecentIDs = recentIDs
+
+// NewRecentIDs exposes newRecentIDs.
+func NewRecentIDs(capacity int) *RecentIDs { return newRecentIDs(capacity) }
+
+func (r *RecentIDs) Has(id string) bool { return r.has(id) }
+func (r *RecentIDs) Add(id string)      { r.add(id) }
+
 // Guard exposes Server.guard.
 func Guard(s *Server, pattern string, h http.Handler) http.Handler { return s.guard(pattern, h) }

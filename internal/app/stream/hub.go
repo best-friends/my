@@ -2,7 +2,10 @@
 
 package stream
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 // Defaults of the zero fields of HubOptions.
 const (
@@ -55,8 +58,11 @@ func NewHub(o HubOptions) *Hub {
 	return &Hub{o: o, subs: map[*subscription]struct{}{}, byAccount: map[string]map[*subscription]struct{}{}}
 }
 
-// Subscribe implements Subscriber.
-func (h *Hub) Subscribe(accountID string) (Subscription, error) {
+// Subscribe implements Subscriber. A Hub is always ready, so it waits for nothing.
+func (h *Hub) Subscribe(ctx context.Context, accountID string) (Subscription, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.closed {
@@ -105,6 +111,16 @@ func (h *Hub) Close() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.closed = true
+	for s := range h.subs {
+		h.removeLocked(s)
+	}
+}
+
+// endAll ends every subscription but keeps accepting new ones, for a Relay whose listener
+// broke: the open streams may have missed signals, so they end and their clients read again.
+func (h *Hub) endAll() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	for s := range h.subs {
 		h.removeLocked(s)
 	}

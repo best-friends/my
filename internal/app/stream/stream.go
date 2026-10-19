@@ -3,7 +3,8 @@
 // Package stream defines the ports of the real-time updates that the streaming endpoint serves
 // (FR-207, ADR-0016): modules publish signals after their transactions commit, and each open
 // stream subscribes to the signals of its account. It also holds Hub, the in-process broker
-// that implements both ports for one process.
+// that implements both ports for one process, and Relay, which implements them for every
+// process on a Bus, the port of the cross-process brokers (ADR-0050).
 //
 // A signal names what changed, not what a viewer sees: the subscriber reads the change back
 // through the use cases of the module that owns it, which apply the visibility policy for that
@@ -12,7 +13,10 @@
 // notifications again when they reconnect.
 package stream
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 // Kind is the kind of a signal.
 type Kind string
@@ -35,8 +39,8 @@ type Event struct {
 	EntryID string
 }
 
-// Publisher publishes signals. Publish never blocks on subscribers and never fails the caller,
-// so commit hooks can call it (uow.CommitHook).
+// Publisher publishes signals. Publish never blocks on subscribers or brokers and never fails
+// the caller, so commit hooks can call it (uow.CommitHook).
 type Publisher interface {
 	Publish(e Event)
 }
@@ -48,21 +52,29 @@ var (
 	ErrTooManySubscriptions = errors.New("stream: too many open subscriptions")
 	// ErrClosed reports a broker that is shutting down.
 	ErrClosed = errors.New("stream: the broker is closed")
+	// ErrUnavailable reports a broker that cannot receive the signals of other processes right
+	// now: its listener failed to start or was not ready in time. A later attempt may succeed.
+	ErrUnavailable = errors.New("stream: the broker is unavailable")
 )
 
 // Subscriber opens subscriptions.
 type Subscriber interface {
 	// Subscribe opens a subscription to the signals of accountID: its notifications and every
-	// home timeline entry. Close it when done.
-	Subscribe(accountID string) (Subscription, error)
+	// home timeline entry. Close it when done. It may wait until the broker is ready to receive
+	// the signals of every process, for as long as ctx allows and at most a bound of the
+	// broker's own; a broker that is not ready by then reports ErrUnavailable.
+	Subscribe(ctx context.Context, accountID string) (Subscription, error)
 }
 
 // Subscription is one open subscription.
 type Subscription interface {
-	// Events delivers the signals in the order they were published.
+	// Events delivers the signals in the order they were published in each process; signals
+	// of different processes may interleave in any order, and a cross-process broker may
+	// deliver one twice.
 	Events() <-chan Event
 	// Done is closed when the subscription ends: Close was called, the subscriber fell behind
-	// (its buffer filled up), or the broker closed.
+	// (its buffer filled up), the broker may have missed signals (the listener of a Relay
+	// broke), or the broker closed.
 	Done() <-chan struct{}
 	// Close ends the subscription and releases it. Calling it again does nothing.
 	Close()
