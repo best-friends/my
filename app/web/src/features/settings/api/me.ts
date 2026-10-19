@@ -45,6 +45,17 @@ export function updatePreferencesMutation(api: Api) {
   };
 }
 
+/**
+ * Chooses `timeZone`, the time zone of the device in use, for a user who has chosen none yet
+ * (PATCH /preferences). `signal` cancels it.
+ */
+export async function adoptTimeZone(api: Api, timeZone: string, signal: AbortSignal): Promise<Preferences> {
+  const { data, error } = await api.fetch.PATCH("/preferences", { body: { time_zone: timeZone }, signal });
+  // The middleware throws an ApiError for every error status, so this is only for the types.
+  if (data === undefined) throw new Error(error.title);
+  return data;
+}
+
 /** Saves a change of the profile (PATCH /accounts/update_credentials), as the options of useMutation. */
 export function updateProfileMutation(api: Api) {
   return {

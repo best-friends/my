@@ -2746,8 +2746,12 @@ type Preferences struct {
 	// RequireMediaDescription Whether clients ask for a description before posting media without one.
 	RequireMediaDescription bool `json:"require_media_description"`
 
-	// TimeZone The time zone, an IANA name such as `Asia/Tokyo`.
+	// TimeZone The time zone, an IANA name such as `Asia/Tokyo`; `UTC` until one is chosen.
 	TimeZone string `json:"time_zone"`
+
+	// TimeZoneChosen Whether a time zone has been chosen: false for a new user until a request sets
+	// `time_zone`. Clients may then set it to the device's time zone.
+	TimeZoneChosen bool `json:"time_zone_chosen"`
 
 	// TimelineLanguages The languages that timelines show, sorted; empty shows every language.
 	TimelineLanguages []string `json:"timeline_languages"`

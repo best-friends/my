@@ -21,7 +21,7 @@ func (q *Queries) DeleteUserTimelineLanguages(ctx context.Context, userID string
 }
 
 const getUserPreferences = `-- name: GetUserPreferences :one
-SELECT user_id, locale, time_zone, default_visibility, default_post_language, require_media_description,
+SELECT user_id, locale, default_visibility, default_post_language, require_media_description,
   email_moderator_notifications, updated_at
 FROM user_preferences WHERE user_id = ?
 `
@@ -32,7 +32,6 @@ func (q *Queries) GetUserPreferences(ctx context.Context, userID string) (UserPr
 	err := row.Scan(
 		&i.UserID,
 		&i.Locale,
-		&i.TimeZone,
 		&i.DefaultVisibility,
 		&i.DefaultPostLanguage,
 		&i.RequireMediaDescription,
@@ -42,18 +41,28 @@ func (q *Queries) GetUserPreferences(ctx context.Context, userID string) (UserPr
 	return i, err
 }
 
+const getUserTimeZone = `-- name: GetUserTimeZone :one
+SELECT time_zone FROM user_time_zones WHERE user_id = ?
+`
+
+func (q *Queries) GetUserTimeZone(ctx context.Context, userID string) (string, error) {
+	row := q.db.QueryRowContext(ctx, getUserTimeZone, userID)
+	var time_zone string
+	err := row.Scan(&time_zone)
+	return time_zone, err
+}
+
 const insertUserPreferences = `-- name: InsertUserPreferences :exec
 
 INSERT INTO user_preferences (
-  user_id, locale, time_zone, default_visibility, default_post_language, require_media_description,
+  user_id, locale, default_visibility, default_post_language, require_media_description,
   email_moderator_notifications, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertUserPreferencesParams struct {
 	UserID                      string
 	Locale                      string
-	TimeZone                    string
 	DefaultVisibility           string
 	DefaultPostLanguage         string
 	RequireMediaDescription     int64
@@ -66,7 +75,6 @@ func (q *Queries) InsertUserPreferences(ctx context.Context, arg InsertUserPrefe
 	_, err := q.db.ExecContext(ctx, insertUserPreferences,
 		arg.UserID,
 		arg.Locale,
-		arg.TimeZone,
 		arg.DefaultVisibility,
 		arg.DefaultPostLanguage,
 		arg.RequireMediaDescription,
@@ -119,14 +127,13 @@ func (q *Queries) ListUserTimelineLanguages(ctx context.Context, userID string) 
 
 const updateUserPreferences = `-- name: UpdateUserPreferences :execrows
 UPDATE user_preferences SET
-  locale = ?, time_zone = ?, default_visibility = ?, default_post_language = ?,
+  locale = ?, default_visibility = ?, default_post_language = ?,
   require_media_description = ?, email_moderator_notifications = ?, updated_at = ?
 WHERE user_id = ?
 `
 
 type UpdateUserPreferencesParams struct {
 	Locale                      string
-	TimeZone                    string
 	DefaultVisibility           string
 	DefaultPostLanguage         string
 	RequireMediaDescription     int64
@@ -138,7 +145,6 @@ type UpdateUserPreferencesParams struct {
 func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPreferencesParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, updateUserPreferences,
 		arg.Locale,
-		arg.TimeZone,
 		arg.DefaultVisibility,
 		arg.DefaultPostLanguage,
 		arg.RequireMediaDescription,
@@ -150,4 +156,19 @@ func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPrefe
 		return 0, err
 	}
 	return result.RowsAffected()
+}
+
+const upsertUserTimeZone = `-- name: UpsertUserTimeZone :exec
+INSERT INTO user_time_zones (user_id, time_zone) VALUES (?, ?)
+ON CONFLICT (user_id) DO UPDATE SET time_zone = excluded.time_zone
+`
+
+type UpsertUserTimeZoneParams struct {
+	UserID   string
+	TimeZone string
+}
+
+func (q *Queries) UpsertUserTimeZone(ctx context.Context, arg UpsertUserTimeZoneParams) error {
+	_, err := q.db.ExecContext(ctx, upsertUserTimeZone, arg.UserID, arg.TimeZone)
+	return err
 }

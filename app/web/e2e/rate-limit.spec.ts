@@ -111,6 +111,7 @@ async function serveApi(page: Page, limited: () => boolean) {
     const preferences: Schemas["Preferences"] = {
       locale: projectLocale(),
       time_zone: "UTC",
+      time_zone_chosen: true,
       default_visibility: "public",
       default_post_language: "en",
       require_media_description: false,

@@ -1866,12 +1866,16 @@ export interface MessageArgs {
   "client:settings.saved": {};
   /** Dates and times are shown in this time zone. */
   "client:settings.time_zone.description": {};
+  /** This device is in a different time zone: {zone}. */
+  "client:settings.time_zone.device_differs": { zone: string };
   /** Time zone */
   "client:settings.time_zone.label": {};
   /** UTC{offset} */
   "client:settings.time_zone.offset": { offset: string };
   /** (UTC{offset}) {name} */
   "client:settings.time_zone.option": { name: string; offset: string };
+  /** Use this device's time zone */
+  "client:settings.time_zone.use_device": {};
   /** Timelines show posts in the languages you check. Check none to see every language. */
   "client:settings.timeline_languages.description": {};
   /** Languages of your timelines */

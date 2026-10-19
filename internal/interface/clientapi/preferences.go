@@ -26,7 +26,7 @@ func newPreferences(p appidentity.UserPreferences) Preferences {
 		langs = []string{}
 	}
 	return Preferences{
-		Locale: p.Locale, TimeZone: p.TimeZone, DefaultVisibility: Visibility(p.DefaultVisibility),
+		Locale: p.Locale, TimeZone: p.TimeZone, TimeZoneChosen: p.TimeZoneChosen, DefaultVisibility: Visibility(p.DefaultVisibility),
 		DefaultPostLanguage: p.DefaultPostLanguage, RequireMediaDescription: p.RequireMediaDescription,
 		EmailModeratorNotifications: p.EmailModeratorNotifications, TimelineLanguages: langs,
 	}

@@ -3727,6 +3727,10 @@
     "defaultMessage": "[Ḓȧȧŧḗḗş ȧȧƞḓ ŧīḿḗḗş ȧȧřḗḗ şħǿǿẇƞ īƞ ŧħīş ŧīḿḗḗ ẑǿǿƞḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.time_zone.device_differs": {
+    "defaultMessage": "[Ŧħīş ḓḗḗṽīƈḗḗ īş īƞ ȧȧ ḓīƒƒḗḗřḗḗƞŧ ŧīḿḗḗ ẑǿǿƞḗḗ: {zone}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.time_zone.label": {
     "defaultMessage": "[Ŧīḿḗḗ ẑǿǿƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3737,6 +3741,10 @@
   },
   "settings.time_zone.option": {
     "defaultMessage": "[(ŬŦƇ{offset}) {name}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.time_zone.use_device": {
+    "defaultMessage": "[Ŭşḗḗ ŧħīş ḓḗḗṽīƈḗḗ'ş ŧīḿḗḗ ẑǿǿƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.timeline_languages.description": {
