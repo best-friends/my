@@ -1,6 +1,6 @@
 # ADR-0047: CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #553
@@ -112,9 +112,7 @@ E2E:
 
 ## Decision（決定）
 
-> 推奨案（Proposed）。Accepted にするのは決定者だけ。
-
-**B・3・E2 を推奨する。**
+**B・3・E2 を採用する。** 決定者の回答（#556 のレビュー、原文）: 「ADR Accepted」
 
 ### 守るものと防ぐ場所
 
@@ -190,7 +188,7 @@ report（1 ジョブ、if: always()）: blob を集めて playwright merge-repor
 | main（`matrix: pr`、1792 テスト、18.0 分） | 約 19.5 分（ジョブ） | 約 8〜9 分 | 約 7 分 | 約 6 分 |
 | nightly（`matrix: full`、約 4480 テスト） | 約 45〜49 分（推定） | 約 15〜17 分 | 約 11〜12 分 | 約 9〜10 分 |
 
-- 推奨は main が N=4、nightly が N=8。main は同時 20 ジョブを PR と Merge Queue と分け合うので、シャードを増やしすぎない。runner の消費は 1 ジョブのときより、シャードの準備の分だけ 3〜4 割増える（main の N=4 で約 1170 秒が約 1560 秒）。
+- シャードの数は main が N=4、nightly が N=8。main は同時 20 ジョブを PR と Merge Queue と分け合うので、シャードを増やしすぎない。runner の消費は 1 ジョブのときより、シャードの準備の分だけ 3〜4 割増える（main の N=4 で約 1170 秒が約 1560 秒）。
 - シャードの worker 数（いまは 2）を 3 にして速くなるかは、実装のときに測って決める。
 
 ### 見込みの効果
@@ -223,13 +221,13 @@ report（1 ジョブ、if: always()）: blob を集めて playwright merge-repor
   - ADR-0041 の「コンテナの PostgreSQL での契約テストは、main への push と nightly で回す」を、「nightly と、DB に関わるパスを変えた main への push で回す」に置き換える。pgmem の採用と毎 PR の `db-check` は ADR-0041 のまま（`db-check` はスキーマの文脈を変えたときに PR と Merge Queue で回す）。
   - ADR-0046 は置き換えない。CI に脆弱性検査のジョブを持たないことはそのまま。Dependabot の PR は lockfile を変えるので、共有の設定としてすべての文脈を回す（今のまま）。
   - ADR-0015 の Build matrix（linux/arm64 のビルドを毎 PR）のうち、arm64 の**イメージ**のビルドを Docker の文脈を変えた PR と nightly に移す。Go の `CGO_ENABLED=0` のビルドは毎 PR のまま。
-- 後続で必要になる作業（Accepted のあとに Issue にする）
-  - `ci.yml` を入口と文脈ごとの再利用ワークフローに分け、`schema`・`ui-test`・`docker-smoke` を `check` に入れる
-  - Merge Queue の `scope: queue` で PR だけの検査を飛ばし、`web` を静的検査とテストの 2 ジョブに分ける
-  - `main.yml` を作り、main への push で回すものをマージ後の検査とキャッシュの保存だけにする
-  - `web-e2e.yml` をビルド・シャード・レポートに分ける
-  - `nightly.yml` に arm64 のイメージのビルドを移し、`postgres-contract` を DB のパスで絞る
-  - CONTRIBUTING.md・AGENTS.md・`docs/agents/workflow.md` の CI の説明を新しい振り分けに合わせる
+- 後続の作業（#560 と #561 は #559 のあと、#562 は #561 のあと、#563 は #559 と #561 のあと、#564 は最後）
+  - #559: `ci.yml` を入口と文脈ごとの再利用ワークフローに分け、`schema`・`ui-test`・`docker-smoke` を `check` に入れる
+  - #560: Merge Queue の `scope: queue` で PR だけの検査を飛ばし、`web` を静的検査とテストの 2 ジョブに分ける
+  - #561: `main.yml` を作り、main への push で回すものをマージ後の検査とキャッシュの保存だけにする
+  - #562: `web-e2e.yml` をビルド・シャード・レポートに分ける
+  - #563: arm64 のイメージのビルドを Docker の文脈を変えた PR と nightly に移し、`docker-smoke` を PR では Docker の文脈で絞る
+  - #564: CONTRIBUTING.md・AGENTS.md・`docs/agents/workflow.md` の CI の説明を新しい振り分けに合わせる
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
