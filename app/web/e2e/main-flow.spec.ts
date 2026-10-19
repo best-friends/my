@@ -196,8 +196,7 @@ async function findInFeed(page: Page, text: string) {
 test.describe("the main flow", () => {
   test.skip(!ownsServer, "the flow creates users with bin/my, which needs the database of the server e2e/server.ts starts");
 
-  test("sign up, sign in, post, read the timelines, follow, and get notified", async ({ page, secondPage: bobPage }, testInfo) => {
-    test.setTimeout(180_000);
+  test("sign up, sign in, post, read the timelines, follow, and get notified", async ({ page, secondPage: bobPage }, testInfo) => {    test.setTimeout(180_000);
     const run = randomBytes(3).toString("hex");
     const alice = newUser("a");
     const bob = newUser("b");
@@ -331,6 +330,11 @@ test.describe("the main flow", () => {
       await expectToast(page, message("compose.posted"));
 
       await navigate(bobPage, "home");
+      // The stream may deliver the post after the timeline opened: it then waits behind the "1 new post"
+      // button (web-client.md Y7) instead of being in the feed from the first render.
+      const newPosts = bobPage.getByRole("main").getByRole("status").getByRole("button");
+      await expect(articleWith(bobPage, followersOnly).or(newPosts)).toBeVisible();
+      if (await newPosts.isVisible()) await newPosts.click();
       await expect(articleWith(bobPage, followersOnly)).toBeVisible();
       await expectQuality(bobPage);
       await navigate(bobPage, "local");

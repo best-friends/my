@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The layout keeps the one event stream of the app open (web-client.md S10, FR-207) and routes its events
 // to the features that own the cached data: new home entries wait behind the home timeline's "N new
-// posts" button, notifications update the unread badge, and a moderator's notifications of a new report or
+// posts" button (or join its cache while no page shows it), notifications update the unread badge, and a moderator's notifications of a new report or
 // registration read the admin entry's counts again. After a reconnect, all of them read again what the
 // gap may have missed, since the server replays nothing (client-api.md §5).
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,7 @@ export function useLiveUpdates(): void {
     onEvent: (event) => {
       switch (event.type) {
         case "update":
-          receiveHomeStatus(queryClient, event.status);
+          receiveHomeStatus(queryClient, api, event.status);
           break;
         case "notification":
           receiveNotification(queryClient, api, event.notification);
