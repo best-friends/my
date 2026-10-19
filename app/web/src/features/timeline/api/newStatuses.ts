@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The home timeline's new entries that wait for the reader (web-client.md Y7, S10): the streaming API
-// delivers them, and they stay in a Query cache entry of their own until the reader presses "N new
-// posts". The home timeline's pages are never changed by the stream; pressing the button inserts the
-// waiting entries at the top.
+// delivers them, and while a page shows the home timeline they stay in a Query cache entry of their own
+// until the reader presses "N new posts", which inserts them at the top. While no page shows it, nobody
+// is reading it: the stream inserts them into its cached pages at once, so that the timeline shows them
+// from the moment it opens again (a timeline loaded less than `staleTime` ago that no write marked
+// stale is not fetched again on opening).
 //
 // When the waiting entries may not join the loaded ones (a reconnect found a whole page of news, or more
 // arrived than are kept), there is a gap; pressing the button then loads the first page again instead,
@@ -66,9 +68,50 @@ function addWaiting(queryClient: QueryClient, statuses: readonly Status[], gap: 
   });
 }
 
-/** A new home entry from the stream: it waits for the reader. */
-export function receiveHomeStatus(queryClient: QueryClient, status: Status): void {
-  addWaiting(queryClient, [status], false);
+/**
+ * Inserts the waiting entries that join the loaded ones at the top of the cached home timeline, and
+ * clears them. After a gap it changes nothing and returns false: only loading the first page again closes it.
+ */
+function insertWaiting(queryClient: QueryClient, api: Api): boolean {
+  const waitingKey = newHomeStatusesQueryOptions().queryKey;
+  const waiting = queryClient.getQueryData(waitingKey);
+  if (waiting === undefined) return true;
+  if (waiting.gap) return false;
+  queryClient.setQueryData(waitingKey, { statuses: [], gap: false });
+  queryClient.setQueryData(timelineQueryOptions(api, { kind: "home" }).queryKey, (data) => {
+    if (data === undefined) return data;
+    const fresh = unseenStatuses(waiting, data.pages.flatMap((page) => page.items));
+    const [first, ...rest] = data.pages;
+    if (first === undefined || fresh.length === 0) return data;
+    return { ...data, pages: [{ ...first, items: [...fresh, ...first.items] }, ...rest] };
+  });
+  return true;
+}
+
+/** Whether a page shows the home timeline now: its query has observers (the timeline's components). */
+function homeShown(queryClient: QueryClient, api: Api): boolean {
+  const query = queryClient.getQueryCache().find({ queryKey: timelineQueryOptions(api, { kind: "home" }).queryKey, exact: true });
+  return (query?.getObserversCount() ?? 0) > 0;
+}
+
+/** New entries wait for the reader while a page shows the timeline, and join its cache otherwise. */
+function receive(queryClient: QueryClient, api: Api, statuses: readonly Status[], gap: boolean): void {
+  if (statuses.length > 0 || gap) addWaiting(queryClient, statuses, gap);
+  joinWaitingHomeStatuses(queryClient, api);
+}
+
+/**
+ * Inserts the waiting entries into the cached home timeline unless a page shows it. The home route's loader
+ * calls it too, so that entries that arrived while the timeline was shown, but were not shown when the reader
+ * left it, are on it when it opens again.
+ */
+export function joinWaitingHomeStatuses(queryClient: QueryClient, api: Api): void {
+  if (!homeShown(queryClient, api)) insertWaiting(queryClient, api);
+}
+
+/** A new home entry from the stream. */
+export function receiveHomeStatus(queryClient: QueryClient, api: Api, status: Status): void {
+  receive(queryClient, api, [status], false);
 }
 
 /**
@@ -87,7 +130,7 @@ export async function catchUpHome(queryClient: QueryClient, api: Api): Promise<v
   const oldest = page.items.at(-1)?.id;
   // A full page of news with more behind it may not reach the loaded entries.
   const gap = page.next_cursor !== undefined && oldest !== undefined && (top === undefined || oldest > top);
-  if (fresh.length > 0 || gap) addWaiting(queryClient, fresh, gap);
+  receive(queryClient, api, fresh, gap);
 }
 
 /**
@@ -96,21 +139,9 @@ export async function catchUpHome(queryClient: QueryClient, api: Api): Promise<v
  * the timeline shows them; rejects when loading the first page again failed.
  */
 export async function showNewHomeStatuses(queryClient: QueryClient, api: Api): Promise<void> {
-  const waitingKey = newHomeStatusesQueryOptions().queryKey;
+  if (insertWaiting(queryClient, api)) return;
   const homeKey = timelineQueryOptions(api, { kind: "home" }).queryKey;
-  const waiting = queryClient.getQueryData(waitingKey);
-  if (waiting === undefined) return;
-  queryClient.setQueryData(waitingKey, { statuses: [], gap: false });
-  if (waiting.gap) {
-    queryClient.setQueryData(homeKey, (data) => data && { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) });
-    await queryClient.refetchQueries({ queryKey: homeKey, exact: true }, { throwOnError: true });
-    return;
-  }
-  queryClient.setQueryData(homeKey, (data) => {
-    if (data === undefined) return data;
-    const fresh = unseenStatuses(waiting, data.pages.flatMap((page) => page.items));
-    const [first, ...rest] = data.pages;
-    if (first === undefined || fresh.length === 0) return data;
-    return { ...data, pages: [{ ...first, items: [...fresh, ...first.items] }, ...rest] };
-  });
+  queryClient.setQueryData(newHomeStatusesQueryOptions().queryKey, { statuses: [], gap: false });
+  queryClient.setQueryData(homeKey, (data) => data && { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) });
+  await queryClient.refetchQueries({ queryKey: homeKey, exact: true }, { throwOnError: true });
 }

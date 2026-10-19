@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips the smoke test."
         type: string
         default: pr
       check:
@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips the smoke test."
         type: choice
         options: [pr, queue]
         default: pr
@@ -50,7 +50,9 @@ jobs:
   docker-smoke:
     # Build the images and run deploy/docker/compose.yaml end to end: schema apply, server start, admin creation,
     # then WebFinger, Actor, and NodeInfo (scripts/docker-smoke.sh dumps the logs on failure and always tears down).
-    if: inputs.smoke
+    # The merge queue skips it: a change that breaks the images is stopped on its pull request, and the rare break
+    # from stacking two of them is found after the merge (ADR-0047).
+    if: inputs.smoke && inputs.scope == 'pr'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

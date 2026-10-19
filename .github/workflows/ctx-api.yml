@@ -8,13 +8,13 @@ on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests, `queue` in the merge queue. Every job runs in both scopes."
         type: string
         default: pr
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests, `queue` in the merge queue. Every job runs in both scopes."
         type: choice
         options: [pr, queue]
         default: pr

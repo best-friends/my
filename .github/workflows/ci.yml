@@ -114,11 +114,13 @@ jobs:
 
   docker:
     # docker-check on a change to the docker context. The images hold everything but the docs, so a change to the
-    # go, web, i18n, or docker context runs the Docker smoke test.
+    # go, web, i18n, or docker context runs the Docker smoke test. The merge queue skips the smoke test
+    # (ctx-docker.yml), so there the job runs only for docker-check.
     needs: changes
     if: >-
+      needs.changes.outputs.docker == 'true' || (needs.changes.outputs.scope == 'pr' && (
       needs.changes.outputs.go == 'true' || needs.changes.outputs.web == 'true' ||
-      needs.changes.outputs.i18n == 'true' || needs.changes.outputs.docker == 'true'
+      needs.changes.outputs.i18n == 'true'))
     uses: ./.github/workflows/ctx-docker.yml
     with:
       scope: ${{ needs.changes.outputs.scope }}
@@ -126,8 +128,9 @@ jobs:
       smoke: true
 
   shell:
+    # shellcheck is a pull request check only (ctx-shell.yml); the merge queue does not call the workflow at all.
     needs: changes
-    if: needs.changes.outputs.shell == 'true'
+    if: needs.changes.outputs.shell == 'true' && needs.changes.outputs.scope == 'pr'
     uses: ./.github/workflows/ctx-shell.yml
     with:
       scope: ${{ needs.changes.outputs.scope }}

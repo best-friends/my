@@ -1,14 +1,14 @@
 name: "Context: web"
 
 # The client contexts of `make check` (scripts/changed-contexts.sh): ui (make ui-check and the @my/ui story tests)
-# and web (make web-check). Called by ci.yml when a pull request or a merge group touches either context, with the
-# inputs `ui` and `web` selecting the jobs, and runnable by hand (ADR-0047).
+# and web (make web-check, split into the static checks and Vitest). Called by ci.yml when a pull request or a merge
+# group touches either context, with the inputs `ui` and `web` selecting the jobs, and runnable by hand (ADR-0047).
 
 on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips ui-test and the web checks decided file by file (licenses, tokens, Playwright image, 100vh)."
         type: string
         default: pr
       ui:
@@ -16,13 +16,13 @@ on:
         type: boolean
         default: true
       web:
-        description: Run the web context (web-check).
+        description: Run the web context (web-check, as the jobs web and web-test).
         type: boolean
         default: true
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips ui-test and the web checks decided file by file (licenses, tokens, Playwright image, 100vh)."
         type: choice
         options: [pr, queue]
         default: pr
@@ -31,7 +31,7 @@ on:
         type: boolean
         default: true
       web:
-        description: Run the web context (web-check).
+        description: Run the web context (web-check, as the jobs web and web-test).
         type: boolean
         default: true
 
@@ -61,6 +61,7 @@ jobs:
         run: make ui-check
 
   web:
+    # make web-check without web-test (the web-test job): tsc, ESLint, knip, the Vite build, and the route tree.
     if: inputs.web
     runs-on: ubuntu-latest
     steps:
@@ -78,10 +79,39 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
-      - name: make web-check
-        run: make web-check
+      - name: make web-check (static checks, except the ones decided file by file)
+        run: make web-typecheck web-lint-code web-dist web-routes-check
+      # Decided file by file or by the lockfile alone, so two stacked pull requests cannot break them and the merge
+      # queue skips them (ADR-0047).
+      - name: make web-check (licenses, tokens, Playwright image, 100vh)
+        if: inputs.scope == 'pr'
+        run: make web-lint-css web-licenses web-tokens playwright-image-check
+
+  web-test:
+    # The Vitest half of make web-check, in a job of its own so that it runs beside the static checks (ADR-0047).
+    if: inputs.web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      # Vitest runs on Node.js; Bun only installs packages and runs scripts (ADR-0025).
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .tool-versions
+      - name: make web-test
+        run: make web-test
 
   ui-test:
-    # The @my/ui story tests (ui-test.yml), which main.yml also runs on its own.
-    if: inputs.ui
+    # The @my/ui story tests (ui-test.yml), which main.yml also runs after the merge. The merge queue skips them: a
+    # pull request that changes a screenshot fixes its baselines itself, and a change from stacking two of them is
+    # rare enough to find after the merge (ADR-0047).
+    if: inputs.ui && inputs.scope == 'pr'
     uses: ./.github/workflows/ui-test.yml
