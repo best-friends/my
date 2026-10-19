@@ -291,6 +291,55 @@ func (l *Localizer) ServerAuthFormExpired() string {
 	return l.format("server:auth.form_expired", nil)
 }
 
+// ServerAuthHumanCheckFailed formats "server:auth.human_check.failed". Error (HTTP 422) on the sign-in and registration forms when the CAPTCHA check was missing, invalid, or expired.
+//
+//	en: Complete the check that you are not a bot, then try again.
+func (l *Localizer) ServerAuthHumanCheckFailed() string {
+	return l.format("server:auth.human_check.failed", nil)
+}
+
+// ServerAuthHumanCheckNoscript formats "server:auth.human_check.noscript". Shown on the sign-in and registration forms when the browser runs no JavaScript, which the CAPTCHA widget needs.
+//
+//	en: This page checks that you are not a bot, which needs JavaScript. Turn on JavaScript to continue.
+func (l *Localizer) ServerAuthHumanCheckNoscript() string {
+	return l.format("server:auth.human_check.noscript", nil)
+}
+
+// ServerAuthHumanCheckNotice formats "server:auth.human_check.notice". Notice next to the CAPTCHA widget on the sign-in and registration forms, followed by links to the service's privacy policy. {service} is the service's name, such as Cloudflare Turnstile or hCaptcha.
+//
+//	en: This page uses {service} to check that you are not a bot. {service} receives your IP address and information about your browser.
+func (l *Localizer) ServerAuthHumanCheckNotice(service string) string {
+	return l.format("server:auth.human_check.notice", map[string]any{"service": service})
+}
+
+// ServerAuthHumanCheckNoticeRecaptcha formats "server:auth.human_check.notice_recaptcha". Notice next to the reCAPTCHA widget on the sign-in and registration forms, followed by links to Google's privacy policy and terms. Keep the names reCAPTCHA and Google: Google asks sites to show this statement.
+//
+//	en: This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply. Google receives your IP address and information about your browser.
+func (l *Localizer) ServerAuthHumanCheckNoticeRecaptcha() string {
+	return l.format("server:auth.human_check.notice_recaptcha", nil)
+}
+
+// ServerAuthHumanCheckPrivacyLink formats "server:auth.human_check.privacy_link". Link next to the CAPTCHA widget to the privacy policy of the company that runs the service. {owner} is a name such as Cloudflare, hCaptcha, or Google.
+//
+//	en: {owner} Privacy Policy
+func (l *Localizer) ServerAuthHumanCheckPrivacyLink(owner string) string {
+	return l.format("server:auth.human_check.privacy_link", map[string]any{"owner": owner})
+}
+
+// ServerAuthHumanCheckTermsLink formats "server:auth.human_check.terms_link". Link next to the CAPTCHA widget to the terms of the company that runs the service. {owner} is a name such as hCaptcha or Google.
+//
+//	en: {owner} Terms of Service
+func (l *Localizer) ServerAuthHumanCheckTermsLink(owner string) string {
+	return l.format("server:auth.human_check.terms_link", map[string]any{"owner": owner})
+}
+
+// ServerAuthHumanCheckUnavailable formats "server:auth.human_check.unavailable". Error (HTTP 503) on the registration form when the CAPTCHA service cannot be reached; the account is not created.
+//
+//	en: The check that you are not a bot is not available right now. Try again later.
+func (l *Localizer) ServerAuthHumanCheckUnavailable() string {
+	return l.format("server:auth.human_check.unavailable", nil)
+}
+
 // ServerAuthSignInEmailLabel formats "server:auth.sign_in.email_label". Label of the email address field on the sign-in form.
 //
 //	en: Email address

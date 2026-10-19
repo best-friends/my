@@ -37,7 +37,7 @@
 {{with .Errors.reason}}<p id="sign-up-reason-error" class="field-error">{{.}}</p>{{end}}
 <textarea id="sign-up-reason" name="reason" rows="4" maxlength="{{.ReasonMax}}" dir="auto" aria-describedby="sign-up-reason-hint{{if .Errors.reason}} sign-up-reason-error{{end}}"{{if .Errors.reason}} aria-invalid="true"{{end}}>{{.Reason}}</textarea>
 </div>{{end}}
-{{with $.Documents}}<div class="agreement">
+{{template "human_check" $}}{{with $.Documents}}<div class="agreement">
 <p id="sign-up-agreement">{{$.L.ServerAuthSignUpAgreement}}</p>
 <ul class="links">
 {{range .}}<li><a href="{{.Path}}">{{.Title}}</a></li>

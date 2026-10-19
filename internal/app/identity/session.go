@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/best-friends/my/internal/app/account"
@@ -67,6 +68,9 @@ type SignInInput struct {
 	// CurrentToken is the session token the browser already holds, if any. Signing in revokes
 	// it, so that the browser holds exactly the new session.
 	CurrentToken string
+	// HumanCheckToken is the token that the CAPTCHA widget put into the form; it is checked
+	// only when Deps.HumanVerifier is set.
+	HumanCheckToken string
 }
 
 // SignedIn is the result of SignIn.
@@ -82,6 +86,13 @@ type SignedIn struct {
 // It fails with ErrInvalidCredentials for an unknown address, a wrong password, or a user whose
 // local account is not active (data-model §5.1), after the same amount of password hashing, and with a *kernel.RateLimitedError when too
 // many attempts failed from the client's IP address or for the email address (ADR-0019 §5).
+//
+// With a HumanVerifier, the CAPTCHA token is checked after the rate limits and before the
+// password (ADR-0042 §3). A token that fails the check fails the sign-in with an error wrapping
+// kernel.ErrHumanCheckFailed and counts as a failure of the client's IP address only, so that
+// nobody can lock another person's account with bad tokens. When the service cannot check the
+// token (kernel.ErrHumanCheckUnavailable), the sign-in goes on without the check (fail open,
+// ADR-0042 §4), so that an outage of the service or a wrong key does not lock everyone out.
 func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) {
 	if s.d.RateLimiter == nil {
 		return SignedIn{}, errors.New("identity: SignIn needs a RateLimiter")
@@ -91,6 +102,17 @@ func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) 
 	accountKey := truncate(identity.NormalizeEmail(in.Email), identity.MaxEmailLength)
 	if err := s.checkLoginLimits(ctx, ipKey, accountKey); err != nil {
 		return SignedIn{}, err
+	}
+	switch err := s.checkHuman(ctx, in.HumanCheckToken, kernel.HumanCheckActionSignIn); {
+	case errors.Is(err, kernel.ErrHumanCheckFailed):
+		if ipKey != "" {
+			if rerr := s.d.RateLimiter.Record(ctx, LoginIPLimit, ipKey); rerr != nil {
+				return SignedIn{}, rerr
+			}
+		}
+		return SignedIn{}, err
+	case err != nil:
+		s.logger().WarnContext(ctx, "the CAPTCHA service could not check a sign-in; letting it through", slog.Any("error", err))
 	}
 	cred, err := s.verifyPassword(ctx, accountKey, in.Password)
 	if err == nil {
@@ -222,6 +244,27 @@ func (s *Service) checkLoginLimits(ctx context.Context, ipKey, accountKey string
 		return &kernel.RateLimitedError{RetryAfter: wait}
 	}
 	return nil
+}
+
+// checkHuman checks the CAPTCHA token of action with the HumanVerifier, and nothing without
+// one. It returns nil, an error wrapping kernel.ErrHumanCheckFailed, or an error wrapping
+// kernel.ErrHumanCheckUnavailable: any other error of the verifier counts as the latter.
+func (s *Service) checkHuman(ctx context.Context, token, action string) error {
+	if s.d.HumanVerifier == nil {
+		return nil
+	}
+	err := s.d.HumanVerifier.Verify(ctx, token, action)
+	if err == nil || errors.Is(err, kernel.ErrHumanCheckFailed) || errors.Is(err, kernel.ErrHumanCheckUnavailable) {
+		return err
+	}
+	return fmt.Errorf("%w: %w", kernel.ErrHumanCheckUnavailable, err)
+}
+
+func (s *Service) logger() *slog.Logger {
+	if s.d.Logger != nil {
+		return s.d.Logger
+	}
+	return slog.Default()
 }
 
 func (s *Service) recordLoginFailure(ctx context.Context, ipKey, accountKey string) error {
