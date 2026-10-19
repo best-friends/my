@@ -11,7 +11,8 @@
 // The policy passes the HTML through unchanged. That is safe only because every HTML it receives comes
 // out of the server's sanitizer (the allowlist in the Go server); HTML from anywhere else, such as the
 // remote posts that federation brings (M3), must go through the same sanitizer on the server first.
-import type { ComponentPropsWithRef } from "react";
+import type { ComponentPropsWithRef, RefCallback } from "react";
+import { mergeRefs } from "react-aria";
 import { tv } from "tailwind-variants";
 
 declare const sanitizedHtmlBrand: unique symbol;
@@ -74,13 +75,51 @@ export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "
   html: SanitizedHtml;
   /** The language of the post, when the server knows it (a BCP 47 tag). */
   lang?: string | undefined;
+  /**
+   * Called when a link in the body is followed in the same tab: a primary click, or Enter on the
+   * focused link, without a modifier key, on a link that has no `target` or `download`. Calling
+   * `event.preventDefault()` keeps the browser from following it, so the app can open the link itself.
+   * Opening a link in a new tab or window stays the browser's.
+   */
+  onLinkClick?: ((event: MouseEvent, link: HTMLAnchorElement) => void) | undefined;
 };
+
+/**
+ * Listens for the clicks on the links of the body. The links are in HTML that React does not render,
+ * so the listener goes on the element itself; React removes it with the element or for a new handler.
+ */
+function linkClickListener(onLinkClick: PostContentProps["onLinkClick"]): RefCallback<HTMLDivElement> | undefined {
+  if (onLinkClick === undefined) return undefined;
+  return (element) => {
+    if (element === null) return;
+    const listener = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+      if (!(link instanceof HTMLAnchorElement) || !element.contains(link) || link.target !== "" || link.hasAttribute("download")) return;
+      onLinkClick(event, link);
+    };
+    element.addEventListener("click", listener);
+    return () => {
+      element.removeEventListener("click", listener);
+    };
+  };
+}
 
 /**
  * The body of a post: server-sanitized HTML in a block whose direction follows its own text (`dir="auto"`)
  * and whose `lang` is the post's language when known (web-client.md Y10). Give it an `id` to describe a
- * PostCard by it.
+ * PostCard by it, and `onLinkClick` to open the links of the body itself (the app opens the links to its
+ * own pages through its router).
  */
-export function PostContent({ html, lang, className, ...props }: PostContentProps) {
-  return <div {...props} dir="auto" lang={lang} className={postContent({ className })} dangerouslySetInnerHTML={{ __html: trustedHtml(html) }} />;
+export function PostContent({ html, lang, onLinkClick, className, ref, ...props }: PostContentProps) {
+  return (
+    <div
+      {...props}
+      ref={mergeRefs(ref, linkClickListener(onLinkClick))}
+      dir="auto"
+      lang={lang}
+      className={postContent({ className })}
+      dangerouslySetInnerHTML={{ __html: trustedHtml(html) }}
+    />
+  );
 }

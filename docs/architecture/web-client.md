@@ -235,6 +235,10 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - プロフィールのアドレスはサーバーの外枠と同じ `/@username`（リモートのアカウントは `/@username@domain`）で、ルートは接頭辞付きのパラメータ（`routes/@{$acct}.tsx`）にする。
     パラメータの `@` を `%40` にしないように、ルーターは `pathParamsAllowedCharacters: ["@"]` にする。複数の機能が指す画面のアドレスは `lib/paths.ts` で作る。
 - **リンク**: 画面の間のリンクは `@my/ui` の `Link` に `href` を渡す。React Aria の `RouterProvider` が同じオリジンの `href` をルーターの遷移に変える。`#id` の `href`（本文へ移動するリンク）は、その要素にフォーカスを移す。
+  投稿の本文とプロフィール（`PostContent`）の中のリンクは、サーバーが描画した HTML のもので、自インスタンスのページも `https://{host}/...`（ADR-0018。連合でも同じ HTML を配る）を指す。
+  これを同じタブで開くと（修飾キーのない左クリックか Enter）、`PostContent` の `onLinkClick` に渡した `lib/contentLinks.ts` の `useContentLinkClick()` が、
+  ホストが `apiOrigin` のホストと同じ（スキームは問わない）プロフィール・投稿・ハッシュタグのリンク（`/@{acct}`・`/@{acct}/{id}`・`/tags/{tag}`）をルーターの遷移に変える。
+  そのため平文 HTTP のローカルの構成（`apiOrigin` が `http://localhost:8080`）でも、TLS のない `https://` に移らずに該当の画面が開く。ほかのリンクと、新しいタブやウィンドウで開くことはブラウザに任せる。
 - **レイアウト**（`routes/-layout/AppLayout.tsx`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` から投稿フォームとサーバーについての 3 列目を出す。
   `xl` 未満では、投稿フォームはタブバーの上（`md` からは画面の隅）に浮かぶボタンから開くシートになる（§12）。どちらにするかは外枠が `matchMedia` で決め（`useMediaQuery`）、ページに置くフォームは常に 1 つにする。
   浮かぶボタンは、ルートの静的なデータ（TanStack Router の `staticData`、`composeButton: true`）を持つ画面（タイムラインとプロフィール）にだけ出す（G4）。外枠は今のマッチ（`useMatches`）からそれを読む。

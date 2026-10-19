@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A post's page and the actions on posts through the whole app (web-client.md T4): the real router and
 // QueryClient, MSW for the client API. Time is fixed so that relative times are known.
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { findLoadingRegion } from "../../test/loading";
@@ -132,6 +132,29 @@ describe("a post's page", () => {
     expect(scrolled).toHaveBeenCalled();
     expect(scrolled.mock.contexts.every((element) => element === article)).toBe(true);
     expect(heading).toHaveFocus();
+  });
+
+  // The server links them under https://{host}/ (ADR-0018) while the app runs at http://localhost:3000,
+  // as on the local plain-HTTP setup; the link to another server is left to the browser.
+  test.each([
+    ["#cats", "/tags/cats"],
+    ["@alice", "/@alice"],
+    ["@carol", "/local"],
+  ])("opens the link %s of its body at %s, whatever the link's scheme", async (name, path) => {
+    const linked: Status = {
+      ...post,
+      content:
+        '<p><a href="https://localhost:3000/@alice">@alice</a> <a href="https://localhost:3000/tags/cats">#cats</a> <a href="https://remote.example/@carol">@carol</a></p>',
+    };
+    serveThread(linked);
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([linked]))));
+    const { user, router } = await renderApp({ path: "/local" });
+
+    const feed = await screen.findByRole("feed", { name: "Local timeline" });
+    await user.click(within(feed).getByRole("link", { name }));
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(path);
+    });
   });
 
   test("does not scroll a post that replies to nothing", async () => {

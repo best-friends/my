@@ -251,6 +251,35 @@ func TestHomeTimelineRendersPostsAndBoosts(t *testing.T) {
 	}
 }
 
+// TestLinksUseTheOrigin checks that the links to the instance's own pages follow Options.Origin
+// (plain HTTP on the local Docker setup) while the ActivityPub ids stay under https://Host.
+func TestLinksUseTheOrigin(t *testing.T) {
+	te := newTimelineEnv(t)
+	timelines, views := te.timelines, te.views
+	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
+		o.Origin = "http://social.example"
+		o.Timelines, o.TimelineReader = timelines, views
+		o.Accounts.(fakeAccounts)[bobAccountID] = bobActor
+	})
+	page := decodePage(t, te.get(t, "/timelines/home", map[string]string{"Authorization": "Bearer read"}))
+	if len(page.Items) != 2 {
+		t.Fatalf("items = %+v, want the boost and the post", page.Items)
+	}
+	post := page.Items[1]
+	if deref(post.Url) != "http://social.example/@alice/"+postID || post.Uri != "https://social.example/ap/statuses/"+postID {
+		t.Errorf("post url, uri = %q, %q", deref(post.Url), post.Uri)
+	}
+	if post.Account.Url != "http://social.example/@alice" || post.Account.Uri != aliceActor.Account.URI {
+		t.Errorf("account url, uri = %q, %q", post.Account.Url, post.Account.Uri)
+	}
+	if got := post.Mentions; len(got) != 1 || got[0].Url != "http://social.example/@bob" {
+		t.Errorf("mentions = %+v", got)
+	}
+	if got := post.Tags; len(got) != 1 || got[0].Url != "http://social.example/tags/cats" {
+		t.Errorf("tags = %+v", got)
+	}
+}
+
 func equalCall(a, b timelineCall) bool {
 	return a.timeline == b.timeline && a.viewer == b.viewer && a.arg == b.arg && a.filter == b.filter &&
 		a.query.Before == b.query.Before && a.query.Limit == b.query.Limit && slices.Equal(a.query.Languages, b.query.Languages)

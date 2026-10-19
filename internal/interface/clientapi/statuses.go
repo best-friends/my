@@ -214,7 +214,12 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 		FavouritesCount: int(v.Counters.FavouritesCount),
 	}
 	if st.URL != "" {
-		out.Url = &st.URL
+		// A local status's stored url is under https://Host, like its ActivityPub id.
+		u := st.URL
+		if st.IsLocal {
+			u = s.pageURL(u)
+		}
+		out.Url = &u
 	}
 	if len(rev.Bodies) > 0 {
 		out.Content = rev.Bodies[0].ContentHTML
@@ -234,7 +239,7 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 		out.Mentions = append(out.Mentions, StatusMention{Id: a.Id, Username: a.Username, Acct: a.Acct, Url: a.Url})
 	}
 	for _, t := range v.Tags {
-		out.Tags = append(out.Tags, StatusTag{Name: t.Name, Url: "https://" + s.o.Host + "/tags/" + url.PathEscape(t.NameNormalized)})
+		out.Tags = append(out.Tags, StatusTag{Name: t.Name, Url: s.origin() + "/tags/" + url.PathEscape(t.NameNormalized)})
 	}
 	if r := v.Relation; r != nil {
 		out.Favourited, out.Boosted, out.Bookmarked = &r.Favourited, &r.Boosted, &r.Bookmarked
