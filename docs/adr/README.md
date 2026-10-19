@@ -52,5 +52,6 @@
 | [0038](0038-moderation-personal-data-retention.md) | モデレーションに関わる個人データの保持期間と開示の範囲 | Accepted |
 | [0039](0039-mobile-navigation-and-compose-entry.md) | モバイルのナビゲーションの項目と投稿の入口 | Accepted |
 | [0040](0040-e2e-on-main-only.md) | Web の E2E を main への push でだけ回す | Accepted |
-| [0042](0042-captcha-human-verifier.md) | サインインと登録のボット対策に CAPTCHA を設定で使えるようにする | Proposed |
+| [0041](0041-postgres-tests-on-pgmem.md) | PostgreSQL のテストを pgmem で動かす | Accepted |
+| [0042](0042-captcha-human-verifier.md) | サインインと登録のボット対策に CAPTCHA を設定で使えるようにする | Accepted |
 <!-- adr-index:end -->

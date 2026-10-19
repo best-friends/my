@@ -125,11 +125,9 @@ jobs:
   go-test:
     needs: changes
     if: needs.changes.outputs.go == 'true'
+    # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); the postgres-contract
+    # job runs them on a real postgres container on pushes to main.
     runs-on: ubuntu-latest
-    env:
-      # The PostgreSQL adapter tests start postgres with testcontainers-go on the runner's Docker.
-      # Make them fail instead of skipping when that is impossible, so CI always runs them.
-      TEST_POSTGRES_REQUIRED: "1"
     steps:
       - uses: actions/checkout@v5
       # The same cache as the go job's, of the test builds and results.
@@ -309,6 +307,12 @@ jobs:
         run: make db-up
       - name: Apply the schema to an empty database and check for drift
         run: make db-check
+
+  postgres-contract:
+    # The PostgreSQL tests on a real postgres container instead of pgmem, on pushes to main only; nightly.yml runs
+    # them too (ADR-0041).
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/postgres-contract.yml
 
   web-e2e:
     # Playwright E2E of the web client over the subset of the width × locale matrix, on pushes to main only;
