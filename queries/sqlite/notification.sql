@@ -81,3 +81,16 @@ DELETE FROM notification_exclusions WHERE viewer_account_id = ? AND target_accou
 -- name: InsertNotificationDeletedStatus :exec
 INSERT INTO notification_deleted_statuses (status_id) VALUES (?)
 ON CONFLICT (status_id) DO NOTHING;
+
+-- Rebuilding the projections (data-model section 9).
+
+-- name: DeleteAllNotificationExclusions :exec
+DELETE FROM notification_exclusions;
+
+-- name: DeleteAllNotificationDeletedStatuses :exec
+DELETE FROM notification_deleted_statuses;
+
+-- ListNotifiedStatusIDs returns every status that a notification, dismissed or not, is about,
+-- in order.
+-- name: ListNotifiedStatusIDs :many
+SELECT DISTINCT status_id FROM notifications WHERE status_id IS NOT NULL ORDER BY status_id;

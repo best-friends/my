@@ -62,6 +62,14 @@ type Repository interface {
 	DeleteAllLifecycleStates(ctx context.Context, tx uow.Tx) error
 	// UpsertRemoteHead points a remote actor's head at its newest snapshot.
 	UpsertRemoteHead(ctx context.Context, tx uow.Tx, h account.RemoteHead) error
+	DeleteAllRemoteHeads(ctx context.Context, tx uow.Tx) error
+	// ListRemoteHeads returns every remote actor's head, ordered by account ID, for keeping
+	// their fetch state across a rebuild.
+	ListRemoteHeads(ctx context.Context, tx uow.Tx) ([]account.RemoteHead, error)
+	// ListLatestRemoteSnapshotHeads returns, for every remote actor with a snapshot, the head
+	// that its newest snapshot makes, last fetched when the snapshot was and with no failures,
+	// ordered by account ID.
+	ListLatestRemoteSnapshotHeads(ctx context.Context, tx uow.Tx) ([]account.RemoteHead, error)
 
 	// Projection sources, in a stable order, for rebuilding the projections.
 

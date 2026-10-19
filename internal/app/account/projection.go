@@ -125,7 +125,10 @@ func localHandle(la account.LocalAccount) account.Handle {
 }
 
 // RebuildProjections empties the account module's projections and derives them again from
-// their sources (data-model §9), in one transaction per projection.
+// their sources (data-model §9), in one transaction per projection. remote_account_heads
+// points each remote actor at its newest snapshot; the fetch state of the periodic refresh
+// (LastFetchedAt, ConsecutiveFetchFailures) has no events, so an actor's head keeps it, and an
+// actor without a head gets the snapshot's fetch time and no failures.
 func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) error {
 	steps := []struct {
 		name string
@@ -134,6 +137,7 @@ func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) 
 		{"account_handles", func(tx uow.Tx) error { return rebuildHandles(ctx, tx, repo) }},
 		{"account_profile_heads", func(tx uow.Tx) error { return rebuildProfileHeads(ctx, tx, repo) }},
 		{"account_lifecycle_states", func(tx uow.Tx) error { return rebuildLifecycleStates(ctx, tx, repo) }},
+		{"remote_account_heads", func(tx uow.Tx) error { return rebuildRemoteHeads(ctx, tx, repo) }},
 	}
 	for _, s := range steps {
 		if err := u.Tx(ctx, s.fn); err != nil {
@@ -162,6 +166,33 @@ func rebuildHandles(ctx context.Context, tx uow.Tx, repo Repository) error {
 	}
 	for _, v := range checks {
 		if err := applyHandleCheck(ctx, tx, repo, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func rebuildRemoteHeads(ctx context.Context, tx uow.Tx, repo Repository) error {
+	current, err := repo.ListRemoteHeads(ctx, tx)
+	if err != nil {
+		return err
+	}
+	fetchState := make(map[string]account.RemoteHead, len(current))
+	for _, h := range current {
+		fetchState[h.AccountID] = h
+	}
+	heads, err := repo.ListLatestRemoteSnapshotHeads(ctx, tx)
+	if err != nil {
+		return err
+	}
+	if err := repo.DeleteAllRemoteHeads(ctx, tx); err != nil {
+		return err
+	}
+	for _, h := range heads {
+		if cur, ok := fetchState[h.AccountID]; ok {
+			h.LastFetchedAt, h.ConsecutiveFetchFailures = cur.LastFetchedAt, cur.ConsecutiveFetchFailures
+		}
+		if err := repo.UpsertRemoteHead(ctx, tx, h); err != nil {
 			return err
 		}
 	}

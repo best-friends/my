@@ -222,6 +222,18 @@ linters:
             - github.com/best-friends/my/internal/app/queue
             - github.com/best-friends/my/internal/app/kernel
             - github.com/best-friends/my/internal/app/uow
+        # app/projection rebuilds and verifies the projections (data-model §9) through rebuild
+        # functions that the composition root takes from the modules; it owns no tables and
+        # depends only on uow and queue.
+        app-projection:
+          list-mode: strict
+          files:
+            - "**/internal/app/projection/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/app/projection
+            - github.com/best-friends/my/internal/app/queue
+            - github.com/best-friends/my/internal/app/uow
         # app/stream holds the ports of the real-time updates (Publisher / Subscriber) and the
         # in-process broker shared by the modules that publish and the streaming endpoint; like
         # uow, it depends on nothing in the repository.
