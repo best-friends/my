@@ -167,3 +167,48 @@ func TestOAuthWebClientFlow(t *testing.T) {
 		t.Errorf("authorize after the sign-out = %d → %q, want the sign-in form", resp.StatusCode, resp.Header.Get("Location"))
 	}
 }
+
+// TestOAuthWebClientPlainHTTPOnLocalhost checks the local setup of deploy/docker (host localhost:8080,
+// web_origin http://localhost:8080): the shell calls the API over plain HTTP, the authorization
+// endpoint answers with that issuer, and the code it returns works at the token endpoint, while the
+// ActivityPub ids stay under https://localhost:8080/.
+func TestOAuthWebClientPlainHTTPOnLocalhost(t *testing.T) {
+	const origin = "http://localhost:8080"
+	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_HOST": "localhost:8080", "MY_WEB_ORIGIN": origin})
+	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
+		_, err := a.Identity.CreateAdmin(t.Context(), identity.CreateAdminInput{
+			Username: "alice", Email: "alice@example.com", Password: "correct horse battery staple",
+		})
+		if err != nil {
+			t.Fatalf("CreateAdmin: %v", err)
+		}
+	})
+	c := &authClient{t: t, s: s, cookies: map[string]string{}}
+	if _, body := c.do(http.MethodGet, "/", nil, map[string]string{"Accept": "text/html"}); !strings.Contains(body, `"apiOrigin":"`+origin+`"`) {
+		t.Errorf("the shell does not call the API at %s:\n%s", origin, body)
+	}
+	redirect := origin + platform.WebClientCallbackPath
+	verifier := strings.Repeat("v", 43)
+	authorize := authpages.PathAuthorize + "?" + url.Values{
+		"response_type": {"code"}, "client_id": {identity.DefaultWebClientID}, "redirect_uri": {redirect},
+		"state": {"s1"}, "code_challenge": {domain.S256Challenge(verifier)}, "code_challenge_method": {"S256"},
+	}.Encode()
+	c.do(http.MethodPost, authpages.PathSignIn, c.form("email", "alice@example.com", "password", "correct horse battery staple",
+		"return_to", authorize), nil)
+	resp, _ := c.do(http.MethodGet, authorize, nil, nil)
+	back, err := url.Parse(resp.Header.Get("Location"))
+	if err != nil || back.Scheme+"://"+back.Host+back.Path != redirect || back.Query().Get("iss") != origin {
+		t.Fatalf("authorize = %d → %q, want the callback with the issuer %s", resp.StatusCode, resp.Header.Get("Location"), origin)
+	}
+	resp, body := c.do(http.MethodPost, oauth.PathToken, url.Values{
+		"grant_type": {"authorization_code"}, "client_id": {identity.DefaultWebClientID}, "code": {back.Query().Get("code")},
+		"redirect_uri": {redirect}, "code_verifier": {verifier},
+	}, nil)
+	if resp.StatusCode != http.StatusOK || c.cookies[oauth.CookieRefreshToken] == "" {
+		t.Fatalf("exchange = %d %s", resp.StatusCode, body)
+	}
+	_, body = c.do(http.MethodGet, "/.well-known/webfinger?resource=acct:alice@localhost:8080", nil, nil)
+	if !strings.Contains(body, `"href":"https://localhost:8080/ap/actors/`) {
+		t.Errorf("WebFinger does not point at an https Actor id: %s", body)
+	}
+}

@@ -363,6 +363,27 @@ func TestSchemaWellFormed(t *testing.T) {
 	}
 }
 
+// TestServerOrigin checks that the server is reached over plain HTTP only when web_origin says so
+// on host, and over HTTPS in every other setup.
+func TestServerOrigin(t *testing.T) {
+	for _, c := range []struct{ host, webOrigin, want string }{
+		{"social.example.org", unset, "https://social.example.org"},
+		{"social.example.org", "https://social.example.org", "https://social.example.org"},
+		{"localhost:8080", "http://localhost:8080", "http://localhost:8080"},
+		// A web client served elsewhere (a development server) says nothing about the server's scheme.
+		{"localhost:8080", "http://localhost:5173", "https://localhost:8080"},
+		{"social.example.org", "http://localhost:5173", "https://social.example.org"},
+	} {
+		cfg, _, err := Load(source(with(minimal(), "MY_HOST", c.host, "MY_WEB_ORIGIN", c.webOrigin), nil))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := cfg.ServerOrigin(); got != c.want {
+			t.Errorf("host %q, web origin %q: ServerOrigin() = %q, want %q", c.host, c.webOrigin, got, c.want)
+		}
+	}
+}
+
 func TestConfigLogValueRedactsSecrets(t *testing.T) {
 	cfg, _, err := Load(source(with(minimal(), "MY_DATABASE_URL", "postgres://user:hunter2@db/my", "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3"), nil))
 	if err != nil {

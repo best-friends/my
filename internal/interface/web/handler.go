@@ -213,6 +213,9 @@ func New(o Options) (*Handler, error) {
 			return nil, err
 		}
 		h.csp = contentSecurityPolicy
+		if strings.HasPrefix(apiOrigin, "https://") {
+			h.csp += upgradeInsecureRequests
+		}
 	}
 
 	h.tags, h.apiOrigin = tags, apiOrigin

@@ -365,7 +365,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// mail = none delivers nothing, so a moderator's approval stands in for verification (FR-002).
 		RequireEmailVerification: cfg.Mail != "none",
 		Messages:                 a.Messages,
-		BaseURL:                  "https://" + cfg.Host,
+		BaseURL:                  cfg.ServerOrigin(),
 	})
 	a.AccountAdmin = identity.NewAccountAdmin(identity.AccountAdminDeps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Accounts: a.Accounts, Restrictions: a.AccountPolicy,
@@ -469,7 +469,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}).Register(a)
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{
-		Identity: a.Identity, OAuth: a.Identity, Issuer: "https://" + cfg.Host, FormActionOrigins: []string{cfg.WebOrigin},
+		Identity: a.Identity, OAuth: a.Identity, Issuer: cfg.ServerOrigin(), FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
 		Moderation: a.Moderation, UserLocales: a.Identity,
 	}).Register(a)
@@ -642,7 +642,7 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 func (a *App) setBlobs(cfg *config.Config) error {
 	switch cfg.Blob {
 	case "fs":
-		store, err := blobfs.New(blobfs.Options{Dir: cfg.BlobFSDir, BaseURL: "https://" + cfg.Host})
+		store, err := blobfs.New(blobfs.Options{Dir: cfg.BlobFSDir, BaseURL: cfg.ServerOrigin()})
 		if err != nil {
 			return err
 		}
@@ -683,7 +683,7 @@ func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*c
 		// The account module's avatars and headers are what the avatars policy keeps.
 		UnitOfWork: a.UnitOfWork, Blobs: a.Blobs, Clock: a.Clock, ProfileImages: a.Accounts,
 		MaxCacheSize: cfg.RemoteMediaCacheMaxBytes,
-		Keys:         keys, BaseURL: "https://" + cfg.Host, Logger: a.Logger,
+		Keys:         keys, BaseURL: cfg.ServerOrigin(), Logger: a.Logger,
 	})
 	if err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -71,6 +72,17 @@ type Config struct {
 	// RemoteStatusMaxRetention bounds how long any remote post is kept, zero for no bound (ADR-0034).
 	RemoteStatusRetention    time.Duration
 	RemoteStatusMaxRetention time.Duration
+}
+
+// ServerOrigin returns the origin at which browsers reach the server itself: its sign-in screens,
+// client API, media and email links. It is web_origin when web_origin is on host, so that
+// http://localhost:8080 runs everything over plain HTTP on localhost, and https://{host} otherwise.
+// ActivityPub ids stay under https://{host}/ whatever it returns (ADR-0018).
+func (c *Config) ServerOrigin() string {
+	if u, err := url.Parse(c.WebOrigin); err == nil && u.Scheme == "http" && strings.EqualFold(u.Host, c.Host) {
+		return "http://" + c.Host
+	}
+	return "https://" + c.Host
 }
 
 // LogValue logs the configuration with its secrets redacted (ADR-0019 §6).

@@ -130,7 +130,7 @@ func runInvite(args []string, stdout, stderr io.Writer) int {
 		var inv identity.Invite
 		inv, err = app.Identity.CreateInvite(ctx, appidentity.CreateInviteInput{MaxUses: maxUses, ExpiresIn: expiresIn})
 		if err == nil {
-			link := "https://" + app.Config.Host + authpages.PathSignUp + "?invite=" + url.QueryEscape(inv.Code)
+			link := app.Config.ServerOrigin() + authpages.PathSignUp + "?invite=" + url.QueryEscape(inv.Code)
 			_, _ = fmt.Fprintf(stdout, "created invite %s (%s, %s)\n%s\n", inv.Code, describeUses(inv.MaxUses), describeExpiry(inv.ExpiresAt), link)
 		}
 	case "list":

@@ -38,6 +38,9 @@ services:
         condition: service_completed_successfully
     environment:
       MY_HOST: ${MY_HOST:?set MY_HOST in .env}
+      # The origin browsers open: http://{MY_HOST} serves sign-in, the client API and media over plain HTTP on
+      # localhost; empty means https://{MY_HOST} behind a TLS-terminating reverse proxy. ActivityPub ids stay https.
+      MY_WEB_ORIGIN: ${MY_WEB_ORIGIN:-}
       MY_ROLE: all
       MY_DB: sqlite
       MY_DATABASE_URL: /data/my.db
