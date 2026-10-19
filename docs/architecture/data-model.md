@@ -336,6 +336,8 @@ flowchart LR
   `time_zone` を指定した設定の変更が行を UPSERT します（`UTC` を選んでも行ができる）。API は `time_zone`（行が無ければ `UTC`）と `time_zone_chosen` を返します。
 - `time_zone` は IANA タイムゾーンデータベースにある名前だけを受け付けます（`Local` や `+09:00` は不可）。サーバーのバイナリはデータベースを埋め込む（Go の `time/tzdata`）ので、検証結果はホストに依存しません。
 - `user_timeline_languages` は 1 回の設定で全体を置き換えます（重複を除き、上限 64 件）。
+- 一部の設定だけの変更（`PATCH /api/v1/preferences`）は、今の値の読み出しと書き込みを 1 つのトランザクションで行い、読み出しで `user_preferences` の行をロックします（PostgreSQL は `SELECT ... FOR UPDATE`、SQLite は書き込みトランザクションが直列）。
+  同時に別々の設定を変えても（Web クライアントが端末のタイムゾーンを保存する間にユーザーがロケールを変える、など）、片方の変更が古い値で上書きされません。
 
 #### データエクスポート
 

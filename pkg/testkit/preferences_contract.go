@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 // PreferencesRepositoryContract verifies the user preferences of a database adapter's identity
 // repository (data-model §4.1) through the identity use cases: the defaults written on
 // registration (with no time zone chosen), replacing preferences and timeline languages with canonical tags, partial
-// updates, rejecting invalid language tags, time zones, and visibilities without writing
+// updates that keep each other's changes when they run at once, rejecting invalid language tags, time zones, and visibilities without writing
 // anything, and reporting users without preferences. It uses the same harness as AccountRepositoryContract.
 func PreferencesRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
@@ -32,6 +33,7 @@ func PreferencesRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"SetsTimelineLanguages", preferencesSetTimelineLanguages},
 		{"RejectsInvalidTimelineLanguages", preferencesRejectTimelineLanguages},
 		{"UpdatesPreferencesPartially", preferencesUpdatePartially},
+		{"KeepsConcurrentPartialUpdates", preferencesUpdateConcurrently},
 		{"ReportsMissingPreferences", preferencesReportMissing},
 	}
 	for _, tc := range cases {
@@ -357,5 +359,33 @@ func preferencesUpdatePartially(t *testing.T, e *accountEnv) {
 
 	if _, err := e.identity.UpdatePreferences(ctx, e.ids.NewID(), appidentity.PreferencesUpdate{}); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("UpdatePreferences(missing) = %v, want ErrNotFound", err)
+	}
+}
+
+// preferencesUpdateConcurrently checks that partial updates of different preferences running at
+// once all stay: a client adopting the device's time zone while the user picks a locale must not
+// write the old locale back.
+func preferencesUpdateConcurrently(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	reg := e.register(t, "alice")
+	locales := []string{"ja", "en"}
+	zones := []string{"Asia/Tokyo", "Europe/Paris"}
+	for i := range 20 {
+		locale, zone := locales[i%2], zones[i%2]
+		var wg sync.WaitGroup
+		errs := make([]error, 2)
+		wg.Go(func() {
+			_, errs[0] = e.identity.UpdatePreferences(ctx, reg.User.ID, appidentity.PreferencesUpdate{Locale: &locale})
+		})
+		wg.Go(func() {
+			_, errs[1] = e.identity.UpdatePreferences(ctx, reg.User.ID, appidentity.PreferencesUpdate{TimeZone: &zone})
+		})
+		wg.Wait()
+		if err := errors.Join(errs...); err != nil {
+			t.Fatalf("round %d: UpdatePreferences = %v", i, err)
+		}
+		if got := e.preferences(t, reg.User.ID); got.Locale != locale || got.TimeZone != zone {
+			t.Fatalf("round %d: preferences have locale %q and time zone %q, want %q and %q", i, got.Locale, got.TimeZone, locale, zone)
+		}
 	}
 }
