@@ -214,6 +214,22 @@ func TestShellAPIOrigin(t *testing.T) {
 			t.Errorf("host %q, web origin %q: shell lacks apiOrigin %q:\n%s", c.host, c.webOrigin, c.want, body)
 		}
 	}
+	// Requests are upgraded to HTTPS only when the server is served over HTTPS: WebKit upgrades
+	// http://localhost too, which breaks a plain-HTTP setup on localhost.
+	for _, c := range []struct {
+		host, webOrigin string
+		upgrade         bool
+	}{
+		{"social.example", "", true},
+		{"localhost:8080", "http://localhost:5173", true},
+		{"localhost:8080", "http://localhost:8080", false},
+	} {
+		_, mux := newHandler(t, web.Options{Host: c.host, WebOrigin: c.webOrigin})
+		csp := get(mux, "/", nil).Header().Get("Content-Security-Policy")
+		if got := strings.HasSuffix(csp, "; upgrade-insecure-requests"); got != c.upgrade {
+			t.Errorf("host %q, web origin %q: CSP %q upgrades insecure requests: %v, want %v", c.host, c.webOrigin, csp, got, c.upgrade)
+		}
+	}
 	for _, bad := range []string{"localhost:8080", "ftp://localhost:8080", "http://"} {
 		if _, err := web.New(web.Options{Host: "localhost:8080", Build: fakeBuild(), WebOrigin: bad}); err == nil {
 			t.Errorf("New accepted the web origin %q", bad)

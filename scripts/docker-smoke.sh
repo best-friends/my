@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-only
 # Smoke test of deploy/docker/compose.yaml: build the images, start the stack (schema apply, then the server),
-# wait for readiness, create an admin, and check WebFinger, the Actor, NodeInfo, and the embedded web client.
+# wait for readiness, create an admin, check WebFinger, the Actor, NodeInfo, and the embedded web client, and sign
+# in as the web client does over plain HTTP on localhost (README.md, "Quick start").
 # Prints the logs on failure and always removes the stack and its volume.
 # Usage: scripts/docker-smoke.sh   (needs docker with compose, curl, jq, openssl)
 set -euo pipefail
@@ -12,6 +13,7 @@ base="http://127.0.0.1:$port"
 
 # Throwaway settings for this run only; the shell environment takes precedence over any deploy/docker/.env.
 export MY_HOST="localhost:$port"
+export MY_WEB_ORIGIN="http://$MY_HOST"
 export MY_HTTP_PORT="$port"
 export MY_VERSION="${MY_VERSION:-smoke}"
 MY_KEK="$(openssl rand -base64 32)"
@@ -79,5 +81,59 @@ echo "$shell" | grep -q '<script type="application/json" id="config">' || fail "
 curl -fsS -o /dev/null "$base$entry" || fail "the entry module $entry is not served"
 curl -fsS "$base/manifest.webmanifest" | jq -e --arg name "$MY_HOST" '.name == $name' >/dev/null ||
 	fail "unexpected Web App Manifest"
+
+# Sign in without a browser, as the web client does (OAuth 2.0 authorization code with PKCE, ADR-0030): the shell's
+# apiOrigin, the authorization endpoint, the sign-in form, the redirect back with a code and the issuer, the token
+# endpoint, and an API call with the access token. Over plain HTTP on localhost, every step stays on http://.
+config="$(echo "$shell" | sed -n 's|.*<script type="application/json" id="config">\([^<]*\)</script>.*|\1|p')"
+api_origin="$(echo "$config" | jq -r '.apiOrigin')"
+[[ "$api_origin" == "$MY_WEB_ORIGIN" ]] || fail "the shell's apiOrigin is $api_origin, want $MY_WEB_ORIGIN"
+
+b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+# The value of a query parameter of a URL, percent-decoded.
+param() {
+	local v
+	v="$(printf '%s' "${1#*\?}" | tr '&' '\n' | sed -n "s/^$2=//p" | head -n 1)"
+	v="${v//+/ }"
+	printf '%b' "${v//%/\\x}"
+}
+# A hidden field of the sign-in form.
+field() { echo "$2" | grep -o "name=\"$1\" value=\"[^\"]*\"" | head -n 1 | sed 's/.*value="//; s/"$//; s/&amp;/\&/g'; }
+
+verifier="$(openssl rand 32 | b64url)"
+challenge="$(printf '%s' "$verifier" | openssl dgst -sha256 -binary | b64url)"
+state="$(openssl rand 16 | b64url)"
+callback="$MY_WEB_ORIGIN/login/callback"
+jar="$(mktemp)"
+# The cookie jar keeps the session and CSRF cookies: curl, like browsers, takes Secure cookies from http://localhost.
+browser=(curl -fsS -b "$jar" -c "$jar")
+redirect=("${browser[@]}" -o /dev/null -w '%{redirect_url}')
+
+sign_in="$("${redirect[@]}" -G --data-urlencode response_type=code --data-urlencode client_id=my-web \
+	--data-urlencode "redirect_uri=$callback" --data-urlencode "code_challenge=$challenge" \
+	--data-urlencode code_challenge_method=S256 --data-urlencode "state=$state" "$api_origin/oauth/authorize")"
+[[ "$sign_in" == "$api_origin/auth/sign_in?"* ]] || fail "the authorization endpoint redirects to '$sign_in', want the sign-in page"
+form="$("${browser[@]}" "$sign_in")"
+csrf="$(field csrf_token "$form")"
+return_to="$(field return_to "$form")"
+[[ -n "$csrf" && -n "$return_to" ]] || fail "the sign-in page has no csrf_token or return_to: $form"
+authorize="$("${redirect[@]}" -H "Origin: $api_origin" --data-urlencode "csrf_token=$csrf" --data-urlencode "return_to=$return_to" \
+	--data-urlencode email=alice@example.com --data-urlencode password=smoke-test-password "$api_origin/auth/sign_in")"
+[[ "$authorize" == "$api_origin/oauth/authorize?"* ]] || fail "signing in redirects to '$authorize', want the authorization endpoint"
+back="$("${redirect[@]}" "$authorize")"
+[[ "$back" == "$callback?"* ]] || fail "the authorization endpoint redirects to '$back', want $callback"
+[[ "$(param "$back" state)" == "$state" ]] || fail "the redirect does not carry the state: $back"
+[[ "$(param "$back" iss)" == "$api_origin" ]] || fail "the redirect's issuer is not $api_origin: $back"
+code="$(param "$back" code)"
+[[ -n "$code" ]] || fail "the redirect has no code: $back"
+
+tokens="$("${browser[@]}" -H "Origin: $MY_WEB_ORIGIN" --data-urlencode grant_type=authorization_code \
+	--data-urlencode "code=$code" --data-urlencode "redirect_uri=$callback" --data-urlencode client_id=my-web \
+	--data-urlencode "code_verifier=$verifier" "$api_origin/oauth/token")"
+access="$(echo "$tokens" | jq -er '.access_token')" || fail "unexpected token response: $tokens"
+grep -q '__Host-my_rt' "$jar" || fail "the token endpoint set no refresh token cookie"
+me="$(curl -fsS -H "Authorization: Bearer $access" "$api_origin/api/v1/accounts/verify_credentials")"
+echo "$me" | jq -e '.username == "alice"' >/dev/null || fail "unexpected verify_credentials: $me"
+rm -f "$jar"
 
 echo "docker-smoke: ok ($actor_id)" >&2

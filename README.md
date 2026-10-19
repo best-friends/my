@@ -40,8 +40,24 @@ curl 'http://localhost:8080/.well-known/webfinger?resource=acct:alice@localhost:
 curl -H 'Accept: application/activity+json' http://localhost:8080/ap/actors/<WebFinger の self リンクの UUID>
 ```
 
-- 公開するときは `.env` の `MY_HOST` を実際のドメインにし、TLS を終端するリバースプロキシ（Caddy など）を前に置きます。
-  `MY_HOST` は最初の起動で DB に記録され、後から変えられません。
+### ブラウザからログインする
+
+`.env.example` の `MY_HOST=localhost:8080` と `MY_WEB_ORIGIN=http://localhost:8080` の組で、サインイン・クライアント API・メディアは
+平文の HTTP の `http://localhost:8080` で動きます（ActivityPub の id は `https://localhost:8080/...` のままです）。
+`MY_HTTP_PORT` を変えたときは、`MY_HOST` と `MY_WEB_ORIGIN` のポートも同じ値にします。
+
+1. ブラウザで `http://localhost:8080/login` を開き、「ログインに進む」を押します。
+2. サーバーのサインイン画面で、上で作った管理者のメールアドレスとパスワードを入れます。
+3. Web クライアントに戻り、ホームのタイムラインが表示されます。
+
+- サインインの Cookie は `Secure` 属性付きです。Chrome と Firefox は `http://localhost` でも受け付けますが、
+  Safari（WebKit）は受け付けないため、手元では Chrome か Firefox を使います。
+- 投稿の本文のハッシュタグやメンションのリンクは、連合の URL なので `https://` です。
+
+### 公開する
+
+- 公開するときは `.env` の `MY_HOST` を実際のドメインにし、`MY_WEB_ORIGIN` を消して（既定は `https://{MY_HOST}`）、
+  TLS を終端するリバースプロキシ（Caddy など）を前に置きます。`MY_HOST` は最初の起動で DB に記録され、後から変えられません。
 - `docker compose down` で止めます。`down -v` はデータのボリュームも消します。
 - CI は同じ手順を `scripts/docker-smoke.sh`（`make docker-smoke`）で毎回実行します。
 

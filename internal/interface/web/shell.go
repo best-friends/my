@@ -128,7 +128,7 @@ func renderShell(d shellData) (document, error) {
 // allows exactly the client's two policies, each created once (no 'allow-duplicates'):
 // my-server-sanitized-html (@my/ui PostContent, the server-sanitized post HTML) and
 // my-service-worker (app/web src/lib/pwa.ts, the worker's fixed URL). No other script can make a
-// policy of its own.
+// policy of its own. Over HTTPS it ends with upgradeInsecureRequests.
 const contentSecurityPolicy = "default-src 'none'; " +
 	"script-src 'self'; " +
 	"style-src 'self'; " +
@@ -143,8 +143,11 @@ const contentSecurityPolicy = "default-src 'none'; " +
 	"base-uri 'none'; " +
 	"object-src 'none'; " +
 	"require-trusted-types-for 'script'; " +
-	"trusted-types my-server-sanitized-html my-service-worker; " +
-	"upgrade-insecure-requests"
+	"trusted-types my-server-sanitized-html my-service-worker"
+
+// upgradeInsecureRequests ends the policy of a server served over HTTPS. A server served over plain
+// HTTP on localhost leaves it out: WebKit upgrades even loopback requests, which then fail.
+const upgradeInsecureRequests = "; upgrade-insecure-requests"
 
 // serviceWorkerContentSecurityPolicy is the policy of the Service Worker (sw.js), which applies to the
 // worker itself: it only fetches from its own origin (the build, the shell, public media, the pages
