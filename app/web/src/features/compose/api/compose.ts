@@ -6,7 +6,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
-import { isPostListQuery, refreshQueries } from "../../../lib/query";
+import { isPostListQuery } from "../../../lib/query";
 
 export type Status = components["schemas"]["Status"];
 export type MediaAttachment = components["schemas"]["MediaAttachment"];
@@ -82,18 +82,18 @@ export async function createStatus(api: Api, body: CreateStatusRequest, idempote
 }
 
 /**
- * Puts a new post into the cache and fetches again every cached list of posts it can appear in, also those no
- * page shows now (refreshQueries, web-client.md S1): opening one of them afterwards shows the post at once. A
- * reply also gives the post it answers one more reply, which its own page shows.
+ * Puts a new post into the cache and marks stale every cached list of posts it can appear in (web-client.md S1);
+ * resolves once those on screen are fetched again. Opening one of the others afterwards fetches it again before
+ * it shows (S7), so it shows the post from its first render. A reply also marks the post it answers, which has
+ * one more reply.
  */
 export async function cachePostedStatus(api: Api, queryClient: QueryClient, status: Status): Promise<void> {
   queryClient.setQueryData(statusQueryOptions(api, status.id).queryKey, status);
   const parentId = status.in_reply_to_id;
-  await refreshQueries(
-    queryClient,
-    { predicate: (query) => isPostListQuery(query.queryKey) },
-    ...(parentId === undefined ? [] : [{ queryKey: statusQueryOptions(api, parentId).queryKey, exact: true }]),
-  );
+  await Promise.all([
+    queryClient.invalidateQueries({ predicate: (query) => isPostListQuery(query.queryKey) }),
+    parentId === undefined ? undefined : queryClient.invalidateQueries({ queryKey: statusQueryOptions(api, parentId).queryKey, exact: true }),
+  ]);
 }
 
 /**

@@ -19,7 +19,7 @@ export const Route = createFileRoute("/admin/signup-blocks")({
   staticData: { title: "client:admin.signup_blocks.title" },
   beforeLoad: requireSignIn,
   loader: ({ context, deps }) =>
-    loadWithPermission(context, "manage_accounts", () => context.queryClient.infiniteQuery({ ...signupBlocksQueryOptions(context.api, deps.filter), staleTime: "static" })),
+    loadWithPermission(context, "manage_accounts", () => context.queryClient.infiniteQuery({ ...signupBlocksQueryOptions(context.api, deps.filter), staleTime: Infinity })),
   component: SignupBlocksPage,
   errorComponent: SignupBlocksError,
 });

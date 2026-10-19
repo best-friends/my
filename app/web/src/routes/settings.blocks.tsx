@@ -9,7 +9,7 @@ import { SettingsHeading } from "./-layout/SettingsHeading";
 export const Route = createFileRoute("/settings/blocks")({
   staticData: { title: "client:settings.blocks.title" },
   beforeLoad: requireSignIn,
-  loader: ({ context }) => context.queryClient.infiniteQuery({ ...blocksQueryOptions(context.api), staleTime: "static" }),
+  loader: ({ context }) => context.queryClient.infiniteQuery({ ...blocksQueryOptions(context.api), staleTime: Infinity }),
   component: BlocksPage,
 });
 

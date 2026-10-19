@@ -11,7 +11,7 @@ export const Route = createFileRoute("/@{$acct}_/following")({
   params: { parse: (params) => profileParamsSchema.parse(params) },
   loader: async ({ context, params: { acct } }) => {
     const account = await loadAccount(context, acct);
-    await context.queryClient.infiniteQuery({ ...followListQueryOptions(context.api, account.id, "following"), staleTime: "static" });
+    await context.queryClient.infiniteQuery({ ...followListQueryOptions(context.api, account.id, "following"), staleTime: Infinity });
   },
   component: FollowingPage,
   pendingComponent: FollowingPending,

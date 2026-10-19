@@ -29,7 +29,7 @@ jobs:
       # cannot stamp the VCS state into bin/my; the E2E server does not need it.
       GOFLAGS: -buildvcs=false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       # The image has neither make nor the unzip that setup-bun extracts Bun with.
       - name: Install make and unzip
         run: apt-get update && apt-get install -y --no-install-recommends make unzip
@@ -37,7 +37,7 @@ jobs:
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       - name: Cache Bun packages
@@ -47,7 +47,7 @@ jobs:
           key: bun-e2e-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}
           restore-keys: bun-e2e-${{ runner.os }}-
       # `make web-e2e` builds bin/my, which e2e/server.ts starts for the server-rendered pages.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
           cache-dependency-path: |
@@ -57,7 +57,7 @@ jobs:
         run: make web-e2e
       - name: Upload the Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report-${{ inputs.matrix }}
           path: |

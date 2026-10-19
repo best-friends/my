@@ -4,6 +4,7 @@ package identity
 
 import (
 	"context"
+	"log/slog"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -36,6 +37,12 @@ type Deps struct {
 
 	// RateLimiter limits failed sign-ins (LoginIPLimit, LoginAccountLimit); SignIn needs it.
 	RateLimiter *kernel.RateLimiter
+	// HumanVerifier checks the CAPTCHA token of every sign-in and sign-up (ADR-0042 §3); nil,
+	// as with the captcha setting none, checks nothing.
+	HumanVerifier kernel.HumanVerifier
+	// Logger records the sign-ins let through while the CAPTCHA service cannot check their
+	// token; nil means slog.Default().
+	Logger *slog.Logger
 	// SessionTTL is the lifetime of a session; zero means DefaultSessionTTL.
 	SessionTTL time.Duration
 	// WebClient is the first-party web client of the authorization server; a zero value
@@ -60,6 +67,9 @@ type Deps struct {
 	Messages *i18n.Bundle
 	// BaseURL is the origin that links in emails point to, such as https://social.example.
 	BaseURL string
+	// InstanceName returns the instance's display name for readers of locale, which emails name
+	// the instance by; nil or "" names it by the host of BaseURL.
+	InstanceName func(ctx context.Context, locale string) string
 }
 
 // Service runs the identity module's use cases.

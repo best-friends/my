@@ -56,7 +56,7 @@ export const Route = createFileRoute("/admin/accounts")({
   // the page's.
   loader: ({ context, deps: { search } }) =>
     loadWithPermission(context, "manage_accounts", () =>
-      context.queryClient.infiniteQuery({ ...adminAccountsQueryOptions(context.api, search), staleTime: "static" }).catch((error: unknown) => {
+      context.queryClient.infiniteQuery({ ...adminAccountsQueryOptions(context.api, search), staleTime: Infinity }).catch((error: unknown) => {
         if (isMissingPermission(error)) throw error;
       }),
     ),

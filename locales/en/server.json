@@ -155,6 +155,10 @@
     "defaultMessage": "Last updated: {date}",
     "description": "Line under the heading of a terms of service or privacy policy page. {date} is the date of the last revision as YYYY-MM-DD."
   },
+  "auth.document_title": {
+    "defaultMessage": "{page} – {instance}",
+    "description": "The browser tab title of the sign-in, sign-up, email verification, account status and consent pages: the page's title, then the server's name. {instance} is the server's display name, or its domain name when it has none."
+  },
   "auth.error.title": {
     "defaultMessage": "Something went wrong",
     "description": "Title and heading of the sign-in screens' error pages."
@@ -162,6 +166,34 @@
   "auth.form_expired": {
     "defaultMessage": "This form has expired. Please try again.",
     "description": "Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared."
+  },
+  "auth.human_check.failed": {
+    "defaultMessage": "Complete the check that you are not a bot, then try again.",
+    "description": "Error (HTTP 422) on the sign-in and registration forms when the CAPTCHA check was missing, invalid, or expired."
+  },
+  "auth.human_check.noscript": {
+    "defaultMessage": "This page checks that you are not a bot, which needs JavaScript. Turn on JavaScript to continue.",
+    "description": "Shown on the sign-in and registration forms when the browser runs no JavaScript, which the CAPTCHA widget needs."
+  },
+  "auth.human_check.notice": {
+    "defaultMessage": "This page uses {service} to check that you are not a bot. {service} receives your IP address and information about your browser.",
+    "description": "Notice next to the CAPTCHA widget on the sign-in and registration forms, followed by links to the service's privacy policy. {service} is the service's name, such as Cloudflare Turnstile or hCaptcha."
+  },
+  "auth.human_check.notice_recaptcha": {
+    "defaultMessage": "This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply. Google receives your IP address and information about your browser.",
+    "description": "Notice next to the reCAPTCHA widget on the sign-in and registration forms, followed by links to Google's privacy policy and terms. Keep the names reCAPTCHA and Google: Google asks sites to show this statement."
+  },
+  "auth.human_check.privacy_link": {
+    "defaultMessage": "{owner} Privacy Policy",
+    "description": "Link next to the CAPTCHA widget to the privacy policy of the company that runs the service. {owner} is a name such as Cloudflare, hCaptcha, or Google."
+  },
+  "auth.human_check.terms_link": {
+    "defaultMessage": "{owner} Terms of Service",
+    "description": "Link next to the CAPTCHA widget to the terms of the company that runs the service. {owner} is a name such as hCaptcha or Google."
+  },
+  "auth.human_check.unavailable": {
+    "defaultMessage": "The check that you are not a bot is not available right now. Try again later.",
+    "description": "Error (HTTP 503) on the registration form when the CAPTCHA service cannot be reached; the account is not created."
   },
   "auth.sign_in.email_label": {
     "defaultMessage": "Email address",
@@ -676,36 +708,36 @@
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
   },
   "mail.admin_appeal.body": {
-    "defaultMessage": "A user of {host} appealed a moderation action, and the appeal awaits the moderators.\n\nOpen your notifications to review it:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
-    "description": "Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+    "defaultMessage": "A user of {instance} appealed a moderation action, and the appeal awaits the moderators.\n\nOpen your notifications to review it:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
+    "description": "Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
   },
   "mail.admin_appeal.subject": {
-    "defaultMessage": "A new appeal awaits the moderators of {host}",
-    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {host} is the server's domain name."
+    "defaultMessage": "A new appeal awaits the moderators of {instance}",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.admin_report.body": {
-    "defaultMessage": "A new report awaits the moderators of {host}.\n\nOpen your notifications to review it:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
-    "description": "Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+    "defaultMessage": "A new report awaits the moderators of {instance}.\n\nOpen your notifications to review it:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
+    "description": "Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
   },
   "mail.admin_report.subject": {
-    "defaultMessage": "A new report awaits the moderators of {host}",
-    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {host} is the server's domain name."
+    "defaultMessage": "A new report awaits the moderators of {instance}",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.admin_sign_up.body": {
-    "defaultMessage": "A new user signed up on {host} and awaits approval.\n\nOpen your notifications to review the registration:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
-    "description": "Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+    "defaultMessage": "A new user signed up on {instance} and awaits approval.\n\nOpen your notifications to review the registration:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
+    "description": "Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
   },
   "mail.admin_sign_up.subject": {
-    "defaultMessage": "A new sign-up awaits approval on {host}",
-    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {host} is the server's domain name."
+    "defaultMessage": "A new sign-up awaits approval on {instance}",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.verify_email.body": {
-    "defaultMessage": "Welcome to {host}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.",
-    "description": "Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
+    "defaultMessage": "Welcome to {instance}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.",
+    "description": "Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
   },
   "mail.verify_email.subject": {
-    "defaultMessage": "Confirm your email address for {host}",
-    "description": "Subject of the email that confirms a new account's email address. {host} is the server's domain name."
+    "defaultMessage": "Confirm your email address for {instance}",
+    "description": "Subject of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none."
   },
   "moderation.action.category": {
     "defaultMessage": "{category, select, spam {Spam} legal {Legal reasons} violation {Violation of the instance's rules} other {Other}}",

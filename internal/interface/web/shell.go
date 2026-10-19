@@ -18,7 +18,8 @@ import (
 type runtimeConfig struct {
 	// APIOrigin is the origin of the client API (ADR-0016).
 	APIOrigin string `json:"apiOrigin"`
-	// InstanceName is the instance's display name.
+	// InstanceName is the instance's display name in the default locale, or its host when it has
+	// none.
 	InstanceName string `json:"instanceName"`
 	// AccountDomain is the domain of local handles (@alice@{accountDomain}).
 	AccountDomain string `json:"accountDomain"`
@@ -203,10 +204,11 @@ type manifestIcon struct {
 	Purpose string `json:"purpose"`
 }
 
-// renderWebManifest generates the manifest from the instance settings in o.
-func renderWebManifest(o *Options, locale string, icons []manifestIcon) (document, error) {
+// renderWebManifest generates the manifest from the instance settings in o and the instance's
+// name in the default locale.
+func renderWebManifest(o *Options, locale, name string, icons []manifestIcon) (document, error) {
 	m := webManifest{
-		ID: "/", Name: o.InstanceName, ShortName: o.InstanceName, StartURL: "/", Scope: "/", Display: "standalone",
+		ID: "/", Name: name, ShortName: name, StartURL: "/", Scope: "/", Display: "standalone",
 		Lang: locale, Dir: i18n.Direction(locale), ThemeColor: o.ThemeColor, BackgroundColor: o.BackgroundColor,
 		Icons: icons,
 	}

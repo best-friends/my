@@ -62,14 +62,16 @@ func TestFederationEndpoints(t *testing.T) {
 
 	resp, body = s.do(t, http.MethodGet, "/nodeinfo/2.1", nil)
 	var ni struct {
-		Software struct{ Version, Repository string }
-		Usage    struct{ Users struct{ Total int } }
+		Software          struct{ Version, Repository string }
+		OpenRegistrations bool
+		Usage             struct{ Users struct{ Total int } }
 	}
 	if err := json.Unmarshal([]byte(body), &ni); err != nil || resp.StatusCode != http.StatusOK {
 		t.Fatalf("nodeinfo = %d %s (%v)", resp.StatusCode, body, err)
 	}
-	if ni.Usage.Users.Total != 1 || ni.Software.Version != "dev" || ni.Software.Repository != config.DefaultSourceURL {
-		t.Errorf("nodeinfo = %+v, want 1 user (not the instance actor), version dev, the default source URL", ni)
+	// The default registration mode, approval, lets anyone sign up for a moderator's approval.
+	if ni.Usage.Users.Total != 1 || ni.Software.Version != "dev" || ni.Software.Repository != config.DefaultSourceURL || !ni.OpenRegistrations {
+		t.Errorf("nodeinfo = %+v, want 1 user (not the instance actor), version dev, the default source URL, open registrations", ni)
 	}
 
 	// A missing actor is the server's ordinary 404 problem.

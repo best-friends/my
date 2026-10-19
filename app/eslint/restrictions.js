@@ -53,6 +53,53 @@ export const syntax = [
     message:
       "Do not call the hooks of the API client (api.query.useQuery / useMutation); React Compiler skips the calling hook. Pass api.query.queryOptions(...) to useQuery, and a function of features/<x>/api to useMutation (web-client.md R4, §10).",
   },
+  {
+    // S7: "static" ignores invalidation, so a loader would show what a write has marked stale (ADR-0045).
+    selector: "Property[key.name='staleTime'][value.value='static']",
+    message: 'Do not use staleTime: "static"; it ignores invalidation. A loader reads with staleTime: Infinity (web-client.md S7, ADR-0045).',
+  },
+  {
+    // S7: ensureQueryData is deprecated in favor of queryClient.query.
+    selector: "CallExpression > MemberExpression.callee[property.name=/^ensure(Infinite)?QueryData$/]",
+    message: "Do not use ensureQueryData; a loader reads with queryClient.query / infiniteQuery and staleTime: Infinity (web-client.md S7).",
+  },
+];
+
+/** The elements that exist only in SVG (the shapes, groups, paint servers and text); `a`, `style` and the like are HTML too. */
+const svgElements = [
+  "svg",
+  "g",
+  "path",
+  "circle",
+  "ellipse",
+  "line",
+  "polygon",
+  "polyline",
+  "rect",
+  "text",
+  "tspan",
+  "textPath",
+  "defs",
+  "use",
+  "symbol",
+  "marker",
+  "mask",
+  "clipPath",
+  "pattern",
+  "linearGradient",
+  "radialGradient",
+  "stop",
+  "filter",
+  "foreignObject",
+  "image",
+];
+
+/** @type {SyntaxRestriction[]} Every client source file but the few that eslint.config.js lets draw SVG (G10). */
+export const svgSyntax = [
+  {
+    selector: `JSXOpeningElement[name.name=/^(${svgElements.join("|")})$/]`,
+    message: "Do not draw SVG; use an icon of @my/ui (Icons.tsx), and add a row to its table for a new one (ADR-0043, web-client.md G10).",
+  },
 ];
 
 /** The QueryClient methods that write the cache or mark it stale. */
@@ -62,7 +109,7 @@ const cacheWrites = "setQueryData|setQueriesData|invalidateQueries|refetchQuerie
 export const featureSyntax = [
   {
     // S1: what a write changes in the cache is written next to the write, in features/<x>/api.
-    selector: String.raw`CallExpression > MemberExpression.callee[property.name=/^(${cacheWrites})$/], CallExpression[callee.name='refreshQueries']`,
+    selector: String.raw`CallExpression > MemberExpression.callee[property.name=/^(${cacheWrites})$/]`,
     message:
       "Do not change the query cache in a hook or a component; call the cache function next to the write in features/<x>/api (e.g. cachePostedStatus) from onSuccess (web-client.md S1).",
   },

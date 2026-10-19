@@ -2,9 +2,9 @@
 // The admin feature: the health of remote servers with the reasons of their state and resuming deliveries to
 // them (federation.md §7.3), the moderation actions on domains (FR-702), the dead jobs of the job queue with
 // running them again, the audit log (FR-704), the review of registrations awaiting approval (FR-721), and the
-// review of appeals of moderation actions (FR-707), and the blocks on sign-ups (FR-719). Each
+// review of appeals of moderation actions (FR-707), the blocks on sign-ups (FR-719), and the server's settings (its name). Each
 // screen is for a viewer whose roles have its permission (manage_domains, manage_jobs, view_audit,
-// manage_accounts); the server checks it on every request. The navigation's admin entry and the menu show
+// manage_accounts, manage_settings); the server checks it on every request. The navigation's admin entry and the menu show
 // what awaits the moderators (FR-712).
 // Routes and other features use it through this file only (web-client.md A3).
 export {
@@ -61,3 +61,6 @@ export { AppealQueue } from "./components/AppealQueue";
 // The terms of service and the privacy policy (#489), for manage_settings.
 export { instanceTextsQueryOptions } from "./api/documents";
 export { DocumentSettings } from "./components/DocumentSettings";
+// The server's settings: its name in each language, which people see in place of its domain, for manage_settings.
+export { instanceQueryOptions as ownInstanceQueryOptions } from "./api/documents";
+export { ServerSettings } from "./components/ServerSettings";

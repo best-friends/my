@@ -74,7 +74,7 @@ function isAccountStatusesQuery(queryKey: QueryKey, accountId: string): boolean 
  * (web-client.md S1, ADR-0045). The server's count includes others' actions, so it is taken only from the
  * `last` press: an answer to an earlier press does not undo a later one still on its way. A boost is also an
  * entry of the viewer's home timeline and of their own posts, which it joins or leaves: those lists are marked,
- * and the ones no page shows are fetched again at once (a list on screen keeps its top, Y7).
+ * and only marked stale: a list on screen keeps its top (Y7), and a list opened next is fetched again before it shows (S7).
  */
 export function cacheRelationAnswer(queryClient: QueryClient, id: string, relation: Relation, answer: Status, last: boolean, viewerId: string): void {
   if (last) {
@@ -84,7 +84,7 @@ export function cacheRelationAnswer(queryClient: QueryClient, id: string, relati
   if (relation === "boost") {
     void queryClient.invalidateQueries({
       predicate: (query) => query.queryKey[1] === "/timelines/home" || isAccountStatusesQuery(query.queryKey, viewerId),
-      refetchType: "inactive",
+      refetchType: "none",
     });
   }
 }

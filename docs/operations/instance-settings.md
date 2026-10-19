@@ -1,7 +1,7 @@
 # インスタンス設定
 
 運営者向けの手順です。要件は FR-001・FR-101・FR-705（[機能要件](../requirements/01-functional.md)）、
-テーブルは [データモデル §4.9](../architecture/data-model.md#49-instance) です。管理画面からの変更は M5 で追加します。
+テーブルは [データモデル §4.9](../architecture/data-model.md#49-instance) です。
 
 ## 設定（環境変数）とインスタンス設定（DB）の分担
 
@@ -55,7 +55,7 @@
 
 | キー | 上限 | 説明 |
 | --- | --- | --- |
-| `name` | 100 文字・1 行 | インスタンスの名前 |
+| `name` | 100 文字・1 行（空白だけは不可） | インスタンスの名前（表示名）。[名前とドメイン](#名前とドメイン) |
 | `short_description` | 500 文字 | 短い説明 |
 | `description` | 20000 文字 | 説明 |
 | `terms` | 100000 文字 | 利用規約（Markdown） |
@@ -65,13 +65,25 @@
 - 文章はロケールごとに持ちます。読むときは、読み手のロケールのフォールバックチェーン → `default_locale` のチェーン → `en` の順に探します
   （例: `ja-JP` → `ja` → 既定のロケール → `en`）。
 - 空の文章を設定すると、そのロケールの文章を消したことになり、チェーンの次のロケールが使われます。
-- 文章は CLI のほか、Web クライアントの管理画面（利用規約とプライバシーポリシーは「規約とポリシー」、`/admin/documents`）とクライアント API（`GET /api/v1/admin/instance_texts`・`PUT /api/v1/admin/instance_texts/{key}/{locale}`）で変えられます。どちらもロールの権限 `manage_settings` が要り、変更は監査ログ（`text_changed`）に残ります。
+- 文章は CLI のほか、Web クライアントの管理画面（名前は「サーバーの設定」、`/admin/settings`。利用規約とプライバシーポリシーは「規約とポリシー」、`/admin/documents`）とクライアント API（`GET /api/v1/admin/instance_texts`・`PUT /api/v1/admin/instance_texts/{key}/{locale}`）で変えられます。どちらもロールの権限 `manage_settings` が要り、変更は監査ログ（`text_changed`）に残ります。
 
 ### 利用規約とプライバシーポリシー
 
 - `terms` と `privacy_policy` は Markdown で書きます（CommonMark と、GitHub Flavored Markdown の表・取り消し線・URL の自動リンク）。段落の中の改行はそのまま改行になり、`#` の見出しはページの題の下の段（`h2`）から始まります。
 - サーバーが公開ページ `/auth/terms`・`/auth/privacy` で HTML にしてサニタイズします。生の HTML・画像・`http` / `https` / `mailto` 以外のリンクは出ません。ページはサインインも JavaScript も要りません。
 - 書いた文書は、登録の画面（作成のボタンの前の同意の文とリンク）、サーバーが描画するすべての画面のフッター、Web クライアント（3 列目・メニュー・設定・サインインの画面）からリンクされます。読み手のチェーンのどのロケールにも無い文書はリンクされず、ページは 404 です。
+
+### 名前とドメイン
+
+インスタンスはドメインと名前を別々に持ちます。
+
+- **ドメイン**は設定 `host`（とハンドルのドメイン `account_domain`）で、運営中は変えられません。ハンドル（`@alice@example.com`）・URL・ActivityPub の ID・`GET /api/v1/instance` の `domain` は、名前があってもドメインのままです。
+- **名前**は文章 `name` で、人に向けてインスタンスを名指す場所に出ます: Web クライアントのサイドバーと「このサーバーについて」、ブラウザのタブのタイトル、
+  サーバーが描画するログイン・登録・メール確認・アカウントの状態・認可同意の画面、メール（メールアドレスの確認・モデレーターへの通知）、
+  リンクプレビューの `og:site_name`、Web App Manifest の `name` / `short_name`、NodeInfo の `metadata.nodeName`、`GET /api/v1/instance` の `name`。
+- 名前は読み手のロケールで選びます（利用者・メールの宛先のロケール、リンクプレビューは投稿の言語）。HTML の外枠・Web App Manifest・NodeInfo は `default_locale` の名前です。
+  どのロケールのチェーンにも名前が無ければ、名前の代わりにドメイン（`host`）を出します。
+- 変更は再起動なしで、次の要求から反映されます。開いている Web クライアントのタブのタイトルとサイドバーは、管理画面で保存したときに更新されます。
 
 ## 使い方
 

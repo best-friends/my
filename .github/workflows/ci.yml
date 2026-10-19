@@ -4,13 +4,17 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The merge queue of main runs the same required `check` on each merge group before it merges the group.
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A new push to a PR replaces its run; every main commit runs to the end (ADR-0040).
+  # A new push to a PR replaces its run; every main commit runs to the end (ADR-0040). Each merge group has a ref of
+  # its own (gh-readonly-queue/main/...) and is never cancelled here: the merge queue replaces the groups it rebuilds.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -18,8 +22,9 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  # `make check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request
-  # touches that context or one it depends on. A change to shared configuration and every push to main run them all.
+  # `make check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request or
+  # the merge group touches that context or one it depends on. A change to shared configuration and every push to
+  # main run them all.
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -33,22 +38,30 @@ jobs:
       shell: ${{ steps.contexts.outputs.shell }}
       schema: ${{ steps.contexts.outputs.schema }}
     steps:
-      # A pull request checks out its merge commit, whose first parent is the base branch.
-      - uses: actions/checkout@v5
+      # A pull request checks out its merge commit, whose first parent is the base branch. A merge group checks out
+      # its head commit and compares it with its base, the main commit the group is built on; that base is fetched by
+      # SHA because a group queued behind others is several commits ahead of it.
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       - name: Select the contexts the change touches
         id: contexts
         env:
           EVENT: ${{ github.event_name }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
         run: |
           if [ "$EVENT" = pull_request ]; then
             git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed"
             contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
+          elif [ "$EVENT" = merge_group ]; then
+            git fetch --no-tags --depth=1 origin "$MERGE_GROUP_BASE_SHA"
+            git diff --name-only "$MERGE_GROUP_BASE_SHA" "$MERGE_GROUP_HEAD_SHA" > "$RUNNER_TEMP/changed"
+            contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
           else
             contexts="$(scripts/changed-contexts.sh --all)"
           fi
-          echo "contexts:" $contexts
+          echo "contexts: ${contexts//$'\n'/ }"
           for c in docs go i18n api ui web docker shell schema; do
             if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
           done
@@ -58,7 +71,7 @@ jobs:
     if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .tool-versions
@@ -77,10 +90,10 @@ jobs:
     if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       # setup-go's own cache is keyed on go.sum alone and never refreshed. This one is saved on every push to main
       # and restored by pull requests, so the build and go test results of unchanged packages stay cached.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
           cache: false
@@ -106,7 +119,7 @@ jobs:
       # The official action installs the prebuilt binary, caches lint results and annotates the PR.
       # It also puts golangci-lint on PATH, so `make go-lint` reuses the binary and the cache.
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@d583c34f0599d37dbac4a198b9c83201be380893 # v9.3.0
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v${{ steps.tools.outputs.golangci-lint }}
       - name: make go-check (except go-test)
@@ -127,9 +140,9 @@ jobs:
     # job runs them on a real postgres container on pushes to main.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       # The same cache as the go job's, of the test builds and results.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
           cache: false
@@ -159,7 +172,7 @@ jobs:
     if: needs.changes.outputs.i18n == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .tool-versions
@@ -177,7 +190,7 @@ jobs:
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .tool-versions
@@ -188,11 +201,11 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # openapi-typescript runs on Node.js (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       # oapi-codegen and securitygen are Go: restore the go job's cache from main, without saving one.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
           cache: false
@@ -214,7 +227,7 @@ jobs:
     if: needs.changes.outputs.ui == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .tool-versions
@@ -225,7 +238,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # Vitest runs on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       - name: make ui-check
@@ -236,7 +249,7 @@ jobs:
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .tool-versions
@@ -247,7 +260,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # Vite and Vitest run on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       - name: make web-check
@@ -258,7 +271,7 @@ jobs:
     if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: make docker-check
         run: make docker-check
 
@@ -267,13 +280,14 @@ jobs:
     if: needs.changes.outputs.shell == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: shellcheck
         run: make lint-shell
 
   check:
-    # The required status check of the protect-main ruleset: it passes only when every job above passed, or was
-    # skipped because the change does not touch its context.
+    # The required status check of the protect-main ruleset, on pull requests and merge groups: it passes only when
+    # every job above passed, or was skipped because the change does not touch its context. `always()` makes it
+    # report a result even when every other job is skipped, so a merge group never waits on it.
     if: always()
     needs: [changes, docs, go, go-test, i18n, api, ui, web, docker, shell]
     runs-on: ubuntu-latest
@@ -297,7 +311,7 @@ jobs:
     env:
       DB_DIALECT: ${{ matrix.dialect }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Atlas Community Edition (pinned in scripts/install-atlas.sh)
         run: make atlas
       - name: Start PostgreSQL
@@ -334,7 +348,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --ipc=host
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       # The image has neither make nor the unzip that setup-bun extracts Bun with.
       - name: Install make and unzip
         run: apt-get update && apt-get install -y --no-install-recommends make unzip
@@ -342,7 +356,7 @@ jobs:
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       - name: Cache Bun packages
@@ -356,7 +370,7 @@ jobs:
       # On a visual difference, the actual and diff images are under app/ui/.vitest/attachments/.
       - name: Upload the screenshot diffs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ui-test-screenshots
           path: app/ui/.vitest/
@@ -372,7 +386,7 @@ jobs:
       needs.changes.outputs.i18n == 'true' || needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Smoke-test the Docker Compose setup

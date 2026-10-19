@@ -6,7 +6,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshQueries } from "../../../lib/query";
 import { viewerQueryOptions } from "../../session";
 import { adminAccountQueryOptions } from "./accounts";
 import { isAuditLogQuery, isMissingPermission } from "./admin";
@@ -55,12 +54,16 @@ export function changeRoleMutation(api: Api) {
 
 /**
  * What a change of the roles of account `accountId` changes (web-client.md S1, ADR-0045): its page shows its role
- * keys (the searches show none) and the audit log records the change, which are fetched again first, so that the
- * log shows it at once; then the roles as the server answered go into the cache. A change of the viewer's own
+ * keys (the searches show none) and the audit log records the change: both are marked stale, and this waits for
+ * those on screen to be fetched again (the log is fetched again when it opens); then the roles as the server
+ * answered go into the cache. A change of the viewer's own
  * roles (`viewerId`) also marks the viewer, whose permissions decide what the app offers.
  */
 export async function cacheChangedRoles(api: Api, queryClient: QueryClient, accountId: string, roles: AdminRoleList, viewerId: string): Promise<void> {
-  await refreshQueries(queryClient, { queryKey: adminAccountQueryOptions(api, accountId).queryKey }, { predicate: (query) => isAuditLogQuery(query.queryKey) });
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: adminAccountQueryOptions(api, accountId).queryKey }),
+    queryClient.invalidateQueries({ predicate: (query) => isAuditLogQuery(query.queryKey) }),
+  ]);
   queryClient.setQueryData(accountRolesQueryOptions(api, accountId).queryKey, roles);
   if (accountId === viewerId) void queryClient.invalidateQueries({ queryKey: viewerQueryOptions(api).queryKey });
 }

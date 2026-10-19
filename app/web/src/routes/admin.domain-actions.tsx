@@ -28,7 +28,7 @@ export const Route = createFileRoute("/admin/domain-actions")({
   loaderDeps: ({ search: { filter, domain } }): { filter: DomainActionFilter; domain: string | undefined } => ({ filter: filter ?? "active", domain }),
   beforeLoad: requireSignIn,
   loader: ({ context, deps }) =>
-    loadWithPermission(context, "manage_domains", () => context.queryClient.infiniteQuery({ ...domainActionsQueryOptions(context.api, deps), staleTime: "static" })),
+    loadWithPermission(context, "manage_domains", () => context.queryClient.infiniteQuery({ ...domainActionsQueryOptions(context.api, deps), staleTime: Infinity })),
   component: DomainActionsPage,
   errorComponent: DomainActionsError,
 });

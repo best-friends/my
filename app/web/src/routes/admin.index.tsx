@@ -15,7 +15,7 @@ export const Route = createFileRoute("/admin/")({
   staticData: { title: "client:admin.menu.title" },
   beforeLoad: requireSignIn,
   loader: async ({ context: { queryClient, api } }) => {
-    await queryClient.query({ ...viewerQueryOptions(api), staleTime: "static" });
+    await queryClient.query({ ...viewerQueryOptions(api), staleTime: Infinity });
   },
   component: AdminPage,
 });

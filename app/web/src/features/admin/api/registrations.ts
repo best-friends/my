@@ -6,7 +6,6 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshQueries } from "../../../lib/query";
 import { pageQuery, refreshAuditLog } from "./admin";
 
 type Schemas = components["schemas"];
@@ -64,14 +63,14 @@ function isAdminCountsQuery(queryKey: readonly unknown[]): boolean {
 }
 
 /**
- * Fetches again what a decision on a registration changes beside the list (web-client.md S1, ADR-0045): the audit
+ * Marks stale what a decision on a registration changes beside the list (web-client.md S1, ADR-0045): the audit
  * log, which records it, and the account searches and the account's page, which show the account's state.
- * Resolves once they are fetched.
+ * Resolves once those on screen are fetched again.
  */
 export async function refreshDecidedRegistration(queryClient: QueryClient): Promise<void> {
   await Promise.all([
     refreshAuditLog(queryClient),
-    refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/accounts" || query.queryKey[1] === "/admin/accounts/{id}" }),
+    queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/accounts" || query.queryKey[1] === "/admin/accounts/{id}" }),
   ]);
 }
 

@@ -2161,11 +2161,16 @@ paths:
         the audit log's `text_changed`). The locale is canonicalized (`ja_jp` is `ja-JP`).
         The terms of service and the privacy policy are Markdown, which the server renders and
         sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
-        the other texts are plain text. An unknown key is a 404. A locale that is not a BCP 47
+        the other texts are plain text. The display name (`name`) names the instance to people
+        in place of its domain: the web client's navigation and tab title, the server-rendered
+        pages, emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`;
+        where no locale of the chain has a name, the domain names it, and handles and URLs always
+        use the domain. An unknown key is a 404. A locale that is not a BCP 47
         tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
         `name`, 500 for `short_description`, 1,500 for `preview_image_alt`, 20,000 for
-        `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`,
-        is a 422 naming `body`. Needs the `manage_settings` permission.
+        `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
+        or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
+        permission.
       tags: [admin]
       security:
         - oauth2: ["admin:write"]
@@ -2727,6 +2732,46 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: sign-up blocks (#346) ---
+  # --- admin: sign-up block import (#498) ---
+  /admin/signup_blocks/import:
+    post:
+      operationId: importSignupBlocks
+      summary: Block sign-ups from a list
+      description: |
+        Adds a block on sign-ups (FR-719) for each value of a list, such as a public list of
+        disposable email domains, all with the same kind, severity, comment, and duration. The
+        list has one value per line in any form that `createSignupBlock` takes, or a CSV row
+        whose first field is the value; blank lines and lines starting with `#` are ignored.
+        It adds what it can and reports the lines it skipped: a value that is not valid for the
+        kind (`invalid`), that repeats an earlier line once in canonical form (`duplicate`), or
+        that a block in effect of the same kind and value with a severity at least as strong
+        already covers (`already_blocked`). Each block added is audited like one added on its
+        own. The blocks are written a few hundred at a time, so an error part way keeps the
+        ones before it; sending the list again skips them as `already_blocked`. More than
+        10,000 values, an invalid kind or severity, or a `comment` that is too long or contains
+        U+0000 is a 422 that adds nothing. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportSignupBlocksRequest"
+      responses:
+        "200":
+          description: What the import added and skipped.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignupBlockImportResult"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: sign-up block import (#498) ---
 components:
   securitySchemes:
     oauth2:
@@ -5651,6 +5696,63 @@ components:
           type: integer
           minimum: 1
     # --- end of admin: sign-up blocks (#346) ---
+    # --- admin: sign-up block import (#498) ---
+    ImportSignupBlocksRequest:
+      description: A list of values to block sign-ups by, all with the same settings.
+      type: object
+      required: [kind, text, severity]
+      properties:
+        kind:
+          $ref: "#/components/schemas/AdminSignupBlockKind"
+        text:
+          description: |
+            The list: one value per line, or a CSV row whose first field is the value; blank
+            lines and lines starting with `#` are ignored. At most 10,000 values.
+          type: string
+        severity:
+          $ref: "#/components/schemas/AdminSignupBlockSeverity"
+        comment:
+          description: The comment of every block added.
+          type: string
+          maxLength: 1000
+        expires_in:
+          description: The seconds each block lasts; omitted, they last until they are lifted.
+          type: integer
+          minimum: 1
+    SignupBlockImportResult:
+      description: What an import of a list of sign-up blocks did.
+      type: object
+      required: [added, skipped]
+      properties:
+        added:
+          description: The number of blocks added.
+          type: integer
+          minimum: 0
+        skipped:
+          description: The lines whose block was not added, in line order.
+          type: array
+          items:
+            $ref: "#/components/schemas/SignupBlockImportSkipped"
+    SignupBlockImportSkipped:
+      description: A line of an imported list whose block was not added.
+      type: object
+      required: [line, value, reason]
+      properties:
+        line:
+          description: The line of the list, from 1.
+          type: integer
+          minimum: 1
+        value:
+          description: The value as written on the line.
+          type: string
+        reason:
+          description: |
+            `invalid`: not a valid value for the kind. `duplicate`: an earlier line has the same
+            value in canonical form. `already_blocked`: a block in effect of the same kind and
+            value with a severity at least as strong covers it.
+          type: string
+          enum: [invalid, duplicate, already_blocked]
+    # --- end of admin: sign-up block import (#498) ---
     # --- reports (#332) ---
     CreateReportRequest:
       description: A report of an account to the moderators.

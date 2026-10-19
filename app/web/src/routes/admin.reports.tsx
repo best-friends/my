@@ -19,7 +19,7 @@ export const Route = createFileRoute("/admin/reports")({
   loaderDeps: ({ search: { state } }): { filter: ReportFilter } => ({ filter: state ?? "open" }),
   beforeLoad: requireSignIn,
   loader: ({ context, deps: { filter } }) =>
-    loadWithPermission(context, "manage_reports", () => context.queryClient.infiniteQuery({ ...reportsQueryOptions(context.api, filter), staleTime: "static" })),
+    loadWithPermission(context, "manage_reports", () => context.queryClient.infiniteQuery({ ...reportsQueryOptions(context.api, filter), staleTime: Infinity })),
   component: ReportsPage,
   errorComponent: ReportsError,
 });

@@ -2,7 +2,7 @@
 // The actions on a post are in the lists that no page shows when they are made (web-client.md S1, ADR-0045):
 // the viewer's profile opened afterwards shows the change from its first render. The server answers every list
 // slowly, as over a real network, so that a list shown from a stale cache would be seen.
-import { screen, waitFor, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
 import { type Schemas, statusPage, timelineStatusFixture, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
@@ -30,7 +30,7 @@ function navigation() {
 
 async function openProfile(user: Awaited<ReturnType<typeof renderApp>>["user"]) {
   await user.click(within(navigation()).getByRole("link", { name: "Profile" }));
-  expect(await screen.findByRole("heading", { level: 1, name: viewerFixture.display_name })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { level: 1, name: viewerFixture.display_name }, { timeout: latency * 5 })).toBeInTheDocument();
   return screen.getByRole("feed", { name: "Posts" });
 }
 
@@ -45,21 +45,15 @@ describe("a boost", () => {
         return HttpResponse.json(posts[0]);
       }),
     );
-    const { user, router, queryClient } = await renderApp({ path: "/profile" });
+    const { user, router } = await renderApp({ path: "/profile" });
     expect(await screen.findByText("No posts yet", {}, { timeout: latency * 5 })).toBeInTheDocument();
 
     await router.navigate({ to: "/local" });
     const article = await within(await screen.findByRole("feed", { name: "Local timeline" })).findByRole("article", { description: "Hello from the local timeline!" });
     await user.click(within(article).getByRole("button", { name: "Boost", pressed: false }));
     expect(await screen.findByText("Boosted")).toBeInTheDocument();
-    // The boost shows at once; the lists that no page shows are fetched again behind it, without being awaited.
-    await waitFor(
-      () => {
-        expect(queryClient.isFetching()).toBe(0);
-      },
-      { timeout: latency * 5 },
-    );
 
+    // The profile is marked stale, so its route fetches it again before it shows (web-client.md S7).
     const feed = await openProfile(user);
     // The profile shows the boost from its first render, not the list from before it.
     expect(within(feed).getByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();

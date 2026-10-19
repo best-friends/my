@@ -161,8 +161,12 @@ type MailDeps struct {
 	Mailer kernel.Mailer
 	// Messages words the emails; nil means the embedded catalogs (i18n.Load).
 	Messages *i18n.Bundle
-	// Host is the server's domain name, which the emails name.
+	// Host is the server's domain name, which the emails name the instance by when it has no
+	// display name.
 	Host string
+	// InstanceName returns the instance's display name for readers of locale, which the emails
+	// name the instance by; nil or "" names it by Host.
+	InstanceName func(ctx context.Context, locale string) string
 	// WebOrigin is the origin of the web client, whose notifications page the emails link to.
 	WebOrigin string
 }
@@ -210,14 +214,20 @@ func sendModeratorEmail(ctx context.Context, d MailDeps, job moderatorEmail) err
 	users := &i18n.Resolver{Bundle: bundle, UserLocale: func(context.Context) string { return box.Locale }}
 	l := users.Localizer(ctx, "")
 	link := strings.TrimSuffix(d.WebOrigin, "/") + "/notifications"
+	name := d.Host
+	if d.InstanceName != nil {
+		if n := d.InstanceName(ctx, l.Locale()); n != "" {
+			name = n
+		}
+	}
 	m := kernel.MailMessage{To: box.Address}
 	switch job.Type {
 	case notification.TypeAdminReport:
-		m.Subject, m.Text = l.ServerMailAdminReportSubject(d.Host), l.ServerMailAdminReportBody(d.Host, link)
+		m.Subject, m.Text = l.ServerMailAdminReportSubject(name), l.ServerMailAdminReportBody(name, link)
 	case notification.TypeAdminSignUp:
-		m.Subject, m.Text = l.ServerMailAdminSignUpSubject(d.Host), l.ServerMailAdminSignUpBody(d.Host, link)
+		m.Subject, m.Text = l.ServerMailAdminSignUpSubject(name), l.ServerMailAdminSignUpBody(name, link)
 	case notification.TypeAdminAppeal:
-		m.Subject, m.Text = l.ServerMailAdminAppealSubject(d.Host), l.ServerMailAdminAppealBody(d.Host, link)
+		m.Subject, m.Text = l.ServerMailAdminAppealSubject(name), l.ServerMailAdminAppealBody(name, link)
 	default:
 		return nil
 	}

@@ -16,8 +16,9 @@ export const Route = createFileRoute("/tags/$tag")({
   staticData: { composeButton: true },
   params: { parse: (params) => paramsSchema.parse(params) },
   loader: async ({ context: { queryClient, api }, params: { tag } }) => {
-    // The cached pages are shown as they are; the page refetches them in the background when stale.
-    await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "tag", tag }), staleTime: "static" });
+    // Cached pages that no write has marked stale are shown at once (and refetched in the background once
+    // old); marked or missing ones are fetched and waited for (web-client.md S7).
+    await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "tag", tag }), staleTime: Infinity });
   },
   component: TagPage,
   pendingComponent: TagPending,

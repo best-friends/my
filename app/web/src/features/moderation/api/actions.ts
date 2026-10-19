@@ -6,7 +6,6 @@ import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tans
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
 import { ApiError } from "../../../lib/errors";
-import { refreshQueries } from "../../../lib/query";
 
 type Schemas = components["schemas"];
 
@@ -82,12 +81,12 @@ export function cacheAppealedAction(api: Api, queryClient: QueryClient, action: 
 }
 
 /**
- * Fetches again both lists of the user's own actions (active and all), also the one the page does not show now,
- * after an appeal that the action's state refused (isStaleAppealError): the route reads them from the cache as
- * they are (refreshQueries, web-client.md S1).
+ * Marks stale both lists of the user's own actions (active and all) after an appeal that the action's state
+ * refused (isStaleAppealError): the one on screen is fetched again at once, the other when the page shows it
+ * (web-client.md S1, S7).
  */
 export function refreshOwnActions(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => isOwnActionsQuery(query.queryKey) });
+  return queryClient.invalidateQueries({ predicate: (query) => isOwnActionsQuery(query.queryKey) });
 }
 
 /**

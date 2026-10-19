@@ -13,8 +13,9 @@ export const Route = createFileRoute("/home")({
     // The home timeline needs a session; without one the page offers to sign in instead.
     await session.restore();
     if (session.status !== "signed-in") return;
-    // The cached pages are shown as they are; the page refetches them in the background when stale.
-    await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "home" }), staleTime: "static" });
+    // Cached pages that no write has marked stale are shown at once (and refetched in the background once
+    // old); marked or missing ones are fetched and waited for (web-client.md S7).
+    await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "home" }), staleTime: Infinity });
   },
   component: HomePage,
   pendingComponent: HomePending,

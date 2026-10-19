@@ -32,13 +32,13 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行う。成功時に、応答で確かに分かる変化（投稿・閲覧者・関係・設定）は `setQueryData` / `updateCachedStatuses` でキャッシュに書き、並びや件数が変わり得る一覧・件数には `invalidateQueries`（既定の `refetchType: "active"`）で無効化の印を付ける。表示していないクエリは、次にその画面を開いたときに loader が取り直して待つ（S7）ので、取り直さない。書き込みの成功表示は、表示中のクエリの取り直しを待ってから出す（`await invalidateQueries(...)`）。書き込みが変えるクエリは、その書き込みの関数の隣（`features/<x>/api` のキャッシュ更新関数。例: `cachePostedStatus`）に書き、部品の `onSuccess` はそれを呼ぶ。データの種類ごとの方針は [ADR-0045](../adr/0045-client-server-cache-policy.md) | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`features/*/hooks` と `features/*/components` で `no-restricted-syntax`（キャッシュを書き換える `QueryClient` のメソッド `setQueryData`・`invalidateQueries` などと `refreshQueries` の呼び出し）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
+| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行う。成功時に、応答で確かに分かる変化（投稿・閲覧者・関係・設定）は `setQueryData` / `updateCachedStatuses` でキャッシュに書き、並びや件数が変わり得る一覧・件数には `invalidateQueries`（既定の `refetchType: "active"`）で無効化の印を付ける。表示していないクエリは、次にその画面を開いたときに loader が取り直して待つ（S7）ので、取り直さない。書き込みの成功表示は、表示中のクエリの取り直しを待ってから出す（`await invalidateQueries(...)`）。書き込みが変えるクエリは、その書き込みの関数の隣（`features/<x>/api` のキャッシュ更新関数。例: `cachePostedStatus`）に書き、部品の `onSuccess` はそれを呼ぶ。データの種類ごとの方針は [ADR-0045](../adr/0045-client-server-cache-policy.md) | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`features/*/hooks` と `features/*/components` で `no-restricted-syntax`（キャッシュを書き換える `QueryClient` のメソッド `setQueryData`・`invalidateQueries` などの呼び出し）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
 | S2 | サーバーのデータを `useState`・Context・グローバルストアにコピーしない | レビュー |
 | S3 | 共有・リロード・戻る / 進むで保ちたい状態（タイムラインの種類・タブ・検索語・開いているメディア）は URL に置き、Zod で検証する | TanStack Router の型 |
 | S4 | 状態は使う場所の近くに置き、必要なときだけ最も近い共通の親に持ち上げる | レビュー |
 | S5 | 状態は判別可能なユニオンで表す（`{ status: 'idle' } \| { status: 'error'; error: Problem }`）。矛盾し得る真偽値を並べない | レビュー |
 | S6 | Context は、変化の少ない値（閲覧者・ロケール・テーマ・複合部品の内部）にだけ使い、更新頻度ごとに分ける | レビュー |
-| S7 | ルートは薄くする。パラメータと検索条件を取り出し、loader で、キャッシュにないか無効化されていれば取得して待ち（`queryClient.query({ ...options, staleTime: Infinity })`。無限スクロールは `queryClient.infiniteQuery`。無効化の印を見ない `staleTime: "static"` と、非推奨の `ensureQueryData` は使わない）、それから機能の部品を表示する。ルーターは `defaultStaleReloadMode: "blocking"` で、前に訪れたルートでも loader の終わりを待って描画する（ADR-0045） | `@tanstack/eslint-plugin-router` の `flat/recommended`（`@tanstack/router/create-route-property-order` など）、レビュー |
+| S7 | ルートは薄くする。パラメータと検索条件を取り出し、loader で、キャッシュにないか無効化されていれば取得して待ち（`queryClient.query({ ...options, staleTime: Infinity })`。無限スクロールは `queryClient.infiniteQuery`。無効化の印を見ない `staleTime: "static"` と、非推奨の `ensureQueryData` は使わない）、それから機能の部品を表示する。ルーターは `defaultStaleReloadMode: "blocking"` で、前に訪れたルートでも loader の終わりを待って描画する（ADR-0045） | `@tanstack/eslint-plugin-router` の `flat/recommended`（`@tanstack/router/create-route-property-order` など）、`no-restricted-syntax`（`staleTime: "static"`・`ensureQueryData`）、レビュー |
 | S8 | 楽観的更新は、まず保留中の mutation の `variables` を表示する方式にする。複数の画面に反映が要るときだけ、キャッシュを書き換えて失敗時に戻す | レビュー |
 | S9 | API の型は OpenAPI からの生成物だけを使う。同じ型を手で書かない | 生成物の差分検査（ADR-0029） |
 | S10 | SSE の購読は `lib/sse` の 1 つの Effect だけが行い、受け取った内容を Query のキャッシュに書き込む | レビュー |
@@ -183,7 +183,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 ## 8. サーバーが描画する画面
 
-ログイン・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。
+ログイン・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログインと登録の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。
 
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
@@ -265,7 +265,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
     `md` からのレールとサイドバーは、ホーム・ローカル・連合・通知・検索・プロフィール・設定の 7 つにする。どちらも 1 つのリストの同じ順番で、各項目はその幅で出ないときに `display: none`（アクセシビリティツリーからも外れる）にする。
     ロールが管理の画面の権限（`manage_domains`・`manage_jobs`・`view_audit`・`manage_accounts`・`manage_reports`・`manage_settings`）を持つ閲覧者には、設定の後に「管理」（`/admin`、§14）を足す。レールとサイドバーとメニューのシートに出し、タブバーには出さない。
     jsdom はスタイルを当てないので、統合テストでは両方の項目が文書にあり、どの幅で何が出るかは E2E（`e2e/shell.spec.ts`・`e2e/federated.spec.ts`）で確かめる。
-  - `lg` からのサイドバーは、リストの上にサーバーの名前（`instanceName`）を、リストの下（`nav` の末尾）にサインインしているアカウントのアバター・表示名・ハンドルを出す。
+  - `lg` からのサイドバーは、リストの上にサーバーの名前（下の「サーバーの名前」）を、リストの下（`nav` の末尾）にサインインしているアカウントのアバター・表示名・ハンドルを出す。
     アカウントはそのプロフィールへのリンクで、名前は表示名とハンドル（それぞれ 1 行に省略、G7）、説明（`aria-describedby`）は「サインインしているアカウント」にする。
     場所はリストの「プロフィール」が示すので、このリンクは `aria-current` を持たない。どちらもリストの外に置くので、リストのリンクとその順番はどの幅でも変わらない。`lg` 未満では出さず、サインインしていないときと読み込み中はアカウントを出さない。
   - タブバーの各項目は文言の幅を基本にし、残りの幅を等分する（`flex: 1 1 auto`）。長い文言（「Notifications」）が短い文言（「Menu」）の余りを使うので、320 px の `en`・`ja`・`ar-XB` で 1 行に収まる。
@@ -288,8 +288,11 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
     オフラインで開いたりリロードしたりして `GET /instance` が届かないときも、前と同じ項目を出す。サーバーの答えが届けばそちらを使う。
   - 無効にしたタイムラインのアドレスを直接開いたとき（両方を無効にしたサーバーでタブバーの「タイムライン」を開いたときを含む）は、「もう一度試す」ではなく無効であることを出す（`routes/local.tsx`・`routes/public.tsx`）。
   先頭に、フォーカスしたときだけ見える「本文へ移動」のリンクを置く。
-- **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。
+- **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。サーバーの名前が変わったときも作り直す（フォーカスは動かさない）。
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
+- **サーバーの名前**（`lib/instanceName.ts` の `useInstanceName`）: サイドバー・3 列目の「このサーバーについて」・タブのタイトル・ログインの画面は、サーバーを `GET /instance` の `name`（閲覧者の言語）で呼ぶ。
+  読み込むまでと読めないときは、外枠のランタイム設定の `instanceName`（サーバーが既定の言語で書いた名前）にする。どちらも、名前がなければサーバーのドメインである。
+  管理画面で名前を変えると、取り直した `GET /instance` で再読み込みなしに変わる。ハンドルとリンクは名前によらずドメイン（ランタイム設定の `accountDomain`）のままにする（[名前とドメイン](../operations/instance-settings.md#名前とドメイン)）。
 - **エラー**（E1、G16）: 画面の失敗はルーターの `defaultErrorComponent`（`RouteError`）がレイアウトの中に出す。画面の `h1` はその画面の名前のままにし（ルートの `staticData.title` のメッセージ ID。名前がパラメータで決まる画面は自分の `errorComponent` から `heading` を渡す）、本文の位置に `RegionError` を出す。
   見出しは失敗の種類（`lib/errors.ts` の `errorKind`: 通信できない・サーバーの失敗・見つからない（404）・権限がない（403）・画面自体の不具合）ごとに分け、理由は `errorMessage(error)`（通信できないときはオフラインかどうかも言う。画面自体の不具合はカタログの文）にする。404 と 403 には「もう一度試す」を出さない。
   「もう一度試す」は、まずその失敗を起こした query だけをその場で取り直す。また失敗したら、エラーとボタンのフォーカスを残したまま新しい理由を `role="alert"` で出す。取れたら Query のエラー境界を戻して loader を再実行し、画面の `h1` にフォーカスを移す。
@@ -447,7 +450,10 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   ローカルかどうかは API の `acct` で判断し（`isRemoteAcct`）、ドメインを文字列で比べない。タイムライン・投稿の詳細・通知・プロフィール・フォローの一覧・設定・サイドバーで同じにする。
 - **ほかのサーバーのアカウントと投稿**（`acct` にドメインがあるもの）: 名前の横のハンドルは `@username@domain` で出す。カードの操作の列の末尾に、元のサーバーの投稿のページ（`url`、なければ `uri`）へのリンクを置く。
   リンクはホスト名だけを見せ、アクセシブルネームはそのホスト名を含む文（「{host} で元の投稿を開く」）にする。サインインしていない間も出す。
-  プロフィールはハンドルの下に、元のサーバーのプロフィール（`Account.url`）へのリンクを置く。どちらのリンクも外部へのリンクのアイコン（`@my/ui` の `ExternalLinkIcon`）を付け、`rel="noreferrer"` で開く。
+  プロフィールは各タブの投稿の一覧の上に「このサーバーが受け取った投稿だけを表示しています」と、元のサーバーのプロフィール（`Account.url`）へのリンク「{host} で見る」を置き、投稿が無いタブでは空の表示の説明と操作に同じものを出す（`TimelineFeed` の `origin`、ADR-0044）。
+  どちらのリンクも外部へのリンクのアイコン（`@my/ui` の `ExternalLinkIcon`）を付け、`rel="noreferrer"` で開く。
+  タブの最初のページが `remote_fetch_started` を返したら（client-api.md）、一覧の上に「元のサーバーから最近の投稿を取得しています」を出して `useAnnouncer` の polite の領域で 1 回知らせ（Y7。表示はページと同時に現れるので、それ自体はライブリージョンにしない）、
+  4 秒後にそのアカウントの投稿の一覧に無効化の印を付けて表示中のタブを 1 回だけ取り直し、取り直しの成否にかかわらずキャッシュの最初のページから `remote_fetch_started` を外して表示を消す（`timeline/hooks/useRemoteFetch`）。失敗は知らせない。
   画像は `preview_url` で表示する。アップロードではサムネイル、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。
 - **楽観的更新**（S8）: 同じ投稿がタイムラインのページ・ブースト・スレッド・投稿の query に同時にあるので、`api/cache.ts` がキャッシュの答えを形（`Status`・`items`・`pages`・`ancestors` / `descendants`）で見分け、すべての写しを書き換える。
   トグルは押した時点で状態と数を変え、失敗したらその 1 回分だけ戻してトーストで理由を知らせる。同じ投稿の同じ操作は TanStack Query の mutation の `scope` で 1 つずつ順に送り、最後に押したものが残る。
@@ -461,7 +467,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 `features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ・登録の審査・登録の拒否リスト・通報・異議申し立ての審査・アカウント）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_reports` が通報の画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_reports` が通報の画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -483,13 +489,19 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
     成功したらドメインを残して入力を空にし、一覧を無効にして、結果をフォームの `StatusMessage` に出す。
   - **解除**: 有効な処分の「解除」（アクセシブルネームに種類・ドメイン・処分した日時を含める）は確かめずに送る。成功したら、キャッシュの「有効」の一覧から除いてフォーカスを次の行のボタンに移し（`lib/useFocusAfterRemoval.ts`）、
     「すべて」の一覧では解除済みに置き換えてフォーカスをその行の見出しに移す。結果は一覧の区画の `StatusMessage` に出し、失敗はトーストで知らせる（E2）。
-- **登録の拒否リスト**（`/admin/signup-blocks`、FR-719）: 新しい拒否のフォームと、新しい順の拒否の一覧の 2 つの区画。一覧は「有効」（`active=true`）と「すべて」のタブ（`?filter=all`、URL に置く。S3）で、
+- **登録の拒否リスト**（`/admin/signup-blocks`、FR-719）: 新しい拒否のフォーム、一覧からの追加、新しい順の拒否の一覧の 3 つの区画。一覧は「有効」（`active=true`）と「すべて」のタブ（`?filter=all`、URL に置く。S3）で、
   各拒否は見出し（対象の値）と、種類・効果・状態・追加した日時・終了（なければ「解除するまで」）・解除した日時・追加のしかた（単独か BAN とともにか）の説明リスト、メモにする。
   メールのドメインはドメインへの処分と同じく `DomainName` で 2 つの形を出し、フォームは U-label のまま送る。メールアドレスの拒否はサーバーがハッシュだけを持つので、見出しはそのハッシュ（16 進の SHA-256）になる。
   - **フォーム**: 種類（`RadioGroup`、既定はメールのドメイン。メールのドメイン・メールアドレス・IP アドレスの範囲）、値（必須。名前・説明・空のときの文言は種類で変わる）、効果（`RadioGroup`、必須、既定の選択なし。承認制にする・拒否する）、
     期間（`DurationSelect`、1・7・30・90・180・365 日と「解除するまで」）、メモ（`ReasonField`、1,000 文字）。拒否はすぐに効き、同じ画面で解除できるので確かめずに送る。
     値の形式（ドメイン・メールアドレス・CIDR）はサーバーが確かめ、断られたら理由をフォームの下（`role="alert"`）に出して入力を残す。成功したら種類を残して入力を空にし、一覧と監査ログを取り直して、結果をフォームの `StatusMessage` に出す。
   - **解除**: ドメインへの処分の解除と同じ（アクセシブルネームに種類・値・追加した日時を含め、確かめずに送り、「有効」では次の行のボタン、「すべて」では行の見出しにフォーカスを移す。結果は一覧の区画の `StatusMessage`、失敗はトースト）。
+  - **一覧からの追加**（`POST /admin/signup_blocks/import`）: 使い捨てのメールアドレスのドメインの公開リストのような一覧の値ごとに、同じ種類・効果・期間・メモの拒否を追加する。フォームは種類・一覧・効果・期間・メモ（新しい拒否のフォームと同じ選択肢）で、
+    一覧は `TextArea` に貼り付けるか、「テキストファイルを選ぶ」（React Aria の `FileTrigger`、テキストと CSV）で読み込む。読み込んだファイルの内容は一覧を置き換え、ファイル名と値の数を `StatusMessage` に出す。1 MB を超えるファイルは読まずに `role="alert"` で断る。
+    値の数はサーバーと同じ数え方（空の行と `#` で始まる行を除く）で求め、値がない・10,000 件を超える・1 MB を超える一覧は、`validate` で一覧の欄のエラーにして送らない（サーバーが読む本文は 1 MiB まで）。拒否はすぐに効き、下の一覧で解除できるので確かめずに送る。
+    サーバーの失敗はフォームの下（`role="alert"`）に出して入力を残す。成功したら種類・効果・期間を残して一覧とメモを空にし、拒否の一覧と監査ログを取り直してから、追加した件数と追加しなかった行の数をフォームの `StatusMessage` に出す。
+    追加しなかった行は、見出し（`h3`「追加しなかった行」）・理由ごとの行数の説明リスト・その見出しが名前を与える表（行番号・一覧に書かれたままの値（`dir="auto"`）・理由（`invalid`・`duplicate`・`already_blocked` を文言にしたもの））で、行の順に出す。
+    表は最初の 100 行だけを出し、残りは「すべて表示する」で出す。ボタンは消えるので、フォーカスを表の見出しに移す。次の追加では表を最初の 100 行に戻す（`key`、R10）。
 - **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
   「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
   複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
@@ -516,6 +528,10 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   審査待ちなら「維持する」「撤回する」を出す。決定は後から変えられないので、どちらも `ConfirmDialog` で確かめ（NFR-MOD-7。撤回は処分を解除するので `danger`、BAN の撤回は削除の取り消しも本文で示す）、ダイアログは本人に見せる説明（`ReasonField`、任意、2,000 文字）を持つ。失敗はダイアログの中に出す。
   成功したら応答の申し立て（撤回なら解除された処分を含む）でキャッシュを置き換え、一覧・件数・アカウントの処分の履歴を無効にする。処分の区画の状態は「解除」に変わり、審査の区画はボタンの代わりに決定・日時・審査した人・本人への説明を出して、その見出しにフォーカスを移し、結果を区画の `StatusMessage` に出す。
   ほかのモデレーターが先に逆の決定をした（409 `appeal-decided`）ときは、ダイアログを閉じて申し立てを読み直し、その決定が残ったことを知らせる。
+- **サーバーの設定**（`/admin/settings`、`manage_settings`）: 「名前」の区画（`h2` の `section`）に、アプリの言語（疑似ロケールを除くカタログのある言語）と、名前が保存されているほかの言語ごとに、名前の `TextField`（「{言語}での名前」、言語名は `Intl.DisplayNames`）を並べる。
+  説明に、名前がドメインの代わりに出る場所と、名前のない言語・どの言語にも名前がないときに何が出るか、ハンドルとリンクはドメインのままであることを書く（[名前とドメイン](../operations/instance-settings.md#名前とドメイン)）。
+  101 文字以上と空白だけの名前はフォームの中で無効にし、送らない。「保存する」は変えた言語だけを `PUT /admin/instance_texts/name/{locale}` で送り（空は消す）、規約とポリシーと同じく `GET /admin/instance_texts`・`GET /instance`・監査ログに無効化の印を付け、表示中の `GET /instance` を取り直してから、結果を区画の `StatusMessage` に出す。
+  外枠の名前（「サーバーの名前」）はこの取り直しで変わる。変えた言語がなければ何も送らずにその旨を出す。失敗はボタンの上（`role="alert"`）に出し、入力を残す（E2）。
 - **通報の一覧**（`/admin/reports`、FR-701・FR-710）: 「未解決」と「解決済み」のタブ（`?state=resolved`、URL に置く。S3）で、新しい順。各通報は見出し（対象のハンドル、詳細へのリンク）と、カテゴリ・通報者・通報日時・担当・投稿の数（解決済みは結果と解決日時も）の説明リスト、通報者のコメント（`dir="auto"`、2 行に省略）にする。
   担当はアカウントの ID しか返らないので、閲覧者なら「あなた」、ほかは `GET /accounts/{id}` で名前を出す。
 - **通報の詳細**（`/admin/reports/{id}`、NFR-MOD-4）: 1 つの画面に、通報の内容（状態・カテゴリ・日時・通報者・通報元・転送・引用するルール・コメント）、通報された投稿、通報されたアカウントとその履歴（ほかの通報と処分の件数、`manage_accounts` があれば処分の履歴）、担当、メモ、対応の区画を `h2` の `section` で並べる。
@@ -561,6 +577,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **テスト**: `features/admin/admin.test.tsx` が出し分け・一覧と絞り込み・ページの読み足し・再開・再実行・失敗・403 を MSW で検査する。既定の閲覧者は権限を持たないので、テストは `operatorHandler()` で権限を与える。
   `features/admin/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
   `features/admin/signupBlocks.test.tsx` は、IDN のメールのドメインの拒否（A-label で記録され、両方の形で出る）、種類で変わる値の欄、必須の入力、フォームの下の失敗、解除とフォーカス、解除の失敗、管理の画面のリンク、権限を検査する。
+  `features/admin/signupBlockImport.test.tsx` は、貼り付けた一覧の追加（送る内容、追加しなかった行の表と理由ごとの行数、一覧の取り直し、次の一覧のためのフォーム）、テキストファイルからの読み込み、大きすぎるファイル、値のない一覧と効果の必須、10,000 件を超える一覧、長い表の「すべて表示する」とフォーカス、サーバーの失敗を検査する。
   `features/admin/auditLog.test.tsx` は、監査ログの行と対象へのリンク、`Select` と行のリンクでの絞り込みと URL、絞り込みのあとのフォーカス、`?pages=` の書き込みと読み込み、URL の不正な値、次のページの失敗、空の状態、権限のない閲覧者と 403 を検査する。
   `features/admin/registrations.test.tsx` は、登録の理由の `dir="auto"`、ページの読み足し、メモ付きの承認と却下・フォーカス・`role="status"` の結果、キャンセルと Esc、メモの上限、ダイアログの中の失敗、先に決められた登録、権限を検査する。
   `features/admin/accounts.test.tsx` は、検索の結果（メールアドレスと IP アドレスを出さない）、キーボードでの検索と URL（ハンドルの分割・A-label のドメイン・IP）、必須の入力欄、断られた検索と再試行、続きを探す空の状態、
@@ -572,7 +589,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   `features/admin/roles.test.tsx` は、ロールの一覧と持っているか、確認を経た付与と剥奪・`role="status"` の結果・見出しへのフォーカス、キャンセルと Esc、閲覧者より上のロールに操作がなく理由が出ること、403 と 409（最後の管理者）の理由をダイアログの中に出すこと、読み込みの失敗と再試行、`manage_roles` のない閲覧者にロールの区画も要求もないことを検査する。
   E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`、`e2e/reports.spec.ts`、`e2e/accounts.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL・キーボードで通報を開き、BAN の確認のダイアログを経て、処分で通報を解決して一覧から消えるまで・キーボードで検索からアカウントを開き、押したときだけメールアドレスと IP アドレスを出し、解除の確認のダイアログを経てフォーカスが行の見出しに移るまで・リモートのアカウントの処分の種類を検査する。
   `e2e/registrations.spec.ts` は、登録の審査の画面の axe・横スクロール・ARIA スナップショット、承認の確認のダイアログ、キーボードでの却下とフォーカスの移動を検査する。
-  `e2e/signup-blocks.spec.ts` は、登録の拒否リストの axe・横スクロール・ARIA スナップショット（両方の形のドメインと長いハッシュ）、キーボードでのメールのドメインの拒否の追加、解除とフォーカスの移動を検査する。
+  `e2e/signup-blocks.spec.ts` は、登録の拒否リストの axe・横スクロール・ARIA スナップショット（両方の形のドメインと長いハッシュ）、キーボードでのメールのドメインの拒否の追加、キーボードでの一覧からの追加と追加しなかった行の表の ARIA スナップショット、解除とフォーカスの移動を検査する。
   `e2e/roles.spec.ts` は、ロールの区画の ARIA スナップショット（閲覧者より上のロールの理由）・axe・横スクロールと、キーボードで付与の確認のダイアログを経て、区画の見出しにフォーカスが移るまでを検査する。
   `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターから文書の公開ページを開き、Markdown の見出し・箇条書き・表の ARIA スナップショット・両方のテーマの axe・横スクロールを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
   `e2e/appeals.spec.ts` は、異議申し立ての一覧の axe・横スクロール・ARIA スナップショットと、キーボードで申し立てを開き、撤回の確認のダイアログを経て処分が解除と出て、審査の見出しにフォーカスが移るまでを検査する。
@@ -644,7 +661,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする | `no-restricted-imports`、`boundaries/dependencies`、レビュー、`knip` |
+| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする。部品も SVG を描かない。例外は部品の形の一部で状態とともに変わる印（`Checkbox` のチェック、`Select` と `ContentWarning` の山形、`Tooltip` の矢印、`Avatar` の人影）と、テストやストーリーの差し替えの中身だけで、`app/eslint.config.js` に理由とともに挙げる | `no-restricted-syntax`（JSX の `<svg>`・`<path>` などの SVG の要素）、`no-restricted-imports`、`boundaries/dependencies`、`knip` |
 | G11 | アイコンの大きさは置き場所で決める: 文と並ぶものは `size-4`、ボタンの中は `size-5`、ナビゲーションは `size-6`。`Button`・`ToggleButton`・`Link` が子の SVG の大きさを決め、アイコンの側では大きさを指定しない（react-icons が書く `1em` より `[&>svg]:size-*` が優先し、置き場所が決めない所では文字の大きさで描かれる） | 部品のテスト（ボタンの中の SVG が 0 × 0 でない）、スクリーンショット |
 | G12 | アイコンは飾り（`aria-hidden="true"`、`focusable="false"`、`Icons.tsx` がどのアイコンにも付ける）にし、意味は見える文言かアクセシブルネームで伝える。アイコンだけのボタンには `aria-label` と、同じ文言の `Tooltip` を付ける | `@my/ui` の部品のテスト（`Foundations/Icons` の play）、レビュー |
 | G13 | オン / オフはアイコンの形でも示し、色だけに頼らない（WCAG 1.4.1）: オンは、形が閉じるもの（星・ブックマーク・警告）を Phosphor の Fill、閉じないもの（ブースト）を Bold にする。向きのあるアイコン（返信・戻る・外部へのリンク）は `rtl:-scale-x-100` で反転し（Phosphor の `mirrored` は書字方向を見ないので使わない）、時計回りの意味を持つもの（再読み込み）や輪（ブースト）は反転しない | `Foundations/Icons` の play（`ar-XB` で向きのあるものだけが反転する）、スクリーンショット（`ar-XB`）、レビュー |

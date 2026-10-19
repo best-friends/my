@@ -92,8 +92,8 @@ type SignupBlock struct {
 // Validate checks the invariants of a new block: a known kind and severity, a value in the
 // canonical form of its kind, a valid comment, and an end after its start.
 func (b SignupBlock) Validate() error {
-	if err := checkText("comment", b.Comment, MaxSignupBlockComment); err != nil {
-		return fmt.Errorf("%w: %w", ErrInvalidSignupBlock, err)
+	if err := CheckSignupBlockComment(b.Comment); err != nil {
+		return err
 	}
 	switch {
 	case b.ID == "" || b.CreatedAt.IsZero():
@@ -102,7 +102,7 @@ func (b SignupBlock) Validate() error {
 		return fmt.Errorf("%w: kind %q", ErrInvalidSignupBlock, b.Kind)
 	case !b.Severity.Valid():
 		return fmt.Errorf("%w: severity %q", ErrInvalidSignupBlock, b.Severity)
-	case !validSignupBlockValue(b.Kind, b.Value):
+	case !ValidSignupBlockValue(b.Kind, b.Value):
 		return fmt.Errorf("%w: %q is not a canonical %s", ErrInvalidSignupBlock, b.Value, b.Kind)
 	case b.ExpiresAt != nil && !b.ExpiresAt.After(b.CreatedAt):
 		return fmt.Errorf("%w: it must expire after it is created", ErrInvalidSignupBlock)
@@ -110,7 +110,17 @@ func (b SignupBlock) Validate() error {
 	return nil
 }
 
-func validSignupBlockValue(k SignupBlockKind, v string) bool {
+// CheckSignupBlockComment checks the comment of a block: a *TextError wrapped with
+// ErrInvalidSignupBlock when it is too long or contains U+0000.
+func CheckSignupBlockComment(c string) error {
+	if err := checkText("comment", c, MaxSignupBlockComment); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidSignupBlock, err)
+	}
+	return nil
+}
+
+// ValidSignupBlockValue reports whether v is a value of kind k in its canonical form.
+func ValidSignupBlockValue(k SignupBlockKind, v string) bool {
 	switch k {
 	case SignupBlockEmailDomain:
 		return ValidDomain(v) && !strings.Contains(v, "_")
@@ -201,3 +211,51 @@ func EmailHash(address string) string {
 // SignupBlockLabel returns the display name of a block in the audit log: its kind and value,
 // such as "email_domain spam.example".
 func SignupBlockLabel(b SignupBlock) string { return string(b.Kind) + " " + b.Value }
+
+// MaxSignupBlockImport is the number of values that one import of a list of sign-up blocks
+// (ParseSignupBlockList) may hold, enough for the public lists of disposable email domains.
+const MaxSignupBlockImport = 10000
+
+// SignupBlockListEntry is one value of a list of sign-up blocks and the line it is on, from 1.
+type SignupBlockListEntry struct {
+	Line  int
+	Value string
+}
+
+// ParseSignupBlockList returns the values of a list of sign-up blocks: one value per line, or
+// the first field of a CSV row (quotes around it are dropped). Blank lines and lines whose first
+// character other than spaces is "#" are skipped, as is a UTF-8 byte order mark at the start.
+// It does not validate the values.
+func ParseSignupBlockList(text string) []SignupBlockListEntry {
+	text = strings.TrimPrefix(text, "\uFEFF")
+	var out []SignupBlockListEntry
+	for i, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if c := strings.IndexByte(line, ','); c >= 0 {
+			line = strings.TrimSpace(line[:c])
+		}
+		if len(line) >= 2 && line[0] == '"' && line[len(line)-1] == '"' {
+			line = strings.TrimSpace(line[1 : len(line)-1])
+		}
+		out = append(out, SignupBlockListEntry{Line: i + 1, Value: line})
+	}
+	return out
+}
+
+// SignupBlockSkip is why an import of a list of sign-up blocks did not add the block of one of
+// its values.
+type SignupBlockSkip string
+
+// Reasons to skip a value of an import.
+const (
+	// SignupBlockSkipInvalid: the value is not valid for the kind of the import.
+	SignupBlockSkipInvalid SignupBlockSkip = "invalid"
+	// SignupBlockSkipDuplicate: an earlier line of the list has the same canonical value.
+	SignupBlockSkipDuplicate SignupBlockSkip = "duplicate"
+	// SignupBlockSkipAlreadyBlocked: a block in effect has the same kind and canonical value and
+	// a severity at least as strong.
+	SignupBlockSkipAlreadyBlocked SignupBlockSkip = "already_blocked"
+)

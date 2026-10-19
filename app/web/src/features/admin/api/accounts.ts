@@ -8,7 +8,7 @@ import { type InfiniteData, infiniteQueryOptions, type Query, type QueryClient }
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { isPostListQuery, refreshQueries } from "../../../lib/query";
+import { isPostListQuery } from "../../../lib/query";
 import { pageQuery, refreshAuditLog } from "./admin";
 import { type AccountAction, accountActionsQueryOptions, refreshReportLists } from "./reports";
 
@@ -83,17 +83,17 @@ function isAccountSearchQuery(queryKey: readonly unknown[]): boolean {
 }
 
 /**
- * Fetches again (refreshQueries) what a change of the state, the restrictions or the roles of account `id`
- * changes: the searches that are cached (each shows those of its accounts) and the account itself, and with
- * `actions` its moderation actions too.
+ * Marks stale what a change of the state, the restrictions or the roles of account `id` changes: the searches
+ * that are cached (each shows those of its accounts) and the account itself, and with `actions` its moderation
+ * actions too. Resolves once those on screen are fetched again; the others are fetched when their page opens
+ * (web-client.md S1, S7).
  */
-export function refreshAdminAccount(queryClient: QueryClient, api: Api, id: string, { actions }: { actions: boolean }): Promise<void> {
-  return refreshQueries(
-    queryClient,
-    { predicate: (query) => isAccountSearchQuery(query.queryKey) },
-    { queryKey: adminAccountQueryOptions(api, id).queryKey },
-    ...(actions ? [{ queryKey: accountActionsQueryOptions(api, id).queryKey }] : []),
-  );
+export async function refreshAdminAccount(queryClient: QueryClient, api: Api, id: string, { actions }: { actions: boolean }): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ predicate: (query) => isAccountSearchQuery(query.queryKey) }),
+    queryClient.invalidateQueries({ queryKey: adminAccountQueryOptions(api, id).queryKey }),
+    ...(actions ? [queryClient.invalidateQueries({ queryKey: accountActionsQueryOptions(api, id).queryKey })] : []),
+  ]);
 }
 
 /**
@@ -134,18 +134,18 @@ function isProfileOf(query: Query, id: string): boolean {
 const publicKinds: ReadonlySet<AccountAction["kind"]> = new Set(["mark_statuses_sensitive", "delete_statuses", "force_sensitive", "limit", "suspend", "ban"]);
 
 /**
- * Fetches again what everyone sees of account `id` when a moderation action of `kind` starts or ends (publicKinds):
+ * Marks stale what everyone sees of account `id` when a moderation action of `kind` starts or ends (publicKinds):
  * its profile and the lists of posts. A warning or a restriction of what the account itself may do changes neither.
  */
 export function refreshPublicAccount(queryClient: QueryClient, id: string, kind: AccountAction["kind"]): Promise<void> | undefined {
   if (!publicKinds.has(kind)) return undefined;
-  return refreshQueries(queryClient, { predicate: (query) => isProfileOf(query, id) || isPostListQuery(query.queryKey) });
+  return queryClient.invalidateQueries({ predicate: (query) => isProfileOf(query, id) || isPostListQuery(query.queryKey) });
 }
 
 /**
  * What a new moderation action on account `accountId` changes (web-client.md S1, ADR-0045): the account's page,
  * its actions and the searches (refreshAdminAccount), the audit log, the lists of reports when it resolves report
- * `reportId`, and what everyone sees of the account. Resolves once they are fetched again.
+ * `reportId`, and what everyone sees of the account. They are marked stale; resolves once those on screen are fetched again.
  */
 export async function cacheIssuedAccountAction(queryClient: QueryClient, api: Api, accountId: string, action: AccountAction, reportId: string | undefined): Promise<void> {
   await Promise.all([
@@ -158,15 +158,15 @@ export async function cacheIssuedAccountAction(queryClient: QueryClient, api: Ap
 
 /**
  * What a new moderation action changes once the screen has shown it: every cached report, which tells of the
- * account's actions (the one it resolved too), is fetched again, and the posts it acted on are marked.
+ * account's actions (the one it resolved too), and the posts it acted on are marked stale.
  */
 export function refreshActedReports(queryClient: QueryClient, action: AccountAction): void {
-  void refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/reports/{id}" });
+  void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/reports/{id}" });
   if (action.status_ids !== undefined) void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/statuses/{id}" });
 }
 
 /**
- * Fetches again what lifting `lifted`, an action on account `accountId`, changes beside its row: the account's
+ * Marks stale what lifting `lifted`, an action on account `accountId`, changes beside its row: the account's
  * state and restrictions (its page and the searches), the audit log, and what everyone sees of the account.
  */
 export async function refreshLiftedAccountAction(queryClient: QueryClient, api: Api, accountId: string, lifted: AccountAction): Promise<void> {

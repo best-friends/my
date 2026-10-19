@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The sign-up blocks screen in every width × locale project (ADR-0027, FR-719): the blocks in effect with an
 // email domain in non-Latin letters shown in both of its forms and a long hash that wraps, adding a block on an
-// email domain with the keyboard, and lifting a block, each passing axe without scrolling sideways. `vite
+// email domain with the keyboard, importing a list with the keyboard and reading the lines it skipped, and
+// lifting a block, each passing axe without scrolling sideways. `vite
 // preview` has no API, so each test plays the server of a signed-in moderator with page.route; names change
 // with the locale, so the structure is checked by role and the values the server sends.
 import type { Page, Route } from "@playwright/test";
@@ -83,6 +84,24 @@ async function moderatorServer(page: Page) {
       blocks = [block, ...blocks];
       return json(route, block);
     }
+    if (key === "POST /admin/signup_blocks/import") {
+      const body = request.postDataJSON() as { kind: string; text: string; severity: string };
+      requests.push(`${key} ${body.kind} ${body.severity}`);
+      // Every line is added but the one in non-Latin letters, which is blocked already, and a value that is no domain.
+      const skipped: { line: number; value: string; reason: string }[] = [];
+      let added = 0;
+      body.text.split("\n").forEach((raw, index) => {
+        const value = raw.trim();
+        if (value === "" || value.startsWith("#")) return;
+        if (value === unicodeDomain) skipped.push({ line: index + 1, value, reason: "already_blocked" });
+        else if (!value.includes(".")) skipped.push({ line: index + 1, value, reason: "invalid" });
+        else {
+          added += 1;
+          blocks = [{ id: `0192f0c4-7a8e-7000-8000-${String(index).padStart(12, "0")}`, kind: body.kind, value, severity: body.severity, state: "active", created_at: "2026-10-17T00:00:00Z" }, ...blocks];
+        }
+      });
+      return json(route, { added, skipped });
+    }
     const lift = /^POST \/admin\/signup_blocks\/([^/]+)\/lift$/.exec(key);
     if (lift) {
       requests.push(key);
@@ -155,7 +174,7 @@ test.describe("sign-up blocks", () => {
     await page.keyboard.press("Space");
     const effect = main.getByRole("radiogroup").nth(1).getByRole("radio").first();
     await expect(effect).toBeChecked();
-    await main.locator('form button[type="submit"]').focus();
+    await main.locator('form button[type="submit"]').first().focus();
     await page.keyboard.press("Enter");
     await expect(main.getByRole("status").filter({ hasText: "spam.example" })).toBeVisible();
     await expect(list.getByRole("heading", { level: 3, name: "spam.example" })).toBeVisible();
@@ -169,6 +188,54 @@ test.describe("sign-up blocks", () => {
     // Focus moves to the button of the row that took the lifted one's place.
     await expect(list.getByRole("listitem").filter({ hasText: hash }).getByRole("button")).toBeFocused();
     expect(requests).toEqual(["POST /admin/signup_blocks email_domain spam.example require_approval", "POST /admin/signup_blocks/0192f0c4-7a8e-7000-8000-0000000001a2/lift"]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("an import of a list of sign-up blocks", () => {
+  test("adds a list with the keyboard and shows the lines it skipped and why", async ({ page, makeAxeBuilder }) => {
+    const requests = await moderatorServer(page);
+    await page.goto("/admin/signup-blocks");
+    const main = page.getByRole("main");
+    await expect(main.getByRole("tabpanel").getByRole("heading", { level: 3 })).toHaveCount(2);
+    // The import is the second section; its kind is the email domain already.
+    const section = main.getByRole("region").nth(1);
+    const listField = section.getByRole("textbox").first();
+    await listField.focus();
+    await page.keyboard.insertText(["# Disposable email domains", "throwaway.example", unicodeDomain, "not-a-domain", "", "mailinator.example"].join("\n"));
+    // Tab past the file button to the first effect, which none is chosen in yet, and choose it with Space.
+    await page.keyboard.press("Tab");
+    await expect(section.getByRole("button").first()).toBeFocused();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Space");
+    await expect(section.getByRole("radiogroup").nth(1).getByRole("radio").first()).toBeChecked();
+    await section.locator('button[type="submit"]').focus();
+    await page.keyboard.press("Enter");
+
+    const table = section.getByRole("table");
+    await expect(table).toBeVisible();
+    expect(requests).toEqual(["POST /admin/signup_blocks/import email_domain require_approval"]);
+    await expect(section.getByRole("status").last()).not.toBeEmpty();
+    await expect(listField).toHaveValue("");
+    await expect(table).toMatchAriaSnapshot(`
+      - table:
+        - rowgroup:
+          - row:
+            - columnheader
+            - columnheader
+            - columnheader
+        - rowgroup:
+          - row:
+            - cell
+            - cell "${unicodeDomain}"
+            - cell
+          - row:
+            - cell
+            - cell "not-a-domain"
+            - cell
+    `);
+    await expect(main.getByRole("tabpanel").getByRole("heading", { level: 3, name: "mailinator.example" })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

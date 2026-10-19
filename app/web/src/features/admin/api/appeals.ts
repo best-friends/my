@@ -9,7 +9,6 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshQueries } from "../../../lib/query";
 import { refreshAdminAccount, refreshPublicAccount } from "./accounts";
 import { pageQuery, refreshAuditLog } from "./admin";
 
@@ -91,21 +90,22 @@ export function decideAppealMutation(api: Api) {
 }
 
 /**
- * Fetches again (refreshQueries) what a decision on an appeal of `accountId` changes: the lists of appeals (it
+ * Marks stale what a decision on an appeal of `accountId` changes (web-client.md S1): the lists of appeals (it
  * moves between the tabs), the moderators' counts, that account with its actions and in the searches (an
- * overturn lifts an action), and the audit log, which records the decision. A list that was only marked stale would show the appeal as it was: a decided appeal
- * among those awaiting review.
+ * overturn lifts an action), and the audit log, which records the decision. Those on screen are fetched again at
+ * once; a list opened later is fetched again before it shows (S7), so it never shows a decided appeal among those
+ * awaiting review.
  */
 async function refreshAppealLists(queryClient: QueryClient, api: Api, accountId: string): Promise<void> {
   await Promise.all([
-    refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts" }),
+    queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts" }),
     refreshAdminAccount(queryClient, api, accountId, { actions: true }),
     refreshAuditLog(queryClient),
   ]);
 }
 
 /**
- * Fetches again what a decision changes (refreshAppealLists, and what everyone sees of the account when an
+ * Marks stale what a decision changes (refreshAppealLists, and what everyone sees of the account when an
  * overturn lifts its action, refreshPublicAccount), then puts `appeal`, as the decision answered it, into the
  * cache: the appeal's page shows the decision once the list has it too.
  */
@@ -119,7 +119,7 @@ export async function storeAppeal(queryClient: QueryClient, api: Api, appeal: Ap
 
 /**
  * After a decision refused because another moderator decided appeal `id` first: that decision changed the appeal
- * and the lists as well, so they are fetched again; resolves once they are.
+ * and the lists as well, so they are marked stale; resolves once those on screen are fetched again.
  */
 export async function refreshDecidedAppeal(queryClient: QueryClient, api: Api, id: string): Promise<void> {
   const accountId = queryClient.getQueryData<Appeal>(appealQueryOptions(api, id).queryKey)?.account_id;

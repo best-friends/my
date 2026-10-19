@@ -3,7 +3,8 @@
 // Package authpages serves the server-rendered sign-in, sign-out, registration, email
 // verification, and OAuth authorization (consent) screens (ADR-0030): plain HTML forms from
 // html/template that work without JavaScript, worded from the server message catalog and styled
-// by one stylesheet that the web client's build provides.
+// by one stylesheet that the web client's build provides. With a CAPTCHA (Options.HumanCheck),
+// the sign-in and registration forms also load the service's widget (humancheck.go).
 //
 // A sign-in or sign-up starts a browser session carried by the __Host-my_session cookie
 // (Secure, HttpOnly, SameSite=Lax, Path=/) with a new token every time (ADR-0019 §4). Every POST
@@ -73,9 +74,24 @@ const (
 // contentSecurityPolicy allows the pages nothing but their own stylesheet, images, and forms.
 // Browsers check form-action on the redirects that follow a form, so it lists the origins a
 // form may end up at: this site, Options.FormActionOrigins, and the consent page's redirect URI.
-func contentSecurityPolicy(formAction []string) string {
-	return "default-src 'none'; style-src 'self'; img-src 'self'; form-action " + strings.Join(append([]string{"'self'"}, formAction...), " ") +
-		"; frame-ancestors 'none'; base-uri 'none'"
+// A page with the CAPTCHA widget adds the service's sources in widget (humancheck.go); the
+// others pass none.
+func contentSecurityPolicy(formAction []string, widget kernel.HumanCheckCSP) string {
+	var b strings.Builder
+	b.WriteString("default-src 'none'")
+	if len(widget.ScriptSrc) > 0 {
+		b.WriteString("; script-src " + strings.Join(widget.ScriptSrc, " "))
+	}
+	if len(widget.FrameSrc) > 0 {
+		b.WriteString("; frame-src " + strings.Join(widget.FrameSrc, " "))
+	}
+	if len(widget.ConnectSrc) > 0 {
+		b.WriteString("; connect-src " + strings.Join(widget.ConnectSrc, " "))
+	}
+	b.WriteString("; style-src " + strings.Join(append([]string{"'self'"}, widget.StyleSrc...), " "))
+	b.WriteString("; img-src 'self'; form-action " + strings.Join(append([]string{"'self'"}, formAction...), " "))
+	b.WriteString("; frame-ancestors 'none'; base-uri 'none'")
+	return b.String()
 }
 
 // maxFormBytes bounds a form body; the largest are the registration form, whose reason field
@@ -118,6 +134,10 @@ type Options struct {
 	FormActionOrigins []string
 	// Locales resolves the locale of the screens (ADR-0009 §2).
 	Locales *i18n.Resolver
+	// InstanceName returns the name of the instance for readers of locale: its display name, or
+	// its domain when it has none. The pages show it above their card and in their title; nil
+	// leaves it out.
+	InstanceName func(ctx context.Context, locale string) string
 	// Stylesheet is the URL of the pages' stylesheet, the web build's server pages entry
 	// (web.Handler.Stylesheet); empty leaves the pages unstyled.
 	Stylesheet string
@@ -131,6 +151,9 @@ type Options struct {
 	// Documents serves the pages of the terms of service and the privacy policy (documents.go);
 	// nil leaves them unpublished.
 	Documents Documents
+	// HumanCheck is the CAPTCHA widget of the sign-in and registration forms (humancheck.go);
+	// nil, as with the captcha setting none, renders none.
+	HumanCheck *kernel.HumanCheckWidget
 }
 
 // Handler serves the screens.
@@ -163,7 +186,7 @@ func New(o Options) *Handler {
 	}
 	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
 	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize, pageDocument} {
-		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
+		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/human_check.html", "templates/"+name+".html"))
 	}
 	h.cop.SetDenyHandler(http.HandlerFunc(h.crossOrigin))
 	return h
@@ -196,13 +219,16 @@ func (h *Handler) Register(r Router) {
 
 // page is the data of a template.
 type page struct {
-	L          *i18n.Localizer
-	Lang, Dir  string
-	Title      string
-	Stylesheet string
-	CSRFToken  string
-	ReturnTo   string
-	Email      string
+	L         *i18n.Localizer
+	Lang, Dir string
+	// Title is the page's title; DocumentTitle adds the instance's name to it.
+	Title string
+	// InstanceName names the instance in the page's locale; "" leaves it out.
+	InstanceName string
+	Stylesheet   string
+	CSRFToken    string
+	ReturnTo     string
+	Email        string
 	// Error is an alert about the whole form; Notice reports success.
 	Error  string
 	Notice string
@@ -219,6 +245,9 @@ type page struct {
 	Consent *consent
 	// Document is the document on its page.
 	Document *documentView
+	// HumanCheck is the CAPTCHA widget of the form; the page's Content-Security-Policy admits
+	// the service when it is set.
+	HumanCheck *humanCheckView
 	// Documents are the links to the published documents, in the footer of every page and on
 	// the registration form; render fills them.
 	Documents []documentLink
@@ -227,6 +256,14 @@ type page struct {
 	// formAction lists origins the page's forms may be redirected to besides
 	// Options.FormActionOrigins.
 	formAction []string
+}
+
+// DocumentTitle is the <title> of the page: its title and the instance's name.
+func (p page) DocumentTitle() string {
+	if p.InstanceName == "" {
+		return p.Title
+	}
+	return p.L.ServerAuthDocumentTitle(p.InstanceName, p.Title)
 }
 
 func (h *Handler) newPage(r *http.Request, title func(*i18n.Localizer) string) page {
@@ -238,13 +275,20 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 	hd := w.Header()
 	hd.Set("Content-Type", "text/html; charset=utf-8")
 	hd.Set("Content-Language", p.Lang)
-	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...)))
+	var widget kernel.HumanCheckCSP
+	if p.HumanCheck != nil {
+		widget = h.humanCheckCSP()
+	}
+	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...), widget))
 	cache := p.cache
 	if cache == "" {
 		cache = "no-store"
 	}
 	hd.Set("Cache-Control", cache)
 	hd.Add("Vary", "Accept-Language, Cookie")
+	if h.o.InstanceName != nil {
+		p.InstanceName = h.o.InstanceName(r.Context(), p.Lang)
+	}
 	p.Documents = h.documentLinks(r, p.L)
 	w.WriteHeader(status)
 	if err := h.pages[name].ExecuteTemplate(w, "layout", p); err != nil {
@@ -314,6 +358,7 @@ func (h *Handler) renderSignIn(w http.ResponseWriter, r *http.Request, status in
 		h.o.Logger.WarnContext(r.Context(), "read the registration mode", slog.Any("error", err))
 	}
 	p.CanSignUp = err == nil && mode != identity.RegistrationClosed
+	p.HumanCheck = h.humanCheck(w, r, p.L, kernel.HumanCheckActionSignIn)
 	h.render(w, r, status, pageSignIn, p)
 }
 
@@ -336,11 +381,12 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	signedIn, err := h.o.Identity.SignIn(r.Context(), appidentity.SignInInput{
-		Email:        email,
-		Password:     password,
-		IP:           clientIP(r),
-		UserAgent:    r.UserAgent(),
-		CurrentToken: cookieValue(r, CookieSession),
+		Email:           email,
+		Password:        password,
+		IP:              clientIP(r),
+		UserAgent:       r.UserAgent(),
+		CurrentToken:    cookieValue(r, CookieSession),
+		HumanCheckToken: h.humanCheckToken(r),
 	})
 	var limited *kernel.RateLimitedError
 	switch {
@@ -353,6 +399,9 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	case errors.Is(err, appidentity.ErrInvalidCredentials):
 		h.renderSignIn(w, r, http.StatusUnprocessableEntity, returnTo, email, (*i18n.Localizer).ServerAuthSignInFailed)
+		return
+	case errors.Is(err, kernel.ErrHumanCheckFailed):
+		h.renderSignIn(w, r, http.StatusUnprocessableEntity, returnTo, email, (*i18n.Localizer).ServerAuthHumanCheckFailed)
 		return
 	case err != nil:
 		h.internalError(w, r, err)

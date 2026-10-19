@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A new post is in the lists that no page shows when it is posted (web-client.md S1): their routes read them
-// from the cache as they are (S7), so the post fetches them again before it is shown done. The server answers
-// every list slowly, as over a real network, so that a list shown from a stale cache would be seen.
+// A new post is in the lists that no page shows when it is posted (ADR-0045, web-client.md S1, S7): the post
+// marks them stale, and their route fetches them again, and waits, when it opens next, so the list never
+// shows what it was before the post. The server answers every list slowly, as over a real network, so that a
+// list shown from a stale cache would be seen.
 import { screen, within } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
+import { watchAppearances } from "../../test/appearances";
 import { type Schemas, statusFixture, statusPage, viewerFixture, viewerStatusFixture } from "../../test/fixtures";
 import { apiBase, resumableSession } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
@@ -40,7 +42,7 @@ function navigation() {
 }
 
 describe("a new post", () => {
-  test("is on the viewer's profile at once when it opens again after posting from the home timeline", async () => {
+  test("is on the viewer's profile from its first render when it opens again after posting from the home timeline", async () => {
     postingServer();
     const { user } = await renderApp({ path: "/profile" });
     expect(await screen.findByRole("heading", { level: 1, name: viewerFixture.display_name })).toBeInTheDocument();
@@ -52,14 +54,18 @@ describe("a new post", () => {
     const sheet = await screen.findByRole("dialog", { name: "New post" });
     await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Fresh from the oven");
     await user.click(within(sheet).getByRole("button", { name: "Post" }));
-    // The post is shown done once the lists it is in have been fetched again.
+    // The post is shown done once the home timeline, on screen, has been fetched again.
     const messages = await screen.findByRole("region", { name: "Messages" }, { timeout: latency * 5 });
     expect(within(messages).getByText("Posted.")).toBeInTheDocument();
 
+    const staleProfile = watchAppearances(() => screen.queryByText("No posts yet") !== null);
     await user.click(within(navigation()).getByRole("link", { name: "Profile" }));
-    expect(await screen.findByRole("heading", { level: 1, name: viewerFixture.display_name })).toBeInTheDocument();
-    // The profile shows the new post from its first render, not the list from before it.
+    // The home timeline stays on screen while the profile's posts are fetched again (web-client.md E4).
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: viewerFixture.display_name }, { timeout: latency * 5 })).toBeInTheDocument();
+    // The profile shows the new post from its first render, and never the list from before it.
     expect(within(screen.getByRole("feed", { name: "Posts" })).getByText("Fresh from the oven")).toBeInTheDocument();
+    expect(staleProfile()).toBe(false);
   });
 });
 

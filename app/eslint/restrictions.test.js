@@ -36,6 +36,7 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
     { code: "function useX() { 'use strict'; return 'use no memo'; }", options: restrict.syntax },
     { code: "useQuery(api.query.queryOptions('get', '/instance'));", options: restrict.syntax },
     { code: "useMutation({ mutationFn: (body) => createStatus(api, body) });", options: restrict.syntax },
+    { code: "queryClient.query({ ...options, staleTime: Infinity });", options: restrict.syntax },
   ],
   invalid: [
     // A5
@@ -58,6 +59,27 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
     { ...fails("'use no forget';"), options: restrict.syntax },
     { ...fails("api.query.useQuery('get', '/instance');"), options: restrict.syntax },
     { ...fails("const m = services.api.query.useMutation('post', '/statuses');"), options: restrict.syntax },
+    // S7
+    { ...fails("queryClient.query({ ...options, staleTime: 'static' });"), options: restrict.syntax },
+    { ...fails("queryClient.ensureQueryData(options);"), options: restrict.syntax },
+    { ...fails("context.queryClient.ensureInfiniteQueryData(options);"), options: restrict.syntax },
+  ],
+});
+
+ruleTester.run("no-restricted-syntax (SVG, G10)", core.get("no-restricted-syntax"), {
+  valid: [
+    { code: "<ReplyIcon />", options: restrict.svgSyntax },
+    { code: "<Button><StarIcon filled /></Button>", options: restrict.svgSyntax },
+    { code: "<img src='/logo.svg' alt='' />", options: restrict.svgSyntax },
+    { code: "<a href='#x'><span>x</span></a>", options: restrict.svgSyntax },
+    { code: "const svg = document.querySelector('svg');", options: restrict.svgSyntax },
+  ],
+  invalid: [
+    { ...fails("<svg viewBox='0 0 24 24' />"), options: restrict.svgSyntax },
+    { ...fails("<svg aria-hidden='true'><path d='M0 0h24' /></svg>", 2), options: restrict.svgSyntax },
+    { ...fails("<><circle cx={12} cy={12} r={3} /><rect width={4} height={4} /></>", 2), options: restrict.svgSyntax },
+    { ...fails("<g><use href='#icon' /></g>", 2), options: restrict.svgSyntax },
+    { ...fails("<linearGradient id='a'><stop offset='0' /></linearGradient>", 2), options: restrict.svgSyntax },
   ],
 });
 
@@ -74,7 +96,6 @@ ruleTester.run("no-restricted-syntax (a feature's hooks and components)", core.g
     { ...fails("void queryClient.invalidateQueries({ queryKey });"), options: featureSyntax },
     { ...fails("client.setQueriesData({ predicate }, update);"), options: featureSyntax },
     { ...fails("queryClient.removeQueries({ queryKey, exact: true });"), options: featureSyntax },
-    { ...fails("await refreshQueries(queryClient, { queryKey });"), options: featureSyntax },
   ],
 });
 

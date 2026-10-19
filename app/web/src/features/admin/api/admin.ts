@@ -8,7 +8,7 @@
 import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
-import { isPostListQuery, refreshQueries } from "../../../lib/query";
+import { isPostListQuery } from "../../../lib/query";
 import type { components } from "../../../lib/api/schema.gen";
 
 type Schemas = components["schemas"];
@@ -49,9 +49,9 @@ export function instancesQueryOptions(api: Api, filter: InstanceFilter) {
   });
 }
 
-/** Fetches again every cached list of remote servers (refreshQueries): marking one available moves it between them. */
+/** Marks stale every cached list of remote servers (web-client.md S1): marking one available moves it between them. */
 function refreshInstanceLists(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/instances" });
+  return queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/instances" });
 }
 
 /** The health of one remote server (GET /admin/instances/{domain}). */
@@ -96,7 +96,7 @@ export function markAvailableMutation(api: Api) {
 
 /**
  * Puts the health of `domain` after it was marked available (`next`) into the cache (web-client.md S1,
- * ADR-0045), once every cached list of remote servers is fetched again (refreshInstanceLists): marking it moves
+ * ADR-0045), once every cached list of remote servers is marked stale (refreshInstanceLists): marking it moves
  * it between them. Its history has a new event, which is marked.
  */
 export async function cacheMarkedAvailable(api: Api, queryClient: QueryClient, domain: string, next: InstanceHealth): Promise<void> {
@@ -188,9 +188,9 @@ function isDomainActionsQuery(queryKey: readonly unknown[]): boolean {
   return queryKey[1] === "/admin/domain_actions";
 }
 
-/** Fetches again every cached list of domain actions (refreshQueries), of every filter and domain: a new action is in each. */
+/** Marks stale every cached list of domain actions (web-client.md S1), of every filter and domain: a new action is in each. */
 function refreshDomainActionLists(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => isDomainActionsQuery(query.queryKey) });
+  return queryClient.invalidateQueries({ predicate: (query) => isDomainActionsQuery(query.queryKey) });
 }
 
 /** Whether a list of domain actions keeps only those in effect, which a lifted action leaves. */
@@ -226,26 +226,26 @@ export function liftDomainActionMutation(api: Api) {
 }
 
 /**
- * Fetches again the cached lists of posts when a domain action of `kind` starts or ends: a limit or a suspension
+ * Marks stale the cached lists of posts when a domain action of `kind` starts or ends: a limit or a suspension
  * changes which posts of the domain's accounts the timelines and threads show.
  */
 function refreshPostListsAfter(queryClient: QueryClient, kind: DomainActionKind): Promise<void> | undefined {
   if (kind !== "limit" && kind !== "suspend") return undefined;
-  return refreshQueries(queryClient, { predicate: (query) => isPostListQuery(query.queryKey) });
+  return queryClient.invalidateQueries({ predicate: (query) => isPostListQuery(query.queryKey) });
 }
 
 /**
  * What a new domain action changes (web-client.md S1, ADR-0045): it is in every list of domain actions, of the
  * other tabs and domains too, and in the audit log, and a limit or a suspension changes the lists of posts.
- * Resolves once they are fetched again.
+ * They are marked stale; resolves once those on screen are fetched again.
  */
 export async function cacheIssuedDomainAction(queryClient: QueryClient, action: DomainAction): Promise<void> {
   await Promise.all([refreshDomainActionLists(queryClient), refreshAuditLog(queryClient), refreshPostListsAfter(queryClient, action.kind)]);
 }
 
 /**
- * Fetches again what lifting a domain action changes beside the lists of domain actions: the audit log, which
- * records the lift, and the lists of posts for a limit or a suspension. Resolves once they are fetched.
+ * Marks stale what lifting a domain action changes beside the lists of domain actions: the audit log, which
+ * records the lift, and the lists of posts for a limit or a suspension. Resolves once those on screen are fetched again.
  */
 export async function refreshLiftedDomainAction(queryClient: QueryClient, lifted: DomainAction): Promise<void> {
   await Promise.all([refreshAuditLog(queryClient), refreshPostListsAfter(queryClient, lifted.kind)]);
@@ -357,11 +357,12 @@ export function isAuditLogQuery(queryKey: readonly unknown[]): boolean {
 }
 
 /**
- * Fetches again every cached page of the audit log, under any filter (refreshQueries): an audited write adds its
- * operation to it, and going back to the log must show that operation from the start, not the log before it.
+ * Marks stale every cached page of the audit log, under any filter (web-client.md S1): an audited write adds its
+ * operation to it, and going back to the log fetches it again before showing it (S7), so that it shows that
+ * operation from the start, not the log before it.
  */
 export function refreshAuditLog(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => isAuditLogQuery(query.queryKey) });
+  return queryClient.invalidateQueries({ predicate: (query) => isAuditLogQuery(query.queryKey) });
 }
 
 /**

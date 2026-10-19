@@ -6,7 +6,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
 import { ApiError } from "../../../lib/errors";
-import { refreshQueries } from "../../../lib/query";
 
 export type Account = components["schemas"]["Account"];
 export type Status = components["schemas"]["Status"];
@@ -52,8 +51,8 @@ export function createReportMutation(api: Api) {
 
 /**
  * Marks what a new report changes (ADR-0045): for a moderator, the admin screen's lists of reports and its
- * counts of open work, which are cached only once they have opened it. Resolves once those are fetched again.
+ * counts of open work, which are cached only once they have opened it. They are marked stale, to be fetched again when they open.
  */
 export function cacheFiledReport(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts" });
+  return queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts" });
 }

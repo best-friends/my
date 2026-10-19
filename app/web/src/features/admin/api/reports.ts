@@ -9,7 +9,6 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshQueries } from "../../../lib/query";
 import { pageQuery, refreshAuditLog } from "./admin";
 
 type Schemas = components["schemas"];
@@ -85,16 +84,16 @@ export function accountActionsQueryOptions(api: Api, accountId: string) {
 }
 
 /**
- * Fetches again (refreshQueries) what a change of a report changes: the lists of reports (it may move between the
- * tabs) and the moderators' counts of open reports. A list that was only marked stale would show the report as it
- * was: a resolved report in the open tab.
+ * Marks stale what a change of a report changes (web-client.md S1): the lists of reports (it may move between the
+ * tabs) and the moderators' counts of open reports. Those on screen are fetched again at once; a list opened later
+ * is fetched again before it shows (S7), so it never shows the report as it was: a resolved report in the open tab.
  */
 export function refreshReportLists(queryClient: QueryClient): Promise<void> {
-  return refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts" });
+  return queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts" });
 }
 
 /**
- * Fetches again the lists that a change of a report changes (refreshReportLists) and the audit log, which
+ * Marks stale the lists that a change of a report changes (refreshReportLists) and the audit log, which
  * records it (refreshAuditLog), then puts `report`, as the operation answered it, into the cache: the page of the
  * report shows the change once the queue and the log have it too.
  */
@@ -104,7 +103,7 @@ export async function storeReport(queryClient: QueryClient, api: Api, report: Re
 }
 
 /**
- * Fetches again the audit log, which records a new note (refreshAuditLog), then puts `report` after the note into
+ * Marks stale the audit log, which records a new note (refreshAuditLog), then puts `report` after the note into
  * the cache. A note changes no row of the lists of reports.
  */
 export async function storeReportNote(queryClient: QueryClient, api: Api, report: ReportDetail): Promise<void> {

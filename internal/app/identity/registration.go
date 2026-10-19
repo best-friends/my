@@ -153,6 +153,9 @@ type SignUpInput struct {
 	// CurrentToken is the session token the browser already holds, if any; the new user's
 	// session replaces it.
 	CurrentToken string
+	// HumanCheckToken is the token that the CAPTCHA widget put into the form; it is checked
+	// only when Deps.HumanVerifier is set.
+	HumanCheckToken string
 }
 
 // SignedUp is the result of SignUp.
@@ -185,6 +188,12 @@ type SignedUp struct {
 // account.ErrUsernameTaken, a *kernel.RateLimitedError (SignUpIPLimit), and errors wrapping
 // identity.ErrInvalidEmail, identity.ErrInvalidPassword, identity.ErrInvalidReason, or
 // account.ErrInvalidUsername for invalid input. A failure writes nothing.
+//
+// With a HumanVerifier, the CAPTCHA token is checked after SignUpIPLimit, which counts the
+// attempt, and before anything else, in every mode and with a valid invite too (ADR-0042 §3).
+// A token that fails the check fails the sign-up with an error wrapping
+// kernel.ErrHumanCheckFailed, and a service that cannot check it with an error wrapping
+// kernel.ErrHumanCheckUnavailable (fail closed, ADR-0042 §4).
 func (s *Service) SignUp(ctx context.Context, in SignUpInput) (SignedUp, error) {
 	mode, err := s.registrationMode(ctx)
 	if err != nil {
@@ -224,6 +233,9 @@ func (s *Service) SignUp(ctx context.Context, in SignUpInput) (SignedUp, error) 
 		if !d.Allowed {
 			return SignedUp{}, &kernel.RateLimitedError{RetryAfter: d.RetryAfter}
 		}
+	}
+	if err := s.checkHuman(ctx, in.HumanCheckToken, kernel.HumanCheckActionSignUp); err != nil {
+		return SignedUp{}, err
 	}
 	severity, err := s.screenSignup(ctx, in.Email, in.IP)
 	if err != nil {
@@ -401,10 +413,16 @@ func (s *Service) sendVerification(ctx context.Context, to, locale, secret strin
 	if u, err := url.Parse(s.d.BaseURL); err == nil && u.Host != "" {
 		host = u.Host
 	}
+	name := host
+	if s.d.InstanceName != nil {
+		if n := s.d.InstanceName(ctx, l.Locale()); n != "" {
+			name = n
+		}
+	}
 	err := s.d.Mailer.Send(ctx, kernel.MailMessage{
 		To:      to,
-		Subject: l.ServerMailVerifyEmailSubject(host),
-		Text:    l.ServerMailVerifyEmailBody(host, int(EmailVerificationTTL/time.Hour), link),
+		Subject: l.ServerMailVerifyEmailSubject(name),
+		Text:    l.ServerMailVerifyEmailBody(host, int(EmailVerificationTTL/time.Hour), name, link),
 	})
 	if err != nil {
 		return fmt.Errorf("identity: send the verification email: %w", err)

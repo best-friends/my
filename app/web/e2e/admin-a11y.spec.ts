@@ -284,7 +284,7 @@ async function moderatorServer(page: Page) {
       return json(route, { items: [{ id: "0192f0c4-7a8e-7000-8000-0000000000e1", kind: "marked_unavailable", reason: "failure_days", occurred_at: "2026-10-10T08:00:00Z" }] });
     }
     if (key === "GET /admin/dead_jobs") return json(route, { items: [deadJob] });
-    if (key === "GET /admin/instance_texts") return json(route, { items: [documentText] });
+    if (key === "GET /admin/instance_texts") return json(route, { items: [documentText, ...instanceNames] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return issued;
@@ -292,6 +292,11 @@ async function moderatorServer(page: Page) {
 
 /** The terms of service in English, as GET /admin/instance_texts lists them. */
 const documentText: Schemas["AdminInstanceText"] = { key: "terms", locale: "en", body: "# Accounts\n\nBe kind.", revised_at: "2026-10-12T08:00:00Z" };
+/** The server's names: in English, and in Arabic (a language without a catalog), which reads right to left. */
+const instanceNames: Schemas["AdminInstanceText"][] = [
+  { key: "name", locale: "ar", body: "مثال", revised_at: "2026-10-16T00:00:00Z" },
+  { key: "name", locale: "en", body: "my example", revised_at: "2026-10-16T00:00:00Z" },
+];
 
 /**
  * Every admin screen, by the name of its route file in src/routes, with an address that opens it and a text of
@@ -314,6 +319,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.instances_.$domain": { path: `/admin/instances/${longDomain}`, ready: longDomain },
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
+  "admin.settings": { path: "/admin/settings", ready: "my.example" },
 };
 
 test("the suite lists every admin route", () => {

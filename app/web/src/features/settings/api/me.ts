@@ -4,7 +4,6 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshQueries } from "../../../lib/query";
 import { updateCachedAccount } from "../../profile";
 
 type Schemas = components["schemas"];
@@ -55,13 +54,13 @@ function isTimelineQuery(queryKey: QueryKey): boolean {
 
 /**
  * Puts the preferences as the server answered `change` into the cache (web-client.md S1, ADR-0045). A change of
- * the timeline languages changes what every timeline shows, so the cached timelines are fetched again, also those
- * no page shows now, and this resolves once they are; a profile shows its posts in every language. A change of
+ * the timeline languages changes what every timeline shows, so the cached timelines are marked stale, and this
+ * resolves once those on screen are fetched again; a profile shows its posts in every language. A change of
  * the locale is handled where the app displays it (lib/services.ts marks every query).
  */
 export async function cacheSavedPreferences(api: Api, queryClient: QueryClient, preferences: Preferences, change: PreferencesChange): Promise<void> {
   queryClient.setQueryData(preferencesQueryOptions(api).queryKey, preferences);
-  if (change.timeline_languages !== undefined) await refreshQueries(queryClient, { predicate: (query) => isTimelineQuery(query.queryKey) });
+  if (change.timeline_languages !== undefined) await queryClient.invalidateQueries({ predicate: (query) => isTimelineQuery(query.queryKey) });
 }
 
 /**

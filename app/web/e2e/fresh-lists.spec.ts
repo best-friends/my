@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A new post is on the viewer's profile from the moment the profile opens again (web-client.md S1), against a
-// real `my serve` on SQLite (e2e/server.ts) in every width × locale project. The profile's route reads its
-// list from the cache as it is (S7), so the post fetches again the lists that no page shows before it is
-// shown done; a list that it had only marked stale would show the posts from before until a refetch ended.
-// Every GET of the client API takes 800 ms more, as over a real network, so that such a list would be seen.
+// A new post is on the viewer's profile from the moment the profile opens again, from the navigation or back in
+// the history (ADR-0045, web-client.md S1, S7), against a real `my serve` on SQLite (e2e/server.ts) in every
+// width × locale project. The post marks stale the lists that no page shows; the profile's route fetches its
+// marked list again and the router waits for it (defaultStaleReloadMode "blocking"), so the profile never
+// renders the posts from before. Every GET of the client API takes 800 ms more, as over a real network, so
+// that a stale list replaced only when a refetch ended would be seen.
 // The user is new to the test (a random name), created with `my admin create` (e2e/server-cli.ts).
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -147,12 +148,24 @@ test("a new post is on the profile from the moment it opens again", async ({ pag
   await page.waitForTimeout(latency * 2);
   expect(await staleRenders(), "renders of the profile's feed without the new post").toBe(0);
 
+  // Once more from the home timeline, and back in the history to the profile.
+  await openFromNavigation(page, "/home", touch);
+  await expect(pageHeading(page)).toHaveText(message("home.title"));
+  const third = `third ${username}`;
+  await post(page, third);
+  const staleAfterBack = await watchForStaleProfile(page, username, third);
+  await page.goBack();
+  await expect(pageHeading(page)).toHaveText(username);
+  await expect(feed.getByRole("article").filter({ hasText: third })).toBeVisible();
+  await page.waitForTimeout(latency * 2);
+  expect(await staleAfterBack(), "renders of the profile's feed without the post made before going back").toBe(0);
+
   await expect(feed.getByRole("article").first()).toMatchAriaSnapshot(`
     - article:
       - link
       - link:
         - time
-      - paragraph: ${second}
+      - paragraph: ${third}
   `);
   await expectNoAxeViolations(() => axeBuilder(page));
   await expectNoHorizontalScroll(page);

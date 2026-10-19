@@ -23,6 +23,8 @@ type fakeSignupBlocks struct {
 	blocks []appmoderation.SignupBlockView
 	added  []appmoderation.SignupBlockInput
 	lifted []string
+	// imported are the imports that got past the checks.
+	imported []appmoderation.SignupBlockImportInput
 }
 
 func (f *fakeSignupBlocks) SignupBlocks(_ context.Context, sf appmoderation.SignupBlockFilter, limit int) ([]appmoderation.SignupBlockView, error) {
@@ -79,6 +81,27 @@ func (f *fakeSignupBlocks) LiftSignupBlock(_ context.Context, id, by string) err
 		}
 	}
 	return appmoderation.ErrNotFound
+}
+
+// ImportSignupBlocks skips the lines "bad" as invalid and adds the others.
+func (f *fakeSignupBlocks) ImportSignupBlocks(_ context.Context, in appmoderation.SignupBlockImportInput) (appmoderation.SignupBlockImportResult, error) {
+	if len([]rune(in.Comment)) > moderation.MaxSignupBlockComment {
+		return appmoderation.SignupBlockImportResult{}, fmt.Errorf("%w: %w", moderation.ErrInvalidSignupBlock, &moderation.TextError{Field: "comment", Max: moderation.MaxSignupBlockComment})
+	}
+	entries := moderation.ParseSignupBlockList(in.Text)
+	if len(entries) > moderation.MaxSignupBlockImport {
+		return appmoderation.SignupBlockImportResult{}, appmoderation.ErrTooManySignupBlocks
+	}
+	f.imported = append(f.imported, in)
+	res := appmoderation.SignupBlockImportResult{Skipped: []appmoderation.SignupBlockImportSkipped{}}
+	for _, e := range entries {
+		if e.Value == "bad" {
+			res.Skipped = append(res.Skipped, appmoderation.SignupBlockImportSkipped{Line: e.Line, Value: e.Value, Reason: moderation.SignupBlockSkipInvalid})
+		} else {
+			res.Added++
+		}
+	}
+	return res, nil
 }
 
 func newSignupBlocksEnv(t *testing.T, perms ...identity.Permission) (*authEnv, *fakeSignupBlocks) {
@@ -162,6 +185,45 @@ func TestSignupBlocksAPI(t *testing.T) {
 	}
 }
 
+func TestImportSignupBlocksAPI(t *testing.T) {
+	e, blocks := newSignupBlocksEnv(t, identity.PermManageAccounts)
+	res := e.adminBody(t, http.MethodPost, "/admin/signup_blocks/import", "admin-write",
+		`{"kind":"email_domain","text":"# list\nspam.example\nbad\nmail.example\n","severity":"reject","comment":"disposable","expires_in":3600}`)
+	if res.StatusCode != http.StatusOK || res.Header.Get("Cache-Control") != "no-store" {
+		t.Fatalf("POST /admin/signup_blocks/import = %d", res.StatusCode)
+	}
+	got := decodeJSON[clientapi.SignupBlockImportResult](t, res)
+	want := []clientapi.SignupBlockImportSkipped{{Line: 3, Value: "bad", Reason: clientapi.SignupBlockImportSkippedReasonInvalid}}
+	if got.Added != 2 || !slices.Equal(got.Skipped, want) {
+		t.Errorf("import = %+v, want 2 added and line 3 invalid", got)
+	}
+	if len(blocks.imported) != 1 || blocks.imported[0].CreatedByUserID != "user-"+aliceAccountID || blocks.imported[0].Duration != time.Hour ||
+		blocks.imported[0].Comment != "disposable" || blocks.imported[0].Severity != moderation.SignupReject {
+		t.Errorf("imported = %+v, want one by alice for an hour", blocks.imported)
+	}
+	// Nothing skipped is an empty list, not null.
+	res = e.adminBody(t, http.MethodPost, "/admin/signup_blocks/import", "admin-write", `{"kind":"ip_range","text":"192.0.2.0/24","severity":"require_approval"}`)
+	if got := decodeJSON[clientapi.SignupBlockImportResult](t, res); res.StatusCode != http.StatusOK || got.Added != 1 || got.Skipped == nil {
+		t.Errorf("import of one range = %d %+v", res.StatusCode, got)
+	}
+
+	for name, body := range map[string]string{
+		"kind":       `{"kind":"email","text":"x","severity":"reject"}`,
+		"severity":   `{"kind":"ip_range","text":"192.0.2.0/24","severity":"maybe"}`,
+		"expires_in": `{"kind":"ip_range","text":"192.0.2.0/24","severity":"reject","expires_in":0}`,
+		"comment":    `{"kind":"ip_range","text":"192.0.2.0/24","severity":"reject","comment":"` + strings.Repeat("x", 1001) + `"}`,
+		"text":       `{"kind":"email_domain","text":"` + strings.Repeat(`a.example\n`, moderation.MaxSignupBlockImport+1) + `","severity":"reject"}`,
+	} {
+		res := e.adminBody(t, http.MethodPost, "/admin/signup_blocks/import", "admin-write", body)
+		if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, name) {
+			t.Errorf("%s: POST import = %d %+v, want 422 naming it", name, res.StatusCode, p)
+		}
+	}
+	if len(blocks.imported) != 2 {
+		t.Errorf("a refused import was run: %d imports", len(blocks.imported))
+	}
+}
+
 func TestSignupBlocksNeedManageAccounts(t *testing.T) {
 	e, blocks := newSignupBlocksEnv(t, identity.PermManageReports)
 	for _, c := range []struct{ method, path, token, body string }{
@@ -169,12 +231,13 @@ func TestSignupBlocksNeedManageAccounts(t *testing.T) {
 		{http.MethodPost, "/admin/signup_blocks", "admin-write", `{"kind":"ip_range","value":"192.0.2.0/24","severity":"reject"}`},
 		{http.MethodGet, "/admin/signup_blocks/01890a5d-ac96-774b-bcce-b302099a8057", "admin-read", ""},
 		{http.MethodPost, "/admin/signup_blocks/01890a5d-ac96-774b-bcce-b302099a8057/lift", "admin-write", ""},
+		{http.MethodPost, "/admin/signup_blocks/import", "admin-write", `{"kind":"email_domain","text":"spam.example","severity":"reject"}`},
 	} {
 		if res := e.adminBody(t, c.method, c.path, c.token, c.body); res.StatusCode != http.StatusForbidden {
 			t.Errorf("%s %s without manage_accounts = %d, want 403", c.method, c.path, res.StatusCode)
 		}
 	}
-	if len(blocks.added) != 0 || len(blocks.lifted) != 0 {
-		t.Errorf("a refused request changed the blocks: %+v %+v", blocks.added, blocks.lifted)
+	if len(blocks.added) != 0 || len(blocks.lifted) != 0 || len(blocks.imported) != 0 {
+		t.Errorf("a refused request changed the blocks: %+v %+v %+v", blocks.added, blocks.lifted, blocks.imported)
 	}
 }

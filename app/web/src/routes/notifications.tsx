@@ -23,8 +23,8 @@ export const Route = createFileRoute("/notifications")({
     if (session.status === "unknown") await session.restore();
     if (session.status !== "signed-in") return;
     await Promise.allSettled([
-      queryClient.infiniteQuery({ ...notificationsQueryOptions(api, filter), staleTime: "static" }),
-      queryClient.query({ ...notificationMarkerQueryOptions(api), staleTime: "static" }),
+      queryClient.infiniteQuery({ ...notificationsQueryOptions(api, filter), staleTime: Infinity }),
+      queryClient.query({ ...notificationMarkerQueryOptions(api), staleTime: Infinity }),
     ]);
   },
   component: NotificationsPage,

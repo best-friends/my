@@ -54,6 +54,11 @@
     @apply mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8 sm:py-16;
   }
 
+  /* The instance's name above the card, in the administrator's words (any language). */
+  .site-name {
+    @apply text-center text-lg font-semibold break-words text-fg;
+  }
+
   /* A document (terms of service, privacy policy) gets a line length for reading. */
   .page-document {
     @apply max-w-3xl;

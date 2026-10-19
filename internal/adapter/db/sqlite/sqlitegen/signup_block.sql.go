@@ -267,3 +267,55 @@ func (q *Queries) ListSignupBlocksInEffect(ctx context.Context, arg ListSignupBl
 	}
 	return items, nil
 }
+
+const listSignupBlocksInEffectOfValues = `-- name: ListSignupBlocksInEffectOfValues :many
+SELECT b.id, b.kind, b.value, b.severity, b.comment, b.moderation_action_id, b.created_by_user_id,
+  b.expires_at, b.created_at
+FROM signup_blocks b
+WHERE b.kind = CAST(?1 AS TEXT)
+  AND b.value IN (SELECT value FROM json_each(CAST(?2 AS TEXT)))
+  AND NOT EXISTS (SELECT 1 FROM signup_block_lifts l WHERE l.block_id = b.id)
+  AND (b.expires_at IS NULL OR b.expires_at > CAST(?3 AS INTEGER))
+ORDER BY b.id
+`
+
+type ListSignupBlocksInEffectOfValuesParams struct {
+	Kind string
+	Vals string
+	Now  int64
+}
+
+// ListSignupBlocksInEffectOfValues returns the blocks of a kind in effect at now whose value is
+// one of vals (a JSON array of strings), for an import to skip the values already blocked.
+func (q *Queries) ListSignupBlocksInEffectOfValues(ctx context.Context, arg ListSignupBlocksInEffectOfValuesParams) ([]SignupBlock, error) {
+	rows, err := q.db.QueryContext(ctx, listSignupBlocksInEffectOfValues, arg.Kind, arg.Vals, arg.Now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SignupBlock{}
+	for rows.Next() {
+		var i SignupBlock
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Value,
+			&i.Severity,
+			&i.Comment,
+			&i.ModerationActionID,
+			&i.CreatedByUserID,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
