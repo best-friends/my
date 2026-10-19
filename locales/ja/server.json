@@ -475,6 +475,10 @@
     "defaultMessage": "他のサーバーのアカウントにはこの操作を行えません。",
     "description": "Detail of the HTTP 422 API error when a block targets an account on another server, which the operation does not support."
   },
+  "errors.report.not_resolved": {
+    "defaultMessage": "再開できるのは解決済みの通報だけです。",
+    "description": "Detail of the HTTP 409 API error when a moderator reopens a report that is still open."
+  },
   "errors.request_too_large": {
     "defaultMessage": "リクエストが大きすぎます。",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."

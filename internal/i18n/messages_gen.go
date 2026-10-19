@@ -837,6 +837,13 @@ func (l *Localizer) ServerErrorsRemoteAccount() string {
 	return l.format("server:errors.remote_account", nil)
 }
 
+// ServerErrorsReportNotResolved formats "server:errors.report.not_resolved". Detail of the HTTP 409 API error when a moderator reopens a report that is still open.
+//
+//	en: Only a resolved report can be reopened.
+func (l *Localizer) ServerErrorsReportNotResolved() string {
+	return l.format("server:errors.report.not_resolved", nil)
+}
+
 // ServerErrorsRequestTooLarge formats "server:errors.request_too_large". API error title for HTTP 413 when a request body is larger than the server accepts.
 //
 //	en: The request is too large.

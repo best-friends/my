@@ -139,6 +139,8 @@ const (
 	AdminAuditActionRegistrationApproved AdminAuditAction = "registration_approved"
 	AdminAuditActionRegistrationRejected AdminAuditAction = "registration_rejected"
 	AdminAuditActionReportAssigned       AdminAuditAction = "report_assigned"
+	AdminAuditActionReportNoteAdded      AdminAuditAction = "report_note_added"
+	AdminAuditActionReportReopened       AdminAuditAction = "report_reopened"
 	AdminAuditActionReportResolved       AdminAuditAction = "report_resolved"
 	AdminAuditActionReportUnassigned     AdminAuditAction = "report_unassigned"
 	AdminAuditActionRoleGranted          AdminAuditAction = "role_granted"
@@ -167,6 +169,10 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionRegistrationRejected:
 		return true
 	case AdminAuditActionReportAssigned:
+		return true
+	case AdminAuditActionReportNoteAdded:
+		return true
+	case AdminAuditActionReportReopened:
 		return true
 	case AdminAuditActionReportResolved:
 		return true
@@ -388,6 +394,30 @@ func (e AdminReportCategory) Valid() bool {
 	case AdminReportCategorySpam:
 		return true
 	case AdminReportCategoryViolation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminReportDetailCategory.
+const (
+	AdminReportDetailCategoryLegal     AdminReportDetailCategory = "legal"
+	AdminReportDetailCategoryOther     AdminReportDetailCategory = "other"
+	AdminReportDetailCategorySpam      AdminReportDetailCategory = "spam"
+	AdminReportDetailCategoryViolation AdminReportDetailCategory = "violation"
+)
+
+// Valid indicates whether the value is a known member of the AdminReportDetailCategory enum.
+func (e AdminReportDetailCategory) Valid() bool {
+	switch e {
+	case AdminReportDetailCategoryLegal:
+		return true
+	case AdminReportDetailCategoryOther:
+		return true
+	case AdminReportDetailCategorySpam:
+		return true
+	case AdminReportDetailCategoryViolation:
 		return true
 	default:
 		return false
@@ -875,7 +905,8 @@ type AdminAccountActionState string
 // AdminAuditAction The kind of an audited operation, each on one kind of target. On an `account`:
 // `account_action_issued`, `account_action_lifted`. On a `domain`:
 // `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
-// `report_unassigned`, `report_resolved`. On a `user` (a registration):
+// `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+// `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 // (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
 // `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
@@ -892,7 +923,8 @@ type AdminAuditEntry struct {
 	// Action The kind of an audited operation, each on one kind of target. On an `account`:
 	// `account_action_issued`, `account_action_lifted`. On a `domain`:
 	// `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
-	// `report_unassigned`, `report_resolved`. On a `user` (a registration):
+	// `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+	// `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
 	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
@@ -918,8 +950,8 @@ type AdminAuditEntry struct {
 	OccurredAt time.Time `json:"occurred_at"`
 
 	// SourceEventId The ID of the record of the operation (the domain action, the assignment, the
-	// resolution, the decision, the revision), which holds its reasons and notes; omitted
-	// when the operation has none.
+	// resolution, the reopening, the note, the decision, the revision), which holds its
+	// reasons and notes; omitted when the operation has none.
 	SourceEventId *string `json:"source_event_id,omitempty"`
 
 	// TargetId The target: the ID of an account, a report, a user, or a rule, the domain of a domain
@@ -1184,7 +1216,7 @@ type AdminReport struct {
 	// State `open` reports await the moderators; `resolved` ones are handled.
 	State AdminReportState `json:"state"`
 
-	// StateChangedAt When the report was filed or, once resolved, resolved.
+	// StateChangedAt When the report entered its state (when it was filed, resolved, or reopened).
 	StateChangedAt time.Time `json:"state_changed_at"`
 
 	// StatusIds The IDs of the target's posts that the report points at.
@@ -1206,6 +1238,88 @@ type AdminReport struct {
 // AdminReportCategory defines model for AdminReport.Category.
 type AdminReportCategory string
 
+// AdminReportDetail A report as a moderator opens it: the report with its internal notes and what the
+// moderators had about its target.
+type AdminReportDetail struct {
+	// AssigneeAccountId The account of the moderator who handles the report; omitted when nobody does.
+	AssigneeAccountId *Id                       `json:"assignee_account_id,omitempty"`
+	Category          AdminReportDetailCategory `json:"category"`
+
+	// Comment The reporter's comment as plain text, up to 5,000 characters.
+	Comment string    `json:"comment"`
+	FiledAt time.Time `json:"filed_at"`
+
+	// Forwarded Whether the report was forwarded to the target's server.
+	Forwarded bool `json:"forwarded"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Notes The moderators' notes on the report, oldest first.
+	Notes []AdminReportNote `json:"notes"`
+
+	// Outcome How the report was resolved, present only while it is resolved. `actioned`: a moderator
+	// took an action on the target. `dismissed`: there was nothing to act on.
+	Outcome *AdminReportOutcome `json:"outcome,omitempty"`
+
+	// ReporterAccount The reporter, often the instance actor of a remote server; omitted when the account is gone.
+	ReporterAccount *Account `json:"reporter_account,omitempty"`
+
+	// ReporterAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	ReporterAccountId Id `json:"reporter_account_id"`
+
+	// RuleIds The IDs of the instance rules that the report cites, retired ones included; only a
+	// report of the `violation` category cites rules.
+	RuleIds []Id `json:"rule_ids"`
+
+	// State `open` reports await the moderators; `resolved` ones are handled.
+	State AdminReportState `json:"state"`
+
+	// StateChangedAt When the report entered its state (when it was filed, resolved, or reopened).
+	StateChangedAt time.Time `json:"state_changed_at"`
+
+	// StatusIds The IDs of the target's posts that the report points at.
+	StatusIds []Id `json:"status_ids"`
+
+	// TargetAccount The account reported; omitted when the account is gone.
+	TargetAccount *Account `json:"target_account,omitempty"`
+
+	// TargetAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	TargetAccountId Id `json:"target_account_id"`
+
+	// TargetHistory What the moderators had about the target of a report.
+	TargetHistory AdminReportTargetHistory `json:"target_history"`
+
+	// Uri The `id` of the `Flag` activity that another server sent; omitted for a report
+	// made on this server.
+	Uri *string `json:"uri,omitempty"`
+}
+
+// AdminReportDetailCategory defines model for AdminReportDetail.Category.
+type AdminReportDetailCategory string
+
+// AdminReportNote A moderator's internal note on a report; never shown to the target or the reporter.
+type AdminReportNote struct {
+	// AuthorAccountId The account of the moderator who wrote the note; omitted for a note from the
+	// command line and when the moderator has no account.
+	AuthorAccountId *Id `json:"author_account_id,omitempty"`
+
+	// Body The note as plain text, up to 2,000 characters.
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+}
+
 // AdminReportOutcome How the report was resolved, present only while it is resolved. `actioned`: a moderator
 // took an action on the target. `dismissed`: there was nothing to act on.
 type AdminReportOutcome string
@@ -1220,6 +1334,15 @@ type AdminReportPage struct {
 
 // AdminReportState `open` reports await the moderators; `resolved` ones are handled.
 type AdminReportState string
+
+// AdminReportTargetHistory What the moderators had about the target of a report.
+type AdminReportTargetHistory struct {
+	// ActionsCount The number of moderation actions on the target, ended ones included.
+	ActionsCount int64 `json:"actions_count"`
+
+	// ReportsCount The number of the target's other reports, open and resolved.
+	ReportsCount int64 `json:"reports_count"`
+}
 
 // AdminRole A role (FR-720): a named set of permissions. A higher position outranks a lower one;
 // a user may grant and revoke only the roles at or below their highest one.
@@ -1307,7 +1430,8 @@ type CreateAccountActionRequest struct {
 	PublicReason   *string                     `json:"public_reason,omitempty"`
 	ReasonCategory *AdminAccountActionCategory `json:"reason_category,omitempty"`
 
-	// ReportId The report of the account that the action follows from.
+	// ReportId The report of the account that the action follows from. The action resolves an open
+	// report as `actioned` in the same operation; a resolved report stays as it is.
 	ReportId *Id `json:"report_id,omitempty"`
 
 	// StatusIds The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
@@ -1332,6 +1456,12 @@ type CreateDomainActionRequest struct {
 	Obfuscate     *bool                 `json:"obfuscate,omitempty"`
 	PrivateNote   *string               `json:"private_note,omitempty"`
 	PublicComment *string               `json:"public_comment,omitempty"`
+}
+
+// CreateReportNoteRequest A note to add to a report.
+type CreateReportNoteRequest struct {
+	// Body The note as plain text; it may not be blank.
+	Body string `json:"body"`
 }
 
 // CreateReportRequest A report of an account to the moderators.
@@ -2786,6 +2916,9 @@ type ApproveRegistrationJSONRequestBody = RegistrationDecisionRequest
 // RejectRegistrationJSONRequestBody defines body for RejectRegistration for application/json ContentType.
 type RejectRegistrationJSONRequestBody = RegistrationDecisionRequest
 
+// AddReportNoteJSONRequestBody defines body for AddReportNote for application/json ContentType.
+type AddReportNoteJSONRequestBody = CreateReportNoteRequest
+
 // ResolveReportJSONRequestBody defines body for ResolveReport for application/json ContentType.
 type ResolveReportJSONRequestBody = ResolveReportRequest
 
@@ -2941,6 +3074,12 @@ type ServerInterface interface {
 	// AssignReportToSelf Take a report
 	// (POST /admin/reports/{id}/assign_to_self)
 	AssignReportToSelf(w http.ResponseWriter, r *http.Request, id ReportId)
+	// AddReportNote Write a note on a report
+	// (POST /admin/reports/{id}/notes)
+	AddReportNote(w http.ResponseWriter, r *http.Request, id ReportId)
+	// ReopenReport Reopen a resolved report
+	// (POST /admin/reports/{id}/reopen)
+	ReopenReport(w http.ResponseWriter, r *http.Request, id ReportId)
 	// ResolveReport Resolve a report
 	// (POST /admin/reports/{id}/resolve)
 	ResolveReport(w http.ResponseWriter, r *http.Request, id ReportId)
@@ -4545,6 +4684,58 @@ func (siw *ServerInterfaceWrapper) AssignReportToSelf(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AssignReportToSelf(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddReportNote operation middleware
+func (siw *ServerInterfaceWrapper) AddReportNote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddReportNote(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReopenReport operation middleware
+func (siw *ServerInterfaceWrapper) ReopenReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReopenReport(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6181,6 +6372,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/assign_to_self", wrapper.AssignReportToSelf)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/unassign", wrapper.UnassignReport)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/resolve", wrapper.ResolveReport)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/notes", wrapper.AddReportNote)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/reopen", wrapper.ReopenReport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/actions", wrapper.ListAccountActions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/actions", wrapper.CreateAccountAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/account_actions/{id}", wrapper.GetAccountAction)
@@ -6257,13 +6450,13 @@ type AdminRegistrationJSONResponse struct {
 	Headers AdminRegistrationResponseHeaders
 }
 
-type AdminReportResponseHeaders struct {
+type AdminReportDetailResponseHeaders struct {
 	CacheControl *string
 }
-type AdminReportJSONResponse struct {
-	Body AdminReport
+type AdminReportDetailJSONResponse struct {
+	Body AdminReportDetail
 
-	Headers AdminReportResponseHeaders
+	Headers AdminReportDetailResponseHeaders
 }
 
 type AdminRoleListResponseHeaders struct {
@@ -8511,7 +8704,7 @@ type GetReportResponseObject interface {
 	VisitGetReportResponse(w http.ResponseWriter) error
 }
 
-type GetReport200JSONResponse struct{ AdminReportJSONResponse }
+type GetReport200JSONResponse struct{ AdminReportDetailJSONResponse }
 
 func (response GetReport200JSONResponse) VisitGetReportResponse(w http.ResponseWriter) error {
 
@@ -8566,7 +8759,7 @@ type AssignReportToSelfResponseObject interface {
 	VisitAssignReportToSelfResponse(w http.ResponseWriter) error
 }
 
-type AssignReportToSelf200JSONResponse struct{ AdminReportJSONResponse }
+type AssignReportToSelf200JSONResponse struct{ AdminReportDetailJSONResponse }
 
 func (response AssignReportToSelf200JSONResponse) VisitAssignReportToSelfResponse(w http.ResponseWriter) error {
 
@@ -8613,6 +8806,117 @@ func (response AssignReportToSelfdefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type AddReportNoteRequestObject struct {
+	Id   ReportId `json:"id"`
+	Body *AddReportNoteJSONRequestBody
+}
+
+type AddReportNoteResponseObject interface {
+	VisitAddReportNoteResponse(w http.ResponseWriter) error
+}
+
+type AddReportNote200JSONResponse struct{ AdminReportDetailJSONResponse }
+
+func (response AddReportNote200JSONResponse) VisitAddReportNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddReportNotedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response AddReportNotedefaultApplicationProblemPlusJSONResponse) VisitAddReportNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenReportRequestObject struct {
+	Id ReportId `json:"id"`
+}
+
+type ReopenReportResponseObject interface {
+	VisitReopenReportResponse(w http.ResponseWriter) error
+}
+
+type ReopenReport200JSONResponse struct{ AdminReportDetailJSONResponse }
+
+func (response ReopenReport200JSONResponse) VisitReopenReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenReportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ReopenReportdefaultApplicationProblemPlusJSONResponse) VisitReopenReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ResolveReportRequestObject struct {
 	Id   ReportId `json:"id"`
 	Body *ResolveReportJSONRequestBody
@@ -8622,7 +8926,7 @@ type ResolveReportResponseObject interface {
 	VisitResolveReportResponse(w http.ResponseWriter) error
 }
 
-type ResolveReport200JSONResponse struct{ AdminReportJSONResponse }
+type ResolveReport200JSONResponse struct{ AdminReportDetailJSONResponse }
 
 func (response ResolveReport200JSONResponse) VisitResolveReportResponse(w http.ResponseWriter) error {
 
@@ -8677,7 +8981,7 @@ type UnassignReportResponseObject interface {
 	VisitUnassignReportResponse(w http.ResponseWriter) error
 }
 
-type UnassignReport200JSONResponse struct{ AdminReportJSONResponse }
+type UnassignReport200JSONResponse struct{ AdminReportDetailJSONResponse }
 
 func (response UnassignReport200JSONResponse) VisitUnassignReportResponse(w http.ResponseWriter) error {
 
@@ -11514,6 +11818,12 @@ type StrictServerInterface interface {
 	// AssignReportToSelf Take a report
 	// (POST /admin/reports/{id}/assign_to_self)
 	AssignReportToSelf(ctx context.Context, request AssignReportToSelfRequestObject) (AssignReportToSelfResponseObject, error)
+	// AddReportNote Write a note on a report
+	// (POST /admin/reports/{id}/notes)
+	AddReportNote(ctx context.Context, request AddReportNoteRequestObject) (AddReportNoteResponseObject, error)
+	// ReopenReport Reopen a resolved report
+	// (POST /admin/reports/{id}/reopen)
+	ReopenReport(ctx context.Context, request ReopenReportRequestObject) (ReopenReportResponseObject, error)
 	// ResolveReport Resolve a report
 	// (POST /admin/reports/{id}/resolve)
 	ResolveReport(ctx context.Context, request ResolveReportRequestObject) (ResolveReportResponseObject, error)
@@ -12802,6 +13112,65 @@ func (sh *strictHandler) AssignReportToSelf(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(AssignReportToSelfResponseObject); ok {
 		if err := validResponse.VisitAssignReportToSelfResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddReportNote operation middleware
+func (sh *strictHandler) AddReportNote(w http.ResponseWriter, r *http.Request, id ReportId) {
+	var request AddReportNoteRequestObject
+
+	request.Id = id
+
+	var body AddReportNoteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddReportNote(ctx, request.(AddReportNoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddReportNote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddReportNoteResponseObject); ok {
+		if err := validResponse.VisitAddReportNoteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReopenReport operation middleware
+func (sh *strictHandler) ReopenReport(w http.ResponseWriter, r *http.Request, id ReportId) {
+	var request ReopenReportRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReopenReport(ctx, request.(ReopenReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReopenReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReopenReportResponseObject); ok {
+		if err := validResponse.VisitReopenReportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

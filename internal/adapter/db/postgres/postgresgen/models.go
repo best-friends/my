@@ -628,6 +628,14 @@ type Report struct {
 	FiledAt           time.Time
 }
 
+type ReportNote struct {
+	ID           string
+	ReportID     string
+	AuthorUserID *string
+	Body         string
+	WrittenAt    time.Time
+}
+
 type ReportState struct {
 	ReportID       string
 	State          string

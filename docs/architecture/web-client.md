@@ -241,6 +241,9 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - 項目は [ADR-0039](../adr/0039-mobile-navigation-and-compose-entry.md) に従う。`md` 未満のタブバーは、ホーム・タイムライン・通知・検索・メニューの 5 つで、
     `md` からのレールとサイドバーは、ホーム・ローカル・連合・通知・検索・プロフィール・設定の 7 つにする。どちらも 1 つのリストの同じ順番で、各項目はその幅で出ないときに `display: none`（アクセシビリティツリーからも外れる）にする。
     jsdom はスタイルを当てないので、統合テストでは両方の項目が文書にあり、どの幅で何が出るかは E2E（`e2e/shell.spec.ts`・`e2e/federated.spec.ts`）で確かめる。
+  - `lg` からのサイドバーは、リストの上にサーバーの名前（`instanceName`）を、リストの下（`nav` の末尾）にサインインしているアカウントのアバター・表示名・ハンドルを出す。
+    アカウントはそのプロフィールへのリンクで、名前は表示名とハンドル（それぞれ 1 行に省略、G7）、説明（`aria-describedby`）は「サインインしているアカウント」にする。
+    場所はリストの「プロフィール」が示すので、このリンクは `aria-current` を持たない。どちらもリストの外に置くので、リストのリンクとその順番はどの幅でも変わらない。`lg` 未満では出さず、サインインしていないときと読み込み中はアカウントを出さない。
   - タブバーの各項目は文言の幅を基本にし、残りの幅を等分する（`flex: 1 1 auto`）。長い文言（「Notifications」）が短い文言（「Menu」）の余りを使うので、320 px の `en`・`ja`・`ar-XB` で 1 行に収まる。
     文言は省略せず、収まらない翻訳では単語の途中でも折り返して、全体を読めるようにする。
   - 「タイムライン」はローカルのタイムライン（ローカルを無効にし連合を有効にしたサーバーでは連合）へのリンクで、`/local` と `/public` のどちらでも `aria-current="page"` になる。
@@ -416,9 +419,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 ## 14. 管理画面
 
-`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
+`features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ・登録の審査）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログの画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **連合先**（`/admin/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
@@ -449,6 +452,11 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   - **操作者**: アカウントの表示名（`dir="auto"`）とハンドル。アカウントが消えた利用者は「削除されたアカウント」、CLI・サーバー自身・ほかのサーバーはそれぞれの名前にする。
   - **対象**: 項目名を対象の種類にし、値は記録時の `target_label` にする。対象の種類に管理画面があるものはそこへリンクする（アカウントは `/admin/accounts/{id}`、通報は `/admin/reports/{id}`、ドメインは `/admin/domain-actions?filter=all&domain=…`、ドメインは `DomainName` で 2 つの形を出す）。
     設定・ルール・登録など画面のない種類は `target_label` だけを出す。API は対象が今もあるかを返さないので、消えた対象へのリンクは、リンク先の画面が見つからないことを示す。
+- **登録の審査**（`/admin/registrations`、FR-721）: 承認を待つ登録の、待っている長い順の一覧。各登録は見出し（`@username`。アカウントがなければその旨）と、登録日時・メールアドレス・メールの確認・招待の説明リスト、登録の理由にする。
+  理由は申請者が書いた文なので `dir="auto"` で表示する（Y10）。「承認する」「却下する」はアクセシブルネームに `@username` を含める。
+  決定は後から変えられないので、どちらも `ConfirmDialog` で確かめる（NFR-MOD-7。却下は `danger`、承認は `primary`）。ダイアログはモデレーター向けのメモ（`ReasonField`、任意、1,000 文字）を持ち、開くとメモにフォーカスが移る。失敗はダイアログの中に出す。
+  成功したらダイアログを閉じ、キャッシュの一覧から除いてフォーカスを次の行のボタン（なければ見出し）に移し（`lib/useFocusAfterRemoval.ts`）、結果を一覧の上の `StatusMessage` に出す。
+  ほかのモデレーターが先に決めた登録は、サーバーがその決定のまま返すので、一覧から除き、どちらの決定が残ったかを知らせる。
 - **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection` にし（`features/admin/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
@@ -457,7 +465,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **テスト**: `features/admin/admin.test.tsx` が出し分け・一覧と絞り込み・ページの読み足し・再開・再実行・失敗・403 を MSW で検査する。既定の閲覧者は権限を持たないので、テストは `operatorHandler()` で権限を与える。
   `features/admin/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
   `features/admin/auditLog.test.tsx` は、監査ログの行と対象へのリンク、`Select` と行のリンクでの絞り込みと URL、絞り込みのあとのフォーカス、`?pages=` の書き込みと読み込み、URL の不正な値、次のページの失敗、空の状態、権限のない閲覧者と 403 を検査する。
+  `features/admin/registrations.test.tsx` は、登録の理由の `dir="auto"`、ページの読み足し、メモ付きの承認と却下・フォーカス・`role="status"` の結果、キャンセルと Esc、メモの上限、ダイアログの中の失敗、先に決められた登録、権限を検査する。
   E2E（`e2e/admin.spec.ts`、`e2e/domain-actions.spec.ts`、`e2e/audit-log.spec.ts`）は、権限のある閲覧者として各画面の axe・横スクロール・ARIA スナップショット・配送の再開・再実行・`suspend` の確認のダイアログ・解除とフォーカスの移動・監査ログのキーボードでの絞り込みとページの読み足しの URL を検査する。
+  `e2e/registrations.spec.ts` は、登録の審査の画面の axe・横スクロール・ARIA スナップショット、承認の確認のダイアログ、キーボードでの却下とフォーカスの移動を検査する。
 
 ## 15. 検索とほかのサーバーのアカウントのフォロー
 

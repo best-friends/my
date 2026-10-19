@@ -258,7 +258,7 @@ type AccountActionInput struct {
 	PublicReason    string
 	PrivateNote     string
 	// ReportID is the report the action follows from; "" for none. The report must be of the
-	// target account.
+	// target account; the action resolves it as actioned.
 	ReportID string
 	// NotifyTarget tells a local target of the action (moderation_notice); it is ignored for a
 	// remote account.
@@ -279,7 +279,9 @@ type AccountActionInput struct {
 // action (suspend, ban) suspends an account that was not suspended. delete_statuses deletes the
 // statuses it names (origin
 // moderation), mark_statuses_sensitive shows them as sensitive until it is lifted, and ban
-// schedules the deletion of the account moderation.BanDeletionDelay later.
+// schedules the deletion of the account moderation.BanDeletionDelay later. An action that
+// follows from a report resolves the report as actioned in the same transaction, with the audit
+// log entry of the resolution, unless the report is resolved already.
 //
 // A local account takes every kind, a remote one limit, suspend, and force_sensitive; another
 // kind, the instance actor, or a kind whose port is missing from Deps fails with
@@ -312,8 +314,10 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		(in.Kind == moderation.ActionBan && s.d.Lifecycles == nil) {
 		return moderation.Action{}, fmt.Errorf("%w: %s on a %s account", ErrUnsupportedAction, in.Kind, where)
 	}
+	var report moderation.Report
 	if in.ReportID != "" {
 		r, err := s.d.Repository.FindReport(ctx, in.ReportID)
+		report = r
 		switch {
 		case errors.Is(err, ErrNotFound):
 			return moderation.Action{}, fmt.Errorf("%w: no report %s", ErrInvalidReportReference, in.ReportID)
@@ -340,7 +344,7 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		return moderation.Action{}, err
 	}
 	repo := s.d.Repository
-	auditID := s.d.IDs.NewID()
+	auditID, resolutionID, resolutionAuditID := s.d.IDs.NewID(), s.d.IDs.NewID(), s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		before, err := repo.AccountRestrictionRows(ctx, tx, a.TargetAccountID)
 		if err != nil {
@@ -360,16 +364,20 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
 		}
-		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
+		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, a.ID, before, now); err != nil {
 			return err
 		}
 		if err := tx.Emit(ctx, AccountActionIssued{Action: a}); err != nil {
 			return err
 		}
-		return s.emitAudit(ctx, tx, moderation.AuditEntry{
+		err = s.emitAudit(ctx, tx, moderation.AuditEntry{
 			ID: auditID, Action: moderation.AuditAccountActionIssued, TargetKind: moderation.AuditTargetAccount,
 			TargetID: a.TargetAccountID, TargetLabel: actorLabel(target), SourceEventID: a.ID, OccurredAt: now,
 		}, in.IssuedByUserID)
+		if err != nil || a.ReportID == "" {
+			return err
+		}
+		return s.resolveByAction(ctx, tx, report, a, actorLabel(target), resolutionID, resolutionAuditID)
 	})
 	if errors.Is(err, appcontent.ErrAlreadyDeleted) {
 		return moderation.Action{}, fmt.Errorf("%w: a status was deleted meanwhile", ErrInvalidStatusReference)
@@ -475,7 +483,7 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
 		}
-		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
+		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, "", before, now); err != nil {
 			return err
 		}
 		// The lift's row is keyed by the action's ID.

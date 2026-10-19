@@ -61,7 +61,7 @@ func runAdminAccountAction(args []string, stdout, stderr io.Writer) int {
 			fs.StringVar(&category, "category", string(moderation.CategoryOther), "spam, legal, violation, or other")
 			fs.StringVar(&publicReason, "public-reason", "", "the reason shown to the account")
 			fs.StringVar(&note, "private-note", "", "a note for the moderators")
-			fs.StringVar(&report, "report", "", "the ID of the report of the account that the action follows from")
+			fs.StringVar(&report, "report", "", "the ID of the report of the account that the action follows from; an open report is resolved as actioned")
 			fs.BoolVar(&noNotify, "no-notify", false, "do not tell the account of the action")
 			fs.DurationVar(&duration, "duration", 0, "how long the action lasts, such as 720h; 0 lasts until lifted")
 			fs.Func("status", "the ID of a status of the account that delete_statuses or mark_statuses_sensitive acts on; repeat it for several", func(s string) error {
@@ -216,7 +216,9 @@ ID. Several actions on one account add up. On a local account:
 
 delete_statuses and mark_statuses_sensitive need one -status or more (up to
 100), and take no -duration; nor does ban. A remote account takes limit,
-suspend, and force_sensitive.
+suspend, and force_sensitive, with the same effects here; suspend also drops
+what the account sends. An action on a remote account is not sent to its
+server, and -no-notify does not apply to it.
 
 list shows the actions on the account newest first, lifted and expired ones
 included unless -active is given. lift ends one action; the other actions on
