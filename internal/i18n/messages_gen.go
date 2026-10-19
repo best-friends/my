@@ -487,6 +487,13 @@ func (l *Localizer) ServerAuthSignedInTitle() string {
 	return l.format("server:auth.signed_in.title", nil)
 }
 
+// ServerAuthStatusActionDeletesIn formats "server:auth.status.action_deletes_in". When a ban deletes the user's account, in place of its end, on the page of a signed-in user whose account is restricted. {days} is the time left, rounded up to whole days.
+//
+//	en: {days, plural, one {Your account will be deleted in # day} other {Your account will be deleted in # days}}
+func (l *Localizer) ServerAuthStatusActionDeletesIn(days int) string {
+	return l.format("server:auth.status.action_deletes_in", map[string]any{"days": days})
+}
+
 // ServerAuthStatusActionEndsIn formats "server:auth.status.action_ends_in". When a moderation action on the user's account ends, on the page of a signed-in user whose account is restricted. {days} is the time left, rounded up to whole days.
 //
 //	en: {days, plural, one {Ends in # day} other {Ends in # days}}

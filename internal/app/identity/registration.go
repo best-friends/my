@@ -486,8 +486,11 @@ type Access struct {
 	// AccountActive is true when that account is active: not deactivated, scheduled for
 	// deletion, or deleted.
 	AccountActive bool
+	// DeletionDueAt is when the account is deleted while its deletion is scheduled; nil
+	// otherwise.
+	DeletionDueAt *time.Time
 	// LoginRestricted is true when moderation forbids the account to log in and use the app
-	// (disable_login, suspend).
+	// (disable_login, suspend, ban).
 	LoginRestricted bool
 }
 
@@ -531,6 +534,9 @@ func (s *Service) UserAccess(ctx context.Context, userID string) (Access, error)
 		return Access{}, err
 	}
 	out.AccountID, out.AccountActive = life.AccountID, life.Active()
+	if life.DeletionScheduled() {
+		out.DeletionDueAt = life.DeletionDueAt
+	}
 	if out.LoginRestricted, err = s.loginRestricted(ctx, life.AccountID); err != nil {
 		return Access{}, err
 	}

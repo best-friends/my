@@ -242,7 +242,8 @@ flowchart LR
 - メールを届けられない構成（`mail = none`）では、メール確認の代わりにモデレーターの承認を求めます（FR-002）。このとき `open` モードの登録も `pending` で始まり、確認済みでないことはアプリの利用を妨げません。
 - アプリ（クライアント API と OAuth の認可）を使えるのは、`user_registration_states` が `approved`（または行が無い）で、メール確認が必要な構成では主アドレスが確認済みの利用者だけです。
   承認待ち・却下・未確認の利用者もサーバーが返す画面にはログインでき、何を待っているかが表示されます。
-  ログインを奪う処分（制限 `login`、§5.2）を受けた利用者も同じで、サーバーが返す画面にはログインでき、効いている処分のうちログインを奪うもの（種類・理由のカテゴリと公開の理由・期限）が本人の UI 言語で表示されます。アクセストークンは得られません。
+  ログインを奪う処分（制限 `login`、§5.2）を受けた利用者も同じで、サーバーが返す画面にはログインでき、効いている処分のうちログインを奪うもの（種類・理由のカテゴリと公開の理由・期限。`ban` は削除までの日数）が本人の UI 言語で表示され、その画面から異議を申し立てられます。アクセストークンは得られません。
+  ライフサイクルが `active` でないアカウント（§4.2）はログインできません。例外は `ban` が効いているあいだの `deletion_scheduled` で、削除まで（`ban` への異議申し立ての期間、§4.3）は同じくサーバーが返す画面にだけログインできます。本人による削除の予約・無効化はログインできないままです。
 - モデレーターの決定（CLI と管理の API）は、`pending` の行だけを更新する条件付きの更新で `user_registration_states` を変え、同じトランザクションで `registration_decisions` と監査ログの行を加えます。
   更新する行が無ければ（決定済み、または同時に決まった）何も記録しないので、登録の決定は 1 回だけです。
 - CLI で作った管理者の主アドレスは、作成と同じトランザクションで確認済みにします（運営者が与えたアドレスなので）。
@@ -282,17 +283,18 @@ flowchart LR
 | --- | --- | --- | --- |
 | `sessions` | リソース | `id`, `user_id`, `token_hash`（`bytes`。Cookie の値の SHA-256）, `created_at`, `expires_at` | 一意 `(token_hash)`。インデックス `(user_id)`（処分による失効） |
 | `session_origins` | リソース（子） | `session_id`（PK）, `user_id`, `ip`（NULL 可）, `user_agent`（`string(512)`、NULL 可）, `created_at` | インデックス `(ip)`（同じ IP のアカウントの検索、FR-714）, `(user_id, created_at DESC)`（アカウントの最近のログイン元、FR-714）, `(created_at)`（保持期間による消去）。保持期間（[ADR-0038](../adr/0038-moderation-personal-data-retention.md)、既定 180 日）を過ぎた行を消去ジョブが消す |
-| `session_revocations` | イベント | `session_id`（PK）, `reason`（`enum(logout, replaced, password_changed, moderation, expired_cleanup)`）, `revoked_at` | 有効なセッション = 失効イベントが無く `expires_at` を過ぎていないもの。`replaced` は同じブラウザでのログインし直し |
+| `session_revocations` | イベント | `session_id`（PK）, `reason`（`enum(logout, replaced, password_changed, moderation, expired_cleanup, account_deleted)`）, `revoked_at` | 有効なセッション = 失効イベントが無く `expires_at` を過ぎていないもの。`replaced` は同じブラウザでのログインし直し |
 | `session_activity` | 現在値 | `session_id`（PK）, `last_seen_at` | ログイン時に作り、以後の更新は 1 時間に 1 回に間引く |
 | `oauth_clients` | リソース | `id`, `client_id`, `client_secret_hash`（NULL 可 = 公開クライアント）, `name`, `website`（NULL 可）, `scope`, `is_first_party`, `owner_user_id`（NULL 可）, `created_at` | 一意 `(client_id)` |
 | `oauth_client_redirect_uris` | 現在値 | `client_id`, `redirect_uri` | PK `(client_id, redirect_uri)`。完全一致で照合する |
 | `oauth_authorization_codes` | リソース | `code_hash`（PK）, `client_id`, `user_id`, `redirect_uri`, `scope`, `code_challenge`, `session_id`（NULL 可 = セッションの外で発行）, `issued_at`, `expires_at` | `session_id` は認可した画面のセッション |
 | `oauth_authorization_code_redemptions` | イベント | `code_hash`（PK）, `token_id`, `redeemed_at` | 一意 `(token_id)`。`token_id` は交換で発行した系列の最初のトークン |
 | `oauth_access_tokens` | リソース | `id`, `family_id`, `client_id`, `user_id`, `access_token_hash`, `refresh_token_hash`（NULL 可）, `scope`, `rotated_from_token_id`（NULL 可）, `issued_at`, `expires_at`, `refresh_expires_at`（NULL 可） | 一意 `(access_token_hash)`, `(refresh_token_hash)`。インデックス `(family_id)`, `(user_id)`（処分による失効）。`refresh_token_hash` と `refresh_expires_at` は同時に NULL |
-| `oauth_token_revocations` | イベント | `token_id`（PK）, `reason`（`enum(user, rotation, refresh_reuse, code_reuse, password_changed, moderation)`）, `revoked_at` | |
+| `oauth_token_revocations` | イベント | `token_id`（PK）, `reason`（`enum(user, rotation, refresh_reuse, code_reuse, password_changed, moderation, account_deleted)`）, `revoked_at` | |
 
 - セッションは、サーバーが返す画面（ログイン・登録・認可同意）の Cookie `__Host-my_session` です（ADR-0019 §4、ADR-0030）。
   ログインのたびに新しいトークンを発行し、ブラウザが持っていた古いセッションは `replaced` で失効させます。
+- ローカルアカウントの `deleted`（§4.2）は、同じトランザクションでその利用者の有効なセッションとトークンを `account_deleted` で失効させます（`identity.RegisterLifecycleProjectors`）。
 - ログイン元（`session_origins`）と登録元（`registration_origins`）は、セッション・利用者と同じトランザクションで記録します。
   - IP アドレスは正規形（IPv4 射影の IPv6 は IPv4、ゾーンは外す）で持ち、同じアドレスが同じ文字列になるようにします。IP アドレスとして読めない値は記録しません。
   - IP アドレスも User-Agent も分からないログインは `session_origins` の行を作らず、IP アドレスの分からない登録は `registration_origins` の行を作りません。どちらもログインと登録を妨げません。

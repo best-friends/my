@@ -1946,6 +1946,8 @@ export interface MessageArgs {
   "server:auth.signed_in.continue": {};
   /** You are signed in */
   "server:auth.signed_in.title": {};
+  /** {days, plural, one {Your account will be deleted in # day} other {Your account will be deleted in # days}} */
+  "server:auth.status.action_deletes_in": { days: number };
   /** {days, plural, one {Ends in # day} other {Ends in # days}} */
   "server:auth.status.action_ends_in": { days: number };
   /** Reason: {category} */

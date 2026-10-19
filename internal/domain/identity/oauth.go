@@ -115,6 +115,8 @@ const (
 	TokenRevokedPasswordChanged TokenRevocationReason = "password_changed"
 	// TokenRevokedModeration: a moderator suspended the user's login.
 	TokenRevokedModeration TokenRevocationReason = "moderation"
+	// TokenRevokedAccountDeleted: the user's local account was deleted.
+	TokenRevokedAccountDeleted TokenRevocationReason = "account_deleted"
 )
 
 // TokenRevocation records that a token stopped working, both its access token and its refresh

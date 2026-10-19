@@ -432,6 +432,13 @@ func appealBan(t *testing.T, e *appealEnv) {
 	if err := e.svc.LiftAccountAction(ctx, ban.ID, e.moderator, ""); !errors.Is(err, appmoderation.ErrNotLiftable) {
 		t.Errorf("LiftAccountAction(ban) = %v, want ErrNotLiftable", err)
 	}
+	// The ban lets its account sign in to appeal it (identity.LoginPolicy); no other account.
+	if banned, err := e.policy.Banned(ctx, e.local); err != nil || !banned {
+		t.Errorf("Banned(the banned account) = %v, %v; want true", banned, err)
+	}
+	if banned, err := e.policy.Banned(ctx, e.other); err != nil || banned {
+		t.Errorf("Banned(another account) = %v, %v; want false", banned, err)
+	}
 	e.clock.Set(deadline)
 	appeal := e.appeal(t, e.local, ban).Appeal
 	e.events.take()
@@ -449,6 +456,9 @@ func appealBan(t *testing.T, e *appealEnv) {
 	}
 	if restricted, err := e.policy.LoginRestricted(ctx, e.local); err != nil || restricted {
 		t.Errorf("LoginRestricted after overturning the ban = %v, %v; want false", restricted, err)
+	}
+	if banned, err := e.policy.Banned(ctx, e.local); err != nil || banned {
+		t.Errorf("Banned after overturning the ban = %v, %v; want false", banned, err)
 	}
 	if s, ok := lastEvent[appmoderation.AccountSuspensionChanged](e.events.take()); !ok || s.Suspended || s.AccountID != e.local {
 		t.Errorf("suspension change = %+v, %v; want the end of the suspension", s, ok)

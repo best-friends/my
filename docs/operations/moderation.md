@@ -67,7 +67,8 @@ my admin account action lift -reason "appealed" <action id>
 - 本人は `GET /api/v1/moderation/actions`（スコープ `read:accounts`、`active` で絞り込み）で自分への処分を新しい順に確かめられます。`notify_target` が偽の処分も、解除・期限切れの処分も並びます。
 - `private_note`・通報・処分した人・解除の理由は、本人には一切見せません。
 - 本人は自分への処分に、処分ごとに 1 回、異議を申し立てられます（[異議申し立て](#異議申し立て)）。処分の一覧と通知の処分には、申し立てられるか（`appealable`）・期限（`appeal_deadline`）・申し立てとその結果（`appeal`）が入ります。
-- `disable_login` と `suspend` を受けた本人は、アプリと API を使えませんが、ログイン画面（`/auth/sign_in`）にはログインでき、効いている `disable_login` / `suspend` の種類・理由・期限を確かめ、その画面から異議を申し立てられます（[異議申し立て](#異議申し立て)）。認可（`/oauth/authorize`）はこの画面を `403` で返し、トークンを発行しません。
+- `disable_login`・`suspend`・`ban` を受けた本人は、アプリと API を使えませんが、ログイン画面（`/auth/sign_in`）にはログインでき、効いている `disable_login` / `suspend` / `ban` の種類・理由・期限（`ban` はアカウントが削除されるまでの日数）を確かめ、その画面から異議を申し立てられます（[異議申し立て](#異議申し立て)）。認可（`/oauth/authorize`）はこの画面を `403` で返し、トークンを発行しません。
+  `ban` を受けた本人がログインできるのはアカウントが削除されるまでで、削除はそのセッションも失効させます。本人が自分で削除を予約したアカウントと無効にしたアカウントは、ログイン画面にもログインできません。
 
 ### 異議申し立て
 
@@ -81,18 +82,17 @@ my admin appeal overturn -reason "Sorry, our mistake." <appeal id>
 ```
 
 本人は `POST /api/v1/moderation/actions/{id}/appeal`（スコープ `write:accounts`、本文 `{"text": "..."}`）で申し立てます。
-アクセストークンを得られない `disable_login` / `suspend` の本人は、ログイン画面の処分ごとのフォーム（`POST /auth/appeal`）から申し立てます。
+アクセストークンを得られない `disable_login` / `suspend` / `ban` の本人は、ログイン画面の処分ごとのフォーム（`POST /auth/appeal`）から申し立てます。
 画面は、申し立てられる処分にはフォームと期限を、申し立て済みの処分にはその内容と結果を、期限切れの処分や申し立てられない処分にはその理由を示し、断った申し立てには理由を示します。
 管理 API では `GET /api/v1/admin/appeals`（`state` で絞り込み）、`GET .../{id}`、`POST .../{id}/uphold`・`POST .../{id}/overturn`（本文 `{"public_reason": "..."}` は省略可）で、権限 `manage_accounts` を要します。
 
 - 申し立ては処分 1 件につき 1 回、本文は 1〜2,000 文字です。期限は処分からインスタンス設定 `appeal_window` の日数（既定 180 日、20〜365 日、[インスタンス設定](instance-settings.md)）です。
   期限を過ぎた処分と 2 回目の申し立ては `422`（`/api/v1/problems/appeal-window-closed`・`/api/v1/problems/already-appealed`）です。
-- `ban` には、アカウントが削除されるまで（処分から 30 日、`appeal_window` が短ければその期限まで）申し立てられます。削除済みのアカウントの `ban` は `422`（`/api/v1/problems/not-appealable`）です。ただし、削除を待つアカウントはログイン画面にもログインできないため、`ban` を受けた本人には今のところ申し立てる手段がありません（[#442](https://github.com/best-friends/my/issues/442)）。解除済み・期限切れの処分にも、期限内なら申し立てられます。
+- `ban` には、アカウントが削除されるまで（処分から 30 日、`appeal_window` が短ければその期限まで）申し立てられます。削除済みのアカウントの `ban` は `422`（`/api/v1/problems/not-appealable`）です。解除済み・期限切れの処分にも、期限内なら申し立てられます。
 - 申し立てると、`manage_accounts` を持つ人に通知（`admin_appeal`）が届きます。審査すると、本人に通知（`appeal_decided`）が届き、本人は結果と `public_reason` を見られます。審査した人は見えません。
 - 覆すと、同じトランザクションで処分を解除します（`lift` と同じ効果。解除の理由は空）。`delete_statuses` を覆しても消した投稿は戻りません。審査までに解除済みの処分は、そのままです。
 - `ban` を覆すと、予定されていたアカウントの削除も同じトランザクションで取り消し（監査ログは `account_deletion_cancelled`）、凍結が終わって連合先にも元のプロフィールの `Update` を送ります。失効したセッションとトークンは戻らないので、本人はもう一度ログインします。審査までにアカウントが削除されていれば、覆せません（`422`、`/api/v1/problems/not-appealable`。維持はできる）。
 - 審査は 1 回です。同じ結果でもう一度審査しても何も変わらず、反対の結果は `409`（`/api/v1/problems/appeal-decided`）です。
-- `disable_login`・`suspend` を受けた本人は API を使えないので、申し立てられません（ログイン画面からの申し立ては [#427](https://github.com/best-friends/my/issues/427)）。
 
 ## アカウントの管理
 
