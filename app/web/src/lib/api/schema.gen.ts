@@ -2943,8 +2943,13 @@ export interface components {
         Preferences: {
             /** @description The UI locale, a BCP 47 language tag. */
             locale: string;
-            /** @description The time zone, an IANA name such as `Asia/Tokyo`. */
+            /** @description The time zone, an IANA name such as `Asia/Tokyo`; `UTC` until one is chosen. */
             time_zone: string;
+            /**
+             * @description Whether a time zone has been chosen: false for a new user until a request sets
+             *     `time_zone`. Clients may then set it to the device's time zone.
+             */
+            time_zone_chosen: boolean;
             default_visibility: components["schemas"]["Visibility"];
             /** @description The language of new posts that name none, a BCP 47 language tag; `und` when undetermined. */
             default_post_language: string;

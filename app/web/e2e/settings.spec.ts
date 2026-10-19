@@ -32,17 +32,21 @@ function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
 }
 
-/** What the played server is like beyond the defaults: the viewer's permissions, and whether it sends email. */
-type ServerOptions = { permissions?: string[]; sendsEmail?: boolean };
+/**
+ * What the played server is like beyond the defaults: the viewer's permissions, whether it sends email, and
+ * whether the viewer has chosen their time zone (UTC) yet.
+ */
+type ServerOptions = { permissions?: string[]; sendsEmail?: boolean; timeZoneChosen?: boolean };
 
 /**
  * Plays the server of a signed-in user whose preferences start in `locale`: the refresh endpoint resumes the
  * session, and the preferences remember their changes (across reloads too). Returns the changes the app sent.
  */
-async function signedInServer(page: Page, locale: string, { permissions = [], sendsEmail = true }: ServerOptions = {}) {
+async function signedInServer(page: Page, locale: string, { permissions = [], sendsEmail = true, timeZoneChosen = true }: ServerOptions = {}) {
   let preferences = {
     locale,
     time_zone: "UTC",
+    time_zone_chosen: timeZoneChosen,
     default_visibility: "public",
     default_post_language: "und",
     require_media_description: false,
@@ -65,7 +69,7 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
       case "PATCH /preferences": {
         const change = request.postDataJSON() as Partial<typeof preferences>;
         changes.push(change);
-        preferences = { ...preferences, ...change };
+        preferences = { ...preferences, ...change, time_zone_chosen: preferences.time_zone_chosen || change.time_zone !== undefined };
         return json(route, preferences);
       }
       case "GET /blocks":
@@ -80,6 +84,9 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
   });
   return changes;
 }
+
+// The browser is in the time zone of the played preferences (UTC), unless a test says otherwise.
+test.use({ timezoneId: "UTC" });
 
 /** The project's locale. */
 function projectLocale(): string {
@@ -267,5 +274,48 @@ test.describe("time zone", () => {
     await expect(tokyo).toHaveAccessibleDescription("Asia/Tokyo");
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("time zone of the device", () => {
+  test.use({ timezoneId: "Asia/Tokyo" });
+
+  test("a new account takes the browser's time zone", async ({ page, makeAxeBuilder }) => {
+    const changes = await signedInServer(page, projectLocale(), { timeZoneChosen: false });
+    await page.goto("/settings/preferences");
+
+    await expect.poll(() => changes).toEqual([{ time_zone: "Asia/Tokyo" }]);
+    const select = page.locator('main button[aria-haspopup="listbox"]').nth(1);
+    await expect(select).toContainText("+09:00");
+    // The zone is the browser's, so no note tells of a difference: the two selects are the only buttons.
+    await expect(page.getByRole("main").getByRole("button")).toHaveCount(2);
+    await expectNoAxeViolations(makeAxeBuilder);
+  });
+
+  test("tells that the chosen zone is not the browser's, and switches to it from the keyboard", async ({ page, makeAxeBuilder }) => {
+    const changes = await signedInServer(page, projectLocale());
+    await page.goto("/settings/preferences");
+    const select = page.locator('main button[aria-haspopup="listbox"]').nth(1);
+    await expect(select).toContainText("+00:00");
+    // The display language and time zone selects, then the note of the browser's zone with its button.
+    await expect(page.getByRole("main")).toMatchAriaSnapshot(`
+      - paragraph
+      - button
+      - button
+      - paragraph: /\\+09:00/
+      - button
+      - radiogroup
+    `);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    const useDevice = page.getByRole("main").getByRole("button").nth(2);
+    await useDevice.focus();
+    await page.keyboard.press("Enter");
+
+    await expect.poll(() => changes).toEqual([{ time_zone: "Asia/Tokyo" }]);
+    await expect(select).toContainText("+09:00");
+    await expect(select).toBeFocused();
+    await expect(page.getByRole("main").getByRole("button")).toHaveCount(2);
   });
 });

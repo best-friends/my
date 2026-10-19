@@ -58,7 +58,7 @@ func newPreferencesEnv(t *testing.T) (*authEnv, *fakePreferences) {
 	t.Helper()
 	prefs := &fakePreferences{userID: "user-" + aliceAccountID, p: appidentity.UserPreferences{
 		Preferences: identity.Preferences{
-			UserID: "user-" + aliceAccountID, Locale: "ja", TimeZone: "Asia/Tokyo",
+			UserID: "user-" + aliceAccountID, Locale: "ja", TimeZone: "Asia/Tokyo", TimeZoneChosen: true,
 			DefaultVisibility: identity.Visibility("unlisted"), DefaultPostLanguage: "ja",
 		},
 	}}
@@ -76,7 +76,7 @@ func TestGetPreferences(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := clientapi.Preferences{
-		Locale: "ja", TimeZone: "Asia/Tokyo", DefaultVisibility: clientapi.VisibilityUnlisted, DefaultPostLanguage: "ja",
+		Locale: "ja", TimeZone: "Asia/Tokyo", TimeZoneChosen: true, DefaultVisibility: clientapi.VisibilityUnlisted, DefaultPostLanguage: "ja",
 		TimelineLanguages: []string{},
 	}
 	if !reflect.DeepEqual(got, want) {

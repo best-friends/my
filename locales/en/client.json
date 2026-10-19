@@ -3723,6 +3723,10 @@
     "defaultMessage": "Saved",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
   },
+  "settings.time_zone.device_differs": {
+    "defaultMessage": "This device is in a different time zone: {zone}.",
+    "description": "Note under the time zone select when the chosen zone is not the time zone of the device in use. {zone} is that device zone as the select names it, like (UTC+09:00) Japan Standard Time."
+  },
   "settings.time_zone.description": {
     "defaultMessage": "Dates and times are shown in this time zone.",
     "description": "Help text of the time zone select."
@@ -3738,6 +3742,10 @@
   "settings.time_zone.option": {
     "defaultMessage": "(UTC{offset}) {name}",
     "description": "Option of the time zone select. {offset} is the zone's difference from UTC, like +09:00 or −05:00; {name} is the zone's name in the display language, like Japan Standard Time."
+  },
+  "settings.time_zone.use_device": {
+    "defaultMessage": "Use this device's time zone",
+    "description": "Button under the time zone select that changes the setting to the time zone of the device in use; shown only when they differ."
   },
   "settings.timeline_languages.description": {
     "defaultMessage": "Timelines show posts in the languages you check. Check none to see every language.",

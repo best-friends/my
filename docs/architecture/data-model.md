@@ -186,7 +186,7 @@ flowchart LR
 
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
-| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `session_activity` |
+| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `account_post_counters`, `poll_tallies`, `custom_emoji_settings`, `media_focus`, `media_descriptions`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins` |
@@ -322,13 +322,16 @@ flowchart LR
 
 | テーブル | カラム | 制約 |
 | --- | --- | --- |
-| `user_preferences` | `user_id`（PK）, `locale`（`lang`）, `time_zone`（IANA 名）, `default_visibility`（`enum(public, local, unlisted, private, direct)`）, `default_post_language`（`lang`）, `require_media_description`（`bool`）, `email_moderator_notifications`（`bool`。モデレーターへの通知をメールでも受け取るか、FR-712）, `updated_at` | |
+| `user_preferences` | `user_id`（PK）, `locale`（`lang`）, `default_visibility`（`enum(public, local, unlisted, private, direct)`）, `default_post_language`（`lang`）, `require_media_description`（`bool`）, `email_moderator_notifications`（`bool`。モデレーターへの通知をメールでも受け取るか、FR-712）, `updated_at` | |
 | `user_timeline_languages` | `user_id`, `language`（`lang`） | PK `(user_id, language)`。行が無ければすべての言語を表示（FR-208） |
+| `user_time_zones` | `user_id`（PK）, `time_zone`（IANA 名） | 行が無ければタイムゾーンを選んでいない（日時は UTC。Web クライアントは端末のゾーンを保存する） |
 
 - 登録時に既定値の行を作ります。`locale` は登録時に指定されたロケール、無ければインスタンスの既定（`default_locale`）、それも無ければ `en` です。
-  `time_zone` は `UTC`、`default_visibility` は `public`、`default_post_language` は `und`（クライアントに任せる）、`require_media_description` と `email_moderator_notifications` は偽です。
+  `user_time_zones` の行は作らない（タイムゾーンは選んでいない状態で、`UTC` として扱う）。`default_visibility` は `public`、`default_post_language` は `und`（クライアントに任せる）、`require_media_description` と `email_moderator_notifications` は偽です。
 - `lang` の値は BCP 47 として検証し、正規形（`ja-JP`、`zh-Hant-TW`、`iw` → `he`）で保存します。未知のサブタグ、言語を明示しないタグ（`und-JP`、私用の `x-…`）は拒否します。
   `locale` は `und` も拒否します。
+- タイムゾーンを選んだ事実は `user_time_zones` の行の有無で表します（ADR-0020 規約 4。`user_preferences` に NULL 許容の列や「選んだか」の列を置かない）。
+  `time_zone` を指定した設定の変更が行を UPSERT します（`UTC` を選んでも行ができる）。API は `time_zone`（行が無ければ `UTC`）と `time_zone_chosen` を返します。
 - `time_zone` は IANA タイムゾーンデータベースにある名前だけを受け付けます（`Local` や `+09:00` は不可）。サーバーのバイナリはデータベースを埋め込む（Go の `time/tzdata`）ので、検証結果はホストに依存しません。
 - `user_timeline_languages` は 1 回の設定で全体を置き換えます（重複を除き、上限 64 件）。
 
@@ -1248,7 +1251,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-003 OAuth 2.0 + PKCE | M | `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_access_tokens`, `sessions` |
 | FR-005 TOTP | S | `totp_enrollments`, `totp_recovery_codes`, `totp_recovery_code_uses` |
 | FR-006 プロフィール | M | `account_profile_revisions`, `account_profile_fields`, `account_profile_heads` |
-| FR-007 言語・タイムゾーン | M | `user_preferences` |
+| FR-007 言語・タイムゾーン | M | `user_preferences`, `user_time_zones` |
 | FR-008 アカウント削除・エクスポート | S | `account_lifecycle_events`, `data_exports`, `data_export_results` |
 | FR-101〜104 投稿・公開範囲・メンション・タグ・CW | M | `statuses`, `status_revisions` と子テーブル, `status_mention_index`, `feed_tag_entries` |
 | FR-105 画像添付・代替テキスト | M | `media_files`, `uploaded_media`, `media_processing_results`, `media_variants`, `media_focus`, `media_descriptions`, `status_revision_attachments` |

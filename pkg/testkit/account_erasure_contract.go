@@ -264,7 +264,7 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 		e.rows(t, table, "account_id", aliceID, 0)
 	}
 	for _, table := range []string{"user_email_addresses", "user_primary_emails", "password_credentials", "sessions",
-		"user_preferences", "user_registration_states", "registration_applications"} {
+		"user_preferences", "user_time_zones", "user_registration_states", "registration_applications"} {
 		e.rows(t, table, "user_id", userID, 0)
 	}
 	e.rows(t, "local_accounts", "account_id", aliceID, 1)

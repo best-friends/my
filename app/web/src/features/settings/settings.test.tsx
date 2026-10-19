@@ -3,7 +3,7 @@
 // handlers, MSW playing the server with the state each test needs, and the user's own interactions.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Preferences, PreferencesChange, ProfileChange } from "./api/me";
 import {
   accountFixture,
@@ -19,8 +19,22 @@ import { server } from "../../test/msw/server";
 import { nodeUploadFile } from "../../test/multipart";
 import { renderApp } from "../../test/render";
 
+/**
+ * Makes `zone` the time zone of this device: the zone of every Intl.DateTimeFormat that names none, as in a
+ * browser set to it. Undone after each test (`unstubGlobals` in vitest.config.ts).
+ */
+function stubDeviceTimeZone(zone: string) {
+  class DeviceDateTimeFormat extends Intl.DateTimeFormat {
+    constructor(locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
+      super(locales, { ...options, timeZone: options?.timeZone ?? zone });
+    }
+  }
+  vi.stubGlobal("Intl", Object.assign(Object.create(Intl) as typeof Intl, { DateTimeFormat: DeviceDateTimeFormat }));
+}
+
 beforeEach(() => {
   server.use(signedInHandler);
+  stubDeviceTimeZone("UTC");
   // The tests share one document; a locale change sets its lang and dir.
   document.documentElement.lang = "en";
   document.documentElement.dir = "ltr";
@@ -39,7 +53,7 @@ function preferencesServer(initial: Partial<Preferences> = {}) {
     http.patch(`${apiBase}/preferences`, async ({ request }) => {
       const change = (await request.json()) as PreferencesChange;
       changes.push(change);
-      preferences = { ...preferences, ...change };
+      preferences = { ...preferences, ...change, time_zone_chosen: preferences.time_zone_chosen || change.time_zone !== undefined };
       return HttpResponse.json(preferences);
     }),
   );
@@ -118,7 +132,8 @@ describe("preferences", () => {
   test("time zones are named in the display language with their offset, and described by their IANA name", async () => {
     const prefs = preferencesServer({ locale: "ja", time_zone: "Asia/Tokyo" });
     const { user } = await renderApp({ path: "/settings/preferences" });
-    const timeZone = await screen.findByRole("button", { name: /タイムゾーン/ });
+    // The select's name ends with its label; the button to use the device's time zone also names it.
+    const timeZone = await screen.findByRole("button", { name: /タイムゾーン$/ });
     expect(timeZone).toHaveTextContent("（UTC+09:00）日本標準時");
 
     await user.click(timeZone);
@@ -134,6 +149,52 @@ describe("preferences", () => {
       expect(prefs.changes).toEqual([{ time_zone: expect.stringMatching(/^Asia\/Kat(h)?mandu$/) as string }]);
     });
     expect(timeZone).toHaveTextContent("（UTC+05:45）ネパール時間");
+  });
+});
+
+describe("time zone of the device", () => {
+  test("a new account takes this device's time zone", async () => {
+    stubDeviceTimeZone("Asia/Tokyo");
+    const prefs = preferencesServer({ time_zone: "UTC", time_zone_chosen: false });
+    await renderApp({ path: "/settings/preferences" });
+
+    await waitFor(() => {
+      expect(prefs.changes).toEqual([{ time_zone: "Asia/Tokyo" }]);
+    });
+    const timeZone = screen.getByRole("button", { name: /Time zone$/ });
+    await waitFor(() => {
+      expect(timeZone).toHaveTextContent("(UTC+09:00) Japan Standard Time");
+    });
+    expect(screen.queryByRole("button", { name: "Use this device's time zone" })).not.toBeInTheDocument();
+  });
+
+  test("a chosen time zone is kept, and the settings tell that this device is in another one", async () => {
+    stubDeviceTimeZone("America/New_York");
+    const prefs = preferencesServer({ time_zone: "Asia/Tokyo" });
+    const { user } = await renderApp({ path: "/settings/preferences" });
+
+    expect(await screen.findByText(/^This device is in a different time zone: \(UTC−0[45]:00\) Eastern Time\.$/)).toBeInTheDocument();
+    const timeZone = screen.getByRole("button", { name: /Time zone$/ });
+    expect(timeZone).toHaveTextContent("(UTC+09:00) Japan Standard Time");
+    expect(prefs.changes).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Use this device's time zone" }));
+
+    await waitFor(() => {
+      expect(prefs.changes).toEqual([{ time_zone: "America/New_York" }]);
+    });
+    expect(timeZone).toHaveTextContent(/^\(UTC−0[45]:00\) Eastern Time/);
+    expect(timeZone).toHaveFocus();
+    expect(screen.queryByText(/different time zone/)).not.toBeInTheDocument();
+  });
+
+  test("an alias of the device's zone is the same zone", async () => {
+    stubDeviceTimeZone("Asia/Calcutta");
+    preferencesServer({ time_zone: "Asia/Kolkata" });
+    await renderApp({ path: "/settings/preferences" });
+
+    expect(await screen.findByRole("button", { name: /Time zone$/ })).toHaveTextContent("(UTC+05:30) India Standard Time");
+    expect(screen.queryByText(/different time zone/)).not.toBeInTheDocument();
   });
 });
 
