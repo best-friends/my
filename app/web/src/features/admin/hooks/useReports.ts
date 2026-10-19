@@ -4,13 +4,13 @@
 // who handles it, the notes, and resolving or reopening it. Each operation on the report answers the report after
 // it, which replaces the cached one; failures are shown in a toast and leave the page as it was (web-client.md E2).
 import { useToast } from "@my/ui";
-import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { type ClientMessageKey, type Translate, useT } from "../../../lib/i18n";
 import type { Account } from "../../profile";
-import { type Status, statusQueryOptions } from "../../status";
+import type { Status } from "../../status";
 import {
   type AccountAction,
   accountActionsQueryOptions,
@@ -121,17 +121,17 @@ export function useCitedRules(ruleIds: readonly string[]): CitedRule[] | null {
   });
 }
 
-/** One post a report points at: loading, shown, or not visible to the moderator (deleted, or not for them). */
-export type ReportedStatus = { id: string; status: "loading" } | { id: string; status: "found"; value: Status } | { id: string; status: "missing" };
+/**
+ * One post a report points at: shown, whatever its visibility, with when it was deleted for a post its author (or
+ * someone else) deleted; or gone, when the server no longer has it.
+ */
+export type ReportedStatus = { id: string; status: "found"; value: Status; deletedAt: string | undefined } | { id: string; status: "gone" };
 
-/** The posts that a report points at, in its order. */
-export function useReportedStatuses(statusIds: readonly string[]): ReportedStatus[] {
-  const api = useApi();
-  const results = useQueries({ queries: statusIds.map((id) => ({ ...statusQueryOptions(api, id), retry: false })) });
-  return statusIds.map((id, index) => {
-    const result = results[index];
-    if (result?.data !== undefined) return { id, status: "found", value: result.data };
-    return result?.isError === true ? { id, status: "missing" } : { id, status: "loading" };
+/** The posts that a report points at, in its order; the report carries them for the moderators (`statuses`). */
+export function reportedStatuses(report: Pick<ReportDetail, "status_ids" | "statuses">): ReportedStatus[] {
+  return report.status_ids.map((id) => {
+    const found = report.statuses.find((item) => item.status.id === id);
+    return found === undefined ? { id, status: "gone" } : { id, status: "found", value: found.status, deletedAt: found.deleted_at };
   });
 }
 

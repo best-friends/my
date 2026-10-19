@@ -626,9 +626,9 @@ export interface MessageArgs {
   "client:admin.report.posts": {};
   /** {count, plural, =0 {None} one {# post} other {# posts}} */
   "client:admin.report.posts.count": { count: number };
-  /** Loading the post */
-  "client:admin.report.posts.loading": {};
-  /** This post cannot be shown: it was deleted, or its visibility does not include you. */
+  /** Deleted {date}. Kept for this report. */
+  "client:admin.report.posts.deleted": { date: string };
+  /** The server no longer has this post. */
   "client:admin.report.posts.missing": {};
   /** The report points at no posts. */
   "client:admin.report.posts.none": {};
