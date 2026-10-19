@@ -124,6 +124,8 @@ test.describe("the admin entry", () => {
       const link = sheet.locator('a[href="/admin"]');
       await expect(link).toHaveAccessibleName(three);
       await expect(link.locator('[aria-hidden="true"]', { hasText: three })).toBeVisible();
+      // The sheet fades and slides in: axe measures contrast once it has settled.
+      await expect(page.locator("[data-entering]")).toHaveCount(0);
       await expectNoAxeViolations(makeAxeBuilder);
       await link.click();
     } else {
@@ -148,6 +150,8 @@ test.describe("the admin entry", () => {
           - link /1|١/:
             - /url: /admin/registrations
     `);
+    // On a phone the sheet fades out as the page opens.
+    await expect(page.locator("[data-exiting]")).toHaveCount(0);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });
