@@ -40,6 +40,18 @@ export { DomainName, MissingPermission } from "./components/parts";
 export { type ReportFilter, reportQueryOptions, reportsQueryOptions } from "./api/reports";
 export { ReportDetailView } from "./components/ReportDetail";
 export { ReportQueue } from "./components/ReportQueue";
+// The account search and an account's page with its moderation actions (FR-714, FR-703, FR-713), for manage_accounts.
+export {
+  adminAccountContactFields,
+  adminAccountOrigins,
+  adminAccountQueryOptions,
+  type AdminAccountSearch,
+  adminAccountSearchLimit,
+  adminAccountsQueryOptions,
+  adminAccountStates,
+} from "./api/accounts";
+export { AccountDetailView } from "./components/AccountDetail";
+export { AccountSearch } from "./components/AccountSearch";
 // The review of appeals of moderation actions (FR-707), for manage_accounts.
 export { type AppealFilter, appealQueryOptions, appealsQueryOptions } from "./api/appeals";
 export { AppealDetailView } from "./components/AppealDetail";

@@ -92,3 +92,20 @@ export function domainToUnicode(domain: string): string {
     })
     .join(".");
 }
+
+/** Characters that a domain never has, which the URL parser would read as the end of the host instead. */
+const notInDomain = /[\s/\\?#@:%]/;
+
+/**
+ * The domain with its U-labels encoded to A-labels (`例え.JP` → `xn--r8jz45g.jp`) by the URL Standard's host
+ * parser (UTS #46 processing), as the server keeps domains. Text that is no domain stays as it is, lowercased,
+ * for the server to judge.
+ */
+export function domainToAscii(domain: string): string {
+  if (domain === "" || notInDomain.test(domain)) return domain.toLowerCase();
+  try {
+    return new URL(`http://${domain}/`).hostname;
+  } catch {
+    return domain.toLowerCase();
+  }
+}
