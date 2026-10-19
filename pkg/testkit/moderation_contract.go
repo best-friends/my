@@ -75,6 +75,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"TellsSuspensionsAndTheirEnds", moderationSuspensions},
 		{"FlagsTheFirstOpenReportAndCounts", moderationFirstOpenReport},
 		{"NotesReopensAndResolvesByAction", moderationNotesAndReopenings},
+		{"RebuildAgreesWithTheCommands", moderationProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newModerationEnv(t, newHarness)) })

@@ -1377,7 +1377,7 @@ CREATE TABLE instance_availability_events (
 ) STRICT;
 CREATE INDEX instance_availability_events_domain_id ON instance_availability_events (domain, id DESC);
 
--- Projection: whether a server is a delivery target, from delivery_attempts and
+-- Current value: whether a server is a delivery target, from delivery_attempts and
 -- instance_availability_events. failure_days counts the distinct UTC days of the latest run of
 -- failures; last_failure_day is YYYYMMDD, or '' without a failure.
 CREATE TABLE instance_health (

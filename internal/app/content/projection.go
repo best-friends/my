@@ -153,11 +153,36 @@ func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) 
 		{"status_counters", repo.RebuildCounters},
 		{"account_post_counters", repo.RebuildPostCounters},
 		{"local_post_counters", repo.RebuildLocalPostCounters},
+		{"poll_tallies", repo.RebuildPollTallies},
 	}
 	for _, s := range steps {
 		if err := u.Tx(ctx, func(tx uow.Tx) error { return s.fn(ctx, tx) }); err != nil {
 			return fmt.Errorf("rebuild %s: %w", s.name, err)
 		}
+	}
+	return nil
+}
+
+// SensitivityMarks calls mark inside tx for each status that a moderation action in force shows
+// as sensitive, with the action: what the moderation module recorded through
+// MarkSensitiveByModeration and has not ended through ClearSensitivityOf. The content module
+// does not read the moderation tables, so the moderation module's public API replays them
+// (appmoderation.ReplaySensitivityMarks).
+type SensitivityMarks func(ctx context.Context, tx uow.Tx, mark func(statusID, actionID string) error) error
+
+// RebuildSensitivityOverrides empties status_sensitivity_overrides and records again, in one
+// transaction, the statuses that marks names (data-model §9).
+func RebuildSensitivityOverrides(ctx context.Context, u uow.UnitOfWork, repo Repository, marks SensitivityMarks) error {
+	err := u.Tx(ctx, func(tx uow.Tx) error {
+		if err := repo.DeleteAllSensitivityOverrides(ctx, tx); err != nil {
+			return err
+		}
+		return marks(ctx, tx, func(statusID, actionID string) error {
+			return repo.InsertSensitivityOverride(ctx, tx, statusID, actionID)
+		})
+	})
+	if err != nil {
+		return fmt.Errorf("rebuild status_sensitivity_overrides: %w", err)
 	}
 	return nil
 }

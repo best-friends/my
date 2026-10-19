@@ -5,10 +5,12 @@ package timeline
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	"github.com/best-friends/my/internal/app/kernel"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/timeline"
@@ -58,6 +60,68 @@ func RegisterModerationProjectors(r *uow.Projectors, repo Repository, accounts A
 		})
 	})
 }
+
+// RebuildRestrictions empties feed_author_restrictions and feed_domain_restrictions and derives
+// them again, in one transaction, by applying the projectors of RegisterModerationProjectors and
+// of the deletions of accounts to the events that sources replay (data-model §9): the
+// restrictions in effect that moderation replays, and the deletions that account replays.
+//
+// The commands replace the restrictions of an account or a domain only after an action or a
+// lift, so a row whose end has passed stays until the next one; it restricts nothing (the reads
+// compare its end with the time). The rebuild keeps the rows that the tables hold whose end has
+// passed at the time of clock, unless it derives a row for the same restriction.
+func RebuildRestrictions(ctx context.Context, u uow.UnitOfWork, repo Repository, accounts Accounts, clock kernel.Clock, sources ...Source) error {
+	projectors := &uow.Projectors{}
+	RegisterModerationProjectors(projectors, repo, accounts)
+	registerDeletionProjector(projectors, repo)
+	err := u.Tx(ctx, func(tx uow.Tx) error {
+		now := kernel.Normalize(clock.Now())
+		authors, domains, err := repo.ListRestrictions(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if err := repo.DeleteRestrictions(ctx, tx); err != nil {
+			return err
+		}
+		for _, src := range sources {
+			if err := src(ctx, tx, func(e uow.Event) error { return projectors.Project(ctx, tx, e) }); err != nil {
+				return err
+			}
+		}
+		derivedAuthors, derivedDomains, err := repo.ListRestrictions(ctx, tx)
+		if err != nil {
+			return err
+		}
+		for _, r := range authors {
+			if !ended(r.EffectiveUntil, now) || slices.ContainsFunc(derivedAuthors, func(d AuthorRestriction) bool {
+				return d.AccountID == r.AccountID && d.Restriction == r.Restriction
+			}) {
+				continue
+			}
+			if err := repo.UpsertAuthorRestriction(ctx, tx, r); err != nil {
+				return err
+			}
+		}
+		for _, r := range domains {
+			if !ended(r.EffectiveUntil, now) || slices.ContainsFunc(derivedDomains, func(d DomainRestriction) bool {
+				return d.Domain == r.Domain && d.Restriction == r.Restriction
+			}) {
+				continue
+			}
+			if err := repo.UpsertDomainRestriction(ctx, tx, r); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("rebuild the feed restrictions: %w", err)
+	}
+	return nil
+}
+
+// ended reports whether a restriction that lasts until until has ended at now.
+func ended(until *time.Time, now time.Time) bool { return until != nil && !until.After(now) }
 
 // replaceRestrictions upserts the timeline restrictions among effects and deletes the others.
 func replaceRestrictions(effects []appmoderation.Effect, upsert func(timeline.Restriction, *time.Time) error, remove func(timeline.Restriction) error) error {

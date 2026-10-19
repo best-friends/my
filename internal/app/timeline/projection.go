@@ -12,6 +12,8 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
+	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/timeline"
 )
@@ -154,6 +156,12 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 		return repo.DeleteExclusion(ctx, tx, ev.AccountID, ev.TargetAccountID, timeline.ExcludedMute)
 	})
 
+	registerDeletionProjector(r, repo)
+}
+
+// registerDeletionProjector registers the projector of the deletions of accounts:
+// feed_author_restrictions holds profile_view for each deleted account.
+func registerDeletionProjector(r *uow.Projectors, repo Repository) {
 	r.Register(appaccount.EventLifecycleEventRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appaccount.LifecycleEventRecorded)
 		if !ev.Deletes() {
@@ -225,6 +233,22 @@ func ContentSource(statuses appcontent.Repository, interactions appcontent.Inter
 	}
 }
 
+// AccountSource replays the deletions of accounts of the account module
+// (appaccount.ReplayDeletions).
+func AccountSource(repo appaccount.Repository) Source {
+	return func(ctx context.Context, tx uow.Tx, emit func(uow.Event) error) error {
+		return appaccount.ReplayDeletions(ctx, tx, repo, emit)
+	}
+}
+
+// ModerationSource replays the restrictions in effect at the time of clock of the moderation
+// module (appmoderation.ReplayEvents).
+func ModerationSource(repo appmoderation.Repository, clock kernel.Clock) Source {
+	return func(ctx context.Context, tx uow.Tx, emit func(uow.Event) error) error {
+		return appmoderation.ReplayEvents(ctx, tx, repo, kernel.Normalize(clock.Now()), emit)
+	}
+}
+
 // GraphSource replays the follows, blocks, and mutes of the graph module (appgraph.ReplayEvents).
 func GraphSource(repo appgraph.Repository) Source {
 	return func(ctx context.Context, tx uow.Tx, emit func(uow.Event) error) error {
@@ -234,8 +258,7 @@ func GraphSource(repo appgraph.Repository) Source {
 
 // RebuildProjections empties the projections of Projection and derives them again, in one
 // transaction, by applying this module's projectors to the events that sources replay
-// (data-model §9). The restrictions are left alone: they derive from moderation, which replays
-// nothing yet.
+// (data-model §9). The restrictions are left alone: RebuildRestrictions derives them.
 func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository, sources ...Source) error {
 	projectors := &uow.Projectors{}
 	RegisterProjectors(projectors, repo)

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -15,17 +16,23 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
+	appinstance "github.com/best-friends/my/internal/app/instance"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/projection"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	domcontent "github.com/best-friends/my/internal/domain/content"
+	domidentity "github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/platform"
 )
 
 // TestProjectionsVerifyAndRebuild fills every projection through the services, on both
 // dialects, and checks that each one verifies, that verify finds the rows that raw SQL breaks
 // and changes nothing, and that rebuild restores them and keeps the fetch state of the remote
-// actors' heads, which no event records. The scheduled job projection.verify corrects them.
+// actors' heads, which no event records, and the restriction rows whose end has passed. The
+// scheduled job projection.verify corrects them.
 func TestProjectionsVerifyAndRebuild(t *testing.T) {
 	t.Parallel()
 	for _, dialect := range []string{"sqlite", "postgres"} {
@@ -35,7 +42,9 @@ func TestProjectionsVerifyAndRebuild(t *testing.T) {
 			if dialect == "postgres" {
 				dbURL = newPostgresDatabase(t)
 			}
-			cfg := loadConfig(t, map[string]string{"MY_DB": dialect, "MY_DATABASE_URL": dbURL, "MY_WEB_ORIGIN": webOrigin})
+			cfg := loadConfig(t, map[string]string{
+				"MY_DB": dialect, "MY_DATABASE_URL": dbURL, "MY_WEB_ORIGIN": webOrigin, "MY_MAIL": "none",
+			})
 			app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 			if err != nil {
 				t.Fatalf("NewApp: %v", err)
@@ -62,12 +71,14 @@ func fillProjections(t *testing.T, a *platform.App) {
 		ids[name] = reg.AccountID
 	}
 	alice, bob, carol := ids["alice"], ids["bob"], ids["carol"]
+	var dave string
 	err := a.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		_, err := a.Accounts.UpsertRemoteActor(ctx, tx, appaccount.RemoteActorInput{
+		d, err := a.Accounts.UpsertRemoteActor(ctx, tx, appaccount.RemoteActorInput{
 			URI: "https://remote.example/users/dave", Domain: "remote.example", Type: "Person",
 			PreferredUsername: "dave", InboxURL: "https://remote.example/users/dave/inbox",
 			SharedInboxURL: "https://remote.example/inbox",
 		})
+		dave = d.ID
 		return err
 	})
 	if err != nil {
@@ -87,7 +98,7 @@ func fillProjections(t *testing.T, a *platform.App) {
 	}
 	first := post(alice, "hi @bob #projections")
 	gone := post(alice, "soon gone")
-	post(bob, "hello")
+	hello := post(bob, "hello")
 	for _, id := range []string{first, gone} {
 		if _, err := a.Interactions.Favourite(ctx, bob, id); err != nil {
 			t.Fatalf("Favourite: %v", err)
@@ -104,6 +115,166 @@ func fillProjections(t *testing.T, a *platform.App) {
 	}
 	if _, err := a.Graph.Mute(ctx, alice, carol, appgraph.MuteInput{HideNotifications: true}); err != nil {
 		t.Fatalf("Mute: %v", err)
+	}
+	fillRemotePoll(t, a, dave)
+	fillModeration(t, a, ids, dave, hello)
+	fillIdentity(t, a, bob)
+}
+
+// fillRemotePoll fills poll_tallies with a remote poll of dave and two observations of it.
+func fillRemotePoll(t *testing.T, a *platform.App, dave string) {
+	t.Helper()
+	ctx := t.Context()
+	at := time.Now().UTC().Add(-time.Hour)
+	in := appcontent.RemoteStatusInput{
+		URI: "https://remote.example/users/dave/statuses/1", AuthorAccountID: dave, AuthorDomain: "remote.example",
+		Visibility: domcontent.VisibilityPublic, PublishedAt: at, RevisedAt: at,
+		Bodies: []appcontent.RemoteBody{{Language: "und", HTML: "<p>cats or dogs?</p>"}},
+		Poll:   &appcontent.RemotePollInput{Options: []string{"cats", "dogs"}, Votes: []int64{1, 2}},
+	}
+	err := a.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		_, err := a.Content.IngestRemoteStatus(ctx, tx, in)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("IngestRemoteStatus: %v", err)
+	}
+	in.Poll.Votes = []int64{3, 2}
+	err = a.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		_, err := a.Content.ReviseRemoteStatus(ctx, tx, in)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("ReviseRemoteStatus: %v", err)
+	}
+}
+
+// fillModeration fills the moderation projections, status_sensitivity_overrides, and the feed
+// restrictions: actions on accounts and domains (one lifted, one that has expired), a report
+// assigned, resolved, and reopened, and an appeal pending and one decided.
+func fillModeration(t *testing.T, a *platform.App, ids map[string]string, dave, hello string) {
+	t.Helper()
+	ctx := t.Context()
+	alice, bob, carol := ids["alice"], ids["bob"], ids["carol"]
+	issue := func(in appmoderation.AccountActionInput) moderation.Action {
+		t.Helper()
+		in.ReasonCategory = moderation.CategoryOther
+		act, err := a.Moderation.IssueAccountAction(ctx, in)
+		if err != nil {
+			t.Fatalf("IssueAccountAction(%s) = %v", in.Kind, err)
+		}
+		return act
+	}
+	limit := issue(appmoderation.AccountActionInput{TargetAccountID: carol, Kind: moderation.ActionLimit, Duration: time.Hour})
+	issue(appmoderation.AccountActionInput{TargetAccountID: dave, Kind: moderation.ActionForceSensitive, Duration: time.Millisecond})
+	issue(appmoderation.AccountActionInput{TargetAccountID: bob, Kind: moderation.ActionMarkStatusesSensitive, StatusIDs: []string{hello}})
+	lifted := issue(appmoderation.AccountActionInput{TargetAccountID: bob, Kind: moderation.ActionRestrictPosting})
+	if err := a.Moderation.LiftAccountAction(ctx, lifted.ID, "", ""); err != nil {
+		t.Fatalf("LiftAccountAction = %v", err)
+	}
+	warn := issue(appmoderation.AccountActionInput{TargetAccountID: alice, Kind: moderation.ActionWarn})
+	for _, in := range []appmoderation.DomainActionInput{
+		{Domain: "spam.example", Kind: moderation.DomainSuspend},
+		{Domain: "remote.example", Kind: moderation.DomainLimit, Duration: time.Millisecond},
+	} {
+		if _, err := a.Moderation.IssueDomainAction(ctx, in); err != nil {
+			t.Fatalf("IssueDomainAction(%s) = %v", in.Kind, err)
+		}
+	}
+	// The force_sensitive action on dave and the limit of remote.example expire, and the expiry
+	// job removes the account's row of the first; the second leaves a row of the timelines whose
+	// end has passed, as does the limit on dave below, whose rows also stay in
+	// account_restrictions, since the expiry job does not run again.
+	time.Sleep(5 * time.Millisecond)
+	if _, err := a.Moderation.ExpireAccountRestrictions(ctx); err != nil {
+		t.Fatalf("ExpireAccountRestrictions = %v", err)
+	}
+	issue(appmoderation.AccountActionInput{TargetAccountID: dave, Kind: moderation.ActionLimit, Duration: 20 * time.Millisecond})
+
+	r, _, err := a.Moderation.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
+		URI: "https://remote.example/flags/1", ReporterAccountID: dave, TargetAccountID: alice, Comment: "spam",
+	})
+	if err != nil {
+		t.Fatalf("FileRemoteReport = %v", err)
+	}
+	if _, err := a.Moderation.AssignReport(ctx, r.ID, "someone", ""); err != nil {
+		t.Fatalf("AssignReport = %v", err)
+	}
+	if _, err := a.Moderation.ResolveReport(ctx, r.ID, moderation.OutcomeDismissed, ""); err != nil {
+		t.Fatalf("ResolveReport = %v", err)
+	}
+	if _, err := a.Moderation.ReopenReport(ctx, r.ID, ""); err != nil {
+		t.Fatalf("ReopenReport = %v", err)
+	}
+	resolved, _, err := a.Moderation.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
+		URI: "https://remote.example/flags/2", ReporterAccountID: dave, TargetAccountID: alice, Comment: "more spam",
+	})
+	if err != nil {
+		t.Fatalf("FileRemoteReport = %v", err)
+	}
+	if _, err := a.Moderation.ResolveReport(ctx, resolved.ID, moderation.OutcomeActioned, ""); err != nil {
+		t.Fatalf("ResolveReport = %v", err)
+	}
+
+	if _, err := a.Moderation.FileAppeal(ctx, carol, limit.ID, "I did nothing wrong."); err != nil {
+		t.Fatalf("FileAppeal = %v", err)
+	}
+	appeal, err := a.Moderation.FileAppeal(ctx, alice, warn.ID, "Please reconsider.")
+	if err != nil {
+		t.Fatalf("FileAppeal = %v", err)
+	}
+	if appeal.Appeal == nil {
+		t.Fatalf("FileAppeal = %+v, want the appeal", appeal)
+	}
+	if _, err := a.Moderation.DecideAppeal(ctx, appeal.Appeal.ID, moderation.AppealDecisionUpheld, "", ""); err != nil {
+		t.Fatalf("DecideAppeal = %v", err)
+	}
+	// The limit on dave ends.
+	time.Sleep(25 * time.Millisecond)
+}
+
+// fillIdentity fills the identity projections: a role grant, a revoked one, and sign-ups
+// pending and approved.
+func fillIdentity(t *testing.T, a *platform.App, bob string) {
+	t.Helper()
+	ctx := t.Context()
+	if _, err := a.Identity.CreateAdmin(ctx, identity.CreateAdminInput{
+		Username: "root", Email: "root@example.com", Password: "correct horse battery staple",
+	}); err != nil {
+		t.Fatalf("CreateAdmin = %v", err)
+	}
+	b, err := a.Accounts.FindByID(ctx, bob)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in := identity.RoleChangeInput{UserID: b.Local.UserID, RoleKey: domidentity.RoleModerator}
+	if _, err := a.Identity.GrantRole(ctx, in); err != nil {
+		t.Fatalf("GrantRole = %v", err)
+	}
+	if _, err := a.Identity.RevokeRole(ctx, in); err != nil {
+		t.Fatalf("RevokeRole = %v", err)
+	}
+	if _, err := a.Identity.GrantRole(ctx, in); err != nil {
+		t.Fatalf("GrantRole = %v", err)
+	}
+	if _, err := a.Instance.SetSetting(ctx, appinstance.SetSettingInput{
+		Key: instance.SettingRegistrationMode, Value: string(instance.RegistrationApproval),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"erin", "frank"} {
+		s, err := a.Identity.SignUp(ctx, identity.SignUpInput{
+			Username: name, Email: name + "@example.com", Password: "correct horse battery staple",
+		})
+		if err != nil {
+			t.Fatalf("SignUp(%s) = %v", name, err)
+		}
+		if name != "frank" {
+			continue
+		}
+		if _, err := a.Identity.DecideRegistration(ctx, identity.DecideInput{UserID: s.User.ID, Decision: domidentity.DecisionApproved}); err != nil {
+			t.Fatalf("DecideRegistration = %v", err)
+		}
 	}
 }
 
@@ -176,7 +347,9 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 		"account_handles", "account_profile_heads", "remote_account_heads", "follow_edges", "follow_counters",
 		"block_edges", "status_heads", "status_mention_index", "status_counters", "account_post_counters", "local_post_counters",
 		"boost_edges", "feed_entries", "feed_tag_entries", "feed_follow_edges", "feed_exclusions",
-		"notification_exclusions", "notification_deleted_statuses",
+		"notification_exclusions", "notification_deleted_statuses", "poll_tallies",
+		"account_restrictions", "domain_restrictions", "report_states", "appeal_states", "status_sensitivity_overrides",
+		"feed_author_restrictions", "feed_domain_restrictions", "user_roles", "user_registration_states", "user_primary_emails",
 	} {
 		if held[table] == 0 {
 			t.Errorf("%s holds no rows", table)
@@ -190,6 +363,17 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	exec("UPDATE remote_account_heads SET inbox_url = 'https://elsewhere.example/inbox', consecutive_fetch_failures = 3")
 	exec("DELETE FROM follow_counters")
 	exec("UPDATE local_post_counters SET posts_count = posts_count + 1")
+	exec("UPDATE poll_tallies SET votes = votes + 1")
+	exec("DELETE FROM account_restrictions WHERE restriction = 'public_discovery'")
+	exec("INSERT INTO domain_restrictions (domain, restriction, source_action_id) VALUES ('nowhere.example', 'federation', 'no-such-action')")
+	exec("UPDATE report_states SET assignee_user_id = NULL")
+	exec("DELETE FROM appeal_states WHERE state = 'pending'")
+	exec("DELETE FROM status_sensitivity_overrides")
+	exec("DELETE FROM feed_author_restrictions WHERE effective_until IS NOT NULL")
+	exec("DELETE FROM feed_domain_restrictions WHERE domain = 'spam.example'")
+	exec("DELETE FROM user_roles")
+	exec("UPDATE user_registration_states SET state = 'rejected' WHERE state = 'pending'")
+	exec("DELETE FROM user_primary_emails")
 
 	drifted := []string{}
 	for _, p := range svc.List() {
@@ -205,8 +389,10 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	}
 	slices.Sort(drifted)
 	want := []string{
+		"account_restrictions", "appeal_states", "domain_restrictions", "feed_author_restrictions", "feed_domain_restrictions",
 		"feed_tag_entries", "follow_counters", "local_post_counters", "notification_deleted_statuses", "notification_exclusions",
-		"remote_account_heads", "status_counters",
+		"poll_tallies", "remote_account_heads", "report_states", "status_counters", "status_sensitivity_overrides",
+		"user_primary_emails", "user_registration_states", "user_roles",
 	}
 	if !slices.Equal(drifted, want) {
 		t.Fatalf("tables that verify reports = %v, want %v", drifted, want)
@@ -237,5 +423,16 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	}
 	if n := count("SELECT COUNT(*) FROM remote_account_heads WHERE inbox_url = 'https://remote.example/users/dave/inbox' AND consecutive_fetch_failures = 3"); n != 1 {
 		t.Errorf("remote heads with the snapshot's inbox and the 3 failures kept = %d, want 1", n)
+	}
+	// The rows whose end has passed stay, and the one that the expiry job removed stays away.
+	for q, want := range map[string]int64{
+		"SELECT COUNT(*) FROM account_restrictions WHERE restriction = 'media_sensitive'":                               0,
+		"SELECT COUNT(*) FROM account_restrictions WHERE restriction = 'unsolicited_reach'":                             2,
+		"SELECT COUNT(*) FROM feed_domain_restrictions WHERE domain = 'remote.example' AND effective_until IS NOT NULL": 1,
+		"SELECT COUNT(*) FROM feed_author_restrictions WHERE effective_until IS NOT NULL":                               2,
+	} {
+		if n := count(q); n != want {
+			t.Errorf("%s = %d, want %d", q, n, want)
+		}
 	}
 }

@@ -202,9 +202,21 @@ type Favourite struct {
 	ID        string
 }
 
+type FeedAuthorRestriction struct {
+	AccountID      string
+	Restriction    string
+	EffectiveUntil sql.NullInt64
+}
+
 type FeedDirectRecipient struct {
 	EntryID            string
 	RecipientAccountID string
+}
+
+type FeedDomainRestriction struct {
+	Domain         string
+	Restriction    string
+	EffectiveUntil sql.NullInt64
 }
 
 type FeedEntry struct {
@@ -418,6 +430,11 @@ type ModerationAction struct {
 	NotifyTarget    int64
 	ExpiresAt       sql.NullInt64
 	IssuedAt        int64
+}
+
+type ModerationActionStatus struct {
+	ActionID string
+	StatusID string
 }
 
 type Mute struct {
