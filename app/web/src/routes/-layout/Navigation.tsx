@@ -170,7 +170,7 @@ export function Navigation() {
       <p dir="auto" className="mx-2 hidden px-3 pt-4 pb-2 text-lg font-semibold wrap-anywhere align-match-parent lg:block">
         {instanceName}
       </p>
-      <ul className="flex md:flex-col md:gap-1 md:p-2 lg:w-60">
+      <ul className="flex md:flex-col md:gap-1 md:p-2">
         {shown.map((item) => {
           const badge = badgeOf(item.section);
           return (
