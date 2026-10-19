@@ -61,3 +61,12 @@ type PostCounter struct {
 	// LastStatusAt is the latest PublishedAt among those statuses.
 	LastStatusAt time.Time
 }
+
+// LocalPostCounter counts the posts of a local account that NodeInfo's usage.localPosts sums
+// (the local_post_counters projection): its statuses that CountAsLocalPost and are not deleted,
+// and its boosts that CountAsLocalPost, are not retracted, and boost a status that is not
+// deleted. An account without such posts has no counter.
+type LocalPostCounter struct {
+	AccountID  string
+	PostsCount int64
+}

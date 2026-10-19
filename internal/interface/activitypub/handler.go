@@ -73,6 +73,8 @@ type Options struct {
 	// OpenRegistrations reports whether people may sign up on their own (NodeInfo
 	// openRegistrations); nil reports false.
 	OpenRegistrations func(ctx context.Context) (bool, error)
+	// LocalPosts returns the number of local posts (NodeInfo usage.localPosts); nil reports 0.
+	LocalPosts func(ctx context.Context) (int64, error)
 
 	Accounts Accounts
 	Objects  Objects

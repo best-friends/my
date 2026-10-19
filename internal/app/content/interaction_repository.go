@@ -56,6 +56,9 @@ type InteractionRepository interface {
 	// ListLiveBoosts returns the boosts that boost_edges holds, ordered by ID, as a source of
 	// other modules' projections (ReplayEvents).
 	ListLiveBoosts(ctx context.Context, tx uow.Tx) ([]content.Boost, error)
+	// ListLocalStatusBoosters returns the local accounts that boost a status in boost_edges,
+	// ordered by ID.
+	ListLocalStatusBoosters(ctx context.Context, tx uow.Tx, statusID string) ([]string, error)
 
 	// status_counters, shared with the status projectors (Repository.RebuildCounters counts
 	// the boosts and favourites by the same rules).
@@ -65,6 +68,9 @@ type InteractionRepository interface {
 	AddBoosts(ctx context.Context, tx uow.Tx, statusID string, delta int64) error
 	// AddFavourites adds delta to the favourites count of a status that has counters.
 	AddFavourites(ctx context.Context, tx uow.Tx, statusID string, delta int64) error
+	// AddLocalPosts adds delta to the local posts of an account (local_post_counters, shared
+	// with the status projectors); the counter goes away when it reaches zero.
+	AddLocalPosts(ctx context.Context, tx uow.Tx, accountID string, delta int64) error
 
 	// Mentioned reports whether the current revision of a status mentions an account
 	// (status_mention_index), for the visibility check.

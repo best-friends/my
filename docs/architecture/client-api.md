@@ -169,7 +169,8 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    `platform` の `i18n.Resolver.UserLocale` は `ViewerFrom` で閲覧者を見つけ、利用者設定のロケールを使います（ADR-0009 §2）。
 3. **レート制限**: 閲覧者があればアカウント単位（`AccountLimit`、1,500 / 5 分）、なければクライアント IP 単位（`AnonymousLimit`、300 / 5 分、IPv6 は `/64`）です。
    無効なトークン・使えないアカウントの要求も IP 単位で数えます。カウンタは `KeyValueStore` 上の `kernel.RateLimiter` で、ストアが失敗したときは要求を通してログに残します。
-   クライアント IP は接続元です（信頼するプロキシの設定はまだなく、転送ヘッダは読みません）。
+   クライアント IP は `kernel.RequestClientIP` で、`platform` のミドルウェアが接続元と信頼するプロキシ（設定 `trusted_proxies`）の転送ヘッダから決めます
+   （[deployment-targets.md](deployment-targets.md#信頼するプロキシとクライアント-ip)）。
 4. **認可**: `security.gen.go` の操作の表を引き、トークンが要る操作に閲覧者がなければ 401、スコープが足りなければ 403 にします。
    表にない操作は `Register` が起動時に panic するので、検査されないまま公開されることはありません。
 5. **本文の上限**: リクエスト本文は 1 MiB まで、`uploadMedia` だけはアップロードの上限（`media_max_image_bytes`）に 64 KiB を足した大きさまでです。

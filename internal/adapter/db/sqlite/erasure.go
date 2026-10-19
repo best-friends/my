@@ -156,7 +156,12 @@ func (r *StatusRepository) EraseInteractionsBy(ctx context.Context, tx uow.Tx, a
 			return q.UncountBoostsBy(ctx, sqlitegen.UncountBoostsByParams{AccountID: accountID, Lim: lim})
 		},
 		func() error {
-			return keep(q.EraseBoostEdgesBy(ctx, sqlitegen.EraseBoostEdgesByParams{AccountID: accountID, Lim: lim}))
+			// The boosts in force count as the account's local posts too (local_post_counters).
+			n, err := q.EraseBoostEdgesBy(ctx, sqlitegen.EraseBoostEdgesByParams{AccountID: accountID, Lim: lim})
+			if err := keep(n, err); err != nil {
+				return err
+			}
+			return addLocalPosts(ctx, tx, accountID, -n)
 		},
 		func() error {
 			return q.EraseBoostRetractionsBy(ctx, sqlitegen.EraseBoostRetractionsByParams{AccountID: accountID, Lim: lim})

@@ -67,6 +67,11 @@ func (b Boost) Federates() bool {
 	return b.IsLocal && b.Visibility != VisibilityLocal && b.Visibility != VisibilityDirect
 }
 
+// CountsAsLocalPost reports whether the boost counts toward its booster's local posts, the
+// usage.localPosts of NodeInfo. Mastodon and GoToSocial store a boost as a status and count
+// those of local accounts.
+func (b Boost) CountsAsLocalPost() bool { return b.IsLocal }
+
 // BoostRetractionOrigin says why a boost was retracted.
 type BoostRetractionOrigin string
 

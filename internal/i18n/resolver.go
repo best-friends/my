@@ -28,19 +28,27 @@ type Resolver struct {
 // Locale returns the locale for a request in ctx with the Accept-Language header value
 // acceptLanguage.
 func (r *Resolver) Locale(ctx context.Context, acceptLanguage string) string {
+	l, _ := r.resolve(ctx, acceptLanguage)
+	return l
+}
+
+// resolve returns Locale(ctx, acceptLanguage) and the preference that chose it (the user's
+// locale, an Accept-Language tag or the instance default, before catalog matching), or ""
+// when none did.
+func (r *Resolver) resolve(ctx context.Context, acceptLanguage string) (locale, requested string) {
 	var user string
 	if r.UserLocale != nil {
 		user = r.UserLocale(ctx)
 	}
-	if l, ok := r.Bundle.match(append([]string{user}, ParseAcceptLanguage(acceptLanguage)...)); ok {
-		return l
+	if l, c, ok := r.Bundle.matchCandidate(append([]string{user}, ParseAcceptLanguage(acceptLanguage)...)); ok {
+		return l, c
 	}
 	if r.InstanceDefault != nil {
-		if l, ok := r.Bundle.match([]string{r.InstanceDefault(ctx)}); ok {
-			return l
+		if l, c, ok := r.Bundle.matchCandidate([]string{r.InstanceDefault(ctx)}); ok {
+			return l, c
 		}
 	}
-	return SourceLocale
+	return SourceLocale, ""
 }
 
 // AcceptedLocale returns the locale with a catalog that best matches the Accept-Language
@@ -57,9 +65,10 @@ func (r *Resolver) AcceptedLocale(acceptLanguage string) (string, bool) {
 	return "", false
 }
 
-// Localizer returns the Localizer of Locale(ctx, acceptLanguage).
+// Localizer returns the Localizer of Locale(ctx, acceptLanguage), whose RequestedLocale is the
+// preference that chose that locale.
 func (r *Resolver) Localizer(ctx context.Context, acceptLanguage string) *Localizer {
-	return r.Bundle.Localizer(r.Locale(ctx, acceptLanguage))
+	return r.Bundle.localizer(r.resolve(ctx, acceptLanguage))
 }
 
 // RequestLocalizer returns the Localizer of req, from its context and Accept-Language header.
@@ -72,8 +81,8 @@ func (r *Resolver) RequestLocalizer(req *http.Request) *Localizer {
 // server-rendered screens of a browser session: userLocale comes first, then the rest of the
 // order of Locale.
 func (r *Resolver) UserLocalizer(req *http.Request, userLocale string) *Localizer {
-	if l, ok := r.Bundle.match([]string{userLocale}); ok {
-		return r.Bundle.Localizer(l)
+	if l, c, ok := r.Bundle.matchCandidate([]string{userLocale}); ok {
+		return r.Bundle.localizer(l, c)
 	}
 	return r.RequestLocalizer(req)
 }

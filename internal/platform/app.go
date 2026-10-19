@@ -500,6 +500,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph, Inbox: a.Inbox,
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
+		LocalPosts:  a.Content.LocalPostCount,
 	}).Register(a)
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{

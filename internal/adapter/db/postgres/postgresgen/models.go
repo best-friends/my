@@ -353,6 +353,11 @@ type LocalAccount struct {
 	UsernameNormalized string
 }
 
+type LocalPostCounter struct {
+	AccountID  string
+	PostsCount int64
+}
+
 type LocalStatus struct {
 	StatusID        string
 	AuthorAccountID string

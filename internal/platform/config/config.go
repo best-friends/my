@@ -11,6 +11,7 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	"net/netip"
 	"net/url"
 	"os"
 	"slices"
@@ -36,14 +37,18 @@ type Config struct {
 	AccountDomain string
 	SourceURL     string
 	// WebOrigin is the origin of the web client that the client API allows by CORS.
-	WebOrigin   string
-	Role        Role
-	Listen      string
-	DB          string
-	DatabaseURL string
-	Queue       string
-	Blob        string
-	Media       string
+	WebOrigin string
+	Role      Role
+	Listen    string
+	// TrustedProxies are the peers whose TrustedProxyHeader tells the client IP (ADR-0019 §5);
+	// TrustedProxyHeader is "x-forwarded-for" or "forwarded".
+	TrustedProxies     []netip.Prefix
+	TrustedProxyHeader string
+	DB                 string
+	DatabaseURL        string
+	Queue              string
+	Blob               string
+	Media              string
 	// BlobFSDir is the directory of the fs blob store.
 	BlobFSDir string
 	// Limits of image uploads and how long an upload may stay unattached.
@@ -104,6 +109,8 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("web_origin", c.WebOrigin),
 		slog.String("role", string(c.Role)),
 		slog.String("listen", c.Listen),
+		slog.Any("trusted_proxies", c.TrustedProxies),
+		slog.String("trusted_proxy_header", c.TrustedProxyHeader),
 		slog.String("db", c.DB),
 		slog.String("database_url", redact(c.DatabaseURL != "")),
 		slog.String("queue", c.Queue),

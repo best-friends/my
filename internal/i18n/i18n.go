@@ -112,6 +112,13 @@ func (b *Bundle) Locales() []string { return slices.Clone(b.locales) }
 // match returns the first locale with a catalog among candidates, matching each through
 // its fallback chain, and whether there is one. Empty and malformed candidates are skipped.
 func (b *Bundle) match(candidates []string) (string, bool) {
+	l, _, ok := b.matchCandidate(candidates)
+	return l, ok
+}
+
+// matchCandidate is match that also returns the canonical candidate whose fallback chain
+// reached the locale, such as "ja-JP" for the locale "ja".
+func (b *Bundle) matchCandidate(candidates []string) (locale, candidate string, ok bool) {
 	for _, c := range candidates {
 		if c = Canonicalize(c); c == "" {
 			continue
@@ -122,32 +129,50 @@ func (b *Bundle) match(candidates []string) (string, bool) {
 				break
 			}
 			if _, ok := b.messages[l]; ok {
-				return l, true
+				return l, c, true
 			}
 		}
 	}
-	return "", false
+	return "", "", false
 }
 
 // Localizer formats messages for one locale. Use the generated accessor methods.
 type Localizer struct {
-	b      *Bundle
-	locale string
-	chain  []string
+	b         *Bundle
+	locale    string
+	requested string
+	chain     []string
 }
 
 // Localizer returns a Localizer for locale, normally a result of Resolve. Messages missing
 // from locale are looked up along its fallback chain.
 func (b *Bundle) Localizer(locale string) *Localizer {
+	return b.localizer(locale, "")
+}
+
+// localizer returns the Localizer of locale for a request that asked for requested, a
+// locale whose fallback chain reaches locale ("" for locale itself).
+func (b *Bundle) localizer(locale, requested string) *Localizer {
 	locale = Canonicalize(locale)
 	if locale == "" {
 		locale = SourceLocale
 	}
-	return &Localizer{b: b, locale: locale, chain: FallbackChain(locale)}
+	if requested = Canonicalize(requested); requested == "" {
+		requested = locale
+	}
+	return &Localizer{b: b, locale: locale, requested: requested, chain: FallbackChain(locale)}
 }
 
 // Locale returns the locale the Localizer was created for.
 func (l *Localizer) Locale() string { return l.locale }
+
+// RequestedLocale returns the locale that the request asked for and that Locale matches: the
+// user's saved locale or the Accept-Language tag whose fallback chain reached Locale, region
+// and script included ("ja-JP" for a Locale of "ja"), or Locale itself for a Localizer that no
+// request preference chose. Content that operators write per locale, such as the instance
+// texts, is looked up from it, so that a text written for "ja-JP" reaches a reader of "ja-JP"
+// even though the messages are in "ja".
+func (l *Localizer) RequestedLocale() string { return l.requested }
 
 // Direction returns "rtl" or "ltr" for the Localizer's locale.
 func (l *Localizer) Direction() string { return Direction(l.locale) }

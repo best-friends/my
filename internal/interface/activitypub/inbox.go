@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"mime"
-	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	appfederation "github.com/best-friends/my/internal/app/federation"
+	"github.com/best-friends/my/internal/app/kernel"
 )
 
 // Inbox is what the inbox endpoints need from the federation module; *appfederation.Inbox
@@ -68,7 +68,7 @@ func (h *Handler) receive(w http.ResponseWriter, r *http.Request) {
 	}
 	origin := &url.URL{Scheme: "https", Host: h.o.Host}
 	_, err = h.o.Inbox.Receive(r.Context(), appfederation.InboxRequest{
-		Request: appfederation.NewSignedRequest(origin, r, body), ClientIP: remoteIP(r),
+		Request: appfederation.NewSignedRequest(origin, r, body), ClientIP: kernel.RequestClientIP(r),
 	})
 	var rej *appfederation.InboxRejection
 	switch {
@@ -108,13 +108,4 @@ func activityContentType(v string) bool {
 		}
 	}
 	return false
-}
-
-// remoteIP returns the address the request came from, for the inbox's IP rate limit.
-func remoteIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
 }

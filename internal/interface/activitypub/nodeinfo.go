@@ -44,7 +44,7 @@ type nodeInfoServices struct {
 
 type nodeInfoUsage struct {
 	Users      nodeInfoUsers `json:"users"`
-	LocalPosts int           `json:"localPosts"`
+	LocalPosts int64         `json:"localPosts"`
 }
 
 type nodeInfoUsers struct {
@@ -52,9 +52,9 @@ type nodeInfoUsers struct {
 }
 
 // nodeInfo serves GET /nodeinfo/2.1 (FR-402). openRegistrations follows the registration mode,
-// as Mastodon reports it: anyone may sign up, with or without a moderator's approval. The server
-// keeps no count of local posts, so localPosts is 0; active-user counts are omitted because
-// logins are not counted.
+// as Mastodon reports it: anyone may sign up, with or without a moderator's approval. localPosts
+// counts the local posts as Mastodon does (content.Service.LocalPostCount); active-user counts
+// are omitted because logins are not counted.
 func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 	users, err := h.o.Accounts.CountLocalUsers(r.Context())
 	if err != nil {
@@ -66,6 +66,14 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 	if h.o.OpenRegistrations != nil {
 		if open, err = h.o.OpenRegistrations(r.Context()); err != nil {
 			h.o.Logger.ErrorContext(r.Context(), "nodeinfo: read the registration mode failed", slog.Any("error", err))
+			h.o.Problem(w, r, http.StatusInternalServerError)
+			return
+		}
+	}
+	var posts int64
+	if h.o.LocalPosts != nil {
+		if posts, err = h.o.LocalPosts(r.Context()); err != nil {
+			h.o.Logger.ErrorContext(r.Context(), "nodeinfo: count local posts failed", slog.Any("error", err))
 			h.o.Problem(w, r, http.StatusInternalServerError)
 			return
 		}
@@ -85,7 +93,7 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 		Protocols:         []string{"activitypub"},
 		Services:          nodeInfoServices{Inbound: []string{}, Outbound: []string{}},
 		OpenRegistrations: open,
-		Usage:             nodeInfoUsage{Users: nodeInfoUsers{Total: users}},
+		Usage:             nodeInfoUsage{Users: nodeInfoUsers{Total: users}, LocalPosts: posts},
 		Metadata:          map[string]any{"nodeName": name},
 	})
 }

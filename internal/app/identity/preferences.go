@@ -28,6 +28,11 @@ type PreferencesRepository interface {
 	// removes them all.
 	ReplaceTimelineLanguages(ctx context.Context, tx uow.Tx, userID string, languages []string) error
 
+	// LockPreferences reads the preferences and timeline languages of a user inside tx, which
+	// changes them, and keeps other writers of them waiting until tx ends, so that a
+	// read-modify-write of them loses no concurrent change. It fails with an error wrapping
+	// ErrNotFound when the user has none.
+	LockPreferences(ctx context.Context, tx uow.Tx, userID string) (UserPreferences, error)
 	// FindPreferences returns the preferences of a user, with identity.DefaultTimeZone and
 	// TimeZoneChosen false when the user has chosen no time zone.
 	FindPreferences(ctx context.Context, userID string) (identity.Preferences, error)
@@ -156,35 +161,88 @@ func (e *PreferenceError) Unwrap() error { return e.Err }
 
 // UpdatePreferences applies a change to the preferences of a user in one transaction and
 // returns the result. Language tags are canonicalized and timeline languages deduplicated and
-// sorted. Invalid input fails with a *PreferenceError, and a user without preferences with
+// sorted. The current preferences are read and locked in that transaction, so concurrent changes
+// of different preferences (a time zone the client adopts while the user picks a locale) all
+// stay. Invalid input fails with a *PreferenceError, and a user without preferences with
 // ErrNotFound.
 func (s *Service) UpdatePreferences(ctx context.Context, userID string, in PreferencesUpdate) (UserPreferences, error) {
-	cur, err := s.Preferences(ctx, userID)
+	in, err := canonicalPreferencesUpdate(in)
 	if err != nil {
 		return UserPreferences{}, err
 	}
-	p := cur.Preferences
-	if in.Locale != nil {
-		if p.Locale, err = CanonicalLocale(*in.Locale); err != nil {
-			return UserPreferences{}, &PreferenceError{Preference: "locale", Err: err}
+	var out UserPreferences
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		cur, err := s.d.Repository.LockPreferences(ctx, tx, userID)
+		if err != nil {
+			return err
 		}
+		out = in.applyTo(cur)
+		out.UpdatedAt = s.d.Clock.Now()
+		if err := s.d.Repository.UpdatePreferences(ctx, tx, out.Preferences); err != nil {
+			return err
+		}
+		if in.TimelineLanguages == nil {
+			return nil
+		}
+		return s.d.Repository.ReplaceTimelineLanguages(ctx, tx, userID, out.TimelineLanguages)
+	})
+	if err != nil {
+		return UserPreferences{}, err
+	}
+	return out, nil
+}
+
+// canonicalPreferencesUpdate validates the values of in and returns them canonicalized, or a
+// *PreferenceError naming the first invalid one.
+func canonicalPreferencesUpdate(in PreferencesUpdate) (PreferencesUpdate, error) {
+	if in.Locale != nil {
+		locale, err := CanonicalLocale(*in.Locale)
+		if err != nil {
+			return PreferencesUpdate{}, &PreferenceError{Preference: "locale", Err: err}
+		}
+		in.Locale = &locale
 	}
 	if in.TimeZone != nil {
 		if err := identity.ValidateTimeZone(*in.TimeZone); err != nil {
-			return UserPreferences{}, &PreferenceError{Preference: "time_zone", Err: err}
+			return PreferencesUpdate{}, &PreferenceError{Preference: "time_zone", Err: err}
 		}
-		p.TimeZone, p.TimeZoneChosen = *in.TimeZone, true
 	}
 	if in.DefaultVisibility != nil {
 		if err := identity.ValidateVisibility(*in.DefaultVisibility); err != nil {
-			return UserPreferences{}, &PreferenceError{Preference: "default_visibility", Err: err}
+			return PreferencesUpdate{}, &PreferenceError{Preference: "default_visibility", Err: err}
 		}
+	}
+	if in.DefaultPostLanguage != nil {
+		lang, err := CanonicalLanguage(*in.DefaultPostLanguage)
+		if err != nil {
+			return PreferencesUpdate{}, &PreferenceError{Preference: "default_post_language", Err: err}
+		}
+		in.DefaultPostLanguage = &lang
+	}
+	if in.TimelineLanguages != nil {
+		langs, err := canonicalTimelineLanguages(*in.TimelineLanguages)
+		if err != nil {
+			return PreferencesUpdate{}, &PreferenceError{Preference: "timeline_languages", Err: err}
+		}
+		in.TimelineLanguages = &langs
+	}
+	return in, nil
+}
+
+// applyTo returns cur with the values of the canonical update in in place of its own.
+func (in PreferencesUpdate) applyTo(cur UserPreferences) UserPreferences {
+	p := cur
+	if in.Locale != nil {
+		p.Locale = *in.Locale
+	}
+	if in.TimeZone != nil {
+		p.TimeZone, p.TimeZoneChosen = *in.TimeZone, true
+	}
+	if in.DefaultVisibility != nil {
 		p.DefaultVisibility = *in.DefaultVisibility
 	}
 	if in.DefaultPostLanguage != nil {
-		if p.DefaultPostLanguage, err = CanonicalLanguage(*in.DefaultPostLanguage); err != nil {
-			return UserPreferences{}, &PreferenceError{Preference: "default_post_language", Err: err}
-		}
+		p.DefaultPostLanguage = *in.DefaultPostLanguage
 	}
 	if in.RequireMediaDescription != nil {
 		p.RequireMediaDescription = *in.RequireMediaDescription
@@ -192,26 +250,10 @@ func (s *Service) UpdatePreferences(ctx context.Context, userID string, in Prefe
 	if in.EmailModeratorNotifications != nil {
 		p.EmailModeratorNotifications = *in.EmailModeratorNotifications
 	}
-	langs := cur.TimelineLanguages
 	if in.TimelineLanguages != nil {
-		if langs, err = canonicalTimelineLanguages(*in.TimelineLanguages); err != nil {
-			return UserPreferences{}, &PreferenceError{Preference: "timeline_languages", Err: err}
-		}
+		p.TimelineLanguages = *in.TimelineLanguages
 	}
-	p.UpdatedAt = s.d.Clock.Now()
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := s.d.Repository.UpdatePreferences(ctx, tx, p); err != nil {
-			return err
-		}
-		if in.TimelineLanguages == nil {
-			return nil
-		}
-		return s.d.Repository.ReplaceTimelineLanguages(ctx, tx, userID, langs)
-	})
-	if err != nil {
-		return UserPreferences{}, err
-	}
-	return UserPreferences{Preferences: p, TimelineLanguages: langs}, nil
+	return p
 }
 
 // canonicalTimelineLanguages canonicalizes, deduplicates, and sorts timeline languages.
