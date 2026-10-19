@@ -133,6 +133,32 @@ DELETE FROM report_states WHERE report_id IN (SELECT value FROM json_each(CAST(s
 -- name: PurgeReports :exec
 DELETE FROM reports WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
 
+-- ListSignupBlocksToPurge returns, oldest first and below @id_before, the sign-up blocks that
+-- ended before @ended_before, at the earlier of their lift and their expiry (never for one with
+-- neither). A block that a ban made stays while a hold in effect preserves the banned account.
+-- name: ListSignupBlocksToPurge :many
+SELECT b.id FROM signup_blocks b
+LEFT JOIN signup_block_lifts l ON l.block_id = b.id
+WHERE b.id < CAST(sqlc.arg(id_before) AS TEXT)
+  AND (CASE
+    WHEN l.lifted_at IS NOT NULL AND b.expires_at IS NOT NULL THEN MIN(l.lifted_at, b.expires_at)
+    ELSE COALESCE(l.lifted_at, b.expires_at)
+  END) < CAST(sqlc.arg(ended_before) AS INTEGER)
+  AND NOT EXISTS (
+    SELECT 1 FROM moderation_actions a JOIN retention_holds h ON h.account_id = a.target_account_id
+    WHERE a.id = b.moderation_action_id
+      AND NOT EXISTS (SELECT 1 FROM retention_hold_releases r WHERE r.hold_id = h.id))
+ORDER BY b.id
+LIMIT sqlc.arg(batch_limit);
+
+-- The PurgeSignupBlock* statements delete the blocks (@ids, a JSON array) with their lifts.
+
+-- name: PurgeSignupBlockLifts :exec
+DELETE FROM signup_block_lifts WHERE block_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
+
+-- name: PurgeSignupBlocks :exec
+DELETE FROM signup_blocks WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
+
 -- DeleteAuditLogEntriesBefore deletes at most @batch_limit entries below @id_before recorded
 -- before @occurred_before, the oldest first, except those on an account that a hold in effect
 -- preserves and on a report or an appeal of such an account.

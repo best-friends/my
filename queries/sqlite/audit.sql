@@ -20,3 +20,16 @@ WHERE (CAST(sqlc.arg(actor_user_id) AS TEXT) = '' OR actor_user_id = sqlc.arg(ac
   AND (CAST(sqlc.arg(before) AS TEXT) = '' OR id < sqlc.arg(before))
 ORDER BY id DESC
 LIMIT sqlc.arg(lim);
+
+-- The targets of the entries that still exist, for the audit log to tell those that are gone
+-- (erased past their retention, ADR-0038). Each returns, in ID order, the records among ids
+-- that exist. The ids are a JSON array.
+
+-- name: ListExistingReportIDs :many
+SELECT id FROM reports WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) ORDER BY id;
+
+-- name: ListExistingAppealIDs :many
+SELECT id FROM moderation_appeals WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) ORDER BY id;
+
+-- name: ListExistingSignupBlockIDs :many
+SELECT id FROM signup_blocks WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) ORDER BY id;

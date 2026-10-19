@@ -500,6 +500,7 @@ flowchart LR
 
 - `email_domain` の `value` は IDNA の A-label のドメインで、サブドメインにも効きます。`email_hash` はメールアドレスの正規形（ドメインを A-label にしたうえで小文字にし、ローカル部の最初の `+` 以降を除く）の SHA-256（16 進の小文字）で、BAN したアカウントのアドレスを平文で残さずに再登録を防ぎます。`ip_range` はマスク済みの CIDR（IPv4 射影アドレスは IPv4 に直す）で、単一のアドレスはその長さのプレフィックスです。
 - 管理 API・CLI で作る拒否は即時に効き、追加と解除をそれぞれ監査ログに記録します。解除済みの拒否の解除は何も変えず、記録もしません。
+- 拒否は、解除か期限切れの早い方から 30 日（`moderation.SignupBlockRetention`。インスタンス設定ではない）を過ぎると、消去ジョブ `moderation.purge_records` が解除の行とともに消します（ADR-0038、[記録の保持期間](#記録の保持期間)）。解除も期限も無い拒否は、効いている間ずっと残ります。
 - BAN は、モデレーターが求めたとき（`block_email`）に、対象の利用者の主メールアドレスの `email_hash`・`reject` の拒否を同じトランザクションで作り（`moderation_action_id` は BAN）、その追加も監査ログに記録します。ローカルアカウントの BAN 以外と、メールアドレスのない利用者には作れません。
 - 登録画面からの登録は、効いている拒否（解除も期限切れもしていないもの）に当たれば、`reject` なら受け付けず、`require_approval` なら登録モードに関わらず `pending` で始めます。登録できなかった理由は利用者に詳しく示しません。
 
@@ -531,6 +532,8 @@ flowchart LR
   | `signup_block_added`, `signup_block_lifted` | `signup_block` | `signup_blocks.id` | 種類と値（`email_domain spam.example`） | `signup_blocks.id`（解除の行もこの ID が PK） |
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
+- 一覧（`moderation.Service.GoneAuditTargets`）は、ページの行の対象が今もあるかを、対象の種類ごとに 1 回の問い合わせでまとめて確かめます。
+  アカウントは `account` の公開 API（`account.Service.ExistingIDs`）に、通報・異議申し立て・登録の拒否は `moderation` 自身の `reports`・`moderation_appeals`・`signup_blocks` に問い合わせ、ほかの種類の対象（ドメイン・利用者・ロール・設定・ルール）は消えないので問い合わせません。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。
 - 更新・削除の API と CLI はありません。保持期間（ADR-0038、既定 730 日）を過ぎた行だけを消去ジョブが消します。
 
@@ -555,17 +558,19 @@ flowchart LR
 - 保全は解放（`retention_hold_releases`）が無い間だけ効きます。運営者が CLI（`my admin retention hold|release|list`）で置き・解放し、1 つのアカウントに複数を置けます。
 - 効いている保全のあるアカウントのモデレーション記録・ログイン元と登録元の IP・投稿は、保持期間を過ぎても消去ジョブが消しません（ADR-0038）。
   モデレーション記録は、そのアカウントへの処分と異議申し立て、そのアカウントが対象か通報者の通報、対象がそのアカウントかその通報・異議申し立ての監査ログです。
+  登録の拒否はアカウントに属さないので保全の対象外ですが、BAN から作られた拒否（`moderation_action_id`）は、その BAN の対象のアカウントに効いている保全があれば残ります。
 
 #### 記録の保持期間
 
-1 時間ごとの消去ジョブ `moderation.purge_records` が、インスタンス設定（§4.9）の保持期間を過ぎたモデレーション記録を、処分 → 通報 → 監査ログの順に消します（ADR-0038、§8）。
-期間は回ごとに読み直します。処分と通報は 1 トランザクションあたり 100 件、監査ログは 1 文あたり 1,000 行で、それぞれ 20 回まで、古い順（`id` 順）に消し、続きは次の回が消します。
+1 時間ごとの消去ジョブ `moderation.purge_records` が、インスタンス設定（§4.9）の保持期間を過ぎたモデレーション記録を、処分 → 通報 → 登録の拒否 → 監査ログの順に消します（ADR-0038、§8）。
+期間は回ごとに読み直します。処分・通報・登録の拒否は 1 トランザクションあたり 100 件、監査ログは 1 文あたり 1,000 行で、それぞれ 20 回まで、古い順（`id` 順）に消し、続きは次の回が消します。
 
 | 記録 | 設定（既定・下限） | 起点 | 消すもの |
 | --- | --- | --- | --- |
 | 処分 | `retention_moderation_actions`（365 日・180 日） | 処分の終わり: `warn`・`delete_statuses` は `issued_at`、ほかは解除と期限の早い方（どちらも無ければ消さない）。異議申し立てがあれば審査の `decided_at` より前には消さず、審査待ちの間は消さない | `moderation_actions` と `moderation_action_statuses`・`moderation_action_lifts`・`moderation_appeals`・`moderation_appeal_decisions`・`appeal_states`・`account_restrictions` の行 |
 | 通報 | `retention_reports`（365 日・180 日） | `report_states` が `resolved` になった `since`（最後の解決）。未解決の通報と、処分が参照する（`moderation_actions.report_id`）通報は消さない | `reports` と `report_statuses`・`report_rule_citations`・`report_assignments`・`report_resolutions`・`report_reopenings`・`report_notes`・`report_states` |
 | 監査ログ | `retention_audit_log`（730 日・365 日） | `occurred_at` | `audit_log_entries` の行 |
+| 登録の拒否 | なし（30 日に固定） | 拒否の終わり: 解除（`signup_block_lifts.lifted_at`）と期限（`expires_at`）の早い方。どちらも無ければ消さない | `signup_blocks` と `signup_block_lifts` の行 |
 
 - 処分が参照する通報は、処分が消えた同じ回に、通報自身の期限を過ぎていれば消えます（処分を先に消すため）。
 - `relationship_severances` と、記録を指す通知（`moderation_action_id`・`report_id`・`appeal_id`）は消しません。指す先の消えた通知は、その記録を埋め込まずに返します。

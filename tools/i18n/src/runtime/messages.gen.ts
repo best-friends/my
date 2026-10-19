@@ -130,7 +130,7 @@ export interface MessageArgs {
   "client:admin.account_actions.duration.indefinite": {};
   /** Ends */
   "client:admin.account_actions.expires_at": {};
-  /** The action could not be taken: {reason} */
+  /** Could not take the action: {reason} */
   "client:admin.account_actions.issue_failed": { reason: string };
   /** Taken */
   "client:admin.account_actions.issued_at": {};
@@ -220,6 +220,240 @@ export interface MessageArgs {
   "client:admin.account_actions.submit_and_resolve": {};
   /** Use at most {max, number} characters */
   "client:admin.account_actions.too_long": { max: number };
+  /** The account is deleted. */
+  "client:admin.account.action.deleted": {};
+  /** Action taken ({kind}). */
+  "client:admin.account.action.issued": { kind: string };
+  /** To act on posts, take the action from a report on them. */
+  "client:admin.account.action.posts": {};
+  /** Take action */
+  "client:admin.account.action.title": {};
+  /** Its restrictions end now. Other actions on the account stay in effect, and deleted posts and ended sessions stay as they are. */
+  "client:admin.account.actions.confirm_lift.description": {};
+  /** Lift {kind} on {handle}? */
+  "client:admin.account.actions.confirm_lift.title": { handle: string; kind: string };
+  /** Taken by */
+  "client:admin.account.actions.issuer": {};
+  /** Command line */
+  "client:admin.account.actions.issuer.cli": {};
+  /** The account's server */
+  "client:admin.account.actions.issuer.remote": {};
+  /** This server */
+  "client:admin.account.actions.issuer.system": {};
+  /** Lift */
+  "client:admin.account.actions.lift": {};
+  /** Lift {kind}, taken {date} */
+  "client:admin.account.actions.lift_action": { date: string; kind: string };
+  /** Could not lift the action: {reason} */
+  "client:admin.account.actions.lift_failed": { reason: string };
+  /** Reason for lifting */
+  "client:admin.account.actions.lift_reason": {};
+  /** Optional. Kept with the action for the moderators. */
+  "client:admin.account.actions.lift_reason.description": {};
+  /** {kind} is lifted. */
+  "client:admin.account.actions.lifted": { kind: string };
+  /** Lifted */
+  "client:admin.account.actions.lifted_at": {};
+  /** Account told */
+  "client:admin.account.actions.notified": {};
+  /** No */
+  "client:admin.account.actions.notified.no": {};
+  /** Yes */
+  "client:admin.account.actions.notified.yes": {};
+  /** Actions on the account */
+  "client:admin.account.actions.title": {};
+  /** Show operations on the account in the audit log */
+  "client:admin.account.audit": {};
+  /** Back to the accounts */
+  "client:admin.account.back": {};
+  /** Email */
+  "client:admin.account.email_verified": {};
+  /** Not verified */
+  "client:admin.account.email_verified.no": {};
+  /** Verified */
+  "client:admin.account.email_verified.yes": {};
+  /** No email address */
+  "client:admin.account.email.none": {};
+  /** Shown only when you ask. Each time is recorded in the audit log. */
+  "client:admin.account.private.description": {};
+  /** Email address */
+  "client:admin.account.private.email": {};
+  /** Could not show the email and IP addresses: {reason} */
+  "client:admin.account.private.failed": { reason: string };
+  /** IP address */
+  "client:admin.account.private.ip": {};
+  /** Registered from */
+  "client:admin.account.private.registration_ip": {};
+  /** Show email and IP addresses */
+  "client:admin.account.private.reveal": {};
+  /** Other accounts on the same IP addresses */
+  "client:admin.account.private.same_ip": {};
+  /** No other account used these IP addresses. */
+  "client:admin.account.private.same_ip.none": {};
+  /** Search the accounts with email at {domain} */
+  "client:admin.account.private.search_email_domain": { domain: string };
+  /** Search the accounts of {ip} */
+  "client:admin.account.private.search_ip": { ip: string };
+  /** Email and IP addresses shown. This was recorded in the audit log. */
+  "client:admin.account.private.shown": {};
+  /** Recent sign-ins */
+  "client:admin.account.private.sign_ins": {};
+  /** No sign-ins are kept. */
+  "client:admin.account.private.sign_ins.none": {};
+  /** Signed in */
+  "client:admin.account.private.signed_in_at": {};
+  /** Email and IP addresses */
+  "client:admin.account.private.title": {};
+  /** Unknown */
+  "client:admin.account.private.unknown": {};
+  /** Browser or app */
+  "client:admin.account.private.user_agent": {};
+  /** Open the profile */
+  "client:admin.account.profile": {};
+  /** Invite */
+  "client:admin.account.registration.invite": {};
+  /** None */
+  "client:admin.account.registration.invite.none": {};
+  /** Registered with an invite */
+  "client:admin.account.registration.invite.used": {};
+  /** Reason for joining */
+  "client:admin.account.registration.reason": {};
+  /** Registration decided */
+  "client:admin.account.registration.state_changed_at": {};
+  /** Applied */
+  "client:admin.account.registration.submitted_at": {};
+  /** No reports on this account */
+  "client:admin.account.reports.empty": {};
+  /** Report of {date} */
+  "client:admin.account.reports.item": { date: string };
+  /** Reports on the account */
+  "client:admin.account.reports.title": {};
+  /** The account's actions take nothing away now. */
+  "client:admin.account.restrictions.none": {};
+  /** Restrictions */
+  "client:admin.account.restrictions.title": {};
+  /** Roles */
+  "client:admin.account.roles": {};
+  /** None */
+  "client:admin.account.roles.none": {};
+  /** Account */
+  "client:admin.account.summary.title": {};
+  /** Account */
+  "client:admin.account.title": {};
+  /** Joined */
+  "client:admin.accounts.created_at": {};
+  /** No accounts yet */
+  "client:admin.accounts.empty": {};
+  /** No accounts match */
+  "client:admin.accounts.empty.filtered": {};
+  /** Change the conditions and search again. */
+  "client:admin.accounts.empty.filtered.description": {};
+  /** No accounts match so far */
+  "client:admin.accounts.empty.so_far": {};
+  /** The server searches the accounts a part at a time. Search further to look at the rest. */
+  "client:admin.accounts.empty.so_far.description": {};
+  /** Search further */
+  "client:admin.accounts.empty.so_far.more": {};
+  /** Server */
+  "client:admin.accounts.origin": {};
+  /** This server */
+  "client:admin.accounts.origin.local": {};
+  /** Other servers */
+  "client:admin.accounts.origin.remote": {};
+  /** Registration */
+  "client:admin.accounts.registration": {};
+  /** Approved */
+  "client:admin.accounts.registration.approved": {};
+  /** Awaiting approval */
+  "client:admin.accounts.registration.pending": {};
+  /** Rejected */
+  "client:admin.accounts.registration.rejected": {};
+  /** Nothing is delivered or received */
+  "client:admin.accounts.restriction.federation": {};
+  /** Cannot follow, favourite, boost or vote */
+  "client:admin.accounts.restriction.interact": {};
+  /** Cannot log in or use the API */
+  "client:admin.accounts.restriction.login": {};
+  /** Media shows as sensitive */
+  "client:admin.accounts.restriction.media_sensitive": {};
+  /** Cannot post, reply, boost or edit */
+  "client:admin.accounts.restriction.post": {};
+  /** The profile and posts are hidden */
+  "client:admin.accounts.restriction.profile_view": {};
+  /** Posts stay off the public timelines and search */
+  "client:admin.accounts.restriction.public_discovery": {};
+  /** Notifications reach followers only */
+  "client:admin.accounts.restriction.unsolicited_reach": {};
+  /** Posts are followers-only */
+  "client:admin.accounts.restriction.visibility_ceiling_private": {};
+  /** Restrictions */
+  "client:admin.accounts.restrictions": {};
+  /** Could not search the accounts */
+  "client:admin.accounts.results.failed": {};
+  /** Loading accounts */
+  "client:admin.accounts.results.loading": {};
+  /** Could not load more accounts */
+  "client:admin.accounts.results.more_failed": {};
+  /** Try again */
+  "client:admin.accounts.results.retry": {};
+  /** Results */
+  "client:admin.accounts.results.title": {};
+  /** Email or IP address */
+  "client:admin.accounts.search.contact": {};
+  /** Searches the accounts of this server by what only moderators see. The results do not show it. */
+  "client:admin.accounts.search.contact.description": {};
+  /** Email address */
+  "client:admin.accounts.search.contact.email": {};
+  /** Email domain */
+  "client:admin.accounts.search.contact.email_domain": {};
+  /** Enter an email address, such as name@example.com. */
+  "client:admin.accounts.search.contact.invalid": {};
+  /** IP address */
+  "client:admin.accounts.search.contact.ip": {};
+  /** Do not search by these */
+  "client:admin.accounts.search.contact.none": {};
+  /** Enter what to search for, or choose not to search by it. */
+  "client:admin.accounts.search.contact.required": {};
+  /** Server */
+  "client:admin.accounts.search.domain": {};
+  /** The domain of another server, such as example.com. */
+  "client:admin.accounts.search.domain.description": {};
+  /** Where */
+  "client:admin.accounts.search.origin": {};
+  /** Any server */
+  "client:admin.accounts.search.origin.any": {};
+  /** State */
+  "client:admin.accounts.search.state": {};
+  /** Any state */
+  "client:admin.accounts.search.state.any": {};
+  /** Search */
+  "client:admin.accounts.search.submit": {};
+  /** Search */
+  "client:admin.accounts.search.title": {};
+  /** Username */
+  "client:admin.accounts.search.username": {};
+  /** Accounts whose username starts with this. A handle (@name@domain) also keeps its server. */
+  "client:admin.accounts.search.username.description": {};
+  /** State */
+  "client:admin.accounts.state": {};
+  /** Active */
+  "client:admin.accounts.state.active": {};
+  /** Deleted */
+  "client:admin.accounts.state.deleted": {};
+  /** Login disabled */
+  "client:admin.accounts.state.disabled": {};
+  /** Limited */
+  "client:admin.accounts.state.limited": {};
+  /** Awaiting approval */
+  "client:admin.accounts.state.pending": {};
+  /** Rejected */
+  "client:admin.accounts.state.rejected": {};
+  /** Suspended */
+  "client:admin.accounts.state.suspended": {};
+  /** Search the accounts of this and other servers, and take or lift moderation actions on them. */
+  "client:admin.accounts.summary": {};
+  /** Accounts */
+  "client:admin.accounts.title": {};
   /** Account */
   "client:admin.appeal.account": {};
   /** Open the account in the admin screens */
@@ -414,7 +648,7 @@ export interface MessageArgs {
   "client:admin.audit_log.filter.title": {};
   /** Operations */
   "client:admin.audit_log.list.title": {};
-  /** Couldn’t load more operations */
+  /** Could not load more operations */
   "client:admin.audit_log.more_failed": {};
   /** When */
   "client:admin.audit_log.occurred_at": {};
@@ -514,7 +748,7 @@ export interface MessageArgs {
   "client:admin.domain_actions.filter.all": {};
   /** Show domain actions */
   "client:admin.domain_actions.filter.label": {};
-  /** The action could not be taken: {reason} */
+  /** Could not take the action: {reason} */
   "client:admin.domain_actions.issue_failed": { reason: string };
   /** {kind} is in effect for {domain}. */
   "client:admin.domain_actions.issued": { domain: string; kind: string };
@@ -548,7 +782,7 @@ export interface MessageArgs {
   "client:admin.domain_actions.lift": {};
   /** Lift {kind} for {domain}, taken {date} */
   "client:admin.domain_actions.lift_action": { date: string; domain: string; kind: string };
-  /** The action could not be lifted: {reason} */
+  /** Could not lift the action: {reason} */
   "client:admin.domain_actions.lift_failed": { reason: string };
   /** {kind} for {domain} is lifted. */
   "client:admin.domain_actions.lifted": { domain: string; kind: string };
@@ -774,7 +1008,7 @@ export interface MessageArgs {
   "client:admin.report.action.title": {};
   /** Assign to me */
   "client:admin.report.assign": {};
-  /** The report could not be assigned to you: {reason} */
+  /** Could not assign the report to you: {reason} */
   "client:admin.report.assign_failed": { reason: string };
   /** Take over */
   "client:admin.report.assign.take_over": {};
@@ -820,7 +1054,7 @@ export interface MessageArgs {
   "client:admin.report.notes.cli": {};
   /** No notes yet. */
   "client:admin.report.notes.empty": {};
-  /** The note could not be added: {reason} */
+  /** Could not add the note: {reason} */
   "client:admin.report.notes.failed": { reason: string };
   /** New note */
   "client:admin.report.notes.new": {};
@@ -858,7 +1092,7 @@ export interface MessageArgs {
   "client:admin.report.posts.title": {};
   /** Reopen */
   "client:admin.report.reopen": {};
-  /** The report could not be reopened: {reason} */
+  /** Could not reopen the report: {reason} */
   "client:admin.report.reopen_failed": { reason: string };
   /** Reopening puts the report back among the open ones. The reporter is not told again when it is resolved. */
   "client:admin.report.reopen.description": {};
@@ -868,7 +1102,7 @@ export interface MessageArgs {
   "client:admin.report.reporter": {};
   /** Handling */
   "client:admin.report.resolution.title": {};
-  /** The report could not be resolved: {reason} */
+  /** Could not resolve the report: {reason} */
   "client:admin.report.resolve_failed": { reason: string };
   /** Resolve as actioned */
   "client:admin.report.resolve.actioned": {};
@@ -914,7 +1148,7 @@ export interface MessageArgs {
   "client:admin.report.title": {};
   /** Unassign */
   "client:admin.report.unassign": {};
-  /** The report could not be unassigned: {reason} */
+  /** Could not unassign the report: {reason} */
   "client:admin.report.unassign_failed": { reason: string };
   /** Nobody handles this report now. */
   "client:admin.report.unassigned": {};
@@ -954,7 +1188,7 @@ export interface MessageArgs {
   "client:api.error.status": { status: string };
   /** Close */
   "client:compose.close": {};
-  /** Could not post: {reason} */
+  /** Could not send the post: {reason} */
   "client:compose.failed": { reason: string };
   /** Language */
   "client:compose.language.label": {};
@@ -970,7 +1204,7 @@ export interface MessageArgs {
   "client:compose.media.description.label": { position: string };
   /** Describe the image for people who cannot see it. Your settings ask for a description of every image. */
   "client:compose.media.description.required": {};
-  /** Could not attach: {reason} */
+  /** Could not attach the image: {reason} */
   "client:compose.media.failed": { reason: string };
   /** The server could not process this image. */
   "client:compose.media.failed_processing": {};
@@ -1004,7 +1238,7 @@ export interface MessageArgs {
   "client:compose.outbox.discard": {};
   /** Edit */
   "client:compose.outbox.edit": {};
-  /** Not sent: {reason} */
+  /** Could not send the post: {reason} */
   "client:compose.outbox.failed": { reason: string };
   /** Posts being sent */
   "client:compose.outbox.label": {};
@@ -1196,7 +1430,7 @@ export interface MessageArgs {
   "client:notifications.unread_count": { count: number };
   /** This screen is not ready yet. */
   "client:page.not_built": {};
-  /** The change did not go through: {reason} */
+  /** Could not change your relationship with the account: {reason} */
   "client:profile.change_failed": { reason: string };
   /** Block */
   "client:profile.confirm.block.action": {};
@@ -1364,7 +1598,7 @@ export interface MessageArgs {
   "client:report.comment.too_long": { max: number };
   /** Done */
   "client:report.done": {};
-  /** The report was not sent: {reason} */
+  /** Could not send the report: {reason} */
   "client:report.failed": { reason: string };
   /** Also send the report to {domain} */
   "client:report.forward": { domain: string };
@@ -1380,7 +1614,7 @@ export interface MessageArgs {
   "client:report.posts.description": {};
   /** This account has no posts that you can choose. */
   "client:report.posts.empty": {};
-  /** Couldn't load the posts */
+  /** Could not load the posts */
   "client:report.posts.failed": {};
   /** Which posts are you reporting? */
   "client:report.posts.heading": {};
@@ -1414,7 +1648,7 @@ export interface MessageArgs {
   "client:search.description": {};
   /** Enter @username@server or the address of a profile. Only accounts this server already knows are found. */
   "client:search.description_signed_out": {};
-  /** The search failed: {reason} */
+  /** Could not search for accounts: {reason} */
   "client:search.failed": { reason: string };
   /** Handle or URL */
   "client:search.label": {};
@@ -1486,6 +1720,14 @@ export interface MessageArgs {
   "client:settings.locale.label": {};
   /** Settings pages */
   "client:settings.menu.title": {};
+  /** Also send them by email */
+  "client:settings.moderator_notifications.email": {};
+  /** The notifications of new reports, sign-ups awaiting approval and appeals that your role handles also come to your email address. */
+  "client:settings.moderator_notifications.email.description": {};
+  /** This server does not send email, so the moderator notifications come only in the app. */
+  "client:settings.moderator_notifications.no_email": {};
+  /** Moderator notifications */
+  "client:settings.moderator_notifications.title": {};
   /** You have not muted anyone */
   "client:settings.mutes.empty": {};
   /** Notifications hidden too */
@@ -1694,7 +1936,7 @@ export interface MessageArgs {
   "client:status.action.copy_link": {};
   /** Delete */
   "client:status.action.delete": {};
-  /** The change was not saved: {reason} */
+  /** Could not save the change: {reason} */
   "client:status.action.failed": { reason: string };
   /** Favourite */
   "client:status.action.favourite": {};

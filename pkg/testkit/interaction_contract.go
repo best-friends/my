@@ -7,6 +7,7 @@ import (
 	"errors"
 	"math/rand/v2"
 	"reflect"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -220,6 +221,19 @@ func (s *stubActors) FindByID(_ context.Context, id string) (appaccount.Actor, e
 		return appaccount.Actor{}, appaccount.ErrNotFound
 	}
 	return a, nil
+}
+
+func (s *stubActors) ExistingIDs(_ context.Context, ids []string) ([]string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []string
+	for _, id := range ids {
+		if _, ok := s.actors[id]; ok {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return out, nil
 }
 
 type stubRelations struct {

@@ -175,6 +175,34 @@ func (r *ModerationRepository) PurgeReports(ctx context.Context, tx uow.Tx, repo
 	return nil
 }
 
+// ListSignupBlocksToPurge implements moderation.RetentionRepository.
+func (r *ModerationRepository) ListSignupBlocksToPurge(ctx context.Context, tx uow.Tx, endedBefore time.Time, limit int) ([]string, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	ids, err := q.ListSignupBlocksToPurge(ctx, sqlitegen.ListSignupBlocksToPurgeParams{
+		IDBefore: idBelow(endedBefore), EndedBefore: toMillis(endedBefore), BatchLimit: int64(limit),
+	})
+	return ids, wrap(err, "list sign-up blocks to purge")
+}
+
+// PurgeSignupBlocks implements moderation.RetentionRepository.
+func (r *ModerationRepository) PurgeSignupBlocks(ctx context.Context, tx uow.Tx, blockIDs []string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	ids, err := jsonList(blockIDs)
+	if err != nil {
+		return err
+	}
+	if err := q.PurgeSignupBlockLifts(ctx, ids); err != nil {
+		return wrap(err, "purge sign-up blocks")
+	}
+	return wrap(q.PurgeSignupBlocks(ctx, ids), "purge sign-up blocks")
+}
+
 // DeleteAuditEntriesBefore implements moderation.RetentionRepository.
 func (r *ModerationRepository) DeleteAuditEntriesBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error) {
 	q, err := queries(tx)

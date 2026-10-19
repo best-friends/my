@@ -191,6 +191,246 @@
     "defaultMessage": "アカウントの状態",
     "description": "Heading and document title of the account status page, and its entry in the list of settings pages."
   },
+  "admin.account.action.deleted": {
+    "defaultMessage": "このアカウントは削除されています。",
+    "description": "Text instead of the action form for a deleted account."
+  },
+  "admin.account.action.issued": {
+    "defaultMessage": "処分しました（{kind}）。",
+    "description": "Status after an action was taken on an account; kind is its kind."
+  },
+  "admin.account.action.posts": {
+    "defaultMessage": "投稿への処分は、その投稿への通報の画面から行います。",
+    "description": "Help above the form of an action on an account's page."
+  },
+  "admin.account.action.title": {
+    "defaultMessage": "処分する",
+    "description": "Heading of the region of an account's admin page with the form of a new action."
+  },
+  "admin.account.actions.confirm_lift.description": {
+    "defaultMessage": "この処分による制限はすぐに終わります。アカウントへのほかの処分は効いたままで、削除した投稿と終わらせたセッションは元に戻りません。",
+    "description": "Description of the confirmation of lifting an account action."
+  },
+  "admin.account.actions.confirm_lift.title": {
+    "defaultMessage": "{handle} への「{kind}」を解除しますか？",
+    "description": "Title of the confirmation of lifting an account action; handle is the account's @handle."
+  },
+  "admin.account.actions.issuer": {
+    "defaultMessage": "処分した人",
+    "description": "Term of an account action: who took it."
+  },
+  "admin.account.actions.issuer.cli": {
+    "defaultMessage": "コマンドライン",
+    "description": "Who took an account action: a moderator on the command line."
+  },
+  "admin.account.actions.issuer.remote": {
+    "defaultMessage": "アカウントのサーバー",
+    "description": "Who took an account action: the account's own server."
+  },
+  "admin.account.actions.issuer.system": {
+    "defaultMessage": "このサーバー",
+    "description": "Who took an account action: this server by itself."
+  },
+  "admin.account.actions.lift": {
+    "defaultMessage": "解除",
+    "description": "Button that lifts a moderation action on an account, and the confirmation's button."
+  },
+  "admin.account.actions.lift_action": {
+    "defaultMessage": "解除：「{kind}」（{date} に処分）",
+    "description": "Accessible name of the button that lifts an account action; kind is the kind, date when it was taken."
+  },
+  "admin.account.actions.lift_failed": {
+    "defaultMessage": "処分を解除できませんでした：{reason}",
+    "description": "Error in the lift confirmation; reason is the server's localized message."
+  },
+  "admin.account.actions.lift_reason": {
+    "defaultMessage": "解除の理由",
+    "description": "Label of the optional reason of lifting an account action, and term of it in the list."
+  },
+  "admin.account.actions.lift_reason.description": {
+    "defaultMessage": "任意。モデレーター向けに処分と一緒に残ります。",
+    "description": "Help under the reason of lifting an account action."
+  },
+  "admin.account.actions.lifted": {
+    "defaultMessage": "「{kind}」を解除しました。",
+    "description": "Status after an account action was lifted; kind is its kind."
+  },
+  "admin.account.actions.lifted_at": {
+    "defaultMessage": "解除した日時",
+    "description": "Term of an account action: when it was lifted."
+  },
+  "admin.account.actions.notified": {
+    "defaultMessage": "アカウントへの通知",
+    "description": "Term of an account action: whether the account was told."
+  },
+  "admin.account.actions.notified.no": {
+    "defaultMessage": "なし",
+    "description": "The account was not told of the action."
+  },
+  "admin.account.actions.notified.yes": {
+    "defaultMessage": "あり",
+    "description": "The account was told of the action."
+  },
+  "admin.account.actions.title": {
+    "defaultMessage": "アカウントへの処分",
+    "description": "Heading of the region of an account's admin page with the moderation actions on it."
+  },
+  "admin.account.audit": {
+    "defaultMessage": "監査ログでアカウントへの操作を見る",
+    "description": "Link from an account's admin page to the audit log filtered to it."
+  },
+  "admin.account.back": {
+    "defaultMessage": "アカウントの一覧に戻る",
+    "description": "Link from an account's admin page to the account search."
+  },
+  "admin.account.email.none": {
+    "defaultMessage": "メールアドレスなし",
+    "description": "A local account has no email address."
+  },
+  "admin.account.email_verified": {
+    "defaultMessage": "メールアドレスの確認",
+    "description": "Term of a local account: whether its email address is verified."
+  },
+  "admin.account.email_verified.no": {
+    "defaultMessage": "未確認",
+    "description": "The email address of an account is not verified."
+  },
+  "admin.account.email_verified.yes": {
+    "defaultMessage": "確認済み",
+    "description": "The email address of an account is verified."
+  },
+  "admin.account.private.description": {
+    "defaultMessage": "求めたときだけ表示します。表示するたびに監査ログに記録されます。",
+    "description": "Text next to the button that shows the email and IP addresses."
+  },
+  "admin.account.private.email": {
+    "defaultMessage": "メールアドレス",
+    "description": "Term of the private data: the primary email address."
+  },
+  "admin.account.private.failed": {
+    "defaultMessage": "メールアドレスと IP アドレスを表示できませんでした：{reason}",
+    "description": "Toast when showing the email and IP addresses failed; reason is the server's localized message."
+  },
+  "admin.account.private.ip": {
+    "defaultMessage": "IP アドレス",
+    "description": "Term of a sign-in: the IP address."
+  },
+  "admin.account.private.registration_ip": {
+    "defaultMessage": "登録元の IP アドレス",
+    "description": "Term of the private data: the IP address the account registered from."
+  },
+  "admin.account.private.reveal": {
+    "defaultMessage": "メールアドレスと IP アドレスを表示する",
+    "description": "Button that shows the email address and IP addresses of a local account."
+  },
+  "admin.account.private.same_ip": {
+    "defaultMessage": "同じ IP アドレスのほかのアカウント",
+    "description": "Heading of the list of other accounts that used the same IP addresses."
+  },
+  "admin.account.private.same_ip.none": {
+    "defaultMessage": "これらの IP アドレスを使ったほかのアカウントはありません。",
+    "description": "Text when no other account used the same IP addresses."
+  },
+  "admin.account.private.search_email_domain": {
+    "defaultMessage": "{domain} のメールアドレスのアカウントを検索する",
+    "description": "Link to the account search by an email domain; domain is the domain."
+  },
+  "admin.account.private.search_ip": {
+    "defaultMessage": "{ip} のアカウントを検索する",
+    "description": "Link to the account search by an IP address; ip is the address."
+  },
+  "admin.account.private.shown": {
+    "defaultMessage": "メールアドレスと IP アドレスを表示しました。この操作は監査ログに記録されました。",
+    "description": "Status after the email and IP addresses were shown."
+  },
+  "admin.account.private.sign_ins": {
+    "defaultMessage": "最近のログイン",
+    "description": "Heading of the list of the newest sign-ins of an account."
+  },
+  "admin.account.private.sign_ins.none": {
+    "defaultMessage": "残っているログインの記録はありません。",
+    "description": "Text when no sign-ins are kept."
+  },
+  "admin.account.private.signed_in_at": {
+    "defaultMessage": "ログインした日時",
+    "description": "Term of a sign-in: when."
+  },
+  "admin.account.private.title": {
+    "defaultMessage": "メールアドレスと IP アドレス",
+    "description": "Heading of the region of a local account's admin page with its email address and IP addresses."
+  },
+  "admin.account.private.unknown": {
+    "defaultMessage": "不明",
+    "description": "An IP address, User-Agent or registration origin that is not kept."
+  },
+  "admin.account.private.user_agent": {
+    "defaultMessage": "ブラウザやアプリ",
+    "description": "Term of a sign-in: the User-Agent it came with."
+  },
+  "admin.account.profile": {
+    "defaultMessage": "プロフィールを開く",
+    "description": "Link from an account's admin page to its profile."
+  },
+  "admin.account.registration.invite": {
+    "defaultMessage": "招待",
+    "description": "Term of a local account: whether it registered with an invite."
+  },
+  "admin.account.registration.invite.none": {
+    "defaultMessage": "なし",
+    "description": "Value of the invite term: no invite."
+  },
+  "admin.account.registration.invite.used": {
+    "defaultMessage": "招待から登録",
+    "description": "Value of the invite term: registered with one."
+  },
+  "admin.account.registration.reason": {
+    "defaultMessage": "登録の理由",
+    "description": "Term of a local account: why the applicant wanted to join."
+  },
+  "admin.account.registration.state_changed_at": {
+    "defaultMessage": "審査の状態になった日時",
+    "description": "Term of a local account: when its registration entered its state."
+  },
+  "admin.account.registration.submitted_at": {
+    "defaultMessage": "登録を申請した日時",
+    "description": "Term of a local account: when its registration was submitted."
+  },
+  "admin.account.reports.empty": {
+    "defaultMessage": "このアカウントへの通報はありません",
+    "description": "Heading when an account has no reports."
+  },
+  "admin.account.reports.item": {
+    "defaultMessage": "{date} の通報",
+    "description": "Heading of a report on an account; date is when it was filed."
+  },
+  "admin.account.reports.title": {
+    "defaultMessage": "アカウントへの通報",
+    "description": "Heading of the region of an account's admin page with the reports on it."
+  },
+  "admin.account.restrictions.none": {
+    "defaultMessage": "いま効いている処分による制限はありません。",
+    "description": "Text when an account has no restrictions."
+  },
+  "admin.account.restrictions.title": {
+    "defaultMessage": "制限",
+    "description": "Heading of the region of an account's admin page with what its actions take away now."
+  },
+  "admin.account.roles": {
+    "defaultMessage": "ロール",
+    "description": "Term of a local account: the roles of its user."
+  },
+  "admin.account.roles.none": {
+    "defaultMessage": "なし",
+    "description": "A local account's user has no roles."
+  },
+  "admin.account.summary.title": {
+    "defaultMessage": "アカウント",
+    "description": "Heading of the region of an account's admin page with the account itself."
+  },
+  "admin.account.title": {
+    "defaultMessage": "アカウント",
+    "description": "Title of an account's admin page."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "理由の種類",
     "description": "Label of the select of the category of the reason for a moderation action on an account."
@@ -256,7 +496,7 @@
     "description": "Term of a list of account actions: when the action ends."
   },
   "admin.account_actions.issue_failed": {
-    "defaultMessage": "処分できませんでした：{reason}",
+    "defaultMessage": "アカウントを処分できませんでした：{reason}",
     "description": "Error when a moderation action on an account fails; reason is the server's localized message."
   },
   "admin.account_actions.issued_at": {
@@ -434,6 +674,234 @@
   "admin.account_actions.too_long": {
     "defaultMessage": "{max, number} 文字以内にしてください",
     "description": "Error of a text of an account action that is too long."
+  },
+  "admin.accounts.created_at": {
+    "defaultMessage": "作成した日時",
+    "description": "Term of an account: when the account was made."
+  },
+  "admin.accounts.empty": {
+    "defaultMessage": "まだアカウントはありません",
+    "description": "Heading of the empty search without conditions."
+  },
+  "admin.accounts.empty.filtered": {
+    "defaultMessage": "条件に合うアカウントはありません",
+    "description": "Heading when no account matches the search."
+  },
+  "admin.accounts.empty.filtered.description": {
+    "defaultMessage": "条件を変えて、もう一度検索してください。",
+    "description": "Description when no account matches the search."
+  },
+  "admin.accounts.empty.so_far": {
+    "defaultMessage": "ここまでに条件に合うアカウントはありません",
+    "description": "Heading when the accounts searched so far match none, and more remain."
+  },
+  "admin.accounts.empty.so_far.description": {
+    "defaultMessage": "サーバーはアカウントを一部ずつ探します。続きを探すと、残りのアカウントを調べます。",
+    "description": "Description when the accounts searched so far match none, and more remain."
+  },
+  "admin.accounts.empty.so_far.more": {
+    "defaultMessage": "続きを探す",
+    "description": "Button that searches the next part of the accounts."
+  },
+  "admin.accounts.origin": {
+    "defaultMessage": "サーバー",
+    "description": "Term of an account in the admin screens: the server it belongs to."
+  },
+  "admin.accounts.origin.local": {
+    "defaultMessage": "このサーバー",
+    "description": "Where an account is: on this server; also an option of the where select."
+  },
+  "admin.accounts.origin.remote": {
+    "defaultMessage": "ほかのサーバー",
+    "description": "Option of the where select: the accounts of other servers."
+  },
+  "admin.accounts.registration": {
+    "defaultMessage": "登録の審査",
+    "description": "Term of a local account: where its registration stands."
+  },
+  "admin.accounts.registration.approved": {
+    "defaultMessage": "承認済み",
+    "description": "Registration state of a local account."
+  },
+  "admin.accounts.registration.pending": {
+    "defaultMessage": "承認待ち",
+    "description": "Registration state of a local account."
+  },
+  "admin.accounts.registration.rejected": {
+    "defaultMessage": "却下済み",
+    "description": "Registration state of a local account."
+  },
+  "admin.accounts.restriction.federation": {
+    "defaultMessage": "配送も受信もしない",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.interact": {
+    "defaultMessage": "フォロー・お気に入り・ブースト・投票ができない",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.login": {
+    "defaultMessage": "ログインと API の利用ができない",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.media_sensitive": {
+    "defaultMessage": "メディアはセンシティブとして表示される",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.post": {
+    "defaultMessage": "投稿・返信・ブースト・編集ができない",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.profile_view": {
+    "defaultMessage": "プロフィールと投稿が隠される",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.public_discovery": {
+    "defaultMessage": "投稿が公開のタイムラインと検索に出ない",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.unsolicited_reach": {
+    "defaultMessage": "通知はフォロワーにだけ届く",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.visibility_ceiling_private": {
+    "defaultMessage": "投稿はフォロワー限定になる",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restrictions": {
+    "defaultMessage": "制限",
+    "description": "Term of an account in the search results: what its actions take away now."
+  },
+  "admin.accounts.results.failed": {
+    "defaultMessage": "アカウントを検索できませんでした",
+    "description": "Heading when the search of the accounts failed."
+  },
+  "admin.accounts.results.loading": {
+    "defaultMessage": "アカウントを読み込んでいます",
+    "description": "Label of the spinner while the accounts load."
+  },
+  "admin.accounts.results.more_failed": {
+    "defaultMessage": "続きのアカウントを読み込めませんでした",
+    "description": "Message when the next page of the accounts failed to load."
+  },
+  "admin.accounts.results.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that runs a failed search of the accounts again."
+  },
+  "admin.accounts.results.title": {
+    "defaultMessage": "検索結果",
+    "description": "Heading of the region of the accounts screen with the accounts found."
+  },
+  "admin.accounts.search.contact": {
+    "defaultMessage": "メールアドレスか IP アドレス",
+    "description": "Label of the select of searching the local accounts by their email address, email domain or an IP address."
+  },
+  "admin.accounts.search.contact.description": {
+    "defaultMessage": "モデレーターだけが見られる情報で、このサーバーのアカウントを探します。結果には表示しません。",
+    "description": "Help under the email or IP address select."
+  },
+  "admin.accounts.search.contact.email": {
+    "defaultMessage": "メールアドレス",
+    "description": "Option of the email or IP address select, and label of its field: the primary email address of an account."
+  },
+  "admin.accounts.search.contact.email_domain": {
+    "defaultMessage": "メールアドレスのドメイン",
+    "description": "Option of the email or IP address select, and label of its field: the domain of the email addresses (example.com)."
+  },
+  "admin.accounts.search.contact.invalid": {
+    "defaultMessage": "name@example.com のようなメールアドレスを入れてください。",
+    "description": "Error of the email address search field when it is not an email address."
+  },
+  "admin.accounts.search.contact.ip": {
+    "defaultMessage": "IP アドレス",
+    "description": "Option of the email or IP address select, and label of its field: an IP address the account registered or signed in from."
+  },
+  "admin.accounts.search.contact.none": {
+    "defaultMessage": "使わない",
+    "description": "Option of the email or IP address select that searches by none of them."
+  },
+  "admin.accounts.search.contact.required": {
+    "defaultMessage": "探す値を入れるか、「使わない」を選んでください。",
+    "description": "Error of the email or IP address field when it is empty."
+  },
+  "admin.accounts.search.domain": {
+    "defaultMessage": "サーバー",
+    "description": "Label of the search field of the domain of the server of an account."
+  },
+  "admin.accounts.search.domain.description": {
+    "defaultMessage": "ほかのサーバーのドメイン（example.com など）。",
+    "description": "Help under the server search field."
+  },
+  "admin.accounts.search.origin": {
+    "defaultMessage": "場所",
+    "description": "Label of the select of whether the accounts are on this server or on others."
+  },
+  "admin.accounts.search.origin.any": {
+    "defaultMessage": "すべてのサーバー",
+    "description": "Option of the where select that keeps every account."
+  },
+  "admin.accounts.search.state": {
+    "defaultMessage": "状態",
+    "description": "Label of the select of the state of the accounts searched."
+  },
+  "admin.accounts.search.state.any": {
+    "defaultMessage": "すべての状態",
+    "description": "Option of the state select that keeps every account."
+  },
+  "admin.accounts.search.submit": {
+    "defaultMessage": "検索する",
+    "description": "Button that searches the accounts."
+  },
+  "admin.accounts.search.title": {
+    "defaultMessage": "検索",
+    "description": "Heading of the region of the accounts screen with the search form."
+  },
+  "admin.accounts.search.username": {
+    "defaultMessage": "ユーザー名",
+    "description": "Label of the search field of the username of an account."
+  },
+  "admin.accounts.search.username.description": {
+    "defaultMessage": "ユーザー名がこれで始まるアカウント。ハンドル（@name@domain）を入れると、そのサーバーでも絞り込みます。",
+    "description": "Help under the username search field."
+  },
+  "admin.accounts.state": {
+    "defaultMessage": "状態",
+    "description": "Term of an account in the admin screens: its state."
+  },
+  "admin.accounts.state.active": {
+    "defaultMessage": "有効",
+    "description": "State of an account: in use, without restrictions of its state."
+  },
+  "admin.accounts.state.deleted": {
+    "defaultMessage": "削除済み",
+    "description": "State of an account: deleted here or on its server."
+  },
+  "admin.accounts.state.disabled": {
+    "defaultMessage": "ログイン停止中",
+    "description": "State of an account: a disable-login action is in effect."
+  },
+  "admin.accounts.state.limited": {
+    "defaultMessage": "サイレンス中",
+    "description": "State of an account: a limit action is in effect."
+  },
+  "admin.accounts.state.pending": {
+    "defaultMessage": "承認待ち",
+    "description": "State of an account: its registration awaits approval."
+  },
+  "admin.accounts.state.rejected": {
+    "defaultMessage": "却下済み",
+    "description": "State of an account: its registration was rejected."
+  },
+  "admin.accounts.state.suspended": {
+    "defaultMessage": "凍結中",
+    "description": "State of an account: a suspension or ban is in effect."
+  },
+  "admin.accounts.summary": {
+    "defaultMessage": "このサーバーとほかのサーバーのアカウントの検索と、アカウントへの処分とその解除。",
+    "description": "Description of the link to the accounts screen in the administration menu."
+  },
+  "admin.accounts.title": {
+    "defaultMessage": "アカウント",
+    "description": "Title of the admin screen that searches the local and remote accounts, and of its link in the administration menu."
   },
   "admin.appeal.account": {
     "defaultMessage": "アカウント",
@@ -928,11 +1396,11 @@
     "description": "Button of a failed job that runs it again."
   },
   "admin.dead_jobs.retry_failed": {
-    "defaultMessage": "ジョブを再実行できませんでした: {reason}",
+    "defaultMessage": "ジョブを再実行できませんでした：{reason}",
     "description": "Error toast when a failed job could not be run again. {reason} is the server's localized reason."
   },
   "admin.dead_jobs.retry_job": {
-    "defaultMessage": "再実行: {type}（{date} に失敗）",
+    "defaultMessage": "再実行：{type}（{date} に失敗）",
     "description": "Accessible name of the run-again button of a failed job, which names the job. {type} is the job type; {date} is when it failed, formatted."
   },
   "admin.dead_jobs.summary": {
@@ -1032,7 +1500,7 @@
     "description": "Accessible name of the tabs that filter the domain actions."
   },
   "admin.domain_actions.issue_failed": {
-    "defaultMessage": "処分できませんでした：{reason}",
+    "defaultMessage": "ドメインを処分できませんでした：{reason}",
     "description": "Error when a new domain action failed. {reason} is the server's localized reason, which names the field at fault."
   },
   "admin.domain_actions.issued": {
@@ -1248,7 +1716,7 @@
     "description": "Description under the button that resumes deliveries to a remote server."
   },
   "admin.instance.mark_failed": {
-    "defaultMessage": "配送を再開できませんでした: {reason}",
+    "defaultMessage": "配送を再開できませんでした：{reason}",
     "description": "Error toast when deliveries to a remote server could not be resumed. {reason} is the server's localized reason."
   },
   "admin.instance.marked_available": {
@@ -1548,7 +2016,7 @@
     "description": "Button that makes the viewer the moderator who handles a report that another moderator handles."
   },
   "admin.report.assign_failed": {
-    "defaultMessage": "担当になれませんでした：{reason}",
+    "defaultMessage": "通報の担当を引き受けられませんでした：{reason}",
     "description": "Toast when taking a report fails."
   },
   "admin.report.assigned": {
@@ -1904,7 +2372,7 @@
     "description": "Accessible name of the × button that closes the new-post sheet. The draft is kept."
   },
   "compose.failed": {
-    "defaultMessage": "投稿できませんでした: {reason}",
+    "defaultMessage": "投稿を送信できませんでした：{reason}",
     "description": "Error after publishing a post failed. The draft is kept. {reason} is the error message."
   },
   "compose.language.label": {
@@ -1936,7 +2404,7 @@
     "description": "Help text under the alternative text field of an attached image when the user's settings ask for a description of every image."
   },
   "compose.media.failed": {
-    "defaultMessage": "添付できませんでした: {reason}",
+    "defaultMessage": "画像を添付できませんでした：{reason}",
     "description": "State of an attached image whose upload failed. {reason} is the error message."
   },
   "compose.media.failed_processing": {
@@ -2004,7 +2472,7 @@
     "description": "Button that puts a post that could not be sent back into the form."
   },
   "compose.outbox.failed": {
-    "defaultMessage": "送信できませんでした: {reason}",
+    "defaultMessage": "投稿を送信できませんでした：{reason}",
     "description": "State of a post that could not be sent. {reason} is the error message."
   },
   "compose.outbox.label": {
@@ -2068,7 +2536,7 @@
     "description": "Heading of the form that writes a new post (the side panel on wide screens, the sheet on phones)."
   },
   "compose.visibility.button": {
-    "defaultMessage": "公開範囲: {visibility}",
+    "defaultMessage": "公開範囲：{visibility}",
     "description": "Button that opens the choice of who can see the post. {visibility} is the current choice, for example 'Public'."
   },
   "compose.visibility.ceiling": {
@@ -2272,7 +2740,7 @@
     "description": "Button at the end of the notifications that loads older ones."
   },
   "notifications.loading": {
-    "defaultMessage": "通知を読み込み中",
+    "defaultMessage": "通知を読み込んでいます",
     "description": "Visually hidden text that names the busy list of notifications while its first page loads."
   },
   "notifications.moderation.action": {
@@ -2376,7 +2844,7 @@
     "description": "Notification sentence: the moderators of the server resolved a report that the user filed. It never says how."
   },
   "notifications.unread": {
-    "defaultMessage": "未読:",
+    "defaultMessage": "未読：",
     "description": "Read by screen readers before the sentence of a notification that was new when the page opened."
   },
   "notifications.unread_count": {
@@ -2388,7 +2856,7 @@
     "description": "Text below the heading of a page whose screen the web client does not have yet."
   },
   "profile.change_failed": {
-    "defaultMessage": "変更できませんでした: {reason}",
+    "defaultMessage": "アカウントとの関係を変更できませんでした：{reason}",
     "description": "Toast when following, blocking, muting or undoing one of them failed. {reason} is the error message."
   },
   "profile.confirm.block.action": {
@@ -2420,7 +2888,7 @@
     "description": "Title of the dialog that confirms unblocking. {name} is the account's display name."
   },
   "profile.confirm.unfollow.action": {
-    "defaultMessage": "フォロー解除",
+    "defaultMessage": "フォローを解除",
     "description": "Button of the dialog that unfollows the account."
   },
   "profile.confirm.unfollow.body": {
@@ -2536,15 +3004,15 @@
     "description": "Link from a follow list to the account's profile. {name} is the account's display name."
   },
   "profile.list.load_more": {
-    "defaultMessage": "もっと見る",
+    "defaultMessage": "さらに表示",
     "description": "Button at the end of a follow list that loads the next accounts."
   },
   "profile.list.load_more_failed": {
-    "defaultMessage": "続きのアカウントを読み込めませんでした: {reason}",
+    "defaultMessage": "続きのアカウントを読み込めませんでした：{reason}",
     "description": "Shown and announced when the next page of a follow list failed to load. {reason} is the error message."
   },
   "profile.list.loading": {
-    "defaultMessage": "アカウントを読み込み中",
+    "defaultMessage": "アカウントを読み込んでいます",
     "description": "Visually hidden text that names the busy follow list while its first page loads."
   },
   "profile.list.retry": {
@@ -2584,7 +3052,7 @@
     "description": "Link on the profile of an account of another server to its profile page on that server. {host} is that server's host name, for example 'mastodon.social'."
   },
   "profile.relationship_failed": {
-    "defaultMessage": "フォローの状態を読み込めませんでした: {reason}",
+    "defaultMessage": "フォローの状態を読み込めませんでした：{reason}",
     "description": "Shown on a profile instead of the follow button when the relationship failed to load. {reason} is the error message."
   },
   "profile.sign_in_to_follow": {
@@ -2768,7 +3236,7 @@
     "description": "Label of the checkbox of one post in the report dialog. {date} is the date and time of the post. The post's text follows as the description."
   },
   "report.posts.loading": {
-    "defaultMessage": "投稿を読み込み中",
+    "defaultMessage": "投稿を読み込んでいます",
     "description": "Accessible name of the spinner while the report dialog loads the account's posts."
   },
   "report.posts.media": {
@@ -2824,7 +3292,7 @@
     "description": "Help text under the search field while nobody is signed in: the server does not fetch unknown accounts from other servers."
   },
   "search.failed": {
-    "defaultMessage": "検索できませんでした: {reason}",
+    "defaultMessage": "アカウントを検索できませんでした：{reason}",
     "description": "Error under the search field when the search failed for another reason. {reason} is the localized reason."
   },
   "search.label": {
@@ -2904,7 +3372,7 @@
     "description": "Heading and document title of the settings page with the blocked accounts."
   },
   "settings.blocks.unblock": {
-    "defaultMessage": "ブロック解除",
+    "defaultMessage": "ブロックを解除",
     "description": "Button that unblocks an account."
   },
   "settings.blocks.unblocked": {
@@ -2948,7 +3416,7 @@
     "description": "Heading and document title of the settings page with the follow requests awaiting approval."
   },
   "settings.list.action": {
-    "defaultMessage": "{action}: {name}",
+    "defaultMessage": "{action}：{name}",
     "description": "Accessible name of a button in a list of accounts. {action} is the button's visible text (for example 'Unblock'), {name} the account's display name."
   },
   "settings.list.more": {
@@ -2967,6 +3435,22 @@
     "defaultMessage": "設定の項目",
     "description": "Heading of the list of links to the pages of the settings."
   },
+  "settings.moderator_notifications.email": {
+    "defaultMessage": "メールでも受け取る",
+    "description": "Label of the switch that also sends the moderator notifications by email."
+  },
+  "settings.moderator_notifications.email.description": {
+    "defaultMessage": "あなたのロールが扱う新しい通報・承認待ちの登録・異議申し立ての通知を、メールアドレスにも送ります。",
+    "description": "Help text of the switch that also sends the moderator notifications by email."
+  },
+  "settings.moderator_notifications.no_email": {
+    "defaultMessage": "このサーバーはメールを送らない設定のため、モデレーターへの通知はアプリの中にだけ届きます。",
+    "description": "Shown instead of the email switch of the moderator notifications when the server is set up to send no email."
+  },
+  "settings.moderator_notifications.title": {
+    "defaultMessage": "モデレーターへの通知",
+    "description": "Heading of the section of the preferences about the notifications of new reports, sign-ups awaiting approval and appeals, shown only to moderators."
+  },
   "settings.mutes.empty": {
     "defaultMessage": "ミュートしているアカウントはありません",
     "description": "Shown when the user mutes no account."
@@ -2984,7 +3468,7 @@
     "description": "Heading and document title of the settings page with the muted accounts."
   },
   "settings.mutes.unmute": {
-    "defaultMessage": "ミュート解除",
+    "defaultMessage": "ミュートを解除",
     "description": "Button that unmutes an account."
   },
   "settings.mutes.unmuted": {
@@ -3384,7 +3868,7 @@
     "description": "Menu item, on the user's own post, that asks to delete it."
   },
   "status.action.failed": {
-    "defaultMessage": "変更を保存できませんでした: {reason}",
+    "defaultMessage": "変更を保存できませんでした：{reason}",
     "description": "Toast when boosting, favouriting or bookmarking a post failed; the button is set back. {reason} is the error message, a full sentence."
   },
   "status.action.favourite": {
@@ -3432,7 +3916,7 @@
     "description": "Toast after the user's post was deleted."
   },
   "status.delete.failed": {
-    "defaultMessage": "投稿を削除できませんでした: {reason}",
+    "defaultMessage": "投稿を削除できませんでした：{reason}",
     "description": "Toast when deleting the user's post failed. {reason} is the error message, a full sentence."
   },
   "status.delete.title": {
@@ -3484,7 +3968,7 @@
     "description": "Heading above the posts that the post of the page replies to, oldest first."
   },
   "status.thread.failed": {
-    "defaultMessage": "返信を読み込めませんでした: {reason}",
+    "defaultMessage": "返信を読み込めませんでした：{reason}",
     "description": "Shown under the post of the page when its thread failed to load. {reason} is the error message, a full sentence."
   },
   "status.thread.loading": {
@@ -3520,7 +4004,7 @@
     "description": "Button next to a post's content warning that shows or hides the post behind it. The same text is used while the post is shown."
   },
   "timeline.empty.account.heading": {
-    "defaultMessage": "まだ投稿がありません",
+    "defaultMessage": "まだ投稿はありません",
     "description": "Shown instead of the posts of a profile's tab when it has none."
   },
   "timeline.empty.home.action": {
@@ -3568,11 +4052,11 @@
     "description": "Button at the end of a timeline that loads older posts."
   },
   "timeline.load_more.failed": {
-    "defaultMessage": "投稿を読み込めませんでした: {reason}",
+    "defaultMessage": "続きの投稿を読み込めませんでした：{reason}",
     "description": "Message, read out and shown at the end of a timeline, when older posts failed to load. {reason} is the error message, a full sentence."
   },
   "timeline.loading": {
-    "defaultMessage": "投稿を読み込み中",
+    "defaultMessage": "投稿を読み込んでいます",
     "description": "Visually hidden text that names the busy region while posts load: the first page of a timeline, or a post page."
   },
   "timeline.media.no_description": {
@@ -3588,7 +4072,7 @@
     "description": "Button above the home timeline when new posts have arrived; pressing it shows them at the top. Screen readers also read it out when the count changes."
   },
   "timeline.new_posts.failed": {
-    "defaultMessage": "新しい投稿を読み込めませんでした: {reason}",
+    "defaultMessage": "新しい投稿を読み込めませんでした：{reason}",
     "description": "Message read out when pressing the new posts button failed to load them. {reason} is the error message, a full sentence."
   },
   "timeline.retry": {

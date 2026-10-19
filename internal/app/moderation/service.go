@@ -105,6 +105,8 @@ func (ReportResolved) EventType() string { return EventReportResolved }
 // *appaccount.Service implements it.
 type Accounts interface {
 	FindByID(ctx context.Context, id string) (appaccount.Actor, error)
+	// ExistingIDs returns, in ID order, the accounts among ids that exist.
+	ExistingIDs(ctx context.Context, ids []string) ([]string, error)
 }
 
 // Statuses is the part of the content module's public API that the actions on statuses use.

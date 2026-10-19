@@ -398,6 +398,11 @@ func (s *Service) FindByID(ctx context.Context, id string) (Actor, error) {
 	return s.actor(ctx, a)
 }
 
+// ExistingIDs returns, in ID order, the accounts among ids that exist, in one lookup.
+func (s *Service) ExistingIDs(ctx context.Context, ids []string) ([]string, error) {
+	return s.d.Repository.ExistingAccountIDs(ctx, ids)
+}
+
 // RemoteInbox is where a remote actor receives activities, from the newest snapshot of its
 // document.
 type RemoteInbox struct {

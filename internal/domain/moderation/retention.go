@@ -19,7 +19,10 @@ import (
 //     (warn, delete_statuses) ends when it is issued; one without an end that is not lifted
 //     (a ban, an indefinite suspension) stays while it is in effect, and so does one whose
 //     appeal is pending;
-//   - an audit log entry: from when it was recorded.
+//   - an audit log entry: from when it was recorded;
+//   - a sign-up block: from its end, the earlier of its lift and its expiry, for the fixed
+//     SignupBlockRetention; one without an end that is not lifted stays while it is in effect,
+//     and a hold on the account whose ban made the block keeps it.
 
 // Default retention periods (the defaults of the instance settings retention_reports,
 // retention_moderation_actions, and retention_audit_log).
@@ -28,6 +31,10 @@ const (
 	DefaultActionRetention   = 365 * 24 * time.Hour
 	DefaultAuditLogRetention = 730 * 24 * time.Hour
 )
+
+// SignupBlockRetention is how long a sign-up block is kept after it ends (ADR-0038). It is not
+// an instance setting.
+const SignupBlockRetention = 30 * 24 * time.Hour
 
 // MaxRetentionHoldReason is the number of characters of the reason of a hold.
 const MaxRetentionHoldReason = 1000

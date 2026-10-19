@@ -205,7 +205,7 @@ describe("reporting from a post", () => {
     await user.type(await within(dialog).findByRole("textbox", { name: "Comment" }), "Impersonates me");
     await user.click(within(dialog).getByRole("button", { name: "Send report" }));
 
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent("The report was not sent: Too many reports in the last hour.");
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Could not send the report: Too many reports in the last hour.");
     expect(within(dialog).getByRole("textbox", { name: "Comment" })).toHaveValue("Impersonates me");
     expect(within(dialog).getByRole("heading", { name: "Anything else the moderators should know?" })).toBeInTheDocument();
   });
@@ -224,7 +224,7 @@ describe("reporting from a post", () => {
     await user.click(within(dialog).getByRole("radio", { name: "Spam" }));
     await user.click(within(dialog).getByRole("button", { name: "Next" }));
 
-    expect(await within(dialog).findByRole("heading", { name: "Couldn't load the posts" })).toBeInTheDocument();
+    expect(await within(dialog).findByRole("heading", { name: "Could not load the posts" })).toBeInTheDocument();
     expect(within(dialog).getByText("The server is busy.")).toBeInTheDocument();
     fails = false;
     await user.click(within(dialog).getByRole("button", { name: "Try again" }));

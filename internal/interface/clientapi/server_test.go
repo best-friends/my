@@ -106,7 +106,7 @@ func TestGetInstanceFromSettings(t *testing.T) {
 			instance.TextShortDescription: {"en": "A small instance."},
 		},
 	}
-	e := newAuthEnv(t, func(o *clientapi.Options) { o.Instance = fake })
+	e := newAuthEnv(t, func(o *clientapi.Options) { o.Instance, o.SendsEmail = fake, true })
 	for _, tt := range []struct {
 		name, acceptLanguage, token, wantName, wantCache string
 	}{
@@ -131,8 +131,8 @@ func TestGetInstanceFromSettings(t *testing.T) {
 			}
 			if got.Name != tt.wantName || got.ShortDescription == nil || *got.ShortDescription != "A small instance." ||
 				got.Description != nil || got.Limits.MaxPostCharacters != 1200 || got.Registrations.Mode != clientapi.InstanceRegistrationsModeInvite ||
-				got.Timelines != (clientapi.InstanceTimelines{Local: true, Federated: false}) {
-				t.Errorf("instance = %+v, want name %q and the stored settings", got, tt.wantName)
+				got.Timelines != (clientapi.InstanceTimelines{Local: true, Federated: false}) || !got.SendsEmail {
+				t.Errorf("instance = %+v, want name %q, the stored settings and email", got, tt.wantName)
 			}
 			if cc := res.Header.Get("Cache-Control"); cc != tt.wantCache {
 				t.Errorf("Cache-Control = %q, want %q", cc, tt.wantCache)

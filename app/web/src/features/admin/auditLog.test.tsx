@@ -9,6 +9,7 @@ import { accountFixture, type Schemas } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { auditTargetHref } from "./hooks/useAuditLog";
 import { operatorHandler } from "./test/handlers";
 
 beforeEach(() => {
@@ -38,6 +39,7 @@ const suspension: Schemas["AdminAuditEntry"] = {
   target_kind: "account",
   target_id: "0192f0c4-7a8e-7000-8000-000000000003",
   target_label: "@carol@remote.example",
+  target_exists: true,
   source_event_id: "0192f0c4-7a8e-7000-8000-0000000b0001",
   occurred_at: "2026-10-17T09:30:00Z",
 };
@@ -51,6 +53,7 @@ const domainLimit: Schemas["AdminAuditEntry"] = {
   target_kind: "domain",
   target_id: "spam.example",
   target_label: "spam.example",
+  target_exists: true,
   occurred_at: "2026-10-16T09:30:00Z",
 };
 
@@ -61,6 +64,7 @@ const settingByCli: Schemas["AdminAuditEntry"] = {
   target_kind: "setting",
   target_id: "registration_mode",
   target_label: "registration_mode",
+  target_exists: true,
   occurred_at: "2026-10-15T09:30:00Z",
 };
 
@@ -71,6 +75,8 @@ const byDeletedUser: Schemas["AdminAuditEntry"] = {
   target_kind: "report",
   target_id: "0192f0c4-7a8e-7000-8000-0000000c0001",
   target_label: "@dave",
+  // The report has been erased past its retention.
+  target_exists: false,
   occurred_at: "2026-10-14T09:30:00Z",
 };
 
@@ -136,7 +142,9 @@ describe("the audit log", () => {
     expect(setting.queryByRole("link", { name: /Show only operations by/ })).not.toBeInTheDocument();
     const resolved = within(row("Report resolved"));
     expect(resolved.getByText("A deleted account")).toBeInTheDocument();
-    expect(resolved.getByRole("link", { name: "@dave" })).toHaveAttribute("href", "/admin/reports/0192f0c4-7a8e-7000-8000-0000000c0001");
+    // An erased report has no screen to link to: its label only.
+    expect(resolved.getByText("@dave")).not.toHaveAttribute("href");
+    expect(resolved.queryByRole("link", { name: "@dave" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
     expect(requests).toEqual(["/admin/audit_log?limit=40", `/admin/audit_log?limit=40&cursor=${domainLimit.id}`]);
   });
@@ -264,7 +272,7 @@ describe("the audit log", () => {
     const { user, router } = await renderApp({ path: "/admin/audit-log" });
 
     await user.click(await screen.findByRole("button", { name: "Show more" }));
-    expect(await screen.findByText("Couldn’t load more operations")).toBeInTheDocument();
+    expect(await screen.findByText("Could not load more operations")).toBeInTheDocument();
     expect(screen.getByText("The database is unavailable.")).toBeInTheDocument();
     expect(rows()).toHaveLength(1);
     expect(router.state.location.search).toEqual({});
@@ -272,7 +280,7 @@ describe("the audit log", () => {
     fail = false;
     await user.click(screen.getByRole("button", { name: "Show more" }));
     expect(await screen.findByRole("heading", { level: 3, name: "Domain action taken" })).toBeInTheDocument();
-    expect(screen.queryByText("Couldn’t load more operations")).not.toBeInTheDocument();
+    expect(screen.queryByText("Could not load more operations")).not.toBeInTheDocument();
   });
 
   test("says when nothing has been recorded", async () => {
@@ -301,5 +309,21 @@ describe("the audit log", () => {
 
     expect(await screen.findByRole("heading", { level: 2, name: "You cannot use this screen" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Audit log" })).toBeInTheDocument();
+  });
+});
+
+describe("the link of an entry's target", () => {
+  test("goes to the admin screen of an account, a report or a domain while the target is there", () => {
+    expect(auditTargetHref({ target_kind: "account", target_id: "a1", target_exists: true })).toBe("/admin/accounts/a1");
+    expect(auditTargetHref({ target_kind: "report", target_id: "r1", target_exists: true })).toBe("/admin/reports/r1");
+    expect(auditTargetHref({ target_kind: "domain", target_id: "spam.example", target_exists: true })).toBe(
+      "/admin/domain-actions?filter=all&domain=spam.example",
+    );
+    expect(auditTargetHref({ target_kind: "setting", target_id: "registration_mode", target_exists: true })).toBeUndefined();
+  });
+
+  test("is not there for an account or a report that is gone", () => {
+    expect(auditTargetHref({ target_kind: "account", target_id: "a1", target_exists: false })).toBeUndefined();
+    expect(auditTargetHref({ target_kind: "report", target_id: "r1", target_exists: false })).toBeUndefined();
   });
 });

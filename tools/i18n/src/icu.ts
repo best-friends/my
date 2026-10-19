@@ -111,3 +111,15 @@ export function pluralCategories(ast: MessageFormatElement[], out: PluralUse[] =
   }
   return out;
 }
+
+/** The literal text of the message, every branch joined, without arguments or ICU syntax. */
+export function literalText(ast: MessageFormatElement[]): string {
+  let out = "";
+  for (const el of ast) {
+    if (el.type === TYPE.literal) out += el.value;
+    else if (el.type === TYPE.plural || el.type === TYPE.select) {
+      for (const o of Object.values(el.options)) out += `\n${literalText(o.value)}`;
+    } else if (el.type === TYPE.tag) out += literalText(el.children);
+  }
+  return out;
+}
