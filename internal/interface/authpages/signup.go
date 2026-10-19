@@ -85,6 +85,9 @@ func (h *Handler) renderSignUp(w http.ResponseWriter, r *http.Request, status in
 	if p.SignUp.Closed && status == http.StatusOK {
 		status = http.StatusForbidden
 	}
+	if !p.SignUp.Closed {
+		p.HumanCheck = h.humanCheck(w, r, p.L, kernel.HumanCheckActionSignUp)
+	}
 	h.render(w, r, status, pageSignUp, p)
 }
 
@@ -132,6 +135,7 @@ func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 		Username: f.Username, Email: f.Email, Password: password, Locale: locale,
 		InviteCode: f.InviteCode, Reason: f.Reason,
 		IP: clientIP(r), UserAgent: r.UserAgent(), CurrentToken: cookieValue(r, CookieSession),
+		HumanCheckToken: h.humanCheckToken(r),
 	})
 	if err != nil {
 		h.signUpFailed(w, r, p, err)
@@ -177,6 +181,12 @@ func (h *Handler) signUpFailed(w http.ResponseWriter, r *http.Request, p page, e
 	case errors.Is(err, appidentity.ErrRegistrationClosed):
 		f.Closed = true
 		status = http.StatusForbidden
+	case errors.Is(err, kernel.ErrHumanCheckFailed):
+		p.Error = l.ServerAuthHumanCheckFailed()
+	case errors.Is(err, kernel.ErrHumanCheckUnavailable):
+		// Registration fails closed while the service cannot check the token (ADR-0042 §4).
+		status = http.StatusServiceUnavailable
+		p.Error = l.ServerAuthHumanCheckUnavailable()
 	case errors.Is(err, appidentity.ErrSignUpRefused):
 		// The sign-up block list refused it; the page does not say which block or why (FR-719).
 		status = http.StatusForbidden

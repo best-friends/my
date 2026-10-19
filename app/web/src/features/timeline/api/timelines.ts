@@ -5,7 +5,7 @@
 // over the openapi-fetch client; the key follows openapi-react-query's `[method, path, init]` and ends with
 // "pages", so that it never collides with a plain query of the same operation (an infinite query caches
 // another shape of data).
-import { infiniteQueryOptions } from "@tanstack/react-query";
+import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
@@ -15,6 +15,12 @@ export type Status = components["schemas"]["Status"];
 
 /** A page of a timeline. */
 export type StatusPage = components["schemas"]["StatusPage"];
+
+/**
+ * A page of any timeline as its query caches it: the first page of a remote account's posts may also tell
+ * that it started fetching the account's recent posts from its server (AccountStatusPage, ADR-0044).
+ */
+export type TimelinePage = components["schemas"]["AccountStatusPage"];
 
 /**
  * Which posts of an account its profile lists (FR-204): its posts and boosts without replies (`posts`),
@@ -63,7 +69,7 @@ function timelineQueryKey(timeline: Timeline) {
 }
 
 /** Fetches one page of `timeline`; `cursor` is the previous page's `next_cursor`, or undefined for the first. */
-async function fetchTimelinePage(api: Api, timeline: Timeline, cursor: string | undefined, signal: AbortSignal): Promise<StatusPage> {
+async function fetchTimelinePage(api: Api, timeline: Timeline, cursor: string | undefined, signal: AbortSignal): Promise<TimelinePage> {
   const query = cursor === undefined ? {} : { cursor };
   const { data, error } = await (() => {
     switch (timeline.kind) {
@@ -111,5 +117,28 @@ export function timelineQueryOptions(api: Api, timeline: Timeline) {
     // refetch when the reader opens them again.
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+  });
+}
+
+/** Whether a timeline's first page started fetching its account's recent posts from the account's server (ADR-0044). */
+export function remoteFetchStarted(data: InfiniteData<TimelinePage>): boolean {
+  return data.pages[0]?.remote_fetch_started === true;
+}
+
+/**
+ * Reads the posts of a remote account again once its recent posts had time to arrive from its server
+ * (ADR-0044): every cached list of the account's posts is marked stale and the one shown is fetched again
+ * (S1). Then the shown timeline's first page forgets that it started the fetch, whether the read succeeded or
+ * not, so that the page is read again only once and a failure is not told. Resolves once that is done.
+ */
+export async function rereadRemoteAccountPosts(queryClient: QueryClient, api: Api, timeline: Extract<Timeline, { kind: "account" }>): Promise<void> {
+  // A partial key matches the account's posts with any filter (TanStack Query, "Query Filters").
+  await queryClient.invalidateQueries({ queryKey: ["get", "/accounts/{id}/statuses", { params: { path: { id: timeline.id } } }] });
+  queryClient.setQueryData(timelineQueryOptions(api, timeline).queryKey, (data) => {
+    const first = data?.pages[0];
+    if (data === undefined || first?.remote_fetch_started !== true) return data;
+    const page: TimelinePage = { ...first };
+    delete page.remote_fetch_started;
+    return { ...data, pages: [page, ...data.pages.slice(1)] };
   });
 }

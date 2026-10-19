@@ -8,6 +8,7 @@
 利用者は `https://<host>/auth/sign_up` で、ユーザー名・メールアドレス・パスワードを入力して登録します。
 登録すると、そのブラウザーはそのままログインした状態になります。
 画面は JavaScript なしで動き、ログイン画面と同じく CSRF トークンとクロスオリジン要求の拒否で守られます（ADR-0030）。
+ボット対策に CAPTCHA を選んだときは、登録とログインの画面にそのウィジェットを出し、JavaScript が要ります（[CAPTCHA](captcha.md)）。
 
 登録モードはインスタンス設定 `registration_mode` で選びます（[インスタンス設定](instance-settings.md)）。変更は次の登録から効きます。
 
@@ -105,11 +106,24 @@ my admin signup-block lift <block id>
 - 期限切れ・解除済みの拒否は効きません。追加と解除は監査ログ（`signup_block_added`・`signup_block_lifted`）に残ります。
 - ローカルアカウントの BAN で `-block-email`（API は `block_email: true`）を付けると、その利用者のメールアドレスの `email_hash` の拒否を同時に作ります。
 
+使い捨てメールのサービスのドメインのように数千件ある一覧は、`import` でファイル（`-` で標準入力）からまとめて足します。すべての値に同じ種類・強さ・コメント・期間が付きます。
+
+```sh
+my admin signup-block import -kind email_domain -comment "disposable email" disposable.txt
+```
+
+- 一覧は 1 行に 1 つの値（`add` の `<value>` と同じ形）か、最初の列を値とする CSV の行です。空行と `#` で始まる行は読み飛ばします。1 回に 10,000 件までです。
+- 足せた件数と、足さなかった行の番号・値・理由を表示します。理由は `invalid`（その種類の値として正しくない）、`duplicate`（同じ一覧の前の行と正規形が同じ）、`already_blocked`（同じ種類・値で、同じかより強い拒否が効いている）です。
+- 足した拒否は 1 件ずつ `add` と同じく監査ログ（`signup_block_added`）に残り、1 件ずつ解除できます。
+- 数百件ずつのトランザクションで書くので、途中で失敗しても、それまでに足した分は残ります。同じ一覧をもう一度読み込めば、残りだけが足されます。
+- 一覧はこのソフトウェアに同梱せず、URL からの定期的な取り込みもしません。公開の一覧（GitHub の disposable-email-domains など）の取得と更新は運営者が行い、更新した一覧をもう一度読み込みます。
+
 管理画面（クライアント API）からも同じ操作ができます。どれも `manage_accounts` 権限が要ります。
 
 | 操作 | 内容 |
 | --- | --- |
 | `GET /api/v1/admin/signup_blocks` | 拒否の一覧（新しい順）。`kind`・`active` で絞り込める |
 | `POST /api/v1/admin/signup_blocks` | 拒否を追加する。本文は `kind`・`value`・`severity`・`comment`・`expires_in`（秒） |
+| `POST /api/v1/admin/signup_blocks/import` | 一覧からまとめて追加する。本文は `kind`・`text`（一覧）・`severity`・`comment`・`expires_in`。応答は足した件数 `added` と足さなかった行 `skipped`（`line`・`value`・`reason`） |
 | `GET /api/v1/admin/signup_blocks/{id}` | 拒否を 1 件返す |
 | `POST /api/v1/admin/signup_blocks/{id}/lift` | 拒否を解除する。解除済みなら何も変えない |

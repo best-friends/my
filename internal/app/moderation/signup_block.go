@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"slices"
 	"strings"
 	"time"
 
@@ -45,6 +46,9 @@ type SignupBlockRepository interface {
 	// that may match a sign-up: the email_domain blocks of one of q.Domains, the email_hash
 	// blocks of q.EmailHash, and every ip_range block.
 	SignupBlocksInEffect(ctx context.Context, q SignupBlockMatch, now time.Time) ([]moderation.SignupBlock, error)
+	// SignupBlocksInEffectOf returns, inside tx, the blocks of kind in effect at now whose value
+	// is one of values.
+	SignupBlocksInEffectOf(ctx context.Context, tx uow.Tx, kind moderation.SignupBlockKind, values []string, now time.Time) ([]moderation.SignupBlock, error)
 }
 
 // SignupBlockQuery selects the blocks of a list.
@@ -120,6 +124,136 @@ func (s *Service) AddSignupBlock(ctx context.Context, in SignupBlockInput) (mode
 		return moderation.SignupBlock{}, err
 	}
 	return b, nil
+}
+
+// ErrTooManySignupBlocks reports an import of more than moderation.MaxSignupBlockImport values.
+var ErrTooManySignupBlocks = fmt.Errorf("moderation: more than %d values to import", moderation.MaxSignupBlockImport)
+
+// signupBlockImportChunk is the number of blocks that one transaction of an import writes, so
+// that an import of thousands of values keeps each transaction short.
+const signupBlockImportChunk = 500
+
+// SignupBlockImportInput is a moderator's list of sign-up blocks to add at once, such as a
+// public list of disposable email domains: every value gets the same kind, severity, comment,
+// and duration.
+type SignupBlockImportInput struct {
+	Kind moderation.SignupBlockKind
+	// Text is the list (moderation.ParseSignupBlockList): one value per line, in any of the forms
+	// SignupBlockInput.Value takes.
+	Text     string
+	Severity moderation.SignupBlockSeverity
+	Comment  string
+	// Duration is how long the blocks last; zero lasts until each is lifted.
+	Duration time.Duration
+	// CreatedByUserID is the moderator; "" for the CLI.
+	CreatedByUserID string
+}
+
+// SignupBlockImportSkipped is a line of an import whose block was not added, and why.
+type SignupBlockImportSkipped struct {
+	Line   int
+	Value  string // as written on the line
+	Reason moderation.SignupBlockSkip
+}
+
+// SignupBlockImportResult is what an import did: the number of blocks it added and the lines
+// it skipped, in line order.
+type SignupBlockImportResult struct {
+	Added   int
+	Skipped []SignupBlockImportSkipped
+}
+
+// ImportSignupBlocks adds a block for each value of a list, in effect at once, and audits each
+// addition like AddSignupBlock. It adds what it can: a value that is not valid for the kind, that
+// repeats an earlier line, or that a block in effect of the same kind with a severity at least as
+// strong already covers is skipped and reported. The blocks are written in transactions of a few
+// hundred, so a failure part way keeps the blocks of the transactions before it; importing the
+// same list again skips those as already blocked. It fails with an error wrapping
+// ErrInvalidSignupBlock for an invalid kind, severity, comment, or duration, and with
+// ErrTooManySignupBlocks for a list of more than moderation.MaxSignupBlockImport values.
+func (s *Service) ImportSignupBlocks(ctx context.Context, in SignupBlockImportInput) (SignupBlockImportResult, error) {
+	var res SignupBlockImportResult
+	switch {
+	case !in.Kind.Valid():
+		return res, fmt.Errorf("%w: kind %q", ErrInvalidSignupBlock, in.Kind)
+	case !in.Severity.Valid():
+		return res, fmt.Errorf("%w: severity %q", ErrInvalidSignupBlock, in.Severity)
+	case in.Duration < 0:
+		return res, fmt.Errorf("%w: a negative duration", ErrInvalidSignupBlock)
+	}
+	comment := strings.TrimSpace(in.Comment)
+	if err := moderation.CheckSignupBlockComment(comment); err != nil {
+		return res, err
+	}
+	entries := moderation.ParseSignupBlockList(in.Text)
+	if len(entries) > moderation.MaxSignupBlockImport {
+		return res, ErrTooManySignupBlocks
+	}
+	type pending struct {
+		entry moderation.SignupBlockListEntry
+		value string
+	}
+	seen := make(map[string]bool, len(entries))
+	var todo []pending
+	for _, e := range entries {
+		v, err := s.canonicalBlockValue(in.Kind, e.Value)
+		switch {
+		case err != nil || !moderation.ValidSignupBlockValue(in.Kind, v):
+			res.Skipped = append(res.Skipped, SignupBlockImportSkipped{Line: e.Line, Value: e.Value, Reason: moderation.SignupBlockSkipInvalid})
+		case seen[v]:
+			res.Skipped = append(res.Skipped, SignupBlockImportSkipped{Line: e.Line, Value: e.Value, Reason: moderation.SignupBlockSkipDuplicate})
+		default:
+			seen[v] = true
+			todo = append(todo, pending{entry: e, value: v})
+		}
+	}
+	for chunk := range slices.Chunk(todo, signupBlockImportChunk) {
+		now := kernel.Normalize(s.d.Clock.Now())
+		blocks := make([]moderation.SignupBlock, len(chunk))
+		auditIDs := make([]string, len(chunk))
+		values := make([]string, len(chunk))
+		for i, p := range chunk {
+			blocks[i] = moderation.SignupBlock{
+				ID: s.d.IDs.NewID(), Kind: in.Kind, Value: p.value, Severity: in.Severity, Comment: comment,
+				CreatedByUserID: in.CreatedByUserID, ExpiresAt: expiry(now, in.Duration), CreatedAt: now,
+			}
+			auditIDs[i] = s.d.IDs.NewID()
+			values[i] = p.value
+		}
+		var added int
+		var skipped []SignupBlockImportSkipped
+		err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			added, skipped = 0, nil
+			existing, err := s.d.Repository.SignupBlocksInEffectOf(ctx, tx, in.Kind, values, now)
+			if err != nil {
+				return err
+			}
+			covered := make(map[string]bool, len(existing))
+			for _, b := range existing {
+				if b.Severity.Stronger(in.Severity) == b.Severity {
+					covered[b.Value] = true
+				}
+			}
+			for i, b := range blocks {
+				if covered[b.Value] {
+					skipped = append(skipped, SignupBlockImportSkipped{Line: chunk[i].entry.Line, Value: chunk[i].entry.Value, Reason: moderation.SignupBlockSkipAlreadyBlocked})
+					continue
+				}
+				if err := s.insertSignupBlock(ctx, tx, b, auditIDs[i]); err != nil {
+					return err
+				}
+				added++
+			}
+			return nil
+		})
+		if err != nil {
+			return res, err
+		}
+		res.Added += added
+		res.Skipped = append(res.Skipped, skipped...)
+	}
+	slices.SortStableFunc(res.Skipped, func(a, b SignupBlockImportSkipped) int { return a.Line - b.Line })
+	return res, nil
 }
 
 // insertSignupBlock writes a block and its audit log entry inside tx.

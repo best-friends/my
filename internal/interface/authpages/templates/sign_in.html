@@ -12,7 +12,7 @@
 <label for="sign-in-password">{{.L.ServerAuthSignInPasswordLabel}}</label>
 <input id="sign-in-password" name="password" type="password" autocomplete="current-password" required{{if .Error}} aria-invalid="true" aria-describedby="sign-in-error"{{end}}>
 </div>
-<div class="actions">
+{{template "human_check" .}}<div class="actions">
 <button class="button" type="submit">{{.L.ServerAuthSignInSubmit}}</button>
 </div>
 </form>

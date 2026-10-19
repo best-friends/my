@@ -129,3 +129,29 @@ func (r *ModerationRepository) SignupBlocksInEffect(ctx context.Context, m appmo
 	}
 	return out, nil
 }
+
+// SignupBlocksInEffectOf implements moderation.SignupBlockRepository.
+func (r *ModerationRepository) SignupBlocksInEffectOf(ctx context.Context, tx uow.Tx, kind moderation.SignupBlockKind, values []string, now time.Time) ([]moderation.SignupBlock, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	if values == nil {
+		values = []string{}
+	}
+	list, err := jsonList(values)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListSignupBlocksInEffectOfValues(ctx, sqlitegen.ListSignupBlocksInEffectOfValuesParams{
+		Kind: string(kind), Vals: list, Now: toMillis(now),
+	})
+	if err != nil {
+		return nil, wrap(err, "list signup blocks in effect of values")
+	}
+	out := make([]moderation.SignupBlock, len(rows))
+	for i, row := range rows {
+		out[i] = signupBlockFrom(row)
+	}
+	return out, nil
+}

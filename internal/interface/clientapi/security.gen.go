@@ -96,6 +96,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/admin/rules/{id}/move":                       {Operation: "moveInstanceRule", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/rules/{id}/retire":                     {Operation: "retireInstanceRule", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/signup_blocks":                         {Operation: "createSignupBlock", Scopes: []string{"admin:write"}},
+	"POST /api/v1/admin/signup_blocks/import":                  {Operation: "importSignupBlocks", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/signup_blocks/{id}/lift":               {Operation: "liftSignupBlock", Scopes: []string{"admin:write"}},
 	"POST /api/v1/follow_requests/{id}/authorize":              {Operation: "acceptFollowRequest", Scopes: []string{"write:follows"}},
 	"POST /api/v1/follow_requests/{id}/reject":                 {Operation: "rejectFollowRequest", Scopes: []string{"write:follows"}},
