@@ -48,14 +48,15 @@ describe("the administration menu", () => {
     expect(within(menu).getByRole("link", { name: "Failed jobs" })).toHaveAccessibleDescription("Background jobs that failed for good, and running them again.");
   });
 
-  test("links to the audit log and the review of registrations for the permissions they need", async () => {
+  test("links to the audit log, the review of registrations and the appeals for the permissions they need", async () => {
     server.use(operatorHandler(["view_audit", "manage_accounts"]));
     await renderApp({ path: "/settings" });
 
     const menu = await screen.findByRole("region", { name: "Administration" });
-    expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/audit-log", "/admin/registrations"]);
+    expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/audit-log", "/admin/registrations", "/admin/appeals"]);
     expect(within(menu).getByRole("link", { name: "Audit log" })).toHaveAccessibleDescription("Who did what in the administration, and when.");
     expect(within(menu).getByRole("link", { name: "Registrations" })).toHaveAccessibleDescription("Sign-ups that await approval, and approving or rejecting them.");
+    expect(within(menu).getByRole("link", { name: "Appeals" })).toHaveAccessibleDescription("Review appeals of moderation actions and uphold or overturn them.");
   });
 });
 

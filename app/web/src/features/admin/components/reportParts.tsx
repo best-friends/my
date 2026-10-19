@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Pieces of the report queue and the report's page: an account as a row shows it (its display name and handle,
-// or that it is gone) and a moderator known by ID only (the one who handles a report, or wrote a note).
+// or that it is gone) and an account known by ID only (the moderator who handles a report or wrote a note, or the
+// user who appealed an action).
 import { useT } from "../../../lib/i18n";
 import type { Account } from "../../profile";
 import { useViewer } from "../../session";
@@ -36,10 +37,11 @@ export function AssigneeName({ id }: { id: string }) {
   const t = useT();
   const viewer = useViewer();
   if (viewer.status === "signed-in" && viewer.account.id === id) return t("client:admin.report.assignee.you");
-  return <OtherModerator id={id} />;
+  return <AccountByIdLabel id={id} />;
 }
 
-function OtherModerator({ id }: { id: string }) {
+/** An account known by ID only (a moderator, or the user who appealed): its name once loaded, or that it is gone. */
+export function AccountByIdLabel({ id }: { id: string }) {
   const t = useT();
   const account = useAccountById(id);
   switch (account.status) {

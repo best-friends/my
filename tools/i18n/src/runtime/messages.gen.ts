@@ -220,6 +220,104 @@ export interface MessageArgs {
   "client:admin.account_actions.submit_and_resolve": {};
   /** Use at most {max, number} characters */
   "client:admin.account_actions.too_long": { max: number };
+  /** Account */
+  "client:admin.appeal.account": {};
+  /** Open the account in the admin screens */
+  "client:admin.appeal.account.admin": {};
+  /** Action state */
+  "client:admin.appeal.action_state": {};
+  /** Action */
+  "client:admin.appeal.action.kind": {};
+  /** Lifted */
+  "client:admin.appeal.action.lifted_at": {};
+  /** Open the report */
+  "client:admin.appeal.action.report": {};
+  /** Moderation action */
+  "client:admin.appeal.action.title": {};
+  /** Another moderator already reviewed this appeal. That decision stands. */
+  "client:admin.appeal.already_decided": {};
+  /** Appeal */
+  "client:admin.appeal.appeal.title": {};
+  /** Back to appeals */
+  "client:admin.appeal.back": {};
+  /** Cancel */
+  "client:admin.appeal.cancel": {};
+  /** The action “{kind}” is lifted now. Deleted posts stay deleted. The decision cannot be changed afterwards. */
+  "client:admin.appeal.confirm_overturn.description": { kind: string };
+  /** The ban is lifted now and the account is no longer deleted. The decision cannot be changed afterwards. */
+  "client:admin.appeal.confirm_overturn.description_ban": {};
+  /** Overturn this appeal? */
+  "client:admin.appeal.confirm_overturn.title": {};
+  /** The action “{kind}” stays. The decision cannot be changed afterwards. */
+  "client:admin.appeal.confirm_uphold.description": { kind: string };
+  /** Uphold this appeal? */
+  "client:admin.appeal.confirm_uphold.title": {};
+  /** Could not save the decision: {reason} */
+  "client:admin.appeal.decide_failed": { reason: string };
+  /** Reviewed */
+  "client:admin.appeal.decided_at": {};
+  /** Reviewed by */
+  "client:admin.appeal.decided_by": {};
+  /** The command line */
+  "client:admin.appeal.decided_by.cli": {};
+  /** Decision */
+  "client:admin.appeal.decision": {};
+  /** Explanation to the user */
+  "client:admin.appeal.decision_reason": {};
+  /** Upholding keeps the action. Overturning lifts it. The user is told of the decision, with your explanation. */
+  "client:admin.appeal.decision.description": {};
+  /** Review */
+  "client:admin.appeal.decision.title": {};
+  /** None */
+  "client:admin.appeal.none": {};
+  /** Overturn */
+  "client:admin.appeal.overturn": {};
+  /** The appeal is overturned and the action is lifted. */
+  "client:admin.appeal.overturned": {};
+  /** The appeal is overturned. The action had already ended. */
+  "client:admin.appeal.overturned_ended": {};
+  /** Explanation to the user */
+  "client:admin.appeal.reason": {};
+  /** Optional. The user who appealed sees it with the decision. */
+  "client:admin.appeal.reason.description": {};
+  /** Use at most {max, number} characters */
+  "client:admin.appeal.reason.too_long": { max: number };
+  /** State */
+  "client:admin.appeal.state": {};
+  /** Appealed */
+  "client:admin.appeal.submitted_at": {};
+  /** What the user wrote */
+  "client:admin.appeal.text": {};
+  /** Appeal */
+  "client:admin.appeal.title": {};
+  /** The appeal is upheld. The action stays. */
+  "client:admin.appeal.upheld": {};
+  /** Uphold */
+  "client:admin.appeal.uphold": {};
+  /** No appeals have been reviewed yet */
+  "client:admin.appeals.empty.decided": {};
+  /** No appeals await review */
+  "client:admin.appeals.empty.pending": {};
+  /** Appeals that users make of the actions on their accounts appear here. */
+  "client:admin.appeals.empty.pending.description": {};
+  /** Reviewed */
+  "client:admin.appeals.filter.decided": {};
+  /** Appeals by state */
+  "client:admin.appeals.filter.label": {};
+  /** Awaiting review */
+  "client:admin.appeals.filter.pending": {};
+  /** Appeal of {kind} */
+  "client:admin.appeals.of": { kind: string };
+  /** Overturned */
+  "client:admin.appeals.state.overturned": {};
+  /** Awaiting review */
+  "client:admin.appeals.state.pending": {};
+  /** Upheld */
+  "client:admin.appeals.state.upheld": {};
+  /** Review appeals of moderation actions and uphold or overturn them. */
+  "client:admin.appeals.summary": {};
+  /** Appeals */
+  "client:admin.appeals.title": {};
   /** Account action taken */
   "client:admin.audit_log.action.account_action_issued": {};
   /** Account action lifted */
