@@ -32,13 +32,18 @@ export const Default: Story = {
 
 /** In place of a region headed by an h2, the message is an h3. */
 export const InARegion: Story = {
-  args: { headingLevel: 3 },
-  render: (args) => (
+  render: () => (
     <section aria-labelledby="region-error-replies" className="flex flex-col gap-4">
       <h2 id="region-error-replies" className="text-lg font-semibold">
         Replies
       </h2>
-      <RegionError {...args} heading="Couldn't load the replies" />
+      <RegionError
+        heading="Couldn't load the replies"
+        headingLevel={3}
+        reason="The server took too long to answer."
+        retryLabel="Try again"
+        onRetry={fn()}
+      />
     </section>
   ),
   play: async ({ canvas }) => {
