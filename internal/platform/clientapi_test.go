@@ -52,8 +52,8 @@ func TestClientAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	if info.Domain != "example.test" || info.Name != "example.test" || info.Version != "1.2.3" ||
-		info.Limits.MaxPostCharacters != 500 || info.Registrations.Mode != clientapi.InstanceRegistrationsModeApproval {
-		t.Errorf("instance = %+v, want example.test, version 1.2.3, the default settings", info)
+		info.Limits.MaxPostCharacters != 500 || info.Registrations.Mode != clientapi.InstanceRegistrationsModeApproval || info.SendsEmail {
+		t.Errorf("instance = %+v, want example.test, version 1.2.3, the default settings, no email (mail = none)", info)
 	}
 	for k, want := range map[string]string{
 		"Access-Control-Allow-Origin":   webOrigin,

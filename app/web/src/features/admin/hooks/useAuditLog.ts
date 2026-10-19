@@ -60,9 +60,11 @@ export const auditActorKindLabels: Readonly<Record<AuditActorKind, ClientMessage
 
 /**
  * The admin screen of an operation's target, where it has one; an account, a report or a domain. The other kinds
- * of target (settings, rules, registrations) have no screen of their own, so their entries show the label only.
+ * of target (settings, rules, registrations) have no screen of their own, and a target that is gone (erased past
+ * its retention) has nothing left to show, so their entries show the label only.
  */
-export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_id">): string | undefined {
+export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_id" | "target_exists">): string | undefined {
+  if (!entry.target_exists) return undefined;
   const id = encodeURIComponent(entry.target_id);
   switch (entry.target_kind) {
     case "account":

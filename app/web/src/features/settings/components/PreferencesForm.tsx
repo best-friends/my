@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Checkbox, Radio, RadioGroup, Select, SelectItem } from "@my/ui";
+import { Checkbox, Radio, RadioGroup, Select, SelectItem, Switch } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useDisplaySettings } from "../../../lib/locale";
 import type { Visibility } from "../api/me";
 import { displayLanguageOf, displayLanguageOptions, timelineLanguageOptions } from "../hooks/languages";
+import { useModeratorEmail } from "../hooks/useModeratorEmail";
 import { useTimeZoneOptions } from "../hooks/timeZones";
 import { type PreferenceControl, usePreferences } from "../hooks/usePreferences";
 
@@ -20,7 +21,7 @@ const visibilities: readonly { id: Visibility; label: ClientMessageKey; descript
 /** The preferences: every control saves its value as soon as it changes. */
 export function PreferencesForm() {
   const t = useT();
-  const { locale, timeZone, defaultVisibility, timelineLanguages } = usePreferences();
+  const { locale, timeZone, defaultVisibility, timelineLanguages, emailModeratorNotifications } = usePreferences();
   return (
     <div className="flex flex-col gap-8">
       <p className="text-fg-muted">{t("client:settings.preferences.autosave")}</p>
@@ -44,7 +45,39 @@ export function PreferencesForm() {
         ))}
       </RadioGroup>
       <TimelineLanguages control={timelineLanguages} />
+      <ModeratorNotifications control={emailModeratorNotifications} />
     </div>
+  );
+}
+
+/**
+ * The moderator notifications, for a viewer whose roles get them: a switch that also sends them by email
+ * (the APG switch pattern), or why they come only in the app when the server sends no email.
+ */
+function ModeratorNotifications({ control }: { control: PreferenceControl<boolean> }) {
+  const t = useT();
+  const headingId = useId();
+  const email = useModeratorEmail(control);
+  if (email.status === "hidden") return null;
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <h2 id={headingId} className="text-lg font-semibold">
+        {t("client:settings.moderator_notifications.title")}
+      </h2>
+      {email.status === "no-email" ? (
+        <p className="text-sm text-fg-muted">{t("client:settings.moderator_notifications.no_email")}</p>
+      ) : (
+        <Switch
+          isSelected={email.control.value}
+          onChange={email.control.onChange}
+          description={t("client:settings.moderator_notifications.email.description")}
+          isInvalid={email.control.error !== undefined}
+          errorMessage={email.control.error}
+        >
+          {t("client:settings.moderator_notifications.email")}
+        </Switch>
+      )}
+    </section>
   );
 }
 

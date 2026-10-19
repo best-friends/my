@@ -23,8 +23,10 @@ import (
 // blocks in effect only (neither lifted nor expired) by the domain of its email address and its
 // parents, the hash of its canonical address, and the IP range of its client, the strongest
 // severity wins, a lift is recorded once, a ban can add the block of the banned user's email
-// address in its transaction, the blocks list newest first with their lifts and filters, and
-// every addition and lift is audited once.
+// address in its transaction, the blocks list newest first with their lifts and filters, every
+// addition and lift is audited once, and the purge of the moderation records erases a block with
+// its lift moderation.SignupBlockRetention after it ends (the earlier of its lift and expiry),
+// keeps one in effect and one made by the ban of a held account, and is safe to repeat.
 func SignupBlockContract(t *testing.T, newHarness ModerationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -36,6 +38,7 @@ func SignupBlockContract(t *testing.T, newHarness ModerationFactory) {
 		{"LiftsOnceAndAudits", signupBlocksLiftAndAudit},
 		{"BanBlocksTheEmailAddress", signupBlocksFromBan},
 		{"ListsWithFiltersAndPages", signupBlocksList},
+		{"PurgesAfterTheyEnd", signupBlocksPurge},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newSignupBlockEnv(t, newHarness)) })
@@ -307,5 +310,101 @@ func signupBlocksList(t *testing.T, e *signupBlockEnv) {
 	check("page", appmoderation.SignupBlockFilter{Before: all[2].ID}, 1, all[1])
 	if _, err := e.svc.SignupBlocks(ctx, appmoderation.SignupBlockFilter{Kind: "email"}, 10); !errors.Is(err, appmoderation.ErrInvalidQuery) {
 		t.Errorf("SignupBlocks(unknown kind) = %v, want ErrInvalidQuery", err)
+	}
+}
+
+func signupBlocksPurge(t *testing.T, e *signupBlockEnv) {
+	ctx := t.Context()
+	start := e.clock.Now()
+	purge := func(want appmoderation.PurgedRecords) {
+		t.Helper()
+		got, err := e.svc.PurgeRecords(ctx)
+		if err != nil || got != want {
+			t.Errorf("PurgeRecords at %v = %+v, %v; want %+v", e.clock.Now().Sub(start), got, err, want)
+		}
+	}
+	lifted := e.add(t, appmoderation.SignupBlockInput{Kind: moderation.SignupBlockEmailDomain, Value: "lifted.example"})
+	if err := e.svc.LiftSignupBlock(ctx, lifted.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	expiring := e.add(t, appmoderation.SignupBlockInput{Kind: moderation.SignupBlockEmailDomain, Value: "expiring.example", Duration: 24 * time.Hour})
+	// Lifted after it expired, it ended when it expired.
+	expiredFirst := e.add(t, appmoderation.SignupBlockInput{Kind: moderation.SignupBlockIPRange, Value: "192.0.2.0/24", Duration: time.Hour})
+	indefinite := e.add(t, appmoderation.SignupBlockInput{Kind: moderation.SignupBlockEmailDomain, Value: "spam.example"})
+	// The block of a banned account's address stays while a hold preserves the account.
+	if _, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+		TargetAccountID: e.local, Kind: moderation.ActionBan, ReasonCategory: moderation.CategorySpam, BlockEmail: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	vs, err := e.svc.SignupBlocks(ctx, appmoderation.SignupBlockFilter{Kind: moderation.SignupBlockEmailHash}, 10)
+	if err != nil || len(vs) != 1 {
+		t.Fatalf("SignupBlocks(email_hash) = %+v, %v; want the ban's block", vs, err)
+	}
+	banned := vs[0].Block
+	if err := e.svc.LiftSignupBlock(ctx, banned.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	hold, err := e.svc.PlaceRetentionHold(ctx, e.local, "court order", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.clock.Advance(48 * time.Hour)
+	if err := e.svc.LiftSignupBlock(ctx, expiredFirst.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	kept := func(bs ...moderation.SignupBlock) {
+		t.Helper()
+		for _, b := range bs {
+			if _, err := e.svc.SignupBlock(ctx, b.ID); err != nil {
+				t.Errorf("SignupBlock(%s) = %v; want it kept", b.Value, err)
+			}
+		}
+	}
+	purged := func(bs ...moderation.SignupBlock) {
+		t.Helper()
+		for _, b := range bs {
+			if _, err := e.svc.SignupBlock(ctx, b.ID); !errors.Is(err, appmoderation.ErrNotFound) {
+				t.Errorf("SignupBlock(%s) = %v; want ErrNotFound", b.Value, err)
+			}
+		}
+	}
+
+	// Within the retention of the earliest end, nothing goes.
+	e.clock.Set(start.Add(moderation.SignupBlockRetention - time.Minute))
+	purge(appmoderation.PurgedRecords{})
+	kept(lifted, expiring, expiredFirst, indefinite, banned)
+	// Past it, the blocks that ended then go; the one that expires later, the one in effect, and
+	// the held one stay.
+	e.clock.Set(start.Add(moderation.SignupBlockRetention + 2*time.Hour))
+	purge(appmoderation.PurgedRecords{SignupBlocks: 2})
+	purged(lifted, expiredFirst)
+	kept(expiring, indefinite, banned)
+	e.clock.Set(start.Add(moderation.SignupBlockRetention + 25*time.Hour))
+	purge(appmoderation.PurgedRecords{SignupBlocks: 1})
+	purged(expiring)
+	purge(appmoderation.PurgedRecords{})
+	// Released, the held block goes at the next run; the block in effect still screens.
+	if _, _, err := e.svc.ReleaseRetentionHold(ctx, hold.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	purge(appmoderation.PurgedRecords{SignupBlocks: 1})
+	purged(banned)
+	kept(indefinite)
+	e.screen(t, "a@spam.example", "", moderation.SignupReject)
+	purge(appmoderation.PurgedRecords{})
+	// The lifts went with their blocks: the lift of a purged block is recorded anew (and undone
+	// by failing the transaction).
+	errUndo := errors.New("undo")
+	err = e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		for _, b := range []moderation.SignupBlock{lifted, expiredFirst, banned} {
+			if err := e.h.Moderation.InsertSignupBlockLift(ctx, tx, moderation.SignupBlockLift{BlockID: b.ID, LiftedAt: e.clock.Now()}); err != nil {
+				t.Errorf("InsertSignupBlockLift(purged %s) = %v; want its lift purged", b.Value, err)
+			}
+		}
+		return errUndo
+	})
+	if !errors.Is(err, errUndo) {
+		t.Fatal(err)
 	}
 }

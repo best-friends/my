@@ -2181,6 +2181,12 @@ export interface components {
             source_url: string;
             limits: components["schemas"]["InstanceLimits"];
             timelines: components["schemas"]["InstanceTimelines"];
+            /**
+             * @description Whether the instance sends email (the server setting `mail` is not `none`). Without
+             *     email, the moderator notifications come only in the app, so clients do not offer
+             *     the preference `email_moderator_notifications`.
+             */
+            sends_email: boolean;
             /** @description The rules in effect, in order, each in the locale of the request. */
             rules: components["schemas"]["InstanceRule"][];
         };
@@ -2945,8 +2951,8 @@ export interface components {
             /** @description Whether clients ask for a description before posting media without one. */
             require_media_description: boolean;
             /**
-             * @description Whether the moderator notifications (`admin_report`, `admin_sign_up`) also come by
-             *     email, to the primary address. Off for a new user.
+             * @description Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
+             *     also come by email, to the primary address. Off for a new user.
              */
             email_moderator_notifications: boolean;
             /** @description The languages that timelines show, sorted; empty shows every language. */
@@ -3098,6 +3104,13 @@ export interface components {
              *     kind and value (`email_domain spam.example`); up to 512 characters.
              */
             target_label: string;
+            /**
+             * @description Whether the target is still there to look at. It is `false` for an account, a report,
+             *     an appeal, or a sign-up block that is gone (erased past its retention), which only
+             *     `target_label` names now. It is `true` for the other kinds of targets, which are
+             *     never erased.
+             */
+            target_exists: boolean;
             /**
              * @description The ID of the record of the operation (the domain action, the assignment, the
              *     resolution, the reopening, the note, the decision, the revision), which holds its

@@ -3,7 +3,8 @@
 // administrators, newest first. The kind of operation and the kind of target are selects (React Aria Select, the
 // WAI-ARIA APG select-only combobox); one actor and one target are chosen from a row's links. The route keeps the
 // filters and the number of loaded pages in the address (web-client.md S3). Each row links to its target's admin
-// screen where that kind of target has one, and shows the label recorded with the operation otherwise.
+// screen where that kind of target has one and the target is still there, and shows the label recorded with the
+// operation otherwise.
 import { DescriptionItem, DescriptionList, EmptyState, Link, RegionError, Select, SelectItem } from "@my/ui";
 import { type RefObject, useEffect, useRef } from "react";
 import { useT } from "../../../lib/i18n";
@@ -231,7 +232,7 @@ function AuditEntryRow({ entry, filter, filterHref }: AuditEntryRowProps) {
   );
 }
 
-/** The target as it was named when the operation happened, linking to its admin screen where it has one. */
+/** The target as it was named when the operation happened, linking to its admin screen while it has one. */
 function AuditTarget({ entry }: { entry: AuditEntry }) {
   const href = auditTargetHref(entry);
   const label = entry.target_kind === "domain" ? <DomainName domain={entry.target_id} /> : <span dir="auto">{entry.target_label}</span>;

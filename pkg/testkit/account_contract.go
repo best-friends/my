@@ -408,6 +408,15 @@ func accountReportsMissing(t *testing.T, e *accountEnv) {
 	if _, _, err := e.h.Identity.FindRole(ctx, "nope"); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("FindRole(nope) = %v, want ErrNotFound", err)
 	}
+	// ExistingIDs keeps the accounts that exist, in ID order, in one lookup.
+	reg := e.register(t, "erin")
+	got, err := e.accounts.ExistingIDs(ctx, []string{reg.AccountID, missing, reg.AccountID})
+	if err != nil || !reflect.DeepEqual(got, []string{reg.AccountID}) {
+		t.Errorf("ExistingIDs = %v, %v; want [%s]", got, err, reg.AccountID)
+	}
+	if got, err := e.accounts.ExistingIDs(ctx, nil); err != nil || len(got) != 0 {
+		t.Errorf("ExistingIDs(nil) = %v, %v; want none", got, err)
+	}
 }
 
 func accountRevisesProfiles(t *testing.T, e *accountEnv) {

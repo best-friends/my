@@ -21,7 +21,7 @@ import (
 // notification modules.
 func (a *App) setUpModeratorNotifications(cfg *config.Config, repo notification.Repository, staff notification.Staff) {
 	deps := notification.ModeratorDeps{Repository: repo, Staff: staff, IDs: a.IDs}
-	if cfg.Mail != "none" && cfg.Mail != "" {
+	if sendsEmail(cfg) {
 		deps.Outbox = a.Outbox
 		if deps.Outbox == nil {
 			// The inline queue has no transactional enqueue.
@@ -33,6 +33,9 @@ func (a *App) setUpModeratorNotifications(cfg *config.Config, repo notification.
 	}
 	notification.RegisterModeratorProjectors(a.Projectors, deps)
 }
+
+// sendsEmail tells whether the instance sends email: mail is set and is not none.
+func sendsEmail(cfg *config.Config) bool { return cfg.Mail != "none" && cfg.Mail != "" }
 
 // moderatorStaff implements notification.Staff on the identity and account modules: the roles
 // of a local account's user and their preference for email.

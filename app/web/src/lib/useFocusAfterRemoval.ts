@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Shared by the lists whose actions take a row off them: the settings lists and the admin dead jobs.
+// Shared by the lists whose actions take a row off them (the settings lists, the admin dead jobs) or take the
+// pressed button off a row that stays (lifting a moderation action).
 import { type RefObject, useEffect, useRef } from "react";
 
 /**
@@ -26,5 +27,25 @@ export function useFocusAfterRemoval(list: RefObject<HTMLElement | null>, ids: r
 
   return (id) => {
     pendingRef.current = { id, index: ids.indexOf(id) };
+  };
+}
+
+/**
+ * Keeps focus when a lifted action stays in the list without its lift button: once the row has rendered
+ * without the button, focus moves to the row's heading (`h3`). Returns `lifted(id)`, to call when the action is lifted.
+ */
+export function useFocusHeadingAfterLift(list: RefObject<HTMLElement | null>): (id: string) => void {
+  const pendingRef = useRef<string | null>(null);
+  // Runs after every render: focus is moved in the DOM, outside React, once the button is gone.
+  useEffect(() => {
+    const id = pendingRef.current;
+    if (id === null) return;
+    const row = list.current?.querySelector<HTMLElement>(`[data-row-id="${id}"]`);
+    if (row?.querySelector("button") != null) return;
+    pendingRef.current = null;
+    row?.querySelector<HTMLElement>("h3")?.focus();
+  });
+  return (id) => {
+    pendingRef.current = id;
   };
 }

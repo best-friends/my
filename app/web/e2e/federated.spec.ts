@@ -65,6 +65,7 @@ function instance(federated: boolean): Instance {
     registrations: { mode: "open" },
     limits: { max_post_characters: 500 },
     timelines: { local: true, federated },
+    sends_email: false,
     rules: [],
   };
 }

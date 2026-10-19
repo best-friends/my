@@ -19,6 +19,7 @@ const pages: readonly { href: string; permission: Permission; label: ClientMessa
   { href: "/admin/dead-jobs", permission: "manage_jobs", label: "client:admin.dead_jobs.title", description: "client:admin.dead_jobs.summary" },
   { href: "/admin/audit-log", permission: "view_audit", label: "client:admin.audit_log.title", description: "client:admin.audit_log.summary" },
   { href: "/admin/registrations", permission: "manage_accounts", label: "client:admin.registrations.title", description: "client:admin.registrations.summary" },
+  { href: "/admin/accounts", permission: "manage_accounts", label: "client:admin.accounts.title", description: "client:admin.accounts.summary" },
   { href: "/admin/reports", permission: "manage_reports", label: "client:admin.reports.title", description: "client:admin.reports.summary" },
   { href: "/admin/appeals", permission: "manage_accounts", label: "client:admin.appeals.title", description: "client:admin.appeals.summary" },
 ];

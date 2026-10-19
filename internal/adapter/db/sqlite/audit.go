@@ -4,6 +4,7 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
@@ -43,6 +44,33 @@ func (r *ModerationRepository) ListAuditEntries(ctx context.Context, q appmodera
 			TargetID: row.TargetID, TargetLabel: row.TargetLabel, SourceEventID: row.SourceEventID.String,
 			OccurredAt: fromMillis(row.OccurredAt),
 		}
+	}
+	return out, nil
+}
+
+// ExistingAuditTargets implements moderation.AuditRepository.
+func (r *ModerationRepository) ExistingAuditTargets(ctx context.Context, kind moderation.AuditTargetKind, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	list, err := jsonList(ids)
+	if err != nil {
+		return nil, err
+	}
+	q := r.db.reader()
+	var out []string
+	switch kind {
+	case moderation.AuditTargetReport:
+		out, err = q.ListExistingReportIDs(ctx, list)
+	case moderation.AuditTargetAppeal:
+		out, err = q.ListExistingAppealIDs(ctx, list)
+	case moderation.AuditTargetSignupBlock:
+		out, err = q.ListExistingSignupBlockIDs(ctx, list)
+	default:
+		return nil, fmt.Errorf("sqlite: the existence of %s targets is not recorded here", kind)
+	}
+	if err != nil {
+		return nil, wrap(err, "list existing "+string(kind)+" targets")
 	}
 	return out, nil
 }
