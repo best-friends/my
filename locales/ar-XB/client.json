@@ -240,7 +240,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.account.actions.lift_failed": {
-    "defaultMessage": "‮⊥ɥǝ ɐɔʇıou ɔonʅp uoʇ qǝ ʅıɟʇǝp: {reason}‬",
+    "defaultMessage": "‮Ↄonʅp uoʇ ʅıɟʇ ʇɥǝ ɐɔʇıou: {reason}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.account.actions.lift_reason": {
@@ -308,7 +308,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.account.private.failed": {
-    "defaultMessage": "‮Ↄonʅpu'ʇ sɥoʍ ʇɥǝ ǝɯɐıʅ ɐup IԀ ɐppɹǝssǝs: {reason}‬",
+    "defaultMessage": "‮Ↄonʅp uoʇ sɥoʍ ʇɥǝ ǝɯɐıʅ ɐup IԀ ɐppɹǝssǝs: {reason}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.account.private.ip": {
@@ -772,7 +772,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.accounts.results.failed": {
-    "defaultMessage": "‮Ↄonʅpu'ʇ sǝɐɹɔɥ ʇɥǝ ɐɔɔonuʇs‬",
+    "defaultMessage": "‮Ↄonʅp uoʇ sǝɐɹɔɥ ʇɥǝ ɐɔɔonuʇs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.accounts.results.loading": {
@@ -780,7 +780,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.accounts.results.more_failed": {
-    "defaultMessage": "‮Ↄonʅpu'ʇ ʅoɐp ɯoɹǝ ɐɔɔonuʇs‬",
+    "defaultMessage": "‮Ↄonʅp uoʇ ʅoɐp ɯoɹǝ ɐɔɔonuʇs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.accounts.results.retry": {

@@ -240,7 +240,7 @@
     "description": "Accessible name of the button that lifts an account action; kind is the kind, date when it was taken."
   },
   "admin.account.actions.lift_failed": {
-    "defaultMessage": "The action could not be lifted: {reason}",
+    "defaultMessage": "Could not lift the action: {reason}",
     "description": "Error in the lift confirmation; reason is the server's localized message."
   },
   "admin.account.actions.lift_reason": {
@@ -308,7 +308,7 @@
     "description": "Term of the private data: the primary email address."
   },
   "admin.account.private.failed": {
-    "defaultMessage": "Couldn't show the email and IP addresses: {reason}",
+    "defaultMessage": "Could not show the email and IP addresses: {reason}",
     "description": "Toast when showing the email and IP addresses failed; reason is the server's localized message."
   },
   "admin.account.private.ip": {
@@ -772,7 +772,7 @@
     "description": "Term of an account in the search results: what its actions take away now."
   },
   "admin.accounts.results.failed": {
-    "defaultMessage": "Couldn't search the accounts",
+    "defaultMessage": "Could not search the accounts",
     "description": "Heading when the search of the accounts failed."
   },
   "admin.accounts.results.loading": {
@@ -780,7 +780,7 @@
     "description": "Label of the spinner while the accounts load."
   },
   "admin.accounts.results.more_failed": {
-    "defaultMessage": "Couldn't load more accounts",
+    "defaultMessage": "Could not load more accounts",
     "description": "Message when the next page of the accounts failed to load."
   },
   "admin.accounts.results.retry": {

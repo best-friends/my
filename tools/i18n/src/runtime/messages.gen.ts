@@ -244,7 +244,7 @@ export interface MessageArgs {
   "client:admin.account.actions.lift": {};
   /** Lift {kind}, taken {date} */
   "client:admin.account.actions.lift_action": { date: string; kind: string };
-  /** The action could not be lifted: {reason} */
+  /** Could not lift the action: {reason} */
   "client:admin.account.actions.lift_failed": { reason: string };
   /** Reason for lifting */
   "client:admin.account.actions.lift_reason": {};
@@ -278,7 +278,7 @@ export interface MessageArgs {
   "client:admin.account.private.description": {};
   /** Email address */
   "client:admin.account.private.email": {};
-  /** Couldn't show the email and IP addresses: {reason} */
+  /** Could not show the email and IP addresses: {reason} */
   "client:admin.account.private.failed": { reason: string };
   /** IP address */
   "client:admin.account.private.ip": {};
@@ -388,11 +388,11 @@ export interface MessageArgs {
   "client:admin.accounts.restriction.visibility_ceiling_private": {};
   /** Restrictions */
   "client:admin.accounts.restrictions": {};
-  /** Couldn't search the accounts */
+  /** Could not search the accounts */
   "client:admin.accounts.results.failed": {};
   /** Loading accounts */
   "client:admin.accounts.results.loading": {};
-  /** Couldn't load more accounts */
+  /** Could not load more accounts */
   "client:admin.accounts.results.more_failed": {};
   /** Try again */
   "client:admin.accounts.results.retry": {};
