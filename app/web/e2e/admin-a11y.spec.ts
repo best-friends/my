@@ -31,7 +31,7 @@ const moderator = {
   indexable: true,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_jobs"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_jobs", "manage_settings"],
 };
 
 /** The reported account: a long display name, local. */
@@ -273,10 +273,17 @@ async function moderatorServer(page: Page) {
       return json(route, { items: [{ id: "0192f0c4-7a8e-7000-8000-0000000000e1", kind: "marked_unavailable", reason: "failure_days", occurred_at: "2026-10-10T08:00:00Z" }] });
     }
     if (key === "GET /admin/dead_jobs") return json(route, { items: [deadJob] });
+    if (key === "GET /admin/instance/texts") return json(route, { items: instanceNames });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return issued;
 }
+
+/** The server's names: in English, and in Arabic (a language without a catalog), which reads right to left. */
+const instanceNames: Schemas["AdminInstanceText"][] = [
+  { key: "name", locale: "ar", text: "مثال", revised_at: "2026-10-16T00:00:00Z" },
+  { key: "name", locale: "en", text: "my example", revised_at: "2026-10-16T00:00:00Z" },
+];
 
 /**
  * Every admin screen, by the name of its route file in src/routes, with an address that opens it and a text of
@@ -296,6 +303,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string }>> = {
   "admin.instances": { path: "/admin/instances", ready: longDomain },
   "admin.instances_.$domain": { path: `/admin/instances/${longDomain}`, ready: longDomain },
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
+  "admin.settings": { path: "/admin/settings", ready: "my.example" },
 };
 
 test("the suite lists every admin route", () => {
