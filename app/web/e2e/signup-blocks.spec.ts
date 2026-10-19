@@ -1,0 +1,175 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// The sign-up blocks screen in every width × locale project (ADR-0027, FR-719): the blocks in effect with an
+// email domain in non-Latin letters shown in both of its forms and a long hash that wraps, adding a block on an
+// email domain with the keyboard, and lifting a block, each passing axe without scrolling sideways. `vite
+// preview` has no API, so each test plays the server of a signed-in moderator with page.route; names change
+// with the locale, so the structure is checked by role and the values the server sends.
+import type { Page, Route } from "@playwright/test";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+
+/** The signed-in moderator's account, as GET /accounts/verify_credentials answers, with manage_accounts. */
+const moderator = {
+  id: "0192f0c4-7a8e-7000-8000-000000000001",
+  username: "alice",
+  acct: "alice",
+  display_name: "Alice",
+  note: "",
+  fields: [],
+  url: "https://my.example/@alice",
+  locked: false,
+  bot: false,
+  created_at: "2026-10-01T00:00:00Z",
+  discoverable: true,
+  indexable: true,
+  source: { note: "", fields: [] },
+  posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
+  permissions: ["manage_accounts"],
+};
+
+// A long domain in non-Latin letters and its A-labels, to show that both forms wrap at 320 px.
+const unicodeDomain = "とても長い使い捨てのメール.例え.jp";
+const asciiDomain = new URL(`https://${unicodeDomain}`).hostname;
+const hash = "5d41402abc4b2a76b9719d911017c592ae0b4f1c7ad8e2c6f5a1b0e9d8c7b6a5";
+const longComment = "Disposable addresses used for many accounts that posted the same advertisement on the same day.";
+
+function json(route: Route, body: unknown, status = 200) {
+  return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
+}
+
+type Block = Record<string, unknown> & { id: string; value: string; state: string };
+
+/** Plays the admin API of a signed-in moderator; returns the blocks added and lifted. */
+async function moderatorServer(page: Page) {
+  const locale = test.info().project.use.locale ?? "en";
+  let blocks: Block[] = [
+    {
+      id: "0192f0c4-7a8e-7000-8000-0000000001a2",
+      kind: "email_domain",
+      value: asciiDomain,
+      severity: "reject",
+      comment: longComment,
+      state: "active",
+      created_at: "2026-10-12T08:00:00Z",
+      expires_at: "2026-11-11T08:00:00Z",
+    },
+    { id: "0192f0c4-7a8e-7000-8000-0000000001a1", kind: "email_hash", value: hash, severity: "require_approval", state: "active", created_at: "2026-10-11T08:00:00Z" },
+  ];
+  const requests: string[] = [];
+  await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow admin" }));
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const path = url.pathname.replace(/^\/api\/v1/, "");
+    if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
+    const key = `${request.method()} ${path}`;
+    if (key === "GET /instance") {
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, rules: [] });
+    }
+    if (key === "GET /accounts/verify_credentials") return json(route, moderator);
+    if (key === "GET /preferences") {
+      return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "und", require_media_description: false, timeline_languages: [] });
+    }
+    if (key === "GET /admin/counts") return json(route, { open_reports: 0, pending_registrations: 0, pending_appeals: 0 });
+    if (key === "GET /admin/audit_log") return json(route, { items: [] });
+    if (key === "GET /admin/signup_blocks") {
+      const active = url.searchParams.get("active") === "true";
+      return json(route, { items: blocks.filter((block) => !active || block.state === "active") });
+    }
+    if (key === "POST /admin/signup_blocks") {
+      const body = request.postDataJSON() as { kind: string; value: string; severity: string };
+      requests.push(`${key} ${body.kind} ${body.value} ${body.severity}`);
+      const value = body.kind === "email_domain" ? new URL(`https://${body.value}`).hostname : body.value;
+      const block: Block = { id: "0192f0c4-7a8e-7000-8000-0000000001a3", kind: body.kind, value, severity: body.severity, state: "active", created_at: "2026-10-17T00:00:00Z" };
+      blocks = [block, ...blocks];
+      return json(route, block);
+    }
+    const lift = /^POST \/admin\/signup_blocks\/([^/]+)\/lift$/.exec(key);
+    if (lift) {
+      requests.push(key);
+      const id = lift[1];
+      blocks = blocks.map((block) => (block.id === id ? { ...block, state: "lifted", lifted_at: "2026-10-17T01:00:00Z" } : block));
+      return json(route, blocks.find((block) => block.id === id));
+    }
+    return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
+  });
+  return requests;
+}
+
+test.describe("page /admin/signup-blocks", () => {
+  test.beforeEach(async ({ page }) => {
+    await moderatorServer(page);
+    await page.goto("/admin/signup-blocks");
+    await expect(page.getByRole("main").getByRole("heading", { level: 3 }).first()).toBeVisible();
+  });
+
+  test("has no axe violations", async ({ makeAxeBuilder }) => {
+    await expectNoAxeViolations(makeAxeBuilder);
+  });
+
+  test("does not scroll horizontally", async ({ page }) => {
+    await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("sign-up blocks", () => {
+  test("lists a block in both forms of its domain, adds a block on an email domain with the keyboard, and lifts a block", async ({ page, makeAxeBuilder }) => {
+    const requests = await moderatorServer(page);
+    await page.goto("/admin/signup-blocks");
+    const main = page.getByRole("main");
+    const list = main.getByRole("tabpanel");
+    await expect(list.getByRole("heading", { level: 3 })).toHaveCount(2);
+
+    await expect(list).toMatchAriaSnapshot(`
+      - tabpanel:
+        - list:
+          - listitem:
+            - heading /${unicodeDomain.replaceAll(".", "\\.")}.*${asciiDomain.replaceAll(".", "\\.")}/ [level=3]
+            - button
+            - term
+            - definition
+            - term
+            - definition
+            - term
+            - definition
+            - term
+            - definition:
+              - time
+            - term
+            - definition:
+              - time
+            - term
+            - definition
+            - term
+            - definition: ${longComment}
+          - listitem:
+            - heading "${hash}" [level=3]
+            - button
+    `);
+
+    // The form with the keyboard: the kind is the email domain already; type the domain, then Tab to the first
+    // effect of its radio group, which none is chosen in yet, and choose it with Space.
+    const domain = main.getByRole("textbox").first();
+    await domain.focus();
+    await page.keyboard.type("spam.example");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Space");
+    const effect = main.getByRole("radiogroup").nth(1).getByRole("radio").first();
+    await expect(effect).toBeChecked();
+    await main.locator('form button[type="submit"]').focus();
+    await page.keyboard.press("Enter");
+    await expect(main.getByRole("status").filter({ hasText: "spam.example" })).toBeVisible();
+    await expect(list.getByRole("heading", { level: 3, name: "spam.example" })).toBeVisible();
+    await expect(domain).toHaveValue("");
+    expect(requests).toEqual(["POST /admin/signup_blocks email_domain spam.example require_approval"]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    await list.getByRole("listitem").filter({ hasText: unicodeDomain }).getByRole("button").click();
+    await expect(list.getByRole("heading", { level: 3 })).toHaveCount(2);
+    // Focus moves to the button of the row that took the lifted one's place.
+    await expect(list.getByRole("listitem").filter({ hasText: hash }).getByRole("button")).toBeFocused();
+    expect(requests).toEqual(["POST /admin/signup_blocks email_domain spam.example require_approval", "POST /admin/signup_blocks/0192f0c4-7a8e-7000-8000-0000000001a2/lift"]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+});
