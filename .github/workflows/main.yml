@@ -168,11 +168,12 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
 
   web-e2e:
-    # Playwright E2E of the web client over the subset of the width × locale matrix, on every push to main;
-    # nightly.yml runs all of it (ADR-0040).
+    # Playwright E2E of the web client over the subset of the width × locale matrix, on every push to main, in
+    # 4 shards of one build; nightly.yml runs all of it (ADR-0040, ADR-0047).
     uses: ./.github/workflows/web-e2e.yml
     with:
       matrix: pr
+      shards: 4
 
   ui-test:
     needs: changes

@@ -21,6 +21,7 @@ jobs:
     uses: ./.github/workflows/web-e2e.yml
     with:
       matrix: full
+      shards: 8
 
   federation-live:
     uses: ./.github/workflows/federation-live.yml
