@@ -9,6 +9,8 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { viewerQueryOptions } from "../../session";
+import { adminAccountQueryOptions } from "../api/accounts";
+import { isAuditLogQuery, refreshQueries } from "../api/admin";
 import {
   accountRolesQueryOptions,
   type AdminRole,
@@ -101,8 +103,8 @@ export type RoleChanges = {
 /**
  * Granting and revoking the roles of local account `accountId`, whose handle (isolated) is `handle`. `onChanged()`
  * is called when the roles after a change are in the cache and the pressed button gives way to the other one.
- * The account's page and the searches are read again (their role keys), and the audit log, which records the
- * change; a change of the viewer's own roles also reads the viewer's permissions again.
+ * The account's page (its role keys) and the audit log, which records the change, are read again first; a change
+ * of the viewer's own roles also reads the viewer's permissions again.
  */
 export function useRoleChanges(accountId: string, handle: string, onChanged: () => void): RoleChanges {
   const api = useApi();
@@ -113,7 +115,15 @@ export function useRoleChanges(accountId: string, handle: string, onChanged: () 
   const [status, setStatus] = useState<string | undefined>(undefined);
   const mutation = useMutation({
     ...changeRoleMutation(api),
-    onSuccess: (roles: AdminRoleList, change) => {
+    onSuccess: async (roles: AdminRoleList, change) => {
+      // The account's page shows its role keys (the searches show none), and the audit log records the change: the
+      // change is done once they are fetched again (the confirmation stays pending until then), so that the audit
+      // log shows it at once (refreshQueries).
+      await refreshQueries(
+        queryClient,
+        { queryKey: adminAccountQueryOptions(api, accountId).queryKey },
+        { predicate: (query) => isAuditLogQuery(query.queryKey) },
+      );
       setDialog((current) => current && { ...current, isOpen: false });
       queryClient.setQueryData(accountRolesQueryOptions(api, accountId).queryKey, roles);
       const role = `⁦${change.role}⁩`;
@@ -121,12 +131,6 @@ export function useRoleChanges(accountId: string, handle: string, onChanged: () 
         change.kind === "grant" ? t("client:admin.account.roles.granted", { role, handle }) : t("client:admin.account.roles.revoked", { role, handle }),
       );
       onChanged();
-      void queryClient.invalidateQueries({
-        predicate: (query) => {
-          const path = query.queryKey[1];
-          return path === "/admin/accounts/{id}" || path === "/admin/accounts" || path === "/admin/audit_log";
-        },
-      });
       if (accountId === viewer.id) void queryClient.invalidateQueries({ queryKey: viewerQueryOptions(api).queryKey });
     },
     onError: (error) => {

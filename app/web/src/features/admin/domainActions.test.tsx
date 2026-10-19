@@ -3,7 +3,7 @@
 // actions, takes new ones (a suspension only after its confirmation), and lifts them, with MSW playing the
 // admin API. The server keeps domains in IDNA A-labels; the screen shows them with their U-labels.
 import { screen, waitFor, within } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { Schemas } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
@@ -139,6 +139,31 @@ describe("the list of domain actions", () => {
     expect(within(screen.getByRole("tabpanel")).getByText("Lifted")).toBeInTheDocument();
   });
 
+  // #471: a lift writes the lift into every cached list, so another tab never shows the action as it was.
+  test("after a lift, the other tab shows the action lifted at once, however slowly the lists come", async () => {
+    domainActionsServer([idn, limit]);
+    const { user } = await renderApp({ path: "/admin/domain-actions?filter=all" });
+    expect(await within(await screen.findByRole("tabpanel")).findByRole("heading", { level: 3, name: "spam.example" })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "In effect" }));
+    await user.click(await screen.findByRole("button", { name: /^Lift Limit for/ }));
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { level: 3, name: "spam.example" })).not.toBeInTheDocument();
+    });
+    // From now on every list takes a while; the handler falls through to domainActionsServer's.
+    server.use(
+      http.get(`${apiBase}/admin/domain_actions`, async () => {
+        await delay(300);
+      }),
+    );
+
+    await user.click(screen.getByRole("tab", { name: "All" }));
+    const panel = within(screen.getByRole("tabpanel"));
+    expect(await panel.findByRole("heading", { level: 3, name: "spam.example" })).toBeInTheDocument();
+    const row = panel.getAllByRole("listitem").find((item) => within(item).queryByRole("heading", { level: 3, name: "spam.example" }) !== null);
+    if (row === undefined) throw new Error("the lifted action is not listed");
+    expect(within(row).getByText("Lifted")).toBeInTheDocument();
+  });
+
   test("an action that cannot be lifted stays, and the failure says why", async () => {
     domainActionsServer([limit]);
     server.use(http.post(`${apiBase}/admin/domain_actions/:id/lift`, () => problem(503, "about:blank", "Service Unavailable")));
@@ -172,6 +197,32 @@ describe("a new domain action", () => {
     expect(screen.getByRole("textbox", { name: "Domain" })).toHaveValue("例え.jp");
     expect(screen.getByRole("radio", { name: "Limit" })).not.toBeChecked();
     expect(screen.getByRole("textbox", { name: "Public comment" })).toHaveValue("");
+  });
+
+  // #471: the other tab's list, shown from its cache as the route loads it, must not show the actions as they
+  // were before the new one while a slow server answers the list again.
+  test("is in the other tab's list at once, however slowly the lists come", async () => {
+    const api = domainActionsServer([limit, lifted]);
+    const { user } = await renderApp({ path: "/admin/domain-actions?filter=all" });
+    expect(await within(await screen.findByRole("tabpanel")).findByText("Lifted")).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "In effect" }));
+    await user.type(await screen.findByRole("textbox", { name: "Domain" }), "new.example");
+    await user.click(screen.getByRole("radio", { name: "Limit" }));
+    // From now on every list takes a while; the handler falls through to domainActionsServer's.
+    server.use(
+      http.get(`${apiBase}/admin/domain_actions`, async () => {
+        await delay(300);
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Take action" }));
+    expect(await screen.findByText(`Limit is in effect for ${isolated("new.example")}.`)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "All" }));
+    const panel = within(screen.getByRole("tabpanel"));
+    expect(await panel.findByText("Lifted")).toBeInTheDocument();
+    expect(panel.getByRole("heading", { level: 3, name: "new.example" })).toBeInTheDocument();
+    // Each list once as it was shown, and once more after the action, before the tab changed.
+    expect(api.lists.toSorted()).toEqual(["limit=40", "limit=40", "limit=40&active=true", "limit=40&active=true"]);
   });
 
   test("needs a domain and a kind before anything is sent", async () => {

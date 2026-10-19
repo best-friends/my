@@ -19,6 +19,7 @@ import {
   isDomainActionsQuery,
   liftDomainActionMutation,
   type NewDomainAction,
+  refreshDomainActionLists,
 } from "../api/admin";
 import { type PagedList, toPagedList } from "./pagedList";
 
@@ -134,7 +135,7 @@ export type DomainActionForm = {
 
 /**
  * The form of a new domain action, starting with `initialDomain`. A success empties the form (keeping the
- * domain, which the next action often shares), refreshes the lists and says what took effect.
+ * domain, which the next action often shares) and says what took effect once every cached list is fetched again.
  */
 export function useDomainActionForm(initialDomain: string): DomainActionForm {
   const api = useApi();
@@ -145,11 +146,13 @@ export function useDomainActionForm(initialDomain: string): DomainActionForm {
   const [status, setStatus] = useState<string | undefined>(undefined);
   const create = useMutation({
     ...createDomainActionMutation(api),
-    onSuccess: (action) => {
+    onSuccess: async (action) => {
+      // The action is in every list, of the other tabs and domains too: it is taken once they are fetched again
+      // (the form stays pending until then), so that another tab shows it at once (refreshDomainActionLists).
+      await refreshDomainActionLists(queryClient);
       setConfirming(false);
       setDraft(emptyDraft(draft.domain));
       setStatus(t("client:admin.domain_actions.issued", { kind: t(domainActionKindLabels[action.kind]), domain: domainInText(t, action.domain) }));
-      void queryClient.invalidateQueries({ predicate: (query) => isDomainActionsQuery(query.queryKey) });
     },
   });
   const run = () => {

@@ -32,7 +32,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行い、成功時にキャッシュを無効化または更新する。いま表示していない画面のクエリで、その画面のルートが loader で読むもの（S7 の `staleTime: "static"` は無効化の印を見ずにキャッシュをそのまま返す）は、`invalidateQueries({ ..., refetchType: "all" })` で取り直し、終わるのを待ってから書き込みを成功として表示する（例: `refreshReportLists`・`refreshAppealLists`） | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
+| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行い、成功時にキャッシュを無効化または更新する。いま表示していない画面のクエリで、その画面のルートが loader で読むもの（S7 の `staleTime: "static"` は無効化の印を見ずにキャッシュをそのまま返す）は、`invalidateQueries({ ..., refetchType: "all" })` で取り直し、終わるのを待ってから書き込みを成功として表示する（管理画面は `features/admin/api/admin.ts` の `refreshQueries` で行う。例: `refreshReportLists`・`refreshAppealLists`・`refreshAdminAccount`） | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
 | S2 | サーバーのデータを `useState`・Context・グローバルストアにコピーしない | レビュー |
 | S3 | 共有・リロード・戻る / 進むで保ちたい状態（タイムラインの種類・タブ・検索語・開いているメディア）は URL に置き、Zod で検証する | TanStack Router の型 |
 | S4 | 状態は使う場所の近くに置き、必要なときだけ最も近い共通の親に持ち上げる | レビュー |

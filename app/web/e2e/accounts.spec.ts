@@ -93,16 +93,27 @@ function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
 }
 
+/**
+ * How long the search takes once an action is lifted: a slow server, so that a search shown from its cache
+ * before the search comes again would show the account as it was (#471).
+ */
+const slowSearchMs = 1500;
+
 /** Plays the API of a signed-in moderator; returns the requests to the account operations. */
 async function moderatorServer(page: Page) {
   const locale = test.info().project.use.locale ?? "en";
   let actions = [limit];
+  let slowSearch = false;
   const requests: string[] = [];
-  const detail = (account: Schemas["AdminAccount"]): Schemas["AdminAccountDetail"] => ({
+  /** The account as it is now: limited while its action is in effect. */
+  const current = (account: Schemas["AdminAccount"]): Schemas["AdminAccount"] => ({
     ...account,
-    ...(account.local ? { registration: { submitted_at: "2026-10-01T00:00:00Z", state_changed_at: "2026-10-01T01:00:00Z" }, email_verified: true } : {}),
     state: account.local && actions.some((action) => action.state === "active") ? "limited" : "active",
     restrictions: account.local && actions.some((action) => action.state === "active") ? account.restrictions : [],
+  });
+  const detail = (account: Schemas["AdminAccount"]): Schemas["AdminAccountDetail"] => ({
+    ...current(account),
+    ...(account.local ? { registration: { submitted_at: "2026-10-01T00:00:00Z", state_changed_at: "2026-10-01T01:00:00Z" }, email_verified: true } : {}),
     roles: [],
     actions: [],
     reports: [],
@@ -123,7 +134,10 @@ async function moderatorServer(page: Page) {
       return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "und", require_media_description: false, timeline_languages: [] });
     }
     if (key === "GET /admin/counts") return json(route, {});
-    if (key === "GET /admin/accounts") return json(route, { items: [localAccount, remoteAccount] });
+    if (key === "GET /admin/accounts") {
+      if (slowSearch) await new Promise((resolve) => setTimeout(resolve, slowSearchMs));
+      return json(route, { items: [current(localAccount), current(remoteAccount)] });
+    }
     if (key === `GET /admin/accounts/${local.id}`) return json(route, detail(localAccount));
     if (key === `GET /admin/accounts/${remote.id}`) return json(route, detail(remoteAccount));
     if (key === `GET /admin/accounts/${local.id}/actions`) return json(route, { items: actions });
@@ -132,6 +146,7 @@ async function moderatorServer(page: Page) {
     if (key === `POST /admin/account_actions/${limit.id}/lift`) {
       const lifted: Schemas["AdminAccountAction"] = { ...limit, state: "lifted", lifted_at: "2026-10-17T00:00:00Z" };
       actions = [lifted];
+      slowSearch = true;
       return json(route, lifted);
     }
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
@@ -181,6 +196,7 @@ test.describe("accounts", () => {
     const requests = await moderatorServer(page);
     await page.goto("/admin/accounts");
     await expect(rows(page)).toHaveCount(2);
+    const limitedRow = await rows(page).first().textContent();
 
     await expect(rows(page).first()).toMatchAriaSnapshot(`
       - listitem:
@@ -249,6 +265,13 @@ test.describe("accounts", () => {
     await expect(page.locator("[data-exiting]")).toHaveCount(0);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+
+    // Back on the search, the account is no longer limited as soon as the results show, though the server
+    // answers the search slowly now: the results are not shown from a cache older than the lift.
+    await page.locator('main a[href="/admin/accounts"]').click();
+    await expect(page).toHaveURL(/\/admin\/accounts$/);
+    await expect(rows(page)).toHaveCount(2);
+    expect(await rows(page).first().textContent()).not.toBe(limitedRow);
   });
 
   test("offers a remote account only the kinds of action it takes, and no email or IP addresses", async ({ page, makeAxeBuilder }) => {

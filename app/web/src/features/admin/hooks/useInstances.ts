@@ -14,6 +14,7 @@ import {
   instanceQueryOptions,
   instancesQueryOptions,
   markAvailableMutation,
+  refreshInstanceLists,
 } from "../api/admin";
 import { type PagedList, toPagedList } from "./pagedList";
 
@@ -27,7 +28,7 @@ export function useInstances(filter: InstanceFilter): PagedList<InstanceHealth> 
 export type InstanceView = {
   health: InstanceHealth;
   events: PagedList<AvailabilityEvent>;
-  /** Clears the server's failures so that deliveries to it resume; the result is announced. */
+  /** Clears the server's failures so that deliveries to it resume; the result is announced once the lists have it. */
   markAvailable: () => void;
   isMarking: boolean;
   /** Whether there is anything for markAvailable to clear. */
@@ -44,11 +45,13 @@ export function useInstance(domain: string): InstanceView {
   const events = useSuspenseInfiniteQuery(availabilityEventsQueryOptions(api, domain));
   const mark = useMutation({
     ...markAvailableMutation(api),
-    onSuccess: (next) => {
+    onSuccess: async (next) => {
+      // The lists show the server's state: it is marked available once they are fetched again (the button stays
+      // pending until then), so that going back to a list shows the server as it is now (refreshInstanceLists).
+      await refreshInstanceLists(queryClient);
       queryClient.setQueryData(instanceQueryOptions(api, domain).queryKey, next);
       announce(t("client:admin.instance.marked_available", { domain }));
-      // The lists show the server's state, and the history has a new event.
-      void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/instances" });
+      // The history, on this page, has a new event.
       void queryClient.invalidateQueries({ queryKey: availabilityEventsQueryOptions(api, domain).queryKey });
     },
     // The server keeps its state; the failure is shown and the button stays (web-client.md E2).

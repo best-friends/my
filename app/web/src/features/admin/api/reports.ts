@@ -9,7 +9,7 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { pageQuery } from "./admin";
+import { pageQuery, refreshQueries } from "./admin";
 
 type Schemas = components["schemas"];
 
@@ -84,17 +84,12 @@ export function accountActionsQueryOptions(api: Api, accountId: string) {
 }
 
 /**
- * Fetches again, at once, what a change of a report changes: the lists of reports (it may move between the tabs)
- * and the moderators' counts of open reports, even those no page shows now (`refetchType: "all"`). A route loads
- * its list from the cache as it is (`staleTime: "static"`, web-client.md S7), so a list that was only marked
- * stale would show the report as it was until its refetch on mount ends: a resolved report in the open tab.
- * Resolves once every fetch has ended; one that fails leaves its list stale, to be fetched again when shown.
+ * Fetches again (refreshQueries) what a change of a report changes: the lists of reports (it may move between the
+ * tabs) and the moderators' counts of open reports. A list that was only marked stale would show the report as it
+ * was: a resolved report in the open tab.
  */
 export function refreshReportLists(queryClient: QueryClient): Promise<void> {
-  return queryClient.invalidateQueries({
-    predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts",
-    refetchType: "all",
-  });
+  return refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/reports" || query.queryKey[1] === "/admin/counts" });
 }
 
 /**

@@ -25,8 +25,8 @@ import {
   adminAccountsQueryOptions,
   type AdminAccountState,
   adminAccountStates,
-  isAdminAccountsQuery,
   liftAccountActionMutation,
+  refreshAdminAccount,
   revealAccountMutation,
 } from "../api/accounts";
 import { type AccountAction, accountActionsQueryOptions } from "../api/reports";
@@ -257,7 +257,7 @@ export type LiftAccountAction = {
 
 /**
  * Lifting the moderation actions on account `accountId`. `onLifted(action)` is called with the lifted action just
- * before its row loses its lift button (to keep focus); the account's state and restrictions are read again.
+ * before its row loses its lift button (to keep focus), once the account's state and restrictions are read again.
  */
 export function useLiftAccountAction(accountId: string, onLifted: (action: AccountAction) => void): LiftAccountAction {
   const api = useApi();
@@ -265,15 +265,17 @@ export function useLiftAccountAction(accountId: string, onLifted: (action: Accou
   const [dialog, setDialog] = useState<LiftDialog>(null);
   const mutation = useMutation({
     ...liftAccountActionMutation(api),
-    onSuccess: (lifted) => {
+    onSuccess: async (lifted) => {
+      // The account's state and restrictions change, in its page and in the searches: the action is lifted once
+      // they are fetched again (the confirmation stays pending until then), so that going back to a search shows
+      // the account as it is now (refreshAdminAccount). The row changes from the answer, after onLifted.
+      await refreshAdminAccount(queryClient, api, accountId, { actions: false });
       setDialog((current) => current && { ...current, isOpen: false });
       onLifted(lifted);
       queryClient.setQueryData<InfiniteData<{ items: AccountAction[] }>>(
         accountActionsQueryOptions(api, accountId).queryKey,
         (data) => data && { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.map((item) => (item.id === lifted.id ? lifted : item)) })) },
       );
-      // The account's state and restrictions change, in its page and in the searches.
-      void queryClient.invalidateQueries({ predicate: (query) => isAdminAccountsQuery(query.queryKey) && query.queryKey[1] !== "/admin/accounts/{id}/actions" });
     },
   });
   const isOpen = dialog?.isOpen ?? false;

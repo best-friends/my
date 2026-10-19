@@ -5,7 +5,7 @@
 // lists follow the API's keyset pagination (each page's `next_cursor` is the `cursor` of the next) as TanStack
 // Query infinite queries on the same client; their keys start like the client's own `[method, path]` and end
 // with "pages", so that they never collide with a plain query of the same operation (web-client.md §10).
-import { infiniteQueryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, type InvalidateQueryFilters, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
@@ -31,6 +31,17 @@ export function pageQuery(cursor: string | undefined): { limit: number; cursor?:
   return cursor === undefined ? { limit: pageSize } : { limit: pageSize, cursor };
 }
 
+/**
+ * Fetches again, at once, the cached queries that any of `filters` matches, even those no page shows now
+ * (`refetchType: "all"`). A route loads its query from the cache as it is (`staleTime: "static"`, web-client.md
+ * S7), so a query that a write only marked stale would show what it was before the write until its refetch on
+ * mount ends (web-client.md S1). A write is shown done once this resolves, after every fetch has ended; one that
+ * fails leaves its query stale, to be fetched again when shown.
+ */
+export async function refreshQueries(queryClient: QueryClient, ...filters: readonly Omit<InvalidateQueryFilters, "refetchType">[]): Promise<void> {
+  await Promise.all(filters.map((filter) => queryClient.invalidateQueries({ ...filter, refetchType: "all" })));
+}
+
 /** The remote servers with delivery failures or marked unavailable, in domain order (GET /admin/instances). */
 export function instancesQueryOptions(api: Api, filter: InstanceFilter) {
   const state = filter === "all" ? undefined : filter;
@@ -46,6 +57,11 @@ export function instancesQueryOptions(api: Api, filter: InstanceFilter) {
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.next_cursor,
   });
+}
+
+/** Fetches again every cached list of remote servers (refreshQueries): marking one available moves it between them. */
+export function refreshInstanceLists(queryClient: QueryClient): Promise<void> {
+  return refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/instances" });
 }
 
 /** The health of one remote server (GET /admin/instances/{domain}). */
@@ -161,6 +177,11 @@ export function domainActionsQueryOptions(api: Api, { filter, domain }: DomainAc
 /** Whether a query is one of the lists of domain actions, of any filter or domain. */
 export function isDomainActionsQuery(queryKey: readonly unknown[]): boolean {
   return queryKey[1] === "/admin/domain_actions";
+}
+
+/** Fetches again every cached list of domain actions (refreshQueries), of every filter and domain: a new action is in each. */
+export function refreshDomainActionLists(queryClient: QueryClient): Promise<void> {
+  return refreshQueries(queryClient, { predicate: (query) => isDomainActionsQuery(query.queryKey) });
 }
 
 /** Whether a list of domain actions keeps only those in effect, which a lifted action leaves. */
@@ -280,6 +301,11 @@ export function auditLogQueryOptions(api: Api, filter: AuditLogFilter) {
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.next_cursor,
   });
+}
+
+/** Whether a query is the audit log, under any filter. */
+export function isAuditLogQuery(queryKey: readonly unknown[]): boolean {
+  return queryKey[1] === "/admin/audit_log";
 }
 
 /**
