@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package sqlite
+
+import (
+	"testing"
+
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/pkg/testkit"
+)
+
+func TestAccountErasureContract(t *testing.T) {
+	testkit.AccountErasureContract(t, func(t *testing.T, opts uow.Options) testkit.AccountErasureHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.AccountErasureHarness{
+			RetentionHarness: testkit.RetentionHarness{
+				RemoteStatusHarness: testkit.RemoteStatusHarness{
+					AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+					Graph:          db.GraphRepository(),
+					Statuses:       db.StatusRepository(),
+					Media:          db.MediaRepository(),
+					Timeline:       db.TimelineRepository(),
+					Notifications:  db.NotificationRepository(),
+					Inbox:          db.FederationRepository(),
+				},
+				Interactions: db.InteractionRepository(),
+				Federation:   db.FederationRepository(),
+				Retention:    db.StatusRepository(),
+				Purges:       db.FederationRepository(),
+				Profiles:     db.AccountRepository(),
+			},
+			AccountErasure:      db.AccountRepository(),
+			IdentityErasure:     db.IdentityRepository(),
+			ContentErasure:      db.StatusRepository(),
+			GraphErasure:        db.GraphRepository(),
+			TimelineErasure:     db.TimelineRepository(),
+			NotificationErasure: db.NotificationRepository(),
+			Rows: func(t *testing.T, table, column, value string) int {
+				t.Helper()
+				var n int
+				// The table and column names come from the contract, never from input.
+				q := "SELECT count(*) FROM " + table + " WHERE " + column + " = ?"
+				if err := db.db.QueryRowContext(t.Context(), q, value).Scan(&n); err != nil {
+					t.Fatalf("count %s: %v", table, err)
+				}
+				return n
+			},
+		}
+	})
+}

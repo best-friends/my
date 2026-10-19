@@ -1,0 +1,350 @@
+-- SPDX-License-Identifier: AGPL-3.0-only
+
+-- The erasure of deleted local accounts' data (data-model sections 4.2 and 8, #397). Each module
+-- erases its own tables; the statements whose rows grow with the number of users or followers
+-- take a bounded batch (@lim). A list argument is an array of strings.
+
+-- account ---------------------------------------------------------------------------------------
+
+-- ListAccountsToErase returns, in account ID order after @after, up to @lim local accounts that
+-- were deleted at or before @deleted_before and are not erased yet, with their users.
+-- name: ListAccountsToErase :many
+SELECT s.account_id, la.user_id FROM account_lifecycle_states s
+JOIN local_accounts la ON la.account_id = s.account_id
+WHERE s.state = 'deleted' AND s.since <= sqlc.arg(deleted_before)::timestamptz
+  AND s.account_id > sqlc.arg(after)::text
+  AND NOT EXISTS (SELECT 1 FROM account_erasures e WHERE e.account_id = s.account_id)
+ORDER BY s.account_id
+LIMIT sqlc.arg(lim);
+
+-- name: EraseProfileFieldSources :exec
+DELETE FROM account_profile_field_sources WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));
+
+-- name: EraseProfileFields :exec
+DELETE FROM account_profile_fields WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));
+
+-- name: EraseProfileRevisionSources :exec
+DELETE FROM account_profile_revision_sources WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));
+
+-- name: EraseProfileHead :exec
+DELETE FROM account_profile_heads WHERE account_id = sqlc.arg(account_id);
+
+-- name: EraseProfileRevisions :exec
+DELETE FROM account_profile_revisions WHERE account_id = sqlc.arg(account_id);
+
+-- name: ErasePrivateKeys :exec
+DELETE FROM local_account_private_keys WHERE account_key_id IN (
+  SELECT k.id FROM account_keys k WHERE k.account_id = sqlc.arg(account_id));
+
+-- name: EraseKeyRevocations :exec
+DELETE FROM account_key_revocations WHERE account_key_id IN (
+  SELECT k.id FROM account_keys k WHERE k.account_id = sqlc.arg(account_id));
+
+-- name: EraseKeys :exec
+DELETE FROM account_keys WHERE account_id = sqlc.arg(account_id);
+
+-- name: InsertAccountErasure :exec
+INSERT INTO account_erasures (account_id, erased_at) VALUES (sqlc.arg(account_id), sqlc.arg(erased_at))
+ON CONFLICT (account_id) DO NOTHING;
+
+-- name: AccountErased :one
+SELECT EXISTS (SELECT 1 FROM account_erasures WHERE account_id = sqlc.arg(account_id));
+
+-- identity: the user's rows, which do not grow with other users ---------------------------------
+
+-- name: EraseEmailVerifications :exec
+DELETE FROM user_email_verifications WHERE email_address_id IN (
+  SELECT a.id FROM user_email_addresses a WHERE a.user_id = sqlc.arg(user_id));
+
+-- name: EraseUserPrimaryEmail :exec
+DELETE FROM user_primary_emails WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseEmailAddresses :exec
+DELETE FROM user_email_addresses WHERE user_id = sqlc.arg(user_id);
+
+-- name: ErasePasswordCredentials :exec
+DELETE FROM password_credentials WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseUserTokenRedemptions :exec
+DELETE FROM user_token_redemptions WHERE token_id IN (
+  SELECT t.id FROM user_tokens t WHERE t.user_id = sqlc.arg(user_id));
+
+-- name: EraseUserTokens :exec
+DELETE FROM user_tokens WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseSessionRevocations :exec
+DELETE FROM session_revocations WHERE session_id IN (
+  SELECT s.id FROM sessions s WHERE s.user_id = sqlc.arg(user_id));
+
+-- name: EraseSessionActivity :exec
+DELETE FROM session_activity WHERE session_id IN (
+  SELECT s.id FROM sessions s WHERE s.user_id = sqlc.arg(user_id));
+
+-- name: EraseSessions :exec
+DELETE FROM sessions WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseAuthorizationCodeRedemptions :exec
+DELETE FROM oauth_authorization_code_redemptions WHERE code_hash IN (
+  SELECT c.code_hash FROM oauth_authorization_codes c WHERE c.user_id = sqlc.arg(user_id));
+
+-- name: EraseAuthorizationCodes :exec
+DELETE FROM oauth_authorization_codes WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseAccessTokenRevocations :exec
+DELETE FROM oauth_token_revocations WHERE token_id IN (
+  SELECT t.id FROM oauth_access_tokens t WHERE t.user_id = sqlc.arg(user_id));
+
+-- name: EraseAccessTokens :exec
+DELETE FROM oauth_access_tokens WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseUserPreferences :exec
+DELETE FROM user_preferences WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseUserTimelineLanguages :exec
+DELETE FROM user_timeline_languages WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseRegistrationDecisions :exec
+DELETE FROM registration_decisions WHERE application_id IN (
+  SELECT a.id FROM registration_applications a WHERE a.user_id = sqlc.arg(user_id));
+
+-- name: EraseRegistrationApplications :exec
+DELETE FROM registration_applications WHERE user_id = sqlc.arg(user_id);
+
+-- name: EraseRegistrationState :exec
+DELETE FROM user_registration_states WHERE user_id = sqlc.arg(user_id);
+
+-- content: the account's statuses and its interactions --------------------------------------------
+
+-- ListAuthorStatusesToErase returns, in ID order after @after, up to @lim statuses of the author
+-- with whether each is deleted already.
+-- name: ListAuthorStatusesToErase :many
+SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
+  s.conversation_uri, s.published_at,
+  EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id) AS deleted
+FROM statuses s
+WHERE s.author_account_id = sqlc.arg(author_account_id) AND s.id > sqlc.arg(after)::text
+ORDER BY s.id
+LIMIT sqlc.arg(lim);
+
+-- The EraseOfStatuses* statements delete what refers to the statuses @ids beyond what
+-- PurgeStatuses deletes: their local rows, every boost of them, and the favourites, bookmarks,
+-- and pins of them.
+
+-- name: EraseLocalStatusesOfStatuses :exec
+DELETE FROM local_statuses WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseBoostEdgesOfStatuses :exec
+DELETE FROM boost_edges WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseBoostRetractionsOfStatuses :exec
+DELETE FROM boost_retractions WHERE boost_id IN (
+  SELECT b.id FROM boosts b WHERE b.status_id = ANY(sqlc.arg(ids)::text[]));
+
+-- name: EraseBoostsOfStatuses :exec
+DELETE FROM boosts WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFavouritesOfStatuses :exec
+DELETE FROM favourites WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseBookmarksOfStatuses :exec
+DELETE FROM bookmarks WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: ErasePinsOfStatuses :exec
+DELETE FROM status_pins WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseCountersOfStatuses :exec
+DELETE FROM status_counters WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- The account's favourites: the counts of the statuses go down first, for the same batch.
+
+-- name: UncountFavouritesBy :exec
+UPDATE status_counters SET favourites_count = favourites_count - 1
+WHERE favourites_count > 0 AND status_id IN (
+  SELECT f.status_id FROM favourites f WHERE f.account_id = sqlc.arg(account_id)
+  ORDER BY f.status_id LIMIT sqlc.arg(lim));
+
+-- name: EraseFavouritesBy :execrows
+DELETE FROM favourites WHERE favourites.account_id = sqlc.arg(account_id) AND favourites.status_id IN (
+  SELECT f.status_id FROM favourites f WHERE f.account_id = sqlc.arg(account_id)
+  ORDER BY f.status_id LIMIT sqlc.arg(lim));
+
+-- name: EraseBookmarksBy :execrows
+DELETE FROM bookmarks WHERE bookmarks.account_id = sqlc.arg(account_id) AND bookmarks.status_id IN (
+  SELECT b.status_id FROM bookmarks b WHERE b.account_id = sqlc.arg(account_id)
+  ORDER BY b.status_id LIMIT sqlc.arg(lim));
+
+-- name: ErasePinsBy :execrows
+DELETE FROM status_pins WHERE account_id = sqlc.arg(account_id);
+
+-- The account's boosts in force: the counts go down with their edges, then every boost of the
+-- account goes with its retraction.
+
+-- name: UncountBoostsBy :exec
+UPDATE status_counters SET boosts_count = boosts_count - 1
+WHERE boosts_count > 0 AND status_id IN (
+  SELECT e.status_id FROM boost_edges e WHERE e.booster_account_id = sqlc.arg(account_id)
+  ORDER BY e.status_id LIMIT sqlc.arg(lim));
+
+-- name: EraseBoostEdgesBy :execrows
+DELETE FROM boost_edges WHERE boost_edges.booster_account_id = sqlc.arg(account_id) AND boost_edges.status_id IN (
+  SELECT e.status_id FROM boost_edges e WHERE e.booster_account_id = sqlc.arg(account_id)
+  ORDER BY e.status_id LIMIT sqlc.arg(lim));
+
+-- name: EraseBoostRetractionsBy :exec
+DELETE FROM boost_retractions WHERE boost_id IN (
+  SELECT b.id FROM boosts b WHERE b.booster_account_id = sqlc.arg(account_id)
+  ORDER BY b.id LIMIT sqlc.arg(lim));
+
+-- name: EraseBoostsBy :execrows
+DELETE FROM boosts WHERE id IN (
+  SELECT b.id FROM boosts b WHERE b.booster_account_id = sqlc.arg(account_id)
+  ORDER BY b.id LIMIT sqlc.arg(lim));
+
+-- graph -------------------------------------------------------------------------------------------
+
+-- ListFollowEdgesToErase returns up to @lim live follows into or out of the account.
+-- name: ListFollowEdgesToErase :many
+SELECT * FROM follow_edges
+WHERE follower_account_id = sqlc.arg(account_id) OR followee_account_id = sqlc.arg(account_id)
+ORDER BY follow_id
+LIMIT sqlc.arg(lim);
+
+-- name: ListFollowIDsToErase :many
+SELECT id FROM follows
+WHERE follower_account_id = sqlc.arg(account_id) OR followee_account_id = sqlc.arg(account_id)
+ORDER BY id
+LIMIT sqlc.arg(lim);
+
+-- name: EraseFollowAcceptances :exec
+DELETE FROM follow_acceptances WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFollowRejections :exec
+DELETE FROM follow_rejections WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFollowTerminations :exec
+DELETE FROM follow_terminations WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFollowResends :exec
+DELETE FROM follow_resends WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFollowPreferences :exec
+DELETE FROM follow_preferences WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFollowEdgesOfFollows :exec
+DELETE FROM follow_edges WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFollows :exec
+DELETE FROM follows WHERE id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: ListBlockIDsToErase :many
+SELECT id FROM blocks
+WHERE blocker_account_id = sqlc.arg(account_id) OR blocked_account_id = sqlc.arg(account_id)
+ORDER BY id
+LIMIT sqlc.arg(lim);
+
+-- name: EraseBlockRetractions :exec
+DELETE FROM block_retractions WHERE block_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseBlockEdgesOfBlocks :exec
+DELETE FROM block_edges WHERE block_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseBlocks :exec
+DELETE FROM blocks WHERE id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseMutesBy :execrows
+DELETE FROM mutes WHERE mutes.account_id = sqlc.arg(account_id) AND mutes.target_account_id IN (
+  SELECT m.target_account_id FROM mutes m WHERE m.account_id = sqlc.arg(account_id)
+  ORDER BY m.target_account_id LIMIT sqlc.arg(lim));
+
+-- name: EraseMutesOf :execrows
+DELETE FROM mutes WHERE mutes.target_account_id = sqlc.arg(account_id) AND mutes.account_id IN (
+  SELECT m.account_id FROM mutes m WHERE m.target_account_id = sqlc.arg(account_id)
+  ORDER BY m.account_id LIMIT sqlc.arg(lim));
+
+-- name: EraseFollowCounters :exec
+DELETE FROM follow_counters WHERE account_id = sqlc.arg(account_id);
+
+-- timeline ----------------------------------------------------------------------------------------
+
+-- name: ListFeedEntryIDsToErase :many
+SELECT id FROM feed_entries
+WHERE author_account_id = sqlc.arg(account_id) OR original_author_account_id = sqlc.arg(account_id)
+ORDER BY id
+LIMIT sqlc.arg(lim);
+
+-- name: EraseFeedDirectRecipientsOfEntries :exec
+DELETE FROM feed_direct_recipients WHERE entry_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFeedTagEntriesOfEntries :exec
+DELETE FROM feed_tag_entries WHERE entry_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFeedEntries :exec
+DELETE FROM feed_entries WHERE id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseFeedDirectRecipientsOf :execrows
+DELETE FROM feed_direct_recipients WHERE feed_direct_recipients.recipient_account_id = sqlc.arg(account_id) AND feed_direct_recipients.entry_id IN (
+  SELECT r.entry_id FROM feed_direct_recipients r WHERE r.recipient_account_id = sqlc.arg(account_id)
+  ORDER BY r.entry_id LIMIT sqlc.arg(lim));
+
+-- name: EraseFeedFollowEdgesAsFollower :execrows
+DELETE FROM feed_follow_edges WHERE feed_follow_edges.follower_account_id = sqlc.arg(account_id) AND feed_follow_edges.followee_account_id IN (
+  SELECT e.followee_account_id FROM feed_follow_edges e WHERE e.follower_account_id = sqlc.arg(account_id)
+  ORDER BY e.followee_account_id LIMIT sqlc.arg(lim));
+
+-- name: EraseFeedFollowEdgesAsFollowee :execrows
+DELETE FROM feed_follow_edges WHERE feed_follow_edges.followee_account_id = sqlc.arg(account_id) AND feed_follow_edges.follower_account_id IN (
+  SELECT e.follower_account_id FROM feed_follow_edges e WHERE e.followee_account_id = sqlc.arg(account_id)
+  ORDER BY e.follower_account_id LIMIT sqlc.arg(lim));
+
+-- name: EraseFeedExclusionsAsViewer :execrows
+DELETE FROM feed_exclusions WHERE feed_exclusions.viewer_account_id = sqlc.arg(account_id) AND feed_exclusions.target_account_id IN (
+  SELECT x.target_account_id FROM feed_exclusions x WHERE x.viewer_account_id = sqlc.arg(account_id)
+  ORDER BY x.target_account_id LIMIT sqlc.arg(lim));
+
+-- name: EraseFeedExclusionsAsTarget :execrows
+DELETE FROM feed_exclusions WHERE feed_exclusions.target_account_id = sqlc.arg(account_id) AND feed_exclusions.viewer_account_id IN (
+  SELECT x.viewer_account_id FROM feed_exclusions x WHERE x.target_account_id = sqlc.arg(account_id)
+  ORDER BY x.viewer_account_id LIMIT sqlc.arg(lim));
+
+-- notification ------------------------------------------------------------------------------------
+
+-- name: EraseNotificationDismissalsOfStatuses :exec
+DELETE FROM notification_dismissals WHERE notification_id IN (
+  SELECT n.id FROM notifications n WHERE n.status_id = ANY(sqlc.arg(ids)::text[]));
+
+-- name: EraseNotificationsOfStatuses :exec
+DELETE FROM notifications WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseDeletedStatusesOfStatuses :exec
+DELETE FROM notification_deleted_statuses WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- ListNotificationIDsToErase returns up to @lim notifications to, from, or about the account and
+-- its user.
+-- name: ListNotificationIDsToErase :many
+SELECT id FROM notifications
+WHERE recipient_account_id = sqlc.arg(account_id) OR source_account_id = sqlc.arg(account_id)
+  OR subject_user_id = sqlc.arg(user_id)
+ORDER BY id
+LIMIT sqlc.arg(lim);
+
+-- name: EraseNotificationDismissals :exec
+DELETE FROM notification_dismissals WHERE notification_id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseNotifications :exec
+DELETE FROM notifications WHERE id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: EraseNotificationReadMarker :exec
+DELETE FROM notification_read_markers WHERE account_id = sqlc.arg(account_id);
+
+-- name: EraseNotificationExclusionsAsViewer :execrows
+DELETE FROM notification_exclusions WHERE notification_exclusions.viewer_account_id = sqlc.arg(account_id) AND notification_exclusions.target_account_id IN (
+  SELECT x.target_account_id FROM notification_exclusions x WHERE x.viewer_account_id = sqlc.arg(account_id)
+  ORDER BY x.target_account_id LIMIT sqlc.arg(lim));
+
+-- name: EraseNotificationExclusionsAsTarget :execrows
+DELETE FROM notification_exclusions WHERE notification_exclusions.target_account_id = sqlc.arg(account_id) AND notification_exclusions.viewer_account_id IN (
+  SELECT x.viewer_account_id FROM notification_exclusions x WHERE x.target_account_id = sqlc.arg(account_id)
+  ORDER BY x.viewer_account_id LIMIT sqlc.arg(lim));

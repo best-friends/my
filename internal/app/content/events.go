@@ -48,6 +48,12 @@ type StatusDeleted struct {
 // EventType implements uow.Event.
 func (StatusDeleted) EventType() string { return EventStatusDeleted }
 
+// ByAccountErasure reports whether the erasure of the author's deleted account recorded the
+// deletion (data-model §8): the Delete of the actor stands for it, so it sends no Delete.
+func (e StatusDeleted) ByAccountErasure() bool {
+	return e.Deletion.Origin == content.DeletedByAccountDeletion
+}
+
 // EventPollTallyObserved is emitted when new counts of a remote poll are recorded; the
 // poll_tallies projection follows the newest observation.
 const EventPollTallyObserved = "content.poll_tally_observed"

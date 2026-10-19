@@ -915,6 +915,24 @@ func fedUpdatesAndDeletesActors(t *testing.T, e *fedEnv) {
 		t.Errorf("Delete document = %v, want the Delete of the author's id to the public", doc)
 	}
 
+	// The erasure's deletions of the account's statuses send nothing: the Delete of the actor
+	// stands for them.
+	s := e.post(t, author, content.VisibilityPublic)
+	e.clock.Advance(time.Second)
+	e.emit(t, appcontent.StatusDeleted{
+		Status: s,
+		Deletion: content.Deletion{
+			StatusID: s.ID, URI: s.URI, AuthorAccountID: author, Origin: content.DeletedByAccountDeletion, DeletedAt: e.clock.Now(),
+		},
+	})
+	e.drain(t)
+	statusActs, _ := e.h.Federation.ListOutboundActivitiesOf(t.Context(), federation.OutboundStatus, s.ID)
+	for _, a := range statusActs {
+		if a.Type == federation.ActivityDelete {
+			t.Errorf("erasure of a status recorded %+v, want no Delete", a)
+		}
+	}
+
 	// An Update of an account that is no longer active has nothing to send.
 	e.accounts.mu.Lock()
 	actor = e.accounts.actors[author]
