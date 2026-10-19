@@ -187,7 +187,7 @@ test.describe("the sidebar of desktops", () => {
         - list:
           - /children: equal
 ${Array.from({ length: 6 }, () => "          - listitem:\n            - link").join("\n")}
-        - link /${displayName} @alice@my\\.example/
+        - link "${displayName} @alice"
     `);
     await expect(viewer).not.toHaveAttribute("aria-current");
     // The account is always in view, at the bottom of the sidebar, inside it.
