@@ -55,6 +55,19 @@ export const syntax = [
   },
 ];
 
+/** The QueryClient methods that write the cache or mark it stale. */
+const cacheWrites = "setQueryData|setQueriesData|invalidateQueries|refetchQueries|resetQueries|removeQueries|cancelQueries";
+
+/** @type {SyntaxRestriction[]} A feature's hooks and components, on top of `syntax`. */
+export const featureSyntax = [
+  {
+    // S1: what a write changes in the cache is written next to the write, in features/<x>/api.
+    selector: String.raw`CallExpression > MemberExpression.callee[property.name=/^(${cacheWrites})$/], CallExpression[callee.name='refreshQueries']`,
+    message:
+      "Do not change the query cache in a hook or a component; call the cache function next to the write in features/<x>/api (e.g. cachePostedStatus) from onSuccess (web-client.md S1).",
+  },
+];
+
 /** Modules that may be mocked only through MSW (T3): the API client and feature API modules. */
 const apiModule = String.raw`/(^|\/)api(\/|$)|^openapi-(fetch|react-query)$/`;
 

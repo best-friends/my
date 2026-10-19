@@ -159,6 +159,12 @@ export default defineConfig(
     },
   },
   {
+    // S1: a feature's hooks and components leave the cache to the functions of features/<x>/api.
+    files: ["web/src/features/*/hooks/**/*.{ts,tsx}", "web/src/features/*/components/**/*.{ts,tsx}"],
+    ignores: tests,
+    rules: { "no-restricted-syntax": ["error", ...restrict.syntax, ...restrict.featureSyntax] },
+  },
+  {
     // D2
     files: components,
     rules: {
