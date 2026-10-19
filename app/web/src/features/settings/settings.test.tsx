@@ -2,7 +2,7 @@
 // The settings pages through the whole app (web-client.md T4): a signed-in session from the default
 // handlers, MSW playing the server with the state each test needs, and the user's own interactions.
 import { screen, waitFor, within } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { Preferences, PreferencesChange, ProfileChange } from "./api/me";
 import {
@@ -12,7 +12,9 @@ import {
   preferencesFixture,
   relationshipFixture,
   type Schemas,
+  statusPage,
   viewerFixture,
+  viewerStatusFixture,
 } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler, withViewer } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
@@ -342,6 +344,48 @@ describe("profile", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  test("the profile page and the author of the viewer's posts show the saved profile at once, before a slow server answers again", async () => {
+    // The server's own account of the viewer, which the save changes; once saved, every read is slow, as on a
+    // real network, so a page that waited for its refetch would show the old name first (#505).
+    let account: Schemas["Account"] = { ...viewerFixture, followers_count: 1, following_count: 1 };
+    let saved = false;
+    const slow = async () => {
+      if (saved) await delay(2000);
+    };
+    server.use(
+      http.get(`${apiBase}/accounts/lookup`, async () => {
+        await slow();
+        return HttpResponse.json(account);
+      }),
+      http.get(`${apiBase}/accounts/:id/statuses`, async () => {
+        await slow();
+        return HttpResponse.json(statusPage([viewerStatusFixture({ account })]));
+      }),
+      http.patch(`${apiBase}/accounts/update_credentials`, async ({ request }) => {
+        const change = (await request.json()) as ProfileChange;
+        account = { ...account, display_name: change.display_name ?? account.display_name };
+        saved = true;
+        return HttpResponse.json({ ...viewerFixture, ...account });
+      }),
+    );
+    const { user, router } = await renderApp({ path: "/profile" });
+    expect(await screen.findByRole("heading", { level: 1, name: "Alice" })).toBeInTheDocument();
+    expect(within(screen.getByRole("feed", { name: "Posts" })).getByRole("article", { name: /^Alice/ })).toBeInTheDocument();
+
+    await router.navigate({ to: "/settings/profile" });
+    const displayName = await screen.findByRole("textbox", { name: "Display name" });
+    await user.clear(displayName);
+    await user.type(displayName, "Alice in Chains");
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+    expect((await screen.findAllByText("Your profile has been saved.")).length).toBeGreaterThan(0);
+    await router.navigate({ to: "/profile" });
+
+    // The first render of the page has the new name, long before the slow reads could answer.
+    const heading = await screen.findByRole("heading", { level: 1 }, { timeout: 500 });
+    expect(heading).toHaveTextContent("Alice in Chains");
+    expect(within(screen.getByRole("feed", { name: "Posts" })).getByRole("article", { name: /^Alice in Chains/ })).toBeInTheDocument();
   });
 
   test("a save the server refuses says why", async () => {
