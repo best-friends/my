@@ -1748,7 +1748,9 @@ paths:
     get:
       operationId: getReport
       summary: Get a report
-      description: An unknown ID is a 404. Needs the `manage_reports` permission.
+      description: |
+        The report as a moderator opens it, with the posts it points at whatever their
+        visibility. An unknown ID is a 404. Needs the `manage_reports` permission.
       tags: [admin]
       security:
         - oauth2: ["admin:read"]
@@ -2676,7 +2678,7 @@ components:
           schema:
             $ref: "#/components/schemas/AdminDomainAction"
     AdminReportDetail:
-      description: The report, with its notes and the history of its target.
+      description: The report, with its notes, its posts, and the history of its target.
       headers:
         Cache-Control:
           $ref: "#/components/headers/CacheControl"
@@ -4437,12 +4439,12 @@ components:
     # --- admin: report notes and reopenings (#333) ---
     AdminReportDetail:
       description: |
-        A report as a moderator opens it: the report with its internal notes and what the
-        moderators had about its target.
+        A report as a moderator opens it: the report with its internal notes, the posts it
+        points at, and what the moderators had about its target.
       allOf:
         - $ref: "#/components/schemas/AdminReport"
         - type: object
-          required: [notes, target_history]
+          required: [notes, target_history, statuses]
           properties:
             notes:
               description: The moderators' notes on the report, oldest first.
@@ -4451,6 +4453,14 @@ components:
                 $ref: "#/components/schemas/AdminReportNote"
             target_history:
               $ref: "#/components/schemas/AdminReportTargetHistory"
+            statuses:
+              description: |
+                The posts that the report points at, in the order of `status_ids`, whatever
+                their visibility and also when their author deleted them, for the moderators to
+                review. A post that the server no longer has is left out.
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminReportStatus"
     AdminReportNote:
       description: A moderator's internal note on a report; never shown to the target or the reporter.
       type: object
@@ -4468,6 +4478,20 @@ components:
           description: The note as plain text, up to 2,000 characters.
           type: string
         created_at:
+          type: string
+          format: date-time
+    AdminReportStatus:
+      description: |
+        A post that a report points at, as a moderator reviews it. `status` is the post as it
+        was last, without the moderator's own relation to it (`favourited`, `boosted`,
+        `bookmarked`, and `pinned` are omitted).
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/Status"
+        deleted_at:
+          description: When the post was deleted, by its author or otherwise; omitted when it is not.
           type: string
           format: date-time
     AdminReportTargetHistory:

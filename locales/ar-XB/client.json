@@ -1455,12 +1455,12 @@
     "defaultMessage": "‮{count,plural,one{# dosʇ} other{# dosʇs} =0{Nouǝ}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "admin.report.posts.loading": {
-    "defaultMessage": "‮⅂oɐpıuƃ ʇɥǝ dosʇ‬",
+  "admin.report.posts.deleted": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝp {date}. Ӽǝdʇ ɟoɹ ʇɥıs ɹǝdoɹʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.report.posts.missing": {
-    "defaultMessage": "‮⊥ɥıs dosʇ ɔɐuuoʇ qǝ sɥoʍu: ıʇ ʍɐs pǝʅǝʇǝp, oɹ ıʇs ʌısıqıʅıʇʎ poǝs uoʇ ıuɔʅnpǝ ʎon.‬",
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ uo ʅouƃǝɹ ɥɐs ʇɥıs dosʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.report.posts.none": {

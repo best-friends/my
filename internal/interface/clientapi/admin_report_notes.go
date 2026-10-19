@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/domain/moderation"
@@ -33,6 +34,9 @@ func (s *Server) reportDetailResponse(ctx context.Context, d moderation.ReportDe
 		Notes:         make([]AdminReportNote, 0, len(d.Notes)),
 		TargetHistory: AdminReportTargetHistory{ReportsCount: d.History.Reports, ActionsCount: d.History.Actions},
 	}
+	if body.Statuses, err = s.reportStatuses(ctx, r.Id); err != nil {
+		return AdminReportDetailJSONResponse{}, err
+	}
 	authors := map[string]string{}
 	for _, n := range d.Notes {
 		note := AdminReportNote{Id: n.ID, Body: n.Body, CreatedAt: n.WrittenAt.UTC()}
@@ -54,6 +58,34 @@ func (s *Server) reportDetailResponse(ctx context.Context, d moderation.ReportDe
 	}
 	cache := cacheNoStore
 	return AdminReportDetailJSONResponse{Body: body, Headers: AdminReportDetailResponseHeaders{CacheControl: &cache}}, nil
+}
+
+// reportStatuses presents the statuses that a report points at, whatever their visibility and
+// deleted ones included, for the moderators (FR-710, NFR-MOD-4). The moderation module reads
+// only the report's statuses; the caller has checked the manage_reports permission.
+func (s *Server) reportStatuses(ctx context.Context, reportID string) ([]AdminReportStatus, error) {
+	reviewed, err := s.o.Moderation.ReportStatuses(ctx, reportID)
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: the statuses of report %s: %w", reportID, err)
+	}
+	views := make([]appcontent.StatusView, 0, len(reviewed))
+	for _, r := range reviewed {
+		views = append(views, r.StatusView)
+	}
+	sts, err := s.presentStatuses(ctx, views)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]AdminReportStatus, 0, len(reviewed))
+	for i, r := range reviewed {
+		item := AdminReportStatus{Status: sts[i]}
+		if !r.DeletedAt.IsZero() {
+			at := r.DeletedAt.UTC()
+			item.DeletedAt = &at
+		}
+		out = append(out, item)
+	}
+	return out, nil
 }
 
 // AddReportNote serves POST /api/v1/admin/reports/{id}/notes.

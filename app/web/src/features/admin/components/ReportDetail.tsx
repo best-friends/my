@@ -18,6 +18,7 @@ import {
   StatusMessage,
 } from "@my/ui";
 import { type ReactNode, type RefObject, useId, useRef, useState } from "react";
+import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { StatusCard } from "../../status";
 import { type AccountAction, type ReportDetail, reportNoteLimit } from "../api/reports";
@@ -29,11 +30,11 @@ import {
   isRemote,
   type ReportedStatus,
   reportCategoryLabels,
+  reportedStatuses,
   reportOutcomeLabels,
   useCitedRules,
   useReport,
   useReportChanges,
-  useReportedStatuses,
   useReportNoteForm,
   useTargetActions,
 } from "../hooks/useReports";
@@ -57,7 +58,9 @@ function ReportPage({ id }: { id: string }) {
   const report = useReport(id);
   const canAct = useHasPermission("manage_accounts");
   const canAudit = useHasPermission("view_audit");
-  const posts = useReportedStatuses(report.status_ids);
+  const posts = reportedStatuses(report);
+  // Deleted posts stay to be reviewed, but no action can delete them or mark them sensitive.
+  const actionable = posts.flatMap((post) => (post.status === "found" && post.deletedAt === undefined ? [post.value] : []));
   const [message, setMessage] = useState<Message | undefined>(undefined);
   const resolutionHeadingRef = useRef<HTMLHeadingElement>(null);
   const focusResolution = useFocusAfterChange(resolutionHeadingRef, report.state);
@@ -164,11 +167,11 @@ function ReportPage({ id }: { id: string }) {
                     accountId: target.id,
                     remote: isRemote(target),
                     reportId: report.id,
-                    statusIds: posts.flatMap((post) => (post.status === "found" ? [post.id] : [])),
+                    statusIds: actionable.map((post) => post.id),
                     category: report.category,
                   }}
                   handle={handleOf(target)}
-                  posts={posts.flatMap((post) => (post.status === "found" ? [post.value] : []))}
+                  posts={actionable}
                   onIssued={(action) => {
                     setMessage({ region: "resolution", text: t("client:admin.report.action.issued", { kind: t(accountActionKindLabels[action.kind]) }) });
                     focusResolution();
@@ -289,17 +292,21 @@ function ReportSummary({ report }: { report: ReportDetail }) {
 
 function ReportedPosts({ posts }: { posts: readonly ReportedStatus[] }) {
   const t = useT();
+  const intl = useIntl();
   if (posts.length === 0) return <p>{t("client:admin.report.posts.none")}</p>;
   return (
     <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
       {posts.map((post) => (
         <li key={post.id}>
           {post.status === "found" ? (
-            <StatusCard status={post.value} withActions={false} />
-          ) : post.status === "loading" ? (
-            <div className="px-4 py-3">
-              <Spinner size="sm" label={t("client:admin.report.posts.loading")} />
-            </div>
+            <>
+              {post.deletedAt !== undefined && (
+                <p className="px-4 pt-3 text-sm font-semibold text-fg-muted">
+                  {t("client:admin.report.posts.deleted", { date: intl.formatDate(post.deletedAt, { dateStyle: "medium", timeStyle: "short" }) })}
+                </p>
+              )}
+              <StatusCard status={post.value} withActions={false} />
+            </>
           ) : (
             <p className="px-4 py-3 text-fg-muted">{t("client:admin.report.posts.missing")}</p>
           )}

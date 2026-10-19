@@ -1361,7 +1361,8 @@ export interface paths {
         };
         /**
          * Get a report
-         * @description An unknown ID is a 404. Needs the `manage_reports` permission.
+         * @description The report as a moderator opens it, with the posts it points at whatever their
+         *     visibility. An unknown ID is a 404. Needs the `manage_reports` permission.
          */
         get: operations["getReport"];
         put?: never;
@@ -3075,13 +3076,19 @@ export interface components {
             outcome: components["schemas"]["AdminReportOutcome"];
         };
         /**
-         * @description A report as a moderator opens it: the report with its internal notes and what the
-         *     moderators had about its target.
+         * @description A report as a moderator opens it: the report with its internal notes, the posts it
+         *     points at, and what the moderators had about its target.
          */
         AdminReportDetail: components["schemas"]["AdminReport"] & {
             /** @description The moderators' notes on the report, oldest first. */
             notes: components["schemas"]["AdminReportNote"][];
             target_history: components["schemas"]["AdminReportTargetHistory"];
+            /**
+             * @description The posts that the report points at, in the order of `status_ids`, whatever
+             *     their visibility and also when their author deleted them, for the moderators to
+             *     review. A post that the server no longer has is left out.
+             */
+            statuses: components["schemas"]["AdminReportStatus"][];
         };
         /** @description A moderator's internal note on a report; never shown to the target or the reporter. */
         AdminReportNote: {
@@ -3095,6 +3102,19 @@ export interface components {
             body: string;
             /** Format: date-time */
             created_at: string;
+        };
+        /**
+         * @description A post that a report points at, as a moderator reviews it. `status` is the post as it
+         *     was last, without the moderator's own relation to it (`favourited`, `boosted`,
+         *     `bookmarked`, and `pinned` are omitted).
+         */
+        AdminReportStatus: {
+            status: components["schemas"]["Status"];
+            /**
+             * Format: date-time
+             * @description When the post was deleted, by its author or otherwise; omitted when it is not.
+             */
+            deleted_at?: string;
         };
         /** @description What the moderators had about the target of a report. */
         AdminReportTargetHistory: {
@@ -3510,7 +3530,7 @@ export interface components {
                 "application/json": components["schemas"]["AdminDomainAction"];
             };
         };
-        /** @description The report, with its notes and the history of its target. */
+        /** @description The report, with its notes, its posts, and the history of its target. */
         AdminReportDetail: {
             headers: {
                 "Cache-Control": components["headers"]["CacheControl"];

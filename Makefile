@@ -234,7 +234,7 @@ web-test: web-install ## Run the client component tests with Vitest (jsdom + MSW
 
 # Playwright runs against `vite preview` of the fresh build, and the server-rendered pages against
 # `my serve` on SQLite from the fresh bin/my (app/web/e2e/server.ts). E2E_MATRIX=full runs every width ×
-# locale project (nightly); the default is the per-PR subset (app/web/playwright.config.ts). CI runs it in
+# locale project (nightly); the default is the default subset (app/web/playwright.config.ts). CI runs it in
 # the pinned Playwright image; locally, install the browser once with `make web-e2e-install`. Both servers
 # listen on free ports picked per run (E2E_PREVIEW_PORT / E2E_SERVER_PORT fix them), so parallel runs in
 # several worktrees stay apart; E2E_BASE_URL / E2E_SERVER_URL test servers started elsewhere instead.

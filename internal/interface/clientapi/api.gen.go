@@ -1345,8 +1345,8 @@ type AdminReport struct {
 // AdminReportCategory defines model for AdminReport.Category.
 type AdminReportCategory string
 
-// AdminReportDetail A report as a moderator opens it: the report with its internal notes and what the
-// moderators had about its target.
+// AdminReportDetail A report as a moderator opens it: the report with its internal notes, the posts it
+// points at, and what the moderators had about its target.
 type AdminReportDetail struct {
 	// AssigneeAccountId The account of the moderator who handles the report; omitted when nobody does.
 	AssigneeAccountId *Id                       `json:"assignee_account_id,omitempty"`
@@ -1391,6 +1391,11 @@ type AdminReportDetail struct {
 
 	// StatusIds The IDs of the target's posts that the report points at.
 	StatusIds []Id `json:"status_ids"`
+
+	// Statuses The posts that the report points at, in the order of `status_ids`, whatever
+	// their visibility and also when their author deleted them, for the moderators to
+	// review. A post that the server no longer has is left out.
+	Statuses []AdminReportStatus `json:"statuses"`
 
 	// TargetAccount The account reported; omitted when the account is gone.
 	TargetAccount *Account `json:"target_account,omitempty"`
@@ -1441,6 +1446,25 @@ type AdminReportPage struct {
 
 // AdminReportState `open` reports await the moderators; `resolved` ones are handled.
 type AdminReportState string
+
+// AdminReportStatus A post that a report points at, as a moderator reviews it. `status` is the post as it
+// was last, without the moderator's own relation to it (`favourited`, `boosted`,
+// `bookmarked`, and `pinned` are omitted).
+type AdminReportStatus struct {
+	// DeletedAt When the post was deleted, by its author or otherwise; omitted when it is not.
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+
+	// Status A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
+	// describe the authenticated user's relation to it and are omitted for anonymous
+	// requests; `pinned` is only given to the author.
+	//
+	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
+	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+	// `visibility` and `language` are those of the boosted status, its `content`,
+	// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
+	// are zero.
+	Status Status `json:"status"`
+}
 
 // AdminReportTargetHistory What the moderators had about the target of a report.
 type AdminReportTargetHistory struct {

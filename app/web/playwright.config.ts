@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Playwright E2E for the web client (ADR-0015, ADR-0027). Every test runs in one project per
-// viewport width × locale. E2E_MATRIX=full runs all of them (nightly); otherwise only the per-PR subset
+// viewport width × locale. E2E_MATRIX=full runs all of them (nightly); otherwise only the default subset
 // runs: every locale at the narrowest and widest width. The client's tests run against `vite preview` of
 // the built app (`make web-e2e` builds it first), or against E2E_BASE_URL when it is set. The tests of the
 // server-rendered pages (e2e/auth-pages.spec.ts) and of the main flow (e2e/main-flow.spec.ts) run against a real `my serve` on SQLite that

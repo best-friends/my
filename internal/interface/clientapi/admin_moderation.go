@@ -10,6 +10,7 @@ import (
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appfederation "github.com/best-friends/my/internal/app/federation"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/domain/account"
@@ -37,6 +38,9 @@ type Moderation interface {
 	ReportDetail(ctx context.Context, id string) (moderation.ReportDetail, error)
 	AddReportNote(ctx context.Context, reportID, body, byUserID string) (moderation.ReportNote, error)
 	ReopenReport(ctx context.Context, reportID, byUserID string) (moderation.ReportRecord, error)
+	// ReportStatuses presents the statuses of a report whatever their visibility, deleted ones
+	// included, for the report's detail (admin_report_notes.go).
+	ReportStatuses(ctx context.Context, reportID string) ([]appcontent.ReviewedStatus, error)
 	// PublicDomainActions lists the domain actions that the instance lists publicly
 	// (listInstanceDomainActions, instance_domain_actions.go).
 	PublicDomainActions(ctx context.Context, before string, limit int) ([]moderation.PublicDomainAction, error)

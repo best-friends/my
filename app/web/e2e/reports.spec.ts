@@ -95,6 +95,7 @@ function report(id: string, overrides: Partial<Report> = {}): Report {
     target_account: target,
     status_ids: [postId],
     rule_ids: [],
+    statuses: [{ status: post }],
     notes: [{ id: "0192f0c4-7a8e-7000-8000-0000000e0001", author_account_id: moderator.id, body: "Same as last week.", created_at: "2026-10-16T10:00:00Z" }],
     target_history: { reports_count: 3, actions_count: 1 },
     ...overrides,
@@ -135,7 +136,6 @@ async function moderatorServer(page: Page) {
       const found = reports.find((item) => item.id === one[1]);
       return found === undefined ? json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404) : json(route, found);
     }
-    if (key === `GET /statuses/${postId}`) return json(route, post);
     if (key === `GET /admin/accounts/${target.id}/actions`) {
       return json(route, {
         items: [{ id: "0192f0c4-7a8e-7000-8000-0000000d0000", account_id: target.id, kind: "warn", reason_category: "spam", issuer: "moderator", notify_target: true, state: "active", issued_at: "2026-10-09T00:00:00Z" }],

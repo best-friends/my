@@ -1455,13 +1455,13 @@
     "defaultMessage": "{count, plural, =0 {なし} other {# 件}}",
     "description": "Number of posts a report points at."
   },
-  "admin.report.posts.loading": {
-    "defaultMessage": "投稿を読み込んでいます",
-    "description": "While a reported post loads."
+  "admin.report.posts.deleted": {
+    "defaultMessage": "{date} に削除。この通報のために残しています。",
+    "description": "Above a reported post that was deleted, which the report keeps for the moderators; date is when it was deleted, formatted."
   },
   "admin.report.posts.missing": {
-    "defaultMessage": "この投稿は表示できません。削除されたか、公開範囲にあなたが含まれていません。",
-    "description": "A reported post that the moderator cannot load."
+    "defaultMessage": "この投稿はサーバーにもう残っていません。",
+    "description": "A reported post that the server no longer has (it was deleted and erased)."
   },
   "admin.report.posts.none": {
     "defaultMessage": "この通報は投稿を含みません。",
