@@ -25,6 +25,7 @@ import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDomainActionsRouteImport } from './routes/admin.domain-actions'
 import { Route as AdminInstancesRouteImport } from './routes/admin.instances'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
@@ -34,6 +35,7 @@ import { Route as SettingsPreferencesRouteImport } from './routes/settings.prefe
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 import { Route as AdminInstancesDomainRouteImport } from './routes/admin.instances_.$domain'
+import { Route as AdminReportsIdRouteImport } from './routes/admin.reports_.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -117,6 +119,11 @@ const AdminInstancesRoute = AdminInstancesRouteImport.update({
   path: '/admin/instances',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
   id: '/login_/callback',
   path: '/login/callback',
@@ -162,6 +169,11 @@ const AdminInstancesDomainRoute = AdminInstancesDomainRouteImport.update({
   path: '/admin/instances/$domain',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminReportsIdRoute = AdminReportsIdRouteImport.update({
+  id: '/admin/reports_/$id',
+  path: '/admin/reports/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -180,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -189,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/tags/$tag': typeof TagsTagRoute
   '/settings/': typeof SettingsIndexRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
+  '/admin/reports/$id': typeof AdminReportsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -207,6 +221,7 @@ export interface FileRoutesByTo {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -216,6 +231,7 @@ export interface FileRoutesByTo {
   '/tags/$tag': typeof TagsTagRoute
   '/settings': typeof SettingsIndexRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
+  '/admin/reports/$id': typeof AdminReportsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -235,6 +251,7 @@ export interface FileRoutesById {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -244,6 +261,7 @@ export interface FileRoutesById {
   '/tags/$tag': typeof TagsTagRoute
   '/settings/': typeof SettingsIndexRoute
   '/admin/instances_/$domain': typeof AdminInstancesDomainRoute
+  '/admin/reports_/$id': typeof AdminReportsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -264,6 +282,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/reports'
     | '/login/callback'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -273,6 +292,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/settings/'
     | '/admin/instances/$domain'
+    | '/admin/reports/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -291,6 +311,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/reports'
     | '/login/callback'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -300,6 +321,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/settings'
     | '/admin/instances/$domain'
+    | '/admin/reports/$id'
   id:
     | '__root__'
     | '/'
@@ -318,6 +340,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/reports'
     | '/login_/callback'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -327,6 +350,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/settings/'
     | '/admin/instances_/$domain'
+    | '/admin/reports_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -346,6 +370,7 @@ export interface RootRouteChildren {
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDomainActionsRoute: typeof AdminDomainActionsRoute
   AdminInstancesRoute: typeof AdminInstancesRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
@@ -355,6 +380,7 @@ export interface RootRouteChildren {
   TagsTagRoute: typeof TagsTagRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   AdminInstancesDomainRoute: typeof AdminInstancesDomainRoute
+  AdminReportsIdRoute: typeof AdminReportsIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -471,6 +497,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInstancesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login_/callback': {
       id: '/login_/callback'
       path: '/login/callback'
@@ -534,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInstancesDomainRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/reports_/$id': {
+      id: '/admin/reports_/$id'
+      path: '/admin/reports/$id'
+      fullPath: '/admin/reports/$id'
+      preLoaderRoute: typeof AdminReportsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -554,6 +594,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDomainActionsRoute: AdminDomainActionsRoute,
   AdminInstancesRoute: AdminInstancesRoute,
+  AdminReportsRoute: AdminReportsRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
@@ -563,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagsTagRoute: TagsTagRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   AdminInstancesDomainRoute: AdminInstancesDomainRoute,
+  AdminReportsIdRoute: AdminReportsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
