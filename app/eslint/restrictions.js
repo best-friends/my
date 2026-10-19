@@ -55,6 +55,43 @@ export const syntax = [
   },
 ];
 
+/** The elements that exist only in SVG (the shapes, groups, paint servers and text); `a`, `style` and the like are HTML too. */
+const svgElements = [
+  "svg",
+  "g",
+  "path",
+  "circle",
+  "ellipse",
+  "line",
+  "polygon",
+  "polyline",
+  "rect",
+  "text",
+  "tspan",
+  "textPath",
+  "defs",
+  "use",
+  "symbol",
+  "marker",
+  "mask",
+  "clipPath",
+  "pattern",
+  "linearGradient",
+  "radialGradient",
+  "stop",
+  "filter",
+  "foreignObject",
+  "image",
+];
+
+/** @type {SyntaxRestriction[]} Every client source file but the few that eslint.config.js lets draw SVG (G10). */
+export const svgSyntax = [
+  {
+    selector: `JSXOpeningElement[name.name=/^(${svgElements.join("|")})$/]`,
+    message: "Do not draw SVG; use an icon of @my/ui (Icons.tsx), and add a row to its table for a new one (ADR-0043, web-client.md G10).",
+  },
+];
+
 /** Modules that may be mocked only through MSW (T3): the API client and feature API modules. */
 const apiModule = String.raw`/(^|\/)api(\/|$)|^openapi-(fetch|react-query)$/`;
 
