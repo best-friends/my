@@ -345,7 +345,7 @@ describe("a report's page", () => {
     const api = reportsServer([spam, older]);
     const { user } = await renderApp({ path: "/admin/reports" });
     await user.click(await screen.findByRole("link", { name: `Report on ${isolated("@bob")}` }));
-    const handling = region("Handling");
+    const handling = await screen.findByRole("region", { name: "Handling" });
     await user.click(await within(handling).findByRole("radio", { name: "Limit" }));
     // From now on every list of reports takes a while; the handler falls through to reportsServer's.
     server.use(
