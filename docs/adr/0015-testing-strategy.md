@@ -1,6 +1,6 @@
 # ADR-0015: テスト戦略
 
-- Status: Accepted（E2E の頻度を ADR-0040（Web の E2E を main への push でだけ回す） が、Contract の PostgreSQL の実行環境と頻度を ADR-0041（PostgreSQL のテストを pgmem で動かす） が置き換える）
+- Status: Accepted（E2E の頻度を ADR-0040（Web の E2E を main への push でだけ回す） が、Contract の PostgreSQL の実行環境と頻度を ADR-0041（PostgreSQL のテストを pgmem で動かす） が置き換える、Build matrix の linux/arm64 のイメージのビルドの頻度を ADR-0047（CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #14
