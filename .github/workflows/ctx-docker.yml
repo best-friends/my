@@ -1,14 +1,15 @@
 name: "Context: docker"
 
 # The docker context of `make check` (scripts/changed-contexts.sh): the Dockerfile image version check
-# (make docker-check) and the Docker Compose smoke test with the linux/arm64 image builds. Called by ci.yml, with the
-# inputs `check` and `smoke` selecting the jobs, and runnable by hand (ADR-0047).
+# (make docker-check), the Docker Compose smoke test (linux/amd64), and the linux/arm64 image builds. Called by
+# ci.yml, main.yml, and nightly.yml, with the inputs `check`, `smoke`, and `arm64` selecting the jobs, and runnable
+# by hand (ADR-0047).
 
 on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests, `queue` in the merge queue, which skips the smoke test."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips the smoke test and the arm64 builds."
         type: string
         default: pr
       check:
@@ -16,13 +17,17 @@ on:
         type: boolean
         default: true
       smoke:
-        description: Run the Docker Compose smoke test and the linux/arm64 image builds.
+        description: Run the Docker Compose smoke test.
+        type: boolean
+        default: true
+      arm64:
+        description: Build the images for linux/arm64.
         type: boolean
         default: true
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests, `queue` in the merge queue, which skips the smoke test."
+        description: "`pr` on pull requests, `queue` in the merge queue, which skips the smoke test and the arm64 builds."
         type: choice
         options: [pr, queue]
         default: pr
@@ -31,7 +36,11 @@ on:
         type: boolean
         default: true
       smoke:
-        description: Run the Docker Compose smoke test and the linux/arm64 image builds.
+        description: Run the Docker Compose smoke test.
+        type: boolean
+        default: true
+      arm64:
+        description: Build the images for linux/arm64.
         type: boolean
         default: true
 
@@ -60,7 +69,15 @@ jobs:
           fetch-depth: 0
       - name: Smoke-test the Docker Compose setup
         run: make docker-smoke
-      # The smoke test covers linux/amd64; also build both images for linux/arm64 (ADR-0010) under QEMU.
+
+  docker-arm64:
+    # The smoke test covers linux/amd64; build both images for linux/arm64 too (ADR-0010) under QEMU. The Go server
+    # cross-builds with CGO_ENABLED=0, so only a change to the Dockerfile or the deployments makes the arm64 images
+    # differ: ci.yml runs it on a change to the docker context and nightly.yml every night (ADR-0047).
+    if: inputs.arm64 && inputs.scope == 'pr'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64

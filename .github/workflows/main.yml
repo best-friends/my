@@ -183,9 +183,12 @@ jobs:
     needs: changes
     if: needs.changes.outputs.smoke == 'true'
     uses: ./.github/workflows/ctx-docker.yml
+    # linux/amd64 only: the arm64 images change only with the docker context, which its pull request and nightly.yml
+    # build (ADR-0047).
     with:
       check: false
       smoke: true
+      arm64: false
 
   postgres-contract:
     # The PostgreSQL tests on a real postgres container instead of pgmem; nightly.yml runs them on every main
