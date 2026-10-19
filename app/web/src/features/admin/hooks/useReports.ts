@@ -2,7 +2,8 @@
 // The report queue (FR-701, FR-710): the reports of a tab, newest first; one report with what the moderators
 // need to handle it on one page (NFR-MOD-4): the posts it points at, the target's earlier actions, the moderator
 // who handles it, the notes, and resolving or reopening it. Each operation on the report answers the report after
-// it, which replaces the cached one; failures are shown in a toast and leave the page as it was (web-client.md E2).
+// it, which replaces the cached one once the lists of reports it changes are fetched again; failures are shown in
+// a toast and leave the page as it was (web-client.md E2).
 import { useToast } from "@my/ui";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
@@ -29,6 +30,7 @@ import {
   reportQueryOptions,
   reportsQueryOptions,
   storeReport,
+  storeReportNote,
 } from "../api/reports";
 import { type PagedList, toPagedList } from "./pagedList";
 
@@ -193,8 +195,9 @@ export type ReportChanges = {
 
 /**
  * Taking, leaving, resolving and reopening one report. `onChanged(change, message)` is called once the cache has
- * the report after it, with what the change did in words: the page shows it next to the pressed button, and
- * keeps focus where that button went away.
+ * the report after it and the lists of reports are fetched again (the change stays pending until then), with
+ * what the change did in words: the page shows it next to the pressed button, and keeps focus where that button
+ * went away.
  */
 export function useReportChanges(id: string, onChanged: (change: ChangeReport, message: string) => void): ReportChanges {
   const api = useApi();
@@ -203,8 +206,8 @@ export function useReportChanges(id: string, onChanged: (change: ChangeReport, m
   const toast = useToast();
   const mutation = useMutation({
     ...changeReportMutation(api),
-    onSuccess: (report, change) => {
-      storeReport(queryClient, api, report);
+    onSuccess: async (report, change) => {
+      await storeReport(queryClient, api, report);
       onChanged(change, changedMessage(t, change));
     },
     onError: (error, change) => {
@@ -254,7 +257,7 @@ export function useReportNoteForm(id: string): ReportNoteForm {
   const add = useMutation({
     ...addReportNoteMutation(api),
     onSuccess: (report) => {
-      storeReport(queryClient, api, report);
+      storeReportNote(queryClient, api, report);
       setBody("");
       setStatus(t("client:admin.report.notes.added"));
     },
