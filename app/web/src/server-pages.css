@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /*
  * The stylesheet of the pages the Go server renders without JavaScript: sign-in, sign-up, email
- * verification, account status and OAuth consent (internal/interface/authpages, ADR-0030).
+ * verification, account status, OAuth consent, and the terms of service and privacy policy
+ * (internal/interface/authpages, ADR-0030).
  * It is a separate entry of the Vite build, so the pages load no SPA CSS, and `my serve` links it
  * from the build manifest (web.Handler.Stylesheet). The templates use only the classes below,
  * so Tailwind scans no source files (source(none)); the rules are built with @apply from the
@@ -51,6 +52,11 @@
   /* The page: one centered card, as wide as the screen on phones. */
   .page {
     @apply mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8 sm:py-16;
+  }
+
+  /* A document (terms of service, privacy policy) gets a line length for reading. */
+  .page-document {
+    @apply max-w-3xl;
   }
 
   .card {
@@ -153,5 +159,89 @@
 
   .moderation-actions textarea {
     @apply bg-surface-raised;
+  }
+
+  /* The agreement on the registration form, above its submit button. */
+  .agreement {
+    @apply flex flex-col gap-2 text-sm;
+  }
+
+  /*
+   * A document's Markdown, rendered and sanitized by the server (internal/adapter/markdown):
+   * headings from h2, paragraphs, lists, quotes, code, rules, and tables.
+   */
+  .document {
+    @apply flex flex-col gap-4 leading-relaxed wrap-anywhere text-fg;
+    text-align: match-parent;
+  }
+
+  .document h2 {
+    @apply mt-4 text-xl font-bold;
+  }
+
+  .document h3 {
+    @apply mt-2 text-lg font-semibold;
+  }
+
+  .document h4,
+  .document h5,
+  .document h6 {
+    @apply font-semibold;
+  }
+
+  .document ul,
+  .document ol {
+    @apply flex flex-col gap-1 ps-6;
+  }
+
+  .document ul {
+    list-style: disc;
+  }
+
+  .document ol {
+    list-style: decimal;
+  }
+
+  .document blockquote {
+    @apply border-s-4 border-border-strong ps-4;
+  }
+
+  .document code {
+    @apply rounded-sm bg-surface-sunken px-1 font-mono text-sm;
+  }
+
+  .document pre {
+    @apply overflow-x-auto rounded-md bg-surface-sunken p-4;
+  }
+
+  .document pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .document hr {
+    @apply border-border;
+  }
+
+  /* Wide tables scroll inside the document, never the page (web-client.md D3). */
+  .document table {
+    @apply block max-w-full overflow-x-auto border-collapse text-sm;
+  }
+
+  .document th,
+  .document td {
+    @apply border border-border px-3 py-2 text-start align-top;
+  }
+
+  /* The footer of every page: links to the published documents. */
+  .footer {
+    @apply mx-auto w-full max-w-3xl px-4 pb-8;
+  }
+
+  .footer-links {
+    @apply flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm;
+  }
+
+  .footer-links a {
+    @apply inline-flex items-center pointer-coarse:min-h-11;
   }
 }

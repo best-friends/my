@@ -12,9 +12,9 @@ import (
 )
 
 // HTTPClient sends every outbound HTTP request of the server: federation fetches and
-// deliveries, WebFinger, NodeInfo, the media proxy, link previews, and Web Push (ADR-0019 §1,
-// docs/architecture/federation.md §1.1). The adapter lives in internal/adapter/httpclient and
-// passes testkit.HTTPClientContract.
+// deliveries, WebFinger, NodeInfo, the media proxy, link previews, Web Push, and CAPTCHA
+// verification (ADR-0019 §1, ADR-0042 §3, docs/architecture/federation.md §1.1). The adapter
+// lives in internal/adapter/httpclient and passes testkit.HTTPClientContract.
 //
 // The adapter refuses destinations that are not public: addresses outside the global unicast
 // space or in the special-purpose ranges of ADR-0019 §1 (checked on the address it actually
@@ -45,6 +45,8 @@ const (
 	HTTPPurposeImage
 	// HTTPPurposeVideo fetches remote video and audio.
 	HTTPPurposeVideo
+	// HTTPPurposeHumanCheck posts a CAPTCHA token to the service's siteverify API (ADR-0042 §3).
+	HTTPPurposeHumanCheck
 )
 
 // MaxRedirects is the number of redirects the HTTPClient follows for one request.
@@ -59,7 +61,8 @@ type HTTPLimits struct {
 	Timeout time.Duration
 }
 
-// DefaultHTTPLimits returns the limits of ADR-0019 §1 for p, and false for an unknown purpose.
+// DefaultHTTPLimits returns the limits of ADR-0019 §1 for p (ADR-0042 §3 for
+// HTTPPurposeHumanCheck), and false for an unknown purpose.
 func DefaultHTTPLimits(p HTTPPurpose) (HTTPLimits, bool) {
 	switch p {
 	case HTTPPurposeJSON, HTTPPurposeHTML:
@@ -68,6 +71,8 @@ func DefaultHTTPLimits(p HTTPPurpose) (HTTPLimits, bool) {
 		return HTTPLimits{MaxBodyBytes: 16 << 20, Timeout: 30 * time.Second}, true
 	case HTTPPurposeVideo:
 		return HTTPLimits{MaxBodyBytes: 100 << 20, Timeout: 60 * time.Second}, true
+	case HTTPPurposeHumanCheck:
+		return HTTPLimits{MaxBodyBytes: 64 << 10, Timeout: 10 * time.Second}, true
 	}
 	return HTTPLimits{}, false
 }

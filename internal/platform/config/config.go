@@ -64,6 +64,10 @@ type Config struct {
 	SMTPPort     int
 	SMTPUsername string
 	SMTPPassword string
+	// Captcha is the CAPTCHA service, or "none"; the keys configure it (ADR-0042).
+	Captcha          string
+	CaptchaSiteKey   string
+	CaptchaSecretKey string
 	// Profile is "production" or "development".
 	Profile string
 	// HTTPAllowPrivateNetworks lets the HTTPClient reach non-public destinations (development only).
@@ -121,6 +125,9 @@ func (c *Config) LogValue() slog.Value {
 		slog.Int("smtp_port", c.SMTPPort),
 		slog.String("smtp_username", c.SMTPUsername),
 		slog.String("smtp_password", redact(c.SMTPPassword != "")),
+		slog.String("captcha", c.Captcha),
+		slog.String("captcha_site_key", c.CaptchaSiteKey),
+		slog.String("captcha_secret_key", redact(c.CaptchaSecretKey != "")),
 		slog.String("profile", c.Profile),
 		slog.Bool("http_allow_private_networks", c.HTTPAllowPrivateNetworks),
 		slog.Duration("remote_status_retention", c.RemoteStatusRetention),

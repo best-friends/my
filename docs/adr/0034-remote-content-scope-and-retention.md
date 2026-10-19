@@ -1,6 +1,6 @@
 # ADR-0034: リモートコンテンツの取り込み範囲・リフレッシュ・保持
 
-- Status: Accepted
+- Status: Accepted（取り込む範囲に ADR-0044（プロフィールを開いたときの取得）が加わる）
 - Date: 2026-10-17
 - Deciders: @rosylilly
 - Issue: #232

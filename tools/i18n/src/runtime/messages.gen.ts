@@ -760,6 +760,66 @@ export interface MessageArgs {
   "client:admin.dead_jobs.summary": {};
   /** Failed jobs */
   "client:admin.dead_jobs.title": {};
+  /** Text in {language} */
+  "client:admin.documents.body": { language: string };
+  /** Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Save it empty to remove the text in this language. */
+  "client:admin.documents.body.description": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:admin.documents.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:admin.documents.characters_over": { count: number };
+  /** Cancel */
+  "client:admin.documents.confirm_remove.cancel": {};
+  /** Remove */
+  "client:admin.documents.confirm_remove.confirm": {};
+  /** People who read this language get the text in another language, or no page when no language has one. You can write it again later. */
+  "client:admin.documents.confirm_remove.description": {};
+  /** Remove the privacy policy in {language}? */
+  "client:admin.documents.confirm_remove.privacy_policy": { language: string };
+  /** Remove the terms of service in {language}? */
+  "client:admin.documents.confirm_remove.terms": { language: string };
+  /** Written in */
+  "client:admin.documents.languages": {};
+  /** No language yet, so the page and its links are hidden */
+  "client:admin.documents.languages.none": {};
+  /** Language */
+  "client:admin.documents.locale": {};
+  /** Each language has its own text. People read the text in their language, or else in the server's default language or English. */
+  "client:admin.documents.locale.description": {};
+  /** Privacy policy */
+  "client:admin.documents.privacy_policy": {};
+  /** The text in {language} is removed. The audit log records the change. */
+  "client:admin.documents.removed": { language: string };
+  /** Save */
+  "client:admin.documents.save": {};
+  /** Could not save the text: {reason} */
+  "client:admin.documents.save_failed": { reason: string };
+  /** The text in {language} is saved. The audit log records the change. */
+  "client:admin.documents.saved": { language: string };
+  /** Last saved in {language} */
+  "client:admin.documents.saved_at": { language: string };
+  /** Not written yet */
+  "client:admin.documents.saved_at.never": {};
+  /** The terms of service and the privacy policy that anyone can read and that people agree to when they sign up. */
+  "client:admin.documents.summary": {};
+  /** Terms of service */
+  "client:admin.documents.terms": {};
+  /** Terms and policies */
+  "client:admin.documents.title": {};
+  /** Use at most {max, number} characters */
+  "client:admin.documents.too_long": { max: number };
+  /** Your changes to the terms of service and the privacy policy will be lost. */
+  "client:admin.documents.unsaved.description": {};
+  /** Discard changes */
+  "client:admin.documents.unsaved.leave": {};
+  /** Keep editing */
+  "client:admin.documents.unsaved.stay": {};
+  /** Leave without saving the texts? */
+  "client:admin.documents.unsaved.title": {};
+  /** Open the privacy policy page */
+  "client:admin.documents.view_privacy_policy": {};
+  /** Open the terms of service page */
+  "client:admin.documents.view_terms": {};
   /** {count, plural, one {# character left} other {# characters left}} */
   "client:admin.domain_actions.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
@@ -1358,6 +1418,12 @@ export interface MessageArgs {
   "client:compose.warning.label": {};
   /** Add a content warning */
   "client:compose.warning.toggle": {};
+  /** Terms and policies */
+  "client:documents.label": {};
+  /** Privacy policy */
+  "client:documents.privacy_policy": {};
+  /** Terms of service */
+  "client:documents.terms": {};
   /** Home */
   "client:home.title": {};
   /** This server does not show the public posts of its accounts in one timeline. */
@@ -1866,12 +1932,16 @@ export interface MessageArgs {
   "client:settings.saved": {};
   /** Dates and times are shown in this time zone. */
   "client:settings.time_zone.description": {};
+  /** This device is in a different time zone: {zone}. */
+  "client:settings.time_zone.device_differs": { zone: string };
   /** Time zone */
   "client:settings.time_zone.label": {};
   /** UTC{offset} */
   "client:settings.time_zone.offset": { offset: string };
   /** (UTC{offset}) {name} */
   "client:settings.time_zone.option": { name: string; offset: string };
+  /** Use this device's time zone */
+  "client:settings.time_zone.use_device": {};
   /** Timelines show posts in the languages you check. Check none to see every language. */
   "client:settings.timeline_languages.description": {};
   /** Languages of your timelines */
@@ -2172,6 +2242,18 @@ export interface MessageArgs {
   "server:auth.authorize.title": { app: string };
   /** The request was refused because it came from another site. */
   "server:auth.cross_origin": {};
+  /** Terms and policies */
+  "server:auth.document.footer_label": {};
+  /** This server has not published a privacy policy. */
+  "server:auth.document.privacy_missing": {};
+  /** Privacy policy */
+  "server:auth.document.privacy_title": {};
+  /** This server has not published terms of service. */
+  "server:auth.document.terms_missing": {};
+  /** Terms of service */
+  "server:auth.document.terms_title": {};
+  /** Last updated: {date} */
+  "server:auth.document.updated": { date: string };
   /** Something went wrong */
   "server:auth.error.title": {};
   /** This form has expired. Please try again. */
@@ -2194,6 +2276,8 @@ export interface MessageArgs {
   "server:auth.sign_in.title": {};
   /** Sign out */
   "server:auth.sign_out.submit": {};
+  /** By creating an account, you agree to these documents of this server. */
+  "server:auth.sign_up.agreement": {};
   /** This server is not accepting new accounts. */
   "server:auth.sign_up.closed": {};
   /** You sign in with this address. */

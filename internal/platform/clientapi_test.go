@@ -38,6 +38,7 @@ func newClientAPIApp(t *testing.T) *platform.App {
 // TestClientAPI checks that the composition root serves the client API under /api/v1 with the
 // security headers of every response and CORS for the configured web origin.
 func TestClientAPI(t *testing.T) {
+	t.Parallel()
 	h := newClientAPIHandler(t)
 	spec := apitest.Load(t)
 
@@ -73,6 +74,7 @@ func TestClientAPI(t *testing.T) {
 }
 
 func TestClientAPICORS(t *testing.T) {
+	t.Parallel()
 	h := newClientAPIHandler(t)
 	preflight := func(origin string) *http.Response {
 		req := httptest.NewRequest(http.MethodOptions, "/api/v1/instance", nil)
@@ -107,6 +109,7 @@ func TestClientAPICORS(t *testing.T) {
 // TestClientAPIFallbackProblems checks that requests under /api/v1 that match no operation get
 // localized problem documents that the web client can read across origins.
 func TestClientAPIFallbackProblems(t *testing.T) {
+	t.Parallel()
 	h := newClientAPIHandler(t)
 	tests := []struct {
 		method, path string
@@ -137,6 +140,7 @@ func TestClientAPIFallbackProblems(t *testing.T) {
 // TestClientAPIInstanceSettings checks that GET /api/v1/instance reports the instance settings
 // and the texts of the request's locale, read per request.
 func TestClientAPIInstanceSettings(t *testing.T) {
+	t.Parallel()
 	app := newClientAPIApp(t)
 	ctx := t.Context()
 	for key, value := range map[instance.SettingKey]string{
@@ -172,6 +176,7 @@ func TestClientAPIInstanceSettings(t *testing.T) {
 // TestClientAPIInstanceRules checks that GET /api/v1/instance lists the rules in effect from
 // the database, in the request's locale, without the retired ones.
 func TestClientAPIInstanceRules(t *testing.T) {
+	t.Parallel()
 	app := newClientAPIApp(t)
 	ctx := t.Context()
 	kind, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{

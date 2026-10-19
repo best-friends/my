@@ -111,6 +111,7 @@ export function relationshipFixture(id: string, overrides: Partial<Schemas["Rela
 export const preferencesFixture: Schemas["Preferences"] = {
   locale: "en",
   time_zone: "UTC",
+  time_zone_chosen: true,
   default_visibility: "public",
   default_post_language: "en",
   require_media_description: false,

@@ -24,6 +24,7 @@ import (
 // can sign in again and the deletion job leaves the account, and once the account is deleted its
 // ban can no longer be appealed.
 func TestBanAppealsThroughTheCompositionRoot(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline"})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {

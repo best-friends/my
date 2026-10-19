@@ -138,6 +138,7 @@ func problemShape(t *testing.T, res *http.Response) string {
 // TestStatusVisibilityThroughTheAPI fetches a status of each of the five visibilities as each
 // kind of viewer: a status that the viewer may not see answers exactly like a missing one.
 func TestStatusVisibilityThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "follower", "mentioned", "stranger", "blocked")
 	ctx := t.Context()
 	if _, err := c.app.Graph.Follow(ctx, c.ids["follower"], c.ids["alice"]); err != nil {
@@ -180,6 +181,7 @@ func TestStatusVisibilityThroughTheAPI(t *testing.T) {
 // TestStatusesThroughTheAPI drives posting with media, replies and threads, edits and their
 // history, interactions, bookmarks, and deletion through the client API on the real database.
 func TestStatusesThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob")
 	ctx := t.Context()
 	upload := func(user string) string {

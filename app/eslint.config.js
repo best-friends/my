@@ -148,7 +148,7 @@ export default defineConfig(
     // S1: the API client and fetch are allowed here.
     files: apiAllowed,
     rules: {
-      "no-restricted-imports": ["error", { paths: restrict.importPaths }],
+      "no-restricted-imports": ["error", restrict.apiAllowedImports],
       "no-restricted-globals": "off",
       "no-restricted-properties": "off",
     },
@@ -159,6 +159,11 @@ export default defineConfig(
     rules: {
       "better-tailwindcss/no-restricted-classes": ["error", { restrict: [...restrict.classes, ...restrict.componentClasses] }],
     },
+  },
+  {
+    // G10: the icon set of the kit is the one file that imports react-icons, and only its Phosphor icons.
+    files: ["ui/src/Icons.tsx"],
+    rules: { "no-restricted-imports": ["error", restrict.iconSetImports] },
   },
   {
     // A8: the single audited component that renders server-sanitized post HTML.
@@ -229,11 +234,12 @@ export default defineConfig(
               from: { element: { type: "feature", fileInternalPath: "**/*.test.{ts,tsx}" } },
               allow: { to: { element: { type: "feature-test", captured: { feature: "{{ from.element.captured.feature }}" } } } },
             },
-            // A2: @my/ui knows only React, React Aria, TanStack Virtual (for Feed) and the Tailwind helpers.
+            // A2: @my/ui knows only React, React Aria, TanStack Virtual (for Feed), the Tailwind helpers and Phosphor (in Icons.tsx).
             {
               from: { element: { type: "ui" } },
               disallow: { to: { module: { origin: "external" } } },
-              message: "@my/ui depends only on React, React Aria, TanStack Virtual and the Tailwind helpers, not {{to.module.source}} (web-client.md A2).",
+              message:
+                "@my/ui depends only on React, React Aria, TanStack Virtual, the Tailwind helpers and, in Icons.tsx, react-icons/pi, not {{to.module.source}} (web-client.md A2).",
             },
             {
               from: { element: { type: "ui" } },
@@ -245,6 +251,12 @@ export default defineConfig(
                   },
                 },
               },
+            },
+            // A2, G10: the icon set of the kit draws its icons with Phosphor (ADR-0043); no-restricted-imports keeps
+            // react-icons to react-icons/pi in this one file.
+            {
+              from: { element: { type: "ui", fileInternalPath: "Icons.tsx" } },
+              allow: { to: { module: { origin: "external", source: ["react-icons"] } } },
             },
             // T5: stories also import the Storybook types and, for their play functions, storybook (storybook/test); components never do.
             {

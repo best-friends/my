@@ -29,6 +29,7 @@ import (
 // files a report unless its domain has reject_reports, and a suspended domain's POSTs get 403 and
 // its actors are not fetched.
 func TestFederationModeration(t *testing.T) {
+	t.Parallel()
 	const (
 		bob   = "https://remote.example/users/bob"
 		carol = "https://bad.example/users/carol"

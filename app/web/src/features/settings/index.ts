@@ -9,3 +9,5 @@ export { PreferencesForm } from "./components/PreferencesForm";
 export { ProfileForm } from "./components/ProfileForm";
 export { SettingsMenu } from "./components/SettingsMenu";
 export { useUserDisplaySettings } from "./hooks/useUserDisplaySettings";
+// Asking before leaving a form with unsaved changes (web-client.md §9), which the admin screens' forms share.
+export { useUnsavedChangesGuard } from "./hooks/useUnsavedChangesGuard";

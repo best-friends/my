@@ -19,6 +19,7 @@ import (
 // TestOAuthWebClientFlow drives the web client's authorization code flow with PKCE, the
 // refresh cookie, reuse detection, and revocation on the real database.
 func TestOAuthWebClientFlow(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		_, err := a.Identity.CreateAdmin(t.Context(), identity.CreateAdminInput{
@@ -173,6 +174,7 @@ func TestOAuthWebClientFlow(t *testing.T) {
 // endpoint answers with that issuer, and the code it returns works at the token endpoint, while the
 // ActivityPub ids stay under https://localhost:8080/.
 func TestOAuthWebClientPlainHTTPOnLocalhost(t *testing.T) {
+	t.Parallel()
 	const origin = "http://localhost:8080"
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_HOST": "localhost:8080", "MY_WEB_ORIGIN": origin})
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {

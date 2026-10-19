@@ -5,6 +5,7 @@
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
+import { isPostListQuery, refreshQueries } from "../../../lib/query";
 import type { components } from "../../../lib/api/schema.gen";
 
 /** An account, as the client API returns it; its own endpoints add the follow counts. */
@@ -90,18 +91,49 @@ export async function changeRelationship(api: Api, id: string, action: Relations
 }
 
 /**
- * Puts a changed relationship into the cache and marks stale what it changes: the account's follow
- * counts, its follow lists, and the viewer's home timeline, which shows the posts of the accounts they
- * follow and hides those of the accounts they block or mute.
+ * A change of a relationship between the viewer and another account: one of the viewer's own, or the viewer
+ * accepting the other account's follow request.
  */
-export function storeRelationship(queryClient: QueryClient, api: Api, relationship: Relationship): void {
+export type RelationshipChange = RelationshipAction | "accept";
+
+/** Whether `change` starts or ends a follow, either way: a block ends the follows both ways. */
+function changesFollows(change: RelationshipChange): boolean {
+  return change === "follow" || change === "unfollow" || change === "accept" || change === "block";
+}
+
+/**
+ * Fetches again every cached query that a change of the viewer's relationship with the account `accountId`
+ * changes, also those no page shows now (refreshQueries, web-client.md S1), and resolves once they are fetched.
+ * A change of a follow changes the follow counts on both profiles and the viewer's own account, every follow
+ * list (any may list either account), and, for the viewer's own follows, the home timeline; a change of a block
+ * or a mute changes every list of posts, which leave out the accounts the viewer blocks or mutes. The lists of
+ * the blocked and muted accounts in the settings are left to the caller (storeRelationship).
+ */
+export function refreshRelationship(queryClient: QueryClient, change: RelationshipChange, accountId: string, viewerId: string): Promise<void> {
+  const follows = changesFollows(change);
+  const posts = change !== "accept";
+  return refreshQueries(queryClient, {
+    predicate: (query) => {
+      const path = query.queryKey[1];
+      if (path === "/accounts/lookup") {
+        const id = (query.state.data as Account | undefined)?.id;
+        return follows && (id === accountId || id === viewerId);
+      }
+      if (path === "/accounts/verify_credentials" || path === "/accounts/{id}/followers" || path === "/accounts/{id}/following") return follows;
+      if (change === "follow" || change === "unfollow") return path === "/timelines/home";
+      return posts && isPostListQuery(query.queryKey);
+    },
+  });
+}
+
+/**
+ * Puts a changed relationship into the cache and fetches again what it changes (refreshRelationship), and
+ * the settings' lists of the accounts that the viewer blocks and mutes; resolves once that is done.
+ */
+export async function storeRelationship(queryClient: QueryClient, api: Api, relationship: Relationship, action: RelationshipAction, viewerId: string): Promise<void> {
   queryClient.setQueryData(relationshipQueryOptions(api, relationship.id).queryKey, [relationship]);
-  void queryClient.invalidateQueries({ queryKey: ["get", "/accounts/lookup"] });
-  // The account's followers and the viewer's following change; any list may show either of them.
-  void queryClient.invalidateQueries({ queryKey: ["get", "/accounts/{id}/followers"] });
-  void queryClient.invalidateQueries({ queryKey: ["get", "/accounts/{id}/following"] });
-  void queryClient.invalidateQueries({ queryKey: ["get", "/timelines/home"] });
-  // The settings list the accounts that the viewer blocks and mutes.
-  void queryClient.invalidateQueries({ queryKey: ["get", "/blocks"] });
-  void queryClient.invalidateQueries({ queryKey: ["get", "/mutes"] });
+  await Promise.all([
+    refreshRelationship(queryClient, action, relationship.id, viewerId),
+    refreshQueries(queryClient, { queryKey: ["get", "/blocks"] }, { queryKey: ["get", "/mutes"] }),
+  ]);
 }

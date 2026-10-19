@@ -14,8 +14,12 @@ type Preferences struct {
 	UserID string
 	// Locale is the UI language. It is never UndeterminedLanguage.
 	Locale string
-	// TimeZone is the zone dates are shown in, such as "Asia/Tokyo" or "UTC".
+	// TimeZone is the zone dates are shown in, such as "Asia/Tokyo" or "UTC"; DefaultTimeZone
+	// until the user chooses one.
 	TimeZone string
+	// TimeZoneChosen is whether the user (or a client for them) has chosen TimeZone. A new user
+	// has not, and the web client then offers the browser's zone (data-model §4.1).
+	TimeZoneChosen bool
 	// DefaultVisibility is the visibility a new post starts with.
 	DefaultVisibility Visibility
 	// DefaultPostLanguage is the language a new post starts with; UndeterminedLanguage leaves it

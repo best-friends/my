@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Checkbox, Radio, RadioGroup, Select, SelectItem, Switch } from "@my/ui";
-import { useId } from "react";
+import { Button, Checkbox, Radio, RadioGroup, Select, SelectItem, Switch } from "@my/ui";
+import { useId, useRef } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useDisplaySettings } from "../../../lib/locale";
 import type { Visibility } from "../api/me";
 import { displayLanguageOf, displayLanguageOptions, timelineLanguageOptions } from "../hooks/languages";
 import { useModeratorEmail } from "../hooks/useModeratorEmail";
-import { useTimeZoneOptions } from "../hooks/timeZones";
+import { deviceTimeZone, sameTimeZone, useTimeZoneOptions } from "../hooks/timeZones";
 import { type PreferenceControl, usePreferences } from "../hooks/usePreferences";
 
 /** The visibilities in the order of ADR-0017, widest first, with their label and description. */
@@ -108,12 +108,44 @@ function DisplayLanguageSelect({ control }: { control: PreferenceControl<string>
 }
 
 /**
- * The time zone: each option is the zone's name in the display language with its difference from UTC, and is
- * described by its IANA name, which tells apart the zones of one name (America/New_York, America/Detroit).
+ * The time zone select, and under it, while the chosen zone is not this device's, a note that names the
+ * device's zone with a button that chooses it.
  */
 function TimeZoneSelect({ control }: { control: PreferenceControl<string> }) {
   const t = useT();
   const options = useTimeZoneOptions(control.value);
+  const groupRef = useRef<HTMLDivElement>(null);
+  const device = deviceTimeZone();
+  const differs = !sameTimeZone(control.value, device);
+  const deviceLabel = options.find((option) => sameTimeZone(option.id, device))?.label ?? device;
+  return (
+    <div ref={groupRef} className="flex flex-col gap-3">
+      <TimeZoneField control={control} options={options} />
+      {differs && (
+        <div className="flex flex-col items-start gap-2 rounded-md border border-s-4 border-border border-s-border-strong bg-surface-raised px-4 py-3">
+          <p className="text-sm wrap-anywhere text-fg">{t("client:settings.time_zone.device_differs", { zone: deviceLabel })}</p>
+          <Button
+            size="sm"
+            onPress={() => {
+              // The button goes away with the difference: focus moves to the select, which shows the new zone.
+              groupRef.current?.querySelector<HTMLElement>("button")?.focus();
+              control.onChange(device);
+            }}
+          >
+            {t("client:settings.time_zone.use_device")}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The time zone: each option is the zone's name in the display language with its difference from UTC, and is
+ * described by its IANA name, which tells apart the zones of one name (America/New_York, America/Detroit).
+ */
+function TimeZoneField({ control, options }: { control: PreferenceControl<string>; options: ReturnType<typeof useTimeZoneOptions> }) {
+  const t = useT();
   return (
     <Select
       label={t("client:settings.time_zone.label")}
