@@ -38,10 +38,13 @@ git switch -c <type>/<N>-<short-slug>     # e.g. task/42-sqlite-adapter, spike/1
 ## 5. Verify
 
 ```sh
-make check
+make check-changed        # the contexts changed since origin/main and their dependents, in parallel
+make go-check             # or one context: docs-check, go-check, i18n-check, api-check, ui-check, web-check, docker-check
+make check                # every context, when the change touches shared configuration
 ```
 
-Must pass. If a check is wrong or flaky, fix it in a separate commit and explain in the PR.
+Must pass. CI runs every affected context again and its `check` gate decides the merge.
+If a check is wrong or flaky, fix it in a separate commit and explain in the PR.
 
 ## 6. Commit & PR
 

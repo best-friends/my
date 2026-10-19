@@ -22,7 +22,56 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
-check: lint-docs adr-index-check go-check i18n-check dockerfile-check api-check web-check ## Run every offline check CI runs
+# --- Checks by context (make check, make check-changed) -------------------------------------
+# Each context has one `<context>-check` target, and CI runs each in its own job. `make check` installs the
+# npm dependencies once, then runs the contexts in parallel, CHECK_JOBS at a time, each context's steps one after
+# another, and prints each context's output as one block when that context ends, then a summary. Inside the run
+# the installs are skipped (CHECK_INSTALLED), so no two contexts write node_modules at once, and no two contexts
+# write the same file: web-check builds into app/web/dist only (web-dist), never into internal/interface/web/dist
+# that the Go builds embed. scripts/changed-contexts.sh maps changed paths to contexts and their dependents.
+CHECKS := docs-check go-check i18n-check api-check ui-check web-check docker-check
+CHECK_JOBS ?= $(words $(CHECKS))
+CHECK_STATUS := .tmp/check
+# The revision `make check-changed` compares with: the changes since its merge base with HEAD, uncommitted and
+# untracked files included.
+BASE ?= origin/main
+
+.PHONY: check check-changed docs-check docker-check ui-check
+
+check: web-install i18n-install ## Run every offline check CI runs, the contexts in parallel (CHECKS="go-check web-check" for some, CHECK_JOBS=1 for one at a time)
+	@rm -rf $(CHECK_STATUS) && mkdir -p $(CHECK_STATUS)
+	@$(MAKE) --no-print-directory --keep-going -j$(CHECK_JOBS) --output-sync=recurse $(addprefix check-run-,$(CHECKS)); \
+		status=$$?; \
+		echo 'make check:'; \
+		for c in $(CHECKS); do printf '  %-14s %s\n' "$$c" "$$(cat $(CHECK_STATUS)/$$c 2>/dev/null || echo 'not run')"; done; \
+		exit $$status
+
+# One context of `make check`, in a make of its own that runs the context's steps serially. Its MAKEFLAGS are
+# dropped so that it neither joins the parallel jobserver nor keeps going past its first failure.
+check-run-%:
+	@start=$$(date +%s); \
+		if env -u MAKEFLAGS -u MFLAGS $(MAKE) --no-print-directory CHECK_INSTALLED=1 $*; then \
+			echo "passed in $$(( $$(date +%s) - start ))s" > $(CHECK_STATUS)/$*; \
+		else \
+			echo "FAILED after $$(( $$(date +%s) - start ))s; its output is above" > $(CHECK_STATUS)/$*; \
+			echo "make check: $* FAILED" >&2; exit 1; \
+		fi
+
+check-changed: ## Run, in parallel, the checks of the contexts changed since BASE (default origin/main) and of their dependents
+	@contexts="$$(scripts/changed-contexts.sh '$(BASE)')" || exit 1; \
+		checks=""; \
+		for c in $$contexts; do \
+			case " $(CHECKS) " in *" $$c-check "*) checks="$$checks $$c-check";; esac; \
+		done; \
+		echo "contexts changed since $(BASE):" $$contexts; \
+		case " $$(echo $$contexts) " in *" shell "*) echo 'also run `make lint-shell` (shellcheck; CI runs it)';; esac; \
+		case " $$(echo $$contexts) " in *" schema "*) echo 'also run `make db-check` for both dialects (CI runs it)';; esac; \
+		if [ -z "$$checks" ]; then echo 'no check covers these changes'; exit 0; fi; \
+		$(MAKE) --no-print-directory check CHECKS="$${checks# }"
+
+docs-check: lint-docs adr-index-check ## Run the documentation checks: markdownlint and the ADR index
+
+docker-check: dockerfile-check ## Run the offline container image checks
 
 lint-docs: ## Lint Markdown files
 	$(MARKDOWNLINT)
@@ -181,8 +230,11 @@ dockerfile-check: ## Fail if the Dockerfile's Go, Node.js, or Bun image differs 
 	@want="oven/bun:$$(awk '$$1 == "bun" { print $$2 }' .tool-versions)-"; \
 		grep -q "^ARG BUN_IMAGE=$$want" Dockerfile || { echo "Dockerfile: BUN_IMAGE must start with $$want" >&2; exit 1; }
 
+# CHECK_INSTALLED skips the installs inside `make check`, which has run them before starting the contexts.
 i18n-install: ## Install the pinned i18n tool dependencies (tools/i18n/bun.lock)
+ifndef CHECK_INSTALLED
 	cd tools/i18n && bun install --frozen-lockfile
+endif
 
 i18n-gen: i18n-install ## Regenerate pseudo-locales, typed accessors, and parity fixtures from locales/
 	cd tools/i18n && bun run src/gen.ts
@@ -198,20 +250,28 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-routes-check web-check
+.PHONY: web-install web-typecheck web-dist web-build web-licenses web-lint web-tokens web-test web-e2e web-e2e-install web-routes-check web-check
+.PHONY: ui-typecheck ui-unit-test
 
 # internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its
 # .gitkeep is committed, so Go builds and tests need no Bun; `make build` embeds the real build.
 WEB_EMBED_DIR := internal/interface/web/dist
 
 web-install: ## Install the pinned client workspace dependencies (app/bun.lock)
+ifndef CHECK_INSTALLED
 	cd app && bun install --frozen-lockfile
+endif
 
-web-typecheck: web-install ## Type-check every client package with tsc
-	cd app && bun run typecheck
+web-typecheck: web-install ## Type-check app/web with tsc (incremental, node_modules/.cache/tsc)
+	cd app/web && bun run typecheck
 
-web-build: web-install ## Build app/web into app/web/dist and copy it to internal/interface/web/dist for embedding (fails when React Compiler compiled nothing or skipped a function)
+ui-typecheck: web-install ## Type-check app/ui with tsc (incremental, node_modules/.cache/tsc)
+	cd app/ui && bun run typecheck
+
+web-dist: web-install ## Build app/web into app/web/dist (fails when React Compiler compiled nothing or skipped a function)
 	cd app && bun run build
+
+web-build: web-dist ## Build app/web and copy the build to internal/interface/web/dist for embedding
 	find $(WEB_EMBED_DIR) -mindepth 1 ! -name .gitkeep -delete
 	cp -R app/web/dist/. $(WEB_EMBED_DIR)/
 
@@ -228,8 +288,10 @@ web-lint: web-install ## Lint the client workspace: ESLint (app/eslint.config.js
 web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors, motion only under motion-safe
 	cd app/ui && bun run check-tokens
 
-web-test: web-install ## Run the client component tests with Vitest (jsdom + MSW)
+web-test: web-install ## Run the app/web component tests with Vitest (jsdom + MSW)
 	cd app/web && bun run test
+
+ui-unit-test: web-install ## Run the app/ui unit tests with Vitest (jsdom); the story tests are `make ui-test`
 	cd app/ui && bun run test:unit
 
 # Playwright runs against `vite preview` of the fresh build, and the server-rendered pages against
@@ -244,11 +306,13 @@ web-e2e: build ## Run the web E2E tests with Playwright (E2E_MATRIX=full for the
 web-e2e-install: web-install ## Download the Playwright browser that web-e2e uses (local runs only)
 	cd app/web && bun run playwright install chromium
 
-web-routes-check: web-build ## Fail when the committed app/web/src/routeTree.gen.ts differs from the one the build generates
+web-routes-check: web-dist ## Fail when the committed app/web/src/routeTree.gen.ts differs from the one the build generates
 	@git diff --exit-code --quiet -- app/web/src/routeTree.gen.ts \
 		|| { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client.md §9)' >&2; exit 1; }
 
-web-check: web-typecheck web-lint web-build web-routes-check web-licenses web-tokens web-test playwright-image-check ## Run every offline web client check
+web-check: web-typecheck web-lint web-dist web-routes-check web-licenses web-tokens web-test playwright-image-check ## Run the offline checks of app/web and the workspace-wide client checks (ESLint, knip, licenses, tokens)
+
+ui-check: ui-typecheck ui-unit-test ## Run the offline checks of app/ui (@my/ui); its dependent app/web is web-check
 
 # --- @my/ui Storybook and story tests (ADR-0027) ----------------------------------------------
 # The story tests run every story in Chromium (Vitest browser mode, Playwright): axe must find no

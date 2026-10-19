@@ -12,12 +12,14 @@ asdf install   # or: mise install
 make check
 ```
 
-`make check` はネットワーク不要のチェック（Markdown lint、ADR 索引、Go の `go vet` / golangci-lint / テスト /
+`make check` はコンテキスト（docs・Go・i18n・API・`app/ui`・`app/web`・Docker）ごとのターゲット（`docs-check`・`go-check`・`i18n-check`・`api-check`・`ui-check`・`web-check`・`docker-check`）を並列に実行し、最後に結果の一覧を出します。
+変更したコンテキストとその依存先だけを回すには `make check-changed`（比較の基準は `BASE=origin/main`）を使います。CI も同じ判定（`scripts/changed-contexts.sh`）で変更のないコンテキストのジョブを飛ばし、必須チェック `check` が各ジョブの結果を集めます。
+これらはネットワーク不要のチェック（Markdown lint、ADR 索引、Go の `go vet` / golangci-lint / テスト /
 `CGO_ENABLED=0` ビルド / 依存ライセンス検査 / sqlc 生成物の検査、i18n カタログ検査、クライアント API の spec の lint と生成物の検査、`Dockerfile` の Go イメージと `.tool-versions` の一致、Web クライアントの型検査・ビルド・依存ライセンス検査）をすべて実行します。初回のみ Go モジュールとツール、`tools/i18n` と `app/` の npm パッケージのダウンロードが必要です。
 
 - Go ツール（govulncheck, go-licenses, sqlc, oapi-codegen）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
-- 脆弱性検査はネットワークが必要なため `make check` には含めず、`make go-vuln` で実行します（CI では毎回実行）。
-- Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `make check` には含めず、`make docker-smoke` で実行します（CI では毎回実行）。
+- 脆弱性検査はネットワークが必要なため `make check` には含めず、`make go-vuln` で実行します（CI では Go のジョブで実行）。
+- Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `make check` には含めず、`make docker-smoke` で実行します（CI ではドキュメント以外を変えたときに実行）。
 - Mastodon・GoToSocial とのライブの相互運用テストは `make check` に含めず、`make federation-live` で実行します（CI では nightly。手順は [deploy/docker/federation-live/README.md](deploy/docker/federation-live/README.md)）。
 - 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`。`tools/i18n` と `app/` の npm パッケージも同じ一覧で検査）に限ります。
   増やす場合は PR で理由を説明してください。
@@ -26,7 +28,7 @@ make check
 
 1. GitHub Issue を選ぶ（`agent:ready` は受け入れ基準が明確で着手可能なもの）。
 2. ブランチ `<type>/<issue>-<slug>` を切る。`main` に直接 push しない。
-3. `make check` を通してコミット（Conventional Commits、英語）。
+3. 触れたコンテキストの check か `make check-changed` を通してコミット（Conventional Commits、英語）。共有の設定を変えたときは `make check`。
 4. PR テンプレートに従って PR を作成する。
 
 ## スキーマの変更
