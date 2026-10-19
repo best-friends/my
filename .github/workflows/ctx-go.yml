@@ -31,9 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # setup-go's own cache is keyed on go.sum alone and never refreshed. This one is saved on every push to main
-      # and restored by pull requests, so the build and go test results of unchanged packages stay cached.
-      # `github` is the caller's context, so github.event_name is ci.yml's event.
+      # setup-go's own cache is keyed on go.sum alone and never refreshed. This one is saved by main.yml on the
+      # pushes to main that touch Go and restored here, so the builds of unchanged packages stay cached.
       - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
@@ -65,22 +64,14 @@ jobs:
           version: v${{ steps.tools.outputs.golangci-lint }}
       - name: make go-check (except go-test)
         run: make go-mod-check go-vet go-lint go-build go-licenses sqlc-check
-      - name: Save the Go module and build cache
-        if: github.event_name == 'push'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
 
   go-test:
-    # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); the postgres-contract
-    # job of ci.yml runs them on a real postgres container on pushes to main.
+    # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); postgres-contract.yml
+    # runs them on a real postgres container after the merge (main.yml) and nightly.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # The same cache as the go job's, of the test builds and results.
+      # Saved by main.yml like the go job's, of the test builds.
       - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
@@ -97,11 +88,3 @@ jobs:
             go-test-${{ runner.os }}-
       - name: make go-test
         run: make go-test
-      - name: Save the Go module and build cache
-        if: github.event_name == 'push'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}

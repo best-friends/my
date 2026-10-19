@@ -1,0 +1,195 @@
+name: Main
+
+# The post-merge suites of a push to main (ADR-0047). A main commit is the head of a merge group that the merge queue
+# has already checked, so the contexts of `make check` (ci.yml) do not run again here. This workflow saves the Go and
+# Bun caches that pull requests and merge groups restore, and runs the checks too slow for the merge queue: the web
+# E2E subset, the Docker Compose smoke test (except on docs-only pushes), the @my/ui story tests (when the ui context
+# changes), and the PostgreSQL tests on a real postgres container (when a path they depend on changes).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One group for main: a newer push cancels the run in progress and starts at once, so the latest main commit is the
+# one checked (ADR-0040) and no run waits only to be replaced. The called workflows set no concurrency of their own.
+concurrency:
+  group: main
+  cancel-in-progress: true
+
+env:
+  # Use exactly the Go version from .tool-versions; never auto-download another toolchain.
+  GOTOOLCHAIN: local
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.select.outputs.go }}
+      ui: ${{ steps.select.outputs.ui }}
+      smoke: ${{ steps.select.outputs.smoke }}
+      postgres: ${{ steps.select.outputs.postgres }}
+    steps:
+      - uses: actions/checkout@v7
+      # The push's range is `before`..`after`; `before` is fetched by SHA because the merge queue can merge several
+      # groups in one push. Without a `before` to compare with (a new branch, or a commit no longer on the remote
+      # after a force push), every suite runs.
+      - name: Select the suites the push touches
+        id: select
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+        run: |
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ] &&
+            git fetch --no-tags --depth=1 origin "$BEFORE"; then
+            git diff --name-only "$BEFORE" "$AFTER" > "$RUNNER_TEMP/changed"
+            contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
+            # The paths the PostgreSQL tests depend on: the packages they test (POSTGRES_TEST_PACKAGES in the
+            # Makefile), the queries and the schema, the test kit, the Go modules, and how CI runs them.
+            if grep -qE '^(internal/adapter/(db|kv|queue)/|internal/platform/|queries/|schema/|pkg/testkit/|sqlc\.yaml$|go\.(mod|sum)$|Makefile$|\.tool-versions$|\.github/workflows/(main|postgres-contract)\.yml$)' \
+              "$RUNNER_TEMP/changed"; then
+              postgres=true
+            else
+              postgres=false
+            fi
+          else
+            echo "No range to compare with: running every suite."
+            contexts="$(scripts/changed-contexts.sh --all)"
+            postgres=true
+          fi
+          echo "contexts: ${contexts//$'\n'/ }"
+          for c in go ui; do
+            if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
+          done
+          # The images hold everything but the docs: any context other than docs runs the smoke test.
+          if grep -vx docs <<< "$contexts" | grep -q .; then echo smoke=true; else echo smoke=false; fi >> "$GITHUB_OUTPUT"
+          echo "postgres=$postgres" >> "$GITHUB_OUTPUT"
+
+  # The Go caches that ctx-go.yml (go, go-test), ctx-api.yml, and postgres-contract.yml restore. Each is keyed by the
+  # commit, so the newest main commit's cache is the one a restore-keys prefix finds. They are built without running
+  # the checks: the go-lint cache holds the CGO_ENABLED=0 build, go vet, and the pinned Go tools; the go-test cache
+  # holds the compiled test binaries (`-exec true` builds and vets them without running them, and caches no results).
+  # A push that touches no Go keeps the previous caches, which still match it.
+  go-lint-cache:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: .tool-versions
+          cache: false
+      - name: Restore the Go module and build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-lint-${{ runner.os }}-
+      - name: Build the packages, go vet, and the Go tools
+        run: |
+          go mod download
+          (cd tools && go mod download)
+          CGO_ENABLED=0 go build ./...
+          go vet ./...
+          CGO_ENABLED=0 go tool -modfile=tools/go.mod sqlc version
+          go tool -modfile=tools/go.mod oapi-codegen -version
+          go tool -modfile=tools/go.mod go-licenses --help > /dev/null 2>&1
+      - name: Save the Go module and build cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+
+  go-test-cache:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: .tool-versions
+          cache: false
+      - name: Restore the Go module and build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-test-${{ runner.os }}-
+      - name: Build the test binaries
+        run: go test -exec true ./...
+      - name: Save the Go module and build cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+
+  bun-cache:
+    # The Bun package cache of ctx-docs.yml, ctx-i18n.yml, ctx-api.yml, and ctx-web.yml, keyed by the lockfiles alone:
+    # it is saved only when no cache of those lockfiles exists yet. ui-test.yml and web-e2e.yml save their own
+    # caches (bun-ui-, bun-e2e-) when they run here.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Look up the Bun package cache
+        id: lookup
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
+          lookup-only: true
+      - if: steps.lookup.outputs.cache-hit != 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      - name: Install the client and i18n tool packages
+        if: steps.lookup.outputs.cache-hit != 'true'
+        run: make web-install i18n-install
+      - name: Save the Bun package cache
+        if: steps.lookup.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
+
+  web-e2e:
+    # Playwright E2E of the web client over the subset of the width × locale matrix, on every push to main;
+    # nightly.yml runs all of it (ADR-0040).
+    uses: ./.github/workflows/web-e2e.yml
+    with:
+      matrix: pr
+
+  ui-test:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    uses: ./.github/workflows/ui-test.yml
+
+  docker-smoke:
+    needs: changes
+    if: needs.changes.outputs.smoke == 'true'
+    uses: ./.github/workflows/ctx-docker.yml
+    with:
+      check: false
+      smoke: true
+
+  postgres-contract:
+    # The PostgreSQL tests on a real postgres container instead of pgmem; nightly.yml runs them on every main
+    # (ADR-0041).
+    needs: changes
+    if: needs.changes.outputs.postgres == 'true'
+    uses: ./.github/workflows/postgres-contract.yml

@@ -1,0 +1,48 @@
+name: UI story tests
+
+# The @my/ui story tests (ADR-0027): axe on every story and the screenshots at 3 container widths × light / dark
+# × LTR / RTL, in the pinned Playwright image. Called by ctx-web.yml when a pull request touches the ui context and
+# by main.yml when a push to main does (ADR-0047).
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  ui-test:
+    # The baselines were generated in this same image (`make ui-snapshots-update`).
+    runs-on: ubuntu-latest
+    # Must equal PLAYWRIGHT_IMAGE in the Makefile (`make playwright-image-check`).
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v7
+      # The image has neither make nor the unzip that setup-bun extracts Bun with.
+      - name: Install make and unzip
+        run: apt-get update && apt-get install -y --no-install-recommends make unzip
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .tool-versions
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-ui-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}
+          restore-keys: bun-ui-${{ runner.os }}-
+      - name: make ui-test
+        run: make ui-test
+      # On a visual difference, the actual and diff images are under app/ui/.vitest/attachments/.
+      - name: Upload the screenshot diffs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ui-test-screenshots
+          path: app/ui/.vitest/
+          retention-days: 7
