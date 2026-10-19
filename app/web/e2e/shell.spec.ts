@@ -203,6 +203,28 @@ ${Array.from({ length: 6 }, () => "          - listitem:\n            - link").j
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });
+
+  // The sidebar scrolls vertically (overflow-y: auto, so overflow-x is auto too): content wider than its box,
+  // by a single pixel, shows a horizontal scrollbar at its bottom. Desktop widths beyond the matrix are checked
+  // from one project per locale.
+  test("scrolls sideways neither itself nor the page at desktop widths", async ({ page }) => {
+    test.skip(page.viewportSize()?.width !== 1440, "resizes the viewport itself; runs once per locale");
+    const navigation = page.getByRole("navigation");
+    for (const width of [1280, 1440, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(navigation.locator('a[href="/@alice"]')).toBeVisible();
+      await expectNoHorizontalScroll(page);
+      // The sidebar and every element in it that can scroll sideways: none is wider inside than its box. Names cut
+      // to one line (overflow: hidden) are wider inside on purpose and never scroll.
+      const overflowing = await navigation.evaluate((nav) =>
+        [nav, ...nav.querySelectorAll<HTMLElement>("*")]
+          .filter((element) => element === nav || ["auto", "scroll"].includes(getComputedStyle(element).overflowX))
+          .filter((element) => element.scrollWidth > element.clientWidth)
+          .map((element) => `${element.tagName.toLowerCase()} scrollWidth ${element.scrollWidth}px > clientWidth ${element.clientWidth}px`),
+      );
+      expect(overflowing, `at ${width}px`).toEqual([]);
+    }
+  });
 });
 
 test.describe("navigation", () => {

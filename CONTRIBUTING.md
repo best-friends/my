@@ -107,9 +107,13 @@ make sqlc-check  # 生成物が最新でなければ失敗（make check に含�
 
 - DB アダプタは `pkg/testkit` のコントラクトテスト（例: `testkit.UnitOfWorkContract`）を SQLite と PostgreSQL の両方で通します。
   テスト用の DB には目標スキーマ `schema/<dialect>.sql` を直接流します（空の DB に対する Atlas の適用と同じ SQL になります）。
-- PostgreSQL のテストは Docker があれば testcontainers-go でコンテナを起動し、なければスキップします。
-  既存のサーバーを使うときは `TEST_POSTGRES_URL=postgres://...`（DB を作成できるユーザー）を指定します。
-  CI は `TEST_POSTGRES_REQUIRED=1` を設定し、PostgreSQL のテストをスキップせず必ず実行します。
+- PostgreSQL のテストは `pkg/testkit/pgtest` でサーバーを得ます（[ADR-0041](docs/adr/0041-postgres-tests-on-pgmem.md)）。
+  既定では、テストのプロセスの中で pgmem（メモリ上で動く PostgreSQL）を起動するので、Docker は要りません。
+  テストのバイナリごとにサーバーを 1 つ起動し、テストごとにスキーマを当てたテンプレートのデータベースを複製します。
+- 本物の PostgreSQL で流すときは、次のどちらかを使います。CI は main への push と nightly で `make go-test-postgres` を流します。
+  - `make go-test-postgres`: `TEST_POSTGRES=container` で testcontainers-go のコンテナ（`TEST_POSTGRES_IMAGE`、既定は `postgres:18-alpine`）を起動します。
+    Docker がないと、`TEST_POSTGRES_REQUIRED=1` なので失敗します。
+  - `TEST_POSTGRES_URL=postgres://...`（DB を作成できるユーザー）: 既存のサーバーを使います
 
 ## 設計判断
 
