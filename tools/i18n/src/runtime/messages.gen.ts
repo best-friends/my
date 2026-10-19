@@ -1578,10 +1578,14 @@ export interface MessageArgs {
   "client:profile.not_found.body": {};
   /** Account not found */
   "client:profile.not_found.title": {};
-  /** Open the original profile on {host} */
-  "client:profile.original": { host: string };
   /** Could not load whether you follow this account: {reason} */
   "client:profile.relationship_failed": { reason: string };
+  /** Fetching recent posts from the original server. */
+  "client:profile.remote.fetching": {};
+  /** Only the posts this server has received are shown. */
+  "client:profile.remote.notice": {};
+  /** See on {host} */
+  "client:profile.remote.original": { host: string };
   /** Sign in to follow */
   "client:profile.sign_in_to_follow": {};
   /** Sign in to see your profile. */

@@ -5,8 +5,8 @@
 import { Avatar, ExternalLinkIcon, Link, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
 import { type ReactNode, useId, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
-import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed } from "../../timeline";
-import { isolate, useProfile } from "../hooks/useProfile";
+import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed, useRemoteFetch } from "../../timeline";
+import { isolate, type ProfileView as ProfileViewData, useProfile } from "../hooks/useProfile";
 import { useRelationship } from "../hooks/useRelationship";
 import { RelationshipActions } from "./RelationshipActions";
 
@@ -58,15 +58,6 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
             <p className="text-fg-muted">
               <span dir="ltr">{profile.handle}</span>
             </p>
-            {profile.original !== null && (
-              <p>
-                {/* The profile on the account's own server, which may show more than this instance knows. */}
-                <Link href={profile.original.href} rel="noreferrer" variant="standalone" className="gap-1">
-                  {t("client:profile.original", { host: isolate(profile.original.host) })}
-                  <ExternalLinkIcon />
-                </Link>
-              </p>
-            )}
           </div>
           {tags.length > 0 && (
             <ul className="flex flex-wrap gap-2">
@@ -115,7 +106,7 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
           )}
         </div>
       </header>
-      <ProfileTabs accountId={account.id} name={profile.name} tab={tab} onTabChange={onTabChange} />
+      <ProfileTabs accountId={account.id} name={profile.name} original={profile.original} tab={tab} onTabChange={onTabChange} />
     </div>
   );
 }
@@ -143,9 +134,15 @@ function HeaderImage({ src }: { src: string | undefined }) {
   );
 }
 
-type ProfileTabsProps ={ accountId: string; name: string; tab: AccountTimelineFilter; onTabChange: (tab: AccountTimelineFilter) => void };
+type ProfileTabsProps = {
+  accountId: string;
+  name: string;
+  original: ProfileViewData["original"];
+  tab: AccountTimelineFilter;
+  onTabChange: (tab: AccountTimelineFilter) => void;
+};
 
-function ProfileTabs({ accountId, name, tab, onTabChange }: ProfileTabsProps) {
+function ProfileTabs({ accountId, name, original, tab, onTabChange }: ProfileTabsProps) {
   const t = useT();
   const headingId = useId();
   return (
@@ -170,9 +167,43 @@ function ProfileTabs({ accountId, name, tab, onTabChange }: ProfileTabsProps) {
             <h2 id={headingId}>{t(tabLabels[filter])}</h2>
           </VisuallyHidden>
           {/* Another tab is another timeline: nothing of the previous one carries over (web-client.md R10). */}
-          <TimelineFeed key={filter} timeline={{ kind: "account", id: accountId, filter }} aria-labelledby={headingId} />
+          <AccountPosts key={filter} accountId={accountId} filter={filter} original={original} labelledBy={headingId} />
         </TabPanel>
       ))}
     </Tabs>
+  );
+}
+
+type AccountPostsProps = { accountId: string; filter: AccountTimelineFilter; original: ProfileViewData["original"]; labelledBy: string };
+
+/**
+ * A tab's posts. For an account of another server they are only those this instance has received, which
+ * the feed says above them, with a link to the profile on the account's own server; while the server fetches
+ * the account's recent posts from there, a line says so until they are read again (ADR-0044).
+ */
+function AccountPosts({ accountId, filter, original, labelledBy }: AccountPostsProps) {
+  const t = useT();
+  const fetching = useRemoteFetch(accountId, filter);
+  const origin =
+    original === null
+      ? undefined
+      : {
+          notice: t("client:profile.remote.notice"),
+          link: (
+            // The profile on the account's own server leaves the app.
+            <Link href={original.href} rel="noreferrer" variant="standalone" className="gap-1">
+              {t("client:profile.remote.original", { host: isolate(original.host) })}
+              <ExternalLinkIcon />
+            </Link>
+          ),
+        };
+  return (
+    <div className="flex flex-col">
+      {/* Visible only: useRemoteFetch announces it in the app's polite live region, which was in the page before it. */}
+      {fetching && (
+        <p className="px-4 py-3 text-sm text-fg-muted">{t("client:profile.remote.fetching")}</p>
+      )}
+      <TimelineFeed timeline={{ kind: "account", id: accountId, filter }} aria-labelledby={labelledBy} {...(origin !== undefined && { origin })} />
+    </div>
   );
 }

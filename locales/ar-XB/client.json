@@ -3151,12 +3151,20 @@
     "defaultMessage": "‮∀ɔɔonuʇ uoʇ ɟonup‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "profile.original": {
-    "defaultMessage": "‮Odǝu ʇɥǝ oɹıƃıuɐʅ dɹoɟıʅǝ ou {host}‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "profile.relationship_failed": {
     "defaultMessage": "‮Ↄonʅp uoʇ ʅoɐp ʍɥǝʇɥǝɹ ʎon ɟoʅʅoʍ ʇɥıs ɐɔɔonuʇ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.remote.fetching": {
+    "defaultMessage": "‮Ⅎǝʇɔɥıuƃ ɹǝɔǝuʇ dosʇs ɟɹoɯ ʇɥǝ oɹıƃıuɐʅ sǝɹʌǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.remote.notice": {
+    "defaultMessage": "‮Ouʅʎ ʇɥǝ dosʇs ʇɥıs sǝɹʌǝɹ ɥɐs ɹǝɔǝıʌǝp ɐɹǝ sɥoʍu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.remote.original": {
+    "defaultMessage": "‮Sǝǝ ou {host}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "profile.sign_in_to_follow": {

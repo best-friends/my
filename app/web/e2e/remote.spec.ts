@@ -96,8 +96,25 @@ const post: Status = {
   bookmarked: false,
 };
 
-/** Answers the client API as Alice's session, with Carol's profile and post. */
-async function serveApi(page: Page): Promise<void> {
+/** An older post of Carol, which this server stored when it fetched her recent posts from her server. */
+const fetchedPost: Status = {
+  ...post,
+  id: "0192f0c4-7a8e-7000-8000-0000000003c2",
+  uri: `https://${host}/users/carol/statuses/0`,
+  url: `https://${host}/@carol/0`,
+  content: "<p>A sketch from last month.</p>",
+  spoiler_text: "",
+  media_attachments: [],
+  created_at: new Date(Date.now() - 30 * 24 * 60 * 60_000).toISOString(),
+};
+
+/**
+ * Answers the client API as Alice's session, with Carol's profile and post. With `fetching`, the first page
+ * of Carol's posts starts fetching her recent posts from her server and the later pages hold the post it
+ * stored too (ADR-0044). Returns the number of requests for her posts so far.
+ */
+async function serveApi(page: Page, { fetching = false } = {}): Promise<{ statuses: number }> {
+  const requests = { statuses: 0 };
   const json = (route: Route, body: unknown, statusCode = 200) =>
     route.fulfill({ status: statusCode, contentType: statusCode < 400 ? "application/json" : "application/problem+json", body: JSON.stringify(body) });
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 }));
@@ -120,11 +137,16 @@ async function serveApi(page: Page): Promise<void> {
         { id: carol.id, following: false, requested: false, followed_by: false, requested_by: false, show_boosts: true, notify: false, blocking: false, muting: false, muting_notifications: false },
       ]);
     }
-    if (path === `/accounts/${carol.id}/statuses`) return json(route, { items: [post] });
+    if (path === `/accounts/${carol.id}/statuses`) {
+      requests.statuses += 1;
+      if (!fetching) return json(route, { items: [post] });
+      return requests.statuses === 1 ? json(route, { items: [post], remote_fetch_started: true }) : json(route, { items: [post, fetchedPost] });
+    }
     if (path === `/statuses/${postId}`) return json(route, post);
     if (path === `/statuses/${postId}/context`) return json(route, { ancestors: [], descendants: [] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
+  return requests;
 }
 
 test.describe("a profile of another server", () => {
@@ -134,11 +156,12 @@ test.describe("a profile of another server", () => {
     await expect(page.getByRole("feed").getByRole("article")).toBeVisible();
   });
 
-  test("links to the profile and the post on their server, without axe violations or sideways scrolling", async ({ page, makeAxeBuilder }) => {
+  test("says that only the posts this server received are shown, links to the profile and the post on their server, without axe violations or sideways scrolling", async ({ page, makeAxeBuilder }) => {
     const main = page.getByRole("main");
     await expect(main.getByText(`@${carol.acct}`).first()).toBeVisible();
+    await expect(main.getByText(message("profile.remote.notice", host))).toBeVisible();
     // The host inside the sentence is wrapped in directional isolates (web-client.md Y10).
-    await expect(main.getByRole("link", { name: message("profile.original", `\u2068${host}\u2069`) })).toHaveAttribute("href", carol.url);
+    await expect(main.getByRole("link", { name: message("profile.remote.original", `\u2068${host}\u2069`) })).toHaveAttribute("href", carol.url);
     const article = page.getByRole("feed").getByRole("article");
     await expect(article.getByRole("link", { name: message("status.original", host) })).toHaveAttribute("href", post.url ?? "");
     await expectNoAxeViolations(makeAxeBuilder);
@@ -166,14 +189,15 @@ test.describe("a profile of another server", () => {
     await expectNoHorizontalScroll(page);
   });
 
-  test("is the heading, the full handle, the link to the original profile, and the post with its link", async ({ page }) => {
+  test("is the heading, the full handle, the notice with the link to the original profile, and the post with its link", async ({ page }) => {
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading "Carol" [level=1]
       - paragraph: "@carol@${host}"
-      - paragraph:
-        - link /${host.replaceAll(".", "\\.")}/
       - paragraph: Painter on another server.
       - tabpanel:
+        - paragraph
+        - paragraph:
+          - link /${host.replaceAll(".", "\\.")}/
         - feed:
           - article:
             - link /Carol/
@@ -183,6 +207,24 @@ test.describe("a profile of another server", () => {
             - button
             - link /${host.replaceAll(".", "\\.")}/
     `);
+  });
+});
+
+test.describe("a profile of another server whose recent posts are being fetched", () => {
+  test("says so until it has read the posts again, once, without axe violations or sideways scrolling", async ({ page, makeAxeBuilder }) => {
+    const requests = await serveApi(page, { fetching: true });
+    await page.goto(`/@${carol.acct}`);
+    const main = page.getByRole("main");
+    const fetchingLine = main.getByText(message("profile.remote.fetching", host));
+    await expect(fetchingLine).toBeVisible();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    // A few seconds later the posts are read again, with the one the server fetched, and the line goes.
+    await expect(page.getByRole("feed").getByRole("article")).toHaveCount(2, { timeout: 10_000 });
+    await expect(fetchingLine).toBeHidden();
+    await expect(main.getByText(message("profile.remote.notice", host))).toBeVisible();
+    expect(requests.statuses).toBe(2);
   });
 });
 

@@ -3151,12 +3151,20 @@
     "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ ƞǿǿŧ ƒǿǿŭŭƞḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "profile.original": {
-    "defaultMessage": "[Ǿƥḗḗƞ ŧħḗḗ ǿǿřīɠīƞȧȧŀ ƥřǿǿƒīŀḗḗ ǿǿƞ {host}]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "profile.relationship_failed": {
     "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ŀǿǿȧȧḓ ẇħḗḗŧħḗḗř ẏǿǿŭŭ ƒǿǿŀŀǿǿẇ ŧħīş ȧȧƈƈǿǿŭŭƞŧ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.remote.fetching": {
+    "defaultMessage": "[Ƒḗḗŧƈħīƞɠ řḗḗƈḗḗƞŧ ƥǿǿşŧş ƒřǿǿḿ ŧħḗḗ ǿǿřīɠīƞȧȧŀ şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.remote.notice": {
+    "defaultMessage": "[Ǿƞŀẏ ŧħḗḗ ƥǿǿşŧş ŧħīş şḗḗřṽḗḗř ħȧȧş řḗḗƈḗḗīṽḗḗḓ ȧȧřḗḗ şħǿǿẇƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "profile.remote.original": {
+    "defaultMessage": "[Şḗḗḗḗ ǿǿƞ {host}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "profile.sign_in_to_follow": {
