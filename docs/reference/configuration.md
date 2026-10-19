@@ -62,6 +62,9 @@ An instance setting that has never been set reads as its default, which is defin
 | [`smtp_port`](#smtp_port) | `MY_SMTP_PORT` | `587` | no | no |
 | [`smtp_username`](#smtp_username) | `MY_SMTP_USERNAME` | none | no | no |
 | [`smtp_password`](#smtp_password) | `MY_SMTP_PASSWORD` | none | no | yes |
+| [`captcha`](#captcha) | `MY_CAPTCHA` | `none` | no | no |
+| [`captcha_site_key`](#captcha_site_key) | `MY_CAPTCHA_SITE_KEY` | none | when `captcha` is not `none` | no |
+| [`captcha_secret_key`](#captcha_secret_key) | `MY_CAPTCHA_SECRET_KEY` | none | when `captcha` is not `none` | yes |
 | [`profile`](#profile) | `MY_PROFILE` | `production` | no | no |
 | [`http_allow_private_networks`](#http_allow_private_networks) | `MY_HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | no | no |
 | [`remote_status_retention`](#remote_status_retention) | `MY_REMOTE_STATUS_RETENTION` | `2160h` | no | no |
@@ -333,6 +336,37 @@ Password for SMTP AUTH PLAIN.
 - Environment variable: `MY_SMTP_PASSWORD` or `MY_SMTP_PASSWORD_FILE`
 - Default: none
 - Required: no
+
+### `captcha`
+
+CAPTCHA service that the sign-in and registration forms check (ADR-0042). The service receives the visitor's IP address, browser details, and cookies, and the two pages load its script; say so in the instance's privacy policy. Only `none` keeps every request on this server.
+
+- Environment variable: `MY_CAPTCHA`
+- Default: `none`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `none` | yes | No CAPTCHA; nothing is sent to a third party. |
+| `turnstile` | yes | Cloudflare Turnstile. |
+| `hcaptcha` | yes | hCaptcha. |
+| `recaptcha` | yes | Google reCAPTCHA v2 with the checkbox (not v3 or Enterprise). |
+
+### `captcha_site_key`
+
+Public site key of the `captcha` service, which the widget on the forms carries.
+
+- Environment variable: `MY_CAPTCHA_SITE_KEY`
+- Default: none
+- Required: when `captcha` is not `none`
+
+### `captcha_secret_key`
+
+Secret key of the `captcha` service, which the server sends with each token to the service's siteverify API. The server does not try the key at start: a key that the service refuses is logged as an error on the first check, and until it is fixed registrations are refused and sign-ins skip the CAPTCHA (ADR-0042 §4).
+
+- Environment variable: `MY_CAPTCHA_SECRET_KEY` or `MY_CAPTCHA_SECRET_KEY_FILE`
+- Default: none
+- Required: when `captcha` is not `none`
 
 ### `profile`
 
