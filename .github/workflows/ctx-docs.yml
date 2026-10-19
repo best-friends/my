@@ -7,13 +7,13 @@ on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips markdownlint."
         type: string
         default: pr
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips markdownlint."
         type: choice
         options: [pr, queue]
         default: pr
@@ -26,14 +26,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # markdownlint is decided file by file, so two pull requests stacked in the merge queue cannot break it; the
+      # ADR index can go stale or collide when two of them add an ADR, so the queue keeps adr-index-check (ADR-0047).
       - uses: oven-sh/setup-bun@v2
+        if: inputs.scope == 'pr'
         with:
           bun-version-file: .tool-versions
       - name: Cache Bun packages
+        if: inputs.scope == 'pr'
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
-      - name: make docs-check
-        run: make docs-check
+      - name: markdownlint
+        if: inputs.scope == 'pr'
+        run: make lint-docs
+      - name: make adr-index-check
+        run: make adr-index-check

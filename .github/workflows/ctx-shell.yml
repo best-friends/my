@@ -7,13 +7,13 @@ on:
   workflow_call:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips shellcheck."
         type: string
         default: pr
   workflow_dispatch:
     inputs:
       scope:
-        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue, which skips shellcheck."
         type: choice
         options: [pr, queue]
         default: pr
@@ -23,6 +23,8 @@ permissions:
 
 jobs:
   shell:
+    # shellcheck is decided file by file, so the merge queue skips it (ADR-0047).
+    if: inputs.scope == 'pr'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
