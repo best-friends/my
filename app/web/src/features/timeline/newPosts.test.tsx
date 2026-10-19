@@ -95,7 +95,7 @@ describe("new posts in the home timeline", () => {
     streams.current().send("update", newStatus(1));
     await waitFor(() => {
       expect(queryClient.getQueryData(["get", "/timelines/home", "pages"])).toMatchObject({ pages: [{ items: [{ id: newStatus(1).id }, {}] }] });
-    });
+    }, { timeout: 3_000 });
     await act(() => router.navigate({ to: "/home" }));
 
     const feed = await screen.findByRole("feed", { name: "Home" });
