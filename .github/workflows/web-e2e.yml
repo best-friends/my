@@ -37,7 +37,7 @@ jobs:
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       - name: Cache Bun packages

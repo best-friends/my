@@ -201,7 +201,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # openapi-typescript runs on Node.js (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       # oapi-codegen and securitygen are Go: restore the go job's cache from main, without saving one.
@@ -238,7 +238,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # Vitest runs on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       - name: make ui-check
@@ -260,7 +260,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # Vite and Vitest run on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       - name: make web-check
@@ -356,7 +356,7 @@ jobs:
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .tool-versions
       - name: Cache Bun packages
