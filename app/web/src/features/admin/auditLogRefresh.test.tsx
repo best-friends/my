@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The audit log after each audited write of the admin screens (#475, web-client.md S1): the route shows the log
-// from its cache as it loads it (S7), so every write that the server records must have the cached log fetched
-// again before it is shown done, or going back to the log shows it without the operation until a slow server
-// answers it again. Each case opens the log, goes to the write's screen, makes the write while the log takes a
-// while to come, and goes back.
+// The audit log after each audited write of the admin screens (#475, web-client.md S1, ADR-0045): every write that
+// the server records marks the cached log stale, and the route fetches it again before showing it (S7), or going
+// back to the log would show it without the operation until a slow server answered it again. Each case opens the
+// log, goes to the write's screen, makes the write while the log takes a while to come, and goes back.
 import { screen, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";

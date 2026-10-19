@@ -18,8 +18,8 @@ export const Route = createFileRoute("/admin/instances_/$domain")({
   loader: ({ context, params: { domain } }) =>
     loadWithPermission(context, "manage_domains", () =>
       Promise.all([
-        context.queryClient.query({ ...instanceQueryOptions(context.api, domain), staleTime: "static" }),
-        context.queryClient.infiniteQuery({ ...availabilityEventsQueryOptions(context.api, domain), staleTime: "static" }),
+        context.queryClient.query({ ...instanceQueryOptions(context.api, domain), staleTime: Infinity }),
+        context.queryClient.infiniteQuery({ ...availabilityEventsQueryOptions(context.api, domain), staleTime: Infinity }),
       ]),
     ),
   component: InstancePage,

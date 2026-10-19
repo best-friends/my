@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { accountFixture, otherAccountFixture, remoteAccountFixture, type Schemas, statusFixture, viewerFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
+import { watchAppearances } from "../../test/appearances";
 import { renderApp } from "../../test/render";
 import { newAccountAction, operatorHandler, reportFixture } from "./test/handlers";
 
@@ -339,8 +340,8 @@ describe("a report's page", () => {
     expect(screen.queryByRole("link", { name: `Report on ${isolated("@bob")}` })).not.toBeInTheDocument();
   });
 
-  // #464: the queue, shown from its cache as the route loads it, must not show the report as it was before the
-  // action while a slow server answers the list again.
+  // #464, ADR-0045: the action marks the queue stale, and the route fetches it again before showing it, so the
+  // queue never shows the report as it was before the action, however slowly the server answers.
   test("back on the queue after an action, the resolved report is gone at once, however slowly the lists come", async () => {
     const api = reportsServer([spam, older]);
     const { user } = await renderApp({ path: "/admin/reports" });
@@ -356,9 +357,10 @@ describe("a report's page", () => {
     await user.click(within(handling).getByRole("button", { name: "Take action and resolve" }));
     expect(await within(handling).findByText("Action taken (Limit). The report is resolved.")).toBeInTheDocument();
 
+    const staleQueue = watchAppearances(() => screen.queryByRole("link", { name: `Report on ${isolated("@bob")}` }) !== null);
     await user.click(screen.getByRole("link", { name: "Back to the reports" }));
     expect(await screen.findByRole("link", { name: `Report on ${isolated("@carol@remote.example")}` })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: `Report on ${isolated("@bob")}` })).not.toBeInTheDocument();
+    expect(staleQueue()).toBe(false);
     expect(api.lists).toEqual(["limit=40&state=open", "limit=40&state=open"]);
   });
 
@@ -374,9 +376,10 @@ describe("a report's page", () => {
     await user.click(await screen.findByRole("button", { name: "Resolve without action" }));
     expect(await within(region("Handling")).findByText("The report is resolved: No action.")).toBeInTheDocument();
 
+    const staleQueue = watchAppearances(() => screen.queryByRole("link", { name: `Report on ${isolated("@bob")}` }) !== null);
     await user.click(screen.getByRole("link", { name: "Back to the reports" }));
     expect(await screen.findByRole("link", { name: `Report on ${isolated("@carol@remote.example")}` })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: `Report on ${isolated("@bob")}` })).not.toBeInTheDocument();
+    expect(staleQueue()).toBe(false);
   });
 
   test("a ban asks first in an alert dialog; cancelling sends nothing", async () => {

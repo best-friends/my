@@ -14,8 +14,8 @@ export const Route = createFileRoute("/settings/account-status")({
   beforeLoad: requireSignIn,
   loader: ({ context }) =>
     Promise.all([
-      context.queryClient.infiniteQuery({ ...ownActionsQueryOptions(context.api, "active"), staleTime: "static" }),
-      context.queryClient.infiniteQuery({ ...ownActionsQueryOptions(context.api, "all"), staleTime: "static" }),
+      context.queryClient.infiniteQuery({ ...ownActionsQueryOptions(context.api, "active"), staleTime: Infinity }),
+      context.queryClient.infiniteQuery({ ...ownActionsQueryOptions(context.api, "all"), staleTime: Infinity }),
     ]),
   component: AccountStatusPage,
 });

@@ -9,7 +9,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { refreshQueries } from "../../../lib/query";
 import { refreshAdminAccount } from "../api/accounts";
 import { refreshAuditLog } from "../api/admin";
 import {
@@ -144,9 +143,9 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
     onSuccess: async (action, { accountId, body }) => {
       // The account has a new action and maybe another state and restrictions (its page and the searches), and
       // the report it follows from is resolved: it leaves the open tab and the counts. The audit log records the
-      // action. The action is done once they are fetched again (the form stays pending until then), so that going
-      // back to a search, the queue or the log shows them as they are now, not as they were (refreshAdminAccount,
-      // refreshReportLists, refreshAuditLog).
+      // action. They are marked stale, and the action is done once those on screen are fetched again (the form
+      // stays pending until then); going back to a search, the queue or the log fetches it again first, so it
+      // shows them as they are now, not as they were (refreshAdminAccount, refreshReportLists, refreshAuditLog, S7).
       await Promise.all([
         refreshAdminAccount(queryClient, api, accountId, { actions: true }),
         body.report_id === undefined ? undefined : refreshReportLists(queryClient),
@@ -158,9 +157,9 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
       // (useFocusAfterChange), which must come after this call.
       onIssued(action);
       // The report is resolved and the others on the account tell of one more action: every cached report is
-      // fetched again, also those no page shows now, which their route reads from the cache as they are
-      // (refreshQueries, web-client.md S1). Deleted posts are gone from the posts on screen.
-      void refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/reports/{id}" });
+      // marked stale, and fetched again when its page opens (web-client.md S1, S7). Deleted posts are gone from
+      // the posts on screen.
+      void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/reports/{id}" });
       if (action.status_ids !== undefined) void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/statuses/{id}" });
     },
   });

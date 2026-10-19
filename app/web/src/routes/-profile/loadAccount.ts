@@ -13,12 +13,12 @@ import type { RouterContext } from "../../lib/query";
 export const profileParamsSchema = z.object({ acct: z.string().min(1).max(320) });
 
 /**
- * Loads the account whose handle is `acct`, unless it is cached. An account that the server does not
+ * Loads the account whose handle is `acct`, unless it is cached and no write has marked it stale. An account that the server does not
  * find (unknown, gone, or blocking the viewer) is the route's "not found".
  */
 export async function loadAccount({ queryClient, api }: Pick<RouterContext, "queryClient" | "api">, acct: string) {
   try {
-    return await queryClient.query({ ...accountQueryOptions(api, acct), staleTime: "static" });
+    return await queryClient.query({ ...accountQueryOptions(api, acct), staleTime: Infinity });
   } catch (error) {
     // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router's "not found" is a thrown object.
     if (error instanceof ApiError && error.status === 404) throw notFound();

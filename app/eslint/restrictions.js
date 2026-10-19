@@ -53,6 +53,16 @@ export const syntax = [
     message:
       "Do not call the hooks of the API client (api.query.useQuery / useMutation); React Compiler skips the calling hook. Pass api.query.queryOptions(...) to useQuery, and a function of features/<x>/api to useMutation (web-client.md R4, §10).",
   },
+  {
+    // S7: "static" ignores invalidation, so a loader would show what a write has marked stale (ADR-0045).
+    selector: "Property[key.name='staleTime'][value.value='static']",
+    message: 'Do not use staleTime: "static"; it ignores invalidation. A loader reads with staleTime: Infinity (web-client.md S7, ADR-0045).',
+  },
+  {
+    // S7: ensureQueryData is deprecated in favor of queryClient.query.
+    selector: "CallExpression > MemberExpression.callee[property.name=/^ensure(Infinite)?QueryData$/]",
+    message: "Do not use ensureQueryData; a loader reads with queryClient.query / infiniteQuery and staleTime: Infinity (web-client.md S7).",
+  },
 ];
 
 /** Modules that may be mocked only through MSW (T3): the API client and feature API modules. */

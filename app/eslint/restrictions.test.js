@@ -36,6 +36,7 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
     { code: "function useX() { 'use strict'; return 'use no memo'; }", options: restrict.syntax },
     { code: "useQuery(api.query.queryOptions('get', '/instance'));", options: restrict.syntax },
     { code: "useMutation({ mutationFn: (body) => createStatus(api, body) });", options: restrict.syntax },
+    { code: "queryClient.query({ ...options, staleTime: Infinity });", options: restrict.syntax },
   ],
   invalid: [
     // A5
@@ -58,6 +59,10 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
     { ...fails("'use no forget';"), options: restrict.syntax },
     { ...fails("api.query.useQuery('get', '/instance');"), options: restrict.syntax },
     { ...fails("const m = services.api.query.useMutation('post', '/statuses');"), options: restrict.syntax },
+    // S7
+    { ...fails("queryClient.query({ ...options, staleTime: 'static' });"), options: restrict.syntax },
+    { ...fails("queryClient.ensureQueryData(options);"), options: restrict.syntax },
+    { ...fails("context.queryClient.ensureInfiniteQueryData(options);"), options: restrict.syntax },
   ],
 });
 

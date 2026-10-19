@@ -80,8 +80,8 @@ export function useRegistrationReview(onDecided: (userId: string) => void): Regi
   const mutation = useMutation({
     ...decideRegistrationMutation(api),
     onSuccess: async (registration, { userId, decision }) => {
-      // The audit log records the decision: it is done once the log is fetched again (the confirmation stays
-      // pending until then), so that going back to the log shows it at once (refreshAuditLog).
+      // The audit log records the decision: it is marked stale, so that going back to the log fetches it again
+      // and shows the decision from the first render (refreshAuditLog, web-client.md S7).
       await refreshAuditLog(queryClient);
       setDialog((current) => current && { ...current, isOpen: false });
       onDecided(userId);

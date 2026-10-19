@@ -9,7 +9,6 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshQueries } from "../../../lib/query";
 import { refreshAdminAccount } from "./accounts";
 import { pageQuery, refreshAuditLog } from "./admin";
 
@@ -91,21 +90,22 @@ export function decideAppealMutation(api: Api) {
 }
 
 /**
- * Fetches again (refreshQueries) what a decision on an appeal of `accountId` changes: the lists of appeals (it
+ * Marks stale what a decision on an appeal of `accountId` changes (web-client.md S1): the lists of appeals (it
  * moves between the tabs), the moderators' counts, that account with its actions and in the searches (an
- * overturn lifts an action), and the audit log, which records the decision. A list that was only marked stale would show the appeal as it was: a decided appeal
- * among those awaiting review.
+ * overturn lifts an action), and the audit log, which records the decision. Those on screen are fetched again at
+ * once; a list opened later is fetched again before it shows (S7), so it never shows a decided appeal among those
+ * awaiting review.
  */
 export async function refreshAppealLists(queryClient: QueryClient, api: Api, accountId: string): Promise<void> {
   await Promise.all([
-    refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts" }),
+    queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts" }),
     refreshAdminAccount(queryClient, api, accountId, { actions: true }),
     refreshAuditLog(queryClient),
   ]);
 }
 
 /**
- * Fetches again what a decision changes (refreshAppealLists), then puts `appeal`, as the decision answered it,
+ * Marks stale what a decision changes (refreshAppealLists), then puts `appeal`, as the decision answered it,
  * into the cache: the appeal's page shows the decision once the list has it too.
  */
 export async function storeAppeal(queryClient: QueryClient, api: Api, appeal: Appeal): Promise<void> {

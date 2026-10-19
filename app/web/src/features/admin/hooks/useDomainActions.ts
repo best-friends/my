@@ -68,8 +68,9 @@ export function useLiftDomainAction(onLifted: (action: DomainAction) => void): L
   const mutation = useMutation({
     ...options,
     onSuccess: async (lifted) => {
-      // The audit log records the lift: the action is lifted once it is fetched again, so that going back to it
-      // shows the lift at once (refreshAuditLog). The lists change from the answer, which shows them right.
+      // The audit log records the lift: it is marked stale, so that going back to it fetches it again and shows
+      // the lift from the first render (refreshAuditLog, web-client.md S7). The lists change from the answer,
+      // which shows them right.
       await refreshAuditLog(queryClient);
       onLifted(lifted);
       for (const query of queryClient.getQueryCache().findAll({ predicate: (query) => isDomainActionsQuery(query.queryKey) })) {

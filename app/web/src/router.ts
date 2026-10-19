@@ -19,6 +19,11 @@ export const routerOptions = {
   defaultPreload: "intent",
   // TanStack Query caches the data (web-client.md S1), so the router keeps no preloaded data of its own.
   defaultPreloadStaleTime: 0,
+  // A page visited before renders only once its loader has ended, not from its previous match while the loader
+  // runs (TanStack Router's default "background"): a loader returns at once what is cached and not marked
+  // stale, and fetches again what a write has marked, so that the page never shows what it was before the
+  // write (web-client.md S7, ADR-0045).
+  defaultStaleReloadMode: "blocking",
   scrollRestoration: true,
   // A remote account's profile is /@alice@example.com, as the server's shell routes have it (ADR-0028);
   // the `@` of a path param stays as it is instead of becoming %40.
