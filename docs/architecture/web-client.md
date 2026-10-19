@@ -179,7 +179,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
     手元の OS のフォントや描画では一致しないので、手元で作った画像はコミットしない。
     - 見た目を変えたら `make ui-snapshots-update`（Docker でそのイメージを使う）で作り直し、差分の画像を確かめてからコミットする。
     - 同じ比較を手元でするときは `make ui-test-docker` を使う。`make ui-test` を手元で動かす（`make ui-test-install` でブラウザを入れる）と、axe は信用できるが、スクリーンショットは一致しない。
-  - `make check` はブラウザなしで動く検査だけを集める。`make ui-test` は CI の `ui-test` ジョブがそのイメージの中で毎 PR 動かす。失敗したときの実際の画像と差分は成果物 `ui-test-screenshots` にある。
+  - `make check` はブラウザなしで動く検査だけを集める。`make ui-test` は CI の `ui-test` ジョブがそのイメージの中で、`app/ui` を変える PR と main への push で動かす（Merge Queue では動かさない、[ADR-0047](../adr/0047-ci-protection-layers.md)）。失敗したときの実際の画像と差分は成果物 `ui-test-screenshots` にある。
   - ワークフローのイメージと `PLAYWRIGHT_IMAGE`、`playwright` / `@playwright/test` の版が食い違うと、`make playwright-image-check`（`make check` の一部）が失敗する。
 
 ## 8. サーバーが描画する画面
