@@ -57,4 +57,5 @@
 | [0043](0043-icon-set.md) | UI キットのアイコンを既存のアイコンセット（Phosphor）から使う | Accepted |
 | [0044](0044-remote-profile-recent-posts.md) | リモートのプロフィールを開いたときに最近の投稿を取得する | Accepted |
 | [0045](0045-client-server-cache-policy.md) | キャッシュの方針（クライアントとサーバー） | Accepted |
+| [0046](0046-dependabot-vulnerability-detection.md) | 依存関係の脆弱性検知を Dependabot に移す | Accepted |
 <!-- adr-index:end -->
