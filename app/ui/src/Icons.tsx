@@ -1,276 +1,248 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The icon set of the kit (web-client.md §16.3, G10–G13). Every icon is drawn on a 24 × 24 grid with a
-// 2px round stroke, and is decorative (`aria-hidden`, `focusable="false"`): the visible label or the
-// accessible name of the control carries the meaning. An icon sets no size of its own; the control
-// around it does (`Button`, `ToggleButton` and `Link` size a child `svg`), and `currentColor` gives it
-// the control's color. Icons with a direction mirror in right-to-left text.
-import type { ReactNode } from "react";
+// The icon set of the kit (web-client.md §16.3, G10–G13; ADR-0043). The shapes are Phosphor's, through
+// react-icons/pi; this file is the only one that imports them. `iconTable` maps each meaningful name
+// (`ReplyIcon`) to its Phosphor icon off and on and to whether it has a direction, and every export below
+// renders one row of it. The Regular weight is the base; a toggle that is on uses the Fill weight when its
+// shape closes (star, bookmark, warning) and the Bold weight when it does not (boost), so the state shows by
+// shape and not by color alone (WCAG 1.4.1).
+//
+// Every icon is decorative (`aria-hidden`, `focusable="false"`): the visible label or the accessible name of
+// the control carries the meaning. An icon sets no size of its own; the control around it does (`Button`,
+// `ToggleButton` and `Link` size a child `svg`), and `currentColor` gives it the control's color. Icons with
+// a direction mirror in right-to-left text with `rtl:-scale-x-100` (Phosphor's `mirrored` ignores the
+// writing direction, so it is not used).
+import {
+  PiArrowBendUpLeft,
+  PiArrowLeft,
+  PiArrowSquareOut,
+  PiArrowUp,
+  PiBell,
+  PiBookmarkSimple,
+  PiBookmarkSimpleFill,
+  PiCards,
+  PiCaretRight,
+  PiDotsThreeBold,
+  PiEye,
+  PiEyeSlash,
+  PiGlobe,
+  PiHouse,
+  PiImage,
+  PiList,
+  PiMagnifyingGlass,
+  PiPlus,
+  PiRepeat,
+  PiRepeatBold,
+  PiShieldCheck,
+  PiSlidersHorizontal,
+  PiStar,
+  PiStarFill,
+  PiTextAlignLeft,
+  PiTranslate,
+  PiUser,
+  PiWarning,
+  PiWarningFill,
+  PiX,
+} from "react-icons/pi";
 
 /** The state of a toggle's icon: filled while on, so the state shows by shape and not by color alone (WCAG 1.4.1). */
 export type ToggleIconProps = { filled?: boolean };
 
-type IconProps = {
-  children: ReactNode;
-  filled?: boolean;
-  /** A heavier stroke, for an on state that has no fill. */
-  bold?: boolean;
+/**
+ * One Phosphor icon and its name in the Phosphor catalog (https://phosphoricons.com/), which the Storybook
+ * gallery shows (a minified build renames the components, so the name is written out).
+ */
+type Glyph = { readonly icon: typeof PiX; readonly phosphor: string };
+
+type IconEntry = {
+  readonly off: Glyph;
+  /** The shape of a toggle that is on. */
+  readonly on?: Glyph;
   /** Mirrors the icon in right-to-left text, for an icon whose direction follows the line (reply, back). */
-  directional?: boolean;
+  readonly directional?: boolean;
 };
 
-function Icon({ children, filled = false, bold = false, directional = false }: IconProps) {
-  return (
-    <svg
-      aria-hidden="true"
-      focusable="false"
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth={bold ? 3 : 2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...(directional && { className: "rtl:-scale-x-100" })}
-    >
-      {children}
-    </svg>
-  );
+const glyph = (icon: typeof PiX, phosphor: string): Glyph => ({ icon, phosphor });
+
+/** Every icon of the kit: its meaningful name, and the Phosphor icons that draw it. */
+export const iconTable = {
+  // Actions.
+  CloseIcon: { off: glyph(PiX, "PiX") },
+  PlusIcon: { off: glyph(PiPlus, "PiPlus") },
+  // Regular's dots are too small to read at size-5, so the overflow menu uses Bold's.
+  MoreIcon: { off: glyph(PiDotsThreeBold, "PiDotsThreeBold") },
+  BackIcon: { off: glyph(PiArrowLeft, "PiArrowLeft"), directional: true },
+  ExternalLinkIcon: { off: glyph(PiArrowSquareOut, "PiArrowSquareOut"), directional: true },
+  SubmenuIcon: { off: glyph(PiCaretRight, "PiCaretRight"), directional: true },
+  // Posts.
+  ReplyIcon: { off: glyph(PiArrowBendUpLeft, "PiArrowBendUpLeft"), directional: true },
+  // Up is where the new items wait (above the feed) in any writing direction, so it does not mirror.
+  NewItemsIcon: { off: glyph(PiArrowUp, "PiArrowUp") },
+  HideMediaIcon: { off: glyph(PiEyeSlash, "PiEyeSlash") },
+  // A loop means a loop and not a direction, so it does not mirror; it has nothing to fill, so on is Bold.
+  BoostIcon: { off: glyph(PiRepeat, "PiRepeat"), on: glyph(PiRepeatBold, "PiRepeatBold") },
+  StarIcon: { off: glyph(PiStar, "PiStar"), on: glyph(PiStarFill, "PiStarFill") },
+  BookmarkIcon: {
+    off: glyph(PiBookmarkSimple, "PiBookmarkSimple"),
+    on: glyph(PiBookmarkSimpleFill, "PiBookmarkSimpleFill"),
+  },
+  // The new-post form.
+  ImageIcon: { off: glyph(PiImage, "PiImage") },
+  // Filled, the exclamation mark stays cut out of the triangle.
+  WarningIcon: { off: glyph(PiWarning, "PiWarning"), on: glyph(PiWarningFill, "PiWarningFill") },
+  EyeIcon: { off: glyph(PiEye, "PiEye") },
+  LanguageIcon: { off: glyph(PiTranslate, "PiTranslate") },
+  // Navigation.
+  HomeIcon: { off: glyph(PiHouse, "PiHouse") },
+  TimelinesIcon: { off: glyph(PiCards, "PiCards") },
+  LocalIcon: { off: glyph(PiTextAlignLeft, "PiTextAlignLeft") },
+  FederatedIcon: { off: glyph(PiGlobe, "PiGlobe") },
+  SearchIcon: { off: glyph(PiMagnifyingGlass, "PiMagnifyingGlass") },
+  NotificationsIcon: { off: glyph(PiBell, "PiBell") },
+  ProfileIcon: { off: glyph(PiUser, "PiUser") },
+  SettingsIcon: { off: glyph(PiSlidersHorizontal, "PiSlidersHorizontal") },
+  AdminIcon: { off: glyph(PiShieldCheck, "PiShieldCheck") },
+  MenuIcon: { off: glyph(PiList, "PiList") },
+} as const satisfies Record<string, IconEntry>;
+
+function renderIcon(entry: IconEntry, on = false) {
+  const { icon: Glyph } = (on && entry.on) || entry.off;
+  return <Glyph aria-hidden="true" focusable="false" className={entry.directional ? "rtl:-scale-x-100" : undefined} />;
 }
 
 // Actions.
 
 /** The × of close and dismiss buttons. */
 export function CloseIcon() {
-  return (
-    <Icon>
-      <path d="M6 6l12 12M18 6 6 18" />
-    </Icon>
-  );
+  return renderIcon(iconTable.CloseIcon);
 }
 
 /** A plus, for a button that creates something (a post). */
 export function PlusIcon() {
-  return (
-    <Icon>
-      <path d="M12 5v14M5 12h14" />
-    </Icon>
-  );
+  return renderIcon(iconTable.PlusIcon);
 }
 
 /** Three dots, for the button of an overflow menu. */
 export function MoreIcon() {
-  return (
-    <Icon filled>
-      <circle cx="5" cy="12" r="1" />
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="19" cy="12" r="1" />
-    </Icon>
-  );
+  return renderIcon(iconTable.MoreIcon);
 }
 
 /** An arrow to the start of the line, for a link back to the page before. It flips in right-to-left text. */
 export function BackIcon() {
-  return (
-    <Icon directional>
-      <path d="M19 12H5M11 18l-6-6 6-6" />
-    </Icon>
-  );
+  return renderIcon(iconTable.BackIcon);
 }
 
-/**
- * A box with an arrow leaving it, after the text of a link to another site. The arrow points to the end
- * of the line, so it flips in right-to-left text.
- */
+/** A box with an arrow leaving it, after the text of a link to another site. It flips in right-to-left text. */
 export function ExternalLinkIcon() {
-  return (
-    <Icon directional>
-      <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
-    </Icon>
-  );
+  return renderIcon(iconTable.ExternalLinkIcon);
+}
+
+/** A caret to the end of the line, after the label of a menu item that opens a submenu. It flips in right-to-left text. */
+export function SubmenuIcon() {
+  return renderIcon(iconTable.SubmenuIcon);
 }
 
 // Posts.
 
 /** An arrow turning back to the start of the line, for replying. It flips in right-to-left text. */
 export function ReplyIcon() {
-  return (
-    <Icon directional>
-      <path d="M9 14 4 9l5-5" />
-      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
-    </Icon>
-  );
+  return renderIcon(iconTable.ReplyIcon);
 }
 
-/**
- * Two arrows in a loop, for boosting. A loop has nothing to fill, so a boost that is on draws its arrows
- * bolder instead. It means a loop and not a direction, so it does not flip.
- */
+/** An arrow up, for the button that shows the new posts waiting above a feed. */
+export function NewItemsIcon() {
+  return renderIcon(iconTable.NewItemsIcon);
+}
+
+/** An eye struck through, for the button that conceals sensitive media again. */
+export function HideMediaIcon() {
+  return renderIcon(iconTable.HideMediaIcon);
+}
+
+/** Two arrows in a loop, for boosting; bolder while on. */
 export function BoostIcon({ filled = false }: ToggleIconProps) {
-  return (
-    <Icon bold={filled}>
-      <path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3" />
-    </Icon>
-  );
+  return renderIcon(iconTable.BoostIcon, filled);
 }
 
-/** A star, for favouriting. */
+/** A star, for favouriting; filled while on. */
 export function StarIcon({ filled = false }: ToggleIconProps) {
-  return (
-    <Icon filled={filled}>
-      <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z" />
-    </Icon>
-  );
+  return renderIcon(iconTable.StarIcon, filled);
 }
 
-/** A bookmark ribbon, for bookmarking. */
+/** A bookmark ribbon, for bookmarking; filled while on. */
 export function BookmarkIcon({ filled = false }: ToggleIconProps) {
-  return (
-    <Icon filled={filled}>
-      <path d="M6 3h12v18l-6-4-6 4z" />
-    </Icon>
-  );
+  return renderIcon(iconTable.BookmarkIcon, filled);
 }
 
 // The new-post form.
 
-/** A framed picture with a sun and a hill, for attaching images. */
+/** A framed picture, for attaching images. */
 export function ImageIcon() {
-  return (
-    <Icon>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m21 15-5-5L5 21" />
-    </Icon>
-  );
+  return renderIcon(iconTable.ImageIcon);
 }
 
-/**
- * A triangle with an exclamation mark, for a content warning. A warning that is on draws it bolder: filled,
- * the mark would vanish into the triangle.
- */
+/** A triangle with an exclamation mark, for a content warning; filled while on. */
 export function WarningIcon({ filled = false }: ToggleIconProps) {
-  return (
-    <Icon bold={filled}>
-      <path d="M10.3 4.2 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z" />
-      <path d="M12 9v4M12 17h.01" />
-    </Icon>
-  );
+  return renderIcon(iconTable.WarningIcon, filled);
 }
 
 /** An eye, for who can see a post (its visibility). */
 export function EyeIcon() {
-  return (
-    <Icon>
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-      <circle cx="12" cy="12" r="3" />
-    </Icon>
-  );
+  return renderIcon(iconTable.EyeIcon);
 }
 
-/** A Latin letter beside a speech bubble, for the language of a post. */
+/** Two scripts side by side, for the language of a post. */
 export function LanguageIcon() {
-  return (
-    <Icon>
-      <path d="m3 20 5-14 5 14M5 15h6" />
-      <path d="M15 4h6v7h-2l-2 2v-2h-2z" />
-    </Icon>
-  );
+  return renderIcon(iconTable.LanguageIcon);
 }
 
 // Navigation.
 
 /** A house, for the home timeline. */
 export function HomeIcon() {
-  return (
-    <Icon>
-      <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
-    </Icon>
-  );
+  return renderIcon(iconTable.HomeIcon);
 }
 
 /** Lines of text, for the local timeline. */
 export function LocalIcon() {
-  return (
-    <Icon>
-      <path d="M4 6h16M4 12h16M4 18h10" />
-    </Icon>
-  );
+  return renderIcon(iconTable.LocalIcon);
 }
 
-/** A card with the edge of another behind it, for the screen with the local and federated timelines. */
+/** A stack of cards, for the screen with the local and federated timelines. */
 export function TimelinesIcon() {
-  return (
-    <Icon>
-      <rect x="4" y="9" width="16" height="11" rx="2" />
-      <path d="M7 5h10" />
-    </Icon>
-  );
+  return renderIcon(iconTable.TimelinesIcon);
 }
 
 /** A globe, for the federated timeline. */
 export function FederatedIcon() {
-  return (
-    <Icon>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
-    </Icon>
-  );
+  return renderIcon(iconTable.FederatedIcon);
 }
 
 /** A magnifying glass, for search. */
 export function SearchIcon() {
-  return (
-    <Icon>
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-4-4" />
-    </Icon>
-  );
+  return renderIcon(iconTable.SearchIcon);
 }
 
 /** A bell, for notifications. */
 export function NotificationsIcon() {
-  return (
-    <Icon>
-      <path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4zM10 21h4" />
-    </Icon>
-  );
+  return renderIcon(iconTable.NotificationsIcon);
 }
 
 /** A head and shoulders, for a profile. */
 export function ProfileIcon() {
-  return (
-    <Icon>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21a8 8 0 0 1 16 0" />
-    </Icon>
-  );
+  return renderIcon(iconTable.ProfileIcon);
 }
 
-/** Two sliders, for settings. */
+/** Sliders, for settings. */
 export function SettingsIcon() {
-  return (
-    <Icon>
-      <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
-      <circle cx="15" cy="7" r="2" />
-      <circle cx="9" cy="17" r="2" />
-    </Icon>
-  );
+  return renderIcon(iconTable.SettingsIcon);
 }
 
 /** A shield with a check, for the administration. */
 export function AdminIcon() {
-  return (
-    <Icon>
-      <path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z" />
-      <path d="M9 12l2 2 4-4" />
-    </Icon>
-  );
+  return renderIcon(iconTable.AdminIcon);
 }
 
 /** Three lines, for the button that opens the menu with the rest of the navigation. */
 export function MenuIcon() {
-  return (
-    <Icon>
-      <path d="M4 6h16M4 12h16M4 18h16" />
-    </Icon>
-  );
+  return renderIcon(iconTable.MenuIcon);
 }

@@ -272,6 +272,34 @@ func HTTPClientContract(t *testing.T, newClient func(t *testing.T, n HTTPClientN
 			t.Error("the compressed response was never requested")
 		}
 	})
+	t.Run("LimitsTheBodyPerPurpose", func(t *testing.T) {
+		e := newHTTPClientEnv(t, newClient)
+		// The CAPTCHA check allows a much smaller body than documents (ADR-0042 §3).
+		limits, ok := kernel.DefaultHTTPLimits(kernel.HTTPPurposeHumanCheck)
+		if !ok {
+			t.Fatal("DefaultHTTPLimits(HTTPPurposeHumanCheck) is unknown")
+		}
+		limit := int(limits.MaxBodyBytes)
+		e.public.handle("/exact", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(bytes.Repeat([]byte("a"), limit)) })
+		e.public.handle("/over", func(w http.ResponseWriter, _ *http.Request) {
+			w.(http.Flusher).Flush()
+			_, _ = w.Write(bytes.Repeat([]byte("a"), limit+1))
+		})
+		resp, err := e.get(t, e.public.url("public.example", "/exact"), kernel.HTTPPurposeHumanCheck)
+		if err != nil {
+			t.Fatalf("Do(exact) = %v", err)
+		}
+		if b, err := resp.ReadAll(); err != nil || len(b) != limit {
+			t.Errorf("read %d bytes, %v; want %d", len(b), err, limit)
+		}
+		resp, err = e.get(t, e.public.url("public.example", "/over"), kernel.HTTPPurposeHumanCheck)
+		if err == nil {
+			_, err = resp.ReadAll()
+		}
+		if !errors.Is(err, kernel.ErrResponseTooLarge) {
+			t.Errorf("over the human check limit: err = %v, want ErrResponseTooLarge", err)
+		}
+	})
 	t.Run("RefusesAnUnknownPurpose", func(t *testing.T) {
 		e := newHTTPClientEnv(t, newClient)
 		_, err := e.get(t, e.public.url("public.example", "/"), 0)

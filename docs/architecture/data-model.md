@@ -327,6 +327,8 @@ flowchart LR
 | `user_time_zones` | `user_id`（PK）, `time_zone`（IANA 名） | 行が無ければタイムゾーンを選んでいない（日時は UTC。Web クライアントは端末のゾーンを保存する） |
 
 - 登録時に既定値の行を作ります。`locale` は登録時に指定されたロケール、無ければインスタンスの既定（`default_locale`）、それも無ければ `en` です。
+  サーバーで描く登録のページは、要求の `Accept-Language` にいちばん合う、カタログのあるロケール（疑似ロケールは除く。`i18n.Resolver.AcceptedLocale`）を指定します。
+  合うものが無ければ指定せず、インスタンスの既定になります。
   `user_time_zones` の行は作らない（タイムゾーンは選んでいない状態で、`UTC` として扱う）。`default_visibility` は `public`、`default_post_language` は `und`（クライアントに任せる）、`require_media_description` と `email_moderator_notifications` は偽です。
 - `lang` の値は BCP 47 として検証し、正規形（`ja-JP`、`zh-Hant-TW`、`iw` → `he`）で保存します。未知のサブタグ、言語を明示しないタグ（`und-JP`、私用の `x-…`）は拒否します。
   `locale` は `und` も拒否します。
@@ -980,6 +982,9 @@ flowchart LR
 - メディアを指す設定（`preview_image`）の値は `media_files.id` の論理参照で、空文字は未設定です。
   どれかの版（現在値でなくても）が指すメディアは、`content` モジュールの未添付アップロードの消去（§4.4）から外れます。
 - 文章は読み手のロケールのフォールバックチェーン、`default_locale` のチェーン、`en` の順に探し、空の文章は飛ばします。
+- `terms`（利用規約）と `privacy_policy`（プライバシーポリシー）は Markdown の文書で、ほかの文章はプレーンテキストです。
+  文書は版に Markdown のまま記録し、公開ページ（`/auth/terms`・`/auth/privacy`）が読むたびに HTML にしてサニタイズします（`instance.DocumentRenderer`）。HTML は保存しません。
+  読み手のチェーンのどのロケールにも文書が無ければ、公開ページは 404 で、登録の画面・各画面のフッター・`GET /api/v1/instance` の `terms_url` / `privacy_policy_url` もそれを指しません。
 - 環境変数・設定ファイルによる設定（ADR-0010）とインスタンス設定は、同じキーを持ちません。
   再起動で反映するデプロイの構成（アダプタ・接続先・ホスト名・秘密情報）は設定に、運営者が稼働中に変える方針と文章はこの表に置きます。
   どちらかがもう一方を上書きすることはありません（[設定リファレンス](../reference/configuration.md)、[運用手順](../operations/instance-settings.md)）。

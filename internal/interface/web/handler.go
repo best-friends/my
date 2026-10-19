@@ -111,6 +111,8 @@ type Handler struct {
 	hasIcon   bool
 	// hasAppleTouchIcon reports whether the build has apple-touch-icon.png.
 	hasAppleTouchIcon bool
+	// hasThemeScript reports whether the build has theme.js.
+	hasThemeScript bool
 	// icons are the manifest icons whose files the build has.
 	icons []manifestIcon
 	csp   string
@@ -183,6 +185,7 @@ func New(o Options) (*Handler, error) {
 	h.files = files
 	_, h.hasIcon = files[iconPath]
 	_, h.hasAppleTouchIcon = files[appleTouchIconPath]
+	_, h.hasThemeScript = files[themeScriptPath]
 	h.icons = []manifestIcon{}
 	for _, icon := range appIcons {
 		if _, ok := files[strings.TrimPrefix(icon.Src, "/")]; ok {
@@ -269,7 +272,7 @@ func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
 func (h *Handler) render(locale string) (*localizedDocuments, error) {
 	shell, err := renderShell(shellData{
 		Lang: locale, Dir: i18n.Direction(locale), Title: h.o.InstanceName, ThemeColor: h.o.ThemeColor,
-		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
+		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, HasThemeScript: h.hasThemeScript, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
 		Config: h.runtimeConfig(locale),
 	})
 	if err != nil {

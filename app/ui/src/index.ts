@@ -59,7 +59,7 @@ export { Spinner, type SpinnerProps } from "./Spinner";
 export { StatusMessage, type StatusMessageProps } from "./StatusMessage";
 export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
 
-// Icons (web-client.md §16.3): decorative, 24 × 24 with a 2px stroke, sized by the control around them.
+// Icons (web-client.md §16.3): Phosphor through react-icons/pi (ADR-0043), decorative, sized by the control around them.
 export {
   AdminIcon,
   BackIcon,
@@ -82,6 +82,7 @@ export {
   SearchIcon,
   SettingsIcon,
   StarIcon,
+  SubmenuIcon,
   TimelinesIcon,
   type ToggleIconProps,
   WarningIcon,

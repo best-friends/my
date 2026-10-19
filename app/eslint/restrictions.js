@@ -55,6 +55,43 @@ export const syntax = [
   },
 ];
 
+/** The elements that exist only in SVG (the shapes, groups, paint servers and text); `a`, `style` and the like are HTML too. */
+const svgElements = [
+  "svg",
+  "g",
+  "path",
+  "circle",
+  "ellipse",
+  "line",
+  "polygon",
+  "polyline",
+  "rect",
+  "text",
+  "tspan",
+  "textPath",
+  "defs",
+  "use",
+  "symbol",
+  "marker",
+  "mask",
+  "clipPath",
+  "pattern",
+  "linearGradient",
+  "radialGradient",
+  "stop",
+  "filter",
+  "foreignObject",
+  "image",
+];
+
+/** @type {SyntaxRestriction[]} Every client source file but the few that eslint.config.js lets draw SVG (G10). */
+export const svgSyntax = [
+  {
+    selector: `JSXOpeningElement[name.name=/^(${svgElements.join("|")})$/]`,
+    message: "Do not draw SVG; use an icon of @my/ui (Icons.tsx), and add a row to its table for a new one (ADR-0043, web-client.md G10).",
+  },
+];
+
 /** Modules that may be mocked only through MSW (T3): the API client and feature API modules. */
 const apiModule = String.raw`/(^|\/)api(\/|$)|^openapi-(fetch|react-query)$/`;
 
@@ -84,7 +121,7 @@ export const testSyntax = [
 ];
 
 /** no-restricted-imports `paths` for every client source file. */
-export const importPaths = [
+const importPaths = [
   {
     name: "react",
     importNames: ["useMemo", "useCallback", "memo"],
@@ -94,11 +131,26 @@ export const importPaths = [
 
 const apiMessage = "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1).";
 
-/** no-restricted-imports options outside features/<x>/api and lib/ (S1). */
-export const apiImports = {
-  paths: [...importPaths, { name: "openapi-fetch", message: apiMessage }, { name: "openapi-react-query", message: apiMessage }],
-  patterns: [{ regex: String.raw`(^|/)lib/api(/|$)`, message: apiMessage }],
-};
+const iconMessage =
+  "Icons come from the @my/ui icon set: only app/ui/src/Icons.tsx imports react-icons, and only Phosphor (react-icons/pi) (ADR-0043, web-client.md G10).";
+
+/** no-restricted-imports patterns for react-icons in every file but app/ui/src/Icons.tsx (G10). */
+const iconPatterns = [{ regex: String.raw`^react-icons(/|$)`, message: iconMessage }];
+
+/** no-restricted-imports patterns in app/ui/src/Icons.tsx: Phosphor only, no other set of react-icons (G10). */
+const iconSetPatterns = [{ regex: String.raw`^react-icons(?!/pi$)(/|$)`, message: iconMessage }];
+
+const apiPatterns = [{ regex: String.raw`(^|/)lib/api(/|$)`, message: apiMessage }];
+const apiPaths = [...importPaths, { name: "openapi-fetch", message: apiMessage }, { name: "openapi-react-query", message: apiMessage }];
+
+/** no-restricted-imports options outside features/<x>/api and lib/ (S1, G10). */
+export const apiImports = { paths: apiPaths, patterns: [...apiPatterns, ...iconPatterns] };
+
+/** no-restricted-imports options in features/<x>/api and lib/, where the API client is allowed (S1, G10). */
+export const apiAllowedImports = { paths: importPaths, patterns: iconPatterns };
+
+/** no-restricted-imports options in app/ui/src/Icons.tsx, the one file that imports react-icons (S1, G10). */
+export const iconSetImports = { paths: apiPaths, patterns: [...apiPatterns, ...iconSetPatterns] };
 
 /** no-restricted-globals / no-restricted-properties for `fetch` outside features/<x>/api and lib/ (S1). */
 export const fetchGlobal = [{ name: "fetch", message: apiMessage }];

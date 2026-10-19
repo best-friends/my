@@ -19,9 +19,11 @@ const pages: readonly { href: string; permission: Permission; label: ClientMessa
   { href: "/admin/dead-jobs", permission: "manage_jobs", label: "client:admin.dead_jobs.title", description: "client:admin.dead_jobs.summary" },
   { href: "/admin/audit-log", permission: "view_audit", label: "client:admin.audit_log.title", description: "client:admin.audit_log.summary" },
   { href: "/admin/registrations", permission: "manage_accounts", label: "client:admin.registrations.title", description: "client:admin.registrations.summary" },
+  { href: "/admin/signup-blocks", permission: "manage_accounts", label: "client:admin.signup_blocks.title", description: "client:admin.signup_blocks.summary" },
   { href: "/admin/accounts", permission: "manage_accounts", label: "client:admin.accounts.title", description: "client:admin.accounts.summary" },
   { href: "/admin/reports", permission: "manage_reports", label: "client:admin.reports.title", description: "client:admin.reports.summary" },
   { href: "/admin/appeals", permission: "manage_accounts", label: "client:admin.appeals.title", description: "client:admin.appeals.summary" },
+  { href: "/admin/documents", permission: "manage_settings", label: "client:admin.documents.title", description: "client:admin.documents.summary" },
 ];
 
 /** The count that a screen's link shows, by the screen's address, and the words of its badge. */

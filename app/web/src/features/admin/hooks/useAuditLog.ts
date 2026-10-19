@@ -59,9 +59,9 @@ export const auditActorKindLabels: Readonly<Record<AuditActorKind, ClientMessage
 };
 
 /**
- * The admin screen of an operation's target, where it has one; an account, a report or a domain. The other kinds
- * of target (settings, rules, registrations) have no screen of their own, and a target that is gone (erased past
- * its retention) has nothing left to show, so their entries show the label only.
+ * The admin screen of an operation's target, where it has one; an account, a report, a domain or a sign-up block.
+ * The other kinds of target (settings, rules, registrations) have no screen of their own, and a target that is
+ * gone (erased past its retention) has nothing left to show, so their entries show the label only.
  */
 export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_id" | "target_exists">): string | undefined {
   if (!entry.target_exists) return undefined;
@@ -74,6 +74,9 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
     case "domain":
       // Every action on the domain, lifted ones too: the entry may be about one that is no longer in effect.
       return `/admin/domain-actions?filter=all&domain=${id}`;
+    case "signup_block":
+      // The screen lists every block, lifted and ended ones too; a block has no screen of its own.
+      return "/admin/signup-blocks?filter=all";
     default:
       return undefined;
   }

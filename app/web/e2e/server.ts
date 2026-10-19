@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Starts the real server for the E2E of the server-rendered pages (ADR-0030) and of the main flow: a fresh
 // SQLite database in the run's temporary directory (e2e/server-origin.ts) with schema/sqlite.sql applied,
-// the admin and the third-party OAuth client of e2e/server-origin.ts, then `my serve -pseudo-locales` (so
-// that the en-XA and ar-XB projects get their locale) until Playwright stops it. Playwright runs it as a
+// the admin, the documents, and the third-party OAuth client of e2e/server-origin.ts, then
+// `my serve -pseudo-locales` (so that the en-XA and ar-XB projects get their locale) until Playwright stops it.
+// Playwright runs it as a
 // webServer with Node.js (`node e2e/server.ts`), from the binary `make build` writes (override with
 // E2E_MY_BIN), in the environment of e2e/server-cli.ts.
 import { spawn } from "node:child_process";
@@ -11,7 +12,7 @@ import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { myBin, runMy, serverDatabase, serverEnv } from "./server-cli.ts";
-import { admin, serverDir, thirdPartyClient } from "./server-origin.ts";
+import { admin, documents, serverDir, thirdPartyClient } from "./server-origin.ts";
 
 const root = resolve(import.meta.dirname, "../../..");
 const database = serverDatabase;
@@ -24,6 +25,10 @@ db.exec(readFileSync(join(root, "schema/sqlite.sql"), "utf8"));
 db.close();
 
 runMy(["admin", "create", "-username", "alice", "-email", admin.email], `${admin.password}\n`);
+
+// The documents, in the default locale, so that every project's pages link to them (#489).
+runMy(["instance", "set", "terms", "-"], documents.terms);
+runMy(["instance", "set", "privacy_policy", "-"], documents.privacyPolicy);
 
 // Third-party clients have no registration flow yet, so the client is written to its tables directly
 // (data-model.md §4.1): a public client limited to the read scope with one redirect URI.

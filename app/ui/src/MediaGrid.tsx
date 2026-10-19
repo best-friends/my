@@ -2,6 +2,7 @@
 import { type ComponentPropsWithRef, useState } from "react";
 import { ToggleButton } from "react-aria-components";
 import { tv } from "tailwind-variants";
+import { HideMediaIcon } from "./Icons";
 import { VisuallyHidden } from "./VisuallyHidden";
 
 const mediaGrid = tv({
@@ -11,7 +12,6 @@ const mediaGrid = tv({
     image: "size-full object-cover",
     badge: "absolute inset-e-1.5 bottom-1.5 rounded-sm bg-surface-raised px-1.5 py-0.5 text-xs font-semibold text-fg shadow-sm",
     toggle: "absolute cursor-default rounded-md bg-surface-raised font-medium text-fg select-none data-focus-visible:focus-ring data-hovered:bg-surface-sunken motion-safe:transition-colors",
-    icon: "size-5 fill-none stroke-current stroke-2",
   },
   variants: {
     count: {
@@ -25,7 +25,7 @@ const mediaGrid = tv({
       // Concealed: one button over the middle of the grid, so it is the obvious thing to press.
       false: { toggle: "inset-0 m-auto size-fit min-h-10 max-w-[calc(100%-1rem)] px-4 py-2 text-base shadow-md pointer-coarse:min-h-11" },
       // Shown: a small icon button in the corner that conceals the media again.
-      true: { toggle: "inset-s-1.5 top-1.5 grid size-8 place-items-center shadow-sm pointer-coarse:size-11" },
+      true: { toggle: "inset-s-1.5 top-1.5 grid size-8 place-items-center shadow-sm pointer-coarse:size-11 [&>svg]:size-5" },
     },
   },
 });
@@ -126,11 +126,7 @@ export function MediaGrid({
         >
           {revealed ? (
             <>
-              <svg aria-hidden="true" viewBox="0 0 24 24" className={slots.icon()}>
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-                <circle cx="12" cy="12" r="3" />
-                <path d="M4 4l16 16" />
-              </svg>
+              <HideMediaIcon />
               <VisuallyHidden>{revealLabel}</VisuallyHidden>
             </>
           ) : (

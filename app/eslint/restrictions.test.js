@@ -61,6 +61,23 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
   ],
 });
 
+ruleTester.run("no-restricted-syntax (SVG, G10)", core.get("no-restricted-syntax"), {
+  valid: [
+    { code: "<ReplyIcon />", options: restrict.svgSyntax },
+    { code: "<Button><StarIcon filled /></Button>", options: restrict.svgSyntax },
+    { code: "<img src='/logo.svg' alt='' />", options: restrict.svgSyntax },
+    { code: "<a href='#x'><span>x</span></a>", options: restrict.svgSyntax },
+    { code: "const svg = document.querySelector('svg');", options: restrict.svgSyntax },
+  ],
+  invalid: [
+    { ...fails("<svg viewBox='0 0 24 24' />"), options: restrict.svgSyntax },
+    { ...fails("<svg aria-hidden='true'><path d='M0 0h24' /></svg>", 2), options: restrict.svgSyntax },
+    { ...fails("<><circle cx={12} cy={12} r={3} /><rect width={4} height={4} /></>", 2), options: restrict.svgSyntax },
+    { ...fails("<g><use href='#icon' /></g>", 2), options: restrict.svgSyntax },
+    { ...fails("<linearGradient id='a'><stop offset='0' /></linearGradient>", 2), options: restrict.svgSyntax },
+  ],
+});
+
 const testSyntax = [...restrict.syntax, ...restrict.testSyntax];
 ruleTester.run("no-restricted-syntax (tests)", core.get("no-restricted-syntax"), {
   valid: [
@@ -86,17 +103,29 @@ ruleTester.run("no-restricted-imports", core.get("no-restricted-imports"), {
     { code: "import { useState } from 'react';", options: [restrict.apiImports] },
     { code: "import { timeline } from '../api';", options: [restrict.apiImports] },
     // Inside features/<x>/api and lib/
-    { code: "import createClient from 'openapi-fetch';", options: [{ paths: restrict.importPaths }] },
-    { code: "import { client } from '../../../lib/api';", options: [{ paths: restrict.importPaths }] },
+    { code: "import createClient from 'openapi-fetch';", options: [restrict.apiAllowedImports] },
+    { code: "import { client } from '../../../lib/api';", options: [restrict.apiAllowedImports] },
+    // Inside app/ui/src/Icons.tsx
+    { code: "import { PiStar } from 'react-icons/pi';", options: [restrict.iconSetImports] },
+    { code: "import { Button } from './Button';", options: [restrict.iconSetImports] },
   ],
   invalid: [
     // R5
     { ...fails("import { useMemo, useCallback } from 'react';", 2), options: [restrict.apiImports] },
-    { ...fails("import { memo } from 'react';"), options: [{ paths: restrict.importPaths }] },
+    { ...fails("import { memo } from 'react';"), options: [restrict.apiAllowedImports] },
     // S1
     { ...fails("import createClient from 'openapi-fetch';"), options: [restrict.apiImports] },
     { ...fails("import { client } from '../../lib/api';"), options: [restrict.apiImports] },
     { ...fails("import { client } from '../../lib/api/client';"), options: [restrict.apiImports] },
+    { ...fails("import { client } from '../../lib/api';"), options: [restrict.iconSetImports] },
+    // G10: react-icons only in Icons.tsx, and only Phosphor there
+    { ...fails("import { PiStar } from 'react-icons/pi';"), options: [restrict.apiImports] },
+    { ...fails("import type { IconType } from 'react-icons';"), options: [restrict.apiImports] },
+    { ...fails("import { PiStar } from 'react-icons/pi';"), options: [restrict.apiAllowedImports] },
+    { ...fails("import { FaStar } from 'react-icons/fa';"), options: [restrict.iconSetImports] },
+    { ...fails("import type { IconType } from 'react-icons';"), options: [restrict.iconSetImports] },
+    { ...fails("import { IconBase } from 'react-icons/lib';"), options: [restrict.iconSetImports] },
+    { ...fails("import { PiStar } from 'react-icons/pip';"), options: [restrict.iconSetImports] },
   ],
 });
 

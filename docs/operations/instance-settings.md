@@ -58,13 +58,20 @@
 | `name` | 100 文字・1 行 | インスタンスの名前 |
 | `short_description` | 500 文字 | 短い説明 |
 | `description` | 20000 文字 | 説明 |
-| `terms` | 100000 文字 | 利用規約 |
-| `privacy_policy` | 100000 文字 | プライバシーポリシー |
+| `terms` | 100000 文字 | 利用規約（Markdown） |
+| `privacy_policy` | 100000 文字 | プライバシーポリシー（Markdown） |
 | `preview_image_alt` | 1500 文字 | `preview_image` の画像の代替テキスト（`og:image:alt`）。無ければ「〇〇のイメージ画像」 |
 
 - 文章はロケールごとに持ちます。読むときは、読み手のロケールのフォールバックチェーン → `default_locale` のチェーン → `en` の順に探します
   （例: `ja-JP` → `ja` → 既定のロケール → `en`）。
 - 空の文章を設定すると、そのロケールの文章を消したことになり、チェーンの次のロケールが使われます。
+- 文章は CLI のほか、Web クライアントの管理画面（利用規約とプライバシーポリシーは「規約とポリシー」、`/admin/documents`）とクライアント API（`GET /api/v1/admin/instance_texts`・`PUT /api/v1/admin/instance_texts/{key}/{locale}`）で変えられます。どちらもロールの権限 `manage_settings` が要り、変更は監査ログ（`text_changed`）に残ります。
+
+### 利用規約とプライバシーポリシー
+
+- `terms` と `privacy_policy` は Markdown で書きます（CommonMark と、GitHub Flavored Markdown の表・取り消し線・URL の自動リンク）。段落の中の改行はそのまま改行になり、`#` の見出しはページの題の下の段（`h2`）から始まります。
+- サーバーが公開ページ `/auth/terms`・`/auth/privacy` で HTML にしてサニタイズします。生の HTML・画像・`http` / `https` / `mailto` 以外のリンクは出ません。ページはサインインも JavaScript も要りません。
+- 書いた文書は、登録の画面（作成のボタンの前の同意の文とリンク）、サーバーが描画するすべての画面のフッター、Web クライアント（3 列目・メニュー・設定・サインインの画面）からリンクされます。読み手のチェーンのどのロケールにも無い文書はリンクされず、ページは 404 です。
 
 ## 使い方
 

@@ -15,6 +15,7 @@ import (
 	"slices"
 
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
+	"github.com/best-friends/my/internal/adapter/captcha/siteverify"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/httpclient"
@@ -24,6 +25,7 @@ import (
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
 	mailnone "github.com/best-friends/my/internal/adapter/mail/none"
 	mailsmtp "github.com/best-friends/my/internal/adapter/mail/smtp"
+	"github.com/best-friends/my/internal/adapter/markdown"
 	"github.com/best-friends/my/internal/adapter/media/native"
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
@@ -93,6 +95,11 @@ type App struct {
 	Mailer kernel.Mailer
 	// HTTPClient sends every outbound HTTP request through the SSRF guard (ADR-0019 §1).
 	HTTPClient kernel.HTTPClient
+	// HumanVerifier checks the CAPTCHA token of the sign-in and registration forms, and
+	// HumanCheckWidget is what those pages render for it; both are nil when captcha is none
+	// (ADR-0042).
+	HumanVerifier    kernel.HumanVerifier
+	HumanCheckWidget *kernel.HumanCheckWidget
 
 	Accounts *account.Service
 	Identity *identity.Service
@@ -333,8 +340,22 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs,
 		// The preview_image setting refers to a media file, which setMedia sets up later.
 		Media: instanceMedia{a},
+		// The terms of service and the privacy policy are Markdown (#489).
+		Documents: markdown.New(),
 	})
 	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	if opts.Version == "" {
+		opts.Version = "dev"
+	}
+	a.HTTPClient = opts.HTTPClient
+	if a.HTTPClient == nil {
+		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
+	}
+	// The identity module's sign-in and registration check the CAPTCHA through it (ADR-0042 §3).
+	if a.HumanVerifier, a.HumanCheckWidget, err = newHumanVerifier(cfg, a.HTTPClient, a.Logger); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
@@ -419,13 +440,6 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
 	fedOutbox := a.setUpFederation(cfg, feds)
 
-	if opts.Version == "" {
-		opts.Version = "dev"
-	}
-	a.HTTPClient = opts.HTTPClient
-	if a.HTTPClient == nil {
-		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
-	}
 	a.setUpDelivery(feds)
 	if err := a.setBlobs(cfg); err != nil {
 		_ = a.Close()
@@ -471,7 +485,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: cfg.ServerOrigin(), FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
-		Moderation: a.Moderation, UserLocales: a.Identity,
+		Moderation: a.Moderation, UserLocales: a.Identity, Documents: a.Instance,
 	}).Register(a)
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {
@@ -501,6 +515,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
+		// The instance texts and the public pages of the documents among them (#489).
+		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
@@ -757,6 +773,23 @@ func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger) kern
 		opts.AllowPrivateNetworks, opts.AllowHTTP, opts.AnyPort = true, true, true
 	}
 	return httpclient.New(opts)
+}
+
+// newHumanVerifier returns the CAPTCHA verifier and widget that cfg.Captcha selects, and
+// nil for none, which sends nothing to a third party (ADR-0042).
+func newHumanVerifier(cfg *config.Config, client kernel.HTTPClient, logger *slog.Logger) (kernel.HumanVerifier, *kernel.HumanCheckWidget, error) {
+	if cfg.Captcha == "" || cfg.Captcha == "none" {
+		return nil, nil, nil
+	}
+	v, err := siteverify.New(siteverify.Options{
+		Service: kernel.HumanCheckService(cfg.Captcha), SiteKey: cfg.CaptchaSiteKey, SecretKey: siteverify.Secret(cfg.CaptchaSecretKey),
+		Host: cfg.Host, HTTP: client, Logger: logger,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	w := v.Widget()
+	return v, &w, nil
 }
 
 // hostOnly returns host without a port.

@@ -26,10 +26,12 @@ import { Route as AdminAccountsRouteImport } from './routes/admin.accounts'
 import { Route as AdminAppealsRouteImport } from './routes/admin.appeals'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
+import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
 import { Route as AdminDomainActionsRouteImport } from './routes/admin.domain-actions'
 import { Route as AdminInstancesRouteImport } from './routes/admin.instances'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminSignupBlocksRouteImport } from './routes/admin.signup-blocks'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
@@ -131,6 +133,11 @@ const AdminDeadJobsRoute = AdminDeadJobsRouteImport.update({
   path: '/admin/dead-jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
+  id: '/admin/documents',
+  path: '/admin/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDomainActionsRoute = AdminDomainActionsRouteImport.update({
   id: '/admin/domain-actions',
   path: '/admin/domain-actions',
@@ -149,6 +156,11 @@ const AdminRegistrationsRoute = AdminRegistrationsRouteImport.update({
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/admin/reports',
   path: '/admin/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSignupBlocksRoute = AdminSignupBlocksRouteImport.update({
+  id: '/admin/signup-blocks',
+  path: '/admin/signup-blocks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
@@ -234,10 +246,12 @@ export interface FileRoutesByFullPath {
   '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/documents': typeof AdminDocumentsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -270,10 +284,12 @@ export interface FileRoutesByTo {
   '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/documents': typeof AdminDocumentsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -307,10 +323,12 @@ export interface FileRoutesById {
   '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/documents': typeof AdminDocumentsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -345,10 +363,12 @@ export interface FileRouteTypes {
     | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
+    | '/admin/documents'
     | '/admin/domain-actions'
     | '/admin/instances'
     | '/admin/registrations'
     | '/admin/reports'
+    | '/admin/signup-blocks'
     | '/login/callback'
     | '/settings/account-status'
     | '/settings/blocks'
@@ -381,10 +401,12 @@ export interface FileRouteTypes {
     | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
+    | '/admin/documents'
     | '/admin/domain-actions'
     | '/admin/instances'
     | '/admin/registrations'
     | '/admin/reports'
+    | '/admin/signup-blocks'
     | '/login/callback'
     | '/settings/account-status'
     | '/settings/blocks'
@@ -417,10 +439,12 @@ export interface FileRouteTypes {
     | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
+    | '/admin/documents'
     | '/admin/domain-actions'
     | '/admin/instances'
     | '/admin/registrations'
     | '/admin/reports'
+    | '/admin/signup-blocks'
     | '/login_/callback'
     | '/settings/account-status'
     | '/settings/blocks'
@@ -454,10 +478,12 @@ export interface RootRouteChildren {
   AdminAppealsRoute: typeof AdminAppealsRoute
   AdminAuditLogRoute: typeof AdminAuditLogRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
+  AdminDocumentsRoute: typeof AdminDocumentsRoute
   AdminDomainActionsRoute: typeof AdminDomainActionsRoute
   AdminInstancesRoute: typeof AdminInstancesRoute
   AdminRegistrationsRoute: typeof AdminRegistrationsRoute
   AdminReportsRoute: typeof AdminReportsRoute
+  AdminSignupBlocksRoute: typeof AdminSignupBlocksRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
@@ -595,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDeadJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/documents': {
+      id: '/admin/documents'
+      path: '/admin/documents'
+      fullPath: '/admin/documents'
+      preLoaderRoute: typeof AdminDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/domain-actions': {
       id: '/admin/domain-actions'
       path: '/admin/domain-actions'
@@ -621,6 +654,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/signup-blocks': {
+      id: '/admin/signup-blocks'
+      path: '/admin/signup-blocks'
+      fullPath: '/admin/signup-blocks'
+      preLoaderRoute: typeof AdminSignupBlocksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login_/callback': {
@@ -734,10 +774,12 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAppealsRoute: AdminAppealsRoute,
   AdminAuditLogRoute: AdminAuditLogRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
+  AdminDocumentsRoute: AdminDocumentsRoute,
   AdminDomainActionsRoute: AdminDomainActionsRoute,
   AdminInstancesRoute: AdminInstancesRoute,
   AdminRegistrationsRoute: AdminRegistrationsRoute,
   AdminReportsRoute: AdminReportsRoute,
+  AdminSignupBlocksRoute: AdminSignupBlocksRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,

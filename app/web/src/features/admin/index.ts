@@ -2,7 +2,7 @@
 // The admin feature: the health of remote servers with the reasons of their state and resuming deliveries to
 // them (federation.md §7.3), the moderation actions on domains (FR-702), the dead jobs of the job queue with
 // running them again, the audit log (FR-704), the review of registrations awaiting approval (FR-721), and the
-// review of appeals of moderation actions (FR-707). Each
+// review of appeals of moderation actions (FR-707), and the blocks on sign-ups (FR-719). Each
 // screen is for a viewer whose roles have its permission (manage_domains, manage_jobs, view_audit,
 // manage_accounts); the server checks it on every request. The navigation's admin entry and the menu show
 // what awaits the moderators (FR-712).
@@ -33,6 +33,8 @@ export { DomainActions } from "./components/DomainActions";
 export { InstanceDetail } from "./components/InstanceDetail";
 export { InstanceList } from "./components/InstanceList";
 export { RegistrationList } from "./components/RegistrationList";
+export { type SignupBlockFilter, signupBlockFilters, signupBlocksQueryOptions } from "./api/signupBlocks";
+export { SignupBlocks } from "./components/SignupBlocks";
 export { useAdminEntry } from "./hooks/useAdminCounts";
 export { registrationsQueryOptions } from "./api/registrations";
 export { DomainName, MissingPermission } from "./components/parts";
@@ -56,3 +58,6 @@ export { AccountSearch } from "./components/AccountSearch";
 export { type AppealFilter, appealQueryOptions, appealsQueryOptions } from "./api/appeals";
 export { AppealDetailView } from "./components/AppealDetail";
 export { AppealQueue } from "./components/AppealQueue";
+// The terms of service and the privacy policy (#489), for manage_settings.
+export { instanceTextsQueryOptions } from "./api/documents";
+export { DocumentSettings } from "./components/DocumentSettings";

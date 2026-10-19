@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the admin feature (web-client.md §7): the health of remote servers, the domain
-// actions, the dead jobs, the audit log, the registrations awaiting approval, the reports, the accounts and their roles, all empty and every server available by default. The default viewer has no
+// actions, the sign-up blocks, the dead jobs, the audit log, the registrations awaiting approval, the reports, the accounts and their roles, all empty and every server available by default. The default viewer has no
 // permissions, so the admin screens' tests start with `server.use(operatorHandler(...))`.
 import { http, HttpResponse } from "msw";
 import { otherAccountFixture, remoteAccountFixture, type Schemas, statusFixture, viewerFixture } from "../../../test/fixtures";
@@ -29,6 +29,21 @@ export function newDomainAction(body: Schemas["CreateDomainActionRequest"]): Sch
     ...(body.public_comment === undefined ? {} : { public_comment: body.public_comment }),
     ...(body.private_note === undefined ? {} : { private_note: body.private_note }),
     ...(body.expires_in === undefined ? {} : { expires_at: new Date(Date.parse(issuedAt) + body.expires_in * 1000).toISOString() }),
+  };
+}
+
+/** A sign-up block on the email domain `mail.example` in effect since 2026-10-10, as the server answers it; `overrides` replace its fields. */
+export function signupBlockFixture(overrides: Partial<Schemas["AdminSignupBlock"]> = {}): Schemas["AdminSignupBlock"] {
+  return { id: "0192f0c4-7a8e-7000-8000-0000000001a1", kind: "email_domain", value: "mail.example", severity: "reject", state: "active", created_at: "2026-10-10T08:00:00Z", ...overrides };
+}
+
+/** The block that POST /admin/signup_blocks records for `body`, added at 2026-10-17T00:00:00Z; the value is kept as sent. */
+export function newSignupBlock(body: Schemas["CreateSignupBlockRequest"]): Schemas["AdminSignupBlock"] {
+  const createdAt = "2026-10-17T00:00:00Z";
+  return {
+    ...signupBlockFixture({ id: "0192f0c4-7a8e-7000-8000-0000000001af", kind: body.kind, value: body.value, severity: body.severity, created_at: createdAt }),
+    ...(body.comment === undefined ? {} : { comment: body.comment }),
+    ...(body.expires_in === undefined ? {} : { expires_at: new Date(Date.parse(createdAt) + body.expires_in * 1000).toISOString() }),
   };
 }
 
@@ -199,6 +214,11 @@ export const moderatorRoleFixture: Schemas["AdminRole"] = {
 };
 export const rolesFixture: Schemas["AdminRole"][] = [adminRoleFixture, moderatorRoleFixture];
 
+/** An instance text as the server answers it, saved at 2026-10-17T00:00:00Z. */
+export function instanceTextFixture(key: Schemas["InstanceTextKey"], locale: string, body: string): Schemas["AdminInstanceText"] {
+  return { key, locale, body, revised_at: "2026-10-17T00:00:00Z" };
+}
+
 /** Whether a path segment is an ID of the API (a UUID), not the name of another operation under the same path. */
 function isId(segment: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(segment);
@@ -224,6 +244,17 @@ export const handlers = [
   http.get(`${apiBase}/admin/domain_actions/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(domainActionFixture({ id: String(params["id"]) })))),
   http.post(`${apiBase}/admin/domain_actions/:id/lift`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(domainActionFixture({ id: String(params["id"]), state: "lifted", lifted_at: "2026-10-17T00:00:00Z" }))),
+  ),
+  // operationIds listSignupBlocks, createSignupBlock, getSignupBlock, liftSignupBlock. A new block keeps the value
+  // as sent (the real server keeps it in canonical form).
+  http.get(`${apiBase}/admin/signup_blocks`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.post(`${apiBase}/admin/signup_blocks`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["CreateSignupBlockRequest"];
+    return withViewer(request, () => HttpResponse.json(newSignupBlock(body)));
+  }),
+  http.get(`${apiBase}/admin/signup_blocks/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(signupBlockFixture({ id: String(params["id"]) })))),
+  http.post(`${apiBase}/admin/signup_blocks/:id/lift`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(signupBlockFixture({ id: String(params["id"]), state: "lifted", lifted_at: "2026-10-17T00:00:00Z" }))),
   ),
   // operationIds listDeadJobs, retryDeadJob.
   http.get(`${apiBase}/admin/dead_jobs`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
@@ -309,6 +340,12 @@ export const handlers = [
         }),
       ),
     );
+  }),
+  // operationIds listInstanceTexts, setInstanceText: no texts; a new text is recorded as sent, at 2026-10-17T00:00:00Z.
+  http.get(`${apiBase}/admin/instance_texts`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.put(`${apiBase}/admin/instance_texts/:key/:locale`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["SetInstanceTextRequest"];
+    return withViewer(request, () => HttpResponse.json(instanceTextFixture(String(params["key"]) as Schemas["InstanceTextKey"], String(params["locale"]), body.body)));
   }),
   // operationId getAccount: the moderators of the reports, Bob for any other ID. The path also matches the
   // operations under /accounts with a name (lookup, relationships…), which go on to their own handlers.

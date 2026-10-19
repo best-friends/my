@@ -9,12 +9,17 @@ import { readRuntimeConfig, type RuntimeConfig } from "./lib/config";
 import { conformToContentSecurityPolicy } from "./lib/csp";
 import { loadStartI18n } from "./lib/locale";
 import { registerServiceWorker, reloadOnPreloadError } from "./lib/pwa";
+import { applyStoredTheme } from "./lib/theme";
 import { createAppRouter } from "./router";
 import { createAppServices } from "./lib/services";
 import "./index.css";
 
 // Before any component renders: React Aria must stay inside the shell's CSP.
 conformToContentSecurityPolicy(document);
+
+// The shell's public/theme.js has applied the stored color theme before the first paint; a shell without it
+// (a Vite dev server under `my serve`) gets it here.
+applyStoredTheme(document);
 
 // Before anything loads a chunk: a deploy may have removed the chunks of this version (ADR-0028).
 reloadOnPreloadError(window);

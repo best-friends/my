@@ -64,6 +64,7 @@
 - 大きさは今のまま置き場所が決める（G11）。react-icons は `width` / `height` に `1em` を書くが、`Button`・`ToggleButton`・`Link`・ナビゲーションの `[&>svg]:size-*` がそれより優先される。
   置き場所が大きさを決めない所でも、`0 × 0` ではなく文字の大きさで描かれる。
 - 太さは Regular（24 px で線幅 1.5 px 相当）を基本にし、オンの状態は形が閉じるものを Fill、閉じないものを Bold にする。
+  Bold（2.25 px 相当）を基本にすると今の手描きの 2 px に近いが、ブーストのオン（Fill）とオフ（Bold）が形でほとんど区別できず、G13 を満たせない（#501 で両方のスクリーンショットを比べた）。
 
 ### Storybook
 
@@ -84,7 +85,3 @@
      `Icons.tsx` を薄い層に書き換え、`Icons.stories.tsx` を表から作る一覧にし、スクリーンショットの基準を `make ui-snapshots-update` で撮り直す。
      [web-client.md §16.3](../architecture/web-client.md#163-アイコン) の G10〜G13 と `app/ui/README.md` のアイコンの節を、Phosphor の太さの決まりに合わせて書き換える。
   2. #502: G10 の「機能やルートに SVG のパスを書かない」を、`app/web` の `<svg>` を lint で禁じる形で強制する（今はレビューと `knip` だけ）。
-
-## Open Questions / 要検証
-
-- 太さを Regular にするか Bold にするか: Bold（2.25 px 相当）は今の手描きの 2 px に近いが、オンの状態に Bold を使えなくなる。#501 で、両方のスクリーンショットを決定者に見せて決める。

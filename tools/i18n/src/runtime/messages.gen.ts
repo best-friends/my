@@ -760,6 +760,66 @@ export interface MessageArgs {
   "client:admin.dead_jobs.summary": {};
   /** Failed jobs */
   "client:admin.dead_jobs.title": {};
+  /** Text in {language} */
+  "client:admin.documents.body": { language: string };
+  /** Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Save it empty to remove the text in this language. */
+  "client:admin.documents.body.description": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:admin.documents.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:admin.documents.characters_over": { count: number };
+  /** Cancel */
+  "client:admin.documents.confirm_remove.cancel": {};
+  /** Remove */
+  "client:admin.documents.confirm_remove.confirm": {};
+  /** People who read this language get the text in another language, or no page when no language has one. You can write it again later. */
+  "client:admin.documents.confirm_remove.description": {};
+  /** Remove the privacy policy in {language}? */
+  "client:admin.documents.confirm_remove.privacy_policy": { language: string };
+  /** Remove the terms of service in {language}? */
+  "client:admin.documents.confirm_remove.terms": { language: string };
+  /** Written in */
+  "client:admin.documents.languages": {};
+  /** No language yet, so the page and its links are hidden */
+  "client:admin.documents.languages.none": {};
+  /** Language */
+  "client:admin.documents.locale": {};
+  /** Each language has its own text. People read the text in their language, or else in the server's default language or English. */
+  "client:admin.documents.locale.description": {};
+  /** Privacy policy */
+  "client:admin.documents.privacy_policy": {};
+  /** The text in {language} is removed. The audit log records the change. */
+  "client:admin.documents.removed": { language: string };
+  /** Save */
+  "client:admin.documents.save": {};
+  /** Could not save the text: {reason} */
+  "client:admin.documents.save_failed": { reason: string };
+  /** The text in {language} is saved. The audit log records the change. */
+  "client:admin.documents.saved": { language: string };
+  /** Last saved in {language} */
+  "client:admin.documents.saved_at": { language: string };
+  /** Not written yet */
+  "client:admin.documents.saved_at.never": {};
+  /** The terms of service and the privacy policy that anyone can read and that people agree to when they sign up. */
+  "client:admin.documents.summary": {};
+  /** Terms of service */
+  "client:admin.documents.terms": {};
+  /** Terms and policies */
+  "client:admin.documents.title": {};
+  /** Use at most {max, number} characters */
+  "client:admin.documents.too_long": { max: number };
+  /** Your changes to the terms of service and the privacy policy will be lost. */
+  "client:admin.documents.unsaved.description": {};
+  /** Discard changes */
+  "client:admin.documents.unsaved.leave": {};
+  /** Keep editing */
+  "client:admin.documents.unsaved.stay": {};
+  /** Leave without saving the texts? */
+  "client:admin.documents.unsaved.title": {};
+  /** Open the privacy policy page */
+  "client:admin.documents.view_privacy_policy": {};
+  /** Open the terms of service page */
+  "client:admin.documents.view_terms": {};
   /** {count, plural, one {# character left} other {# characters left}} */
   "client:admin.domain_actions.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
@@ -1232,6 +1292,122 @@ export interface MessageArgs {
   "client:admin.reports.summary": {};
   /** Reports */
   "client:admin.reports.title": {};
+  /** Could not add the block: {reason} */
+  "client:admin.signup_blocks.add_failed": { reason: string };
+  /** {severity} is in effect for the {kind} {value}. */
+  "client:admin.signup_blocks.added": { kind: string; severity: string; value: string };
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:admin.signup_blocks.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:admin.signup_blocks.characters_over": { count: number };
+  /** Comment */
+  "client:admin.signup_blocks.comment": {};
+  /** Seen by moderators only. */
+  "client:admin.signup_blocks.comment.description": {};
+  /** Added */
+  "client:admin.signup_blocks.created_at": {};
+  /** Duration */
+  "client:admin.signup_blocks.duration": {};
+  /** {count, plural, one {# day} other {# days}} */
+  "client:admin.signup_blocks.duration.days": { count: number };
+  /** The block ends by itself after this. */
+  "client:admin.signup_blocks.duration.description": {};
+  /** Until lifted */
+  "client:admin.signup_blocks.duration.indefinite": {};
+  /** No sign-up blocks in effect */
+  "client:admin.signup_blocks.empty.active": {};
+  /** Blocks on sign-ups appear here until they end or are lifted. */
+  "client:admin.signup_blocks.empty.active.description": {};
+  /** No sign-up blocks yet */
+  "client:admin.signup_blocks.empty.all": {};
+  /** Ends */
+  "client:admin.signup_blocks.expires_at": {};
+  /** In effect */
+  "client:admin.signup_blocks.filter.active": {};
+  /** All */
+  "client:admin.signup_blocks.filter.all": {};
+  /** Blocks to show */
+  "client:admin.signup_blocks.filter.label": {};
+  /** Match by */
+  "client:admin.signup_blocks.kind": {};
+  /** Email domain */
+  "client:admin.signup_blocks.kind.email_domain": {};
+  /** Sign-ups with an email address at this domain or its subdomains, such as a disposable email service. */
+  "client:admin.signup_blocks.kind.email_domain.description": {};
+  /** Email address */
+  "client:admin.signup_blocks.kind.email_hash": {};
+  /** Sign-ups with one email address. Only its hash is kept. */
+  "client:admin.signup_blocks.kind.email_hash.description": {};
+  /** IP range */
+  "client:admin.signup_blocks.kind.ip_range": {};
+  /** Sign-ups from an IP address or a range of them. */
+  "client:admin.signup_blocks.kind.ip_range.description": {};
+  /** Lift */
+  "client:admin.signup_blocks.lift": {};
+  /** Lift the block on the {kind} {value}, added {date} */
+  "client:admin.signup_blocks.lift_action": { date: string; kind: string; value: string };
+  /** Could not lift the block: {reason} */
+  "client:admin.signup_blocks.lift_failed": { reason: string };
+  /** The block on the {kind} {value} is lifted. */
+  "client:admin.signup_blocks.lifted": { kind: string; value: string };
+  /** Lifted */
+  "client:admin.signup_blocks.lifted_at": {};
+  /** Blocks */
+  "client:admin.signup_blocks.list.title": {};
+  /** Add a block */
+  "client:admin.signup_blocks.new.title": {};
+  /** Effect */
+  "client:admin.signup_blocks.severity": {};
+  /** Refuse */
+  "client:admin.signup_blocks.severity.reject": {};
+  /** The sign-up is refused. The page does not say why. */
+  "client:admin.signup_blocks.severity.reject.description": {};
+  /** Require approval */
+  "client:admin.signup_blocks.severity.require_approval": {};
+  /** The registration waits for a moderator's approval, whatever the registration mode. */
+  "client:admin.signup_blocks.severity.require_approval.description": {};
+  /** Choose an effect */
+  "client:admin.signup_blocks.severity.required": {};
+  /** Source */
+  "client:admin.signup_blocks.source": {};
+  /** With a ban */
+  "client:admin.signup_blocks.source.ban": {};
+  /** Added on its own */
+  "client:admin.signup_blocks.source.manual": {};
+  /** State */
+  "client:admin.signup_blocks.state": {};
+  /** In effect */
+  "client:admin.signup_blocks.state.active": {};
+  /** Ended */
+  "client:admin.signup_blocks.state.expired": {};
+  /** Lifted */
+  "client:admin.signup_blocks.state.lifted": {};
+  /** Add block */
+  "client:admin.signup_blocks.submit": {};
+  /** Email domains, email addresses and IP ranges whose sign-ups are refused or need approval. */
+  "client:admin.signup_blocks.summary": {};
+  /** Sign-up blocks */
+  "client:admin.signup_blocks.title": {};
+  /** Enter {max, number} characters or fewer */
+  "client:admin.signup_blocks.too_long": { max: number };
+  /** Domain */
+  "client:admin.signup_blocks.value.email_domain": {};
+  /** Such as mail.example. A domain in non-Latin letters can be entered as it is. */
+  "client:admin.signup_blocks.value.email_domain.description": {};
+  /** Enter a domain */
+  "client:admin.signup_blocks.value.email_domain.required": {};
+  /** Email address */
+  "client:admin.signup_blocks.value.email_hash": {};
+  /** An email address, or the hex SHA-256 of one. Case and the part from a + in the local part are ignored. */
+  "client:admin.signup_blocks.value.email_hash.description": {};
+  /** Enter an email address */
+  "client:admin.signup_blocks.value.email_hash.required": {};
+  /** IP address or range */
+  "client:admin.signup_blocks.value.ip_range": {};
+  /** A CIDR range such as 192.0.2.0/24 or 2001:db8::/32, or a single IP address. */
+  "client:admin.signup_blocks.value.ip_range.description": {};
+  /** Enter an IP address or range */
+  "client:admin.signup_blocks.value.ip_range.required": {};
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
   /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
@@ -1358,6 +1534,12 @@ export interface MessageArgs {
   "client:compose.warning.label": {};
   /** Add a content warning */
   "client:compose.warning.toggle": {};
+  /** Terms and policies */
+  "client:documents.label": {};
+  /** Privacy policy */
+  "client:documents.privacy_policy": {};
+  /** Terms of service */
+  "client:documents.terms": {};
   /** Home */
   "client:home.title": {};
   /** This server does not show the public posts of its accounts in one timeline. */
@@ -1800,7 +1982,7 @@ export interface MessageArgs {
   "client:settings.mutes.until": { date: string };
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
-  /** Language, time zone, who sees your posts by default, and the languages of your timelines */
+  /** Language, time zone, theme, who sees your posts by default, and the languages of your timelines */
   "client:settings.preferences.summary": {};
   /** Preferences */
   "client:settings.preferences.title": {};
@@ -1868,6 +2050,16 @@ export interface MessageArgs {
   "client:settings.profile.unsaved.title": {};
   /** Saved */
   "client:settings.saved": {};
+  /** Dark */
+  "client:settings.theme.dark": {};
+  /** Applies at once and is kept on this browser. */
+  "client:settings.theme.description": {};
+  /** Theme */
+  "client:settings.theme.label": {};
+  /** Light */
+  "client:settings.theme.light": {};
+  /** Match the system */
+  "client:settings.theme.system": {};
   /** Dates and times are shown in this time zone. */
   "client:settings.time_zone.description": {};
   /** This device is in a different time zone: {zone}. */
@@ -2180,6 +2372,18 @@ export interface MessageArgs {
   "server:auth.authorize.title": { app: string };
   /** The request was refused because it came from another site. */
   "server:auth.cross_origin": {};
+  /** Terms and policies */
+  "server:auth.document.footer_label": {};
+  /** This server has not published a privacy policy. */
+  "server:auth.document.privacy_missing": {};
+  /** Privacy policy */
+  "server:auth.document.privacy_title": {};
+  /** This server has not published terms of service. */
+  "server:auth.document.terms_missing": {};
+  /** Terms of service */
+  "server:auth.document.terms_title": {};
+  /** Last updated: {date} */
+  "server:auth.document.updated": { date: string };
   /** Something went wrong */
   "server:auth.error.title": {};
   /** This form has expired. Please try again. */
@@ -2202,6 +2406,8 @@ export interface MessageArgs {
   "server:auth.sign_in.title": {};
   /** Sign out */
   "server:auth.sign_out.submit": {};
+  /** By creating an account, you agree to these documents of this server. */
+  "server:auth.sign_up.agreement": {};
   /** This server is not accepting new accounts. */
   "server:auth.sign_up.closed": {};
   /** You sign in with this address. */

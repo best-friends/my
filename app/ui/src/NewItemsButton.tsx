@@ -4,13 +4,13 @@
 import type { ComponentPropsWithRef } from "react";
 import { tv } from "tailwind-variants";
 import { Button } from "./Button";
+import { NewItemsIcon } from "./Icons";
 
 const newItemsButton = tv({
   slots: {
     // Never display: none, even when empty: a live region must stay rendered to announce the next count.
     base: "flex justify-center",
     button: "rounded-full shadow-md",
-    arrow: "size-4 fill-none stroke-current stroke-2",
   },
 });
 
@@ -34,9 +34,7 @@ export function NewItemsButton({ count, label, onPress, className, ...props }: N
     <div {...props} role="status" className={slots.base({ className })}>
       {count > 0 && (
         <Button variant="primary" size="sm" onPress={onPress} className={slots.button()}>
-          <svg aria-hidden="true" viewBox="0 0 16 16" className={slots.arrow()}>
-            <path d="M8 13V3M4 7l4-4 4 4" />
-          </svg>
+          <NewItemsIcon />
           {label}
         </Button>
       )}
