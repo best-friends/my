@@ -23,7 +23,7 @@
 
 ## 運用
 
-- [管理者の作成](operations/admin-cli.md)
+- [管理者とロール](operations/admin-cli.md)
 - [インスタンス設定](operations/instance-settings.md)
 - [利用者登録（登録モード・招待・承認・メール確認）](operations/registration.md)
 - [ドメイン単位の処分と通報の対応](operations/moderation.md)

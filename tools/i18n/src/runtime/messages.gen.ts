@@ -146,6 +146,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.report_resolved": {};
   /** Report unassigned */
   "client:admin.audit_log.action.report_unassigned": {};
+  /** Role granted */
+  "client:admin.audit_log.action.role_granted": {};
+  /** Role revoked */
+  "client:admin.audit_log.action.role_revoked": {};
   /** Rule added */
   "client:admin.audit_log.action.rule_added": {};
   /** Rule moved */
@@ -466,6 +470,74 @@ export interface MessageArgs {
   "client:admin.missing_permission.description": { permission: string };
   /** You cannot use this screen */
   "client:admin.missing_permission.heading": {};
+  /** A removed account */
+  "client:admin.registrations.account_gone": {};
+  /** {applicant} was already approved by another moderator. That decision stands. */
+  "client:admin.registrations.already_approved": { applicant: string };
+  /** {applicant} was already rejected by another moderator. That decision stands. */
+  "client:admin.registrations.already_rejected": { applicant: string };
+  /** Approve */
+  "client:admin.registrations.approve": {};
+  /** Approve {applicant} */
+  "client:admin.registrations.approve_applicant": { applicant: string };
+  /** {applicant} is approved and can sign in. */
+  "client:admin.registrations.approved": { applicant: string };
+  /** Cancel */
+  "client:admin.registrations.cancel": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:admin.registrations.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:admin.registrations.characters_over": { count: number };
+  /** {applicant} can sign in and start posting. The decision cannot be changed afterwards. */
+  "client:admin.registrations.confirm_approve.description": { applicant: string };
+  /** Approve {applicant}? */
+  "client:admin.registrations.confirm_approve.title": { applicant: string };
+  /** {applicant} cannot sign in. The decision cannot be changed afterwards. */
+  "client:admin.registrations.confirm_reject.description": { applicant: string };
+  /** Reject {applicant}? */
+  "client:admin.registrations.confirm_reject.title": { applicant: string };
+  /** Could not save the decision: {reason} */
+  "client:admin.registrations.decide_failed": { reason: string };
+  /** Email */
+  "client:admin.registrations.email": {};
+  /** Email confirmed */
+  "client:admin.registrations.email_verified": {};
+  /** Not confirmed */
+  "client:admin.registrations.email_verified.no": {};
+  /** Confirmed */
+  "client:admin.registrations.email_verified.yes": {};
+  /** None */
+  "client:admin.registrations.email.none": {};
+  /** No registrations await approval */
+  "client:admin.registrations.empty": {};
+  /** New sign-ups appear here while registrations need approval. */
+  "client:admin.registrations.empty.description": {};
+  /** Invite */
+  "client:admin.registrations.invite": {};
+  /** None */
+  "client:admin.registrations.invite.none": {};
+  /** Signed up with an invite */
+  "client:admin.registrations.invite.used": {};
+  /** Note for moderators */
+  "client:admin.registrations.note": {};
+  /** Optional. Only moderators see it. */
+  "client:admin.registrations.note.description": {};
+  /** Use at most {max, number} characters */
+  "client:admin.registrations.note.too_long": { max: number };
+  /** Reason for joining */
+  "client:admin.registrations.reason": {};
+  /** No reason given */
+  "client:admin.registrations.reason.none": {};
+  /** Reject */
+  "client:admin.registrations.reject": {};
+  /** Reject {applicant} */
+  "client:admin.registrations.reject_applicant": { applicant: string };
+  /** {applicant} is rejected. */
+  "client:admin.registrations.rejected": { applicant: string };
+  /** Signed up */
+  "client:admin.registrations.submitted_at": {};
+  /** Registrations */
+  "client:admin.registrations.title": {};
   /** A deleted account */
   "client:admin.report.account.deleted": {};
   /** Loading… */
@@ -836,6 +908,10 @@ export interface MessageArgs {
   "client:notifications.post.open": {};
   /** Try again */
   "client:notifications.retry": {};
+  /** The moderators suspended {name}. You lost {followers, plural, one {# follower} other {# followers}} and {following, plural, one {# account you followed} other {# accounts you followed}}. */
+  "client:notifications.severed.account": { followers: number; following: number; name: string };
+  /** The moderators suspended {domain}. You lost {followers, plural, one {# follower} other {# followers}} and {following, plural, one {# account you followed} other {# accounts you followed}} there. */
+  "client:notifications.severed.domain": { domain: string; followers: number; following: number };
   /** Sign in */
   "client:notifications.sign_in": {};
   /** Sign in to see your notifications. */
@@ -862,6 +938,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** A suspension by the moderators ended some of your follows */
+  "client:notifications.type.relationships_severed": {};
   /** A report you filed has been resolved */
   "client:notifications.type.report_resolved": {};
   /** Unread: */
@@ -1338,6 +1416,8 @@ export interface MessageArgs {
   "client:shell.not_found.title": {};
   /** You are offline. Anything that failed to load loads again when you are back online. */
   "client:shell.offline": {};
+  /** Too many requests were sent to the server. What failed to load loads again at {time}. */
+  "client:shell.rate_limited": { time: string };
   /** Skip to main content */
   "client:shell.skip_to_main": {};
   /** The server sent settings the app cannot read. Reload the page; if this keeps happening, tell the server's administrator. */

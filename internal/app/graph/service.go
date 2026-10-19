@@ -269,18 +269,26 @@ func (s *Service) terminate(ctx context.Context, followerID, followeeID string, 
 // terminateIn ends the follow from followerID to followeeID inside tx, if there is one (and it
 // is active, when activeOnly).
 func (s *Service) terminateIn(ctx context.Context, tx uow.Tx, followerID, followeeID string, reason graph.TerminationReason, activeOnly bool, now time.Time) error {
+	_, err := s.endIn(ctx, tx, FollowTerminated{Termination: graph.Termination{Reason: reason, TerminatedAt: now}}, followerID, followeeID, activeOnly)
+	return err
+}
+
+// endIn is terminateIn with the termination's reason, time, and announcement taken from ev, and
+// returns the state that the follow ended in, graph.StateNone when no follow ended.
+func (s *Service) endIn(ctx context.Context, tx uow.Tx, ev FollowTerminated, followerID, followeeID string, activeOnly bool) (graph.State, error) {
 	edge, f, err := s.liveFollow(ctx, tx, followerID, followeeID)
 	if errors.Is(err, ErrNotFound) || (err == nil && activeOnly && edge.State != graph.StateActive) {
-		return nil
+		return graph.StateNone, nil
 	}
 	if err != nil {
-		return err
+		return graph.StateNone, err
 	}
-	t := graph.Termination{FollowID: f.ID, Reason: reason, TerminatedAt: now}
-	if err := s.d.Repository.InsertTermination(ctx, tx, t); err != nil {
-		return err
+	ev.Follow, ev.PreviousState = f, edge.State
+	ev.Termination.FollowID = f.ID
+	if err := s.d.Repository.InsertTermination(ctx, tx, ev.Termination); err != nil {
+		return graph.StateNone, err
 	}
-	return tx.Emit(ctx, FollowTerminated{Follow: f, Termination: t, PreviousState: edge.State})
+	return edge.State, tx.Emit(ctx, ev)
 }
 
 // liveFollow returns the edge from follower to followee and its follow; ErrNotFound means none.

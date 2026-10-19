@@ -25,6 +25,7 @@ import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDomainActionsRouteImport } from './routes/admin.domain-actions'
 import { Route as AdminInstancesRouteImport } from './routes/admin.instances'
+import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
@@ -119,6 +120,11 @@ const AdminInstancesRoute = AdminInstancesRouteImport.update({
   path: '/admin/instances',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRegistrationsRoute = AdminRegistrationsRouteImport.update({
+  id: '/admin/registrations',
+  path: '/admin/registrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/admin/reports',
   path: '/admin/reports',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
+  '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/registrations'
     | '/admin/reports'
     | '/login/callback'
     | '/settings/blocks'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/registrations'
     | '/admin/reports'
     | '/login/callback'
     | '/settings/blocks'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
     | '/admin/instances'
+    | '/admin/registrations'
     | '/admin/reports'
     | '/login_/callback'
     | '/settings/blocks'
@@ -370,6 +382,7 @@ export interface RootRouteChildren {
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDomainActionsRoute: typeof AdminDomainActionsRoute
   AdminInstancesRoute: typeof AdminInstancesRoute
+  AdminRegistrationsRoute: typeof AdminRegistrationsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
@@ -497,6 +510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInstancesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/registrations': {
+      id: '/admin/registrations'
+      path: '/admin/registrations'
+      fullPath: '/admin/registrations'
+      preLoaderRoute: typeof AdminRegistrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/reports': {
       id: '/admin/reports'
       path: '/admin/reports'
@@ -594,6 +614,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDomainActionsRoute: AdminDomainActionsRoute,
   AdminInstancesRoute: AdminInstancesRoute,
+  AdminRegistrationsRoute: AdminRegistrationsRoute,
   AdminReportsRoute: AdminReportsRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,

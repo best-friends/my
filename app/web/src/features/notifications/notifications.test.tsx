@@ -261,6 +261,44 @@ describe("the notifications page", () => {
     expect(within(within(feed).getByRole("article", { name: /The moderators/ })).queryAllByRole("link")).toEqual([]);
   });
 
+  test("says which suspension ended follows and how many the user lost", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const at = "2026-10-16T09:00:00Z";
+    const items: Notification[] = [
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000d1",
+        type: "relationships_severed",
+        created_at: at,
+        relationship_severance: { kind: "domain_suspension", domain: "bad.example", followers_lost: 2, following_lost: 1 },
+      },
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000d2",
+        type: "relationships_severed",
+        created_at: at,
+        account: otherAccountFixture,
+        relationship_severance: { kind: "account_suspension", followers_lost: 1, following_lost: 0 },
+      },
+      // A severance that is no longer there says only that follows ended.
+      { id: "0192f0c4-7a8e-7000-8000-0000000000d3", type: "relationships_severed", created_at: at },
+    ];
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    const domain = within(feed).getByRole("article", {
+      name: /The moderators suspended bad\.example\. You lost 2 followers and 1 account you followed there\./,
+    });
+    // A server has no profile to link to.
+    expect(within(domain).queryAllByRole("link")).toEqual([]);
+    const account = within(feed).getByRole("article", {
+      name: /The moderators suspended Bob\. You lost 1 follower and 0 accounts you followed\./,
+    });
+    expect(within(account).getByRole("link", { name: "Bob" })).toHaveAttribute("href", "/@bob");
+    expect(within(feed).getByRole("article", { name: /A suspension by the moderators ended some of your follows/ })).toBeInTheDocument();
+  });
+
   test("links the actor to their profile and offers a follow back, one tab stop each", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000a2", unread_count: 0 });

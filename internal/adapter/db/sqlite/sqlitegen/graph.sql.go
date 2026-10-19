@@ -381,6 +381,43 @@ func (q *Queries) ListFollowEdges(ctx context.Context) ([]FollowEdge, error) {
 	return items, nil
 }
 
+const listFollowEdgesOf = `-- name: ListFollowEdgesOf :many
+SELECT follower_account_id, followee_account_id, follow_id, state, since
+FROM follow_edges WHERE follower_account_id = ?1 OR followee_account_id = ?1
+ORDER BY follower_account_id, followee_account_id
+`
+
+// ListFollowEdgesOf returns the edges into and out of an account, pending and active, ordered
+// by follower and followee.
+func (q *Queries) ListFollowEdgesOf(ctx context.Context, accountID string) ([]FollowEdge, error) {
+	rows, err := q.db.QueryContext(ctx, listFollowEdgesOf, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FollowEdge{}
+	for rows.Next() {
+		var i FollowEdge
+		if err := rows.Scan(
+			&i.FollowerAccountID,
+			&i.FolloweeAccountID,
+			&i.FollowID,
+			&i.State,
+			&i.Since,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFollowHistories = `-- name: ListFollowHistories :many
 SELECT
   f.id, f.uri, f.follower_account_id, f.followee_account_id, f.requested_at,

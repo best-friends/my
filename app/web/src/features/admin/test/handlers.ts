@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the admin feature (web-client.md §7): the health of remote servers, the domain
-// actions, the dead jobs and the audit log, all empty and every server available by default. The default viewer has no
+// actions, the dead jobs, the audit log, the registrations awaiting approval and the reports, all empty and every server available by default. The default viewer has no
 // permissions, so the admin screens' tests start with `server.use(operatorHandler(...))`.
 import { http, HttpResponse } from "msw";
 import { otherAccountFixture, remoteAccountFixture, type Schemas, viewerFixture } from "../../../test/fixtures";
@@ -29,6 +29,22 @@ export function newDomainAction(body: Schemas["CreateDomainActionRequest"]): Sch
     ...(body.public_comment === undefined ? {} : { public_comment: body.public_comment }),
     ...(body.private_note === undefined ? {} : { private_note: body.private_note }),
     ...(body.expires_in === undefined ? {} : { expires_at: new Date(Date.parse(issuedAt) + body.expires_in * 1000).toISOString() }),
+  };
+}
+
+/** A registration of `bob` awaiting approval since 2026-10-16, as the server lists it; `overrides` replace its fields. */
+export function registrationFixture(overrides: Partial<Schemas["AdminRegistration"]> = {}): Schemas["AdminRegistration"] {
+  return {
+    user_id: "0192f0c4-7a8e-7000-8000-0000000000b1",
+    account_id: "0192f0c4-7a8e-7000-8000-0000000000c1",
+    username: "bob",
+    state: "pending",
+    since: "2026-10-16T09:00:00Z",
+    email: "bob@example.com",
+    email_verified: true,
+    reason: "I would like to post about birds.",
+    submitted_at: "2026-10-16T09:00:00Z",
+    ...overrides,
   };
 }
 
@@ -107,6 +123,14 @@ export const handlers = [
   http.post(`${apiBase}/admin/dead_jobs/:id/retry`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationId listAuditLog.
   http.get(`${apiBase}/admin/audit_log`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  // operationIds listPendingRegistrations, approveRegistration, rejectRegistration.
+  http.get(`${apiBase}/admin/registrations`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.post(`${apiBase}/admin/registrations/:userId/approve`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(registrationFixture({ user_id: String(params["userId"]), state: "approved", since: "2026-10-17T00:00:00Z" }))),
+  ),
+  http.post(`${apiBase}/admin/registrations/:userId/reject`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(registrationFixture({ user_id: String(params["userId"]), state: "rejected", since: "2026-10-17T00:00:00Z" }))),
+  ),
   // operationIds listReports, getReport, assignReportToSelf, unassignReport, resolveReport, addReportNote, reopenReport.
   http.get(`${apiBase}/admin/reports`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.get(`${apiBase}/admin/reports/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(reportFixture({ id: String(params["id"]) })))),

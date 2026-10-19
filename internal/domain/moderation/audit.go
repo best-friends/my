@@ -109,6 +109,10 @@ const (
 	AuditRuleMoved AuditAction = "rule_moved"
 	// AuditRuleRetired: a rule was retired (instance_rule_retirements).
 	AuditRuleRetired AuditAction = "rule_retired"
+	// AuditRoleGranted: a role was granted to a user (user_role_grants).
+	AuditRoleGranted AuditAction = "role_granted"
+	// AuditRoleRevoked: a role was revoked from a user (user_role_revocations).
+	AuditRoleRevoked AuditAction = "role_revoked"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -133,6 +137,8 @@ var auditActions = []struct {
 	{AuditRuleRevised, AuditTargetRule},
 	{AuditRuleMoved, AuditTargetRule},
 	{AuditRuleRetired, AuditTargetRule},
+	{AuditRoleGranted, AuditTargetRole},
+	{AuditRoleRevoked, AuditTargetRole},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

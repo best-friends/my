@@ -287,6 +287,14 @@
     "defaultMessage": "通報の担当の解除",
     "description": "Heading of an audit log entry: a report was left without an assigned moderator."
   },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "ロールの付与",
+    "description": "Heading of an audit log entry: an administrator granted a role to a user."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "ロールの剥奪",
+    "description": "Heading of an audit log entry: an administrator revoked a role from a user."
+  },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "ルールの追加",
     "description": "Heading of an audit log entry: an administrator added a server rule."
@@ -926,6 +934,142 @@
   "admin.missing_permission.heading": {
     "defaultMessage": "この画面を使う権限がありません",
     "description": "Heading of an admin screen for a user whose roles lack its permission."
+  },
+  "admin.registrations.account_gone": {
+    "defaultMessage": "削除されたアカウント",
+    "description": "Heading of a registration on the registrations admin screen, and the applicant in its sentences, when the user's account no longer exists."
+  },
+  "admin.registrations.already_approved": {
+    "defaultMessage": "{applicant} はすでにほかのモデレーターが承認していました。その決定のままです。",
+    "description": "Status after a moderator decided a registration that another moderator had approved first; nothing changed. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.already_rejected": {
+    "defaultMessage": "{applicant} はすでにほかのモデレーターが却下していました。その決定のままです。",
+    "description": "Status after a moderator decided a registration that another moderator had rejected first; nothing changed. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.approve": {
+    "defaultMessage": "承認する",
+    "description": "Button of a pending registration that opens the confirmation of approving it, and the button of that confirmation that approves it."
+  },
+  "admin.registrations.approve_applicant": {
+    "defaultMessage": "{applicant} を承認する",
+    "description": "Accessible name of the approve button of a pending registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.approved": {
+    "defaultMessage": "{applicant} を承認しました。ログインできるようになりました。",
+    "description": "Status after a moderator approved a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button of the confirmation of approving or rejecting a registration that closes it without deciding."
+  },
+  "admin.registrations.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Character count under the note of a registration decision while the text is within the limit."
+  },
+  "admin.registrations.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Character count under the note of a registration decision when the text is longer than the limit."
+  },
+  "admin.registrations.confirm_approve.description": {
+    "defaultMessage": "{applicant} はログインして投稿できるようになります。決定は後から変えられません。",
+    "description": "Text of the confirmation before approving a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_approve.title": {
+    "defaultMessage": "{applicant} を承認しますか？",
+    "description": "Title of the confirmation before approving a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_reject.description": {
+    "defaultMessage": "{applicant} はログインできなくなります。決定は後から変えられません。",
+    "description": "Text of the confirmation before rejecting a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_reject.title": {
+    "defaultMessage": "{applicant} を却下しますか？",
+    "description": "Title of the confirmation before rejecting a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.decide_failed": {
+    "defaultMessage": "決定を保存できませんでした：{reason}",
+    "description": "Error in the confirmation of approving or rejecting a registration when the request failed. {reason} is why."
+  },
+  "admin.registrations.email": {
+    "defaultMessage": "メールアドレス",
+    "description": "Term of a pending registration's email address."
+  },
+  "admin.registrations.email.none": {
+    "defaultMessage": "なし",
+    "description": "Value of a pending registration's email address when the user has none."
+  },
+  "admin.registrations.email_verified": {
+    "defaultMessage": "メールの確認",
+    "description": "Term of whether the applicant confirmed their email address."
+  },
+  "admin.registrations.email_verified.no": {
+    "defaultMessage": "未確認",
+    "description": "Value when the applicant has not confirmed their email address."
+  },
+  "admin.registrations.email_verified.yes": {
+    "defaultMessage": "確認済み",
+    "description": "Value when the applicant confirmed their email address."
+  },
+  "admin.registrations.empty": {
+    "defaultMessage": "承認待ちの登録はありません",
+    "description": "Heading of the registrations admin screen when no registration awaits a decision."
+  },
+  "admin.registrations.empty.description": {
+    "defaultMessage": "登録を承認制にしているあいだ、新しい登録がここに並びます。",
+    "description": "Text under the heading of the empty registrations admin screen."
+  },
+  "admin.registrations.invite": {
+    "defaultMessage": "招待",
+    "description": "Term of whether the applicant signed up with an invite."
+  },
+  "admin.registrations.invite.none": {
+    "defaultMessage": "なし",
+    "description": "Value when the applicant signed up without an invite."
+  },
+  "admin.registrations.invite.used": {
+    "defaultMessage": "招待から登録",
+    "description": "Value when the applicant signed up with an invite."
+  },
+  "admin.registrations.note": {
+    "defaultMessage": "モデレーター向けのメモ",
+    "description": "Label of the optional note in the confirmation of approving or rejecting a registration."
+  },
+  "admin.registrations.note.description": {
+    "defaultMessage": "任意です。モデレーターだけが見られます。",
+    "description": "Hint under the note of a registration decision."
+  },
+  "admin.registrations.note.too_long": {
+    "defaultMessage": "{max, number} 文字以内にしてください",
+    "description": "Error under the note of a registration decision when it is too long. {max} is the limit."
+  },
+  "admin.registrations.reason": {
+    "defaultMessage": "登録の理由",
+    "description": "Term of the reason the applicant gave for joining."
+  },
+  "admin.registrations.reason.none": {
+    "defaultMessage": "理由はありません",
+    "description": "Value when the applicant gave no reason for joining."
+  },
+  "admin.registrations.reject": {
+    "defaultMessage": "却下する",
+    "description": "Button of a pending registration that opens the confirmation of rejecting it, and the button of that confirmation that rejects it."
+  },
+  "admin.registrations.reject_applicant": {
+    "defaultMessage": "{applicant} を却下する",
+    "description": "Accessible name of the reject button of a pending registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.rejected": {
+    "defaultMessage": "{applicant} を却下しました。",
+    "description": "Status after a moderator rejected a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.submitted_at": {
+    "defaultMessage": "登録日時",
+    "description": "Term of when the applicant signed up."
+  },
+  "admin.registrations.title": {
+    "defaultMessage": "登録の審査",
+    "description": "Title of the admin screen that lists the registrations awaiting approval."
   },
   "admin.report.account.deleted": {
     "defaultMessage": "削除されたアカウント",
@@ -1667,6 +1811,14 @@
     "defaultMessage": "もう一度試す",
     "description": "Button that loads the notifications again after they failed to load."
   },
+  "notifications.severed.account": {
+    "defaultMessage": "モデレーターが{name}さんを凍結したため、フォロワー{followers, plural, other {#人}}とフォロー{following, plural, other {#人}}の関係が解除されました。",
+    "description": "Notification sentence: the moderators of this server suspended a remote account, which ended the follows between it and the user in both directions; they are not restored when the suspension ends. {name} is the display name of the suspended account. {followers} is the number of the suspended accounts that followed the user, {following} the number of those that the user followed (either may be 0)."
+  },
+  "notifications.severed.domain": {
+    "defaultMessage": "モデレーターが{domain}を凍結したため、そのサーバーのフォロワー{followers, plural, other {#人}}とフォロー{following, plural, other {#人}}の関係が解除されました。",
+    "description": "Notification sentence: the moderators of this server suspended another server, which ended the follows between its accounts and the user in both directions; they are not restored when the suspension ends. {domain} is the server's domain name. {followers} is the number of the suspended accounts that followed the user, {following} the number of those that the user followed (either may be 0)."
+  },
   "notifications.sign_in": {
     "defaultMessage": "ログイン",
     "description": "Link on the notifications page, when nobody is signed in, that opens the sign-in page."
@@ -1718,6 +1870,10 @@
   "notifications.type.poll_closed": {
     "defaultMessage": "参加した投票が終了しました",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
+  },
+  "notifications.type.relationships_severed": {
+    "defaultMessage": "モデレーターによる凍結で、いくつかのフォロー関係が解除されました",
+    "description": "Notification sentence when the details of the suspension are no longer available: the moderators of this server suspended a server or an account, which ended follows between it and the user."
   },
   "notifications.type.report_resolved": {
     "defaultMessage": "あなたの通報への対応が完了しました",
@@ -2670,6 +2826,10 @@
   "shell.offline": {
     "defaultMessage": "オフラインです。読み込めなかったものは、オンラインに戻ると読み込み直します。",
     "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
+  },
+  "shell.rate_limited": {
+    "defaultMessage": "サーバーへのリクエストが多すぎます。読み込めなかったものは {time} に読み込み直します。",
+    "description": "Text of the bar at the top of the app while the server's rate limit refuses requests (HTTP 429). {time} is the time of day the app loads again, with seconds (for example 12:34:56). Screen readers announce it when it appears."
   },
   "shell.skip_to_main": {
     "defaultMessage": "本文へ移動",

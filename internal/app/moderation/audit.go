@@ -40,10 +40,13 @@ const (
 	AuditRuleRevised          = moderation.AuditRuleRevised
 	AuditRuleMoved            = moderation.AuditRuleMoved
 	AuditRuleRetired          = moderation.AuditRuleRetired
+	AuditRoleGranted          = moderation.AuditRoleGranted
+	AuditRoleRevoked          = moderation.AuditRoleRevoked
 
 	AuditTargetUser    = moderation.AuditTargetUser
 	AuditTargetSetting = moderation.AuditTargetSetting
 	AuditTargetRule    = moderation.AuditTargetRule
+	AuditTargetRole    = moderation.AuditTargetRole
 )
 
 // AuditActor returns the actor of an operation given the user ID that the use cases take: the

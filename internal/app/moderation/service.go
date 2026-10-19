@@ -12,6 +12,7 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/moderation"
 )
@@ -132,8 +133,15 @@ type Deps struct {
 	// Lifecycles schedules the deletion of a banned account; nil refuses bans with
 	// ErrUnsupportedAction.
 	Lifecycles Lifecycles
-	Clock      kernel.Clock
-	IDs        kernel.IDGenerator
+	// Follows cuts the follows of the remote accounts and domains that are suspended (FR-717);
+	// nil cuts none.
+	Follows Follows
+	// Directory finds the local accounts and the accounts of a suspended domain, and Outbox
+	// enqueues the job that cuts their follows; without either, a domain suspension cuts none.
+	Directory Directory
+	Outbox    queue.Outbox
+	Clock     kernel.Clock
+	IDs       kernel.IDGenerator
 }
 
 // Service runs the moderation module's use cases: actions on domains and accounts, their lifts,
@@ -160,7 +168,8 @@ type DomainActionInput struct {
 
 // IssueDomainAction records an action on a domain and, in the same transaction, the
 // restrictions it imposes on the domain and its subdomains (data-model §5.2), and emits
-// DomainRestrictionsChanged and its audit log entry.
+// DomainRestrictionsChanged and its audit log entry. A suspension also enqueues JobSeverDomain,
+// which cuts the follows with the domain (SeverDomain).
 func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (moderation.DomainAction, error) {
 	now := kernel.Normalize(s.d.Clock.Now())
 	a := moderation.DomainAction{
@@ -183,6 +192,9 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 			}
 		}
 		if err := s.emitDomain(ctx, tx, a.Domain, now); err != nil {
+			return err
+		}
+		if err := s.enqueueDomainSeverance(ctx, tx, a); err != nil {
 			return err
 		}
 		return s.emitAudit(ctx, tx, moderation.AuditEntry{
@@ -276,7 +288,8 @@ type AccountActionInput struct {
 // IssueAccountAction records an action on an account and, in the same transaction, the
 // restrictions it imposes (data-model §5.2) and its other effects, and emits
 // AccountRestrictionsChanged and AccountActionIssued, and AccountSuspensionChanged when the
-// action (suspend, ban) suspends an account that was not suspended. delete_statuses deletes the
+// action (suspend, ban) suspends an account that was not suspended; the suspension of a remote
+// account also cuts its follows with the local accounts (severance.go). delete_statuses deletes the
 // statuses it names (origin
 // moderation), mark_statuses_sensitive shows them as sensitive until it is lifted, and ban
 // schedules the deletion of the account moderation.BanDeletionDelay later. An action that
@@ -364,8 +377,14 @@ func (s *Service) IssueAccountAction(ctx context.Context, in AccountActionInput)
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
 		}
-		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
+		started, err := s.emitSuspension(ctx, tx, a.TargetAccountID, a.ID, before, now)
+		if err != nil {
 			return err
+		}
+		if started && !target.Account.IsLocal() && s.severs() {
+			if err := s.severAccountIn(ctx, tx, a, now); err != nil {
+				return err
+			}
 		}
 		if err := tx.Emit(ctx, AccountActionIssued{Action: a}); err != nil {
 			return err
@@ -483,7 +502,7 @@ func (s *Service) LiftAccountAction(ctx context.Context, actionID, liftedByUserI
 		if err := s.emitAccount(ctx, tx, a.TargetAccountID, now); err != nil {
 			return err
 		}
-		if err := s.emitSuspension(ctx, tx, a.TargetAccountID, before, now); err != nil {
+		if _, err := s.emitSuspension(ctx, tx, a.TargetAccountID, "", before, now); err != nil {
 			return err
 		}
 		// The lift's row is keyed by the action's ID.

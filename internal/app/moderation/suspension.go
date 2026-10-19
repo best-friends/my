@@ -15,16 +15,21 @@ import (
 
 // EventAccountSuspensionChanged follows every change of whether an account is suspended (the
 // federation restriction of suspend and ban): an action that suspends it, and the lift or the
-// expiry of its last suspension (moderation.SuspensionChange). The federation module sends the
-// Update of a local actor from it (federation.md §11.1, ADR-0036).
+// expiry of its last suspension (moderation.SuspensionChange), of a local account and of a
+// remote one alike. The federation module sends the Update of a local actor from it
+// (federation.md §11.1, ADR-0036); when it starts the suspension of a remote account, the same
+// transaction cuts the follows with the account (FR-717: relationship_severances.action_id is
+// ActionID, severance.go).
 const EventAccountSuspensionChanged = "moderation.account_suspension_changed"
 
 // AccountSuspensionChanged carries an account's suspension after a change: Suspended is true
-// when an action suspended the account, false when its last suspension ended. ChangedAt is the
+// when an action suspended the account, false when its last suspension ended. ActionID is the
+// action that suspended the account when Suspended is true, and "" otherwise. ChangedAt is the
 // time of the action, the lift, or the cleanup that removed the expired suspension.
 type AccountSuspensionChanged struct {
 	AccountID string
 	Suspended bool
+	ActionID  string
 	ChangedAt time.Time
 }
 
@@ -32,17 +37,21 @@ type AccountSuspensionChanged struct {
 func (AccountSuspensionChanged) EventType() string { return EventAccountSuspensionChanged }
 
 // emitSuspension emits AccountSuspensionChanged in tx when the change from the rows before to
-// the account's rows now changes its suspension.
-func (s *Service) emitSuspension(ctx context.Context, tx uow.Tx, accountID string, before []moderation.RestrictionRow, now time.Time) error {
+// the account's rows now changes its suspension, and reports whether the account became
+// suspended. actionID is the action issued in tx, "" for a lift.
+func (s *Service) emitSuspension(ctx context.Context, tx uow.Tx, accountID, actionID string, before []moderation.RestrictionRow, now time.Time) (started bool, err error) {
 	after, err := s.d.Repository.AccountRestrictionRows(ctx, tx, accountID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	changed, suspended := moderation.SuspensionChange(before, after, now)
 	if !changed {
-		return nil
+		return false, nil
 	}
-	return tx.Emit(ctx, AccountSuspensionChanged{AccountID: accountID, Suspended: suspended, ChangedAt: now})
+	if !suspended {
+		actionID = ""
+	}
+	return suspended, tx.Emit(ctx, AccountSuspensionChanged{AccountID: accountID, Suspended: suspended, ActionID: actionID, ChangedAt: now})
 }
 
 const (
@@ -58,8 +67,10 @@ const (
 	expiryMaxBatches = 20
 )
 
-// RegisterJobs registers the moderation job handlers on reg and the expiry schedule on sched.
+// RegisterJobs registers the moderation job handlers on reg (the expiry of restrictions and the
+// severance of a suspended domain's follows) and the expiry schedule on sched.
 func (s *Service) RegisterJobs(reg *queue.JobHandlerRegistry, sched *queue.Scheduler) {
+	reg.Register(JobSeverDomain, s.handleSeverDomain)
 	reg.Register(JobExpireRestrictions, func(ctx context.Context, _ queue.Job) queue.Result {
 		if _, err := s.ExpireAccountRestrictions(ctx); err != nil {
 			return queue.Retry(0, err)

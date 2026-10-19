@@ -432,6 +432,7 @@ type Notification struct {
 	ModerationActionID *string
 	ReportID           *string
 	SubjectUserID      *string
+	SeveranceID        *string
 	DedupeKey          string
 	CreatedAt          time.Time
 }
@@ -649,6 +650,11 @@ type Role struct {
 	Key       string
 	Position  int32
 	CreatedAt time.Time
+}
+
+type RolePermission struct {
+	RoleID     string
+	Permission string
 }
 
 type SessionOrigin struct {

@@ -270,6 +270,12 @@ flowchart LR
 | `user_role_revocations` | イベント | `grant_id`（PK）, `revoked_by_user_id`（NULL 可 = CLI による剥奪）, `revoked_at` | |
 | `user_roles` | 投影 | `user_id`, `role_id`, `grant_id` | PK `(user_id, role_id)` |
 
+- 付与は `user_role_grants` に 1 行足して `user_roles` に加え、剥奪は `user_role_revocations` に 1 行足して `user_roles` から除きます。どちらも同じトランザクションで監査ログ（`role_granted`・`role_revoked`）を書きます。
+  持っているロールの付与と持っていないロールの剥奪は何もしません。
+- 利用者は自分のロールの最も高い `position` 以下のロールだけを付与・剥奪できます（FR-720）。CLI はどのロールも付与・剥奪できます。
+- `admin` は最後の 1 人から剥奪できません。1 つのロールの変更は、トランザクションの最初にそのロールの行を読んで（PostgreSQL では `FOR UPDATE`）1 つずつ進めます。
+- 権限は要求ごとに `user_roles` から読むので、変更は次の要求から効きます。モデレーター向けの通知の宛先も、通知を作るときの `user_roles` で決まります。
+
 #### セッション・OAuth
 
 | テーブル | 分類 | カラム | 制約 |
@@ -498,6 +504,7 @@ flowchart LR
   | `text_changed` | `setting` | 文章のキー | キーとロケール（`terms [ja]`） | `instance_text_revisions.id` |
   | `rule_added`, `rule_revised`, `rule_moved` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_revisions.id`（移動は動かしたルールの版。動かしたルールの位置が変わらないときは最初に記録した版） |
   | `rule_retired` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_retirements.rule_id` |
+  | `role_granted`, `role_revoked` | `role` | `roles.id` | ロールのキーと利用者のハンドル（`moderator @alice`） | `user_role_grants.id`（剥奪の行もこの ID が PK） |
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。
@@ -507,9 +514,12 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `relationship_severances` | イベント | `id`, `domain_action_id`（NULL 可）, `action_id`（NULL 可。リモートのアカウントの凍結）, `account_id`（関係を失ったローカルのアカウント）, `followers_lost`（`int`）, `following_lost`（`int`）, `occurred_at` | インデックス `(account_id, id DESC)`。`domain_action_id` と `action_id` はどちらか一方だけが値を持つ（`CHECK`） |
+| `relationship_severances` | イベント | `id`, `domain_action_id`（NULL 可）, `action_id`（NULL 可。リモートのアカウントの凍結）, `account_id`（関係を失ったローカルのアカウント）, `followers_lost`（`int`）, `following_lost`（`int`）, `occurred_at` | インデックス `(account_id, id DESC)`。一意 `(domain_action_id, account_id)`, `(action_id, account_id)`。`domain_action_id` と `action_id` はどちらか一方だけが値を持つ（`CHECK`） |
 
-- ドメインの凍結とリモートのアカウントの凍結は、両方向のフォローを `follow_terminations`（`reason = moderation`）で切り、関係を失ったローカルのアカウントごとに 1 行を記録して通知します（FR-717、ADR-0036）。解除しても関係は戻しません。
+- ドメインの凍結とリモートのアカウントの凍結は、両方向のフォローを（承認待ちも含めて）`follow_terminations`（`reason = moderation`）で切り、承認済みのフォローを失ったローカルのアカウントごとに 1 行を記録して通知します（FR-717、ADR-0036）。`followers_lost` / `following_lost` は承認済みのフォローの数で、承認待ちだけを失ったアカウントには行を作りません。解除しても関係は戻しません。
+- リモートのアカウントの凍結は、凍結を始めた処分のトランザクションで切ります（相手は 1 アカウントなので、ローカルのアカウントの数で済む）。
+- ドメインの凍結は件数に上限がないので、処分のトランザクションで outbox に積んだジョブ `moderation.sever_domain` が、ローカルのアカウント 1 つごとに 1 トランザクションで、そのアカウントとドメイン・サブドメインのアカウントの間のフォローを切ります。処分がジョブの前に解除されても切ります。
+- 一意制約により、同じ処分を処理し直しても行と通知は増えません。リモートのアカウントがすでに凍結中なら 2 つ目の凍結は何も切りません（`account_suspension_changed` が出ないため）。
 
 #### 保全
 
@@ -996,7 +1006,8 @@ flowchart LR
 | `report_intake` | 通報を受け付けない（ドメイン単位の `reject_reports`） | `Flag` の受信 |
 
 - 新しい処分は、`kind` に値を足して対応表に 1 行書くだけで追加できます（テーブル変更なし）。
-- リモートアカウントへの処分は `limit` / `suspend` / `force_sensitive` などを同じ表で扱います。`login` と `post` はリモートには意味がないので無視します。リモートのアカウントの `suspend` は、同じトランザクションで両方向のフォローを切ります（`relationship_severances`）。
+- リモートアカウントへの処分は、制限だけを生む `limit` / `suspend` / `force_sensitive` を同じ表で扱います。ほかの種類（`login` や `post` の制限、本人への通知、投稿への処分、`ban`）はリモートには意味がないので受け付けません（`moderation.ErrUnsupportedAction`）。`notify_target` は常に偽です。
+- リモートのアカウントの `suspend` は、同じトランザクションで両方向のフォローを切ります（`relationship_severances`）。切断は、ローカルのアカウントと同じく凍結の始まりに発行される `moderation.account_suspension_changed`（凍結した処分の ID を持つ）と同じ時点で行います。
 - ローカルのアカウントの `suspend` / `ban` とその解除・期限切れ、`delete_statuses` が連合先に送るものは [ADR-0036](../adr/0036-moderation-federation-propagation.md) と [federation.md §11](federation.md#11-モデレーションとの連携) にあります。
 - ドメイン単位の処分の対応: `limit` → `public_discovery`, `unsolicited_reach`、`suspend` → `profile_view`, `federation`、`reject_media` → `media_fetch`、`reject_reports` → `report_intake`、`force_sensitive` → `media_sensitive`。
 

@@ -156,6 +156,13 @@ func TestRegistrationRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestRoleRepositoryContract(t *testing.T) {
+	testkit.RoleRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.AccountHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()}
+	})
+}
+
 func TestInstanceRepositoryContract(t *testing.T) {
 	testkit.InstanceRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.InstanceHarness {
 		db, _ := newTestDB(t, "", opts)
@@ -247,6 +254,25 @@ func TestRemoteFollowContract(t *testing.T) {
 			Notifications: db.NotificationRepository(),
 			Federation:    feds,
 			Inbox:         feds,
+		}
+	})
+}
+
+func TestSeveranceContract(t *testing.T) {
+	testkit.SeveranceContract(t, func(t *testing.T, opts uow.Options) testkit.SeveranceHarness {
+		db, _ := newTestDB(t, "", opts)
+		feds := db.FederationRepository()
+		return testkit.SeveranceHarness{
+			RemoteFollowHarness: testkit.RemoteFollowHarness{
+				FollowHarness: testkit.FollowHarness{
+					AccountHarness: testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()},
+					Graph:          db.GraphRepository(),
+				},
+				Notifications: db.NotificationRepository(),
+				Federation:    feds,
+				Inbox:         feds,
+			},
+			Moderation: db.ModerationRepository(),
 		}
 	})
 }

@@ -432,6 +432,7 @@ type Notification struct {
 	ModerationActionID sql.NullString
 	ReportID           sql.NullString
 	SubjectUserID      sql.NullString
+	SeveranceID        sql.NullString
 	DedupeKey          string
 	CreatedAt          int64
 }
@@ -649,6 +650,11 @@ type Role struct {
 	Key       string
 	Position  int64
 	CreatedAt int64
+}
+
+type RolePermission struct {
+	RoleID     string
+	Permission string
 }
 
 type SessionOrigin struct {
