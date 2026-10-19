@@ -16,7 +16,7 @@ NPM_ALLOWED_LICENSES := $(GO_ALLOWED_LICENSES),BlueOak-1.0.0,MIT-0
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 .PHONY: help check lint-docs lint-shell adr-index adr-index-check adr-new build \
-	go-check go-mod-check go-vet go-lint go-test go-build go-licenses go-vuln \
+	go-check go-mod-check go-vet go-lint go-test go-test-postgres go-build go-licenses go-vuln \
 	i18n-install i18n-gen i18n-check
 
 help: ## Show available targets
@@ -131,8 +131,14 @@ go-vet: ## Run go vet
 go-lint: ## Run golangci-lint (includes the depguard architecture boundaries)
 	golangci-lint run ./...
 
-go-test: ## Run Go tests
+go-test: ## Run Go tests (PostgreSQL tests on pgmem, ADR-0041)
 	go test ./...
+
+# The packages whose tests use PostgreSQL through pkg/testkit/pgtest.
+POSTGRES_TEST_PACKAGES := ./internal/adapter/db/postgres/ ./internal/adapter/kv/db/ ./internal/adapter/queue/db/ ./internal/platform/
+
+go-test-postgres: ## Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI on main and nightly)
+	TEST_POSTGRES=container TEST_POSTGRES_REQUIRED=1 go test -count=1 $(POSTGRES_TEST_PACKAGES)
 
 go-build: ## Build all packages statically (CGO_ENABLED=0)
 	CGO_ENABLED=0 go build ./...
