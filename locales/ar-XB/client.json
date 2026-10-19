@@ -2623,6 +2623,238 @@
     "defaultMessage": "‮Sǝɹʌǝɹ sǝʇʇıuƃs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.signup_blocks.add_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɐpp ʇɥǝ qʅoɔʞ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.added": {
+    "defaultMessage": "‮{severity} ıs ıu ǝɟɟǝɔʇ ɟoɹ ʇɥǝ {kind} {value}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.characters_left": {
+    "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʅǝɟʇ} other{# ɔɥɐɹɐɔʇǝɹs ʅǝɟʇ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.characters_over": {
+    "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.comment": {
+    "defaultMessage": "‮Ↄoɯɯǝuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.comment.description": {
+    "defaultMessage": "‮Sǝǝu qʎ ɯopǝɹɐʇoɹs ouʅʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.created_at": {
+    "defaultMessage": "‮∀ppǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.duration": {
+    "defaultMessage": "‮ᗡnɹɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.duration.days": {
+    "defaultMessage": "‮{count,plural,one{# pɐʎ} other{# pɐʎs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.duration.description": {
+    "defaultMessage": "‮⊥ɥǝ qʅoɔʞ ǝups qʎ ıʇsǝʅɟ ɐɟʇǝɹ ʇɥıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.duration.indefinite": {
+    "defaultMessage": "‮∩uʇıʅ ʅıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.empty.active": {
+    "defaultMessage": "‮No sıƃu-nd qʅoɔʞs ıu ǝɟɟǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.empty.active.description": {
+    "defaultMessage": "‮Ԑʅoɔʞs ou sıƃu-nds ɐddǝɐɹ ɥǝɹǝ nuʇıʅ ʇɥǝʎ ǝup oɹ ɐɹǝ ʅıɟʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.empty.all": {
+    "defaultMessage": "‮No sıƃu-nd qʅoɔʞs ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.expires_at": {
+    "defaultMessage": "‮Ǝups‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.filter.active": {
+    "defaultMessage": "‮Iu ǝɟɟǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.filter.all": {
+    "defaultMessage": "‮∀ʅʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.filter.label": {
+    "defaultMessage": "‮Ԑʅoɔʞs ʇo sɥoʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.kind": {
+    "defaultMessage": "‮Wɐʇɔɥ qʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.kind.email_domain": {
+    "defaultMessage": "‮Ǝɯɐıʅ poɯɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.kind.email_domain.description": {
+    "defaultMessage": "‮Sıƃu-nds ʍıʇɥ ɐu ǝɯɐıʅ ɐppɹǝss ɐʇ ʇɥıs poɯɐıu oɹ ıʇs snqpoɯɐıus, snɔɥ ɐs ɐ pısdosɐqʅǝ ǝɯɐıʅ sǝɹʌıɔǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.kind.email_hash": {
+    "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.kind.email_hash.description": {
+    "defaultMessage": "‮Sıƃu-nds ʍıʇɥ ouǝ ǝɯɐıʅ ɐppɹǝss. Ouʅʎ ıʇs ɥɐsɥ ıs ʞǝdʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.kind.ip_range": {
+    "defaultMessage": "‮IԀ ɹɐuƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.kind.ip_range.description": {
+    "defaultMessage": "‮Sıƃu-nds ɟɹoɯ ɐu IԀ ɐppɹǝss oɹ ɐ ɹɐuƃǝ oɟ ʇɥǝɯ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.lift": {
+    "defaultMessage": "‮⅂ıɟʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.lift_action": {
+    "defaultMessage": "‮⅂ıɟʇ ʇɥǝ qʅoɔʞ ou ʇɥǝ {kind} {value}, ɐppǝp {date}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.lift_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ʅıɟʇ ʇɥǝ qʅoɔʞ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.lifted": {
+    "defaultMessage": "‮⊥ɥǝ qʅoɔʞ ou ʇɥǝ {kind} {value} ıs ʅıɟʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.lifted_at": {
+    "defaultMessage": "‮⅂ıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.list.title": {
+    "defaultMessage": "‮Ԑʅoɔʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.new.title": {
+    "defaultMessage": "‮∀pp ɐ qʅoɔʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.severity": {
+    "defaultMessage": "‮Ǝɟɟǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.severity.reject": {
+    "defaultMessage": "‮ᴚǝɟnsǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.severity.reject.description": {
+    "defaultMessage": "‮⊥ɥǝ sıƃu-nd ıs ɹǝɟnsǝp. ⊥ɥǝ dɐƃǝ poǝs uoʇ sɐʎ ʍɥʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.severity.require_approval": {
+    "defaultMessage": "‮ᴚǝbnıɹǝ ɐddɹoʌɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.severity.require_approval.description": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝƃısʇɹɐʇıou ʍɐıʇs ɟoɹ ɐ ɯopǝɹɐʇoɹ's ɐddɹoʌɐʅ, ʍɥɐʇǝʌǝɹ ʇɥǝ ɹǝƃısʇɹɐʇıou ɯopǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.severity.required": {
+    "defaultMessage": "‮Ↄɥoosǝ ɐu ǝɟɟǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.source": {
+    "defaultMessage": "‮Sonɹɔǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.source.ban": {
+    "defaultMessage": "‮Mıʇɥ ɐ qɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.source.manual": {
+    "defaultMessage": "‮∀ppǝp ou ıʇs oʍu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.state.active": {
+    "defaultMessage": "‮Iu ǝɟɟǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.state.expired": {
+    "defaultMessage": "‮Ǝupǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.state.lifted": {
+    "defaultMessage": "‮⅂ıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.submit": {
+    "defaultMessage": "‮∀pp qʅoɔʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.summary": {
+    "defaultMessage": "‮Ǝɯɐıʅ poɯɐıus, ǝɯɐıʅ ɐppɹǝssǝs ɐup IԀ ɹɐuƃǝs ʍɥosǝ sıƃu-nds ɐɹǝ ɹǝɟnsǝp oɹ uǝǝp ɐddɹoʌɐʅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.title": {
+    "defaultMessage": "‮Sıƃu-nd qʅoɔʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.too_long": {
+    "defaultMessage": "‮Ǝuʇǝɹ {max, number} ɔɥɐɹɐɔʇǝɹs oɹ ɟǝʍǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.email_domain": {
+    "defaultMessage": "‮ᗡoɯɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.email_domain.description": {
+    "defaultMessage": "‮Snɔɥ ɐs ɯɐıʅ.ǝxɐɯdʅǝ. ∀ poɯɐıu ıu uou-⅂ɐʇıu ʅǝʇʇǝɹs ɔɐu qǝ ǝuʇǝɹǝp ɐs ıʇ ıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.email_domain.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ poɯɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.email_hash": {
+    "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.email_hash.description": {
+    "defaultMessage": "‮∀u ǝɯɐıʅ ɐppɹǝss, oɹ ʇɥǝ ɥǝx SH∀-256 oɟ ouǝ. Ↄɐsǝ ɐup ʇɥǝ dɐɹʇ ɟɹoɯ ɐ + ıu ʇɥǝ ʅoɔɐʅ dɐɹʇ ɐɹǝ ıƃuoɹǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.email_hash.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐu ǝɯɐıʅ ɐppɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.ip_range": {
+    "defaultMessage": "‮IԀ ɐppɹǝss oɹ ɹɐuƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.ip_range.description": {
+    "defaultMessage": "‮∀ ↃIᗡᴚ ɹɐuƃǝ snɔɥ ɐs 192.0.2.0/24 oɹ 2001:pq8::/32, oɹ ɐ sıuƃʅǝ IԀ ɐppɹǝss.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.value.ip_range.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐu IԀ ɐppɹǝss oɹ ɹɐuƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "api.error.network": {
     "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɐɔɥ ʇɥǝ sǝɹʌǝɹ. Ↄɥǝɔʞ ʎonɹ ɔouuǝɔʇıou ɐup ʇɹʎ ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3764,7 +3996,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.summary": {
-    "defaultMessage": "‮⅂ɐuƃnɐƃǝ, ʇıɯǝ zouǝ, ʍɥo sǝǝs ʎonɹ dosʇs qʎ pǝɟɐnʅʇ, ɐup ʇɥǝ ʅɐuƃnɐƃǝs oɟ ʎonɹ ʇıɯǝʅıuǝs‬",
+    "defaultMessage": "‮⅂ɐuƃnɐƃǝ, ʇıɯǝ zouǝ, ʇɥǝɯǝ, ʍɥo sǝǝs ʎonɹ dosʇs qʎ pǝɟɐnʅʇ, ɐup ʇɥǝ ʅɐuƃnɐƃǝs oɟ ʎonɹ ʇıɯǝʅıuǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.title": {
@@ -3897,6 +4129,26 @@
   },
   "settings.saved": {
     "defaultMessage": "‮Sɐʌǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.dark": {
+    "defaultMessage": "‮ᗡɐɹʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.description": {
+    "defaultMessage": "‮∀ddʅıǝs ɐʇ ouɔǝ ɐup ıs ʞǝdʇ ou ʇɥıs qɹoʍsǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.label": {
+    "defaultMessage": "‮⊥ɥǝɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.light": {
+    "defaultMessage": "‮⅂ıƃɥʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.theme.system": {
+    "defaultMessage": "‮Wɐʇɔɥ ʇɥǝ sʎsʇǝɯ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.time_zone.description": {

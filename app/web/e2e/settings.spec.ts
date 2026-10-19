@@ -124,13 +124,17 @@ test.describe("display language", () => {
     await expect(page.locator("html")).toHaveAttribute("dir", localeDir(locale));
     const before = await heading.textContent();
 
-    // The form: the display language and time zone selects, the visibility radio group and the languages group.
+    // The form: the display language and time zone selects, the theme and visibility radio groups and the languages group.
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading [level=1]
       - link
       - paragraph
       - button
       - button
+      - radiogroup:
+        - radio [checked]
+        - radio
+        - radio
       - radiogroup:
         - radio [checked]
         - radio
@@ -154,6 +158,36 @@ test.describe("display language", () => {
     await expect(heading).not.toHaveText(before ?? "");
     await expect(select).toContainText(target.name);
     expect(changes).toEqual([{ locale: target.locale }]);
+  });
+});
+
+test.describe("theme", () => {
+  test("switches at once, passes axe in both themes, and stays after a reload without reaching the server", async ({ page, makeAxeBuilder }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    const changes = await signedInServer(page, projectLocale());
+    await page.goto("/settings/preferences");
+    // The theme is the first radio group: the OS setting (checked), light and dark.
+    const theme = page.getByRole("main").getByRole("radiogroup").first();
+    await expect(theme.getByRole("radio").first()).toBeChecked();
+    const html = page.locator("html");
+    await expect(html).not.toHaveAttribute("data-theme");
+
+    // The APG radio group: the arrow keys move and check (Up is the previous one in both directions, and wraps).
+    await theme.getByRole("radio").first().focus();
+    await page.keyboard.press("ArrowUp");
+    await expect(theme.getByRole("radio").nth(2)).toBeChecked();
+    await expect(html).toHaveAttribute("data-theme", "dark");
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    await page.keyboard.press("ArrowUp");
+    await expect(html).toHaveAttribute("data-theme", "light");
+    await expectNoAxeViolations(makeAxeBuilder);
+
+    await page.reload();
+    await expect(page.getByRole("main").getByRole("radiogroup").first().getByRole("radio").nth(1)).toBeChecked();
+    await expect(html).toHaveAttribute("data-theme", "light");
+    expect(changes).toEqual([]);
   });
 });
 

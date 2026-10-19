@@ -38,6 +38,7 @@ func fakeBuild() fstest.MapFS {
 		"assets/server-pages-FFFF.css": {Data: []byte("main{}")},
 		"icon.svg":                     {Data: []byte("<svg xmlns='http://www.w3.org/2000/svg'/>")},
 		"sw.js":                        {Data: []byte("self.addEventListener('fetch', () => {})")},
+		"theme.js":                     {Data: []byte("document.documentElement.dataset.theme = 'dark'")},
 		// The PNG icons except icon-512.png, which the manifest then leaves out.
 		"icon-192.png":          {Data: []byte("png 192")},
 		"icon-maskable-512.png": {Data: []byte("png maskable")},
@@ -95,6 +96,8 @@ func TestShellLoadsTheBuildFromTheManifest(t *testing.T) {
 		`<link rel="manifest" href="/manifest.webmanifest">`,
 		`<link rel="icon" href="/icon.svg" type="image/svg+xml">`,
 		`<link rel="apple-touch-icon" href="/apple-touch-icon.png">`,
+		// The stored color theme applies before the first paint: a classic script, before the stylesheets.
+		`<script src="/theme.js"></script>` + "\n" + `<link rel="stylesheet" href="/assets/index-CCCC.css">`,
 		`<link rel="stylesheet" href="/assets/index-CCCC.css">` + "\n" + `<link rel="stylesheet" href="/assets/shared-DDDD.css">`,
 		`<link rel="modulepreload" href="/assets/shared-BBBB.js">`,
 		`<script type="module" src="/assets/index-AAAA.js"></script>`,
@@ -157,13 +160,14 @@ func TestShellCSP(t *testing.T) {
 	}
 	body := rec.Body.String()
 	scripts := regexp.MustCompile(`<script([^>]*)>([^<]*)</script>`).FindAllStringSubmatch(body, -1)
-	if len(scripts) != 2 {
-		t.Fatalf("shell has %d scripts, want the data block and the entry:\n%s", len(scripts), body)
+	if len(scripts) != 3 {
+		t.Fatalf("shell has %d scripts, want the theme script, the data block and the entry:\n%s", len(scripts), body)
 	}
 	for _, s := range scripts {
 		attrs, content := s[1], s[2]
 		switch {
 		case attrs == ` type="application/json" id="config"`:
+		case attrs == ` src="/theme.js"` && content == "":
 		case strings.HasPrefix(attrs, ` type="module" src="/`) && !strings.HasPrefix(attrs, ` type="module" src="//`) && content == "":
 		default:
 			t.Errorf("script %q would need a nonce or a remote origin under %q", s[0], csp)
@@ -180,7 +184,7 @@ func TestRuntimeConfigIsEscaped(t *testing.T) {
 	name := `</script><script>alert(1)</script><!-- "quoted" & 'single' \ ` + "\u2028"
 	_, mux := newHandler(t, web.Options{InstanceName: named(name), Host: "social.example", AccountDomain: "example.org", DefaultLocale: locale("ja")})
 	body := get(mux, "/", nil).Body.String()
-	if strings.Count(body, "</script>") != 2 || strings.Contains(body, "<script>alert") || strings.Contains(body, "<!--") {
+	if strings.Count(body, "</script>") != 3 || strings.Contains(body, "<script>alert") || strings.Contains(body, "<!--") {
 		t.Fatalf("the instance name escaped the data block:\n%s", body)
 	}
 	m := regexp.MustCompile(`<script type="application/json" id="config">([^<]*)</script>`).FindStringSubmatch(body)
@@ -291,6 +295,7 @@ func TestStaticFiles(t *testing.T) {
 		{"/assets/index-CCCC.css", "public, max-age=31536000, immutable", "text/css; charset=utf-8", "body{}"},
 		{"/sw.js", "no-cache", "text/javascript; charset=utf-8", "self.addEventListener('fetch', () => {})"},
 		{"/icon.svg", "no-cache", "image/svg+xml", "<svg xmlns='http://www.w3.org/2000/svg'/>"},
+		{"/theme.js", "no-cache", "text/javascript; charset=utf-8", "document.documentElement.dataset.theme = 'dark'"},
 	}
 	for _, tt := range tests {
 		rec := get(mux, tt.path, nil)

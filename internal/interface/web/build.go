@@ -26,6 +26,9 @@ const (
 	iconPath = "icon.svg"
 	// serviceWorkerPath is the Service Worker that vite-plugin-pwa builds from app/web/sw/sw.ts (ADR-0028).
 	serviceWorkerPath = "sw.js"
+	// themeScriptPath is the classic script that applies the color theme stored on the browser before the
+	// first paint (app/web/public/theme.js). The shell loads it render-blocking, before its stylesheets.
+	themeScriptPath = "theme.js"
 	// appleTouchIconPath is the home screen icon of iOS, which takes no SVG and applies its own mask.
 	appleTouchIconPath = "apple-touch-icon.png"
 )

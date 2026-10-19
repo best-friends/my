@@ -98,3 +98,33 @@ func TestResolverUserLocalizer(t *testing.T) {
 		}
 	}
 }
+
+func TestResolverAcceptedLocale(t *testing.T) {
+	r := &Resolver{Bundle: load(t), InstanceDefault: func(context.Context) string { return "ja" }}
+	tests := []struct {
+		acceptLanguage string
+		want           string // "" means none matches
+	}{
+		{"ja", "ja"},
+		{"ja-JP,en;q=0.5", "ja"},
+		{"en-US", "en"},
+		{"fr;q=0.9, ja;q=0.8, en;q=0.1", "ja"},
+		{"fr, de", ""},
+		{"", ""},
+		{"*", ""},
+	}
+	for _, tt := range tests {
+		got, ok := r.AcceptedLocale(tt.acceptLanguage)
+		if got != tt.want || ok != (tt.want != "") {
+			t.Errorf("AcceptedLocale(%q) = %q, %v, want %q", tt.acceptLanguage, got, ok, tt.want)
+		}
+	}
+
+	// A pseudo-locale is never a saved locale, even where it is selectable; the next tag decides.
+	pseudo := &Resolver{Bundle: load(t, WithPseudoLocales())}
+	for header, want := range map[string]string{"en-XA, ja;q=0.5": "ja", "ar-XB": ""} {
+		if got, _ := pseudo.AcceptedLocale(header); got != want {
+			t.Errorf("AcceptedLocale(%q) with pseudo-locales = %q, want %q", header, got, want)
+		}
+	}
+}

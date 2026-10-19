@@ -8,6 +8,7 @@ import { displayLanguageOf, displayLanguageOptions, timelineLanguageOptions } fr
 import { useModeratorEmail } from "../hooks/useModeratorEmail";
 import { deviceTimeZone, sameTimeZone, useTimeZoneOptions } from "../hooks/timeZones";
 import { type PreferenceControl, usePreferences } from "../hooks/usePreferences";
+import { ThemeRadioGroup } from "./ThemeRadioGroup";
 
 /** The visibilities in the order of ADR-0017, widest first, with their label and description. */
 const visibilities: readonly { id: Visibility; label: ClientMessageKey; description: ClientMessageKey }[] = [
@@ -18,7 +19,7 @@ const visibilities: readonly { id: Visibility; label: ClientMessageKey; descript
   { id: "direct", label: "client:settings.visibility.direct", description: "client:settings.visibility.direct.description" },
 ];
 
-/** The preferences: every control saves its value as soon as it changes. */
+/** The preferences: every control saves its value as soon as it changes; the theme is kept on this browser. */
 export function PreferencesForm() {
   const t = useT();
   const { locale, timeZone, defaultVisibility, timelineLanguages, emailModeratorNotifications } = usePreferences();
@@ -27,6 +28,7 @@ export function PreferencesForm() {
       <p className="text-fg-muted">{t("client:settings.preferences.autosave")}</p>
       <DisplayLanguageSelect control={locale} />
       <TimeZoneSelect control={timeZone} />
+      <ThemeRadioGroup />
       <RadioGroup
         label={t("client:settings.default_visibility.label")}
         description={t("client:settings.default_visibility.description")}

@@ -5,6 +5,7 @@ import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
+import { updateCachedAccount } from "../../profile";
 import { type CredentialAccount, credentialsQueryOptions, type ProfileChange, updateProfileMutation } from "../api/me";
 import { type MediaAttachment, MediaProcessingError, uploadImage } from "../api/media";
 
@@ -61,6 +62,9 @@ export function useProfileForm() {
     ...updateProfileMutation(api),
     onSuccess: (saved) => {
       queryClient.setQueryData(credentialsQueryOptions(api).queryKey, saved);
+      // The profile page and the author of every post of the viewer show the new profile from their first
+      // render, even those cached from before the change (web-client.md S1).
+      updateCachedAccount(queryClient, saved);
       // The saved profile has the new images from now on.
       avatar.saved();
       header.saved();

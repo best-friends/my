@@ -15,12 +15,15 @@ import {
   PiArrowBendUpLeft,
   PiArrowLeft,
   PiArrowSquareOut,
+  PiArrowUp,
   PiBell,
   PiBookmarkSimple,
   PiBookmarkSimpleFill,
   PiCards,
+  PiCaretRight,
   PiDotsThreeBold,
   PiEye,
+  PiEyeSlash,
   PiGlobe,
   PiHouse,
   PiImage,
@@ -69,8 +72,12 @@ export const iconTable = {
   MoreIcon: { off: glyph(PiDotsThreeBold, "PiDotsThreeBold") },
   BackIcon: { off: glyph(PiArrowLeft, "PiArrowLeft"), directional: true },
   ExternalLinkIcon: { off: glyph(PiArrowSquareOut, "PiArrowSquareOut"), directional: true },
+  SubmenuIcon: { off: glyph(PiCaretRight, "PiCaretRight"), directional: true },
   // Posts.
   ReplyIcon: { off: glyph(PiArrowBendUpLeft, "PiArrowBendUpLeft"), directional: true },
+  // Up is where the new items wait (above the feed) in any writing direction, so it does not mirror.
+  NewItemsIcon: { off: glyph(PiArrowUp, "PiArrowUp") },
+  HideMediaIcon: { off: glyph(PiEyeSlash, "PiEyeSlash") },
   // A loop means a loop and not a direction, so it does not mirror; it has nothing to fill, so on is Bold.
   BoostIcon: { off: glyph(PiRepeat, "PiRepeat"), on: glyph(PiRepeatBold, "PiRepeatBold") },
   StarIcon: { off: glyph(PiStar, "PiStar"), on: glyph(PiStarFill, "PiStarFill") },
@@ -129,11 +136,26 @@ export function ExternalLinkIcon() {
   return renderIcon(iconTable.ExternalLinkIcon);
 }
 
+/** A caret to the end of the line, after the label of a menu item that opens a submenu. It flips in right-to-left text. */
+export function SubmenuIcon() {
+  return renderIcon(iconTable.SubmenuIcon);
+}
+
 // Posts.
 
 /** An arrow turning back to the start of the line, for replying. It flips in right-to-left text. */
 export function ReplyIcon() {
   return renderIcon(iconTable.ReplyIcon);
+}
+
+/** An arrow up, for the button that shows the new posts waiting above a feed. */
+export function NewItemsIcon() {
+  return renderIcon(iconTable.NewItemsIcon);
+}
+
+/** An eye struck through, for the button that conceals sensitive media again. */
+export function HideMediaIcon() {
+  return renderIcon(iconTable.HideMediaIcon);
 }
 
 /** Two arrows in a loop, for boosting; bolder while on. */

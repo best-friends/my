@@ -313,12 +313,13 @@ describe("the audit log", () => {
 });
 
 describe("the link of an entry's target", () => {
-  test("goes to the admin screen of an account, a report or a domain while the target is there", () => {
+  test("goes to the admin screen of an account, a report, a domain or a sign-up block while the target is there", () => {
     expect(auditTargetHref({ target_kind: "account", target_id: "a1", target_exists: true })).toBe("/admin/accounts/a1");
     expect(auditTargetHref({ target_kind: "report", target_id: "r1", target_exists: true })).toBe("/admin/reports/r1");
     expect(auditTargetHref({ target_kind: "domain", target_id: "spam.example", target_exists: true })).toBe(
       "/admin/domain-actions?filter=all&domain=spam.example",
     );
+    expect(auditTargetHref({ target_kind: "signup_block", target_id: "0192f0c4-7a8e-7000-8000-0000000001a1", target_exists: true })).toBe("/admin/signup-blocks?filter=all");
     expect(auditTargetHref({ target_kind: "setting", target_id: "registration_mode", target_exists: true })).toBeUndefined();
   });
 

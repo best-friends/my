@@ -6,6 +6,7 @@ import (
 	"html"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -150,5 +151,49 @@ func TestSignUpScreens(t *testing.T) {
 	_, resp = signUp("username", "erin", "email", "erin@example.com", "password", "correct horse battery", "invite_code", inv.Code)
 	if resp.StatusCode != http.StatusTooManyRequests || resp.Header.Get("Retry-After") == "" {
 		t.Fatalf("sixth sign-up = %d, want 429", resp.StatusCode)
+	}
+}
+
+// TestSignUpTakesTheBrowserLocale checks on the real database that a new account's locale is
+// the supported locale that best matches its registration's Accept-Language, and the current
+// default_locale setting when none does (FR-007).
+func TestSignUpTakesTheBrowserLocale(t *testing.T) {
+	t.Parallel()
+	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
+	s := start(t, cfg, platform.ServeOptions{}, nil)
+	ctx := t.Context()
+	for key, value := range map[instance.SettingKey]string{
+		instance.SettingRegistrationMode: string(instance.RegistrationOpen),
+		instance.SettingDefaultLocale:    "ja",
+	} {
+		if _, err := s.app.Instance.SetSetting(ctx, appinstance.SetSettingInput{Key: key, Value: value}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tests := []struct{ username, acceptLanguage, want string }{
+		{"alice", "ja-JP,ja;q=0.9,en;q=0.8", "ja"},
+		{"bob", "en-US,en;q=0.9", "en"},
+		{"carol", "fr-FR,de;q=0.5", "ja"},
+		{"dave", "", "ja"},
+	}
+	for _, tt := range tests {
+		c := &authClient{t: t, s: s, cookies: map[string]string{}}
+		form := c.formAt(authpages.PathSignUp, "username", tt.username, "email", tt.username+"@example.com", "password", "correct horse battery")
+		if resp, body := c.do(http.MethodPost, authpages.PathSignUp, form, map[string]string{"Accept-Language": tt.acceptLanguage}); resp.StatusCode != http.StatusSeeOther {
+			t.Fatalf("%s: sign-up = %d\n%s", tt.username, resp.StatusCode, body)
+		}
+	}
+	pending, err := s.app.Identity.ListRegistrations(ctx, domainidentity.RegistrationPending, 10)
+	if err != nil || len(pending) != len(tests) {
+		t.Fatalf("pending = %+v, %v", pending, err)
+	}
+	for _, tt := range tests {
+		i := slices.IndexFunc(pending, func(r identity.RegistrationEntry) bool { return r.Username == tt.username })
+		if i < 0 {
+			t.Fatalf("no registration of %s in %+v", tt.username, pending)
+		}
+		if got, err := s.app.Identity.UserLocale(ctx, pending[i].Application.UserID); err != nil || got != tt.want {
+			t.Errorf("Accept-Language %q: locale = %q, %v, want %q", tt.acceptLanguage, got, err, tt.want)
+		}
 	}
 }

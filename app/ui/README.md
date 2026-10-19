@@ -86,6 +86,8 @@ The CSP allows no inline script, and the HTML shell is shared and cached across 
 ([ADR-0028](../../docs/adr/0028-html-shell-link-previews-and-pwa.md)), so the server cannot write a per-viewer attribute (from a cookie) into it.
 The choice is therefore applied by a same-origin, render-blocking classic script (`<script src>` in `<head>`, without `defer`,
 `async` or `type="module"`) that reads it from storage and sets `document.documentElement.dataset.theme`.
+In `app/web` that script is `public/theme.js` (served at `/theme.js`, loaded before the stylesheets), and `src/lib/theme.ts`
+changes the choice and the attribute together; both use the localStorage key `my:display:theme`.
 
 ## Typography
 
@@ -164,8 +166,11 @@ Icons are part of the kit, so that every screen draws the same shapes at the sam
   `src/Icons.tsx` is the only file that imports `react-icons`, and only `react-icons/pi` (lint enforces both). Its
   `iconTable` maps each meaningful name (`ReplyIcon`) to its Phosphor icon off and on and to whether it has a direction;
   each export renders one row, and the `Foundations/Icons` gallery lists the whole table with the Phosphor names.
-- The base weight is Regular. A screen never writes SVG paths of its own; a missing icon is a new row of the table
-  (look the shape up by name in the Phosphor catalog) and a new export, which the gallery then shows.
+- The base weight is Regular. Neither a screen nor a component draws SVG of its own (lint rejects `<svg>`, `<path>` and
+  the other SVG elements in JSX); a missing icon is a new row of the table (look the shape up by name in the Phosphor
+  catalog) and a new export, which the gallery then shows. The exceptions, listed with their reasons in
+  `app/eslint.config.js`, are the marks of a control's own drawing (the check of `Checkbox`, the chevrons of `Select`
+  and `ContentWarning`, the arrow of `Tooltip`, the silhouette of `Avatar`) and stand-in content in tests and stories.
 - They are decorative: `aria-hidden="true"` and `focusable="false"`. The meaning is in the visible label or the accessible
   name of the control. An icon-only control has an `aria-label` and a `Tooltip` with the same text.
 - The control sizes its icon: `Button`, `ToggleButton` and `Link` size a child `svg` (`size-5` in buttons, also in a

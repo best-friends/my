@@ -5,8 +5,8 @@
 //
 // Below md the tab bar holds Home, Timelines, Notifications, Search and Menu, so that every label fits a fifth
 // of a 320 px screen. Timelines opens the local timeline (or the federated one where the local one is off),
-// whose page has both as tabs; Menu is a button that opens a sheet with the profile and the settings. From md
-// the rail holds Home, Local, Federated, Notifications, Search, Profile and Settings instead. Both are one list
+// whose page has both as tabs; Menu is a button that opens a sheet with the profile, the settings and the color
+// theme. From md the rail holds Home, Local, Federated, Notifications, Search, Profile and Settings instead. Both are one list
 // in one order, and each item hides at the widths where it does not belong (display: none, so it leaves the
 // accessibility tree too).
 //
@@ -51,6 +51,7 @@ import { useAdminEntry } from "../../features/admin";
 import { DocumentLinks } from "../../features/documents";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
+import { ThemeRadioGroup } from "../../features/settings";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
 import { handleOf } from "../../lib/handle";
 import { useInstanceName } from "../../lib/instanceName";
@@ -248,8 +249,9 @@ type NavigationMenuProps = {
  * item. A navigation to another page closes the sheet when it starts, so that the new page's heading can take
  * focus (useViewChange); a navigation that the unsaved-changes guard holds does not start, and the sheet stays.
  * The button carries the counts of the sheet's items (what awaits the moderators), so that they show in the tab
- * bar too, and the sheet's items show them as the rail does. Under the items, the links to the server's terms of
- * service and privacy policy, which the third column shows on wide screens, when the server publishes them.
+ * bar too, and the sheet's items show them as the rail does. Under the items, the sheet switches the color theme
+ * (the same control as the preferences page, in a row), and under that it links to the server's terms of service
+ * and privacy policy, which the third column shows on wide screens, when the server publishes them.
  */
 function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
   const t = useT();
@@ -294,6 +296,10 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
             );
           })}
         </ul>
+        {/* The theme is a setting of this browser, switched here too so that phones reach it in one step. */}
+        <div className="mt-4 border-t border-border px-3 pt-4">
+          <ThemeRadioGroup layout="sheet" />
+        </div>
         <DocumentLinks placement="sheet" />
       </Sheet>
     </DialogTrigger>

@@ -153,6 +153,16 @@ const domainAction = {
   expires_at: "2026-11-11T08:00:00Z",
 };
 
+const signupBlock = {
+  id: "0192f0c4-7a8e-7000-8000-0000000001a2",
+  kind: "email_domain",
+  value: "xn--r8jz45g.jp",
+  severity: "reject",
+  comment: "Disposable addresses used for many accounts that posted the same advertisement on the same day.",
+  state: "active",
+  created_at: "2026-10-12T08:00:00Z",
+};
+
 const auditEntry = {
   id: "0192f0c4-7a8e-7000-8000-0000000a0004",
   actor_kind: "user",
@@ -266,6 +276,7 @@ async function moderatorServer(page: Page) {
     if (key === `GET /admin/appeals/${appealId}`) return json(route, appeal);
     if (key === "GET /admin/registrations") return json(route, { items: [registration] });
     if (key === "GET /admin/domain_actions") return json(route, { items: [domainAction] });
+    if (key === "GET /admin/signup_blocks") return json(route, { items: [signupBlock] });
     if (key === "GET /admin/audit_log") return json(route, { items: [auditEntry] });
     if (key === "GET /admin/instances") return json(route, { items: [instance] });
     if (key === `GET /admin/instances/${longDomain}`) return json(route, instance);
@@ -302,6 +313,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.appeals_.$id": { path: `/admin/appeals/${appealId}`, ready: target.display_name },
   "admin.registrations": { path: "/admin/registrations", ready: registration.email },
   "admin.domain-actions": { path: "/admin/domain-actions", ready: domainAction.public_comment },
+  "admin.signup-blocks": { path: "/admin/signup-blocks", ready: signupBlock.comment },
   "admin.audit-log": { path: "/admin/audit-log", ready: auditEntry.target_label },
   "admin.instances": { path: "/admin/instances", ready: longDomain },
   "admin.instances_.$domain": { path: `/admin/instances/${longDomain}`, ready: longDomain },

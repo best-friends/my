@@ -137,6 +137,21 @@ describe("the tab bar's Menu", () => {
     });
   });
 
+  test("switches the color theme in place, and the sheet stays open", async () => {
+    const { user } = await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
+    const sheet = await screen.findByRole("dialog", { name: "Menu" });
+
+    const theme = within(sheet).getByRole("radiogroup", { name: "Theme" });
+    expect(theme).toHaveAttribute("aria-orientation", "horizontal");
+    await user.click(within(theme).getByRole("radio", { name: "Dark" }));
+
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+    expect(localStorage.getItem("my:display:theme")).toBe("dark");
+    expect(screen.getByRole("dialog", { name: "Menu" })).toBeInTheDocument();
+  });
+
   test("closes when one of its links is followed, and focus moves to the new page's heading", async () => {
     server.use(signedInHandler);
     const { user, router } = await renderApp({ path: "/home" });
