@@ -1,6 +1,6 @@
 # ADR-0015: テスト戦略
 
-- Status: Accepted
+- Status: Accepted（E2E の頻度を ADR-0040（Web の E2E を main への push でだけ回す） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #14

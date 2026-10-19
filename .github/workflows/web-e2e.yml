@@ -1,13 +1,13 @@
 name: Web E2E
 
-# Playwright E2E of the web client (ADR-0015, ADR-0027), called by ci.yml on every PR with the per-PR subset
+# Playwright E2E of the web client (ADR-0015, ADR-0027), called by ci.yml on every push to main (ADR-0040) with the subset
 # and by nightly.yml with the full width × locale matrix (app/web/playwright.config.ts).
 
 on:
   workflow_call:
     inputs:
       matrix:
-        description: "`pr` for the per-PR subset, `full` for every width × locale project."
+        description: "`pr` for the default subset (main pushes), `full` for every width × locale project."
         type: string
         required: true
 
