@@ -289,7 +289,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | --- | --- | --- |
 | `content.status_created` | `Create` | §7.2 の公開範囲ごとの宛先 |
 | `content.status_revised` | `Update` | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー。[data-model §7](data-model.md#7-公開範囲と配送)） |
-| `content.status_deleted` | `Delete`（`Tombstone`） | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー） |
+| `content.status_deleted`（アカウントの消去による `origin = account_deletion` を除く。`Delete`（Actor）が代わりを務める） | `Delete`（`Tombstone`） | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー） |
 | `content.boosted` / `content.boost_retracted`（`Federates` のときだけ） | `Announce` / `Undo Announce` | ブーストした人のリモートフォロワー + 元投稿の作者（リモートなら） |
 | `content.favourited` / `content.unfavourited`（リモートの投稿だけ） | `Like` / `Undo Like`（本文は projector がイベントから組み立てて保存する。Mastodon と同じく宛先を持たない） | 投稿の作者の inbox |
 | `graph.follow_requested` / `graph.followed`（相手がリモート） | `Follow` | 相手の inbox |

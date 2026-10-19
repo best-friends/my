@@ -128,7 +128,7 @@ func RegisterOutboundProjectors(r *uow.Projectors, d RecorderDeps) {
 	})
 	r.Register(appcontent.EventStatusDeleted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appcontent.StatusDeleted)
-		if !ok || !ev.Status.IsLocal {
+		if !ok || !ev.Status.IsLocal || ev.ByAccountErasure() {
 			return nil
 		}
 		act, err := rec.insert(ctx, tx, federation.OutboundActivity{

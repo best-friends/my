@@ -1849,3 +1849,29 @@ CREATE TABLE retention_hold_releases (
 -- The purge of remote statuses keeps the statuses that a report or an action points at.
 CREATE INDEX report_statuses_status_id ON report_statuses (status_id);
 CREATE INDEX moderation_action_statuses_status_id ON moderation_action_statuses (status_id);
+
+-- ---------------------------------------------------------------------------------------------
+-- account: the erasure of deleted local accounts' data (#397, data-model §4.2, §8). Owned by
+-- internal/app/account; the indexes serve the erasure's statements in the other modules.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: the erasure job removed the data of a deleted local account (data-model §8). An
+-- account is erased at most once; one whose statuses the moderation records still keep has no
+-- row until they are erased too.
+CREATE TABLE account_erasures (
+  account_id TEXT NOT NULL PRIMARY KEY,
+  erased_at INTEGER NOT NULL
+) STRICT;
+
+CREATE INDEX follows_follower_account_id ON follows (follower_account_id);
+CREATE INDEX follows_followee_account_id ON follows (followee_account_id);
+CREATE INDEX blocks_blocker_account_id ON blocks (blocker_account_id);
+CREATE INDEX blocks_blocked_account_id ON blocks (blocked_account_id);
+CREATE INDEX boosts_booster_account_id ON boosts (booster_account_id);
+CREATE INDEX mutes_target_account_id ON mutes (target_account_id);
+CREATE INDEX notifications_source_account_id ON notifications (source_account_id);
+CREATE INDEX notifications_subject_user_id ON notifications (subject_user_id);
+CREATE INDEX feed_entries_original_author_account_id ON feed_entries (original_author_account_id);
+CREATE INDEX feed_follow_edges_followee_account_id ON feed_follow_edges (followee_account_id);
+CREATE INDEX feed_exclusions_target_account_id ON feed_exclusions (target_account_id);
+CREATE INDEX notification_exclusions_target_account_id ON notification_exclusions (target_account_id);

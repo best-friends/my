@@ -184,7 +184,7 @@ flowchart LR
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
 | `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `session_activity` |
-| `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
+| `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `account_post_counters`, `poll_tallies`, `custom_emoji_settings`, `media_focus`, `media_descriptions`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins` |
 | `graph` | `follows`, `follow_acceptances`, `follow_rejections`, `follow_terminations`, `follow_resends`, `blocks`, `block_retractions` | `follow_edges`, `block_edges`, `follow_counters`, `follow_preferences`, `mutes`, `account_domain_mutes` |
@@ -401,6 +401,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | `account_lifecycle_events` | イベント | `id`, `account_id`, `kind`（`enum(deactivated, reactivated, deletion_scheduled, deletion_cancelled, deleted, remote_deleted)`）, `initiated_by`（`enum(self, moderator, system, remote)`）, `moderation_action_id`（NULL 可）, `deletion_due_at`（NULL 可。`deletion_scheduled` のみ）, `occurred_at` | インデックス `(account_id, id DESC)` |
 | `account_lifecycle_states` | 投影 | `account_id`（PK）, `state`（`enum(active, deactivated, deletion_scheduled, deleted)`）, `since`, `deletion_due_at`（NULL 可） | インデックス `(state, deletion_due_at)`（削除の実行） |
+| `account_erasures` | イベント | `account_id`（PK）, `erased_at` | 消去ジョブがアカウントのデータを消し終えた記録（§8）。1 アカウントにつき 1 回 |
 
 - **ライフサイクルは本人とシステムの軸** です。モデレーションの処分は別の軸（§4.3）に置きます。
   - BAN のように処分が削除を伴う場合は、処分が `deletion_scheduled` イベントを `initiated_by = moderator` で発生させます（`moderation_action_id` で根拠を辿れる）。BAN への異議申し立てを覆すと、`deletion_cancelled`（`initiated_by = moderator`、同じ `moderation_action_id`）で取り消します（`account.Service.CancelDeletionByModeration`）。
@@ -409,6 +410,7 @@ flowchart LR
 - 期日を過ぎた `deletion_scheduled` は、1 時間ごとのジョブ `account.execute_deletions` が `deleted`（`initiated_by = system`）にします（`account.Service.ExecuteDueDeletions`）。
   1 回で 100 件まで、アカウントごとに短いトランザクションで、状態を読み直してから記録するので、再実行しても二重に削除しません。
   `deleted` は既存の購読者を通して、アカウントと投稿を表示から外し、`Delete`（Actor）を送ります（[federation.md §7.1](federation.md)）。
+- `deleted` から 7 日（`account.ErasureDelay`。`Delete`（Actor）の配送のリトライが終わるまで、鍵とフォローが要る）を過ぎたローカルのアカウントは、1 時間ごとのジョブ `account.erase_deleted` がデータを消します（§8）。
 - 行が無いアカウントは `active` とみなします。作成時には行を作らず、最初のライフサイクルイベントで作ります（イベントからの再構築と一致させるため）。
 - 投影はイベントを `id` 順に畳み込んで作ります: `deactivated` → `deactivated`、`reactivated` / `deletion_cancelled` → `active`、`deletion_scheduled` → `deletion_scheduled`（`deletion_due_at` を写す）、`deleted` / `remote_deleted` → `deleted`。`deleted` は最終状態で、以後のイベントでは変わりません。`since` は最後に状態を変えたイベントの `occurred_at` です。
 - `deletion_due_at` は、イベントでは `kind = deletion_scheduled` のとき、投影では `state = deletion_scheduled` のときだけ値を持ちます（`CHECK` 制約）。
@@ -1188,13 +1190,19 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
 | --- | --- | --- | --- |
 | 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
-| アカウント削除（FR-008） | `account_lifecycle_events`（`deletion_scheduled` → 期日に `deleted`） | プロフィールの版・メールアドレス・資格情報・投稿（上と同じ）・現在値の関係 | `accounts`（`uri` と `domain` のみ。URI の再利用防止）、処分の記録（理由・種類・日時） |
+| アカウント削除（FR-008） | `account_lifecycle_events`（`deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・ブックマーク・ピン留めを含む）、本人のお気に入り・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）、`feed_*` の本人の行 | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与 |
 | BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
 | モデレーション記録の保持期間（ADR-0038） | なし（期限は記録の日時から求める。§4.3 記録の保持期間） | 保持期間を過ぎた通報と子テーブル・処分と子テーブル・異議申し立て・監査ログ・`session_origins`・`registration_origins`・解除か期限切れから 30 日の `signup_blocks` | 保全（`retention_holds`）のあるアカウントの記録、未解決の通報、処分が参照する通報、終わっていない処分と審査待ちの異議申し立て |
 | リモート投稿の保持期間（FR-803） | `status_deletions`（`origin = retention`） | `statuses`・版と子テーブル・投票・投影の行・リモートのアカウントのブースト（§4.4 リモート投稿の保持期間） | `status_deletions`（取得し直しは拒まない）、ローカルのアカウントのブースト・お気に入り・ブックマーク・ピン留め・通知 |
 
 - `Delete`（Actor）は、`active` なフォロワーの inbox と、既知の shared inbox（削除されていないリモートの Actor の `remote_account_heads.shared_inbox_url`）に送ります。
 - 消去は「イベントを記録 → 投影から即時に除外 → 消去ジョブが一定件数ずつ物理削除」の順です。表示から消えるのは即時、物理削除は非同期です。
+- アカウント削除の消去は、1 時間ごとのジョブ `account.erase_deleted` が、`deleted` から 7 日を過ぎた、保全（§4.3）の無いローカルのアカウントに行います。
+  - モジュールごとの消去（`content` → `graph` → `timeline` → `notification` → `identity` → `account`）を、1 文あたり 100 行（投稿は 100 件）・1 回のジョブで 50 トランザクションまで行い、使い切ったらカーソル（アカウントの ID）を持った次のジョブが続けます。どれも再実行してよい。
+  - 削除されていない投稿には `status_deletions`（`origin = account_deletion`）を記録して `content.status_deleted` を発行し（投影・`feed_*` から外れる）、同じトランザクションで行を消します。投稿ごとの `Delete` は送りません（`Delete`（Actor）が代わりを務める）。
+  - 有効なフォローは `follow_terminations`（`account_deleted`）で終わらせ、相手の `follow_counters` から引いてから消します。相手のサーバーには何も送りません。
+  - 通報か投稿単位の処分が指す投稿（`moderation` の `StatusRetained`）は、削除だけを記録して行を残し、その記録が消えた後の回で消します。それまで `account_erasures` は記録せず、毎回そのアカウントを調べ直します。
+  - メディアのファイル（`media_files` と Blob）は、このジョブでは消しません（#460）。
 
 ## 9. 投影の再構築と検証
 
