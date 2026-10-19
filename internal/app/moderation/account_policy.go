@@ -22,7 +22,7 @@ type AccountDomains interface {
 // restrictions in effect on an account are those of its own actions (account_restrictions) and
 // those of its domain and the parent domains (domain_restrictions), read at the time of each
 // call. The other modules decide through it, never from the moderation tables: the content
-// module through Content, the identity module through LoginRestricted, the graph module
+// module through Content, the identity module through LoginRestricted and Banned, the graph module
 // through InteractionRestricted, and the notification module through
 // UnsolicitedReachRestricted.
 type AccountPolicy struct {
@@ -70,9 +70,33 @@ func (p *AccountPolicy) has(ctx context.Context, accountID string, r moderation.
 }
 
 // LoginRestricted reports whether an account may not log in or use the API (the login
-// restriction: disable_login, suspend).
+// restriction: disable_login, suspend, ban).
 func (p *AccountPolicy) LoginRestricted(ctx context.Context, accountID string) (bool, error) {
 	return p.has(ctx, accountID, moderation.RestrictLogin)
+}
+
+// banPage is how many actions in effect Banned reads at a time.
+const banPage = 100
+
+// Banned reports whether a ban is in effect on an account: issued and not lifted by an
+// overturned appeal (a ban never expires). Its account signs in to the server-rendered screens
+// until the ban deletes it, so that the user can appeal (FR-707).
+func (p *AccountPolicy) Banned(ctx context.Context, accountID string) (bool, error) {
+	now := kernel.Normalize(p.clock.Now())
+	q := ActionQuery{AccountID: accountID, InEffectAt: &now}
+	for {
+		rs, err := p.repo.ListActions(ctx, q, banPage)
+		if err != nil {
+			return false, err
+		}
+		if slices.ContainsFunc(rs, func(r moderation.ActionRecord) bool { return r.Action.Kind == moderation.ActionBan }) {
+			return true, nil
+		}
+		if len(rs) < banPage {
+			return false, nil
+		}
+		q.Before = rs[len(rs)-1].Action.ID
+	}
 }
 
 // InteractionRestricted reports whether an account may not follow, favourite, boost, or reply

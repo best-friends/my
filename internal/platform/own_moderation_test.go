@@ -11,8 +11,12 @@ import (
 	"testing"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
+	appnotification "github.com/best-friends/my/internal/app/notification"
+	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/best-friends/my/internal/domain/notification"
 	"github.com/best-friends/my/internal/interface/authpages"
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
@@ -107,6 +111,102 @@ func TestOwnModerationActions(t *testing.T) {
 		"code_challenge": {strings.Repeat("c", 43)}, "code_challenge_method": {"S256"},
 	}.Encode(), nil); w.Code != http.StatusForbidden || w.Header().Get("Location") != "" {
 		t.Errorf("authorize while suspended = %d → %q, want 403 and no code", w.Code, w.Header().Get("Location"))
+	}
+}
+
+// TestAppealFromTheSignInScreens checks, through the composition root, that a suspended user,
+// who has no access token, appeals the suspension from the status page of the sign-in screens,
+// that the other moderators get admin_appeal, and that a second appeal is refused with the
+// reason (FR-707, ADR-0038).
+func TestAppealFromTheSignInScreens(t *testing.T) {
+	c := newStatusesClient(t, "alice", "bob")
+	ctx := t.Context()
+	suspend, err := c.app.Moderation.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+		TargetAccountID: c.ids["bob"], Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategorySpam, PublicReason: "Spam links.",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sc := &screens{t: t, h: c.h, cookies: map[string]string{}}
+	form := sc.form(authpages.PathSignIn, "email", "bob@example.com", "password", "correct horse battery staple")
+	if w := sc.do(http.MethodPost, authpages.PathSignIn, form); w.Code != http.StatusSeeOther || w.Header().Get("Location") != authpages.PathSignIn {
+		t.Fatalf("sign-in while suspended = %d → %q, want the status page", w.Code, w.Header().Get("Location"))
+	}
+	if body := sc.do(http.MethodGet, authpages.PathSignIn, nil).Body.String(); !strings.Contains(body, `name="action_id" value="`+suspend.ID+`"`) {
+		t.Fatalf("status page has no appeal form for %s:\n%s", suspend.ID, body)
+	}
+
+	w := sc.do(http.MethodPost, authpages.PathAppeal, sc.form(authpages.PathSignIn, "action_id", suspend.ID, "text", "They were not spam."))
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "Your appeal was sent.") {
+		t.Fatalf("appeal = %d\n%s", w.Code, w.Body.String())
+	}
+	ns, err := c.app.Notifications.List(ctx, c.ids["alice"], appnotification.Query{Types: []notification.Type{notification.TypeAdminAppeal}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ns) != 1 || ns[0].AppealID == "" {
+		t.Fatalf("alice's admin_appeal notifications = %+v, want one", ns)
+	}
+	appeal, err := c.app.Moderation.OwnAppealAction(ctx, c.ids["bob"], ns[0].AppealID)
+	if err != nil || appeal.ID != suspend.ID || appeal.Appeal == nil || appeal.Appeal.Text != "They were not spam." {
+		t.Fatalf("the appealed action = %+v, %v; want the suspension with bob's text", appeal, err)
+	}
+
+	w = sc.do(http.MethodPost, authpages.PathAppeal, sc.form(authpages.PathSignIn, "action_id", suspend.ID, "text", "Again."))
+	if w.Code != http.StatusUnprocessableEntity || !strings.Contains(w.Body.String(), "You have already appealed this action.") {
+		t.Fatalf("second appeal = %d\n%s", w.Code, w.Body.String())
+	}
+}
+
+// TestBanAppealFromTheSignInScreens checks, through the composition root, that a banned user
+// signs in to the status page of the sign-in screens until the ban deletes the account, appeals
+// the ban there so that the other moderators get admin_appeal (FR-707, ADR-0038), and is signed
+// out by the deletion and cannot sign in again.
+func TestBanAppealFromTheSignInScreens(t *testing.T) {
+	c := newStatusesClient(t, "alice", "bob")
+	ctx := t.Context()
+	ban, err := c.app.Moderation.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+		TargetAccountID: c.ids["bob"], Kind: moderation.ActionBan, ReasonCategory: moderation.CategoryLegal, PublicReason: "Illegal content.",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sc := &screens{t: t, h: c.h, cookies: map[string]string{}}
+	signIn := func() *httptest.ResponseRecorder {
+		t.Helper()
+		form := sc.form(authpages.PathSignIn, "email", "bob@example.com", "password", "correct horse battery staple")
+		return sc.do(http.MethodPost, authpages.PathSignIn, form)
+	}
+	if w := signIn(); w.Code != http.StatusSeeOther || w.Header().Get("Location") != authpages.PathSignIn {
+		t.Fatalf("sign-in while banned = %d → %q, want the status page", w.Code, w.Header().Get("Location"))
+	}
+	if body := sc.do(http.MethodGet, authpages.PathSignIn, nil).Body.String(); !strings.Contains(body, `name="action_id" value="`+ban.ID+`"`) ||
+		!strings.Contains(body, "Your account will be deleted in 30 days") {
+		t.Fatalf("status page has no appeal form for %s or no deletion:\n%s", ban.ID, body)
+	}
+	w := sc.do(http.MethodPost, authpages.PathAppeal, sc.form(authpages.PathSignIn, "action_id", ban.ID, "text", "It was legal."))
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "Your appeal was sent.") {
+		t.Fatalf("appeal = %d\n%s", w.Code, w.Body.String())
+	}
+	ns, err := c.app.Notifications.List(ctx, c.ids["alice"], appnotification.Query{Types: []notification.Type{notification.TypeAdminAppeal}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ns) != 1 || ns[0].AppealID == "" {
+		t.Fatalf("alice's admin_appeal notifications = %+v, want one", ns)
+	}
+
+	// The deletion that the ban scheduled ends the session, and the account no longer signs in.
+	if _, err := c.app.Accounts.RecordLifecycleEvent(ctx, appaccount.LifecycleInput{
+		AccountID: c.ids["bob"], Kind: account.LifecycleDeleted, InitiatedBy: account.InitiatedBySystem,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if body := sc.do(http.MethodGet, authpages.PathSignIn, nil).Body.String(); strings.Contains(body, `name="action_id"`) || !strings.Contains(body, `name="password"`) {
+		t.Fatalf("sign-in screen after the deletion, want the sign-in form:\n%s", body)
+	}
+	if w := signIn(); w.Code == http.StatusSeeOther {
+		t.Fatalf("sign-in after the deletion = %d → %q, want a refusal", w.Code, w.Header().Get("Location"))
 	}
 }
 

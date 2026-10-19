@@ -275,6 +275,10 @@
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ şīɠƞḗḗḓ īƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.status.action_deletes_in": {
+    "defaultMessage": "[{days,plural,one{Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ẇīŀŀ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ īƞ # ḓȧȧẏ} other{Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ẇīŀŀ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ īƞ # ḓȧȧẏş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.status.action_ends_in": {
     "defaultMessage": "[{days,plural,one{Ḗƞḓş īƞ # ḓȧȧẏ} other{Ḗƞḓş īƞ # ḓȧȧẏş}}]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -285,6 +289,38 @@
   },
   "auth.status.action_until_lifted": {
     "defaultMessage": "[Ŀȧȧşŧş ŭŭƞŧīŀ ȧȧ ḿǿǿḓḗḗřȧȧŧǿǿř ŀīƒŧş īŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_answer": {
+    "defaultMessage": "[Ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş' ȧȧƞşẇḗḗř:]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_hint": {
+    "defaultMessage": "[{days,plural,one{Ẏǿǿŭŭ ƈȧȧƞ ȧȧƥƥḗḗȧȧŀ ǿǿƞƈḗḗ, ẇīŧħīƞ # ḓȧȧẏ. Ŭƥ ŧǿǿ {max, number} ƈħȧȧřȧȧƈŧḗḗřş.} other{Ẏǿǿŭŭ ƈȧȧƞ ȧȧƥƥḗḗȧȧŀ ǿǿƞƈḗḗ, ẇīŧħīƞ # ḓȧȧẏş. Ŭƥ ŧǿǿ {max, number} ƈħȧȧřȧȧƈŧḗḗřş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_label": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀ ŧħīş ȧȧƈŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_not_sent": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƥƥḗḗȧȧŀ ẇȧȧş ƞǿǿŧ şḗḗƞŧ. Ƈħḗḗƈķ ŧħḗḗ ƒīḗḗŀḓ ḿȧȧřķḗḗḓ ƀḗḗŀǿǿẇ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_sent": {
+    "defaultMessage": "[Ẏǿǿŭŭř ȧȧƥƥḗḗȧȧŀ ẇȧȧş şḗḗƞŧ. Ȧ ḿǿǿḓḗḗřȧȧŧǿǿř ẇīŀŀ řḗḗṽīḗḗẇ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_state": {
+    "defaultMessage": "[{state,select,other{Ẏǿǿŭŭ ȧȧƥƥḗḗȧȧŀḗḗḓ ŧħīş ȧȧƈŧīǿǿƞ.} overturned{Ȧ ḿǿǿḓḗḗřȧȧŧǿǿř řḗḗṽīḗḗẇḗḗḓ ẏǿǿŭŭř ȧȧƥƥḗḗȧȧŀ ȧȧƞḓ ŀīƒŧḗḗḓ ŧħḗḗ ȧȧƈŧīǿǿƞ.} pending{Ẏǿǿŭŭř ȧȧƥƥḗḗȧȧŀ īş ẇȧȧīŧīƞɠ ƒǿǿř ȧȧ ḿǿǿḓḗḗřȧȧŧǿǿř'ş řḗḗṽīḗḗẇ.} upheld{Ȧ ḿǿǿḓḗḗřȧȧŧǿǿř řḗḗṽīḗḗẇḗḗḓ ẏǿǿŭŭř ȧȧƥƥḗḗȧȧŀ ȧȧƞḓ ķḗḗƥŧ ŧħḗḗ ȧȧƈŧīǿǿƞ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_submit": {
+    "defaultMessage": "[Şḗḗƞḓ ŧħḗḗ ȧȧƥƥḗḗȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.status.appeal_text_invalid": {
+    "defaultMessage": "[Ẇřīŧḗḗ ẏǿǿŭŭř ȧȧƥƥḗḗȧȧŀ īƞ ŭŭƥ ŧǿǿ {max, number} ƈħȧȧřȧȧƈŧḗḗřş.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.status.pending": {

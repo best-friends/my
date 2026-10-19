@@ -6,7 +6,7 @@
 // action, which offers a remote account only the kinds a remote account takes. What a change did stays on the
 // page in a StatusMessage (role="status") next to what caused it (web-client.md §14).
 import { Avatar, Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, Link, ReasonField, RegionError, Spinner, StatusMessage } from "@my/ui";
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusHeadingAfterLift } from "../../../lib/useFocusAfterRemoval";
@@ -34,7 +34,7 @@ import {
 } from "../hooks/useReports";
 import { AccountActionForm } from "./AccountActionForm";
 import { AccountOrigin } from "./AccountSearch";
-import { DateTime, DetailSection, RecordList, RequirePermission } from "./parts";
+import { DateTime, DetailSection, RecordList, RequirePermission, useFocusAfterChange } from "./parts";
 import { AccountLabel, AssigneeName } from "./reportParts";
 
 export function AccountDetailView({ id }: { id: string }) {
@@ -43,23 +43,6 @@ export function AccountDetailView({ id }: { id: string }) {
       <AccountPage id={id} />
     </RequirePermission>
   );
-}
-
-/**
- * Moves focus to `target` once `value` has changed after `expect()` was called: a change that takes the pressed
- * button away (showing the private data) leaves focus on the region's heading.
- */
-function useFocusAfterChange(target: RefObject<HTMLElement | null>, value: unknown): () => void {
-  const pendingRef = useRef(false);
-  // Focus is moved in the DOM, outside React, once the page shows the change.
-  useEffect(() => {
-    if (!pendingRef.current) return;
-    pendingRef.current = false;
-    target.current?.focus();
-  }, [target, value]);
-  return () => {
-    pendingRef.current = true;
-  };
 }
 
 function AccountPage({ id }: { id: string }) {

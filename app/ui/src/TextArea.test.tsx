@@ -16,6 +16,35 @@ describe("TextArea", () => {
     expect(textArea).toHaveAccessibleDescription(expect.stringContaining("Too long."));
   });
 
+  it("runs validate and stops its form while the text is invalid", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn((event: SubmitEvent | { preventDefault: () => void }) => {
+      event.preventDefault();
+    });
+    render(
+      <form onSubmit={onSubmit}>
+        <TextArea
+          label="Reason"
+          validate={(value) => (value.trim() === "" ? "Enter a reason." : null)}
+          errorMessage="Enter a reason."
+          characterLimit={10}
+          formatRemaining={formatRemaining}
+        />
+        <button type="submit">Send</button>
+      </form>,
+    );
+    const textArea = screen.getByRole("textbox", { name: "Reason" });
+    await user.type(textArea, "   ");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(textArea).toBeInvalid();
+    expect(screen.getByText("Enter a reason.")).toBeInTheDocument();
+
+    await user.type(textArea, "spam");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
   it("has no count or status region without a limit", () => {
     render(<TextArea label="Bio" />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();

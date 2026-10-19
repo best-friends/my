@@ -343,6 +343,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	// Moderation needs only the account module; the modules below read its restrictions.
 	a.setUpModeration(mods)
 	identity.RegisterModerationProjectors(a.Projectors, identities, a.Accounts, a.Clock)
+	identity.RegisterLifecycleProjectors(a.Projectors, identities, a.Accounts, a.Clock)
 	a.Identity = identity.NewService(identity.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,

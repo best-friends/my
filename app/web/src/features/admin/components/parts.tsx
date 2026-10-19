@@ -4,7 +4,7 @@
 // state and "show more"), the titled section of a detail page, a server's state in words, a domain in both
 // of its forms, and dates in the viewer's locale and time zone. The facts of a record are @my/ui's DescriptionList.
 import { Button, EmptyState } from "@my/ui";
-import { type ReactNode, type Ref, useId } from "react";
+import { type ReactNode, type Ref, type RefObject, useEffect, useId, useRef } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { domainToUnicode } from "../../../lib/idn";
@@ -124,9 +124,9 @@ export function RecordList<T>({ list, getId, children, empty, listRef, moreError
 
 /**
  * A titled region of a detail page below its `h1`: an `h2` that names a `<section>`. With `headingRef`, the
- * heading can take focus, for a region whose content changes under the button that changed it.
+ * heading takes focus (`tabindex="-1"`) when the region changes under it (useFocusAfterChange).
  */
-export function DetailSection({ title, headingRef, children }: { title: ReactNode; headingRef?: Ref<HTMLHeadingElement>; children: ReactNode }) {
+export function DetailSection({ title, headingRef, children }: { title: ReactNode; headingRef?: RefObject<HTMLHeadingElement | null>; children: ReactNode }) {
   const headingId = useId();
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
@@ -136,4 +136,21 @@ export function DetailSection({ title, headingRef, children }: { title: ReactNod
       {children}
     </section>
   );
+}
+
+/**
+ * Moves focus to `target` once `value` has changed after `expect()` was called: a change that takes the pressed
+ * button away (resolving a report, deciding an appeal) leaves focus on the heading of the button's region.
+ */
+export function useFocusAfterChange(target: RefObject<HTMLElement | null>, value: unknown): () => void {
+  const pendingRef = useRef(false);
+  // Focus is moved in the DOM, outside React, once the page shows the change.
+  useEffect(() => {
+    if (!pendingRef.current) return;
+    pendingRef.current = false;
+    target.current?.focus();
+  }, [target, value]);
+  return () => {
+    pendingRef.current = true;
+  };
 }
