@@ -22,7 +22,7 @@ jobs:
     env:
       FEDERATION_LIVE_OUT: ${{ github.workspace }}/.tmp/federation-live-out
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-go@v7
