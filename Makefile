@@ -281,10 +281,10 @@ web-build: web-dist ## Build app/web and copy the build to internal/interface/we
 web-licenses: web-install i18n-install ## Fail on client npm dependency licenses incompatible with AGPL-3.0
 	cd tools/i18n && bun run src/licenses.ts $(NPM_ALLOWED_LICENSES) ../../app/node_modules
 
-web-lint: web-lint-code web-lint-css ## Lint the client workspace: ESLint (app/eslint.config.js), its rule tests, knip, no 100vh in CSS
+web-lint: web-lint-code web-lint-css ## Lint the client workspace: Oxlint (app/.oxlintrc.json), the tests of its restrictions, knip, no 100vh in CSS
 
 # The two halves of web-lint, for the CI jobs: the merge queue runs web-lint-code alone (ADR-0047).
-web-lint-code: web-install ## Run ESLint (app/eslint.config.js), the tests of its custom rules, and knip
+web-lint-code: web-install ## Run Oxlint (app/.oxlintrc.json), the tests of its restrictions and violation fixtures (app/oxlint), and knip
 	cd app && bun run lint
 	cd app && bun run lint:rules
 	cd app && bun run knip
@@ -319,7 +319,7 @@ web-routes-check: web-dist ## Fail when the committed app/web/src/routeTree.gen.
 	@git diff --exit-code --quiet -- app/web/src/routeTree.gen.ts \
 		|| { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client.md §9)' >&2; exit 1; }
 
-web-check: web-typecheck web-lint web-dist web-routes-check web-licenses web-tokens web-test playwright-image-check ## Run the offline checks of app/web and the workspace-wide client checks (ESLint, knip, licenses, tokens)
+web-check: web-typecheck web-lint web-dist web-routes-check web-licenses web-tokens web-test playwright-image-check ## Run the offline checks of app/web and the workspace-wide client checks (Oxlint, knip, licenses, tokens)
 
 ui-check: ui-typecheck ui-unit-test ## Run the offline checks of app/ui (@my/ui); its dependent app/web is web-check
 

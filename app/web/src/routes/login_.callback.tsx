@@ -22,7 +22,7 @@ export const Route = createFileRoute("/login_/callback")({
   validateSearch: searchSchema,
   beforeLoad: async ({ context, search }) => {
     const returnTo = await completeSignIn(context.session, search, window.location.origin);
-    // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router's redirects are thrown objects.
+    // eslint-disable-next-line typescript/only-throw-error -- TanStack Router's redirects are thrown objects.
     throw redirect({ href: returnTo, replace: true });
   },
   errorComponent: SignInCallbackError,

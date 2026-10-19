@@ -88,8 +88,9 @@ type VirtualFeed = {
  * compiler. Its callers see values that change when the result changes and are compiled as usual.
  */
 function useVirtualFeed(options: VirtualFeedOptions): VirtualFeed {
-  // eslint-disable-next-line no-restricted-syntax -- R4: the virtualizer is a mutable object React Compiler would read stale (see above).
+  // eslint-disable-next-line restrict/syntax -- R4: the virtualizer is a mutable object React Compiler would read stale (see above).
   "use no memo";
+  // eslint-disable-next-line react/incompatible-library -- R4: this hook opts out of the compiler for this library (see above); Oxlint's port of the rule reports inside "use no memo" too.
   const virtualizer = useWindowVirtualizer<HTMLElement>({
     count: options.count,
     estimateSize: () => options.estimateSize,

@@ -169,7 +169,7 @@ Icons are part of the kit, so that every screen draws the same shapes at the sam
 - The base weight is Regular. Neither a screen nor a component draws SVG of its own (lint rejects `<svg>`, `<path>` and
   the other SVG elements in JSX); a missing icon is a new row of the table (look the shape up by name in the Phosphor
   catalog) and a new export, which the gallery then shows. The exceptions, listed with their reasons in
-  `app/eslint.config.js`, are the marks of a control's own drawing (the check of `Checkbox`, the chevrons of `Select`
+  `app/.oxlintrc.json`, are the marks of a control's own drawing (the check of `Checkbox`, the chevrons of `Select`
   and `ContentWarning`, the arrow of `Tooltip`, the silhouette of `Avatar`) and stand-in content in tests and stories.
 - They are decorative: `aria-hidden="true"` and `focusable="false"`. The meaning is in the visible label or the accessible
   name of the control. An icon-only control has an `aria-label` and a `Tooltip` with the same text.

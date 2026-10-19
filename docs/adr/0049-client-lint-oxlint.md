@@ -58,6 +58,8 @@
 
 - lint は Oxlint（`oxlint`、`oxlint-tsgolint`）で行う。設定は `app/.oxlintrc.json` にし、`@oxlint/migrate --type-aware` で今の `app/eslint.config.js` から作る。
   - typescript-eslint の型情報の規則は tsgolint で動かす（`options.typeAware`）。
+    tsgolint はファイルごとに一番近い `tsconfig.json` を使うので、`app/ui` と `app/web` の `tsconfig.json` は `references` だけを持つ solution 形式にし、
+    アプリの設定は `tsconfig.app.json` に置く（`tsc -p` には `tsconfig.app.json`・`tsconfig.node.json` などを渡す）。これで `app/web/sw` と `app/web/e2e` の型も解決する。
   - `eslint-plugin-react-hooks` の規則は Oxlint のネイティブの `react/*` で動かす。
   - `@eslint-react`、TanStack Query / Router、Testing Library、boundaries、better-tailwindcss、formatjs、eslint-comments は、Oxlint の JS プラグイン（`jsPlugins`）で動かす。
     JS プラグインは alpha だが、決定者はこれを受け入れている。
@@ -68,6 +70,7 @@
 - 無効化コメントは `eslint-disable` の形のまま使う。R9 の `no-restricted-disable` には、`react-hooks/*` に加えて Oxlint の `react/` の名前（`react/exhaustive-deps` など）を挙げる。
 - `make web-lint` は Oxlint・`restrictions.test.js`・knip・CSS の `100vh` の検査を動かす。
 - 依存から ESLint、typescript-eslint、`eslint-plugin-react-hooks` を外す。JS プラグインとして使うプラグインは残す。
+  knip は `.oxlintrc.json` の `jsPlugins` と `settings` を読んで、JS プラグインと boundaries の resolver を使われている依存として数える。
 
 理由:
 
@@ -89,10 +92,3 @@
   細部が公式のプラグインと違う。
 - typescript-eslint がなくなるので、ADR-0048 の TypeScript 6 の API の別名が要るのは openapi-typescript だけになる。
 - 移行の作業は Issue にする（`make web-lint` と CI の切り替え、`restrictions.js` とそのテストの移植、ESLint とそのプラグインの削除、web-client.md の「強制」の列の更新）。
-
-## Open Questions / 要検証
-
-- tsgolint はファイルごとに一番近い `tsconfig.json` を使うので、`app/web/sw` と `app/web/e2e` の型を解決できず偽陽性を出す。
-  `app/ui` と `app/web` の `tsconfig.json` を `references` だけを持つ solution 形式にし、今の内容を `tsconfig.app.json` に移す（`tsc -p` に渡す名前も変える）と解消する。
-  この形にしてよいか（決定者の判断が要る）
-- knip が `.oxlintrc.json` の JS プラグインを依存として認識するか（要検証）

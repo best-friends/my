@@ -109,7 +109,7 @@ classify() {
       ;;
   esac
   case "$path" in
-    app/ui/* | app/tsconfig.base.json | app/eslint.config.js | app/eslint/* | app/knip.json | scripts/ui-test-docker.sh)
+    app/ui/* | app/tsconfig.base.json | app/.oxlintrc.json | app/oxlint/* | app/knip.json | scripts/ui-test-docker.sh)
       select_contexts ui
       known=1
       ;;
