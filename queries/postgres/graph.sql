@@ -84,6 +84,13 @@ ORDER BY f.id;
 SELECT follower_account_id, followee_account_id, follow_id, state, since
 FROM follow_edges ORDER BY follower_account_id, followee_account_id;
 
+-- ListFollowEdgesOf returns the edges into and out of an account, pending and active, ordered
+-- by follower and followee.
+-- name: ListFollowEdgesOf :many
+SELECT follower_account_id, followee_account_id, follow_id, state, since
+FROM follow_edges WHERE follower_account_id = sqlc.arg(account_id) OR followee_account_id = sqlc.arg(account_id)
+ORDER BY follower_account_id, followee_account_id;
+
 -- name: ListFollowCounters :many
 SELECT account_id, followers_count, following_count FROM follow_counters ORDER BY account_id;
 

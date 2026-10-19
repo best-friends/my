@@ -111,6 +111,9 @@ type FollowTerminated struct {
 	Termination graph.Termination
 	// PreviousState is the state the follow ended in: graph.StatePending or graph.StateActive.
 	PreviousState graph.State
+	// Unannounced reports that the other account's server is not told of the end: the
+	// suspension of its domain, which delivers nothing to it (ADR-0036).
+	Unannounced bool
 }
 
 // EventType implements uow.Event.

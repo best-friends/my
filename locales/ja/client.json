@@ -1051,6 +1051,14 @@
     "defaultMessage": "もう一度試す",
     "description": "Button that loads the notifications again after they failed to load."
   },
+  "notifications.severed.account": {
+    "defaultMessage": "モデレーターが{name}さんを凍結したため、フォロワー{followers, plural, other {#人}}とフォロー{following, plural, other {#人}}の関係が解除されました。",
+    "description": "Notification sentence: the moderators of this server suspended a remote account, which ended the follows between it and the user in both directions; they are not restored when the suspension ends. {name} is the display name of the suspended account. {followers} is the number of the suspended accounts that followed the user, {following} the number of those that the user followed (either may be 0)."
+  },
+  "notifications.severed.domain": {
+    "defaultMessage": "モデレーターが{domain}を凍結したため、そのサーバーのフォロワー{followers, plural, other {#人}}とフォロー{following, plural, other {#人}}の関係が解除されました。",
+    "description": "Notification sentence: the moderators of this server suspended another server, which ended the follows between its accounts and the user in both directions; they are not restored when the suspension ends. {domain} is the server's domain name. {followers} is the number of the suspended accounts that followed the user, {following} the number of those that the user followed (either may be 0)."
+  },
   "notifications.sign_in": {
     "defaultMessage": "ログイン",
     "description": "Link on the notifications page, when nobody is signed in, that opens the sign-in page."
@@ -1102,6 +1110,10 @@
   "notifications.type.poll_closed": {
     "defaultMessage": "参加した投票が終了しました",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
+  },
+  "notifications.type.relationships_severed": {
+    "defaultMessage": "モデレーターによる凍結で、いくつかのフォロー関係が解除されました",
+    "description": "Notification sentence when the details of the suspension are no longer available: the moderators of this server suspended a server or an account, which ended follows between it and the user."
   },
   "notifications.type.report_resolved": {
     "defaultMessage": "あなたの通報への対応が完了しました",

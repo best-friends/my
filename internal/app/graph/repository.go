@@ -71,6 +71,8 @@ type Repository interface {
 
 	// Edge returns the edge from follower to followee.
 	Edge(ctx context.Context, tx uow.Tx, followerAccountID, followeeAccountID string) (graph.Edge, error)
+	// ListEdgesOf returns the edges into and out of an account, ordered by follower and followee.
+	ListEdgesOf(ctx context.Context, tx uow.Tx, accountID string) ([]graph.Edge, error)
 	// InsertEdge inserts an edge and reports false, writing nothing, when the pair already has one.
 	InsertEdge(ctx context.Context, tx uow.Tx, e graph.Edge) (bool, error)
 	// UpdateEdge replaces the state and since of the pair's edge when it belongs to e.FollowID.

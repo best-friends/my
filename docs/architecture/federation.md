@@ -491,13 +491,15 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | ローカルの `ban` | 上の `Update` と、`deletion_scheduled` の期日の `Delete`（Actor） | 同上 |
 | ローカルの投稿への `delete_statuses` | 投稿ごとの `Delete` | 本人の削除と同じ（§7.2） |
 | リモートのアカウントの `suspend` | そのアカウントのローカルの利用者へのフォローに `Reject(Follow)`、ローカルの利用者からのフォローに `Undo(Follow)` | そのアカウントの inbox |
-| ドメインの `suspend` | 送らない。両方向のフォローを `follow_terminations`（`reason = moderation`）で切り、`relationship_severances` を記録する | — |
+| ドメインの `suspend` | 送らない。両方向のフォローを `follow_terminations`（`reason = moderation`）で切り、`relationship_severances` を記録する（ジョブ `moderation.sever_domain`） | — |
 | それ以外（`limit`・`restrict_posting`・`force_sensitive` など） | 送らない | — |
 
 - `suspended` は Mastodon 拡張（`toot:suspended`）で、`@context` は §7.4 の Actor と同じです。凍結中の文書は `federation.ActorDocument.Suspend` が作り、`id`・コレクション・inbox・鍵は残します。
 - 凍結とその終わりは、`moderation` が処分・解除・期限切れの行の削除のトランザクションで発行する `moderation.account_suspension_changed`（[data-model §4.3](data-model.md#制限投影)）から、`federation.RegisterSuspensionProjectors` が同じトランザクションで `Update`（Actor）を積みます。重なった凍結の 2 つ目と、1 つが残る解除は何も送りません。
   文書は展開の始めの時点の状態から組み立てるので（§7.4）、凍結と解除が続けて起きても、後から展開した `Update` ほど新しい状態を表します。
 - BAN の `Delete`（Actor）は、削除の予約の期日に `account.execute_deletions` がアカウントの削除（`deleted`）を記録したときに、§7.1 のアカウント削除と同じ経路で送ります。凍結中でも `Delete` は止めません。
+- リモートのアカウントの `suspend` は、凍結を始めた処分のトランザクションで `graph.SeverByModeration` が両方向のフォローを切り、その `FollowTerminated`（`reason = moderation`）から §7.1 の projector が `Reject`（そのアカウントのフォロー）と `Undo`（ローカルの利用者のフォロー）を積みます。
+  ドメインの `suspend` で切るフォローの `FollowTerminated` は `Unannounced` で、何も積みません（配送も止まっています）。
 - 処分を解除しても、切ったフォローは戻しません。
 - 受信した Actor の `suspended: true` は、リモートのアカウントの表示に出すだけで、このサーバーの処分にはしません。
 
