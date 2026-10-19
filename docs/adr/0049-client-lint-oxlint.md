@@ -1,6 +1,6 @@
-# ADR-0049: クライアントの lint を Oxlint にし、型情報が要る規則だけ ESLint に残す
+# ADR-0049: クライアントの lint を ESLint から Oxlint に移す
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #572
@@ -20,9 +20,9 @@
 
 ## Decision Drivers（判断基準）
 
-1. web-client.md の「強制」の列の行を、lint から外さない
-2. lint の時間を大きく縮める（CI の 4 vCPU で効く）
-3. 公式が示す方法で設定し、独自の仕組みを増やさない
+1. lint の時間を大きく縮める（CI の 4 vCPU で効く）
+2. web-client.md の「強制」の列の行を、できるだけ lint から外さない
+3. 依存とツールの数を減らす
 4. 公開から 2 週間以上たった版だけを使い、ライセンスが AGPL-3.0 と両立する
 5. TypeScript 7（[ADR-0048](0048-typescript-7-with-typescript-6-api.md)）の妨げにならない
 
@@ -54,50 +54,45 @@
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**選択肢 3 を推奨する。**
+**選択肢 2 を採用する。** lint は Oxlint だけで行い、ESLint とその実行は使わない。
 
 - lint は Oxlint（`oxlint`、`oxlint-tsgolint`）で行う。設定は `app/.oxlintrc.json` にし、`@oxlint/migrate --type-aware` で今の `app/eslint.config.js` から作る。
   - typescript-eslint の型情報の規則は tsgolint で動かす（`options.typeAware`）。
   - `eslint-plugin-react-hooks` の規則は Oxlint のネイティブの `react/*` で動かす。
-  - `@eslint-react`、TanStack Query / Router、Testing Library、boundaries、better-tailwindcss、formatjs、eslint-comments は JS プラグイン（`jsPlugins`）で動かす。
-  - `no-restricted-syntax` は Oxlint にないので、ESLint の同じ規則を読み込む 1 ファイルの JS プラグインで動かし、`restrictions.js` のセレクタをそのまま渡す。
-- ESLint は、JS プラグインでは型情報が得られない規則（`@eslint-react/no-leaked-conditional-rendering` と `@eslint-react/no-unused-props`）だけを動かす。
-- `make web-lint` は Oxlint と ESLint を並列に動かし、どちらかが失敗したら失敗する。`restrictions.test.js`・knip・CSS の `100vh` の検査は今のまま。
-- tsgolint はファイルごとに一番近い `tsconfig.json` を使うので、`app/ui` と `app/web` の `tsconfig.json` を `references` だけを持つ solution 形式にし、
-  今の内容を `tsconfig.app.json` に移す（`tsc -p` に渡す名前も変える）。
+  - `@eslint-react`、TanStack Query / Router、Testing Library、boundaries、better-tailwindcss、formatjs、eslint-comments は、Oxlint の JS プラグイン（`jsPlugins`）で動かす。
+    JS プラグインは alpha だが、決定者はこれを受け入れている。
+  - `no-restricted-syntax` は Oxlint にないので、`restrictions.js` のセレクタを受け取って報告する 1 ファイルの JS プラグインをリポジトリに置く。
+    `restrictions.test.js` は Oxlint の RuleTester（`oxlint/plugins-dev`）で、各禁止規則が違反を拒むことを確かめる。
+- R14（数値を `&&` の条件にしない）は、型情報が要る `@eslint-react/no-leaked-conditional-rendering` が Oxlint では動かないので、lint では検査せず、レビューで確かめる。
+  `@eslint-react/no-unused-props` と `@typescript-eslint/no-unsafe-enum-assignment` も検査から外れる。
 - 無効化コメントは `eslint-disable` の形のまま使う。R9 の `no-restricted-disable` には、`react-hooks/*` に加えて Oxlint の `react/` の名前（`react/exhaustive-deps` など）を挙げる。
+- `make web-lint` は Oxlint・`restrictions.test.js`・knip・CSS の `100vh` の検査を動かす。
+- 依存から ESLint、typescript-eslint、`eslint-plugin-react-hooks` を外す。JS プラグインとして使うプラグインは残す。
 
 理由:
 
-- 選択肢 3 は、「強制」の列の行をすべて保ったまま（判断基準 1）、時間を約 6 分の 1 にする（判断基準 2）。消えるのは列にない
-  `@typescript-eslint/no-unsafe-enum-assignment` と、設定を持たない `react-hooks/config`・`react-hooks/gating` だけ。
-- 選択肢 2 は同じ速さだが R14 を失う。選択肢 1 は CI では速くならない。選択肢 4 は最速だが、境界・i18n・Tailwind・Testing Library・TanStack の検査を失い、
-  GritQL で書き直せるのは `restrictions.js` の構文の禁止だけ。
-- 設定は Oxlint の公式の移行ツールと、ESLint の規則をそのまま使う（判断基準 3）。追加する依存は MIT で、公開から 2 週間以上たった版（判断基準 4）。
-
-次のときはこの推奨を見直す:
-
-- Oxlint の JS プラグインが型情報を受け取れるようになったら、ESLint をやめて選択肢 2 にする。
-- 決定者が R14 を lint で検査しなくてよいとするなら、選択肢 2 にする。
-- Biome がプラグインで境界・Tailwind・Testing Library に当たる検査を書けるようになったら、選択肢 4 を比べ直す。
+- 選択肢 2 は、時間を約 6 分の 1 にし（判断基準 1）、ESLint の実行をなくす（判断基準 3）。外れる「強制」の行は R14 だけで、決定者は R14 を lint で検査しないことを受け入れている（判断基準 2）。
+- 選択肢 3 は R14 を保つが、ESLint と typescript-eslint を R14 のためだけに残す。選択肢 1 は CI では速くならない。
+  選択肢 4 は最速だが、境界・i18n・Tailwind・Testing Library・TanStack の検査を失う。
+- 追加する依存（`oxlint`、`oxlint-tsgolint`）は MIT で、公開から 2 週間以上たった版を使う（判断基準 4）。
+- 型情報の規則は TypeScript 7 の typescript-go で動き、lint は TypeScript 6 の API に依存しなくなる（判断基準 5）。
 
 ## Consequences（影響）
 
 - `make web-lint` の lint の手順が約 50 秒から約 9 秒になる。
-- [ADR-0025](0025-web-client-stack.md) の技術スタックの表の「lint」の行と、[ADR-0027](0027-ui-quality-gates.md) の検査の層の表の「lint」の行は、受け入れたらこの ADR が置き換える
-  （ESLint を Oxlint ＋ 型情報の規則だけの ESLint にする。プラグインと規則は同じ）。両 ADR の Status に、置き換える部分を書く。
-- web-client.md の「強制」の列の規則名は、Oxlint で動く名前（`react-hooks/purity` は `react/purity` など）に合わせて書き直す。
+- この ADR は、[ADR-0025](0025-web-client-stack.md) の技術スタックの表の「lint」の行と、[ADR-0027](0027-ui-quality-gates.md) の検査の層の表の「lint」の行を置き換える。
+  プラグインと規則は同じものを使い、それを動かすのが ESLint から Oxlint に変わる。
+- web-client.md の「強制」の列で、R14 はレビューになる。ほかの行の規則名は、Oxlint で動く名前（`react-hooks/purity` は `react/purity` など）に合わせる。
 - 「強制」の列の大半（境界・i18n・Tailwind・Testing Library・TanStack）が、alpha の Oxlint の JS プラグインで動く。Oxlint の版を上げるたびに、
   違反のフィクスチャで各行が検出されることを確かめる必要がある。
 - React Compiler の規則は、`eslint-plugin-react-hooks` ではなく Oxlint の移植で動く。移植は `"use no memo"` の関数の中でも `react/incompatible-library` を報告するなど、
   細部が公式のプラグインと違う。
-- 依存に ESLint と typescript-eslint が残るので、TypeScript 6 の API の別名（ADR-0048）も、その 2 規則のために残る。
-- 後続の作業（Issue にする）: 移行（設定、`make web-lint`、tsconfig の solution 形式、無効化コメントの規則名、web-client.md の規則名、ADR-0025 / ADR-0027 の Status）。
+- typescript-eslint がなくなるので、ADR-0048 の TypeScript 6 の API の別名が要るのは openapi-typescript だけになる。
+- 移行の作業は Issue にする（`make web-lint` と CI の切り替え、`restrictions.js` とそのテストの移植、ESLint とそのプラグインの削除、web-client.md の「強制」の列の更新）。
 
 ## Open Questions / 要検証
 
-- 選択肢 3（R14 を ESLint で保つ）と選択肢 2（ESLint をなくし、R14 を lint で検査しない）のどちらにするか
-- 「強制」の列の大半を alpha の Oxlint の JS プラグインに載せてよいか
+- tsgolint はファイルごとに一番近い `tsconfig.json` を使うので、`app/web/sw` と `app/web/e2e` の型を解決できず偽陽性を出す。
+  `app/ui` と `app/web` の `tsconfig.json` を `references` だけを持つ solution 形式にし、今の内容を `tsconfig.app.json` に移す（`tsc -p` に渡す名前も変える）と解消する。
+  この形にしてよいか（決定者の判断が要る）
 - knip が `.oxlintrc.json` の JS プラグインを依存として認識するか（要検証）
