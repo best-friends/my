@@ -264,6 +264,16 @@
 - **microk8s**: Kustomize ベースのマニフェスト（または Helm chart）を `deploy/k8s` に提供。SQLite 構成時はレプリカ 1 固定。
 - **バックアップ**: SQLite は Litestream で S3 互換へ継続レプリケーション、Postgres は `pg_dump` / マネージドのスナップショット。
 
+## KV（任意の Valkey）
+
+- 既定の `kv = db` は RDB のテーブルに置き、追加の常駐ミドルウェアを要らない（NFR-COST-2）。どのターゲットの既定の構成も、Valkey を前提にしない。
+- レート制限やキャッシュの書き込みが DB の負荷になったら、`kv = valkey` で Valkey（BSD-3-Clause の Redis 互換のサーバー）か Redis 互換のサービスに移す。
+  ADR-0003 と ADR-0019 の「Redis」は、このアダプタで満たす。接続は `valkey_url`（`valkeys://` で TLS、パスで DB 番号）、
+  非公開の CA は `valkey_tls_ca_file`、キーの接頭辞は `valkey_key_prefix` で設定する（[設定のリファレンス](../reference/configuration.md)）。
+- クラスタのモードのサーバーでも動く。KV のキーは 1 つのハッシュスロット（ハッシュタグ `{kv}`）に集まるので、KV をクラスタで分散はしない。
+- 候補: Google Cloud は Memorystore for Valkey、AWS は ElastiCache for Valkey（サーバーレスを含む）、Self-hosted は `valkey/valkey` のコンテナ。
+  どれも常時課金で、ほぼ $0 の構成には入らない（料金は要検証。M4 で計測する）。
+
 ## コスト見積りの観点（M4 で埋める）
 
 | 観点 | 計測方法 |

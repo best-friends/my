@@ -53,6 +53,9 @@ An instance setting that has never been set reads as its default, which is defin
 | [`media_unattached_ttl`](#media_unattached_ttl) | `MY_MEDIA_UNATTACHED_TTL` | `24h` | no | no |
 | [`remote_media_cache_max_bytes`](#remote_media_cache_max_bytes) | `MY_REMOTE_MEDIA_CACHE_MAX_BYTES` | `1073741824` | no | no |
 | [`kv`](#kv) | `MY_KV` | `db` | no | no |
+| [`valkey_url`](#valkey_url) | `MY_VALKEY_URL` | none | when `kv = valkey` | yes |
+| [`valkey_tls_ca_file`](#valkey_tls_ca_file) | `MY_VALKEY_TLS_CA_FILE` | none | no | no |
+| [`valkey_key_prefix`](#valkey_key_prefix) | `MY_VALKEY_KEY_PREFIX` | `my:` | no | no |
 | [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
 | [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
 | [`kek_previous`](#kek_previous) | `MY_KEK_PREVIOUS` | none | no | yes |
@@ -251,7 +254,31 @@ Key-value store adapter for caches and rate limits (ADR-0003, ADR-0019 §5).
 | --- | --- | --- |
 | `db` | yes | Table in the database. |
 | `memory` | yes | In-process memory; limits are per process. |
-| `redis` | not in v0 | Redis. |
+| `valkey` | yes | Valkey or another server that speaks the Redis protocol (`valkey_url`); entries are shared by every process on the server. |
+
+### `valkey_url`
+
+Valkey server of the adapters that use one (`kv = valkey`): `valkey://[user:password@]host[:port][/db]` (`redis://` is the same), `valkeys://` or `rediss://` for TLS, or `unix:///path/to/socket`. The path selects the database number. A cluster is found by itself.
+
+- Environment variable: `MY_VALKEY_URL` or `MY_VALKEY_URL_FILE`
+- Default: none
+- Required: when `kv = valkey`
+
+### `valkey_tls_ca_file`
+
+PEM file of the certificate authorities that the TLS certificate of `valkey_url` chains to, for a managed service with a private CA. Empty uses the system roots; it needs a `valkeys://` or `rediss://` URL.
+
+- Environment variable: `MY_VALKEY_TLS_CA_FILE`
+- Default: none
+- Required: no
+
+### `valkey_key_prefix`
+
+Prefix of every key that this server writes to `valkey_url`, so that several instances or other applications can share the server.
+
+- Environment variable: `MY_VALKEY_KEY_PREFIX`
+- Default: `my:`
+- Required: no
 
 ### `key_manager`
 

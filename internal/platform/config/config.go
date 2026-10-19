@@ -54,9 +54,13 @@ type Config struct {
 	// RemoteMediaCacheMaxBytes bounds the total size of the remote media cache.
 	RemoteMediaCacheMaxBytes int64
 	KV                       string
-	KeyManager               string
-	KEK                      []byte
-	PreviousKEKs             [][]byte
+	// ValkeyURL, ValkeyTLSCAFile, and ValkeyKeyPrefix configure the Valkey server of kv = valkey.
+	ValkeyURL       string
+	ValkeyTLSCAFile string
+	ValkeyKeyPrefix string
+	KeyManager      string
+	KEK             []byte
+	PreviousKEKs    [][]byte
 	// Mail is the Mailer adapter; MailFrom and the SMTP fields configure it.
 	Mail         string
 	MailFrom     string
@@ -116,6 +120,9 @@ func (c *Config) LogValue() slog.Value {
 		slog.Duration("media_unattached_ttl", c.MediaUnattachedTTL),
 		slog.Int64("remote_media_cache_max_bytes", c.RemoteMediaCacheMaxBytes),
 		slog.String("kv", c.KV),
+		slog.String("valkey_url", redact(c.ValkeyURL != "")),
+		slog.String("valkey_tls_ca_file", c.ValkeyTLSCAFile),
+		slog.String("valkey_key_prefix", c.ValkeyKeyPrefix),
 		slog.String("key_manager", c.KeyManager),
 		slog.String("kek", redact(len(c.KEK) > 0)),
 		slog.Int("kek_previous", len(c.PreviousKEKs)),

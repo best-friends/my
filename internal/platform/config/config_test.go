@@ -68,7 +68,7 @@ func TestLoadValid(t *testing.T) {
 			env:  minimal(),
 			want: Config{
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
-				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 			},
@@ -87,7 +87,7 @@ listen = "127.0.0.1:9000"
 `},
 			want: Config{
 				Host: "social.example.org", AccountDomain: "example.org", SourceURL: "https://git.example.org/fork/my", WebOrigin: "http://localhost:5173", Role: RoleWeb, Listen: "127.0.0.1:9000",
-				DB: "postgres", DatabaseURL: "file:my.db", Queue: "sqs", Blob: "fs", Media: "native", KV: "db",
+				DB: "postgres", DatabaseURL: "file:my.db", Queue: "sqs", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 			},
@@ -98,7 +98,7 @@ listen = "127.0.0.1:9000"
 			files: map[string]string{"/mnt/db-url": "postgres://db/my\n", "/mnt/kek": testKEK + "\n"},
 			want: Config{
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
-				DB: "sqlite", DatabaseURL: "postgres://db/my", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				DB: "sqlite", DatabaseURL: "postgres://db/my", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 			},
@@ -108,7 +108,7 @@ listen = "127.0.0.1:9000"
 			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+", "+testKEK2),
 			want: Config{
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
-				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 				PreviousKEKs: [][]byte{bytes.Repeat([]byte{1}, kekSize), bytes.Repeat([]byte{2}, kekSize)},
@@ -120,7 +120,7 @@ listen = "127.0.0.1:9000"
 				"MY_SMTP_PORT", "2525", "MY_SMTP_USERNAME", "mailer", "MY_SMTP_PASSWORD", "hunter3"),
 			want: Config{
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
-				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "smtp", MailFrom: "noreply@social.example.org", SMTPHost: "smtp.example.org",
 				SMTPPort: 2525, SMTPUsername: "mailer", SMTPPassword: "hunter3", Captcha: "none", Profile: "production",
@@ -132,7 +132,7 @@ listen = "127.0.0.1:9000"
 			files: map[string]string{"/mnt/captcha": "0x4AAA-secret\n"},
 			want: Config{
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
-				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
 				Captcha: "turnstile", CaptchaSiteKey: "0x4AAA-site", CaptchaSecretKey: "0x4AAA-secret", Profile: "production",
@@ -143,7 +143,7 @@ listen = "127.0.0.1:9000"
 			env:  with(minimal(), "MY_HOST", "localhost:3000"),
 			want: Config{
 				Host: "localhost:3000", AccountDomain: "localhost:3000", SourceURL: DefaultSourceURL, WebOrigin: "https://localhost:3000", Role: RoleAll, Listen: ":8080",
-				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
 			},
@@ -212,12 +212,31 @@ func TestLoadInvalid(t *testing.T) {
 		},
 		{
 			name: "adapters outside v0",
-			env:  with(minimal(), "MY_BLOB", "gcs", "MY_KV", "redis", "MY_KEY_MANAGER", "awskms", "MY_KEK", unset),
+			env:  with(minimal(), "MY_BLOB", "gcs", "MY_KEY_MANAGER", "awskms", "MY_KEK", unset),
 			want: []string{
 				`blob (MY_BLOB): "gcs" is not available in v0; want one of fs, s3`,
-				`kv (MY_KV): "redis" is not available in v0; want one of db, memory`,
 				`key_manager (MY_KEY_MANAGER): "awskms" is not available in v0; want one of local`,
 			},
+		},
+		{
+			name: "kv valkey without a URL",
+			env:  with(minimal(), "MY_KV", "valkey"),
+			want: []string{"valkey_url (MY_VALKEY_URL): required when kv is valkey"},
+		},
+		{
+			name: "valkey URLs",
+			env:  with(minimal(), "MY_KV", "valkey", "MY_VALKEY_URL", "http://cache:6379"),
+			want: []string{"valkey_url (MY_VALKEY_URL): valkey: invalid URL scheme: http"},
+		},
+		{
+			name: "valkey URL that skips TLS verification",
+			env:  with(minimal(), "MY_KV", "valkey", "MY_VALKEY_URL", "valkeys://cache:6379?skip_verify=true"),
+			want: []string{"valkey_url (MY_VALKEY_URL): valkey: skip_verify is refused"},
+		},
+		{
+			name: "valkey CA file without TLS",
+			env:  with(minimal(), "MY_KV", "valkey", "MY_VALKEY_URL", "valkey://cache:6379/2", "MY_VALKEY_TLS_CA_FILE", "/etc/ca.pem"),
+			want: []string{"valkey_tls_ca_file (MY_VALKEY_TLS_CA_FILE): needs a valkeys:// or rediss:// valkey_url"},
 		},
 		{
 			name: "media limits",
@@ -357,7 +376,8 @@ kek = "nope"
 
 func TestLoadSettingsRedactSecrets(t *testing.T) {
 	_, settings, err := Load(source(with(minimal(), "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3",
-		"MY_CAPTCHA", "turnstile", "MY_CAPTCHA_SITE_KEY", "site", "MY_CAPTCHA_SECRET_KEY", "0x5eCrE7"), nil))
+		"MY_CAPTCHA", "turnstile", "MY_CAPTCHA_SITE_KEY", "site", "MY_CAPTCHA_SECRET_KEY", "0x5eCrE7",
+		"MY_KV", "valkey", "MY_VALKEY_URL", "valkey://user:pass@cache:6379/0"), nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -420,7 +440,8 @@ func TestServerOrigin(t *testing.T) {
 
 func TestConfigLogValueRedactsSecrets(t *testing.T) {
 	cfg, _, err := Load(source(with(minimal(), "MY_DATABASE_URL", "postgres://user:hunter2@db/my", "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3",
-		"MY_CAPTCHA", "hcaptcha", "MY_CAPTCHA_SITE_KEY", "site", "MY_CAPTCHA_SECRET_KEY", "0x5eCrE7"), nil))
+		"MY_CAPTCHA", "hcaptcha", "MY_CAPTCHA_SITE_KEY", "site", "MY_CAPTCHA_SECRET_KEY", "0x5eCrE7",
+		"MY_KV", "valkey", "MY_VALKEY_URL", "valkey://user:pass@cache:6379/0"), nil))
 	if err != nil {
 		t.Fatal(err)
 	}

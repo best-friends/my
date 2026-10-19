@@ -33,7 +33,7 @@ Remote servers ──AP──►│                               │
         │ DB: sqlite │ libsql │ postgres                                        │
         │ Queue: db │ sqs │ cloud-tasks │ inline                                │
         │ Blob: fs │ s3-compatible(S3/R2/GCS/MinIO)                             │
-        │ KV/Cache: db │ memory │ redis(任意)                                    │
+        │ KV/Cache: db │ memory │ valkey(任意。Redis 互換)                        │
         │ Mail: none │ smtp │ ses │ http-api   Push: webpush                    │
         │ Media: none │ native(pure Go) │ vips(cgo, 任意)                       │
         └──────────────────────────────────────────────────────────────────────┘
@@ -103,7 +103,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `Scheduler` | 定期実行のトリガー | in-process cron | [0004](../adr/0004-job-queue-abstraction.md) |
 | `BlobStore` | メディアの保存・署名付き URL | fs | [0005](../adr/0005-blob-storage-and-media.md) |
 | `MediaProcessor` | サムネイル・リサイズ・EXIF 除去 | native | [0005](../adr/0005-blob-storage-and-media.md) |
-| `KeyValueStore` | キャッシュ・レート制限・連合ライブラリ用 KV | db | [0003](../adr/0003-database-abstraction.md) |
+| `KeyValueStore` | キャッシュ・レート制限・連合ライブラリ用 KV。任意の `valkey` は Valkey か Redis 互換のサーバーに置き、ADR-0003 と ADR-0019 の「Redis」の枠をこのアダプタで満たす | db | [0003](../adr/0003-database-abstraction.md), [0019](../adr/0019-security-baseline.md) |
 | `HTTPClient` | 外部 HTTP（SSRF ガード・用途別の本文上限とタイムアウト・UA 付与） | httpclient（`net/http` + SSRF ガード） | [0006](../adr/0006-federation-protocol-scope.md), [0019](../adr/0019-security-baseline.md) |
 | `Mailer` | メール送信 | none（ログ出力） | [0010](../adr/0010-configuration-and-packaging.md) |
 | `HumanVerifier` | サインインと登録の CAPTCHA のトークンの検証（`HTTPClient` で siteverify に送る）。`captcha = none` では使わない（nil） | なし（`captcha = none`） | [0042](../adr/0042-captcha-human-verifier.md) |
@@ -193,7 +193,8 @@ internal/
     queue/{db,inline,sqs,cloudtasks}/
     blob/{fs,s3}/
     media/{native,vips,none}/
-    kv/{db,memory}/
+    kv/{db,memory,valkey}/
+    valkey/          # Valkey（Redis 互換）への接続（valkey-go）。valkey_url を使うアダプタが共有する
     mail/{none,smtp,ses}/
     captcha/siteverify/ # HumanVerifier の実装（Turnstile / hCaptcha / reCAPTCHA v2 のプリセット。ADR-0042）
     system/          # Clock / IDGenerator の本番実装（システム時計・UUIDv7）

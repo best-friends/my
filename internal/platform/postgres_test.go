@@ -7,11 +7,13 @@ import (
 	"testing"
 
 	"github.com/best-friends/my/pkg/testkit/pgtest"
+	"github.com/best-friends/my/pkg/testkit/valkeytest"
 )
 
 func TestMain(m *testing.M) {
 	code := pgtest.Main(m)
 	removeSQLiteTemplate()
+	valkeytest.Close()
 	os.Exit(code)
 }
 
