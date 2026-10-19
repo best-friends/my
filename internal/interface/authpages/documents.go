@@ -73,7 +73,7 @@ func (h *Handler) documentPage(i int) http.HandlerFunc {
 		ok := false
 		if h.o.Documents != nil {
 			var err error
-			doc, ok, err = h.o.Documents.Document(r.Context(), d.key, p.L.Locale())
+			doc, ok, err = h.o.Documents.Document(r.Context(), d.key, p.L.RequestedLocale())
 			if err != nil {
 				h.internalError(w, r, err)
 				return
@@ -102,7 +102,7 @@ func (h *Handler) documentLinks(r *http.Request, l *i18n.Localizer) []documentLi
 	}
 	var out []documentLink
 	for _, d := range documentPages {
-		ok, err := h.o.Documents.HasDocument(r.Context(), d.key, l.Locale())
+		ok, err := h.o.Documents.HasDocument(r.Context(), d.key, l.RequestedLocale())
 		if err != nil {
 			h.o.Logger.WarnContext(r.Context(), "read an instance document", slog.String("key", string(d.key)), slog.Any("error", err))
 			continue

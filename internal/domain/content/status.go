@@ -24,6 +24,13 @@ type Status struct {
 	PublishedAt     time.Time
 }
 
+// CountsAsLocalPost reports whether the status counts toward its author's local posts, the
+// usage.localPosts of NodeInfo. As Mastodon and GoToSocial count them, these are the statuses
+// of local accounts except the direct ones.
+func (s Status) CountsAsLocalPost() bool {
+	return s.IsLocal && s.Visibility != VisibilityDirect
+}
+
 // LocalStatus is the local subtype of a status: the client that posted it and the client API's
 // Idempotency-Key, unique per author.
 type LocalStatus struct {

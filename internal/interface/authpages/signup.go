@@ -134,7 +134,7 @@ func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 	signedUp, err := h.o.Identity.SignUp(r.Context(), appidentity.SignUpInput{
 		Username: f.Username, Email: f.Email, Password: password, Locale: locale,
 		InviteCode: f.InviteCode, Reason: f.Reason,
-		IP: clientIP(r), UserAgent: r.UserAgent(), CurrentToken: cookieValue(r, CookieSession),
+		IP: kernel.RequestClientIP(r), UserAgent: r.UserAgent(), CurrentToken: cookieValue(r, CookieSession),
 		HumanCheckToken: h.humanCheckToken(r),
 	})
 	if err != nil {

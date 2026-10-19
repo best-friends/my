@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io/fs"
 	"log/slog"
+	"net/netip"
 	"reflect"
 	"slices"
 	"strings"
@@ -70,7 +71,7 @@ func TestLoadValid(t *testing.T) {
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 			},
 		},
 		{
@@ -89,7 +90,7 @@ listen = "127.0.0.1:9000"
 				Host: "social.example.org", AccountDomain: "example.org", SourceURL: "https://git.example.org/fork/my", WebOrigin: "http://localhost:5173", Role: RoleWeb, Listen: "127.0.0.1:9000",
 				DB: "postgres", DatabaseURL: "file:my.db", Queue: "sqs", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 			},
 		},
 		{
@@ -100,7 +101,7 @@ listen = "127.0.0.1:9000"
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "postgres://db/my", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 			},
 		},
 		{
@@ -110,7 +111,7 @@ listen = "127.0.0.1:9000"
 				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
-				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				PreviousKEKs: [][]byte{bytes.Repeat([]byte{1}, kekSize), bytes.Repeat([]byte{2}, kekSize)},
 			},
 		},
@@ -123,7 +124,7 @@ listen = "127.0.0.1:9000"
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "smtp", MailFrom: "noreply@social.example.org", SMTPHost: "smtp.example.org",
-				SMTPPort: 2525, SMTPUsername: "mailer", SMTPPassword: "hunter3", Captcha: "none", Profile: "production",
+				SMTPPort: 2525, SMTPUsername: "mailer", SMTPPassword: "hunter3", Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 			},
 		},
 		{
@@ -135,7 +136,7 @@ listen = "127.0.0.1:9000"
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
-				Captcha: "turnstile", CaptchaSiteKey: "0x4AAA-site", CaptchaSecretKey: "0x4AAA-secret", Profile: "production",
+				Captcha: "turnstile", CaptchaSiteKey: "0x4AAA-site", CaptchaSecretKey: "0x4AAA-secret", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 			},
 		},
 		{
@@ -145,7 +146,23 @@ listen = "127.0.0.1:9000"
 				Host: "localhost:3000", AccountDomain: "localhost:3000", SourceURL: DefaultSourceURL, WebOrigin: "https://localhost:3000", Role: RoleAll, Listen: ":8080",
 				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
 				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
+			},
+		},
+		{
+			name: "trusted proxies",
+			env: with(minimal(), "MY_TRUSTED_PROXIES", "10.1.2.3/8, 2001:db8::/32,192.0.2.10, ::ffff:198.51.100.0/120, 2001:db8::1",
+				"MY_TRUSTED_PROXY_HEADER", "forwarded"),
+			want: Config{
+				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db",
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production",
+				TrustedProxies: []netip.Prefix{
+					netip.MustParsePrefix("10.0.0.0/8"), netip.MustParsePrefix("2001:db8::/32"), netip.MustParsePrefix("192.0.2.10/32"),
+					netip.MustParsePrefix("198.51.100.0/24"), netip.MustParsePrefix("2001:db8::1/128"),
+				},
+				TrustedProxyHeader: "forwarded",
 			},
 		},
 	}
@@ -261,6 +278,19 @@ func TestLoadInvalid(t *testing.T) {
 			name: "previous KEK given twice",
 			env:  with(minimal(), "MY_KEK_PREVIOUS", testKEK1+", "+testKEK1),
 			want: []string{"kek_previous (MY_KEK_PREVIOUS): must not repeat a key or contain the current kek"},
+		},
+		{
+			name: "malformed trusted proxies",
+			env:  with(minimal(), "MY_TRUSTED_PROXIES", "10.0.0.0/8, 10.0.0.0/33", "MY_TRUSTED_PROXY_HEADER", "x-real-ip"),
+			want: []string{
+				`trusted_proxies (MY_TRUSTED_PROXIES): entry #2 "10.0.0.0/33" must be a CIDR such as 10.0.0.0/8 or an IP address`,
+				`trusted_proxy_header (MY_TRUSTED_PROXY_HEADER): unknown value "x-real-ip"; want one of x-forwarded-for, forwarded`,
+			},
+		},
+		{
+			name: "trusted proxy with a zone",
+			env:  with(minimal(), "MY_TRUSTED_PROXIES", "fe80::1%eth0"),
+			want: []string{`trusted_proxies (MY_TRUSTED_PROXIES): entry #1 "fe80::1%eth0" must be a CIDR such as 10.0.0.0/8 or an IP address`},
 		},
 		{
 			name: "smtp without a sender or a host",

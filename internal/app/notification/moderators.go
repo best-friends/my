@@ -216,7 +216,7 @@ func sendModeratorEmail(ctx context.Context, d MailDeps, job moderatorEmail) err
 	link := strings.TrimSuffix(d.WebOrigin, "/") + "/notifications"
 	name := d.Host
 	if d.InstanceName != nil {
-		if n := d.InstanceName(ctx, l.Locale()); n != "" {
+		if n := d.InstanceName(ctx, l.RequestedLocale()); n != "" {
 			name = n
 		}
 	}

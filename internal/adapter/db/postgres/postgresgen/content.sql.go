@@ -32,6 +32,24 @@ func (q *Queries) AddAccountPost(ctx context.Context, arg AddAccountPostParams) 
 	return err
 }
 
+const addLocalPosts = `-- name: AddLocalPosts :exec
+
+INSERT INTO local_post_counters (account_id, posts_count) VALUES ($1, $2)
+ON CONFLICT (account_id) DO UPDATE SET posts_count = local_post_counters.posts_count + excluded.posts_count
+`
+
+type AddLocalPostsParams struct {
+	AccountID string
+	Added     int64
+}
+
+// local_post_counters: the posts of each local account that NodeInfo reports (data-model section 4.4).
+// The status projectors count the statuses and the interaction projectors the boosts.
+func (q *Queries) AddLocalPosts(ctx context.Context, arg AddLocalPostsParams) error {
+	_, err := q.db.Exec(ctx, addLocalPosts, arg.AccountID, arg.Added)
+	return err
+}
+
 const addStatusReplies = `-- name: AddStatusReplies :exec
 UPDATE status_counters SET replies_count = replies_count + $1 WHERE status_id = $2
 `
@@ -61,6 +79,15 @@ DELETE FROM account_post_counters
 
 func (q *Queries) DeleteAllAccountPostCounters(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, deleteAllAccountPostCounters)
+	return err
+}
+
+const deleteAllLocalPostCounters = `-- name: DeleteAllLocalPostCounters :exec
+DELETE FROM local_post_counters
+`
+
+func (q *Queries) DeleteAllLocalPostCounters(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteAllLocalPostCounters)
 	return err
 }
 
@@ -109,6 +136,22 @@ DELETE FROM account_post_counters WHERE account_id = $1 AND statuses_count <= 0
 
 func (q *Queries) DeleteEmptyAccountPostCounter(ctx context.Context, accountID string) error {
 	_, err := q.db.Exec(ctx, deleteEmptyAccountPostCounter, accountID)
+	return err
+}
+
+const deleteSpentLocalPostCounter = `-- name: DeleteSpentLocalPostCounter :exec
+DELETE FROM local_post_counters WHERE account_id = $1 AND posts_count <= $2
+`
+
+type DeleteSpentLocalPostCounterParams struct {
+	AccountID string
+	Removed   int64
+}
+
+// DeleteSpentLocalPostCounter removes the counter that removing posts would bring to zero, before
+// SubtractLocalPosts subtracts them from one that stays positive.
+func (q *Queries) DeleteSpentLocalPostCounter(ctx context.Context, arg DeleteSpentLocalPostCounterParams) error {
+	_, err := q.db.Exec(ctx, deleteSpentLocalPostCounter, arg.AccountID, arg.Removed)
 	return err
 }
 
@@ -819,6 +862,57 @@ func (q *Queries) ListLiveStatusHeads(ctx context.Context) ([]ListLiveStatusHead
 	return items, nil
 }
 
+const listLocalPostCounters = `-- name: ListLocalPostCounters :many
+SELECT account_id, posts_count FROM local_post_counters ORDER BY account_id
+`
+
+func (q *Queries) ListLocalPostCounters(ctx context.Context) ([]LocalPostCounter, error) {
+	rows, err := q.db.Query(ctx, listLocalPostCounters)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LocalPostCounter{}
+	for rows.Next() {
+		var i LocalPostCounter
+		if err := rows.Scan(&i.AccountID, &i.PostsCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLocalStatusBoosters = `-- name: ListLocalStatusBoosters :many
+SELECT e.booster_account_id FROM boost_edges e JOIN boosts b ON b.id = e.boost_id
+WHERE e.status_id = $1 AND b.is_local
+ORDER BY e.booster_account_id
+`
+
+// ListLocalStatusBoosters returns the local accounts whose live boosts of a status go with it.
+func (q *Queries) ListLocalStatusBoosters(ctx context.Context, statusID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listLocalStatusBoosters, statusID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var booster_account_id string
+		if err := rows.Scan(&booster_account_id); err != nil {
+			return nil, err
+		}
+		items = append(items, booster_account_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStatusCounters = `-- name: ListStatusCounters :many
 SELECT status_id, replies_count, boosts_count, favourites_count FROM status_counters ORDER BY status_id
 `
@@ -1099,6 +1193,28 @@ func (q *Queries) RebuildAccountPostCounters(ctx context.Context) error {
 	return err
 }
 
+const rebuildLocalPostCounters = `-- name: RebuildLocalPostCounters :exec
+INSERT INTO local_post_counters (account_id, posts_count)
+SELECT p.account_id, COUNT(*) FROM (
+  SELECT s.author_account_id AS account_id FROM statuses s
+  WHERE s.is_local AND s.visibility <> 'direct'
+    AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+  UNION ALL
+  SELECT b.booster_account_id AS account_id FROM boosts b
+  WHERE b.is_local
+    AND NOT EXISTS (SELECT 1 FROM boost_retractions r WHERE r.boost_id = b.id)
+    AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = b.status_id)
+) p
+GROUP BY p.account_id
+`
+
+// RebuildLocalPostCounters states the projectors' rules: the local statuses that are not deleted
+// and not direct, and the local boosts that are not retracted, of statuses that are not deleted.
+func (q *Queries) RebuildLocalPostCounters(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, rebuildLocalPostCounters)
+	return err
+}
+
 const rebuildStatusCounters = `-- name: RebuildStatusCounters :exec
 INSERT INTO status_counters (status_id, replies_count, boosts_count, favourites_count)
 SELECT s.id,
@@ -1182,6 +1298,31 @@ func (q *Queries) StatusIsDeleted(ctx context.Context, statusID string) (bool, e
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const subtractLocalPosts = `-- name: SubtractLocalPosts :exec
+UPDATE local_post_counters SET posts_count = posts_count - $1 WHERE account_id = $2
+`
+
+type SubtractLocalPostsParams struct {
+	Removed   int64
+	AccountID string
+}
+
+func (q *Queries) SubtractLocalPosts(ctx context.Context, arg SubtractLocalPostsParams) error {
+	_, err := q.db.Exec(ctx, subtractLocalPosts, arg.Removed, arg.AccountID)
+	return err
+}
+
+const sumLocalPosts = `-- name: SumLocalPosts :one
+SELECT COALESCE(SUM(posts_count), 0)::bigint AS total FROM local_post_counters
+`
+
+func (q *Queries) SumLocalPosts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, sumLocalPosts)
+	var total int64
+	err := row.Scan(&total)
+	return total, err
 }
 
 const upsertStatusHead = `-- name: UpsertStatusHead :exec

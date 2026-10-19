@@ -18,7 +18,9 @@ import (
 //   - status_reply_links links a reply to its parent once both are known;
 //   - status_counters counts the replies whose visibility CountsAsReply (the boosts and
 //     favourites are counted by RegisterInteractionProjectors);
-//   - account_post_counters counts each account's statuses and their latest PublishedAt.
+//   - account_post_counters counts each account's statuses and their latest PublishedAt;
+//   - local_post_counters counts each local account's statuses that CountAsLocalPost (its
+//     boosts are counted by RegisterInteractionProjectors).
 //
 // The rebuild queries of the Repository state the same rules in SQL; the property test in
 // testkit.StatusRepositoryContract checks that both agree.
@@ -102,7 +104,13 @@ func projectCreated(ctx context.Context, tx uow.Tx, repo Repository, s content.S
 			}
 		}
 	}
-	return repo.AddPost(ctx, tx, s.AuthorAccountID, s.PublishedAt)
+	if err := repo.AddPost(ctx, tx, s.AuthorAccountID, s.PublishedAt); err != nil {
+		return err
+	}
+	if s.CountsAsLocalPost() {
+		return repo.AddLocalPosts(ctx, tx, s.AuthorAccountID, 1)
+	}
+	return nil
 }
 
 func projectDeleted(ctx context.Context, tx uow.Tx, repo Repository, s content.Status) error {
@@ -119,7 +127,13 @@ func projectDeleted(ctx context.Context, tx uow.Tx, repo Repository, s content.S
 	if err := repo.DeleteStatusProjections(ctx, tx, s.ID); err != nil {
 		return err
 	}
-	return repo.RemovePost(ctx, tx, s.AuthorAccountID)
+	if err := repo.RemovePost(ctx, tx, s.AuthorAccountID); err != nil {
+		return err
+	}
+	if s.CountsAsLocalPost() {
+		return repo.AddLocalPosts(ctx, tx, s.AuthorAccountID, -1)
+	}
+	return nil
 }
 
 func linkTo(reply, parent content.Status) content.ReplyLink {
@@ -138,6 +152,7 @@ func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) 
 		{"status_reply_links", repo.RebuildReplyLinks},
 		{"status_counters", repo.RebuildCounters},
 		{"account_post_counters", repo.RebuildPostCounters},
+		{"local_post_counters", repo.RebuildLocalPostCounters},
 	}
 	for _, s := range steps {
 		if err := u.Tx(ctx, func(tx uow.Tx) error { return s.fn(ctx, tx) }); err != nil {

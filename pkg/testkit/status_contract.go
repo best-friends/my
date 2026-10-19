@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"reflect"
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -47,6 +49,7 @@ func StatusRepositoryContract(t *testing.T, newHarness StatusFactory) {
 		{"DeletesStatuses", statusDeletes},
 		{"LinksReplies", statusLinksReplies},
 		{"CountsPosts", statusCountsPosts},
+		{"CountsLocalPosts", statusCountsLocalPosts},
 		{"EnsuresTags", statusEnsuresTags},
 		{"IncrementalProjectionEqualsRebuild", statusProjectionEqualsRebuild},
 	}
@@ -562,6 +565,53 @@ func statusCountsPosts(t *testing.T, e *statusEnv) {
 	}
 }
 
+// statusCountsLocalPosts checks local_post_counters and its total, NodeInfo's usage.localPosts:
+// the local statuses that are not deleted count, except the direct ones and remote statuses.
+func statusCountsLocalPosts(t *testing.T, e *statusEnv) {
+	ctx := t.Context()
+	total := func() int64 {
+		t.Helper()
+		n, err := e.h.Statuses.LocalPostsTotal(ctx)
+		if err != nil {
+			t.Fatalf("LocalPostsTotal = %v", err)
+		}
+		return n
+	}
+	if n := total(); n != 0 {
+		t.Errorf("LocalPostsTotal on an empty database = %d, want 0", n)
+	}
+	alice, bob, remote := e.ids.NewID(), e.ids.NewID(), e.ids.NewID()
+	public := e.newStatus(alice, content.VisibilityPublic)
+	local := e.newStatus(alice, content.VisibilityLocal)
+	direct := e.newStatus(alice, content.VisibilityDirect)
+	private := e.newStatus(bob, content.VisibilityPrivate)
+	federated := e.newStatus(remote, content.VisibilityPublic)
+	federated.IsLocal = false
+	federated.URI = "https://remote.example/notes/local-posts"
+	for _, s := range []content.Status{public, local, direct, private, federated} {
+		e.mustCreate(t, s)
+	}
+	want := []content.LocalPostCounter{{AccountID: alice, PostsCount: 2}, {AccountID: bob, PostsCount: 1}}
+	slices.SortFunc(want, func(a, b content.LocalPostCounter) int { return strings.Compare(a.AccountID, b.AccountID) })
+	if got, err := e.h.Statuses.ListLocalPostCounters(ctx); err != nil || !reflect.DeepEqual(got, want) {
+		t.Errorf("local post counters = %+v, %v; want %+v (no direct or remote statuses)", got, err, want)
+	}
+	if n := total(); n != 3 {
+		t.Errorf("LocalPostsTotal = %d, want 3", n)
+	}
+	e.mustRemove(t, direct)
+	e.mustRemove(t, public)
+	e.mustRemove(t, private)
+	e.mustRemove(t, federated)
+	want = []content.LocalPostCounter{{AccountID: alice, PostsCount: 1}}
+	if got, err := e.h.Statuses.ListLocalPostCounters(ctx); err != nil || !reflect.DeepEqual(got, want) {
+		t.Errorf("local post counters after deletions = %+v, %v; want %+v (an account without posts has no row)", got, err, want)
+	}
+	if n := total(); n != 1 {
+		t.Errorf("LocalPostsTotal after deletions = %d, want 1", n)
+	}
+}
+
 func statusEnsuresTags(t *testing.T, e *statusEnv) {
 	ctx := t.Context()
 	ensure := func(name string) content.Tag {
@@ -685,6 +735,7 @@ type statusProjections struct {
 	Links        []content.ReplyLink
 	Counters     []content.Counters
 	PostCounters []content.PostCounter
+	LocalPosts   []content.LocalPostCounter
 }
 
 func snapshotStatusProjections(t *testing.T, repo appcontent.Repository) statusProjections {
@@ -707,6 +758,9 @@ func snapshotStatusProjections(t *testing.T, repo appcontent.Repository) statusP
 	}
 	if p.PostCounters, err = repo.ListPostCounters(t.Context()); err != nil {
 		t.Fatalf("ListPostCounters = %v", err)
+	}
+	if p.LocalPosts, err = repo.ListLocalPostCounters(t.Context()); err != nil {
+		t.Fatalf("ListLocalPostCounters = %v", err)
 	}
 	return p
 }

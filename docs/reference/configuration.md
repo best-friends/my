@@ -41,6 +41,8 @@ An instance setting that has never been set reads as its default, which is defin
 | [`web_origin`](#web_origin) | `MY_WEB_ORIGIN` | `https://{host}` | no | no |
 | [`role`](#role) | `MY_ROLE` | `all` | no | no |
 | [`listen`](#listen) | `MY_LISTEN` | `:8080` | no | no |
+| [`trusted_proxies`](#trusted_proxies) | `MY_TRUSTED_PROXIES` | none | no | no |
+| [`trusted_proxy_header`](#trusted_proxy_header) | `MY_TRUSTED_PROXY_HEADER` | `x-forwarded-for` | no | no |
 | [`db`](#db) | `MY_DB` | `sqlite` | no | no |
 | [`database_url`](#database_url) | `MY_DATABASE_URL` | none | yes | yes |
 | [`queue`](#queue) | `MY_QUEUE` | `db` | no | no |
@@ -128,6 +130,27 @@ TCP address the HTTP server listens on, as `host:port`.
 - Environment variable: `MY_LISTEN`
 - Default: `:8080`
 - Required: no
+
+### `trusted_proxies`
+
+Reverse proxies and load balancers in front of the server whose forwarding header (`trusted_proxy_header`) tells the client IP, as comma-separated CIDRs or addresses such as `10.0.0.0/8, 2001:db8::/32, 192.0.2.10` (ADR-0019 §5). The client IP keys the rate limits of sign-in, registration, the client API, and the inbox. When the connection's peer is in this list, the client IP is the rightmost address of the header that is not in it; otherwise the header is ignored and the client IP is the peer. Empty trusts no one: behind a proxy every request then shares the proxy's limits. List only addresses that nothing but your proxies can connect from, and only proxies that append to the header rather than pass a client's value through (docs/architecture/deployment-targets.md).
+
+- Environment variable: `MY_TRUSTED_PROXIES`
+- Default: none
+- Required: no
+
+### `trusted_proxy_header`
+
+Forwarding header that the `trusted_proxies` append the client IP to. Only this header is read, so that a client cannot add the other one past a proxy that does not know it.
+
+- Environment variable: `MY_TRUSTED_PROXY_HEADER`
+- Default: `x-forwarded-for`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `x-forwarded-for` | yes | `X-Forwarded-For`, which nginx, Caddy, Traefik, Google Cloud load balancers and Cloud Run, and AWS Application Load Balancers append to. |
+| `forwarded` | yes | The `for` parameters of `Forwarded` (RFC 7239). |
 
 ### `db`
 

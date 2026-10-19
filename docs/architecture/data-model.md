@@ -96,11 +96,11 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 | コマンド | 書き込むリソース / イベント | 同期で更新する投影 | outbox |
 | --- | --- | --- | --- |
 | 利用者登録 | `users`, `password_credentials`, `accounts`, `local_accounts`, `account_profile_revisions`, `account_keys`, `local_account_private_keys`（登録画面からは加えて `user_email_addresses`, `registration_applications`, `registration_decisions`, `invite_redemptions`, `user_tokens`, `sessions`） | `account_handles`, `account_profile_heads`（登録画面からは加えて `user_primary_emails`, `user_registration_states`, `session_activity`） | なし（確認メールはコミット後に `Mailer` で送る） |
-| 投稿 | `statuses`, `local_statuses`, `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `account_post_counters`, `notifications`（メンション） | 配送の展開 |
+| 投稿 | `statuses`, `local_statuses`, `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `account_post_counters`, `local_post_counters`, `notifications`（メンション） | 配送の展開 |
 | 投稿の編集 | `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `feed_entries`（言語）, `feed_tag_entries`, `feed_direct_recipients`, `notifications`（増えたメンション） | `Update` の配送 |
-| 投稿の削除 | `status_deletions` | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `account_post_counters`, `boost_edges`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `notification_deleted_statuses` | `Delete` の配送 |
-| ブースト | `boosts` | `boost_edges`, `feed_entries`, `status_counters`, `notifications` | `Announce` の配送（`local` 投稿のブーストは連合しない） |
-| ブーストの取り消し | `boost_retractions` | `boost_edges`, `feed_entries`, `status_counters` | `Undo Announce` の配送（連合したブーストだけ） |
+| 投稿の削除 | `status_deletions` | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `account_post_counters`, `local_post_counters`, `boost_edges`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `notification_deleted_statuses` | `Delete` の配送 |
+| ブースト | `boosts` | `boost_edges`, `feed_entries`, `status_counters`, `local_post_counters`, `notifications` | `Announce` の配送（`local` 投稿のブーストは連合しない） |
+| ブーストの取り消し | `boost_retractions` | `boost_edges`, `feed_entries`, `status_counters`, `local_post_counters` | `Undo Announce` の配送（連合したブーストだけ） |
 | お気に入り / 取り消し | `favourites`（現在値） | `status_counters`, `notifications`（お気に入りだけ） | `Like` / `Undo Like` の配送（リモートの投稿だけ） |
 | ブックマーク・ピン留め / 取り消し | `bookmarks` / `status_pins`（現在値） | なし | なし |
 | フォロー | `follows`（＋自動承認なら `follow_acceptances`） | `follow_edges`, `feed_follow_edges`, `follow_counters`, `notifications` | `Follow` / `Accept` の配送 |
@@ -136,7 +136,7 @@ PostgreSQL の並行性の挙動（READ COMMITTED、`SELECT ... FOR UPDATE`、`F
 ### 2.3 集計値
 
 - カウンタは【投影】です。イベントを集計するモジュールが所有します。
-  - `account_post_counters` と `status_counters` は `content`、`follow_counters` は `graph` が所有します。
+  - `account_post_counters`・`local_post_counters`・`status_counters` は `content`、`follow_counters` は `graph` が所有します。
 - 加算・減算は、元のイベントが実際に挿入された（影響行数 = 1）ときだけ行います。
 - ずれは定期ジョブ `projection.verify` が、イベントから数え直して補正します（§9）。
 - リモートアカウントのフォロワー数などは、取得スナップショットの `totalItems` を表示に使います。ローカルのカウンタは「このインスタンスが知っている件数」として別に持ちます。
@@ -189,7 +189,7 @@ flowchart LR
 | `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
-| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `account_post_counters`, `poll_tallies`, `custom_emoji_settings`, `media_focus`, `media_descriptions`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins` |
+| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `media_focus`, `media_descriptions`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins` |
 | `graph` | `follows`, `follow_acceptances`, `follow_rejections`, `follow_terminations`, `follow_resends`, `blocks`, `block_retractions` | `follow_edges`, `block_edges`, `follow_counters`, `follow_preferences`, `mutes`, `account_domain_mutes` |
 | `timeline` | なし | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_author_restrictions`, `feed_domain_restrictions` |
 | `notification` | `notifications`, `notification_dismissals` | `notification_read_markers`, `push_subscriptions`, `push_subscription_alerts` |
@@ -336,6 +336,8 @@ flowchart LR
   `time_zone` を指定した設定の変更が行を UPSERT します（`UTC` を選んでも行ができる）。API は `time_zone`（行が無ければ `UTC`）と `time_zone_chosen` を返します。
 - `time_zone` は IANA タイムゾーンデータベースにある名前だけを受け付けます（`Local` や `+09:00` は不可）。サーバーのバイナリはデータベースを埋め込む（Go の `time/tzdata`）ので、検証結果はホストに依存しません。
 - `user_timeline_languages` は 1 回の設定で全体を置き換えます（重複を除き、上限 64 件）。
+- 一部の設定だけの変更（`PATCH /api/v1/preferences`）は、今の値の読み出しと書き込みを 1 つのトランザクションで行い、読み出しで `user_preferences` の行をロックします（PostgreSQL は `SELECT ... FOR UPDATE`、SQLite は書き込みトランザクションが直列）。
+  同時に別々の設定を変えても（Web クライアントが端末のタイムゾーンを保存する間にユーザーがロケールを変える、など）、片方の変更が古い値で上書きされません。
 
 #### データエクスポート
 
@@ -624,12 +626,19 @@ flowchart LR
 | `status_sensitivity_overrides` | `status_id`, `source_action_id` | PK `(status_id, source_action_id)`、インデックス `(source_action_id)`。`mark_statuses_sensitive` による強制センシティブ。処分と同じトランザクションで書き、解除で処分の行を消す。行がある投稿の添付は、閲覧者を問わずセンシティブとして表示する（OGP のプレビューにも画像を出さない） |
 | `status_counters` | `status_id`（PK）, `replies_count`, `boosts_count`, `favourites_count`（`bigint`） | §2.3 |
 | `account_post_counters` | `account_id`（PK）, `statuses_count`（`bigint`、1 以上）, `last_status_at` | §2.3。投稿が 0 件のアカウントは行を持たない |
+| `local_post_counters` | `account_id`（PK）, `posts_count`（`bigint`、1 以上） | §2.3。NodeInfo の `usage.localPosts`（全行の合計）。数えるものが 0 件のアカウントは行を持たない |
 
 - 投稿の投影は **削除されていない投稿だけ** を対象にします。削除イベントを記録したトランザクションで、その投稿の `status_heads`・`status_mention_index`・`status_counters`・`status_reply_links`（返信としての行と、親としての行の両方）を消します。削除された投稿への遅れた版は投影に反映しません。
 - `status_reply_links` は、返信と親の両方が既知で、どちらも削除されていないときに 1 行です。返信が先に届いた場合は、親の投稿のトランザクションで `statuses (in_reply_to_uri)` から返信を引いてつなぎます。
 - `replies_count` は、つながった返信のうち公開範囲が `public` / `local` / `unlisted` のものを数えます。`private` / `direct` の返信は、件数からも存在が分からないように数えません。
+- `local_post_counters` はローカルアカウントごとに、NodeInfo の `usage.localPosts` に数える投稿の件数を持ちます。
+  Mastodon（`account_stats.statuses_count` のローカルアカウントの合計）と GoToSocial に合わせ、削除されていない `direct` 以外のローカルの投稿と、取り消されていない、削除されていない投稿へのローカルのブーストを数えます。
+  - 両者はブーストを投稿として保存するので、ブーストも数えます。
+  - NodeInfo は誰でも読めるので、要求のたびに投稿を数えず、ローカルアカウントの数の行を合計します。
+    行をインスタンスで 1 つにしないのは、投稿のたびに同じ行を更新して書き込みが競合しないようにするためです。
+  - 投稿の削除では、その投稿へのローカルのブーストの分も、ブーストした各アカウントから引きます。アカウントの消去（§8）では、消すブーストの分を引きます。
 - `account_post_counters` は削除されていない投稿の件数と、その中で最新の `published_at` です。後から届いた古いリモート投稿では `last_status_at` は戻りません。投稿を削除したときは、残りの投稿から `last_status_at` を取り直します。
-- 再構築（§9）は、各投影を空にして `statuses`・`status_revisions` と子テーブル・`status_deletions` から 1 つの SQL で作り直します。projector と同じ規則を SQL で書いたもので、両者の一致をコントラクトテストの性質テストで確かめます。
+- 再構築（§9）は、各投影を空にして `statuses`・`status_revisions` と子テーブル・`status_deletions`（`local_post_counters` は加えて `boosts`・`boost_retractions`）から 1 つの SQL で作り直します。projector と同じ規則を SQL で書いたもので、両者の一致をコントラクトテストの性質テストで確かめます。
 
 #### ローカル投稿のコマンド
 

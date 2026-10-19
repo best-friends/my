@@ -7,8 +7,8 @@ import "github.com/best-friends/my/internal/domain/content"
 // Event types of the content module's statuses, for uow.Projectors (data-model §4.4). Every
 // status command emits exactly one of them inside its transaction, after writing the resource
 // and event rows, so that the projectors of this module (status_heads, status_mention_index,
-// status_reply_links, status_counters, account_post_counters) and of other modules (timeline's
-// feed_* entries, notification's mention notifications) see the same facts. Each event carries
+// status_reply_links, status_counters, account_post_counters, local_post_counters) and of other
+// modules (timeline's feed_* entries, notification's mention notifications) see the same facts. Each event carries
 // everything its subscribers need; they never read the content tables.
 //
 //   - EventStatusCreated: a status was posted, with its first revision.

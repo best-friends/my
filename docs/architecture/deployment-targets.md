@@ -274,6 +274,35 @@
 - 候補: Google Cloud は Memorystore for Valkey、AWS は ElastiCache for Valkey（サーバーレスを含む）、Self-hosted は `valkey/valkey` のコンテナ。
   どれも常時課金で、ほぼ $0 の構成には入らない（料金は要検証。M4 で計測する）。
 
+## 信頼するプロキシとクライアント IP
+
+ログイン・登録・匿名のクライアント API・Inbox のレート制限は、クライアント IP（IPv6 は `/64`）ごとに数える（ADR-0019 §5）。
+サーバーはリクエストごとに 1 回、`internal/platform` の HTTP ミドルウェアでクライアント IP を決め、リクエストの context に入れる（`kernel.RequestClientIP`）。
+
+- 接続元が設定 `trusted_proxies`（CIDR かアドレスのカンマ区切り）に含まれないときは、接続元がクライアント IP で、転送ヘッダは読まない。既定は空で、誰も信頼しない。
+- 含まれるときは、設定 `trusted_proxy_header` のヘッダ（`x-forwarded-for` が既定、`forwarded` は RFC 7239 の `for`）を右から見て、
+  `trusted_proxies` に含まれない最初のアドレスを採る。それより左はクライアントが書いた値なので使わない。
+  同名ヘッダが複数行あれば順につないだ 1 つのリストとして読む。
+- 右から見てアドレスでない値（`unknown`、難読化した識別子、`for` のない要素、壊れた値）に当たったら、その値を書いた信頼するプロキシのアドレスを採る。
+  全部が信頼するプロキシなら最も左のアドレスを採る。
+- 読むヘッダは片方だけ。両方を読むと、片方しか書かないプロキシの背後でクライアントがもう片方を偽造できる。
+
+設定しないとプロキシの背後では全リクエストがプロキシの IP に見え、ログインの IP 制限（5 回 / 分）などをインスタンス全体で共有する。
+逆に、プロキシ以外も接続できるアドレスや、ヘッダに追記せずクライアントの値をそのまま渡すプロキシを入れると、クライアントが IP を偽って制限を逃れられる。
+
+| ターゲット | 接続元 | `trusted_proxies` | `trusted_proxy_header` |
+| --- | --- | --- | --- |
+| Docker Compose（`deploy/docker`、ホストのリバースプロキシ） | Compose ネットワークのゲートウェイ（ポートは `127.0.0.1` にだけ公開） | ネットワークのサブネット（`docker network inspect <project>_default`。既定の割り当て範囲全体なら `172.16.0.0/12, 192.168.0.0/16`） | プロキシが追記するヘッダ。Caddy の `reverse_proxy` と Traefik は `X-Forwarded-For`、nginx は `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` で追記する |
+| Cloud Run（直接公開） | Google Front End からのリンクローカルアドレス | `169.254.0.0/16` | `x-forwarded-for` |
+| Cloud Run（外部アプリケーションロードバランサの背後） | 同上 | `169.254.0.0/16` に加えてロードバランサの転送ルールの IP | `x-forwarded-for` |
+| AWS Application Load Balancer（EC2 / ECS） | ロードバランサのノード（ALB のサブネットのプライベート IP） | ALB を置いたサブネット（または VPC）の CIDR | `x-forwarded-for`（ALB の `routing.http.xff_header_processing.mode` は既定の `append` のままにする） |
+
+- Google Cloud のロードバランサと Cloud Run は `X-Forwarded-For` を `<クライアントが送った値>, <クライアント IP>[, <ロードバランサの IP>]` の形にする。
+  要検証: Cloud Run のコンテナから見た接続元が `169.254.0.0/16` に収まること（M4 のデプロイ検証でアクセスログの接続元を確認し、ずれていれば表を直す）。
+- AWS ALB の `append` モードはクライアント IP を `X-Forwarded-For` の右端に追記する。`preserve` は追記しない（クライアントの値がそのまま届く）ので使わない。
+- 要検証: Lambda Web Adapter 経由（Function URL / ALB → Lambda）では接続元がアダプタの `127.0.0.1` になる。`trusted_proxies = 127.0.0.1` で
+  `X-Forwarded-For` を採れるか、ヘッダが前段で追記されたものかを、Lambda のデプロイテンプレートの作業で確認する。
+
 ## コスト見積りの観点（M4 で埋める）
 
 | 観点 | 計測方法 |

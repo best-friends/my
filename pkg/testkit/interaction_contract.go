@@ -55,6 +55,7 @@ func InteractionRepositoryContract(t *testing.T, newHarness InteractionFactory) 
 		{"AppliesRestrictions", interactionRestrictions},
 		{"CountsConcurrentCommandsOnce", interactionCountsConcurrentOnce},
 		{"ForgetsDeletedStatuses", interactionForgetsDeletedStatuses},
+		{"CountsLocalBoostsAsLocalPosts", interactionCountsLocalPosts},
 		{"IncrementalProjectionEqualsRebuild", interactionProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
@@ -764,6 +765,49 @@ func interactionForgetsDeletedStatuses(t *testing.T, e *interactionEnv) {
 	}
 }
 
+// interactionCountsLocalPosts checks that a live local boost counts as one of its booster's local
+// posts (NodeInfo's usage.localPosts), until it is retracted or its status is deleted.
+func interactionCountsLocalPosts(t *testing.T, e *interactionEnv) {
+	ctx := t.Context()
+	author, actor := e.localAccount(), e.localAccount()
+	posts := func(accountID string) int64 {
+		t.Helper()
+		counters, err := e.h.Statuses.ListLocalPostCounters(ctx)
+		if err != nil {
+			t.Fatalf("ListLocalPostCounters = %v", err)
+		}
+		for _, c := range counters {
+			if c.AccountID == accountID {
+				return c.PostsCount
+			}
+		}
+		return 0
+	}
+	s := e.post(t, author, content.VisibilityPublic)
+	if _, err := e.svc.Boost(ctx, actor, s.ID); err != nil {
+		t.Fatal(err)
+	}
+	if a, b := posts(author), posts(actor); a != 1 || b != 1 {
+		t.Errorf("local posts after a boost = author %d, booster %d; want 1 and 1", a, b)
+	}
+	if err := e.svc.Unboost(ctx, actor, s.ID); err != nil {
+		t.Fatal(err)
+	}
+	if n := posts(actor); n != 0 {
+		t.Errorf("booster's local posts after the retraction = %d, want 0", n)
+	}
+	if _, err := e.svc.Boost(ctx, actor, s.ID); err != nil {
+		t.Fatal(err)
+	}
+	e.mustRemove(t, s)
+	if a, b := posts(author), posts(actor); a != 0 || b != 0 {
+		t.Errorf("local posts after deleting the boosted status = author %d, booster %d; want 0 and 0", a, b)
+	}
+	if n, err := e.h.Statuses.LocalPostsTotal(ctx); err != nil || n != 0 {
+		t.Errorf("LocalPostsTotal = %d, %v; want 0", n, err)
+	}
+}
+
 // interactionProjectionEqualsRebuild runs random boosts, favourites, their undos, and status
 // deletions, and checks that rebuilding status_counters and boost_edges from their sources
 // yields exactly the rows that the synchronous projectors wrote (data-model §9).
@@ -826,8 +870,9 @@ func interactionProjectionEqualsRebuild(t *testing.T, e *interactionEnv) {
 }
 
 type interactionProjections struct {
-	Counters []content.Counters
-	Edges    []content.BoostEdge
+	Counters   []content.Counters
+	Edges      []content.BoostEdge
+	LocalPosts []content.LocalPostCounter
 }
 
 func snapshotInteractionProjections(t *testing.T, h InteractionHarness) interactionProjections {
@@ -841,6 +886,9 @@ func snapshotInteractionProjections(t *testing.T, h InteractionHarness) interact
 	}
 	if p.Edges, err = h.Interactions.ListBoostEdges(t.Context()); err != nil {
 		t.Fatalf("ListBoostEdges = %v", err)
+	}
+	if p.LocalPosts, err = h.Statuses.ListLocalPostCounters(t.Context()); err != nil {
+		t.Fatalf("ListLocalPostCounters = %v", err)
 	}
 	return p
 }

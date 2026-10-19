@@ -415,7 +415,7 @@ func (s *Service) sendVerification(ctx context.Context, to, locale, secret strin
 	}
 	name := host
 	if s.d.InstanceName != nil {
-		if n := s.d.InstanceName(ctx, l.Locale()); n != "" {
+		if n := s.d.InstanceName(ctx, l.RequestedLocale()); n != "" {
 			name = n
 		}
 	}

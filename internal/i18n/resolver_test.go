@@ -88,6 +88,55 @@ func TestResolverReadsInstanceDefaultPerRequest(t *testing.T) {
 	}
 }
 
+// TestResolverRequestedLocale checks that a Localizer keeps the preference that chose its
+// locale, region and script included, for the content that operators write per locale.
+func TestResolverRequestedLocale(t *testing.T) {
+	b := load(t)
+	tests := []struct {
+		name            string
+		viewer          string
+		acceptLanguage  string
+		instanceDefault string
+		wantLocale      string
+		wantRequested   string
+	}{
+		{"region of a catalog", "", "ja-JP", "", "ja", "ja-JP"},
+		{"unknown region of a catalog", "", "ja-XX", "", "ja", "ja-XX"},
+		{"case and separators are canonical", "", "ja_jp", "", "ja", "ja-JP"},
+		{"language without region", "", "ja", "", "ja", "ja"},
+		{"first matching tag decides", "", "fr-CA, en-GB;q=0.5", "", "en", "en-GB"},
+		{"user setting with region", "ja-JP", "en", "", "ja", "ja-JP"},
+		{"instance default with region", "", "fr", "ja-JP", "ja", "ja-JP"},
+		{"nothing matches", "", "fr-CA", "de", "en", "en"},
+	}
+	for _, tt := range tests {
+		r := &Resolver{
+			Bundle:          b,
+			UserLocale:      viewerLocale,
+			InstanceDefault: func(context.Context) string { return tt.instanceDefault },
+		}
+		ctx := t.Context()
+		if tt.viewer != "" {
+			ctx = withViewer(ctx, tt.viewer)
+		}
+		l := r.Localizer(ctx, tt.acceptLanguage)
+		if l.Locale() != tt.wantLocale || l.RequestedLocale() != tt.wantRequested {
+			t.Errorf("%s: Localizer(viewer %q, %q) with default %q = %q requested %q, want %q requested %q",
+				tt.name, tt.viewer, tt.acceptLanguage, tt.instanceDefault,
+				l.Locale(), l.RequestedLocale(), tt.wantLocale, tt.wantRequested)
+		}
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Language", "en")
+	if got := (&Resolver{Bundle: b}).UserLocalizer(req, "ja-JP").RequestedLocale(); got != "ja-JP" {
+		t.Errorf("UserLocalizer(user ja-JP).RequestedLocale() = %q, want ja-JP", got)
+	}
+	if got := b.Localizer("ja").RequestedLocale(); got != "ja" {
+		t.Errorf("Bundle.Localizer(ja).RequestedLocale() = %q, want ja", got)
+	}
+}
+
 func TestResolverUserLocalizer(t *testing.T) {
 	r := &Resolver{Bundle: load(t), InstanceDefault: func(context.Context) string { return "ja" }}
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

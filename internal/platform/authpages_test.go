@@ -155,3 +155,53 @@ func TestSignInScreens(t *testing.T) {
 		t.Fatalf("sign-in after five failures = %d Retry-After %q, want 429", resp.StatusCode, resp.Header.Get("Retry-After"))
 	}
 }
+
+// TestSignInLimitPerForwardedClient checks the sign-in IP limit behind a trusted proxy
+// (ADR-0019 §5): the clients that the proxy forwards have limits of their own, while the
+// forwarding header of a peer outside trusted_proxies is ignored.
+func TestSignInLimitPerForwardedClient(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name    string
+		trusted string
+		// separate reports whether a second forwarded client still gets through.
+		separate bool
+	}{
+		{name: "trusted proxy", trusted: "127.0.0.0/8, ::1", separate: true},
+		{name: "untrusted peer", trusted: "192.0.2.0/24", separate: false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_TRUSTED_PROXIES": tt.trusted})
+			s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
+				_, err := a.Identity.CreateAdmin(t.Context(), identity.CreateAdminInput{
+					Username: "alice", Email: "alice@example.com", Password: "correct horse battery staple",
+				})
+				if err != nil {
+					t.Fatalf("CreateAdmin: %v", err)
+				}
+			})
+			c := &authClient{t: t, s: s, cookies: map[string]string{}}
+			signIn := func(client string) int {
+				form := c.form("email", "alice@example.com", "password", "wrong password")
+				resp, _ := c.do(http.MethodPost, authpages.PathSignIn, form, map[string]string{"X-Forwarded-For": "198.51.100.1, " + client})
+				return resp.StatusCode
+			}
+			for i := range identity.LoginIPLimit.Max {
+				if got := signIn("203.0.113.1"); got != http.StatusUnprocessableEntity {
+					t.Fatalf("failure #%d = %d, want 422", i+1, got)
+				}
+			}
+			if got := signIn("203.0.113.1"); got != http.StatusTooManyRequests {
+				t.Fatalf("first client after %d failures = %d, want 429", identity.LoginIPLimit.Max, got)
+			}
+			want := http.StatusTooManyRequests
+			if tt.separate {
+				want = http.StatusUnprocessableEntity
+			}
+			if got := signIn("203.0.113.2"); got != want {
+				t.Errorf("second client = %d, want %d", got, want)
+			}
+		})
+	}
+}

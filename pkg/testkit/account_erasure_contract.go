@@ -260,7 +260,7 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 		t.Errorf("erased actor = %+v, want the account, its username, and its lifecycle only", actor)
 	}
 	for _, table := range []string{"account_profile_revisions", "account_profile_heads", "account_keys", "follow_counters",
-		"account_post_counters", "mutes", "favourites", "bookmarks", "status_pins", "notification_read_markers"} {
+		"account_post_counters", "local_post_counters", "mutes", "favourites", "bookmarks", "status_pins", "notification_read_markers"} {
 		e.rows(t, table, "account_id", aliceID, 0)
 	}
 	for _, table := range []string{"user_email_addresses", "user_primary_emails", "password_credentials", "sessions",

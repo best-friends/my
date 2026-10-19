@@ -1888,3 +1888,16 @@ CREATE INDEX feed_entries_original_author_account_id ON feed_entries (original_a
 CREATE INDEX feed_follow_edges_followee_account_id ON feed_follow_edges (followee_account_id);
 CREATE INDEX feed_exclusions_target_account_id ON feed_exclusions (target_account_id);
 CREATE INDEX notification_exclusions_target_account_id ON notification_exclusions (target_account_id);
+
+-- ---------------------------------------------------------------------------------------------
+-- content: the local posts that NodeInfo reports (#518, data-model §4.4). Owned by
+-- internal/app/content.
+-- ---------------------------------------------------------------------------------------------
+
+-- Projection: the posts of each local account as Mastodon counts them for NodeInfo's
+-- usage.localPosts: the statuses that are not deleted and not direct, and the boosts that are not
+-- retracted, of statuses that are not deleted. No row means none.
+CREATE TABLE local_post_counters (
+  account_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  posts_count bigint NOT NULL CHECK (posts_count > 0)
+);
