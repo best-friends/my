@@ -193,7 +193,7 @@ report（1 ジョブ、if: always()）: blob を集めて playwright merge-repor
 | nightly（`matrix: full`、約 4480 テスト） | 約 45〜49 分（推定） | 約 15〜17 分 | 約 11〜12 分 | 約 9〜10 分 |
 
 - シャードの数は main が N=4、nightly が N=8。main は同時 20 ジョブを PR と Merge Queue と分け合うので、シャードを増やしすぎない。runner の消費は 1 ジョブのときより、シャードの準備の分だけ 3〜4 割増える（main の N=4 で約 1170 秒が約 1560 秒）。
-- シャードの worker 数（いまは 2）を 3 にして速くなるかは、実装のときに測って決める。
+- シャードの worker 数は 2。実測（#562）では 3 にすると main の範囲が約 10.0 分から約 8.8 分、nightly が約 10.6 分から約 10.2 分になるだけで、縮む時間が小さいので 2 のままにする。
 
 ### 見込みの効果
 
@@ -246,7 +246,3 @@ report（1 ジョブ、if: always()）: blob を集めて playwright merge-repor
 ただし main への push の検査は Merge Queue と同じ木を 2 度検査しているだけで、しかも 63% が取り消されて検査されていない。
 
 E1（1 ジョブのまま）の利点は runner の消費が最も少ないことだが、main の E2E が約 20 分かかり、main への push が続くあいだは最後のコミット以外の結果が得られない。
-
-## Open Questions / 要検証
-
-- E2E のシャードの worker 数を 3 にしたときの速さと、フレークの増減
