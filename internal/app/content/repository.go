@@ -72,6 +72,9 @@ type Repository interface {
 	// and takes LastStatusAt again from the account's statuses that are not deleted; the
 	// counter goes away with the last of them.
 	RemovePost(ctx context.Context, tx uow.Tx, accountID string) error
+	// AddLocalPosts adds delta to the local posts of an account (local_post_counters); the
+	// counter goes away when it reaches zero.
+	AddLocalPosts(ctx context.Context, tx uow.Tx, accountID string, delta int64) error
 	// DeleteStatusProjections removes a status from every status projection: its head, its
 	// mentions, its counters, its link to its parent, and the links of its replies to it.
 	DeleteStatusProjections(ctx context.Context, tx uow.Tx, statusID string) error
@@ -91,6 +94,9 @@ type Repository interface {
 	// each status, by the rules of RegisterInteractionProjectors.
 	RebuildCounters(ctx context.Context, tx uow.Tx) error
 	RebuildPostCounters(ctx context.Context, tx uow.Tx) error
+	// RebuildLocalPostCounters also counts the local boosts that are not retracted, of
+	// statuses that are not deleted, by the rules of RegisterInteractionProjectors.
+	RebuildLocalPostCounters(ctx context.Context, tx uow.Tx) error
 
 	// Projection contents, for verifying the projections: heads, reply links, counters, and post
 	// counters ordered by their key; mentions ordered by account ID and status ID.
@@ -100,6 +106,7 @@ type Repository interface {
 	ListReplyLinks(ctx context.Context) ([]content.ReplyLink, error)
 	ListCounters(ctx context.Context) ([]content.Counters, error)
 	ListPostCounters(ctx context.Context) ([]content.PostCounter, error)
+	ListLocalPostCounters(ctx context.Context) ([]content.LocalPostCounter, error)
 
 	// Sources of other modules' projections (ReplayEvents).
 
@@ -135,6 +142,8 @@ type Repository interface {
 	// FindPostCounter returns the post counter of an account; ErrNotFound means it has no
 	// statuses.
 	FindPostCounter(ctx context.Context, accountID string) (content.PostCounter, error)
+	// LocalPostsTotal returns the sum of the local post counters.
+	LocalPostsTotal(ctx context.Context) (int64, error)
 
 	// Remote statuses: custom emoji, poll tallies, and the scope of ingestion (ADR-0034).
 	// InsertRevision also writes a revision's Poll and Remote, and FindRevision reads them.

@@ -18,7 +18,9 @@ var errBoostEdgeExists = errors.New("content: the account already boosts the sta
 // of a status.
 //   - boost_edges holds each boost that is not retracted, of a status that is not deleted;
 //   - status_counters.boosts_count counts those boosts and favourites_count the favourites of
-//     the status. Both change only when an event says a row was actually written.
+//     the status. Both change only when an event says a row was actually written;
+//   - local_post_counters counts, besides the statuses that RegisterProjectors counts, each
+//     local account's boosts in boost_edges.
 //
 // The rebuild queries state the same rules in SQL (InteractionRepository.RebuildBoostEdges and
 // Repository.RebuildCounters); the property test in testkit.InteractionRepositoryContract
@@ -34,7 +36,10 @@ func RegisterInteractionProjectors(r *uow.Projectors, repo InteractionRepository
 			// A concurrent boost of the same pair won; a new attempt finds its edge.
 			return uow.MarkRetryable(errBoostEdgeExists)
 		}
-		return repo.AddBoosts(ctx, tx, b.StatusID, 1)
+		if err := repo.AddBoosts(ctx, tx, b.StatusID, 1); err != nil {
+			return err
+		}
+		return addLocalBoost(ctx, tx, repo, b, 1)
 	})
 	r.Register(EventBoostRetracted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		b := e.(BoostRetracted).Boost
@@ -42,7 +47,10 @@ func RegisterInteractionProjectors(r *uow.Projectors, repo InteractionRepository
 		if err != nil || !deleted {
 			return err
 		}
-		return repo.AddBoosts(ctx, tx, b.StatusID, -1)
+		if err := repo.AddBoosts(ctx, tx, b.StatusID, -1); err != nil {
+			return err
+		}
+		return addLocalBoost(ctx, tx, repo, b, -1)
 	})
 	r.Register(EventFavourited, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		return repo.AddFavourites(ctx, tx, e.(Favourited).Favourite.StatusID, 1)
@@ -51,9 +59,28 @@ func RegisterInteractionProjectors(r *uow.Projectors, repo InteractionRepository
 		return repo.AddFavourites(ctx, tx, e.(Unfavourited).Favourite.StatusID, -1)
 	})
 	// A deleted status leaves every status projection; its counters go with RegisterProjectors.
+	// Its local boosts no longer count as their boosters' posts.
 	r.Register(EventStatusDeleted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
-		return repo.DeleteStatusBoostEdges(ctx, tx, e.(StatusDeleted).Status.ID)
+		statusID := e.(StatusDeleted).Status.ID
+		boosters, err := repo.ListLocalStatusBoosters(ctx, tx, statusID)
+		if err != nil {
+			return err
+		}
+		for _, id := range boosters {
+			if err := repo.AddLocalPosts(ctx, tx, id, -1); err != nil {
+				return err
+			}
+		}
+		return repo.DeleteStatusBoostEdges(ctx, tx, statusID)
 	})
+}
+
+// addLocalBoost adds delta to the local posts of the booster of b when b CountsAsLocalPost.
+func addLocalBoost(ctx context.Context, tx uow.Tx, repo InteractionRepository, b content.Boost, delta int64) error {
+	if !b.CountsAsLocalPost() {
+		return nil
+	}
+	return repo.AddLocalPosts(ctx, tx, b.BoosterAccountID, delta)
 }
 
 // RebuildInteractionProjections empties boost_edges and derives it again from the boosts and

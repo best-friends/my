@@ -176,4 +176,9 @@ func TestFederationObjects(t *testing.T) {
 	if _, body := s.do(t, http.MethodGet, "/ap/actors/"+accountID+"/outbox", ap); !strings.Contains(body, `"totalItems":5`) {
 		t.Errorf("outbox = %s, want the 5 statuses that are not deleted", body)
 	}
+	// NodeInfo counts the local posts as Mastodon does: every status that is not deleted except
+	// the direct one.
+	if _, body := s.do(t, http.MethodGet, "/nodeinfo/2.1", nil); !strings.Contains(body, `"localPosts":4`) {
+		t.Errorf("nodeinfo = %s, want 4 local posts", body)
+	}
 }

@@ -142,3 +142,10 @@ func (s *Service) PostCount(ctx context.Context, accountID string) (int64, error
 	}
 	return c.StatusesCount, err
 }
+
+// LocalPostCount returns the posts of the local accounts as NodeInfo's usage.localPosts reports
+// them, counted as Mastodon counts its local posts: the statuses that are not deleted and not
+// direct, and the boosts that are not retracted, of statuses that are not deleted.
+func (s *Service) LocalPostCount(ctx context.Context) (int64, error) {
+	return s.d.Repository.LocalPostsTotal(ctx)
+}
