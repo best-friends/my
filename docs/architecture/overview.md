@@ -74,6 +74,7 @@ Remote servers ──AP──►│                               │
   | `internal/app/uow` | 標準ライブラリだけ（`UnitOfWork` ポート・リトライ・同期 projector の登録先） |
   | `internal/app/blob`, `internal/app/media` | 標準ライブラリだけ（`BlobStore` / `MediaProcessor` ポート） |
   | `internal/app/stream` | 標準ライブラリだけ（リアルタイム更新の `Publisher` / `Subscriber` ポートとプロセス内ブローカー） |
+  | `internal/app/projection` | 標準ライブラリ、`internal/app/uow`、`internal/app/queue`（投影の再構築と検証。各モジュールの再構築関数は composition root が渡す） |
   | `internal/i18n` | 標準ライブラリ、`locales`（埋め込みカタログ）、MessageFormat エンジンだけ（`app` と `interface` から使う末端のライブラリ） |
   | `internal/interface/*` | `app` と `domain`（`adapter` / `platform` は不可。`pkg/testkit` はテストからだけ可） |
   | `internal/adapter/*` | `app` のポートと `domain`（`interface` と `platform` は不可） |
@@ -181,6 +182,7 @@ internal/
   app/blob/          # BlobStore ポートとキーの構文
   app/media/         # MediaProcessor ポート、形式の判定、上限の既定値
   app/stream/        # リアルタイム更新の Publisher / Subscriber ポートとプロセス内ブローカー Hub
+  app/projection/    # 投影の再構築と検証（my projection、定期ジョブ projection.verify）と、表を列に依存せず読み書きする Store ポート
   interface/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo

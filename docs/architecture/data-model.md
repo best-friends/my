@@ -138,7 +138,7 @@ PostgreSQL の並行性の挙動（READ COMMITTED、`SELECT ... FOR UPDATE`、`F
 - カウンタは【投影】です。イベントを集計するモジュールが所有します。
   - `account_post_counters`・`local_post_counters`・`status_counters` は `content`、`follow_counters` は `graph` が所有します。
 - 加算・減算は、元のイベントが実際に挿入された（影響行数 = 1）ときだけ行います。
-- ずれは定期ジョブ `projection.verify` が、イベントから数え直して補正します（§9）。
+- ずれは定期ジョブ `projection.verify`（1 日ごと）が、イベントから数え直して補正します（§9）。
 - リモートアカウントのフォロワー数などは、取得スナップショットの `totalItems` を表示に使います。ローカルのカウンタは「このインスタンスが知っている件数」として別に持ちます。
 
 ## 3. 概念モデル
@@ -880,7 +880,7 @@ flowchart LR
 | `notification_dismissals` | イベント | `notification_id`（PK）, `dismissed_at` | |
 | `notification_read_markers` | 現在値 | `account_id`（PK）, `last_read_id` | 未読数は `id > last_read_id` で数える |
 | `notification_exclusions` | 投影 | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可） | PK `(viewer_account_id, target_account_id, reason)`。`graph` のブロック・ミュートのイベントから作る |
-| `notification_deleted_statuses` | 投影 | `status_id`（PK） | `content.status_deleted` から作る。`origin = retention` の削除は、その投稿についての通知があるときだけ |
+| `notification_deleted_statuses` | 投影 | `status_id`（PK） | `content.status_deleted` から作る。その投稿についての通知があるときだけ（削除された投稿に後から通知は付かない） |
 | `push_subscriptions` | 現在値 | `id`, `user_id`, `oauth_token_id`, `endpoint`, `key_p256dh`, `key_auth`, `created_at`, `updated_at` | 一意 `(endpoint)`（FR-206） |
 | `push_subscription_alerts` | 現在値 | `subscription_id`, `notification_type` | PK `(subscription_id, notification_type)` |
 
@@ -1251,7 +1251,21 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 | `instance_health` | `delivery_attempts`, `instance_availability_events` | 同期（間引き） |
 
-- CLI: `my projection rebuild <name>` で投影を空にしてイベントから作り直し、`my projection verify <name>` で作り直した結果と現在の投影を比較します。
+- CLI: `my projection list` は投影と所有モジュールと表を示します。投影の名前は所有モジュールの再構築関数の単位です
+  （`instance`、`account`、`graph`、`content`、`boost_edges`、`feeds`、`notification_exclusions`、`notification_deleted_statuses`）。
+  `<name>` には投影の名前か、その表の名前を渡します。省略するとすべての投影です。
+  - `my projection verify [<name>]` は、1 つのトランザクションの中で現在の表を読み、所有モジュールの再構築関数を実行し、結果の表を読んでロールバックします。
+    差分の行（現在の表にあって作り直した結果にない行、その逆）を表示し、差分があれば 1 で終了します。何も変えません。
+  - `my projection rebuild [<name>]` は同じ比較のあと、差分だけを 1 トランザクション 500 行までに分けて書きます（ADR-0003 の行数上限）。
+    余分な行を消してから欠けた行を入れるので、読み手が空の投影を見ることはなく、正しい行は書き直しません。
+    消すのは全列が一致する行だけ、入れるのはキーが重なる行のない行だけなので、比較と書き込みの間に変わった行は新しい値のまま残り、次の検証が残ったずれを見つけます。
+  - 定期ジョブ `projection.verify`（1 日ごと）は、すべての投影に `rebuild` と同じことをし、ずれていた投影をログに残します。
+  - 表を列に依存せず読み書きするのはアダプタの `projection.Store` です（`testkit.ProjectionStoreContract`）。
+  - `remote_account_heads` の取得の状態（`last_fetched_at`、`consecutive_fetch_failures`）はイベントに残らないので、再構築は既存の行の値を残し、
+    行のない Actor には最新のスナップショットの取得時刻と 0 を入れます。`snapshot_id` と配送先は最新のスナップショットから作ります。
+  - `notification_deleted_statuses` は、通知の対象の投稿のうち `content` の公開 API が削除済みと答えるものから作ります。
+  - `account_restrictions`・`domain_restrictions`・`report_states`・`appeal_states`・`status_sensitivity_overrides`・`feed_author_restrictions`・`feed_domain_restrictions`・
+    `user_roles`・`user_registration_states`・`user_primary_emails`・`instance_health`・`poll_tallies` は再構築関数を持たず、CLI の対象ではありません（#589）。
 - コントラクトテスト: 各 projector に「イベント列を与えて投影を作る」テストと、「インクリメンタル更新の結果 = 一括再構築の結果」の性質テストを書きます。
 - 他のモジュールのイベントから作る投影（`feed_*`）は、元のモジュールのテーブルを読まずに再構築します。
   `content.ReplayEvents` は削除されていない投稿ごとに現在版つきの `content.status_created` を、有効なブーストごとに `content.boosted` を、

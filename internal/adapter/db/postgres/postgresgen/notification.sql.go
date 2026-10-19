@@ -67,6 +67,26 @@ func (q *Queries) CountNotificationsAfter(ctx context.Context, arg CountNotifica
 	return count, err
 }
 
+const deleteAllNotificationDeletedStatuses = `-- name: DeleteAllNotificationDeletedStatuses :exec
+DELETE FROM notification_deleted_statuses
+`
+
+func (q *Queries) DeleteAllNotificationDeletedStatuses(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteAllNotificationDeletedStatuses)
+	return err
+}
+
+const deleteAllNotificationExclusions = `-- name: DeleteAllNotificationExclusions :exec
+
+DELETE FROM notification_exclusions
+`
+
+// Rebuilding the projections (data-model section 9).
+func (q *Queries) DeleteAllNotificationExclusions(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteAllNotificationExclusions)
+	return err
+}
+
 const deleteNotificationExclusion = `-- name: DeleteNotificationExclusion :exec
 DELETE FROM notification_exclusions WHERE viewer_account_id = $1 AND target_account_id = $2 AND reason = $3
 `
@@ -264,6 +284,32 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listNotifiedStatusIDs = `-- name: ListNotifiedStatusIDs :many
+SELECT DISTINCT status_id FROM notifications WHERE status_id IS NOT NULL ORDER BY status_id
+`
+
+// ListNotifiedStatusIDs returns every status that a notification, dismissed or not, is about,
+// in order.
+func (q *Queries) ListNotifiedStatusIDs(ctx context.Context) ([]*string, error) {
+	rows, err := q.db.Query(ctx, listNotifiedStatusIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*string{}
+	for rows.Next() {
+		var status_id *string
+		if err := rows.Scan(&status_id); err != nil {
+			return nil, err
+		}
+		items = append(items, status_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

@@ -41,6 +41,7 @@ import (
 	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/notification"
+	"github.com/best-friends/my/internal/app/projection"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/app/timeline"
@@ -146,6 +147,8 @@ type App struct {
 	Previews *content.Previews
 	// Scheduler enqueues the periodic jobs for the worker role.
 	Scheduler *queue.Scheduler
+	// Projections rebuilds and verifies the projections (`my projection`, data-model §9).
+	Projections *projection.Service
 	// FanOut turns the outbound activities that the federation projectors record into
 	// deliveries (docs/architecture/federation.md §7).
 	FanOut *federation.FanOut
@@ -248,6 +251,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feds         federationRepository
 		mods         moderation.Repository
 		retention    retentionRepositories
+		projections  projection.Store
 	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
 	switch cfg.DB {
@@ -264,6 +268,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
 		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
+		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 		}
@@ -283,6 +288,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
 		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
+		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 		}
@@ -439,6 +445,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	a.setUpModeratorNotifications(cfg, notifs, moderatorStaff{a})
 	a.setUpRetention(cfg, retention, statuses)
+	a.setUpProjections(projections, projectionRepositories{
+		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
+		feeds: feeds, notifications: notifs,
+	})
 	a.Streams = stream.NewHub(stream.HubOptions{})
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)

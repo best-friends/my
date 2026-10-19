@@ -90,10 +90,11 @@ type ProjectorDeps struct {
 //     hides notifications; deletes it otherwise.
 //   - graph.unmuted: deletes the mute.
 //
-// The projector of content.status_deleted records the status in notification_deleted_statuses,
-// which the list and the unread count also apply, so that the mention, boost, and favourite
-// notifications about a deleted status no longer appear. Notifications are events and stay
-// until the erasure job deletes them.
+// The projector of content.status_deleted records the status in notification_deleted_statuses
+// when a notification is about it, which the list and the unread count also apply, so that the
+// mention, boost, and favourite notifications about a deleted status no longer appear. A
+// deleted status gets no notifications later, so one without them needs no row. Notifications
+// are events and stay until the erasure job deletes them.
 //
 // Register them after the graph, content, and moderation projectors.
 func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
@@ -121,37 +122,7 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 			DedupeKey: notification.FollowKey(notification.TypeFollowAccepted, f.ID), CreatedAt: ev.Acceptance.AcceptedAt,
 		})
 	})
-	r.Register(appgraph.EventBlocked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
-		b := e.(appgraph.Blocked).Block
-		for _, x := range blockExclusions(b.BlockerAccountID, b.BlockedAccountID) {
-			if err := d.Repository.UpsertExclusion(ctx, tx, x); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	r.Register(appgraph.EventUnblocked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
-		b := e.(appgraph.Unblocked).Block
-		for _, x := range blockExclusions(b.BlockerAccountID, b.BlockedAccountID) {
-			if err := d.Repository.DeleteExclusion(ctx, tx, x.ViewerAccountID, x.TargetAccountID, x.Reason); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	r.Register(appgraph.EventMuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
-		m := e.(appgraph.Muted).Mute
-		if !m.HideNotifications {
-			return d.Repository.DeleteExclusion(ctx, tx, m.AccountID, m.TargetAccountID, notification.ExcludedMute)
-		}
-		return d.Repository.UpsertExclusion(ctx, tx, notification.Exclusion{
-			ViewerAccountID: m.AccountID, TargetAccountID: m.TargetAccountID, Reason: notification.ExcludedMute, ExpiresAt: m.ExpiresAt,
-		})
-	})
-	r.Register(appgraph.EventUnmuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
-		ev := e.(appgraph.Unmuted)
-		return d.Repository.DeleteExclusion(ctx, tx, ev.AccountID, ev.TargetAccountID, notification.ExcludedMute)
-	})
+	registerExclusionProjectors(r, d.Repository)
 	r.Register(appcontent.EventStatusCreated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.StatusCreated)
 		return p.mentions(ctx, tx, ev.Status.ID, ev.Status.AuthorAccountID, ev.Revision.MentionedAccountIDs, ev.Revision.RevisedAt)
@@ -160,19 +131,7 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 		ev := e.(appcontent.StatusRevised)
 		return p.mentions(ctx, tx, ev.Status.ID, ev.Status.AuthorAccountID, ev.Revision.MentionedAccountIDs, ev.Revision.RevisedAt)
 	})
-	r.Register(appcontent.EventStatusDeleted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
-		del := e.(appcontent.StatusDeleted).Deletion
-		if !del.Tombstone() {
-			// A deletion that is no tombstone is the retention purge's (ADR-0034). The purge
-			// deletes many remote statuses, almost none of them notified, and a status deleted
-			// without notifications gets none later, so it needs no row.
-			notified, err := d.Repository.StatusHasNotifications(ctx, tx, del.StatusID)
-			if err != nil || !notified {
-				return err
-			}
-		}
-		return d.Repository.InsertDeletedStatus(ctx, tx, del.StatusID)
-	})
+	registerDeletedStatusProjector(r, d.Repository)
 	r.Register(appcontent.EventBoosted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.Boosted)
 		return p.interaction(ctx, tx, notification.TypeBoost, ev.Status, ev.Boost.BoosterAccountID, ev.Boost.BoostedAt)
@@ -212,6 +171,61 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 			DedupeKey: notification.AppealDecidedKey(ev.Appeal.ID), CreatedAt: ev.Decision.DecidedAt,
 		})
 	})
+}
+
+// registerExclusionProjectors registers the projectors of notification_exclusions, for
+// RegisterProjectors and RebuildExclusions.
+func registerExclusionProjectors(r *uow.Projectors, repo Repository) {
+	r.Register(appgraph.EventBlocked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		b := e.(appgraph.Blocked).Block
+		for _, x := range blockExclusions(b.BlockerAccountID, b.BlockedAccountID) {
+			if err := repo.UpsertExclusion(ctx, tx, x); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	r.Register(appgraph.EventUnblocked, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		b := e.(appgraph.Unblocked).Block
+		for _, x := range blockExclusions(b.BlockerAccountID, b.BlockedAccountID) {
+			if err := repo.DeleteExclusion(ctx, tx, x.ViewerAccountID, x.TargetAccountID, x.Reason); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	r.Register(appgraph.EventMuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		m := e.(appgraph.Muted).Mute
+		if !m.HideNotifications {
+			return repo.DeleteExclusion(ctx, tx, m.AccountID, m.TargetAccountID, notification.ExcludedMute)
+		}
+		return repo.UpsertExclusion(ctx, tx, notification.Exclusion{
+			ViewerAccountID: m.AccountID, TargetAccountID: m.TargetAccountID, Reason: notification.ExcludedMute, ExpiresAt: m.ExpiresAt,
+		})
+	})
+	r.Register(appgraph.EventUnmuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appgraph.Unmuted)
+		return repo.DeleteExclusion(ctx, tx, ev.AccountID, ev.TargetAccountID, notification.ExcludedMute)
+	})
+}
+
+// registerDeletedStatusProjector registers the projector of notification_deleted_statuses, for
+// RegisterProjectors.
+func registerDeletedStatusProjector(r *uow.Projectors, repo Repository) {
+	r.Register(appcontent.EventStatusDeleted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		return recordDeletedStatus(ctx, tx, repo, e.(appcontent.StatusDeleted).Deletion.StatusID)
+	})
+}
+
+// recordDeletedStatus records a deleted status in notification_deleted_statuses when a
+// notification is about it. Most deletions by the retention purge (ADR-0034) are of remote
+// statuses that nobody was notified of, and they need no row.
+func recordDeletedStatus(ctx context.Context, tx uow.Tx, repo Repository, statusID string) error {
+	notified, err := repo.StatusHasNotifications(ctx, tx, statusID)
+	if err != nil || !notified {
+		return err
+	}
+	return repo.InsertDeletedStatus(ctx, tx, statusID)
 }
 
 // blockExclusions are the exclusions of blocker's block of blocked: each hides the other's

@@ -132,3 +132,23 @@ ORDER BY k.id DESC LIMIT 1;
 -- name: InsertAccountKeyRevocation :execrows
 INSERT INTO account_key_revocations (account_key_id, revoked_at) VALUES (@account_key_id, @revoked_at)
 ON CONFLICT (account_key_id) DO NOTHING;
+
+-- Rebuilding remote_account_heads (data-model section 9).
+
+-- ListRemoteAccountHeads returns every head, ordered by account ID.
+-- name: ListRemoteAccountHeads :many
+SELECT account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures
+FROM remote_account_heads ORDER BY account_id;
+
+-- ListLatestRemoteAccountSnapshots returns the endpoints of the newest snapshot of every actor,
+-- ordered by account ID.
+-- name: ListLatestRemoteAccountSnapshots :many
+SELECT s.id, s.account_id, s.inbox_url, s.shared_inbox_url, s.fetched_at
+FROM remote_account_snapshots s
+WHERE s.id = (
+  SELECT n.id FROM remote_account_snapshots n WHERE n.account_id = s.account_id ORDER BY n.id DESC LIMIT 1
+)
+ORDER BY s.account_id;
+
+-- name: DeleteAllRemoteAccountHeads :exec
+DELETE FROM remote_account_heads;

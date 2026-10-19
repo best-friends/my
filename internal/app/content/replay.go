@@ -10,6 +10,12 @@ import (
 	"github.com/best-friends/my/internal/domain/content"
 )
 
+// IsDeleted reports inside tx whether a status has a deletion, for rebuilding other modules'
+// projections of deletions (notification_deleted_statuses, data-model §9).
+func (s *Service) IsDeleted(ctx context.Context, tx uow.Tx, statusID string) (bool, error) {
+	return s.d.Repository.IsDeleted(ctx, tx, statusID)
+}
+
 // ReplayEvents passes to emit, inside tx, the events that derive other modules' projections of
 // statuses and boosts from their current state (data-model §9), so that those modules rebuild
 // their projections without reading this module's tables: a StatusCreated with the current

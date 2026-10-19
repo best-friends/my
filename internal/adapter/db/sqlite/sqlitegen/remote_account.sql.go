@@ -21,6 +21,15 @@ func (q *Queries) DeleteAccountHandle(ctx context.Context, accountID string) err
 	return err
 }
 
+const deleteAllRemoteAccountHeads = `-- name: DeleteAllRemoteAccountHeads :exec
+DELETE FROM remote_account_heads
+`
+
+func (q *Queries) DeleteAllRemoteAccountHeads(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllRemoteAccountHeads)
+	return err
+}
+
 const deleteOtherAccountHandle = `-- name: DeleteOtherAccountHandle :exec
 DELETE FROM account_handles
 WHERE username_normalized = ?1 AND domain = ?2 AND account_id <> ?3
@@ -401,6 +410,92 @@ func (q *Queries) ListLatestRemoteAccountHandleVerifications(ctx context.Context
 			&i.Domain,
 			&i.Outcome,
 			&i.CheckedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLatestRemoteAccountSnapshots = `-- name: ListLatestRemoteAccountSnapshots :many
+SELECT s.id, s.account_id, s.inbox_url, s.shared_inbox_url, s.fetched_at
+FROM remote_account_snapshots s
+WHERE s.id = (
+  SELECT n.id FROM remote_account_snapshots n WHERE n.account_id = s.account_id ORDER BY n.id DESC LIMIT 1
+)
+ORDER BY s.account_id
+`
+
+type ListLatestRemoteAccountSnapshotsRow struct {
+	ID             string
+	AccountID      string
+	InboxUrl       string
+	SharedInboxUrl sql.NullString
+	FetchedAt      int64
+}
+
+// ListLatestRemoteAccountSnapshots returns the endpoints of the newest snapshot of every actor,
+// ordered by account ID.
+func (q *Queries) ListLatestRemoteAccountSnapshots(ctx context.Context) ([]ListLatestRemoteAccountSnapshotsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listLatestRemoteAccountSnapshots)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLatestRemoteAccountSnapshotsRow{}
+	for rows.Next() {
+		var i ListLatestRemoteAccountSnapshotsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.InboxUrl,
+			&i.SharedInboxUrl,
+			&i.FetchedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRemoteAccountHeads = `-- name: ListRemoteAccountHeads :many
+
+SELECT account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures
+FROM remote_account_heads ORDER BY account_id
+`
+
+// Rebuilding remote_account_heads (data-model section 9).
+// ListRemoteAccountHeads returns every head, ordered by account ID.
+func (q *Queries) ListRemoteAccountHeads(ctx context.Context) ([]RemoteAccountHead, error) {
+	rows, err := q.db.QueryContext(ctx, listRemoteAccountHeads)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RemoteAccountHead{}
+	for rows.Next() {
+		var i RemoteAccountHead
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.SnapshotID,
+			&i.InboxUrl,
+			&i.SharedInboxUrl,
+			&i.LastFetchedAt,
+			&i.ConsecutiveFetchFailures,
 		); err != nil {
 			return nil, err
 		}
