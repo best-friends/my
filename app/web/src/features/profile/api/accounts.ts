@@ -5,7 +5,7 @@
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
-import { isPostListQuery, refreshQueries } from "../../../lib/query";
+import { isPostListQuery } from "../../../lib/query";
 import type { components } from "../../../lib/api/schema.gen";
 
 /** An account, as the client API returns it; its own endpoints add the follow counts. */
@@ -102,8 +102,9 @@ function changesFollows(change: RelationshipChange): boolean {
 }
 
 /**
- * Fetches again every cached query that a change of the viewer's relationship with the account `accountId`
- * changes, also those no page shows now (refreshQueries, web-client.md S1), and resolves once they are fetched.
+ * Marks stale every cached query that a change of the viewer's relationship with the account `accountId`
+ * changes (web-client.md S1), and resolves once those on screen are fetched again; the others are fetched again
+ * when their page opens (S7).
  * A change of a follow changes the follow counts on both profiles and the viewer's own account, every follow
  * list (any may list either account), and, for the viewer's own follows, the home timeline; a change of a block
  * or a mute changes every list of posts, which leave out the accounts the viewer blocks or mutes. The lists of
@@ -112,7 +113,7 @@ function changesFollows(change: RelationshipChange): boolean {
 export function refreshRelationship(queryClient: QueryClient, change: RelationshipChange, accountId: string, viewerId: string): Promise<void> {
   const follows = changesFollows(change);
   const posts = change !== "accept";
-  return refreshQueries(queryClient, {
+  return queryClient.invalidateQueries({
     predicate: (query) => {
       const path = query.queryKey[1];
       if (path === "/accounts/lookup") {
@@ -127,13 +128,14 @@ export function refreshRelationship(queryClient: QueryClient, change: Relationsh
 }
 
 /**
- * Puts a changed relationship into the cache and fetches again what it changes (refreshRelationship), and
- * the settings' lists of the accounts that the viewer blocks and mutes; resolves once that is done.
+ * Puts a changed relationship into the cache and marks stale what it changes (refreshRelationship), and the
+ * settings' lists of the accounts that the viewer blocks and mutes; resolves once those on screen are fetched again.
  */
 export async function storeRelationship(queryClient: QueryClient, api: Api, relationship: Relationship, action: RelationshipAction, viewerId: string): Promise<void> {
   queryClient.setQueryData(relationshipQueryOptions(api, relationship.id).queryKey, [relationship]);
   await Promise.all([
     refreshRelationship(queryClient, action, relationship.id, viewerId),
-    refreshQueries(queryClient, { queryKey: ["get", "/blocks"] }, { queryKey: ["get", "/mutes"] }),
+    queryClient.invalidateQueries({ queryKey: ["get", "/blocks"] }),
+    queryClient.invalidateQueries({ queryKey: ["get", "/mutes"] }),
   ]);
 }

@@ -45,7 +45,7 @@ export const Route = createFileRoute("/admin/audit-log")({
   // loaded, as after loading more, are kept.
   loader: ({ context, deps: { filter, pages } }) =>
     loadWithPermission(context, "view_audit", () =>
-      context.queryClient.infiniteQuery({ ...auditLogQueryOptions(context.api, filter), pages, staleTime: "static" }),
+      context.queryClient.infiniteQuery({ ...auditLogQueryOptions(context.api, filter), pages, staleTime: Infinity }),
     ),
   component: AuditLogPage,
   errorComponent: AuditLogError,

@@ -1292,6 +1292,28 @@ export interface MessageArgs {
   "client:admin.reports.summary": {};
   /** Reports */
   "client:admin.reports.title": {};
+  /** Enter a name with letters, or leave the field empty. */
+  "client:admin.settings.name.blank": {};
+  /** People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Each language has its own name. A language without one shows the name in the server's default language, and with no name at all the domain shows. Handles and links always use the domain. */
+  "client:admin.settings.name.description": { domain: string };
+  /** Name in {language} */
+  "client:admin.settings.name.field": { language: string };
+  /** Save */
+  "client:admin.settings.name.save": {};
+  /** Could not save the name: {reason} */
+  "client:admin.settings.name.save_failed": { reason: string };
+  /** Saved the name. */
+  "client:admin.settings.name.saved": {};
+  /** Name */
+  "client:admin.settings.name.title": {};
+  /** Use at most {max} characters. */
+  "client:admin.settings.name.too_long": { max: string };
+  /** The names are already saved. */
+  "client:admin.settings.name.unchanged": {};
+  /** The server's name, which people see in place of its domain. */
+  "client:admin.settings.summary": {};
+  /** Server settings */
+  "client:admin.settings.title": {};
   /** Could not add the block: {reason} */
   "client:admin.signup_blocks.add_failed": { reason: string };
   /** {severity} is in effect for the {kind} {value}. */
@@ -1328,6 +1350,60 @@ export interface MessageArgs {
   "client:admin.signup_blocks.filter.all": {};
   /** Blocks to show */
   "client:admin.signup_blocks.filter.label": {};
+  /** Seen by moderators only. Every block of the list gets this comment. */
+  "client:admin.signup_blocks.import.comment.description": {};
+  /** Add a block for each value of a list, such as a public list of disposable email domains. Every block gets the same kind, effect, duration and comment. */
+  "client:admin.signup_blocks.import.description": {};
+  /** {added, plural, =0 {No block was added} one {# block was added} other {# blocks were added}}: {kind}, {severity}. {skipped, plural, =0 {No line was skipped.} one {# line was skipped.} other {# lines were skipped.}} */
+  "client:admin.signup_blocks.import.done": { added: number; kind: string; severity: string; skipped: number };
+  /** Could not add the blocks: {reason} */
+  "client:admin.signup_blocks.import.failed": { reason: string };
+  /** Choose a text file */
+  "client:admin.signup_blocks.import.file": {};
+  /** A text or CSV file. Its text replaces the list above. */
+  "client:admin.signup_blocks.import.file.description": {};
+  /** Could not read {name}. Choose the file again. */
+  "client:admin.signup_blocks.import.file.failed": { name: string };
+  /** Read {name}: {count, plural, one {# value} other {# values}}. */
+  "client:admin.signup_blocks.import.file.read": { count: number; name: string };
+  /** {name} is larger than {max, number} MB. Split the list into smaller files. */
+  "client:admin.signup_blocks.import.file.too_large": { max: number; name: string };
+  /** List */
+  "client:admin.signup_blocks.import.list": {};
+  /** One value per line, at most {max, number}. In a CSV row, the first field is the value. Blank lines and lines that start with # are ignored. */
+  "client:admin.signup_blocks.import.list.description": { max: number };
+  /** Enter at least one value, or choose a file */
+  "client:admin.signup_blocks.import.list.required": {};
+  /** The list is larger than {max, number} MB. Split it into smaller lists */
+  "client:admin.signup_blocks.import.list.too_large": { max: number };
+  /** The list has {count, number} values. Enter {max, number} or fewer, and add the rest in another import */
+  "client:admin.signup_blocks.import.list.too_many": { count: number; max: number };
+  /** Already blocked */
+  "client:admin.signup_blocks.import.reason.already_blocked": {};
+  /** Same as an earlier line */
+  "client:admin.signup_blocks.import.reason.duplicate": {};
+  /** Not a valid value for the kind */
+  "client:admin.signup_blocks.import.reason.invalid": {};
+  /** Line */
+  "client:admin.signup_blocks.import.skipped.line": {};
+  /** {line, number} */
+  "client:admin.signup_blocks.import.skipped.line_number": { line: number };
+  /** {count, plural, one {# line} other {# lines}} */
+  "client:admin.signup_blocks.import.skipped.lines": { count: number };
+  /** Reason */
+  "client:admin.signup_blocks.import.skipped.reason": {};
+  /** Show all {count, plural, one {# line} other {# lines}} */
+  "client:admin.signup_blocks.import.skipped.show_all": { count: number };
+  /** The first {shown, number} of {count, number} lines are shown. */
+  "client:admin.signup_blocks.import.skipped.shown": { count: number; shown: number };
+  /** Lines not added */
+  "client:admin.signup_blocks.import.skipped.title": {};
+  /** Value */
+  "client:admin.signup_blocks.import.skipped.value": {};
+  /** Add blocks */
+  "client:admin.signup_blocks.import.submit": {};
+  /** Add from a list */
+  "client:admin.signup_blocks.import.title": {};
   /** Match by */
   "client:admin.signup_blocks.kind": {};
   /** Email domain */
@@ -2372,6 +2448,8 @@ export interface MessageArgs {
   "server:auth.authorize.title": { app: string };
   /** The request was refused because it came from another site. */
   "server:auth.cross_origin": {};
+  /** {page} – {instance} */
+  "server:auth.document_title": { instance: string; page: string };
   /** Terms and policies */
   "server:auth.document.footer_label": {};
   /** This server has not published a privacy policy. */
@@ -2658,22 +2736,22 @@ export interface MessageArgs {
   "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
-  /** A user of {host} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
-  "server:mail.admin_appeal.body": { host: string; url: string };
-  /** A new appeal awaits the moderators of {host} */
-  "server:mail.admin_appeal.subject": { host: string };
-  /** A new report awaits the moderators of {host}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
-  "server:mail.admin_report.body": { host: string; url: string };
-  /** A new report awaits the moderators of {host} */
-  "server:mail.admin_report.subject": { host: string };
-  /** A new user signed up on {host} and awaits approval.  Open your notifications to review the registration:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
-  "server:mail.admin_sign_up.body": { host: string; url: string };
-  /** A new sign-up awaits approval on {host} */
-  "server:mail.admin_sign_up.subject": { host: string };
-  /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
-  "server:mail.verify_email.body": { host: string; hours: number; url: string };
-  /** Confirm your email address for {host} */
-  "server:mail.verify_email.subject": { host: string };
+  /** A user of {instance} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_appeal.body": { instance: string; url: string };
+  /** A new appeal awaits the moderators of {instance} */
+  "server:mail.admin_appeal.subject": { instance: string };
+  /** A new report awaits the moderators of {instance}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_report.body": { instance: string; url: string };
+  /** A new report awaits the moderators of {instance} */
+  "server:mail.admin_report.subject": { instance: string };
+  /** A new user signed up on {instance} and awaits approval.  Open your notifications to review the registration:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_sign_up.body": { instance: string; url: string };
+  /** A new sign-up awaits approval on {instance} */
+  "server:mail.admin_sign_up.subject": { instance: string };
+  /** Welcome to {instance}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
+  "server:mail.verify_email.body": { host: string; hours: number; instance: string; url: string };
+  /** Confirm your email address for {instance} */
+  "server:mail.verify_email.subject": { instance: string };
   /** {category, select, spam {Spam} legal {Legal reasons} violation {Violation of the instance's rules} other {Other}} */
   "server:moderation.action.category": { category: "legal" | "spam" | "violation" | (string & {}) };
   /** {kind, select, warn {Warning} mark_statuses_sensitive {Posts marked as sensitive} delete_statuses {Posts deleted} force_sensitive {Media always marked as sensitive} limit {Limited: posts shown to followers only and kept off the public timelines} restrict_posting {No posting, replying, boosting, or editing} restrict_interaction {No following, favouriting, boosting, or replying} disable_login {Login disabled} suspend {Suspended: no use of the app, and the profile and posts are hidden} ban {Banned: the account is deleted} other {Moderation action}} */

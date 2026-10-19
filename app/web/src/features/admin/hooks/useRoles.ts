@@ -10,7 +10,6 @@ import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { viewerQueryOptions } from "../../session";
 import { adminAccountQueryOptions } from "../api/accounts";
-import { refreshQueries } from "../../../lib/query";
 import { isAuditLogQuery } from "../api/admin";
 import {
   accountRolesQueryOptions,
@@ -117,14 +116,13 @@ export function useRoleChanges(accountId: string, handle: string, onChanged: () 
   const mutation = useMutation({
     ...changeRoleMutation(api),
     onSuccess: async (roles: AdminRoleList, change) => {
-      // The account's page shows its role keys (the searches show none), and the audit log records the change: the
-      // change is done once they are fetched again (the confirmation stays pending until then), so that the audit
-      // log shows it at once (refreshQueries).
-      await refreshQueries(
-        queryClient,
-        { queryKey: adminAccountQueryOptions(api, accountId).queryKey },
-        { predicate: (query) => isAuditLogQuery(query.queryKey) },
-      );
+      // The account's page shows its role keys (the searches show none), and the audit log records the change: both
+      // are marked stale, and the change is done once the account on screen is fetched again (the confirmation stays
+      // pending until then); the audit log is fetched again when it opens (web-client.md S1, S7).
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminAccountQueryOptions(api, accountId).queryKey }),
+        queryClient.invalidateQueries({ predicate: (query) => isAuditLogQuery(query.queryKey) }),
+      ]);
       setDialog((current) => current && { ...current, isOpen: false });
       queryClient.setQueryData(accountRolesQueryOptions(api, accountId).queryKey, roles);
       const role = `⁦${change.role}⁩`;

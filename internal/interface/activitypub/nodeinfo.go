@@ -51,9 +51,10 @@ type nodeInfoUsers struct {
 	Total int `json:"total"`
 }
 
-// nodeInfo serves GET /nodeinfo/2.1 (FR-402). Registration is open to no one: accounts are
-// created by the administrator. There are no posts yet, so localPosts is 0; active-user counts
-// are omitted because logins are not recorded.
+// nodeInfo serves GET /nodeinfo/2.1 (FR-402). openRegistrations follows the registration mode,
+// as Mastodon reports it: anyone may sign up, with or without a moderator's approval. The server
+// keeps no count of local posts, so localPosts is 0; active-user counts are omitted because
+// logins are not counted.
 func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 	users, err := h.o.Accounts.CountLocalUsers(r.Context())
 	if err != nil {
@@ -61,13 +62,30 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 		h.o.Problem(w, r, http.StatusInternalServerError)
 		return
 	}
+	open := false
+	if h.o.OpenRegistrations != nil {
+		if open, err = h.o.OpenRegistrations(r.Context()); err != nil {
+			h.o.Logger.ErrorContext(r.Context(), "nodeinfo: read the registration mode failed", slog.Any("error", err))
+			h.o.Problem(w, r, http.StatusInternalServerError)
+			return
+		}
+	}
+	// nodeName is the name that Mastodon and other servers read from NodeInfo's free-form
+	// metadata to show the instance by.
+	name := h.o.Host
+	if h.o.InstanceName != nil {
+		if n := h.o.InstanceName(r.Context()); n != "" {
+			name = n
+		}
+	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	h.writeJSON(w, r, typeNodeInfo, nodeInfo{
-		Version:   "2.1",
-		Software:  nodeInfoSoftware{Name: softwareName, Version: h.o.SoftwareVersion, Repository: h.o.SourceURL},
-		Protocols: []string{"activitypub"},
-		Services:  nodeInfoServices{Inbound: []string{}, Outbound: []string{}},
-		Usage:     nodeInfoUsage{Users: nodeInfoUsers{Total: users}},
-		Metadata:  map[string]any{},
+		Version:           "2.1",
+		Software:          nodeInfoSoftware{Name: softwareName, Version: h.o.SoftwareVersion, Repository: h.o.SourceURL},
+		Protocols:         []string{"activitypub"},
+		Services:          nodeInfoServices{Inbound: []string{}, Outbound: []string{}},
+		OpenRegistrations: open,
+		Usage:             nodeInfoUsage{Users: nodeInfoUsers{Total: users}},
+		Metadata:          map[string]any{"nodeName": name},
 	})
 }

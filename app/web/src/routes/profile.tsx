@@ -14,7 +14,7 @@ export const Route = createFileRoute("/profile")({
   loader: async ({ context: { queryClient, api, session } }) => {
     await session.restore();
     if (session.status !== "signed-in") return;
-    const viewer = await queryClient.query({ ...viewerQueryOptions(api), staleTime: "static" });
+    const viewer = await queryClient.query({ ...viewerQueryOptions(api), staleTime: Infinity });
     // The address bar shows the profile's own address; going back skips this one.
     // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router's redirects are thrown objects.
     throw redirect({ to: "/@{$acct}", params: { acct: viewer.acct }, replace: true });

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The sign-up blocks screen below its heading (FR-719): the form of a new block, then the blocks, in effect or
-// all, newest first. The form follows the browser's constraint validation (React Aria's native validation); a
+// The sign-up blocks screen below its heading (FR-719): the form of a new block, the import of a list of them
+// (SignupBlockImport), then the blocks, in effect or all, newest first. The form follows the browser's constraint validation (React Aria's native validation); a
 // block takes effect at once and is lifted as easily, so neither asks first. What adding or lifting did stays on
 // the page in a StatusMessage (role="status") next to what caused it. The tabs follow the WAI-ARIA APG tabs
 // pattern with automatic activation (React Aria Tabs), kept in the URL by the route (web-client.md S3); only the
@@ -33,7 +33,6 @@ import {
   type SignupBlockKind,
   signupBlockKinds,
   signupBlockSeverities,
-  type SignupBlockSeverity,
   type SignupBlockState,
   signupBlockValueLimit,
 } from "../api/signupBlocks";
@@ -47,12 +46,8 @@ import {
   useSignupBlocks,
 } from "../hooks/useSignupBlocks";
 import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "./parts";
-
-const kindDescriptions: Readonly<Record<SignupBlockKind, ClientMessageKey>> = {
-  email_domain: "client:admin.signup_blocks.kind.email_domain.description",
-  email_hash: "client:admin.signup_blocks.kind.email_hash.description",
-  ip_range: "client:admin.signup_blocks.kind.ip_range.description",
-};
+import { SignupBlockImportForm } from "./SignupBlockImport";
+import { day, signupBlockDurations, signupBlockKindDescriptions, signupBlockSeverityDescriptions } from "./signupBlockFields";
 
 /** The label, help and error of the value field for each kind. */
 const valueFields: Readonly<Record<SignupBlockKind, { label: ClientMessageKey; description: ClientMessageKey; required: ClientMessageKey }>> = {
@@ -73,11 +68,6 @@ const valueFields: Readonly<Record<SignupBlockKind, { label: ClientMessageKey; d
   },
 };
 
-const severityDescriptions: Readonly<Record<SignupBlockSeverity, ClientMessageKey>> = {
-  reject: "client:admin.signup_blocks.severity.reject.description",
-  require_approval: "client:admin.signup_blocks.severity.require_approval.description",
-};
-
 const stateLabels: Readonly<Record<SignupBlockState, ClientMessageKey>> = {
   active: "client:admin.signup_blocks.state.active",
   expired: "client:admin.signup_blocks.state.expired",
@@ -88,10 +78,6 @@ const filterLabels: Readonly<Record<SignupBlockFilter, ClientMessageKey>> = {
   active: "client:admin.signup_blocks.filter.active",
   all: "client:admin.signup_blocks.filter.all",
 };
-
-/** The durations a block can last, in seconds, from the shortest. */
-const day = 86_400;
-const durations = [day, 7 * day, 30 * day, 90 * day, 180 * day, 365 * day] as const;
 
 function isFilter(key: unknown): key is SignupBlockFilter {
   return signupBlockFilters.some((filter) => filter === key);
@@ -111,6 +97,9 @@ export function SignupBlocks(props: SignupBlocksProps) {
       <div className="flex flex-col gap-8">
         <DetailSection title={t("client:admin.signup_blocks.new.title")}>
           <NewSignupBlockForm />
+        </DetailSection>
+        <DetailSection title={t("client:admin.signup_blocks.import.title")}>
+          <SignupBlockImportForm />
         </DetailSection>
         <DetailSection title={t("client:admin.signup_blocks.list.title")}>
           <SignupBlockTabs {...props} />
@@ -137,7 +126,7 @@ function NewSignupBlockForm() {
         isRequired
       >
         {signupBlockKinds.map((kind) => (
-          <Radio key={kind} value={kind} description={t(kindDescriptions[kind])}>
+          <Radio key={kind} value={kind} description={t(signupBlockKindDescriptions[kind])}>
             {t(signupBlockKindLabels[kind])}
           </Radio>
         ))}
@@ -166,7 +155,7 @@ function NewSignupBlockForm() {
         errorMessage={t("client:admin.signup_blocks.severity.required")}
       >
         {signupBlockSeverities.map((severity) => (
-          <Radio key={severity} value={severity} description={t(severityDescriptions[severity])}>
+          <Radio key={severity} value={severity} description={t(signupBlockSeverityDescriptions[severity])}>
             {t(signupBlockSeverityLabels[severity])}
           </Radio>
         ))}
@@ -174,7 +163,7 @@ function NewSignupBlockForm() {
       <DurationSelect
         label={t("client:admin.signup_blocks.duration")}
         description={t("client:admin.signup_blocks.duration.description")}
-        durations={durations}
+        durations={signupBlockDurations}
         formatDuration={(seconds) => t("client:admin.signup_blocks.duration.days", { count: seconds / day })}
         indefiniteLabel={t("client:admin.signup_blocks.duration.indefinite")}
         value={draft.expiresIn}

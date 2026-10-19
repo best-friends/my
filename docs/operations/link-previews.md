@@ -26,7 +26,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 | `og:url`、`<link rel="canonical">` | 正規 URL（現在のユーザー名の URL） |
 | `og:description` | 投稿の本文（プロフィールは自己紹介）からタグを除いた平文を 200 書記素で切り詰めたもの。CW 付きの投稿は CW の文だけ |
 | `og:image`、`og:image:alt` / `width` / `height` | 下記の順で選んだ画像 |
-| `og:site_name` | インスタンス名 |
+| `og:site_name` | インスタンスの名前（文章 `name` を `og:locale` と同じ言語で選ぶ。無ければ `host`、[名前とドメイン](instance-settings.md#名前とドメイン)） |
 | `og:locale`、`<html lang dir>` | 投稿の言語。未設定（`und`）なら投稿者の既定の投稿言語、それもなければインスタンスの `default_locale`。`Accept-Language` では変わらない |
 | `article:published_time`、`article:author` | 投稿だけ。投稿日時（UTC）と投稿者のプロフィール URL |
 | `profile:username` | プロフィールだけ。`ユーザー名@アカウントドメイン` |

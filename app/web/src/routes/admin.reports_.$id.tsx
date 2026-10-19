@@ -17,7 +17,7 @@ export const Route = createFileRoute("/admin/reports_/$id")({
   params: { parse: (params) => paramsSchema.parse(params) },
   beforeLoad: requireSignIn,
   loader: ({ context, params: { id } }) =>
-    loadWithPermission(context, "manage_reports", () => context.queryClient.query({ ...reportQueryOptions(context.api, id), staleTime: "static" })),
+    loadWithPermission(context, "manage_reports", () => context.queryClient.query({ ...reportQueryOptions(context.api, id), staleTime: Infinity })),
   component: ReportPage,
   errorComponent: ReportError,
 });

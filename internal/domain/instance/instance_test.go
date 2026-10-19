@@ -231,6 +231,9 @@ func TestTextValidate(t *testing.T) {
 		{name, "Example", true},
 		{name, "a\nb", false},
 		{desc, "a\nb", true},
+		{name, " \t　", false},
+		{name, " Example ", true},
+		{desc, "   ", true},
 		{name, "\xff", false},
 		{desc, "a\x00b", false},
 	} {

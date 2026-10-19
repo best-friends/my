@@ -12,13 +12,15 @@
     "inbound": [],
     "outbound": []
   },
-  "openRegistrations": false,
+  "openRegistrations": true,
   "usage": {
     "users": {
       "total": 4
     },
     "localPosts": 0
   },
-  "metadata": {}
+  "metadata": {
+    "nodeName": "Example Social"
+  }
 }
 

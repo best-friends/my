@@ -20,13 +20,13 @@ export const Route = createFileRoute("/@{$acct}")({
   params: { parse: (params) => profileParamsSchema.parse(params) },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { tab } }): { tab: AccountTimelineFilter } => ({ tab: tab ?? "posts" }),
-  // The account and the first page of the selected tab load with the page; the cached ones are shown as
-  // they are and refetched in the background when stale.
+  // The account and the first page of the selected tab load with the page; cached ones that no write has
+  // marked stale are shown at once, marked ones are fetched again first (web-client.md S7).
   loader: async ({ context, params: { acct }, deps: { tab } }) => {
     const account = await loadAccount(context, acct);
     await context.queryClient.infiniteQuery({
       ...timelineQueryOptions(context.api, { kind: "account", id: account.id, filter: tab }),
-      staleTime: "static",
+      staleTime: Infinity,
     });
   },
   component: ProfilePage,

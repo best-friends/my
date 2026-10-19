@@ -67,6 +67,12 @@ type Options struct {
 	SoftwareVersion string
 	// SourceURL is where users get the server's source code (NodeInfo software.repository).
 	SourceURL string
+	// InstanceName returns the instance's display name in its default locale, which NodeInfo
+	// reports as metadata.nodeName; nil or "" reports Host.
+	InstanceName func(ctx context.Context) string
+	// OpenRegistrations reports whether people may sign up on their own (NodeInfo
+	// openRegistrations); nil reports false.
+	OpenRegistrations func(ctx context.Context) (bool, error)
 
 	Accounts Accounts
 	Objects  Objects

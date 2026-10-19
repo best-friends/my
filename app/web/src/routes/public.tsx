@@ -17,8 +17,9 @@ export const Route = createFileRoute("/public")({
   // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
   staticData: { title: "client:public.title", composeButton: true },
   loader: async ({ context: { queryClient, api } }) => {
-    // The cached pages are shown as they are; the page refetches them in the background when stale.
-    await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "public" }), staleTime: "static" });
+    // Cached pages that no write has marked stale are shown at once (and refetched in the background once
+    // old); marked or missing ones are fetched and waited for (web-client.md S7).
+    await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "public" }), staleTime: Infinity });
   },
   component: PublicPage,
   pendingComponent: PublicPending,

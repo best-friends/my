@@ -256,6 +256,12 @@ export const handlers = [
   http.post(`${apiBase}/admin/signup_blocks/:id/lift`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(signupBlockFixture({ id: String(params["id"]), state: "lifted", lifted_at: "2026-10-17T00:00:00Z" }))),
   ),
+  // operationId importSignupBlocks: every value of the list is added.
+  http.post(`${apiBase}/admin/signup_blocks/import`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["ImportSignupBlocksRequest"];
+    const added = body.text.split("\n").filter((line) => line.trim() !== "" && !line.trim().startsWith("#")).length;
+    return withViewer(request, () => HttpResponse.json({ added, skipped: [] } satisfies Schemas["SignupBlockImportResult"]));
+  }),
   // operationIds listDeadJobs, retryDeadJob.
   http.get(`${apiBase}/admin/dead_jobs`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.post(`${apiBase}/admin/dead_jobs/:id/retry`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),

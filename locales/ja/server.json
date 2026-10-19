@@ -155,6 +155,10 @@
     "defaultMessage": "最終更新日：{date}",
     "description": "Line under the heading of a terms of service or privacy policy page. {date} is the date of the last revision as YYYY-MM-DD."
   },
+  "auth.document_title": {
+    "defaultMessage": "{page} – {instance}",
+    "description": "The browser tab title of the sign-in, sign-up, email verification, account status and consent pages: the page's title, then the server's name. {instance} is the server's display name, or its domain name when it has none."
+  },
   "auth.error.title": {
     "defaultMessage": "問題が発生しました",
     "description": "Title and heading of the sign-in screens' error pages."
@@ -704,36 +708,36 @@
     "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
   },
   "mail.admin_appeal.body": {
-    "defaultMessage": "{host} の利用者が処分に異議を申し立て、モデレーターの審査を待っています。\n\n次のリンクから通知を開いて、確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
-    "description": "Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+    "defaultMessage": "{instance} の利用者が処分に異議を申し立て、モデレーターの審査を待っています。\n\n次のリンクから通知を開いて、確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
+    "description": "Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
   },
   "mail.admin_appeal.subject": {
-    "defaultMessage": "{host} のモデレーターに新しい異議申し立てが届きました",
-    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {host} is the server's domain name."
+    "defaultMessage": "{instance} のモデレーターに新しい異議申し立てが届きました",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.admin_report.body": {
-    "defaultMessage": "{host} のモデレーターに新しい通報が届きました。\n\n次のリンクから通知を開いて、確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
-    "description": "Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+    "defaultMessage": "{instance} のモデレーターに新しい通報が届きました。\n\n次のリンクから通知を開いて、確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
+    "description": "Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
   },
   "mail.admin_report.subject": {
-    "defaultMessage": "{host} のモデレーターに新しい通報が届きました",
-    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {host} is the server's domain name."
+    "defaultMessage": "{instance} のモデレーターに新しい通報が届きました",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.admin_sign_up.body": {
-    "defaultMessage": "{host} に新しい利用者が登録し、承認を待っています。\n\n次のリンクから通知を開いて、登録を確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
-    "description": "Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line)."
+    "defaultMessage": "{instance} に新しい利用者が登録し、承認を待っています。\n\n次のリンクから通知を開いて、登録を確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
+    "description": "Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
   },
   "mail.admin_sign_up.subject": {
-    "defaultMessage": "{host} に承認待ちの登録があります",
-    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {host} is the server's domain name."
+    "defaultMessage": "{instance} に承認待ちの登録があります",
+    "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.verify_email.body": {
-    "defaultMessage": "{host} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。",
-    "description": "Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
+    "defaultMessage": "{instance} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。",
+    "description": "Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
   },
   "mail.verify_email.subject": {
-    "defaultMessage": "{host} のメールアドレスの確認",
-    "description": "Subject of the email that confirms a new account's email address. {host} is the server's domain name."
+    "defaultMessage": "{instance} のメールアドレスの確認",
+    "description": "Subject of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none."
   },
   "moderation.action.category": {
     "defaultMessage": "{category, select, spam {スパム} legal {法的な理由} violation {サーバーのルール違反} other {その他}}",

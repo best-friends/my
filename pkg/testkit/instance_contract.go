@@ -299,6 +299,7 @@ func instanceRejectsInvalidTexts(t *testing.T, e *instanceEnv) {
 		{appinstance.SetTextInput{Key: instance.TextName, Locale: "", Body: "x"}, instance.ErrInvalidValue},
 		{appinstance.SetTextInput{Key: instance.TextName, Locale: "e n", Body: "x"}, instance.ErrInvalidValue},
 		{appinstance.SetTextInput{Key: instance.TextName, Locale: "en", Body: "two\nlines"}, instance.ErrInvalidValue},
+		{appinstance.SetTextInput{Key: instance.TextName, Locale: "en", Body: "   "}, instance.ErrInvalidValue},
 		{appinstance.SetTextInput{Key: instance.TextName, Locale: "en", Body: strings.Repeat("a", 101)}, instance.ErrInvalidValue},
 		{appinstance.SetTextInput{Key: instance.TextName, Locale: "en", Body: "\xff"}, instance.ErrInvalidValue},
 	} {

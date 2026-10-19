@@ -46,6 +46,7 @@ import (
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
+	domaininstance "github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
 	"github.com/best-friends/my/internal/interface/authpages"
@@ -389,6 +390,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		RequireEmailVerification: cfg.Mail != "none",
 		Messages:                 a.Messages,
 		BaseURL:                  cfg.ServerOrigin(),
+		InstanceName:             a.instanceName,
 	})
 	a.AccountAdmin = identity.NewAccountAdmin(identity.AccountAdminDeps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Accounts: a.Accounts, Restrictions: a.AccountPolicy,
@@ -479,6 +481,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
+		InstanceName: func(ctx context.Context) string { return a.instanceName(ctx, "") },
+		// Sign-ups that wait for a moderator's approval are open, as Mastodon reports them.
+		OpenRegistrations: func(ctx context.Context) (bool, error) {
+			mode, err := a.Instance.RegistrationMode(ctx)
+			return mode == domaininstance.RegistrationOpen || mode == domaininstance.RegistrationApproval, err
+		},
 		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph, Inbox: a.Inbox,
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
@@ -488,6 +496,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Identity: a.Identity, OAuth: a.Identity, Issuer: cfg.ServerOrigin(), FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
 		Moderation: a.Moderation, UserLocales: a.Identity, Documents: a.Instance,
+		InstanceName: func(ctx context.Context, locale string) string {
+			if name := a.instanceName(ctx, locale); name != "" {
+				return name
+			}
+			return cfg.Host
+		},
 		HumanCheck: a.HumanCheckWidget,
 	}).Register(a)
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
@@ -602,8 +616,8 @@ func (a *App) setUpWeb(opts AppOptions) error {
 	h, err := web.New(web.Options{
 		Build: opts.WebBuild, DevViteOrigin: opts.DevViteOrigin,
 		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain, WebOrigin: a.Config.WebOrigin,
-		// The instance is named after its host until the instance settings hold a name.
-		InstanceName: a.Config.Host,
+		// The instance's display name, read per request; the host when it has none.
+		InstanceName: a.instanceName,
 		// The HTML is the same for every visitor, so only the instance default applies.
 		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
 		// Profile and post pages carry link previews of what an anonymous visitor may see.

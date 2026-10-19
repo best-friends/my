@@ -3,8 +3,8 @@
 // delivers them, and while a page shows the home timeline they stay in a Query cache entry of their own
 // until the reader presses "N new posts", which inserts them at the top. While no page shows it, nobody
 // is reading it: the stream inserts them into its cached pages at once, so that the timeline shows them
-// from the moment it opens again (a timeline loaded just before, say after a follow, is not stale yet
-// and would not be fetched again on opening).
+// from the moment it opens again (a timeline loaded less than `staleTime` ago that no write marked
+// stale is not fetched again on opening).
 //
 // When the waiting entries may not join the loaded ones (a reconnect found a whole page of news, or more
 // arrived than are kept), there is a gap; pressing the button then loads the first page again instead,

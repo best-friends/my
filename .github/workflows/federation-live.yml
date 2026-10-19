@@ -22,10 +22,10 @@ jobs:
     env:
       FEDERATION_LIVE_OUT: ${{ github.workspace }}/.tmp/federation-live-out
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
           cache-dependency-path: |
@@ -35,7 +35,7 @@ jobs:
         run: make federation-live
       - name: Upload the logs and captured activities
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: federation-live
           path: ${{ env.FEDERATION_LIVE_OUT }}

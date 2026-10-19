@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The audit log after each audited write of the admin screens (#475, web-client.md S1): the route shows the log
-// from its cache as it loads it (S7), so every write that the server records must have the cached log fetched
-// again before it is shown done, or going back to the log shows it without the operation until a slow server
-// answers it again. Each case opens the log, goes to the write's screen, makes the write while the log takes a
-// while to come, and goes back.
+// The audit log after each audited write of the admin screens (#475, web-client.md S1, ADR-0045): every write that
+// the server records marks the cached log stale, and the route fetches it again before showing it (S7), or going
+// back to the log would show it without the operation until a slow server answered it again. Each case opens the
+// log, goes to the write's screen, makes the write while the log takes a while to come, and goes back.
 import { screen, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
@@ -15,7 +14,7 @@ import { renderApp } from "../../test/render";
 import { accountActionFixture, appealFixture, domainActionFixture, operatorHandler, registrationFixture, reportFixture } from "./test/handlers";
 
 beforeEach(() => {
-  server.use(signedInHandler, operatorHandler(["manage_accounts", "manage_reports", "manage_domains", "view_audit"]));
+  server.use(signedInHandler, operatorHandler(["manage_accounts", "manage_reports", "manage_domains", "manage_settings", "view_audit"]));
   document.documentElement.lang = "en";
   document.documentElement.dir = "ltr";
 });
@@ -32,7 +31,7 @@ type Write = {
   /** The audited operation, as the audit log lists it. */
   action: Schemas["AdminAuditAction"];
   /** The request of the write, which the server records. */
-  method: "post";
+  method: "post" | "put";
   path: string;
   /** The screen of the write. */
   page: string;
@@ -201,6 +200,17 @@ const writes: Write[] = [
     path: "/admin/appeals/:id/overturn",
     page: `/admin/appeals/${appeal.id}`,
     write: (user) => decide(user, "Overturn", "Overturn", "The appeal is overturned and the action is lifted."),
+  },
+  {
+    action: "text_changed",
+    method: "put",
+    path: "/admin/instance_texts/:key/:locale",
+    page: "/admin/settings",
+    write: async (user) => {
+      await user.type(await screen.findByRole("textbox", { name: "Name in English" }), "Example Social");
+      await user.click(screen.getByRole("button", { name: "Save" }));
+      expect(await screen.findByText("Saved the name.")).toBeInTheDocument();
+    },
   },
 ];
 

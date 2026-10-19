@@ -46,8 +46,8 @@ export function useInstance(domain: string): InstanceView {
   const mark = useMutation({
     ...markAvailableMutation(api),
     onSuccess: async (next) => {
-      // The lists show the server's state: it is marked available once they are fetched again (the button stays
-      // pending until then), so that going back to a list shows the server as it is now (refreshInstanceLists).
+      // The lists show the server's state: they are marked stale, so that going back to a list fetches it again
+      // and shows the server as it is now (refreshInstanceLists, web-client.md S7).
       await refreshInstanceLists(queryClient);
       queryClient.setQueryData(instanceQueryOptions(api, domain).queryKey, next);
       announce(t("client:admin.instance.marked_available", { domain }));

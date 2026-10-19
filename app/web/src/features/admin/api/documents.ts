@@ -6,7 +6,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { isAuditLogQuery } from "./admin";
+import { refreshAuditLog } from "./admin";
 
 type Schemas = components["schemas"];
 
@@ -45,14 +45,15 @@ export function setDocumentMutation(api: Api) {
 }
 
 /**
- * Marks what a new text changes (ADR-0045): the texts, the instance's links to the documents' pages (which
- * every page shows), and the audit log, which records the change. The queries shown now are fetched again and
- * awaited; the others are fetched again by their route's loader when opened.
+ * Marks what a new text changes (ADR-0045): the texts and the instance's links to the documents' pages (which
+ * every page shows); the queries shown now are fetched again and awaited, the others by their route's loader when
+ * opened. The audit log records the change, and its route reads its cache as it is (`staleTime: "static"`), so it
+ * is fetched again at once, like after every audited write (refreshAuditLog).
  */
 export async function cacheSavedDocument(queryClient: QueryClient): Promise<void> {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["get", "/admin/instance_texts"] }),
     queryClient.invalidateQueries({ queryKey: ["get", "/instance"] }),
-    queryClient.invalidateQueries({ predicate: (query) => isAuditLogQuery(query.queryKey) }),
+    refreshAuditLog(queryClient),
   ]);
 }

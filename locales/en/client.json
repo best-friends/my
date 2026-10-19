@@ -2579,6 +2579,50 @@
     "defaultMessage": "Reports",
     "description": "Heading and title of the report queue."
   },
+  "admin.settings.name.blank": {
+    "defaultMessage": "Enter a name with letters, or leave the field empty.",
+    "description": "Error of a field of the server's name that holds only spaces."
+  },
+  "admin.settings.name.description": {
+    "defaultMessage": "People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Each language has its own name. A language without one shows the name in the server's default language, and with no name at all the domain shows. Handles and links always use the domain.",
+    "description": "Explanation above the fields of the server's name on the server settings screen. {domain} is the server's domain name."
+  },
+  "admin.settings.name.field": {
+    "defaultMessage": "Name in {language}",
+    "description": "Label of the field of the server's name in one language. {language} is the language's name in the app's language, such as English or Japanese."
+  },
+  "admin.settings.name.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the server's names on the server settings screen."
+  },
+  "admin.settings.name.save_failed": {
+    "defaultMessage": "Could not save the name: {reason}",
+    "description": "Error when saving the server's name failed. {reason} is the server's localized reason, which names the field at fault."
+  },
+  "admin.settings.name.saved": {
+    "defaultMessage": "Saved the name.",
+    "description": "Status after the server's names were saved; the sidebar and the browser tab show the new name."
+  },
+  "admin.settings.name.title": {
+    "defaultMessage": "Name",
+    "description": "Heading of the section of the server's name on the server settings screen."
+  },
+  "admin.settings.name.too_long": {
+    "defaultMessage": "Use at most {max} characters.",
+    "description": "Error of a field of the server's name whose text is longer than its limit. {max} is the limit."
+  },
+  "admin.settings.name.unchanged": {
+    "defaultMessage": "The names are already saved.",
+    "description": "Status after pressing Save on the server settings screen without changing a name."
+  },
+  "admin.settings.summary": {
+    "defaultMessage": "The server's name, which people see in place of its domain.",
+    "description": "Description of the server settings screen in the administration menu."
+  },
+  "admin.settings.title": {
+    "defaultMessage": "Server settings",
+    "description": "Title of the server settings screen (the server's name), in the administration menu and as its heading."
+  },
   "admin.signup_blocks.add_failed": {
     "defaultMessage": "Could not add the block: {reason}",
     "description": "Error under the form of a new sign-up block when the server refused it. {reason} is why."
@@ -2650,6 +2694,114 @@
   "admin.signup_blocks.filter.label": {
     "defaultMessage": "Blocks to show",
     "description": "Accessible name of the tabs that filter the list of sign-up blocks."
+  },
+  "admin.signup_blocks.import.comment.description": {
+    "defaultMessage": "Seen by moderators only. Every block of the list gets this comment.",
+    "description": "Help text under the comment of an import of a list of sign-up blocks."
+  },
+  "admin.signup_blocks.import.description": {
+    "defaultMessage": "Add a block for each value of a list, such as a public list of disposable email domains. Every block gets the same kind, effect, duration and comment.",
+    "description": "Text at the top of the section that imports a list of sign-up blocks."
+  },
+  "admin.signup_blocks.import.done": {
+    "defaultMessage": "{added, plural, =0 {No block was added} one {# block was added} other {# blocks were added}}: {kind}, {severity}. {skipped, plural, =0 {No line was skipped.} one {# line was skipped.} other {# lines were skipped.}}",
+    "description": "Status after an import of a list of sign-up blocks. {added} is the number of blocks added; {skipped} the number of lines skipped; {kind} the kind of the list, such as Email domain; {severity} the effect, such as Refuse."
+  },
+  "admin.signup_blocks.import.failed": {
+    "defaultMessage": "Could not add the blocks: {reason}",
+    "description": "Error under the import form of sign-up blocks when the server refused the list. {reason} is why."
+  },
+  "admin.signup_blocks.import.file": {
+    "defaultMessage": "Choose a text file",
+    "description": "Button that opens the file picker to read a list of sign-up blocks from a text or CSV file."
+  },
+  "admin.signup_blocks.import.file.description": {
+    "defaultMessage": "A text or CSV file. Its text replaces the list above.",
+    "description": "Help text next to the button that reads a list of sign-up blocks from a file."
+  },
+  "admin.signup_blocks.import.file.failed": {
+    "defaultMessage": "Could not read {name}. Choose the file again.",
+    "description": "Error when the browser could not read the chosen file of a list of sign-up blocks. {name} is the file name."
+  },
+  "admin.signup_blocks.import.file.read": {
+    "defaultMessage": "Read {name}: {count, plural, one {# value} other {# values}}.",
+    "description": "Status after the chosen file of a list of sign-up blocks was read into the list. {name} is the file name; {count} the number of values in it."
+  },
+  "admin.signup_blocks.import.file.too_large": {
+    "defaultMessage": "{name} is larger than {max, number} MB. Split the list into smaller files.",
+    "description": "Error when the chosen file of a list of sign-up blocks is too large to send. {name} is the file name; {max} the limit in megabytes."
+  },
+  "admin.signup_blocks.import.list": {
+    "defaultMessage": "List",
+    "description": "Label of the text area of a list of sign-up block values."
+  },
+  "admin.signup_blocks.import.list.description": {
+    "defaultMessage": "One value per line, at most {max, number}. In a CSV row, the first field is the value. Blank lines and lines that start with # are ignored.",
+    "description": "Help text under the list of an import of sign-up blocks. {max} is the most values one import holds."
+  },
+  "admin.signup_blocks.import.list.required": {
+    "defaultMessage": "Enter at least one value, or choose a file",
+    "description": "Error under the list of an import of sign-up blocks when it has no value."
+  },
+  "admin.signup_blocks.import.list.too_large": {
+    "defaultMessage": "The list is larger than {max, number} MB. Split it into smaller lists",
+    "description": "Error under the list of an import of sign-up blocks when it has too many bytes to send. {max} is the limit in megabytes."
+  },
+  "admin.signup_blocks.import.list.too_many": {
+    "defaultMessage": "The list has {count, number} values. Enter {max, number} or fewer, and add the rest in another import",
+    "description": "Error under the list of an import of sign-up blocks when it has more values than one import holds. {count} is how many it has; {max} the limit."
+  },
+  "admin.signup_blocks.import.reason.already_blocked": {
+    "defaultMessage": "Already blocked",
+    "description": "Why a line of an imported list of sign-up blocks was not added: a block in effect with an effect at least as strong covers it."
+  },
+  "admin.signup_blocks.import.reason.duplicate": {
+    "defaultMessage": "Same as an earlier line",
+    "description": "Why a line of an imported list of sign-up blocks was not added: an earlier line has the same value."
+  },
+  "admin.signup_blocks.import.reason.invalid": {
+    "defaultMessage": "Not a valid value for the kind",
+    "description": "Why a line of an imported list of sign-up blocks was not added: the value is not a valid domain, email address or IP range."
+  },
+  "admin.signup_blocks.import.skipped.line": {
+    "defaultMessage": "Line",
+    "description": "Column header of the line number of a skipped line of an imported list of sign-up blocks."
+  },
+  "admin.signup_blocks.import.skipped.line_number": {
+    "defaultMessage": "{line, number}",
+    "description": "The line number of a skipped line of an imported list of sign-up blocks, in its table."
+  },
+  "admin.signup_blocks.import.skipped.lines": {
+    "defaultMessage": "{count, plural, one {# line} other {# lines}}",
+    "description": "The number of skipped lines of an imported list of sign-up blocks for one reason."
+  },
+  "admin.signup_blocks.import.skipped.reason": {
+    "defaultMessage": "Reason",
+    "description": "Column header of why a line of an imported list of sign-up blocks was skipped."
+  },
+  "admin.signup_blocks.import.skipped.show_all": {
+    "defaultMessage": "Show all {count, plural, one {# line} other {# lines}}",
+    "description": "Button that shows every skipped line of an imported list of sign-up blocks. {count} is how many there are."
+  },
+  "admin.signup_blocks.import.skipped.shown": {
+    "defaultMessage": "The first {shown, number} of {count, number} lines are shown.",
+    "description": "Text above the button that shows every skipped line of an imported list of sign-up blocks."
+  },
+  "admin.signup_blocks.import.skipped.title": {
+    "defaultMessage": "Lines not added",
+    "description": "Heading of the lines of an imported list of sign-up blocks that were skipped, and the name of their table."
+  },
+  "admin.signup_blocks.import.skipped.value": {
+    "defaultMessage": "Value",
+    "description": "Column header of the value of a skipped line of an imported list of sign-up blocks."
+  },
+  "admin.signup_blocks.import.submit": {
+    "defaultMessage": "Add blocks",
+    "description": "Submit button of the import of a list of sign-up blocks."
+  },
+  "admin.signup_blocks.import.title": {
+    "defaultMessage": "Add from a list",
+    "description": "Heading of the section that imports a list of sign-up blocks at once."
   },
   "admin.signup_blocks.kind": {
     "defaultMessage": "Match by",
