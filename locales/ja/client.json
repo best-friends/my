@@ -1520,7 +1520,7 @@
     "description": "Label of the text area of a document in the selected language. {language} is the language's name."
   },
   "admin.documents.body.description": {
-    "defaultMessage": "Markdown で書きます：見出し（#）、箇条書き（-）、リンク（[文字](https://…)）、強調（**太字**）。改行はそのまま改行になります。空にして保存すると、この言語の本文を削除します。",
+    "defaultMessage": "Markdown で書きます：見出し（#）、箇条書き（-）、リンク（[文字](URL)）、強調（**太字**）。改行はそのまま改行になります。空にして保存すると、この言語の本文を削除します。",
     "description": "Description of the text area of a document: the Markdown it takes, and how to remove the text."
   },
   "admin.documents.characters_left": {

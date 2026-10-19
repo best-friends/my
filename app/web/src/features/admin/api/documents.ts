@@ -6,7 +6,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { refreshAuditLog, refreshQueries } from "./admin";
+import { isAuditLogQuery } from "./admin";
 
 type Schemas = components["schemas"];
 
@@ -45,12 +45,14 @@ export function setDocumentMutation(api: Api) {
 }
 
 /**
- * Fetches again what a new text changes (refreshQueries): the texts, the instance's links to the documents' pages
- * (which every page shows), and the audit log, which records the change.
+ * Marks what a new text changes (ADR-0045): the texts, the instance's links to the documents' pages (which
+ * every page shows), and the audit log, which records the change. The queries shown now are fetched again and
+ * awaited; the others are fetched again by their route's loader when opened.
  */
-export async function refreshDocuments(queryClient: QueryClient): Promise<void> {
+export async function cacheSavedDocument(queryClient: QueryClient): Promise<void> {
   await Promise.all([
-    refreshQueries(queryClient, { queryKey: ["get", "/admin/instance_texts"] }, { queryKey: ["get", "/instance"] }),
-    refreshAuditLog(queryClient),
+    queryClient.invalidateQueries({ queryKey: ["get", "/admin/instance_texts"] }),
+    queryClient.invalidateQueries({ queryKey: ["get", "/instance"] }),
+    queryClient.invalidateQueries({ predicate: (query) => isAuditLogQuery(query.queryKey) }),
   ]);
 }

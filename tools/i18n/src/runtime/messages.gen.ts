@@ -762,7 +762,7 @@ export interface MessageArgs {
   "client:admin.dead_jobs.title": {};
   /** Text in {language} */
   "client:admin.documents.body": { language: string };
-  /** Write in Markdown: headings (#), lists (-), links ([text](https://…)) and emphasis (**bold**). Each line break starts a new line. Save it empty to remove the text in this language. */
+  /** Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Save it empty to remove the text in this language. */
   "client:admin.documents.body.description": {};
   /** {count, plural, one {# character left} other {# characters left}} */
   "client:admin.documents.characters_left": { count: number };

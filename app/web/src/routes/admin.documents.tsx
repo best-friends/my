@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin/documents")({
   validateSearch: searchSchema,
   beforeLoad: requireSignIn,
   loader: ({ context }) =>
-    loadWithPermission(context, "manage_settings", () => context.queryClient.query({ ...instanceTextsQueryOptions(context.api), staleTime: "static" })),
+    loadWithPermission(context, "manage_settings", () => context.queryClient.query({ ...instanceTextsQueryOptions(context.api), staleTime: Infinity })),
   component: DocumentsPage,
   errorComponent: DocumentsError,
 });

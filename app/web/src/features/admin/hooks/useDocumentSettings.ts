@@ -13,7 +13,7 @@ import {
   instanceQueryOptions,
   type InstanceText,
   instanceTextsQueryOptions,
-  refreshDocuments,
+  cacheSavedDocument,
   setDocumentMutation,
 } from "../api/documents";
 
@@ -108,9 +108,9 @@ function useDocumentEditor(key: DocumentKey, { locale, displayLocale, texts, dra
   const save = useMutation({
     ...setDocumentMutation(api),
     onSuccess: async (text) => {
-      // The texts, the links to the pages, and the audit log change: the text is saved once they are fetched
-      // again (the form stays pending until then), so that the screen and the log show it at once (refreshDocuments).
-      await refreshDocuments(queryClient);
+      // The texts, the links to the pages, and the audit log change: the text is saved once those shown now are
+      // fetched again (the form stays pending until then); the others load again when opened (cacheSavedDocument).
+      await cacheSavedDocument(queryClient);
       setConfirming(false);
       setDraft(key, text.locale, undefined);
       const language = languageName(text.locale, displayLocale);
