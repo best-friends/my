@@ -267,6 +267,71 @@ func (p loginPolicy) LoginRestricted(_ context.Context, accountID string) (bool,
 	return p[accountID], nil
 }
 
+func (loginPolicy) Banned(context.Context, string) (bool, error) { return false, nil }
+
+// banPolicy is an identity.LoginPolicy with a ban in effect on the accounts in it, which also
+// forbids them to log in.
+type banPolicy map[string]bool
+
+func (p banPolicy) LoginRestricted(_ context.Context, accountID string) (bool, error) {
+	return p[accountID], nil
+}
+
+func (p banPolicy) Banned(_ context.Context, accountID string) (bool, error) {
+	return p[accountID], nil
+}
+
+// sessionBannedSignsInUntilDeletion checks that an account whose deletion a ban scheduled signs
+// in to the server-rendered screens only, so that the user can appeal (FR-707), while one whose
+// deletion is scheduled without a ban does not, and that the deletion ends its sessions and
+// tokens and keeps it from signing in again (data-model §4.1).
+func sessionBannedSignsInUntilDeletion(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	appidentity.RegisterLifecycleProjectors(e.projectors, e.h.Identity, e.accounts, e.clock)
+	reg := e.sessionUser(t)
+	_, wrongErr := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: "wrong password"})
+	due := e.clock.Now().Add(30 * 24 * time.Hour)
+	if _, err := e.accounts.RecordLifecycleEvent(ctx, appaccount.LifecycleInput{
+		AccountID: reg.AccountID, Kind: account.LifecycleDeletionScheduled, InitiatedBy: account.InitiatedByModerator, DeletionDueAt: &due,
+	}); err != nil {
+		t.Fatalf("RecordLifecycleEvent(deletion_scheduled) = %v", err)
+	}
+	// Without a ban in effect (the owner's own deletion, or a login restriction of another
+	// kind), the account does not sign in, exactly like with a wrong password.
+	for name, policy := range map[string]appidentity.LoginPolicy{"no policy": nil, "a login restriction": loginPolicy{reg.AccountID: true}} {
+		_, err := e.newIdentityWith(func(d *appidentity.Deps) { d.Logins = policy }).SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: sessionPassword})
+		if !errors.Is(err, appidentity.ErrInvalidCredentials) || err.Error() != wrongErr.Error() {
+			t.Errorf("SignIn to an account scheduled for deletion with %s = %v, want the wrong-password error %v", name, err, wrongErr)
+		}
+	}
+
+	e.identity = e.newIdentityWith(func(d *appidentity.Deps) { d.Logins = banPolicy{reg.AccountID: true} })
+	signed := e.signIn(t, appidentity.SignInInput{})
+	if _, err := e.identity.Authenticate(ctx, signed.Token); err != nil {
+		t.Errorf("Authenticate the banned account's session = %v", err)
+	}
+	if a, err := e.identity.UserAccess(ctx, reg.User.ID); err != nil || a.Allowed() || !a.LoginRestricted || a.AccountID != reg.AccountID || a.AccountActive {
+		t.Errorf("UserAccess of the banned account = %+v, %v; want restricted, inactive, and not allowed", a, err)
+	}
+	tokens, _ := e.webTokensFor(t, reg.User.ID)
+	if _, err := e.identity.AuthenticateBearer(ctx, tokens.AccessToken); !errors.Is(err, appidentity.ErrAccountUnavailable) {
+		t.Errorf("AuthenticateBearer of the banned account = %v, want ErrAccountUnavailable", err)
+	}
+
+	// The deletion ends the session and the tokens and keeps the account from signing in again.
+	e.clock.Set(due)
+	if n, err := e.accounts.ExecuteDueDeletions(ctx); err != nil || n != 1 {
+		t.Fatalf("ExecuteDueDeletions = %d, %v; want 1", n, err)
+	}
+	e.wantInvalidSession(t, signed.Token, "a session of a deleted account")
+	if _, err := e.identity.RefreshWebClient(ctx, tokens.RefreshToken); err == nil {
+		t.Error("RefreshWebClient with a token of a deleted account = nil, want an error")
+	}
+	if _, err := e.identity.SignIn(ctx, appidentity.SignInInput{Email: sessionEmail, Password: sessionPassword}); !errors.Is(err, appidentity.ErrInvalidCredentials) {
+		t.Errorf("SignIn to the deleted account = %v, want ErrInvalidCredentials", err)
+	}
+}
+
 // sessionModerationEndsLogins checks the login restriction (data-model §5.2): the policy keeps
 // a restricted account from using the app and its tokens while it still signs in to the
 // server-rendered screens, and revoking a user's

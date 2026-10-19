@@ -715,7 +715,7 @@ CREATE INDEX sessions_user_id ON sessions (user_id);
 -- Event: a session ended before it expired.
 CREATE TABLE session_revocations (
   session_id text COLLATE "C" NOT NULL PRIMARY KEY,
-  reason text NOT NULL CHECK (reason IN ('logout', 'replaced', 'password_changed', 'moderation', 'expired_cleanup')),
+  reason text NOT NULL CHECK (reason IN ('logout', 'replaced', 'password_changed', 'moderation', 'expired_cleanup', 'account_deleted')),
   revoked_at timestamptz NOT NULL
 );
 
@@ -798,7 +798,7 @@ CREATE INDEX oauth_access_tokens_user_id ON oauth_access_tokens (user_id);
 -- Event: a token row (its access and refresh token) stopped working.
 CREATE TABLE oauth_token_revocations (
   token_id text COLLATE "C" NOT NULL PRIMARY KEY,
-  reason text NOT NULL CHECK (reason IN ('user', 'rotation', 'refresh_reuse', 'code_reuse', 'password_changed', 'moderation')),
+  reason text NOT NULL CHECK (reason IN ('user', 'rotation', 'refresh_reuse', 'code_reuse', 'password_changed', 'moderation', 'account_deleted')),
   revoked_at timestamptz NOT NULL
 );
 

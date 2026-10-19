@@ -8,6 +8,7 @@
 export * as admin from "../../features/admin/test/handlers";
 export * as compose from "../../features/compose/test/handlers";
 export * as core from "./http";
+export * as moderation from "../../features/moderation/test/handlers";
 export * as notifications from "../../features/notifications/test/handlers";
 export * as profile from "../../features/profile/test/handlers";
 export * as report from "../../features/report/test/handlers";

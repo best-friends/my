@@ -18,10 +18,11 @@ import (
 	"github.com/best-friends/my/internal/i18n"
 )
 
-// A user whom moderation keeps out of the app (disable_login, suspend) still signs in to these
-// screens: the status page lists the actions in effect that keep them out, so that they can see
-// why without an access token (FR-715, NFR-MOD-6), and takes their appeal of each action, once
-// and within its appeal window (FR-707, ADR-0038), since they cannot reach the client API.
+// A user whom moderation keeps out of the app (disable_login, suspend, ban) still signs in to
+// these screens, a banned one until the ban deletes the account (identity.Service.SignIn): the
+// status page lists the actions in effect that keep them out, so that they can see why without
+// an access token (FR-715, NFR-MOD-6), and takes their appeal of each action, once and within
+// its appeal window (FR-707, ADR-0038), since they cannot reach the client API.
 
 // Moderation lists the actions on a user's own account as the user sees them, with no private
 // note, report, or issuer, and files the user's appeals of them. *appmoderation.Service
@@ -116,7 +117,12 @@ func (h *Handler) restrictionActions(ctx context.Context, l *i18n.Localizer, acc
 			Reason:   v.PublicReason,
 			Ends:     l.ServerAuthStatusActionUntilLifted(),
 		}
-		if v.ExpiresAt != nil {
+		switch {
+		case v.Kind == moderation.ActionBan && access.DeletionDueAt != nil:
+			// A ban never ends; it deletes the account.
+			due := *access.DeletionDueAt
+			a.Ends, a.EndsAt = l.ServerAuthStatusActionDeletesIn(daysUntil(now, due)), due.UTC().Format(time.RFC3339)
+		case v.ExpiresAt != nil:
 			a.Ends, a.EndsAt = l.ServerAuthStatusActionEndsIn(daysUntil(now, *v.ExpiresAt)), v.ExpiresAt.UTC().Format(time.RFC3339)
 		}
 		describeAppeal(&a, l, v, now)
