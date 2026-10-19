@@ -19,14 +19,16 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr list:*)",
       "Bash(gh pr diff:*)",
-      "Bash(gh pr checks:*)"
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr merge --auto:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Bash(git push origin main:*)",
       "Bash(gh repo delete:*)",
-      "Bash(gh pr merge:*)",
+      "Bash(gh pr merge --admin:*)",
+      "Bash(gh pr merge * --admin*)",
       "Read(./.env)",
       "Read(./.env.*)"
     ]
