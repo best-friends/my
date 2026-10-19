@@ -61,6 +61,23 @@ ruleTester.run("no-restricted-syntax (every file)", core.get("no-restricted-synt
   ],
 });
 
+ruleTester.run("no-restricted-syntax (SVG, G10)", core.get("no-restricted-syntax"), {
+  valid: [
+    { code: "<ReplyIcon />", options: restrict.svgSyntax },
+    { code: "<Button><StarIcon filled /></Button>", options: restrict.svgSyntax },
+    { code: "<img src='/logo.svg' alt='' />", options: restrict.svgSyntax },
+    { code: "<a href='#x'><span>x</span></a>", options: restrict.svgSyntax },
+    { code: "const svg = document.querySelector('svg');", options: restrict.svgSyntax },
+  ],
+  invalid: [
+    { ...fails("<svg viewBox='0 0 24 24' />"), options: restrict.svgSyntax },
+    { ...fails("<svg aria-hidden='true'><path d='M0 0h24' /></svg>", 2), options: restrict.svgSyntax },
+    { ...fails("<><circle cx={12} cy={12} r={3} /><rect width={4} height={4} /></>", 2), options: restrict.svgSyntax },
+    { ...fails("<g><use href='#icon' /></g>", 2), options: restrict.svgSyntax },
+    { ...fails("<linearGradient id='a'><stop offset='0' /></linearGradient>", 2), options: restrict.svgSyntax },
+  ],
+});
+
 const testSyntax = [...restrict.syntax, ...restrict.testSyntax];
 ruleTester.run("no-restricted-syntax (tests)", core.get("no-restricted-syntax"), {
   valid: [

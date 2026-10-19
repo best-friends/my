@@ -136,8 +136,8 @@ export default defineConfig(
       "better-tailwindcss/no-unnecessary-whitespace": "error",
       // D5, D6, D7
       "better-tailwindcss/no-restricted-classes": ["error", { restrict: restrict.classes }],
-      // A5, D5, D10, R5, R13
-      "no-restricted-syntax": ["error", ...restrict.syntax],
+      // A5, D5, D10, R5, R13, G10
+      "no-restricted-syntax": ["error", ...restrict.syntax, ...restrict.svgSyntax],
       // R5, S1
       "no-restricted-imports": ["error", restrict.apiImports],
       "no-restricted-globals": ["error", ...restrict.fetchGlobal],
@@ -164,6 +164,19 @@ export default defineConfig(
     // G10: the icon set of the kit is the one file that imports react-icons, and only its Phosphor icons.
     files: ["ui/src/Icons.tsx"],
     rules: { "no-restricted-imports": ["error", restrict.iconSetImports] },
+  },
+  {
+    // G10: SVG that is part of a control's own drawing and not an icon with a meaning of its own. Each is drawn
+    // with the control's stroke and changes with its state, so the icon set's shapes and sizing (G11) do not fit:
+    // - Checkbox: the check and the dash inside the box, stroked at the box's weight.
+    // - Select: the chevron of the trigger and the check of the selected option, as in Checkbox.
+    // - ContentWarning: the disclosure chevron, which turns over while the content is shown.
+    // - Tooltip: the arrow of the overlay, which points at the trigger in the overlay's colors.
+    // - Avatar: the silhouette that fills an avatar without an image, at a fraction of the avatar's size.
+    // - EmptyState.stories: a stand-in for the illustration a caller passes, which is a picture and not an icon.
+    // Tests are exempt too (their block sets no-restricted-syntax without svgSyntax): they render stand-in children.
+    files: ["ui/src/{Checkbox,Select,ContentWarning,Tooltip,Avatar}.tsx", "ui/src/EmptyState.stories.tsx"],
+    rules: { "no-restricted-syntax": ["error", ...restrict.syntax] },
   },
   {
     // A8: the single audited component that renders server-sanitized post HTML.
@@ -285,6 +298,7 @@ export default defineConfig(
     rules: {
       "testing-library/prefer-user-event": "error",
       "testing-library/no-test-id-queries": "error",
+      // Without svgSyntax: a test may render a stand-in SVG child for a slot (G10).
       "no-restricted-syntax": ["error", ...restrict.syntax, ...restrict.testSyntax],
     },
   },
