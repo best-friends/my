@@ -52,6 +52,7 @@ func TestMain(m *testing.M) {
 	if code == 0 {
 		code = m.Run()
 	}
+	dropTemplate()
 	cleanup()
 	os.Exit(code)
 }
@@ -96,24 +97,100 @@ func setUpServer() (code int, cleanup func()) {
 	return 0, cleanup
 }
 
-// newTestDB creates a new database on the test server, applies the bootstrap SQL and the product
-// schema (see package schema for why executing the files matches an Atlas apply), and opens it.
+// template is the database that newTestDB clones: the bootstrap SQL and the product schema (see
+// package schema for why executing the files matches an Atlas apply), applied once per test binary.
+// Copying it with CREATE DATABASE ... TEMPLATE is much faster than running the DDL for every test.
+var template struct {
+	once sync.Once
+	name string
+	err  error
+}
+
+// templateName creates the template database on first use and returns its name.
+func templateName(ctx context.Context) (string, error) {
+	template.once.Do(func() {
+		template.name, template.err = createTemplate(context.WithoutCancel(ctx))
+	})
+	return template.name, template.err
+}
+
+func createTemplate(ctx context.Context) (string, error) {
+	name := randomDatabaseName("test_template_")
+	admin, err := pgx.Connect(ctx, serverURL)
+	if err != nil {
+		return "", fmt.Errorf("connect: %w", err)
+	}
+	defer func() { _ = admin.Close(ctx) }()
+	if _, err := admin.Exec(ctx, "CREATE DATABASE "+name); err != nil {
+		return "", fmt.Errorf("create template database: %w", err)
+	}
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		return "", fmt.Errorf("%s must be a postgres:// URL: %w", envURL, err)
+	}
+	u.Path = "/" + name
+	conn, err := pgx.Connect(ctx, u.String())
+	if err != nil {
+		return "", fmt.Errorf("connect to the template: %w", err)
+	}
+	defer func() { _ = conn.Close(ctx) }()
+	for _, ddl := range []string{schema.PostgresBootstrap, schema.Postgres} {
+		if _, err := conn.Exec(ctx, ddl); err != nil {
+			return "", fmt.Errorf("apply schema: %w", err)
+		}
+	}
+	return name, nil
+}
+
+// dropTemplate drops the template database, if there is one, so a shared TEST_POSTGRES_URL server
+// keeps no leftovers.
+func dropTemplate() {
+	if template.name == "" {
+		return
+	}
+	ctx := context.Background()
+	if c, err := pgx.Connect(ctx, serverURL); err == nil {
+		_, _ = c.Exec(ctx, "DROP DATABASE "+template.name+" WITH (FORCE)")
+		_ = c.Close(ctx)
+	}
+}
+
+func randomDatabaseName(prefix string) string {
+	suffix := make([]byte, 8)
+	_, _ = rand.Read(suffix)
+	return prefix + hex.EncodeToString(suffix)
+}
+
+// newTestDB creates a new database on the test server as a copy of the template database, which
+// holds the bootstrap SQL and the product schema, and opens it.
 func newTestDB(t *testing.T, opts uow.Options) *DB {
 	t.Helper()
 	if serverURL == "" {
 		t.Skip(skipReason)
 	}
 	ctx := t.Context()
+	tmpl, err := templateName(ctx)
+	if err != nil {
+		t.Fatalf("template database: %v", err)
+	}
 	admin, err := pgx.Connect(ctx, serverURL)
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
 	defer func() { _ = admin.Close(context.WithoutCancel(ctx)) }()
 
-	suffix := make([]byte, 8)
-	_, _ = rand.Read(suffix)
-	name := "test_" + hex.EncodeToString(suffix)
-	if _, err := admin.Exec(ctx, "CREATE DATABASE "+name); err != nil {
+	name := randomDatabaseName("test_")
+	// The backend of the connection that built the template may still be exiting, and PostgreSQL
+	// refuses to copy a database that has a session (55006 object_in_use); wait for it briefly.
+	for attempt := 0; ; attempt++ {
+		_, err = admin.Exec(ctx, "CREATE DATABASE "+name+" TEMPLATE "+tmpl)
+		var pgErr *pgconn.PgError
+		if err == nil || attempt == 50 || !errors.As(err, &pgErr) || pgErr.Code != "55006" {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if err != nil {
 		t.Fatalf("create database: %v", err)
 	}
 	u, err := url.Parse(serverURL)
@@ -134,11 +211,6 @@ func newTestDB(t *testing.T, opts uow.Options) *DB {
 			_ = c.Close(ctx)
 		}
 	})
-	for _, ddl := range []string{schema.PostgresBootstrap, schema.Postgres} {
-		if _, err := db.pool.Exec(ctx, ddl); err != nil {
-			t.Fatalf("apply schema: %v", err)
-		}
-	}
 	return db
 }
 
