@@ -222,6 +222,7 @@ my admin report reopen <report id>
 | `rule` | `rule_added`・`rule_revised`・`rule_moved`・`rule_retired`（インスタンスのルール） |
 | `role` | `role_granted`・`role_revoked`（利用者へのロールの付与・剥奪） |
 | `appeal` | `appeal_upheld`・`appeal_overturned`（異議申し立ての審査。覆したときは処分の `account_action_lifted`、`ban` なら `account_deletion_cancelled` も記録する） |
+| `signup_block` | `signup_block_added`・`signup_block_lifted`（登録の拒否の追加・解除） |
 
 ```sh
 my admin audit list
@@ -232,8 +233,8 @@ my admin audit list -target-kind domain -target-id spam.example
 管理 API では `GET /api/v1/admin/audit_log`（`actor_account_id`・`action`・`target_kind`・`target_id` で絞り込み）で、権限 `view_audit` を要します。
 
 - 1 行は操作者（`user` ならその利用者、CLI なら `cli`）・操作・対象の種類と ID・対象の表示名・元の記録の ID・日時です。
-  対象の ID は、アカウント・通報・異議申し立て・利用者・ルール・ロールの ID、ドメイン単位の処分ではドメイン、設定と文章ではキーです。
-- 対象の表示名（`@alice`・`@bob@example.com`・ドメイン・設定のキー・ルールの文。文章はキーとロケール、ロールはキーと利用者のハンドル）は記録したときの写しなので、対象が消えた後も読めます。
+  対象の ID は、アカウント・通報・異議申し立て・利用者・ルール・ロール・登録の拒否の ID、ドメイン単位の処分ではドメイン、設定と文章ではキーです。
+- 対象の表示名（`@alice`・`@bob@example.com`・ドメイン・設定のキー・ルールの文。文章はキーとロケール、ロールはキーと利用者のハンドル、登録の拒否は種類と値）は記録したときの写しなので、対象が消えた後も読めます。
   API の各行は対象が今もあるか（`target_exists`）も返し、消えたアカウント・通報・異議申し立て・登録の拒否では `false` です。Web の監査ログは、消えた対象をリンクにせず表示名だけを出します。
 - 理由とメモの本文は写しません。元の記録（処分・担当・解決・再開・メモ・審査・設定やルールの版）の ID から引きます。
 - 一覧は新しい順のキーセットページングです（CLI は `-before <entry id>`）。
