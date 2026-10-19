@@ -1174,6 +1174,12 @@ paths:
         for everyone, its local posts for logged-in viewers, its followers-only posts for its
         followers, and its direct posts addressed to the viewer. With `pinned`, the page lists
         the account's pinned posts instead, newest pin first, in a single page.
+
+        The page lists only the posts this server has received. For a remote account, the first
+        page (no `cursor`, no `pinned`) of a logged-in viewer may start fetching the account's
+        recent public posts from its server in the background; `remote_fetch_started` tells
+        that it did. It does at most once a day per account, for at most 30 accounts per viewer
+        in 5 minutes, and never for an account that the viewer blocks or that blocks the viewer.
       tags: [timelines]
       security:
         - {}
@@ -1210,7 +1216,7 @@ paths:
         - $ref: "#/components/parameters/Limit"
       responses:
         "200":
-          $ref: "#/components/responses/StatusPage"
+          $ref: "#/components/responses/AccountStatusPage"
         default:
           $ref: "#/components/responses/Problem"
   /timelines/home:
@@ -2849,6 +2855,15 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/StatusPage"
+    AccountStatusPage:
+      description: A page of the posts and boosts of an account, newest first.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AccountStatusPage"
     Problem:
       description: An error, as an RFC 9457 problem document.
       headers:
@@ -4106,6 +4121,19 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/Status"
+    AccountStatusPage:
+      description: A page of the statuses of an account.
+      allOf:
+        - $ref: "#/components/schemas/StatusPage"
+        - type: object
+          properties:
+            remote_fetch_started:
+              description: |
+                `true` when this request started fetching the remote account's recent public
+                posts from its server (ADR-0044). The fetch runs in the background; read the
+                first page again a few seconds later to see what it stored. Absent otherwise,
+                including when a fetch started in the last day.
+              type: boolean
     StatusSource:
       description: What the author typed, for editing a status.
       type: object

@@ -82,6 +82,9 @@ func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 		{"FetchesThreadsWithinBounds", remoteFetchesThreadsWithinBounds},
 		{"RemembersFailedFetches", remoteRemembersFailedFetches},
 		{"ResolvesHandlesAndURLsOfAccountsAndPosts", remoteResolves},
+		{"FetchesTheRecentPostsOfOutboxesOfMajorImplementations", remoteFetchesOutboxFixtures},
+		{"FetchesOutboxesWithinBounds", remoteFetchesOutboxesWithinBounds},
+		{"StartsOutboxFetchesOnlyWhenAllowed", remoteStartsOutboxFetches},
 		{"StoresStringsWithNUL", remoteStatusStoresStringsWithNUL},
 	}
 	for _, tc := range cases {

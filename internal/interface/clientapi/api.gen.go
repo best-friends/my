@@ -1052,6 +1052,21 @@ type AccountSource struct {
 	Note string `json:"note"`
 }
 
+// AccountStatusPage A page of the statuses of an account.
+type AccountStatusPage struct {
+	// Items The statuses of the page.
+	Items []Status `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+
+	// RemoteFetchStarted `true` when this request started fetching the remote account's recent public
+	// posts from its server (ADR-0044). The fetch runs in the background; read the
+	// first page again a few seconds later to see what it stored. Absent otherwise,
+	// including when a fetch started in the last day.
+	RemoteFetchStarted *bool `json:"remote_fetch_started,omitempty"`
+}
+
 // AdminAccount An account as the moderators see it (FR-714). It never includes an email or IP address.
 type AdminAccount struct {
 	// Account An account, as clients show it (FR-006).
@@ -7710,6 +7725,15 @@ type AccountProfileJSONResponse struct {
 	Headers AccountProfileResponseHeaders
 }
 
+type AccountStatusPageResponseHeaders struct {
+	CacheControl *string
+}
+type AccountStatusPageJSONResponse struct {
+	Body AccountStatusPage
+
+	Headers AccountStatusPageResponseHeaders
+}
+
 type AdminAccountActionResponseHeaders struct {
 	CacheControl *string
 }
@@ -8468,7 +8492,7 @@ type ListAccountStatusesResponseObject interface {
 	VisitListAccountStatusesResponse(w http.ResponseWriter) error
 }
 
-type ListAccountStatuses200JSONResponse struct{ StatusPageJSONResponse }
+type ListAccountStatuses200JSONResponse struct{ AccountStatusPageJSONResponse }
 
 func (response ListAccountStatuses200JSONResponse) VisitListAccountStatusesResponse(w http.ResponseWriter) error {
 

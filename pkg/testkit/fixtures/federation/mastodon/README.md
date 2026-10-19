@@ -15,6 +15,12 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
   ([deploy/docker/federation-live](../../../../../deploy/docker/federation-live/README.md)) on 2026-10-17: what Mastodon delivered to
   this server, as this server stored it. Replaced: `mastodon.test` → `mastodon.example`, `my.test` → `remote.example`,
   `publicKeyPem`, and the Linked Data `signatureValue`. The users (`alice`, `bob`) and the texts are the test's own.
+- `4.7/outbox.json` and `4.7/outbox-page.json` are what Mastodon v4.7.3 serves for bob's outbox, rendered from its source
+  (© Mastodon gGmbH and contributors, AGPL-3.0): `outbox_presenter` of `ActivityPub::OutboxesController` and the attributes of
+  `ActivityPub::CollectionSerializer`, with `ActivityPub::OutboxSerializer` rendering the items. The items are the captured
+  `4.7/create-note-unlisted.json`, `announce.json`, `create-note-reply.json`, and `create-note.json` without their `@context`
+  (what an anonymous or instance-actor request sees: no followers-only or direct posts), newest first; the page's `@context` is
+  that of `create-note.json`. With fewer items than `LIMIT` (20), the page has no `next`.
 
 | File | Source | License |
 | --- | --- | --- |
@@ -33,6 +39,8 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
 | `4.7/undo-like.json` | capture of Mastodon 4.7.3, 2026-10-17: the `Undo` of that favourite | capture |
 | `4.7/update-note.json` | capture of Mastodon 4.7.3, 2026-10-17: an edit of a public post | capture |
 | `4.7/delete-note.json` | capture of Mastodon 4.7.3, 2026-10-17: the deletion of a public post | capture |
+| `4.7/outbox.json` | `outbox_presenter` of [app/controllers/activitypub/outboxes_controller.rb](https://github.com/mastodon/mastodon/blob/v4.7.3/app/controllers/activitypub/outboxes_controller.rb) and [app/serializers/activitypub/collection_serializer.rb](https://github.com/mastodon/mastodon/blob/v4.7.3/app/serializers/activitypub/collection_serializer.rb) | AGPL-3.0 |
+| `4.7/outbox-page.json` | the same, with the page's items by [app/serializers/activitypub/outbox_serializer.rb](https://github.com/mastodon/mastodon/blob/v4.7.3/app/serializers/activitypub/outbox_serializer.rb): the captured posts and boost above | AGPL-3.0 |
 | `4.8/actor.json` | capture of a Mastodon 4.8 actor | capture |
 | `circa-2018/follow.json` | [test/fixtures/mastodon-follow-activity.json](https://akkoma.dev/AkkomaGang/akkoma/src/commit/98dd958886a8b0ef65d5bd827aba3789f1dc5116/test/fixtures/mastodon-follow-activity.json) | AGPL-3.0 |
 | `circa-2018/accept-follow.json` | [test/fixtures/mastodon-accept-activity.json](https://akkoma.dev/AkkomaGang/akkoma/src/commit/98dd958886a8b0ef65d5bd827aba3789f1dc5116/test/fixtures/mastodon-accept-activity.json) | AGPL-3.0 |
