@@ -1665,6 +1665,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the roles
+         * @description The roles of the instance, highest position first, with the permissions they grant
+         *     (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
+         *     (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
+         *     `manage_roles` permission.
+         */
+        get: operations["listRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the roles of a local account
+         * @description The roles that the user of a local account holds, highest position first. An unknown
+         *     account, or one that is not local, is a 404. Needs the `manage_roles` permission.
+         */
+        get: operations["listAccountRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{id}/roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Grant a role to a local account
+         * @description Grants the role to the user of a local account; its permissions apply from the user's
+         *     next request, and the audit log records `role_granted`. Granting a role that the user
+         *     holds changes nothing and records nothing. A role whose position is above every role
+         *     of the viewer is a 403. An unknown account, one that is not local, or an unknown role
+         *     is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+         *     permission.
+         */
+        put: operations["grantAccountRole"];
+        post?: never;
+        /**
+         * Revoke a role from a local account
+         * @description Revokes the role from the user of a local account; its permissions stop applying from
+         *     the user's next request, and the audit log records `role_revoked`. Revoking a role
+         *     that the user does not hold changes nothing and records nothing. A role whose
+         *     position is above every role of the viewer is a 403, and revoking `admin` from its
+         *     only holder is a 409. An unknown account, one that is not local, or an unknown role
+         *     is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+         *     permission.
+         */
+        delete: operations["revokeAccountRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/registrations": {
         parameters: {
             query?: never;
@@ -2656,11 +2735,12 @@ export interface components {
          *     `user` (a registration):
          *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
          *     (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `signup_block`:
-         *     `signup_block_added`, `signup_block_lifted`.
+         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+         *     user): `role_granted`, `role_revoked`. On a `signup_block`: `signup_block_added`,
+         *     `signup_block_lifted`.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "signup_block_added" | "signup_block_lifted";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "signup_block_added" | "signup_block_lifted";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -2983,8 +3063,9 @@ export interface components {
         /**
          * @description A capability that a role grants. `manage_accounts`: the moderation actions on accounts.
          *     `manage_domains`: the health of remote servers and the moderation actions on domains.
-         *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
-         *     dead jobs of the job queue. The others guard no client API operation yet.
+         *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+         *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+         *     log. The others guard no client API operation yet.
          * @enum {string}
          */
         Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
@@ -3058,6 +3139,22 @@ export interface components {
              * @description The registrations that await approval. Needs `manage_accounts`.
              */
             pending_registrations?: number;
+        };
+        /**
+         * @description A role (FR-720): a named set of permissions. A higher position outranks a lower one;
+         *     a user may grant and revoke only the roles at or below their highest one.
+         */
+        AdminRole: {
+            id: components["schemas"]["Id"];
+            /** @description The name of the role, such as `admin` or `moderator`. */
+            key: string;
+            position: number;
+            /** @description The permissions that the role grants, in the order of `Permission`. */
+            permissions: components["schemas"]["Permission"][];
+        };
+        /** @description Roles, highest position first. */
+        AdminRoleList: {
+            items: components["schemas"]["AdminRole"][];
         };
         /** @description A user's registration as the moderators review it (FR-721). */
         AdminRegistration: {
@@ -3344,6 +3441,16 @@ export interface components {
                 "application/json": components["schemas"]["AdminRule"];
             };
         };
+        /** @description The roles. */
+        AdminRoleList: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRoleList"];
+            };
+        };
         /** @description The registration. */
         AdminRegistration: {
             headers: {
@@ -3392,6 +3499,8 @@ export interface components {
         AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
         RuleId: components["schemas"]["Id"];
+        /** @description The key of the role, such as `moderator`. */
+        RoleKey: string;
         /** @description The ID of the user who signed up. */
         RegistrationUserId: components["schemas"]["Id"];
         /** @description The ID of the sign-up block. */
@@ -5214,6 +5323,71 @@ export interface operations {
                     "application/json": components["schemas"]["AdminCounts"];
                 };
             };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAccountRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    grantAccountRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeAccountRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRoleList"];
             default: components["responses"]["Problem"];
         };
     };

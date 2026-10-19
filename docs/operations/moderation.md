@@ -158,7 +158,7 @@ my admin report reopen <report id>
 ## 監査ログ
 
 モデレーターと管理者の操作は、操作と同じトランザクションで監査ログ（`audit_log_entries`）に 1 行ずつ記録されます（FR-704、[ADR-0037](../adr/0037-audit-log.md)）。
-失敗した操作と、何も変えなかった操作（解除済みの処分の解除、解決済みの通報の解決、同じ担当への割り当て、廃止済みのルールの廃止、位置の変わらない移動）は記録しません。
+失敗した操作と、何も変えなかった操作（解除済みの処分の解除、解決済みの通報の解決、同じ担当への割り当て、廃止済みのルールの廃止、位置の変わらない移動、持っているロールの付与、持っていないロールの剥奪）は記録しません。
 
 | 対象の種類 | 操作 |
 | --- | --- |
@@ -168,6 +168,7 @@ my admin report reopen <report id>
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |
 | `setting` | `setting_changed`（インスタンス設定）・`text_changed`（インスタンスの文章。1 ロケールの変更） |
 | `rule` | `rule_added`・`rule_revised`・`rule_moved`・`rule_retired`（インスタンスのルール） |
+| `role` | `role_granted`・`role_revoked`（利用者へのロールの付与・剥奪） |
 
 ```sh
 my admin audit list
@@ -178,8 +179,8 @@ my admin audit list -target-kind domain -target-id spam.example
 管理 API では `GET /api/v1/admin/audit_log`（`actor_account_id`・`action`・`target_kind`・`target_id` で絞り込み）で、権限 `view_audit` を要します。
 
 - 1 行は操作者（`user` ならその利用者、CLI なら `cli`）・操作・対象の種類と ID・対象の表示名・元の記録の ID・日時です。
-  対象の ID は、アカウント・通報・利用者・ルールの ID、ドメイン単位の処分ではドメイン、設定と文章ではキーです。
-- 対象の表示名（`@alice`・`@bob@example.com`・ドメイン・設定のキー・ルールの文。文章はキーとロケール）は記録したときの写しなので、対象が消えた後も読めます。
+  対象の ID は、アカウント・通報・利用者・ルール・ロールの ID、ドメイン単位の処分ではドメイン、設定と文章ではキーです。
+- 対象の表示名（`@alice`・`@bob@example.com`・ドメイン・設定のキー・ルールの文。文章はキーとロケール、ロールはキーと利用者のハンドル）は記録したときの写しなので、対象が消えた後も読めます。
 - 理由とメモの本文は写しません。元の記録（処分・担当・解決・再開・メモ・審査・設定やルールの版）の ID から引きます。
 - 一覧は新しい順のキーセットページングです（CLI は `-before <entry id>`）。
 - 監査ログを更新・削除する API と CLI はありません。

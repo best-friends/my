@@ -110,11 +110,16 @@ const contractHost = "social.example"
 // cheapArgon2 keeps the contract fast; the parameters do not affect what is stored.
 var cheapArgon2 = appidentity.Argon2Params{MemoryKiB: 64, Iterations: 1, Parallelism: 1, SaltLength: 16, KeyLength: 32}
 
-func newAccountEnv(t *testing.T, newHarness AccountFactory) *accountEnv {
+// newAccountEnv returns an env on a new harness; register adds projectors after the account
+// module's.
+func newAccountEnv(t *testing.T, newHarness AccountFactory, register ...func(*uow.Projectors)) *accountEnv {
 	t.Helper()
 	projectors := &uow.Projectors{}
 	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
 	appaccount.RegisterProjectors(projectors, h.Accounts)
+	for _, r := range register {
+		r(projectors)
+	}
 	clock := NewClock(time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC))
 	ids := NewIDGenerator(clock)
 	accounts := appaccount.NewService(appaccount.Deps{

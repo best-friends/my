@@ -7,7 +7,7 @@ import { apiBase, oauthError, oauthPaths, problem, tokenResponse } from "../../t
 import { instanceFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { Session } from "../auth/session";
-import { ApiError, NetworkError } from "../errors";
+import { ApiError, NetworkError, rateLimitedUntil } from "../errors";
 import { loadI18n } from "../i18n";
 import { AppLocale } from "../locale";
 import { createApi } from "./client";
@@ -105,6 +105,28 @@ test("describes an error without a problem document from the client's catalog", 
     type: "about:blank",
     message: "The server could not handle the request (error 502). Try again later.",
   });
+});
+
+test("keeps when a rate-limited request may be sent again, from Retry-After in seconds or as a date", async () => {
+  const { api } = await setUp();
+  const before = Date.now();
+  server.use(http.get(`${apiBase}/instance`, () => problem(429, "about:blank", "Too many requests.", { headers: { "Retry-After": "30" } })));
+
+  const inSeconds: unknown = await api.fetch.GET("/instance").catch((error: unknown) => error);
+
+  expect(inSeconds).toBeInstanceOf(ApiError);
+  expect(rateLimitedUntil(inSeconds)).toBeGreaterThanOrEqual(before + 30_000);
+  expect(rateLimitedUntil(inSeconds)).toBeLessThanOrEqual(Date.now() + 30_000);
+
+  server.use(http.get(`${apiBase}/instance`, () => problem(429, "about:blank", "Too many requests.", { headers: { "Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT" } })));
+  const atDate = await api.fetch.GET("/instance").catch((error: unknown) => error);
+  expect(rateLimitedUntil(atDate)).toBe(Date.UTC(2026, 9, 21, 7, 28));
+
+  // Without Retry-After, or for another status, nothing says when to try again.
+  server.use(http.get(`${apiBase}/instance`, () => problem(429, "about:blank", "Too many requests.")));
+  expect(rateLimitedUntil(await api.fetch.GET("/instance").catch((error: unknown) => error))).toBeUndefined();
+  server.use(http.get(`${apiBase}/instance`, () => problem(503, "about:blank", "Unavailable", { headers: { "Retry-After": "30" } })));
+  expect(rateLimitedUntil(await api.fetch.GET("/instance").catch((error: unknown) => error))).toBeUndefined();
 });
 
 test("turns a network failure into a localized NetworkError", async () => {

@@ -43,6 +43,14 @@
     "defaultMessage": "[Řḗḗƥǿǿřŧ ŭŭƞȧȧşşīɠƞḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "[Řǿǿŀḗḗ ɠřȧȧƞŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "[Řǿǿŀḗḗ řḗḗṽǿǿķḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "[Řŭŭŀḗḗ ȧȧḓḓḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -2197,6 +2205,10 @@
   },
   "shell.offline": {
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ǿǿƒƒŀīƞḗḗ. Ȧƞẏŧħīƞɠ ŧħȧȧŧ ƒȧȧīŀḗḗḓ ŧǿǿ ŀǿǿȧȧḓ ŀǿǿȧȧḓş ȧȧɠȧȧīƞ ẇħḗḗƞ ẏǿǿŭŭ ȧȧřḗḗ ƀȧȧƈķ ǿǿƞŀīƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.rate_limited": {
+    "defaultMessage": "[Ŧǿǿǿǿ ḿȧȧƞẏ řḗḗɋŭŭḗḗşŧş ẇḗḗřḗḗ şḗḗƞŧ ŧǿǿ ŧħḗḗ şḗḗřṽḗḗř. Ẇħȧȧŧ ƒȧȧīŀḗḗḓ ŧǿǿ ŀǿǿȧȧḓ ŀǿǿȧȧḓş ȧȧɠȧȧīƞ ȧȧŧ {time}.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.skip_to_main": {

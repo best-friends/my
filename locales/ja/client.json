@@ -43,6 +43,14 @@
     "defaultMessage": "通報の担当の解除",
     "description": "Heading of an audit log entry: a report was left without an assigned moderator."
   },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "ロールの付与",
+    "description": "Heading of an audit log entry: an administrator granted a role to a user."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "ロールの剥奪",
+    "description": "Heading of an audit log entry: an administrator revoked a role from a user."
+  },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "ルールの追加",
     "description": "Heading of an audit log entry: an administrator added a server rule."
@@ -2198,6 +2206,10 @@
   "shell.offline": {
     "defaultMessage": "オフラインです。読み込めなかったものは、オンラインに戻ると読み込み直します。",
     "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
+  },
+  "shell.rate_limited": {
+    "defaultMessage": "サーバーへのリクエストが多すぎます。読み込めなかったものは {time} に読み込み直します。",
+    "description": "Text of the bar at the top of the app while the server's rate limit refuses requests (HTTP 429). {time} is the time of day the app loads again, with seconds (for example 12:34:56). Screen readers announce it when it appears."
   },
   "shell.skip_to_main": {
     "defaultMessage": "本文へ移動",

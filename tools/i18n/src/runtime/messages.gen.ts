@@ -24,6 +24,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.report_resolved": {};
   /** Report unassigned */
   "client:admin.audit_log.action.report_unassigned": {};
+  /** Role granted */
+  "client:admin.audit_log.action.role_granted": {};
+  /** Role revoked */
+  "client:admin.audit_log.action.role_revoked": {};
   /** Rule added */
   "client:admin.audit_log.action.rule_added": {};
   /** Rule moved */
@@ -1102,6 +1106,8 @@ export interface MessageArgs {
   "client:shell.not_found.title": {};
   /** You are offline. Anything that failed to load loads again when you are back online. */
   "client:shell.offline": {};
+  /** Too many requests were sent to the server. What failed to load loads again at {time}. */
+  "client:shell.rate_limited": { time: string };
   /** Skip to main content */
   "client:shell.skip_to_main": {};
   /** The server sent settings the app cannot read. Reload the page; if this keeps happening, tell the server's administrator. */

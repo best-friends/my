@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useLocale, useT } from "../../../lib/i18n";
+import { shellQueryReader } from "../../../lib/query";
 import {
   cachePostedStatus,
   createStatus,
@@ -105,8 +106,8 @@ function requestBody(draft: Draft, visibility: Visibility, language: string): Cr
  */
 export function useComposeFormPending(): boolean {
   const api = useApi();
-  const instance = useQuery(instanceQueryOptions(api));
-  const preferences = useQuery(preferencesQueryOptions(api));
+  const instance = useQuery({ ...instanceQueryOptions(api), ...shellQueryReader });
+  const preferences = useQuery({ ...preferencesQueryOptions(api), ...shellQueryReader });
   return instance.isPending || preferences.isPending;
 }
 
@@ -130,11 +131,11 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
   const announce = useAnnouncer();
   const state = useComposeState(store);
   const { draft } = state;
-  const instance = useQuery(instanceQueryOptions(api));
-  const preferences = useQuery(preferencesQueryOptions(api));
+  const instance = useQuery({ ...instanceQueryOptions(api), ...shellQueryReader });
+  const preferences = useQuery({ ...preferencesQueryOptions(api), ...shellQueryReader });
   const replyQuery = useQuery({ ...statusQueryOptions(api, draft.replyToId ?? ""), enabled: draft.replyToId !== null });
   // The form exists only for a signed-in viewer, so the account is in the cache already.
-  const limits = useQuery(credentialsQueryOptions(api)).data?.posting;
+  const limits = useQuery({ ...credentialsQueryOptions(api), ...shellQueryReader }).data?.posting;
   const replyPost = draft.replyToId === null ? undefined : replyQuery.data;
   const preferredVisibility = preferences.data?.default_visibility;
   const visibility =

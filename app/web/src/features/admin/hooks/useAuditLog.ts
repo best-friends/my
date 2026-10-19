@@ -27,6 +27,8 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   rule_revised: "client:admin.audit_log.action.rule_revised",
   rule_moved: "client:admin.audit_log.action.rule_moved",
   rule_retired: "client:admin.audit_log.action.rule_retired",
+  role_granted: "client:admin.audit_log.action.role_granted",
+  role_revoked: "client:admin.audit_log.action.role_revoked",
   signup_block_added: "client:admin.audit_log.action.signup_block_added",
   signup_block_lifted: "client:admin.audit_log.action.signup_block_lifted",
 };

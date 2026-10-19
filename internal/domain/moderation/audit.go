@@ -109,6 +109,10 @@ const (
 	AuditRuleMoved AuditAction = "rule_moved"
 	// AuditRuleRetired: a rule was retired (instance_rule_retirements).
 	AuditRuleRetired AuditAction = "rule_retired"
+	// AuditRoleGranted: a role was granted to a user (user_role_grants).
+	AuditRoleGranted AuditAction = "role_granted"
+	// AuditRoleRevoked: a role was revoked from a user (user_role_revocations).
+	AuditRoleRevoked AuditAction = "role_revoked"
 	// AuditSignupBlockAdded: a new sign-up block (signup_blocks).
 	AuditSignupBlockAdded AuditAction = "signup_block_added"
 	// AuditSignupBlockLifted: a sign-up block was lifted (signup_block_lifts).
@@ -137,6 +141,8 @@ var auditActions = []struct {
 	{AuditRuleRevised, AuditTargetRule},
 	{AuditRuleMoved, AuditTargetRule},
 	{AuditRuleRetired, AuditTargetRule},
+	{AuditRoleGranted, AuditTargetRole},
+	{AuditRoleRevoked, AuditTargetRole},
 	{AuditSignupBlockAdded, AuditTargetSignupBlock},
 	{AuditSignupBlockLifted, AuditTargetSignupBlock},
 }

@@ -43,6 +43,14 @@
     "defaultMessage": "‮ᴚǝdoɹʇ nuɐssıƃuǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "‮ᴚoʅǝ ƃɹɐuʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "‮ᴚoʅǝ ɹǝʌoʞǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "‮ᴚnʅǝ ɐppǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -2197,6 +2205,10 @@
   },
   "shell.offline": {
     "defaultMessage": "‮⅄on ɐɹǝ oɟɟʅıuǝ. ∀uʎʇɥıuƃ ʇɥɐʇ ɟɐıʅǝp ʇo ʅoɐp ʅoɐps ɐƃɐıu ʍɥǝu ʎon ɐɹǝ qɐɔʞ ouʅıuǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.rate_limited": {
+    "defaultMessage": "‮⊥oo ɯɐuʎ ɹǝbnǝsʇs ʍǝɹǝ sǝuʇ ʇo ʇɥǝ sǝɹʌǝɹ. Mɥɐʇ ɟɐıʅǝp ʇo ʅoɐp ʅoɐps ɐƃɐıu ɐʇ {time}.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.skip_to_main": {
