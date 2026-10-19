@@ -18,6 +18,7 @@ import (
 // approval notifies every administrator with the new user's account, and the counts of what
 // awaits the moderators follow.
 func TestModeratorNotificationsThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob", "carol")
 	ctx := t.Context()
 	types := func(user string) []clientapi.Notification {

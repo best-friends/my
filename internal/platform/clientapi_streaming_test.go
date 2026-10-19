@@ -56,6 +56,7 @@ func readEvents(r *bufio.Reader) <-chan sseEvent {
 // arrive as the home timeline and the notification list show them, that the posts of other
 // accounts do not, and that disconnecting releases the subscription.
 func TestStreamingDeliversHomeEntriesAndNotifications(t *testing.T) {
+	t.Parallel()
 	e := newTimelineAPI(t)
 	alice, bob, carol := e.user(t, "alice"), e.user(t, "bob"), e.user(t, "carol")
 	e.follow(t, alice, bob)

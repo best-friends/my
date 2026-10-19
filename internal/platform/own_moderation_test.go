@@ -26,6 +26,7 @@ import (
 // with its kind, reason, and end; the list has every action and never the private note; and a
 // suspended user, whose tokens end, still sees the actions on the sign-in screens.
 func TestOwnModerationActions(t *testing.T) {
+	t.Parallel()
 	e := newAccountsEnv(t)
 	alice := e.user("alice")
 	issue := func(in appmoderation.AccountActionInput) moderation.Action {
@@ -119,6 +120,7 @@ func TestOwnModerationActions(t *testing.T) {
 // that the other moderators get admin_appeal, and that a second appeal is refused with the
 // reason (FR-707, ADR-0038).
 func TestAppealFromTheSignInScreens(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob")
 	ctx := t.Context()
 	suspend, err := c.app.Moderation.IssueAccountAction(ctx, appmoderation.AccountActionInput{
@@ -163,6 +165,7 @@ func TestAppealFromTheSignInScreens(t *testing.T) {
 // the ban there so that the other moderators get admin_appeal (FR-707, ADR-0038), and is signed
 // out by the deletion and cannot sign in again.
 func TestBanAppealFromTheSignInScreens(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob")
 	ctx := t.Context()
 	ban, err := c.app.Moderation.IssueAccountAction(ctx, appmoderation.AccountActionInput{

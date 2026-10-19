@@ -29,6 +29,7 @@ import (
 // local account is stored with its HTML sanitized and notifies the account, and its Delete
 // removes it.
 func TestInboxIngestsRemoteStatuses(t *testing.T) {
+	t.Parallel()
 	const actor = "https://remote.example/users/bob"
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {

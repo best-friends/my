@@ -21,6 +21,7 @@ import (
 // neither in the response nor to the target, and statuses or rules that it may not cite are
 // a 422.
 func TestReportsThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob", "carol")
 	ctx := t.Context()
 	rule, err := c.app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "Be kind"}}})
@@ -109,6 +110,7 @@ func TestReportsThroughTheAPI(t *testing.T) {
 // real database: the reporter gets one report_resolved and sees the report resolved in their
 // list, neither telling how it was resolved, and resolving it again notifies nobody.
 func TestReportResolutionReachesTheReporter(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob", "carol")
 	var report clientapi.Report
 	res := c.do("alice", http.MethodPost, "/reports", map[string]any{"account_id": c.ids["bob"], "category": "spam"}, &report)

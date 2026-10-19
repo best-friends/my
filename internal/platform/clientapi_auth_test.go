@@ -55,6 +55,7 @@ func issueTokens(t *testing.T, app *platform.App, userID, scope string) identity
 // the user's locale, an account that may no longer use the app, and cookies, which never
 // authenticate.
 func TestClientAPIAuthentication(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {

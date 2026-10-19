@@ -28,6 +28,7 @@ import (
 // the avatar behind the media proxy; its attachments are served through the proxy with their alt
 // text; and turning the timeline off makes it a 404.
 func TestClientAPIPresentsRemoteStatuses(t *testing.T) {
+	t.Parallel()
 	e := newTimelineAPI(t)
 	ctx := t.Context()
 	alice := e.user(t, "alice")

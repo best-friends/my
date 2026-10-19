@@ -9,10 +9,12 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -46,20 +48,64 @@ func (b *syncBuffer) String() string {
 	return b.buf.String()
 }
 
-// newDatabase returns the path of a new SQLite database file, with the schema applied when
-// applied is true.
+// sqliteTemplate is the SQLite database file with the schema applied that newDatabase copies,
+// created once per test binary: applying the schema commits every statement on its own, which
+// costs more than the rest of most tests. TestMain removes its directory.
+var sqliteTemplate struct {
+	once sync.Once
+	dir  string
+	path string
+	err  error
+}
+
+func createSQLiteTemplate() {
+	s := &sqliteTemplate
+	if s.dir, s.err = os.MkdirTemp("", "platform-sqlite-template-"); s.err != nil {
+		return
+	}
+	s.path = filepath.Join(s.dir, "my.db")
+	db, err := sql.Open("sqlite", s.path)
+	if err != nil {
+		s.err = err
+		return
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.ExecContext(context.Background(), schema.SQLite); err != nil {
+		s.err = fmt.Errorf("apply schema: %w", err)
+	}
+}
+
+// removeSQLiteTemplate removes the template that newDatabase created, if any.
+func removeSQLiteTemplate() {
+	if sqliteTemplate.dir != "" {
+		_ = os.RemoveAll(sqliteTemplate.dir)
+	}
+}
+
+// newDatabase returns the path of a new SQLite database file, a copy of the template with the
+// schema applied when applied is true, and a path to no file yet otherwise.
 func newDatabase(t *testing.T, applied bool) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "my.db")
-	db, err := sql.Open("sqlite", path)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "my.db")
+	if !applied {
+		return path
+	}
+	sqliteTemplate.once.Do(createSQLiteTemplate)
+	if sqliteTemplate.err != nil {
+		t.Fatalf("SQLite template: %v", sqliteTemplate.err)
+	}
+	b, err := os.ReadFile(sqliteTemplate.path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = db.Close() }()
-	if applied {
-		if _, err := db.ExecContext(t.Context(), schema.SQLite); err != nil {
-			t.Fatalf("apply schema: %v", err)
-		}
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.WriteFile("my.db", b, 0o600); err != nil {
+		t.Fatal(err)
 	}
 	return path
 }
@@ -174,6 +220,7 @@ func decodeProblem(t *testing.T, resp *http.Response, body string) problemDoc {
 }
 
 func TestServeSQLite(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	s := start(t, cfg, platform.ServeOptions{}, nil)
 
@@ -255,6 +302,7 @@ func TestServeSQLite(t *testing.T) {
 }
 
 func TestReadinessWithoutSchema(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, false)})
 	s := start(t, cfg, platform.ServeOptions{}, nil)
 
@@ -274,6 +322,7 @@ func TestReadinessWithoutSchema(t *testing.T) {
 }
 
 func TestWorkerRoleServesOnlyHealthChecks(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_ROLE": "worker"})
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		a.Handle("GET /web", http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
@@ -287,6 +336,7 @@ func TestWorkerRoleServesOnlyHealthChecks(t *testing.T) {
 }
 
 func TestPanicIsAProblem(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_ROLE": "web"})
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		a.Handle("GET /panic", http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("boom") }))
@@ -305,6 +355,7 @@ func TestPanicIsAProblem(t *testing.T) {
 
 // Shutdown waits for the request and the job in progress, then returns.
 func TestShutdownWaitsForRequestsAndJobs(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	reqStarted, reqRelease := make(chan struct{}), make(chan struct{})
 	jobStarted, jobRelease := make(chan struct{}), make(chan struct{})
@@ -368,6 +419,7 @@ func TestShutdownWaitsForRequestsAndJobs(t *testing.T) {
 
 // After the shutdown timeout, Serve cancels the requests still running and reports the timeout.
 func TestShutdownTimeout(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_ROLE": "web"})
 	started := make(chan struct{})
 	s := start(t, cfg, platform.ServeOptions{ShutdownTimeout: 100 * time.Millisecond}, func(a *platform.App) {
@@ -399,6 +451,7 @@ func TestShutdownTimeout(t *testing.T) {
 // configuration and the instance settings in the database: a key lives in exactly one of them,
 // so neither overrides the other (docs/reference/configuration.md).
 func TestConfigAndInstanceSettingsShareNoKey(t *testing.T) {
+	t.Parallel()
 	db := map[string]bool{}
 	for _, d := range instance.Definitions() {
 		db[string(d.Key)] = true

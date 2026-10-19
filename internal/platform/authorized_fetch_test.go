@@ -141,6 +141,7 @@ func signedGet(t *testing.T, from, to *peer, path string) (*http.Response, strin
 // fetches (signed with its own instance actor's key, which the first serves without checking). Unsigned GETs of objects and collections get 401; user actors give unsigned
 // requests only the document that verifying their signatures needs.
 func TestAuthorizedFetch(t *testing.T) {
+	t.Parallel()
 	network := &peerNet{servers: map[string]*server{}}
 	a := startPeer(t, "a.example", network)
 	b := startPeer(t, "b.example", network)

@@ -22,6 +22,7 @@ import (
 // tags (ADR-0028): public and unlisted posts of active local accounts do; every other post
 // page, whatever the reason, is the same generic shell with 404 and noindex.
 func TestLinkPreviews(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	build := fstest.MapFS{
 		".vite/manifest.json":  {Data: []byte(`{"index.html": {"file": "assets/index-AAAA.js", "isEntry": true}}`)},
