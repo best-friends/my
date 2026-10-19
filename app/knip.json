@@ -2,8 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["eslint/*.test.js"],
-      "project": ["*.js", "eslint/**/*.js"],
+      "entry": ["oxlint/*.test.js"],
+      "project": ["oxlint/**/*.js"],
       "tailwind": false
     },
     "ui": {

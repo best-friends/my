@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The one audited component that renders HTML (web-client.md A8). ESLint allows dangerouslySetInnerHTML
-// in this file only (app/eslint.config.js). The server sanitizes every post body to its allowlist
+// The one audited component that renders HTML (web-client.md A8). Lint allows dangerouslySetInnerHTML
+// in this file only (app/.oxlintrc.json). The server sanitizes every post body to its allowlist
 // before it reaches the client; this component trusts that and adds nothing of its own. The app's
 // Content-Security-Policy requires Trusted Types (`require-trusted-types-for 'script'`, ADR-0019 §9), under
 // which the browser refuses a plain string as innerHTML, so the HTML goes in as a TrustedHTML made by the

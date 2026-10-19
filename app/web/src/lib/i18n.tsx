@@ -15,7 +15,7 @@ export type ClientMessageKey = Extract<MessageKey, `client:${string}`>;
 
 declare global {
   // react-intl's hook for typing message IDs (FormatJS docs, "TypeScript").
-  // eslint-disable-next-line @typescript-eslint/no-namespace -- react-intl reads the ID type from this global namespace.
+  // eslint-disable-next-line typescript/no-namespace -- react-intl reads the ID type from this global namespace.
   namespace FormatjsIntl {
     interface Message {
       ids: ClientMessageKey;

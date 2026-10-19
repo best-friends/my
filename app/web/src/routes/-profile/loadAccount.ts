@@ -20,7 +20,7 @@ export async function loadAccount({ queryClient, api }: Pick<RouterContext, "que
   try {
     return await queryClient.query({ ...accountQueryOptions(api, acct), staleTime: Infinity });
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router's "not found" is a thrown object.
+    // eslint-disable-next-line typescript/only-throw-error -- TanStack Router's "not found" is a thrown object.
     if (error instanceof ApiError && error.status === 404) throw notFound();
     throw error;
   }

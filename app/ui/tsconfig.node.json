@@ -1,6 +1,6 @@
 {
   "extends": "../tsconfig.base.json",
-  "//": "Tool configs, which run on Node.js. The Storybook preview and the story tests run in the browser and are checked by tsconfig.json.",
+  "//": "Tool configs, which run on Node.js. The Storybook preview and the story tests run in the browser and are checked by tsconfig.app.json.",
   "compilerOptions": {
     "lib": ["ES2023"],
     "types": ["node"],

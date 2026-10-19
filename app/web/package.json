@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.tsbuildinfo && tsc -p tsconfig.node.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.node.tsbuildinfo && tsc -p tsconfig.sw.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.sw.tsbuildinfo",
+    "typecheck": "tsc -p tsconfig.app.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.app.tsbuildinfo && tsc -p tsconfig.node.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.node.tsbuildinfo && tsc -p tsconfig.sw.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.sw.tsbuildinfo",
     "test": "vitest run",
     "e2e": "playwright test"
   },

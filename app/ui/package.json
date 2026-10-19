@@ -10,7 +10,7 @@
     "./theme.css": "./src/theme.css"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.tsbuildinfo && tsc -p tsconfig.node.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.node.tsbuildinfo && tsc -p scripts/tsconfig.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/scripts.tsbuildinfo",
+    "typecheck": "tsc -p tsconfig.app.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.app.tsbuildinfo && tsc -p tsconfig.node.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/tsconfig.node.tsbuildinfo && tsc -p scripts/tsconfig.json --incremental --tsBuildInfoFile node_modules/.cache/tsc/scripts.tsbuildinfo",
     "check-tokens": "bun run scripts/check-tokens.ts src/storybook.css ../web/src/index.css ../web/src/server-pages.css",
     "storybook": "storybook dev --port 6006 --no-open",
     "build-storybook": "storybook build",

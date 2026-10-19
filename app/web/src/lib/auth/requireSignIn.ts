@@ -8,6 +8,6 @@ import type { RouterContext } from "../query";
 export async function requireSignIn({ context, location }: { context: RouterContext; location: ParsedLocation }): Promise<void> {
   await context.session.restore();
   if (context.session.status === "signed-in") return;
-  // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router's redirects are thrown objects.
+  // eslint-disable-next-line typescript/only-throw-error -- TanStack Router's redirects are thrown objects.
   throw redirect({ to: "/login", search: { return_to: location.href } });
 }

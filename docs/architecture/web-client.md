@@ -5,40 +5,44 @@ Web クライアント（`app/web`）と共有 UI キット（`app/ui`）を書�
 主な出典は react.dev、WAI-ARIA Authoring Practices、WCAG 2.2、Tailwind CSS・TanStack・Testing Library の公式ドキュメントです。
 
 「強制」の列は、lint・型検査・テストで機械的に検査するものを示します。「レビュー」はレビューで確認します。
-lint は `make web-lint`（`make web-check` と `make check` の一部）で実行します。設定は `app/eslint.config.js`、独自の制限は `app/eslint/restrictions.js` にあり、
-`app/eslint/restrictions.test.js` が各制限の違反例と許可例を検査します。ESLint は `--max-warnings 0` で動かすので、警告も失敗になります。
-ルールを無効化するコメントには理由（`-- 理由`）が必要です（`@eslint-community/eslint-comments/require-description`）。
+lint は Oxlint で、`make web-lint`（`make web-check` と `make check` の一部）で実行します（[ADR-0049](../adr/0049-client-lint-oxlint.md)）。
+設定は `app/.oxlintrc.json` です。型情報の規則（`typescript/*`）は tsgolint が、React Compiler とフックの規則（`react/*`）は Oxlint が動かし、
+ほかのプラグインの規則は Oxlint の JS プラグインとして動きます。独自の制限は、`app/.oxlintrc.json` がセレクタを渡す JS プラグイン `app/oxlint/restrictions.js` の規則
+（`restrict/syntax`・`restrict/svg`・`restrict/feature`・`restrict/test`）と、Oxlint の `no-restricted-imports` などの規則の設定です。
+`app/oxlint/restrictions.test.js` が各制限の違反例と許可例を、`app/oxlint/violations.test.js` が下の表の lint の行ごとの違反を Oxlint が報告することを検査します。
+Oxlint は警告でも失敗します（`options.denyWarnings`）。
+ルールを無効化するコメント（`eslint-disable-next-line`）には理由（`-- 理由`）が必要です（`@eslint-community/eslint-comments/require-description`）。
 
 ## 1. React の基本
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| R1 | コンポーネントとフックは純粋にする。レンダリング中に副作用・変更・`Date.now()` / `Math.random()` を書かない | `react-hooks/purity`、`react-hooks/globals` |
-| R2 | props・state・フックに渡した値・JSX に渡した値を変更しない（`push` / `sort` ではなく `toSorted` / スプレッド） | `react-hooks/immutability`（代入を検出する。`push` / `sort` などのメソッド呼び出しはレビュー） |
-| R3 | フックはコンポーネントか `use*` 関数のトップレベルでだけ呼ぶ | `react-hooks/rules-of-hooks` |
-| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint とビルドで失敗させる。コンパイラから外す（`"use no memo"`）のは、コンパイルできないライブラリを包む 1 つのフックだけにし、理由を書く（`@my/ui` の `Feed` が TanStack Virtual の仮想化を読むフック） | `eslint-plugin-react-hooks` の `recommended-latest`（`react-hooks/incompatible-library`・`react-hooks/unsupported-syntax` も error）、`vite build`（`app/web/vite-plugins/react-compiler-check.ts`。コンパイラが関数を 1 つでも諦めると、場所と理由を出して失敗する。`"use no memo"` で外した関数は除く。1 つも関数を変換しなくても失敗）、`no-restricted-syntax`（`"use no memo"` / `"use no forget"`。必要なときは理由付きの無効化コメント。API クライアントのフック `api.query.useQuery` / `api.query.useMutation` の呼び出し、§10） |
-| R5 | `useMemo` / `useCallback` / `memo` は書かない。必要なとき（Effect の依存に安定した参照が要るなど）は理由をコメントに書く | `no-restricted-imports`・`no-restricted-syntax`（`useMemo` / `useCallback` / `memo` の使用。必要なときは理由付きの無効化コメント）、`react-hooks/use-memo` |
-| R6 | 他の値から計算できるものは state にせず、レンダリング中に計算する | `react-hooks/set-state-in-effect`、`react-hooks/no-deriving-state-in-effects` |
+| R1 | コンポーネントとフックは純粋にする。レンダリング中に副作用・変更・`Date.now()` / `Math.random()` を書かない | `react/purity`、`react/globals` |
+| R2 | props・state・フックに渡した値・JSX に渡した値を変更しない（`push` / `sort` ではなく `toSorted` / スプレッド） | `react/immutability`（代入を検出する。`push` / `sort` などのメソッド呼び出しはレビュー） |
+| R3 | フックはコンポーネントか `use*` 関数のトップレベルでだけ呼ぶ | `react/rules-of-hooks` |
+| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint とビルドで失敗させる。コンパイラから外す（`"use no memo"`）のは、コンパイルできないライブラリを包む 1 つのフックだけにし、理由を書く（`@my/ui` の `Feed` が TanStack Virtual の仮想化を読むフック） | Oxlint の React Compiler の規則（`react/*`。`react/incompatible-library`・`react/unsupported-syntax` も error）、`vite build`（`app/web/vite-plugins/react-compiler-check.ts`。コンパイラが関数を 1 つでも諦めると、場所と理由を出して失敗する。`"use no memo"` で外した関数は除く。1 つも関数を変換しなくても失敗）、`restrict/syntax`（`"use no memo"` / `"use no forget"`。必要なときは理由付きの無効化コメント。API クライアントのフック `api.query.useQuery` / `api.query.useMutation` の呼び出し、§10） |
+| R5 | `useMemo` / `useCallback` / `memo` は書かない。必要なとき（Effect の依存に安定した参照が要るなど）は理由をコメントに書く | `no-restricted-imports`・`restrict/syntax`（`useMemo` / `useCallback` / `memo` の使用。必要なときは理由付きの無効化コメント）、`react/use-memo` |
+| R6 | 他の値から計算できるものは state にせず、レンダリング中に計算する | `react/set-state-in-effect`、`react/no-deriving-state-in-effects` |
 | R7 | 利用者の操作で起きる処理（送信・通知・計測）はイベントハンドラに書く。Effect に書かない | レビュー |
 | R8 | Effect は外部のシステム（SSE、ブラウザ API、React 以外の部品）と同期するときだけ使い、必ず後始末を返す | レビュー |
-| R9 | Effect の中で反応させたくない値は `useEffectEvent` で読む。`exhaustive-deps` を無効化しない | `react-hooks/exhaustive-deps` を error、`@eslint-community/eslint-comments/no-restricted-disable`（`react-hooks/*` の無効化を禁止） |
+| R9 | Effect の中で反応させたくない値は `useEffectEvent` で読む。`exhaustive-deps` を無効化しない | `react/exhaustive-deps` を error、`@eslint-community/eslint-comments/no-restricted-disable`（`react-hooks/*` と、Oxlint の `react/` の React Compiler とフックの規則の無効化を禁止。`Feed` のフックで Oxlint が `"use no memo"` の中でも報告する `react/incompatible-library` だけは除く） |
 | R10 | ID が変わったら state を初期化したい場合は `key` を使う。Effect で初期化しない | レビュー |
-| R11 | コンポーネントやフックを、ほかのコンポーネントの中で定義しない | `react-hooks/static-components`、`@eslint-react/no-nested-component-definitions` |
+| R11 | コンポーネントやフックを、ほかのコンポーネントの中で定義しない | `react/static-components`、`@eslint-react/no-nested-component-definitions` |
 | R12 | リストの `key` には安定した ID を使う。動的なリストに配列の添字を使わない | `@eslint-react/no-array-index-key`、`@eslint-react/no-missing-key` |
-| R13 | `forwardRef`・`<Ctx.Provider>`・関数コンポーネントの `defaultProps` を使わない（`ref` は普通の props、`<Ctx value>`、引数の既定値） | `@eslint-react/no-forward-ref`、`@eslint-react/no-context-provider`、`no-restricted-syntax`（`defaultProps`） |
-| R14 | 数値を `&&` の条件にしない（`{count && <X />}` は `0` を表示する）。`count > 0 &&` と書く | `@eslint-react/no-leaked-conditional-rendering`（型情報あり） |
+| R13 | `forwardRef`・`<Ctx.Provider>`・関数コンポーネントの `defaultProps` を使わない（`ref` は普通の props、`<Ctx value>`、引数の既定値） | `@eslint-react/no-forward-ref`、`@eslint-react/no-context-provider`、`restrict/syntax`（`defaultProps`） |
+| R14 | 数値を `&&` の条件にしない（`{count && <X />}` は `0` を表示する）。`count > 0 &&` と書く | レビュー |
 
 ## 2. 状態とデータ
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行う。成功時に、応答で確かに分かる変化（投稿・閲覧者・関係・設定）は `setQueryData` / `updateCachedStatuses` でキャッシュに書き、並びや件数が変わり得る一覧・件数には `invalidateQueries`（既定の `refetchType: "active"`）で無効化の印を付ける。表示していないクエリは、次にその画面を開いたときに loader が取り直して待つ（S7）ので、取り直さない。書き込みの成功表示は、表示中のクエリの取り直しを待ってから出す（`await invalidateQueries(...)`）。書き込みが変えるクエリは、その書き込みの関数の隣（`features/<x>/api` のキャッシュ更新関数。例: `cachePostedStatus`）に書き、部品の `onSuccess` はそれを呼ぶ。データの種類ごとの方針は [ADR-0045](../adr/0045-client-server-cache-policy.md) | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`features/*/hooks` と `features/*/components` で `no-restricted-syntax`（キャッシュを書き換える `QueryClient` のメソッド `setQueryData`・`invalidateQueries` などの呼び出し）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
+| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行う。成功時に、応答で確かに分かる変化（投稿・閲覧者・関係・設定）は `setQueryData` / `updateCachedStatuses` でキャッシュに書き、並びや件数が変わり得る一覧・件数には `invalidateQueries`（既定の `refetchType: "active"`）で無効化の印を付ける。表示していないクエリは、次にその画面を開いたときに loader が取り直して待つ（S7）ので、取り直さない。書き込みの成功表示は、表示中のクエリの取り直しを待ってから出す（`await invalidateQueries(...)`）。書き込みが変えるクエリは、その書き込みの関数の隣（`features/<x>/api` のキャッシュ更新関数。例: `cachePostedStatus`）に書き、部品の `onSuccess` はそれを呼ぶ。データの種類ごとの方針は [ADR-0045](../adr/0045-client-server-cache-policy.md) | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`features/*/hooks` と `features/*/components` で `restrict/feature`（キャッシュを書き換える `QueryClient` のメソッド `setQueryData`・`invalidateQueries` などの呼び出し）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
 | S2 | サーバーのデータを `useState`・Context・グローバルストアにコピーしない | レビュー |
 | S3 | 共有・リロード・戻る / 進むで保ちたい状態（タイムラインの種類・タブ・検索語・開いているメディア）は URL に置き、Zod で検証する | TanStack Router の型 |
 | S4 | 状態は使う場所の近くに置き、必要なときだけ最も近い共通の親に持ち上げる | レビュー |
 | S5 | 状態は判別可能なユニオンで表す（`{ status: 'idle' } \| { status: 'error'; error: Problem }`）。矛盾し得る真偽値を並べない | レビュー |
 | S6 | Context は、変化の少ない値（閲覧者・ロケール・テーマ・複合部品の内部）にだけ使い、更新頻度ごとに分ける | レビュー |
-| S7 | ルートは薄くする。パラメータと検索条件を取り出し、loader で、キャッシュにないか無効化されていれば取得して待ち（`queryClient.query({ ...options, staleTime: Infinity })`。無限スクロールは `queryClient.infiniteQuery`。無効化の印を見ない `staleTime: "static"` と、非推奨の `ensureQueryData` は使わない）、それから機能の部品を表示する。ルーターは `defaultStaleReloadMode: "blocking"` で、前に訪れたルートでも loader の終わりを待って描画する（ADR-0045） | `@tanstack/eslint-plugin-router` の `flat/recommended`（`@tanstack/router/create-route-property-order` など）、`no-restricted-syntax`（`staleTime: "static"`・`ensureQueryData`）、レビュー |
+| S7 | ルートは薄くする。パラメータと検索条件を取り出し、loader で、キャッシュにないか無効化されていれば取得して待ち（`queryClient.query({ ...options, staleTime: Infinity })`。無限スクロールは `queryClient.infiniteQuery`。無効化の印を見ない `staleTime: "static"` と、非推奨の `ensureQueryData` は使わない）、それから機能の部品を表示する。ルーターは `defaultStaleReloadMode: "blocking"` で、前に訪れたルートでも loader の終わりを待って描画する（ADR-0045） | `@tanstack/eslint-plugin-router` の `flat/recommended`（`@tanstack/router/create-route-property-order` など）、`restrict/syntax`（`staleTime: "static"`・`ensureQueryData`）、レビュー |
 | S8 | 楽観的更新は、まず保留中の mutation の `variables` を表示する方式にする。複数の画面に反映が要るときだけ、キャッシュを書き換えて失敗時に戻す | レビュー |
 | S9 | API の型は OpenAPI からの生成物だけを使う。同じ型を手で書かない | 生成物の差分検査（ADR-0029） |
 | S10 | SSE の購読は `lib/sse` の 1 つの Effect だけが行い、受け取った内容を Query のキャッシュに書き込む | レビュー |
@@ -51,9 +55,9 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | A2 | `@my/ui` は React・React Aria Components・Tailwind のユーティリティと、ドメインを持たない振る舞いのライブラリ（許可リストは ADR-0031）にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`@tanstack/react-virtual`・`tailwind-variants`・`tailwind-merge`、`Icons.tsx` だけは `react-icons` だけ）、パッケージの依存関係（Bun の isolated linker） |
 | A3 | 機能は、ほかの機能を `index.ts` 経由でだけ使う | `boundaries/dependencies`（ほかの `feature` は `index.ts` だけ） |
 | A4 | 機能のロジックは `features/<x>/hooks` のカスタムフックに置く。フックは JSX を返さない。機能の部品はフックの戻り値を `@my/ui` に渡すだけにする | レビュー |
-| A5 | 操作できる要素は `@my/ui`（React Aria Components を包んだ部品）から使う。`onClick` を付けた `div` / `span` を書かない | `no-restricted-syntax`（`div` / `span` の `onClick`・`onKeyDown`・`onPointerDown` など） |
+| A5 | 操作できる要素は `@my/ui`（React Aria Components を包んだ部品）から使う。`onClick` を付けた `div` / `span` を書かない | `restrict/syntax`（`div` / `span` の `onClick`・`onKeyDown`・`onPointerDown` など） |
 | A6 | `@my/ui` の部品は表示に専念し、状態はできるだけ外から渡す（`value` / `onChange`） | レビュー |
-| A7 | props は型を明示する（`React.FC` を使わない）。ネイティブ要素の props は `ComponentPropsWithRef<'button'>` で拡張する。多態的な `as` props を使わない | `@typescript-eslint/no-restricted-types`（`FC` / `FunctionComponent`）、レビュー |
+| A7 | props は型を明示する（`React.FC` を使わない）。ネイティブ要素の props は `ComponentPropsWithRef<'button'>` で拡張する。多態的な `as` props を使わない | `typescript/no-restricted-types`（`FC` / `FunctionComponent`）、レビュー |
 | A8 | `dangerouslySetInnerHTML` は、サーバーでサニタイズ済みの投稿本文を表示する 1 つの監査済み部品（`PostContent`）でだけ使う。`PostContent` は本文を `SanitizedHtml` 型で受け取る。この型は `serverSanitizedHtml()` でだけ作り、API の応答でサーバーがサニタイズ済みと定める項目を読む場所でだけ呼ぶ | `@eslint-react/dom-no-dangerously-set-innerhtml`（`app/ui/src/PostContent.tsx` だけ許可）、型検査（ただの `string` は `SanitizedHtml` にならない）、レビュー |
 | A9 | 利用者に見える文字列はすべて `react-intl` を通す。JSX に文字列リテラルを書かない | `formatjs/no-literal-string-in-jsx`（子要素と `aria-*`・`label`・`placeholder`・`title`・`alt`。テストとストーリーは除く） |
 
@@ -89,12 +93,12 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | D2 | 画面幅のブレークポイントはアプリの外枠だけで使う。部品にはコンテナクエリ（`@container`、`@md:`）を使う | `ui/src` と `features` の `.tsx` で `better-tailwindcss/no-restricted-classes`（`sm:`〜`2xl:`・`max-*:`・`min-[…]:`） |
 | D3 | 320 px のどのロケールでも横スクロールが出ない | Playwright（`scrollWidth <= clientWidth`） |
 | D4 | タップ領域は 24 × 24 px 以上、主要な操作は `pointer-coarse:` で 44 px 以上にする | axe `target-size`、レビュー |
-| D5 | `100vh` を使わない（`svh` / `dvh`）。端に固定する要素には `env(safe-area-inset-*)` を足す | `no-restricted-syntax`（文字列）、`better-tailwindcss/no-restricted-classes`（`h-screen` など）、`make web-lint` の grep（CSS） |
+| D5 | `100vh` を使わない（`svh` / `dvh`）。端に固定する要素には `env(safe-area-inset-*)` を足す | `restrict/syntax`（文字列）、`better-tailwindcss/no-restricted-classes`（`h-screen` など）、`make web-lint` の grep（CSS） |
 | D6 | アニメーションは `motion-safe:` の下に置く | `make web-tokens`、`better-tailwindcss/no-restricted-classes`（`animate-*`）、レビュー |
 | D7 | 方向は論理プロパティのユーティリティで書く。`ml-` / `mr-` / `pl-` / `pr-` / `left-` / `right-` / `text-left` / `text-right` / `rounded-l` / `rounded-r` / `border-l` / `border-r` / `mask-l-` / `mask-r-` を使わない（方向のあるアイコンの反転と、論理方向の版がない `mask-l-` / `mask-r-`（端のフェード）だけ、`rtl:` / `ltr:` の下で許可） | `better-tailwindcss/no-restricted-classes` |
 | D8 | 色は `@my/ui/theme.css` の意味のトークン（`--color-surface`、`--color-fg-muted` など）だけを使う。生のパレット（`--palette-*`）や任意の色を部品に書かない（`--color-*: initial` で Tailwind の既定の色を消す）。トークンの一覧・コントラストの組・ライト / ダークの切り替えは [app/ui/README.md](../../app/ui/README.md) にある | Tailwind の設定、`make web-tokens`、`better-tailwindcss/no-unknown-classes` |
 | D9 | 部品の見た目の違いは `tailwind-variants` の 1 部品 1 レシピで定義する。クラス名を動的に組み立てない。`className` は `tailwind-merge` で root / スロットにだけ合成する | `better-tailwindcss/no-concatenated-classes`、`better-tailwindcss/no-conflicting-classes`、レビュー |
-| D10 | CSP を壊さない。`setAttribute('style')` や `cssText` を使わない（React の `style={}` は可） | `no-restricted-syntax` |
+| D10 | CSP を壊さない。`setAttribute('style')` や `cssText` を使わない（React の `style={}` は可） | `restrict/syntax` |
 
 ## 7. テスト
 
@@ -102,11 +106,11 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | --- | --- | --- |
 | T1 | 利用者の使い方に近い形でテストする。フックの内部や state を直接検査しない | レビュー |
 | T2 | 操作は `user-event` で再現する。`screen` を使い、`waitFor` + `getBy` ではなく `findBy` を使う | `testing-library/prefer-user-event`、`testing-library/prefer-screen-queries`、`testing-library/prefer-find-by` |
-| T3 | ネットワークは MSW だけでモックする。`fetch` や API のモジュールをモックしない | テストの `no-restricted-syntax`（`api` を含むモジュールと `openapi-fetch` の `vi.mock` / `vi.doMock`、`fetch` の `vi.spyOn` / `vi.stubGlobal` / 代入）、レビュー |
+| T3 | ネットワークは MSW だけでモックする。`fetch` や API のモジュールをモックしない | テストの `restrict/test`（`api` を含むモジュールと `openapi-fetch` の `vi.mock` / `vi.doMock`、`fetch` の `vi.spyOn` / `vi.stubGlobal` / 代入）、レビュー |
 | T4 | 既定は統合テスト（本物の QueryClient とルーター + MSW）にする。純粋なロジックは単体テスト、主要な流れは 4 ロケールの E2E にする | レビュー |
 | T5 | `@my/ui` の部品は必ずストーリーを持つ。ストーリーはアクセシビリティ・見た目・RTL のテストの入力になる | レビュー、`knip`（使われないファイル・export・依存） |
 | T6 | 部品のテストは jsdom かブラウザモードで動かす。React Compiler の preset はクライアント向けの変換にだけ効くので、Vitest の `node` 環境では本番と違うコードをテストすることになる | Vitest の設定 |
-| T7 | 非同期の結果は Testing Library の `findBy` / `waitFor` で待つ。`vi.waitFor` は使わない。待ち時間の上限はテストごとに変えず、setup の `asyncUtilTimeout` と Vitest の `testTimeout` にまとめる（待ちは実時間なので、負荷の高い機械では既定の 1 秒・5 秒を超える）。React の描画の外で動くフォーカス（React Aria のフォーカスの復帰は `requestAnimationFrame`、ルート変更の見出しへのフォーカスはルーターの `onRendered`）は `waitFor` の中で `toHaveFocus()` を検証する | テストの `no-restricted-syntax`（`vi.waitFor`）、Vitest の設定、レビュー |
+| T7 | 非同期の結果は Testing Library の `findBy` / `waitFor` で待つ。`vi.waitFor` は使わない。待ち時間の上限はテストごとに変えず、setup の `asyncUtilTimeout` と Vitest の `testTimeout` にまとめる（待ちは実時間なので、負荷の高い機械では既定の 1 秒・5 秒を超える）。React の描画の外で動くフォーカス（React Aria のフォーカスの復帰は `requestAnimationFrame`、ルート変更の見出しへのフォーカスはルーターの `onRendered`）は `waitFor` の中で `toHaveFocus()` を検証する | テストの `restrict/test`（`vi.waitFor`）、Vitest の設定、レビュー |
 
 ### テストの置き場所と道具
 
@@ -325,7 +329,7 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
 - **クライアント**（`lib/api/client.ts`）: openapi-fetch のクライアントと、その上の openapi-react-query のクライアントを 1 つずつ作る（`Api` の `fetch` と `query`）。
   機能は `features/<x>/api` で `api.query.queryOptions(...)` から `queryOptions` を作る。キーは `[method, path, params]` になる。
   書き込みは、`features/<x>/api` が `api.fetch` で作る `mutationKey` / `mutationFn` を TanStack Query の `useMutation` に渡す。
-  openapi-react-query のフック（`api.query.useQuery` / `api.query.useMutation` など）は呼ばない（`no-restricted-syntax`）。オブジェクトから読むフックは描画ごとに同じ関数だと示せないので、React Compiler が呼んだフックごと最適化を諦め、`vite build` が失敗する（R4、[Don't dynamically use Hooks](https://react.dev/reference/rules/react-calls-components-and-hooks#dont-dynamically-use-hooks)）。
+  openapi-react-query のフック（`api.query.useQuery` / `api.query.useMutation` など）は呼ばない（`restrict/syntax`）。オブジェクトから読むフックは描画ごとに同じ関数だと示せないので、React Compiler が呼んだフックごと最適化を諦め、`vite build` が失敗する（R4、[Don't dynamically use Hooks](https://react.dev/reference/rules/react-calls-components-and-hooks#dont-dynamically-use-hooks)）。
   ページを `next_cursor` でたどる一覧（タイムライン）は、openapi-react-query に無限クエリの `queryOptions` がないので、TanStack Query の `infiniteQueryOptions` で `api.fetch` を呼んで作る。
   キーは同じ形の末尾に `"pages"` を足したもの（`["get", "/timelines/local", "pages"]`）にし、同じ操作の普通のクエリと重ならないようにする（`features/timeline/api`）。
   - 表示のロケール（§9）を要求ごとに `Accept-Language` で送り、サーバーが problem の `title` / `detail` をそのロケールで返すようにする。
@@ -662,7 +666,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする。部品も SVG を描かない。例外は部品の形の一部で状態とともに変わる印（`Checkbox` のチェック、`Select` と `ContentWarning` の山形、`Tooltip` の矢印、`Avatar` の人影）と、テストやストーリーの差し替えの中身だけで、`app/eslint.config.js` に理由とともに挙げる | `no-restricted-syntax`（JSX の `<svg>`・`<path>` などの SVG の要素）、`no-restricted-imports`、`boundaries/dependencies`、`knip` |
+| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする。部品も SVG を描かない。例外は部品の形の一部で状態とともに変わる印（`Checkbox` のチェック、`Select` と `ContentWarning` の山形、`Tooltip` の矢印、`Avatar` の人影）と、テストやストーリーの差し替えの中身だけで、`app/.oxlintrc.json` に理由とともに挙げる | `restrict/svg`（JSX の `<svg>`・`<path>` などの SVG の要素）、`no-restricted-imports`、`boundaries/dependencies`、`knip` |
 | G11 | アイコンの大きさは置き場所で決める: 文と並ぶものは `size-4`、ボタンの中は `size-5`、ナビゲーションは `size-6`。`Button`・`ToggleButton`・`Link` が子の SVG の大きさを決め、アイコンの側では大きさを指定しない（react-icons が書く `1em` より `[&>svg]:size-*` が優先し、置き場所が決めない所では文字の大きさで描かれる） | 部品のテスト（ボタンの中の SVG が 0 × 0 でない）、スクリーンショット |
 | G12 | アイコンは飾り（`aria-hidden="true"`、`focusable="false"`、`Icons.tsx` がどのアイコンにも付ける）にし、意味は見える文言かアクセシブルネームで伝える。アイコンだけのボタンには `aria-label` と、同じ文言の `Tooltip` を付ける | `@my/ui` の部品のテスト（`Foundations/Icons` の play）、レビュー |
 | G13 | オン / オフはアイコンの形でも示し、色だけに頼らない（WCAG 1.4.1）: オンは、形が閉じるもの（星・ブックマーク・警告）を Phosphor の Fill、閉じないもの（ブースト）を Bold にする。向きのあるアイコン（返信・戻る・外部へのリンク）は `rtl:-scale-x-100` で反転し（Phosphor の `mirrored` は書字方向を見ないので使わない）、時計回りの意味を持つもの（再読み込み）や輪（ブースト）は反転しない | `Foundations/Icons` の play（`ar-XB` で向きのあるものだけが反転する）、スクリーンショット（`ar-XB`）、レビュー |

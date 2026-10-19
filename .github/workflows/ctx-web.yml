@@ -61,7 +61,7 @@ jobs:
         run: make ui-check
 
   web:
-    # make web-check without web-test (the web-test job): tsc, ESLint, knip, the Vite build, and the route tree.
+    # make web-check without web-test (the web-test job): tsc, Oxlint, knip, the Vite build, and the route tree.
     if: inputs.web
     runs-on: ubuntu-latest
     steps:
