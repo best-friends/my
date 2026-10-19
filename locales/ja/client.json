@@ -496,7 +496,7 @@
     "description": "Term of a list of account actions: when the action ends."
   },
   "admin.account_actions.issue_failed": {
-    "defaultMessage": "処分できませんでした：{reason}",
+    "defaultMessage": "アカウントを処分できませんでした：{reason}",
     "description": "Error when a moderation action on an account fails; reason is the server's localized message."
   },
   "admin.account_actions.issued_at": {
@@ -1396,11 +1396,11 @@
     "description": "Button of a failed job that runs it again."
   },
   "admin.dead_jobs.retry_failed": {
-    "defaultMessage": "ジョブを再実行できませんでした: {reason}",
+    "defaultMessage": "ジョブを再実行できませんでした：{reason}",
     "description": "Error toast when a failed job could not be run again. {reason} is the server's localized reason."
   },
   "admin.dead_jobs.retry_job": {
-    "defaultMessage": "再実行: {type}（{date} に失敗）",
+    "defaultMessage": "再実行：{type}（{date} に失敗）",
     "description": "Accessible name of the run-again button of a failed job, which names the job. {type} is the job type; {date} is when it failed, formatted."
   },
   "admin.dead_jobs.summary": {
@@ -1500,7 +1500,7 @@
     "description": "Accessible name of the tabs that filter the domain actions."
   },
   "admin.domain_actions.issue_failed": {
-    "defaultMessage": "処分できませんでした：{reason}",
+    "defaultMessage": "ドメインを処分できませんでした：{reason}",
     "description": "Error when a new domain action failed. {reason} is the server's localized reason, which names the field at fault."
   },
   "admin.domain_actions.issued": {
@@ -1716,7 +1716,7 @@
     "description": "Description under the button that resumes deliveries to a remote server."
   },
   "admin.instance.mark_failed": {
-    "defaultMessage": "配送を再開できませんでした: {reason}",
+    "defaultMessage": "配送を再開できませんでした：{reason}",
     "description": "Error toast when deliveries to a remote server could not be resumed. {reason} is the server's localized reason."
   },
   "admin.instance.marked_available": {
@@ -2016,7 +2016,7 @@
     "description": "Button that makes the viewer the moderator who handles a report that another moderator handles."
   },
   "admin.report.assign_failed": {
-    "defaultMessage": "担当になれませんでした：{reason}",
+    "defaultMessage": "通報の担当を引き受けられませんでした：{reason}",
     "description": "Toast when taking a report fails."
   },
   "admin.report.assigned": {
@@ -2372,7 +2372,7 @@
     "description": "Accessible name of the × button that closes the new-post sheet. The draft is kept."
   },
   "compose.failed": {
-    "defaultMessage": "投稿できませんでした: {reason}",
+    "defaultMessage": "投稿を送信できませんでした：{reason}",
     "description": "Error after publishing a post failed. The draft is kept. {reason} is the error message."
   },
   "compose.language.label": {
@@ -2404,7 +2404,7 @@
     "description": "Help text under the alternative text field of an attached image when the user's settings ask for a description of every image."
   },
   "compose.media.failed": {
-    "defaultMessage": "添付できませんでした: {reason}",
+    "defaultMessage": "画像を添付できませんでした：{reason}",
     "description": "State of an attached image whose upload failed. {reason} is the error message."
   },
   "compose.media.failed_processing": {
@@ -2472,7 +2472,7 @@
     "description": "Button that puts a post that could not be sent back into the form."
   },
   "compose.outbox.failed": {
-    "defaultMessage": "送信できませんでした: {reason}",
+    "defaultMessage": "投稿を送信できませんでした：{reason}",
     "description": "State of a post that could not be sent. {reason} is the error message."
   },
   "compose.outbox.label": {
@@ -2536,7 +2536,7 @@
     "description": "Heading of the form that writes a new post (the side panel on wide screens, the sheet on phones)."
   },
   "compose.visibility.button": {
-    "defaultMessage": "公開範囲: {visibility}",
+    "defaultMessage": "公開範囲：{visibility}",
     "description": "Button that opens the choice of who can see the post. {visibility} is the current choice, for example 'Public'."
   },
   "compose.visibility.ceiling": {
@@ -2740,7 +2740,7 @@
     "description": "Button at the end of the notifications that loads older ones."
   },
   "notifications.loading": {
-    "defaultMessage": "通知を読み込み中",
+    "defaultMessage": "通知を読み込んでいます",
     "description": "Visually hidden text that names the busy list of notifications while its first page loads."
   },
   "notifications.moderation.action": {
@@ -2844,7 +2844,7 @@
     "description": "Notification sentence: the moderators of the server resolved a report that the user filed. It never says how."
   },
   "notifications.unread": {
-    "defaultMessage": "未読:",
+    "defaultMessage": "未読：",
     "description": "Read by screen readers before the sentence of a notification that was new when the page opened."
   },
   "notifications.unread_count": {
@@ -2856,7 +2856,7 @@
     "description": "Text below the heading of a page whose screen the web client does not have yet."
   },
   "profile.change_failed": {
-    "defaultMessage": "変更できませんでした: {reason}",
+    "defaultMessage": "アカウントとの関係を変更できませんでした：{reason}",
     "description": "Toast when following, blocking, muting or undoing one of them failed. {reason} is the error message."
   },
   "profile.confirm.block.action": {
@@ -2888,7 +2888,7 @@
     "description": "Title of the dialog that confirms unblocking. {name} is the account's display name."
   },
   "profile.confirm.unfollow.action": {
-    "defaultMessage": "フォロー解除",
+    "defaultMessage": "フォローを解除",
     "description": "Button of the dialog that unfollows the account."
   },
   "profile.confirm.unfollow.body": {
@@ -3004,15 +3004,15 @@
     "description": "Link from a follow list to the account's profile. {name} is the account's display name."
   },
   "profile.list.load_more": {
-    "defaultMessage": "もっと見る",
+    "defaultMessage": "さらに表示",
     "description": "Button at the end of a follow list that loads the next accounts."
   },
   "profile.list.load_more_failed": {
-    "defaultMessage": "続きのアカウントを読み込めませんでした: {reason}",
+    "defaultMessage": "続きのアカウントを読み込めませんでした：{reason}",
     "description": "Shown and announced when the next page of a follow list failed to load. {reason} is the error message."
   },
   "profile.list.loading": {
-    "defaultMessage": "アカウントを読み込み中",
+    "defaultMessage": "アカウントを読み込んでいます",
     "description": "Visually hidden text that names the busy follow list while its first page loads."
   },
   "profile.list.retry": {
@@ -3052,7 +3052,7 @@
     "description": "Link on the profile of an account of another server to its profile page on that server. {host} is that server's host name, for example 'mastodon.social'."
   },
   "profile.relationship_failed": {
-    "defaultMessage": "フォローの状態を読み込めませんでした: {reason}",
+    "defaultMessage": "フォローの状態を読み込めませんでした：{reason}",
     "description": "Shown on a profile instead of the follow button when the relationship failed to load. {reason} is the error message."
   },
   "profile.sign_in_to_follow": {
@@ -3236,7 +3236,7 @@
     "description": "Label of the checkbox of one post in the report dialog. {date} is the date and time of the post. The post's text follows as the description."
   },
   "report.posts.loading": {
-    "defaultMessage": "投稿を読み込み中",
+    "defaultMessage": "投稿を読み込んでいます",
     "description": "Accessible name of the spinner while the report dialog loads the account's posts."
   },
   "report.posts.media": {
@@ -3292,7 +3292,7 @@
     "description": "Help text under the search field while nobody is signed in: the server does not fetch unknown accounts from other servers."
   },
   "search.failed": {
-    "defaultMessage": "検索できませんでした: {reason}",
+    "defaultMessage": "アカウントを検索できませんでした：{reason}",
     "description": "Error under the search field when the search failed for another reason. {reason} is the localized reason."
   },
   "search.label": {
@@ -3372,7 +3372,7 @@
     "description": "Heading and document title of the settings page with the blocked accounts."
   },
   "settings.blocks.unblock": {
-    "defaultMessage": "ブロック解除",
+    "defaultMessage": "ブロックを解除",
     "description": "Button that unblocks an account."
   },
   "settings.blocks.unblocked": {
@@ -3416,7 +3416,7 @@
     "description": "Heading and document title of the settings page with the follow requests awaiting approval."
   },
   "settings.list.action": {
-    "defaultMessage": "{action}: {name}",
+    "defaultMessage": "{action}：{name}",
     "description": "Accessible name of a button in a list of accounts. {action} is the button's visible text (for example 'Unblock'), {name} the account's display name."
   },
   "settings.list.more": {
@@ -3468,7 +3468,7 @@
     "description": "Heading and document title of the settings page with the muted accounts."
   },
   "settings.mutes.unmute": {
-    "defaultMessage": "ミュート解除",
+    "defaultMessage": "ミュートを解除",
     "description": "Button that unmutes an account."
   },
   "settings.mutes.unmuted": {
@@ -3868,7 +3868,7 @@
     "description": "Menu item, on the user's own post, that asks to delete it."
   },
   "status.action.failed": {
-    "defaultMessage": "変更を保存できませんでした: {reason}",
+    "defaultMessage": "変更を保存できませんでした：{reason}",
     "description": "Toast when boosting, favouriting or bookmarking a post failed; the button is set back. {reason} is the error message, a full sentence."
   },
   "status.action.favourite": {
@@ -3916,7 +3916,7 @@
     "description": "Toast after the user's post was deleted."
   },
   "status.delete.failed": {
-    "defaultMessage": "投稿を削除できませんでした: {reason}",
+    "defaultMessage": "投稿を削除できませんでした：{reason}",
     "description": "Toast when deleting the user's post failed. {reason} is the error message, a full sentence."
   },
   "status.delete.title": {
@@ -3968,7 +3968,7 @@
     "description": "Heading above the posts that the post of the page replies to, oldest first."
   },
   "status.thread.failed": {
-    "defaultMessage": "返信を読み込めませんでした: {reason}",
+    "defaultMessage": "返信を読み込めませんでした：{reason}",
     "description": "Shown under the post of the page when its thread failed to load. {reason} is the error message, a full sentence."
   },
   "status.thread.loading": {
@@ -4004,7 +4004,7 @@
     "description": "Button next to a post's content warning that shows or hides the post behind it. The same text is used while the post is shown."
   },
   "timeline.empty.account.heading": {
-    "defaultMessage": "まだ投稿がありません",
+    "defaultMessage": "まだ投稿はありません",
     "description": "Shown instead of the posts of a profile's tab when it has none."
   },
   "timeline.empty.home.action": {
@@ -4052,11 +4052,11 @@
     "description": "Button at the end of a timeline that loads older posts."
   },
   "timeline.load_more.failed": {
-    "defaultMessage": "投稿を読み込めませんでした: {reason}",
+    "defaultMessage": "続きの投稿を読み込めませんでした：{reason}",
     "description": "Message, read out and shown at the end of a timeline, when older posts failed to load. {reason} is the error message, a full sentence."
   },
   "timeline.loading": {
-    "defaultMessage": "投稿を読み込み中",
+    "defaultMessage": "投稿を読み込んでいます",
     "description": "Visually hidden text that names the busy region while posts load: the first page of a timeline, or a post page."
   },
   "timeline.media.no_description": {
@@ -4072,7 +4072,7 @@
     "description": "Button above the home timeline when new posts have arrived; pressing it shows them at the top. Screen readers also read it out when the count changes."
   },
   "timeline.new_posts.failed": {
-    "defaultMessage": "新しい投稿を読み込めませんでした: {reason}",
+    "defaultMessage": "新しい投稿を読み込めませんでした：{reason}",
     "description": "Message read out when pressing the new posts button failed to load them. {reason} is the error message, a full sentence."
   },
   "timeline.retry": {

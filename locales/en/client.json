@@ -240,7 +240,7 @@
     "description": "Accessible name of the button that lifts an account action; kind is the kind, date when it was taken."
   },
   "admin.account.actions.lift_failed": {
-    "defaultMessage": "The action could not be lifted: {reason}",
+    "defaultMessage": "Could not lift the action: {reason}",
     "description": "Error in the lift confirmation; reason is the server's localized message."
   },
   "admin.account.actions.lift_reason": {
@@ -308,7 +308,7 @@
     "description": "Term of the private data: the primary email address."
   },
   "admin.account.private.failed": {
-    "defaultMessage": "Couldn't show the email and IP addresses: {reason}",
+    "defaultMessage": "Could not show the email and IP addresses: {reason}",
     "description": "Toast when showing the email and IP addresses failed; reason is the server's localized message."
   },
   "admin.account.private.ip": {
@@ -496,7 +496,7 @@
     "description": "Term of a list of account actions: when the action ends."
   },
   "admin.account_actions.issue_failed": {
-    "defaultMessage": "The action could not be taken: {reason}",
+    "defaultMessage": "Could not take the action: {reason}",
     "description": "Error when a moderation action on an account fails; reason is the server's localized message."
   },
   "admin.account_actions.issued_at": {
@@ -772,7 +772,7 @@
     "description": "Term of an account in the search results: what its actions take away now."
   },
   "admin.accounts.results.failed": {
-    "defaultMessage": "Couldn't search the accounts",
+    "defaultMessage": "Could not search the accounts",
     "description": "Heading when the search of the accounts failed."
   },
   "admin.accounts.results.loading": {
@@ -780,7 +780,7 @@
     "description": "Label of the spinner while the accounts load."
   },
   "admin.accounts.results.more_failed": {
-    "defaultMessage": "Couldn't load more accounts",
+    "defaultMessage": "Could not load more accounts",
     "description": "Message when the next page of the accounts failed to load."
   },
   "admin.accounts.results.retry": {
@@ -1292,7 +1292,7 @@
     "description": "Heading of the list of operations in the audit log, newest first."
   },
   "admin.audit_log.more_failed": {
-    "defaultMessage": "Couldn’t load more operations",
+    "defaultMessage": "Could not load more operations",
     "description": "Shown under the loaded part of the audit log when its next page failed to load; the reason follows, and the show more button tries again."
   },
   "admin.audit_log.occurred_at": {
@@ -1500,7 +1500,7 @@
     "description": "Accessible name of the tabs that filter the domain actions."
   },
   "admin.domain_actions.issue_failed": {
-    "defaultMessage": "The action could not be taken: {reason}",
+    "defaultMessage": "Could not take the action: {reason}",
     "description": "Error when a new domain action failed. {reason} is the server's localized reason, which names the field at fault."
   },
   "admin.domain_actions.issued": {
@@ -1568,7 +1568,7 @@
     "description": "Accessible name of the lift button of a domain action, which names the action. {kind} is its kind; {domain} its domain; {date} when it was taken, formatted."
   },
   "admin.domain_actions.lift_failed": {
-    "defaultMessage": "The action could not be lifted: {reason}",
+    "defaultMessage": "Could not lift the action: {reason}",
     "description": "Error toast when a domain action could not be lifted. {reason} is the server's localized reason."
   },
   "admin.domain_actions.lifted": {
@@ -2016,7 +2016,7 @@
     "description": "Button that makes the viewer the moderator who handles a report that another moderator handles."
   },
   "admin.report.assign_failed": {
-    "defaultMessage": "The report could not be assigned to you: {reason}",
+    "defaultMessage": "Could not assign the report to you: {reason}",
     "description": "Toast when taking a report fails."
   },
   "admin.report.assigned": {
@@ -2104,7 +2104,7 @@
     "description": "A report without notes."
   },
   "admin.report.notes.failed": {
-    "defaultMessage": "The note could not be added: {reason}",
+    "defaultMessage": "Could not add the note: {reason}",
     "description": "Error under the note field when adding fails."
   },
   "admin.report.notes.new": {
@@ -2184,7 +2184,7 @@
     "description": "Help of the reopen button."
   },
   "admin.report.reopen_failed": {
-    "defaultMessage": "The report could not be reopened: {reason}",
+    "defaultMessage": "Could not reopen the report: {reason}",
     "description": "Toast when reopening fails."
   },
   "admin.report.reopened": {
@@ -2216,7 +2216,7 @@
     "description": "Heading of the buttons that resolve a report without an action."
   },
   "admin.report.resolve_failed": {
-    "defaultMessage": "The report could not be resolved: {reason}",
+    "defaultMessage": "Could not resolve the report: {reason}",
     "description": "Toast when resolving fails."
   },
   "admin.report.resolved": {
@@ -2292,7 +2292,7 @@
     "description": "Button that leaves a report to nobody."
   },
   "admin.report.unassign_failed": {
-    "defaultMessage": "The report could not be unassigned: {reason}",
+    "defaultMessage": "Could not unassign the report: {reason}",
     "description": "Toast when unassigning fails."
   },
   "admin.report.unassigned": {
@@ -2372,7 +2372,7 @@
     "description": "Accessible name of the × button that closes the new-post sheet. The draft is kept."
   },
   "compose.failed": {
-    "defaultMessage": "Could not post: {reason}",
+    "defaultMessage": "Could not send the post: {reason}",
     "description": "Error after publishing a post failed. The draft is kept. {reason} is the error message."
   },
   "compose.language.label": {
@@ -2404,7 +2404,7 @@
     "description": "Help text under the alternative text field of an attached image when the user's settings ask for a description of every image."
   },
   "compose.media.failed": {
-    "defaultMessage": "Could not attach: {reason}",
+    "defaultMessage": "Could not attach the image: {reason}",
     "description": "State of an attached image whose upload failed. {reason} is the error message."
   },
   "compose.media.failed_processing": {
@@ -2472,7 +2472,7 @@
     "description": "Button that puts a post that could not be sent back into the form."
   },
   "compose.outbox.failed": {
-    "defaultMessage": "Not sent: {reason}",
+    "defaultMessage": "Could not send the post: {reason}",
     "description": "State of a post that could not be sent. {reason} is the error message."
   },
   "compose.outbox.label": {
@@ -2856,7 +2856,7 @@
     "description": "Text below the heading of a page whose screen the web client does not have yet."
   },
   "profile.change_failed": {
-    "defaultMessage": "The change did not go through: {reason}",
+    "defaultMessage": "Could not change your relationship with the account: {reason}",
     "description": "Toast when following, blocking, muting or undoing one of them failed. {reason} is the error message."
   },
   "profile.confirm.block.action": {
@@ -3192,7 +3192,7 @@
     "description": "Button that closes the report dialog after the report was sent."
   },
   "report.failed": {
-    "defaultMessage": "The report was not sent: {reason}",
+    "defaultMessage": "Could not send the report: {reason}",
     "description": "Error in the report dialog when sending the report failed; the answers are kept. {reason} is the error message, a full sentence."
   },
   "report.forward": {
@@ -3224,7 +3224,7 @@
     "description": "Shown in the posts step of the report dialog when the account has no posts the user can see."
   },
   "report.posts.failed": {
-    "defaultMessage": "Couldn't load the posts",
+    "defaultMessage": "Could not load the posts",
     "description": "Heading of the error in the posts step of the report dialog when its posts did not load."
   },
   "report.posts.heading": {
@@ -3292,7 +3292,7 @@
     "description": "Help text under the search field while nobody is signed in: the server does not fetch unknown accounts from other servers."
   },
   "search.failed": {
-    "defaultMessage": "The search failed: {reason}",
+    "defaultMessage": "Could not search for accounts: {reason}",
     "description": "Error under the search field when the search failed for another reason. {reason} is the localized reason."
   },
   "search.label": {
@@ -3868,7 +3868,7 @@
     "description": "Menu item, on the user's own post, that asks to delete it."
   },
   "status.action.failed": {
-    "defaultMessage": "The change was not saved: {reason}",
+    "defaultMessage": "Could not save the change: {reason}",
     "description": "Toast when boosting, favouriting or bookmarking a post failed; the button is set back. {reason} is the error message, a full sentence."
   },
   "status.action.favourite": {

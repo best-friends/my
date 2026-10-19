@@ -8,6 +8,8 @@
 //          shared with Go (anything but client*)
 //   error: malformed locale directory, namespace, or key; two keys mapping to one accessor
 //   error: generated files (pseudo-locales, accessors, golden) differ from `make i18n-gen`
+//   error: copy outside the tone and punctuation rules (web-client.md G19, G20): an exclamation mark
+//          in any non-pseudo locale; an ASCII colon or comma in Japanese text (use "：" and "、")
 //   warn:  untranslated key (falls back to en at runtime)
 //   warn:  translation drops a source argument (sometimes legitimate)
 //   warn:  key not referenced from code
@@ -26,7 +28,7 @@ import {
   SOURCE,
 } from "./catalog";
 import { generate, goName } from "./generate";
-import { type Args, extractArgs, outsideSharedSubset, parseMessage, pluralCategories } from "./icu";
+import { type Args, extractArgs, literalText, outsideSharedSubset, parseMessage, pluralCategories } from "./icu";
 
 let errors = 0;
 let warnings = 0;
@@ -52,6 +54,7 @@ function analyze(locale: string, ns: string, key: string, message: unknown): Arg
         new Intl.PluralRules(formattingLocale(locale), { type: "ordinal" }).resolvedOptions().pluralCategories,
       ),
     };
+    for (const f of copyStyleFindings(locale, literalText(ast))) error(`${where}: ${f}`);
     for (const c of pluralCategories(ast)) {
       if (!rules[c.type].has(c.key)) error(`${where}: ${c.type} category "${c.key}" does not exist in ${locale}`);
     }
@@ -59,6 +62,18 @@ function analyze(locale: string, ns: string, key: string, message: unknown): Arg
   } catch (e) {
     error(`${where}: ${(e as Error).message}`);
   }
+}
+
+/** Punctuation that web-client.md G19 / G20 rule out, found in the message's own text (not its ICU syntax). */
+function copyStyleFindings(locale: string, text: string): string[] {
+  if (isPseudo(locale)) return [];
+  const out: string[] = [];
+  if (/[!！]/.test(text)) out.push("no exclamation marks in UI copy (web-client.md G19)");
+  if (new Intl.Locale(locale).language === "ja") {
+    if (text.includes(":")) out.push("use the full-width colon \"：\" in Japanese (web-client.md G20)");
+    if (text.includes(",")) out.push("use \"、\" instead of an ASCII comma in Japanese (web-client.md G20)");
+  }
+  return out;
 }
 
 function checkCatalog(catalog: Catalog) {

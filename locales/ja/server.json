@@ -316,7 +316,7 @@
     "description": "When a moderation action on the user's account ends, on the page of a signed-in user whose account is restricted. {days} is the time left, rounded up to whole days."
   },
   "auth.status.action_reason": {
-    "defaultMessage": "理由: {category}",
+    "defaultMessage": "理由：{category}",
     "description": "The reason category of a moderation action, on the page of a signed-in user whose account is restricted. {category} is the category's label (for example, Spam)."
   },
   "auth.status.action_deletes_in": {
@@ -336,7 +336,7 @@
     "description": "Title and heading of the page a signed-in user sees while a moderation action keeps their account out of the app."
   },
   "auth.status.appeal_answer": {
-    "defaultMessage": "モデレーターからの回答:",
+    "defaultMessage": "モデレーターからの回答：",
     "description": "Label before the moderators' explanation of their decision on the user's appeal, on the status page of a signed-in user whose account is restricted."
   },
   "auth.status.appeal_hint": {

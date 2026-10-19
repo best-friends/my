@@ -272,7 +272,7 @@ describe("the audit log", () => {
     const { user, router } = await renderApp({ path: "/admin/audit-log" });
 
     await user.click(await screen.findByRole("button", { name: "Show more" }));
-    expect(await screen.findByText("Couldn’t load more operations")).toBeInTheDocument();
+    expect(await screen.findByText("Could not load more operations")).toBeInTheDocument();
     expect(screen.getByText("The database is unavailable.")).toBeInTheDocument();
     expect(rows()).toHaveLength(1);
     expect(router.state.location.search).toEqual({});
@@ -280,7 +280,7 @@ describe("the audit log", () => {
     fail = false;
     await user.click(screen.getByRole("button", { name: "Show more" }));
     expect(await screen.findByRole("heading", { level: 3, name: "Domain action taken" })).toBeInTheDocument();
-    expect(screen.queryByText("Couldn’t load more operations")).not.toBeInTheDocument();
+    expect(screen.queryByText("Could not load more operations")).not.toBeInTheDocument();
   });
 
   test("says when nothing has been recorded", async () => {

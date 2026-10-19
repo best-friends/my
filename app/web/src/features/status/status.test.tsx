@@ -262,8 +262,8 @@ describe("the actions on a post", () => {
 
     await user.click(boost);
 
-    expect(await findToast("The change was not saved: Service Unavailable")).toBeInTheDocument();
-    expect(within(screen.getByRole("alert")).getByText("The change was not saved: Service Unavailable")).toBeInTheDocument();
+    expect(await findToast("Could not save the change: Service Unavailable")).toBeInTheDocument();
+    expect(within(screen.getByRole("alert")).getByText("Could not save the change: Service Unavailable")).toBeInTheDocument();
     expect(boost).toHaveAttribute("aria-pressed", "false");
     expect(boost).toHaveAccessibleDescription("1");
   });
@@ -294,7 +294,7 @@ describe("the actions on a post", () => {
     expect(sent).toEqual(["on"]);
     first.release(HttpResponse.json({ ...post, bookmarked: true }));
 
-    expect(await findToast("The change was not saved: Service Unavailable")).toBeInTheDocument();
+    expect(await findToast("Could not save the change: Service Unavailable")).toBeInTheDocument();
     expect(sent).toEqual(["on", "off"]);
     // The removal failed, so the bookmark the server kept shows.
     expect(bookmark).toHaveAttribute("aria-pressed", "true");
