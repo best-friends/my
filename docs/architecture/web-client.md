@@ -48,7 +48,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 | # | 規約 | 強制 |
 | --- | --- | --- |
 | A1 | 依存の向きは `routes → features → (@my/ui, lib)` だけにする | `boundaries/dependencies`（要素は `shell`（`web/src` 直下）・`route`・`feature`・`lib`・`ui`、テストだけが import できる `test`（`web/src/test`）と `feature-test`（`web/src/features/*/test`））、`boundaries/no-unknown-files` |
-| A2 | `@my/ui` は React・React Aria Components・Tailwind のユーティリティと、ドメインを持たない振る舞いのライブラリ（許可リストは ADR-0031）にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`@tanstack/react-virtual`・`tailwind-variants`・`tailwind-merge` だけ）、パッケージの依存関係（Bun の isolated linker） |
+| A2 | `@my/ui` は React・React Aria Components・Tailwind のユーティリティと、ドメインを持たない振る舞いのライブラリ（許可リストは ADR-0031）にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`@tanstack/react-virtual`・`tailwind-variants`・`tailwind-merge`、`Icons.tsx` だけは `react-icons` だけ）、パッケージの依存関係（Bun の isolated linker） |
 | A3 | 機能は、ほかの機能を `index.ts` 経由でだけ使う | `boundaries/dependencies`（ほかの `feature` は `index.ts` だけ） |
 | A4 | 機能のロジックは `features/<x>/hooks` のカスタムフックに置く。フックは JSX を返さない。機能の部品はフックの戻り値を `@my/ui` に渡すだけにする | レビュー |
 | A5 | 操作できる要素は `@my/ui`（React Aria Components を包んだ部品）から使う。`onClick` を付けた `div` / `span` を書かない | `no-restricted-syntax`（`div` / `span` の `onClick`・`onKeyDown`・`onPointerDown` など） |
@@ -611,10 +611,10 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| G10 | アイコンは `@my/ui` のアイコン集から使う。機能やルートに SVG のパスを書かない。アイコン集は 24 × 24 の格子、線幅 2、角は丸めて描き、新しいアイコンも同じ形で足す（ライブラリを足すときは ADR-0031 の許可リストの手順に従う） | レビュー、`knip` |
-| G11 | アイコンの大きさは置き場所で決める: 文と並ぶものは `size-4`、ボタンの中は `size-5`、ナビゲーションは `size-6`。`Button`・`ToggleButton`・`Link` が子の SVG の大きさを決め、アイコンの側では大きさを指定しない | 部品のテスト（ボタンの中の SVG が 0 × 0 でない）、スクリーンショット |
-| G12 | アイコンは飾り（`aria-hidden="true"`、`focusable="false"`）にし、意味は見える文言かアクセシブルネームで伝える。アイコンだけのボタンには `aria-label` と、同じ文言の `Tooltip` を付ける | `@my/ui` の部品のテスト、レビュー |
-| G13 | オン / オフはアイコンの形（塗りつぶし・線の太さ）でも示し、色だけに頼らない（WCAG 1.4.1）。向きのあるアイコン（返信の矢印、戻る）は `rtl:-scale-x-100` で反転し、時計回りの意味を持つもの（再読み込み）は反転しない | スクリーンショット（`ar-XB`）、レビュー |
+| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする | `no-restricted-imports`、`boundaries/dependencies`、レビュー、`knip` |
+| G11 | アイコンの大きさは置き場所で決める: 文と並ぶものは `size-4`、ボタンの中は `size-5`、ナビゲーションは `size-6`。`Button`・`ToggleButton`・`Link` が子の SVG の大きさを決め、アイコンの側では大きさを指定しない（react-icons が書く `1em` より `[&>svg]:size-*` が優先し、置き場所が決めない所では文字の大きさで描かれる） | 部品のテスト（ボタンの中の SVG が 0 × 0 でない）、スクリーンショット |
+| G12 | アイコンは飾り（`aria-hidden="true"`、`focusable="false"`、`Icons.tsx` がどのアイコンにも付ける）にし、意味は見える文言かアクセシブルネームで伝える。アイコンだけのボタンには `aria-label` と、同じ文言の `Tooltip` を付ける | `@my/ui` の部品のテスト（`Foundations/Icons` の play）、レビュー |
+| G13 | オン / オフはアイコンの形でも示し、色だけに頼らない（WCAG 1.4.1）: オンは、形が閉じるもの（星・ブックマーク・警告）を Phosphor の Fill、閉じないもの（ブースト）を Bold にする。向きのあるアイコン（返信・戻る・外部へのリンク）は `rtl:-scale-x-100` で反転し（Phosphor の `mirrored` は書字方向を見ないので使わない）、時計回りの意味を持つもの（再読み込み）や輪（ブースト）は反転しない | `Foundations/Icons` の play（`ar-XB` で向きのあるものだけが反転する）、スクリーンショット（`ar-XB`）、レビュー |
 
 ### 16.4 空・読み込み中・エラー・オフライン
 

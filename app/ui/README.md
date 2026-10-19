@@ -160,16 +160,22 @@ for example `motion-safe:transition-colors`; `make web-tokens` fails on `transit
 Icons are part of the kit, so that every screen draws the same shapes at the same sizes
 ([web-client.md §16.3](../../docs/architecture/web-client.md#163-アイコン)):
 
-- They are drawn in-house on a 24 × 24 grid with a 2px round stroke, like the existing `CloseIcon` and `ExternalLinkIcon`.
-  A screen never writes SVG paths of its own; a missing icon is added to the kit, with a story.
+- The shapes are [Phosphor](https://phosphoricons.com/)'s, through `react-icons/pi` ([ADR-0043](../../docs/adr/0043-icon-set.md)).
+  `src/Icons.tsx` is the only file that imports `react-icons`, and only `react-icons/pi` (lint enforces both). Its
+  `iconTable` maps each meaningful name (`ReplyIcon`) to its Phosphor icon off and on and to whether it has a direction;
+  each export renders one row, and the `Foundations/Icons` gallery lists the whole table with the Phosphor names.
+- The base weight is Regular. A screen never writes SVG paths of its own; a missing icon is a new row of the table
+  (look the shape up by name in the Phosphor catalog) and a new export, which the gallery then shows.
 - They are decorative: `aria-hidden="true"` and `focusable="false"`. The meaning is in the visible label or the accessible
   name of the control. An icon-only control has an `aria-label` and a `Tooltip` with the same text.
 - The control sizes its icon: `Button`, `ToggleButton` and `Link` size a child `svg` (`size-5` in buttons, also in a
   `toolbar` button among toggles, `size-4` in a small button and next to a link's text), and a `navigation` link sizes
   every `svg` in it at `size-6`. An icon sets no size of its own, and neither does the screen that places it, so it never
   renders at 0 × 0.
-- A toggle shows its state by the icon's shape (filled, or a heavier stroke) as well as its color.
-- Icons with a direction (reply, back, forward) mirror in right-to-left text with `rtl:-scale-x-100`.
+- A toggle shows its state by the icon's shape as well as its color: on is Phosphor's Fill weight for a shape that closes
+  (star, bookmark, warning) and the Bold weight for one that does not (boost).
+- Icons with a direction (reply, back, external link) mirror in right-to-left text with `rtl:-scale-x-100`; Phosphor's
+  `mirrored` ignores the writing direction, so it is not used.
 
 ## States of a region
 
