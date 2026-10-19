@@ -114,7 +114,7 @@ describe("the search page", () => {
 
     await user.type(field, "@dave@elsewhere.example{Enter}");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("The search failed: Internal Server Error");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not search for accounts: Internal Server Error");
   });
 
   test("starts with the search in the address", async () => {

@@ -305,7 +305,7 @@ describe("a report's page", () => {
     await user.type(field, "A note");
     await user.click(screen.getByRole("button", { name: "Add note" }));
 
-    expect(await screen.findByText("The note could not be added: Service Unavailable")).toBeInTheDocument();
+    expect(await screen.findByText("Could not add the note: Service Unavailable")).toBeInTheDocument();
     expect(field).toHaveValue("A note");
     expect(field).toBeInvalid();
   });
@@ -419,7 +419,7 @@ describe("a report's page", () => {
     const dialog = await screen.findByRole("alertdialog");
     await user.click(within(dialog).getByRole("button", { name: "Ban" }));
 
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent("The action could not be taken: Service Unavailable");
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Could not take the action: Service Unavailable");
   });
 
   test("an account of another server takes only the actions for it, and is not told", async () => {
@@ -460,7 +460,7 @@ describe("a report's page", () => {
 
     await user.click(await screen.findByRole("button", { name: "Resolve as actioned" }));
 
-    expect(await screen.findByText("The report could not be resolved: Service Unavailable")).toBeInTheDocument();
+    expect(await screen.findByText("Could not resolve the report: Service Unavailable")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resolve as actioned" })).toBeInTheDocument();
   });
 

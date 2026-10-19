@@ -175,9 +175,9 @@ describe("the new-post form", () => {
     await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Do not lose me");
     await user.click(within(sheet).getByRole("button", { name: "Post" }));
 
-    expect(await within(sheet).findByText("Could not post: The server is busy")).toBeInTheDocument();
+    expect(await within(sheet).findByText("Could not send the post: The server is busy")).toBeInTheDocument();
     expect(within(sheet).getByRole("textbox", { name: "Your post" })).toHaveValue("Do not lose me");
-    expect(screen.getByRole("alert")).toHaveTextContent("Could not post: The server is busy");
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not send the post: The server is busy");
 
     await user.click(within(sheet).getByRole("button", { name: "Post" }));
 
@@ -210,7 +210,7 @@ describe("the new-post form", () => {
     await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "Second");
     fail();
 
-    expect(await within(outbox).findByText("Not sent: Broken")).toBeInTheDocument();
+    expect(await within(outbox).findByText("Could not send the post: Broken")).toBeInTheDocument();
     expect(within(sheet).getByRole("textbox", { name: "Your post" })).toHaveValue("Second");
     await user.click(within(outbox).getByRole("button", { name: "Send again" }));
 
