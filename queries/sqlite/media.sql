@@ -65,6 +65,15 @@ WHERE m.origin = 'upload' AND m.id > sqlc.arg(after_id) AND m.id < sqlc.arg(befo
 ORDER BY m.id
 LIMIT sqlc.arg(row_limit);
 
+-- The uploads of an owner by ID, with whether a status revision attaches each, for the erasure
+-- of a deleted account (data-model section 8).
+-- name: ListOwnerUploads :many
+SELECT m.id, CAST(EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = m.id) AS BOOLEAN) AS attached
+FROM media_files m
+WHERE m.owner_account_id = sqlc.arg(owner_account_id) AND m.origin = 'upload' AND m.id > sqlc.arg(after_id)
+ORDER BY m.id
+LIMIT sqlc.arg(row_limit);
+
 -- name: UpsertMediaDescription :exec
 INSERT INTO media_descriptions (media_id, description) VALUES (?, ?)
 ON CONFLICT (media_id) DO UPDATE SET description = excluded.description;

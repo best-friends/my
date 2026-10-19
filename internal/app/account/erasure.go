@@ -54,9 +54,10 @@ type ErasureStep struct {
 
 // DataEraser erases one module's part of a deleted local account's data (data-model §8). Each
 // call is one short transaction that deletes at most about limit rows, starting from cursor (""
-// for the first batch of a run), and is safe to repeat. The content, graph, timeline,
-// notification, and identity modules implement it; the composition root hands them to the
-// erasure in that order.
+// for the first batch of a run), and is safe to repeat; external I/O such as blob deletions runs
+// outside that transaction. The content, graph, timeline, notification, and identity modules
+// implement it; the composition root hands them to the erasure in that order, except that the
+// content module's media files go after the notifications.
 type DataEraser interface {
 	EraseAccountData(ctx context.Context, target ErasureTarget, cursor string, limit int) (ErasureStep, error)
 }
@@ -103,11 +104,12 @@ type ErasureDeps struct {
 // Eraser runs JobEraseDeletedAccounts (data-model §8): a local account deleted longer than the
 // delay ago, that no retention hold preserves, loses its statuses (each recorded as deleted with
 // origin account_deletion first), its favourites, bookmarks, pins, boosts, follows, blocks, mutes,
-// its timeline and notification rows, its user's email addresses, credentials, sessions,
-// tokens, preferences, and registration application, and its profile revisions and keys. The
-// account's row with its URI and domain, its username, its lifecycle, and the moderation records
-// stay. A status that a report or an action points at keeps its rows until the moderation
-// purge erases that record, and the account is recorded as erased only when nothing is left.
+// its timeline and notification rows, its uploads with their blobs, its user's email addresses,
+// credentials, sessions, tokens, preferences, and registration application, and its profile
+// revisions and keys. The account's row with its URI and domain, its username, its lifecycle,
+// and the moderation records stay. A status that a report or an action points at keeps its rows
+// and its media files until the moderation purge erases that record, and the account is
+// recorded as erased only when nothing is left.
 type Eraser struct{ d ErasureDeps }
 
 // NewEraser returns the erasure on d.

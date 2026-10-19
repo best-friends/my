@@ -613,20 +613,9 @@ func (s *MediaService) deleteUnattached(ctx context.Context, id string) (bool, e
 			return false, err
 		}
 	}
-	var keys []string
-	if up, err := s.d.Repository.FindUploadedMedia(ctx, id); err == nil {
-		keys = append(keys, up.BlobKey)
-	} else if !errors.Is(err, ErrNotFound) {
-		return false, err
-	}
-	results, err := s.d.Repository.ListProcessingResults(ctx, id)
+	keys, err := mediaBlobKeys(ctx, s.d.Repository, id)
 	if err != nil {
 		return false, err
-	}
-	for _, r := range results {
-		for _, v := range r.Variants {
-			keys = append(keys, v.BlobKey)
-		}
 	}
 	var deleted bool
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {

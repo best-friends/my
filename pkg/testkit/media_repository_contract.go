@@ -40,7 +40,8 @@ type MediaFactory func(t *testing.T, opts uow.Options) MediaHarness
 // result with its variants and deletes the file as received, failures recorded as results,
 // focal points and descriptions as current values that only the uploader reads and changes
 // until a status attaches the file, the cleanup of old unattached uploads that keeps attached
-// and referenced ones, remote media files recorded once per owner and URL, and the media
+// and referenced ones, the erasure of a deleted account's uploads with their blobs that keeps
+// the attached and referenced ones, remote media files recorded once per owner and URL, and the media
 // proxy's remote media cache with its cleanup.
 func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 	t.Helper()
@@ -59,6 +60,7 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"UpdatesOnlyOwnUnattachedUploads", mediaUpdates},
 		{"CleansUpOldUnattachedUploads", mediaCleansUp},
 		{"CleanupPagesPastReferencedUploads", mediaCleanupPages},
+		{"ErasesDeletedAccountsUploads", mediaErasesDeletedAccounts},
 		{"RecordsRemoteMediaOnce", mediaRecordsRemoteMedia},
 		{"CachesRemoteMediaUnderThePolicy", mediaCachesRemoteMedia},
 		{"CleansUpTheRemoteMediaCache", mediaCleansUpRemoteMediaCache},
@@ -609,5 +611,125 @@ func mediaCleanupPages(t *testing.T, e *mediaEnv) {
 	}
 	if _, err := e.service.Media(t.Context(), last.File.ID); !errors.Is(err, appcontent.ErrNotFound) {
 		t.Errorf("the upload after %d referenced ones was kept: %v", n-1, err)
+	}
+}
+
+// failingDeletes is a blob store whose deletions fail while fail is set.
+type failingDeletes struct {
+	blob.Store
+	fail bool
+}
+
+var errBlobDelete = errors.New("testkit: blob deletion failed")
+
+func (f *failingDeletes) Delete(ctx context.Context, key string) error {
+	if f.fail {
+		return errBlobDelete
+	}
+	return f.Store.Delete(ctx, key)
+}
+
+// eraseMedia runs the media eraser on the owner's uploads in batches of limit to the end of a
+// run, and reports whether a batch kept something.
+func (e *mediaEnv) eraseMedia(t *testing.T, er *appcontent.MediaEraser, owner string, limit int) bool {
+	t.Helper()
+	kept, cursor := false, ""
+	for range 100 {
+		step, err := er.EraseAccountData(t.Context(), appaccount.ErasureTarget{AccountID: owner}, cursor, limit)
+		if err != nil {
+			t.Fatalf("EraseAccountData(%q) = %v", cursor, err)
+		}
+		kept = kept || step.Kept
+		if step.Done {
+			return kept
+		}
+		cursor = step.Next
+	}
+	t.Fatal("the media eraser did not reach the end")
+	return kept
+}
+
+func mediaErasesDeletedAccounts(t *testing.T, e *mediaEnv) {
+	ctx := t.Context()
+	plain := e.upload(t, FixturePNG(4, 3, false))
+	e.process(t, plain.File.ID)
+	if _, err := e.service.Update(ctx, mediaOwner, appcontent.MediaUpdate{MediaID: plain.File.ID, Description: ptr("a cat")}); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.service.SetFocus(ctx, mediaOwner, content.MediaFocus{MediaID: plain.File.ID, X: 0.1}); err != nil {
+		t.Fatal(err)
+	}
+	unprocessed := e.upload(t, FixturePNG(4, 3, false))
+	attached := e.upload(t, FixturePNG(4, 3, false))
+	e.process(t, attached.File.ID)
+	e.attach(t, attached.File.ID)
+	referenced := e.upload(t, FixturePNG(4, 3, false))
+	e.process(t, referenced.File.ID)
+	e.referrers[referenced.File.ID] = true
+	other, err := e.service.Upload(ctx, appcontent.UploadInput{
+		OwnerAccountID: "0192f0c1-0000-7000-8000-0000000000b0", Content: bytes.NewReader(FixturePNG(4, 3, false)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blobsOf := func(id string) int {
+		n := 0
+		for _, k := range e.blobs.Keys() {
+			if strings.Contains(k, id) {
+				n++
+			}
+		}
+		return n
+	}
+
+	store := &failingDeletes{Store: e.blobs, fail: true}
+	er := appcontent.NewMediaEraser(appcontent.MediaErasureDeps{
+		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Media, Blobs: store, Referrers: []appcontent.MediaReferrer{e.referrers},
+	})
+	// A failed blob deletion keeps the rows, which the next run deletes again.
+	if _, err := er.EraseAccountData(ctx, appaccount.ErasureTarget{AccountID: mediaOwner}, "", 10); !errors.Is(err, errBlobDelete) {
+		t.Fatalf("EraseAccountData with failing deletions = %v, want errBlobDelete", err)
+	}
+	if _, err := e.service.Media(ctx, plain.File.ID); err != nil {
+		t.Fatalf("a failed blob deletion lost the rows: %v", err)
+	}
+	store.fail = false
+	// Batches of one file exercise the continuation.
+	if kept := e.eraseMedia(t, er, mediaOwner, 1); !kept {
+		t.Error("the run did not report the attached upload as kept")
+	}
+	for _, gone := range []appcontent.Media{plain, unprocessed} {
+		if _, err := e.service.Media(ctx, gone.File.ID); !errors.Is(err, appcontent.ErrNotFound) {
+			t.Errorf("erased upload: Media = %v, want ErrNotFound", err)
+		}
+		if _, err := e.h.Media.FindFocus(ctx, gone.File.ID); !errors.Is(err, appcontent.ErrNotFound) {
+			t.Errorf("erased upload kept its focus: %v", err)
+		}
+		if _, err := e.h.Media.FindDescription(ctx, gone.File.ID); !errors.Is(err, appcontent.ErrNotFound) {
+			t.Errorf("erased upload kept its description: %v", err)
+		}
+		if rs, err := e.h.Media.ListProcessingResults(ctx, gone.File.ID); err != nil || len(rs) != 0 {
+			t.Errorf("erased upload kept %d results (%v)", len(rs), err)
+		}
+		if n := blobsOf(gone.File.ID); n != 0 {
+			t.Errorf("erased upload kept %d blobs", n)
+		}
+	}
+	for _, kept := range []appcontent.Media{attached, referenced, other} {
+		if _, err := e.service.Media(ctx, kept.File.ID); err != nil {
+			t.Errorf("kept upload: Media = %v", err)
+		}
+	}
+	for _, kept := range []appcontent.Media{attached, referenced} {
+		if n := blobsOf(kept.File.ID); n != 2 {
+			t.Errorf("kept upload has %d blobs, want its 2 variants", n)
+		}
+	}
+	// A second run keeps the same files.
+	if kept := e.eraseMedia(t, er, mediaOwner, 10); !kept {
+		t.Error("the second run did not report the attached upload as kept")
+	}
+	if _, err := e.service.Media(ctx, attached.File.ID); err != nil {
+		t.Errorf("the second run erased the attached upload: %v", err)
 	}
 }

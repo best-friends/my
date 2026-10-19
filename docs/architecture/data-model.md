@@ -1195,7 +1195,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
 | --- | --- | --- | --- |
 | 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
-| アカウント削除（FR-008） | `account_lifecycle_events`（`deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・ブックマーク・ピン留めを含む）、本人のお気に入り・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）、`feed_*` の本人の行 | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与 |
+| アカウント削除（FR-008） | `account_lifecycle_events`（`deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・ブックマーク・ピン留めを含む）、本人のお気に入り・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）、`feed_*` の本人の行、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
 | BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
 | モデレーション記録の保持期間（ADR-0038） | なし（期限は記録の日時から求める。§4.3 記録の保持期間） | 保持期間を過ぎた通報と子テーブル・処分と子テーブル・異議申し立て・監査ログ・`session_origins`・`registration_origins`・解除か期限切れから 30 日の `signup_blocks` | 保全（`retention_holds`）のあるアカウントの記録、未解決の通報、処分が参照する通報、終わっていない処分と審査待ちの異議申し立て |
 | リモート投稿の保持期間（FR-803） | `status_deletions`（`origin = retention`） | `statuses`・版と子テーブル・投票・投影の行・リモートのアカウントのブースト（§4.4 リモート投稿の保持期間） | `status_deletions`（取得し直しは拒まない）、ローカルのアカウントのブースト・お気に入り・ブックマーク・ピン留め・通知 |
@@ -1203,11 +1203,12 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 - `Delete`（Actor）は、`active` なフォロワーの inbox と、既知の shared inbox（削除されていないリモートの Actor の `remote_account_heads.shared_inbox_url`）に送ります。
 - 消去は「イベントを記録 → 投影から即時に除外 → 消去ジョブが一定件数ずつ物理削除」の順です。表示から消えるのは即時、物理削除は非同期です。
 - アカウント削除の消去は、1 時間ごとのジョブ `account.erase_deleted` が、`deleted` から 7 日を過ぎた、保全（§4.3）の無いローカルのアカウントに行います。
-  - モジュールごとの消去（`content` → `graph` → `timeline` → `notification` → `identity` → `account`）を、1 文あたり 100 行（投稿は 100 件）・1 回のジョブで 50 トランザクションまで行い、使い切ったらカーソル（アカウントの ID）を持った次のジョブが続けます。どれも再実行してよい。
+  - モジュールごとの消去（`content` の投稿と操作 → `graph` → `timeline` → `notification` → `content` のメディア → `identity` → `account`）を、1 文あたり 100 行（投稿は 100 件）・1 回のジョブで 50 トランザクションまで行い、使い切ったらカーソル（アカウントの ID）を持った次のジョブが続けます。どれも再実行してよい。
   - 削除されていない投稿には `status_deletions`（`origin = account_deletion`）を記録して `content.status_deleted` を発行し（投影・`feed_*` から外れる）、同じトランザクションで行を消します。投稿ごとの `Delete` は送りません（`Delete`（Actor）が代わりを務める）。
   - 有効なフォローは `follow_terminations`（`account_deleted`）で終わらせ、相手の `follow_counters` から引いてから消します。相手のサーバーには何も送りません。
   - 通報か投稿単位の処分が指す投稿（`moderation` の `StatusRetained`）は、削除だけを記録して行を残し、その記録が消えた後の回で消します。それまで `account_erasures` は記録せず、毎回そのアカウントを調べ直します。
-  - メディアのファイル（`media_files` と Blob）は、このジョブでは消しません（#460）。
+  - 本人のアップロードは、Blob（受け取ったままのファイルと各処理結果の版）をトランザクションの外で消してから、同じ回の 1 トランザクションで `media_files` と子テーブル（`uploaded_media`・`media_processing_results`・`media_variants`・`media_focus`・`media_descriptions`）を消します。行が残りの消去の記録なので、Blob の削除に失敗しても次の回が消し直します（存在しない Blob の削除は成功する）。
+  - 残した投稿の版が添付するファイルは、投稿と同じく記録が消えた後の回で消します（ADR-0038）。インスタンス設定（§4.9）のどれかの版が指すファイルはインスタンスのものとして残し、消去を止めません。プロフィールの版が指すアバターとヘッダーは、プロフィールと一緒に消えます。
 
 ## 9. 投影の再構築と検証
 

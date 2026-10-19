@@ -221,6 +221,21 @@ func (r *MediaRepository) ListUnattachedUploads(ctx context.Context, afterID str
 	return ids, wrap(err, "list unattached uploads")
 }
 
+// ListOwnerUploads implements content.MediaRepository.
+func (r *MediaRepository) ListOwnerUploads(ctx context.Context, ownerAccountID, afterID string, limit int) ([]appcontent.OwnedUpload, error) {
+	rows, err := r.db.reader().ListOwnerUploads(ctx, sqlitegen.ListOwnerUploadsParams{
+		OwnerAccountID: ownerAccountID, AfterID: afterID, RowLimit: int64(limit),
+	})
+	if err != nil {
+		return nil, wrap(err, "list owner uploads")
+	}
+	out := make([]appcontent.OwnedUpload, len(rows))
+	for i, row := range rows {
+		out[i] = appcontent.OwnedUpload{MediaID: row.ID, Attached: row.Attached}
+	}
+	return out, nil
+}
+
 // UpsertDescription implements content.MediaRepository.
 func (r *MediaRepository) UpsertDescription(ctx context.Context, tx uow.Tx, d content.MediaDescription) error {
 	q, err := queries(tx)

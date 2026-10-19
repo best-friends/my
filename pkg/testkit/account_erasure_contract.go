@@ -3,7 +3,9 @@
 package testkit
 
 import (
+	"bytes"
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	appidentity "github.com/best-friends/my/internal/app/identity"
+	"github.com/best-friends/my/internal/app/media"
 	appnotification "github.com/best-friends/my/internal/app/notification"
 	apptimeline "github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
@@ -39,7 +42,7 @@ type AccountErasureFactory func(t *testing.T, opts uow.Options) AccountErasureHa
 // AccountErasureContract verifies the erasure of deleted local accounts (data-model §8) on a
 // database adapter, with the real modules: an account deleted longer than the delay ago, without
 // a retention hold, loses its personal data (profile, keys, email addresses, credentials,
-// sessions, preferences, statuses, favourites, bookmarks, boosts, follows, mutes,
+// sessions, preferences, statuses, favourites, bookmarks, boosts, follows, mutes, uploads,
 // notifications, timeline rows) while its row, URI, domain, username, and lifecycle stay; its
 // statuses become deletions with origin account_deletion, the other accounts' counters lose it,
 // and a status that the moderation records need keeps its rows until they are gone, after which
@@ -60,7 +63,9 @@ func AccountErasureContract(t *testing.T, newHarness AccountErasureFactory) {
 
 type erasureEnv struct {
 	*retentionEnv
-	eh AccountErasureHarness
+	eh    AccountErasureHarness
+	blobs *MemoryBlobStore
+	media *appcontent.MediaService
 }
 
 func newErasureEnv(t *testing.T, newHarness AccountErasureFactory) *erasureEnv {
@@ -70,7 +75,36 @@ func newErasureEnv(t *testing.T, newHarness AccountErasureFactory) *erasureEnv {
 		eh = newHarness(t, opts)
 		return eh.RetentionHarness
 	})
-	return &erasureEnv{retentionEnv: re, eh: eh}
+	blobs := NewMemoryBlobStore(re.clock)
+	svc := appcontent.NewMediaService(appcontent.MediaDeps{
+		UnitOfWork: eh.UnitOfWork, Repository: eh.Media, Blobs: blobs, Processor: FakeMediaProcessor{},
+		Jobs: &recordingJobs{}, Clock: re.clock, IDs: re.ids, Limits: media.Limits{MaxBytes: 1 << 20},
+	})
+	return &erasureEnv{retentionEnv: re, eh: eh, blobs: blobs, media: svc}
+}
+
+// upload uploads and processes an image of the account and returns its media file ID.
+func (e *erasureEnv) upload(t *testing.T, accountID string) string {
+	t.Helper()
+	m, err := e.media.Upload(t.Context(), appcontent.UploadInput{OwnerAccountID: accountID, Content: bytes.NewReader(FixturePNG(4, 3, false))})
+	if err != nil {
+		t.Fatalf("Upload = %v", err)
+	}
+	if res := e.media.Process(t.Context(), m.File.ID); !res.IsDone() {
+		t.Fatalf("Process = %+v, want Done", res)
+	}
+	return m.File.ID
+}
+
+// blobsOf returns the number of blobs of a media file.
+func (e *erasureEnv) blobsOf(mediaID string) int {
+	n := 0
+	for _, k := range e.blobs.Keys() {
+		if strings.Contains(k, mediaID) {
+			n++
+		}
+	}
+	return n
 }
 
 // stubHolds stands in for the moderation module's retention holds.
@@ -95,6 +129,7 @@ func (e *erasureEnv) eraser(evidence appcontent.RetainedStatuses, holds appaccou
 			appgraph.NewEraser(u, e.eh.Graph, e.eh.GraphErasure, e.clock),
 			apptimeline.NewEraser(u, e.eh.TimelineErasure),
 			notifications,
+			appcontent.NewMediaEraser(appcontent.MediaErasureDeps{UnitOfWork: u, Repository: e.eh.Media, Blobs: e.blobs}),
 			appidentity.NewEraser(u, e.eh.IdentityErasure),
 		},
 	})
@@ -168,6 +203,7 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 		t.Fatalf("Delete = %v", err)
 	}
 	bobs := e.postAs(t, bob, "bob's")
+	aliceUpload, bobUpload := e.upload(t, aliceID), e.upload(t, bob)
 	// Bob interacts with alice's statuses, alice with bob's.
 	if _, err := e.interactions.Favourite(ctx, bob, plain.ID); err != nil {
 		t.Fatal(err)
@@ -250,6 +286,18 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 	e.rows(t, "notifications", "source_account_id", aliceID, 0)
 	e.rows(t, "notifications", "status_id", plain.ID, 0)
 	e.rows(t, "local_statuses", "author_account_id", aliceID, 1) // the reported one
+	// Alice's uploads go with their blobs; bob's stay.
+	e.rows(t, "media_files", "owner_account_id", aliceID, 0)
+	for _, table := range []string{"uploaded_media", "media_processing_results"} {
+		e.rows(t, table, "media_id", aliceUpload, 0)
+	}
+	if n := e.blobsOf(aliceUpload); n != 0 {
+		t.Errorf("alice's upload kept %d blobs", n)
+	}
+	e.rows(t, "media_files", "owner_account_id", bob, 1)
+	if n := e.blobsOf(bobUpload); n != 2 {
+		t.Errorf("bob's upload has %d blobs, want its 2 variants", n)
+	}
 
 	// The statuses are deletions; the reported one keeps its rows for now.
 	for _, st := range []content.Status{plain, gone} {
