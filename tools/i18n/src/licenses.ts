@@ -32,8 +32,9 @@ const reviewed: Record<string, string> = {
   // CC BY 4.0 as compatible with GPLv3, and so with AGPLv3.
   "caniuse-lite@1.0.30001814": "CC-BY-4.0",
   // Glob matcher that the lint's ESLint plugins pull in through their peers eslint and
-  // @typescript-eslint/typescript-estree (app/ lint only; never bundled into the client). The Blue Oak Model License 1.0.0 is an OSI-approved permissive license with only a
-  // notice condition, so it imposes nothing that conflicts with AGPL-3.0.
+  // @typescript-eslint/typescript-estree (app/ lint only; never bundled into the client). The Blue
+  // Oak Model License 1.0.0 is an OSI-approved permissive license with only a notice condition, so it
+  // imposes nothing that conflicts with AGPL-3.0.
   "minimatch@10.2.6": "BlueOak-1.0.0",
   // The YAML loader's argument parser (js-yaml, through @redocly/openapi-core), which openapi-typescript
   // runs in `make generate` (app/web devDependency; never bundled into the client). The FSF lists the
