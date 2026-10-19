@@ -44,6 +44,7 @@ import (
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
+	domaininstance "github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/activitypub"
 	"github.com/best-friends/my/internal/interface/authpages"
@@ -465,7 +466,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		InstanceName: func(ctx context.Context) string { return a.instanceName(ctx, "") },
-		Accounts:     a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph, Inbox: a.Inbox,
+		// Sign-ups that wait for a moderator's approval are open, as Mastodon reports them.
+		OpenRegistrations: func(ctx context.Context) (bool, error) {
+			mode, err := a.Instance.RegistrationMode(ctx)
+			return mode == domaininstance.RegistrationOpen || mode == domaininstance.RegistrationApproval, err
+		},
+		Accounts: a.Accounts, Objects: a.newObjects(cfg), Graph: a.Graph, Inbox: a.Inbox,
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
 	}).Register(a)

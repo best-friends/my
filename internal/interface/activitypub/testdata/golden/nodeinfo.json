@@ -12,7 +12,7 @@
     "inbound": [],
     "outbound": []
   },
-  "openRegistrations": false,
+  "openRegistrations": true,
   "usage": {
     "users": {
       "total": 4
