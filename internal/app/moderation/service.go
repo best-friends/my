@@ -150,6 +150,9 @@ type Deps struct {
 	Outbox    queue.Outbox
 	Clock     kernel.Clock
 	IDs       kernel.IDGenerator
+	// Evidence presents the statuses of a report to the moderators (ReportStatuses); nil
+	// presents none.
+	Evidence Evidence
 }
 
 // Service runs the moderation module's use cases: actions on domains and accounts, their lifts,
