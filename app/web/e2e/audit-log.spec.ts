@@ -98,10 +98,28 @@ function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
 }
 
-/** Plays the API of a signed-in operator: the audit log two entries per page. Returns the audit log requests. */
-async function operatorServer(page: Page) {
+/**
+ * How long the audit log takes once a domain action is lifted: a slow server, so that a log shown from its cache
+ * before the log comes again would show it without the lift (#475).
+ */
+const slowLogMs = 1500;
+
+type DomainAction = Record<string, unknown> & { id: string; state: string };
+
+/** The limit on the long domain that the log's domain_action_issued entry records, in effect. */
+const domainLimit: DomainAction = { id: "0192f0c4-7a8e-7000-8000-0000000000a2", domain: longDomain, kind: "limit", obfuscate: false, state: "active", issued_at: "2026-10-16T09:30:00Z" };
+
+/**
+ * Plays the API of a signed-in operator: the audit log two entries per page. With `domains`, the operator also
+ * manages domains: the limit on the long domain is listed, and lifting it records the lift and makes the log slow.
+ * Returns the audit log requests.
+ */
+async function operatorServer(page: Page, { domains = false }: { domains?: boolean } = {}) {
   const locale = test.info().project.use.locale ?? "en";
   const requests: string[] = [];
+  let log = entries;
+  let limit = domainLimit;
+  let slowLog = false;
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow admin" }));
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
@@ -112,20 +130,29 @@ async function operatorServer(page: Page) {
     if (key === "GET /instance") {
       return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, rules: [] });
     }
-    if (key === "GET /accounts/verify_credentials") return json(route, operator);
+    if (key === "GET /accounts/verify_credentials") return json(route, domains ? { ...operator, permissions: ["view_audit", "manage_domains"] } : operator);
     if (key === "GET /preferences") {
       return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "und", require_media_description: false, timeline_languages: [] });
     }
     if (key === "GET /admin/audit_log") {
       requests.push(url.search);
+      if (slowLog) await new Promise((resolve) => setTimeout(resolve, slowLogMs));
       const actor = url.searchParams.get("actor_account_id");
       const action = url.searchParams.get("action");
-      const matching = entries.filter((entry) => (actor === null || entry.actor_account_id === actor) && (action === null || entry.action === action));
+      const matching = log.filter((entry) => (actor === null || entry.actor_account_id === actor) && (action === null || entry.action === action));
       const cursor = url.searchParams.get("cursor");
       const start = cursor === null ? 0 : matching.findIndex((entry) => entry.id === cursor) + 1;
       const items = matching.slice(start, start + 2);
       const last = items.at(-1);
       return json(route, start + 2 < matching.length && last !== undefined ? { items, next_cursor: last.id } : { items });
+    }
+    if (domains && key === "GET /admin/domain_actions") return json(route, { items: url.searchParams.get("active") === "true" && limit.state !== "active" ? [] : [limit] });
+    if (domains && key === `POST /admin/domain_actions/${domainLimit.id}/lift`) {
+      limit = { ...limit, state: "lifted", lifted_at: "2026-10-17T10:00:00Z" };
+      const lift: Entry = { ...entries[1], id: "0192f0c4-7a8e-7000-8000-0000000a0005", actor_account_id: operator.id, actor_account: operator, action: "domain_action_lifted", occurred_at: "2026-10-17T10:00:00Z" };
+      log = [lift, ...log];
+      slowLog = true;
+      return json(route, limit);
     }
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
@@ -217,5 +244,28 @@ test.describe("audit log", () => {
       `?limit=40&actor_account_id=${moderator.id}`,
       `?limit=40&actor_account_id=${moderator.id}&action=domain_action_issued`,
     ]);
+  });
+
+  test("shows a lift made on the domain actions at once when going back, however slowly the log comes", async ({ page, makeAxeBuilder }) => {
+    await operatorServer(page, { domains: true });
+    await page.goto("/admin/audit-log");
+    await expect(rows(page)).toHaveCount(2);
+
+    // The domain action's row links to the domain's actions; lifting the limit there is recorded in the log.
+    await rows(page).nth(1).getByRole("link").first().click();
+    await expect(page).toHaveURL(/\/admin\/domain-actions\?/);
+    const lift = page.getByRole("main").getByRole("button").filter({ hasText: new RegExp(`^${message("admin.domain_actions.lift").replace(/[\\^$.*+?()[\]{}|]/g, "\\$&")}$`) });
+    await expect(lift).toHaveCount(1);
+    await lift.click();
+    await expect(lift).toHaveCount(0);
+
+    // Back on the log, the lift heads it as soon as the operations show, though the server answers the log
+    // slowly now: the log is not shown from a cache older than the lift.
+    await page.goBack();
+    await expect(page).toHaveURL(/\/admin\/audit-log$/);
+    await expect(rows(page)).toHaveCount(2);
+    expect(await rows(page).first().getByRole("heading", { level: 3 }).textContent()).toBe(message("admin.audit_log.action.domain_action_lifted"));
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
   });
 });

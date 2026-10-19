@@ -10,6 +10,7 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { refreshAdminAccount } from "../api/accounts";
+import { refreshAuditLog } from "../api/admin";
 import {
   type AccountAction,
   type AccountActionCategory,
@@ -125,8 +126,9 @@ export type AccountActionForm = {
 
 /**
  * The form of a moderation action on `target`. `onIssued(action)` is called once the server has taken it and the
- * account, its actions and the searches (and, for an action that resolves a report, the lists of reports) are
- * fetched again, after the form is emptied; the caches of the reports and the deleted posts are marked stale.
+ * account, its actions, the searches and the audit log (and, for an action that resolves a report, the lists of
+ * reports) are fetched again, after the form is emptied; the caches of the reports and the deleted posts are
+ * marked stale.
  */
 export function useAccountActionForm(target: ActionTarget, onIssued: (action: AccountAction) => void): AccountActionForm {
   const api = useApi();
@@ -140,12 +142,14 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
     ...createAccountActionMutation(api),
     onSuccess: async (action, { accountId, body }) => {
       // The account has a new action and maybe another state and restrictions (its page and the searches), and
-      // the report it follows from is resolved: it leaves the open tab and the counts. The action is done once
-      // they are fetched again (the form stays pending until then), so that going back to a search or the queue
-      // shows them as they are now, not as they were (refreshAdminAccount, refreshReportLists).
+      // the report it follows from is resolved: it leaves the open tab and the counts. The audit log records the
+      // action. The action is done once they are fetched again (the form stays pending until then), so that going
+      // back to a search, the queue or the log shows them as they are now, not as they were (refreshAdminAccount,
+      // refreshReportLists, refreshAuditLog).
       await Promise.all([
         refreshAdminAccount(queryClient, api, accountId, { actions: true }),
         body.report_id === undefined ? undefined : refreshReportLists(queryClient),
+        refreshAuditLog(queryClient),
       ]);
       setConfirming(false);
       setDraft(emptyDraft(target));

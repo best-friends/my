@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { type Translate, useT } from "../../../lib/i18n";
+import { refreshAuditLog } from "../api/admin";
 import { decideRegistrationMutation, isAdminCountsQuery, type Registration, type RegistrationDecision, registrationsQueryOptions } from "../api/registrations";
 import { type PagedList, toPagedList } from "./pagedList";
 
@@ -65,9 +66,9 @@ export type RegistrationReview = {
 };
 
 /**
- * Deciding registrations. `onDecided(userId)` is called just before the registration leaves the list (to keep
- * focus, lib/useFocusAfterRemoval). A registration that another moderator decided first keeps that decision;
- * it leaves the list too, and the status says which decision stands.
+ * Deciding registrations. `onDecided(userId)` is called, once the audit log is fetched again, just before the
+ * registration leaves the list (to keep focus, lib/useFocusAfterRemoval). A registration that another moderator
+ * decided first keeps that decision; it leaves the list too, and the status says which decision stands.
  */
 export function useRegistrationReview(onDecided: (userId: string) => void): RegistrationReview {
   const api = useApi();
@@ -78,7 +79,10 @@ export function useRegistrationReview(onDecided: (userId: string) => void): Regi
   const listKey = registrationsQueryOptions(api).queryKey;
   const mutation = useMutation({
     ...decideRegistrationMutation(api),
-    onSuccess: (registration, { userId, decision }) => {
+    onSuccess: async (registration, { userId, decision }) => {
+      // The audit log records the decision: it is done once the log is fetched again (the confirmation stays
+      // pending until then), so that going back to the log shows it at once (refreshAuditLog).
+      await refreshAuditLog(queryClient);
       setDialog((current) => current && { ...current, isOpen: false });
       onDecided(userId);
       queryClient.setQueryData(

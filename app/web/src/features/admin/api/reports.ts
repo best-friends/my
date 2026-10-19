@@ -9,7 +9,7 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { pageQuery, refreshQueries } from "./admin";
+import { pageQuery, refreshAuditLog, refreshQueries } from "./admin";
 
 type Schemas = components["schemas"];
 
@@ -93,16 +93,21 @@ export function refreshReportLists(queryClient: QueryClient): Promise<void> {
 }
 
 /**
- * Fetches again the lists that a change of a report changes (refreshReportLists), then puts `report`, as the
- * operation answered it, into the cache: the page of the report shows the change once the queue has it too.
+ * Fetches again the lists that a change of a report changes (refreshReportLists) and the audit log, which
+ * records it (refreshAuditLog), then puts `report`, as the operation answered it, into the cache: the page of the
+ * report shows the change once the queue and the log have it too.
  */
 export async function storeReport(queryClient: QueryClient, api: Api, report: ReportDetail): Promise<void> {
-  await refreshReportLists(queryClient);
+  await Promise.all([refreshReportLists(queryClient), refreshAuditLog(queryClient)]);
   queryClient.setQueryData(reportQueryOptions(api, report.id).queryKey, report);
 }
 
-/** Puts `report` after a new note into the cache. A note changes no row of the lists of reports. */
-export function storeReportNote(queryClient: QueryClient, api: Api, report: ReportDetail): void {
+/**
+ * Fetches again the audit log, which records a new note (refreshAuditLog), then puts `report` after the note into
+ * the cache. A note changes no row of the lists of reports.
+ */
+export async function storeReportNote(queryClient: QueryClient, api: Api, report: ReportDetail): Promise<void> {
+  await refreshAuditLog(queryClient);
   queryClient.setQueryData(reportQueryOptions(api, report.id).queryKey, report);
 }
 

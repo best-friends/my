@@ -19,6 +19,7 @@ import {
   isDomainActionsQuery,
   liftDomainActionMutation,
   type NewDomainAction,
+  refreshAuditLog,
   refreshDomainActionLists,
 } from "../api/admin";
 import { type PagedList, toPagedList } from "./pagedList";
@@ -53,8 +54,9 @@ export type LiftDomainAction = {
 };
 
 /**
- * Lifting domain actions. `onLifted(action)` is called with the lifted action just before the lists change:
- * the lists of actions in effect drop it (to keep focus, lib/useFocusAfterRemoval), the others show it lifted.
+ * Lifting domain actions. `onLifted(action)` is called with the lifted action, once the audit log is fetched
+ * again, just before the lists change: the lists of actions in effect drop it (to keep focus,
+ * lib/useFocusAfterRemoval), the others show it lifted.
  * Several actions may be lifted at once, so everything after a success is in the mutation's own callbacks.
  */
 export function useLiftDomainAction(onLifted: (action: DomainAction) => void): LiftDomainAction {
@@ -65,7 +67,10 @@ export function useLiftDomainAction(onLifted: (action: DomainAction) => void): L
   const options = liftDomainActionMutation(api);
   const mutation = useMutation({
     ...options,
-    onSuccess: (lifted) => {
+    onSuccess: async (lifted) => {
+      // The audit log records the lift: the action is lifted once it is fetched again, so that going back to it
+      // shows the lift at once (refreshAuditLog). The lists change from the answer, which shows them right.
+      await refreshAuditLog(queryClient);
       onLifted(lifted);
       for (const query of queryClient.getQueryCache().findAll({ predicate: (query) => isDomainActionsQuery(query.queryKey) })) {
         const keep = isActiveOnlyQuery(query.queryKey) ? [] : [lifted];
@@ -147,9 +152,10 @@ export function useDomainActionForm(initialDomain: string): DomainActionForm {
   const create = useMutation({
     ...createDomainActionMutation(api),
     onSuccess: async (action) => {
-      // The action is in every list, of the other tabs and domains too: it is taken once they are fetched again
-      // (the form stays pending until then), so that another tab shows it at once (refreshDomainActionLists).
-      await refreshDomainActionLists(queryClient);
+      // The action is in every list, of the other tabs and domains too, and in the audit log: it is taken once
+      // they are fetched again (the form stays pending until then), so that another tab or the log shows it at
+      // once (refreshDomainActionLists, refreshAuditLog).
+      await Promise.all([refreshDomainActionLists(queryClient), refreshAuditLog(queryClient)]);
       setConfirming(false);
       setDraft(emptyDraft(draft.domain));
       setStatus(t("client:admin.domain_actions.issued", { kind: t(domainActionKindLabels[action.kind]), domain: domainInText(t, action.domain) }));

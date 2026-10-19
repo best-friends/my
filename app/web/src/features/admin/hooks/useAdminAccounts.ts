@@ -29,6 +29,7 @@ import {
   refreshAdminAccount,
   revealAccountMutation,
 } from "../api/accounts";
+import { refreshAuditLog } from "../api/admin";
 import { type AccountAction, accountActionsQueryOptions } from "../api/reports";
 import type { PagedList } from "./pagedList";
 
@@ -210,15 +211,18 @@ export type PrivateData = {
 /**
  * The email address and IP addresses of local account `id`. Nothing is asked of the server until `reveal()`, the
  * moderator's own action, and the answer is kept by this mutation only: it is not cached, so another visit to
- * the page shows them again only when asked again (and recorded again). `onRevealed()` runs when it is shown.
+ * the page shows them again only when asked again (and recorded again). They are shown, and `onRevealed()` runs,
+ * once the audit log, which records the call, is fetched again (refreshAuditLog).
  */
 export function usePrivateData(id: string, onRevealed: () => void): PrivateData {
   const api = useApi();
   const t = useT();
+  const queryClient = useQueryClient();
   const toast = useToast();
   const mutation = useMutation({
     ...revealAccountMutation(api),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await refreshAuditLog(queryClient);
       onRevealed();
     },
     onError: (error) => {
@@ -257,7 +261,8 @@ export type LiftAccountAction = {
 
 /**
  * Lifting the moderation actions on account `accountId`. `onLifted(action)` is called with the lifted action just
- * before its row loses its lift button (to keep focus), once the account's state and restrictions are read again.
+ * before its row loses its lift button (to keep focus), once the account's state and restrictions and the audit
+ * log are read again.
  */
 export function useLiftAccountAction(accountId: string, onLifted: (action: AccountAction) => void): LiftAccountAction {
   const api = useApi();
@@ -266,10 +271,11 @@ export function useLiftAccountAction(accountId: string, onLifted: (action: Accou
   const mutation = useMutation({
     ...liftAccountActionMutation(api),
     onSuccess: async (lifted) => {
-      // The account's state and restrictions change, in its page and in the searches: the action is lifted once
-      // they are fetched again (the confirmation stays pending until then), so that going back to a search shows
-      // the account as it is now (refreshAdminAccount). The row changes from the answer, after onLifted.
-      await refreshAdminAccount(queryClient, api, accountId, { actions: false });
+      // The account's state and restrictions change, in its page and in the searches, and the audit log records
+      // the lift: the action is lifted once they are fetched again (the confirmation stays pending until then), so
+      // that going back to a search or the log shows them as they are now (refreshAdminAccount, refreshAuditLog).
+      // The row changes from the answer, after onLifted.
+      await Promise.all([refreshAdminAccount(queryClient, api, accountId, { actions: false }), refreshAuditLog(queryClient)]);
       setDialog((current) => current && { ...current, isOpen: false });
       onLifted(lifted);
       queryClient.setQueryData<InfiniteData<{ items: AccountAction[] }>>(
