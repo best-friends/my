@@ -17,7 +17,7 @@ import {
   Spinner,
   StatusMessage,
 } from "@my/ui";
-import { type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useId, useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { StatusCard } from "../../status";
 import { type AccountAction, type ReportDetail, reportNoteLimit } from "../api/reports";
@@ -38,7 +38,7 @@ import {
   useTargetActions,
 } from "../hooks/useReports";
 import { AccountActionForm } from "./AccountActionForm";
-import { DateTime, RecordList, RequirePermission } from "./parts";
+import { DateTime, RecordList, RequirePermission, useFocusAfterChange } from "./parts";
 import { AccountLabel, AssigneeName } from "./reportParts";
 
 export function ReportDetailView({ id }: { id: string }) {
@@ -51,23 +51,6 @@ export function ReportDetailView({ id }: { id: string }) {
 
 /** The region of the page that a message belongs to: the one whose button caused it. */
 type Message = { region: "assignee" | "resolution"; text: string };
-
-/**
- * Moves focus to `target` once `value` has changed after `expect()` was called: a change that takes the pressed
- * button away (resolving and reopening swap the buttons of the region) leaves focus on the region's heading.
- */
-function useFocusAfterChange(target: RefObject<HTMLElement | null>, value: unknown): () => void {
-  const pendingRef = useRef(false);
-  // Focus is moved in the DOM, outside React, once the page shows the change.
-  useEffect(() => {
-    if (!pendingRef.current) return;
-    pendingRef.current = false;
-    target.current?.focus();
-  }, [target, value]);
-  return () => {
-    pendingRef.current = true;
-  };
-}
 
 function ReportPage({ id }: { id: string }) {
   const t = useT();
