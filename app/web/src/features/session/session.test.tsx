@@ -116,8 +116,9 @@ describe("signing in and out", () => {
     //    gets a 401 for the expired token, refreshes it and succeeds with the new one.
     expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
     expect(router.state.location.href).toBe("/settings");
-    expect(await screen.findByText("Alice")).toBeInTheDocument();
-    expect(screen.getByText("@alice@my.example")).toBeInTheDocument();
+    const main = screen.getByRole("main");
+    expect(await within(main).findByText("Alice")).toBeInTheDocument();
+    expect(within(main).getByText("@alice@my.example")).toBeInTheDocument();
     expect(oauth.seen.tokenForms).toEqual([
       expect.objectContaining({ grant_type: "authorization_code", code: "the-code", client_id: "my-web", redirect_uri: `${origin}/login/callback` }),
     ]);

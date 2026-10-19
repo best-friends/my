@@ -1648,6 +1648,28 @@ CREATE TABLE status_sensitivity_overrides (
 ) STRICT;
 CREATE INDEX status_sensitivity_overrides_source_action_id ON status_sensitivity_overrides (source_action_id);
 
+-- moderation: notes on reports and their reopenings (#333, data-model §4.3) --------------------
+
+-- Event: a moderator reopened a resolved report. reopened_by_user_id is NULL for the CLI.
+CREATE TABLE report_reopenings (
+  id TEXT NOT NULL PRIMARY KEY,
+  report_id TEXT NOT NULL,
+  reopened_by_user_id TEXT,
+  reopened_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX report_reopenings_report_id_id ON report_reopenings (report_id, id DESC);
+
+-- Event: a moderator's internal note on a report, shown to the moderators only.
+-- author_user_id is NULL for the CLI.
+CREATE TABLE report_notes (
+  id TEXT NOT NULL PRIMARY KEY,
+  report_id TEXT NOT NULL,
+  author_user_id TEXT,
+  body TEXT NOT NULL,
+  written_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX report_notes_report_id_id ON report_notes (report_id, id);
+
 -- ---------------------------------------------------------------------------------------------
 -- identity: where sign-ins and registrations came from (data-model.md §4.1, ADR-0038). Kept
 -- apart from sessions and users so that the purge erases them after their retention.
@@ -1690,6 +1712,7 @@ CREATE TABLE audit_log_entries (
   action TEXT NOT NULL CHECK (action IN (
     'account_action_issued', 'account_action_lifted', 'domain_action_issued',
     'domain_action_lifted', 'report_assigned', 'report_unassigned', 'report_resolved',
+    'report_reopened', 'report_note_added',
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
     'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'appeal_upheld',
     'appeal_overturned'

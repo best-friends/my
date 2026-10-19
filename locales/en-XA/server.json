@@ -491,6 +491,10 @@
     "defaultMessage": "[Ŧħīş īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ ƒǿǿř ȧȧƈƈǿǿŭŭƞŧş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.report.not_resolved": {
+    "defaultMessage": "[Ǿƞŀẏ ȧȧ řḗḗşǿǿŀṽḗḗḓ řḗḗƥǿǿřŧ ƈȧȧƞ ƀḗḗ řḗḗǿǿƥḗḗƞḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.request_too_large": {
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."

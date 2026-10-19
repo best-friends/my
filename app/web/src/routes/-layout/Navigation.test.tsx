@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
-import { instanceFixture } from "../../test/fixtures";
+import { instanceFixture, preferencesFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -200,5 +200,55 @@ describe("the tab bar's Menu", () => {
     await user.click(within(nav).getByRole("button", { name: "メニュー" }));
     const sheet = await screen.findByRole("dialog", { name: "メニュー" });
     expect(within(sheet).getByRole("button", { name: "閉じる" })).toBeInTheDocument();
+  });
+});
+
+describe("the sidebar's server and viewer", () => {
+  test("names the server above the list and links the signed-in account below it, without changing the list", async () => {
+    server.use(signedInHandler);
+    await renderApp({ path: "/profile" });
+    await screen.findByRole("heading", { level: 1, name: "Alice" });
+
+    const nav = navigation();
+    const viewer = await within(nav).findByRole("link", { name: "Alice @alice@my.example" });
+    expect(viewer).toHaveAttribute("href", "/@alice");
+    expect(viewer).toHaveAccessibleDescription("The account you are signed in with");
+    // The list's Profile item marks the place; the viewer's link is a second way there.
+    expect(viewer).not.toHaveAttribute("aria-current");
+    expect(within(nav).getByRole("link", { name: "Profile" })).toHaveAttribute("aria-current", "page");
+
+    const name = within(nav).getByText("my example");
+    const list = within(nav).getByRole("list");
+    expect(name.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(list.compareDocumentPosition(viewer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(list).not.toContainElement(viewer);
+    // The federated timeline joins the list once the instance says it serves it.
+    await within(list).findByRole("link", { name: "Federated" });
+    expect(within(list).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/home",
+      "/local",
+      "/local",
+      "/public",
+      "/notifications",
+      "/search",
+      "/profile",
+      "/settings",
+    ]);
+  });
+
+  test("shows no account while signed out", async () => {
+    await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    expect(within(navigation()).getByText("my example")).toBeInTheDocument();
+    expect(within(navigation()).queryByRole("link", { name: /@alice/ })).not.toBeInTheDocument();
+  });
+
+  test("is in Japanese in the ja locale", async () => {
+    server.use(signedInHandler, http.get(`${apiBase}/preferences`, () => HttpResponse.json({ ...preferencesFixture, locale: "ja" })));
+    await renderApp({ path: "/home", locale: "ja" });
+    const nav = await screen.findByRole("navigation", { name: "メイン" });
+    expect(await within(nav).findByRole("link", { name: "Alice @alice@my.example" })).toHaveAccessibleDescription(
+      "サインインしているアカウント",
+    );
   });
 });

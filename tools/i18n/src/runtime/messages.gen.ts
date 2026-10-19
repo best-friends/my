@@ -20,6 +20,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.registration_rejected": {};
   /** Report assigned */
   "client:admin.audit_log.action.report_assigned": {};
+  /** Note added to a report */
+  "client:admin.audit_log.action.report_note_added": {};
+  /** Report reopened */
+  "client:admin.audit_log.action.report_reopened": {};
   /** Report resolved */
   "client:admin.audit_log.action.report_resolved": {};
   /** Report unassigned */
@@ -1024,6 +1028,8 @@ export interface MessageArgs {
   "client:shell.nav.settings": {};
   /** Timelines */
   "client:shell.nav.timelines": {};
+  /** The account you are signed in with */
+  "client:shell.nav.viewer": {};
   /** There is no page at this address. */
   "client:shell.not_found.body": {};
   /** Go to the home timeline */
@@ -1418,6 +1424,8 @@ export interface MessageArgs {
   "server:errors.rate_limited_detail": { seconds: number };
   /** This is not available for accounts on other servers. */
   "server:errors.remote_account": {};
+  /** Only a resolved report can be reopened. */
+  "server:errors.report.not_resolved": {};
   /** The request is too large. */
   "server:errors.request_too_large": {};
   /** You cannot do this to your own account. */

@@ -35,6 +35,14 @@
     "defaultMessage": "Report assigned",
     "description": "Heading of an audit log entry: a report was assigned to a moderator."
   },
+  "admin.audit_log.action.report_note_added": {
+    "defaultMessage": "Note added to a report",
+    "description": "Heading of an audit log entry: a moderator wrote an internal note on a report."
+  },
+  "admin.audit_log.action.report_reopened": {
+    "defaultMessage": "Report reopened",
+    "description": "Heading of an audit log entry: a moderator reopened a resolved report."
+  },
   "admin.audit_log.action.report_resolved": {
     "defaultMessage": "Report resolved",
     "description": "Heading of an audit log entry: a moderator resolved a report."
@@ -2042,6 +2050,10 @@
   "shell.nav.timelines": {
     "defaultMessage": "Timelines",
     "description": "Item of the bottom tab bar on phones that opens the screen with the local and federated timelines as tabs. Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
+  },
+  "shell.nav.viewer": {
+    "defaultMessage": "The account you are signed in with",
+    "description": "Description read after the name of the link at the bottom of the desktop sidebar that shows the signed-in account (avatar, display name, handle) and opens its profile."
   },
   "shell.not_found.body": {
     "defaultMessage": "There is no page at this address.",

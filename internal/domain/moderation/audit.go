@@ -89,6 +89,10 @@ const (
 	AuditReportUnassigned AuditAction = "report_unassigned"
 	// AuditReportResolved: a report was resolved (report_resolutions).
 	AuditReportResolved AuditAction = "report_resolved"
+	// AuditReportReopened: a resolved report was reopened (report_reopenings).
+	AuditReportReopened AuditAction = "report_reopened"
+	// AuditReportNoteAdded: a moderator wrote an internal note on a report (report_notes).
+	AuditReportNoteAdded AuditAction = "report_note_added"
 	// AuditRegistrationApproved: a pending registration was approved (registration_decisions).
 	AuditRegistrationApproved AuditAction = "registration_approved"
 	// AuditRegistrationRejected: a pending registration was rejected (registration_decisions).
@@ -124,6 +128,8 @@ var auditActions = []struct {
 	{AuditReportAssigned, AuditTargetReport},
 	{AuditReportUnassigned, AuditTargetReport},
 	{AuditReportResolved, AuditTargetReport},
+	{AuditReportReopened, AuditTargetReport},
+	{AuditReportNoteAdded, AuditTargetReport},
 	{AuditRegistrationApproved, AuditTargetUser},
 	{AuditRegistrationRejected, AuditTargetUser},
 	{AuditSettingChanged, AuditTargetSetting},

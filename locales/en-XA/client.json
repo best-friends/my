@@ -35,6 +35,14 @@
     "defaultMessage": "[Řḗḗƥǿǿřŧ ȧȧşşīɠƞḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.report_note_added": {
+    "defaultMessage": "[Ƞǿǿŧḗḗ ȧȧḓḓḗḗḓ ŧǿǿ ȧȧ řḗḗƥǿǿřŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.report_reopened": {
+    "defaultMessage": "[Řḗḗƥǿǿřŧ řḗḗǿǿƥḗḗƞḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.report_resolved": {
     "defaultMessage": "[Řḗḗƥǿǿřŧ řḗḗşǿǿŀṽḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -2041,6 +2049,10 @@
   },
   "shell.nav.timelines": {
     "defaultMessage": "[Ŧīḿḗḗŀīƞḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.viewer": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ ẏǿǿŭŭ ȧȧřḗḗ şīɠƞḗḗḓ īƞ ẇīŧħ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.not_found.body": {

@@ -8,8 +8,12 @@ import (
 	"strings"
 	"testing"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
+	"github.com/best-friends/my/internal/app/uow"
 	domaincontent "github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/platform"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -113,5 +117,61 @@ func TestAdminAccountActionCommands(t *testing.T) {
 		if code, _, stderr := runCmd(t, adminCmd, tc.args...); code != tc.code || !strings.Contains(stderr, tc.want) {
 			t.Errorf("admin %q = %d %q; want %d with %q", tc.args, code, stderr, tc.code, tc.want)
 		}
+	}
+}
+
+// TestAdminAccountActionOnRemoteAccount issues and lifts actions on a remote account with the
+// CLI: a suspend takes away its profile and is audited as the CLI's, and a kind that only a
+// local account takes fails.
+func TestAdminAccountActionOnRemoteAccount(t *testing.T) {
+	newAdminEnv(t)
+	cfg, _, err := config.Load(config.Source{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = app.Close() }()
+	const bob = "https://remote.example/users/bob"
+	err = app.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		_, err := app.Accounts.UpsertRemoteActor(t.Context(), tx, appaccount.RemoteActorInput{
+			URI: bob, Domain: "remote.example", Type: "Person", PreferredUsername: "bob", InboxURL: bob + "/inbox",
+			Document: []byte(`{"id":"` + bob + `"}`),
+		})
+		return err
+	})
+	if err != nil {
+		t.Fatalf("UpsertRemoteActor: %v", err)
+	}
+	actor, err := app.Accounts.FindByURI(t.Context(), bob)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := actor.Account.ID
+
+	if code, _, stderr := runCmd(t, adminCmd, "account", "action", "issue", "-kind", "disable_login", id); code != 1 ||
+		!strings.Contains(stderr, "disable_login on a remote account") {
+		t.Errorf("account action issue disable_login on a remote account = %d %q", code, stderr)
+	}
+	code, stdout, stderr := runCmd(t, adminCmd, "account", "action", "issue", "-kind", "suspend", "-duration", "24h", id)
+	m := regexp.MustCompile(`^issued suspend on account ` + id + ` \(action (\S+), expires \S+\)\n$`).FindStringSubmatch(stdout)
+	if code != 0 || m == nil {
+		t.Fatalf("account action issue suspend = %d %q %q", code, stdout, stderr)
+	}
+	if hidden, err := app.AccountPolicy.ProfileHidden(t.Context(), id); err != nil || !hidden {
+		t.Errorf("ProfileHidden while suspended = %v, %v; want true", hidden, err)
+	}
+	if code, _, stderr = runCmd(t, adminCmd, "account", "action", "lift", m[1]); code != 0 {
+		t.Fatalf("account action lift = %d %q", code, stderr)
+	}
+	if hidden, err := app.AccountPolicy.ProfileHidden(t.Context(), id); err != nil || hidden {
+		t.Errorf("ProfileHidden after the lift = %v, %v; want false", hidden, err)
+	}
+	entries, err := app.Moderation.AuditLog(t.Context(), appmoderation.AuditQuery{TargetKind: moderation.AuditTargetAccount, TargetID: id}, 10)
+	if err != nil || len(entries) != 2 || entries[0].Action != moderation.AuditAccountActionLifted ||
+		entries[1].Action != moderation.AuditAccountActionIssued || entries[0].ActorKind != moderation.AuditActorCLI {
+		t.Errorf("audit log of the remote account = %+v, %v; want the issue and the lift by the CLI", entries, err)
 	}
 }
