@@ -3093,7 +3093,7 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, registrations, limits, timelines, rules]
+      required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules]
       properties:
         domain:
           description: The domain that serves the instance.
@@ -3120,6 +3120,12 @@ components:
           $ref: "#/components/schemas/InstanceLimits"
         timelines:
           $ref: "#/components/schemas/InstanceTimelines"
+        sends_email:
+          description: |
+            Whether the instance sends email (the server setting `mail` is not `none`). Without
+            email, the moderator notifications come only in the app, so clients do not offer
+            the preference `email_moderator_notifications`.
+          type: boolean
         rules:
           description: The rules in effect, in order, each in the locale of the request.
           type: array
@@ -4255,8 +4261,8 @@ components:
           type: boolean
         email_moderator_notifications:
           description: |
-            Whether the moderator notifications (`admin_report`, `admin_sign_up`) also come by
-            email, to the primary address. Off for a new user.
+            Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
+            also come by email, to the primary address. Off for a new user.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, sorted; empty shows every language.
@@ -4477,7 +4483,7 @@ components:
     AdminAuditEntry:
       description: One operation of a moderator or an administrator (FR-704).
       type: object
-      required: [id, actor_kind, action, target_kind, target_id, target_label, occurred_at]
+      required: [id, actor_kind, action, target_kind, target_id, target_label, target_exists, occurred_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -4508,6 +4514,13 @@ components:
             `@bob@example.com`, a domain, a setting's key, a rule's text, or a sign-up block's
             kind and value (`email_domain spam.example`); up to 512 characters.
           type: string
+        target_exists:
+          description: |
+            Whether the target is still there to look at. It is `false` for an account, a report,
+            an appeal, or a sign-up block that is gone (erased past its retention), which only
+            `target_label` names now. It is `true` for the other kinds of targets, which are
+            never erased.
+          type: boolean
         source_event_id:
           description: |
             The ID of the record of the operation (the domain action, the assignment, the

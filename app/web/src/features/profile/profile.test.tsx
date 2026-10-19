@@ -242,7 +242,7 @@ describe("the follow button", () => {
 
     await user.click(await screen.findByRole("button", { name: "Follow" }));
 
-    expect(await screen.findAllByText("The change did not go through: Service Unavailable")).not.toHaveLength(0);
+    expect(await screen.findAllByText("Could not change your relationship with the account: Service Unavailable")).not.toHaveLength(0);
     expect(screen.getByRole("button", { name: "Follow" })).toBeInTheDocument();
   });
 });

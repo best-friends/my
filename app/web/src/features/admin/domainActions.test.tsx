@@ -146,7 +146,7 @@ describe("the list of domain actions", () => {
 
     await user.click(await screen.findByRole("button", { name: /^Lift Limit for/ }));
 
-    expect(await screen.findByText("The action could not be lifted: Service Unavailable")).toBeInTheDocument();
+    expect(await screen.findByText("Could not lift the action: Service Unavailable")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Lift Limit for/ })).toBeInTheDocument();
   });
 });
@@ -228,7 +228,7 @@ describe("a new domain action", () => {
     const dialog = await screen.findByRole("alertdialog");
     await user.click(within(dialog).getByRole("button", { name: "Suspend" }));
 
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent("The action could not be taken: Service Unavailable");
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Could not take the action: Service Unavailable");
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
   });
 
@@ -248,7 +248,7 @@ describe("a new domain action", () => {
     await user.click(screen.getByRole("radio", { name: "Reject reports" }));
     await user.click(screen.getByRole("button", { name: "Take action" }));
 
-    expect(await screen.findByText("The action could not be taken: domain: not a valid domain")).toHaveAttribute("role", "alert");
+    expect(await screen.findByText("Could not take the action: domain: not a valid domain")).toHaveAttribute("role", "alert");
     expect(screen.getByRole("textbox", { name: "Domain" })).toHaveValue("not a domain");
     expect(screen.getByRole("radio", { name: "Reject reports" })).toBeChecked();
   });

@@ -66,6 +66,7 @@ const instance: Instance = {
   registrations: { mode: "open" },
   limits: { max_post_characters: 500 },
   timelines: { local: true, federated: true },
+  sends_email: false,
   rules: [],
 };
 

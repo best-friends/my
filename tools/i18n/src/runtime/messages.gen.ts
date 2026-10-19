@@ -130,7 +130,7 @@ export interface MessageArgs {
   "client:admin.account_actions.duration.indefinite": {};
   /** Ends */
   "client:admin.account_actions.expires_at": {};
-  /** The action could not be taken: {reason} */
+  /** Could not take the action: {reason} */
   "client:admin.account_actions.issue_failed": { reason: string };
   /** Taken */
   "client:admin.account_actions.issued_at": {};
@@ -244,7 +244,7 @@ export interface MessageArgs {
   "client:admin.account.actions.lift": {};
   /** Lift {kind}, taken {date} */
   "client:admin.account.actions.lift_action": { date: string; kind: string };
-  /** The action could not be lifted: {reason} */
+  /** Could not lift the action: {reason} */
   "client:admin.account.actions.lift_failed": { reason: string };
   /** Reason for lifting */
   "client:admin.account.actions.lift_reason": {};
@@ -278,7 +278,7 @@ export interface MessageArgs {
   "client:admin.account.private.description": {};
   /** Email address */
   "client:admin.account.private.email": {};
-  /** Couldn't show the email and IP addresses: {reason} */
+  /** Could not show the email and IP addresses: {reason} */
   "client:admin.account.private.failed": { reason: string };
   /** IP address */
   "client:admin.account.private.ip": {};
@@ -440,11 +440,11 @@ export interface MessageArgs {
   "client:admin.accounts.restriction.visibility_ceiling_private": {};
   /** Restrictions */
   "client:admin.accounts.restrictions": {};
-  /** Couldn't search the accounts */
+  /** Could not search the accounts */
   "client:admin.accounts.results.failed": {};
   /** Loading accounts */
   "client:admin.accounts.results.loading": {};
-  /** Couldn't load more accounts */
+  /** Could not load more accounts */
   "client:admin.accounts.results.more_failed": {};
   /** Try again */
   "client:admin.accounts.results.retry": {};
@@ -700,7 +700,7 @@ export interface MessageArgs {
   "client:admin.audit_log.filter.title": {};
   /** Operations */
   "client:admin.audit_log.list.title": {};
-  /** Couldn’t load more operations */
+  /** Could not load more operations */
   "client:admin.audit_log.more_failed": {};
   /** When */
   "client:admin.audit_log.occurred_at": {};
@@ -800,7 +800,7 @@ export interface MessageArgs {
   "client:admin.domain_actions.filter.all": {};
   /** Show domain actions */
   "client:admin.domain_actions.filter.label": {};
-  /** The action could not be taken: {reason} */
+  /** Could not take the action: {reason} */
   "client:admin.domain_actions.issue_failed": { reason: string };
   /** {kind} is in effect for {domain}. */
   "client:admin.domain_actions.issued": { domain: string; kind: string };
@@ -834,7 +834,7 @@ export interface MessageArgs {
   "client:admin.domain_actions.lift": {};
   /** Lift {kind} for {domain}, taken {date} */
   "client:admin.domain_actions.lift_action": { date: string; domain: string; kind: string };
-  /** The action could not be lifted: {reason} */
+  /** Could not lift the action: {reason} */
   "client:admin.domain_actions.lift_failed": { reason: string };
   /** {kind} for {domain} is lifted. */
   "client:admin.domain_actions.lifted": { domain: string; kind: string };
@@ -1060,7 +1060,7 @@ export interface MessageArgs {
   "client:admin.report.action.title": {};
   /** Assign to me */
   "client:admin.report.assign": {};
-  /** The report could not be assigned to you: {reason} */
+  /** Could not assign the report to you: {reason} */
   "client:admin.report.assign_failed": { reason: string };
   /** Take over */
   "client:admin.report.assign.take_over": {};
@@ -1106,7 +1106,7 @@ export interface MessageArgs {
   "client:admin.report.notes.cli": {};
   /** No notes yet. */
   "client:admin.report.notes.empty": {};
-  /** The note could not be added: {reason} */
+  /** Could not add the note: {reason} */
   "client:admin.report.notes.failed": { reason: string };
   /** New note */
   "client:admin.report.notes.new": {};
@@ -1144,7 +1144,7 @@ export interface MessageArgs {
   "client:admin.report.posts.title": {};
   /** Reopen */
   "client:admin.report.reopen": {};
-  /** The report could not be reopened: {reason} */
+  /** Could not reopen the report: {reason} */
   "client:admin.report.reopen_failed": { reason: string };
   /** Reopening puts the report back among the open ones. The reporter is not told again when it is resolved. */
   "client:admin.report.reopen.description": {};
@@ -1154,7 +1154,7 @@ export interface MessageArgs {
   "client:admin.report.reporter": {};
   /** Handling */
   "client:admin.report.resolution.title": {};
-  /** The report could not be resolved: {reason} */
+  /** Could not resolve the report: {reason} */
   "client:admin.report.resolve_failed": { reason: string };
   /** Resolve as actioned */
   "client:admin.report.resolve.actioned": {};
@@ -1200,7 +1200,7 @@ export interface MessageArgs {
   "client:admin.report.title": {};
   /** Unassign */
   "client:admin.report.unassign": {};
-  /** The report could not be unassigned: {reason} */
+  /** Could not unassign the report: {reason} */
   "client:admin.report.unassign_failed": { reason: string };
   /** Nobody handles this report now. */
   "client:admin.report.unassigned": {};
@@ -1240,7 +1240,7 @@ export interface MessageArgs {
   "client:api.error.status": { status: string };
   /** Close */
   "client:compose.close": {};
-  /** Could not post: {reason} */
+  /** Could not send the post: {reason} */
   "client:compose.failed": { reason: string };
   /** Language */
   "client:compose.language.label": {};
@@ -1256,7 +1256,7 @@ export interface MessageArgs {
   "client:compose.media.description.label": { position: string };
   /** Describe the image for people who cannot see it. Your settings ask for a description of every image. */
   "client:compose.media.description.required": {};
-  /** Could not attach: {reason} */
+  /** Could not attach the image: {reason} */
   "client:compose.media.failed": { reason: string };
   /** The server could not process this image. */
   "client:compose.media.failed_processing": {};
@@ -1290,7 +1290,7 @@ export interface MessageArgs {
   "client:compose.outbox.discard": {};
   /** Edit */
   "client:compose.outbox.edit": {};
-  /** Not sent: {reason} */
+  /** Could not send the post: {reason} */
   "client:compose.outbox.failed": { reason: string };
   /** Posts being sent */
   "client:compose.outbox.label": {};
@@ -1482,7 +1482,7 @@ export interface MessageArgs {
   "client:notifications.unread_count": { count: number };
   /** This screen is not ready yet. */
   "client:page.not_built": {};
-  /** The change did not go through: {reason} */
+  /** Could not change your relationship with the account: {reason} */
   "client:profile.change_failed": { reason: string };
   /** Block */
   "client:profile.confirm.block.action": {};
@@ -1650,7 +1650,7 @@ export interface MessageArgs {
   "client:report.comment.too_long": { max: number };
   /** Done */
   "client:report.done": {};
-  /** The report was not sent: {reason} */
+  /** Could not send the report: {reason} */
   "client:report.failed": { reason: string };
   /** Also send the report to {domain} */
   "client:report.forward": { domain: string };
@@ -1666,7 +1666,7 @@ export interface MessageArgs {
   "client:report.posts.description": {};
   /** This account has no posts that you can choose. */
   "client:report.posts.empty": {};
-  /** Couldn't load the posts */
+  /** Could not load the posts */
   "client:report.posts.failed": {};
   /** Which posts are you reporting? */
   "client:report.posts.heading": {};
@@ -1700,7 +1700,7 @@ export interface MessageArgs {
   "client:search.description": {};
   /** Enter @username@server or the address of a profile. Only accounts this server already knows are found. */
   "client:search.description_signed_out": {};
-  /** The search failed: {reason} */
+  /** Could not search for accounts: {reason} */
   "client:search.failed": { reason: string };
   /** Handle or URL */
   "client:search.label": {};
@@ -1772,6 +1772,14 @@ export interface MessageArgs {
   "client:settings.locale.label": {};
   /** Settings pages */
   "client:settings.menu.title": {};
+  /** Also send them by email */
+  "client:settings.moderator_notifications.email": {};
+  /** The notifications of new reports, sign-ups awaiting approval and appeals that your role handles also come to your email address. */
+  "client:settings.moderator_notifications.email.description": {};
+  /** This server does not send email, so the moderator notifications come only in the app. */
+  "client:settings.moderator_notifications.no_email": {};
+  /** Moderator notifications */
+  "client:settings.moderator_notifications.title": {};
   /** You have not muted anyone */
   "client:settings.mutes.empty": {};
   /** Notifications hidden too */
@@ -1980,7 +1988,7 @@ export interface MessageArgs {
   "client:status.action.copy_link": {};
   /** Delete */
   "client:status.action.delete": {};
-  /** The change was not saved: {reason} */
+  /** Could not save the change: {reason} */
   "client:status.action.failed": { reason: string };
   /** Favourite */
   "client:status.action.favourite": {};

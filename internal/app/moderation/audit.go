@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/uow"
@@ -69,6 +70,9 @@ type AuditRepository interface {
 	InsertAuditEntry(ctx context.Context, tx uow.Tx, e moderation.AuditEntry) error
 	// ListAuditEntries returns up to limit entries matching q, newest first.
 	ListAuditEntries(ctx context.Context, q AuditQuery, limit int) ([]moderation.AuditEntry, error)
+	// ExistingAuditTargets returns, in ID order, the targets among ids of a kind of target that
+	// this module keeps (a report, an appeal, or a sign-up block) that exist.
+	ExistingAuditTargets(ctx context.Context, kind moderation.AuditTargetKind, ids []string) ([]string, error)
 }
 
 // AuditQuery selects the entries of the audit log. Empty fields select every entry.
@@ -111,6 +115,52 @@ func (s *Service) AuditLog(ctx context.Context, q AuditQuery, limit int) ([]mode
 		return nil, fmt.Errorf("%w: a target ID needs its target kind", ErrInvalidQuery)
 	}
 	return s.d.Repository.ListAuditEntries(ctx, q, limit)
+}
+
+// AuditTarget names the target of an entry of the audit log.
+type AuditTarget struct {
+	Kind moderation.AuditTargetKind
+	ID   string
+}
+
+// GoneAuditTargets returns the targets of entries that no longer exist: accounts, reports,
+// appeals, and sign-up blocks erased (past their retention, ADR-0038). It looks up each kind of
+// target once for all the entries. The other kinds of targets are never erased (a domain, a
+// user, a role, a setting, a rule) or have no operation recorded on them (a status), so they
+// are never gone.
+func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.AuditEntry) (map[AuditTarget]bool, error) {
+	ids := map[moderation.AuditTargetKind][]string{}
+	seen := map[AuditTarget]bool{}
+	for _, e := range entries {
+		t := AuditTarget{Kind: e.TargetKind, ID: e.TargetID}
+		if seen[t] {
+			continue
+		}
+		seen[t] = true
+		switch e.TargetKind {
+		case moderation.AuditTargetAccount, moderation.AuditTargetReport, moderation.AuditTargetAppeal, moderation.AuditTargetSignupBlock:
+			ids[e.TargetKind] = append(ids[e.TargetKind], e.TargetID)
+		}
+	}
+	gone := map[AuditTarget]bool{}
+	for kind, list := range ids {
+		var existing []string
+		var err error
+		if kind == moderation.AuditTargetAccount {
+			existing, err = s.d.Accounts.ExistingIDs(ctx, list)
+		} else {
+			existing, err = s.d.Repository.ExistingAuditTargets(ctx, kind, list)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("moderation: the %s targets of the audit log: %w", kind, err)
+		}
+		for _, id := range list {
+			if !slices.Contains(existing, id) {
+				gone[AuditTarget{Kind: kind, ID: id}] = true
+			}
+		}
+	}
+	return gone, nil
 }
 
 // emitAudit emits the audit log entry of one of this module's operations, performed by byUserID

@@ -4,6 +4,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
@@ -47,6 +48,30 @@ func (r *ModerationRepository) ListAuditEntries(ctx context.Context, q appmodera
 			TargetID: row.TargetID, TargetLabel: row.TargetLabel, SourceEventID: fromNullString(row.SourceEventID),
 			OccurredAt: row.OccurredAt.UTC(),
 		}
+	}
+	return out, nil
+}
+
+// ExistingAuditTargets implements moderation.AuditRepository.
+func (r *ModerationRepository) ExistingAuditTargets(ctx context.Context, kind moderation.AuditTargetKind, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	q := r.db.reader()
+	var out []string
+	var err error
+	switch kind {
+	case moderation.AuditTargetReport:
+		out, err = q.ListExistingReportIDs(ctx, ids)
+	case moderation.AuditTargetAppeal:
+		out, err = q.ListExistingAppealIDs(ctx, ids)
+	case moderation.AuditTargetSignupBlock:
+		out, err = q.ListExistingSignupBlockIDs(ctx, ids)
+	default:
+		return nil, fmt.Errorf("postgres: the existence of %s targets is not recorded here", kind)
+	}
+	if err != nil {
+		return nil, wrap(err, "list existing "+string(kind)+" targets")
 	}
 	return out, nil
 }

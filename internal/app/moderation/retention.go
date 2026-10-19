@@ -17,8 +17,9 @@ import (
 
 // The retention of the moderation records (ADR-0038, data-model §4.3, §8): the hourly
 // JobPurgeRecords erases the actions on accounts with their appeals, the reports, and the audit
-// log entries past the retention periods of the instance settings (internal/domain/moderation
-// retention.go says when each period starts), in bounded batches like the other purges (FR-803). An
+// log entries past the retention periods of the instance settings, and the sign-up blocks
+// moderation.SignupBlockRetention after they end (internal/domain/moderation retention.go says
+// when each period starts), in bounded batches like the other purges (FR-803). An
 // operator's hold on an account stops the erasure of its records, of its sign-in and
 // registration origins (the identity module asks HeldAccountIDs), and of its statuses (the
 // content module asks StatusRetained), until it is released.
@@ -94,6 +95,12 @@ type RetentionRepository interface {
 	// PurgeReports deletes the reports with their statuses, rule citations, assignments,
 	// resolutions, reopenings, notes, and states.
 	PurgeReports(ctx context.Context, tx uow.Tx, ids []string) error
+	// ListSignupBlocksToPurge returns up to limit sign-up blocks, oldest first, that ended (were
+	// lifted or expired, whichever came first) before endedBefore, except those made by a ban
+	// of an account that a hold preserves.
+	ListSignupBlocksToPurge(ctx context.Context, tx uow.Tx, endedBefore time.Time, limit int) ([]string, error)
+	// PurgeSignupBlocks deletes the sign-up blocks with their lifts.
+	PurgeSignupBlocks(ctx context.Context, tx uow.Tx, ids []string) error
 	// DeleteAuditEntriesBefore deletes inside tx at most limit audit log entries recorded before
 	// t, the oldest first, in one statement, except those on an account that a hold preserves
 	// or on a report or an appeal of such an account, and returns how many it deleted.
@@ -191,14 +198,15 @@ func (s *Service) retentionPeriods(ctx context.Context) (RetentionPeriods, error
 
 // PurgedRecords counts what one run of PurgeRecords erased.
 type PurgedRecords struct {
-	Actions, Reports int
-	AuditEntries     int64
+	Actions, Reports, SignupBlocks int
+	AuditEntries                   int64
 }
 
 // PurgeRecords erases the moderation records past their retention: the actions with their
 // appeals first, so that a report they followed from is erased in the same run, then the
-// reports, then the audit log entries. Each batch is one short transaction, and one run deletes
-// a bounded number of rows of each kind; the next run continues. It is safe to repeat.
+// reports, then the sign-up blocks, then the audit log entries. Each batch is one short
+// transaction, and one run deletes a bounded number of rows of each kind; the next run
+// continues. It is safe to repeat.
 func (s *Service) PurgeRecords(ctx context.Context) (PurgedRecords, error) {
 	periods, err := s.retentionPeriods(ctx)
 	if err != nil {
@@ -234,6 +242,9 @@ func (s *Service) PurgeRecords(ctx context.Context) (PurgedRecords, error) {
 		return out, err
 	}
 	if out.Reports, err = purge("reports", now.Add(-periods.Reports), repo.ListReportsToPurge, repo.PurgeReports); err != nil {
+		return out, err
+	}
+	if out.SignupBlocks, err = purge("sign-up blocks", now.Add(-moderation.SignupBlockRetention), repo.ListSignupBlocksToPurge, repo.PurgeSignupBlocks); err != nil {
 		return out, err
 	}
 	before := now.Add(-periods.AuditLog)

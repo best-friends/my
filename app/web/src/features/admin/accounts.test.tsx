@@ -129,7 +129,7 @@ describe("the account search", () => {
     const { user } = await renderApp({ path: "/admin/accounts?ip=nope" });
 
     const results = await screen.findByRole("region", { name: "Results" });
-    expect(await within(results).findByRole("heading", { level: 3, name: "Couldn't search the accounts" })).toBeInTheDocument();
+    expect(await within(results).findByRole("heading", { level: 3, name: "Could not search the accounts" })).toBeInTheDocument();
     expect(within(results).getByText("ip is not an IP address.")).toBeInTheDocument();
     // The form keeps the search that failed.
     expect(within(region("Search")).getByRole("textbox", { name: "IP address" })).toHaveValue("nope");
@@ -298,7 +298,7 @@ describe("an account's admin page", () => {
     const privateData = await screen.findByRole("region", { name: "Email and IP addresses" });
     await user.click(within(privateData).getByRole("button", { name: "Show email and IP addresses" }));
 
-    expect(await screen.findByText("Couldn't show the email and IP addresses: Service Unavailable")).toBeInTheDocument();
+    expect(await screen.findByText("Could not show the email and IP addresses: Service Unavailable")).toBeInTheDocument();
     expect(within(privateData).getByRole("button", { name: "Show email and IP addresses" })).toBeInTheDocument();
   });
 
@@ -386,7 +386,7 @@ describe("an account's admin page", () => {
     const dialog = await screen.findByRole("alertdialog");
     // Without a reason, the request asks for nothing more.
     await user.click(within(dialog).getByRole("button", { name: "Lift" }));
-    expect(await within(dialog).findByText("The action could not be lifted: Service Unavailable")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Could not lift the action: Service Unavailable")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => {
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();

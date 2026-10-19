@@ -18,10 +18,24 @@ import (
 	"github.com/best-friends/my/internal/interface/clientapi/apitest"
 )
 
-// fakeAuditLog keeps entries oldest first and lists them like appmoderation.Service.AuditLog.
+// fakeAuditLog keeps entries oldest first and lists them like appmoderation.Service.AuditLog,
+// with the targets in gone erased.
 type fakeAuditLog struct {
 	entries []moderation.AuditEntry
 	queries []appmoderation.AuditQuery
+	gone    map[appmoderation.AuditTarget]bool
+	lookups int
+}
+
+func (f *fakeAuditLog) GoneAuditTargets(_ context.Context, entries []moderation.AuditEntry) (map[appmoderation.AuditTarget]bool, error) {
+	f.lookups++
+	out := map[appmoderation.AuditTarget]bool{}
+	for _, e := range entries {
+		if t := (appmoderation.AuditTarget{Kind: e.TargetKind, ID: e.TargetID}); f.gone[t] {
+			out[t] = true
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeAuditLog) AuditLog(_ context.Context, q appmoderation.AuditQuery, limit int) ([]moderation.AuditEntry, error) {
@@ -41,7 +55,7 @@ func (f *fakeAuditLog) AuditLog(_ context.Context, q appmoderation.AuditQuery, l
 const goneAccountID = "01890a5d-ac96-774b-bcce-b302099a5999"
 
 // newAuditEnv is newAuthEnv with an audit log of three entries: alice's domain action, the CLI's
-// resolution of a report, and a rule added by a user whose account is gone. alice holds every
+// resolution of a report that is gone, and a rule added by a user whose account is gone. alice holds every
 // permission, carol (bob's account) only the moderator's, and bob none.
 func newAuditEnv(t *testing.T) (*authEnv, *fakeAuditLog) {
 	t.Helper()
@@ -62,7 +76,7 @@ func newAuditEnv(t *testing.T) (*authEnv, *fakeAuditLog) {
 			Action: moderation.AuditRuleAdded, TargetKind: moderation.AuditTargetRule, TargetID: "01890a5d-ac96-774b-bcce-b302099a6003",
 			TargetLabel: "Be kind", OccurredAt: at(3),
 		},
-	}}
+	}, gone: map[appmoderation.AuditTarget]bool{{Kind: moderation.AuditTargetReport, ID: reportOne}: true}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{
 			"user-" + aliceAccountID: identity.AllPermissions(),
@@ -116,20 +130,24 @@ func TestListAuditLog(t *testing.T) {
 	gone, cli := page.Items[0], page.Items[1]
 	// The actor whose account is gone keeps the ID of the account, without its presentation.
 	if gone.ActorKind != clientapi.AdminAuditActorKindUser || gone.ActorAccountId == nil || *gone.ActorAccountId != goneAccountID ||
-		gone.ActorAccount != nil || gone.SourceEventId != nil || gone.TargetLabel != "Be kind" {
+		gone.ActorAccount != nil || gone.SourceEventId != nil || gone.TargetLabel != "Be kind" || !gone.TargetExists {
 		t.Errorf("entry by a gone account = %+v", gone)
 	}
 	if cli.ActorKind != clientapi.AdminAuditActorKindCli || cli.ActorAccountId != nil || cli.Action != clientapi.AdminAuditActionReportResolved ||
-		cli.TargetKind != clientapi.AdminAuditTargetKindReport || cli.TargetId != reportOne || cli.TargetLabel != "@spammer@remote.example" ||
+		cli.TargetKind != clientapi.AdminAuditTargetKindReport || cli.TargetId != reportOne || cli.TargetLabel != "@spammer@remote.example" || cli.TargetExists ||
 		cli.SourceEventId == nil || *cli.SourceEventId != f.entries[1].SourceEventID || !cli.OccurredAt.Equal(f.entries[1].OccurredAt) {
 		t.Errorf("CLI entry = %+v", cli)
+	}
+	// The targets of a page are looked up once.
+	if f.lookups != 1 {
+		t.Errorf("targets looked up %d times for one page, want 1", f.lookups)
 	}
 	res = e.send(t, http.MethodGet, "/admin/audit_log?limit=2&cursor="+*page.NextCursor, "admin-read", "")
 	rest := decodeJSON[clientapi.AdminAuditEntryPage](t, res)
 	if !slices.Equal(auditIDs(rest), []string{f.entries[0].ID}) || rest.NextCursor != nil {
 		t.Fatalf("second page = %+v", rest)
 	}
-	if a := rest.Items[0]; a.ActorAccountId == nil || *a.ActorAccountId != aliceAccountID || a.ActorAccount == nil || a.ActorAccount.Username != "alice" {
+	if a := rest.Items[0]; a.ActorAccountId == nil || *a.ActorAccountId != aliceAccountID || a.ActorAccount == nil || a.ActorAccount.Username != "alice" || !a.TargetExists {
 		t.Errorf("alice's entry = %+v", a)
 	}
 

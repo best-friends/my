@@ -120,7 +120,7 @@ func TestStatusOfARestrictedUser(t *testing.T) {
 	wantContains(t, body,
 		`<h1>アカウントは処分を受けています</h1>`,
 		`<strong>凍結（アプリを使えず、プロフィールと投稿が隠れる）</strong>`,
-		`<p class="hint">理由: スパム</p>`,
+		`<p class="hint">理由：スパム</p>`,
 		`<p dir="auto">spam &lt;wave&gt;</p>`,
 		`<time datetime="`+ends.UTC().Format(time.RFC3339)+`">あと 3 日で終わります</time>`,
 		`<strong>ログインの停止</strong>`,

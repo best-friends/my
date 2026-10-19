@@ -17,9 +17,11 @@ import (
 // The audit log (FR-704, ADR-0037, view_audit): the operations of the moderators and the
 // administrators, which their use cases record. It is read-only here, as everywhere.
 
-// AuditLog lists the audit log. *appmoderation.Service implements it.
+// AuditLog lists the audit log and tells which targets of its entries are gone.
+// *appmoderation.Service implements it.
 type AuditLog interface {
 	AuditLog(ctx context.Context, q appmoderation.AuditQuery, limit int) ([]moderation.AuditEntry, error)
+	GoneAuditTargets(ctx context.Context, entries []moderation.AuditEntry) (map[appmoderation.AuditTarget]bool, error)
 }
 
 // ListAuditLog serves GET /api/v1/admin/audit_log, newest first. The cursor is the ID of the
@@ -88,8 +90,13 @@ func (s *Server) ListAuditLog(ctx context.Context, req ListAuditLogRequestObject
 }
 
 // newAuditEntries presents entries with the accounts of their actors, reading each user's
-// account once. An actor whose account is gone is presented by kind only.
+// account once, and whether their targets still exist, looked up once for all the entries. An
+// actor whose account is gone is presented by kind only.
 func (s *Server) newAuditEntries(ctx context.Context, entries []moderation.AuditEntry) ([]AdminAuditEntry, error) {
+	gone, err := s.o.AuditLog.GoneAuditTargets(ctx, entries)
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: the targets of the audit log: %w", err)
+	}
 	accountOf := map[string]string{} // user ID -> account ID; "" when gone
 	var order []appaccount.Actor
 	for _, e := range entries {
@@ -131,7 +138,7 @@ func (s *Server) newAuditEntries(ctx context.Context, entries []moderation.Audit
 		item := AdminAuditEntry{
 			Id: e.ID, ActorKind: AdminAuditActorKind(e.ActorKind), Action: AdminAuditAction(e.Action),
 			TargetKind: AdminAuditTargetKind(e.TargetKind), TargetId: e.TargetID, TargetLabel: e.TargetLabel,
-			OccurredAt: e.OccurredAt.UTC(),
+			TargetExists: !gone[appmoderation.AuditTarget{Kind: e.TargetKind, ID: e.TargetID}], OccurredAt: e.OccurredAt.UTC(),
 		}
 		if id := accountOf[e.ActorUserID]; id != "" {
 			item.ActorAccountId = &id
