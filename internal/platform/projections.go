@@ -57,7 +57,7 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 			},
 			{
 				Name: "content", Module: "content",
-				Tables: []string{"status_heads", "status_mention_index", "status_reply_links", "status_counters", "account_post_counters"},
+				Tables: []string{"status_heads", "status_mention_index", "status_reply_links", "status_counters", "account_post_counters", "local_post_counters"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return content.RebuildProjections(ctx, u, r.statuses)
 				},

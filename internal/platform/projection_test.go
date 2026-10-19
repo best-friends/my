@@ -174,7 +174,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	}
 	for _, table := range []string{
 		"account_handles", "account_profile_heads", "remote_account_heads", "follow_edges", "follow_counters",
-		"block_edges", "status_heads", "status_mention_index", "status_counters", "account_post_counters",
+		"block_edges", "status_heads", "status_mention_index", "status_counters", "account_post_counters", "local_post_counters",
 		"boost_edges", "feed_entries", "feed_tag_entries", "feed_follow_edges", "feed_exclusions",
 		"notification_exclusions", "notification_deleted_statuses",
 	} {
@@ -189,6 +189,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	exec("INSERT INTO notification_deleted_statuses (status_id) VALUES ('no-such-status')")
 	exec("UPDATE remote_account_heads SET inbox_url = 'https://elsewhere.example/inbox', consecutive_fetch_failures = 3")
 	exec("DELETE FROM follow_counters")
+	exec("UPDATE local_post_counters SET posts_count = posts_count + 1")
 
 	drifted := []string{}
 	for _, p := range svc.List() {
@@ -204,7 +205,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	}
 	slices.Sort(drifted)
 	want := []string{
-		"feed_tag_entries", "follow_counters", "notification_deleted_statuses", "notification_exclusions",
+		"feed_tag_entries", "follow_counters", "local_post_counters", "notification_deleted_statuses", "notification_exclusions",
 		"remote_account_heads", "status_counters",
 	}
 	if !slices.Equal(drifted, want) {
