@@ -3,7 +3,7 @@
 // navigation as a bottom tab bar; from md a side rail and the page; from xl a third column about the
 // server. Heights use svh (D5) and every edge that touches the screen adds its safe-area inset.
 // Viewport breakpoints are allowed here because this is the app shell (D2).
-import { Link, OfflineBanner } from "@my/ui";
+import { Link } from "@my/ui";
 import { Outlet, useMatches } from "@tanstack/react-router";
 import { useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -11,7 +11,7 @@ import { ComposeEntry, ComposeProvider } from "../../features/compose";
 import { useViewer } from "../../features/session";
 import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
-import { useIsOffline } from "../../lib/network";
+import { ConnectionBanner } from "./ConnectionBanner";
 import { Navigation } from "./Navigation";
 import { ServerInfo } from "./ServerInfo";
 import { useLiveUpdates } from "./useLiveUpdates";
@@ -40,12 +40,11 @@ export function AppLayout() {
   const pageWantsButton = useMatches({ select: (matches) => matches.some((match) => match.staticData.composeButton === true) });
   const signedIn = useViewer().status === "signed-in";
   const showButton = !wide && pageWantsButton && signedIn;
-  const offline = useIsOffline();
   return (
     <ComposeProvider layout={wide ? "panel" : "sheet"}>
-    {/* The one offline bar (web-client.md G17), in the page from the start so that going offline is announced.
-        It pads for the top safe-area inset itself, so it comes before the element that pads for it. */}
-    <OfflineBanner isOffline={offline}>{t("client:shell.offline")}</OfflineBanner>
+    {/* The one bar for being offline or rate-limited (web-client.md G17), in the page from the start so that the
+        change is announced. It pads for the top safe-area inset itself, so it comes before the element that pads for it. */}
+    <ConnectionBanner />
     <div className="min-h-svh px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] md:grid md:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,1fr)_24rem]">
       {/* The first focusable element of the page; visible only while focused. */}
       <Link

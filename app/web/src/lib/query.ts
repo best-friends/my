@@ -5,7 +5,7 @@
 import { type Query, QueryClient } from "@tanstack/react-query";
 import type { Api } from "./api/client";
 import type { Session } from "./auth/session";
-import { NetworkError } from "./errors";
+import { ApiError, NetworkError } from "./errors";
 
 /** What every route receives as its router context. */
 export type RouterContext = { queryClient: QueryClient; api: Api; session: Session };
@@ -37,6 +37,27 @@ export function createQueryClient(): QueryClient {
     },
   });
 }
+
+/**
+ * The `retry` of the queries the app shell reads on every page (the viewer, the preferences, the instance, the
+ * notification marker), which show their last value or a default while they fail: another try finds the same
+ * answer to a request the server refused (4xx), and a 429 only spends more of the rate limit before Retry-After
+ * (lib/rateLimit.ts loads it again then). Anything else is tried once more, so that a failure shows in about a
+ * second instead of after the default three tries (about seven seconds).
+ */
+export function shellQueryRetry(failureCount: number, error: unknown): boolean {
+  if (error instanceof ApiError && error.status < 500) return false;
+  return failureCount < 1;
+}
+
+/**
+ * The options of a feature that reads the shell's queries on its own as soon as the shell does (the new-post form).
+ * The shell's observers load these queries and handle their failures: a 429 waits for Retry-After (lib/rateLimit.ts),
+ * anything else shows where the shell uses it. So mounting another reader does not send the request again for a
+ * failure already known (`retryOnMount: false`), which would spend more of the rate limit and make the rate-limit bar
+ * go and come back; it shows the last value or its defaults instead.
+ */
+export const shellQueryReader = { retry: shellQueryRetry, retryOnMount: false } as const;
 
 function refetchFailed(query: Query): "always" | false {
   return query.state.status === "error" ? "always" : false;
