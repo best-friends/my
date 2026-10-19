@@ -630,12 +630,35 @@ type Report struct {
 	FiledAt           time.Time
 }
 
+type ReportAssignment struct {
+	ID               string
+	ReportID         string
+	AssigneeUserID   *string
+	AssignedByUserID *string
+	AssignedAt       time.Time
+}
+
 type ReportNote struct {
 	ID           string
 	ReportID     string
 	AuthorUserID *string
 	Body         string
 	WrittenAt    time.Time
+}
+
+type ReportReopening struct {
+	ID               string
+	ReportID         string
+	ReopenedByUserID *string
+	ReopenedAt       time.Time
+}
+
+type ReportResolution struct {
+	ID               string
+	ReportID         string
+	Outcome          string
+	ResolvedByUserID *string
+	ResolvedAt       time.Time
 }
 
 type ReportState struct {

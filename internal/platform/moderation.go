@@ -4,13 +4,17 @@ package platform
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/graph"
+	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/instance"
 )
 
 // setUpModeration builds the moderation use cases, the policy that federation and the media
@@ -29,7 +33,8 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 	a.Moderation = moderation.NewService(moderation.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs,
 		Statuses: moderationStatuses{a}, Lifecycles: a.Accounts, AppealWindow: appealWindow{a},
-		Follows: moderationFollows{a}, Directory: a.Accounts, Outbox: outbox,
+		Retention: retentionSettings{a},
+		Follows:   moderationFollows{a}, Directory: a.Accounts, Outbox: outbox,
 		Evidence: moderationEvidence{a},
 	})
 	a.ModerationPolicy = moderation.NewFederationPolicy(repo, a.Clock)
@@ -53,6 +58,55 @@ func (w appealWindow) AppealWindow(ctx context.Context) (time.Duration, error) {
 		return 0, err
 	}
 	return settings.AppealWindow(), nil
+}
+
+// retentionSettings reads the retention periods of the moderation records from the instance
+// settings (ADR-0038).
+type retentionSettings struct{ a *App }
+
+func (r retentionSettings) RetentionPeriods(ctx context.Context) (moderation.RetentionPeriods, error) {
+	settings, err := r.a.Instance.Settings(ctx)
+	if err != nil {
+		return moderation.RetentionPeriods{}, err
+	}
+	return moderation.RetentionPeriods{
+		Reports:  settings.Retention(instance.SettingRetentionReports),
+		Actions:  settings.Retention(instance.SettingRetentionModerationActions),
+		AuditLog: settings.Retention(instance.SettingRetentionAuditLog),
+	}, nil
+}
+
+// originRetention reads the policy of the identity module's origin purge: the periods of the
+// instance settings and the users of the local accounts that a retention hold preserves
+// (ADR-0038).
+type originRetention struct{ a *App }
+
+func (o originRetention) OriginRetention(ctx context.Context) (identity.OriginRetentionPolicy, error) {
+	settings, err := o.a.Instance.Settings(ctx)
+	if err != nil {
+		return identity.OriginRetentionPolicy{}, err
+	}
+	held, err := o.a.Moderation.HeldAccountIDs(ctx)
+	if err != nil {
+		return identity.OriginRetentionPolicy{}, err
+	}
+	pol := identity.OriginRetentionPolicy{
+		SessionPeriod:      settings.Retention(instance.SettingRetentionSessionOrigins),
+		RegistrationPeriod: settings.Retention(instance.SettingRetentionRegistrationOrigins),
+	}
+	for _, id := range held {
+		actor, err := o.a.Accounts.FindByID(ctx, id)
+		switch {
+		case errors.Is(err, account.ErrNotFound):
+			continue
+		case err != nil:
+			return identity.OriginRetentionPolicy{}, err
+		}
+		if actor.Local != nil && actor.Local.UserID != "" {
+			pol.HeldUserIDs = append(pol.HeldUserIDs, actor.Local.UserID)
+		}
+	}
+	return pol, nil
 }
 
 // moderationStatuses gives the moderation module the content module, which is built after it
