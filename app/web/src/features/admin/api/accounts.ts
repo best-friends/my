@@ -8,7 +8,8 @@ import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { pageQuery, refreshQueries } from "./admin";
+import { refreshQueries } from "../../../lib/query";
+import { pageQuery } from "./admin";
 import { type AccountAction, accountActionsQueryOptions } from "./reports";
 
 type Schemas = components["schemas"];

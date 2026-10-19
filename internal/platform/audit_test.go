@@ -21,6 +21,7 @@ import (
 // audit log entry (ADR-0037) with their actor, target, and label, and that operations that
 // fail or change nothing record none.
 func TestAuditLogOfEveryModule(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_QUEUE": "inline", "MY_MAIL": "none"})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {

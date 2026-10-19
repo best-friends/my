@@ -5,8 +5,8 @@ import { type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
 import { useApi } from "../../../lib/auth/SessionProvider";
-import { useConfig } from "../../../lib/config";
 import { useContentLinkClick } from "../../../lib/contentLinks";
+import { handleOf, isRemoteAcct } from "../../../lib/handle";
 import { hostOf } from "../../../lib/host";
 import { followListPath } from "../../../lib/paths";
 import { type Account, accountQueryOptions } from "../api/accounts";
@@ -15,7 +15,7 @@ export type ProfileView = {
   account: Account;
   /** The display name, or the username when there is none. */
   name: string;
-  /** The full handle, `@alice@example.com`. */
+  /** The handle: `@alice` for a local account, `@bob@example.com` for a remote one. */
   handle: string;
   /** The profile text as the server sanitized it, or null when there is none. */
   note: SanitizedHtml | null;
@@ -31,11 +31,6 @@ export type ProfileView = {
   /** For an account of another server, its profile page there and the host of that page; null for a local account. */
   original: { href: string; host: string } | null;
 };
-
-/** The full handle of an account: `acct` is `username` for local accounts and `username@domain` for remote ones. */
-export function handleOf(acct: string, localDomain: string): string {
-  return acct.includes("@") ? `@${acct}` : `@${acct}@${localDomain}`;
-}
 
 /**
  * A name inside a sentence of the UI's language. It is the user's text in any script, so it is wrapped in
@@ -55,13 +50,12 @@ export function nameOf(account: Account): string {
 export function useProfile(acct: string): ProfileView {
   const api = useApi();
   const intl = useIntl();
-  const { accountDomain } = useConfig();
   const { data: account } = useSuspenseQuery(accountQueryOptions(api, acct));
   const onLinkClick = useContentLinkClick();
   return {
     account,
     name: nameOf(account),
-    handle: handleOf(account.acct, accountDomain),
+    handle: handleOf(account.acct),
     // `note` and the field values are sanitized HTML (api/openapi.yaml, Account.note and ProfileField.value).
     note: account.note === "" ? null : serverSanitizedHtml(account.note),
     // A profile's fields have no IDs; their order is their identity, and the list only changes as a whole.
@@ -71,6 +65,6 @@ export function useProfile(acct: string): ProfileView {
     followers: account.followers_count === undefined ? null : { count: account.followers_count, href: followListPath(account.acct, "followers") },
     joined: { dateTime: account.created_at, date: intl.formatDate(account.created_at, { dateStyle: "long" }) },
     // A remote account's `url` is the page its actor declares, or its actor's ID (api/openapi.yaml, Account.url).
-    original: account.acct.includes("@") ? { href: account.url, host: hostOf(account.url, account.domain) } : null,
+    original: isRemoteAcct(account.acct) ? { href: account.url, host: hostOf(account.url, account.domain) } : null,
   };
 }

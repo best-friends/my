@@ -58,3 +58,6 @@ export { AccountSearch } from "./components/AccountSearch";
 export { type AppealFilter, appealQueryOptions, appealsQueryOptions } from "./api/appeals";
 export { AppealDetailView } from "./components/AppealDetail";
 export { AppealQueue } from "./components/AppealQueue";
+// The terms of service and the privacy policy (#489), for manage_settings.
+export { instanceTextsQueryOptions } from "./api/documents";
+export { DocumentSettings } from "./components/DocumentSettings";

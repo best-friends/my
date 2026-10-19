@@ -18,6 +18,7 @@ import (
 // TestDefaultLocaleAppliesWithoutRestart checks that every HTTP surface resolves the locale
 // of a request without Accept-Language from the current default_locale setting.
 func TestDefaultLocaleAppliesWithoutRestart(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {
@@ -58,6 +59,7 @@ func TestDefaultLocaleAppliesWithoutRestart(t *testing.T) {
 // TestPseudoLocales checks that the pseudo-locales are selectable on the sign-in screen only
 // with AppOptions.PseudoLocales (`my serve -pseudo-locales`), and that ar-XB renders right to left.
 func TestPseudoLocales(t *testing.T) {
+	t.Parallel()
 	render := func(t *testing.T, pseudo bool, acceptLanguage string) (string, string) {
 		t.Helper()
 		cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})

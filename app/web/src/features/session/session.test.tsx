@@ -122,7 +122,7 @@ describe("signing in and out", () => {
     expect(router.state.location.href).toBe("/settings");
     const main = screen.getByRole("main");
     expect(await within(main).findByText("Alice")).toBeInTheDocument();
-    expect(within(main).getByText("@alice@my.example")).toBeInTheDocument();
+    expect(within(main).getByText("@alice")).toBeInTheDocument();
     expect(oauth.seen.tokenForms).toEqual([
       expect.objectContaining({ grant_type: "authorization_code", code: "the-code", client_id: "my-web", redirect_uri: `${origin}/login/callback` }),
     ]);

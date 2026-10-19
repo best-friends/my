@@ -71,6 +71,9 @@ type Options struct {
 	// Threads starts fetching the remote parts of a thread that a viewer opens (getStatusContext);
 	// nil fetches none.
 	Threads ThreadFetcher
+	// Outboxes starts fetching the recent posts of a remote account whose profile a logged-in
+	// viewer opens (the first page of listAccountStatuses); nil fetches none.
+	Outboxes OutboxFetcher
 	// Timelines reads the timelines, and TimelineReader the statuses they list.
 	Timelines      Timelines
 	TimelineReader TimelineReader
@@ -119,6 +122,13 @@ type Options struct {
 	// Rules runs the use cases of the instance rules: the admin operations (admin_rules.go)
 	// and the rules of GET /instance, which lists none when it is nil.
 	Rules InstanceRules
+	// InstanceTexts reads and writes the instance texts for the admin operations
+	// (admin_instance_texts.go).
+	InstanceTexts InstanceTexts
+	// TermsPath and PrivacyPolicyPath are the paths, on Origin, of the public pages of the terms
+	// of service and the privacy policy, for Instance.terms_url and Instance.privacy_policy_url;
+	// empty leaves the link out.
+	TermsPath, PrivacyPolicyPath string
 	// Roles lists, grants, and revokes the roles of users for the admin operations
 	// (admin_roles.go).
 	Roles Roles

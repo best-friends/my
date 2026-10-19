@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
+import { refreshQueries } from "../../../lib/query";
 import { refreshAdminAccount } from "../api/accounts";
 import { refreshAuditLog } from "../api/admin";
 import {
@@ -156,14 +157,11 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
       // Before the report's page reads the report again: the page moves focus once it shows the report resolved
       // (useFocusAfterChange), which must come after this call.
       onIssued(action);
-      // The report is resolved and the others on the account tell of one more action, and deleted posts are gone.
-      void queryClient.invalidateQueries({
-        predicate: (query) => {
-          const path = query.queryKey[1];
-          if (path === "/statuses/{id}") return action.status_ids !== undefined;
-          return path === "/admin/reports/{id}";
-        },
-      });
+      // The report is resolved and the others on the account tell of one more action: every cached report is
+      // fetched again, also those no page shows now, which their route reads from the cache as they are
+      // (refreshQueries, web-client.md S1). Deleted posts are gone from the posts on screen.
+      void refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/reports/{id}" });
+      if (action.status_ids !== undefined) void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/statuses/{id}" });
     },
   });
   const chosenStatusIds = target.statusIds.filter((id) => !draft.leftOut.includes(id));

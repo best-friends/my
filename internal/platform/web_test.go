@@ -23,6 +23,7 @@ const (
 // TestWebClient checks how the composition root splits requests between the web client's
 // shell, its files, ActivityPub, and the other endpoints (ADR-0028).
 func TestWebClient(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	build := fstest.MapFS{
 		".vite/manifest.json": {Data: []byte(`{"index.html": {"file": "assets/index-AAAA.js", "isEntry": true, "css": ["assets/index-CCCC.css"]},

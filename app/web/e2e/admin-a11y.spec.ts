@@ -31,7 +31,7 @@ const moderator = {
   indexable: true,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_jobs"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_jobs", "manage_settings"],
 };
 
 /** The reported account: a long display name, local. */
@@ -284,16 +284,21 @@ async function moderatorServer(page: Page) {
       return json(route, { items: [{ id: "0192f0c4-7a8e-7000-8000-0000000000e1", kind: "marked_unavailable", reason: "failure_days", occurred_at: "2026-10-10T08:00:00Z" }] });
     }
     if (key === "GET /admin/dead_jobs") return json(route, { items: [deadJob] });
+    if (key === "GET /admin/instance_texts") return json(route, { items: [documentText] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return issued;
 }
 
+/** The terms of service in English, as GET /admin/instance_texts lists them. */
+const documentText: Schemas["AdminInstanceText"] = { key: "terms", locale: "en", body: "# Accounts\n\nBe kind.", revised_at: "2026-10-12T08:00:00Z" };
+
 /**
  * Every admin screen, by the name of its route file in src/routes, with an address that opens it and a text of
- * the server's answer that shows once it has loaded. A new admin route fails the test below until it is listed.
+ * the server's answer that shows once it has loaded (or, for a screen that shows it only as the value of a field,
+ * that field's value). A new admin route fails the test below until it is listed.
  */
-const adminPages: Readonly<Record<string, { path: string; ready: string }>> = {
+const adminPages: Readonly<Record<string, { path: string; ready: string | { value: string } }>> = {
   "admin.index": { path: "/admin", ready: "" },
   "admin.reports": { path: "/admin/reports", ready: `@${target.acct}` },
   "admin.reports_.$id": { path: `/admin/reports/${reportId}`, ready: "Same as last week." },
@@ -308,6 +313,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string }>> = {
   "admin.instances": { path: "/admin/instances", ready: longDomain },
   "admin.instances_.$domain": { path: `/admin/instances/${longDomain}`, ready: longDomain },
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
+  "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
 };
 
 test("the suite lists every admin route", () => {
@@ -325,7 +331,8 @@ for (const [route, { path, ready }] of Object.entries(adminPages)) {
       const main = page.getByRole("main");
       await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
       // The administration page lists links only; the other screens show what the server sent.
-      await expect(ready === "" ? main.locator('a[href="/admin/reports"]') : main.getByText(ready).first()).toBeVisible();
+      if (typeof ready !== "string") await expect(main.getByRole("textbox").first()).toHaveValue(ready.value);
+      else await expect(ready === "" ? main.locator('a[href="/admin/reports"]') : main.getByText(ready).first()).toBeVisible();
     });
 
     test("has no axe violations", async ({ makeAxeBuilder }) => {

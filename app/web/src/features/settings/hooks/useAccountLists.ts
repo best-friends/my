@@ -7,7 +7,8 @@ import { type InfiniteData, useMutation, useQueryClient, useSuspenseInfiniteQuer
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { credentialsQueryOptions } from "../api/me";
+import { refreshRelationship, type RelationshipChange } from "../../profile";
+import { useViewer } from "../../session";
 import { type Account, accountActionMutation, blocksQueryOptions, followRequestsQueryOptions, type MutedAccount, mutesQueryOptions } from "../api/relationships";
 
 /** What a list screen needs from its list: the items so far, and loading more. */
@@ -48,6 +49,19 @@ export type AccountAction = {
 
 type MutationCallbacks = { onSuccess: () => void; onError: (error: unknown) => void };
 
+/**
+ * The `onSuccess` of a mutation that makes `change` to the viewer's relationship with the account it is given:
+ * the action is done once what the change shows elsewhere is fetched again (refreshRelationship; the row stays
+ * pending until then), so that a page opened next shows it at once (web-client.md S1). The list itself is
+ * updated by the action (useListAction), which then moves focus.
+ */
+function useRefreshRelationship(change: RelationshipChange): (data: unknown, id: string) => Promise<void> {
+  const queryClient = useQueryClient();
+  const viewer = useViewer();
+  const viewerId = viewer.status === "signed-in" ? viewer.account.id : "";
+  return (_data, id) => refreshRelationship(queryClient, change, id, viewerId);
+}
+
 /** An AccountAction from a mutation of one account, the update that takes the account off the cached list, and its announcement. */
 function useListAction(options: {
   mutate: (id: string, callbacks: MutationCallbacks) => void;
@@ -84,7 +98,7 @@ export function useBlocks(): { list: AccountList<Account>; unblock: AccountActio
   const queryClient = useQueryClient();
   const options = blocksQueryOptions(api);
   const query = useSuspenseInfiniteQuery(options);
-  const unblock = useMutation(accountActionMutation(api, "/accounts/{id}/unblock"));
+  const unblock = useMutation({ ...accountActionMutation(api, "/accounts/{id}/unblock"), onSuccess: useRefreshRelationship("unblock") });
   return {
     list: toList(query, (page) => page.accounts),
     unblock: useListAction({
@@ -109,7 +123,7 @@ export function useMutes(): { list: AccountList<MutedAccount>; unmute: AccountAc
   const queryClient = useQueryClient();
   const options = mutesQueryOptions(api);
   const query = useSuspenseInfiniteQuery(options);
-  const unmute = useMutation(accountActionMutation(api, "/accounts/{id}/unmute"));
+  const unmute = useMutation({ ...accountActionMutation(api, "/accounts/{id}/unmute"), onSuccess: useRefreshRelationship("unmute") });
   return {
     list: toList(query, (page) => page.mutes),
     unmute: useListAction({
@@ -134,11 +148,8 @@ export function useFollowRequests(): { list: AccountList<Account>; accept: Accou
   const queryClient = useQueryClient();
   const options = followRequestsQueryOptions(api);
   const query = useSuspenseInfiniteQuery(options);
-  const accept = useMutation({
-    ...accountActionMutation(api, "/follow_requests/{id}/authorize"),
-    // The viewer has one more follower.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: credentialsQueryOptions(api).queryKey }),
-  });
+  // The viewer has one more follower.
+  const accept = useMutation({ ...accountActionMutation(api, "/follow_requests/{id}/authorize"), onSuccess: useRefreshRelationship("accept") });
   const reject = useMutation(accountActionMutation(api, "/follow_requests/{id}/reject"));
   const remove = (id: string) => {
     queryClient.setQueryData(options.queryKey, (data) =>

@@ -21,6 +21,7 @@ import (
 // approval and rejection are recorded in registration_decisions and the audit log, and deciding
 // a decided registration again changes nothing.
 func TestRegistrationReviewThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	path := newDatabase(t, true)
 	c := newStatusesClientWith(t, map[string]string{"MY_DATABASE_URL": path}, platform.AppOptions{}, "carol")
 	db, err := sql.Open("sqlite", path)

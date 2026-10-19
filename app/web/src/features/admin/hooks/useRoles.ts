@@ -10,7 +10,8 @@ import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { viewerQueryOptions } from "../../session";
 import { adminAccountQueryOptions } from "../api/accounts";
-import { isAuditLogQuery, refreshQueries } from "../api/admin";
+import { refreshQueries } from "../../../lib/query";
+import { isAuditLogQuery } from "../api/admin";
 import {
   accountRolesQueryOptions,
   type AdminRole,

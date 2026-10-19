@@ -22,6 +22,13 @@ type Statuses interface {
 	Delete(ctx context.Context, accountID, statusID string) (content.Deletion, error)
 }
 
+// OutboxFetcher starts fetching the recent posts of a remote account whose profile a viewer
+// opens (ADR-0044), and reports whether it did; the conditions are its own.
+// *federation.StatusHandlers implements it.
+type OutboxFetcher interface {
+	FetchOutbox(ctx context.Context, viewerAccountID, accountID string) (bool, error)
+}
+
 // ThreadFetcher starts fetching the missing ancestors and the replies of a status from their
 // servers, without waiting for them. *federation.StatusHandlers implements it.
 type ThreadFetcher interface {

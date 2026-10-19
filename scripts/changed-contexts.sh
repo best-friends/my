@@ -12,7 +12,7 @@
 #
 # Contexts:
 #   docs    Markdown lint and the ADR index                     (make docs-check)
-#   go      the Go module, sqlc, and the Go tests                (make go-check, govulncheck)
+#   go      the Go module, sqlc, and the Go tests                (make go-check)
 #   i18n    the catalogs and their generated accessors           (make i18n-check)
 #   api     the OpenAPI spec and the code generated from it      (make api-check)
 #   ui      app/ui (@my/ui)                                      (make ui-check, the story tests)

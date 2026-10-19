@@ -55,7 +55,7 @@ describe("a profile", () => {
     // The name is the user's text in any script (web-client.md Y10).
     expect(within(screen.getByRole("heading", { level: 1 })).getByText("Bob")).toHaveAttribute("dir", "auto");
     // The first is the header's; the posts below show it too.
-    expect(within(main()).getAllByText("@bob@my.example")[0]).toHaveAttribute("dir", "ltr");
+    expect(within(main()).getAllByText("@bob")[0]).toHaveAttribute("dir", "ltr");
     expect(within(main()).getByText("I bake bread.")).toBeInTheDocument();
     expect(within(main()).getByRole("term")).toHaveTextContent("Site");
     expect(within(main()).getByRole("definition")).toHaveTextContent("bob.example");
@@ -299,7 +299,7 @@ describe("the follow lists", () => {
     const { user } = await renderApp({ path: "/@bob/followers" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Followers of \u2068Bob\u2069" })).toBeInTheDocument();
-    expect(within(main()).getByRole("link", { name: "Alice @alice@my.example" })).toHaveAttribute("href", "/@alice");
+    expect(within(main()).getByRole("link", { name: "Alice @alice" })).toHaveAttribute("href", "/@alice");
     expect(within(main()).getByRole("link", { name: "Back to the profile of \u2068Bob\u2069" })).toHaveAttribute("href", "/@bob");
 
     await user.click(screen.getByRole("button", { name: "Show more" }));
@@ -331,7 +331,7 @@ describe("the follow lists", () => {
     release();
 
     expect(await screen.findByRole("heading", { level: 1, name: "Followers of ⁨Bob⁩" })).toBeInTheDocument();
-    expect(within(main()).getByRole("link", { name: "Alice @alice@my.example" })).toBeInTheDocument();
+    expect(within(main()).getByRole("link", { name: "Alice @alice" })).toBeInTheDocument();
     expect(screen.queryByText("Loading accounts")).not.toBeInTheDocument();
   });
 

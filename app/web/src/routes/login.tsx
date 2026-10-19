@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { DocumentLinks } from "../features/documents";
 import { SignInPanel } from "../features/session";
 import { isReturnPath } from "../lib/auth/signIn";
 import { useT } from "../lib/i18n";
@@ -11,7 +12,7 @@ const searchSchema = z.object({
   return_to: z.string().refine(isReturnPath).optional().catch(undefined),
 });
 
-/** The sign-in page: it sends the browser to the server's sign-in screen (ADR-0030). */
+/** The sign-in page: it sends the browser to the server's sign-in screen (ADR-0030), with the links to the server's terms of service and privacy policy. */
 export const Route = createFileRoute("/login")({
   staticData: { title: "client:login.title" },
   validateSearch: searchSchema,
@@ -25,6 +26,7 @@ function LoginPage() {
     <>
       <PageHeading>{t("client:login.title")}</PageHeading>
       <SignInPanel returnTo={returnTo} />
+      <DocumentLinks />
     </>
   );
 }

@@ -10,7 +10,14 @@ import { type AdminCounts, adminCountsQueryOptions, countPermissions } from "../
 import { useViewerPermissions } from "./usePermissions";
 
 /** The permissions of the admin screens (AdminMenu): a viewer with one of them has an admin screen to open. */
-const screenPermissions: ReadonlySet<Permission> = new Set(["manage_domains", "manage_jobs", "view_audit", "manage_accounts", "manage_reports"]);
+const screenPermissions: ReadonlySet<Permission> = new Set([
+  "manage_domains",
+  "manage_jobs",
+  "view_audit",
+  "manage_accounts",
+  "manage_reports",
+  "manage_settings",
+]);
 
 /**
  * The counts the viewer may see: none while signed out, while they load, and when they cannot be loaded (the

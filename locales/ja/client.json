@@ -1515,6 +1515,126 @@
     "defaultMessage": "失敗したジョブ",
     "description": "Heading of the screen of background jobs that failed for good, and its link in the administration menu."
   },
+  "admin.documents.body": {
+    "defaultMessage": "{language}の本文",
+    "description": "Label of the text area of a document in the selected language. {language} is the language's name."
+  },
+  "admin.documents.body.description": {
+    "defaultMessage": "Markdown で書きます：見出し（#）、箇条書き（-）、リンク（[文字](URL)）、強調（**太字**）。改行はそのまま改行になります。空にして保存すると、この言語の本文を削除します。",
+    "description": "Description of the text area of a document: the Markdown it takes, and how to remove the text."
+  },
+  "admin.documents.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Character count under the text area of a document."
+  },
+  "admin.documents.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Character count under the text area of a document when the text is too long."
+  },
+  "admin.documents.confirm_remove.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button of the dialog that keeps a document in a language."
+  },
+  "admin.documents.confirm_remove.confirm": {
+    "defaultMessage": "削除",
+    "description": "Button of the dialog that removes a document in a language."
+  },
+  "admin.documents.confirm_remove.description": {
+    "defaultMessage": "この言語で読む人には、ほかの言語の本文が出ます。どの言語にもなければページは出なくなります。あとからもう一度書けます。",
+    "description": "Body of the dialog that asks before removing a document in a language."
+  },
+  "admin.documents.confirm_remove.privacy_policy": {
+    "defaultMessage": "{language}のプライバシーポリシーを削除しますか？",
+    "description": "Title of the dialog that asks before removing the privacy policy in a language."
+  },
+  "admin.documents.confirm_remove.terms": {
+    "defaultMessage": "{language}の利用規約を削除しますか？",
+    "description": "Title of the dialog that asks before removing the terms of service in a language."
+  },
+  "admin.documents.languages": {
+    "defaultMessage": "書かれている言語",
+    "description": "Term of the languages that a document is written in, on the terms and policies screen."
+  },
+  "admin.documents.languages.none": {
+    "defaultMessage": "まだどの言語もないので、ページとそのリンクは出ていません",
+    "description": "Value of 'Written in' when a document has no text in any language: no page shows it and no link leads to it."
+  },
+  "admin.documents.locale": {
+    "defaultMessage": "言語",
+    "description": "Label of the select of the language whose texts the terms and policies screen edits."
+  },
+  "admin.documents.locale.description": {
+    "defaultMessage": "言語ごとに別の本文を書きます。読む人には、その人の言語の本文を、なければサーバーの既定の言語か英語の本文を出します。",
+    "description": "Description of the language select on the terms and policies screen."
+  },
+  "admin.documents.privacy_policy": {
+    "defaultMessage": "プライバシーポリシー",
+    "description": "Heading of the section of the privacy policy on the terms and policies screen."
+  },
+  "admin.documents.removed": {
+    "defaultMessage": "{language}の本文を削除しました。変更は監査ログに記録されます。",
+    "description": "Status message after a document's text in a language is removed."
+  },
+  "admin.documents.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves the text of a document in the selected language."
+  },
+  "admin.documents.save_failed": {
+    "defaultMessage": "本文を保存できませんでした：{reason}",
+    "description": "Error under a document's form when saving failed."
+  },
+  "admin.documents.saved": {
+    "defaultMessage": "{language}の本文を保存しました。変更は監査ログに記録されます。",
+    "description": "Status message after a document's text is saved. {language} is the language's name."
+  },
+  "admin.documents.saved_at": {
+    "defaultMessage": "{language}の本文を最後に保存した日時",
+    "description": "Term of when the text in the selected language was last saved, on the terms and policies screen."
+  },
+  "admin.documents.saved_at.never": {
+    "defaultMessage": "まだ書かれていません",
+    "description": "Value of 'Last saved in {language}' when the document has no text in that language."
+  },
+  "admin.documents.summary": {
+    "defaultMessage": "誰でも読めて、登録するときに同意してもらう利用規約とプライバシーポリシー。",
+    "description": "Description of the terms and policies screen in the admin menu."
+  },
+  "admin.documents.terms": {
+    "defaultMessage": "利用規約",
+    "description": "Heading of the section of the terms of service on the terms and policies screen."
+  },
+  "admin.documents.title": {
+    "defaultMessage": "規約とポリシー",
+    "description": "Title and heading of the admin screen where administrators write the terms of service and the privacy policy, and its link in the admin menu."
+  },
+  "admin.documents.too_long": {
+    "defaultMessage": "{max, number} 文字以内にしてください",
+    "description": "Error of the text area of a document when the text is too long."
+  },
+  "admin.documents.unsaved.description": {
+    "defaultMessage": "利用規約とプライバシーポリシーへの変更は失われます。",
+    "description": "Body of the dialog that asks before leaving the terms and policies screen with unsaved texts."
+  },
+  "admin.documents.unsaved.leave": {
+    "defaultMessage": "変更を破棄する",
+    "description": "Button that leaves the terms and policies screen, losing the unsaved texts."
+  },
+  "admin.documents.unsaved.stay": {
+    "defaultMessage": "編集を続ける",
+    "description": "Button that stays on the terms and policies screen with the unsaved texts."
+  },
+  "admin.documents.unsaved.title": {
+    "defaultMessage": "本文を保存せずに移動しますか？",
+    "description": "Title of the dialog that asks before leaving the terms and policies screen with unsaved texts."
+  },
+  "admin.documents.view_privacy_policy": {
+    "defaultMessage": "プライバシーポリシーのページを開く",
+    "description": "Link from the terms and policies screen to the public page of the privacy policy."
+  },
+  "admin.documents.view_terms": {
+    "defaultMessage": "利用規約のページを開く",
+    "description": "Link from the terms and policies screen to the public page of the terms of service."
+  },
   "admin.domain.ascii": {
     "defaultMessage": "（{domain}）",
     "description": "After a domain in non-Latin letters: the same domain as the server keeps it, in ASCII (IDNA A-labels), such as '(xn--r8jz45g.jp)'. {domain} is that ASCII form."
@@ -2943,6 +3063,18 @@
     "defaultMessage": "注意書き（CW）を付ける",
     "description": "Toggle button (an icon) that adds a content warning: a short text shown instead of the post until the reader opens it."
   },
+  "documents.label": {
+    "defaultMessage": "規約とポリシー",
+    "description": "Accessible name of the links to the server's terms of service and privacy policy (in the third column, the menu, the settings, and the sign-in page), and the heading of their section in the settings."
+  },
+  "documents.privacy_policy": {
+    "defaultMessage": "プライバシーポリシー",
+    "description": "Link to the server's public page of its privacy policy."
+  },
+  "documents.terms": {
+    "defaultMessage": "利用規約",
+    "description": "Link to the server's public page of its terms of service."
+  },
   "home.title": {
     "defaultMessage": "ホーム",
     "description": "Heading and document title of the home timeline page."
@@ -3955,6 +4087,10 @@
     "defaultMessage": "保存しました",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
   },
+  "settings.time_zone.device_differs": {
+    "defaultMessage": "この端末のタイムゾーンは設定と違います：{zone}",
+    "description": "Note under the time zone select when the chosen zone is not the time zone of the device in use. {zone} is that device zone as the select names it, like (UTC+09:00) Japan Standard Time."
+  },
   "settings.time_zone.description": {
     "defaultMessage": "日時をこのタイムゾーンで表示します。",
     "description": "Help text of the time zone select."
@@ -3970,6 +4106,10 @@
   "settings.time_zone.option": {
     "defaultMessage": "（UTC{offset}）{name}",
     "description": "Option of the time zone select. {offset} is the zone's difference from UTC, like +09:00 or −05:00; {name} is the zone's name in the display language, like Japan Standard Time."
+  },
+  "settings.time_zone.use_device": {
+    "defaultMessage": "この端末のタイムゾーンにする",
+    "description": "Button under the time zone select that changes the setting to the time zone of the device in use; shown only when they differ."
   },
   "settings.timeline_languages.description": {
     "defaultMessage": "チェックした言語の投稿だけをタイムラインに表示します。何もチェックしなければすべての言語を表示します。",

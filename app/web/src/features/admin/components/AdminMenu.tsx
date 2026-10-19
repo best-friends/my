@@ -23,6 +23,7 @@ const pages: readonly { href: string; permission: Permission; label: ClientMessa
   { href: "/admin/accounts", permission: "manage_accounts", label: "client:admin.accounts.title", description: "client:admin.accounts.summary" },
   { href: "/admin/reports", permission: "manage_reports", label: "client:admin.reports.title", description: "client:admin.reports.summary" },
   { href: "/admin/appeals", permission: "manage_accounts", label: "client:admin.appeals.title", description: "client:admin.appeals.summary" },
+  { href: "/admin/documents", permission: "manage_settings", label: "client:admin.documents.title", description: "client:admin.documents.summary" },
 ];
 
 /** The count that a screen's link shows, by the screen's address, and the words of its badge. */
