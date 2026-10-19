@@ -43,6 +43,14 @@
     "defaultMessage": "通報の担当の解除",
     "description": "Heading of an audit log entry: a report was left without an assigned moderator."
   },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "ロールの付与",
+    "description": "Heading of an audit log entry: an administrator granted a role to a user."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "ロールの剥奪",
+    "description": "Heading of an audit log entry: an administrator revoked a role from a user."
+  },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "ルールの追加",
     "description": "Heading of an audit log entry: an administrator added a server rule."
