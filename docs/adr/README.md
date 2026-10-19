@@ -54,4 +54,5 @@
 | [0040](0040-e2e-on-main-only.md) | Web の E2E を main への push でだけ回す | Accepted |
 | [0041](0041-postgres-tests-on-pgmem.md) | PostgreSQL のテストを pgmem で動かす | Accepted |
 | [0042](0042-captcha-human-verifier.md) | サインインと登録のボット対策に CAPTCHA を設定で使えるようにする | Accepted |
+| [0045](0045-client-server-cache-policy.md) | キャッシュの方針（クライアントとサーバー） | Proposed |
 <!-- adr-index:end -->
