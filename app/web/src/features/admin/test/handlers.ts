@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the admin feature (web-client.md §7): the health of remote servers, the domain
-// actions, the dead jobs, the audit log, the registrations awaiting approval and the reports, all empty and every server available by default. The default viewer has no
+// actions, the dead jobs, the audit log, the registrations awaiting approval, the reports and the accounts, all empty and every server available by default. The default viewer has no
 // permissions, so the admin screens' tests start with `server.use(operatorHandler(...))`.
 import { http, HttpResponse } from "msw";
 import { otherAccountFixture, remoteAccountFixture, type Schemas, statusFixture, viewerFixture } from "../../../test/fixtures";
@@ -101,6 +101,47 @@ export function newAccountAction(accountId: string, body: Schemas["CreateAccount
   };
 }
 
+/** `account` as the moderators see it: active, without restrictions, local when it is on this server. */
+export function adminAccountFixture(account: Schemas["Account"], overrides: Partial<Schemas["AdminAccount"]> = {}): Schemas["AdminAccount"] {
+  const local = !account.acct.includes("@");
+  return { id: account.id, account, local, state: "active", restrictions: [], ...(local ? { registration_state: "approved" } : {}), ...overrides };
+}
+
+/**
+ * The details of `account` as GET /admin/accounts/{id} answers them: a local one registered on 2026-10-01 with
+ * a verified email address and no roles, actions or reports; `overrides` replace its fields.
+ */
+export function adminAccountDetailFixture(account: Schemas["Account"], overrides: Partial<Schemas["AdminAccountDetail"]> = {}): Schemas["AdminAccountDetail"] {
+  const summary = adminAccountFixture(account);
+  return {
+    ...summary,
+    ...(summary.local ? { registration: { submitted_at: "2026-10-01T00:00:00Z", state_changed_at: "2026-10-01T01:00:00Z" }, email_verified: true } : {}),
+    roles: [],
+    actions: [],
+    reports: [],
+    ...overrides,
+  };
+}
+
+/** What POST /admin/accounts/{id}/reveal answers by default: an email address, no IP addresses kept. */
+export const privateDataFixture: Schemas["AdminAccountPrivateData"] = { email: "bob@example.com", email_verified: true, sign_ins: [], same_ip_accounts: [] };
+
+/** A moderation action `kind` on Bob in effect since 2026-10-10, as the server answers it; `overrides` replace its fields. */
+export function accountActionFixture(overrides: Partial<Schemas["AdminAccountAction"]> = {}): Schemas["AdminAccountAction"] {
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000d00a1",
+    account_id: otherAccountFixture.id,
+    kind: "limit",
+    reason_category: "spam",
+    issuer: "moderator",
+    issued_by_account_id: viewerFixture.id,
+    notify_target: true,
+    state: "active",
+    issued_at: "2026-10-10T08:00:00Z",
+    ...overrides,
+  };
+}
+
 /** Whether a path segment is an ID of the API (a UUID), not the name of another operation under the same path. */
 function isId(segment: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(segment);
@@ -170,6 +211,28 @@ export const handlers = [
   http.post(`${apiBase}/admin/accounts/:id/actions`, async ({ request, params }) => {
     const body = (await request.clone().json()) as Schemas["CreateAccountActionRequest"];
     return withViewer(request, () => HttpResponse.json(newAccountAction(String(params["id"]), body)));
+  }),
+  // operationIds listAdminAccounts, getAdminAccount, revealAdminAccount: no accounts found; Bob, local, for any
+  // ID; no private data but an email address.
+  http.get(`${apiBase}/admin/accounts`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.get(`${apiBase}/admin/accounts/:id`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(adminAccountDetailFixture({ ...otherAccountFixture, id: String(params["id"]) }))),
+  ),
+  http.post(`${apiBase}/admin/accounts/:id/reveal`, ({ request }) => withViewer(request, () => HttpResponse.json(privateDataFixture))),
+  // operationIds getAccountAction, liftAccountAction.
+  http.get(`${apiBase}/admin/account_actions/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(accountActionFixture({ id: String(params["id"]) })))),
+  http.post(`${apiBase}/admin/account_actions/:id/lift`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["LiftAccountActionRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json(
+        accountActionFixture({
+          id: String(params["id"]),
+          state: "lifted",
+          lifted_at: "2026-10-17T00:00:00Z",
+          ...(body.reason === undefined ? {} : { lift_reason: body.reason }),
+        }),
+      ),
+    );
   }),
   // operationId getAccount: the moderators of the reports, Bob for any other ID. The path also matches the
   // operations under /accounts with a name (lookup, relationships…), which go on to their own handlers.

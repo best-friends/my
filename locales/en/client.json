@@ -1,4 +1,244 @@
 {
+  "admin.account.action.deleted": {
+    "defaultMessage": "The account is deleted.",
+    "description": "Text instead of the action form for a deleted account."
+  },
+  "admin.account.action.issued": {
+    "defaultMessage": "Action taken ({kind}).",
+    "description": "Status after an action was taken on an account; kind is its kind."
+  },
+  "admin.account.action.posts": {
+    "defaultMessage": "To act on posts, take the action from a report on them.",
+    "description": "Help above the form of an action on an account's page."
+  },
+  "admin.account.action.title": {
+    "defaultMessage": "Take action",
+    "description": "Heading of the region of an account's admin page with the form of a new action."
+  },
+  "admin.account.actions.confirm_lift.description": {
+    "defaultMessage": "Its restrictions end now. Other actions on the account stay in effect, and deleted posts and ended sessions stay as they are.",
+    "description": "Description of the confirmation of lifting an account action."
+  },
+  "admin.account.actions.confirm_lift.title": {
+    "defaultMessage": "Lift {kind} on {handle}?",
+    "description": "Title of the confirmation of lifting an account action; handle is the account's @handle."
+  },
+  "admin.account.actions.issuer": {
+    "defaultMessage": "Taken by",
+    "description": "Term of an account action: who took it."
+  },
+  "admin.account.actions.issuer.cli": {
+    "defaultMessage": "Command line",
+    "description": "Who took an account action: a moderator on the command line."
+  },
+  "admin.account.actions.issuer.remote": {
+    "defaultMessage": "The account's server",
+    "description": "Who took an account action: the account's own server."
+  },
+  "admin.account.actions.issuer.system": {
+    "defaultMessage": "This server",
+    "description": "Who took an account action: this server by itself."
+  },
+  "admin.account.actions.lift": {
+    "defaultMessage": "Lift",
+    "description": "Button that lifts a moderation action on an account, and the confirmation's button."
+  },
+  "admin.account.actions.lift_action": {
+    "defaultMessage": "Lift {kind}, taken {date}",
+    "description": "Accessible name of the button that lifts an account action; kind is the kind, date when it was taken."
+  },
+  "admin.account.actions.lift_failed": {
+    "defaultMessage": "The action could not be lifted: {reason}",
+    "description": "Error in the lift confirmation; reason is the server's localized message."
+  },
+  "admin.account.actions.lift_reason": {
+    "defaultMessage": "Reason for lifting",
+    "description": "Label of the optional reason of lifting an account action, and term of it in the list."
+  },
+  "admin.account.actions.lift_reason.description": {
+    "defaultMessage": "Optional. Kept with the action for the moderators.",
+    "description": "Help under the reason of lifting an account action."
+  },
+  "admin.account.actions.lifted": {
+    "defaultMessage": "{kind} is lifted.",
+    "description": "Status after an account action was lifted; kind is its kind."
+  },
+  "admin.account.actions.lifted_at": {
+    "defaultMessage": "Lifted",
+    "description": "Term of an account action: when it was lifted."
+  },
+  "admin.account.actions.notified": {
+    "defaultMessage": "Account told",
+    "description": "Term of an account action: whether the account was told."
+  },
+  "admin.account.actions.notified.no": {
+    "defaultMessage": "No",
+    "description": "The account was not told of the action."
+  },
+  "admin.account.actions.notified.yes": {
+    "defaultMessage": "Yes",
+    "description": "The account was told of the action."
+  },
+  "admin.account.actions.title": {
+    "defaultMessage": "Actions on the account",
+    "description": "Heading of the region of an account's admin page with the moderation actions on it."
+  },
+  "admin.account.audit": {
+    "defaultMessage": "Show operations on the account in the audit log",
+    "description": "Link from an account's admin page to the audit log filtered to it."
+  },
+  "admin.account.back": {
+    "defaultMessage": "Back to the accounts",
+    "description": "Link from an account's admin page to the account search."
+  },
+  "admin.account.email.none": {
+    "defaultMessage": "No email address",
+    "description": "A local account has no email address."
+  },
+  "admin.account.email_verified": {
+    "defaultMessage": "Email",
+    "description": "Term of a local account: whether its email address is verified."
+  },
+  "admin.account.email_verified.no": {
+    "defaultMessage": "Not verified",
+    "description": "The email address of an account is not verified."
+  },
+  "admin.account.email_verified.yes": {
+    "defaultMessage": "Verified",
+    "description": "The email address of an account is verified."
+  },
+  "admin.account.private.description": {
+    "defaultMessage": "Shown only when you ask. Each time is recorded in the audit log.",
+    "description": "Text next to the button that shows the email and IP addresses."
+  },
+  "admin.account.private.email": {
+    "defaultMessage": "Email address",
+    "description": "Term of the private data: the primary email address."
+  },
+  "admin.account.private.failed": {
+    "defaultMessage": "Couldn't show the email and IP addresses: {reason}",
+    "description": "Toast when showing the email and IP addresses failed; reason is the server's localized message."
+  },
+  "admin.account.private.ip": {
+    "defaultMessage": "IP address",
+    "description": "Term of a sign-in: the IP address."
+  },
+  "admin.account.private.registration_ip": {
+    "defaultMessage": "Registered from",
+    "description": "Term of the private data: the IP address the account registered from."
+  },
+  "admin.account.private.reveal": {
+    "defaultMessage": "Show email and IP addresses",
+    "description": "Button that shows the email address and IP addresses of a local account."
+  },
+  "admin.account.private.same_ip": {
+    "defaultMessage": "Other accounts on the same IP addresses",
+    "description": "Heading of the list of other accounts that used the same IP addresses."
+  },
+  "admin.account.private.same_ip.none": {
+    "defaultMessage": "No other account used these IP addresses.",
+    "description": "Text when no other account used the same IP addresses."
+  },
+  "admin.account.private.search_email_domain": {
+    "defaultMessage": "Search the accounts with email at {domain}",
+    "description": "Link to the account search by an email domain; domain is the domain."
+  },
+  "admin.account.private.search_ip": {
+    "defaultMessage": "Search the accounts of {ip}",
+    "description": "Link to the account search by an IP address; ip is the address."
+  },
+  "admin.account.private.shown": {
+    "defaultMessage": "Email and IP addresses shown. This was recorded in the audit log.",
+    "description": "Status after the email and IP addresses were shown."
+  },
+  "admin.account.private.sign_ins": {
+    "defaultMessage": "Recent sign-ins",
+    "description": "Heading of the list of the newest sign-ins of an account."
+  },
+  "admin.account.private.sign_ins.none": {
+    "defaultMessage": "No sign-ins are kept.",
+    "description": "Text when no sign-ins are kept."
+  },
+  "admin.account.private.signed_in_at": {
+    "defaultMessage": "Signed in",
+    "description": "Term of a sign-in: when."
+  },
+  "admin.account.private.title": {
+    "defaultMessage": "Email and IP addresses",
+    "description": "Heading of the region of a local account's admin page with its email address and IP addresses."
+  },
+  "admin.account.private.unknown": {
+    "defaultMessage": "Unknown",
+    "description": "An IP address, User-Agent or registration origin that is not kept."
+  },
+  "admin.account.private.user_agent": {
+    "defaultMessage": "Browser or app",
+    "description": "Term of a sign-in: the User-Agent it came with."
+  },
+  "admin.account.profile": {
+    "defaultMessage": "Open the profile",
+    "description": "Link from an account's admin page to its profile."
+  },
+  "admin.account.registration.invite": {
+    "defaultMessage": "Invite",
+    "description": "Term of a local account: whether it registered with an invite."
+  },
+  "admin.account.registration.invite.none": {
+    "defaultMessage": "None",
+    "description": "Value of the invite term: no invite."
+  },
+  "admin.account.registration.invite.used": {
+    "defaultMessage": "Registered with an invite",
+    "description": "Value of the invite term: registered with one."
+  },
+  "admin.account.registration.reason": {
+    "defaultMessage": "Reason for joining",
+    "description": "Term of a local account: why the applicant wanted to join."
+  },
+  "admin.account.registration.state_changed_at": {
+    "defaultMessage": "Registration decided",
+    "description": "Term of a local account: when its registration entered its state."
+  },
+  "admin.account.registration.submitted_at": {
+    "defaultMessage": "Applied",
+    "description": "Term of a local account: when its registration was submitted."
+  },
+  "admin.account.reports.empty": {
+    "defaultMessage": "No reports on this account",
+    "description": "Heading when an account has no reports."
+  },
+  "admin.account.reports.item": {
+    "defaultMessage": "Report of {date}",
+    "description": "Heading of a report on an account; date is when it was filed."
+  },
+  "admin.account.reports.title": {
+    "defaultMessage": "Reports on the account",
+    "description": "Heading of the region of an account's admin page with the reports on it."
+  },
+  "admin.account.restrictions.none": {
+    "defaultMessage": "The account's actions take nothing away now.",
+    "description": "Text when an account has no restrictions."
+  },
+  "admin.account.restrictions.title": {
+    "defaultMessage": "Restrictions",
+    "description": "Heading of the region of an account's admin page with what its actions take away now."
+  },
+  "admin.account.roles": {
+    "defaultMessage": "Roles",
+    "description": "Term of a local account: the roles of its user."
+  },
+  "admin.account.roles.none": {
+    "defaultMessage": "None",
+    "description": "A local account's user has no roles."
+  },
+  "admin.account.summary.title": {
+    "defaultMessage": "Account",
+    "description": "Heading of the region of an account's admin page with the account itself."
+  },
+  "admin.account.title": {
+    "defaultMessage": "Account",
+    "description": "Title of an account's admin page."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "Reason",
     "description": "Label of the select of the category of the reason for a moderation action on an account."
@@ -242,6 +482,234 @@
   "admin.account_actions.too_long": {
     "defaultMessage": "Use at most {max, number} characters",
     "description": "Error of a text of an account action that is too long."
+  },
+  "admin.accounts.created_at": {
+    "defaultMessage": "Joined",
+    "description": "Term of an account: when the account was made."
+  },
+  "admin.accounts.empty": {
+    "defaultMessage": "No accounts yet",
+    "description": "Heading of the empty search without conditions."
+  },
+  "admin.accounts.empty.filtered": {
+    "defaultMessage": "No accounts match",
+    "description": "Heading when no account matches the search."
+  },
+  "admin.accounts.empty.filtered.description": {
+    "defaultMessage": "Change the conditions and search again.",
+    "description": "Description when no account matches the search."
+  },
+  "admin.accounts.empty.so_far": {
+    "defaultMessage": "No accounts match so far",
+    "description": "Heading when the accounts searched so far match none, and more remain."
+  },
+  "admin.accounts.empty.so_far.description": {
+    "defaultMessage": "The server searches the accounts a part at a time. Search further to look at the rest.",
+    "description": "Description when the accounts searched so far match none, and more remain."
+  },
+  "admin.accounts.empty.so_far.more": {
+    "defaultMessage": "Search further",
+    "description": "Button that searches the next part of the accounts."
+  },
+  "admin.accounts.origin": {
+    "defaultMessage": "Server",
+    "description": "Term of an account in the admin screens: the server it belongs to."
+  },
+  "admin.accounts.origin.local": {
+    "defaultMessage": "This server",
+    "description": "Where an account is: on this server; also an option of the where select."
+  },
+  "admin.accounts.origin.remote": {
+    "defaultMessage": "Other servers",
+    "description": "Option of the where select: the accounts of other servers."
+  },
+  "admin.accounts.registration": {
+    "defaultMessage": "Registration",
+    "description": "Term of a local account: where its registration stands."
+  },
+  "admin.accounts.registration.approved": {
+    "defaultMessage": "Approved",
+    "description": "Registration state of a local account."
+  },
+  "admin.accounts.registration.pending": {
+    "defaultMessage": "Awaiting approval",
+    "description": "Registration state of a local account."
+  },
+  "admin.accounts.registration.rejected": {
+    "defaultMessage": "Rejected",
+    "description": "Registration state of a local account."
+  },
+  "admin.accounts.restriction.federation": {
+    "defaultMessage": "Nothing is delivered or received",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.interact": {
+    "defaultMessage": "Cannot follow, favourite, boost or vote",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.login": {
+    "defaultMessage": "Cannot log in or use the API",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.media_sensitive": {
+    "defaultMessage": "Media shows as sensitive",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.post": {
+    "defaultMessage": "Cannot post, reply, boost or edit",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.profile_view": {
+    "defaultMessage": "The profile and posts are hidden",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.public_discovery": {
+    "defaultMessage": "Posts stay off the public timelines and search",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.unsolicited_reach": {
+    "defaultMessage": "Notifications reach followers only",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restriction.visibility_ceiling_private": {
+    "defaultMessage": "Posts are followers-only",
+    "description": "A restriction of an account by its actions."
+  },
+  "admin.accounts.restrictions": {
+    "defaultMessage": "Restrictions",
+    "description": "Term of an account in the search results: what its actions take away now."
+  },
+  "admin.accounts.results.failed": {
+    "defaultMessage": "Couldn't search the accounts",
+    "description": "Heading when the search of the accounts failed."
+  },
+  "admin.accounts.results.loading": {
+    "defaultMessage": "Loading accounts",
+    "description": "Label of the spinner while the accounts load."
+  },
+  "admin.accounts.results.more_failed": {
+    "defaultMessage": "Couldn't load more accounts",
+    "description": "Message when the next page of the accounts failed to load."
+  },
+  "admin.accounts.results.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that runs a failed search of the accounts again."
+  },
+  "admin.accounts.results.title": {
+    "defaultMessage": "Results",
+    "description": "Heading of the region of the accounts screen with the accounts found."
+  },
+  "admin.accounts.search.contact": {
+    "defaultMessage": "Email or IP address",
+    "description": "Label of the select of searching the local accounts by their email address, email domain or an IP address."
+  },
+  "admin.accounts.search.contact.description": {
+    "defaultMessage": "Searches the accounts of this server by what only moderators see. The results do not show it.",
+    "description": "Help under the email or IP address select."
+  },
+  "admin.accounts.search.contact.email": {
+    "defaultMessage": "Email address",
+    "description": "Option of the email or IP address select, and label of its field: the primary email address of an account."
+  },
+  "admin.accounts.search.contact.email_domain": {
+    "defaultMessage": "Email domain",
+    "description": "Option of the email or IP address select, and label of its field: the domain of the email addresses (example.com)."
+  },
+  "admin.accounts.search.contact.invalid": {
+    "defaultMessage": "Enter an email address, such as name@example.com.",
+    "description": "Error of the email address search field when it is not an email address."
+  },
+  "admin.accounts.search.contact.ip": {
+    "defaultMessage": "IP address",
+    "description": "Option of the email or IP address select, and label of its field: an IP address the account registered or signed in from."
+  },
+  "admin.accounts.search.contact.none": {
+    "defaultMessage": "Do not search by these",
+    "description": "Option of the email or IP address select that searches by none of them."
+  },
+  "admin.accounts.search.contact.required": {
+    "defaultMessage": "Enter what to search for, or choose not to search by it.",
+    "description": "Error of the email or IP address field when it is empty."
+  },
+  "admin.accounts.search.domain": {
+    "defaultMessage": "Server",
+    "description": "Label of the search field of the domain of the server of an account."
+  },
+  "admin.accounts.search.domain.description": {
+    "defaultMessage": "The domain of another server, such as example.com.",
+    "description": "Help under the server search field."
+  },
+  "admin.accounts.search.origin": {
+    "defaultMessage": "Where",
+    "description": "Label of the select of whether the accounts are on this server or on others."
+  },
+  "admin.accounts.search.origin.any": {
+    "defaultMessage": "Any server",
+    "description": "Option of the where select that keeps every account."
+  },
+  "admin.accounts.search.state": {
+    "defaultMessage": "State",
+    "description": "Label of the select of the state of the accounts searched."
+  },
+  "admin.accounts.search.state.any": {
+    "defaultMessage": "Any state",
+    "description": "Option of the state select that keeps every account."
+  },
+  "admin.accounts.search.submit": {
+    "defaultMessage": "Search",
+    "description": "Button that searches the accounts."
+  },
+  "admin.accounts.search.title": {
+    "defaultMessage": "Search",
+    "description": "Heading of the region of the accounts screen with the search form."
+  },
+  "admin.accounts.search.username": {
+    "defaultMessage": "Username",
+    "description": "Label of the search field of the username of an account."
+  },
+  "admin.accounts.search.username.description": {
+    "defaultMessage": "Accounts whose username starts with this. A handle (@name@domain) also keeps its server.",
+    "description": "Help under the username search field."
+  },
+  "admin.accounts.state": {
+    "defaultMessage": "State",
+    "description": "Term of an account in the admin screens: its state."
+  },
+  "admin.accounts.state.active": {
+    "defaultMessage": "Active",
+    "description": "State of an account: in use, without restrictions of its state."
+  },
+  "admin.accounts.state.deleted": {
+    "defaultMessage": "Deleted",
+    "description": "State of an account: deleted here or on its server."
+  },
+  "admin.accounts.state.disabled": {
+    "defaultMessage": "Login disabled",
+    "description": "State of an account: a disable-login action is in effect."
+  },
+  "admin.accounts.state.limited": {
+    "defaultMessage": "Limited",
+    "description": "State of an account: a limit action is in effect."
+  },
+  "admin.accounts.state.pending": {
+    "defaultMessage": "Awaiting approval",
+    "description": "State of an account: its registration awaits approval."
+  },
+  "admin.accounts.state.rejected": {
+    "defaultMessage": "Rejected",
+    "description": "State of an account: its registration was rejected."
+  },
+  "admin.accounts.state.suspended": {
+    "defaultMessage": "Suspended",
+    "description": "State of an account: a suspension or ban is in effect."
+  },
+  "admin.accounts.summary": {
+    "defaultMessage": "Search the accounts of this and other servers, and take or lift moderation actions on them.",
+    "description": "Description of the link to the accounts screen in the administration menu."
+  },
+  "admin.accounts.title": {
+    "defaultMessage": "Accounts",
+    "description": "Title of the admin screen that searches the local and remote accounts, and of its link in the administration menu."
   },
   "admin.audit_log.action.account_action_issued": {
     "defaultMessage": "Account action taken",

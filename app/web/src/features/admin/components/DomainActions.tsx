@@ -24,10 +24,10 @@ import {
   Tabs,
   TextField,
 } from "@my/ui";
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
-import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
+import { useFocusAfterRemoval, useFocusHeadingAfterLift } from "../../../lib/useFocusAfterRemoval";
 import {
   type DomainAction,
   type DomainActionFilter,
@@ -283,26 +283,6 @@ function DomainActionList({ filter, domain, onLifted }: DomainActionListProps) {
       {(action) => <DomainActionRow action={action} lift={lift} />}
     </RecordList>
   );
-}
-
-/**
- * Keeps focus when a lifted action stays in the list without its lift button: once the row has rendered
- * without the button, focus moves to the row's heading. Returns `lifted(id)`, to call when the action is lifted.
- */
-function useFocusHeadingAfterLift(list: RefObject<HTMLElement | null>): (id: string) => void {
-  const pendingRef = useRef<string | null>(null);
-  // Runs after every render: focus is moved in the DOM, outside React, once the button is gone.
-  useEffect(() => {
-    const id = pendingRef.current;
-    if (id === null) return;
-    const row = list.current?.querySelector<HTMLElement>(`[data-row-id="${id}"]`);
-    if (row?.querySelector("button") != null) return;
-    pendingRef.current = null;
-    row?.querySelector<HTMLElement>("h3")?.focus();
-  });
-  return (id) => {
-    pendingRef.current = id;
-  };
 }
 
 function DomainActionRow({ action, lift }: { action: DomainAction; lift: LiftDomainAction }) {

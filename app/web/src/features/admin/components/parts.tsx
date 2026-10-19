@@ -122,12 +122,15 @@ export function RecordList<T>({ list, getId, children, empty, listRef, moreError
   );
 }
 
-/** A titled region of a detail page below its `h1`: an `h2` that names a `<section>`. */
-export function DetailSection({ title, children }: { title: ReactNode; children: ReactNode }) {
+/**
+ * A titled region of a detail page below its `h1`: an `h2` that names a `<section>`. With `headingRef`, the
+ * heading can take focus, for a region whose content changes under the button that changed it.
+ */
+export function DetailSection({ title, headingRef, children }: { title: ReactNode; headingRef?: Ref<HTMLHeadingElement>; children: ReactNode }) {
   const headingId = useId();
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+      <h2 ref={headingRef} id={headingId} {...(headingRef !== undefined && { tabIndex: -1 })} className="text-lg font-semibold outline-none">
         {title}
       </h2>
       {children}
