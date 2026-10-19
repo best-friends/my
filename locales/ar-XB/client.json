@@ -1,4 +1,196 @@
 {
+  "account_status.active.empty": {
+    "defaultMessage": "‮No ɐɔʇıous ɐɹǝ ıu ǝɟɟǝɔʇ ou ʎonɹ ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.active.empty.description": {
+    "defaultMessage": "‮Iɟ ɯopǝɹɐʇoɹs ʇɐʞǝ ɐu ɐɔʇıou ou ʎonɹ ɐɔɔonuʇ, ıʇ sɥoʍs ɥǝɹǝ ʍıʇɥ ıʇs ɹǝɐsou ɐup ʍɥǝu ıʇ ǝups.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.active.title": {
+    "defaultMessage": "‮∀ɔʇıous ıu ǝɟɟǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.cancel": {
+    "defaultMessage": "‮Ↄɐuɔǝʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.characters_left": {
+    "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʅǝɟʇ} other{# ɔɥɐɹɐɔʇǝɹs ʅǝɟʇ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.characters_over": {
+    "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.closed": {
+    "defaultMessage": "‮⊥ɥǝ ʇıɯǝ ʇo ɐddǝɐʅ ʇɥıs ɐɔʇıou ǝupǝp ou {date}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.confirm.description": {
+    "defaultMessage": "‮Wopǝɹɐʇoɹs ɹǝʌıǝʍ “{kind}” oɟ {date} ɐƃɐıu ɐup ʇǝʅʅ ʎon ʇɥǝıɹ pǝɔısıou ıu ɐ uoʇıɟıɔɐʇıou. ⅄on ɔɐu ɐddǝɐʅ ɐu ɐɔʇıou ouʅʎ ouɔǝ, ɐup ʎon ɔɐuuoʇ ɔɥɐuƃǝ ʇɥǝ ɐddǝɐʅ ɐɟʇǝɹ sǝupıuƃ ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.confirm.title": {
+    "defaultMessage": "‮∀ddǝɐʅ ʇɥıs ɐɔʇıou?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.decided_at": {
+    "defaultMessage": "‮ᗡǝɔıpǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.decision_reason": {
+    "defaultMessage": "‮Ǝxdʅɐuɐʇıou oɟ ʇɥǝ pǝɔısıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ sǝup ʇɥǝ ɐddǝɐʅ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.open": {
+    "defaultMessage": "‮∀ddǝɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.open_of": {
+    "defaultMessage": "‮∀ddǝɐʅ ʇɥǝ ɐɔʇıou oɟ {date}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.send": {
+    "defaultMessage": "‮Sǝup ɐddǝɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.sent": {
+    "defaultMessage": "‮⅄on ɐddǝɐʅǝp “{kind}”. ⊥ɥǝ ɯopǝɹɐʇoɹs ʍıʅʅ ʇǝʅʅ ʎon ʇɥǝıɹ pǝɔısıou ıu ɐ uoʇıɟıɔɐʇıou.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.state.overturned": {
+    "defaultMessage": "‮∀ɔʇıou ʅıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.state.pending": {
+    "defaultMessage": "‮∩upǝɹ ɹǝʌıǝʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.state.upheld": {
+    "defaultMessage": "‮∀ɔʇıou ʞǝdʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.submitted_at": {
+    "defaultMessage": "‮Sǝuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.text": {
+    "defaultMessage": "‮⅄onɹ ɐddǝɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.text.description": {
+    "defaultMessage": "‮Mɹıʇǝ ʍɥɐʇ ʇɥǝ ɯopǝɹɐʇoɹs sɥonʅp ʞuoʍ. ⊥ɥǝʎ sǝǝ ʍɥɐʇ ʎon ʍɹıʇǝ ɥǝɹǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.text.label": {
+    "defaultMessage": "‮Mɥʎ sɥonʅp ʇɥǝ ɯopǝɹɐʇoɹs ɹǝɔousıpǝɹ ıʇ?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.text.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʍɥʎ ʇɥǝ ɯopǝɹɐʇoɹs sɥonʅp ɹǝɔousıpǝɹ ʇɥǝ ɐɔʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.text.too_long": {
+    "defaultMessage": "‮∩sǝ ɐʇ ɯosʇ {max, number} ɔɥɐɹɐɔʇǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.title": {
+    "defaultMessage": "‮∀ddǝɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.unavailable": {
+    "defaultMessage": "‮⊥ɥıs ɐɔʇıou ɔɐuuoʇ qǝ ɐddǝɐʅǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.appeal.until": {
+    "defaultMessage": "‮⅄on ɔɐu ɐddǝɐʅ ʇɥıs ɐɔʇıou nuʇıʅ {date}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.expires_at": {
+    "defaultMessage": "‮Ǝups‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.expires_at.none": {
+    "defaultMessage": "‮Mɥǝu ʅıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.issued_at": {
+    "defaultMessage": "‮⊥ɐʞǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.lifted_at": {
+    "defaultMessage": "‮⅂ıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.more": {
+    "defaultMessage": "‮Sɥoʍ ɯoɹǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.past.empty": {
+    "defaultMessage": "‮No dɐsʇ ɐɔʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.past.title": {
+    "defaultMessage": "‮Ԁɐsʇ ɐɔʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.posts.loading": {
+    "defaultMessage": "‮⅂oɐpıuƃ ʇɥǝ dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.posts.missing": {
+    "defaultMessage": "‮⊥ɥıs dosʇ ıs pǝʅǝʇǝp oɹ ɔɐuuoʇ qǝ sɥoʍu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.posts.title": {
+    "defaultMessage": "‮Ԁosʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.public_reason": {
+    "defaultMessage": "‮Ǝxdʅɐuɐʇıou ɟɹoɯ ʇɥǝ ɯopǝɹɐʇoɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.public_reason.none": {
+    "defaultMessage": "‮Nouǝ ƃıʌǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.reason_category": {
+    "defaultMessage": "‮ᴚǝɐsou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.state.active": {
+    "defaultMessage": "‮Iu ǝɟɟǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.state.expired": {
+    "defaultMessage": "‮Ǝupǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.state.lifted": {
+    "defaultMessage": "‮⅂ıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.summary": {
+    "defaultMessage": "‮Wopǝɹɐʇıou ɐɔʇıous ou ʎonɹ ɐɔɔonuʇ, ɐup ɐddǝɐʅıuƃ ʇɥǝɯ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "account_status.title": {
+    "defaultMessage": "‮∀ɔɔonuʇ sʇɐʇns‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "‮ᴚǝɐsou‬",
     "description": "Generated from en by tools/i18n; do not edit."
