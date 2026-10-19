@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the admin feature (web-client.md §7): the health of remote servers, the domain
-// actions, the dead jobs, the audit log, the registrations awaiting approval, the reports and the accounts, all empty and every server available by default. The default viewer has no
+// actions, the dead jobs, the audit log, the registrations awaiting approval, the reports, the accounts and their roles, all empty and every server available by default. The default viewer has no
 // permissions, so the admin screens' tests start with `server.use(operatorHandler(...))`.
 import { http, HttpResponse } from "msw";
 import { otherAccountFixture, remoteAccountFixture, type Schemas, statusFixture, viewerFixture } from "../../../test/fixtures";
@@ -184,6 +184,21 @@ export function decidedAppeal(appeal: Schemas["AdminAppeal"], decision: "uphold"
   };
 }
 
+/** The roles that every instance has (GET /admin/roles), highest first: admin with every permission, and moderator. */
+export const adminRoleFixture: Schemas["AdminRole"] = {
+  id: "0192f0c4-7a8e-7000-8000-000000000a01",
+  key: "admin",
+  position: 1000,
+  permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs"],
+};
+export const moderatorRoleFixture: Schemas["AdminRole"] = {
+  id: "0192f0c4-7a8e-7000-8000-000000000a02",
+  key: "moderator",
+  position: 100,
+  permissions: ["manage_reports", "manage_accounts", "view_audit"],
+};
+export const rolesFixture: Schemas["AdminRole"][] = [adminRoleFixture, moderatorRoleFixture];
+
 /** Whether a path segment is an ID of the API (a UUID), not the name of another operation under the same path. */
 function isId(segment: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(segment);
@@ -270,6 +285,16 @@ export const handlers = [
     withViewer(request, () => HttpResponse.json(adminAccountDetailFixture({ ...otherAccountFixture, id: String(params["id"]) }))),
   ),
   http.post(`${apiBase}/admin/accounts/:id/reveal`, ({ request }) => withViewer(request, () => HttpResponse.json(privateDataFixture))),
+  // operationIds listRoles, listAccountRoles, grantAccountRole, revokeAccountRole: the instance's two roles; the
+  // viewer holds admin and every other account none; a change answers the role granted, or none after a revoke.
+  http.get(`${apiBase}/admin/roles`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: rolesFixture }))),
+  http.get(`${apiBase}/admin/accounts/:id/roles`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json({ items: params["id"] === viewerFixture.id ? [adminRoleFixture] : [] })),
+  ),
+  http.put(`${apiBase}/admin/accounts/:id/roles/:role`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json({ items: rolesFixture.filter((role) => role.key === params["role"]) })),
+  ),
+  http.delete(`${apiBase}/admin/accounts/:id/roles/:role`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   // operationIds getAccountAction, liftAccountAction.
   http.get(`${apiBase}/admin/account_actions/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(accountActionFixture({ id: String(params["id"]) })))),
   http.post(`${apiBase}/admin/account_actions/:id/lift`, async ({ request, params }) => {

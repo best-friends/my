@@ -419,8 +419,112 @@
     "defaultMessage": "‮ᴚoʅǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.account.roles.confirm_grant.description": {
+    "defaultMessage": "‮⊥ɥǝ ɐɔɔonuʇ's nsǝɹ ƃǝʇs ʇɥǝ ɹoʅǝ's dǝɹɯıssıous ɟɹoɯ ʇɥǝıɹ uǝxʇ ɹǝbnǝsʇ. ⅄on ɔɐu ɹǝʌoʞǝ ıʇ ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.confirm_grant.title": {
+    "defaultMessage": "‮⅁ɹɐuʇ {role} ʇo {handle}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.confirm_revoke.description": {
+    "defaultMessage": "‮⊥ɥǝ ɐɔɔonuʇ's nsǝɹ ʅosǝs ʇɥǝ ɹoʅǝ's dǝɹɯıssıous ɟɹoɯ ʇɥǝıɹ uǝxʇ ɹǝbnǝsʇ. ⅄on ɔɐu ƃɹɐuʇ ıʇ ɐƃɐıu ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.confirm_revoke.description_admin": {
+    "defaultMessage": "‮⊥ɥǝ ɐɔɔonuʇ's nsǝɹ ʅosǝs ǝʌǝɹʎ ɐpɯıu dǝɹɯıssıou ɟɹoɯ ʇɥǝıɹ uǝxʇ ɹǝbnǝsʇ. ⊥ɥǝ sǝɹʌǝɹ ʞǝǝds ɐʇ ʅǝɐsʇ ouǝ ɐpɯıu, so ʇɥǝ ɹoʅǝ ɔɐuuoʇ qǝ ɹǝʌoʞǝp ɟɹoɯ ıʇs ouʅʎ ɥoʅpǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.confirm_revoke.title": {
+    "defaultMessage": "‮ᴚǝʌoʞǝ {role} ɟɹoɯ {handle}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.description": {
+    "defaultMessage": "‮ᴚoʅǝs ƃıʌǝ ʇɥǝ ɐɔɔonuʇ's nsǝɹ ʇɥǝ dǝɹɯıssıous oɟ ʇɥǝ ɐpɯıu sɔɹǝǝus. ⅄on ɔɐu ƃɹɐuʇ ɐup ɹǝʌoʞǝ ʇɥǝ ɹoʅǝs ɐʇ oɹ qǝʅoʍ ʎonɹ ɥıƃɥǝsʇ ɹoʅǝ. ⊥ɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ǝɐɔɥ ɔɥɐuƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.empty": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ɥɐs uo ɹoʅǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.failed": {
+    "defaultMessage": "‮⊥ɥǝ ɹoʅǝ ɔonʅp uoʇ qǝ ɔɥɐuƃǝp: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.failed.last_admin": {
+    "defaultMessage": "‮⊥ɥǝ ɹoʅǝ ɔonʅp uoʇ qǝ ɹǝʌoʞǝp: ʇɥıs ɐɔɔonuʇ ıs ʇɥǝ ouʅʎ ɐpɯıu oɟ ʇɥıs sǝɹʌǝɹ. ⅁ɹɐuʇ ɐpɯıu ʇo ɐuoʇɥǝɹ ɐɔɔonuʇ ɟıɹsʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.failed.outranked": {
+    "defaultMessage": "‮⊥ɥǝ ɹoʅǝ ɔonʅp uoʇ qǝ ɔɥɐuƃǝp: ıʇ ıs ɐqoʌǝ ʎonɹ ɥıƃɥǝsʇ ɹoʅǝ. ⅄on ɔɐu ƃɹɐuʇ ɐup ɹǝʌoʞǝ ouʅʎ ʇɥǝ ɹoʅǝs ɐʇ oɹ qǝʅoʍ ʎonɹ ɥıƃɥǝsʇ ɹoʅǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.grant": {
+    "defaultMessage": "‮⅁ɹɐuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.grant_role": {
+    "defaultMessage": "‮⅁ɹɐuʇ {role}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.granted": {
+    "defaultMessage": "‮{role} ıs ƃɹɐuʇǝp ʇo {handle}. ⊥ɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ʇɥǝ ɔɥɐuƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.held": {
+    "defaultMessage": "‮⊥ɥıs ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.held.no": {
+    "defaultMessage": "‮ᗡoǝs uoʇ ɥɐʌǝ ʇɥǝ ɹoʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.held.yes": {
+    "defaultMessage": "‮Hɐs ʇɥǝ ɹoʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.load_failed": {
+    "defaultMessage": "‮⊥ɥǝ ɹoʅǝs ɔonʅp uoʇ qǝ ʅoɐpǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.loading": {
+    "defaultMessage": "‮⅂oɐpıuƃ ʇɥǝ ɹoʅǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.account.roles.none": {
     "defaultMessage": "‮Nouǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.outranked": {
+    "defaultMessage": "‮⊥ɥıs ɹoʅǝ ıs ɐqoʌǝ ʎonɹ ɥıƃɥǝsʇ ɹoʅǝ, {role}, so ʎon ɔɐuuoʇ ƃɹɐuʇ oɹ ɹǝʌoʞǝ ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.permissions": {
+    "defaultMessage": "‮Ԁǝɹɯıssıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.permissions.none": {
+    "defaultMessage": "‮Nouǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.retry": {
+    "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.revoke": {
+    "defaultMessage": "‮ᴚǝʌoʞǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.revoke_role": {
+    "defaultMessage": "‮ᴚǝʌoʞǝ {role}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.revoked": {
+    "defaultMessage": "‮{role} ıs ɹǝʌoʞǝp ɟɹoɯ {handle}. ⊥ɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ʇɥǝ ɔɥɐuƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.roles.title": {
+    "defaultMessage": "‮ᴚoʅǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.account.summary.title": {

@@ -419,9 +419,113 @@
     "defaultMessage": "ロール",
     "description": "Term of a local account: the roles of its user."
   },
+  "admin.account.roles.confirm_grant.description": {
+    "defaultMessage": "アカウントの利用者は、次の操作からこのロールの権限を使えます。あとで剥奪できます。",
+    "description": "Description of the confirmation of granting a role."
+  },
+  "admin.account.roles.confirm_grant.title": {
+    "defaultMessage": "{handle} に {role} を付与しますか？",
+    "description": "Title of the confirmation of granting a role; role is its key, handle the account's @handle."
+  },
+  "admin.account.roles.confirm_revoke.description": {
+    "defaultMessage": "アカウントの利用者は、次の操作からこのロールの権限を使えなくなります。あとでもう一度付与できます。",
+    "description": "Description of the confirmation of revoking a role other than admin."
+  },
+  "admin.account.roles.confirm_revoke.description_admin": {
+    "defaultMessage": "アカウントの利用者は、次の操作から管理者のすべての権限を使えなくなります。サーバーには管理者が少なくとも 1 人必要なので、ただ 1 人の管理者からは剥奪できません。",
+    "description": "Description of the confirmation of revoking the admin role."
+  },
+  "admin.account.roles.confirm_revoke.title": {
+    "defaultMessage": "{handle} から {role} を剥奪しますか？",
+    "description": "Title of the confirmation of revoking a role; role is its key, handle the account's @handle."
+  },
+  "admin.account.roles.description": {
+    "defaultMessage": "ロールは、アカウントの利用者に管理画面の権限を与えます。あなたのいちばん高いロール以下のロールを付与・剥奪できます。変更はそれぞれ監査ログに記録されます。",
+    "description": "Text at the top of the roles region of a local account's admin page."
+  },
+  "admin.account.roles.empty": {
+    "defaultMessage": "このサーバーにはロールがありません",
+    "description": "Heading when the instance has no roles at all."
+  },
+  "admin.account.roles.failed": {
+    "defaultMessage": "ロールを変更できませんでした：{reason}",
+    "description": "Error in the confirmation of a role change; reason is the server's localized message."
+  },
+  "admin.account.roles.failed.last_admin": {
+    "defaultMessage": "ロールを剥奪できませんでした：このアカウントはこのサーバーのただ 1 人の管理者です。先にほかのアカウントに admin を付与してください。",
+    "description": "Error in the confirmation of revoking admin that the server refused because the account is the only admin."
+  },
+  "admin.account.roles.failed.outranked": {
+    "defaultMessage": "ロールを変更できませんでした：あなたのいちばん高いロールより上のロールです。付与・剥奪できるのは、あなたのいちばん高いロール以下のロールだけです。",
+    "description": "Error in the confirmation of a role change that the server refused because the role is above the viewer's highest role."
+  },
+  "admin.account.roles.grant": {
+    "defaultMessage": "付与する",
+    "description": "Button that grants a role to an account, and the confirmation's button."
+  },
+  "admin.account.roles.grant_role": {
+    "defaultMessage": "{role} を付与する",
+    "description": "Accessible name of the button that grants a role; role is its key."
+  },
+  "admin.account.roles.granted": {
+    "defaultMessage": "{handle} に {role} を付与しました。この変更は監査ログに記録されました。",
+    "description": "Status after a role was granted; role is its key, handle the account's @handle."
+  },
+  "admin.account.roles.held": {
+    "defaultMessage": "このアカウント",
+    "description": "Term of a role in an account's roles region: whether the account's user holds the role."
+  },
+  "admin.account.roles.held.no": {
+    "defaultMessage": "付与されていません",
+    "description": "The account's user does not hold the role."
+  },
+  "admin.account.roles.held.yes": {
+    "defaultMessage": "付与されています",
+    "description": "The account's user holds the role."
+  },
+  "admin.account.roles.load_failed": {
+    "defaultMessage": "ロールを読み込めませんでした",
+    "description": "Heading of the error when the roles of an account could not be loaded."
+  },
+  "admin.account.roles.loading": {
+    "defaultMessage": "ロールを読み込んでいます",
+    "description": "Accessible name of the spinner while the roles of an account load."
+  },
   "admin.account.roles.none": {
     "defaultMessage": "なし",
     "description": "A local account's user has no roles."
+  },
+  "admin.account.roles.outranked": {
+    "defaultMessage": "このロールはあなたのいちばん高いロール（{role}）より上なので、付与・剥奪できません。",
+    "description": "Why a role has no grant or revoke button; role is the key of the viewer's highest role."
+  },
+  "admin.account.roles.permissions": {
+    "defaultMessage": "権限",
+    "description": "Term of a role: the permissions it grants."
+  },
+  "admin.account.roles.permissions.none": {
+    "defaultMessage": "なし",
+    "description": "A role grants no permissions."
+  },
+  "admin.account.roles.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads the roles of an account again after a failure."
+  },
+  "admin.account.roles.revoke": {
+    "defaultMessage": "剥奪する",
+    "description": "Button that revokes a role from an account, and the confirmation's button."
+  },
+  "admin.account.roles.revoke_role": {
+    "defaultMessage": "{role} を剥奪する",
+    "description": "Accessible name of the button that revokes a role; role is its key."
+  },
+  "admin.account.roles.revoked": {
+    "defaultMessage": "{handle} から {role} を剥奪しました。この変更は監査ログに記録されました。",
+    "description": "Status after a role was revoked; role is its key, handle the account's @handle."
+  },
+  "admin.account.roles.title": {
+    "defaultMessage": "ロール",
+    "description": "Heading of the region of a local account's admin page where a user with manage_roles grants and revokes its roles."
   },
   "admin.account.summary.title": {
     "defaultMessage": "アカウント",
