@@ -133,3 +133,46 @@ func TestSignupBlocksThroughTheAPI(t *testing.T) {
 		t.Errorf("lift entry = %+v", audit[1])
 	}
 }
+
+// TestImportSignupBlocksThroughTheAPI imports a list of email domains on the real database: the
+// U-labels are stored in A-labels, the lines it cannot add are reported, the blocks refuse the
+// sign-ups they match, and each block added is audited.
+func TestImportSignupBlocksThroughTheAPI(t *testing.T) {
+	t.Parallel()
+	c := newStatusesClientWith(t, nil, platform.AppOptions{}, "carol")
+	ctx := t.Context()
+	var res clientapi.SignupBlockImportResult
+	body := map[string]any{
+		"kind": "email_domain", "severity": "reject",
+		"text": "# disposable\n例え.jp\nspam.example,2026-10-01\n192.0.2.1\nSPAM.example\n",
+	}
+	if r := c.do("carol", http.MethodPost, "/admin/signup_blocks/import", body, &res); r.StatusCode != http.StatusOK {
+		t.Fatalf("POST /admin/signup_blocks/import = %d", r.StatusCode)
+	}
+	want := []clientapi.SignupBlockImportSkipped{
+		{Line: 4, Value: "192.0.2.1", Reason: clientapi.SignupBlockImportSkippedReasonInvalid},
+		{Line: 5, Value: "SPAM.example", Reason: clientapi.SignupBlockImportSkippedReasonDuplicate},
+	}
+	if res.Added != 2 || len(res.Skipped) != len(want) || res.Skipped[0] != want[0] || res.Skipped[1] != want[1] {
+		t.Errorf("import = %+v, want 2 added, %+v", res, want)
+	}
+	for _, email := range []string{"a@mx.xn--r8jz45g.jp", "b@spam.example"} {
+		if _, err := c.app.Identity.SignUp(ctx, appidentity.SignUpInput{
+			Username: "imported", Email: email, Password: "correct horse battery staple",
+		}); !errors.Is(err, appidentity.ErrSignUpRefused) {
+			t.Errorf("sign-up with %s = %v, want ErrSignUpRefused", email, err)
+		}
+	}
+	// The same list again adds nothing.
+	if r := c.do("carol", http.MethodPost, "/admin/signup_blocks/import", body, &res); r.StatusCode != http.StatusOK || res.Added != 0 ||
+		len(res.Skipped) != 4 || res.Skipped[0].Reason != clientapi.SignupBlockImportSkippedReasonAlreadyBlocked {
+		t.Errorf("import again = %d %+v, want everything skipped", r.StatusCode, res)
+	}
+	audit, err := c.app.Moderation.AuditLog(ctx, appmoderation.AuditQuery{TargetKind: moderation.AuditTargetSignupBlock}, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(audit) != 2 || audit[0].Action != moderation.AuditSignupBlockAdded || audit[1].Action != moderation.AuditSignupBlockAdded {
+		t.Errorf("audit log of the import = %+v, want two additions", audit)
+	}
+}

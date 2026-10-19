@@ -946,6 +946,27 @@ func (e ReportState) Valid() bool {
 	}
 }
 
+// Defines values for SignupBlockImportSkippedReason.
+const (
+	SignupBlockImportSkippedReasonAlreadyBlocked SignupBlockImportSkippedReason = "already_blocked"
+	SignupBlockImportSkippedReasonDuplicate      SignupBlockImportSkippedReason = "duplicate"
+	SignupBlockImportSkippedReasonInvalid        SignupBlockImportSkippedReason = "invalid"
+)
+
+// Valid indicates whether the value is a known member of the SignupBlockImportSkippedReason enum.
+func (e SignupBlockImportSkippedReason) Valid() bool {
+	switch e {
+	case SignupBlockImportSkippedReasonAlreadyBlocked:
+		return true
+	case SignupBlockImportSkippedReasonDuplicate:
+		return true
+	case SignupBlockImportSkippedReasonInvalid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Visibility.
 const (
 	VisibilityDirect   Visibility = "direct"
@@ -2274,6 +2295,28 @@ type FollowAccountRequest struct {
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type Id = string
 
+// ImportSignupBlocksRequest A list of values to block sign-ups by, all with the same settings.
+type ImportSignupBlocksRequest struct {
+	// Comment The comment of every block added.
+	Comment *string `json:"comment,omitempty"`
+
+	// ExpiresIn The seconds each block lasts; omitted, they last until they are lifted.
+	ExpiresIn *int `json:"expires_in,omitempty"`
+
+	// Kind `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
+	// email address, compared in lower case without the part of the local part from its first
+	// `+`. `ip_range`: the client addresses in a CIDR prefix.
+	Kind AdminSignupBlockKind `json:"kind"`
+
+	// Severity `reject`: the sign-up is refused. `require_approval`: the registration starts pending
+	// for a moderator, whatever the registration mode.
+	Severity AdminSignupBlockSeverity `json:"severity"`
+
+	// Text The list: one value per line, or a CSV row whose first field is the value; blank
+	// lines and lines starting with `#` are ignored. At most 10,000 values.
+	Text string `json:"text"`
+}
+
 // Instance Public information about the instance.
 type Instance struct {
 	// Description The full description of the instance, as plain text; omitted when there is none.
@@ -3024,6 +3067,34 @@ type SetInstanceTextRequest struct {
 	// Body The text; empty clears it in the locale.
 	Body string `json:"body"`
 }
+
+// SignupBlockImportResult What an import of a list of sign-up blocks did.
+type SignupBlockImportResult struct {
+	// Added The number of blocks added.
+	Added int `json:"added"`
+
+	// Skipped The lines whose block was not added, in line order.
+	Skipped []SignupBlockImportSkipped `json:"skipped"`
+}
+
+// SignupBlockImportSkipped A line of an imported list whose block was not added.
+type SignupBlockImportSkipped struct {
+	// Line The line of the list, from 1.
+	Line int `json:"line"`
+
+	// Reason `invalid`: not a valid value for the kind. `duplicate`: an earlier line has the same
+	// value in canonical form. `already_blocked`: a block in effect of the same kind and
+	// value with a severity at least as strong covers it.
+	Reason SignupBlockImportSkippedReason `json:"reason"`
+
+	// Value The value as written on the line.
+	Value string `json:"value"`
+}
+
+// SignupBlockImportSkippedReason `invalid`: not a valid value for the kind. `duplicate`: an earlier line has the same
+// value in canonical form. `already_blocked`: a block in effect of the same kind and
+// value with a severity at least as strong covers it.
+type SignupBlockImportSkippedReason string
 
 // SpoilerText The content warning; omitted or empty for none. It counts toward `max_post_characters`.
 type SpoilerText = string
@@ -3780,6 +3851,9 @@ type MoveInstanceRuleJSONRequestBody = MoveInstanceRuleRequest
 // CreateSignupBlockJSONRequestBody defines body for CreateSignupBlock for application/json ContentType.
 type CreateSignupBlockJSONRequestBody = CreateSignupBlockRequest
 
+// ImportSignupBlocksJSONRequestBody defines body for ImportSignupBlocks for application/json ContentType.
+type ImportSignupBlocksJSONRequestBody = ImportSignupBlocksRequest
+
 // UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
 type UploadMediaMultipartRequestBody = MediaUpload
 
@@ -3992,6 +4066,9 @@ type ServerInterface interface {
 	// CreateSignupBlock Block sign-ups
 	// (POST /admin/signup_blocks)
 	CreateSignupBlock(w http.ResponseWriter, r *http.Request)
+	// ImportSignupBlocks Block sign-ups from a list
+	// (POST /admin/signup_blocks/import)
+	ImportSignupBlocks(w http.ResponseWriter, r *http.Request)
 	// GetSignupBlock Get a sign-up block
 	// (GET /admin/signup_blocks/{id})
 	GetSignupBlock(w http.ResponseWriter, r *http.Request, id SignupBlockId)
@@ -6317,6 +6394,20 @@ func (siw *ServerInterfaceWrapper) CreateSignupBlock(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ImportSignupBlocks operation middleware
+func (siw *ServerInterfaceWrapper) ImportSignupBlocks(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportSignupBlocks(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSignupBlock operation middleware
 func (siw *ServerInterfaceWrapper) GetSignupBlock(w http.ResponseWriter, r *http.Request) {
 
@@ -7839,6 +7930,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks", wrapper.CreateSignupBlock)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/signup_blocks/{id}", wrapper.GetSignupBlock)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks/{id}/lift", wrapper.LiftSignupBlock)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks/import", wrapper.ImportSignupBlocks)
 
 	return m
 }
@@ -11552,6 +11644,68 @@ func (response CreateSignupBlockdefaultApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type ImportSignupBlocksRequestObject struct {
+	Body *ImportSignupBlocksJSONRequestBody
+}
+
+type ImportSignupBlocksResponseObject interface {
+	VisitImportSignupBlocksResponse(w http.ResponseWriter) error
+}
+
+type ImportSignupBlocks200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ImportSignupBlocks200JSONResponse struct {
+	Body    SignupBlockImportResult
+	Headers ImportSignupBlocks200ResponseHeaders
+}
+
+func (response ImportSignupBlocks200JSONResponse) VisitImportSignupBlocksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportSignupBlocksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ImportSignupBlocksdefaultApplicationProblemPlusJSONResponse) VisitImportSignupBlocksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetSignupBlockRequestObject struct {
 	Id SignupBlockId `json:"id"`
 }
@@ -14188,6 +14342,9 @@ type StrictServerInterface interface {
 	// CreateSignupBlock Block sign-ups
 	// (POST /admin/signup_blocks)
 	CreateSignupBlock(ctx context.Context, request CreateSignupBlockRequestObject) (CreateSignupBlockResponseObject, error)
+	// ImportSignupBlocks Block sign-ups from a list
+	// (POST /admin/signup_blocks/import)
+	ImportSignupBlocks(ctx context.Context, request ImportSignupBlocksRequestObject) (ImportSignupBlocksResponseObject, error)
 	// GetSignupBlock Get a sign-up block
 	// (GET /admin/signup_blocks/{id})
 	GetSignupBlock(ctx context.Context, request GetSignupBlockRequestObject) (GetSignupBlockResponseObject, error)
@@ -16092,6 +16249,37 @@ func (sh *strictHandler) CreateSignupBlock(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateSignupBlockResponseObject); ok {
 		if err := validResponse.VisitCreateSignupBlockResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportSignupBlocks operation middleware
+func (sh *strictHandler) ImportSignupBlocks(w http.ResponseWriter, r *http.Request) {
+	var request ImportSignupBlocksRequestObject
+
+	var body ImportSignupBlocksJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportSignupBlocks(ctx, request.(ImportSignupBlocksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportSignupBlocks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportSignupBlocksResponseObject); ok {
+		if err := validResponse.VisitImportSignupBlocksResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

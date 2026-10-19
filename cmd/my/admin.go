@@ -46,7 +46,7 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case args[0] == "role":
 		return runAdminRole(args[1:], stdout, stderr)
 	case args[0] == "signup-block":
-		return runAdminSignupBlock(args[1:], stdout, stderr)
+		return runAdminSignupBlock(args[1:], stdin, stdout, stderr)
 	case args[0] != "create":
 		_, _ = fmt.Fprintf(stderr, "my admin: unknown subcommand %q\n\n", args[0])
 		adminUsage(stderr)
