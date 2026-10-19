@@ -91,6 +91,15 @@ type MediaRepository interface {
 	// ("" for the first page) that were created before createdBefore and that no status
 	// revision attaches, ordered by ID.
 	ListUnattachedUploads(ctx context.Context, afterID string, createdBefore time.Time, limit int) ([]string, error)
+	// ListOwnerUploads returns up to limit uploaded media files of an owner after afterID (""
+	// for the first page), ordered by ID, with whether a status revision attaches each.
+	ListOwnerUploads(ctx context.Context, ownerAccountID, afterID string, limit int) ([]OwnedUpload, error)
+}
+
+// OwnedUpload is an uploaded media file of an owner, with whether a status revision attaches it.
+type OwnedUpload struct {
+	MediaID  string
+	Attached bool
 }
 
 // FileVariant is a variant of a media file's current processing result, with the file.

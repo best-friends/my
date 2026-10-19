@@ -327,6 +327,50 @@ func (q *Queries) ListMediaVariantsOf(ctx context.Context, mediaID string) ([]Me
 	return items, nil
 }
 
+const listOwnerUploads = `-- name: ListOwnerUploads :many
+SELECT m.id, CAST(EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = m.id) AS BOOLEAN) AS attached
+FROM media_files m
+WHERE m.owner_account_id = ?1 AND m.origin = 'upload' AND m.id > ?2
+ORDER BY m.id
+LIMIT ?3
+`
+
+type ListOwnerUploadsParams struct {
+	OwnerAccountID string
+	AfterID        string
+	RowLimit       int64
+}
+
+type ListOwnerUploadsRow struct {
+	ID       string
+	Attached bool
+}
+
+// The uploads of an owner by ID, with whether a status revision attaches each, for the erasure
+// of a deleted account (data-model section 8).
+func (q *Queries) ListOwnerUploads(ctx context.Context, arg ListOwnerUploadsParams) ([]ListOwnerUploadsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listOwnerUploads, arg.OwnerAccountID, arg.AfterID, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOwnerUploadsRow{}
+	for rows.Next() {
+		var i ListOwnerUploadsRow
+		if err := rows.Scan(&i.ID, &i.Attached); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReadyMediaVariants = `-- name: ListReadyMediaVariants :many
 SELECT m.id, m.owner_account_id, m.origin, m.created_at,
   v.result_id, v.kind, v.blob_key, v.content_type, v.file_size, v.width, v.height

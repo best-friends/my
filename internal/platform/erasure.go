@@ -17,11 +17,12 @@ import (
 // (data-model §8, FR-008). Every database adapter's repositories implement the modules'
 // erasure repositories. The erasers run in order: the statuses first, whose notifications the
 // notification module erases with them, then the account's interactions, follows, timeline and
-// notification rows, and its user's identity data; the account module erases the profile and
-// keys last. A retention hold stops it, and the statuses that the moderation records need stay
-// (ADR-0038). It comes after the content, graph, timeline, and notification services.
+// notification rows, its uploads with their blobs, and its user's identity data; the account
+// module erases the profile and keys last. A retention hold stops it, and the statuses that the
+// moderation records need stay with their media files (ADR-0038). It comes after the content,
+// graph, timeline, notification, and media services and the blob store.
 func (a *App) setUpErasure(ids identity.Repository, accounts account.Repository, statuses content.Repository,
-	follows graph.Repository, feeds timeline.Repository, notifs notification.Repository,
+	follows graph.Repository, feeds timeline.Repository, notifs notification.Repository, medias content.MediaRepository,
 ) error {
 	identities, okI := ids.(identity.ErasureRepository)
 	profiles, okA := accounts.(account.ErasureRepository)
@@ -44,6 +45,10 @@ func (a *App) setUpErasure(ids identity.Repository, accounts account.Repository,
 			graph.NewEraser(a.UnitOfWork, follows, edges, a.Clock),
 			timeline.NewEraser(a.UnitOfWork, entries),
 			notifications,
+			// The instance settings' images stay; the profile's go with the account.
+			content.NewMediaEraser(content.MediaErasureDeps{
+				UnitOfWork: a.UnitOfWork, Repository: medias, Blobs: a.Blobs, Referrers: []content.MediaReferrer{a.Instance},
+			}),
 			identity.NewEraser(a.UnitOfWork, identities),
 		},
 	}).RegisterJobs(a.Handlers, a.Scheduler)

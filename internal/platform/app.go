@@ -414,10 +414,6 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	a.setUpModeratorNotifications(cfg, notifs, moderatorStaff{a})
 	a.setUpRetention(cfg, retention, statuses)
-	if err := a.setUpErasure(identities, accounts, statuses, follows, feeds, notifs); err != nil {
-		_ = a.Close()
-		return nil, err
-	}
 	a.Streams = stream.NewHub(stream.HubOptions{})
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
@@ -441,6 +437,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, err
 	}
 	if err := a.setMedia(cfg, medias); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	if err := a.setUpErasure(identities, accounts, statuses, follows, feeds, notifs, medias); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
