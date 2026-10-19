@@ -4,13 +4,9 @@ package postgres
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -18,199 +14,25 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/testcontainers/testcontainers-go"
-	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/schema"
-)
-
-// Environment variables that control where the tests find PostgreSQL.
-const (
-	// envURL points the tests at an existing server, as a postgres:// URL whose user may create
-	// databases. Without it, the tests start a container with testcontainers-go.
-	envURL = "TEST_POSTGRES_URL"
-	// envRequired, when non-empty, turns "no PostgreSQL available" into a failure instead of a
-	// skip. CI sets it so that the PostgreSQL tests can never be skipped silently.
-	envRequired = "TEST_POSTGRES_REQUIRED"
-	// envImage overrides the container image; it defaults to the one `make db-up` uses.
-	envImage     = "TEST_POSTGRES_IMAGE"
-	defaultImage = "postgres:18-alpine"
-)
-
-var (
-	// serverURL is the URL of the test server, or empty when there is none.
-	serverURL string
-	// skipReason says why serverURL is empty.
-	skipReason string
+	"github.com/best-friends/my/pkg/testkit/pgtest"
 )
 
 func TestMain(m *testing.M) {
-	code, cleanup := setUpServer()
-	if code == 0 {
-		code = m.Run()
-	}
-	dropTemplate()
-	cleanup()
-	os.Exit(code)
+	os.Exit(pgtest.Main(m))
 }
 
-// setUpServer finds or starts the PostgreSQL server for the tests.
-func setUpServer() (code int, cleanup func()) {
-	cleanup = func() {}
-	if u := os.Getenv(envURL); u != "" {
-		serverURL = u
-		return 0, cleanup
-	}
-	if err := exec.Command("docker", "info").Run(); err != nil {
-		skipReason = fmt.Sprintf("%s is unset and Docker is unavailable (%v)", envURL, err)
-		if os.Getenv(envRequired) != "" {
-			fmt.Fprintf(os.Stderr, "postgres tests: %s, but %s is set\n", skipReason, envRequired)
-			return 1, cleanup
-		}
-		return 0, cleanup
-	}
-	image := os.Getenv(envImage)
-	if image == "" {
-		image = defaultImage
-	}
-	ctx := context.Background()
-	c, err := tcpostgres.Run(ctx, image,
-		tcpostgres.WithDatabase("my"), tcpostgres.WithUsername("my"), tcpostgres.WithPassword("my"),
-		tcpostgres.BasicWaitStrategies(),
-	)
-	cleanup = func() {
-		if c != nil {
-			_ = testcontainers.TerminateContainer(c)
-		}
-	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "postgres tests: start container %s: %v\n", image, err)
-		return 1, cleanup
-	}
-	if serverURL, err = c.ConnectionString(ctx, "sslmode=disable"); err != nil {
-		fmt.Fprintf(os.Stderr, "postgres tests: %v\n", err)
-		return 1, cleanup
-	}
-	return 0, cleanup
-}
-
-// template is the database that newTestDB clones: the bootstrap SQL and the product schema (see
-// package schema for why executing the files matches an Atlas apply), applied once per test binary.
-// Copying it with CREATE DATABASE ... TEMPLATE is much faster than running the DDL for every test.
-var template struct {
-	once sync.Once
-	name string
-	err  error
-}
-
-// templateName creates the template database on first use and returns its name.
-func templateName(ctx context.Context) (string, error) {
-	template.once.Do(func() {
-		template.name, template.err = createTemplate(context.WithoutCancel(ctx))
-	})
-	return template.name, template.err
-}
-
-func createTemplate(ctx context.Context) (string, error) {
-	name := randomDatabaseName("test_template_")
-	admin, err := pgx.Connect(ctx, serverURL)
-	if err != nil {
-		return "", fmt.Errorf("connect: %w", err)
-	}
-	defer func() { _ = admin.Close(ctx) }()
-	if _, err := admin.Exec(ctx, "CREATE DATABASE "+name); err != nil {
-		return "", fmt.Errorf("create template database: %w", err)
-	}
-	u, err := url.Parse(serverURL)
-	if err != nil {
-		return "", fmt.Errorf("%s must be a postgres:// URL: %w", envURL, err)
-	}
-	u.Path = "/" + name
-	conn, err := pgx.Connect(ctx, u.String())
-	if err != nil {
-		return "", fmt.Errorf("connect to the template: %w", err)
-	}
-	defer func() { _ = conn.Close(ctx) }()
-	for _, ddl := range []string{schema.PostgresBootstrap, schema.Postgres} {
-		if _, err := conn.Exec(ctx, ddl); err != nil {
-			return "", fmt.Errorf("apply schema: %w", err)
-		}
-	}
-	return name, nil
-}
-
-// dropTemplate drops the template database, if there is one, so a shared TEST_POSTGRES_URL server
-// keeps no leftovers.
-func dropTemplate() {
-	if template.name == "" {
-		return
-	}
-	ctx := context.Background()
-	if c, err := pgx.Connect(ctx, serverURL); err == nil {
-		_, _ = c.Exec(ctx, "DROP DATABASE "+template.name+" WITH (FORCE)")
-		_ = c.Close(ctx)
-	}
-}
-
-func randomDatabaseName(prefix string) string {
-	suffix := make([]byte, 8)
-	_, _ = rand.Read(suffix)
-	return prefix + hex.EncodeToString(suffix)
-}
-
-// newTestDB creates a new database on the test server as a copy of the template database, which
-// holds the bootstrap SQL and the product schema, and opens it.
+// newTestDB opens a new database with the product schema on the test server (package pgtest).
 func newTestDB(t *testing.T, opts uow.Options) *DB {
 	t.Helper()
-	if serverURL == "" {
-		t.Skip(skipReason)
-	}
-	ctx := t.Context()
-	tmpl, err := templateName(ctx)
-	if err != nil {
-		t.Fatalf("template database: %v", err)
-	}
-	admin, err := pgx.Connect(ctx, serverURL)
-	if err != nil {
-		t.Fatalf("connect: %v", err)
-	}
-	defer func() { _ = admin.Close(context.WithoutCancel(ctx)) }()
-
-	name := randomDatabaseName("test_")
-	// The backend of the connection that built the template may still be exiting, and PostgreSQL
-	// refuses to copy a database that has a session (55006 object_in_use); wait for it briefly.
-	for attempt := 0; ; attempt++ {
-		_, err = admin.Exec(ctx, "CREATE DATABASE "+name+" TEMPLATE "+tmpl)
-		var pgErr *pgconn.PgError
-		if err == nil || attempt == 50 || !errors.As(err, &pgErr) || pgErr.Code != "55006" {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	if err != nil {
-		t.Fatalf("create database: %v", err)
-	}
-	u, err := url.Parse(serverURL)
-	if err != nil {
-		t.Fatalf("%s must be a postgres:// URL: %v", envURL, err)
-	}
-	u.Path = "/" + name
-
-	db, err := Open(ctx, u.String(), opts)
+	db, err := Open(t.Context(), pgtest.NewDatabase(t), opts)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	t.Cleanup(func() {
-		db.Close()
-		ctx := context.Background()
-		if c, err := pgx.Connect(ctx, serverURL); err == nil {
-			_, _ = c.Exec(ctx, "DROP DATABASE "+name+" WITH (FORCE)")
-			_ = c.Close(ctx)
-		}
-	})
+	t.Cleanup(db.Close)
 	return db
 }
 
