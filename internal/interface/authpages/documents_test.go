@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"testing"
 	"time"
 
@@ -84,6 +85,14 @@ func TestDocumentPages(t *testing.T) {
 	w = b.do(http.MethodGet, authpages.PathPrivacyPolicy, nil, map[string]string{"Accept-Language": "ja"})
 	wantContains(t, w.Body.String(), `<html lang="ja"`, `<h1>プライバシーポリシー</h1>`, `<div class="document" lang="en" dir="auto">`,
 		"<p>We keep <strong>little</strong>.</p>")
+
+	// A reader of ja-JP reads the page in ja, but the documents for ja-JP first (ja-JP -> ja).
+	docs.locales = nil
+	w = b.do(http.MethodGet, authpages.PathTerms, nil, map[string]string{"Accept-Language": "ja-JP"})
+	if w.Header().Get("Content-Language") != "ja" || len(docs.locales) == 0 || slices.ContainsFunc(docs.locales, func(l string) bool { return l != "ja-JP" }) {
+		t.Errorf("Accept-Language ja-JP: Content-Language %q, documents read for %v, want ja and only ja-JP",
+			w.Header().Get("Content-Language"), docs.locales)
+	}
 }
 
 func TestMissingDocumentsAreNotFoundAndNotLinked(t *testing.T) {
