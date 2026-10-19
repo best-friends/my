@@ -114,6 +114,20 @@ func TestSignupDomainsAndEmailHash(t *testing.T) {
 	}
 }
 
+func TestParseSignupBlockList(t *testing.T) {
+	text := "\uFEFF# disposable domains\r\nspam.example\r\n\n  Mail.Example  \n# comment\n\"quoted.example\",2026-10-01,note\nplain.example, comment\n   \n,\n"
+	want := []moderation.SignupBlockListEntry{
+		{Line: 2, Value: "spam.example"}, {Line: 4, Value: "Mail.Example"}, {Line: 6, Value: "quoted.example"},
+		{Line: 7, Value: "plain.example"}, {Line: 9, Value: ""},
+	}
+	if got := moderation.ParseSignupBlockList(text); !reflect.DeepEqual(got, want) {
+		t.Errorf("ParseSignupBlockList = %+v, want %+v", got, want)
+	}
+	if got := moderation.ParseSignupBlockList(""); got != nil {
+		t.Errorf("ParseSignupBlockList(\"\") = %+v, want nil", got)
+	}
+}
+
 func TestSignupBlockSeverityStronger(t *testing.T) {
 	r, a := moderation.SignupReject, moderation.SignupRequireApproval
 	for _, c := range []struct {

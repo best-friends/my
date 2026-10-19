@@ -370,6 +370,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
 		Logins: a.AccountPolicy, RateLimiter: a.RateLimiter,
+		// nil for captcha = none; sign-in and sign-up check the CAPTCHA token otherwise (ADR-0042).
+		HumanVerifier: a.HumanVerifier, Logger: a.Logger,
 		// The default locale and the registration mode are instance settings in the database,
 		// never configuration (docs/reference/configuration.md); they are read per registration so
 		// changes apply at once.
@@ -500,6 +502,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			}
 			return cfg.Host
 		},
+		HumanCheck: a.HumanCheckWidget,
 	}).Register(a)
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {

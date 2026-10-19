@@ -167,6 +167,34 @@
     "defaultMessage": "This form has expired. Please try again.",
     "description": "Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared."
   },
+  "auth.human_check.failed": {
+    "defaultMessage": "Complete the check that you are not a bot, then try again.",
+    "description": "Error (HTTP 422) on the sign-in and registration forms when the CAPTCHA check was missing, invalid, or expired."
+  },
+  "auth.human_check.noscript": {
+    "defaultMessage": "This page checks that you are not a bot, which needs JavaScript. Turn on JavaScript to continue.",
+    "description": "Shown on the sign-in and registration forms when the browser runs no JavaScript, which the CAPTCHA widget needs."
+  },
+  "auth.human_check.notice": {
+    "defaultMessage": "This page uses {service} to check that you are not a bot. {service} receives your IP address and information about your browser.",
+    "description": "Notice next to the CAPTCHA widget on the sign-in and registration forms, followed by links to the service's privacy policy. {service} is the service's name, such as Cloudflare Turnstile or hCaptcha."
+  },
+  "auth.human_check.notice_recaptcha": {
+    "defaultMessage": "This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply. Google receives your IP address and information about your browser.",
+    "description": "Notice next to the reCAPTCHA widget on the sign-in and registration forms, followed by links to Google's privacy policy and terms. Keep the names reCAPTCHA and Google: Google asks sites to show this statement."
+  },
+  "auth.human_check.privacy_link": {
+    "defaultMessage": "{owner} Privacy Policy",
+    "description": "Link next to the CAPTCHA widget to the privacy policy of the company that runs the service. {owner} is a name such as Cloudflare, hCaptcha, or Google."
+  },
+  "auth.human_check.terms_link": {
+    "defaultMessage": "{owner} Terms of Service",
+    "description": "Link next to the CAPTCHA widget to the terms of the company that runs the service. {owner} is a name such as hCaptcha or Google."
+  },
+  "auth.human_check.unavailable": {
+    "defaultMessage": "The check that you are not a bot is not available right now. Try again later.",
+    "description": "Error (HTTP 503) on the registration form when the CAPTCHA service cannot be reached; the account is not created."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "Email address",
     "description": "Label of the email address field on the sign-in form."

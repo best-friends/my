@@ -4,13 +4,17 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The merge queue of main runs the same required `check` on each merge group before it merges the group.
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A new push to a PR replaces its run; every main commit runs to the end (ADR-0040).
+  # A new push to a PR replaces its run; every main commit runs to the end (ADR-0040). Each merge group has a ref of
+  # its own (gh-readonly-queue/main/...) and is never cancelled here: the merge queue replaces the groups it rebuilds.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -18,8 +22,9 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  # `make check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request
-  # touches that context or one it depends on. A change to shared configuration and every push to main run them all.
+  # `make check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request or
+  # the merge group touches that context or one it depends on. A change to shared configuration and every push to
+  # main run them all.
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -33,7 +38,9 @@ jobs:
       shell: ${{ steps.contexts.outputs.shell }}
       schema: ${{ steps.contexts.outputs.schema }}
     steps:
-      # A pull request checks out its merge commit, whose first parent is the base branch.
+      # A pull request checks out its merge commit, whose first parent is the base branch. A merge group checks out
+      # its head commit and compares it with its base, the main commit the group is built on; that base is fetched by
+      # SHA because a group queued behind others is several commits ahead of it.
       - uses: actions/checkout@v5
         with:
           fetch-depth: 2
@@ -41,14 +48,20 @@ jobs:
         id: contexts
         env:
           EVENT: ${{ github.event_name }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
         run: |
           if [ "$EVENT" = pull_request ]; then
             git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed"
             contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
+          elif [ "$EVENT" = merge_group ]; then
+            git fetch --no-tags --depth=1 origin "$MERGE_GROUP_BASE_SHA"
+            git diff --name-only "$MERGE_GROUP_BASE_SHA" "$MERGE_GROUP_HEAD_SHA" > "$RUNNER_TEMP/changed"
+            contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
           else
             contexts="$(scripts/changed-contexts.sh --all)"
           fi
-          echo "contexts:" $contexts
+          echo "contexts: ${contexts//$'\n'/ }"
           for c in docs go i18n api ui web docker shell schema; do
             if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
           done
@@ -272,8 +285,9 @@ jobs:
         run: make lint-shell
 
   check:
-    # The required status check of the protect-main ruleset: it passes only when every job above passed, or was
-    # skipped because the change does not touch its context.
+    # The required status check of the protect-main ruleset, on pull requests and merge groups: it passes only when
+    # every job above passed, or was skipped because the change does not touch its context. `always()` makes it
+    # report a result even when every other job is skipped, so a merge group never waits on it.
     if: always()
     needs: [changes, docs, go, go-test, i18n, api, ui, web, docker, shell]
     runs-on: ubuntu-latest

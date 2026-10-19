@@ -30,6 +30,10 @@ make check
 2. ブランチ `<type>/<issue>-<slug>` を切る。`main` に直接 push しない。
 3. 触れたコンテキストの check か `make check-changed` を通してコミット（Conventional Commits、英語）。共有の設定を変えたときは `make check`。
 4. PR テンプレートに従って PR を作成する。
+5. CI が緑になったら `gh pr merge <PR> --auto --merge` で Merge Queue に入れる。`main` には Merge Queue からだけマージし、
+   キューは PR を `main`（と先に並んだ PR）に重ねたマージグループで CI を回し直して、必須チェック `check` が通ればマージする。
+6. 衝突や `check` の失敗でキューから外れたら、`main` を取り込み、生成ファイル（`make generate`・`make sqlc`・`make i18n-gen`・
+   `make web-dist` の出力）は手で衝突を解かずに作り直し、`make check-changed` を通して push し、もう一度キューに入れる。
 
 ## スキーマの変更
 

@@ -2156,6 +2156,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/signup_blocks/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block sign-ups from a list
+         * @description Adds a block on sign-ups (FR-719) for each value of a list, such as a public list of
+         *     disposable email domains, all with the same kind, severity, comment, and duration. The
+         *     list has one value per line in any form that `createSignupBlock` takes, or a CSV row
+         *     whose first field is the value; blank lines and lines starting with `#` are ignored.
+         *     It adds what it can and reports the lines it skipped: a value that is not valid for the
+         *     kind (`invalid`), that repeats an earlier line once in canonical form (`duplicate`), or
+         *     that a block in effect of the same kind and value with a severity at least as strong
+         *     already covers (`already_blocked`). Each block added is audited like one added on its
+         *     own. The blocks are written a few hundred at a time, so an error part way keeps the
+         *     ones before it; sending the list again skips them as `already_blocked`. More than
+         *     10,000 values, an invalid kind or severity, or a `comment` that is too long or contains
+         *     U+0000 is a 422 that adds nothing. Needs the `manage_accounts` permission.
+         */
+        post: operations["importSignupBlocks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3863,6 +3894,41 @@ export interface components {
             comment?: string;
             /** @description The seconds the block lasts; omitted, it lasts until it is lifted. */
             expires_in?: number;
+        };
+        /** @description A list of values to block sign-ups by, all with the same settings. */
+        ImportSignupBlocksRequest: {
+            kind: components["schemas"]["AdminSignupBlockKind"];
+            /**
+             * @description The list: one value per line, or a CSV row whose first field is the value; blank
+             *     lines and lines starting with `#` are ignored. At most 10,000 values.
+             */
+            text: string;
+            severity: components["schemas"]["AdminSignupBlockSeverity"];
+            /** @description The comment of every block added. */
+            comment?: string;
+            /** @description The seconds each block lasts; omitted, they last until they are lifted. */
+            expires_in?: number;
+        };
+        /** @description What an import of a list of sign-up blocks did. */
+        SignupBlockImportResult: {
+            /** @description The number of blocks added. */
+            added: number;
+            /** @description The lines whose block was not added, in line order. */
+            skipped: components["schemas"]["SignupBlockImportSkipped"][];
+        };
+        /** @description A line of an imported list whose block was not added. */
+        SignupBlockImportSkipped: {
+            /** @description The line of the list, from 1. */
+            line: number;
+            /** @description The value as written on the line. */
+            value: string;
+            /**
+             * @description `invalid`: not a valid value for the kind. `duplicate`: an earlier line has the same
+             *     value in canonical form. `already_blocked`: a block in effect of the same kind and
+             *     value with a severity at least as strong covers it.
+             * @enum {string}
+             */
+            reason: "invalid" | "duplicate" | "already_blocked";
         };
         /** @description A report of an account to the moderators. */
         CreateReportRequest: {
@@ -6425,6 +6491,32 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminSignupBlock"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    importSignupBlocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportSignupBlocksRequest"];
+            };
+        };
+        responses: {
+            /** @description What the import added and skipped. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignupBlockImportResult"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

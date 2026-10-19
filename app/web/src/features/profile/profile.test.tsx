@@ -352,7 +352,7 @@ describe("a profile of another server", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Carol" })).toBeInTheDocument();
     expect(within(main()).getAllByText("@carol@remote.example")[0]).toHaveAttribute("dir", "ltr");
     // The host inside the sentence is isolated, as names are (web-client.md Y10); the link leaves the app.
-    expect(within(main()).getByRole("link", { name: "Open the original profile on ⁨remote.example⁩" })).toHaveAttribute(
+    expect(within(main()).getByRole("link", { name: "See on ⁨remote.example⁩" })).toHaveAttribute(
       "href",
       "https://remote.example/@carol",
     );
@@ -374,9 +374,10 @@ describe("a profile of another server", () => {
     bobServer();
     await renderApp({ path: "/@bob" });
 
-    // Neither on the profile nor on its post.
+    // Neither on the profile nor on its post, and no notice above the posts.
     expect(await screen.findByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
-    expect(within(main()).queryByRole("link", { name: /^Open the original/ })).not.toBeInTheDocument();
+    expect(within(main()).queryByRole("link", { name: /^(Open the original|See on)/ })).not.toBeInTheDocument();
+    expect(within(main()).queryByText("Only the posts this server has received are shown.")).not.toBeInTheDocument();
   });
 });
 

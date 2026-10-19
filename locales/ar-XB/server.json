@@ -167,6 +167,34 @@
     "defaultMessage": "‮⊥ɥıs ɟoɹɯ ɥɐs ǝxdıɹǝp. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.human_check.failed": {
+    "defaultMessage": "‮Ↄoɯdʅǝʇǝ ʇɥǝ ɔɥǝɔʞ ʇɥɐʇ ʎon ɐɹǝ uoʇ ɐ qoʇ, ʇɥǝu ʇɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.noscript": {
+    "defaultMessage": "‮⊥ɥıs dɐƃǝ ɔɥǝɔʞs ʇɥɐʇ ʎon ɐɹǝ uoʇ ɐ qoʇ, ʍɥıɔɥ uǝǝps ſɐʌɐSɔɹıdʇ. ⊥nɹu ou ſɐʌɐSɔɹıdʇ ʇo ɔouʇıunǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.notice": {
+    "defaultMessage": "‮⊥ɥıs dɐƃǝ nsǝs {service} ʇo ɔɥǝɔʞ ʇɥɐʇ ʎon ɐɹǝ uoʇ ɐ qoʇ. {service} ɹǝɔǝıʌǝs ʎonɹ IԀ ɐppɹǝss ɐup ıuɟoɹɯɐʇıou ɐqonʇ ʎonɹ qɹoʍsǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.notice_recaptcha": {
+    "defaultMessage": "‮⊥ɥıs sıʇǝ ıs dɹoʇǝɔʇǝp qʎ ɹǝↃ∀Ԁ⊥ↃH∀ ɐup ʇɥǝ ⅁ooƃʅǝ Ԁɹıʌɐɔʎ Ԁoʅıɔʎ ɐup ⊥ǝɹɯs oɟ Sǝɹʌıɔǝ ɐddʅʎ. ⅁ooƃʅǝ ɹǝɔǝıʌǝs ʎonɹ IԀ ɐppɹǝss ɐup ıuɟoɹɯɐʇıou ɐqonʇ ʎonɹ qɹoʍsǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.privacy_link": {
+    "defaultMessage": "‮{owner} Ԁɹıʌɐɔʎ Ԁoʅıɔʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.terms_link": {
+    "defaultMessage": "‮{owner} ⊥ǝɹɯs oɟ Sǝɹʌıɔǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.unavailable": {
+    "defaultMessage": "‮⊥ɥǝ ɔɥǝɔʞ ʇɥɐʇ ʎon ɐɹǝ uoʇ ɐ qoʇ ıs uoʇ ɐʌɐıʅɐqʅǝ ɹıƃɥʇ uoʍ. ⊥ɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss‬",
     "description": "Generated from en by tools/i18n; do not edit."

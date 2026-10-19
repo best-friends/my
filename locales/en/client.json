@@ -3559,13 +3559,21 @@
     "defaultMessage": "Account not found",
     "description": "Heading and document title of a profile address that names no account the user may see."
   },
-  "profile.original": {
-    "defaultMessage": "Open the original profile on {host}",
-    "description": "Link on the profile of an account of another server to its profile page on that server. {host} is that server's host name, for example 'mastodon.social'."
-  },
   "profile.relationship_failed": {
     "defaultMessage": "Could not load whether you follow this account: {reason}",
     "description": "Shown on a profile instead of the follow button when the relationship failed to load. {reason} is the error message."
+  },
+  "profile.remote.fetching": {
+    "defaultMessage": "Fetching recent posts from the original server.",
+    "description": "Shown above the posts of a profile of an account of another server while this server fetches its recent posts from that server; the posts are read again a few seconds later."
+  },
+  "profile.remote.notice": {
+    "defaultMessage": "Only the posts this server has received are shown.",
+    "description": "Shown above the posts of a profile of an account of another server, and in the empty state of its posts: this server lists only the posts it has received, which may not be all of them."
+  },
+  "profile.remote.original": {
+    "defaultMessage": "See on {host}",
+    "description": "Link next to the notice above the posts of a profile of an account of another server, to its profile page on that server. {host} is that server's host name, for example 'mastodon.social'."
   },
   "profile.sign_in_to_follow": {
     "defaultMessage": "Sign in to follow",

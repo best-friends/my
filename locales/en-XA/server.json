@@ -167,6 +167,34 @@
     "defaultMessage": "[Ŧħīş ƒǿǿřḿ ħȧȧş ḗḗẋƥīřḗḗḓ. Ƥŀḗḗȧȧşḗḗ ŧřẏ ȧȧɠȧȧīƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.human_check.failed": {
+    "defaultMessage": "[Ƈǿǿḿƥŀḗḗŧḗḗ ŧħḗḗ ƈħḗḗƈķ ŧħȧȧŧ ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧ ƀǿǿŧ, ŧħḗḗƞ ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.noscript": {
+    "defaultMessage": "[Ŧħīş ƥȧȧɠḗḗ ƈħḗḗƈķş ŧħȧȧŧ ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧ ƀǿǿŧ, ẇħīƈħ ƞḗḗḗḗḓş ĴȧȧṽȧȧŞƈřīƥŧ. Ŧŭŭřƞ ǿǿƞ ĴȧȧṽȧȧŞƈřīƥŧ ŧǿǿ ƈǿǿƞŧīƞŭŭḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.notice": {
+    "defaultMessage": "[Ŧħīş ƥȧȧɠḗḗ ŭŭşḗḗş {service} ŧǿǿ ƈħḗḗƈķ ŧħȧȧŧ ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧ ƀǿǿŧ. {service} řḗḗƈḗḗīṽḗḗş ẏǿǿŭŭř ĪƤ ȧȧḓḓřḗḗşş ȧȧƞḓ īƞƒǿǿřḿȧȧŧīǿǿƞ ȧȧƀǿǿŭŭŧ ẏǿǿŭŭř ƀřǿǿẇşḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.notice_recaptcha": {
+    "defaultMessage": "[Ŧħīş şīŧḗḗ īş ƥřǿǿŧḗḗƈŧḗḗḓ ƀẏ řḗḗƇȦƤŦƇĦȦ ȧȧƞḓ ŧħḗḗ Ɠǿǿǿǿɠŀḗḗ Ƥřīṽȧȧƈẏ Ƥǿǿŀīƈẏ ȧȧƞḓ Ŧḗḗřḿş ǿǿƒ Şḗḗřṽīƈḗḗ ȧȧƥƥŀẏ. Ɠǿǿǿǿɠŀḗḗ řḗḗƈḗḗīṽḗḗş ẏǿǿŭŭř ĪƤ ȧȧḓḓřḗḗşş ȧȧƞḓ īƞƒǿǿřḿȧȧŧīǿǿƞ ȧȧƀǿǿŭŭŧ ẏǿǿŭŭř ƀřǿǿẇşḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.privacy_link": {
+    "defaultMessage": "[{owner} Ƥřīṽȧȧƈẏ Ƥǿǿŀīƈẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.terms_link": {
+    "defaultMessage": "[{owner} Ŧḗḗřḿş ǿǿƒ Şḗḗřṽīƈḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.human_check.unavailable": {
+    "defaultMessage": "[Ŧħḗḗ ƈħḗḗƈķ ŧħȧȧŧ ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧ ƀǿǿŧ īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ řīɠħŧ ƞǿǿẇ. Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "[Ḗḿȧȧīŀ ȧȧḓḓřḗḗşş]",
     "description": "Generated from en by tools/i18n; do not edit."

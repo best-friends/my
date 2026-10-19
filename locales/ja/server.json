@@ -167,6 +167,34 @@
     "defaultMessage": "フォームの有効期限が切れました。もう一度お試しください。",
     "description": "Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared."
   },
+  "auth.human_check.failed": {
+    "defaultMessage": "ボットかどうかの確認をやり直してから、もう一度お試しください。",
+    "description": "Error (HTTP 422) on the sign-in and registration forms when the CAPTCHA check was missing, invalid, or expired."
+  },
+  "auth.human_check.noscript": {
+    "defaultMessage": "このページではボットかどうかを確認します。確認には JavaScript が必要です。JavaScript を有効にしてください。",
+    "description": "Shown on the sign-in and registration forms when the browser runs no JavaScript, which the CAPTCHA widget needs."
+  },
+  "auth.human_check.notice": {
+    "defaultMessage": "このページは {service} でボットかどうかを確認します。{service} にはあなたの IP アドレスとブラウザの情報が送られます。",
+    "description": "Notice next to the CAPTCHA widget on the sign-in and registration forms, followed by links to the service's privacy policy. {service} is the service's name, such as Cloudflare Turnstile or hCaptcha."
+  },
+  "auth.human_check.notice_recaptcha": {
+    "defaultMessage": "このサイトは reCAPTCHA で保護されており、Google のプライバシーポリシーと利用規約が適用されます。Google にはあなたの IP アドレスとブラウザの情報が送られます。",
+    "description": "Notice next to the reCAPTCHA widget on the sign-in and registration forms, followed by links to Google's privacy policy and terms. Keep the names reCAPTCHA and Google: Google asks sites to show this statement."
+  },
+  "auth.human_check.privacy_link": {
+    "defaultMessage": "{owner} のプライバシーポリシー",
+    "description": "Link next to the CAPTCHA widget to the privacy policy of the company that runs the service. {owner} is a name such as Cloudflare, hCaptcha, or Google."
+  },
+  "auth.human_check.terms_link": {
+    "defaultMessage": "{owner} の利用規約",
+    "description": "Link next to the CAPTCHA widget to the terms of the company that runs the service. {owner} is a name such as hCaptcha or Google."
+  },
+  "auth.human_check.unavailable": {
+    "defaultMessage": "いまはボットかどうかを確認できません。しばらくしてからやり直してください。",
+    "description": "Error (HTTP 503) on the registration form when the CAPTCHA service cannot be reached; the account is not created."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "メールアドレス",
     "description": "Label of the email address field on the sign-in form."
