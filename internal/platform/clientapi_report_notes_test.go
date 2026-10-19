@@ -16,6 +16,7 @@ import (
 // that follows from the report resolves it as actioned, and the reporter is notified of the
 // first resolution only.
 func TestReportNotesReopenAndActionThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob", "carol")
 	const secret = "Probably the same person as before"
 	var report clientapi.Report

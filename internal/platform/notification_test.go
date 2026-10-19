@@ -20,6 +20,7 @@ import (
 // projectors once, on the graph and content events: a follow, a mention, and a favourite each
 // notify the other account once, and the unread count follows.
 func TestNotificationsAreWired(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		ctx := t.Context()
@@ -75,6 +76,7 @@ func TestNotificationsAreWired(t *testing.T) {
 // the notification projectors: a limited account's mention notifies only the mentioned accounts
 // that follow it.
 func TestSilenceLimitsNotifications(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		ctx := t.Context()

@@ -48,6 +48,7 @@ type sweepRequest struct {
 // operation of the client API and to the other HTTP endpoints, on both dialects: no request is
 // a 500, and both dialects answer each request with the same status (#323).
 func TestLookupsOfInvalidText(t *testing.T) {
+	t.Parallel()
 	spec := apitest.Load(t)
 	reqs := sweepRequests(spec.Doc())
 	statuses := map[string]map[string]int{}

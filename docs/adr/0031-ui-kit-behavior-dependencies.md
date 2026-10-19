@@ -33,6 +33,7 @@ ADR-0026 の依存の制限の目的は、UI キットがアプリのドメイ�
 - React、React Aria Components / React Aria
 - Tailwind のユーティリティ: `tailwind-variants`、`tailwind-merge`
 - ドメインを持たない振る舞いのライブラリ: 現在は `@tanstack/react-virtual`
+- アイコン: `react-icons`（Phosphor の `react-icons/pi` だけ、`Icons.tsx` からだけ。[ADR-0043](0043-icon-set.md)）
 
 許可リストに追加できるのは、次をすべて満たすものだけとする。追加は PR の説明で理由を示し、この ADR の一覧を更新する。
 

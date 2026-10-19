@@ -6,6 +6,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
+import { isPostListQuery, refreshQueries } from "../../../lib/query";
 
 export type Status = components["schemas"]["Status"];
 export type MediaAttachment = components["schemas"]["MediaAttachment"];
@@ -75,20 +76,13 @@ export async function createStatus(api: Api, body: CreateStatusRequest, idempote
   return data;
 }
 
-/** The paths whose cached lists a new post can appear in. */
-const listsWithNewPosts: ReadonlySet<string> = new Set([
-  "/timelines/home",
-  "/timelines/local",
-  "/timelines/tag/{hashtag}",
-  "/accounts/{id}/statuses",
-  "/statuses/{id}/context",
-]);
-
-/** Puts a new post into the cache and refetches the lists it can appear in. */
+/**
+ * Puts a new post into the cache and fetches again every cached list of posts it can appear in, also those no
+ * page shows now (refreshQueries, web-client.md S1): opening one of them afterwards shows the post at once.
+ */
 export async function cachePostedStatus(api: Api, queryClient: QueryClient, status: Status): Promise<void> {
   queryClient.setQueryData(statusQueryOptions(api, status.id).queryKey, status);
-  // openapi-react-query keys are [method, path, init].
-  await queryClient.invalidateQueries({ predicate: (query) => typeof query.queryKey[1] === "string" && listsWithNewPosts.has(query.queryKey[1]) });
+  await refreshQueries(queryClient, { predicate: (query) => isPostListQuery(query.queryKey) });
 }
 
 /**

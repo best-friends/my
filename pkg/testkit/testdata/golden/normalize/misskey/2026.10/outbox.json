@@ -1,0 +1,8 @@
+{
+  "Collection": {
+    "First": {
+      "ID": "https://misskey.example/users/asfo7no84zv70002/outbox?page=true"
+    },
+    "ID": "https://misskey.example/users/asfo7no84zv70002/outbox"
+  }
+}

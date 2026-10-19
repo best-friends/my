@@ -25,6 +25,7 @@ import (
 // waits for its processing, changes its description and focus, and checks that another
 // account can neither read nor change it.
 func TestClientAPIMedia(t *testing.T) {
+	t.Parallel()
 	// The inline queue processes the upload without a worker.
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline"})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})

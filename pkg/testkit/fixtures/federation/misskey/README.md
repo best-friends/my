@@ -17,6 +17,11 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
   ([deploy/docker/federation-live](../../../../../deploy/docker/federation-live/README.md)) on 2026-10-17: what Misskey
   delivered to this server, as this server stored it. Replaced: `misskey.test` → `misskey.example`, `my.test` →
   `remote.example`, and `publicKeyPem`. The users (`alice`, `grace`) and the texts are the test's own.
+- `2026.10/outbox.json` and `2026.10/outbox-page.json` are what Misskey 2026.10.0 serves for grace's outbox, rendered from its
+  source (© misskey-dev, AGPL-3.0): `outbox` of `ActivityPubServerService` builds them with `renderOrderedCollection` and
+  `renderOrderedCollectionPage` of `ApRendererService` and wraps them in `addContext`; `packActivity` renders the items. The items
+  are the captured `2026.10/create-note-unlisted.json`, `announce.json`, `create-note-reply.json`, and `create-note.json` without
+  their `@context` (the outbox lists only `public` and `home` notes), newest first.
 
 | File | Source | License |
 | --- | --- | --- |
@@ -46,3 +51,5 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
 | `2026.10/like-reaction.json` | capture of Misskey 2026.10.0, 2026-10-17: a 👍 reaction to a post of alice (`Like` with `content` and `_misskey_reaction`) | capture |
 | `2026.10/undo-like-reaction.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Undo` of that reaction | capture |
 | `2026.10/delete-note.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Delete` of a note | capture |
+| `2026.10/outbox.json` | `outbox` of [server/ActivityPubServerService.ts](https://github.com/misskey-dev/misskey/blob/2026.10.0/packages/backend/src/server/ActivityPubServerService.ts) and `renderOrderedCollection` of [core/activitypub/ApRendererService.ts](https://github.com/misskey-dev/misskey/blob/2026.10.0/packages/backend/src/core/activitypub/ApRendererService.ts) | AGPL-3.0 |
+| `2026.10/outbox-page.json` | the same, with `renderOrderedCollectionPage` and `packActivity`: the captured notes and renote above | AGPL-3.0 |

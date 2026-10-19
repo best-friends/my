@@ -27,6 +27,7 @@ import (
 // built-in preview image, then the image of the preview_image setting with its localized alt
 // text as soon as it is set, without a restart (ADR-0028).
 func TestInstancePreviewImage(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	build := fstest.MapFS{
 		".vite/manifest.json":  {Data: []byte(`{"index.html": {"file": "assets/index-AAAA.js", "isEntry": true}}`)},

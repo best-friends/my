@@ -135,6 +135,7 @@ func ids(accounts []clientapi.Account) []string {
 // TestClientAPIAccounts covers getting accounts, follows of open and locked accounts with
 // their requests, the follow lists and their paging, and the relationships.
 func TestClientAPIAccounts(t *testing.T) {
+	t.Parallel()
 	e := newAccountsEnv(t)
 	alice, bob, carol := e.user("alice"), e.user("bob"), e.user("carol")
 	if _, err := e.app.Accounts.ReviseProfile(t.Context(), bob.id, account.ProfileInput{
@@ -276,6 +277,7 @@ func TestClientAPIAccounts(t *testing.T) {
 // TestClientAPIBlocksAndMutes checks that an account that blocks the viewer is not found
 // anywhere, as if it did not exist, and covers the block and mute lists.
 func TestClientAPIBlocksAndMutes(t *testing.T) {
+	t.Parallel()
 	e := newAccountsEnv(t)
 	alice, carol, dave := e.user("alice"), e.user("carol"), e.user("dave")
 	e.relate("follow", alice, carol, nil)

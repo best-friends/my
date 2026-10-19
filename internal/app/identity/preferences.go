@@ -20,14 +20,16 @@ import (
 type PreferencesRepository interface {
 	// InsertPreferences stores the preferences of a user who has none yet.
 	InsertPreferences(ctx context.Context, tx uow.Tx, p identity.Preferences) error
-	// UpdatePreferences replaces the stored preferences of p.UserID. It fails with an error
-	// wrapping ErrNotFound when the user has none.
+	// UpdatePreferences replaces the stored preferences of p.UserID, and stores p.TimeZone as
+	// the user's choice when p.TimeZoneChosen. It fails with an error wrapping ErrNotFound when
+	// the user has none.
 	UpdatePreferences(ctx context.Context, tx uow.Tx, p identity.Preferences) error
 	// ReplaceTimelineLanguages makes languages the user's timeline languages; an empty list
 	// removes them all.
 	ReplaceTimelineLanguages(ctx context.Context, tx uow.Tx, userID string, languages []string) error
 
-	// FindPreferences returns the preferences of a user.
+	// FindPreferences returns the preferences of a user, with identity.DefaultTimeZone and
+	// TimeZoneChosen false when the user has chosen no time zone.
 	FindPreferences(ctx context.Context, userID string) (identity.Preferences, error)
 	// ListTimelineLanguages returns the timeline languages of a user, sorted; none means all.
 	ListTimelineLanguages(ctx context.Context, userID string) ([]string, error)
@@ -89,6 +91,7 @@ func (s *Service) SetPreferences(ctx context.Context, userID string, in Preferen
 		UserID:                      userID,
 		Locale:                      locale,
 		TimeZone:                    in.TimeZone,
+		TimeZoneChosen:              true,
 		DefaultVisibility:           in.DefaultVisibility,
 		DefaultPostLanguage:         postLang,
 		RequireMediaDescription:     in.RequireMediaDescription,
@@ -170,7 +173,7 @@ func (s *Service) UpdatePreferences(ctx context.Context, userID string, in Prefe
 		if err := identity.ValidateTimeZone(*in.TimeZone); err != nil {
 			return UserPreferences{}, &PreferenceError{Preference: "time_zone", Err: err}
 		}
-		p.TimeZone = *in.TimeZone
+		p.TimeZone, p.TimeZoneChosen = *in.TimeZone, true
 	}
 	if in.DefaultVisibility != nil {
 		if err := identity.ValidateVisibility(*in.DefaultVisibility); err != nil {
@@ -262,7 +265,7 @@ func CanonicalLocale(tag string) (string, error) {
 }
 
 // defaultPreferences returns the preferences of a new user: the registration's locale or else
-// the instance default, UTC, and public posts in an undetermined language.
+// the instance default, no time zone chosen (UTC), and public posts in an undetermined language.
 func (s *Service) defaultPreferences(ctx context.Context, userID, locale string, now time.Time) (identity.Preferences, error) {
 	if locale == "" && s.d.DefaultLocale != nil {
 		var err error

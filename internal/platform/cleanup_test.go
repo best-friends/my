@@ -15,6 +15,7 @@ import (
 // The scheduler's first tick enqueues every periodic cleanup, and the key-value store's cleanup
 // removes the expired entries physically while it keeps the live ones.
 func TestSchedulerRunsTheCleanups(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_QUEUE": "inline"})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{})
 	if err != nil {

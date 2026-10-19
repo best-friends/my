@@ -74,9 +74,10 @@ func fetchObjectJob(p fetchObjectPayload) (queue.NewJob, error) {
 	return queue.NewJob{Type: JobFetchObject, Payload: payload, IdempotencyKey: "fetch_object:" + hex.EncodeToString(sum[:])}, nil
 }
 
-// RegisterJobs registers the handler of JobFetchObject.
+// RegisterJobs registers the handlers of JobFetchObject and JobFetchOutbox.
 func (h *StatusHandlers) RegisterJobs(r *queue.JobHandlerRegistry) {
 	r.Register(JobFetchObject, h.handleFetchObject)
+	r.Register(JobFetchOutbox, h.handleFetchOutbox)
 }
 
 // fetchParentTx enqueues in tx the fetch of the parent of a reply that was just ingested, when

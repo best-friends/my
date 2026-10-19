@@ -778,6 +778,15 @@ func (q *Queries) EraseUserPrimaryEmail(ctx context.Context, userID string) erro
 	return err
 }
 
+const eraseUserTimeZone = `-- name: EraseUserTimeZone :exec
+DELETE FROM user_time_zones WHERE user_id = $1
+`
+
+func (q *Queries) EraseUserTimeZone(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, eraseUserTimeZone, userID)
+	return err
+}
+
 const eraseUserTimelineLanguages = `-- name: EraseUserTimelineLanguages :exec
 DELETE FROM user_timeline_languages WHERE user_id = $1
 `
