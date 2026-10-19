@@ -136,7 +136,7 @@ func (s *Server) newAccount(a appaccount.Actor, parts accountParts) Account {
 	switch {
 	case a.Local != nil:
 		out.Username, out.Acct = a.Local.Username, a.Local.Username
-		out.Url = "https://" + s.o.Host + "/@" + a.Local.Username
+		out.Url = s.origin() + "/@" + a.Local.Username
 	case a.Handle != nil:
 		out.Username = a.Handle.Username
 		out.Acct = a.Handle.Username
@@ -376,6 +376,23 @@ func (s *Server) resolve(ctx context.Context, acct string) (a appaccount.Actor, 
 // isURL reports whether a lookup names an actor by URL rather than by handle.
 func isURL(acct string) bool {
 	return strings.HasPrefix(acct, "https://") || strings.HasPrefix(acct, "http://")
+}
+
+// origin is the origin of the links to the server's own pages (Options.Origin).
+func (s *Server) origin() string {
+	if s.o.Origin != "" {
+		return s.o.Origin
+	}
+	return "https://" + s.o.Host
+}
+
+// pageURL returns the link to the page of this instance that u, a URL under https://Host, names,
+// under origin; any other u is returned as it is.
+func (s *Server) pageURL(u string) string {
+	if rest, ok := strings.CutPrefix(u, "https://"+s.o.Host+"/"); ok {
+		return s.origin() + "/" + rest
+	}
+	return u
 }
 
 // accountDomain is the domain of local handles.

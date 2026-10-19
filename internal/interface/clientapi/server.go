@@ -24,6 +24,10 @@ type Options struct {
 	// AccountDomain is the domain of local handles (@alice@AccountDomain) when it differs
 	// from Host; "" means Host.
 	AccountDomain string
+	// Origin is the origin at which browsers reach the server's own pages, for the links that
+	// responses carry to them (Account.url of a local account, Status.url of a local status,
+	// StatusTag.url); "" means https://Host. The ActivityPub ids stay under https://Host.
+	Origin string
 	// SoftwareVersion is the server version.
 	SoftwareVersion string
 	// SourceURL is where users get the server's source code (ADR-0011).

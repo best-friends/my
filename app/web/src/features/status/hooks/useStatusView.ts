@@ -3,6 +3,7 @@
 // hook decides what to show and formats it; the component only places it. It returns no JSX.
 import { type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
 import { useConfig } from "../../../lib/config";
+import { useContentLinkClick } from "../../../lib/contentLinks";
 import { hostOf } from "../../../lib/host";
 import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
@@ -27,6 +28,8 @@ export type StatusView = {
   original: { href: string; host: string } | null;
   /** The body, as the server sanitized it. */
   html: SanitizedHtml;
+  /** Opens the links of the body to this instance's pages through the router (the body's `onLinkClick`). */
+  onLinkClick: (event: MouseEvent, link: HTMLAnchorElement) => void;
   /** The language of the post (BCP 47), or undefined when the server does not know it. */
   lang: string | undefined;
   /** The author's content warning, or null when there is none. */
@@ -75,6 +78,7 @@ export function useStatusView(status: Status): StatusView {
   const post = status.boost ?? status;
   const lang = post.language === "und" ? undefined : post.language;
   const time = useTimeView(post.created_at);
+  const onLinkClick = useContentLinkClick();
   return {
     boostedBy:
       status.boost === undefined ? null : { name: status.account.display_name || status.account.username, href: profilePath(status.account.acct) },
@@ -89,6 +93,7 @@ export function useStatusView(status: Status): StatusView {
     original: originalOf(post),
     // `content` is sanitized HTML (api/openapi.yaml, Status.content).
     html: serverSanitizedHtml(post.content),
+    onLinkClick,
     lang,
     contentWarning: post.spoiler_text === "" ? null : post.spoiler_text,
     media: mediaItems(post.media_attachments, lang),

@@ -77,7 +77,7 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
               ))}
             </ul>
           )}
-          {profile.note !== null && <PostContent html={profile.note} />}
+          {profile.note !== null && <PostContent html={profile.note} onLinkClick={profile.onLinkClick} />}
           {profile.fields.length > 0 && (
             <dl className="flex flex-col divide-y divide-border rounded-lg border border-border">
               {profile.fields.map((field) => (
@@ -86,7 +86,7 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
                     {field.name}
                   </dt>
                   <dd className="min-w-0">
-                    <PostContent html={field.value} />
+                    <PostContent html={field.value} onLinkClick={profile.onLinkClick} />
                   </dd>
                 </div>
               ))}

@@ -57,7 +57,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         revealLabel={t("client:timeline.media.reveal")}
       />
     ) : undefined;
-  const body = <PostContent html={view.html} lang={view.lang} {...(variant === "focused" && { className: "text-lg" })} />;
+  const body = <PostContent html={view.html} lang={view.lang} onLinkClick={view.onLinkClick} {...(variant === "focused" && { className: "text-lg" })} />;
   const time =
     variant === "focused" ? (
       // The relative time as everywhere else (G8); the full date is in the details.
