@@ -1,6 +1,6 @@
 # ADR-0045: キャッシュの方針（クライアントとサーバー）
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #485
@@ -58,9 +58,7 @@ S1 のいまの決まりは、書き込みごとに「どの画面のどのク�
 
 ## Decision（決定）
 
-> Proposed の間は推奨案。
-
-クライアントは選択肢 2、サーバーは選択肢 1 を推奨する。
+クライアントは選択肢 2、サーバーは選択肢 1 を採用する。
 
 ### クライアント（TanStack Query と TanStack Router）
 
@@ -92,7 +90,7 @@ S1 のいまの決まりは、書き込みごとに「どの画面のどのク�
 すべてのデータに共通:
 
 - 利用者が変わったら全部を捨てる（`removeQueries`、いまどおり）。表示言語が変わったら全部に印を付ける（いまどおり）。
-- 別のタブ・別の端末での書き込みは知らせない（v0）。次に画面を開いたときに、`staleTime` を過ぎていれば裏で取り直す。
+- 別のタブ・別の端末での書き込みは知らせない（v0。`BroadcastChannel` などでタブの間に知らせる仕組みは持たない）。次に画面を開いたときに、`staleTime` を過ぎていれば裏で取り直す。
 
 ### サーバー
 
@@ -122,7 +120,7 @@ S1 のいまの決まりは、書き込みごとに「どの画面のどのク�
 - 後続の作業:
   - #504: いまの S1 に合わせて、投稿・関係の変更のあとに表示していない一覧も取り直す（すぐ直す不具合）
   - #505: プロフィールの保存で、閲覧者のアカウントと埋め込みアカウントを更新する（すぐ直す不具合）
-  - この ADR が受け入れられたら: loader の `staleTime: "static"` を `Infinity` に、`defaultStaleReloadMode: "blocking"` を置き、`refreshQueries` を印付けに戻し、web-client.md S1・S7 をこの方針に書き換えるタスクを作る
+  - loader の `staleTime: "static"` を `Infinity` にし、`defaultStaleReloadMode: "blocking"` を置き、`refreshQueries` を印付けに戻す（web-client.md S1・S7 はこの方針で書いてある）
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
@@ -145,4 +143,3 @@ S1 のいまの決まりは、書き込みごとに「どの画面のどのク�
 ## Open Questions / 要検証
 
 - 印の付いた無限スクロールの一覧を、読み込んだ全ページでなく最初のページから取り直すか（ホームの「N 件の新しい投稿」と同じく先頭のページだけにする。戻ったときのスクロール位置との兼ね合い）
-- 別のタブでの書き込みを `BroadcastChannel` で知らせるか（v0 では知らせない）

@@ -32,13 +32,13 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行い、成功時にキャッシュを無効化または更新する。いま表示していない画面のクエリで、その画面のルートが loader で読むもの（S7 の `staleTime: "static"` は無効化の印を見ずにキャッシュをそのまま返す）は、`invalidateQueries({ ..., refetchType: "all" })` で取り直し、終わるのを待ってから書き込みを成功として表示する（管理画面は `features/admin/api/admin.ts` の `refreshQueries` で行う。例: `refreshReportLists`・`refreshAppealLists`・`refreshAdminAccount`。監査ログに記録される書き込みは `refreshAuditLog` で監査ログも取り直す） | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
+| S1 | サーバーのデータは TanStack Query だけで扱う。取得は `features/<x>/api` の `queryOptions`、書き込みは `useMutation` で行う。成功時に、応答で確かに分かる変化（投稿・閲覧者・関係・設定）は `setQueryData` / `updateCachedStatuses` でキャッシュに書き、並びや件数が変わり得る一覧・件数には `invalidateQueries`（既定の `refetchType: "active"`）で無効化の印を付ける。表示していないクエリは、次にその画面を開いたときに loader が取り直して待つ（S7）ので、取り直さない。書き込みの成功表示は、表示中のクエリの取り直しを待ってから出す（`await invalidateQueries(...)`）。書き込みが変えるクエリは、その書き込みの関数の隣（`features/<x>/api` のキャッシュ更新関数。例: `cachePostedStatus`）に書き、部品の `onSuccess` はそれを呼ぶ。データの種類ごとの方針は [ADR-0045](../adr/0045-client-server-cache-policy.md) | `features/*/api` と `lib/` の外で `no-restricted-imports`（`openapi-fetch`・`openapi-react-query`・`lib/api`）・`no-restricted-globals` / `no-restricted-properties`（`fetch`）、`@tanstack/eslint-plugin-query` の `flat/recommended-strict`（`@tanstack/query/exhaustive-deps`・`@tanstack/query/prefer-query-options` など） |
 | S2 | サーバーのデータを `useState`・Context・グローバルストアにコピーしない | レビュー |
 | S3 | 共有・リロード・戻る / 進むで保ちたい状態（タイムラインの種類・タブ・検索語・開いているメディア）は URL に置き、Zod で検証する | TanStack Router の型 |
 | S4 | 状態は使う場所の近くに置き、必要なときだけ最も近い共通の親に持ち上げる | レビュー |
 | S5 | 状態は判別可能なユニオンで表す（`{ status: 'idle' } \| { status: 'error'; error: Problem }`）。矛盾し得る真偽値を並べない | レビュー |
 | S6 | Context は、変化の少ない値（閲覧者・ロケール・テーマ・複合部品の内部）にだけ使い、更新頻度ごとに分ける | レビュー |
-| S7 | ルートは薄くする。パラメータと検索条件を取り出し、loader でキャッシュになければ取得して（`queryClient.query({ ...options, staleTime: "static" })`。無限スクロールは `queryClient.infiniteQuery`。非推奨の `ensureQueryData` は使わない）から機能の部品を表示する | `@tanstack/eslint-plugin-router` の `flat/recommended`（`@tanstack/router/create-route-property-order` など）、レビュー |
+| S7 | ルートは薄くする。パラメータと検索条件を取り出し、loader で、キャッシュにないか無効化されていれば取得して待ち（`queryClient.query({ ...options, staleTime: Infinity })`。無限スクロールは `queryClient.infiniteQuery`。無効化の印を見ない `staleTime: "static"` と、非推奨の `ensureQueryData` は使わない）、それから機能の部品を表示する。ルーターは `defaultStaleReloadMode: "blocking"` で、前に訪れたルートでも loader の終わりを待って描画する（ADR-0045） | `@tanstack/eslint-plugin-router` の `flat/recommended`（`@tanstack/router/create-route-property-order` など）、レビュー |
 | S8 | 楽観的更新は、まず保留中の mutation の `variables` を表示する方式にする。複数の画面に反映が要るときだけ、キャッシュを書き換えて失敗時に戻す | レビュー |
 | S9 | API の型は OpenAPI からの生成物だけを使う。同じ型を手で書かない | 生成物の差分検査（ADR-0029） |
 | S10 | SSE の購読は `lib/sse` の 1 つの Effect だけが行い、受け取った内容を Query のキャッシュに書き込む | レビュー |
