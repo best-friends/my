@@ -36,10 +36,7 @@ const latency = 800;
 
 const pageHeading = (page: Page) => page.getByRole("main").getByRole("heading", { level: 1 });
 
-/**
- * Signs in through the server's screen, and makes the project's locale the user's display language and English
- * the language of their posts.
- */
+/** Signs in through the server's screen, and makes the project's locale the user's display language. */
 async function signIn(page: Page, email: string, password: string): Promise<void> {
   await page.goto("/login");
   await expect(pageHeading(page)).toBeVisible();
@@ -53,10 +50,7 @@ async function signIn(page: Page, email: string, password: string): Promise<void
   const authorization = (await authorized).headers()["authorization"] ?? "";
   await expect(page).toHaveURL(`${serverURL}/home`);
   const locale = projectLocale();
-  const response = await page.request.patch(`${serverURL}/api/v1/preferences`, {
-    headers: { Authorization: authorization },
-    data: { locale, default_post_language: "en" },
-  });
+  const response = await page.request.patch(`${serverURL}/api/v1/preferences`, { headers: { Authorization: authorization }, data: { locale } });
   expect(response.ok(), `PATCH /api/v1/preferences: ${String(response.status())}`).toBe(true);
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("dir", localeDir(locale));
@@ -71,6 +65,13 @@ async function newUser(page: Page, prefix: string): Promise<string> {
   runMy(["admin", "create", "-username", username, "-email", email], `${password}\n`);
   await signIn(page, email, password);
   return username;
+}
+
+/** The Authorization header that the app sends with its next request to the client API. */
+function nextAuthorization(page: Page): Promise<string> {
+  return page
+    .waitForRequest((request) => new URL(request.url()).pathname.startsWith("/api/") && request.headers()["authorization"]?.startsWith("Bearer ") === true)
+    .then((request) => request.headers()["authorization"] ?? "");
 }
 
 /** Makes every GET of the client API but the stream take `latency` ms more. */
@@ -178,9 +179,17 @@ test("a change of the timeline languages is on the local timeline from the momen
   const username = await newUser(page, "e2e_langs");
   await slowDown(page);
 
-  // The local timeline has the user's post in English, and its list is cached.
+  // The local timeline has the user's post in English, and its list is cached. The post names its language: one
+  // of undetermined language is on every timeline whatever the timeline languages (data-model.md, FR-208).
   const text = `in English ${username}`;
-  await post(page, text);
+  const authorized = nextAuthorization(page);
+  await openFromNavigation(page, "/profile", touch);
+  const authorization = await authorized;
+  const posted = await page.request.post(`${serverURL}/api/v1/statuses`, {
+    headers: { Authorization: authorization, "Idempotency-Key": `e2e-${username}` },
+    data: { text, visibility: "public", language: "en" },
+  });
+  expect(posted.ok(), `POST /api/v1/statuses: ${String(posted.status())}`).toBe(true);
   await openFromNavigation(page, "/local", touch);
   await expect(pageHeading(page)).toHaveText(message("local.title"));
   await expect(page.getByRole("feed").getByRole("article").filter({ hasText: text })).toBeVisible({ timeout: latency * 10 });
@@ -191,7 +200,9 @@ test("a change of the timeline languages is on the local timeline from the momen
   await expect(pageHeading(page)).toHaveText(message("settings.preferences.title"));
   const german = await page.evaluate(() => new Intl.DisplayNames([document.documentElement.lang], { type: "language" }).of("de") ?? "de");
   const languages = page.getByRole("group", { name: message("settings.timeline_languages.label") });
-  await languages.getByRole("checkbox", { name: german, exact: true }).check();
+  // The checkbox is visually hidden behind its box; its label is what a pointer presses.
+  await languages.getByText(german, { exact: true }).click();
+  await expect(languages.getByRole("checkbox", { name: german, exact: true })).toBeChecked();
   await expect(page.getByText(message("settings.saved")).first()).toBeVisible({ timeout: latency * 10 });
 
   // A render of the local timeline with the English post would be a stale list.
