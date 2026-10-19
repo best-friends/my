@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useApi, useSessionStatus } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
+import { shellQueryRetry } from "../../../lib/query";
 import { type Account, viewerQueryOptions } from "../api/viewer";
 
 /** Who is using the app. */
@@ -13,13 +14,17 @@ export type Viewer =
   /** Signed in, but the account could not be loaded; `message` is localized. `isRetrying` while `retry` loads it again. */
   | { status: "error"; message: string; retry: () => void; isRetrying: boolean };
 
-/** Returns the viewer: the session's status and, once signed in, the account from the API. */
+/**
+ * Returns the viewer: the session's status and, once signed in, the account from the API. The app shell reads it
+ * on every page, so an account loaded before stays the viewer while a refetch fails (a 429 of the rate limit, say).
+ */
 export function useViewer(): Viewer {
   const api = useApi();
   const status = useSessionStatus();
-  const account = useQuery({ ...viewerQueryOptions(api), enabled: status === "signed-in" });
+  const account = useQuery({ ...viewerQueryOptions(api), enabled: status === "signed-in", retry: shellQueryRetry });
   if (status === "signed-out") return { status: "signed-out" };
   if (status === "unknown") return { status: "loading" };
+  if (account.data !== undefined) return { status: "signed-in", account: account.data };
   if (account.isError) {
     return {
       status: "error",
@@ -30,6 +35,5 @@ export function useViewer(): Viewer {
       isRetrying: account.isFetching,
     };
   }
-  if (account.data === undefined) return { status: "loading" };
-  return { status: "signed-in", account: account.data };
+  return { status: "loading" };
 }

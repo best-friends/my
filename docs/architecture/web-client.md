@@ -208,14 +208,16 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
     これを止める手段はなく、外枠の CSP がこの `<style>` を拒むので、iOS では overlay を開くたびに CSP の違反が 1 件報告される。この報告は受け入れ、CSP（ADR-0019 §9）は変えない。
     代わりに `@my/ui` の Dialog / Sheet / Popover / Select / Menu は、スクロールする面に `overscroll-contain` を自分で付け、overlay の中のスクロールがページに伝わらないようにする。overlay の中に別のスクロールする領域を作るときも、その領域に `overscroll-contain` を付ける。
     Chromium はこの経路を通らないので、`e2e/csp.spec.ts` はこの違反を検出しない。
-- **起動**（`main.tsx`）: サーバーが外枠に書いた `<html lang>` から、カタログのある最も近いロケールを決め（`ja-JP` → `ja`、ない言語は `en`）、`<html>` の `lang` / `dir` をそれに合わせる。
+- **起動**（`main.tsx`）: このブラウザで最後に表示したロケール（localStorage の `my:display:locale`）か、なければサーバーが外枠に書いた `<html lang>`（インスタンスのロケール）から、
+  カタログのある最も近いロケールを決め（`ja-JP` → `ja`、ない言語は `en`）、`<html>` の `lang` / `dir` をそれに合わせる（`lib/locale.tsx` の `loadStartI18n`）。
   次に `<script type="application/json" id="config">` のランタイム設定を Zod で検証して読む（`lib/config`、`useConfig()`）。読めなければアプリの代わりに起動エラーの画面を出す。
   読めたら、表示のロケール・QueryClient・セッション・API クライアント（`lib/services.ts`）を作り、リフレッシュトークンの Cookie からセッションを再開し始める（§10）。
 - **表示のロケールとタイムゾーン**（`lib/locale.tsx`、FR-007）: ページを開いている間に変わるので、React の外のストア（`AppLocale`、`useSyncExternalStore` で読む）に置く。
   サインインした利用者の設定（`GET /preferences`）を読むと、外枠（`AppLayout` が呼ぶ `features/settings` の `useUserDisplaySettings`）がその `locale` と `time_zone` をストアに渡す。
   ストアはそのロケールのカタログを読み込んでから `<html>` の `lang` / `dir` を変え、i18n のプロバイダを描画し直す。読み込みが前後したときは最後に頼んだロケールが勝つ。
   タイムゾーンは `react-intl` の `timeZone` になる。ロケールが変わると、サーバーが `Accept-Language` で訳した内容を取り直すために、Query をすべて無効にする。
-  サインインしていないときと設定を読むまでは、サーバーのロケールのままになる。表示言語の選択肢は、カタログのあるロケール（疑似ロケールは、今それで表示しているときだけ）を、それぞれの言語の名前で並べる。
+  ストアは決めたロケールを `my:display:locale` に残す。設定を読むまでと、設定が読めないとき（429 を含む）とサインインしていないときは、最後に表示したロケール（初めてのブラウザではサーバーのロケール）のままになり、`<html lang>` も戻さない。
+  このキーはこのブラウザでの表示のしかたで、利用者のデータではないので、セッションが終わっても消さない。次の利用者の設定が読めればそれに替わる。タイムゾーンは残さず、設定を読むまではブラウザのものになる。表示言語の選択肢は、カタログのあるロケール（疑似ロケールは、今それで表示しているときだけ）を、それぞれの言語の名前で並べる。
   タイムゾーンの選択肢は、表示中のロケールの CLDR の名前（`Intl.DisplayNames` にタイムゾーンの種類はないので、`Intl.DateTimeFormat` の `timeZoneName: "longGeneric"`。名前のないゾーンは UTC からの差だけ）に、
   画面を開いた時点の UTC からの差を付けて「（UTC+09:00）日本標準時」と出し、その差と名前の順に並べる。IANA の名前（`Asia/Tokyo`）は、同じ名前のゾーンを見分けるための選択肢の説明（`SelectItem` の `description`）にする。
 - **未保存の変更**: プロフィールの編集のように、まとめて保存するフォームは、保存していない変更があるまま別の画面へ移るとき（検索条件とハッシュだけの変化は除く）に、TanStack Router の `useBlocker`（`withResolver`）で遷移を止め、
@@ -274,6 +276,15 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
   - オンラインに戻ると、失敗していた query（表示中のもの）だけを取り直す（既定の `refetchOnReconnect` が失敗した query にだけ `"always"` を返す）。タイムラインは自分で `refetchOnReconnect: false` にしているので取り直さない（§10）。
     `NetworkError` で失敗した画面は、`RouteError` がオンラインに戻ったときに「もう一度試す」と同じことをして読み込み直す。
   - 通知の画面の loader は失敗しても画面を開き、一覧が見出しの下に自分の失敗を出す（`useNotifications`。読み込みの失敗はマウントで再試行しない）。
+- **外枠の読み込み**: 外枠はどの画面でも、閲覧者（`GET /accounts/verify_credentials`、`useViewer`）・設定（`GET /preferences`、`useUserDisplaySettings`）・インスタンス（`GET /instance`、`useTimelineAvailability`）・
+  通知の既読位置（`GET /notifications/marker`、`useUnreadNotificationCount`）を読む。どれが失敗しても画面全体のエラーにはせず、前に読めた値（Query のキャッシュ）か既定の値（閲覧者は読み込み中か `AccountSection` の区画のエラー、
+  表示言語は上の「表示のロケール」、タイムラインは localStorage の値、未読数は 0）で表示を続ける。閲覧者は、前に読めたアカウントがあれば再取得が失敗してもサインイン中のままにする。
+  これらの query の `retry` は `lib/query.ts` の `shellQueryRetry` にする（loader は再試行しないまま）。同じものを外枠と同時に読む投稿フォーム（`useComposeForm`）は `shellQueryReader` で、さらに `retryOnMount: false` にし、外枠がすでに知っている失敗をマウントのたびに取り直さない（429 の制限を使い増やさず、帯も消えて出直さない）。4xx（429 を含む）は再試行せず、それ以外（5xx・`NetworkError`）は 1 回だけ再試行するので、失敗は約 1 秒で区画に出る。
+- **レート制限**（`lib/rateLimit.ts`）: サーバーのレート制限の 429 は `Retry-After`（秒数か HTTP の日付）を持つ。API クライアントはそれを `ApiError` の `retryAt`（時刻）にし、`rateLimitedUntil(error)` が 429 のときだけそれを返す。
+  レイアウトの `useRateLimitRetry` が、画面で使っている query（observer のあるもの）のうち 429 で失敗して止まっているものを Query のキャッシュから探し、その最も遅い `retryAt` に、それらを取り直す（時刻が理由なので Effect のタイマー）。
+  その間、オフラインの帯（`ConnectionBanner` が出す 1 つの `OfflineBanner`）に、リクエストが多すぎることと、読み込み直す時刻（秒まで）を出す。オフラインのときはオフラインの文言を優先する。
+  `src/shell.test.tsx` が外枠の 4 つの要求の失敗（5xx と 429）・前の値の保持・再読み込み後の表示言語・429 の帯とその時刻での取り直し・アカウントの区画の再試行を MSW で検査し、
+  `e2e/rate-limit.spec.ts` が 429 の帯の axe・横スクロール・ARIA スナップショットと、時刻での取り直しを検査する。
 
 ## 10. API クライアントと認証
 

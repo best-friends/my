@@ -20,15 +20,41 @@ export class ApiError extends Error implements Problem {
   readonly status: number;
   readonly detail?: string;
   readonly request_id?: string;
+  /**
+   * When the server takes the request again (ms since the epoch), from the response's Retry-After: a 429 of the
+   * rate limit says when the limit lets a request through.
+   */
+  readonly retryAt?: number;
 
-  constructor(problem: Problem) {
+  constructor(problem: Problem, { retryAt }: { retryAt?: number | undefined } = {}) {
     super(problem.detail ?? problem.title);
     this.type = problem.type;
     this.title = problem.title;
     this.status = problem.status;
     if (problem.detail !== undefined) this.detail = problem.detail;
     if (problem.request_id !== undefined) this.request_id = problem.request_id;
+    if (retryAt !== undefined) this.retryAt = retryAt;
   }
+}
+
+/**
+ * When the request that failed with `error` may be sent again, if it failed because the server limits how many
+ * requests the user sends (429 Too Many Requests with Retry-After); undefined for any other error.
+ */
+export function rateLimitedUntil(error: unknown): number | undefined {
+  return error instanceof ApiError && error.status === 429 ? error.retryAt : undefined;
+}
+
+/**
+ * The time a Retry-After value (RFC 9110 §10.2.3) names, in ms since the epoch: a number of seconds after `now`,
+ * or an HTTP-date. Undefined when the value is neither.
+ */
+function retryAfterTime(value: string | null, now: number): number | undefined {
+  if (value === null) return undefined;
+  const trimmed = value.trim();
+  if (/^\d+$/.test(trimmed)) return now + Number(trimmed) * 1000;
+  const date = Date.parse(trimmed);
+  return Number.isNaN(date) ? undefined : date;
 }
 
 /**
@@ -79,14 +105,15 @@ function isProblem(value: unknown): value is Problem {
  * HTML page, say) becomes an `about:blank` problem titled from the client's catalog.
  */
 export async function apiErrorFromResponse(response: Response, t: Translate): Promise<ApiError> {
+  const options = { retryAt: retryAfterTime(response.headers.get("Retry-After"), Date.now()) };
   const mediaType = response.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase();
   if (mediaType === "application/problem+json") {
     try {
       const body: unknown = await response.json();
-      if (isProblem(body)) return new ApiError(body);
+      if (isProblem(body)) return new ApiError(body, options);
     } catch {
       // Not JSON after all; described by its status below.
     }
   }
-  return new ApiError({ type: "about:blank", title: t("client:api.error.status", { status: String(response.status) }), status: response.status });
+  return new ApiError({ type: "about:blank", title: t("client:api.error.status", { status: String(response.status) }), status: response.status }, options);
 }
