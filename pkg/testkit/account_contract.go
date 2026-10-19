@@ -116,6 +116,12 @@ func newAccountEnv(t *testing.T, newHarness AccountFactory, register ...func(*uo
 	t.Helper()
 	projectors := &uow.Projectors{}
 	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
+	return newAccountEnvOn(h, projectors, register...)
+}
+
+// newAccountEnvOn wires the use cases onto a harness whose UnitOfWork runs projectors;
+// register adds projectors after the account module's.
+func newAccountEnvOn(h AccountHarness, projectors *uow.Projectors, register ...func(*uow.Projectors)) *accountEnv {
 	appaccount.RegisterProjectors(projectors, h.Accounts)
 	for _, r := range register {
 		r(projectors)

@@ -13,6 +13,7 @@ export type NotificationType = components["schemas"]["NotificationType"];
 export type NotificationMarker = components["schemas"]["NotificationMarker"];
 export type NotificationAccount = components["schemas"]["Account"];
 export type NotificationStatus = components["schemas"]["Status"];
+export type ModerationAction = components["schemas"]["ModerationAction"];
 
 /** The filters of the notifications page, in the order of its tabs; `all` sends no `types`. */
 export const notificationFilters = ["all", "mentions", "follows", "boosts", "favourites"] as const;

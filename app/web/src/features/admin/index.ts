@@ -4,7 +4,8 @@
 // running them again, the audit log (FR-704), the review of registrations awaiting approval (FR-721), and the
 // review of appeals of moderation actions (FR-707). Each
 // screen is for a viewer whose roles have its permission (manage_domains, manage_jobs, view_audit,
-// manage_accounts); the server checks it on every request.
+// manage_accounts); the server checks it on every request. The navigation's admin entry and the menu show
+// what awaits the moderators (FR-712).
 // Routes and other features use it through this file only (web-client.md A3).
 export {
   auditActions,
@@ -24,13 +25,15 @@ export {
   isMissingPermission,
   type Permission,
 } from "./api/admin";
-export { AdminMenu } from "./components/AdminMenu";
+export { refreshAdminCounts } from "./api/counts";
+export { AdminMenu, AdminPages } from "./components/AdminMenu";
 export { AuditLog } from "./components/AuditLog";
 export { DeadJobList } from "./components/DeadJobList";
 export { DomainActions } from "./components/DomainActions";
 export { InstanceDetail } from "./components/InstanceDetail";
 export { InstanceList } from "./components/InstanceList";
 export { RegistrationList } from "./components/RegistrationList";
+export { useAdminEntry } from "./hooks/useAdminCounts";
 export { registrationsQueryOptions } from "./api/registrations";
 export { DomainName, MissingPermission } from "./components/parts";
 // The report queue and a report's page (FR-701, FR-710, NFR-MOD-4), for manage_reports.

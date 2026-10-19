@@ -48,6 +48,11 @@ export function registrationFixture(overrides: Partial<Schemas["AdminRegistratio
   };
 }
 
+/** GET /admin/counts answering `counts`, the counts that the viewer's permissions allow. */
+export function countsHandler(counts: Schemas["AdminCounts"]) {
+  return http.get(`${apiBase}/admin/counts`, ({ request }) => withViewer(request, () => HttpResponse.json(counts)));
+}
+
 /**
  * An open report by Carol of another server on Bob, filed on 2026-10-16 with one post and no notes, as the server
  * answers it; `overrides` replace its fields.
@@ -144,6 +149,8 @@ function isId(segment: string): boolean {
 }
 
 export const handlers = [
+  // operationId getAdminCounts: nothing awaits the moderators.
+  countsHandler({}),
   // operationIds listInstanceHealth, getInstanceHealth, listInstanceAvailabilityEvents, markInstanceAvailable.
   http.get(`${apiBase}/admin/instances`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.get(`${apiBase}/admin/instances/:domain`, ({ request, params }) => withViewer(request, () => HttpResponse.json(availableHealth(String(params["domain"]))))),

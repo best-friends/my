@@ -21,6 +21,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as AtChar123acctChar125IdRouteImport } from './routes/@{$acct}_.$id'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAppealsRouteImport } from './routes/admin.appeals'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
@@ -102,6 +103,11 @@ const AtChar123acctChar125FollowingRoute =
     path: '/@{$acct}/following',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAppealsRoute = AdminAppealsRouteImport.update({
   id: '/admin/appeals',
   path: '/admin/appeals',
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
@@ -252,6 +259,7 @@ export interface FileRoutesByTo {
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/admin': typeof AdminIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/admin/appeals_/$id': typeof AdminAppealsIdRoute
   '/admin/instances_/$domain': typeof AdminInstancesDomainRoute
@@ -319,6 +328,7 @@ export interface FileRouteTypes {
     | '/settings/preferences'
     | '/settings/profile'
     | '/tags/$tag'
+    | '/admin/'
     | '/settings/'
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
@@ -351,6 +361,7 @@ export interface FileRouteTypes {
     | '/settings/preferences'
     | '/settings/profile'
     | '/tags/$tag'
+    | '/admin'
     | '/settings'
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
@@ -383,6 +394,7 @@ export interface FileRouteTypes {
     | '/settings/preferences'
     | '/settings/profile'
     | '/tags/$tag'
+    | '/admin/'
     | '/settings/'
     | '/admin/appeals_/$id'
     | '/admin/instances_/$domain'
@@ -416,6 +428,7 @@ export interface RootRouteChildren {
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   TagsTagRoute: typeof TagsTagRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   AdminAppealsIdRoute: typeof AdminAppealsIdRoute
   AdminInstancesDomainRoute: typeof AdminInstancesDomainRoute
@@ -506,6 +519,13 @@ declare module '@tanstack/react-router' {
       path: '/@{$acct}/following'
       fullPath: '/@{$acct}/following'
       preLoaderRoute: typeof AtChar123acctChar125FollowingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/appeals': {
@@ -664,6 +684,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   TagsTagRoute: TagsTagRoute,
+  AdminIndexRoute: AdminIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   AdminAppealsIdRoute: AdminAppealsIdRoute,
   AdminInstancesDomainRoute: AdminInstancesDomainRoute,
