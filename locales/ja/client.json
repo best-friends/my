@@ -183,6 +183,10 @@
     "defaultMessage": "{target}への操作だけを表示",
     "description": "Link in an audit log entry that keeps only the operations on its target. {target} is the target’s name, such as @alice or a domain."
   },
+  "admin.audit_log.summary": {
+    "defaultMessage": "管理で、いつ誰が何をしたかの記録。",
+    "description": "Description of the audit log screen in the administration menu."
+  },
   "admin.audit_log.target_kind.account": {
     "defaultMessage": "アカウント",
     "description": "A kind of target of audited operations, also the term of the target in an entry."
@@ -822,6 +826,10 @@
   "admin.registrations.submitted_at": {
     "defaultMessage": "登録日時",
     "description": "Term of when the applicant signed up."
+  },
+  "admin.registrations.summary": {
+    "defaultMessage": "承認を待っている登録と、その承認・却下。",
+    "description": "Description of the registration review screen in the administration menu."
   },
   "admin.registrations.title": {
     "defaultMessage": "登録の審査",

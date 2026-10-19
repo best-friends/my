@@ -183,6 +183,10 @@
     "defaultMessage": "[Şħǿǿẇ ǿǿƞŀẏ ǿǿƥḗḗřȧȧŧīǿǿƞş ǿǿƞ {target}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.summary": {
+    "defaultMessage": "[Ẇħǿǿ ḓīḓ ẇħȧȧŧ īƞ ŧħḗḗ ȧȧḓḿīƞīşŧřȧȧŧīǿǿƞ, ȧȧƞḓ ẇħḗḗƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.target_kind.account": {
     "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -821,6 +825,10 @@
   },
   "admin.registrations.submitted_at": {
     "defaultMessage": "[Şīɠƞḗḗḓ ŭŭƥ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.summary": {
+    "defaultMessage": "[Şīɠƞ-ŭŭƥş ŧħȧȧŧ ȧȧẇȧȧīŧ ȧȧƥƥřǿǿṽȧȧŀ, ȧȧƞḓ ȧȧƥƥřǿǿṽīƞɠ ǿǿř řḗḗĵḗḗƈŧīƞɠ ŧħḗḗḿ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.registrations.title": {

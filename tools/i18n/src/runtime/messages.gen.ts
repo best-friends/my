@@ -94,6 +94,8 @@ export interface MessageArgs {
   "client:admin.audit_log.only_actor": { name: string };
   /** Show only operations on {target} */
   "client:admin.audit_log.only_target": { target: string };
+  /** Who did what in the administration, and when. */
+  "client:admin.audit_log.summary": {};
   /** Account */
   "client:admin.audit_log.target_kind.account": {};
   /** Appeal */
@@ -414,6 +416,8 @@ export interface MessageArgs {
   "client:admin.registrations.rejected": { applicant: string };
   /** Signed up */
   "client:admin.registrations.submitted_at": {};
+  /** Sign-ups that await approval, and approving or rejecting them. */
+  "client:admin.registrations.summary": {};
   /** Registrations */
   "client:admin.registrations.title": {};
   /** Could not reach the server. Check your connection and try again. */

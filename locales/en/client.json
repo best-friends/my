@@ -183,6 +183,10 @@
     "defaultMessage": "Show only operations on {target}",
     "description": "Link in an audit log entry that keeps only the operations on its target. {target} is the target’s name, such as @alice or a domain."
   },
+  "admin.audit_log.summary": {
+    "defaultMessage": "Who did what in the administration, and when.",
+    "description": "Description of the audit log screen in the administration menu."
+  },
   "admin.audit_log.target_kind.account": {
     "defaultMessage": "Account",
     "description": "A kind of target of audited operations, also the term of the target in an entry."
@@ -822,6 +826,10 @@
   "admin.registrations.submitted_at": {
     "defaultMessage": "Signed up",
     "description": "Term of when the applicant signed up."
+  },
+  "admin.registrations.summary": {
+    "defaultMessage": "Sign-ups that await approval, and approving or rejecting them.",
+    "description": "Description of the registration review screen in the administration menu."
   },
   "admin.registrations.title": {
     "defaultMessage": "Registrations",
