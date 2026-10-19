@@ -61,4 +61,5 @@
 | [0047](0047-ci-protection-layers.md) | CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける | Accepted |
 | [0048](0048-typescript-7-with-typescript-6-api.md) | 型検査を TypeScript 7 にし、コンパイラ API を使うツールには TypeScript 6 を並べる | Accepted |
 | [0049](0049-client-lint-oxlint.md) | クライアントの lint を ESLint から Oxlint に移す | Accepted |
+| [0050](0050-stream-pubsub-across-processes.md) | リアルタイム更新のプロセス間 Pub/Sub | Proposed |
 <!-- adr-index:end -->
