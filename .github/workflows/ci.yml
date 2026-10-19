@@ -1,5 +1,10 @@
 name: CI
 
+# The entry of the pull request and merge queue checks (ADR-0047): `changes` selects the contexts of `make check` the
+# change touches, one job per context calls that context's reusable workflow (ctx-<context>.yml), and `check`
+# collects their results into the single required status check. The workflow has no path filter, so it always runs
+# and `check` always reports. Pushes to main also run the post-merge suites (postgres-contract, web-e2e).
+
 on:
   pull_request:
   push:
@@ -17,10 +22,6 @@ concurrency:
   # its own (gh-readonly-queue/main/...) and is never cancelled here: the merge queue replaces the groups it rebuilds.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  # Use exactly the Go version from .tool-versions; never auto-download another toolchain.
-  GOTOOLCHAIN: local
-
 jobs:
   # `make check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request or
   # the merge group touches that context or one it depends on. A change to shared configuration and every push to
@@ -37,6 +38,8 @@ jobs:
       docker: ${{ steps.contexts.outputs.docker }}
       shell: ${{ steps.contexts.outputs.shell }}
       schema: ${{ steps.contexts.outputs.schema }}
+      # The input `scope` of the ctx-*.yml: `queue` in the merge queue, `pr` on pull requests and main pushes.
+      scope: ${{ github.event_name == 'merge_group' && 'queue' || 'pr' }}
     steps:
       # A pull request checks out its merge commit, whose first parent is the base branch. A merge group checks out
       # its head commit and compares it with its base, the main commit the group is built on; that base is fetched by
@@ -66,230 +69,82 @@ jobs:
             if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
           done
 
+  # One job per context, each calling the context's reusable workflow. A job whose `if` is false is skipped, and
+  # `check` counts a skipped job as passed. Inside a called workflow `github` is this workflow's context (so
+  # github.event_name is this run's event), but this workflow's `env` does not reach it: the ctx-*.yml set their own.
   docs:
     needs: changes
     if: needs.changes.outputs.docs == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .tool-versions
-      - name: Cache Bun packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-      - name: make docs-check
-        run: make docs-check
+    uses: ./.github/workflows/ctx-docs.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
 
   go:
-    # go-check except go-test (the go-test job).
     needs: changes
     if: needs.changes.outputs.go == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      # setup-go's own cache is keyed on go.sum alone and never refreshed. This one is saved on every push to main
-      # and restored by pull requests, so the build and go test results of unchanged packages stay cached.
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-lint-${{ runner.os }}-
-      - name: Verify Go version matches .tool-versions
-        run: |
-          want="go$(awk '$1 == "golang" { print $2 }' .tool-versions)"
-          got="$(go env GOVERSION)"
-          echo "want=${want} got=${got}"
-          test "${want}" = "${got}"
-      - name: Read tool versions from .tool-versions
-        id: tools
-        run: echo "golangci-lint=$(awk '$1 == "golangci-lint" { print $2 }' .tool-versions)" >> "$GITHUB_OUTPUT"
-      # The official action installs the prebuilt binary, caches lint results and annotates the PR.
-      # It also puts golangci-lint on PATH, so `make go-lint` reuses the binary and the cache.
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-        with:
-          version: v${{ steps.tools.outputs.golangci-lint }}
-      - name: make go-check (except go-test)
-        run: make go-mod-check go-vet go-lint go-build go-licenses sqlc-check
-      - name: Save the Go module and build cache
-        if: github.event_name == 'push'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-
-  go-test:
-    needs: changes
-    if: needs.changes.outputs.go == 'true'
-    # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); the postgres-contract
-    # job runs them on a real postgres container on pushes to main.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      # The same cache as the go job's, of the test builds and results.
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-test-${{ runner.os }}-
-      - name: make go-test
-        run: make go-test
-      - name: Save the Go module and build cache
-        if: github.event_name == 'push'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+    uses: ./.github/workflows/ctx-go.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
 
   i18n:
     needs: changes
     if: needs.changes.outputs.i18n == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .tool-versions
-      - name: Cache Bun packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-      - name: make i18n-check
-        run: make i18n-check
+    uses: ./.github/workflows/ctx-i18n.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
 
   api:
     needs: changes
     if: needs.changes.outputs.api == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .tool-versions
-      - name: Cache Bun packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-      # openapi-typescript runs on Node.js (ADR-0025).
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .tool-versions
-      # oapi-codegen and securitygen are Go: restore the go job's cache from main, without saving one.
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-lint-${{ runner.os }}-
-      - name: make api-check
-        run: make api-check
-
-  ui:
-    needs: changes
-    if: needs.changes.outputs.ui == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .tool-versions
-      - name: Cache Bun packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-      # Vitest runs on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .tool-versions
-      - name: make ui-check
-        run: make ui-check
+    uses: ./.github/workflows/ctx-api.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
 
   web:
+    # The ui context (ui-check and the ui-test story tests) and the web context (web-check).
     needs: changes
-    if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .tool-versions
-      - name: Cache Bun packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-      # Vite and Vitest run on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .tool-versions
-      - name: make web-check
-        run: make web-check
+    if: needs.changes.outputs.ui == 'true' || needs.changes.outputs.web == 'true'
+    uses: ./.github/workflows/ctx-web.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
+      ui: ${{ needs.changes.outputs.ui == 'true' }}
+      web: ${{ needs.changes.outputs.web == 'true' }}
+
+  schema:
+    needs: changes
+    if: needs.changes.outputs.schema == 'true'
+    uses: ./.github/workflows/ctx-schema.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
 
   docker:
+    # docker-check on a change to the docker context. The images hold everything but the docs, so a change to the
+    # go, web, i18n, or docker context runs the Docker smoke test.
     needs: changes
-    if: needs.changes.outputs.docker == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: make docker-check
-        run: make docker-check
+    if: >-
+      needs.changes.outputs.go == 'true' || needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.i18n == 'true' || needs.changes.outputs.docker == 'true'
+    uses: ./.github/workflows/ctx-docker.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
+      check: ${{ needs.changes.outputs.docker == 'true' }}
+      smoke: true
 
   shell:
     needs: changes
     if: needs.changes.outputs.shell == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: shellcheck
-        run: make lint-shell
+    uses: ./.github/workflows/ctx-shell.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
 
   check:
     # The required status check of the protect-main ruleset, on pull requests and merge groups: it passes only when
-    # every job above passed, or was skipped because the change does not touch its context. `always()` makes it
-    # report a result even when every other job is skipped, so a merge group never waits on it.
+    # every context job above passed, or was skipped because the change does not touch its context. A job that calls
+    # a reusable workflow fails when one of the called jobs fails, so a failed schema, ui-test, or docker-smoke job
+    # fails `check`. `always()` makes it report a result even when every other job is skipped, so neither a pull
+    # request nor a merge group waits on it.
     if: always()
-    needs: [changes, docs, go, go-test, i18n, api, ui, web, docker, shell]
+    needs: [changes, docs, go, i18n, api, web, schema, docker, shell]
     runs-on: ubuntu-latest
     steps:
       - name: Fail if a check job failed or was cancelled
@@ -298,27 +153,6 @@ jobs:
         run: |
           jq -r 'to_entries[] | "\(.key)\t\(.value.result)"' <<< "$RESULTS"
           jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$RESULTS" > /dev/null
-
-  schema:
-    # Apply each dialect's desired-state schema to an empty database and require an empty diff afterwards (ADR-0023).
-    needs: changes
-    if: needs.changes.outputs.schema == 'true'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        dialect: [sqlite, postgres]
-    env:
-      DB_DIALECT: ${{ matrix.dialect }}
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install Atlas Community Edition (pinned in scripts/install-atlas.sh)
-        run: make atlas
-      - name: Start PostgreSQL
-        if: matrix.dialect == 'postgres'
-        run: make db-up
-      - name: Apply the schema to an empty database and check for drift
-        run: make db-check
 
   postgres-contract:
     # The PostgreSQL tests on a real postgres container instead of pgmem, on pushes to main only; nightly.yml runs
@@ -336,66 +170,3 @@ jobs:
     uses: ./.github/workflows/web-e2e.yml
     with:
       matrix: pr
-
-  ui-test:
-    # The @my/ui story tests (ADR-0027): axe on every story and the screenshots at 3 container widths × light / dark
-    # × LTR / RTL. The baselines were generated in this same image (`make ui-snapshots-update`).
-    needs: changes
-    if: needs.changes.outputs.ui == 'true'
-    runs-on: ubuntu-latest
-    # Must equal PLAYWRIGHT_IMAGE in the Makefile (`make playwright-image-check`).
-    container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
-      options: --ipc=host
-    steps:
-      - uses: actions/checkout@v7
-      # The image has neither make nor the unzip that setup-bun extracts Bun with.
-      - name: Install make and unzip
-        run: apt-get update && apt-get install -y --no-install-recommends make unzip
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .tool-versions
-      # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .tool-versions
-      - name: Cache Bun packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-ui-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}
-          restore-keys: bun-ui-${{ runner.os }}-
-      - name: make ui-test
-        run: make ui-test
-      # On a visual difference, the actual and diff images are under app/ui/.vitest/attachments/.
-      - name: Upload the screenshot diffs
-        if: failure()
-        uses: actions/upload-artifact@v6
-        with:
-          name: ui-test-screenshots
-          path: app/ui/.vitest/
-          retention-days: 7
-
-  docker-smoke:
-    # Build the images and run deploy/docker/compose.yaml end to end: schema apply, server start, admin creation,
-    # then WebFinger, Actor, and NodeInfo (scripts/docker-smoke.sh dumps the logs on failure and always tears down).
-    # The images hold everything but the docs, so a change to any other context runs it.
-    needs: changes
-    if: >-
-      needs.changes.outputs.go == 'true' || needs.changes.outputs.web == 'true' ||
-      needs.changes.outputs.i18n == 'true' || needs.changes.outputs.docker == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Smoke-test the Docker Compose setup
-        run: make docker-smoke
-      # The smoke test covers linux/amd64; also build both images for linux/arm64 (ADR-0010) under QEMU.
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-        with:
-          platforms: arm64
-      - name: Build the images for linux/arm64
-        run: |
-          docker build --platform linux/arm64 --target schema .
-          docker build --platform linux/arm64 --target app .

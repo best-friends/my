@@ -1,0 +1,42 @@
+name: "Context: schema"
+
+# The schema context of `make check` (scripts/changed-contexts.sh): apply each dialect's desired-state schema to an
+# empty database and require an empty diff afterwards (make db-check, ADR-0023). Called by ci.yml when a pull request
+# or a merge group touches the context, and runnable by hand (ADR-0047).
+
+on:
+  workflow_call:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: string
+        default: pr
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: choice
+        options: [pr, queue]
+        default: pr
+
+permissions:
+  contents: read
+
+jobs:
+  schema:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dialect: [sqlite, postgres]
+    env:
+      DB_DIALECT: ${{ matrix.dialect }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Atlas Community Edition (pinned in scripts/install-atlas.sh)
+        run: make atlas
+      - name: Start PostgreSQL
+        if: matrix.dialect == 'postgres'
+        run: make db-up
+      - name: Apply the schema to an empty database and check for drift
+        run: make db-check

@@ -1,0 +1,30 @@
+name: "Context: shell"
+
+# The shell context of `make check` (scripts/changed-contexts.sh): shellcheck on scripts/*.sh (make lint-shell).
+# Called by ci.yml when a pull request or a merge group touches the context, and runnable by hand (ADR-0047).
+
+on:
+  workflow_call:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: string
+        default: pr
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: choice
+        options: [pr, queue]
+        default: pr
+
+permissions:
+  contents: read
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: shellcheck
+        run: make lint-shell
