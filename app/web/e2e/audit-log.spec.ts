@@ -187,7 +187,7 @@ test.describe("audit log", () => {
     await page.keyboard.press("Enter");
     const listbox = page.getByRole("listbox");
     await expect(listbox).toBeVisible();
-    await listbox.getByRole("option").nth(3).click();
+    await listbox.getByRole("option").nth(4).click();
     await expect(page).toHaveURL(/[?&]action=domain_action_issued/);
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first().getByRole("link").first()).toHaveAttribute("href", `/admin/domain-actions?filter=all&domain=${longDomain}`);
