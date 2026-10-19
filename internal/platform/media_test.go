@@ -18,6 +18,7 @@ import (
 // An upload goes through the database queue's outbox to the worker, which strips its EXIF
 // (with the GPS position) before the instance serves it under /media/.
 func TestUploadedMediaIsServedWithoutLocation(t *testing.T) {
+	t.Parallel()
 	for _, queueName := range []string{"db", "inline"} {
 		t.Run(queueName, func(t *testing.T) {
 			cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_QUEUE": queueName})

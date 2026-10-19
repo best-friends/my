@@ -22,6 +22,7 @@ var loggedLink = regexp.MustCompile(`https://example\.test(/auth/verify_email\?t
 // TestSignUpScreens drives registration in each mode on the real database, with mail = none:
 // verification emails go to the log, and a moderator's approval stands in for verification.
 func TestSignUpScreens(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	s := start(t, cfg, platform.ServeOptions{}, nil)
 	ctx := t.Context()

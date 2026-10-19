@@ -51,6 +51,7 @@ func issueAccessToken(t *testing.T, app *platform.App, userID, scope string) str
 // notifications that a follow and a favourite create, with their source account, the type
 // filter, the read marker and unread count, and dismissal.
 func TestClientAPINotifications(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {

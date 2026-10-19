@@ -74,6 +74,7 @@ func recordRemote(t *testing.T, app *platform.App, remoteURL string) string {
 // The media proxy relays a recorded remote file with the detected type and the cache TTL of
 // the instance settings, and refuses unsigned or tampered URLs and SVG content.
 func TestMediaProxy(t *testing.T) {
+	t.Parallel()
 	remote, _, png := remoteServer(t)
 	cfg := loadConfig(t, map[string]string{
 		"MY_DATABASE_URL": newDatabase(t, true), "MY_PROFILE": "development", "MY_HTTP_ALLOW_PRIVATE_NETWORKS": "true",
@@ -129,6 +130,7 @@ func TestMediaProxy(t *testing.T) {
 // Without http_allow_private_networks, the proxy's fetch of an internal address is refused by
 // the SSRF guard: the client gets 404 and the internal server sees no request.
 func TestMediaProxySSRFGuard(t *testing.T) {
+	t.Parallel()
 	remote, hits, _ := remoteServer(t)
 	s := start(t, loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)}), platform.ServeOptions{}, nil)
 	internal := strings.Replace(remote.URL, "http://", "https://", 1) + "/a.png"
@@ -146,6 +148,7 @@ func TestMediaProxySSRFGuard(t *testing.T) {
 // Under remote_media_policy all, the proxy keeps a copy in blob storage and serves the second
 // request from it; under none it relays every request.
 func TestMediaProxyCache(t *testing.T) {
+	t.Parallel()
 	remote, hits, png := remoteServer(t)
 	cfg := loadConfig(t, map[string]string{
 		"MY_DATABASE_URL": newDatabase(t, true), "MY_PROFILE": "development", "MY_HTTP_ALLOW_PRIVATE_NETWORKS": "true",

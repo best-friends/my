@@ -25,6 +25,7 @@ import (
 // account, her profile, a timeline, an account list, and a notification. bob has no images, and
 // his account has none.
 func TestClientAPIAccountImages(t *testing.T) {
+	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline"})
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {
