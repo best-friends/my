@@ -3435,6 +3435,22 @@
     "defaultMessage": "[Şḗḗŧŧīƞɠş ƥȧȧɠḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.moderator_notifications.email": {
+    "defaultMessage": "[Ȧŀşǿǿ şḗḗƞḓ ŧħḗḗḿ ƀẏ ḗḗḿȧȧīŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.moderator_notifications.email.description": {
+    "defaultMessage": "[Ŧħḗḗ ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ǿǿƒ ƞḗḗẇ řḗḗƥǿǿřŧş, şīɠƞ-ŭŭƥş ȧȧẇȧȧīŧīƞɠ ȧȧƥƥřǿǿṽȧȧŀ ȧȧƞḓ ȧȧƥƥḗḗȧȧŀş ŧħȧȧŧ ẏǿǿŭŭř řǿǿŀḗḗ ħȧȧƞḓŀḗḗş ȧȧŀşǿǿ ƈǿǿḿḗḗ ŧǿǿ ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.moderator_notifications.no_email": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ şḗḗƞḓ ḗḗḿȧȧīŀ, şǿǿ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ƈǿǿḿḗḗ ǿǿƞŀẏ īƞ ŧħḗḗ ȧȧƥƥ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.moderator_notifications.title": {
+    "defaultMessage": "[Ḿǿǿḓḗḗřȧȧŧǿǿř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.mutes.empty": {
     "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ƞǿǿŧ ḿŭŭŧḗḗḓ ȧȧƞẏǿǿƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."

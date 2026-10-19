@@ -2226,6 +2226,11 @@ type Instance struct {
 	// Rules The rules in effect, in order, each in the locale of the request.
 	Rules []InstanceRule `json:"rules"`
 
+	// SendsEmail Whether the instance sends email (the server setting `mail` is not `none`). Without
+	// email, the moderator notifications come only in the app, so clients do not offer
+	// the preference `email_moderator_notifications`.
+	SendsEmail bool `json:"sends_email"`
+
 	// ShortDescription A one-paragraph summary of the instance, as plain text; omitted when there is none.
 	ShortDescription *string `json:"short_description,omitempty"`
 
@@ -2731,8 +2736,8 @@ type Preferences struct {
 	// accounts.
 	DefaultVisibility Visibility `json:"default_visibility"`
 
-	// EmailModeratorNotifications Whether the moderator notifications (`admin_report`, `admin_sign_up`) also come by
-	// email, to the primary address. Off for a new user.
+	// EmailModeratorNotifications Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
+	// also come by email, to the primary address. Off for a new user.
 	EmailModeratorNotifications bool `json:"email_moderator_notifications"`
 
 	// Locale The UI locale, a BCP 47 language tag.
