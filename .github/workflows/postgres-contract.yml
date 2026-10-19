@@ -1,0 +1,40 @@
+name: PostgreSQL contract
+
+# The PostgreSQL tests (the repository contracts of internal/adapter/db/postgres, the kv and queue adapters, and the
+# dual-dialect tests of internal/platform) on a real postgres container instead of pgmem (ADR-0041). Called by ci.yml on
+# every push to main and by nightly.yml; pull requests run the same tests on pgmem in ci.yml's go-test job.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  # Use exactly the Go version from .tool-versions; never auto-download another toolchain.
+  GOTOOLCHAIN: local
+
+jobs:
+  postgres-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: .tool-versions
+          cache: false
+      # The go-test job's cache from main, without saving one.
+      - name: Restore the Go module and build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-test-${{ runner.os }}-
+      # testcontainers-go starts postgres:18-alpine on the runner's Docker; TEST_POSTGRES_REQUIRED makes a missing
+      # Docker fail the job instead of skipping the tests.
+      - name: make go-test-postgres
+        run: make go-test-postgres
