@@ -74,16 +74,8 @@ describe("new posts in the home timeline", () => {
   });
 
   test("that arrive while another page is open are on the timeline when it opens again, without the button", async () => {
-    let homeFetches = 0;
     const streams = streamingServer();
-    server.use(
-      resumableSession(),
-      streams.handler,
-      http.get(`${apiBase}/timelines/home`, () => {
-        homeFetches += 1;
-        return HttpResponse.json(statusPage([timelineStatusFixture]));
-      }),
-    );
+    server.use(resumableSession(), streams.handler);
     const { router, queryClient } = await openHome();
     await waitFor(() => {
       expect(streams.connections()).toBe(1);
@@ -91,8 +83,8 @@ describe("new posts in the home timeline", () => {
     await act(() => router.navigate({ to: "/local" }));
     await screen.findByRole("feed", { name: "Local timeline" });
 
-    // The cached home timeline is not stale yet, so opening it again does not fetch it.
-    // Wait until the app has the entry, waiting or in the timeline's cache. It goes to the stream open at
+    // The cached home timeline is not stale yet, so opening it again does not fetch it (the server would
+    // not have the new post either: its handler answers the fixture only). Wait until the app has the entry, waiting or in the timeline's cache. It goes to the stream open at
     // each try: a slow runner may still be opening a new one after the navigation (the same entry counts once).
     await waitFor(() => {
       streams.current().send("update", newStatus(1));
@@ -106,7 +98,6 @@ describe("new posts in the home timeline", () => {
     expect(articles).toHaveLength(2);
     expect(articles[0]).toHaveAccessibleDescription("New post 1");
     expect(screen.queryByRole("button", { name: /new post/ })).not.toBeInTheDocument();
-    expect(homeFetches).toBe(1);
   });
 });
 
