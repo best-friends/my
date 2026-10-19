@@ -12,3 +12,19 @@ export function profilePath(acct: string): string {
 export function followListPath(acct: string, list: "followers" | "following"): string {
   return `/@${acct}/${list}`;
 }
+
+/**
+ * The page of the user's own account status: the moderation actions on the account, and appealing them
+ * (FR-715). A `moderation_notice` notification leads there.
+ */
+export const accountStatusPath = "/settings/account-status";
+
+/** The admin page of one appeal of a moderation action, which an `admin_appeal` notification leads to. */
+export function adminAppealPath(id: string): string {
+  return `/admin/appeals/${id}`;
+}
+
+/** The admin page of one report, which an `admin_report` notification leads to. */
+export function adminReportPath(id: string): string {
+  return `/admin/reports/${id}`;
+}

@@ -4,8 +4,20 @@
 // loading more, each passing axe without scrolling sideways, with the filters and pages in the URL. `vite preview`
 // has no API, so each test plays the server of a signed-in operator with page.route; names change with the
 // locale, so the structure is checked by role and by what the server sends (names, handles, domains).
+import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+
+type Catalog = Record<string, { defaultMessage: string }>;
+
+/** The client message `key` in the project's locale (only messages without arguments). */
+function message(key: string): string {
+  const locale = test.info().project.use.locale ?? "en";
+  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const text = catalog[key]?.defaultMessage;
+  if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
+  return text;
+}
 
 /** The signed-in operator's account, as GET /accounts/verify_credentials answers, with view_audit. */
 const operator = {
@@ -187,7 +199,7 @@ test.describe("audit log", () => {
     await page.keyboard.press("Enter");
     const listbox = page.getByRole("listbox");
     await expect(listbox).toBeVisible();
-    await listbox.getByRole("option").nth(3).click();
+    await listbox.getByRole("option", { name: message("admin.audit_log.action.domain_action_issued"), exact: true }).click();
     await expect(page).toHaveURL(/[?&]action=domain_action_issued/);
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first().getByRole("link").first()).toHaveAttribute("href", `/admin/domain-actions?filter=all&domain=${longDomain}`);

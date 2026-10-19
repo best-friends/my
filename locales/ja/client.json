@@ -299,6 +299,10 @@
     "defaultMessage": "通報の担当の解除",
     "description": "Heading of an audit log entry: a report was left without an assigned moderator."
   },
+  "admin.audit_log.action.revealed_private_data": {
+    "defaultMessage": "個人データの表示",
+    "description": "Heading of an audit log entry: a moderator was shown the email address and the IP addresses of a local account."
+  },
   "admin.audit_log.action.role_granted": {
     "defaultMessage": "ロールの付与",
     "description": "Heading of an audit log entry: an administrator granted a role to a user."
@@ -446,6 +450,10 @@
   "admin.audit_log.only_target": {
     "defaultMessage": "{target}への操作だけを表示",
     "description": "Link in an audit log entry that keeps only the operations on its target. {target} is the target’s name, such as @alice or a domain."
+  },
+  "admin.audit_log.summary": {
+    "defaultMessage": "管理で、いつ誰が何をしたかの記録。",
+    "description": "Description of the audit log screen in the administration menu."
   },
   "admin.audit_log.target_kind.account": {
     "defaultMessage": "アカウント",
@@ -799,6 +807,14 @@
     "defaultMessage": "{max, number} 文字以内にしてください",
     "description": "Error under the public comment or private note of a domain action when it is too long. {max} is the limit."
   },
+  "admin.home.none.description": {
+    "defaultMessage": "あなたのロールには、管理の画面に要る権限がありません。管理者が付与できます。",
+    "description": "Description on the administration page of a user whose roles grant none of the admin screens' permissions."
+  },
+  "admin.home.none.heading": {
+    "defaultMessage": "使える管理の画面はありません",
+    "description": "Heading on the administration page of a user whose roles grant none of the admin screens' permissions."
+  },
   "admin.instance.back": {
     "defaultMessage": "連合先のサーバーに戻る",
     "description": "Link under the heading of a remote server's page that opens the list of remote servers."
@@ -943,6 +959,18 @@
     "defaultMessage": "さらに表示",
     "description": "Button under a list of an admin screen that loads more of it."
   },
+  "admin.menu.open_reports": {
+    "defaultMessage": "{count, plural, other {未解決の通報 # 件}}",
+    "description": "Badge of the reports item of the administration menu: how many reports are open."
+  },
+  "admin.menu.pending_appeals": {
+    "defaultMessage": "{count, plural, other {審査待ち # 件}}",
+    "description": "Badge of the appeals item of the administration menu: how many appeals of moderation actions await a decision."
+  },
+  "admin.menu.pending_registrations": {
+    "defaultMessage": "{count, plural, other {承認待ち # 件}}",
+    "description": "Badge of the registrations item of the administration menu: how many registrations await approval."
+  },
   "admin.menu.title": {
     "defaultMessage": "管理",
     "description": "Heading of the links to the admin screens on the settings page, shown only to operators."
@@ -954,6 +982,10 @@
   "admin.missing_permission.heading": {
     "defaultMessage": "この画面を使う権限がありません",
     "description": "Heading of an admin screen for a user whose roles lack its permission."
+  },
+  "admin.pending_count": {
+    "defaultMessage": "{count, plural, other {未対応 # 件}}",
+    "description": "Badge of the navigation's administration item: how many open reports and registrations await the moderators."
   },
   "admin.registrations.account_gone": {
     "defaultMessage": "削除されたアカウント",
@@ -1086,6 +1118,10 @@
   "admin.registrations.submitted_at": {
     "defaultMessage": "登録日時",
     "description": "Term of when the applicant signed up."
+  },
+  "admin.registrations.summary": {
+    "defaultMessage": "承認を待っている登録と、その承認・却下。",
+    "description": "Description of the registration review screen in the administration menu."
   },
   "admin.registrations.title": {
     "defaultMessage": "登録の審査",
@@ -1763,6 +1799,14 @@
     "defaultMessage": "ログイン",
     "description": "Heading and document title of the page that starts signing in."
   },
+  "notifications.appeal.overturned": {
+    "defaultMessage": "異議申し立てが認められ、処分は解除されました。",
+    "description": "In an appeal_decided notification: the moderators granted the user's appeal and lifted the action."
+  },
+  "notifications.appeal.upheld": {
+    "defaultMessage": "異議申し立ては認められず、処分はそのままです。",
+    "description": "In an appeal_decided notification: the moderators kept the action that the user appealed."
+  },
   "notifications.empty.all": {
     "defaultMessage": "まだ通知はありません",
     "description": "Heading shown on the notifications page when the user has no notifications."
@@ -1811,6 +1855,30 @@
     "defaultMessage": "{name}さんほか{count, plural, other {#人}}があなたの投稿をお気に入りに登録しました",
     "description": "Notification sentence for several favourites of one of the user's posts, grouped in one row. {name} is the display name of the newest account that favourited it; {count} is the number of the other accounts that did (1 or more)."
   },
+  "notifications.link.account_status": {
+    "defaultMessage": "アカウントの状態を見る",
+    "description": "Link in a moderation notice notification to the page with the moderation actions on the user's account."
+  },
+  "notifications.link.appeal": {
+    "defaultMessage": "異議申し立てを開く",
+    "description": "Link in a moderator's notification of a new appeal to the appeal's admin page."
+  },
+  "notifications.link.followers": {
+    "defaultMessage": "フォロワーを見る",
+    "description": "Link in a notification of follows ended by a suspension to the user's list of followers."
+  },
+  "notifications.link.following": {
+    "defaultMessage": "フォロー中のアカウントを見る",
+    "description": "Link in a notification of follows ended by a suspension to the list of accounts the user follows."
+  },
+  "notifications.link.registrations": {
+    "defaultMessage": "登録を審査する",
+    "description": "Link in a moderator's notification of a new sign-up to the registration review screen."
+  },
+  "notifications.link.report": {
+    "defaultMessage": "通報を開く",
+    "description": "Link in a moderator's notification of a new report to the report's admin page."
+  },
   "notifications.load_more": {
     "defaultMessage": "さらに通知を読み込む",
     "description": "Button at the end of the notifications that loads older ones."
@@ -1819,6 +1887,14 @@
     "defaultMessage": "通知を読み込み中",
     "description": "Visually hidden text that names the busy list of notifications while its first page loads."
   },
+  "notifications.moderation.action": {
+    "defaultMessage": "{kind}：{category}",
+    "description": "In a moderation notice notification: what the action on the user's account does ({kind}, e.g. 'Suspension') and the reason category ({category}, e.g. 'Spam'), both already translated by the server."
+  },
+  "notifications.moderation.until": {
+    "defaultMessage": "{date}まで",
+    "description": "In a moderation notice notification: when the action on the user's account ends by itself; {date} is a formatted date and time."
+  },
   "notifications.post.content_warning": {
     "defaultMessage": "CW：{summary}",
     "description": "A notification's link to the post it is about, when the post is behind its author's content warning: the warning only. {summary} is the warning's text."
@@ -1826,6 +1902,10 @@
   "notifications.post.open": {
     "defaultMessage": "投稿を開く",
     "description": "A notification's link to the post it is about, when the post has no text to quote (pictures only)."
+  },
+  "notifications.report_resolved.account": {
+    "defaultMessage": "{name}さんについてのあなたの通報への対応が完了しました",
+    "description": "Notification sentence: the moderators resolved the user's report; {name} is the reported account's name, a link to its profile."
   },
   "notifications.retry": {
     "defaultMessage": "もう一度試す",
@@ -2791,6 +2871,14 @@
     "defaultMessage": "メニュー",
     "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
   },
+  "shell.nav.admin": {
+    "defaultMessage": "管理",
+    "description": "Navigation item to the admin screens, shown only to users whose roles have an admin permission."
+  },
+  "shell.nav.admin_pending": {
+    "defaultMessage": "管理、{count, plural, other {未対応 # 件}}",
+    "description": "Accessible name of the navigation item to the admin screens while open reports or registrations awaiting approval wait for the moderators; starts with the visible label."
+  },
   "shell.nav.home": {
     "defaultMessage": "ホーム",
     "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -2806,6 +2894,10 @@
   "shell.nav.menu": {
     "defaultMessage": "メニュー",
     "description": "Button of the bottom tab bar on phones that opens a sheet with the rest of the navigation (profile, settings). Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
+  },
+  "shell.nav.menu_pending": {
+    "defaultMessage": "メニュー、{count, plural, other {管理に未対応 # 件}}",
+    "description": "Accessible name of the phone tab bar's Menu button while things await the moderators in the administration, which the menu leads to; starts with the visible label."
   },
   "shell.nav.notifications": {
     "defaultMessage": "通知",

@@ -90,6 +90,10 @@ type Options struct {
 	// AccountModeration runs the moderators' use cases on the actions on accounts for the admin
 	// operations (admin_account_actions.go).
 	AccountModeration AccountModeration
+	// AccountAdmin runs the account management of the admin operations, and AccountReports
+	// reads the reports of an account for its details (admin_accounts.go).
+	AccountAdmin   AccountAdmin
+	AccountReports AccountReports
 	// OwnModeration reads the actions on the viewer's own account, for GET /moderation/actions
 	// and the moderation notices (moderation.go); nil leaves the action out of the notices.
 	OwnModeration OwnModeration

@@ -1,15 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a notification's row shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4):
 // the hook decides what to show and formats it; the component only places it. It returns no JSX.
+import { useIntl } from "react-intl";
 import type { ClientMessageKey } from "../../../lib/i18n";
-import { profilePath } from "../../../lib/paths";
+import { accountStatusPath, adminAppealPath, adminReportPath, followListPath, profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
+import { useViewer } from "../../session";
 import { statusPath } from "../../status";
-import type { Notification, NotificationAccount, NotificationStatus, NotificationType } from "../api/notifications";
+import type { ModerationAction, Notification, NotificationAccount, NotificationStatus, NotificationType } from "../api/notifications";
 import type { NotificationGroup } from "./groupNotifications";
 
 /** An account in a row: its name in the UI (the username when it has no display name), profile page, and avatar URL. */
 export type NotificationActor = { name: string; href: string; avatar: string | undefined };
+
+/** A link from a row to the page where the user follows up what it tells. */
+type NotificationLink = { href: string; label: ClientMessageKey };
+
+/** What a `moderation_notice` tells of the action on the user's account, formatted for the row. */
+export type ModerationNoticeView = {
+  /** What the action does, and why, in the user's language as the server sends them. */
+  kind: string;
+  category: string;
+  /** The moderators' explanation, their own text; null when they gave none. */
+  reason: string | null;
+  /** When the action ends by itself, as a date and time in the user's locale; null when it lasts until lifted. */
+  until: { dateTime: string; text: string } | null;
+  /**
+   * For an `appeal_decided`: what the moderators decided on the user's appeal, and their explanation (their own
+   * text, null when they gave none). Null for a `moderation_notice`, and while the appeal is pending.
+   */
+  decision: { sentence: ClientMessageKey; reason: string | null } | null;
+};
 
 export type NotificationView = {
   /**
@@ -19,6 +40,11 @@ export type NotificationView = {
   sentence: ClientMessageKey;
   /** The account that did it, the newest of a group; null for the types without an actor. */
   actor: NotificationActor | null;
+  /**
+   * The account that `{name}` names in a row without an actor, shown without an avatar: the account that a
+   * `report_resolved`'s report is about. Null otherwise.
+   */
+  subject: NotificationActor | null;
   /**
    * The other accounts of a group, newest first, each once: the people who also favourited or boosted the
    * post. Empty for a row of one notification.
@@ -40,6 +66,13 @@ export type NotificationView = {
    * user lost; null for the other types.
    */
   severance: { domain: string | null; followers: number; following: number } | null;
+  /** What a `moderation_notice` or an `appeal_decided` tells of the action; null for the other types. */
+  notice: ModerationNoticeView | null;
+  /**
+   * The pages the row leads to besides the actor's profile and the post, where the user follows up what it
+   * tells: the account status, the report, the registrations, or the user's follow lists.
+   */
+  links: readonly NotificationLink[];
 };
 
 const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
@@ -107,9 +140,59 @@ function severanceOf(notification: Notification): Pick<NotificationView, "senten
   return { sentence: "client:notifications.severed.account", severance: { domain: null, ...counts } };
 }
 
+/** The sentences of the decisions on an appeal. */
+const decisionSentences: Readonly<Record<"upheld" | "overturned", ClientMessageKey>> = {
+  upheld: "client:notifications.appeal.upheld",
+  overturned: "client:notifications.appeal.overturned",
+};
+
+/**
+ * What a row shows of the action that a `moderation_notice` or an `appeal_decided` tells of; `formatDate` formats
+ * its end.
+ */
+function noticeOf(action: ModerationAction, formatDate: (value: string) => string): ModerationNoticeView {
+  const { appeal } = action;
+  return {
+    decision:
+      appeal === undefined || appeal.state === "pending"
+        ? null
+        : { sentence: decisionSentences[appeal.state], reason: appeal.decision_reason === undefined || appeal.decision_reason === "" ? null : appeal.decision_reason },
+    kind: action.kind_label,
+    category: action.reason_category_label,
+    reason: action.public_reason === undefined || action.public_reason === "" ? null : action.public_reason,
+    until: action.expires_at === undefined ? null : { dateTime: action.expires_at, text: formatDate(action.expires_at) },
+  };
+}
+
+/** The pages that a row of `notification` links to (NotificationView.links); `ownAcct` is null until the viewer loads. */
+function linksOf(notification: Notification, ownAcct: string | null): NotificationLink[] {
+  switch (notification.type) {
+    case "moderation_notice":
+    case "appeal_decided":
+      return [{ href: accountStatusPath, label: "client:notifications.link.account_status" }];
+    case "admin_appeal":
+      return notification.appeal_id === undefined ? [] : [{ href: adminAppealPath(notification.appeal_id), label: "client:notifications.link.appeal" }];
+    case "admin_report":
+      return notification.report_id === undefined ? [] : [{ href: adminReportPath(notification.report_id), label: "client:notifications.link.report" }];
+    case "admin_sign_up":
+      return [{ href: "/admin/registrations", label: "client:notifications.link.registrations" }];
+    case "relationships_severed":
+      return ownAcct === null
+        ? []
+        : [
+            { href: followListPath(ownAcct, "followers"), label: "client:notifications.link.followers" },
+            { href: followListPath(ownAcct, "following"), label: "client:notifications.link.following" },
+          ];
+    default:
+      return [];
+  }
+}
+
 /** Returns what the row of `group` shows: one notification, or the favourites or the boosts of one post. */
 export function useNotificationView(group: NotificationGroup): NotificationView {
   const [notification] = group.notifications;
+  const intl = useIntl();
+  const viewer = useViewer();
   const time = useTimeView(notification.created_at);
   const { account, status } = notification;
   const severed = notification.type === "relationships_severed" ? severanceOf(notification) : null;
@@ -122,13 +205,21 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
     others.push(actorOf(other));
   }
   const groupSentence = groupSentences[notification.type];
+  const target = notification.type === "report_resolved" ? notification.report?.target_account : undefined;
+  const action = notification.type === "moderation_notice" || notification.type === "appeal_decided" ? notification.moderation_action : undefined;
   return {
-    sentence: severed?.sentence ?? (others.length > 0 && groupSentence !== undefined ? groupSentence : sentences[notification.type]),
+    sentence:
+      severed?.sentence ??
+      (target === undefined ? null : "client:notifications.report_resolved.account") ??
+      (others.length > 0 && groupSentence !== undefined ? groupSentence : sentences[notification.type]),
     actor: account === undefined ? null : actorOf(account),
+    subject: target === undefined ? null : actorOf(target),
     others,
     time,
     post: status === undefined ? null : postOf(status),
     followBack: notification.type === "follow" && account !== undefined ? account : null,
     severance: severed?.severance ?? null,
+    notice: action === undefined ? null : noticeOf(action, (value) => intl.formatDate(value, { dateStyle: "medium", timeStyle: "short" })),
+    links: linksOf(notification, viewer.status === "signed-in" ? viewer.account.acct : null),
   };
 }
