@@ -309,6 +309,14 @@ export function isAuditLogQuery(queryKey: readonly unknown[]): boolean {
 }
 
 /**
+ * Fetches again every cached page of the audit log, under any filter (refreshQueries): an audited write adds its
+ * operation to it, and going back to the log must show that operation from the start, not the log before it.
+ */
+export function refreshAuditLog(queryClient: QueryClient): Promise<void> {
+  return refreshQueries(queryClient, { predicate: (query) => isAuditLogQuery(query.queryKey) });
+}
+
+/**
  * The most pages of the audit log that its address keeps (`?pages=`), 1,000 entries: the list reads them again
  * after a reload, and loading more than these keeps working without changing the address.
  */

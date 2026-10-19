@@ -10,7 +10,7 @@ import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
 import { refreshAdminAccount } from "./accounts";
-import { pageQuery, refreshQueries } from "./admin";
+import { pageQuery, refreshAuditLog, refreshQueries } from "./admin";
 
 type Schemas = components["schemas"];
 
@@ -91,14 +91,15 @@ export function decideAppealMutation(api: Api) {
 
 /**
  * Fetches again (refreshQueries) what a decision on an appeal of `accountId` changes: the lists of appeals (it
- * moves between the tabs), the moderators' counts, and that account with its actions and in the searches (an
- * overturn lifts an action). A list that was only marked stale would show the appeal as it was: a decided appeal
+ * moves between the tabs), the moderators' counts, that account with its actions and in the searches (an
+ * overturn lifts an action), and the audit log, which records the decision. A list that was only marked stale would show the appeal as it was: a decided appeal
  * among those awaiting review.
  */
 export async function refreshAppealLists(queryClient: QueryClient, api: Api, accountId: string): Promise<void> {
   await Promise.all([
     refreshQueries(queryClient, { predicate: (query) => query.queryKey[1] === "/admin/appeals" || query.queryKey[1] === "/admin/counts" }),
     refreshAdminAccount(queryClient, api, accountId, { actions: true }),
+    refreshAuditLog(queryClient),
   ]);
 }
 
