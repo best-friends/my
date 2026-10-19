@@ -2,12 +2,12 @@
 import { useAnnouncer } from "@my/ui";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
-import { useConfig } from "../../../lib/config";
 import { errorMessage } from "../../../lib/errors";
+import { handleOf } from "../../../lib/handle";
 import { useT } from "../../../lib/i18n";
 import { profilePath } from "../../../lib/paths";
 import { type FollowList, followListQueryOptions } from "../api/accounts";
-import { handleOf, nameOf } from "./useProfile";
+import { nameOf } from "./useProfile";
 
 /** One account of a follow list, as its row shows it. */
 type FollowListItem = { id: string; name: string; handle: string; href: string };
@@ -32,7 +32,6 @@ export function useFollowList(id: string, list: FollowList): FollowListState {
   const api = useApi();
   const t = useT();
   const announce = useAnnouncer();
-  const { accountDomain } = useConfig();
   const query = useSuspenseInfiniteQuery(followListQueryOptions(api, id, list));
 
   const loadMore = () => {
@@ -47,7 +46,7 @@ export function useFollowList(id: string, list: FollowList): FollowListState {
   return {
     items: query.data.pages
       .flatMap((page) => page.accounts)
-      .map((account) => ({ id: account.id, name: nameOf(account), handle: handleOf(account.acct, accountDomain), href: profilePath(account.acct) })),
+      .map((account) => ({ id: account.id, name: nameOf(account), handle: handleOf(account.acct), href: profilePath(account.acct) })),
     hasMore: query.hasNextPage,
     isLoadingMore: query.isFetchingNextPage,
     loadMore,

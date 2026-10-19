@@ -51,7 +51,7 @@ import { useAdminEntry } from "../../features/admin";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
-import { useConfig } from "../../lib/config";
+import { handleOf } from "../../lib/handle";
 import { useInstanceName } from "../../lib/instanceName";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { followListPath, profilePath } from "../../lib/paths";
@@ -207,7 +207,6 @@ export function Navigation() {
  */
 function ViewerLink() {
   const t = useT();
-  const { accountDomain } = useConfig();
   const viewer = useViewer();
   const descriptionId = useId();
   if (viewer.status !== "signed-in") return null;
@@ -223,7 +222,7 @@ function ViewerLink() {
       >
         <Avatar src={account.avatar_url} name={name} size="sm" decorative />
         {/* The display name and the handle a line each (the sidebar is no container), as a post's author shows them. */}
-        <PostCardAuthor name={name} handle={`@${account.acct}@${accountDomain}`} />
+        <PostCardAuthor name={name} handle={handleOf(account.acct)} />
       </Link>
       {/* A description of a hidden element is still read (accname), and the element stays out of the tree. */}
       <span id={descriptionId} hidden>
