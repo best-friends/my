@@ -13,14 +13,14 @@ make check
 ```
 
 `make check` はコンテキスト（docs・Go・i18n・API・`app/ui`・`app/web`・Docker）ごとのターゲット（`docs-check`・`go-check`・`i18n-check`・`api-check`・`ui-check`・`web-check`・`docker-check`）を並列に実行し、最後に結果の一覧を出します。
-変更したコンテキストとその依存先だけを回すには `make check-changed`（比較の基準は `BASE=origin/main`）を使います。CI も同じ判定（`scripts/changed-contexts.sh`）で変更のないコンテキストのジョブを飛ばし、必須チェック `check` が各ジョブの結果を集めます。
+変更したコンテキストとその依存先だけを回すには `make check-changed`（比較の基準は `BASE=origin/main`）を使います。CI も同じ判定（`scripts/changed-contexts.sh`）で変更のないコンテキストのジョブを飛ばし、必須チェック `check` が各ジョブの結果を集めます（[CI](#ci)）。
 これらはネットワーク不要のチェック（Markdown lint、ADR 索引、Go の `go vet` / golangci-lint / テスト /
 `CGO_ENABLED=0` ビルド / 依存ライセンス検査 / sqlc 生成物の検査、i18n カタログ検査、クライアント API の spec の lint と生成物の検査、`Dockerfile` の Go イメージと `.tool-versions` の一致、Web クライアントの型検査・ビルド・依存ライセンス検査）をすべて実行します。初回のみ Go モジュールとツール、`tools/i18n` と `app/` の npm パッケージのダウンロードが必要です。
 
 - Go ツール（go-licenses, sqlc, oapi-codegen）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
 - 依存関係の既知の脆弱性は GitHub の Dependabot Alerts で検知し、版更新の PR は Dependabot が作ります（`.github/dependabot.yml`、ADR-0046）。
 - Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `make check` には含めず、`make docker-smoke` で実行します（CI では Docker の構成・`cmd/`・`internal/platform/` を変える PR、ドキュメント以外を変えた main への push、nightly で実行。linux/arm64 のイメージのビルドは Docker の構成を変える PR と nightly）。
-- Mastodon・GoToSocial とのライブの相互運用テストは `make check` に含めず、`make federation-live` で実行します（CI では nightly。手順は [deploy/docker/federation-live/README.md](deploy/docker/federation-live/README.md)）。
+- Mastodon・GoToSocial・Misskey とのライブの相互運用テストは `make check` に含めず、`make federation-live` で実行します（CI では nightly。手順は [deploy/docker/federation-live/README.md](deploy/docker/federation-live/README.md)）。
 - 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`。`tools/i18n` と `app/` の npm パッケージも同じ一覧で検査）に限ります。
   増やす場合は PR で理由を説明してください。
 
@@ -30,10 +30,26 @@ make check
 2. ブランチ `<type>/<issue>-<slug>` を切る。`main` に直接 push しない。
 3. 触れたコンテキストの check か `make check-changed` を通してコミット（Conventional Commits、英語）。共有の設定を変えたときは `make check`。
 4. PR テンプレートに従って PR を作成する。
-5. CI が緑になったら `gh pr merge <PR> --auto --merge` で Merge Queue に入れる。`main` には Merge Queue からだけマージし、
-   キューは PR を `main`（と先に並んだ PR）に重ねたマージグループで CI を回し直して、必須チェック `check` が通ればマージする。
+5. PR の CI が緑になったら、メンテナかオーケストレーター（エージェントを束ねて PR をマージする役）が
+   `gh pr merge <PR> -R best-friends/my --auto --merge` で Merge Queue に入れる。`main` には Merge Queue からだけマージする。
 6. 衝突や `check` の失敗でキューから外れたら、`main` を取り込み、生成ファイル（`make generate`・`make sqlc`・`make i18n-gen`・
-   `make web-dist` の出力）は手で衝突を解かずに作り直し、`make check-changed` を通して push し、もう一度キューに入れる。
+   `make web-dist` の出力）は手で衝突を解かずに作り直し、`make check-changed` を通して push する（もう一度キューに入れるのは 5. と同じ人）。
+   `main` の取り込みは、PR が衝突したときかキューから外れたときだけにする（キューが最新の `main` に重ねて検査する）。
+
+## CI
+
+CI（`.github/workflows/`）は、どこで何を検査するかを次のように分けています（[ADR-0047](docs/adr/0047-ci-protection-layers.md)）。
+
+| いつ | ワークフロー | 回すもの |
+| --- | --- | --- |
+| PR | `ci.yml` | 変更したコンテキストとその依存先の `ctx-<context>.yml`（`make check` と同じ検査。Go のテストは pgmem の上で動く）。`app/ui` を変えたら `@my/ui` のストーリーテスト（`ui-test.yml`）、Docker の構成を変えたら linux/arm64 のイメージのビルド、Docker の構成・`cmd/`・`internal/platform/` を変えたら Docker Compose のスモークテストも回す。必須チェック `check` が結果を集める |
+| Merge Queue | `ci.yml` | マージグループ（PR を `main` と先に並んだ PR に重ねたもの）で、変更したコンテキストの検査をもう一度回す。ファイルごとに決まる検査（markdownlint・Go と npm の依存ライセンス・shellcheck・CSS の `100vh`・デザイントークン・Playwright のイメージの版）と、ストーリーテスト・スモークテスト・arm64 のビルドは飛ばす。`check` が通ればキューがマージする |
+| `main` への push | `main.yml` | Web の E2E（幅 × ロケールの部分集合を 4 シャード）、ドキュメント以外を変えたらスモークテスト、`app/ui` を変えたらストーリーテスト、DB のアダプタ・クエリ・スキーマなどを変えたら本物の PostgreSQL でのテスト（`postgres-contract.yml`）。PR と Merge Queue が使う Go と Bun のキャッシュもここで作る。`make check` のコンテキストは回し直さない |
+| nightly（03:00 JST） | `nightly.yml` | Web の E2E の全マトリクス（8 シャード）、ライブの相互運用テスト（`federation-live.yml`）、本物の PostgreSQL でのテスト、スモークテストと linux/arm64 のイメージのビルド |
+
+- PR では Web の E2E は自動では回りません。Web クライアントに触れる PR は、手元で `make web-e2e` を回すか、PR のブランチに対して
+  `gh workflow run web-e2e.yml -R best-friends/my --ref <branch>`（全マトリクスは `-f matrix=full` を足す。Actions タブからも実行できる）で回します。
+- `ctx-<context>.yml`・`nightly.yml`・`federation-live.yml` も `workflow_dispatch` で手で回せます。
 
 ## スキーマの変更
 
@@ -114,7 +130,7 @@ make sqlc-check  # 生成物が最新でなければ失敗（make check に含�
 - PostgreSQL のテストは `pkg/testkit/pgtest` でサーバーを得ます（[ADR-0041](docs/adr/0041-postgres-tests-on-pgmem.md)）。
   既定では、テストのプロセスの中で pgmem（メモリ上で動く PostgreSQL）を起動するので、Docker は要りません。
   テストのバイナリごとにサーバーを 1 つ起動し、テストごとにスキーマを当てたテンプレートのデータベースを複製します。
-- 本物の PostgreSQL で流すときは、次のどちらかを使います。CI は main への push と nightly で `make go-test-postgres` を流します。
+- 本物の PostgreSQL で流すときは、次のどちらかを使います。CI はそれらのテストが依存するパスを変えた `main` への push と nightly で `make go-test-postgres` を流します。
   - `make go-test-postgres`: `TEST_POSTGRES=container` で testcontainers-go のコンテナ（`TEST_POSTGRES_IMAGE`、既定は `postgres:18-alpine`）を起動します。
     Docker がないと、`TEST_POSTGRES_REQUIRED=1` なので失敗します。
   - `TEST_POSTGRES_URL=postgres://...`（DB を作成できるユーザー）: 既存のサーバーを使います
