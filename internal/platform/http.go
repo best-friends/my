@@ -36,9 +36,9 @@ const (
 const readinessTimeout = 3 * time.Second
 
 // Handler returns the HTTP handler of the App: the routes of its role behind the middleware
-// that every response passes (request ID, access log, security headers, panic recovery, and
-// the CORS of the client API). GET requests that no route serves get the web client's HTML
-// (the SPA routes) unless they ask for ActivityPub. Requests whose target or form holds text
+// that every response passes (request ID, access log, security headers, panic recovery, the
+// CORS of the client API, and the client IP of the rate limits, clientIPs). GET requests that
+// no route serves get the web client's HTML (the SPA routes) unless they ask for ActivityPub. Requests whose target or form holds text
 // that no database can look up are a 400 before any route (rejectInvalidText).
 // The worker role serves only the health checks, for the platform's probes.
 func (a *App) Handler() http.Handler {
@@ -54,6 +54,7 @@ func (a *App) Handler() http.Handler {
 	}
 	h := a.problemFallback(mux, page)
 	h = a.rejectInvalidText(h)
+	h = a.clientIPs(h)
 	h = clientAPICORS(a.Config.WebOrigin, h)
 	h = a.recoverPanics(h)
 	h = securityHeaders(h)
