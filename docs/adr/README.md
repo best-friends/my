@@ -58,4 +58,5 @@
 | [0044](0044-remote-profile-recent-posts.md) | リモートのプロフィールを開いたときに最近の投稿を取得する | Accepted |
 | [0045](0045-client-server-cache-policy.md) | キャッシュの方針（クライアントとサーバー） | Accepted |
 | [0046](0046-dependabot-vulnerability-detection.md) | 依存関係の脆弱性検知を Dependabot に移す | Accepted |
+| [0047](0047-ci-protection-layers.md) | CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける | Proposed |
 <!-- adr-index:end -->
