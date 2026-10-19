@@ -390,6 +390,51 @@ func (q *Queries) ListRetentionHolds(ctx context.Context, accountID string) ([]L
 	return items, nil
 }
 
+const listSignupBlocksToPurge = `-- name: ListSignupBlocksToPurge :many
+SELECT b.id FROM signup_blocks b
+LEFT JOIN signup_block_lifts l ON l.block_id = b.id
+WHERE b.id < $1::text
+  AND (CASE
+    WHEN l.lifted_at IS NOT NULL AND b.expires_at IS NOT NULL THEN LEAST(l.lifted_at, b.expires_at)
+    ELSE COALESCE(l.lifted_at, b.expires_at)
+  END) < $2::timestamptz
+  AND NOT EXISTS (
+    SELECT 1 FROM moderation_actions a JOIN retention_holds h ON h.account_id = a.target_account_id
+    WHERE a.id = b.moderation_action_id
+      AND NOT EXISTS (SELECT 1 FROM retention_hold_releases r WHERE r.hold_id = h.id))
+ORDER BY b.id
+LIMIT $3::integer
+`
+
+type ListSignupBlocksToPurgeParams struct {
+	IDBefore    string
+	EndedBefore time.Time
+	BatchLimit  int32
+}
+
+// ListSignupBlocksToPurge returns, oldest first and below @id_before, the sign-up blocks that
+// ended before @ended_before, at the earlier of their lift and their expiry (never for one with
+// neither). A block that a ban made stays while a hold in effect preserves the banned account.
+func (q *Queries) ListSignupBlocksToPurge(ctx context.Context, arg ListSignupBlocksToPurgeParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listSignupBlocksToPurge, arg.IDBefore, arg.EndedBefore, arg.BatchLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const purgeModerationActionLifts = `-- name: PurgeModerationActionLifts :exec
 DELETE FROM moderation_action_lifts WHERE action_id = ANY($1::text[])
 `
@@ -530,6 +575,26 @@ DELETE FROM reports WHERE id = ANY($1::text[])
 
 func (q *Queries) PurgeReports(ctx context.Context, ids []string) error {
 	_, err := q.db.Exec(ctx, purgeReports, ids)
+	return err
+}
+
+const purgeSignupBlockLifts = `-- name: PurgeSignupBlockLifts :exec
+
+DELETE FROM signup_block_lifts WHERE block_id = ANY($1::text[])
+`
+
+// The PurgeSignupBlock* statements delete the blocks (@ids) with their lifts.
+func (q *Queries) PurgeSignupBlockLifts(ctx context.Context, ids []string) error {
+	_, err := q.db.Exec(ctx, purgeSignupBlockLifts, ids)
+	return err
+}
+
+const purgeSignupBlocks = `-- name: PurgeSignupBlocks :exec
+DELETE FROM signup_blocks WHERE id = ANY($1::text[])
+`
+
+func (q *Queries) PurgeSignupBlocks(ctx context.Context, ids []string) error {
+	_, err := q.db.Exec(ctx, purgeSignupBlocks, ids)
 	return err
 }
 
