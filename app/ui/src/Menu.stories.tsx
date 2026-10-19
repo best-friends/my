@@ -5,6 +5,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, waitFor } from "storybook/test";
 import { Button } from "./Button";
+import { SubmenuIcon } from "./Icons";
 import { Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger } from "./Menu";
 
 /** The keys that move into and out of a submenu in the page's reading direction. */
@@ -34,9 +35,7 @@ const meta = {
         <SubmenuTrigger>
           <MenuItem id="share" textValue="Share">
             <span className="flex-1">Share</span>
-            <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 fill-none stroke-current stroke-2 rtl:rotate-180">
-              <path d="M6 3l5 5-5 5" />
-            </svg>
+            <SubmenuIcon />
           </MenuItem>
           <Menu aria-label="Share">
             <MenuItem id="share-email">Email</MenuItem>

@@ -183,7 +183,7 @@ lint は `make web-lint`（`make web-check` と `make check` の一部）で実�
 
 ## 8. サーバーが描画する画面
 
-ログイン・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。
+ログイン・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログインと登録の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。
 
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
@@ -447,7 +447,10 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   ローカルかどうかは API の `acct` で判断し（`isRemoteAcct`）、ドメインを文字列で比べない。タイムライン・投稿の詳細・通知・プロフィール・フォローの一覧・設定・サイドバーで同じにする。
 - **ほかのサーバーのアカウントと投稿**（`acct` にドメインがあるもの）: 名前の横のハンドルは `@username@domain` で出す。カードの操作の列の末尾に、元のサーバーの投稿のページ（`url`、なければ `uri`）へのリンクを置く。
   リンクはホスト名だけを見せ、アクセシブルネームはそのホスト名を含む文（「{host} で元の投稿を開く」）にする。サインインしていない間も出す。
-  プロフィールはハンドルの下に、元のサーバーのプロフィール（`Account.url`）へのリンクを置く。どちらのリンクも外部へのリンクのアイコン（`@my/ui` の `ExternalLinkIcon`）を付け、`rel="noreferrer"` で開く。
+  プロフィールは各タブの投稿の一覧の上に「このサーバーが受け取った投稿だけを表示しています」と、元のサーバーのプロフィール（`Account.url`）へのリンク「{host} で見る」を置き、投稿が無いタブでは空の表示の説明と操作に同じものを出す（`TimelineFeed` の `origin`、ADR-0044）。
+  どちらのリンクも外部へのリンクのアイコン（`@my/ui` の `ExternalLinkIcon`）を付け、`rel="noreferrer"` で開く。
+  タブの最初のページが `remote_fetch_started` を返したら（client-api.md）、一覧の上に「元のサーバーから最近の投稿を取得しています」を出して `useAnnouncer` の polite の領域で 1 回知らせ（Y7。表示はページと同時に現れるので、それ自体はライブリージョンにしない）、
+  4 秒後にそのアカウントの投稿の一覧に無効化の印を付けて表示中のタブを 1 回だけ取り直し、取り直しの成否にかかわらずキャッシュの最初のページから `remote_fetch_started` を外して表示を消す（`timeline/hooks/useRemoteFetch`）。失敗は知らせない。
   画像は `preview_url` で表示する。アップロードではサムネイル、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。
 - **楽観的更新**（S8）: 同じ投稿がタイムラインのページ・ブースト・スレッド・投稿の query に同時にあるので、`api/cache.ts` がキャッシュの答えを形（`Status`・`items`・`pages`・`ancestors` / `descendants`）で見分け、すべての写しを書き換える。
   トグルは押した時点で状態と数を変え、失敗したらその 1 回分だけ戻してトーストで理由を知らせる。同じ投稿の同じ操作は TanStack Query の mutation の `scope` で 1 つずつ順に送り、最後に押したものが残る。
@@ -644,7 +647,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする | `no-restricted-imports`、`boundaries/dependencies`、レビュー、`knip` |
+| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする。部品も SVG を描かない。例外は部品の形の一部で状態とともに変わる印（`Checkbox` のチェック、`Select` と `ContentWarning` の山形、`Tooltip` の矢印、`Avatar` の人影）と、テストやストーリーの差し替えの中身だけで、`app/eslint.config.js` に理由とともに挙げる | `no-restricted-syntax`（JSX の `<svg>`・`<path>` などの SVG の要素）、`no-restricted-imports`、`boundaries/dependencies`、`knip` |
 | G11 | アイコンの大きさは置き場所で決める: 文と並ぶものは `size-4`、ボタンの中は `size-5`、ナビゲーションは `size-6`。`Button`・`ToggleButton`・`Link` が子の SVG の大きさを決め、アイコンの側では大きさを指定しない（react-icons が書く `1em` より `[&>svg]:size-*` が優先し、置き場所が決めない所では文字の大きさで描かれる） | 部品のテスト（ボタンの中の SVG が 0 × 0 でない）、スクリーンショット |
 | G12 | アイコンは飾り（`aria-hidden="true"`、`focusable="false"`、`Icons.tsx` がどのアイコンにも付ける）にし、意味は見える文言かアクセシブルネームで伝える。アイコンだけのボタンには `aria-label` と、同じ文言の `Tooltip` を付ける | `@my/ui` の部品のテスト（`Foundations/Icons` の play）、レビュー |
 | G13 | オン / オフはアイコンの形でも示し、色だけに頼らない（WCAG 1.4.1）: オンは、形が閉じるもの（星・ブックマーク・警告）を Phosphor の Fill、閉じないもの（ブースト）を Bold にする。向きのあるアイコン（返信・戻る・外部へのリンク）は `rtl:-scale-x-100` で反転し（Phosphor の `mirrored` は書字方向を見ないので使わない）、時計回りの意味を持つもの（再読み込み）や輪（ブースト）は反転しない | `Foundations/Icons` の play（`ar-XB` で向きのあるものだけが反転する）、スクリーンショット（`ar-XB`）、レビュー |

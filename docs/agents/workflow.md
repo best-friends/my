@@ -58,9 +58,26 @@ gh pr create --fill --body-file - <<'EOF'
 EOF
 ```
 
-- Comment on the issue with the PR link. Do not merge.
+- Comment on the issue with the PR link. Do not merge it yourself; the decider or the orchestrator merges (§7).
 
-## 7. When blocked
+## 7. Merge through the merge queue
+
+`main` takes pull requests only through GitHub's merge queue. CI runs again on each merge group (the PR on top of
+`main` and of the PRs queued ahead of it) and the queue merges the group when its required `check` passes.
+
+- Once the PR's CI is green, queue it: `gh pr merge <PR> -R best-friends/my --auto --merge`.
+- When the queue drops the PR (a conflict with `main`, or a failed `check` on the merge group), merge `main` into the
+  branch, regenerate the generated files instead of resolving their conflicts by hand, run the checks, push, and
+  queue it again:
+
+```sh
+git fetch origin && git merge origin/main
+make generate sqlc i18n-gen web-dist   # the ones whose sources changed: client API code, sqlc code, i18n accessors
+                                       # and pseudo-locales, app/web/src/routeTree.gen.ts
+make check-changed
+```
+
+## 8. When blocked
 
 - Comment on the issue: what you tried, what decision is needed, the options you see, and your recommendation.
 - `gh issue edit <N> --add-label agent:blocked`

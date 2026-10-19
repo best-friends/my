@@ -82,6 +82,7 @@ export {
   SearchIcon,
   SettingsIcon,
   StarIcon,
+  SubmenuIcon,
   TimelinesIcon,
   type ToggleIconProps,
   WarningIcon,

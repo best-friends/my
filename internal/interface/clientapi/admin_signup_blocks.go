@@ -25,6 +25,7 @@ type SignupBlocks interface {
 	SignupBlock(ctx context.Context, id string) (appmoderation.SignupBlockView, error)
 	AddSignupBlock(ctx context.Context, in appmoderation.SignupBlockInput) (moderation.SignupBlock, error)
 	LiftSignupBlock(ctx context.Context, blockID, liftedByUserID string) error
+	ImportSignupBlocks(ctx context.Context, in appmoderation.SignupBlockImportInput) (appmoderation.SignupBlockImportResult, error)
 }
 
 func newAdminSignupBlock(v appmoderation.SignupBlockView) AdminSignupBlock {

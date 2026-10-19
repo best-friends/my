@@ -1760,10 +1760,14 @@ export interface MessageArgs {
   "client:profile.not_found.body": {};
   /** Account not found */
   "client:profile.not_found.title": {};
-  /** Open the original profile on {host} */
-  "client:profile.original": { host: string };
   /** Could not load whether you follow this account: {reason} */
   "client:profile.relationship_failed": { reason: string };
+  /** Fetching recent posts from the original server. */
+  "client:profile.remote.fetching": {};
+  /** Only the posts this server has received are shown. */
+  "client:profile.remote.notice": {};
+  /** See on {host} */
+  "client:profile.remote.original": { host: string };
   /** Sign in to follow */
   "client:profile.sign_in_to_follow": {};
   /** Sign in to see your profile. */
@@ -2384,6 +2388,20 @@ export interface MessageArgs {
   "server:auth.error.title": {};
   /** This form has expired. Please try again. */
   "server:auth.form_expired": {};
+  /** Complete the check that you are not a bot, then try again. */
+  "server:auth.human_check.failed": {};
+  /** This page checks that you are not a bot, which needs JavaScript. Turn on JavaScript to continue. */
+  "server:auth.human_check.noscript": {};
+  /** This page uses {service} to check that you are not a bot. {service} receives your IP address and information about your browser. */
+  "server:auth.human_check.notice": { service: string };
+  /** This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply. Google receives your IP address and information about your browser. */
+  "server:auth.human_check.notice_recaptcha": {};
+  /** {owner} Privacy Policy */
+  "server:auth.human_check.privacy_link": { owner: string };
+  /** {owner} Terms of Service */
+  "server:auth.human_check.terms_link": { owner: string };
+  /** The check that you are not a bot is not available right now. Try again later. */
+  "server:auth.human_check.unavailable": {};
   /** Email address */
   "server:auth.sign_in.email_label": {};
   /** The email address or password is incorrect. */

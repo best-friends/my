@@ -26,6 +26,7 @@
 - [管理者とロール](operations/admin-cli.md)
 - [インスタンス設定](operations/instance-settings.md)
 - [利用者登録（登録モード・招待・承認・メール確認）](operations/registration.md)
+- [ボット対策の CAPTCHA（Turnstile / hCaptcha / reCAPTCHA）](operations/captcha.md)
 - [ドメイン単位の処分と通報の対応](operations/moderation.md)
 - [鍵暗号化鍵（KEK）の管理](operations/key-management.md)
 - [サーバーの起動・停止とヘルスチェック](operations/running.md)
