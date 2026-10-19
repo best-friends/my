@@ -48,6 +48,11 @@ export function registrationFixture(overrides: Partial<Schemas["AdminRegistratio
   };
 }
 
+/** GET /admin/counts answering `counts`, the counts that the viewer's permissions allow. */
+export function countsHandler(counts: Schemas["AdminCounts"]) {
+  return http.get(`${apiBase}/admin/counts`, ({ request }) => withViewer(request, () => HttpResponse.json(counts)));
+}
+
 /**
  * An open report by Carol of another server on Bob, filed on 2026-10-16 with one post and no notes, as the server
  * answers it; `overrides` replace its fields.
@@ -96,12 +101,56 @@ export function newAccountAction(accountId: string, body: Schemas["CreateAccount
   };
 }
 
+/**
+ * A pending appeal by Bob, made on 2026-10-16, of an active suspension that a moderator took on 2026-10-15, as
+ * the server answers it; `overrides` replace its fields.
+ */
+export function appealFixture(overrides: Partial<Schemas["AdminAppeal"]> = {}): Schemas["AdminAppeal"] {
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000f0001",
+    account_id: otherAccountFixture.id,
+    text: "I posted the link once, to my own blog.",
+    state: "pending",
+    submitted_at: "2026-10-16T09:00:00Z",
+    action: {
+      id: "0192f0c4-7a8e-7000-8000-0000000d0101",
+      account_id: otherAccountFixture.id,
+      kind: "suspend",
+      reason_category: "spam",
+      public_reason: "Repeated advertising.",
+      private_note: "Third report this week.",
+      issuer: "moderator",
+      issued_by_account_id: viewerFixture.id,
+      notify_target: true,
+      state: "active",
+      issued_at: "2026-10-15T09:00:00Z",
+    },
+    ...overrides,
+  };
+}
+
+/** The appeal `appeal` after `decision` at 2026-10-17T00:00:00Z by the viewer; an overturn lifts an active action. */
+export function decidedAppeal(appeal: Schemas["AdminAppeal"], decision: "uphold" | "overturn", reason: string | undefined): Schemas["AdminAppeal"] {
+  const decidedAt = "2026-10-17T00:00:00Z";
+  const action = decision === "overturn" && appeal.action.state === "active" ? { ...appeal.action, state: "lifted" as const, lifted_at: decidedAt } : appeal.action;
+  return {
+    ...appeal,
+    state: decision === "uphold" ? "upheld" : "overturned",
+    decided_at: decidedAt,
+    decided_by_account_id: viewerFixture.id,
+    action,
+    ...(reason === undefined ? {} : { decision_reason: reason }),
+  };
+}
+
 /** Whether a path segment is an ID of the API (a UUID), not the name of another operation under the same path. */
 function isId(segment: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(segment);
 }
 
 export const handlers = [
+  // operationId getAdminCounts: nothing awaits the moderators.
+  countsHandler({}),
   // operationIds listInstanceHealth, getInstanceHealth, listInstanceAvailabilityEvents, markInstanceAvailable.
   http.get(`${apiBase}/admin/instances`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.get(`${apiBase}/admin/instances/:domain`, ({ request, params }) => withViewer(request, () => HttpResponse.json(availableHealth(String(params["domain"]))))),
@@ -158,6 +207,15 @@ export const handlers = [
     );
   }),
   http.post(`${apiBase}/admin/reports/:id/reopen`, ({ request, params }) => withViewer(request, () => HttpResponse.json(reportFixture({ id: String(params["id"]) })))),
+  // operationIds listAppeals, getAppeal, upholdAppeal, overturnAppeal.
+  http.get(`${apiBase}/admin/appeals`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.get(`${apiBase}/admin/appeals/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(appealFixture({ id: String(params["id"]) })))),
+  ...(["uphold", "overturn"] as const).map((decision) =>
+    http.post(`${apiBase}/admin/appeals/:id/${decision}`, async ({ request, params }) => {
+      const body = (await request.clone().json()) as Schemas["DecideAppealRequest"];
+      return withViewer(request, () => HttpResponse.json(decidedAppeal(appealFixture({ id: String(params["id"]) }), decision, body.public_reason)));
+    }),
+  ),
   // operationIds listAccountActions, createAccountAction.
   http.get(`${apiBase}/admin/accounts/:id/actions`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.post(`${apiBase}/admin/accounts/:id/actions`, async ({ request, params }) => {

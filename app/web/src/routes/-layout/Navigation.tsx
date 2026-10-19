@@ -14,6 +14,12 @@
 // badge's digits are hidden from assistive technology; the link is named with the count instead
 // ("Notifications, 3 unread"), a name that starts with the visible label (WCAG 2.5.3).
 //
+// A viewer whose roles have a permission of an admin screen also has Administration, after Settings in the rail
+// and the sidebar and in the menu's sheet. While open reports or registrations await the moderators (FR-712),
+// it shows their number as a badge the same way ("Administration, 3 pending"), and so does the tab bar's Menu
+// button, which leads there ("Menu, 3 pending in administration"): the count is in the names and drawn as
+// digits, never shown by color alone (WCAG 1.4.1).
+//
 // The local and federated timelines appear in the rail only while the instance serves them (FR-202). The tab
 // bar keeps its five items whatever the instance serves: only the Timelines screen's tabs change.
 //
@@ -21,6 +27,7 @@
 // signed-in account (avatar, display name and handle) as a link to its profile. Both are outside the list, so
 // the list's links stay the same and in the same order at every width, and narrower layouts hide both.
 import {
+  AdminIcon,
   Avatar,
   Badge,
   Button,
@@ -40,6 +47,7 @@ import {
 } from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
+import { useAdminEntry } from "../../features/admin";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
@@ -47,7 +55,7 @@ import { useConfig } from "../../lib/config";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { followListPath, profilePath } from "../../lib/paths";
 
-type Section = "/home" | "/timelines" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/settings";
+type Section = "/home" | "/timelines" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/settings" | "/admin";
 
 type NavigationItem = {
   section: Section;
@@ -57,6 +65,8 @@ type NavigationItem = {
   shows: "always" | "tab-bar" | "rail";
   /** The timeline the item opens, offered only while the instance serves it. */
   timeline?: keyof TimelineAvailability;
+  /** Whether the item is for a viewer whose roles have a permission of an admin screen only. */
+  admin?: true;
 };
 
 const items: readonly NavigationItem[] = [
@@ -68,9 +78,10 @@ const items: readonly NavigationItem[] = [
   { section: "/search", label: "client:shell.nav.search", icon: <SearchIcon />, shows: "always" },
   { section: "/profile", label: "client:shell.nav.profile", icon: <ProfileIcon />, shows: "rail" },
   { section: "/settings", label: "client:shell.nav.settings", icon: <SettingsIcon />, shows: "rail" },
+  { section: "/admin", label: "client:shell.nav.admin", icon: <AdminIcon />, shows: "rail", admin: true },
 ];
 
-/** The items of the menu sheet: those of the rail that are not in the tab bar, other than the timelines. */
+/** The items of the menu sheet: those of the rail that are not in the tab bar, other than the timelines (and Administration only for its viewers). */
 const menuItems = items.filter((item) => item.shows === "rail" && item.timeline === undefined);
 
 /**
@@ -95,6 +106,9 @@ const itemClass =
 /** The pill around the icon, filled for the current item. */
 const pillClass =
   "relative rounded-full px-2 py-0.5 group-aria-[current=page]:bg-accent group-aria-[current=page]:text-accent-fg md:px-4 lg:px-1";
+
+/** A count on the corner of an item's icon. */
+const badgeClass = "absolute -top-1.5 -inset-e-1 ring-2 ring-surface-raised md:ring-surface";
 
 /** The label under the icon (beside it from lg). */
 const labelClass = "max-w-full text-center leading-tight text-balance wrap-anywhere lg:text-start";
@@ -122,15 +136,29 @@ function timelinesPath(timelines: TimelineAvailability): "/local" | "/public" {
   return !timelines.local && timelines.federated ? "/public" : "/local";
 }
 
+/** The badge of an item and the name of its link while it shows one, or null for an item without a count now. */
+type ItemBadge = { count: number; badgeLabel: string; name: string } | null;
+
 export function Navigation() {
   const t = useT();
   const { instanceName } = useConfig();
   const pathname = useLocation({ select: (location) => location.pathname });
   const unread = useUnreadNotificationCount();
+  const adminEntry = useAdminEntry();
   const viewer = useViewer();
   const ownAcct = viewer.status === "signed-in" ? viewer.account.acct : null;
   const timelines = useTimelineAvailability();
-  const shown = items.filter((item) => item.timeline === undefined || timelines[item.timeline]);
+  const shown = items.filter((item) => (item.timeline === undefined || timelines[item.timeline]) && (item.admin !== true || adminEntry.available));
+  const badgeOf = (section: Section): ItemBadge => {
+    if (section === "/notifications" && unread > 0) {
+      return { count: unread, badgeLabel: t("client:notifications.unread_count", { count: unread }), name: t("client:shell.nav.notifications_unread", { count: unread }) };
+    }
+    if (section === "/admin" && adminEntry.available && adminEntry.pending > 0) {
+      const count = adminEntry.pending;
+      return { count, badgeLabel: t("client:admin.pending_count", { count }), name: t("client:shell.nav.admin_pending", { count }) };
+    }
+    return null;
+  };
   const current = (section: Section) => (inSection(pathname, section, ownAcct) ? "page" : undefined);
   return (
     <nav
@@ -143,25 +171,19 @@ export function Navigation() {
       </p>
       <ul className="flex md:flex-col md:gap-1 md:p-2 lg:w-60">
         {shown.map((item) => {
-          const badge = item.section === "/notifications" && unread > 0;
+          const badge = badgeOf(item.section);
           return (
             <li key={item.section} className={shownAt[item.shows]}>
               <Link
                 href={item.section === "/timelines" ? timelinesPath(timelines) : item.section}
-                {...(badge ? { "aria-label": t("client:shell.nav.notifications_unread", { count: unread }) } : {})}
+                {...(badge !== null && { "aria-label": badge.name })}
                 aria-current={current(item.section)}
                 variant="navigation"
                 className={itemClass}
               >
                 <span className={pillClass}>
                   {item.icon}
-                  {badge && (
-                    <Badge
-                      count={unread}
-                      label={t("client:notifications.unread_count", { count: unread })}
-                      className="absolute -top-1.5 -inset-e-1 ring-2 ring-surface-raised md:ring-surface"
-                    />
-                  )}
+                  {badge !== null && <Badge count={badge.count} label={badge.badgeLabel} className={badgeClass} />}
                 </span>
                 <span className={labelClass}>{t(item.label)}</span>
               </Link>
@@ -169,7 +191,7 @@ export function Navigation() {
           );
         })}
         <li className={shownAt["tab-bar"]}>
-          <NavigationMenu current={current} />
+          <NavigationMenu items={menuItems.filter((item) => item.admin !== true || adminEntry.available)} current={current} badgeOf={badgeOf} />
         </li>
       </ul>
       <ViewerLink />
@@ -211,8 +233,12 @@ function ViewerLink() {
 }
 
 type NavigationMenuProps = {
+  /** The items of the sheet that the viewer may use. */
+  items: readonly NavigationItem[];
   /** The `aria-current` of a section's link. */
   current: (section: Section) => "page" | undefined;
+  /** The badge of a section's link, the same as in the rail. */
+  badgeOf: (section: Section) => ItemBadge;
 };
 
 /**
@@ -220,11 +246,14 @@ type NavigationMenuProps = {
  * are not in the tab bar. The button is not a place, so it never has aria-current; the sheet marks the current
  * item. A navigation to another page closes the sheet when it starts, so that the new page's heading can take
  * focus (useViewChange); a navigation that the unsaved-changes guard holds does not start, and the sheet stays.
+ * The button carries the counts of the sheet's items (what awaits the moderators), so that they show in the tab
+ * bar too, and the sheet's items show them as the rail does.
  */
-function NavigationMenu({ current }: NavigationMenuProps) {
+function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
   const t = useT();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const pending = items.reduce((sum, item) => sum + (badgeOf(item.section)?.count ?? 0), 0);
   // The router is outside React: subscribe to its navigations, and unsubscribe on unmount.
   useEffect(
     () =>
@@ -235,27 +264,33 @@ function NavigationMenu({ current }: NavigationMenuProps) {
   );
   return (
     <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
-      <Button variant="ghost" className={itemClass}>
+      <Button variant="ghost" className={itemClass} {...(pending > 0 && { "aria-label": t("client:shell.nav.menu_pending", { count: pending }) })}>
         <span className={pillClass}>
           <MenuIcon />
+          {pending > 0 && <Badge count={pending} label={t("client:admin.pending_count", { count: pending })} className={badgeClass} />}
         </span>
         <span className={labelClass}>{t("client:shell.nav.menu")}</span>
       </Button>
       <Sheet title={t("client:shell.menu.title")} closeLabel={t("client:shell.menu.close")} isDismissable>
         <ul className="flex flex-col">
-          {menuItems.map((item) => (
-            <li key={item.section}>
-              <Link
-                href={item.section}
-                aria-current={current(item.section)}
-                variant="navigation"
-                className="flex min-h-12 w-full gap-3 rounded-md px-3 text-base font-normal text-fg data-hovered:bg-surface-sunken aria-[current=page]:font-semibold aria-[current=page]:text-accent"
-              >
-                {item.icon}
-                {t(item.label)}
-              </Link>
-            </li>
-          ))}
+          {items.map((item) => {
+            const badge = badgeOf(item.section);
+            return (
+              <li key={item.section}>
+                <Link
+                  href={item.section}
+                  {...(badge !== null && { "aria-label": badge.name })}
+                  aria-current={current(item.section)}
+                  variant="navigation"
+                  className="flex min-h-12 w-full gap-3 rounded-md px-3 text-base font-normal text-fg data-hovered:bg-surface-sunken aria-[current=page]:font-semibold aria-[current=page]:text-accent"
+                >
+                  {item.icon}
+                  {t(item.label)}
+                  {badge !== null && <Badge count={badge.count} label={badge.badgeLabel} />}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </Sheet>
     </DialogTrigger>

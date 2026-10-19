@@ -281,7 +281,7 @@ flowchart LR
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `sessions` | リソース | `id`, `user_id`, `token_hash`（`bytes`。Cookie の値の SHA-256）, `created_at`, `expires_at` | 一意 `(token_hash)`。インデックス `(user_id)`（処分による失効） |
-| `session_origins` | リソース（子） | `session_id`（PK）, `user_id`, `ip`（NULL 可）, `user_agent`（`string(512)`、NULL 可）, `created_at` | インデックス `(ip)`（同じ IP のアカウントの検索、FR-714）, `(created_at)`（保持期間による消去）。保持期間（[ADR-0038](../adr/0038-moderation-personal-data-retention.md)、既定 180 日）を過ぎた行を消去ジョブが消す |
+| `session_origins` | リソース（子） | `session_id`（PK）, `user_id`, `ip`（NULL 可）, `user_agent`（`string(512)`、NULL 可）, `created_at` | インデックス `(ip)`（同じ IP のアカウントの検索、FR-714）, `(user_id, created_at DESC)`（アカウントの最近のログイン元、FR-714）, `(created_at)`（保持期間による消去）。保持期間（[ADR-0038](../adr/0038-moderation-personal-data-retention.md)、既定 180 日）を過ぎた行を消去ジョブが消す |
 | `session_revocations` | イベント | `session_id`（PK）, `reason`（`enum(logout, replaced, password_changed, moderation, expired_cleanup)`）, `revoked_at` | 有効なセッション = 失効イベントが無く `expires_at` を過ぎていないもの。`replaced` は同じブラウザでのログインし直し |
 | `session_activity` | 現在値 | `session_id`（PK）, `last_seen_at` | ログイン時に作り、以後の更新は 1 時間に 1 回に間引く |
 | `oauth_clients` | リソース | `id`, `client_id`, `client_secret_hash`（NULL 可 = 公開クライアント）, `name`, `website`（NULL 可）, `scope`, `is_first_party`, `owner_user_id`（NULL 可）, `created_at` | 一意 `(client_id)` |
@@ -298,6 +298,9 @@ flowchart LR
   - IP アドレスも User-Agent も分からないログインは `session_origins` の行を作らず、IP アドレスの分からない登録は `registration_origins` の行を作りません。どちらもログインと登録を妨げません。
   - 1 時間ごとの消去ジョブ `identity.purge_origins` が、保持期間（インスタンス設定 `retention_session_origins`・`retention_registration_origins`、既定 180 日、§4.9）を過ぎた行を、1 文あたり 1,000 行・1 テーブルあたり 20 文まで、古い順に消します。
     保全（§4.3）のあるローカルのアカウントの利用者の行は消しません。期間と保全のある利用者は回ごとに読み直します。セッションと利用者は残ります。
+  - IP アドレスとメールアドレスを返すのは、モデレーターのアカウントの管理（FR-714）の「表示」（`identity.AccountAdmin.Reveal`）だけで、呼ぶたびにそのためのトランザクションで監査ログ（`revealed_private_data`）を書き、書けたときだけ返します。
+- アカウントの管理（FR-714）の検索は、モジュールをまたぐ JOIN をしません。条件ごとに 1 つのモジュールが自分のテーブルから ID を新しい順のキーセットで返し（メールアドレス・メールのドメイン・IP アドレス・登録の状態は `identity` が利用者の ID で、処分の制限は `moderation` が `account_restrictions` から、削除は `account` が `account_lifecycle_states` から、それ以外は `account` が `accounts` と `account_handles` から）、`identity.AccountAdmin` が残りの条件をアカウントごとに確かめます。
+  1 ページを埋めるのに読むのは 400 アカウントまでで、埋まらなければ読んだ位置をカーソルにして返します（短い、または空のページにも続きがある）。
 - `scope` は RFC 6749 の scope 文字列（空白区切り・ソート済みの正規形）です。照合は文字列全体で行い、個々のスコープの検索には使わないため、1 カラムで持ちます。
 - `oauth_clients` 以外のテーブルの `client_id` は `oauth_clients.id` を指します。クライアントが送る公開の識別子は `oauth_clients.client_id` です。
 - ファーストパーティの Web クライアント（`client_id` は `my-web`）は起動時に冪等に登録します。リダイレクト URI は設定 `web_origin` から導くので、`oauth_client_redirect_uris` は起動のたびに設定値へ置き換える【現在値】です。
@@ -518,6 +521,7 @@ flowchart LR
   | `rule_retired` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_retirements.rule_id` |
   | `role_granted`, `role_revoked` | `role` | `roles.id` | ロールのキーと利用者のハンドル（`moderator @alice`） | `user_role_grants.id`（剥奪の行もこの ID が PK） |
   | `appeal_upheld`, `appeal_overturned` | `appeal` | `moderation_appeals.id` | 申し立てたアカウントのハンドル | `moderation_appeal_decisions.appeal_id`（= `moderation_appeals.id`） |
+  | `revealed_private_data` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | なし（元の記録を持たない操作） |
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。

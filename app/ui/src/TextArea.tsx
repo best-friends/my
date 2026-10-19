@@ -125,7 +125,9 @@ export function TextArea({
       {...props}
       value={text}
       onChange={handleChange}
-      isInvalid={isInvalid === true || over}
+      // Only a true isInvalid is passed: any defined value overrides React Aria's own validation (`validate`,
+      // `isRequired`), which would then never mark the field invalid or stop its form.
+      {...(isInvalid === true || over ? { isInvalid: true } : {})}
       {...(describedBy === "" ? {} : { "aria-describedby": describedBy })}
       className={composeRenderProps(className, (className) => styles.root({ className }))}
     >

@@ -116,6 +116,8 @@ type Repository interface {
 	SeveranceRepository
 	// The retention of the records and the holds (retention.go).
 	RetentionRepository
+	// The account management (account_admin.go).
+	AccountAdminRepository
 }
 
 // ReportQuery selects the reports of a list.

@@ -1,4 +1,196 @@
 {
+  "account_status.active.empty": {
+    "defaultMessage": "No actions are in effect on your account",
+    "description": "Shown when no moderation action is in effect on the user's account."
+  },
+  "account_status.active.empty.description": {
+    "defaultMessage": "If moderators take an action on your account, it shows here with its reason and when it ends.",
+    "description": "Under the heading shown when no moderation action is in effect on the user's account."
+  },
+  "account_status.active.title": {
+    "defaultMessage": "Actions in effect",
+    "description": "Heading of the account status page's region with the moderation actions in effect now."
+  },
+  "account_status.appeal.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the appeal dialog without appealing."
+  },
+  "account_status.appeal.characters_left": {
+    "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
+    "description": "Character count of the appeal field. {count} is the number of characters left."
+  },
+  "account_status.appeal.characters_over": {
+    "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
+    "description": "Character count of the appeal field when it is over the limit. {count} is the number of characters too many."
+  },
+  "account_status.appeal.closed": {
+    "defaultMessage": "The time to appeal this action ended on {date}.",
+    "description": "Shown instead of the appeal button when the time to appeal a moderation action has passed. {date} is a formatted date and time."
+  },
+  "account_status.appeal.confirm.description": {
+    "defaultMessage": "Moderators review “{kind}” of {date} again and tell you their decision in a notification. You can appeal an action only once, and you cannot change the appeal after sending it.",
+    "description": "Description of the dialog that appeals a moderation action. {kind} is what the action does, as the server names it; {date} is when it was taken, a formatted date and time."
+  },
+  "account_status.appeal.confirm.title": {
+    "defaultMessage": "Appeal this action?",
+    "description": "Question that titles the dialog that appeals a moderation action."
+  },
+  "account_status.appeal.decided_at": {
+    "defaultMessage": "Decided",
+    "description": "Term of the user's appeal of a moderation action: when the moderators decided it."
+  },
+  "account_status.appeal.decision_reason": {
+    "defaultMessage": "Explanation of the decision",
+    "description": "Term of the user's appeal of a moderation action: the moderators' explanation of their decision."
+  },
+  "account_status.appeal.failed": {
+    "defaultMessage": "Could not send the appeal: {reason}",
+    "description": "In the appeal dialog when sending the appeal failed. {reason} is why, from the server."
+  },
+  "account_status.appeal.open": {
+    "defaultMessage": "Appeal",
+    "description": "Button that opens the appeal of a moderation action."
+  },
+  "account_status.appeal.open_of": {
+    "defaultMessage": "Appeal the action of {date}",
+    "description": "Accessible name of the button that opens the appeal of a moderation action. {date} is when the action was taken, a formatted date and time."
+  },
+  "account_status.appeal.send": {
+    "defaultMessage": "Send appeal",
+    "description": "Button in the appeal dialog that sends the appeal."
+  },
+  "account_status.appeal.sent": {
+    "defaultMessage": "You appealed “{kind}”. The moderators will tell you their decision in a notification.",
+    "description": "Status shown after the user appealed a moderation action. {kind} is what the action does, as the server names it."
+  },
+  "account_status.appeal.state": {
+    "defaultMessage": "State",
+    "description": "Term of the user's appeal of a moderation action: where it stands."
+  },
+  "account_status.appeal.state.overturned": {
+    "defaultMessage": "Action lifted",
+    "description": "State of an appeal after which the moderators lifted the action."
+  },
+  "account_status.appeal.state.pending": {
+    "defaultMessage": "Under review",
+    "description": "State of an appeal that awaits the moderators' decision."
+  },
+  "account_status.appeal.state.upheld": {
+    "defaultMessage": "Action kept",
+    "description": "State of an appeal after which the moderators kept the action."
+  },
+  "account_status.appeal.submitted_at": {
+    "defaultMessage": "Sent",
+    "description": "Term of the user's appeal of a moderation action: when the user sent it."
+  },
+  "account_status.appeal.text": {
+    "defaultMessage": "Your appeal",
+    "description": "Term of the user's appeal of a moderation action: what the user wrote."
+  },
+  "account_status.appeal.text.description": {
+    "defaultMessage": "Write what the moderators should know. They see what you write here.",
+    "description": "Help text under the field of an appeal."
+  },
+  "account_status.appeal.text.label": {
+    "defaultMessage": "Why should the moderators reconsider it?",
+    "description": "Label of the field where the user writes why the moderators should reconsider an action."
+  },
+  "account_status.appeal.text.required": {
+    "defaultMessage": "Enter why the moderators should reconsider the action",
+    "description": "Error of the appeal field when it is empty or has white space only."
+  },
+  "account_status.appeal.text.too_long": {
+    "defaultMessage": "Use at most {max, number} characters",
+    "description": "Error of the appeal field when it has too many characters. {max} is the limit."
+  },
+  "account_status.appeal.title": {
+    "defaultMessage": "Appeal",
+    "description": "Heading of the appeal part of a moderation action on the user's account."
+  },
+  "account_status.appeal.unavailable": {
+    "defaultMessage": "This action cannot be appealed.",
+    "description": "Shown instead of the appeal button when a moderation action cannot be appealed."
+  },
+  "account_status.appeal.until": {
+    "defaultMessage": "You can appeal this action until {date}.",
+    "description": "Above the button that appeals a moderation action. {date} is a formatted date and time."
+  },
+  "account_status.expires_at": {
+    "defaultMessage": "Ends",
+    "description": "Term of a moderation action on the user's account: when it ends."
+  },
+  "account_status.expires_at.none": {
+    "defaultMessage": "When lifted",
+    "description": "Value of the end of a moderation action that lasts until a moderator lifts it."
+  },
+  "account_status.issued_at": {
+    "defaultMessage": "Taken",
+    "description": "Term of a moderation action on the user's account: when it was taken."
+  },
+  "account_status.lifted_at": {
+    "defaultMessage": "Lifted",
+    "description": "Term of a moderation action on the user's account: when a moderator lifted it."
+  },
+  "account_status.more": {
+    "defaultMessage": "Show more",
+    "description": "Button under a list of moderation actions that loads more of them."
+  },
+  "account_status.past.empty": {
+    "defaultMessage": "No past actions",
+    "description": "Shown when no moderation action on the user's account has ended."
+  },
+  "account_status.past.title": {
+    "defaultMessage": "Past actions",
+    "description": "Heading of the account status page's region with the moderation actions that ended (expired or lifted)."
+  },
+  "account_status.posts.loading": {
+    "defaultMessage": "Loading the post",
+    "description": "Accessible label of the spinner while a post that a moderation action acted on loads."
+  },
+  "account_status.posts.missing": {
+    "defaultMessage": "This post is deleted or cannot be shown.",
+    "description": "In place of a post that a moderation action acted on and that cannot be shown, such as a deleted one."
+  },
+  "account_status.posts.title": {
+    "defaultMessage": "Posts",
+    "description": "Heading of the posts that a moderation action on posts acted on."
+  },
+  "account_status.public_reason": {
+    "defaultMessage": "Explanation from the moderators",
+    "description": "Term of a moderation action on the user's account: the moderators' explanation to the user."
+  },
+  "account_status.public_reason.none": {
+    "defaultMessage": "None given",
+    "description": "Value of the moderators' explanation of an action when they gave none."
+  },
+  "account_status.reason_category": {
+    "defaultMessage": "Reason",
+    "description": "Term of a moderation action on the user's account: the kind of reason the moderators gave."
+  },
+  "account_status.state": {
+    "defaultMessage": "State",
+    "description": "Term of a moderation action on the user's account: whether it is in effect."
+  },
+  "account_status.state.active": {
+    "defaultMessage": "In effect",
+    "description": "State of a moderation action that is in effect now."
+  },
+  "account_status.state.expired": {
+    "defaultMessage": "Ended",
+    "description": "State of a moderation action that ended at its end time."
+  },
+  "account_status.state.lifted": {
+    "defaultMessage": "Lifted",
+    "description": "State of a moderation action that a moderator lifted."
+  },
+  "account_status.summary": {
+    "defaultMessage": "Moderation actions on your account, and appealing them",
+    "description": "Description of the account status page in the list of settings pages."
+  },
+  "account_status.title": {
+    "defaultMessage": "Account status",
+    "description": "Heading and document title of the account status page, and its entry in the list of settings pages."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "Reason",
     "description": "Label of the select of the category of the reason for a moderation action on an account."
@@ -243,6 +435,202 @@
     "defaultMessage": "Use at most {max, number} characters",
     "description": "Error of a text of an account action that is too long."
   },
+  "admin.appeal.account": {
+    "defaultMessage": "Account",
+    "description": "Term of the account that appealed, which the action is on."
+  },
+  "admin.appeal.account.admin": {
+    "defaultMessage": "Open the account in the admin screens",
+    "description": "Link from an appeal's page to the admin page of the account that appealed."
+  },
+  "admin.appeal.action.kind": {
+    "defaultMessage": "Action",
+    "description": "Term of the kind of the moderation action on an appeal's page."
+  },
+  "admin.appeal.action.lifted_at": {
+    "defaultMessage": "Lifted",
+    "description": "Term of when the action was lifted."
+  },
+  "admin.appeal.action.report": {
+    "defaultMessage": "Open the report",
+    "description": "Link from an appeal's page to the report the action follows from."
+  },
+  "admin.appeal.action.title": {
+    "defaultMessage": "Moderation action",
+    "description": "Heading of the region of an appeal's page with the action it is of."
+  },
+  "admin.appeal.action_state": {
+    "defaultMessage": "Action state",
+    "description": "Term of the state of the action an appeal is of, in the list of appeals."
+  },
+  "admin.appeal.already_decided": {
+    "defaultMessage": "Another moderator already reviewed this appeal. That decision stands.",
+    "description": "Status when a moderator decided an appeal that another moderator had decided the other way first."
+  },
+  "admin.appeal.appeal.title": {
+    "defaultMessage": "Appeal",
+    "description": "Heading of the region of an appeal's page with what the user wrote."
+  },
+  "admin.appeal.back": {
+    "defaultMessage": "Back to appeals",
+    "description": "Link from an appeal's page to the list of appeals."
+  },
+  "admin.appeal.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button of the confirmation of a decision on an appeal that closes it without deciding."
+  },
+  "admin.appeal.confirm_overturn.description": {
+    "defaultMessage": "The action “{kind}” is lifted now. Deleted posts stay deleted. The decision cannot be changed afterwards.",
+    "description": "Text of the confirmation before overturning an appeal. {kind} is the kind of the action."
+  },
+  "admin.appeal.confirm_overturn.description_ban": {
+    "defaultMessage": "The ban is lifted now and the account is no longer deleted. The decision cannot be changed afterwards.",
+    "description": "Text of the confirmation before overturning the appeal of a ban."
+  },
+  "admin.appeal.confirm_overturn.title": {
+    "defaultMessage": "Overturn this appeal?",
+    "description": "Title of the confirmation before overturning an appeal."
+  },
+  "admin.appeal.confirm_uphold.description": {
+    "defaultMessage": "The action “{kind}” stays. The decision cannot be changed afterwards.",
+    "description": "Text of the confirmation before upholding an appeal. {kind} is the kind of the action."
+  },
+  "admin.appeal.confirm_uphold.title": {
+    "defaultMessage": "Uphold this appeal?",
+    "description": "Title of the confirmation before upholding an appeal."
+  },
+  "admin.appeal.decide_failed": {
+    "defaultMessage": "Could not save the decision: {reason}",
+    "description": "Error in the confirmation of a decision on an appeal when the request failed. {reason} is why."
+  },
+  "admin.appeal.decided_at": {
+    "defaultMessage": "Reviewed",
+    "description": "Term of when a moderator decided an appeal."
+  },
+  "admin.appeal.decided_by": {
+    "defaultMessage": "Reviewed by",
+    "description": "Term of the moderator who decided an appeal."
+  },
+  "admin.appeal.decided_by.cli": {
+    "defaultMessage": "The command line",
+    "description": "Value of who decided an appeal when it was decided from the command line."
+  },
+  "admin.appeal.decision": {
+    "defaultMessage": "Decision",
+    "description": "Term of the decision on an appeal."
+  },
+  "admin.appeal.decision.description": {
+    "defaultMessage": "Upholding keeps the action. Overturning lifts it. The user is told of the decision, with your explanation.",
+    "description": "Text above the uphold and overturn buttons of a pending appeal."
+  },
+  "admin.appeal.decision.title": {
+    "defaultMessage": "Review",
+    "description": "Heading of the region of an appeal's page where it is decided."
+  },
+  "admin.appeal.decision_reason": {
+    "defaultMessage": "Explanation to the user",
+    "description": "Term of the explanation of a decision that the user was shown."
+  },
+  "admin.appeal.none": {
+    "defaultMessage": "None",
+    "description": "Value of a moderator's text on an appeal's page when there is none."
+  },
+  "admin.appeal.overturn": {
+    "defaultMessage": "Overturn",
+    "description": "Button of a pending appeal that opens the confirmation of overturning it, and the confirmation's button that overturns it."
+  },
+  "admin.appeal.overturned": {
+    "defaultMessage": "The appeal is overturned and the action is lifted.",
+    "description": "Status after a moderator overturned an appeal, which lifted its action."
+  },
+  "admin.appeal.overturned_ended": {
+    "defaultMessage": "The appeal is overturned. The action had already ended.",
+    "description": "Status after a moderator overturned an appeal whose action had already ended or been lifted."
+  },
+  "admin.appeal.reason": {
+    "defaultMessage": "Explanation to the user",
+    "description": "Label of the optional explanation in the confirmation of a decision on an appeal."
+  },
+  "admin.appeal.reason.description": {
+    "defaultMessage": "Optional. The user who appealed sees it with the decision.",
+    "description": "Hint under the explanation of a decision on an appeal."
+  },
+  "admin.appeal.reason.too_long": {
+    "defaultMessage": "Use at most {max, number} characters",
+    "description": "Error under the explanation of a decision on an appeal when it is too long. {max} is the limit."
+  },
+  "admin.appeal.state": {
+    "defaultMessage": "State",
+    "description": "Term of an appeal's state."
+  },
+  "admin.appeal.submitted_at": {
+    "defaultMessage": "Appealed",
+    "description": "Term of when the user appealed."
+  },
+  "admin.appeal.text": {
+    "defaultMessage": "What the user wrote",
+    "description": "Term of the text of an appeal, written by the user."
+  },
+  "admin.appeal.title": {
+    "defaultMessage": "Appeal",
+    "description": "Heading of the page of one appeal of a moderation action."
+  },
+  "admin.appeal.upheld": {
+    "defaultMessage": "The appeal is upheld. The action stays.",
+    "description": "Status after a moderator upheld an appeal."
+  },
+  "admin.appeal.uphold": {
+    "defaultMessage": "Uphold",
+    "description": "Button of a pending appeal that opens the confirmation of upholding it, and the confirmation's button that upholds it."
+  },
+  "admin.appeals.empty.decided": {
+    "defaultMessage": "No appeals have been reviewed yet",
+    "description": "Heading of the appeals screen's reviewed tab when it is empty."
+  },
+  "admin.appeals.empty.pending": {
+    "defaultMessage": "No appeals await review",
+    "description": "Heading of the appeals screen's pending tab when it is empty."
+  },
+  "admin.appeals.empty.pending.description": {
+    "defaultMessage": "Appeals that users make of the actions on their accounts appear here.",
+    "description": "Text under the heading of the empty pending tab of the appeals screen."
+  },
+  "admin.appeals.filter.decided": {
+    "defaultMessage": "Reviewed",
+    "description": "Tab of the appeals that were upheld or overturned."
+  },
+  "admin.appeals.filter.label": {
+    "defaultMessage": "Appeals by state",
+    "description": "Accessible name of the tabs of the appeals admin screen."
+  },
+  "admin.appeals.filter.pending": {
+    "defaultMessage": "Awaiting review",
+    "description": "Tab of the appeals that await a decision."
+  },
+  "admin.appeals.of": {
+    "defaultMessage": "Appeal of {kind}",
+    "description": "Heading of an appeal in the list, a link to its page. {kind} is the kind of the moderation action, such as Suspend."
+  },
+  "admin.appeals.state.overturned": {
+    "defaultMessage": "Overturned",
+    "description": "State of an appeal whose action the moderators lifted."
+  },
+  "admin.appeals.state.pending": {
+    "defaultMessage": "Awaiting review",
+    "description": "State of an appeal that awaits a decision."
+  },
+  "admin.appeals.state.upheld": {
+    "defaultMessage": "Upheld",
+    "description": "State of an appeal whose action the moderators kept."
+  },
+  "admin.appeals.summary": {
+    "defaultMessage": "Review appeals of moderation actions and uphold or overturn them.",
+    "description": "Description of the appeals screen in the admin menu."
+  },
+  "admin.appeals.title": {
+    "defaultMessage": "Appeals",
+    "description": "Heading of the admin screen of the appeals of moderation actions, and its link in the admin menu."
+  },
   "admin.audit_log.action.account_action_issued": {
     "defaultMessage": "Account action taken",
     "description": "Heading of an audit log entry: a moderator took an action (a suspension, a limit…) on an account."
@@ -298,6 +686,10 @@
   "admin.audit_log.action.report_unassigned": {
     "defaultMessage": "Report unassigned",
     "description": "Heading of an audit log entry: a report was left without an assigned moderator."
+  },
+  "admin.audit_log.action.revealed_private_data": {
+    "defaultMessage": "Private data shown",
+    "description": "Heading of an audit log entry: a moderator was shown the email address and the IP addresses of a local account."
   },
   "admin.audit_log.action.role_granted": {
     "defaultMessage": "Role granted",
@@ -438,6 +830,10 @@
   "admin.audit_log.only_target": {
     "defaultMessage": "Show only operations on {target}",
     "description": "Link in an audit log entry that keeps only the operations on its target. {target} is the target’s name, such as @alice or a domain."
+  },
+  "admin.audit_log.summary": {
+    "defaultMessage": "Who did what in the administration, and when.",
+    "description": "Description of the audit log screen in the administration menu."
   },
   "admin.audit_log.target_kind.account": {
     "defaultMessage": "Account",
@@ -791,6 +1187,14 @@
     "defaultMessage": "Use at most {max, number} characters",
     "description": "Error under the public comment or private note of a domain action when it is too long. {max} is the limit."
   },
+  "admin.home.none.description": {
+    "defaultMessage": "Your roles grant none of the permissions that the admin screens need. An administrator can grant them.",
+    "description": "Description on the administration page of a user whose roles grant none of the admin screens' permissions."
+  },
+  "admin.home.none.heading": {
+    "defaultMessage": "No admin screens for your roles",
+    "description": "Heading on the administration page of a user whose roles grant none of the admin screens' permissions."
+  },
   "admin.instance.back": {
     "defaultMessage": "Back to remote servers",
     "description": "Link under the heading of a remote server's page that opens the list of remote servers."
@@ -935,6 +1339,18 @@
     "defaultMessage": "Show more",
     "description": "Button under a list of an admin screen that loads more of it."
   },
+  "admin.menu.open_reports": {
+    "defaultMessage": "{count, plural, one {# open report} other {# open reports}}",
+    "description": "Badge of the reports item of the administration menu: how many reports are open."
+  },
+  "admin.menu.pending_appeals": {
+    "defaultMessage": "{count, plural, one {# awaits a decision} other {# await a decision}}",
+    "description": "Badge of the appeals item of the administration menu: how many appeals of moderation actions await a decision."
+  },
+  "admin.menu.pending_registrations": {
+    "defaultMessage": "{count, plural, one {# awaits approval} other {# await approval}}",
+    "description": "Badge of the registrations item of the administration menu: how many registrations await approval."
+  },
   "admin.menu.title": {
     "defaultMessage": "Administration",
     "description": "Heading of the links to the admin screens on the settings page, shown only to operators."
@@ -946,6 +1362,10 @@
   "admin.missing_permission.heading": {
     "defaultMessage": "You cannot use this screen",
     "description": "Heading of an admin screen for a user whose roles lack its permission."
+  },
+  "admin.pending_count": {
+    "defaultMessage": "{count, plural, one {# pending} other {# pending}}",
+    "description": "Badge of the navigation's administration item: how many open reports and registrations await the moderators."
   },
   "admin.registrations.account_gone": {
     "defaultMessage": "A removed account",
@@ -1078,6 +1498,10 @@
   "admin.registrations.submitted_at": {
     "defaultMessage": "Signed up",
     "description": "Term of when the applicant signed up."
+  },
+  "admin.registrations.summary": {
+    "defaultMessage": "Sign-ups that await approval, and approving or rejecting them.",
+    "description": "Description of the registration review screen in the administration menu."
   },
   "admin.registrations.title": {
     "defaultMessage": "Registrations",
@@ -1755,6 +2179,14 @@
     "defaultMessage": "Sign in",
     "description": "Heading and document title of the page that starts signing in."
   },
+  "notifications.appeal.overturned": {
+    "defaultMessage": "Your appeal was granted, and the action was lifted.",
+    "description": "In an appeal_decided notification: the moderators granted the user's appeal and lifted the action."
+  },
+  "notifications.appeal.upheld": {
+    "defaultMessage": "Your appeal was not granted, and the action stays.",
+    "description": "In an appeal_decided notification: the moderators kept the action that the user appealed."
+  },
   "notifications.empty.all": {
     "defaultMessage": "No notifications yet",
     "description": "Heading shown on the notifications page when the user has no notifications."
@@ -1803,6 +2235,30 @@
     "defaultMessage": "{name} and {count, plural, one {# other} other {# others}} favourited your post",
     "description": "Notification sentence for several favourites of one of the user's posts, grouped in one row. {name} is the display name of the newest account that favourited it; {count} is the number of the other accounts that did (1 or more)."
   },
+  "notifications.link.account_status": {
+    "defaultMessage": "View your account status",
+    "description": "Link in a moderation notice notification to the page with the moderation actions on the user's account."
+  },
+  "notifications.link.appeal": {
+    "defaultMessage": "Open the appeal",
+    "description": "Link in a moderator's notification of a new appeal to the appeal's admin page."
+  },
+  "notifications.link.followers": {
+    "defaultMessage": "View your followers",
+    "description": "Link in a notification of follows ended by a suspension to the user's list of followers."
+  },
+  "notifications.link.following": {
+    "defaultMessage": "View the accounts you follow",
+    "description": "Link in a notification of follows ended by a suspension to the list of accounts the user follows."
+  },
+  "notifications.link.registrations": {
+    "defaultMessage": "Review registrations",
+    "description": "Link in a moderator's notification of a new sign-up to the registration review screen."
+  },
+  "notifications.link.report": {
+    "defaultMessage": "Open the report",
+    "description": "Link in a moderator's notification of a new report to the report's admin page."
+  },
   "notifications.load_more": {
     "defaultMessage": "Load more notifications",
     "description": "Button at the end of the notifications that loads older ones."
@@ -1811,6 +2267,14 @@
     "defaultMessage": "Loading notifications",
     "description": "Visually hidden text that names the busy list of notifications while its first page loads."
   },
+  "notifications.moderation.action": {
+    "defaultMessage": "{kind}: {category}",
+    "description": "In a moderation notice notification: what the action on the user's account does ({kind}, e.g. 'Suspension') and the reason category ({category}, e.g. 'Spam'), both already translated by the server."
+  },
+  "notifications.moderation.until": {
+    "defaultMessage": "Until {date}",
+    "description": "In a moderation notice notification: when the action on the user's account ends by itself; {date} is a formatted date and time."
+  },
   "notifications.post.content_warning": {
     "defaultMessage": "Content warning: {summary}",
     "description": "A notification's link to the post it is about, when the post is behind its author's content warning: the warning only. {summary} is the warning's text."
@@ -1818,6 +2282,10 @@
   "notifications.post.open": {
     "defaultMessage": "Open post",
     "description": "A notification's link to the post it is about, when the post has no text to quote (pictures only)."
+  },
+  "notifications.report_resolved.account": {
+    "defaultMessage": "Your report on {name} has been resolved",
+    "description": "Notification sentence: the moderators resolved the user's report; {name} is the reported account's name, a link to its profile."
   },
   "notifications.retry": {
     "defaultMessage": "Try again",
@@ -2783,6 +3251,14 @@
     "defaultMessage": "Menu",
     "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
   },
+  "shell.nav.admin": {
+    "defaultMessage": "Administration",
+    "description": "Navigation item to the admin screens, shown only to users whose roles have an admin permission."
+  },
+  "shell.nav.admin_pending": {
+    "defaultMessage": "Administration, {count, plural, one {# pending} other {# pending}}",
+    "description": "Accessible name of the navigation item to the admin screens while open reports or registrations awaiting approval wait for the moderators; starts with the visible label."
+  },
   "shell.nav.home": {
     "defaultMessage": "Home",
     "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -2798,6 +3274,10 @@
   "shell.nav.menu": {
     "defaultMessage": "Menu",
     "description": "Button of the bottom tab bar on phones that opens a sheet with the rest of the navigation (profile, settings). Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
+  },
+  "shell.nav.menu_pending": {
+    "defaultMessage": "Menu, {count, plural, one {# pending in administration} other {# pending in administration}}",
+    "description": "Accessible name of the phone tab bar's Menu button while things await the moderators in the administration, which the menu leads to; starts with the visible label."
   },
   "shell.nav.notifications": {
     "defaultMessage": "Notifications",

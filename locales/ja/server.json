@@ -327,6 +327,38 @@
     "defaultMessage": "アカウントは処分を受けています",
     "description": "Title and heading of the page a signed-in user sees while a moderation action keeps their account out of the app."
   },
+  "auth.status.appeal_answer": {
+    "defaultMessage": "モデレーターからの回答:",
+    "description": "Label before the moderators' explanation of their decision on the user's appeal, on the status page of a signed-in user whose account is restricted."
+  },
+  "auth.status.appeal_hint": {
+    "defaultMessage": "{days, plural, other {異議の申し立ては 1 回だけ、あと # 日以内にできます。{max, number} 文字まで。}}",
+    "description": "Hint under the appeal field of a moderation action on the status page. {days} is the time left to appeal, rounded up to whole days; {max} is the longest allowed appeal in characters."
+  },
+  "auth.status.appeal_label": {
+    "defaultMessage": "この処分に異議を申し立てる",
+    "description": "Label of the field in which a user whose account is restricted writes their appeal of a moderation action (why a moderator should reconsider it)."
+  },
+  "auth.status.appeal_not_sent": {
+    "defaultMessage": "異議申し立てを送れませんでした。下に示した欄を確かめてください。",
+    "description": "Alert on the status page when the appeal form was sent with an empty or too long appeal; the field's own error follows below."
+  },
+  "auth.status.appeal_sent": {
+    "defaultMessage": "異議申し立てを送りました。モデレーターが審査します。",
+    "description": "Notice on the status page after the user appealed a moderation action on their account."
+  },
+  "auth.status.appeal_state": {
+    "defaultMessage": "{state, select, pending {異議申し立てはモデレーターの審査待ちです。} upheld {モデレーターが異議申し立てを審査し、処分を維持しました。} overturned {モデレーターが異議申し立てを審査し、処分を解除しました。} other {この処分に異議を申し立てました。}}",
+    "description": "Where the user's appeal of a moderation action stands, on the status page. {state} is pending, upheld (the action stays), or overturned (the action is lifted)."
+  },
+  "auth.status.appeal_submit": {
+    "defaultMessage": "申し立てる",
+    "description": "Button that sends the user's appeal of a moderation action on their account."
+  },
+  "auth.status.appeal_text_invalid": {
+    "defaultMessage": "{max, number} 文字以内で申し立ての内容を書いてください。",
+    "description": "Error under the appeal field when it is empty or too long. {max} is the longest allowed appeal in characters."
+  },
   "auth.verify_email.done": {
     "defaultMessage": "ありがとうございます。メールアドレスを確認しました。",
     "description": "Body of the page after the email address was confirmed."
@@ -377,7 +409,7 @@
   },
   "errors.appeal.not_appealable": {
     "defaultMessage": "この処分には異議を申し立てられません。",
-    "description": "API error title for HTTP 422 when the user appeals a ban, which is never lifted."
+    "description": "API error title for HTTP 422 when the user appeals a ban whose account is already deleted; a ban is appealable only until its account is deleted."
   },
   "errors.appeal.window_closed": {
     "defaultMessage": "この処分に異議を申し立てられる期間は過ぎています。",

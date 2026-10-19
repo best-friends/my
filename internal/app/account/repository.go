@@ -125,4 +125,5 @@ type Repository interface {
 	CountLocalAccounts(ctx context.Context) (int, error)
 
 	RemoteRepository
+	SearchRepository
 }

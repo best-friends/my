@@ -21,6 +21,8 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as AtChar123acctChar125IdRouteImport } from './routes/@{$acct}_.$id'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAppealsRouteImport } from './routes/admin.appeals'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDomainActionsRouteImport } from './routes/admin.domain-actions'
@@ -29,12 +31,14 @@ import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrat
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
+import { Route as AdminAppealsIdRouteImport } from './routes/admin.appeals_.$id'
 import { Route as AdminInstancesDomainRouteImport } from './routes/admin.instances_.$domain'
 import { Route as AdminReportsIdRouteImport } from './routes/admin.reports_.$id'
 
@@ -100,6 +104,16 @@ const AtChar123acctChar125FollowingRoute =
     path: '/@{$acct}/following',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAppealsRoute = AdminAppealsRouteImport.update({
+  id: '/admin/appeals',
+  path: '/admin/appeals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAuditLogRoute = AdminAuditLogRouteImport.update({
   id: '/admin/audit-log',
   path: '/admin/audit-log',
@@ -140,6 +154,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAccountStatusRoute = SettingsAccountStatusRouteImport.update({
+  id: '/settings/account-status',
+  path: '/settings/account-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
   id: '/settings/blocks',
   path: '/settings/blocks',
@@ -170,6 +189,11 @@ const TagsTagRoute = TagsTagRouteImport.update({
   path: '/tags/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAppealsIdRoute = AdminAppealsIdRouteImport.update({
+  id: '/admin/appeals_/$id',
+  path: '/admin/appeals/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminInstancesDomainRoute = AdminInstancesDomainRouteImport.update({
   id: '/admin/instances_/$domain',
   path: '/admin/instances/$domain',
@@ -194,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
@@ -201,13 +226,16 @@ export interface FileRoutesByFullPath {
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
   '/admin/reports/$id': typeof AdminReportsIdRoute
 }
@@ -224,6 +252,7 @@ export interface FileRoutesByTo {
   '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
@@ -231,13 +260,16 @@ export interface FileRoutesByTo {
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/admin': typeof AdminIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
   '/admin/reports/$id': typeof AdminReportsIdRoute
 }
@@ -255,6 +287,7 @@ export interface FileRoutesById {
   '/@{$acct}_/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
@@ -262,13 +295,16 @@ export interface FileRoutesById {
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/login_/callback': typeof LoginCallbackRoute
+  '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tags/$tag': typeof TagsTagRoute
+  '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/admin/appeals_/$id': typeof AdminAppealsIdRoute
   '/admin/instances_/$domain': typeof AdminInstancesDomainRoute
   '/admin/reports_/$id': typeof AdminReportsIdRoute
 }
@@ -287,6 +323,7 @@ export interface FileRouteTypes {
     | '/@{$acct}/$id'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
@@ -294,13 +331,16 @@ export interface FileRouteTypes {
     | '/admin/registrations'
     | '/admin/reports'
     | '/login/callback'
+    | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
     | '/tags/$tag'
+    | '/admin/'
     | '/settings/'
+    | '/admin/appeals/$id'
     | '/admin/instances/$domain'
     | '/admin/reports/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -317,6 +357,7 @@ export interface FileRouteTypes {
     | '/@{$acct}/$id'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
@@ -324,13 +365,16 @@ export interface FileRouteTypes {
     | '/admin/registrations'
     | '/admin/reports'
     | '/login/callback'
+    | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
     | '/tags/$tag'
+    | '/admin'
     | '/settings'
+    | '/admin/appeals/$id'
     | '/admin/instances/$domain'
     | '/admin/reports/$id'
   id:
@@ -347,6 +391,7 @@ export interface FileRouteTypes {
     | '/@{$acct}_/$id'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
+    | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
     | '/admin/domain-actions'
@@ -354,13 +399,16 @@ export interface FileRouteTypes {
     | '/admin/registrations'
     | '/admin/reports'
     | '/login_/callback'
+    | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
     | '/tags/$tag'
+    | '/admin/'
     | '/settings/'
+    | '/admin/appeals_/$id'
     | '/admin/instances_/$domain'
     | '/admin/reports_/$id'
   fileRoutesById: FileRoutesById
@@ -378,6 +426,7 @@ export interface RootRouteChildren {
   AtChar123acctChar125IdRoute: typeof AtChar123acctChar125IdRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
+  AdminAppealsRoute: typeof AdminAppealsRoute
   AdminAuditLogRoute: typeof AdminAuditLogRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDomainActionsRoute: typeof AdminDomainActionsRoute
@@ -385,13 +434,16 @@ export interface RootRouteChildren {
   AdminRegistrationsRoute: typeof AdminRegistrationsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
+  SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
   SettingsMutesRoute: typeof SettingsMutesRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   TagsTagRoute: typeof TagsTagRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  AdminAppealsIdRoute: typeof AdminAppealsIdRoute
   AdminInstancesDomainRoute: typeof AdminInstancesDomainRoute
   AdminReportsIdRoute: typeof AdminReportsIdRoute
 }
@@ -482,6 +534,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AtChar123acctChar125FollowingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/appeals': {
+      id: '/admin/appeals'
+      path: '/admin/appeals'
+      fullPath: '/admin/appeals'
+      preLoaderRoute: typeof AdminAppealsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/audit-log': {
       id: '/admin/audit-log'
       path: '/admin/audit-log'
@@ -538,6 +604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/account-status': {
+      id: '/settings/account-status'
+      path: '/settings/account-status'
+      fullPath: '/settings/account-status'
+      preLoaderRoute: typeof SettingsAccountStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/blocks': {
       id: '/settings/blocks'
       path: '/settings/blocks'
@@ -580,6 +653,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/appeals_/$id': {
+      id: '/admin/appeals_/$id'
+      path: '/admin/appeals/$id'
+      fullPath: '/admin/appeals/$id'
+      preLoaderRoute: typeof AdminAppealsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/instances_/$domain': {
       id: '/admin/instances_/$domain'
       path: '/admin/instances/$domain'
@@ -610,6 +690,7 @@ const rootRouteChildren: RootRouteChildren = {
   AtChar123acctChar125IdRoute: AtChar123acctChar125IdRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
+  AdminAppealsRoute: AdminAppealsRoute,
   AdminAuditLogRoute: AdminAuditLogRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDomainActionsRoute: AdminDomainActionsRoute,
@@ -617,13 +698,16 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRegistrationsRoute: AdminRegistrationsRoute,
   AdminReportsRoute: AdminReportsRoute,
   LoginCallbackRoute: LoginCallbackRoute,
+  SettingsAccountStatusRoute: SettingsAccountStatusRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
   SettingsMutesRoute: SettingsMutesRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   TagsTagRoute: TagsTagRoute,
+  AdminIndexRoute: AdminIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  AdminAppealsIdRoute: AdminAppealsIdRoute,
   AdminInstancesDomainRoute: AdminInstancesDomainRoute,
   AdminReportsIdRoute: AdminReportsIdRoute,
 }

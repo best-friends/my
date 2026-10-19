@@ -14,8 +14,8 @@
 //
 // A signed-in user whose account cannot be used yet (a registration waiting for approval or
 // rejected, an email address waiting for confirmation, or moderation actions that keep the
-// account out of the app, identity.Access) sees a page that says so, and lists those actions,
-// instead of continuing to where they were going.
+// account out of the app, identity.Access) sees a page that says so, and lists those actions
+// with a form to appeal each, instead of continuing to where they were going.
 //
 // The authorization endpoint (RFC 6749 §3.1) asks a signed-in user to consent to a third-party
 // client and answers the client by a 303 redirect to its registered redirect URI with the code
@@ -56,6 +56,9 @@ const (
 	PathVerifyEmail = appidentity.PathVerifyEmail
 	// PathResendVerification sends a signed-in user a new verification email.
 	PathResendVerification = "/auth/verify_email/resend"
+	// PathAppeal takes the status page's appeals of the moderation actions that keep the user
+	// out of the app (moderation.go).
+	PathAppeal = "/auth/appeal"
 	// PathAuthorize is the OAuth authorization endpoint.
 	PathAuthorize = "/oauth/authorize"
 )
@@ -75,8 +78,9 @@ func contentSecurityPolicy(formAction []string) string {
 		"; frame-ancestors 'none'; base-uri 'none'"
 }
 
-// maxFormBytes bounds a form body; the largest is the registration form, whose reason field
-// holds up to identity.MaxRegistrationReasonLength characters.
+// maxFormBytes bounds a form body; the largest are the registration form, whose reason field
+// holds up to identity.MaxRegistrationReasonLength characters, and the appeal form, whose text
+// holds up to moderation.MaxAppealText.
 const maxFormBytes = 32 << 10
 
 // maxReturnTo bounds the return_to path.
@@ -176,6 +180,7 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathVerifyEmail, http.HandlerFunc(h.verifyEmailPage))
 	r.Handle("POST "+PathVerifyEmail, h.cop.Handler(http.HandlerFunc(h.verifyEmail)))
 	r.Handle("POST "+PathResendVerification, h.cop.Handler(http.HandlerFunc(h.resendVerification)))
+	r.Handle("POST "+PathAppeal, h.cop.Handler(http.HandlerFunc(h.appeal)))
 	if h.o.OAuth != nil {
 		r.Handle("GET "+PathAuthorize, http.HandlerFunc(h.authorizePage))
 		r.Handle("POST "+PathAuthorize, h.cop.Handler(http.HandlerFunc(h.authorize)))
