@@ -304,7 +304,8 @@ test.describe("OAuth consent page", () => {
       const query = new URL(page.url()).searchParams;
       expect(query.get("code")).toMatch(/\S/);
       expect(query.get("state")).toBe("e2e-state");
-      expect(query.get("iss")).toBe(serverURL.replace(/^http:/, "https:"));
+      // The server runs with web_origin http://{host}, so it is its own issuer over plain HTTP (Config.ServerOrigin).
+      expect(query.get("iss")).toBe(serverURL);
     });
   });
 });
