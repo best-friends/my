@@ -648,6 +648,34 @@ func (l *Localizer) ServerErrorsAccountUnavailable() string {
 	return l.format("server:errors.account_unavailable", nil)
 }
 
+// ServerErrorsAppealAlreadyAppealed formats "server:errors.appeal.already_appealed". API error title for HTTP 422 when the user appeals a moderation action on their account a second time; an action is appealed once.
+//
+//	en: You have already appealed this action.
+func (l *Localizer) ServerErrorsAppealAlreadyAppealed() string {
+	return l.format("server:errors.appeal.already_appealed", nil)
+}
+
+// ServerErrorsAppealDecided formats "server:errors.appeal.decided". API error title for HTTP 409 when a moderator decides an appeal that another decision already settled the other way.
+//
+//	en: This appeal has already been decided otherwise.
+func (l *Localizer) ServerErrorsAppealDecided() string {
+	return l.format("server:errors.appeal.decided", nil)
+}
+
+// ServerErrorsAppealNotAppealable formats "server:errors.appeal.not_appealable". API error title for HTTP 422 when the user appeals a ban, which is never lifted.
+//
+//	en: This action cannot be appealed.
+func (l *Localizer) ServerErrorsAppealNotAppealable() string {
+	return l.format("server:errors.appeal.not_appealable", nil)
+}
+
+// ServerErrorsAppealWindowClosed formats "server:errors.appeal.window_closed". API error title for HTTP 422 when the user appeals a moderation action after the instance's appeal window.
+//
+//	en: The time to appeal this action has passed.
+func (l *Localizer) ServerErrorsAppealWindowClosed() string {
+	return l.format("server:errors.appeal.window_closed", nil)
+}
+
 // ServerErrorsBadGateway formats "server:errors.bad_gateway". Error title for HTTP 502 when the server could not get a resource from a remote server, e.g. the media proxy could not reach the remote file or the remote server answered with a 5xx.
 //
 //	en: A remote server could not be reached or answered with an error.
@@ -1038,6 +1066,20 @@ func (l *Localizer) ServerErrorsUnusableImage(name string) string {
 //	en: The server is not ready to accept requests.
 func (l *Localizer) ServerHealthUnavailable() string {
 	return l.format("server:health.unavailable", nil)
+}
+
+// ServerMailAdminAppealBody formats "server:mail.admin_appeal.body". Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line).
+//
+//	en: A user of {host} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
+func (l *Localizer) ServerMailAdminAppealBody(host string, url string) string {
+	return l.format("server:mail.admin_appeal.body", map[string]any{"host": host, "url": url})
+}
+
+// ServerMailAdminAppealSubject formats "server:mail.admin_appeal.subject". Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {host} is the server's domain name.
+//
+//	en: A new appeal awaits the moderators of {host}
+func (l *Localizer) ServerMailAdminAppealSubject(host string) string {
+	return l.format("server:mail.admin_appeal.subject", map[string]any{"host": host})
 }
 
 // ServerMailAdminReportBody formats "server:mail.admin_report.body". Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line).

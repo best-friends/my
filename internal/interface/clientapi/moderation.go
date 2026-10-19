@@ -41,6 +41,23 @@ func newModerationAction(l *i18n.Localizer, v appmoderation.TargetActionView) Mo
 		t := v.LiftedAt.UTC()
 		out.LiftedAt = &t
 	}
+	out.Appealable = v.Appealable
+	if v.AppealDeadline != nil {
+		t := v.AppealDeadline.UTC()
+		out.AppealDeadline = &t
+	}
+	if a := v.Appeal; a != nil {
+		out.Appeal = &ModerationAppeal{
+			Id: a.ID, Text: a.Text, State: ModerationAppealState(a.State), SubmittedAt: a.SubmittedAt.UTC(),
+		}
+		if a.DecidedAt != nil {
+			t := a.DecidedAt.UTC()
+			out.Appeal.DecidedAt = &t
+		}
+		if a.DecisionReason != "" {
+			out.Appeal.DecisionReason = &a.DecisionReason
+		}
+	}
 	return out
 }
 

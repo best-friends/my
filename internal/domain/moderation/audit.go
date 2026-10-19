@@ -113,6 +113,14 @@ const (
 	AuditRoleGranted AuditAction = "role_granted"
 	// AuditRoleRevoked: a role was revoked from a user (user_role_revocations).
 	AuditRoleRevoked AuditAction = "role_revoked"
+	// AuditAppealUpheld: an appeal was decided and its action kept (moderation_appeal_decisions).
+	AuditAppealUpheld AuditAction = "appeal_upheld"
+	// AuditAppealOverturned: an appeal was decided and its action lifted
+	// (moderation_appeal_decisions); the lift has its own account_action_lifted entry.
+	AuditAppealOverturned AuditAction = "appeal_overturned"
+	// AuditAccountDeletionCancelled: an overturned appeal of a ban cancelled the scheduled
+	// deletion of the account (account_lifecycle_events, deletion_cancelled).
+	AuditAccountDeletionCancelled AuditAction = "account_deletion_cancelled"
 	// AuditRevealedPrivateData: a moderator was shown the email address and the IP addresses of
 	// a local account (FR-714); the operation has no row of its own.
 	AuditRevealedPrivateData AuditAction = "revealed_private_data"
@@ -142,6 +150,9 @@ var auditActions = []struct {
 	{AuditRuleRetired, AuditTargetRule},
 	{AuditRoleGranted, AuditTargetRole},
 	{AuditRoleRevoked, AuditTargetRole},
+	{AuditAppealUpheld, AuditTargetAppeal},
+	{AuditAppealOverturned, AuditTargetAppeal},
+	{AuditAccountDeletionCancelled, AuditTargetAccount},
 	{AuditRevealedPrivateData, AuditTargetAccount},
 }
 

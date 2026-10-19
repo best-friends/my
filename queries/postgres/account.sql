@@ -51,6 +51,11 @@ DELETE FROM account_profile_heads;
 -- name: GetLifecycleState :one
 SELECT account_id, state, since, deletion_due_at FROM account_lifecycle_states WHERE account_id = $1;
 
+-- GetLifecycleStateForUpdate is GetLifecycleState that locks the row until the transaction ends.
+-- name: GetLifecycleStateForUpdate :one
+SELECT account_id, state, since, deletion_due_at FROM account_lifecycle_states WHERE account_id = $1
+FOR UPDATE;
+
 -- name: UpsertLifecycleState :exec
 INSERT INTO account_lifecycle_states (account_id, state, since, deletion_due_at) VALUES ($1, $2, $3, $4)
 ON CONFLICT (account_id) DO UPDATE SET

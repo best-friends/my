@@ -30,6 +30,9 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   rule_retired: "client:admin.audit_log.action.rule_retired",
   role_granted: "client:admin.audit_log.action.role_granted",
   role_revoked: "client:admin.audit_log.action.role_revoked",
+  appeal_upheld: "client:admin.audit_log.action.appeal_upheld",
+  appeal_overturned: "client:admin.audit_log.action.appeal_overturned",
+  account_deletion_cancelled: "client:admin.audit_log.action.account_deletion_cancelled",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {

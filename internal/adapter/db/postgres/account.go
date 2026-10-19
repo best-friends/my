@@ -242,7 +242,7 @@ func (r *AccountRepository) LifecycleState(ctx context.Context, tx uow.Tx, accou
 	if err != nil {
 		return account.LifecycleState{}, err
 	}
-	row, err := q.GetLifecycleState(ctx, accountID)
+	row, err := q.GetLifecycleStateForUpdate(ctx, accountID)
 	if err != nil {
 		return account.LifecycleState{}, notFound(err, appaccount.ErrNotFound, "lifecycle state of "+accountID)
 	}
