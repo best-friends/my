@@ -146,6 +146,45 @@ func TestGetInstanceFromSettings(t *testing.T) {
 	}
 }
 
+// TestGetInstanceReadsRegionalTexts checks that the texts and rules follow the locale the
+// request asked for, region included (ja-JP -> ja -> default -> en), rather than the locale of
+// the messages: ja-JP has no catalog of its own, yet a text written for it reaches its readers.
+func TestGetInstanceReadsRegionalTexts(t *testing.T) {
+	fake := &fakeInstance{texts: map[instance.TextKey]map[string]string{
+		instance.TextName: {"en": "Example Social", "ja": "例のソーシャル", "ja-JP": "日本の例のソーシャル"},
+	}}
+	rules := &fakeRules{rules: []instance.Rule{{
+		ID: "01890a5d-ac96-774b-bcce-b302099a6001",
+		Revision: instance.RuleRevision{Position: 1, Texts: []instance.RuleText{
+			{Locale: "en", Text: "Be kind"}, {Locale: "ja", Text: "親切に"}, {Locale: "ja-JP", Text: "日本では親切に"},
+		}},
+	}}}
+	e := newAuthEnv(t, func(o *clientapi.Options) { o.Instance, o.Rules = fake, rules })
+	for _, tt := range []struct {
+		acceptLanguage, wantName, wantRule, wantRuleLang string
+	}{
+		{"ja-JP", "日本の例のソーシャル", "日本では親切に", "ja-JP"},
+		{"ja-jp,en;q=0.5", "日本の例のソーシャル", "日本では親切に", "ja-JP"},
+		{"ja", "例のソーシャル", "親切に", "ja"},
+		{"ja-XX", "例のソーシャル", "親切に", "ja"},
+		{"en-GB", "Example Social", "Be kind", "en"},
+		{"fr-CA", "Example Social", "Be kind", "en"},
+	} {
+		res := e.get(t, "/instance", map[string]string{"Accept-Language": tt.acceptLanguage})
+		if res.StatusCode != http.StatusOK {
+			t.Fatalf("Accept-Language %s: status = %d, want 200", tt.acceptLanguage, res.StatusCode)
+		}
+		var got clientapi.Instance
+		if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
+			t.Fatal(err)
+		}
+		if got.Name != tt.wantName || len(got.Rules) != 1 || got.Rules[0].Text != tt.wantRule || got.Rules[0].Lang != tt.wantRuleLang {
+			t.Errorf("Accept-Language %s: name %q, rules %+v, want %q and %q in %s",
+				tt.acceptLanguage, got.Name, got.Rules, tt.wantName, tt.wantRule, tt.wantRuleLang)
+		}
+	}
+}
+
 // TestProblemsAreLocalized checks the problem documents that the generated code writes for
 // unparsable requests and failed handlers: they conform to the spec and are localized from
 // Accept-Language.
