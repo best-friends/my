@@ -120,6 +120,8 @@ type Repository interface {
 	AccountAdminRepository
 	// The sign-up block list (signup_block.go).
 	SignupBlockRepository
+	// The rebuild of the projections (projection.go).
+	ProjectionRepository
 }
 
 // ReportQuery selects the reports of a list.

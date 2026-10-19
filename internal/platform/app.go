@@ -459,7 +459,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpRetention(cfg, retention, statuses)
 	a.setUpProjections(projections, projectionRepositories{
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
-		feeds: feeds, notifications: notifs,
+		feeds: feeds, notifications: notifs, moderation: mods, identities: identities,
 	})
 	a.Streams = stream.NewHub(stream.HubOptions{})
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)

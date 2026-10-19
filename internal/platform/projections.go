@@ -8,7 +8,9 @@ import (
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/graph"
+	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/instance"
+	"github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/projection"
 	"github.com/best-friends/my/internal/app/timeline"
@@ -25,6 +27,8 @@ type projectionRepositories struct {
 	interactions  content.InteractionRepository
 	feeds         timeline.Repository
 	notifications notification.Repository
+	moderation    moderation.Repository
+	identities    identity.Repository
 }
 
 // setUpProjections builds the service of `my projection` and registers the projection.verify
@@ -49,6 +53,20 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 				},
 			},
 			{
+				Name: "identity", Module: "identity",
+				Tables: []string{"user_roles", "user_registration_states", "user_primary_emails"},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return identity.RebuildProjections(ctx, u, r.identities)
+				},
+			},
+			{
+				Name: "moderation", Module: "moderation",
+				Tables: []string{"account_restrictions", "domain_restrictions", "report_states", "appeal_states"},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return moderation.RebuildProjections(ctx, u, r.moderation, a.Clock)
+				},
+			},
+			{
 				Name: "graph", Module: "graph",
 				Tables: []string{"follow_edges", "follow_counters", "block_edges"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
@@ -57,9 +75,19 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 			},
 			{
 				Name: "content", Module: "content",
-				Tables: []string{"status_heads", "status_mention_index", "status_reply_links", "status_counters", "account_post_counters", "local_post_counters"},
+				Tables: []string{"status_heads", "status_mention_index", "status_reply_links", "status_counters", "account_post_counters", "local_post_counters", "poll_tallies"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return content.RebuildProjections(ctx, u, r.statuses)
+				},
+			},
+			{
+				Name: "status_sensitivity_overrides", Module: "content",
+				Tables: []string{"status_sensitivity_overrides"},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return content.RebuildSensitivityOverrides(ctx, u, r.statuses,
+						func(ctx context.Context, tx uow.Tx, mark func(statusID, actionID string) error) error {
+							return moderation.ReplaySensitivityMarks(ctx, tx, r.moderation, mark)
+						})
 				},
 			},
 			{
@@ -75,6 +103,14 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return timeline.RebuildProjections(ctx, u, r.feeds,
 						timeline.ContentSource(r.statuses, r.interactions), timeline.GraphSource(r.follows))
+				},
+			},
+			{
+				Name: "feed_restrictions", Module: "timeline",
+				Tables: []string{"feed_author_restrictions", "feed_domain_restrictions"},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return timeline.RebuildRestrictions(ctx, u, r.feeds, a.Accounts, a.Clock,
+						timeline.ModerationSource(r.moderation, a.Clock), timeline.AccountSource(r.accounts))
 				},
 			},
 			{

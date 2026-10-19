@@ -83,6 +83,8 @@ type Repository interface {
 	InsertSensitivityOverride(ctx context.Context, tx uow.Tx, statusID, actionID string) error
 	// DeleteSensitivityOverridesOf deletes the overrides of a lifted action.
 	DeleteSensitivityOverridesOf(ctx context.Context, tx uow.Tx, actionID string) error
+	// DeleteAllSensitivityOverrides empties status_sensitivity_overrides, for its rebuild.
+	DeleteAllSensitivityOverrides(ctx context.Context, tx uow.Tx) error
 
 	// Rebuilds empty one projection and derive it again from the statuses, their revisions,
 	// and their deletions, by the same rules as the projectors (data-model §9).
@@ -97,6 +99,8 @@ type Repository interface {
 	// RebuildLocalPostCounters also counts the local boosts that are not retracted, of
 	// statuses that are not deleted, by the rules of RegisterInteractionProjectors.
 	RebuildLocalPostCounters(ctx context.Context, tx uow.Tx) error
+	// RebuildPollTallies derives poll_tallies from the newest observation of each poll.
+	RebuildPollTallies(ctx context.Context, tx uow.Tx) error
 
 	// Projection contents, for verifying the projections: heads, reply links, counters, and post
 	// counters ordered by their key; mentions ordered by account ID and status ID.

@@ -211,6 +211,12 @@ type Repository interface {
 	// DeleteProjection empties the projections that the content and graph events derive (every
 	// table of Projection), for a rebuild.
 	DeleteProjection(ctx context.Context, tx uow.Tx) error
+	// ListRestrictions returns every row of feed_author_restrictions and
+	// feed_domain_restrictions, expired ones included, for a rebuild.
+	ListRestrictions(ctx context.Context, tx uow.Tx) ([]AuthorRestriction, []DomainRestriction, error)
+	// DeleteRestrictions empties feed_author_restrictions and feed_domain_restrictions, for a
+	// rebuild.
+	DeleteRestrictions(ctx context.Context, tx uow.Tx) error
 
 	// Timelines (data-model §6), newest first, at most Limit entries each.
 

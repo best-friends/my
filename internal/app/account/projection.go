@@ -251,3 +251,24 @@ func rebuildLifecycleStates(ctx context.Context, tx uow.Tx, repo Repository) err
 	}
 	return nil
 }
+
+// ReplayDeletions emits inside tx LifecycleEventRecorded for each lifecycle event that deletes
+// an account (LifecycleEventRecorded.Deletes), in account and event order, for the rebuild of
+// the projections that other modules derive from the deletions (data-model §9). Deletion is
+// final, so these are the accounts that are deleted now.
+func ReplayDeletions(ctx context.Context, tx uow.Tx, repo Repository, emit func(uow.Event) error) error {
+	events, err := repo.ListLifecycleEvents(ctx, tx)
+	if err != nil {
+		return err
+	}
+	for _, e := range events {
+		ev := LifecycleEventRecorded{Event: e}
+		if !ev.Deletes() {
+			continue
+		}
+		if err := emit(ev); err != nil {
+			return err
+		}
+	}
+	return nil
+}
