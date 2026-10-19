@@ -122,7 +122,7 @@ test("a saved display name is on the profile page from its first render", async 
   // The heading has the name and the handle under it, and the post has its author's name.
   await expect(page.getByRole("main")).toMatchAriaSnapshot(`
     - heading "${name}" [level=1]
-    - paragraph: /@${username}@/
+    - paragraph: "@${username}"
   `);
   await expectNoAxeViolations(() => axeBuilder(page));
   await expectNoHorizontalScroll(page);
