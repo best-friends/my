@@ -2579,6 +2579,238 @@
     "defaultMessage": "通報",
     "description": "Heading and title of the report queue."
   },
+  "admin.signup_blocks.add_failed": {
+    "defaultMessage": "拒否を追加できませんでした：{reason}",
+    "description": "Error under the form of a new sign-up block when the server refused it. {reason} is why."
+  },
+  "admin.signup_blocks.added": {
+    "defaultMessage": "{kind} {value} に「{severity}」を適用しました。",
+    "description": "Status after a new sign-up block took effect. {severity} is its effect, such as Refuse; {kind} is its kind, such as Email domain; {value} what it matches."
+  },
+  "admin.signup_blocks.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Character count under the comment of a sign-up block while the text is within the limit."
+  },
+  "admin.signup_blocks.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Character count under the comment of a sign-up block when the text is longer than the limit."
+  },
+  "admin.signup_blocks.comment": {
+    "defaultMessage": "メモ",
+    "description": "Label of the moderators' comment of a sign-up block, and its term in the list."
+  },
+  "admin.signup_blocks.comment.description": {
+    "defaultMessage": "モデレーターだけが見られます。",
+    "description": "Help text under the comment of a new sign-up block."
+  },
+  "admin.signup_blocks.created_at": {
+    "defaultMessage": "追加した日時",
+    "description": "Term of when a sign-up block was added."
+  },
+  "admin.signup_blocks.duration": {
+    "defaultMessage": "期間",
+    "description": "Label of the duration of a new sign-up block."
+  },
+  "admin.signup_blocks.duration.days": {
+    "defaultMessage": "{count, plural, other {# 日}}",
+    "description": "An option of the duration of a sign-up block, in days."
+  },
+  "admin.signup_blocks.duration.description": {
+    "defaultMessage": "この期間が過ぎると、拒否は自動で終わります。",
+    "description": "Help text under the duration of a new sign-up block."
+  },
+  "admin.signup_blocks.duration.indefinite": {
+    "defaultMessage": "解除するまで",
+    "description": "The option of a sign-up block that lasts until it is lifted, and the end of such a block in the list."
+  },
+  "admin.signup_blocks.empty.active": {
+    "defaultMessage": "有効な拒否はありません",
+    "description": "Heading of the empty list of sign-up blocks in effect."
+  },
+  "admin.signup_blocks.empty.active.description": {
+    "defaultMessage": "登録の拒否は、終わるか解除されるまでここに表示されます。",
+    "description": "Text of the empty list of sign-up blocks in effect."
+  },
+  "admin.signup_blocks.empty.all": {
+    "defaultMessage": "登録の拒否はまだありません",
+    "description": "Heading of the empty list of every sign-up block."
+  },
+  "admin.signup_blocks.expires_at": {
+    "defaultMessage": "終了",
+    "description": "Term of when a sign-up block ends."
+  },
+  "admin.signup_blocks.filter.active": {
+    "defaultMessage": "有効",
+    "description": "Tab of the sign-up blocks in effect."
+  },
+  "admin.signup_blocks.filter.all": {
+    "defaultMessage": "すべて",
+    "description": "Tab of every sign-up block, ended ones included."
+  },
+  "admin.signup_blocks.filter.label": {
+    "defaultMessage": "表示する拒否",
+    "description": "Accessible name of the tabs that filter the list of sign-up blocks."
+  },
+  "admin.signup_blocks.kind": {
+    "defaultMessage": "対象の種類",
+    "description": "Label of the choice of what a sign-up block matches (email domain, email address, IP range), and the term of that in a listed block."
+  },
+  "admin.signup_blocks.kind.email_domain": {
+    "defaultMessage": "メールのドメイン",
+    "description": "A kind of sign-up block: the domain of the email address, with its subdomains."
+  },
+  "admin.signup_blocks.kind.email_domain.description": {
+    "defaultMessage": "このドメインとそのサブドメインのメールアドレスでの登録。使い捨てのメールアドレスのサービスなど。",
+    "description": "Help text of the email domain kind of a new sign-up block."
+  },
+  "admin.signup_blocks.kind.email_hash": {
+    "defaultMessage": "メールアドレス",
+    "description": "A kind of sign-up block: one email address, kept as a hash."
+  },
+  "admin.signup_blocks.kind.email_hash.description": {
+    "defaultMessage": "1 つのメールアドレスでの登録。保存するのはハッシュだけです。",
+    "description": "Help text of the email address kind of a new sign-up block."
+  },
+  "admin.signup_blocks.kind.ip_range": {
+    "defaultMessage": "IP アドレスの範囲",
+    "description": "A kind of sign-up block: the client addresses in a CIDR range."
+  },
+  "admin.signup_blocks.kind.ip_range.description": {
+    "defaultMessage": "1 つの IP アドレスか、その範囲からの登録。",
+    "description": "Help text of the IP range kind of a new sign-up block."
+  },
+  "admin.signup_blocks.lift": {
+    "defaultMessage": "解除",
+    "description": "Button that lifts a sign-up block."
+  },
+  "admin.signup_blocks.lift_action": {
+    "defaultMessage": "解除：{kind} {value} の拒否（{date} に追加）",
+    "description": "Accessible name of the lift button of a sign-up block. {kind} is its kind, such as Email domain; {value} what it matches; {date} when it was added, formatted."
+  },
+  "admin.signup_blocks.lift_failed": {
+    "defaultMessage": "拒否を解除できませんでした：{reason}",
+    "description": "Toast when lifting a sign-up block failed. {reason} is why."
+  },
+  "admin.signup_blocks.lifted": {
+    "defaultMessage": "{kind} {value} の拒否を解除しました。",
+    "description": "Status after a sign-up block was lifted. {kind} is its kind, such as Email domain; {value} what it matches."
+  },
+  "admin.signup_blocks.lifted_at": {
+    "defaultMessage": "解除した日時",
+    "description": "Term of when a sign-up block was lifted."
+  },
+  "admin.signup_blocks.list.title": {
+    "defaultMessage": "拒否の一覧",
+    "description": "Heading of the section with the list of sign-up blocks."
+  },
+  "admin.signup_blocks.new.title": {
+    "defaultMessage": "拒否を追加する",
+    "description": "Heading of the section with the form of a new sign-up block."
+  },
+  "admin.signup_blocks.severity": {
+    "defaultMessage": "効果",
+    "description": "Label of the choice of what a sign-up block does, and the term of that in a listed block."
+  },
+  "admin.signup_blocks.severity.reject": {
+    "defaultMessage": "拒否する",
+    "description": "A severity of sign-up block: the sign-up is refused."
+  },
+  "admin.signup_blocks.severity.reject.description": {
+    "defaultMessage": "登録を断ります。画面には理由を出しません。",
+    "description": "Help text of the refuse severity of a new sign-up block."
+  },
+  "admin.signup_blocks.severity.require_approval": {
+    "defaultMessage": "承認制にする",
+    "description": "A severity of sign-up block: the registration waits for a moderator."
+  },
+  "admin.signup_blocks.severity.require_approval.description": {
+    "defaultMessage": "登録の方式にかかわらず、登録はモデレーターの承認を待ちます。",
+    "description": "Help text of the require approval severity of a new sign-up block."
+  },
+  "admin.signup_blocks.severity.required": {
+    "defaultMessage": "効果を選んでください",
+    "description": "Error under the effect of a new sign-up block when none is chosen."
+  },
+  "admin.signup_blocks.source": {
+    "defaultMessage": "追加のしかた",
+    "description": "Term of how a sign-up block was added: on its own or with a ban."
+  },
+  "admin.signup_blocks.source.ban": {
+    "defaultMessage": "BAN とともに追加",
+    "description": "A sign-up block made from a ban of an account."
+  },
+  "admin.signup_blocks.source.manual": {
+    "defaultMessage": "単独で追加",
+    "description": "A sign-up block added from this screen or the command line."
+  },
+  "admin.signup_blocks.state": {
+    "defaultMessage": "状態",
+    "description": "Term of the state of a sign-up block in the list."
+  },
+  "admin.signup_blocks.state.active": {
+    "defaultMessage": "有効",
+    "description": "State of a sign-up block in effect."
+  },
+  "admin.signup_blocks.state.expired": {
+    "defaultMessage": "期限切れ",
+    "description": "State of a sign-up block that ended at its end date."
+  },
+  "admin.signup_blocks.state.lifted": {
+    "defaultMessage": "解除済み",
+    "description": "State of a sign-up block a moderator lifted."
+  },
+  "admin.signup_blocks.submit": {
+    "defaultMessage": "拒否を追加する",
+    "description": "Submit button of the form of a new sign-up block."
+  },
+  "admin.signup_blocks.summary": {
+    "defaultMessage": "登録を拒否する、または承認制にするメールのドメイン・メールアドレス・IP アドレスの範囲。",
+    "description": "Description of the sign-up blocks screen in the administration menu."
+  },
+  "admin.signup_blocks.title": {
+    "defaultMessage": "登録の拒否リスト",
+    "description": "Heading of the screen of the blocks on sign-ups by email domain, email address or IP range, and its link in the administration menu."
+  },
+  "admin.signup_blocks.too_long": {
+    "defaultMessage": "{max, number} 文字以内にしてください",
+    "description": "Error under the comment of a sign-up block when it is too long. {max} is the limit."
+  },
+  "admin.signup_blocks.value.email_domain": {
+    "defaultMessage": "ドメイン",
+    "description": "Label of the value field of a new sign-up block on an email domain."
+  },
+  "admin.signup_blocks.value.email_domain.description": {
+    "defaultMessage": "mail.example のように入力します。ラテン文字以外のドメインもそのまま入力できます。",
+    "description": "Help text under the domain field of a new sign-up block on an email domain."
+  },
+  "admin.signup_blocks.value.email_domain.required": {
+    "defaultMessage": "ドメインを入力してください",
+    "description": "Error under the domain field of a new sign-up block when it is empty."
+  },
+  "admin.signup_blocks.value.email_hash": {
+    "defaultMessage": "メールアドレス",
+    "description": "Label of the value field of a new sign-up block on one email address."
+  },
+  "admin.signup_blocks.value.email_hash.description": {
+    "defaultMessage": "メールアドレスか、その 16 進の SHA-256 を入力します。大文字と小文字、ローカル部の + から後は区別しません。",
+    "description": "Help text under the email address field of a new sign-up block."
+  },
+  "admin.signup_blocks.value.email_hash.required": {
+    "defaultMessage": "メールアドレスを入力してください",
+    "description": "Error under the email address field of a new sign-up block when it is empty."
+  },
+  "admin.signup_blocks.value.ip_range": {
+    "defaultMessage": "IP アドレスか範囲",
+    "description": "Label of the value field of a new sign-up block on an IP range."
+  },
+  "admin.signup_blocks.value.ip_range.description": {
+    "defaultMessage": "192.0.2.0/24 のような CIDR の範囲（IPv6 も使えます）か、1 つの IP アドレスを入力します。",
+    "description": "Help text under the IP range field of a new sign-up block."
+  },
+  "admin.signup_blocks.value.ip_range.required": {
+    "defaultMessage": "IP アドレスか範囲を入力してください",
+    "description": "Error under the IP range field of a new sign-up block when it is empty."
+  },
   "api.error.network": {
     "defaultMessage": "サーバーに接続できませんでした。接続を確かめて、もう一度試してください。",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."

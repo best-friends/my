@@ -31,6 +31,7 @@ import { Route as AdminDomainActionsRouteImport } from './routes/admin.domain-ac
 import { Route as AdminInstancesRouteImport } from './routes/admin.instances'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminSignupBlocksRouteImport } from './routes/admin.signup-blocks'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
@@ -157,6 +158,11 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
   path: '/admin/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSignupBlocksRoute = AdminSignupBlocksRouteImport.update({
+  id: '/admin/signup-blocks',
+  path: '/admin/signup-blocks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
   id: '/login_/callback',
   path: '/login/callback',
@@ -245,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -282,6 +289,7 @@ export interface FileRoutesByTo {
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login/callback': typeof LoginCallbackRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -320,6 +328,7 @@ export interface FileRoutesById {
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
@@ -359,6 +368,7 @@ export interface FileRouteTypes {
     | '/admin/instances'
     | '/admin/registrations'
     | '/admin/reports'
+    | '/admin/signup-blocks'
     | '/login/callback'
     | '/settings/account-status'
     | '/settings/blocks'
@@ -396,6 +406,7 @@ export interface FileRouteTypes {
     | '/admin/instances'
     | '/admin/registrations'
     | '/admin/reports'
+    | '/admin/signup-blocks'
     | '/login/callback'
     | '/settings/account-status'
     | '/settings/blocks'
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '/admin/instances'
     | '/admin/registrations'
     | '/admin/reports'
+    | '/admin/signup-blocks'
     | '/login_/callback'
     | '/settings/account-status'
     | '/settings/blocks'
@@ -471,6 +483,7 @@ export interface RootRouteChildren {
   AdminInstancesRoute: typeof AdminInstancesRoute
   AdminRegistrationsRoute: typeof AdminRegistrationsRoute
   AdminReportsRoute: typeof AdminReportsRoute
+  AdminSignupBlocksRoute: typeof AdminSignupBlocksRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
@@ -643,6 +656,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/signup-blocks': {
+      id: '/admin/signup-blocks'
+      path: '/admin/signup-blocks'
+      fullPath: '/admin/signup-blocks'
+      preLoaderRoute: typeof AdminSignupBlocksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login_/callback': {
       id: '/login_/callback'
       path: '/login/callback'
@@ -759,6 +779,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminInstancesRoute: AdminInstancesRoute,
   AdminRegistrationsRoute: AdminRegistrationsRoute,
   AdminReportsRoute: AdminReportsRoute,
+  AdminSignupBlocksRoute: AdminSignupBlocksRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
