@@ -2125,6 +2125,72 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: instance rules (#331) ---
+  # --- admin: instance texts (#489) ---
+  /admin/instance_texts:
+    get:
+      operationId: listInstanceTexts
+      summary: List the instance texts
+      description: |
+        The current text of every key in every locale that has one (FR-705): the name, the
+        descriptions, the terms of service, the privacy policy, and the alternative text of the
+        preview image, by key and locale. Cleared texts are not listed. The list is not
+        paginated. Needs the `manage_settings` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          description: The texts.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInstanceTextList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/instance_texts/{key}/{locale}:
+    put:
+      operationId: setInstanceText
+      summary: Set an instance text in one locale
+      description: |
+        Records a revision of the text of `key` in `locale`, which becomes its current text; an
+        empty `body` clears the text in that locale, so that readers get the next locale of
+        their fallback chain. The revision and the change are kept (`instance_text_revisions`,
+        the audit log's `text_changed`). The locale is canonicalized (`ja_jp` is `ja-JP`).
+        The terms of service and the privacy policy are Markdown, which the server renders and
+        sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
+        the other texts are plain text. An unknown key is a 404. A locale that is not a BCP 47
+        tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
+        `name`, 500 for `short_description`, 1,500 for `preview_image_alt`, 20,000 for
+        `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`,
+        is a 422 naming `body`. Needs the `manage_settings` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/InstanceTextKey"
+        - $ref: "#/components/parameters/InstanceTextLocale"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetInstanceTextRequest"
+      responses:
+        "200":
+          description: The text as recorded; `body` is empty when the text was cleared.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInstanceText"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: instance texts (#489) ---
   # --- admin: moderator counts (#338) ---
   /admin/counts:
     get:
@@ -2816,6 +2882,24 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: instance texts (#489) ---
+    InstanceTextKey:
+      name: key
+      in: path
+      required: true
+      description: The key of the text.
+      schema:
+        $ref: "#/components/schemas/InstanceTextKey"
+    InstanceTextLocale:
+      name: locale
+      in: path
+      required: true
+      description: The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+    # --- end of admin: instance texts (#489) ---
     # --- admin: roles (#348) ---
     RoleKey:
       name: role
@@ -3146,6 +3230,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/InstanceRule"
+        terms_url:
+          description: |
+            The public page of the instance's terms of service, which needs no sign-in; omitted
+            when no locale of the request's fallback chain has them, so that clients do not
+            link to it.
+          type: string
+          format: uri
+        privacy_policy_url:
+          description: |
+            The public page of the instance's privacy policy, which needs no sign-in; omitted
+            when no locale of the request's fallback chain has it.
+          type: string
+          format: uri
     InstanceRegistrations:
       description: How people sign up on the instance.
       type: object
@@ -5122,6 +5219,52 @@ components:
           type: integer
           minimum: 1
     # --- end of admin: instance rules (#331) ---
+    # --- admin: instance texts (#489) ---
+    AdminInstanceText:
+      description: The current text of a key in one locale.
+      type: object
+      required: [key, locale, body, revised_at]
+      properties:
+        key:
+          $ref: "#/components/schemas/InstanceTextKey"
+        locale:
+          description: The BCP 47 tag of the locale, canonical (`ja-JP`).
+          type: string
+        body:
+          description: |
+            The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
+            Empty only in the answer to clearing it.
+          type: string
+        revised_at:
+          description: When the revision was recorded.
+          type: string
+          format: date-time
+    AdminInstanceTextList:
+      description: The current instance texts, by key and locale.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminInstanceText"
+    InstanceTextKey:
+      description: |
+        The key of an instance text: the name (one line), the short and full descriptions,
+        the terms of service and the privacy policy (Markdown), and the alternative text of the
+        preview image.
+      type: string
+      enum: [name, short_description, description, terms, privacy_policy, preview_image_alt]
+    SetInstanceTextRequest:
+      description: A new revision of an instance text in one locale.
+      type: object
+      required: [body]
+      properties:
+        body:
+          description: The text; empty clears it in the locale.
+          type: string
+          maxLength: 100000
+    # --- end of admin: instance texts (#489) ---
     # --- admin: moderator counts (#338) ---
     AdminCounts:
       description: What awaits the moderators; a count whose permission the user lacks is omitted.

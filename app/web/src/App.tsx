@@ -11,6 +11,7 @@ import { SessionProvider } from "./lib/auth/SessionProvider";
 import { ConfigProvider, type RuntimeConfig } from "./lib/config";
 import { type I18n, MessagesProvider, useT } from "./lib/i18n";
 import { AppLocaleProvider, useDisplaySettings } from "./lib/locale";
+import { isServerPath } from "./lib/paths";
 import type { AppServices } from "./lib/services";
 import { UpdatePrompt } from "./UpdatePrompt";
 
@@ -24,11 +25,17 @@ export function App({ config, locale, queryClient, api, session, leaveApp, route
   /**
    * Every @my/ui Link (and Menu item, Tab) with a same-origin href navigates through the router instead
    * of loading a new document. An in-page target (the skip link's "#main") gets focus instead, as the
-   * browser would do for a fragment, without touching the router's location.
+   * browser would do for a fragment, without touching the router's location. A page of the server itself
+   * (the terms of service under /auth, lib/paths.ts) is no route of the app: it loads in place of the app.
    */
   const navigate = (href: string) => {
     if (href.startsWith("#")) {
       document.getElementById(decodeURIComponent(href.slice(1)))?.focus();
+      return;
+    }
+    const url = new URL(href, window.location.href);
+    if (isServerPath(url.pathname)) {
+      leaveApp(url);
       return;
     }
     void router.navigate({ href });

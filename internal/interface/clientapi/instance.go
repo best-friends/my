@@ -54,6 +54,9 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 				t.set(text.Body)
 			}
 		}
+		if err := s.documentURLs(ctx, &out, locale); err != nil {
+			return nil, err
+		}
 	}
 	out.Registrations = InstanceRegistrations{Mode: InstanceRegistrationsMode(settings.RegistrationMode())}
 	out.Limits = InstanceLimits{MaxPostCharacters: settings.MaxStatusLength()}

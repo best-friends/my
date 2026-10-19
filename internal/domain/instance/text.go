@@ -31,15 +31,18 @@ type TextDefinition struct {
 	MaxLength int
 	// SingleLine keys reject line breaks.
 	SingleLine bool
-	Doc        string
+	// Document keys hold a page of Markdown that the instance publishes (the terms of service
+	// and the privacy policy); the other keys are plain text.
+	Document bool
+	Doc      string
 }
 
 var textDefinitions = []TextDefinition{
 	{Key: TextName, MaxLength: 100, SingleLine: true, Doc: "Name of the instance."},
 	{Key: TextShortDescription, MaxLength: 500, Doc: "One-paragraph summary of the instance."},
 	{Key: TextDescription, MaxLength: 20000, Doc: "Full description of the instance."},
-	{Key: TextTerms, MaxLength: 100000, Doc: "Terms of service."},
-	{Key: TextPrivacyPolicy, MaxLength: 100000, Doc: "Privacy policy."},
+	{Key: TextTerms, MaxLength: 100000, Document: true, Doc: "Terms of service, in Markdown."},
+	{Key: TextPrivacyPolicy, MaxLength: 100000, Document: true, Doc: "Privacy policy, in Markdown."},
 	{Key: TextPreviewImageAlt, MaxLength: 1500, Doc: "Alt text of the preview_image setting's image (og:image:alt)."},
 }
 

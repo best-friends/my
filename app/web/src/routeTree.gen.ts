@@ -26,6 +26,7 @@ import { Route as AdminAccountsRouteImport } from './routes/admin.accounts'
 import { Route as AdminAppealsRouteImport } from './routes/admin.appeals'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
+import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
 import { Route as AdminDomainActionsRouteImport } from './routes/admin.domain-actions'
 import { Route as AdminInstancesRouteImport } from './routes/admin.instances'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
@@ -131,6 +132,11 @@ const AdminDeadJobsRoute = AdminDeadJobsRouteImport.update({
   path: '/admin/dead-jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
+  id: '/admin/documents',
+  path: '/admin/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDomainActionsRoute = AdminDomainActionsRouteImport.update({
   id: '/admin/domain-actions',
   path: '/admin/domain-actions',
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/documents': typeof AdminDocumentsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/documents': typeof AdminDocumentsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
@@ -307,6 +315,7 @@ export interface FileRoutesById {
   '/admin/appeals': typeof AdminAppealsRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
+  '/admin/documents': typeof AdminDocumentsRoute
   '/admin/domain-actions': typeof AdminDomainActionsRoute
   '/admin/instances': typeof AdminInstancesRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
@@ -345,6 +354,7 @@ export interface FileRouteTypes {
     | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
+    | '/admin/documents'
     | '/admin/domain-actions'
     | '/admin/instances'
     | '/admin/registrations'
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
+    | '/admin/documents'
     | '/admin/domain-actions'
     | '/admin/instances'
     | '/admin/registrations'
@@ -417,6 +428,7 @@ export interface FileRouteTypes {
     | '/admin/appeals'
     | '/admin/audit-log'
     | '/admin/dead-jobs'
+    | '/admin/documents'
     | '/admin/domain-actions'
     | '/admin/instances'
     | '/admin/registrations'
@@ -454,6 +466,7 @@ export interface RootRouteChildren {
   AdminAppealsRoute: typeof AdminAppealsRoute
   AdminAuditLogRoute: typeof AdminAuditLogRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
+  AdminDocumentsRoute: typeof AdminDocumentsRoute
   AdminDomainActionsRoute: typeof AdminDomainActionsRoute
   AdminInstancesRoute: typeof AdminInstancesRoute
   AdminRegistrationsRoute: typeof AdminRegistrationsRoute
@@ -595,6 +608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDeadJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/documents': {
+      id: '/admin/documents'
+      path: '/admin/documents'
+      fullPath: '/admin/documents'
+      preLoaderRoute: typeof AdminDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/domain-actions': {
       id: '/admin/domain-actions'
       path: '/admin/domain-actions'
@@ -734,6 +754,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAppealsRoute: AdminAppealsRoute,
   AdminAuditLogRoute: AdminAuditLogRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
+  AdminDocumentsRoute: AdminDocumentsRoute,
   AdminDomainActionsRoute: AdminDomainActionsRoute,
   AdminInstancesRoute: AdminInstancesRoute,
   AdminRegistrationsRoute: AdminRegistrationsRoute,
