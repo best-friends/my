@@ -232,9 +232,13 @@ const (
 	AdminAuditActionRegistrationApproved AdminAuditAction = "registration_approved"
 	AdminAuditActionRegistrationRejected AdminAuditAction = "registration_rejected"
 	AdminAuditActionReportAssigned       AdminAuditAction = "report_assigned"
+	AdminAuditActionReportNoteAdded      AdminAuditAction = "report_note_added"
+	AdminAuditActionReportReopened       AdminAuditAction = "report_reopened"
 	AdminAuditActionReportResolved       AdminAuditAction = "report_resolved"
 	AdminAuditActionReportUnassigned     AdminAuditAction = "report_unassigned"
 	AdminAuditActionRevealedPrivateData  AdminAuditAction = "revealed_private_data"
+	AdminAuditActionRoleGranted          AdminAuditAction = "role_granted"
+	AdminAuditActionRoleRevoked          AdminAuditAction = "role_revoked"
 	AdminAuditActionRuleAdded            AdminAuditAction = "rule_added"
 	AdminAuditActionRuleMoved            AdminAuditAction = "rule_moved"
 	AdminAuditActionRuleRetired          AdminAuditAction = "rule_retired"
@@ -260,11 +264,19 @@ func (e AdminAuditAction) Valid() bool {
 		return true
 	case AdminAuditActionReportAssigned:
 		return true
+	case AdminAuditActionReportNoteAdded:
+		return true
+	case AdminAuditActionReportReopened:
+		return true
 	case AdminAuditActionReportResolved:
 		return true
 	case AdminAuditActionReportUnassigned:
 		return true
 	case AdminAuditActionRevealedPrivateData:
+		return true
+	case AdminAuditActionRoleGranted:
+		return true
+	case AdminAuditActionRoleRevoked:
 		return true
 	case AdminAuditActionRuleAdded:
 		return true
@@ -484,6 +496,30 @@ func (e AdminReportCategory) Valid() bool {
 	}
 }
 
+// Defines values for AdminReportDetailCategory.
+const (
+	AdminReportDetailCategoryLegal     AdminReportDetailCategory = "legal"
+	AdminReportDetailCategoryOther     AdminReportDetailCategory = "other"
+	AdminReportDetailCategorySpam      AdminReportDetailCategory = "spam"
+	AdminReportDetailCategoryViolation AdminReportDetailCategory = "violation"
+)
+
+// Valid indicates whether the value is a known member of the AdminReportDetailCategory enum.
+func (e AdminReportDetailCategory) Valid() bool {
+	switch e {
+	case AdminReportDetailCategoryLegal:
+		return true
+	case AdminReportDetailCategoryOther:
+		return true
+	case AdminReportDetailCategorySpam:
+		return true
+	case AdminReportDetailCategoryViolation:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminReportOutcome.
 const (
 	AdminReportOutcomeActioned  AdminReportOutcome = "actioned"
@@ -688,6 +724,27 @@ func (e Permission) Valid() bool {
 	case PermissionManageSettings:
 		return true
 	case PermissionViewAudit:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistrationState.
+const (
+	RegistrationStateApproved RegistrationState = "approved"
+	RegistrationStatePending  RegistrationState = "pending"
+	RegistrationStateRejected RegistrationState = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the RegistrationState enum.
+func (e RegistrationState) Valid() bool {
+	switch e {
+	case RegistrationStateApproved:
+		return true
+	case RegistrationStatePending:
+		return true
+	case RegistrationStateRejected:
 		return true
 	default:
 		return false
@@ -1111,10 +1168,12 @@ type AdminAccountState string
 // `account_action_issued`, `account_action_lifted`, `revealed_private_data` (a moderator
 // was shown the account's email address and IP addresses). On a `domain`:
 // `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
-// `report_unassigned`, `report_resolved`. On a `user` (a registration):
+// `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+// `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 // (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+// user): `role_granted`, `role_revoked`.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -1128,10 +1187,12 @@ type AdminAuditEntry struct {
 	// `account_action_issued`, `account_action_lifted`, `revealed_private_data` (a moderator
 	// was shown the account's email address and IP addresses). On a `domain`:
 	// `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
-	// `report_unassigned`, `report_resolved`. On a `user` (a registration):
+	// `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+	// `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+	// user): `role_granted`, `role_revoked`.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -1153,8 +1214,8 @@ type AdminAuditEntry struct {
 	OccurredAt time.Time `json:"occurred_at"`
 
 	// SourceEventId The ID of the record of the operation (the domain action, the assignment, the
-	// resolution, the decision, the revision), which holds its reasons and notes; omitted
-	// when the operation has none.
+	// resolution, the reopening, the note, the decision, the revision), which holds its
+	// reasons and notes; omitted when the operation has none.
 	SourceEventId *string `json:"source_event_id,omitempty"`
 
 	// TargetId The target: the ID of an account, a report, a user, or a rule, the domain of a domain
@@ -1338,6 +1399,50 @@ type AdminInstanceHealthPage struct {
 // `Reject`.
 type AdminInstanceState string
 
+// AdminRegistration A user's registration as the moderators review it (FR-721).
+type AdminRegistration struct {
+	// AccountId The user's local account; omitted when it is gone.
+	AccountId *Id `json:"account_id,omitempty"`
+
+	// Email The user's primary email address; empty when there is none.
+	Email string `json:"email"`
+
+	// EmailVerified Whether the user confirmed the email address.
+	EmailVerified bool `json:"email_verified"`
+
+	// InviteId The invite the user signed up with; omitted for none.
+	InviteId *Id `json:"invite_id,omitempty"`
+
+	// Reason Why the user wants to join, as plain text; omitted when they gave none.
+	Reason *string `json:"reason,omitempty"`
+
+	// Since When the registration entered its state.
+	Since time.Time `json:"since"`
+
+	// State Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+	// sign in, and `rejected` keeps them out.
+	State RegistrationState `json:"state"`
+
+	// SubmittedAt When the user signed up.
+	SubmittedAt time.Time `json:"submitted_at"`
+
+	// UserId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	UserId Id `json:"user_id"`
+
+	// Username The username of the user's local account; omitted when it is gone.
+	Username *string `json:"username,omitempty"`
+}
+
+// AdminRegistrationPage A page of registrations, longest in their state first.
+type AdminRegistrationPage struct {
+	Items []AdminRegistration `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
 // AdminReport A report of an account to the moderators (FR-701).
 type AdminReport struct {
 	// AssigneeAccountId The account of the moderator who handles the report; omitted when nobody does.
@@ -1375,7 +1480,7 @@ type AdminReport struct {
 	// State `open` reports await the moderators; `resolved` ones are handled.
 	State AdminReportState `json:"state"`
 
-	// StateChangedAt When the report was filed or, once resolved, resolved.
+	// StateChangedAt When the report entered its state (when it was filed, resolved, or reopened).
 	StateChangedAt time.Time `json:"state_changed_at"`
 
 	// StatusIds The IDs of the target's posts that the report points at.
@@ -1397,6 +1502,88 @@ type AdminReport struct {
 // AdminReportCategory defines model for AdminReport.Category.
 type AdminReportCategory string
 
+// AdminReportDetail A report as a moderator opens it: the report with its internal notes and what the
+// moderators had about its target.
+type AdminReportDetail struct {
+	// AssigneeAccountId The account of the moderator who handles the report; omitted when nobody does.
+	AssigneeAccountId *Id                       `json:"assignee_account_id,omitempty"`
+	Category          AdminReportDetailCategory `json:"category"`
+
+	// Comment The reporter's comment as plain text, up to 5,000 characters.
+	Comment string    `json:"comment"`
+	FiledAt time.Time `json:"filed_at"`
+
+	// Forwarded Whether the report was forwarded to the target's server.
+	Forwarded bool `json:"forwarded"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Notes The moderators' notes on the report, oldest first.
+	Notes []AdminReportNote `json:"notes"`
+
+	// Outcome How the report was resolved, present only while it is resolved. `actioned`: a moderator
+	// took an action on the target. `dismissed`: there was nothing to act on.
+	Outcome *AdminReportOutcome `json:"outcome,omitempty"`
+
+	// ReporterAccount The reporter, often the instance actor of a remote server; omitted when the account is gone.
+	ReporterAccount *Account `json:"reporter_account,omitempty"`
+
+	// ReporterAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	ReporterAccountId Id `json:"reporter_account_id"`
+
+	// RuleIds The IDs of the instance rules that the report cites, retired ones included; only a
+	// report of the `violation` category cites rules.
+	RuleIds []Id `json:"rule_ids"`
+
+	// State `open` reports await the moderators; `resolved` ones are handled.
+	State AdminReportState `json:"state"`
+
+	// StateChangedAt When the report entered its state (when it was filed, resolved, or reopened).
+	StateChangedAt time.Time `json:"state_changed_at"`
+
+	// StatusIds The IDs of the target's posts that the report points at.
+	StatusIds []Id `json:"status_ids"`
+
+	// TargetAccount The account reported; omitted when the account is gone.
+	TargetAccount *Account `json:"target_account,omitempty"`
+
+	// TargetAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	TargetAccountId Id `json:"target_account_id"`
+
+	// TargetHistory What the moderators had about the target of a report.
+	TargetHistory AdminReportTargetHistory `json:"target_history"`
+
+	// Uri The `id` of the `Flag` activity that another server sent; omitted for a report
+	// made on this server.
+	Uri *string `json:"uri,omitempty"`
+}
+
+// AdminReportDetailCategory defines model for AdminReportDetail.Category.
+type AdminReportDetailCategory string
+
+// AdminReportNote A moderator's internal note on a report; never shown to the target or the reporter.
+type AdminReportNote struct {
+	// AuthorAccountId The account of the moderator who wrote the note; omitted for a note from the
+	// command line and when the moderator has no account.
+	AuthorAccountId *Id `json:"author_account_id,omitempty"`
+
+	// Body The note as plain text, up to 2,000 characters.
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+}
+
 // AdminReportOutcome How the report was resolved, present only while it is resolved. `actioned`: a moderator
 // took an action on the target. `dismissed`: there was nothing to act on.
 type AdminReportOutcome string
@@ -1411,6 +1598,36 @@ type AdminReportPage struct {
 
 // AdminReportState `open` reports await the moderators; `resolved` ones are handled.
 type AdminReportState string
+
+// AdminReportTargetHistory What the moderators had about the target of a report.
+type AdminReportTargetHistory struct {
+	// ActionsCount The number of moderation actions on the target, ended ones included.
+	ActionsCount int64 `json:"actions_count"`
+
+	// ReportsCount The number of the target's other reports, open and resolved.
+	ReportsCount int64 `json:"reports_count"`
+}
+
+// AdminRole A role (FR-720): a named set of permissions. A higher position outranks a lower one;
+// a user may grant and revoke only the roles at or below their highest one.
+type AdminRole struct {
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Key The name of the role, such as `admin` or `moderator`.
+	Key string `json:"key"`
+
+	// Permissions The permissions that the role grants, in the order of `Permission`.
+	Permissions []Permission `json:"permissions"`
+	Position    int          `json:"position"`
+}
+
+// AdminRoleList Roles, highest position first.
+type AdminRoleList struct {
+	Items []AdminRole `json:"items"`
+}
 
 // AdminRule A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
 // across revisions, so reports keep citing it.
@@ -1483,7 +1700,8 @@ type CreateAccountActionRequest struct {
 	PublicReason   *string                     `json:"public_reason,omitempty"`
 	ReasonCategory *AdminAccountActionCategory `json:"reason_category,omitempty"`
 
-	// ReportId The report of the account that the action follows from.
+	// ReportId The report of the account that the action follows from. The action resolves an open
+	// report as `actioned` in the same operation; a resolved report stays as it is.
 	ReportId *Id `json:"report_id,omitempty"`
 
 	// StatusIds The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
@@ -1508,6 +1726,12 @@ type CreateDomainActionRequest struct {
 	Obfuscate     *bool                 `json:"obfuscate,omitempty"`
 	PrivateNote   *string               `json:"private_note,omitempty"`
 	PublicComment *string               `json:"public_comment,omitempty"`
+}
+
+// CreateReportNoteRequest A note to add to a report.
+type CreateReportNoteRequest struct {
+	// Body The note as plain text; it may not be blank.
+	Body string `json:"body"`
 }
 
 // CreateReportRequest A report of an account to the moderators.
@@ -2109,8 +2333,9 @@ type PageInfo struct {
 // Permission A capability that a role grants. `manage_accounts`: the accounts and their moderation
 // actions.
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
-// `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
-// dead jobs of the job queue. The others guard no client API operation yet.
+// `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+// roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+// log. The others guard no client API operation yet.
 type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
@@ -2210,6 +2435,16 @@ type ProfileField struct {
 	// Value The field's value as sanitized HTML.
 	Value string `json:"value"`
 }
+
+// RegistrationDecisionRequest A moderator's decision on a registration.
+type RegistrationDecisionRequest struct {
+	// Note A note for the moderators, as plain text; omitted or empty for none.
+	Note *string `json:"note,omitempty"`
+}
+
+// RegistrationState Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+// sign in, and `rejected` keeps them out.
+type RegistrationState string
 
 // Relationship The viewer's relationship with an account. It never says whether the account blocks
 // the viewer: such an account is not found at all.
@@ -2611,10 +2846,18 @@ type InstanceDomain = string
 // Limit defines model for Limit.
 type Limit = int
 
+// RegistrationUserId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type RegistrationUserId = Id
+
 // ReportId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type ReportId = Id
+
+// RoleKey defines model for RoleKey.
+type RoleKey = string
 
 // RuleId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -2806,6 +3049,15 @@ type ListInstanceAvailabilityEventsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListPendingRegistrationsParams defines parameters for ListPendingRegistrations.
+type ListPendingRegistrationsParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListReportsParams defines parameters for ListReports.
 type ListReportsParams struct {
 	// State Keep only the reports in this state; omitted keeps both.
@@ -2964,6 +3216,15 @@ type CreateAccountActionJSONRequestBody = CreateAccountActionRequest
 // CreateDomainActionJSONRequestBody defines body for CreateDomainAction for application/json ContentType.
 type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 
+// ApproveRegistrationJSONRequestBody defines body for ApproveRegistration for application/json ContentType.
+type ApproveRegistrationJSONRequestBody = RegistrationDecisionRequest
+
+// RejectRegistrationJSONRequestBody defines body for RejectRegistration for application/json ContentType.
+type RejectRegistrationJSONRequestBody = RegistrationDecisionRequest
+
+// AddReportNoteJSONRequestBody defines body for AddReportNote for application/json ContentType.
+type AddReportNoteJSONRequestBody = CreateReportNoteRequest
+
 // ResolveReportJSONRequestBody defines body for ResolveReport for application/json ContentType.
 type ResolveReportJSONRequestBody = ResolveReportRequest
 
@@ -3065,6 +3326,15 @@ type ServerInterface interface {
 	// RevealAdminAccount Show the email address and the IP addresses of a local account
 	// (POST /admin/accounts/{id}/reveal)
 	RevealAdminAccount(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// ListAccountRoles List the roles of a local account
+	// (GET /admin/accounts/{id}/roles)
+	ListAccountRoles(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// RevokeAccountRole Revoke a role from a local account
+	// (DELETE /admin/accounts/{id}/roles/{role})
+	RevokeAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey)
+	// GrantAccountRole Grant a role to a local account
+	// (PUT /admin/accounts/{id}/roles/{role})
+	GrantAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey)
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams)
@@ -3101,6 +3371,15 @@ type ServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(w http.ResponseWriter, r *http.Request, domain InstanceDomain)
+	// ListPendingRegistrations List the registrations that await approval
+	// (GET /admin/registrations)
+	ListPendingRegistrations(w http.ResponseWriter, r *http.Request, params ListPendingRegistrationsParams)
+	// ApproveRegistration Approve a registration
+	// (POST /admin/registrations/{user_id}/approve)
+	ApproveRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId)
+	// RejectRegistration Reject a registration
+	// (POST /admin/registrations/{user_id}/reject)
+	RejectRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId)
 	// ListReports List the reports
 	// (GET /admin/reports)
 	ListReports(w http.ResponseWriter, r *http.Request, params ListReportsParams)
@@ -3110,12 +3389,21 @@ type ServerInterface interface {
 	// AssignReportToSelf Take a report
 	// (POST /admin/reports/{id}/assign_to_self)
 	AssignReportToSelf(w http.ResponseWriter, r *http.Request, id ReportId)
+	// AddReportNote Write a note on a report
+	// (POST /admin/reports/{id}/notes)
+	AddReportNote(w http.ResponseWriter, r *http.Request, id ReportId)
+	// ReopenReport Reopen a resolved report
+	// (POST /admin/reports/{id}/reopen)
+	ReopenReport(w http.ResponseWriter, r *http.Request, id ReportId)
 	// ResolveReport Resolve a report
 	// (POST /admin/reports/{id}/resolve)
 	ResolveReport(w http.ResponseWriter, r *http.Request, id ReportId)
 	// UnassignReport Leave a report to nobody
 	// (POST /admin/reports/{id}/unassign)
 	UnassignReport(w http.ResponseWriter, r *http.Request, id ReportId)
+	// ListRoles List the roles
+	// (GET /admin/roles)
+	ListRoles(w http.ResponseWriter, r *http.Request)
 	// ListInstanceRules List the instance rules
 	// (GET /admin/rules)
 	ListInstanceRules(w http.ResponseWriter, r *http.Request, params ListInstanceRulesParams)
@@ -4116,6 +4404,102 @@ func (siw *ServerInterfaceWrapper) RevealAdminAccount(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListAccountRoles operation middleware
+func (siw *ServerInterfaceWrapper) ListAccountRoles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAccountRoles(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeAccountRole operation middleware
+func (siw *ServerInterfaceWrapper) RevokeAccountRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role" -------------
+	var role RoleKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role", r.PathValue("role"), &role, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeAccountRole(w, r, id, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GrantAccountRole operation middleware
+func (siw *ServerInterfaceWrapper) GrantAccountRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role" -------------
+	var role RoleKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role", r.PathValue("role"), &role, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GrantAccountRole(w, r, id, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAuditLog operation middleware
 func (siw *ServerInterfaceWrapper) ListAuditLog(w http.ResponseWriter, r *http.Request) {
 
@@ -4604,6 +4988,104 @@ func (siw *ServerInterfaceWrapper) MarkInstanceAvailable(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// ListPendingRegistrations operation middleware
+func (siw *ServerInterfaceWrapper) ListPendingRegistrations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPendingRegistrationsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPendingRegistrations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveRegistration operation middleware
+func (siw *ServerInterfaceWrapper) ApproveRegistration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId RegistrationUserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveRegistration(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectRegistration operation middleware
+func (siw *ServerInterfaceWrapper) RejectRegistration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId RegistrationUserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectRegistration(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListReports operation middleware
 func (siw *ServerInterfaceWrapper) ListReports(w http.ResponseWriter, r *http.Request) {
 
@@ -4715,6 +5197,58 @@ func (siw *ServerInterfaceWrapper) AssignReportToSelf(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// AddReportNote operation middleware
+func (siw *ServerInterfaceWrapper) AddReportNote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddReportNote(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReopenReport operation middleware
+func (siw *ServerInterfaceWrapper) ReopenReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReopenReport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ResolveReport operation middleware
 func (siw *ServerInterfaceWrapper) ResolveReport(w http.ResponseWriter, r *http.Request) {
 
@@ -4758,6 +5292,20 @@ func (siw *ServerInterfaceWrapper) UnassignReport(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UnassignReport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoles operation middleware
+func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoles(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6328,6 +6876,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/assign_to_self", wrapper.AssignReportToSelf)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/unassign", wrapper.UnassignReport)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/resolve", wrapper.ResolveReport)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/notes", wrapper.AddReportNote)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/reports/{id}/reopen", wrapper.ReopenReport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/actions", wrapper.ListAccountActions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/actions", wrapper.CreateAccountAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/account_actions/{id}", wrapper.GetAccountAction)
@@ -6342,6 +6892,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts", wrapper.ListAdminAccounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}", wrapper.GetAdminAccount)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/reveal", wrapper.RevealAdminAccount)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/roles", wrapper.ListRoles)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/roles", wrapper.ListAccountRoles)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.RevokeAccountRole)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.GrantAccountRole)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/registrations", wrapper.ListPendingRegistrations)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/registrations/{user_id}/approve", wrapper.ApproveRegistration)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/registrations/{user_id}/reject", wrapper.RejectRegistration)
 
 	return m
 }
@@ -6391,13 +6948,31 @@ type AdminInstanceHealthJSONResponse struct {
 	Headers AdminInstanceHealthResponseHeaders
 }
 
-type AdminReportResponseHeaders struct {
+type AdminRegistrationResponseHeaders struct {
 	CacheControl *string
 }
-type AdminReportJSONResponse struct {
-	Body AdminReport
+type AdminRegistrationJSONResponse struct {
+	Body AdminRegistration
 
-	Headers AdminReportResponseHeaders
+	Headers AdminRegistrationResponseHeaders
+}
+
+type AdminReportDetailResponseHeaders struct {
+	CacheControl *string
+}
+type AdminReportDetailJSONResponse struct {
+	Body AdminReportDetail
+
+	Headers AdminReportDetailResponseHeaders
+}
+
+type AdminRoleListResponseHeaders struct {
+	CacheControl *string
+}
+type AdminRoleListJSONResponse struct {
+	Body AdminRoleList
+
+	Headers AdminRoleListResponseHeaders
 }
 
 type AdminRuleResponseHeaders struct {
@@ -7714,6 +8289,173 @@ func (response RevealAdminAccountdefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type ListAccountRolesRequestObject struct {
+	Id AdminAccountId `json:"id"`
+}
+
+type ListAccountRolesResponseObject interface {
+	VisitListAccountRolesResponse(w http.ResponseWriter) error
+}
+
+type ListAccountRoles200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response ListAccountRoles200JSONResponse) VisitListAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountRolesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAccountRolesdefaultApplicationProblemPlusJSONResponse) VisitListAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeAccountRoleRequestObject struct {
+	Id   AdminAccountId `json:"id"`
+	Role RoleKey        `json:"role"`
+}
+
+type RevokeAccountRoleResponseObject interface {
+	VisitRevokeAccountRoleResponse(w http.ResponseWriter) error
+}
+
+type RevokeAccountRole200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response RevokeAccountRole200JSONResponse) VisitRevokeAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeAccountRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RevokeAccountRoledefaultApplicationProblemPlusJSONResponse) VisitRevokeAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GrantAccountRoleRequestObject struct {
+	Id   AdminAccountId `json:"id"`
+	Role RoleKey        `json:"role"`
+}
+
+type GrantAccountRoleResponseObject interface {
+	VisitGrantAccountRoleResponse(w http.ResponseWriter) error
+}
+
+type GrantAccountRole200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response GrantAccountRole200JSONResponse) VisitGrantAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GrantAccountRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GrantAccountRoledefaultApplicationProblemPlusJSONResponse) VisitGrantAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListAuditLogRequestObject struct {
 	Params ListAuditLogParams
 }
@@ -8411,6 +9153,180 @@ func (response MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type ListPendingRegistrationsRequestObject struct {
+	Params ListPendingRegistrationsParams
+}
+
+type ListPendingRegistrationsResponseObject interface {
+	VisitListPendingRegistrationsResponse(w http.ResponseWriter) error
+}
+
+type ListPendingRegistrations200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListPendingRegistrations200JSONResponse struct {
+	Body    AdminRegistrationPage
+	Headers ListPendingRegistrations200ResponseHeaders
+}
+
+func (response ListPendingRegistrations200JSONResponse) VisitListPendingRegistrationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRegistrationsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListPendingRegistrationsdefaultApplicationProblemPlusJSONResponse) VisitListPendingRegistrationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistrationRequestObject struct {
+	UserId RegistrationUserId `json:"user_id"`
+	Body   *ApproveRegistrationJSONRequestBody
+}
+
+type ApproveRegistrationResponseObject interface {
+	VisitApproveRegistrationResponse(w http.ResponseWriter) error
+}
+
+type ApproveRegistration200JSONResponse struct{ AdminRegistrationJSONResponse }
+
+func (response ApproveRegistration200JSONResponse) VisitApproveRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistrationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ApproveRegistrationdefaultApplicationProblemPlusJSONResponse) VisitApproveRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRegistrationRequestObject struct {
+	UserId RegistrationUserId `json:"user_id"`
+	Body   *RejectRegistrationJSONRequestBody
+}
+
+type RejectRegistrationResponseObject interface {
+	VisitRejectRegistrationResponse(w http.ResponseWriter) error
+}
+
+type RejectRegistration200JSONResponse struct{ AdminRegistrationJSONResponse }
+
+func (response RejectRegistration200JSONResponse) VisitRejectRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRegistrationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RejectRegistrationdefaultApplicationProblemPlusJSONResponse) VisitRejectRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListReportsRequestObject struct {
 	Params ListReportsParams
 }
@@ -8481,7 +9397,7 @@ type GetReportResponseObject interface {
 	VisitGetReportResponse(w http.ResponseWriter) error
 }
 
-type GetReport200JSONResponse struct{ AdminReportJSONResponse }
+type GetReport200JSONResponse struct{ AdminReportDetailJSONResponse }
 
 func (response GetReport200JSONResponse) VisitGetReportResponse(w http.ResponseWriter) error {
 
@@ -8536,7 +9452,7 @@ type AssignReportToSelfResponseObject interface {
 	VisitAssignReportToSelfResponse(w http.ResponseWriter) error
 }
 
-type AssignReportToSelf200JSONResponse struct{ AdminReportJSONResponse }
+type AssignReportToSelf200JSONResponse struct{ AdminReportDetailJSONResponse }
 
 func (response AssignReportToSelf200JSONResponse) VisitAssignReportToSelfResponse(w http.ResponseWriter) error {
 
@@ -8583,6 +9499,117 @@ func (response AssignReportToSelfdefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type AddReportNoteRequestObject struct {
+	Id   ReportId `json:"id"`
+	Body *AddReportNoteJSONRequestBody
+}
+
+type AddReportNoteResponseObject interface {
+	VisitAddReportNoteResponse(w http.ResponseWriter) error
+}
+
+type AddReportNote200JSONResponse struct{ AdminReportDetailJSONResponse }
+
+func (response AddReportNote200JSONResponse) VisitAddReportNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddReportNotedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response AddReportNotedefaultApplicationProblemPlusJSONResponse) VisitAddReportNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenReportRequestObject struct {
+	Id ReportId `json:"id"`
+}
+
+type ReopenReportResponseObject interface {
+	VisitReopenReportResponse(w http.ResponseWriter) error
+}
+
+type ReopenReport200JSONResponse struct{ AdminReportDetailJSONResponse }
+
+func (response ReopenReport200JSONResponse) VisitReopenReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenReportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ReopenReportdefaultApplicationProblemPlusJSONResponse) VisitReopenReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ResolveReportRequestObject struct {
 	Id   ReportId `json:"id"`
 	Body *ResolveReportJSONRequestBody
@@ -8592,7 +9619,7 @@ type ResolveReportResponseObject interface {
 	VisitResolveReportResponse(w http.ResponseWriter) error
 }
 
-type ResolveReport200JSONResponse struct{ AdminReportJSONResponse }
+type ResolveReport200JSONResponse struct{ AdminReportDetailJSONResponse }
 
 func (response ResolveReport200JSONResponse) VisitResolveReportResponse(w http.ResponseWriter) error {
 
@@ -8647,7 +9674,7 @@ type UnassignReportResponseObject interface {
 	VisitUnassignReportResponse(w http.ResponseWriter) error
 }
 
-type UnassignReport200JSONResponse struct{ AdminReportJSONResponse }
+type UnassignReport200JSONResponse struct{ AdminReportDetailJSONResponse }
 
 func (response UnassignReport200JSONResponse) VisitUnassignReportResponse(w http.ResponseWriter) error {
 
@@ -8671,6 +9698,60 @@ type UnassignReportdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UnassignReportdefaultApplicationProblemPlusJSONResponse) VisitUnassignReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesRequestObject struct {
+}
+
+type ListRolesResponseObject interface {
+	VisitListRolesResponse(w http.ResponseWriter) error
+}
+
+type ListRoles200JSONResponse struct{ AdminRoleListJSONResponse }
+
+func (response ListRoles200JSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListRolesdefaultApplicationProblemPlusJSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -11376,6 +12457,15 @@ type StrictServerInterface interface {
 	// RevealAdminAccount Show the email address and the IP addresses of a local account
 	// (POST /admin/accounts/{id}/reveal)
 	RevealAdminAccount(ctx context.Context, request RevealAdminAccountRequestObject) (RevealAdminAccountResponseObject, error)
+	// ListAccountRoles List the roles of a local account
+	// (GET /admin/accounts/{id}/roles)
+	ListAccountRoles(ctx context.Context, request ListAccountRolesRequestObject) (ListAccountRolesResponseObject, error)
+	// RevokeAccountRole Revoke a role from a local account
+	// (DELETE /admin/accounts/{id}/roles/{role})
+	RevokeAccountRole(ctx context.Context, request RevokeAccountRoleRequestObject) (RevokeAccountRoleResponseObject, error)
+	// GrantAccountRole Grant a role to a local account
+	// (PUT /admin/accounts/{id}/roles/{role})
+	GrantAccountRole(ctx context.Context, request GrantAccountRoleRequestObject) (GrantAccountRoleResponseObject, error)
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(ctx context.Context, request ListAuditLogRequestObject) (ListAuditLogResponseObject, error)
@@ -11412,6 +12502,15 @@ type StrictServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(ctx context.Context, request MarkInstanceAvailableRequestObject) (MarkInstanceAvailableResponseObject, error)
+	// ListPendingRegistrations List the registrations that await approval
+	// (GET /admin/registrations)
+	ListPendingRegistrations(ctx context.Context, request ListPendingRegistrationsRequestObject) (ListPendingRegistrationsResponseObject, error)
+	// ApproveRegistration Approve a registration
+	// (POST /admin/registrations/{user_id}/approve)
+	ApproveRegistration(ctx context.Context, request ApproveRegistrationRequestObject) (ApproveRegistrationResponseObject, error)
+	// RejectRegistration Reject a registration
+	// (POST /admin/registrations/{user_id}/reject)
+	RejectRegistration(ctx context.Context, request RejectRegistrationRequestObject) (RejectRegistrationResponseObject, error)
 	// ListReports List the reports
 	// (GET /admin/reports)
 	ListReports(ctx context.Context, request ListReportsRequestObject) (ListReportsResponseObject, error)
@@ -11421,12 +12520,21 @@ type StrictServerInterface interface {
 	// AssignReportToSelf Take a report
 	// (POST /admin/reports/{id}/assign_to_self)
 	AssignReportToSelf(ctx context.Context, request AssignReportToSelfRequestObject) (AssignReportToSelfResponseObject, error)
+	// AddReportNote Write a note on a report
+	// (POST /admin/reports/{id}/notes)
+	AddReportNote(ctx context.Context, request AddReportNoteRequestObject) (AddReportNoteResponseObject, error)
+	// ReopenReport Reopen a resolved report
+	// (POST /admin/reports/{id}/reopen)
+	ReopenReport(ctx context.Context, request ReopenReportRequestObject) (ReopenReportResponseObject, error)
 	// ResolveReport Resolve a report
 	// (POST /admin/reports/{id}/resolve)
 	ResolveReport(ctx context.Context, request ResolveReportRequestObject) (ResolveReportResponseObject, error)
 	// UnassignReport Leave a report to nobody
 	// (POST /admin/reports/{id}/unassign)
 	UnassignReport(ctx context.Context, request UnassignReportRequestObject) (UnassignReportResponseObject, error)
+	// ListRoles List the roles
+	// (GET /admin/roles)
+	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
 	// ListInstanceRules List the instance rules
 	// (GET /admin/rules)
 	ListInstanceRules(ctx context.Context, request ListInstanceRulesRequestObject) (ListInstanceRulesResponseObject, error)
@@ -12219,6 +13327,86 @@ func (sh *strictHandler) RevealAdminAccount(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// ListAccountRoles operation middleware
+func (sh *strictHandler) ListAccountRoles(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request ListAccountRolesRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAccountRoles(ctx, request.(ListAccountRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAccountRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAccountRolesResponseObject); ok {
+		if err := validResponse.VisitListAccountRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeAccountRole operation middleware
+func (sh *strictHandler) RevokeAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey) {
+	var request RevokeAccountRoleRequestObject
+
+	request.Id = id
+	request.Role = role
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeAccountRole(ctx, request.(RevokeAccountRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeAccountRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeAccountRoleResponseObject); ok {
+		if err := validResponse.VisitRevokeAccountRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GrantAccountRole operation middleware
+func (sh *strictHandler) GrantAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey) {
+	var request GrantAccountRoleRequestObject
+
+	request.Id = id
+	request.Role = role
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GrantAccountRole(ctx, request.(GrantAccountRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GrantAccountRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GrantAccountRoleResponseObject); ok {
+		if err := validResponse.VisitGrantAccountRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListAuditLog operation middleware
 func (sh *strictHandler) ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams) {
 	var request ListAuditLogRequestObject
@@ -12535,6 +13723,104 @@ func (sh *strictHandler) MarkInstanceAvailable(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// ListPendingRegistrations operation middleware
+func (sh *strictHandler) ListPendingRegistrations(w http.ResponseWriter, r *http.Request, params ListPendingRegistrationsParams) {
+	var request ListPendingRegistrationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPendingRegistrations(ctx, request.(ListPendingRegistrationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPendingRegistrations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPendingRegistrationsResponseObject); ok {
+		if err := validResponse.VisitListPendingRegistrationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveRegistration operation middleware
+func (sh *strictHandler) ApproveRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId) {
+	var request ApproveRegistrationRequestObject
+
+	request.UserId = userId
+
+	var body ApproveRegistrationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveRegistration(ctx, request.(ApproveRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveRegistrationResponseObject); ok {
+		if err := validResponse.VisitApproveRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectRegistration operation middleware
+func (sh *strictHandler) RejectRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId) {
+	var request RejectRegistrationRequestObject
+
+	request.UserId = userId
+
+	var body RejectRegistrationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectRegistration(ctx, request.(RejectRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectRegistrationResponseObject); ok {
+		if err := validResponse.VisitRejectRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListReports operation middleware
 func (sh *strictHandler) ListReports(w http.ResponseWriter, r *http.Request, params ListReportsParams) {
 	var request ListReportsRequestObject
@@ -12613,6 +13899,65 @@ func (sh *strictHandler) AssignReportToSelf(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// AddReportNote operation middleware
+func (sh *strictHandler) AddReportNote(w http.ResponseWriter, r *http.Request, id ReportId) {
+	var request AddReportNoteRequestObject
+
+	request.Id = id
+
+	var body AddReportNoteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddReportNote(ctx, request.(AddReportNoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddReportNote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddReportNoteResponseObject); ok {
+		if err := validResponse.VisitAddReportNoteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReopenReport operation middleware
+func (sh *strictHandler) ReopenReport(w http.ResponseWriter, r *http.Request, id ReportId) {
+	var request ReopenReportRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReopenReport(ctx, request.(ReopenReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReopenReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReopenReportResponseObject); ok {
+		if err := validResponse.VisitReopenReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ResolveReport operation middleware
 func (sh *strictHandler) ResolveReport(w http.ResponseWriter, r *http.Request, id ReportId) {
 	var request ResolveReportRequestObject
@@ -12665,6 +14010,30 @@ func (sh *strictHandler) UnassignReport(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnassignReportResponseObject); ok {
 		if err := validResponse.VisitUnassignReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoles operation middleware
+func (sh *strictHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	var request ListRolesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoles(ctx, request.(ListRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRolesResponseObject); ok {
+		if err := validResponse.VisitListRolesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

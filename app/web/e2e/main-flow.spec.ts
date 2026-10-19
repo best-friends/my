@@ -16,7 +16,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { crc32, deflateSync } from "node:zlib";
 import type { Page } from "@playwright/test";
-import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test as base } from "./fixtures";
+import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, openFromNavigation, test as base } from "./fixtures";
 import { ownsServer, runMy } from "./server-cli.ts";
 import { serverURL } from "./server-origin.ts";
 
@@ -145,7 +145,7 @@ async function signInToApp(page: Page, user: User, { hasSession = false } = {}):
 async function navigate(page: Page, label: "home" | "local" | "notifications" | "settings"): Promise<void> {
   // Found by its address: the notifications link's name changes once unread notifications arrive
   // ("Notifications, 1 unread", a message of its own in every locale).
-  await page.getByRole("navigation", { name: message("shell.nav.label") }).locator(`a[href="/${label}"]`).click();
+  await openFromNavigation(page, `/${label}`, false);
   await expect(pageHeading(page)).toHaveText(message(`${label}.title`));
 }
 

@@ -29,7 +29,7 @@ export function createAppServices(config: RuntimeConfig, i18n: I18n, leaveApp: L
   // Each app starts from what the browser says about the network (tests make one app per test).
   startConnectivity();
   const queryClient = createQueryClient();
-  const locale = new AppLocale(i18n, { doc: document });
+  const locale = new AppLocale(i18n, { doc: document, remember: true });
   const session = new Session({ apiOrigin: config.apiOrigin });
   forgetUserDataOnUserChange(session, queryClient);
   refetchOnLocaleChange(locale, queryClient);

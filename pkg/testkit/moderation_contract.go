@@ -47,7 +47,10 @@ type ModerationFactory func(t *testing.T, opts uow.Options) ModerationHarness
 // limits and suspensions in effect without their private notes, and moderators list, assign,
 // and resolve reports, each resolution emitting the report with it, and a reporter lists only
 // their own reports, newest first, with their states, a filed report tells whether it is the
-// target's only open one, and the open reports are counted. The accounts are in-memory stand-ins.
+// target's only open one, and the open reports are counted. Moderators also write notes on a
+// report, reopen a resolved one, see its target's other reports and actions, and an action that
+// follows from a report resolves it as actioned once, each audited. The accounts are in-memory
+// stand-ins.
 func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -71,6 +74,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"ListsTheReportsOfAReporter", moderationReportsOfReporter},
 		{"TellsSuspensionsAndTheirEnds", moderationSuspensions},
 		{"FlagsTheFirstOpenReportAndCounts", moderationFirstOpenReport},
+		{"NotesReopensAndResolvesByAction", moderationNotesAndReopenings},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newModerationEnv(t, newHarness)) })
@@ -115,6 +119,7 @@ func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv
 	}
 	e.suspensions = &eventLog{}
 	projectors.Register(appmoderation.EventAccountSuspensionChanged, e.suspensions.record)
+	appmoderation.RegisterAuditProjector(projectors, h.Moderation)
 	e.svc = appmoderation.NewService(appmoderation.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Moderation, Accounts: e.actors, Clock: clock, IDs: ids,
 		Statuses: e.statuses, Lifecycles: e.lifecycles,

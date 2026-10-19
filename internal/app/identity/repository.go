@@ -54,6 +54,7 @@ type Repository interface {
 	OAuthRepository
 	RegistrationRepository
 	OriginRepository
+	RoleRepository
 	AccountAdminRepository
 
 	InsertSession(ctx context.Context, tx uow.Tx, s identity.Session) error

@@ -108,6 +108,8 @@ type Repository interface {
 
 	// The audit log (audit.go).
 	AuditRepository
+	// Notes on reports and their reopenings (report_notes.go).
+	ReportNoteRepository
 	// The account management (account_admin.go).
 	AccountAdminRepository
 }

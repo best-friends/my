@@ -628,6 +628,14 @@ type Report struct {
 	FiledAt           time.Time
 }
 
+type ReportNote struct {
+	ID           string
+	ReportID     string
+	AuthorUserID *string
+	Body         string
+	WrittenAt    time.Time
+}
+
 type ReportState struct {
 	ReportID       string
 	State          string
@@ -641,6 +649,11 @@ type Role struct {
 	Key       string
 	Position  int32
 	CreatedAt time.Time
+}
+
+type RolePermission struct {
+	RoleID     string
+	Permission string
 }
 
 type SessionOrigin struct {

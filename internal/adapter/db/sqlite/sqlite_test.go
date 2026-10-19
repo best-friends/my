@@ -156,6 +156,13 @@ func TestRegistrationRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestRoleRepositoryContract(t *testing.T) {
+	testkit.RoleRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.AccountHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.AccountHarness{UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository()}
+	})
+}
+
 func TestInstanceRepositoryContract(t *testing.T) {
 	testkit.InstanceRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.InstanceHarness {
 		db, _ := newTestDB(t, "", opts)

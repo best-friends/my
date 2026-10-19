@@ -1,4 +1,236 @@
 {
+  "admin.audit_log.action.account_action_issued": {
+    "defaultMessage": "Account action taken",
+    "description": "Heading of an audit log entry: a moderator took an action (a suspension, a limit…) on an account."
+  },
+  "admin.audit_log.action.account_action_lifted": {
+    "defaultMessage": "Account action lifted",
+    "description": "Heading of an audit log entry: a moderator lifted an action on an account."
+  },
+  "admin.audit_log.action.domain_action_issued": {
+    "defaultMessage": "Domain action taken",
+    "description": "Heading of an audit log entry: a moderator took an action on a remote domain."
+  },
+  "admin.audit_log.action.domain_action_lifted": {
+    "defaultMessage": "Domain action lifted",
+    "description": "Heading of an audit log entry: a moderator lifted an action on a remote domain."
+  },
+  "admin.audit_log.action.registration_approved": {
+    "defaultMessage": "Registration approved",
+    "description": "Heading of an audit log entry: a moderator approved a sign-up."
+  },
+  "admin.audit_log.action.registration_rejected": {
+    "defaultMessage": "Registration rejected",
+    "description": "Heading of an audit log entry: a moderator rejected a sign-up."
+  },
+  "admin.audit_log.action.report_assigned": {
+    "defaultMessage": "Report assigned",
+    "description": "Heading of an audit log entry: a report was assigned to a moderator."
+  },
+  "admin.audit_log.action.report_note_added": {
+    "defaultMessage": "Note added to a report",
+    "description": "Heading of an audit log entry: a moderator wrote an internal note on a report."
+  },
+  "admin.audit_log.action.report_reopened": {
+    "defaultMessage": "Report reopened",
+    "description": "Heading of an audit log entry: a moderator reopened a resolved report."
+  },
+  "admin.audit_log.action.report_resolved": {
+    "defaultMessage": "Report resolved",
+    "description": "Heading of an audit log entry: a moderator resolved a report."
+  },
+  "admin.audit_log.action.report_unassigned": {
+    "defaultMessage": "Report unassigned",
+    "description": "Heading of an audit log entry: a report was left without an assigned moderator."
+  },
+  "admin.audit_log.action.revealed_private_data": {
+    "defaultMessage": "Private data shown",
+    "description": "Heading of an audit log entry: a moderator was shown the email address and the IP addresses of a local account."
+  },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "Role granted",
+    "description": "Heading of an audit log entry: an administrator granted a role to a user."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "Role revoked",
+    "description": "Heading of an audit log entry: an administrator revoked a role from a user."
+  },
+  "admin.audit_log.action.rule_added": {
+    "defaultMessage": "Rule added",
+    "description": "Heading of an audit log entry: an administrator added a server rule."
+  },
+  "admin.audit_log.action.rule_moved": {
+    "defaultMessage": "Rule moved",
+    "description": "Heading of an audit log entry: an administrator moved a server rule in the list."
+  },
+  "admin.audit_log.action.rule_retired": {
+    "defaultMessage": "Rule retired",
+    "description": "Heading of an audit log entry: an administrator retired a server rule."
+  },
+  "admin.audit_log.action.rule_revised": {
+    "defaultMessage": "Rule revised",
+    "description": "Heading of an audit log entry: an administrator revised a server rule."
+  },
+  "admin.audit_log.action.setting_changed": {
+    "defaultMessage": "Setting changed",
+    "description": "Heading of an audit log entry: an administrator changed an instance setting."
+  },
+  "admin.audit_log.action.text_changed": {
+    "defaultMessage": "Text changed",
+    "description": "Heading of an audit log entry: an administrator changed an instance text (such as the terms) in one language."
+  },
+  "admin.audit_log.actor": {
+    "defaultMessage": "By",
+    "description": "Term in an audit log entry: who performed the operation."
+  },
+  "admin.audit_log.actor.cli": {
+    "defaultMessage": "Command line",
+    "description": "Who performed an audited operation: the server operator with the my command line, as no user."
+  },
+  "admin.audit_log.actor.deleted_user": {
+    "defaultMessage": "A deleted account",
+    "description": "Who performed an audited operation, when the account of that moderator or administrator is gone."
+  },
+  "admin.audit_log.actor.remote": {
+    "defaultMessage": "Another server",
+    "description": "Who performed an audited operation: another server of the federation."
+  },
+  "admin.audit_log.actor.system": {
+    "defaultMessage": "This server",
+    "description": "Who performed an audited operation: the server itself, automatically."
+  },
+  "admin.audit_log.empty": {
+    "defaultMessage": "No operations yet",
+    "description": "Heading of the audit log when nothing has been recorded."
+  },
+  "admin.audit_log.empty.description": {
+    "defaultMessage": "What moderators and administrators do on this server is listed here.",
+    "description": "Text of the empty audit log."
+  },
+  "admin.audit_log.empty.filtered": {
+    "defaultMessage": "No operations match the filters",
+    "description": "Heading of the audit log when no operation matches the chosen filters."
+  },
+  "admin.audit_log.empty.filtered.description": {
+    "defaultMessage": "Choose other filters, or clear them to see every operation.",
+    "description": "Text of the audit log when no operation matches the chosen filters."
+  },
+  "admin.audit_log.every_actor": {
+    "defaultMessage": "Show operations by all people",
+    "description": "Link in an audit log entry, while the log is filtered by its actor, that lets go of that filter."
+  },
+  "admin.audit_log.every_target": {
+    "defaultMessage": "Show operations on all targets",
+    "description": "Link in an audit log entry, while the log is filtered by its target, that lets go of that filter."
+  },
+  "admin.audit_log.filter.action": {
+    "defaultMessage": "Operation",
+    "description": "Label of the select that keeps one kind of operation in the audit log."
+  },
+  "admin.audit_log.filter.action.all": {
+    "defaultMessage": "All operations",
+    "description": "Option of the operation select of the audit log that keeps every kind of operation."
+  },
+  "admin.audit_log.filter.actor": {
+    "defaultMessage": "Operations by",
+    "description": "Term of the audit log filter that keeps the operations of one moderator or administrator; their name follows."
+  },
+  "admin.audit_log.filter.actor.clear": {
+    "defaultMessage": "Show all people",
+    "description": "Link next to the account the audit log is filtered by that lets go of that filter."
+  },
+  "admin.audit_log.filter.actor.unknown": {
+    "defaultMessage": "The chosen account",
+    "description": "Shown in place of the name of the account the audit log is filtered by, when no loaded entry shows that account."
+  },
+  "admin.audit_log.filter.clear": {
+    "defaultMessage": "Clear filters",
+    "description": "Link that shows the whole audit log again, without any filter."
+  },
+  "admin.audit_log.filter.target": {
+    "defaultMessage": "Operations on",
+    "description": "Term of the audit log filter that keeps the operations on one target; the target follows."
+  },
+  "admin.audit_log.filter.target.clear": {
+    "defaultMessage": "Show all targets",
+    "description": "Link next to the target the audit log is filtered by that lets go of that filter."
+  },
+  "admin.audit_log.filter.target_kind": {
+    "defaultMessage": "Target",
+    "description": "Label of the select that keeps the operations on one kind of target (an account, a domain, a report…) in the audit log."
+  },
+  "admin.audit_log.filter.target_kind.all": {
+    "defaultMessage": "All targets",
+    "description": "Option of the target select of the audit log that keeps every kind of target."
+  },
+  "admin.audit_log.filter.title": {
+    "defaultMessage": "Filters",
+    "description": "Heading of the filters of the audit log."
+  },
+  "admin.audit_log.list.title": {
+    "defaultMessage": "Operations",
+    "description": "Heading of the list of operations in the audit log, newest first."
+  },
+  "admin.audit_log.more_failed": {
+    "defaultMessage": "Couldn’t load more operations",
+    "description": "Shown under the loaded part of the audit log when its next page failed to load; the reason follows, and the show more button tries again."
+  },
+  "admin.audit_log.occurred_at": {
+    "defaultMessage": "When",
+    "description": "Term in an audit log entry: when the operation happened."
+  },
+  "admin.audit_log.only_actor": {
+    "defaultMessage": "Show only operations by {name}",
+    "description": "Link in an audit log entry that keeps only the operations of its actor. {name} is the actor’s display name."
+  },
+  "admin.audit_log.only_target": {
+    "defaultMessage": "Show only operations on {target}",
+    "description": "Link in an audit log entry that keeps only the operations on its target. {target} is the target’s name, such as @alice or a domain."
+  },
+  "admin.audit_log.target_kind.account": {
+    "defaultMessage": "Account",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.appeal": {
+    "defaultMessage": "Appeal",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.domain": {
+    "defaultMessage": "Domain",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.report": {
+    "defaultMessage": "Report",
+    "description": "A kind of target of audited operations, also the term of the target in an entry. The entry names the reported account."
+  },
+  "admin.audit_log.target_kind.role": {
+    "defaultMessage": "Role",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.rule": {
+    "defaultMessage": "Rule",
+    "description": "A kind of target of audited operations (a server rule), also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.setting": {
+    "defaultMessage": "Setting",
+    "description": "A kind of target of audited operations (an instance setting or text), also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.signup_block": {
+    "defaultMessage": "Sign-up block",
+    "description": "A kind of target of audited operations (a blocked e-mail domain or IP range for sign-ups), also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.status": {
+    "defaultMessage": "Post",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.user": {
+    "defaultMessage": "Registration",
+    "description": "A kind of target of audited operations (a user whose sign-up was reviewed), also the term of the target in an entry."
+  },
+  "admin.audit_log.title": {
+    "defaultMessage": "Audit log",
+    "description": "Heading of the admin screen that lists what moderators and administrators did."
+  },
   "admin.dead_jobs.attempts": {
     "defaultMessage": "Attempts",
     "description": "Term in a failed job's details: how many times the job ran."
@@ -463,6 +695,142 @@
     "defaultMessage": "You cannot use this screen",
     "description": "Heading of an admin screen for a user whose roles lack its permission."
   },
+  "admin.registrations.account_gone": {
+    "defaultMessage": "A removed account",
+    "description": "Heading of a registration on the registrations admin screen, and the applicant in its sentences, when the user's account no longer exists."
+  },
+  "admin.registrations.already_approved": {
+    "defaultMessage": "{applicant} was already approved by another moderator. That decision stands.",
+    "description": "Status after a moderator decided a registration that another moderator had approved first; nothing changed. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.already_rejected": {
+    "defaultMessage": "{applicant} was already rejected by another moderator. That decision stands.",
+    "description": "Status after a moderator decided a registration that another moderator had rejected first; nothing changed. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.approve": {
+    "defaultMessage": "Approve",
+    "description": "Button of a pending registration that opens the confirmation of approving it, and the button of that confirmation that approves it."
+  },
+  "admin.registrations.approve_applicant": {
+    "defaultMessage": "Approve {applicant}",
+    "description": "Accessible name of the approve button of a pending registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.approved": {
+    "defaultMessage": "{applicant} is approved and can sign in.",
+    "description": "Status after a moderator approved a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button of the confirmation of approving or rejecting a registration that closes it without deciding."
+  },
+  "admin.registrations.characters_left": {
+    "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
+    "description": "Character count under the note of a registration decision while the text is within the limit."
+  },
+  "admin.registrations.characters_over": {
+    "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
+    "description": "Character count under the note of a registration decision when the text is longer than the limit."
+  },
+  "admin.registrations.confirm_approve.description": {
+    "defaultMessage": "{applicant} can sign in and start posting. The decision cannot be changed afterwards.",
+    "description": "Text of the confirmation before approving a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_approve.title": {
+    "defaultMessage": "Approve {applicant}?",
+    "description": "Title of the confirmation before approving a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_reject.description": {
+    "defaultMessage": "{applicant} cannot sign in. The decision cannot be changed afterwards.",
+    "description": "Text of the confirmation before rejecting a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_reject.title": {
+    "defaultMessage": "Reject {applicant}?",
+    "description": "Title of the confirmation before rejecting a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.decide_failed": {
+    "defaultMessage": "Could not save the decision: {reason}",
+    "description": "Error in the confirmation of approving or rejecting a registration when the request failed. {reason} is why."
+  },
+  "admin.registrations.email": {
+    "defaultMessage": "Email",
+    "description": "Term of a pending registration's email address."
+  },
+  "admin.registrations.email.none": {
+    "defaultMessage": "None",
+    "description": "Value of a pending registration's email address when the user has none."
+  },
+  "admin.registrations.email_verified": {
+    "defaultMessage": "Email confirmed",
+    "description": "Term of whether the applicant confirmed their email address."
+  },
+  "admin.registrations.email_verified.no": {
+    "defaultMessage": "Not confirmed",
+    "description": "Value when the applicant has not confirmed their email address."
+  },
+  "admin.registrations.email_verified.yes": {
+    "defaultMessage": "Confirmed",
+    "description": "Value when the applicant confirmed their email address."
+  },
+  "admin.registrations.empty": {
+    "defaultMessage": "No registrations await approval",
+    "description": "Heading of the registrations admin screen when no registration awaits a decision."
+  },
+  "admin.registrations.empty.description": {
+    "defaultMessage": "New sign-ups appear here while registrations need approval.",
+    "description": "Text under the heading of the empty registrations admin screen."
+  },
+  "admin.registrations.invite": {
+    "defaultMessage": "Invite",
+    "description": "Term of whether the applicant signed up with an invite."
+  },
+  "admin.registrations.invite.none": {
+    "defaultMessage": "None",
+    "description": "Value when the applicant signed up without an invite."
+  },
+  "admin.registrations.invite.used": {
+    "defaultMessage": "Signed up with an invite",
+    "description": "Value when the applicant signed up with an invite."
+  },
+  "admin.registrations.note": {
+    "defaultMessage": "Note for moderators",
+    "description": "Label of the optional note in the confirmation of approving or rejecting a registration."
+  },
+  "admin.registrations.note.description": {
+    "defaultMessage": "Optional. Only moderators see it.",
+    "description": "Hint under the note of a registration decision."
+  },
+  "admin.registrations.note.too_long": {
+    "defaultMessage": "Use at most {max, number} characters",
+    "description": "Error under the note of a registration decision when it is too long. {max} is the limit."
+  },
+  "admin.registrations.reason": {
+    "defaultMessage": "Reason for joining",
+    "description": "Term of the reason the applicant gave for joining."
+  },
+  "admin.registrations.reason.none": {
+    "defaultMessage": "No reason given",
+    "description": "Value when the applicant gave no reason for joining."
+  },
+  "admin.registrations.reject": {
+    "defaultMessage": "Reject",
+    "description": "Button of a pending registration that opens the confirmation of rejecting it, and the button of that confirmation that rejects it."
+  },
+  "admin.registrations.reject_applicant": {
+    "defaultMessage": "Reject {applicant}",
+    "description": "Accessible name of the reject button of a pending registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.rejected": {
+    "defaultMessage": "{applicant} is rejected.",
+    "description": "Status after a moderator rejected a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.submitted_at": {
+    "defaultMessage": "Signed up",
+    "description": "Term of when the applicant signed up."
+  },
+  "admin.registrations.title": {
+    "defaultMessage": "Registrations",
+    "description": "Title of the admin screen that lists the registrations awaiting approval."
+  },
   "api.error.network": {
     "defaultMessage": "Could not reach the server. Check your connection and try again.",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."
@@ -718,6 +1086,14 @@
   "home.title": {
     "defaultMessage": "Home",
     "description": "Heading and document title of the home timeline page."
+  },
+  "local.disabled.body": {
+    "defaultMessage": "This server does not show the public posts of its accounts in one timeline.",
+    "description": "Text below the heading of the local timeline's page when the server's operators have turned that timeline off."
+  },
+  "local.disabled.title": {
+    "defaultMessage": "The local timeline is off",
+    "description": "Heading and document title of the local timeline's page when the server's operators have turned that timeline off."
   },
   "local.title": {
     "defaultMessage": "Local timeline",
@@ -1755,6 +2131,14 @@
     "defaultMessage": "Loading",
     "description": "Accessible name of the progress indicator shown while a page loads."
   },
+  "shell.menu.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the × button that closes the navigation menu's sheet."
+  },
+  "shell.menu.title": {
+    "defaultMessage": "Menu",
+    "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
+  },
   "shell.nav.home": {
     "defaultMessage": "Home",
     "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -1765,7 +2149,11 @@
   },
   "shell.nav.local": {
     "defaultMessage": "Local",
-    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in the side rail of tablets. On phones the same timeline is a tab of the Timelines screen instead."
+  },
+  "shell.nav.menu": {
+    "defaultMessage": "Menu",
+    "description": "Button of the bottom tab bar on phones that opens a sheet with the rest of the navigation (profile, settings). Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
   },
   "shell.nav.notifications": {
     "defaultMessage": "Notifications",
@@ -1777,11 +2165,11 @@
   },
   "shell.nav.profile": {
     "defaultMessage": "Profile",
-    "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
   },
   "shell.nav.public": {
     "defaultMessage": "Federated",
-    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in the side rail of tablets. On phones the same timeline is a tab of the Timelines screen instead."
   },
   "shell.nav.search": {
     "defaultMessage": "Search",
@@ -1789,7 +2177,15 @@
   },
   "shell.nav.settings": {
     "defaultMessage": "Settings",
-    "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
+  "shell.nav.timelines": {
+    "defaultMessage": "Timelines",
+    "description": "Item of the bottom tab bar on phones that opens the screen with the local and federated timelines as tabs. Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
+  },
+  "shell.nav.viewer": {
+    "defaultMessage": "The account you are signed in with",
+    "description": "Description read after the name of the link at the bottom of the desktop sidebar that shows the signed-in account (avatar, display name, handle) and opens its profile."
   },
   "shell.not_found.body": {
     "defaultMessage": "There is no page at this address.",
@@ -1806,6 +2202,10 @@
   "shell.offline": {
     "defaultMessage": "You are offline. Anything that failed to load loads again when you are back online.",
     "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
+  },
+  "shell.rate_limited": {
+    "defaultMessage": "Too many requests were sent to the server. What failed to load loads again at {time}.",
+    "description": "Text of the bar at the top of the app while the server's rate limit refuses requests (HTTP 429). {time} is the time of day the app loads again, with seconds (for example 12:34:56). Screen readers announce it when it appears."
   },
   "shell.skip_to_main": {
     "defaultMessage": "Skip to main content",
@@ -2074,5 +2474,17 @@
   "timeline.signed_out.heading": {
     "defaultMessage": "You are not signed in",
     "description": "Heading on the home page when nobody is signed in, shown instead of the home timeline."
+  },
+  "timeline.tabs.label": {
+    "defaultMessage": "Timelines",
+    "description": "Accessible name of the tabs that switch between the local and the federated timeline."
+  },
+  "timeline.tabs.local": {
+    "defaultMessage": "Local",
+    "description": "Tab that opens the local timeline (public posts of this server's accounts)."
+  },
+  "timeline.tabs.public": {
+    "defaultMessage": "Federated",
+    "description": "Tab that opens the federated timeline (public posts of this server and of the other servers it knows)."
   }
 }

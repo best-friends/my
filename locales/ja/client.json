@@ -1,4 +1,236 @@
 {
+  "admin.audit_log.action.account_action_issued": {
+    "defaultMessage": "アカウントへの処分",
+    "description": "Heading of an audit log entry: a moderator took an action (a suspension, a limit…) on an account."
+  },
+  "admin.audit_log.action.account_action_lifted": {
+    "defaultMessage": "アカウントへの処分の解除",
+    "description": "Heading of an audit log entry: a moderator lifted an action on an account."
+  },
+  "admin.audit_log.action.domain_action_issued": {
+    "defaultMessage": "ドメインへの処分",
+    "description": "Heading of an audit log entry: a moderator took an action on a remote domain."
+  },
+  "admin.audit_log.action.domain_action_lifted": {
+    "defaultMessage": "ドメインへの処分の解除",
+    "description": "Heading of an audit log entry: a moderator lifted an action on a remote domain."
+  },
+  "admin.audit_log.action.registration_approved": {
+    "defaultMessage": "登録の承認",
+    "description": "Heading of an audit log entry: a moderator approved a sign-up."
+  },
+  "admin.audit_log.action.registration_rejected": {
+    "defaultMessage": "登録の却下",
+    "description": "Heading of an audit log entry: a moderator rejected a sign-up."
+  },
+  "admin.audit_log.action.report_assigned": {
+    "defaultMessage": "通報の担当の割り当て",
+    "description": "Heading of an audit log entry: a report was assigned to a moderator."
+  },
+  "admin.audit_log.action.report_note_added": {
+    "defaultMessage": "通報へのメモ",
+    "description": "Heading of an audit log entry: a moderator wrote an internal note on a report."
+  },
+  "admin.audit_log.action.report_reopened": {
+    "defaultMessage": "通報の再開",
+    "description": "Heading of an audit log entry: a moderator reopened a resolved report."
+  },
+  "admin.audit_log.action.report_resolved": {
+    "defaultMessage": "通報の解決",
+    "description": "Heading of an audit log entry: a moderator resolved a report."
+  },
+  "admin.audit_log.action.report_unassigned": {
+    "defaultMessage": "通報の担当の解除",
+    "description": "Heading of an audit log entry: a report was left without an assigned moderator."
+  },
+  "admin.audit_log.action.revealed_private_data": {
+    "defaultMessage": "個人データの表示",
+    "description": "Heading of an audit log entry: a moderator was shown the email address and the IP addresses of a local account."
+  },
+  "admin.audit_log.action.role_granted": {
+    "defaultMessage": "ロールの付与",
+    "description": "Heading of an audit log entry: an administrator granted a role to a user."
+  },
+  "admin.audit_log.action.role_revoked": {
+    "defaultMessage": "ロールの剥奪",
+    "description": "Heading of an audit log entry: an administrator revoked a role from a user."
+  },
+  "admin.audit_log.action.rule_added": {
+    "defaultMessage": "ルールの追加",
+    "description": "Heading of an audit log entry: an administrator added a server rule."
+  },
+  "admin.audit_log.action.rule_moved": {
+    "defaultMessage": "ルールの並べ替え",
+    "description": "Heading of an audit log entry: an administrator moved a server rule in the list."
+  },
+  "admin.audit_log.action.rule_retired": {
+    "defaultMessage": "ルールの廃止",
+    "description": "Heading of an audit log entry: an administrator retired a server rule."
+  },
+  "admin.audit_log.action.rule_revised": {
+    "defaultMessage": "ルールの改訂",
+    "description": "Heading of an audit log entry: an administrator revised a server rule."
+  },
+  "admin.audit_log.action.setting_changed": {
+    "defaultMessage": "設定の変更",
+    "description": "Heading of an audit log entry: an administrator changed an instance setting."
+  },
+  "admin.audit_log.action.text_changed": {
+    "defaultMessage": "文章の変更",
+    "description": "Heading of an audit log entry: an administrator changed an instance text (such as the terms) in one language."
+  },
+  "admin.audit_log.actor": {
+    "defaultMessage": "操作者",
+    "description": "Term in an audit log entry: who performed the operation."
+  },
+  "admin.audit_log.actor.cli": {
+    "defaultMessage": "コマンドライン",
+    "description": "Who performed an audited operation: the server operator with the my command line, as no user."
+  },
+  "admin.audit_log.actor.deleted_user": {
+    "defaultMessage": "削除されたアカウント",
+    "description": "Who performed an audited operation, when the account of that moderator or administrator is gone."
+  },
+  "admin.audit_log.actor.remote": {
+    "defaultMessage": "ほかのサーバー",
+    "description": "Who performed an audited operation: another server of the federation."
+  },
+  "admin.audit_log.actor.system": {
+    "defaultMessage": "このサーバー",
+    "description": "Who performed an audited operation: the server itself, automatically."
+  },
+  "admin.audit_log.empty": {
+    "defaultMessage": "まだ操作の記録はありません",
+    "description": "Heading of the audit log when nothing has been recorded."
+  },
+  "admin.audit_log.empty.description": {
+    "defaultMessage": "このサーバーでモデレーターと管理者が行った操作がここに表示されます。",
+    "description": "Text of the empty audit log."
+  },
+  "admin.audit_log.empty.filtered": {
+    "defaultMessage": "絞り込みに合う操作はありません",
+    "description": "Heading of the audit log when no operation matches the chosen filters."
+  },
+  "admin.audit_log.empty.filtered.description": {
+    "defaultMessage": "ほかの条件を選ぶか、絞り込みを外してすべての操作を表示してください。",
+    "description": "Text of the audit log when no operation matches the chosen filters."
+  },
+  "admin.audit_log.every_actor": {
+    "defaultMessage": "すべての操作者の操作を表示",
+    "description": "Link in an audit log entry, while the log is filtered by its actor, that lets go of that filter."
+  },
+  "admin.audit_log.every_target": {
+    "defaultMessage": "すべての対象への操作を表示",
+    "description": "Link in an audit log entry, while the log is filtered by its target, that lets go of that filter."
+  },
+  "admin.audit_log.filter.action": {
+    "defaultMessage": "操作の種類",
+    "description": "Label of the select that keeps one kind of operation in the audit log."
+  },
+  "admin.audit_log.filter.action.all": {
+    "defaultMessage": "すべての操作",
+    "description": "Option of the operation select of the audit log that keeps every kind of operation."
+  },
+  "admin.audit_log.filter.actor": {
+    "defaultMessage": "操作者",
+    "description": "Term of the audit log filter that keeps the operations of one moderator or administrator; their name follows."
+  },
+  "admin.audit_log.filter.actor.clear": {
+    "defaultMessage": "すべての操作者を表示",
+    "description": "Link next to the account the audit log is filtered by that lets go of that filter."
+  },
+  "admin.audit_log.filter.actor.unknown": {
+    "defaultMessage": "選んだアカウント",
+    "description": "Shown in place of the name of the account the audit log is filtered by, when no loaded entry shows that account."
+  },
+  "admin.audit_log.filter.clear": {
+    "defaultMessage": "絞り込みを外す",
+    "description": "Link that shows the whole audit log again, without any filter."
+  },
+  "admin.audit_log.filter.target": {
+    "defaultMessage": "対象",
+    "description": "Term of the audit log filter that keeps the operations on one target; the target follows."
+  },
+  "admin.audit_log.filter.target.clear": {
+    "defaultMessage": "すべての対象を表示",
+    "description": "Link next to the target the audit log is filtered by that lets go of that filter."
+  },
+  "admin.audit_log.filter.target_kind": {
+    "defaultMessage": "対象の種類",
+    "description": "Label of the select that keeps the operations on one kind of target (an account, a domain, a report…) in the audit log."
+  },
+  "admin.audit_log.filter.target_kind.all": {
+    "defaultMessage": "すべての対象",
+    "description": "Option of the target select of the audit log that keeps every kind of target."
+  },
+  "admin.audit_log.filter.title": {
+    "defaultMessage": "絞り込み",
+    "description": "Heading of the filters of the audit log."
+  },
+  "admin.audit_log.list.title": {
+    "defaultMessage": "操作",
+    "description": "Heading of the list of operations in the audit log, newest first."
+  },
+  "admin.audit_log.more_failed": {
+    "defaultMessage": "続きの操作を読み込めませんでした",
+    "description": "Shown under the loaded part of the audit log when its next page failed to load; the reason follows, and the show more button tries again."
+  },
+  "admin.audit_log.occurred_at": {
+    "defaultMessage": "日時",
+    "description": "Term in an audit log entry: when the operation happened."
+  },
+  "admin.audit_log.only_actor": {
+    "defaultMessage": "{name}の操作だけを表示",
+    "description": "Link in an audit log entry that keeps only the operations of its actor. {name} is the actor’s display name."
+  },
+  "admin.audit_log.only_target": {
+    "defaultMessage": "{target}への操作だけを表示",
+    "description": "Link in an audit log entry that keeps only the operations on its target. {target} is the target’s name, such as @alice or a domain."
+  },
+  "admin.audit_log.target_kind.account": {
+    "defaultMessage": "アカウント",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.appeal": {
+    "defaultMessage": "異議申し立て",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.domain": {
+    "defaultMessage": "ドメイン",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.report": {
+    "defaultMessage": "通報",
+    "description": "A kind of target of audited operations, also the term of the target in an entry. The entry names the reported account."
+  },
+  "admin.audit_log.target_kind.role": {
+    "defaultMessage": "ロール",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.rule": {
+    "defaultMessage": "ルール",
+    "description": "A kind of target of audited operations (a server rule), also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.setting": {
+    "defaultMessage": "設定",
+    "description": "A kind of target of audited operations (an instance setting or text), also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.signup_block": {
+    "defaultMessage": "登録の拒否リスト",
+    "description": "A kind of target of audited operations (a blocked e-mail domain or IP range for sign-ups), also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.status": {
+    "defaultMessage": "投稿",
+    "description": "A kind of target of audited operations, also the term of the target in an entry."
+  },
+  "admin.audit_log.target_kind.user": {
+    "defaultMessage": "登録",
+    "description": "A kind of target of audited operations (a user whose sign-up was reviewed), also the term of the target in an entry."
+  },
+  "admin.audit_log.title": {
+    "defaultMessage": "監査ログ",
+    "description": "Heading of the admin screen that lists what moderators and administrators did."
+  },
   "admin.dead_jobs.attempts": {
     "defaultMessage": "試行回数",
     "description": "Term in a failed job's details: how many times the job ran."
@@ -463,6 +695,142 @@
     "defaultMessage": "この画面を使う権限がありません",
     "description": "Heading of an admin screen for a user whose roles lack its permission."
   },
+  "admin.registrations.account_gone": {
+    "defaultMessage": "削除されたアカウント",
+    "description": "Heading of a registration on the registrations admin screen, and the applicant in its sentences, when the user's account no longer exists."
+  },
+  "admin.registrations.already_approved": {
+    "defaultMessage": "{applicant} はすでにほかのモデレーターが承認していました。その決定のままです。",
+    "description": "Status after a moderator decided a registration that another moderator had approved first; nothing changed. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.already_rejected": {
+    "defaultMessage": "{applicant} はすでにほかのモデレーターが却下していました。その決定のままです。",
+    "description": "Status after a moderator decided a registration that another moderator had rejected first; nothing changed. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.approve": {
+    "defaultMessage": "承認する",
+    "description": "Button of a pending registration that opens the confirmation of approving it, and the button of that confirmation that approves it."
+  },
+  "admin.registrations.approve_applicant": {
+    "defaultMessage": "{applicant} を承認する",
+    "description": "Accessible name of the approve button of a pending registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.approved": {
+    "defaultMessage": "{applicant} を承認しました。ログインできるようになりました。",
+    "description": "Status after a moderator approved a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button of the confirmation of approving or rejecting a registration that closes it without deciding."
+  },
+  "admin.registrations.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Character count under the note of a registration decision while the text is within the limit."
+  },
+  "admin.registrations.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Character count under the note of a registration decision when the text is longer than the limit."
+  },
+  "admin.registrations.confirm_approve.description": {
+    "defaultMessage": "{applicant} はログインして投稿できるようになります。決定は後から変えられません。",
+    "description": "Text of the confirmation before approving a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_approve.title": {
+    "defaultMessage": "{applicant} を承認しますか？",
+    "description": "Title of the confirmation before approving a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_reject.description": {
+    "defaultMessage": "{applicant} はログインできなくなります。決定は後から変えられません。",
+    "description": "Text of the confirmation before rejecting a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.confirm_reject.title": {
+    "defaultMessage": "{applicant} を却下しますか？",
+    "description": "Title of the confirmation before rejecting a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.decide_failed": {
+    "defaultMessage": "決定を保存できませんでした：{reason}",
+    "description": "Error in the confirmation of approving or rejecting a registration when the request failed. {reason} is why."
+  },
+  "admin.registrations.email": {
+    "defaultMessage": "メールアドレス",
+    "description": "Term of a pending registration's email address."
+  },
+  "admin.registrations.email.none": {
+    "defaultMessage": "なし",
+    "description": "Value of a pending registration's email address when the user has none."
+  },
+  "admin.registrations.email_verified": {
+    "defaultMessage": "メールの確認",
+    "description": "Term of whether the applicant confirmed their email address."
+  },
+  "admin.registrations.email_verified.no": {
+    "defaultMessage": "未確認",
+    "description": "Value when the applicant has not confirmed their email address."
+  },
+  "admin.registrations.email_verified.yes": {
+    "defaultMessage": "確認済み",
+    "description": "Value when the applicant confirmed their email address."
+  },
+  "admin.registrations.empty": {
+    "defaultMessage": "承認待ちの登録はありません",
+    "description": "Heading of the registrations admin screen when no registration awaits a decision."
+  },
+  "admin.registrations.empty.description": {
+    "defaultMessage": "登録を承認制にしているあいだ、新しい登録がここに並びます。",
+    "description": "Text under the heading of the empty registrations admin screen."
+  },
+  "admin.registrations.invite": {
+    "defaultMessage": "招待",
+    "description": "Term of whether the applicant signed up with an invite."
+  },
+  "admin.registrations.invite.none": {
+    "defaultMessage": "なし",
+    "description": "Value when the applicant signed up without an invite."
+  },
+  "admin.registrations.invite.used": {
+    "defaultMessage": "招待から登録",
+    "description": "Value when the applicant signed up with an invite."
+  },
+  "admin.registrations.note": {
+    "defaultMessage": "モデレーター向けのメモ",
+    "description": "Label of the optional note in the confirmation of approving or rejecting a registration."
+  },
+  "admin.registrations.note.description": {
+    "defaultMessage": "任意です。モデレーターだけが見られます。",
+    "description": "Hint under the note of a registration decision."
+  },
+  "admin.registrations.note.too_long": {
+    "defaultMessage": "{max, number} 文字以内にしてください",
+    "description": "Error under the note of a registration decision when it is too long. {max} is the limit."
+  },
+  "admin.registrations.reason": {
+    "defaultMessage": "登録の理由",
+    "description": "Term of the reason the applicant gave for joining."
+  },
+  "admin.registrations.reason.none": {
+    "defaultMessage": "理由はありません",
+    "description": "Value when the applicant gave no reason for joining."
+  },
+  "admin.registrations.reject": {
+    "defaultMessage": "却下する",
+    "description": "Button of a pending registration that opens the confirmation of rejecting it, and the button of that confirmation that rejects it."
+  },
+  "admin.registrations.reject_applicant": {
+    "defaultMessage": "{applicant} を却下する",
+    "description": "Accessible name of the reject button of a pending registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.rejected": {
+    "defaultMessage": "{applicant} を却下しました。",
+    "description": "Status after a moderator rejected a registration. {applicant} is the applicant's @username."
+  },
+  "admin.registrations.submitted_at": {
+    "defaultMessage": "登録日時",
+    "description": "Term of when the applicant signed up."
+  },
+  "admin.registrations.title": {
+    "defaultMessage": "登録の審査",
+    "description": "Title of the admin screen that lists the registrations awaiting approval."
+  },
   "api.error.network": {
     "defaultMessage": "サーバーに接続できませんでした。接続を確かめて、もう一度試してください。",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."
@@ -718,6 +1086,14 @@
   "home.title": {
     "defaultMessage": "ホーム",
     "description": "Heading and document title of the home timeline page."
+  },
+  "local.disabled.body": {
+    "defaultMessage": "このサーバーは、このサーバーのアカウントの公開投稿をまとめたタイムラインを表示していません。",
+    "description": "Text below the heading of the local timeline's page when the server's operators have turned that timeline off."
+  },
+  "local.disabled.title": {
+    "defaultMessage": "ローカルタイムラインは提供されていません",
+    "description": "Heading and document title of the local timeline's page when the server's operators have turned that timeline off."
   },
   "local.title": {
     "defaultMessage": "ローカルタイムライン",
@@ -1755,6 +2131,14 @@
     "defaultMessage": "読み込み中",
     "description": "Accessible name of the progress indicator shown while a page loads."
   },
+  "shell.menu.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the × button that closes the navigation menu's sheet."
+  },
+  "shell.menu.title": {
+    "defaultMessage": "メニュー",
+    "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
+  },
   "shell.nav.home": {
     "defaultMessage": "ホーム",
     "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -1765,7 +2149,11 @@
   },
   "shell.nav.local": {
     "defaultMessage": "ローカル",
-    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in the side rail of tablets. On phones the same timeline is a tab of the Timelines screen instead."
+  },
+  "shell.nav.menu": {
+    "defaultMessage": "メニュー",
+    "description": "Button of the bottom tab bar on phones that opens a sheet with the rest of the navigation (profile, settings). Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
   },
   "shell.nav.notifications": {
     "defaultMessage": "通知",
@@ -1777,11 +2165,11 @@
   },
   "shell.nav.profile": {
     "defaultMessage": "プロフィール",
-    "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the user's own profile. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
   },
   "shell.nav.public": {
     "defaultMessage": "連合",
-    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in the side rail of tablets. On phones the same timeline is a tab of the Timelines screen instead."
   },
   "shell.nav.search": {
     "defaultMessage": "検索",
@@ -1789,7 +2177,15 @@
   },
   "shell.nav.settings": {
     "defaultMessage": "設定",
-    "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in a bottom tab bar."
+    "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
+  "shell.nav.timelines": {
+    "defaultMessage": "タイムライン",
+    "description": "Item of the bottom tab bar on phones that opens the screen with the local and federated timelines as tabs. Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
+  },
+  "shell.nav.viewer": {
+    "defaultMessage": "サインインしているアカウント",
+    "description": "Description read after the name of the link at the bottom of the desktop sidebar that shows the signed-in account (avatar, display name, handle) and opens its profile."
   },
   "shell.not_found.body": {
     "defaultMessage": "このアドレスのページはありません。",
@@ -1806,6 +2202,10 @@
   "shell.offline": {
     "defaultMessage": "オフラインです。読み込めなかったものは、オンラインに戻ると読み込み直します。",
     "description": "Text of the bar at the top of the app while the device is offline or the server cannot be reached. Screen readers announce it when it appears."
+  },
+  "shell.rate_limited": {
+    "defaultMessage": "サーバーへのリクエストが多すぎます。読み込めなかったものは {time} に読み込み直します。",
+    "description": "Text of the bar at the top of the app while the server's rate limit refuses requests (HTTP 429). {time} is the time of day the app loads again, with seconds (for example 12:34:56). Screen readers announce it when it appears."
   },
   "shell.skip_to_main": {
     "defaultMessage": "本文へ移動",
@@ -2074,5 +2474,17 @@
   "timeline.signed_out.heading": {
     "defaultMessage": "ログインしていません",
     "description": "Heading on the home page when nobody is signed in, shown instead of the home timeline."
+  },
+  "timeline.tabs.label": {
+    "defaultMessage": "タイムライン",
+    "description": "Accessible name of the tabs that switch between the local and the federated timeline."
+  },
+  "timeline.tabs.local": {
+    "defaultMessage": "ローカル",
+    "description": "Tab that opens the local timeline (public posts of this server's accounts)."
+  },
+  "timeline.tabs.public": {
+    "defaultMessage": "連合",
+    "description": "Tab that opens the federated timeline (public posts of this server and of the other servers it knows)."
   }
 }

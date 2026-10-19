@@ -1711,7 +1711,7 @@ paths:
         - $ref: "#/components/parameters/ReportId"
       responses:
         "200":
-          $ref: "#/components/responses/AdminReport"
+          $ref: "#/components/responses/AdminReportDetail"
         default:
           $ref: "#/components/responses/Problem"
   /admin/reports/{id}/assign_to_self:
@@ -1728,7 +1728,7 @@ paths:
         - $ref: "#/components/parameters/ReportId"
       responses:
         "200":
-          $ref: "#/components/responses/AdminReport"
+          $ref: "#/components/responses/AdminReportDetail"
         default:
           $ref: "#/components/responses/Problem"
   /admin/reports/{id}/unassign:
@@ -1745,7 +1745,7 @@ paths:
         - $ref: "#/components/parameters/ReportId"
       responses:
         "200":
-          $ref: "#/components/responses/AdminReport"
+          $ref: "#/components/responses/AdminReportDetail"
         default:
           $ref: "#/components/responses/Problem"
   /admin/reports/{id}/resolve:
@@ -1768,10 +1768,54 @@ paths:
               $ref: "#/components/schemas/ResolveReportRequest"
       responses:
         "200":
-          $ref: "#/components/responses/AdminReport"
+          $ref: "#/components/responses/AdminReportDetail"
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: domain actions and reports (#296) ---
+  # --- admin: report notes and reopenings (#333) ---
+  /admin/reports/{id}/notes:
+    post:
+      operationId: addReportNote
+      summary: Write a note on a report
+      description: |
+        Adds an internal note to the report (FR-710). Notes are shown to the moderators only,
+        never to the target or the reporter, and cannot be edited or removed. An unknown ID is
+        a 404. Needs the `manage_reports` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportNoteRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminReportDetail"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/reports/{id}/reopen:
+    post:
+      operationId: reopenReport
+      summary: Reopen a resolved report
+      description: |
+        Puts a resolved report back in the queue as `open`, keeping its assignee. Resolving it
+        again does not notify the reporter again. An open report is a 409, an unknown ID a
+        404. Needs the `manage_reports` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/ReportId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminReportDetail"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: report notes and reopenings (#333) ---
   # --- admin: account actions (#316) ---
   /admin/accounts/{id}/actions:
     get:
@@ -1822,7 +1866,9 @@ paths:
         posts of the account that `status_ids` names, for everyone, the account included, and
         sends their deletion like the account's own; `mark_statuses_sensitive` shows their
         media as sensitive until it is lifted. A remote account takes `limit`, `suspend`, and
-        `force_sensitive`. Another kind, the instance actor, or a `report_id` that is not a
+        `force_sensitive`, with the same effects here: a `suspend` also drops what the account
+        sends, and its lift brings the profile and posts back. An action on a remote account is
+        not sent to its server, and `notify_target` does not apply to it. Another kind, the instance actor, or a `report_id` that is not a
         report of the account is a 422 naming `kind`, `id`, or `report_id`. `status_ids` on
         another kind, missing, repeated, or too many on an action on posts, or naming a post
         that does not exist, is deleted, or is of another account is a 422 naming `status_ids`;
@@ -2202,6 +2248,161 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: accounts (#344) ---
+  # --- admin: roles (#348) ---
+  /admin/roles:
+    get:
+      operationId: listRoles
+      summary: List the roles
+      description: |
+        The roles of the instance, highest position first, with the permissions they grant
+        (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
+        (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
+        `manage_roles` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}/roles:
+    get:
+      operationId: listAccountRoles
+      summary: List the roles of a local account
+      description: |
+        The roles that the user of a local account holds, highest position first. An unknown
+        account, or one that is not local, is a 404. Needs the `manage_roles` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}/roles/{role}:
+    put:
+      operationId: grantAccountRole
+      summary: Grant a role to a local account
+      description: |
+        Grants the role to the user of a local account; its permissions apply from the user's
+        next request, and the audit log records `role_granted`. Granting a role that the user
+        holds changes nothing and records nothing. A role whose position is above every role
+        of the viewer is a 403. An unknown account, one that is not local, or an unknown role
+        is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+        permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+        - $ref: "#/components/parameters/RoleKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: revokeAccountRole
+      summary: Revoke a role from a local account
+      description: |
+        Revokes the role from the user of a local account; its permissions stop applying from
+        the user's next request, and the audit log records `role_revoked`. Revoking a role
+        that the user does not hold changes nothing and records nothing. A role whose
+        position is above every role of the viewer is a 403, and revoking `admin` from its
+        only holder is a 409. An unknown account, one that is not local, or an unknown role
+        is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+        permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+        - $ref: "#/components/parameters/RoleKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: roles (#348) ---
+  # --- admin: registrations (#345) ---
+  /admin/registrations:
+    get:
+      operationId: listPendingRegistrations
+      summary: List the registrations that await approval
+      description: |
+        The sign-ups that wait for a moderator's decision (FR-721), with the reasons their
+        applicants gave, longest waiting first. Needs the `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of pending registrations.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRegistrationPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/registrations/{user_id}/approve:
+    post:
+      operationId: approveRegistration
+      summary: Approve a registration
+      description: |
+        Approves a pending registration, so that its user can sign in, with an optional note
+        for the moderators; the decision is audited. Deciding a decided registration changes
+        nothing and keeps its decision. A user without a registration is a 404. Needs the
+        `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RegistrationUserId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationDecisionRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRegistration"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/registrations/{user_id}/reject:
+    post:
+      operationId: rejectRegistration
+      summary: Reject a registration
+      description: |
+        Rejects a pending registration, so that its user cannot sign in, with an optional note
+        for the moderators; the decision is audited. Deciding a decided registration changes
+        nothing and keeps its decision. A user without a registration is a 404. Needs the
+        `manage_accounts` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RegistrationUserId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationDecisionRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRegistration"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: registrations (#345) ---
 components:
   securitySchemes:
     oauth2:
@@ -2348,6 +2549,26 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: roles (#348) ---
+    RoleKey:
+      name: role
+      in: path
+      required: true
+      description: The key of the role, such as `moderator`.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+    # --- end of admin: roles (#348) ---
+    # --- admin: registrations (#345) ---
+    RegistrationUserId:
+      name: user_id
+      in: path
+      required: true
+      description: The ID of the user who signed up.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: registrations (#345) ---
   responses:
     StatusPage:
       description: A page of posts and boosts, newest first.
@@ -2444,15 +2665,15 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/AdminDomainAction"
-    AdminReport:
-      description: The report.
+    AdminReportDetail:
+      description: The report, with its notes and the history of its target.
       headers:
         Cache-Control:
           $ref: "#/components/headers/CacheControl"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/AdminReport"
+            $ref: "#/components/schemas/AdminReportDetail"
     # --- end of admin: domain actions and reports (#296) ---
     # --- admin: account actions (#316) ---
     AdminAccountAction:
@@ -2476,6 +2697,28 @@ components:
           schema:
             $ref: "#/components/schemas/AdminRule"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: roles (#348) ---
+    AdminRoleList:
+      description: The roles.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminRoleList"
+    # --- end of admin: roles (#348) ---
+    # --- admin: registrations (#345) ---
+    AdminRegistration:
+      description: The registration.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminRegistration"
+    # --- end of admin: registrations (#345) ---
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -3733,10 +3976,12 @@ components:
         `account_action_issued`, `account_action_lifted`, `revealed_private_data` (a moderator
         was shown the account's email address and IP addresses). On a `domain`:
         `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
-        `report_unassigned`, `report_resolved`. On a `user` (a registration):
+        `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+        `user` (a registration):
         `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
         (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-        `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+        `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+        user): `role_granted`, `role_revoked`.
       type: string
       enum:
         - account_action_issued
@@ -3746,6 +3991,8 @@ components:
         - report_assigned
         - report_unassigned
         - report_resolved
+        - report_reopened
+        - report_note_added
         - registration_approved
         - registration_rejected
         - setting_changed
@@ -3754,6 +4001,8 @@ components:
         - rule_revised
         - rule_moved
         - rule_retired
+        - role_granted
+        - role_revoked
         - revealed_private_data
     AdminAuditActorKind:
       description: |
@@ -3799,8 +4048,8 @@ components:
         source_event_id:
           description: |
             The ID of the record of the operation (the domain action, the assignment, the
-            resolution, the decision, the revision), which holds its reasons and notes; omitted
-            when the operation has none.
+            resolution, the reopening, the note, the decision, the revision), which holds its
+            reasons and notes; omitted when the operation has none.
           type: string
         occurred_at:
           type: string
@@ -3910,7 +4159,7 @@ components:
         outcome:
           $ref: "#/components/schemas/AdminReportOutcome"
         state_changed_at:
-          description: When the report was filed or, once resolved, resolved.
+          description: When the report entered its state (when it was filed, resolved, or reopened).
           type: string
           format: date-time
         assignee_account_id:
@@ -3998,6 +4247,68 @@ components:
         outcome:
           $ref: "#/components/schemas/AdminReportOutcome"
     # --- end of admin: domain actions and reports (#296) ---
+    # --- admin: report notes and reopenings (#333) ---
+    AdminReportDetail:
+      description: |
+        A report as a moderator opens it: the report with its internal notes and what the
+        moderators had about its target.
+      allOf:
+        - $ref: "#/components/schemas/AdminReport"
+        - type: object
+          required: [notes, target_history]
+          properties:
+            notes:
+              description: The moderators' notes on the report, oldest first.
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminReportNote"
+            target_history:
+              $ref: "#/components/schemas/AdminReportTargetHistory"
+    AdminReportNote:
+      description: A moderator's internal note on a report; never shown to the target or the reporter.
+      type: object
+      required: [id, body, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        author_account_id:
+          description: |
+            The account of the moderator who wrote the note; omitted for a note from the
+            command line and when the moderator has no account.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        body:
+          description: The note as plain text, up to 2,000 characters.
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    AdminReportTargetHistory:
+      description: What the moderators had about the target of a report.
+      type: object
+      required: [reports_count, actions_count]
+      properties:
+        reports_count:
+          description: The number of the target's other reports, open and resolved.
+          type: integer
+          format: int64
+          minimum: 0
+        actions_count:
+          description: The number of moderation actions on the target, ended ones included.
+          type: integer
+          format: int64
+          minimum: 0
+    CreateReportNoteRequest:
+      description: A note to add to a report.
+      type: object
+      required: [body]
+      properties:
+        body:
+          description: The note as plain text; it may not be blank.
+          type: string
+          minLength: 1
+          maxLength: 2000
+    # --- end of admin: report notes and reopenings (#333) ---
     # --- admin: account actions (#316) ---
     AdminAccountAction:
       description: A moderation action on an account (FR-703).
@@ -4123,7 +4434,9 @@ components:
           type: string
           maxLength: 5000
         report_id:
-          description: The report of the account that the action follows from.
+          description: |
+            The report of the account that the action follows from. The action resolves an open
+            report as `actioned` in the same operation; a resolved report stays as it is.
           allOf:
             - $ref: "#/components/schemas/Id"
         notify_target:
@@ -4160,8 +4473,9 @@ components:
         A capability that a role grants. `manage_accounts`: the accounts and their moderation
         actions.
         `manage_domains`: the health of remote servers and the moderation actions on domains.
-        `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
-        dead jobs of the job queue. The others guard no client API operation yet.
+        `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+        roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+        log. The others guard no client API operation yet.
       type: string
       enum:
         - manage_reports
@@ -4462,6 +4776,102 @@ components:
           items:
             $ref: "#/components/schemas/AdminAccount"
     # --- end of admin: accounts (#344) ---
+    # --- admin: roles (#348) ---
+    AdminRole:
+      description: |
+        A role (FR-720): a named set of permissions. A higher position outranks a lower one;
+        a user may grant and revoke only the roles at or below their highest one.
+      type: object
+      required: [id, key, position, permissions]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        key:
+          description: The name of the role, such as `admin` or `moderator`.
+          type: string
+          minLength: 1
+          maxLength: 64
+        position:
+          type: integer
+        permissions:
+          description: The permissions that the role grants, in the order of `Permission`.
+          type: array
+          items:
+            $ref: "#/components/schemas/Permission"
+    AdminRoleList:
+      description: Roles, highest position first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRole"
+    # --- end of admin: roles (#348) ---
+    # --- admin: registrations (#345) ---
+    AdminRegistration:
+      description: A user's registration as the moderators review it (FR-721).
+      type: object
+      required: [user_id, state, since, email, email_verified, submitted_at]
+      properties:
+        user_id:
+          $ref: "#/components/schemas/Id"
+        account_id:
+          description: The user's local account; omitted when it is gone.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        username:
+          description: The username of the user's local account; omitted when it is gone.
+          type: string
+        state:
+          $ref: "#/components/schemas/RegistrationState"
+        since:
+          description: When the registration entered its state.
+          type: string
+          format: date-time
+        email:
+          description: The user's primary email address; empty when there is none.
+          type: string
+        email_verified:
+          description: Whether the user confirmed the email address.
+          type: boolean
+        reason:
+          description: Why the user wants to join, as plain text; omitted when they gave none.
+          type: string
+        invite_id:
+          description: The invite the user signed up with; omitted for none.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        submitted_at:
+          description: When the user signed up.
+          type: string
+          format: date-time
+    AdminRegistrationPage:
+      description: A page of registrations, longest in their state first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminRegistration"
+    RegistrationDecisionRequest:
+      description: A moderator's decision on a registration.
+      type: object
+      properties:
+        note:
+          description: A note for the moderators, as plain text; omitted or empty for none.
+          type: string
+          maxLength: 1000
+    RegistrationState:
+      description: |
+        Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+        sign in, and `rejected` keeps them out.
+      type: string
+      enum: [pending, approved, rejected]
+    # --- end of admin: registrations (#345) ---
     # --- reports (#332) ---
     CreateReportRequest:
       description: A report of an account to the moderators.

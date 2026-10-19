@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The locale and time zone the app is displayed in, which can change while the page is open (FR-007):
-// the page starts in the instance's locale from <html lang>, then follows the signed-in user's preferences.
+// the page starts in the locale it was last displayed in on this browser, or else in the instance's locale from
+// <html lang>, then follows the signed-in user's preferences. Starting from the last locale keeps the user's
+// language while their preferences cannot be read (a 429 of the rate limit, say) instead of the instance's.
 // It lives outside React, as an external store (react.dev: useSyncExternalStore), because the API client
 // reads it for every request (Accept-Language, localized errors) and the shell renders the providers from it.
 import { createContext, type ReactNode, use, useSyncExternalStore } from "react";
@@ -16,20 +18,59 @@ export type DisplaySettings = {
 export type AppLocaleOptions = {
   /** The document whose <html lang dir> follows the locale; none in tests that only format messages. */
   doc?: Document;
+  /** Whether a locale change is remembered for the next start (`startLocale`); the app's store does, tests mostly not. */
+  remember?: boolean;
 };
+
+/**
+ * The localStorage key of the locale the app was last displayed in. It says how this browser shows the app, like
+ * <html lang>, so it outlives the session; the next user's preferences replace it once they load.
+ */
+const rememberedLocaleKey = "my:display:locale";
+
+/**
+ * The locale a page starts in: the one the app was last displayed in on this browser, or else the instance's
+ * locale that the server wrote into <html lang>.
+ */
+function startLocale(doc: Document): string {
+  try {
+    const remembered = localStorage.getItem(rememberedLocaleKey);
+    if (remembered !== null && remembered !== "") return remembered;
+  } catch {
+    // Storage is blocked; the page starts in the instance's locale.
+  }
+  return doc.documentElement.lang;
+}
+
+/** Loads the messages of the supported locale closest to `startLocale(doc)` and sets <html lang dir> to it. */
+export async function loadStartI18n(doc: Document): Promise<I18n> {
+  const i18n = await loadI18n(startLocale(doc));
+  applyDocumentLocale(doc, i18n.locale);
+  return i18n;
+}
+
+function rememberLocale(locale: string): void {
+  try {
+    localStorage.setItem(rememberedLocaleKey, locale);
+  } catch {
+    // Storage is full or blocked; the next start is in the instance's locale until the preferences load.
+  }
+}
 
 export class AppLocale {
   #settings: DisplaySettings;
   #t: Translate;
   readonly #doc: Document | undefined;
+  readonly #remember: boolean;
   readonly #listeners = new Set<() => void>();
   /** Counts the locale changes asked for, so that only the latest one is applied when catalogs load out of order. */
   #requests = 0;
 
-  constructor(i18n: I18n, { doc }: AppLocaleOptions = {}) {
+  constructor(i18n: I18n, { doc, remember = false }: AppLocaleOptions = {}) {
     this.#settings = { i18n, timeZone: undefined };
     this.#t = createTranslate(i18n);
     this.#doc = doc;
+    this.#remember = remember;
   }
 
   /** The current settings (the getSnapshot of useSyncExternalStore). */
@@ -57,9 +98,13 @@ export class AppLocale {
    */
   async setLocale(requested: string): Promise<void> {
     const request = ++this.#requests;
-    if (resolveLocale(requested) === this.locale) return;
+    if (resolveLocale(requested) === this.locale) {
+      if (this.#remember) rememberLocale(this.locale);
+      return;
+    }
     const i18n = await loadI18n(requested);
     if (request !== this.#requests || i18n.locale === this.locale) return;
+    if (this.#remember) rememberLocale(i18n.locale);
     if (this.#doc !== undefined) applyDocumentLocale(this.#doc, i18n.locale);
     this.#t = createTranslate(i18n);
     this.#set({ ...this.#settings, i18n });

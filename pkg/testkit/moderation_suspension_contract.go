@@ -13,7 +13,7 @@ import (
 )
 
 // moderationSuspensions checks AccountSuspensionChanged (federation.md §11.1): an action that
-// suspends an account that was not suspended tells it, the lift or the expiry of its last
+// suspends an account that was not suspended, local or remote, tells it with the action, the lift or the expiry of its last
 // suspension tells the end once, whichever removes the suspension first, and the expiry job
 // removes the expired restrictions of every kind.
 func moderationSuspensions(t *testing.T, e *moderationEnv) {
@@ -59,14 +59,31 @@ func moderationSuspensions(t *testing.T, e *moderationEnv) {
 			t.Errorf("%s: suspension events = %+v, want %+v", what, gs, ws)
 		}
 	}
-	change := func(suspended bool) appmoderation.AccountSuspensionChanged {
-		return appmoderation.AccountSuspensionChanged{AccountID: e.local, Suspended: suspended, ChangedAt: e.clock.Now()}
+	// suspendedBy is the event of a suspension by a; ended, the event of the end of the last one.
+	suspendedBy := func(a moderation.Action) appmoderation.AccountSuspensionChanged {
+		return appmoderation.AccountSuspensionChanged{AccountID: a.TargetAccountID, Suspended: true, ActionID: a.ID, ChangedAt: e.clock.Now()}
+	}
+	ended := func(accountID string) appmoderation.AccountSuspensionChanged {
+		return appmoderation.AccountSuspensionChanged{AccountID: accountID, Suspended: false, ChangedAt: e.clock.Now()}
 	}
 	suspendRows := len(moderation.Action{Kind: moderation.ActionSuspend, ExpiresAt: &time.Time{}}.Rows())
 
+	// The suspension of a remote account is told like that of a local one, with its action.
+	remote, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
+		TargetAccountID: e.remote, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategorySpam,
+	})
+	if err != nil {
+		t.Fatalf("IssueAccountAction(remote suspend) = %v", err)
+	}
+	told("remote suspension", suspendedBy(remote))
+	if err := e.svc.LiftAccountAction(ctx, remote.ID, "", ""); err != nil {
+		t.Fatalf("LiftAccountAction(remote suspend) = %v", err)
+	}
+	told("lift of the remote suspension", ended(e.remote))
+
 	// The first suspension is told; a second one, and the lift of one of the two, are not.
-	issue(moderation.ActionSuspend, time.Hour)
-	told("first suspension", change(true))
+	first := issue(moderation.ActionSuspend, time.Hour)
+	told("first suspension", suspendedBy(first))
 	forever := issue(moderation.ActionSuspend, 0)
 	told("second suspension")
 	lift(forever)
@@ -80,11 +97,11 @@ func moderationSuspensions(t *testing.T, e *moderationEnv) {
 	// the expired rows of every kind.
 	e.clock.Advance(2 * time.Hour)
 	expire(suspendRows + 1)
-	told("expiry", change(false))
+	told("expiry", ended(e.local))
 	expire(0)
 	told("expiry again")
 	var rows []moderation.RestrictionRow
-	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+	err = e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		var err error
 		rows, err = e.h.Moderation.AccountRestrictionRows(ctx, tx, e.local)
 		return err
@@ -96,20 +113,20 @@ func moderationSuspensions(t *testing.T, e *moderationEnv) {
 	// A lift after the expiry and before the run tells the end, and the run then has nothing
 	// to tell.
 	a := issue(moderation.ActionSuspend, time.Hour)
-	told("suspension", change(true))
+	told("suspension", suspendedBy(a))
 	e.clock.Advance(2 * time.Hour)
 	lift(a)
-	told("lift of an expired suspension", change(false))
+	told("lift of an expired suspension", ended(e.local))
 	expire(0)
 	told("expiry after the lift")
 
 	// A suspension over an expired one that the run has not removed is told, and removing the
 	// expired one tells nothing.
-	issue(moderation.ActionSuspend, time.Hour)
-	told("suspension", change(true))
+	a = issue(moderation.ActionSuspend, time.Hour)
+	told("suspension", suspendedBy(a))
 	e.clock.Advance(2 * time.Hour)
-	issue(moderation.ActionSuspend, time.Hour)
-	told("suspension over an expired one", change(true))
+	a = issue(moderation.ActionSuspend, time.Hour)
+	told("suspension over an expired one", suspendedBy(a))
 	expire(suspendRows)
 	told("removal of the expired suspension under another")
 	if ok, err := e.policy.AccountFederationSuspended(ctx, e.local); err != nil || !ok {

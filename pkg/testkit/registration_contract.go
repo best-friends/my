@@ -26,7 +26,7 @@ import (
 // registration mode: open mode approves at once (or waits for a moderator when email cannot be
 // verified), approval mode waits for a moderator's decision, invite mode needs a valid invite,
 // and closed mode refuses. It also checks that concurrent sign-ups never redeem an invite more
-// than its maximum uses, that an email verification token works exactly once (also when
+// than its maximum uses, that concurrent decisions on a registration decide it once, that an email verification token works exactly once (also when
 // redeemed concurrently), that a failed sign-up writes nothing, that sign-ups are rate-limited
 // per address, the invite listing and revocation, that a sign-up records its origin, which
 // the purge erases after the retention, the count of pending registrations, and the holders of
@@ -44,6 +44,7 @@ func RegistrationRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"InviteModeNeedsAValidInvite", registrationInvite},
 		{"ClosedModeRefuses", registrationClosed},
 		{"InviteUsesHoldUnderConcurrency", registrationInviteConcurrency},
+		{"ConcurrentDecisionsDecideOnce", registrationDecisionConcurrency},
 		{"VerificationTokensWorkOnce", registrationTokenOnce},
 		{"FailedSignUpsWriteNothing", registrationFailureWritesNothing},
 		{"RateLimitsSignUpsPerAddress", registrationRateLimit},
@@ -205,6 +206,17 @@ func registrationApproval(t *testing.T, e *accountEnv) {
 	if len(pending) != 2 || pending[0].Application.UserID != alice.User.ID || pending[1].Application.UserID != bob.User.ID {
 		t.Fatalf("pending = %+v; want alice then bob", pending)
 	}
+	if after, err := r.ListRegistrationsAfter(ctx, identity.RegistrationPending, pending[0].Position(), 10); err != nil ||
+		len(after) != 1 || after[0].Application.UserID != bob.User.ID {
+		t.Errorf("pending after alice = %+v, %v; want bob", after, err)
+	}
+	if one, err := r.Registration(ctx, bob.User.ID); err != nil || one.Application.UserID != bob.User.ID || one.Username != "bob" ||
+		one.AccountID != bob.AccountID || one.Email != "bob@example.com" || one.State.State != identity.RegistrationPending {
+		t.Errorf("Registration(bob) = %+v, %v", one, err)
+	}
+	if _, err := r.Registration(ctx, "nobody"); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("Registration(nobody) = %v, want ErrNotFound", err)
+	}
 	p := pending[0]
 	if p.Username != "alice" || p.Email != in.Email || p.EmailVerified || p.Application.Reason != "I like ducks." ||
 		!p.State.Since.Equal(alice.User.CreatedAt) {
@@ -358,6 +370,41 @@ func registrationInviteConcurrency(t *testing.T, e *accountEnv) {
 	list, err := r.ListInvites(ctx, 10)
 	if err != nil || len(list) != 1 || list[0].Uses != maxUses || list[0].Usable(e.clock.Now()) {
 		t.Errorf("ListInvites = %+v, %v; want %d uses and used up", list, err, maxUses)
+	}
+}
+
+func registrationDecisionConcurrency(t *testing.T, e *accountEnv) {
+	ctx := t.Context()
+	r := e.registration(identity.RegistrationApproval, true)
+	alice := r.signUp(t, signUpInput("alice"))
+	const moderators = 6
+	var wg sync.WaitGroup
+	errs := make([]error, moderators)
+	decisions := make([]identity.Decision, moderators)
+	for i := range moderators {
+		decisions[i] = identity.DecisionApproved
+		if i%2 == 1 {
+			decisions[i] = identity.DecisionRejected
+		}
+		wg.Go(func() {
+			_, errs[i] = r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: decisions[i], DecidedByUserID: fmt.Sprintf("mod%d", i)})
+		})
+	}
+	wg.Wait()
+	var won []identity.Decision
+	for i, err := range errs {
+		switch {
+		case err == nil:
+			won = append(won, decisions[i])
+		case !errors.Is(err, appidentity.ErrNotPending):
+			t.Errorf("moderator %d: %v", i, err)
+		}
+	}
+	if len(won) != 1 {
+		t.Fatalf("%d of %d concurrent decisions succeeded, want 1", len(won), moderators)
+	}
+	if st, err := e.h.Identity.FindRegistrationState(ctx, alice.User.ID); err != nil || st.State != won[0].State() {
+		t.Errorf("state = %+v, %v; want %s", st, err, won[0].State())
 	}
 }
 

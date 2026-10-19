@@ -7,6 +7,7 @@ package clientapi
 // operationSecurity is the security of each operation of api/openapi.yaml, by the
 // http.ServeMux pattern that the generated code registers it with.
 var operationSecurity = map[string]operationAccess{
+	"DELETE /api/v1/admin/accounts/{id}/roles/{role}":          {Operation: "revokeAccountRole", Scopes: []string{"admin:write"}},
 	"DELETE /api/v1/statuses/{id}":                             {Operation: "deleteStatus", Scopes: []string{"write:statuses"}},
 	"DELETE /api/v1/statuses/{id}/bookmark":                    {Operation: "unbookmarkStatus", Scopes: []string{"write:bookmarks"}},
 	"DELETE /api/v1/statuses/{id}/boost":                       {Operation: "unboostStatus", Scopes: []string{"write:statuses"}},
@@ -23,6 +24,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/admin/accounts":                               {Operation: "listAdminAccounts", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/accounts/{id}":                          {Operation: "getAdminAccount", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/accounts/{id}/actions":                  {Operation: "listAccountActions", Scopes: []string{"admin:read"}},
+	"GET /api/v1/admin/accounts/{id}/roles":                    {Operation: "listAccountRoles", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/audit_log":                              {Operation: "listAuditLog", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/counts":                                 {Operation: "getAdminCounts", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/dead_jobs":                              {Operation: "listDeadJobs", Scopes: []string{"admin:read"}},
@@ -31,8 +33,10 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/admin/instances":                              {Operation: "listInstanceHealth", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/instances/{domain}":                     {Operation: "getInstanceHealth", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/instances/{domain}/availability_events": {Operation: "listInstanceAvailabilityEvents", Scopes: []string{"admin:read"}},
+	"GET /api/v1/admin/registrations":                          {Operation: "listPendingRegistrations", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/reports":                                {Operation: "listReports", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/reports/{id}":                           {Operation: "getReport", Scopes: []string{"admin:read"}},
+	"GET /api/v1/admin/roles":                                  {Operation: "listRoles", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/rules":                                  {Operation: "listInstanceRules", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/rules/{id}":                             {Operation: "getInstanceRule", Scopes: []string{"admin:read"}},
 	"GET /api/v1/blocks":                                       {Operation: "listBlocks", Scopes: []string{"read:blocks"}},
@@ -74,7 +78,11 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/admin/domain_actions":                        {Operation: "createDomainAction", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/domain_actions/{id}/lift":              {Operation: "liftDomainAction", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/instances/{domain}/mark_available":     {Operation: "markInstanceAvailable", Scopes: []string{"admin:write"}},
+	"POST /api/v1/admin/registrations/{user_id}/approve":       {Operation: "approveRegistration", Scopes: []string{"admin:write"}},
+	"POST /api/v1/admin/registrations/{user_id}/reject":        {Operation: "rejectRegistration", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/reports/{id}/assign_to_self":           {Operation: "assignReportToSelf", Scopes: []string{"admin:write"}},
+	"POST /api/v1/admin/reports/{id}/notes":                    {Operation: "addReportNote", Scopes: []string{"admin:write"}},
+	"POST /api/v1/admin/reports/{id}/reopen":                   {Operation: "reopenReport", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/reports/{id}/resolve":                  {Operation: "resolveReport", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/reports/{id}/unassign":                 {Operation: "unassignReport", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/rules":                                 {Operation: "createInstanceRule", Scopes: []string{"admin:write"}},
@@ -90,6 +98,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/statuses/{id}/boost":                         {Operation: "boostStatus", Scopes: []string{"write:statuses"}},
 	"POST /api/v1/statuses/{id}/favourite":                     {Operation: "favouriteStatus", Scopes: []string{"write:favourites"}},
 	"POST /api/v1/statuses/{id}/pin":                           {Operation: "pinStatus", Scopes: []string{"write:statuses"}},
+	"PUT /api/v1/admin/accounts/{id}/roles/{role}":             {Operation: "grantAccountRole", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/notifications/marker":                         {Operation: "updateNotificationMarker", Scopes: []string{"write:notifications"}},
 	"PUT /api/v1/statuses/{id}":                                {Operation: "editStatus", Scopes: []string{"write:statuses"}},
 }

@@ -116,6 +116,6 @@ domain_action_issued, domain_action_lifted (domain);
 report_assigned, report_unassigned, report_resolved (report);
 registration_approved, registration_rejected (user); setting_changed,
 text_changed (setting); rule_added, rule_revised, rule_moved, rule_retired
-(rule).
+(rule); role_granted, role_revoked (role).
 `)
 }

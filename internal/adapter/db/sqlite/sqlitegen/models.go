@@ -628,6 +628,14 @@ type Report struct {
 	FiledAt           int64
 }
 
+type ReportNote struct {
+	ID           string
+	ReportID     string
+	AuthorUserID sql.NullString
+	Body         string
+	WrittenAt    int64
+}
+
 type ReportState struct {
 	ReportID       string
 	State          string
@@ -641,6 +649,11 @@ type Role struct {
 	Key       string
 	Position  int64
 	CreatedAt int64
+}
+
+type RolePermission struct {
+	RoleID     string
+	Permission string
 }
 
 type SessionOrigin struct {

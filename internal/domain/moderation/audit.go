@@ -89,6 +89,10 @@ const (
 	AuditReportUnassigned AuditAction = "report_unassigned"
 	// AuditReportResolved: a report was resolved (report_resolutions).
 	AuditReportResolved AuditAction = "report_resolved"
+	// AuditReportReopened: a resolved report was reopened (report_reopenings).
+	AuditReportReopened AuditAction = "report_reopened"
+	// AuditReportNoteAdded: a moderator wrote an internal note on a report (report_notes).
+	AuditReportNoteAdded AuditAction = "report_note_added"
 	// AuditRegistrationApproved: a pending registration was approved (registration_decisions).
 	AuditRegistrationApproved AuditAction = "registration_approved"
 	// AuditRegistrationRejected: a pending registration was rejected (registration_decisions).
@@ -105,6 +109,10 @@ const (
 	AuditRuleMoved AuditAction = "rule_moved"
 	// AuditRuleRetired: a rule was retired (instance_rule_retirements).
 	AuditRuleRetired AuditAction = "rule_retired"
+	// AuditRoleGranted: a role was granted to a user (user_role_grants).
+	AuditRoleGranted AuditAction = "role_granted"
+	// AuditRoleRevoked: a role was revoked from a user (user_role_revocations).
+	AuditRoleRevoked AuditAction = "role_revoked"
 	// AuditRevealedPrivateData: a moderator was shown the email address and the IP addresses of
 	// a local account (FR-714); the operation has no row of its own.
 	AuditRevealedPrivateData AuditAction = "revealed_private_data"
@@ -122,6 +130,8 @@ var auditActions = []struct {
 	{AuditReportAssigned, AuditTargetReport},
 	{AuditReportUnassigned, AuditTargetReport},
 	{AuditReportResolved, AuditTargetReport},
+	{AuditReportReopened, AuditTargetReport},
+	{AuditReportNoteAdded, AuditTargetReport},
 	{AuditRegistrationApproved, AuditTargetUser},
 	{AuditRegistrationRejected, AuditTargetUser},
 	{AuditSettingChanged, AuditTargetSetting},
@@ -130,6 +140,8 @@ var auditActions = []struct {
 	{AuditRuleRevised, AuditTargetRule},
 	{AuditRuleMoved, AuditTargetRule},
 	{AuditRuleRetired, AuditTargetRule},
+	{AuditRoleGranted, AuditTargetRole},
+	{AuditRoleRevoked, AuditTargetRole},
 	{AuditRevealedPrivateData, AuditTargetAccount},
 }
 

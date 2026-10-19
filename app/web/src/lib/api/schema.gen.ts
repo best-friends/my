@@ -1406,6 +1406,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/reports/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write a note on a report
+         * @description Adds an internal note to the report (FR-710). Notes are shown to the moderators only,
+         *     never to the target or the reporter, and cannot be edited or removed. An unknown ID is
+         *     a 404. Needs the `manage_reports` permission.
+         */
+        post: operations["addReportNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reports/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen a resolved report
+         * @description Puts a resolved report back in the queue as `open`, keeping its assignee. Resolving it
+         *     again does not notify the reporter again. An open report is a 409, an unknown ID a
+         *     404. Needs the `manage_reports` permission.
+         */
+        post: operations["reopenReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/accounts/{id}/actions": {
         parameters: {
             query?: never;
@@ -1435,7 +1479,9 @@ export interface paths {
          *     posts of the account that `status_ids` names, for everyone, the account included, and
          *     sends their deletion like the account's own; `mark_statuses_sensitive` shows their
          *     media as sensitive until it is lifted. A remote account takes `limit`, `suspend`, and
-         *     `force_sensitive`. Another kind, the instance actor, or a `report_id` that is not a
+         *     `force_sensitive`, with the same effects here: a `suspend` also drops what the account
+         *     sends, and its lift brings the profile and posts back. An action on a remote account is
+         *     not sent to its server, and `notify_target` does not apply to it. Another kind, the instance actor, or a `report_id` that is not a
          *     report of the account is a 422 naming `kind`, `id`, or `report_id`. `status_ids` on
          *     another kind, missing, repeated, or too many on an action on posts, or naming a post
          *     that does not exist, is deleted, or is of another account is a 422 naming `status_ids`;
@@ -1694,6 +1740,152 @@ export interface paths {
          *     `manage_accounts` permission.
          */
         post: operations["revealAdminAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the roles
+         * @description The roles of the instance, highest position first, with the permissions they grant
+         *     (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
+         *     (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
+         *     `manage_roles` permission.
+         */
+        get: operations["listRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the roles of a local account
+         * @description The roles that the user of a local account holds, highest position first. An unknown
+         *     account, or one that is not local, is a 404. Needs the `manage_roles` permission.
+         */
+        get: operations["listAccountRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{id}/roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Grant a role to a local account
+         * @description Grants the role to the user of a local account; its permissions apply from the user's
+         *     next request, and the audit log records `role_granted`. Granting a role that the user
+         *     holds changes nothing and records nothing. A role whose position is above every role
+         *     of the viewer is a 403. An unknown account, one that is not local, or an unknown role
+         *     is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+         *     permission.
+         */
+        put: operations["grantAccountRole"];
+        post?: never;
+        /**
+         * Revoke a role from a local account
+         * @description Revokes the role from the user of a local account; its permissions stop applying from
+         *     the user's next request, and the audit log records `role_revoked`. Revoking a role
+         *     that the user does not hold changes nothing and records nothing. A role whose
+         *     position is above every role of the viewer is a 403, and revoking `admin` from its
+         *     only holder is a 409. An unknown account, one that is not local, or an unknown role
+         *     is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+         *     permission.
+         */
+        delete: operations["revokeAccountRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the registrations that await approval
+         * @description The sign-ups that wait for a moderator's decision (FR-721), with the reasons their
+         *     applicants gave, longest waiting first. Needs the `manage_accounts` permission.
+         */
+        get: operations["listPendingRegistrations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/registrations/{user_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a registration
+         * @description Approves a pending registration, so that its user can sign in, with an optional note
+         *     for the moderators; the decision is audited. Deciding a decided registration changes
+         *     nothing and keeps its decision. A user without a registration is a 404. Needs the
+         *     `manage_accounts` permission.
+         */
+        post: operations["approveRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/registrations/{user_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a registration
+         * @description Rejects a pending registration, so that its user cannot sign in, with an optional note
+         *     for the moderators; the decision is audited. Deciding a decided registration changes
+         *     nothing and keeps its decision. A user without a registration is a 404. Needs the
+         *     `manage_accounts` permission.
+         */
+        post: operations["rejectRegistration"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2546,13 +2738,15 @@ export interface components {
          *     `account_action_issued`, `account_action_lifted`, `revealed_private_data` (a moderator
          *     was shown the account's email address and IP addresses). On a `domain`:
          *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
-         *     `report_unassigned`, `report_resolved`. On a `user` (a registration):
+         *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+         *     `user` (a registration):
          *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
          *     (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`.
+         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
+         *     user): `role_granted`, `role_revoked`.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "revealed_private_data";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "revealed_private_data";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -2586,8 +2780,8 @@ export interface components {
             target_label: string;
             /**
              * @description The ID of the record of the operation (the domain action, the assignment, the
-             *     resolution, the decision, the revision), which holds its reasons and notes; omitted
-             *     when the operation has none.
+             *     resolution, the reopening, the note, the decision, the revision), which holds its
+             *     reasons and notes; omitted when the operation has none.
              */
             source_event_id?: string;
             /** Format: date-time */
@@ -2666,7 +2860,7 @@ export interface components {
             outcome?: components["schemas"]["AdminReportOutcome"];
             /**
              * Format: date-time
-             * @description When the report was filed or, once resolved, resolved.
+             * @description When the report entered its state (when it was filed, resolved, or reopened).
              */
             state_changed_at: string;
             /** @description The account of the moderator who handles the report; omitted when nobody does. */
@@ -2718,6 +2912,46 @@ export interface components {
         /** @description How a report is resolved. */
         ResolveReportRequest: {
             outcome: components["schemas"]["AdminReportOutcome"];
+        };
+        /**
+         * @description A report as a moderator opens it: the report with its internal notes and what the
+         *     moderators had about its target.
+         */
+        AdminReportDetail: components["schemas"]["AdminReport"] & {
+            /** @description The moderators' notes on the report, oldest first. */
+            notes: components["schemas"]["AdminReportNote"][];
+            target_history: components["schemas"]["AdminReportTargetHistory"];
+        };
+        /** @description A moderator's internal note on a report; never shown to the target or the reporter. */
+        AdminReportNote: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The account of the moderator who wrote the note; omitted for a note from the
+             *     command line and when the moderator has no account.
+             */
+            author_account_id?: components["schemas"]["Id"];
+            /** @description The note as plain text, up to 2,000 characters. */
+            body: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description What the moderators had about the target of a report. */
+        AdminReportTargetHistory: {
+            /**
+             * Format: int64
+             * @description The number of the target's other reports, open and resolved.
+             */
+            reports_count: number;
+            /**
+             * Format: int64
+             * @description The number of moderation actions on the target, ended ones included.
+             */
+            actions_count: number;
+        };
+        /** @description A note to add to a report. */
+        CreateReportNoteRequest: {
+            /** @description The note as plain text; it may not be blank. */
+            body: string;
         };
         /** @description A moderation action on an account (FR-703). */
         AdminAccountAction: {
@@ -2800,7 +3034,10 @@ export interface components {
             public_reason?: string;
             /** @description A note for the moderators only. */
             private_note?: string;
-            /** @description The report of the account that the action follows from. */
+            /**
+             * @description The report of the account that the action follows from. The action resolves an open
+             *     report as `actioned` in the same operation; a resolved report stays as it is.
+             */
             report_id?: components["schemas"]["Id"];
             /**
              * @description Whether a local account is told of the action; ignored for a remote one.
@@ -2826,8 +3063,9 @@ export interface components {
          * @description A capability that a role grants. `manage_accounts`: the accounts and their moderation
          *     actions.
          *     `manage_domains`: the health of remote servers and the moderation actions on domains.
-         *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_jobs`: the
-         *     dead jobs of the job queue. The others guard no client API operation yet.
+         *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+         *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+         *     log. The others guard no client API operation yet.
          * @enum {string}
          */
         Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
@@ -3014,6 +3252,64 @@ export interface components {
             ip: string;
             accounts: components["schemas"]["AdminAccount"][];
         };
+        /**
+         * @description A role (FR-720): a named set of permissions. A higher position outranks a lower one;
+         *     a user may grant and revoke only the roles at or below their highest one.
+         */
+        AdminRole: {
+            id: components["schemas"]["Id"];
+            /** @description The name of the role, such as `admin` or `moderator`. */
+            key: string;
+            position: number;
+            /** @description The permissions that the role grants, in the order of `Permission`. */
+            permissions: components["schemas"]["Permission"][];
+        };
+        /** @description Roles, highest position first. */
+        AdminRoleList: {
+            items: components["schemas"]["AdminRole"][];
+        };
+        /** @description A user's registration as the moderators review it (FR-721). */
+        AdminRegistration: {
+            user_id: components["schemas"]["Id"];
+            /** @description The user's local account; omitted when it is gone. */
+            account_id?: components["schemas"]["Id"];
+            /** @description The username of the user's local account; omitted when it is gone. */
+            username?: string;
+            state: components["schemas"]["RegistrationState"];
+            /**
+             * Format: date-time
+             * @description When the registration entered its state.
+             */
+            since: string;
+            /** @description The user's primary email address; empty when there is none. */
+            email: string;
+            /** @description Whether the user confirmed the email address. */
+            email_verified: boolean;
+            /** @description Why the user wants to join, as plain text; omitted when they gave none. */
+            reason?: string;
+            /** @description The invite the user signed up with; omitted for none. */
+            invite_id?: components["schemas"]["Id"];
+            /**
+             * Format: date-time
+             * @description When the user signed up.
+             */
+            submitted_at: string;
+        };
+        /** @description A page of registrations, longest in their state first. */
+        AdminRegistrationPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminRegistration"][];
+        };
+        /** @description A moderator's decision on a registration. */
+        RegistrationDecisionRequest: {
+            /** @description A note for the moderators, as plain text; omitted or empty for none. */
+            note?: string;
+        };
+        /**
+         * @description Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+         *     sign in, and `rejected` keeps them out.
+         * @enum {string}
+         */
+        RegistrationState: "pending" | "approved" | "rejected";
         /** @description A report of an account to the moderators. */
         CreateReportRequest: {
             /** @description The account reported, local or remote. */
@@ -3161,14 +3457,14 @@ export interface components {
                 "application/json": components["schemas"]["AdminDomainAction"];
             };
         };
-        /** @description The report. */
-        AdminReport: {
+        /** @description The report, with its notes and the history of its target. */
+        AdminReportDetail: {
             headers: {
                 "Cache-Control": components["headers"]["CacheControl"];
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["AdminReport"];
+                "application/json": components["schemas"]["AdminReportDetail"];
             };
         };
         /** @description The account action. */
@@ -3189,6 +3485,26 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["AdminRule"];
+            };
+        };
+        /** @description The roles. */
+        AdminRoleList: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRoleList"];
+            };
+        };
+        /** @description The registration. */
+        AdminRegistration: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRegistration"];
             };
         };
     };
@@ -3219,6 +3535,10 @@ export interface components {
         AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
         RuleId: components["schemas"]["Id"];
+        /** @description The key of the role, such as `moderator`. */
+        RoleKey: string;
+        /** @description The ID of the user who signed up. */
+        RegistrationUserId: components["schemas"]["Id"];
     };
     requestBodies: never;
     headers: {
@@ -4724,7 +5044,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: components["responses"]["AdminReport"];
+            200: components["responses"]["AdminReportDetail"];
             default: components["responses"]["Problem"];
         };
     };
@@ -4740,7 +5060,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: components["responses"]["AdminReport"];
+            200: components["responses"]["AdminReportDetail"];
             default: components["responses"]["Problem"];
         };
     };
@@ -4756,7 +5076,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: components["responses"]["AdminReport"];
+            200: components["responses"]["AdminReportDetail"];
             default: components["responses"]["Problem"];
         };
     };
@@ -4776,7 +5096,43 @@ export interface operations {
             };
         };
         responses: {
-            200: components["responses"]["AdminReport"];
+            200: components["responses"]["AdminReportDetail"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    addReportNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the report. */
+                id: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReportNoteRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminReportDetail"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    reopenReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the report. */
+                id: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminReportDetail"];
             default: components["responses"]["Problem"];
         };
     };
@@ -5098,6 +5454,138 @@ export interface operations {
                     "application/json": components["schemas"]["AdminAccountPrivateData"];
                 };
             };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAccountRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    grantAccountRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeAccountRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listPendingRegistrations: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of pending registrations. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRegistrationPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    approveRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the user who signed up. */
+                user_id: components["parameters"]["RegistrationUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RegistrationDecisionRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRegistration"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    rejectRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the user who signed up. */
+                user_id: components["parameters"]["RegistrationUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RegistrationDecisionRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRegistration"];
             default: components["responses"]["Problem"];
         };
     };
