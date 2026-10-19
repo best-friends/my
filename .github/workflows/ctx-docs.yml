@@ -1,0 +1,39 @@
+name: "Context: docs"
+
+# The docs context of `make check` (scripts/changed-contexts.sh): markdownlint and the ADR index (make docs-check).
+# Called by ci.yml when a pull request or a merge group touches the context, and runnable by hand (ADR-0047).
+
+on:
+  workflow_call:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: string
+        default: pr
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: choice
+        options: [pr, queue]
+        default: pr
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - name: make docs-check
+        run: make docs-check

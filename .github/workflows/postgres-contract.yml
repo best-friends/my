@@ -2,7 +2,7 @@ name: PostgreSQL contract
 
 # The PostgreSQL tests (the repository contracts of internal/adapter/db/postgres, the kv and queue adapters, and the
 # dual-dialect tests of internal/platform) on a real postgres container instead of pgmem (ADR-0041). Called by ci.yml on
-# every push to main and by nightly.yml; pull requests run the same tests on pgmem in ci.yml's go-test job.
+# every push to main and by nightly.yml; pull requests run the same tests on pgmem in ctx-go.yml's go-test job.
 
 on:
   workflow_call:

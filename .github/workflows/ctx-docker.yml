@@ -1,0 +1,68 @@
+name: "Context: docker"
+
+# The docker context of `make check` (scripts/changed-contexts.sh): the Dockerfile image version check
+# (make docker-check) and the Docker Compose smoke test with the linux/arm64 image builds. Called by ci.yml, with the
+# inputs `check` and `smoke` selecting the jobs, and runnable by hand (ADR-0047).
+
+on:
+  workflow_call:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: string
+        default: pr
+      check:
+        description: Run make docker-check.
+        type: boolean
+        default: true
+      smoke:
+        description: Run the Docker Compose smoke test and the linux/arm64 image builds.
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: choice
+        options: [pr, queue]
+        default: pr
+      check:
+        description: Run make docker-check.
+        type: boolean
+        default: true
+      smoke:
+        description: Run the Docker Compose smoke test and the linux/arm64 image builds.
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  docker:
+    if: inputs.check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: make docker-check
+        run: make docker-check
+
+  docker-smoke:
+    # Build the images and run deploy/docker/compose.yaml end to end: schema apply, server start, admin creation,
+    # then WebFinger, Actor, and NodeInfo (scripts/docker-smoke.sh dumps the logs on failure and always tears down).
+    if: inputs.smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Smoke-test the Docker Compose setup
+        run: make docker-smoke
+      # The smoke test covers linux/amd64; also build both images for linux/arm64 (ADR-0010) under QEMU.
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+      - name: Build the images for linux/arm64
+        run: |
+          docker build --platform linux/arm64 --target schema .
+          docker build --platform linux/arm64 --target app .

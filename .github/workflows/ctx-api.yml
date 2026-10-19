@@ -1,0 +1,63 @@
+name: "Context: api"
+
+# The api context of `make check` (scripts/changed-contexts.sh): the OpenAPI spec and the code generated from it
+# (make api-check). Called by ci.yml when a pull request or a merge group touches the context, and runnable by hand
+# (ADR-0047).
+
+on:
+  workflow_call:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: string
+        default: pr
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "`pr` on pull requests (and main pushes), `queue` in the merge queue. Every job runs in both scopes."
+        type: choice
+        options: [pr, queue]
+        default: pr
+
+permissions:
+  contents: read
+
+env:
+  # Use exactly the Go version from .tool-versions; never auto-download another toolchain.
+  GOTOOLCHAIN: local
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      # openapi-typescript runs on Node.js (ADR-0025).
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .tool-versions
+      # oapi-codegen and securitygen are Go: restore the cache of ctx-go.yml's go job from main, without saving one.
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: .tool-versions
+          cache: false
+      - name: Restore the Go module and build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-lint-${{ runner.os }}-
+      - name: make api-check
+        run: make api-check
