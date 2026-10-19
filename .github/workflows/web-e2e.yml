@@ -1,7 +1,10 @@
 name: Web E2E
 
-# Playwright E2E of the web client (ADR-0015, ADR-0027), called by main.yml on every push to main (ADR-0040) with the subset
-# and by nightly.yml with the full width × locale matrix (app/web/playwright.config.ts).
+# Playwright E2E of the web client (ADR-0015, ADR-0027) in three stages (ADR-0047): one build of app/web/dist and
+# bin/my, Playwright `--shard` jobs that all test that same build, and one HTML report merged from the shards' blob
+# reports. main.yml calls it on every push to main (ADR-0040) with the subset on 4 shards, and nightly.yml with the
+# full width × locale matrix (app/web/playwright.config.ts) on 8. Pull requests never start it on their own: run it
+# by hand on a PR's branch with `gh workflow run web-e2e.yml --ref <branch>` (or the Actions tab).
 
 on:
   workflow_call:
@@ -10,13 +13,93 @@ on:
         description: "`pr` for the default subset (main pushes), `full` for every width × locale project."
         type: string
         required: true
+      shards:
+        description: "The number of shard jobs; 0 picks 4 for `pr` and 8 for `full`."
+        type: number
+        default: 0
+      workers:
+        description: "Playwright workers in each shard job."
+        type: number
+        default: 2
+  workflow_dispatch:
+    inputs:
+      matrix:
+        description: "`pr` for the default subset, `full` for every width × locale project."
+        type: choice
+        options: [pr, full]
+        default: pr
+      shards:
+        description: "The number of shard jobs; 0 picks 4 for `pr` and 8 for `full`."
+        type: number
+        default: 0
+      workers:
+        description: "Playwright workers in each shard job."
+        type: number
+        default: 2
 
 permissions:
   contents: read
 
 jobs:
-  web-e2e:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.shards.outputs.list }}
+      total: ${{ steps.shards.outputs.total }}
+    steps:
+      - name: List the shards
+        id: shards
+        env:
+          MATRIX: ${{ inputs.matrix }}
+          SHARDS: ${{ inputs.shards }}
+        run: |
+          total="$SHARDS"
+          if [ "$total" -le 0 ]; then
+            if [ "$MATRIX" = full ]; then total=8; else total=4; fi
+          fi
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+          echo "list=$(jq -nc --argjson n "$total" '[range(1; $n + 1)]')" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      # Use the Node.js from .tool-versions (ADR-0025).
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .tool-versions
+      - name: Restore the Bun package cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: .tool-versions
+          cache-dependency-path: |
+            go.mod
+            go.sum
+      # `make build` builds app/web/dist (vite preview serves it) and bin/my with it embedded (e2e/server.ts
+      # starts it).
+      - name: make build
+        run: make build
+      # Artifacts drop file modes, so the build travels as a tarball that keeps bin/my executable.
+      - name: Pack the build
+        run: tar -cf "$RUNNER_TEMP/e2e-build.tar" bin/my app/web/dist
+      - uses: actions/upload-artifact@v6
+        with:
+          name: e2e-build-${{ inputs.matrix }}-w${{ inputs.workers }}
+          path: ${{ runner.temp }}/e2e-build.tar
+          retention-days: 1
+
+  shard:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.build.outputs.shards) }}
+    name: shard ${{ matrix.shard }}/${{ needs.build.outputs.total }}
     # The official Playwright image, pinned by digest, provides the browsers and their system libraries.
     # Its tag must match @playwright/test in app/web/package.json, and it must equal PLAYWRIGHT_IMAGE in the Makefile
     # (`make playwright-image-check`).
@@ -25,14 +108,11 @@ jobs:
       options: --ipc=host
     env:
       E2E_MATRIX: ${{ inputs.matrix }}
-      # The checkout belongs to another user than the container's root, so git refuses it and `go build`
-      # cannot stamp the VCS state into bin/my; the E2E server does not need it.
-      GOFLAGS: -buildvcs=false
     steps:
       - uses: actions/checkout@v7
-      # The image has neither make nor the unzip that setup-bun extracts Bun with.
-      - name: Install make and unzip
-        run: apt-get update && apt-get install -y --no-install-recommends make unzip
+      # The image lacks the unzip that setup-bun extracts Bun with.
+      - name: Install unzip
+        run: apt-get update && apt-get install -y --no-install-recommends unzip
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .tool-versions
@@ -46,21 +126,63 @@ jobs:
           path: ~/.bun/install/cache
           key: bun-e2e-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}
           restore-keys: bun-e2e-${{ runner.os }}-
-      # `make web-e2e` builds bin/my, which e2e/server.ts starts for the server-rendered pages.
-      - uses: actions/setup-go@v7
+      - name: Install the client packages
+        working-directory: app
+        run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v7
         with:
-          go-version-file: .tool-versions
-          cache-dependency-path: |
-            go.mod
-            go.sum
-      - name: make web-e2e
-        run: make web-e2e
+          name: e2e-build-${{ inputs.matrix }}-w${{ inputs.workers }}
+          path: ${{ runner.temp }}
+      - name: Unpack the build
+        run: tar -xf "$RUNNER_TEMP/e2e-build.tar"
+      - name: playwright test --shard=${{ matrix.shard }}/${{ needs.build.outputs.total }}
+        working-directory: app/web
+        env:
+          SHARD: ${{ matrix.shard }}/${{ needs.build.outputs.total }}
+          WORKERS: ${{ inputs.workers }}
+        run: bun run playwright test --shard="$SHARD" --workers="$WORKERS" --reporter=github,blob
+      - uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: e2e-blob-${{ inputs.matrix }}-w${{ inputs.workers }}-${{ matrix.shard }}
+          path: app/web/blob-report/
+          retention-days: 1
+
+  report:
+    # Merges the blob reports even when shards failed; a cancelled run (a newer push to main) skips it.
+    needs: [build, shard]
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .tool-versions
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .tool-versions
+      - name: Restore the Bun package cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - name: Install the client packages
+        working-directory: app
+        run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: e2e-blob-${{ inputs.matrix }}-w${{ inputs.workers }}-*
+          path: ${{ runner.temp }}/blob-reports
+          merge-multiple: true
+      - name: playwright merge-reports
+        working-directory: app/web
+        run: bun run playwright merge-reports --reporter html "$RUNNER_TEMP/blob-reports"
+      # The merged report holds every shard's results and the traces of the failed tests.
       - name: Upload the Playwright report
-        if: failure()
+        if: ${{ needs.shard.result != 'success' }}
         uses: actions/upload-artifact@v6
         with:
           name: playwright-report-${{ inputs.matrix }}
-          path: |
-            app/web/playwright-report/
-            app/web/test-results/
+          path: app/web/playwright-report/
           retention-days: 7

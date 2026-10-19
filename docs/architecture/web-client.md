@@ -161,7 +161,8 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     種類の変わるボタン（「フォロー」のアクセントから「リクエスト中」の面へ）は `motion-safe:transition-colors` で色を移すので、途中で `color-contrast` が中間の文字色と背景色を読むと違反になるため。
     終わりのないアニメーション（スピナー、スケルトンの明滅）は待たない。
   - プロジェクトは画面幅 320 / 390 / 768 / 1024 / 1440 px × ロケール `en` / `ja` / `en-XA` / `ar-XB` の 20 個。768 px 未満はタッチと粗いポインタのスマートフォンとして動かす。
-  - main への push では全ロケールの 320 / 1440 px だけを動かし（PR では動かさない、[ADR-0040](../adr/0040-e2e-on-main-only.md)。Web に触れる PR では作者が手元で `make web-e2e` を回す）、nightly（`E2E_MATRIX=full`）は全体を動かす。
+  - main への push では全ロケールの 320 / 1440 px だけを動かし（PR では動かさない、[ADR-0040](../adr/0040-e2e-on-main-only.md)。Web に触れる PR では作者が手元で `make web-e2e` を回すか、PR のブランチに対して `web-e2e.yml` を `workflow_dispatch` で手で回す）、nightly（`E2E_MATRIX=full`）は全体を動かす。
+  - CI（`web-e2e.yml`）は `app/web/dist` と `bin/my` を 1 回だけビルドし、全シャードが同じビルドを検査する（[ADR-0047](../adr/0047-ci-protection-layers.md)）。シャードは main が 4、nightly が 8 で、各シャードの blob レポートを 1 つの HTML レポートにまとめる。`make web-e2e` は手元で全部を 1 回で回す。
   - spec は `e2e/fixtures.ts` から `test` / `expect` を import する。`vite preview` は `index.html`（ランタイム設定の代わりを含む）をそのまま返すので、fixture がプロジェクトのロケールを `<html lang dir>` に書き込み、サーバーの外枠と同じ状態にする。ビルドのファイルへの相対のリンクは、`my serve` と同じくルートからのものにする（ルートより下の画面のため）。ランタイム設定の `apiOrigin` もその回の `vite preview` のオリジンに書き換えるので、クライアントの API と OAuth の要求はプレビューに届き、spec が `page.route` で応答できる（ログイン済みの画面は、`/oauth/token/refresh` と API の操作に応答して作る）。axe は `makeAxeBuilder` と `expectNoAxeViolations`（規則と対象のセレクタの一覧が空であることを検査）、横スクロールは `expectNoHorizontalScroll` で検査する。
   - 構造は `toMatchAriaSnapshot` で検査する。ロケールで変わる名前は、スナップショットから省くか正規表現にする。
   - CI は、digest で固定した Playwright の公式イメージで動かす。イメージの版は `@playwright/test` の版と合わせる。

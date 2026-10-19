@@ -59,7 +59,7 @@ curl -H 'Accept: application/activity+json' http://localhost:8080/ap/actors/<Web
 - 公開するときは `.env` の `MY_HOST` を実際のドメインにし、`MY_WEB_ORIGIN` を消して（既定は `https://{MY_HOST}`）、
   TLS を終端するリバースプロキシ（Caddy など）を前に置きます。`MY_HOST` は最初の起動で DB に記録され、後から変えられません。
 - `docker compose down` で止めます。`down -v` はデータのボリュームも消します。
-- CI は同じ手順を `scripts/docker-smoke.sh`（`make docker-smoke`）で毎回実行します。
+- CI は同じ手順を `scripts/docker-smoke.sh`（`make docker-smoke`）で、Docker の構成・`cmd/`・`internal/platform/` を変える PR、ドキュメント以外を変えた main への push、nightly で実行します。
 
 設定項目は [設定リファレンス](docs/reference/configuration.md)、運用は [サーバーの起動・停止](docs/operations/running.md) を参照してください。
 

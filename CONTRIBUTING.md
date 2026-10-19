@@ -19,7 +19,7 @@ make check
 
 - Go ツール（go-licenses, sqlc, oapi-codegen）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
 - 依存関係の既知の脆弱性は GitHub の Dependabot Alerts で検知し、版更新の PR は Dependabot が作ります（`.github/dependabot.yml`、ADR-0046）。
-- Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `make check` には含めず、`make docker-smoke` で実行します（CI ではドキュメント以外を変えたときに実行）。
+- Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `make check` には含めず、`make docker-smoke` で実行します（CI では Docker の構成・`cmd/`・`internal/platform/` を変える PR、ドキュメント以外を変えた main への push、nightly で実行。linux/arm64 のイメージのビルドは Docker の構成を変える PR と nightly）。
 - Mastodon・GoToSocial とのライブの相互運用テストは `make check` に含めず、`make federation-live` で実行します（CI では nightly。手順は [deploy/docker/federation-live/README.md](deploy/docker/federation-live/README.md)）。
 - 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Makefile` の `GO_ALLOWED_LICENSES`。`tools/i18n` と `app/` の npm パッケージも同じ一覧で検査）に限ります。
   増やす場合は PR で理由を説明してください。

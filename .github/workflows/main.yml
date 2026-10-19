@@ -168,11 +168,12 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
 
   web-e2e:
-    # Playwright E2E of the web client over the subset of the width × locale matrix, on every push to main;
-    # nightly.yml runs all of it (ADR-0040).
+    # Playwright E2E of the web client over the subset of the width × locale matrix, on every push to main, in
+    # 4 shards of one build; nightly.yml runs all of it (ADR-0040, ADR-0047).
     uses: ./.github/workflows/web-e2e.yml
     with:
       matrix: pr
+      shards: 4
 
   ui-test:
     needs: changes
@@ -183,9 +184,12 @@ jobs:
     needs: changes
     if: needs.changes.outputs.smoke == 'true'
     uses: ./.github/workflows/ctx-docker.yml
+    # linux/amd64 only: the arm64 images change only with the docker context, which its pull request and nightly.yml
+    # build (ADR-0047).
     with:
       check: false
       smoke: true
+      arm64: false
 
   postgres-contract:
     # The PostgreSQL tests on a real postgres container instead of pgmem; nightly.yml runs them on every main

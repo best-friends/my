@@ -35,6 +35,7 @@ jobs:
       docker: ${{ steps.contexts.outputs.docker }}
       shell: ${{ steps.contexts.outputs.shell }}
       schema: ${{ steps.contexts.outputs.schema }}
+      smoke: ${{ steps.contexts.outputs.smoke }}
       # The input `scope` of the ctx-*.yml: `queue` in the merge queue, `pr` on pull requests.
       scope: ${{ github.event_name == 'merge_group' && 'queue' || 'pr' }}
     steps:
@@ -63,6 +64,14 @@ jobs:
           for c in docs go i18n api ui web docker shell schema; do
             if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
           done
+          # The Docker smoke test runs on a change to the docker context and on one to cmd/ or internal/platform/,
+          # which load the configuration and assemble the server the images start (ADR-0047). changed-contexts.sh
+          # puts those two in the go context, so their paths are matched here.
+          if grep -qx docker <<< "$contexts" || grep -qE '^(cmd|internal/platform)/' "$RUNNER_TEMP/changed"; then
+            echo smoke=true
+          else
+            echo smoke=false
+          fi >> "$GITHUB_OUTPUT"
 
   # One job per context, each calling the context's reusable workflow. A job whose `if` is false is skipped, and
   # `check` counts a skipped job as passed. Inside a called workflow `github` is this workflow's context (so
@@ -113,19 +122,19 @@ jobs:
       scope: ${{ needs.changes.outputs.scope }}
 
   docker:
-    # docker-check on a change to the docker context. The images hold everything but the docs, so a change to the
-    # go, web, i18n, or docker context runs the Docker smoke test. The merge queue skips the smoke test
-    # (ctx-docker.yml), so there the job runs only for docker-check.
+    # docker-check and the linux/arm64 image builds on a change to the docker context, and on pull requests the
+    # Docker smoke test on a change to the docker context, cmd/, or internal/platform/ (ADR-0047). The merge queue
+    # runs only docker-check (ctx-docker.yml), so there the job runs only on a change to the docker context.
     needs: changes
     if: >-
-      needs.changes.outputs.docker == 'true' || (needs.changes.outputs.scope == 'pr' && (
-      needs.changes.outputs.go == 'true' || needs.changes.outputs.web == 'true' ||
-      needs.changes.outputs.i18n == 'true'))
+      needs.changes.outputs.docker == 'true' ||
+      (needs.changes.outputs.scope == 'pr' && needs.changes.outputs.smoke == 'true')
     uses: ./.github/workflows/ctx-docker.yml
     with:
       scope: ${{ needs.changes.outputs.scope }}
       check: ${{ needs.changes.outputs.docker == 'true' }}
-      smoke: true
+      smoke: ${{ needs.changes.outputs.smoke == 'true' }}
+      arm64: ${{ needs.changes.outputs.docker == 'true' }}
 
   shell:
     # shellcheck is a pull request check only (ctx-shell.yml); the merge queue does not call the workflow at all.
@@ -138,9 +147,9 @@ jobs:
   check:
     # The required status check of the protect-main ruleset, on pull requests and merge groups: it passes only when
     # every context job above passed, or was skipped because the change does not touch its context. A job that calls
-    # a reusable workflow fails when one of the called jobs fails, so a failed schema, ui-test, or docker-smoke job
-    # fails `check`. `always()` makes it report a result even when every other job is skipped, so neither a pull
-    # request nor a merge group waits on it.
+    # a reusable workflow fails when one of the called jobs fails, so a failed schema, ui-test, docker-smoke, or
+    # docker-arm64 job fails `check`. `always()` makes it report a result even when every other job is skipped, so
+    # neither a pull request nor a merge group waits on it.
     if: always()
     needs: [changes, docs, go, i18n, api, web, schema, docker, shell]
     runs-on: ubuntu-latest
