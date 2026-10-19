@@ -2579,6 +2579,50 @@
     "defaultMessage": "Reports",
     "description": "Heading and title of the report queue."
   },
+  "admin.settings.name.blank": {
+    "defaultMessage": "Enter a name with letters, or leave the field empty.",
+    "description": "Error of a field of the server's name that holds only spaces."
+  },
+  "admin.settings.name.description": {
+    "defaultMessage": "People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Each language has its own name. A language without one shows the name in the server's default language, and with no name at all the domain shows. Handles and links always use the domain.",
+    "description": "Explanation above the fields of the server's name on the server settings screen. {domain} is the server's domain name."
+  },
+  "admin.settings.name.field": {
+    "defaultMessage": "Name in {language}",
+    "description": "Label of the field of the server's name in one language. {language} is the language's name in the app's language, such as English or Japanese."
+  },
+  "admin.settings.name.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the server's names on the server settings screen."
+  },
+  "admin.settings.name.save_failed": {
+    "defaultMessage": "Could not save the name: {reason}",
+    "description": "Error when saving the server's name failed. {reason} is the server's localized reason, which names the field at fault."
+  },
+  "admin.settings.name.saved": {
+    "defaultMessage": "Saved the name.",
+    "description": "Status after the server's names were saved; the sidebar and the browser tab show the new name."
+  },
+  "admin.settings.name.title": {
+    "defaultMessage": "Name",
+    "description": "Heading of the section of the server's name on the server settings screen."
+  },
+  "admin.settings.name.too_long": {
+    "defaultMessage": "Use at most {max} characters.",
+    "description": "Error of a field of the server's name whose text is longer than its limit. {max} is the limit."
+  },
+  "admin.settings.name.unchanged": {
+    "defaultMessage": "The names are already saved.",
+    "description": "Status after pressing Save on the server settings screen without changing a name."
+  },
+  "admin.settings.summary": {
+    "defaultMessage": "The server's name, which people see in place of its domain.",
+    "description": "Description of the server settings screen in the administration menu."
+  },
+  "admin.settings.title": {
+    "defaultMessage": "Server settings",
+    "description": "Title of the server settings screen (the server's name), in the administration menu and as its heading."
+  },
   "admin.signup_blocks.add_failed": {
     "defaultMessage": "Could not add the block: {reason}",
     "description": "Error under the form of a new sign-up block when the server refused it. {reason} is why."

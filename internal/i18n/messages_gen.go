@@ -235,6 +235,13 @@ func (l *Localizer) ServerAuthCrossOrigin() string {
 	return l.format("server:auth.cross_origin", nil)
 }
 
+// ServerAuthDocumentTitle formats "server:auth.document_title". The browser tab title of the sign-in, sign-up, email verification, account status and consent pages: the page's title, then the server's name. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: {page} – {instance}
+func (l *Localizer) ServerAuthDocumentTitle(instance string, page string) string {
+	return l.format("server:auth.document_title", map[string]any{"instance": instance, "page": page})
+}
+
 // ServerAuthDocumentFooterLabel formats "server:auth.document.footer_label". Accessible name of the navigation in the footer of the server-rendered pages that links to the terms of service and the privacy policy.
 //
 //	en: Terms and policies
@@ -1236,60 +1243,60 @@ func (l *Localizer) ServerHealthUnavailable() string {
 	return l.format("server:health.unavailable", nil)
 }
 
-// ServerMailAdminAppealBody formats "server:mail.admin_appeal.body". Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line).
+// ServerMailAdminAppealBody formats "server:mail.admin_appeal.body". Plain-text body of the email to a moderator about a new appeal. It never names the user or the action. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line).
 //
-//	en: A user of {host} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
-func (l *Localizer) ServerMailAdminAppealBody(host string, url string) string {
-	return l.format("server:mail.admin_appeal.body", map[string]any{"host": host, "url": url})
+//	en: A user of {instance} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
+func (l *Localizer) ServerMailAdminAppealBody(instance string, url string) string {
+	return l.format("server:mail.admin_appeal.body", map[string]any{"instance": instance, "url": url})
 }
 
-// ServerMailAdminAppealSubject formats "server:mail.admin_appeal.subject". Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {host} is the server's domain name.
+// ServerMailAdminAppealSubject formats "server:mail.admin_appeal.subject". Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {instance} is the server's display name, or its domain name when it has none.
 //
-//	en: A new appeal awaits the moderators of {host}
-func (l *Localizer) ServerMailAdminAppealSubject(host string) string {
-	return l.format("server:mail.admin_appeal.subject", map[string]any{"host": host})
+//	en: A new appeal awaits the moderators of {instance}
+func (l *Localizer) ServerMailAdminAppealSubject(instance string) string {
+	return l.format("server:mail.admin_appeal.subject", map[string]any{"instance": instance})
 }
 
-// ServerMailAdminReportBody formats "server:mail.admin_report.body". Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line).
+// ServerMailAdminReportBody formats "server:mail.admin_report.body". Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line).
 //
-//	en: A new report awaits the moderators of {host}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
-func (l *Localizer) ServerMailAdminReportBody(host string, url string) string {
-	return l.format("server:mail.admin_report.body", map[string]any{"host": host, "url": url})
+//	en: A new report awaits the moderators of {instance}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
+func (l *Localizer) ServerMailAdminReportBody(instance string, url string) string {
+	return l.format("server:mail.admin_report.body", map[string]any{"instance": instance, "url": url})
 }
 
-// ServerMailAdminReportSubject formats "server:mail.admin_report.subject". Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {host} is the server's domain name.
+// ServerMailAdminReportSubject formats "server:mail.admin_report.subject". Subject of the email to a moderator who chose to get moderator notifications by email: someone reported an account that had no open report. {instance} is the server's display name, or its domain name when it has none.
 //
-//	en: A new report awaits the moderators of {host}
-func (l *Localizer) ServerMailAdminReportSubject(host string) string {
-	return l.format("server:mail.admin_report.subject", map[string]any{"host": host})
+//	en: A new report awaits the moderators of {instance}
+func (l *Localizer) ServerMailAdminReportSubject(instance string) string {
+	return l.format("server:mail.admin_report.subject", map[string]any{"instance": instance})
 }
 
-// ServerMailAdminSignUpBody formats "server:mail.admin_sign_up.body". Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {host} is the server's domain name, {url} the link to the notifications (keep it on its own line).
+// ServerMailAdminSignUpBody formats "server:mail.admin_sign_up.body". Plain-text body of the email to a moderator about a sign-up that awaits approval. It never names the user. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line).
 //
-//	en: A new user signed up on {host} and awaits approval.  Open your notifications to review the registration:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
-func (l *Localizer) ServerMailAdminSignUpBody(host string, url string) string {
-	return l.format("server:mail.admin_sign_up.body", map[string]any{"host": host, "url": url})
+//	en: A new user signed up on {instance} and awaits approval.  Open your notifications to review the registration:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
+func (l *Localizer) ServerMailAdminSignUpBody(instance string, url string) string {
+	return l.format("server:mail.admin_sign_up.body", map[string]any{"instance": instance, "url": url})
 }
 
-// ServerMailAdminSignUpSubject formats "server:mail.admin_sign_up.subject". Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {host} is the server's domain name.
+// ServerMailAdminSignUpSubject formats "server:mail.admin_sign_up.subject". Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {instance} is the server's display name, or its domain name when it has none.
 //
-//	en: A new sign-up awaits approval on {host}
-func (l *Localizer) ServerMailAdminSignUpSubject(host string) string {
-	return l.format("server:mail.admin_sign_up.subject", map[string]any{"host": host})
+//	en: A new sign-up awaits approval on {instance}
+func (l *Localizer) ServerMailAdminSignUpSubject(instance string) string {
+	return l.format("server:mail.admin_sign_up.subject", map[string]any{"instance": instance})
 }
 
-// ServerMailVerifyEmailBody formats "server:mail.verify_email.body". Plain-text body of the email that confirms a new account's email address. {host} is the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works.
+// ServerMailVerifyEmailBody formats "server:mail.verify_email.body". Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works.
 //
-//	en: Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.
-func (l *Localizer) ServerMailVerifyEmailBody(host string, hours int, url string) string {
-	return l.format("server:mail.verify_email.body", map[string]any{"host": host, "hours": hours, "url": url})
+//	en: Welcome to {instance}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.
+func (l *Localizer) ServerMailVerifyEmailBody(host string, hours int, instance string, url string) string {
+	return l.format("server:mail.verify_email.body", map[string]any{"host": host, "hours": hours, "instance": instance, "url": url})
 }
 
-// ServerMailVerifyEmailSubject formats "server:mail.verify_email.subject". Subject of the email that confirms a new account's email address. {host} is the server's domain name.
+// ServerMailVerifyEmailSubject formats "server:mail.verify_email.subject". Subject of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none.
 //
-//	en: Confirm your email address for {host}
-func (l *Localizer) ServerMailVerifyEmailSubject(host string) string {
-	return l.format("server:mail.verify_email.subject", map[string]any{"host": host})
+//	en: Confirm your email address for {instance}
+func (l *Localizer) ServerMailVerifyEmailSubject(instance string) string {
+	return l.format("server:mail.verify_email.subject", map[string]any{"instance": instance})
 }
 
 // ServerModerationActionCategory formats "server:moderation.action.category". Label of the reason category that a moderator chose for an action on the user's own account. {category} is the category.

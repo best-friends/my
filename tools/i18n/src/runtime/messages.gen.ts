@@ -1292,6 +1292,28 @@ export interface MessageArgs {
   "client:admin.reports.summary": {};
   /** Reports */
   "client:admin.reports.title": {};
+  /** Enter a name with letters, or leave the field empty. */
+  "client:admin.settings.name.blank": {};
+  /** People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Each language has its own name. A language without one shows the name in the server's default language, and with no name at all the domain shows. Handles and links always use the domain. */
+  "client:admin.settings.name.description": { domain: string };
+  /** Name in {language} */
+  "client:admin.settings.name.field": { language: string };
+  /** Save */
+  "client:admin.settings.name.save": {};
+  /** Could not save the name: {reason} */
+  "client:admin.settings.name.save_failed": { reason: string };
+  /** Saved the name. */
+  "client:admin.settings.name.saved": {};
+  /** Name */
+  "client:admin.settings.name.title": {};
+  /** Use at most {max} characters. */
+  "client:admin.settings.name.too_long": { max: string };
+  /** The names are already saved. */
+  "client:admin.settings.name.unchanged": {};
+  /** The server's name, which people see in place of its domain. */
+  "client:admin.settings.summary": {};
+  /** Server settings */
+  "client:admin.settings.title": {};
   /** Could not add the block: {reason} */
   "client:admin.signup_blocks.add_failed": { reason: string };
   /** {severity} is in effect for the {kind} {value}. */
@@ -2426,6 +2448,8 @@ export interface MessageArgs {
   "server:auth.authorize.title": { app: string };
   /** The request was refused because it came from another site. */
   "server:auth.cross_origin": {};
+  /** {page} – {instance} */
+  "server:auth.document_title": { instance: string; page: string };
   /** Terms and policies */
   "server:auth.document.footer_label": {};
   /** This server has not published a privacy policy. */
@@ -2712,22 +2736,22 @@ export interface MessageArgs {
   "server:errors.unusable_image": { name: string };
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
-  /** A user of {host} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
-  "server:mail.admin_appeal.body": { host: string; url: string };
-  /** A new appeal awaits the moderators of {host} */
-  "server:mail.admin_appeal.subject": { host: string };
-  /** A new report awaits the moderators of {host}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
-  "server:mail.admin_report.body": { host: string; url: string };
-  /** A new report awaits the moderators of {host} */
-  "server:mail.admin_report.subject": { host: string };
-  /** A new user signed up on {host} and awaits approval.  Open your notifications to review the registration:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
-  "server:mail.admin_sign_up.body": { host: string; url: string };
-  /** A new sign-up awaits approval on {host} */
-  "server:mail.admin_sign_up.subject": { host: string };
-  /** Welcome to {host}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
-  "server:mail.verify_email.body": { host: string; hours: number; url: string };
-  /** Confirm your email address for {host} */
-  "server:mail.verify_email.subject": { host: string };
+  /** A user of {instance} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_appeal.body": { instance: string; url: string };
+  /** A new appeal awaits the moderators of {instance} */
+  "server:mail.admin_appeal.subject": { instance: string };
+  /** A new report awaits the moderators of {instance}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_report.body": { instance: string; url: string };
+  /** A new report awaits the moderators of {instance} */
+  "server:mail.admin_report.subject": { instance: string };
+  /** A new user signed up on {instance} and awaits approval.  Open your notifications to review the registration:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_sign_up.body": { instance: string; url: string };
+  /** A new sign-up awaits approval on {instance} */
+  "server:mail.admin_sign_up.subject": { instance: string };
+  /** Welcome to {instance}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
+  "server:mail.verify_email.body": { host: string; hours: number; instance: string; url: string };
+  /** Confirm your email address for {instance} */
+  "server:mail.verify_email.subject": { instance: string };
   /** {category, select, spam {Spam} legal {Legal reasons} violation {Violation of the instance's rules} other {Other}} */
   "server:moderation.action.category": { category: "legal" | "spam" | "violation" | (string & {}) };
   /** {kind, select, warn {Warning} mark_statuses_sensitive {Posts marked as sensitive} delete_statuses {Posts deleted} force_sensitive {Media always marked as sensitive} limit {Limited: posts shown to followers only and kept off the public timelines} restrict_posting {No posting, replying, boosting, or editing} restrict_interaction {No following, favouriting, boosting, or replying} disable_login {Login disabled} suspend {Suspended: no use of the app, and the profile and posts are hidden} ban {Banned: the account is deleted} other {Moderation action}} */

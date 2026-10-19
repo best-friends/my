@@ -413,10 +413,16 @@ func (s *Service) sendVerification(ctx context.Context, to, locale, secret strin
 	if u, err := url.Parse(s.d.BaseURL); err == nil && u.Host != "" {
 		host = u.Host
 	}
+	name := host
+	if s.d.InstanceName != nil {
+		if n := s.d.InstanceName(ctx, l.Locale()); n != "" {
+			name = n
+		}
+	}
 	err := s.d.Mailer.Send(ctx, kernel.MailMessage{
 		To:      to,
-		Subject: l.ServerMailVerifyEmailSubject(host),
-		Text:    l.ServerMailVerifyEmailBody(host, int(EmailVerificationTTL/time.Hour), link),
+		Subject: l.ServerMailVerifyEmailSubject(name),
+		Text:    l.ServerMailVerifyEmailBody(host, int(EmailVerificationTTL/time.Hour), name, link),
 	})
 	if err != nil {
 		return fmt.Errorf("identity: send the verification email: %w", err)

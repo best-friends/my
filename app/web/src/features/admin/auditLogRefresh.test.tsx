@@ -15,7 +15,7 @@ import { renderApp } from "../../test/render";
 import { accountActionFixture, appealFixture, domainActionFixture, operatorHandler, registrationFixture, reportFixture } from "./test/handlers";
 
 beforeEach(() => {
-  server.use(signedInHandler, operatorHandler(["manage_accounts", "manage_reports", "manage_domains", "view_audit"]));
+  server.use(signedInHandler, operatorHandler(["manage_accounts", "manage_reports", "manage_domains", "manage_settings", "view_audit"]));
   document.documentElement.lang = "en";
   document.documentElement.dir = "ltr";
 });
@@ -32,7 +32,7 @@ type Write = {
   /** The audited operation, as the audit log lists it. */
   action: Schemas["AdminAuditAction"];
   /** The request of the write, which the server records. */
-  method: "post";
+  method: "post" | "put";
   path: string;
   /** The screen of the write. */
   page: string;
@@ -201,6 +201,17 @@ const writes: Write[] = [
     path: "/admin/appeals/:id/overturn",
     page: `/admin/appeals/${appeal.id}`,
     write: (user) => decide(user, "Overturn", "Overturn", "The appeal is overturned and the action is lifted."),
+  },
+  {
+    action: "text_changed",
+    method: "put",
+    path: "/admin/instance_texts/:key/:locale",
+    page: "/admin/settings",
+    write: async (user) => {
+      await user.type(await screen.findByRole("textbox", { name: "Name in English" }), "Example Social");
+      await user.click(screen.getByRole("button", { name: "Save" }));
+      expect(await screen.findByText("Saved the name.")).toBeInTheDocument();
+    },
   },
 ];
 

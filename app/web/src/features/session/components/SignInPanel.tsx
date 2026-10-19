@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Button } from "@my/ui";
-import { useConfig } from "../../../lib/config";
 import { useT } from "../../../lib/i18n";
+import { useInstanceName } from "../../../lib/instanceName";
 import { useSignIn } from "../hooks/useSignIn";
 
 export type SignInPanelProps = {
@@ -12,7 +12,7 @@ export type SignInPanelProps = {
 /** The body of the sign-in page: what signing in gives, and the button to the server's sign-in screen. */
 export function SignInPanel({ returnTo }: SignInPanelProps) {
   const t = useT();
-  const { instanceName } = useConfig();
+  const instanceName = useInstanceName();
   const { signIn, isPending } = useSignIn(returnTo);
   return (
     <div className="flex flex-col items-start gap-4">

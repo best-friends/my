@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>{{.Title}}</title>
+<title>{{.DocumentTitle}}</title>
 {{with .Stylesheet}}<link rel="stylesheet" href="{{.}}">
 {{end}}</head>
 <body>
 <main class="page{{if .Document}} page-document{{end}}">
-<div class="card">
+{{with .InstanceName}}<p class="site-name" dir="auto">{{.}}</p>
+{{end}}<div class="card">
 {{template "content" .}}
 </div>
 </main>

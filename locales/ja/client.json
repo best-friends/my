@@ -2579,6 +2579,50 @@
     "defaultMessage": "通報",
     "description": "Heading and title of the report queue."
   },
+  "admin.settings.name.blank": {
+    "defaultMessage": "空白以外の文字を入れるか、空のままにしてください。",
+    "description": "Error of a field of the server's name that holds only spaces."
+  },
+  "admin.settings.name.description": {
+    "defaultMessage": "アプリがこのサーバーを名指す場所（サイドバー、ブラウザのタブ、ログインの画面、メール、リンクのプレビュー）では、ドメイン {domain} の代わりに名前が表示されます。名前は言語ごとに持ちます。名前のない言語ではサーバーの既定の言語の名前が、どの言語にも名前がなければドメインが表示されます。ハンドルとリンクは、いつもドメインのままです。",
+    "description": "Explanation above the fields of the server's name on the server settings screen. {domain} is the server's domain name."
+  },
+  "admin.settings.name.field": {
+    "defaultMessage": "{language}での名前",
+    "description": "Label of the field of the server's name in one language. {language} is the language's name in the app's language, such as English or Japanese."
+  },
+  "admin.settings.name.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves the server's names on the server settings screen."
+  },
+  "admin.settings.name.save_failed": {
+    "defaultMessage": "名前を保存できませんでした：{reason}",
+    "description": "Error when saving the server's name failed. {reason} is the server's localized reason, which names the field at fault."
+  },
+  "admin.settings.name.saved": {
+    "defaultMessage": "名前を保存しました。",
+    "description": "Status after the server's names were saved; the sidebar and the browser tab show the new name."
+  },
+  "admin.settings.name.title": {
+    "defaultMessage": "名前",
+    "description": "Heading of the section of the server's name on the server settings screen."
+  },
+  "admin.settings.name.too_long": {
+    "defaultMessage": "{max} 文字以内にしてください。",
+    "description": "Error of a field of the server's name whose text is longer than its limit. {max} is the limit."
+  },
+  "admin.settings.name.unchanged": {
+    "defaultMessage": "名前はすでに保存されています。",
+    "description": "Status after pressing Save on the server settings screen without changing a name."
+  },
+  "admin.settings.summary": {
+    "defaultMessage": "サーバーの名前。ドメインの代わりに表示されます。",
+    "description": "Description of the server settings screen in the administration menu."
+  },
+  "admin.settings.title": {
+    "defaultMessage": "サーバーの設定",
+    "description": "Title of the server settings screen (the server's name), in the administration menu and as its heading."
+  },
   "admin.signup_blocks.add_failed": {
     "defaultMessage": "拒否を追加できませんでした：{reason}",
     "description": "Error under the form of a new sign-up block when the server refused it. {reason} is why."

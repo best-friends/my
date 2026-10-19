@@ -1717,11 +1717,16 @@ export interface paths {
          *     the audit log's `text_changed`). The locale is canonicalized (`ja_jp` is `ja-JP`).
          *     The terms of service and the privacy policy are Markdown, which the server renders and
          *     sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
-         *     the other texts are plain text. An unknown key is a 404. A locale that is not a BCP 47
+         *     the other texts are plain text. The display name (`name`) names the instance to people
+         *     in place of its domain: the web client's navigation and tab title, the server-rendered
+         *     pages, emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`;
+         *     where no locale of the chain has a name, the domain names it, and handles and URLs always
+         *     use the domain. An unknown key is a 404. A locale that is not a BCP 47
          *     tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
          *     `name`, 500 for `short_description`, 1,500 for `preview_image_alt`, 20,000 for
-         *     `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`,
-         *     is a 422 naming `body`. Needs the `manage_settings` permission.
+         *     `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
+         *     or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
+         *     permission.
          */
         put: operations["setInstanceText"];
         post?: never;

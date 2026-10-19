@@ -176,6 +176,7 @@ func TestInstanceTextProblems(t *testing.T) {
 		{"bad locale", "/admin/instance_texts/terms/not%20a%20tag", `{"body":"x"}`, http.StatusUnprocessableEntity, "locale"},
 		{"too long", "/admin/instance_texts/name/en", `{"body":"` + strings.Repeat("a", 101) + `"}`, http.StatusUnprocessableEntity, "body"},
 		{"line break", "/admin/instance_texts/name/en", `{"body":"a\nb"}`, http.StatusUnprocessableEntity, "body"},
+		{"blank name", "/admin/instance_texts/name/en", `{"body":"   "}`, http.StatusUnprocessableEntity, "body"},
 		{"NUL", "/admin/instance_texts/terms/en", `{"body":"a\u0000b"}`, http.StatusUnprocessableEntity, "body"},
 	} {
 		res := e.send(t, http.MethodPut, tc.path, "admin", tc.body)
