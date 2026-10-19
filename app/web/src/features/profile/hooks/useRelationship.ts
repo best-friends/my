@@ -73,8 +73,10 @@ export function useRelationship(account: Account): RelationshipState {
   const query = useQuery({ ...relationshipQueryOptions(api, account.id), enabled: isOther });
   const mutation = useMutation({
     mutationFn: (action: RelationshipAction) => changeRelationship(api, account.id, action),
-    onSuccess: (relationship, action) => {
-      storeRelationship(queryClient, api, relationship);
+    onSuccess: async (relationship, action) => {
+      // The change is done once what it changes is fetched again (the action stays pending until then), so that
+      // a page opened next shows it at once (web-client.md S1).
+      if (viewer.status === "signed-in") await storeRelationship(queryClient, api, relationship, action, viewer.account.id);
       announce(doneMessage(t, action, relationship, nameOf(account)));
     },
     onError: (error) => {
