@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client";
 import { App, StartupError } from "./App";
 import { readRuntimeConfig, type RuntimeConfig } from "./lib/config";
 import { conformToContentSecurityPolicy } from "./lib/csp";
-import { applyDocumentLocale, loadI18n } from "./lib/i18n";
+import { loadStartI18n } from "./lib/locale";
 import { registerServiceWorker, reloadOnPreloadError } from "./lib/pwa";
 import { createAppRouter } from "./router";
 import { createAppServices } from "./lib/services";
@@ -23,9 +23,9 @@ const container = document.getElementById("root");
 if (container === null) throw new Error("the shell has no #root element");
 const root = createRoot(container);
 
-// The server writes the locale into <html lang>; the page is rendered in the closest supported one.
-const i18n = await loadI18n(document.documentElement.lang);
-applyDocumentLocale(document, i18n.locale);
+// The page is rendered in the supported locale closest to the one it was last displayed in on this browser, or
+// else to the instance's, which the server writes into <html lang> (lib/locale).
+const i18n = await loadStartI18n(document);
 
 let config: RuntimeConfig | undefined;
 try {

@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useApi, useSessionStatus } from "../../../lib/auth/SessionProvider";
+import { shellQueryRetry } from "../../../lib/query";
 import { useAppLocale } from "../../../lib/locale";
 import { preferencesQueryOptions } from "../api/me";
 
@@ -14,7 +15,7 @@ export function useUserDisplaySettings(): void {
   const api = useApi();
   const status = useSessionStatus();
   const appLocale = useAppLocale();
-  const { data } = useQuery({ ...preferencesQueryOptions(api), enabled: status === "signed-in" });
+  const { data } = useQuery({ ...preferencesQueryOptions(api), enabled: status === "signed-in", retry: shellQueryRetry });
   const locale = data?.locale;
   const timeZone = data?.time_zone;
 
