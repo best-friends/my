@@ -135,7 +135,7 @@ go-test: ## Run Go tests (PostgreSQL tests on pgmem, ADR-0041)
 	go test ./...
 
 # The packages whose tests use PostgreSQL through pkg/testkit/pgtest.
-POSTGRES_TEST_PACKAGES := ./internal/adapter/db/postgres/ ./internal/adapter/kv/db/ ./internal/adapter/queue/db/ ./internal/platform/
+POSTGRES_TEST_PACKAGES := ./internal/adapter/db/postgres/ ./internal/adapter/kv/db/ ./internal/adapter/queue/db/ ./internal/adapter/stream/postgres/ ./internal/platform/
 
 go-test-postgres: ## Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI on main and nightly)
 	TEST_POSTGRES=container TEST_POSTGRES_REQUIRED=1 go test -count=1 $(POSTGRES_TEST_PACKAGES)

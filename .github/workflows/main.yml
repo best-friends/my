@@ -48,7 +48,7 @@ jobs:
             contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
             # The paths the PostgreSQL tests depend on: the packages they test (POSTGRES_TEST_PACKAGES in the
             # Makefile), the queries and the schema, the test kit, the Go modules, and how CI runs them.
-            if grep -qE '^(internal/adapter/(db|kv|queue)/|internal/platform/|queries/|schema/|pkg/testkit/|sqlc\.yaml$|go\.(mod|sum)$|Makefile$|\.tool-versions$|\.github/workflows/(main|postgres-contract)\.yml$)' \
+            if grep -qE '^(internal/adapter/((db|kv|queue)/|stream/postgres/)|internal/platform/|queries/|schema/|pkg/testkit/|sqlc\.yaml$|go\.(mod|sum)$|Makefile$|\.tool-versions$|\.github/workflows/(main|postgres-contract)\.yml$)' \
               "$RUNNER_TEMP/changed"; then
               postgres=true
             else
