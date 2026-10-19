@@ -1,6 +1,6 @@
-# ADR-0042: UI キットのアイコンを既存のアイコンセット（Phosphor）から使う
+# ADR-0043: UI キットのアイコンを既存のアイコンセット（Phosphor）から使う
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #483
@@ -43,9 +43,7 @@
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: 選択肢 1（react-icons の Phosphor、`react-icons/pi`）を使い、`Icons.tsx` を「意味の名前から Phosphor のアイコンを引く薄い層」にする。**
+**選択肢 1（react-icons の Phosphor、`react-icons/pi`）を採用する。** `Icons.tsx` は「意味の名前から Phosphor のアイコンを引く薄い層」にする。
 
 - Phosphor は、どのアイコンにも同じ 6 種の太さ・塗りがあるので、G13 のオン / オフ（星・ブックマーク・警告は Fill、ブーストは Bold）をセットの中だけで表せる。
   Lucide（選択肢 3）は塗りの版がなく、`fill` を付けると警告の「!」や繰り返しの矢印が潰れる。Tabler（選択肢 4）は塗りの版が一部だけで、ブーストのオンの形がない。
@@ -72,7 +70,7 @@
 `Foundations/Icons` の一覧は、表のすべての項目を、意味の名前・Phosphor の名前・オンの形・向きの有無と並べて出す。
 今の `ui-test` が 3 つの幅 × light / dark × LTR / RTL でスクリーンショットを撮るので、置き換えや追加のレビューでは、差分に出る Phosphor の名前と、スクリーンショットの差分を見ればよい。
 
-覆る条件: react-icons の公開が長く止まり、Phosphor の新しい版が react-icons に入らなくなった場合、または必要な形が Phosphor にない場面が続いた場合は、公式パッケージ（選択肢 2）か Tabler（選択肢 4）を見直す。
+見直す条件: react-icons の公開が長く止まり、Phosphor の新しい版が react-icons に入らなくなった場合、または必要な形が Phosphor にない場面が続いた場合は、公式パッケージ（選択肢 2）か Tabler（選択肢 4）を見直す。
 
 ## Consequences（影響）
 
@@ -81,12 +79,12 @@
 - 23 個で約 3 KB（gzip）大きくなる。
 - react-icons は 30 以上のセットを含み、展開後に約 88 MB ある。インストールの時間と `node_modules` の大きさが増える（バンドルには選んだアイコンしか入らない）。
 - react-icons は各セットの更新を取り込むまで遅れることがある（Phosphor は core 2.1.1 で最新と同じ、Lucide や Remix は古い）。
-- 後続の作業（決定後に task として起こす）:
-  1. `@my/ui` に `react-icons` を足し、ADR-0031 の許可リスト・`app/eslint.config.js` の `@my/ui` の許可・`react-icons/pi` 以外と `Icons.tsx` 以外からの import の禁止を足す。
+- 後続の作業:
+  1. #501: `@my/ui` に `react-icons` を足し、ADR-0031 の許可リスト・`app/eslint.config.js` の `@my/ui` の許可・`react-icons/pi` 以外と `Icons.tsx` 以外からの import の禁止を足す。
      `Icons.tsx` を薄い層に書き換え、`Icons.stories.tsx` を表から作る一覧にし、スクリーンショットの基準を `make ui-snapshots-update` で撮り直す。
      [web-client.md §16.3](../architecture/web-client.md#163-アイコン) の G10〜G13 と `app/ui/README.md` のアイコンの節を、Phosphor の太さの決まりに合わせて書き換える。
-  2. G10 の「機能やルートに SVG のパスを書かない」を、`app/web` の `<svg>` を lint で禁じる形で強制する（今はレビューと `knip` だけ）。
+  2. #502: G10 の「機能やルートに SVG のパスを書かない」を、`app/web` の `<svg>` を lint で禁じる形で強制する（今はレビューと `knip` だけ）。
 
 ## Open Questions / 要検証
 
-- 太さを Regular にするか Bold にするか: Bold（2.25 px 相当）は今の手描きの 2 px に近いが、オンの状態に Bold を使えなくなる。置き換えの task で、両方のスクリーンショットを決定者に見せて決める。
+- 太さを Regular にするか Bold にするか: Bold（2.25 px 相当）は今の手描きの 2 px に近いが、オンの状態に Bold を使えなくなる。#501 で、両方のスクリーンショットを決定者に見せて決める。
