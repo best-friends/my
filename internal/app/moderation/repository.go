@@ -110,6 +110,8 @@ type Repository interface {
 	AuditRepository
 	// Notes on reports and their reopenings (report_notes.go).
 	ReportNoteRepository
+	// The follows that suspensions cut (severance.go).
+	SeveranceRepository
 	// The account management (account_admin.go).
 	AccountAdminRepository
 }

@@ -450,6 +450,21 @@ func (s *Service) AnyOnDomain(ctx context.Context, domain string, ids []string) 
 	return s.d.Repository.AnyAccountOnDomain(ctx, domain, ids)
 }
 
+// AccountsOnDomain returns inside tx, in ID order, the accounts among ids that are on domain or
+// one of its subdomains, for the follows that a domain suspension cuts (FR-717).
+func (s *Service) AccountsOnDomain(ctx context.Context, tx uow.Tx, domain string, ids []string) ([]string, error) {
+	if domain == account.LocalDomain || len(ids) == 0 {
+		return nil, nil
+	}
+	return s.d.Repository.AccountsOnDomain(ctx, tx, domain, ids)
+}
+
+// LocalAccountIDs returns up to limit local account IDs in order, after the ID after ("" for the
+// first page), the instance actor included.
+func (s *Service) LocalAccountIDs(ctx context.Context, after string, limit int) ([]string, error) {
+	return s.d.Repository.ListLocalAccountIDs(ctx, after, limit)
+}
+
 // IsLocal reports, inside tx, whether an account exists and is local. Projectors of other
 // modules call it in the transaction of the event they project.
 func (s *Service) IsLocal(ctx context.Context, tx uow.Tx, id string) (bool, error) {

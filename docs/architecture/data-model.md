@@ -518,9 +518,12 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `relationship_severances` | イベント | `id`, `domain_action_id`（NULL 可）, `action_id`（NULL 可。リモートのアカウントの凍結）, `account_id`（関係を失ったローカルのアカウント）, `followers_lost`（`int`）, `following_lost`（`int`）, `occurred_at` | インデックス `(account_id, id DESC)`。`domain_action_id` と `action_id` はどちらか一方だけが値を持つ（`CHECK`） |
+| `relationship_severances` | イベント | `id`, `domain_action_id`（NULL 可）, `action_id`（NULL 可。リモートのアカウントの凍結）, `account_id`（関係を失ったローカルのアカウント）, `followers_lost`（`int`）, `following_lost`（`int`）, `occurred_at` | インデックス `(account_id, id DESC)`。一意 `(domain_action_id, account_id)`, `(action_id, account_id)`。`domain_action_id` と `action_id` はどちらか一方だけが値を持つ（`CHECK`） |
 
-- ドメインの凍結とリモートのアカウントの凍結は、両方向のフォローを `follow_terminations`（`reason = moderation`）で切り、関係を失ったローカルのアカウントごとに 1 行を記録して通知します（FR-717、ADR-0036）。解除しても関係は戻しません。
+- ドメインの凍結とリモートのアカウントの凍結は、両方向のフォローを（承認待ちも含めて）`follow_terminations`（`reason = moderation`）で切り、承認済みのフォローを失ったローカルのアカウントごとに 1 行を記録して通知します（FR-717、ADR-0036）。`followers_lost` / `following_lost` は承認済みのフォローの数で、承認待ちだけを失ったアカウントには行を作りません。解除しても関係は戻しません。
+- リモートのアカウントの凍結は、凍結を始めた処分のトランザクションで切ります（相手は 1 アカウントなので、ローカルのアカウントの数で済む）。
+- ドメインの凍結は件数に上限がないので、処分のトランザクションで outbox に積んだジョブ `moderation.sever_domain` が、ローカルのアカウント 1 つごとに 1 トランザクションで、そのアカウントとドメイン・サブドメインのアカウントの間のフォローを切ります。処分がジョブの前に解除されても切ります。
+- 一意制約により、同じ処分を処理し直しても行と通知は増えません。リモートのアカウントがすでに凍結中なら 2 つ目の凍結は何も切りません（`account_suspension_changed` が出ないため）。
 
 #### 保全
 
@@ -1008,7 +1011,7 @@ flowchart LR
 
 - 新しい処分は、`kind` に値を足して対応表に 1 行書くだけで追加できます（テーブル変更なし）。
 - リモートアカウントへの処分は、制限だけを生む `limit` / `suspend` / `force_sensitive` を同じ表で扱います。ほかの種類（`login` や `post` の制限、本人への通知、投稿への処分、`ban`）はリモートには意味がないので受け付けません（`moderation.ErrUnsupportedAction`）。`notify_target` は常に偽です。
-- リモートのアカウントの `suspend` は、同じトランザクションで両方向のフォローを切ります（`relationship_severances`）。切断は、ローカルのアカウントと同じく凍結の始まりに発行される `moderation.account_suspension_changed`（凍結した処分の ID を持つ）を契機にします。
+- リモートのアカウントの `suspend` は、同じトランザクションで両方向のフォローを切ります（`relationship_severances`）。切断は、ローカルのアカウントと同じく凍結の始まりに発行される `moderation.account_suspension_changed`（凍結した処分の ID を持つ）と同じ時点で行います。
 - ローカルのアカウントの `suspend` / `ban` とその解除・期限切れ、`delete_statuses` が連合先に送るものは [ADR-0036](../adr/0036-moderation-federation-propagation.md) と [federation.md §11](federation.md#11-モデレーションとの連携) にあります。
 - ドメイン単位の処分の対応: `limit` → `public_discovery`, `unsolicited_reach`、`suspend` → `profile_view`, `federation`、`reject_media` → `media_fetch`、`reject_reports` → `report_intake`、`force_sensitive` → `media_sensitive`。
 

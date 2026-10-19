@@ -3324,6 +3324,34 @@ components:
           description: The report that an `admin_report` is about.
           allOf:
             - $ref: "#/components/schemas/Id"
+        relationship_severance:
+          $ref: "#/components/schemas/RelationshipSeverance"
+    RelationshipSeverance:
+      description: |
+        The follows that a `relationships_severed` tells of: the user lost them when the
+        moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+        account (`account_suspension`, the notification's `account` is the account). Both
+        directions end, follow requests too, and lifting the suspension does not restore them;
+        the counts are of the accepted follows.
+      type: object
+      required: [kind, followers_lost, following_lost]
+      properties:
+        kind:
+          type: string
+          enum:
+            - domain_suspension
+            - account_suspension
+        domain:
+          description: The suspended server of a `domain_suspension`; omitted otherwise.
+          type: string
+        followers_lost:
+          description: The accounts that followed the user and no longer do.
+          type: integer
+          minimum: 0
+        following_lost:
+          description: The accounts that the user followed and no longer does.
+          type: integer
+          minimum: 0
     NotificationMarker:
       description: How far the authenticated user has read the notifications.
       type: object
@@ -3366,7 +3394,9 @@ components:
         `report_resolved` also comes from the instance: its `report` is the user's report that
         the moderators resolved, without how they resolved it. It is sent once per report, even
         when the report is reopened and resolved again.
-        about. `moderation_notice` comes from the instance and has no `account`.
+        `relationships_severed` also comes from the instance: its `relationship_severance` tells
+        how many follows the user lost when the moderators suspended a server or a remote
+        account, whose `account` it carries for an account. It is sent once per suspension.
         The moderator notifications come from the instance too: `admin_report` (an account
         that had no open report was reported; `report_id` is the report) goes to the users
         with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
@@ -3384,6 +3414,7 @@ components:
         - report_resolved
         - admin_report
         - admin_sign_up
+        - relationships_severed
     # --- end notifications ---
     # --- statuses (#109): Status is shared with the other operations; MediaAttachment is in the media section ---
     CreateStatusRequest:

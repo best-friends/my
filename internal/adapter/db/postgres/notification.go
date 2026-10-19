@@ -32,7 +32,7 @@ func (r *NotificationRepository) InsertNotification(ctx context.Context, tx uow.
 		ID: n.ID, RecipientAccountID: n.RecipientAccountID, Type: string(n.Type),
 		SourceAccountID: toNullString(n.SourceAccountID), StatusID: toNullString(n.StatusID),
 		ModerationActionID: toNullString(n.ModerationActionID), ReportID: toNullString(n.ReportID),
-		SubjectUserID: toNullString(n.SubjectUserID), DedupeKey: n.DedupeKey, CreatedAt: n.CreatedAt,
+		SubjectUserID: toNullString(n.SubjectUserID), SeveranceID: toNullString(n.SeveranceID), DedupeKey: n.DedupeKey, CreatedAt: n.CreatedAt,
 	})
 	if err != nil {
 		return false, wrap(err, "insert notification")
@@ -155,7 +155,7 @@ func notificationFrom(row postgresgen.Notification) notification.Notification {
 		ID: row.ID, RecipientAccountID: row.RecipientAccountID, Type: notification.Type(row.Type),
 		SourceAccountID: fromNullString(row.SourceAccountID), StatusID: fromNullString(row.StatusID),
 		ModerationActionID: fromNullString(row.ModerationActionID), ReportID: fromNullString(row.ReportID),
-		SubjectUserID: fromNullString(row.SubjectUserID), DedupeKey: row.DedupeKey, CreatedAt: utc(row.CreatedAt),
+		SubjectUserID: fromNullString(row.SubjectUserID), SeveranceID: fromNullString(row.SeveranceID), DedupeKey: row.DedupeKey, CreatedAt: utc(row.CreatedAt),
 	}
 }
 

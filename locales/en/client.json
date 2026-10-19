@@ -1199,6 +1199,14 @@
     "defaultMessage": "Try again",
     "description": "Button that loads the notifications again after they failed to load."
   },
+  "notifications.severed.account": {
+    "defaultMessage": "The moderators suspended {name}. You lost {followers, plural, one {# follower} other {# followers}} and {following, plural, one {# account you followed} other {# accounts you followed}}.",
+    "description": "Notification sentence: the moderators of this server suspended a remote account, which ended the follows between it and the user in both directions; they are not restored when the suspension ends. {name} is the display name of the suspended account. {followers} is the number of the suspended accounts that followed the user, {following} the number of those that the user followed (either may be 0)."
+  },
+  "notifications.severed.domain": {
+    "defaultMessage": "The moderators suspended {domain}. You lost {followers, plural, one {# follower} other {# followers}} and {following, plural, one {# account you followed} other {# accounts you followed}} there.",
+    "description": "Notification sentence: the moderators of this server suspended another server, which ended the follows between its accounts and the user in both directions; they are not restored when the suspension ends. {domain} is the server's domain name. {followers} is the number of the suspended accounts that followed the user, {following} the number of those that the user followed (either may be 0)."
+  },
   "notifications.sign_in": {
     "defaultMessage": "Sign in",
     "description": "Link on the notifications page, when nobody is signed in, that opens the sign-in page."
@@ -1250,6 +1258,10 @@
   "notifications.type.poll_closed": {
     "defaultMessage": "A poll you took part in has ended",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
+  },
+  "notifications.type.relationships_severed": {
+    "defaultMessage": "A suspension by the moderators ended some of your follows",
+    "description": "Notification sentence when the details of the suspension are no longer available: the moderators of this server suspended a server or an account, which ended follows between it and the user."
   },
   "notifications.type.report_resolved": {
     "defaultMessage": "A report you filed has been resolved",

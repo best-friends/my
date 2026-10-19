@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/moderation"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 )
 
@@ -16,11 +18,18 @@ import (
 // and the policy of the accounts' restrictions (data-model §5.3). It needs the account module,
 // and comes before the identity module and everything that federates. It also registers the
 // job that deletes the accounts whose deletion is due, which bans schedule, and
-// the audit log projector.
+// the audit log projector. Suspensions cut follows through the graph module (FR-717), which is
+// built after it.
 func (a *App) setUpModeration(repo moderation.Repository) {
+	outbox := a.Outbox
+	if outbox == nil {
+		// The inline queue has no transactional enqueue.
+		outbox = queue.AfterCommit(a.Projectors, a.Jobs, a.Logger)
+	}
 	a.Moderation = moderation.NewService(moderation.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Accounts: a.Accounts, Clock: a.Clock, IDs: a.IDs,
 		Statuses: moderationStatuses{a}, Lifecycles: a.Accounts,
+		Follows: moderationFollows{a}, Directory: a.Accounts, Outbox: outbox,
 	})
 	a.ModerationPolicy = moderation.NewFederationPolicy(repo, a.Clock)
 	a.AccountPolicy = moderation.NewAccountPolicy(repo, a.Accounts, a.Clock)
@@ -51,6 +60,18 @@ func (m moderationStatuses) MarkSensitiveByModeration(ctx context.Context, tx uo
 
 func (m moderationStatuses) ClearSensitivityOf(ctx context.Context, tx uow.Tx, actionID string) error {
 	return m.a.Content.ClearSensitivityOf(ctx, tx, actionID)
+}
+
+// moderationFollows gives the moderation module the graph module, which is built after it
+// because it reads the moderation restrictions.
+type moderationFollows struct{ a *App }
+
+func (m moderationFollows) Counterparts(ctx context.Context, tx uow.Tx, accountID string) ([]string, error) {
+	return m.a.Graph.Counterparts(ctx, tx, accountID)
+}
+
+func (m moderationFollows) SeverByModeration(ctx context.Context, tx uow.Tx, accountID string, others []string, announce bool, now time.Time) (graph.Severed, error) {
+	return m.a.Graph.SeverByModeration(ctx, tx, accountID, others, announce, now)
 }
 
 // setUpLocalReports builds the filing of local users' reports, which checks the reported

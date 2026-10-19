@@ -648,17 +648,18 @@ func (e MediaAttachmentType) Valid() bool {
 
 // Defines values for NotificationType.
 const (
-	NotificationTypeAdminReport      NotificationType = "admin_report"
-	NotificationTypeAdminSignUp      NotificationType = "admin_sign_up"
-	NotificationTypeBoost            NotificationType = "boost"
-	NotificationTypeFavourite        NotificationType = "favourite"
-	NotificationTypeFollow           NotificationType = "follow"
-	NotificationTypeFollowAccepted   NotificationType = "follow_accepted"
-	NotificationTypeFollowRequest    NotificationType = "follow_request"
-	NotificationTypeMention          NotificationType = "mention"
-	NotificationTypeModerationNotice NotificationType = "moderation_notice"
-	NotificationTypePollClosed       NotificationType = "poll_closed"
-	NotificationTypeReportResolved   NotificationType = "report_resolved"
+	NotificationTypeAdminReport          NotificationType = "admin_report"
+	NotificationTypeAdminSignUp          NotificationType = "admin_sign_up"
+	NotificationTypeBoost                NotificationType = "boost"
+	NotificationTypeFavourite            NotificationType = "favourite"
+	NotificationTypeFollow               NotificationType = "follow"
+	NotificationTypeFollowAccepted       NotificationType = "follow_accepted"
+	NotificationTypeFollowRequest        NotificationType = "follow_request"
+	NotificationTypeMention              NotificationType = "mention"
+	NotificationTypeModerationNotice     NotificationType = "moderation_notice"
+	NotificationTypePollClosed           NotificationType = "poll_closed"
+	NotificationTypeRelationshipsSevered NotificationType = "relationships_severed"
+	NotificationTypeReportResolved       NotificationType = "report_resolved"
 )
 
 // Valid indicates whether the value is a known member of the NotificationType enum.
@@ -683,6 +684,8 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeModerationNotice:
 		return true
 	case NotificationTypePollClosed:
+		return true
+	case NotificationTypeRelationshipsSevered:
 		return true
 	case NotificationTypeReportResolved:
 		return true
@@ -745,6 +748,24 @@ func (e RegistrationState) Valid() bool {
 	case RegistrationStatePending:
 		return true
 	case RegistrationStateRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RelationshipSeveranceKind.
+const (
+	RelationshipSeveranceKindAccountSuspension RelationshipSeveranceKind = "account_suspension"
+	RelationshipSeveranceKindDomainSuspension  RelationshipSeveranceKind = "domain_suspension"
+)
+
+// Valid indicates whether the value is a known member of the RelationshipSeveranceKind enum.
+func (e RelationshipSeveranceKind) Valid() bool {
+	switch e {
+	case RelationshipSeveranceKindAccountSuspension:
+		return true
+	case RelationshipSeveranceKindDomainSuspension:
 		return true
 	default:
 		return false
@@ -2254,6 +2275,13 @@ type Notification struct {
 	// ModerationAction The action on the user's account that a `moderation_notice` tells of.
 	ModerationAction *ModerationAction `json:"moderation_action,omitempty"`
 
+	// RelationshipSeverance The follows that a `relationships_severed` tells of: the user lost them when the
+	// moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+	// account (`account_suspension`, the notification's `account` is the account). Both
+	// directions end, follow requests too, and lifting the suspension does not restore them;
+	// the counts are of the accepted follows.
+	RelationshipSeverance *RelationshipSeverance `json:"relationship_severance,omitempty"`
+
 	// Report The user's report that a `report_resolved` tells of.
 	Report *Report `json:"report,omitempty"`
 
@@ -2273,7 +2301,9 @@ type Notification struct {
 	// `report_resolved` also comes from the instance: its `report` is the user's report that
 	// the moderators resolved, without how they resolved it. It is sent once per report, even
 	// when the report is reopened and resolved again.
-	// about. `moderation_notice` comes from the instance and has no `account`.
+	// `relationships_severed` also comes from the instance: its `relationship_severance` tells
+	// how many follows the user lost when the moderators suspended a server or a remote
+	// account, whose `account` it carries for an account. It is sent once per suspension.
 	// The moderator notifications come from the instance too: `admin_report` (an account
 	// that had no open report was reported; `report_id` is the report) goes to the users
 	// with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
@@ -2317,7 +2347,9 @@ type NotificationPage struct {
 // `report_resolved` also comes from the instance: its `report` is the user's report that
 // the moderators resolved, without how they resolved it. It is sent once per report, even
 // when the report is reopened and resolved again.
-// about. `moderation_notice` comes from the instance and has no `account`.
+// `relationships_severed` also comes from the instance: its `relationship_severance` tells
+// how many follows the user lost when the moderators suspended a server or a remote
+// account, whose `account` it carries for an account. It is sent once per suspension.
 // The moderator notifications come from the instance too: `admin_report` (an account
 // that had no open report was reported; `report_id` is the report) goes to the users
 // with the `manage_reports` permission, and `admin_sign_up` (a registration awaits
@@ -2481,6 +2513,26 @@ type Relationship struct {
 	// ShowBoosts Whether the viewer's follow shows the account's boosts in the home timeline (true without a follow).
 	ShowBoosts bool `json:"show_boosts"`
 }
+
+// RelationshipSeverance The follows that a `relationships_severed` tells of: the user lost them when the
+// moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+// account (`account_suspension`, the notification's `account` is the account). Both
+// directions end, follow requests too, and lifting the suspension does not restore them;
+// the counts are of the accepted follows.
+type RelationshipSeverance struct {
+	// Domain The suspended server of a `domain_suspension`; omitted otherwise.
+	Domain *string `json:"domain,omitempty"`
+
+	// FollowersLost The accounts that followed the user and no longer do.
+	FollowersLost int `json:"followers_lost"`
+
+	// FollowingLost The accounts that the user followed and no longer does.
+	FollowingLost int                       `json:"following_lost"`
+	Kind          RelationshipSeveranceKind `json:"kind"`
+}
+
+// RelationshipSeveranceKind defines model for RelationshipSeverance.Kind.
+type RelationshipSeveranceKind string
 
 // Report A report that the user filed. It never names the reporter, and tells only whether the
 // moderators resolved it, never how.

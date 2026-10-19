@@ -183,6 +183,19 @@ func (r *GraphRepository) Edge(ctx context.Context, tx uow.Tx, followerAccountID
 	return findEdge(ctx, q, followerAccountID, followeeAccountID)
 }
 
+// ListEdgesOf implements graph.Repository.
+func (r *GraphRepository) ListEdgesOf(ctx context.Context, tx uow.Tx, accountID string) ([]graph.Edge, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListFollowEdgesOf(ctx, accountID)
+	if err != nil {
+		return nil, wrap(err, "list follow edges of "+accountID)
+	}
+	return edgesFrom(rows), nil
+}
+
 // FindEdge implements graph.Repository.
 func (r *GraphRepository) FindEdge(ctx context.Context, followerAccountID, followeeAccountID string) (graph.Edge, error) {
 	return findEdge(ctx, r.db.reader(), followerAccountID, followeeAccountID)

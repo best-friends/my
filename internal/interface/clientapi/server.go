@@ -114,6 +114,9 @@ type Options struct {
 	// FiledReports reads the reports that the viewer filed (listOwnReports) and that their
 	// report_resolved notifications tell of; nil leaves the report out of the notifications.
 	FiledReports FiledReports
+	// Severances reads the follows that the viewer's relationships_severed notifications tell
+	// of; nil leaves them out of the notifications.
+	Severances Severances
 	// ReportCounts and RegistrationCounts count what awaits the moderators (admin_counts.go);
 	// nil leaves the count out.
 	ReportCounts       ReportCounts
