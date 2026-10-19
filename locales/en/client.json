@@ -1267,13 +1267,13 @@
     "defaultMessage": "{count, plural, =0 {None} one {# post} other {# posts}}",
     "description": "Number of posts a report points at."
   },
-  "admin.report.posts.loading": {
-    "defaultMessage": "Loading the post",
-    "description": "While a reported post loads."
+  "admin.report.posts.deleted": {
+    "defaultMessage": "Deleted {date}. Kept for this report.",
+    "description": "Above a reported post that was deleted, which the report keeps for the moderators; date is when it was deleted, formatted."
   },
   "admin.report.posts.missing": {
-    "defaultMessage": "This post cannot be shown: it was deleted, or its visibility does not include you.",
-    "description": "A reported post that the moderator cannot load."
+    "defaultMessage": "The server no longer has this post.",
+    "description": "A reported post that the server no longer has (it was deleted and erased)."
   },
   "admin.report.posts.none": {
     "defaultMessage": "The report points at no posts.",

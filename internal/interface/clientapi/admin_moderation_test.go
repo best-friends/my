@@ -12,6 +12,7 @@ import (
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/identity"
@@ -28,6 +29,8 @@ type fakeModeration struct {
 	reports []moderation.ReportRecord
 	issued  []appmoderation.DomainActionInput
 	notes   []moderation.ReportNote
+	// reviewed are the statuses that ReportStatuses presents, by report.
+	reviewed map[string][]appcontent.ReviewedStatus
 }
 
 func (f *fakeModeration) id() string {

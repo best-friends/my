@@ -32,6 +32,7 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 		Statuses: moderationStatuses{a}, Lifecycles: a.Accounts, AppealWindow: appealWindow{a},
 		Follows: moderationFollows{a}, Directory: a.Accounts, Outbox: outbox,
 		Emails: moderationEmails{a}, CanonicalDomain: federation.CanonicalHost,
+		Evidence: moderationEvidence{a},
 	})
 	a.ModerationPolicy = moderation.NewFederationPolicy(repo, a.Clock)
 	a.AccountPolicy = moderation.NewAccountPolicy(repo, a.Accounts, a.Clock)
@@ -74,6 +75,14 @@ func (m moderationStatuses) MarkSensitiveByModeration(ctx context.Context, tx uo
 
 func (m moderationStatuses) ClearSensitivityOf(ctx context.Context, tx uow.Tx, actionID string) error {
 	return m.a.Content.ClearSensitivityOf(ctx, tx, actionID)
+}
+
+// moderationEvidence gives the moderation module the status reader, which is built after it,
+// to present the statuses of a report to the moderators.
+type moderationEvidence struct{ a *App }
+
+func (m moderationEvidence) Review(ctx context.Context, statusID string) (content.ReviewedStatus, error) {
+	return m.a.Statuses.Review(ctx, statusID)
 }
 
 // moderationFollows gives the moderation module the graph module, which is built after it
