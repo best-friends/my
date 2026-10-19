@@ -7,6 +7,7 @@ import { createHash, randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { axeTags, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
+import { ownsServer, runMy } from "./server-cli.ts";
 import { admin, serverURL, thirdPartyClient } from "./server-origin.ts";
 
 test.use({ baseURL: serverURL });
@@ -169,6 +170,44 @@ test.describe("without JavaScript", () => {
       await expectNoAxeViolationsInBothThemes(status, makeAxeBuilder);
       await expectNoHorizontalScroll(status);
     });
+  });
+});
+
+test.describe("status page of a suspended account", () => {
+  test.use({ javaScriptEnabled: false });
+  test.skip(!ownsServer, "the test suspends a user with bin/my, which needs the database of the server e2e/server.ts starts");
+
+  test("appeals the suspension without JavaScript", async ({ browser, context, page }) => {
+    // A user of its own per project, suspended by the CLI as a moderator would (docs/operations/moderation.md).
+    const username = `e2e_appeal_${randomBytes(4).toString("hex")}`;
+    const user = { email: `${username}@example.com`, password: `e2e-password-${username}` };
+    runMy(["admin", "create", "-username", username, "-email", user.email], `${user.password}\n`);
+    const issued = runMy(["admin", "account", "action", "issue", "-kind", "suspend", "-category", "spam", `@${username}`]);
+    const actionID = /\(action (\S+),/.exec(issued)?.[1] ?? "";
+    expect(actionID).not.toBe("");
+
+    await page.goto("/auth/sign_in");
+    await emailField(page).fill(user.email);
+    await passwordField(page, "current-password").fill(user.password);
+    await submitButton(page).click();
+    await expect(page).toHaveURL(/\/auth\/sign_in$/);
+    await expectPageBasics(page);
+    const appeal = page.locator(`[id="appeal-${actionID}"]`);
+    await expect(appeal).toHaveAccessibleName(/\S/);
+    await expect(appeal).toHaveAccessibleDescription(/\S/);
+    await withJavaScript(browser, context, page, async (status, makeAxeBuilder) => {
+      await expect(status.locator('form[action="/auth/appeal"]')).toBeVisible();
+      await expectNoAxeViolationsInBothThemes(status, makeAxeBuilder);
+      await expectNoHorizontalScroll(status);
+    });
+
+    await appeal.fill("The links were not spam.");
+    await page.locator('form[action="/auth/appeal"] button[type="submit"]').click();
+    await expect(page.getByRole("status")).toBeVisible();
+    await expect(page.locator('form[action="/auth/appeal"]')).toHaveCount(0);
+    await expect(page.getByRole("main")).toContainText("The links were not spam.");
+    expect(runMy(["admin", "appeal", "list", "-state", "pending"])).toContain(actionID);
+    await expectNoHorizontalScroll(page);
   });
 });
 

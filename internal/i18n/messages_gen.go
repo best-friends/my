@@ -508,6 +508,62 @@ func (l *Localizer) ServerAuthStatusActionUntilLifted() string {
 	return l.format("server:auth.status.action_until_lifted", nil)
 }
 
+// ServerAuthStatusAppealAnswer formats "server:auth.status.appeal_answer". Label before the moderators' explanation of their decision on the user's appeal, on the status page of a signed-in user whose account is restricted.
+//
+//	en: The moderators' answer:
+func (l *Localizer) ServerAuthStatusAppealAnswer() string {
+	return l.format("server:auth.status.appeal_answer", nil)
+}
+
+// ServerAuthStatusAppealHint formats "server:auth.status.appeal_hint". Hint under the appeal field of a moderation action on the status page. {days} is the time left to appeal, rounded up to whole days; {max} is the longest allowed appeal in characters.
+//
+//	en: {days, plural, one {You can appeal once, within # day. Up to {max, number} characters.} other {You can appeal once, within # days. Up to {max, number} characters.}}
+func (l *Localizer) ServerAuthStatusAppealHint(days int, max float64) string {
+	return l.format("server:auth.status.appeal_hint", map[string]any{"days": days, "max": max})
+}
+
+// ServerAuthStatusAppealLabel formats "server:auth.status.appeal_label". Label of the field in which a user whose account is restricted writes their appeal of a moderation action (why a moderator should reconsider it).
+//
+//	en: Appeal this action
+func (l *Localizer) ServerAuthStatusAppealLabel() string {
+	return l.format("server:auth.status.appeal_label", nil)
+}
+
+// ServerAuthStatusAppealNotSent formats "server:auth.status.appeal_not_sent". Alert on the status page when the appeal form was sent with an empty or too long appeal; the field's own error follows below.
+//
+//	en: The appeal was not sent. Check the field marked below.
+func (l *Localizer) ServerAuthStatusAppealNotSent() string {
+	return l.format("server:auth.status.appeal_not_sent", nil)
+}
+
+// ServerAuthStatusAppealSent formats "server:auth.status.appeal_sent". Notice on the status page after the user appealed a moderation action on their account.
+//
+//	en: Your appeal was sent. A moderator will review it.
+func (l *Localizer) ServerAuthStatusAppealSent() string {
+	return l.format("server:auth.status.appeal_sent", nil)
+}
+
+// ServerAuthStatusAppealState formats "server:auth.status.appeal_state". Where the user's appeal of a moderation action stands, on the status page. {state} is pending, upheld (the action stays), or overturned (the action is lifted).
+//
+//	en: {state, select, pending {Your appeal is waiting for a moderator's review.} upheld {A moderator reviewed your appeal and kept the action.} overturned {A moderator reviewed your appeal and lifted the action.} other {You appealed this action.}}
+func (l *Localizer) ServerAuthStatusAppealState(state string) string {
+	return l.format("server:auth.status.appeal_state", map[string]any{"state": state})
+}
+
+// ServerAuthStatusAppealSubmit formats "server:auth.status.appeal_submit". Button that sends the user's appeal of a moderation action on their account.
+//
+//	en: Send the appeal
+func (l *Localizer) ServerAuthStatusAppealSubmit() string {
+	return l.format("server:auth.status.appeal_submit", nil)
+}
+
+// ServerAuthStatusAppealTextInvalid formats "server:auth.status.appeal_text_invalid". Error under the appeal field when it is empty or too long. {max} is the longest allowed appeal in characters.
+//
+//	en: Write your appeal in up to {max, number} characters.
+func (l *Localizer) ServerAuthStatusAppealTextInvalid(max float64) string {
+	return l.format("server:auth.status.appeal_text_invalid", map[string]any{"max": max})
+}
+
 // ServerAuthStatusPending formats "server:auth.status.pending". Explains that a moderator has not yet approved the registration and that the app cannot be used until then.
 //
 //	en: Your registration is waiting for a moderator's approval. You can sign in, but you can use the app only after it is approved.

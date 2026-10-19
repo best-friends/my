@@ -1712,6 +1712,22 @@ export interface MessageArgs {
   "server:auth.status.action_reason": { category: string };
   /** Lasts until a moderator lifts it */
   "server:auth.status.action_until_lifted": {};
+  /** The moderators' answer: */
+  "server:auth.status.appeal_answer": {};
+  /** {days, plural, one {You can appeal once, within # day. Up to {max, number} characters.} other {You can appeal once, within # days. Up to {max, number} characters.}} */
+  "server:auth.status.appeal_hint": { days: number; max: number };
+  /** Appeal this action */
+  "server:auth.status.appeal_label": {};
+  /** The appeal was not sent. Check the field marked below. */
+  "server:auth.status.appeal_not_sent": {};
+  /** Your appeal was sent. A moderator will review it. */
+  "server:auth.status.appeal_sent": {};
+  /** {state, select, pending {Your appeal is waiting for a moderator's review.} upheld {A moderator reviewed your appeal and kept the action.} overturned {A moderator reviewed your appeal and lifted the action.} other {You appealed this action.}} */
+  "server:auth.status.appeal_state": { state: "overturned" | "pending" | "upheld" | (string & {}) };
+  /** Send the appeal */
+  "server:auth.status.appeal_submit": {};
+  /** Write your appeal in up to {max, number} characters. */
+  "server:auth.status.appeal_text_invalid": { max: number };
   /** Your registration is waiting for a moderator's approval. You can sign in, but you can use the app only after it is approved. */
   "server:auth.status.pending": {};
   /** Your registration was not approved, so this account cannot be used. */

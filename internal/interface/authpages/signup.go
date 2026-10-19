@@ -214,12 +214,18 @@ type statusView struct {
 // renderStatus shows the status page of userID, in the user's saved locale. notice and alert
 // are worded in l, the page's localizer, when given.
 func (h *Handler) renderStatus(w http.ResponseWriter, r *http.Request, status int, userID string, access appidentity.Access, notice, alert func(l *i18n.Localizer) string) {
+	h.renderStatusPage(w, r, status, userID, access, notice, alert, nil)
+}
+
+// renderStatusPage is renderStatus with an appeal to show again in its form (moderation.go);
+// nil for none.
+func (h *Handler) renderStatusPage(w http.ResponseWriter, r *http.Request, status int, userID string, access appidentity.Access, notice, alert func(l *i18n.Localizer) string, draft *appealDraft) {
 	l := h.userLocalizer(r, userID)
 	title := (*i18n.Localizer).ServerAuthStatusTitle
 	if access.LoginRestricted {
 		title = (*i18n.Localizer).ServerAuthStatusRestrictedTitle
 	}
-	actions, err := h.restrictionActions(r.Context(), l, access)
+	actions, err := h.restrictionActions(r.Context(), l, access, draft)
 	if err != nil {
 		h.internalError(w, r, err)
 		return
