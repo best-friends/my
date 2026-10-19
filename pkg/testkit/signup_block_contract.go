@@ -5,6 +5,7 @@ package testkit
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -26,7 +27,9 @@ import (
 // address in its transaction, the blocks list newest first with their lifts and filters, every
 // addition and lift is audited once, and the purge of the moderation records erases a block with
 // its lift moderation.SignupBlockRetention after it ends (the earlier of its lift and expiry),
-// keeps one in effect and one made by the ban of a held account, and is safe to repeat.
+// keeps one in effect and one made by the ban of a held account, and is safe to repeat; an import
+// of a list adds and audits a block per new value across transactions and skips the invalid,
+// repeated, and already blocked ones.
 func SignupBlockContract(t *testing.T, newHarness ModerationFactory) {
 	t.Helper()
 	cases := []struct {
@@ -39,6 +42,7 @@ func SignupBlockContract(t *testing.T, newHarness ModerationFactory) {
 		{"BanBlocksTheEmailAddress", signupBlocksFromBan},
 		{"ListsWithFiltersAndPages", signupBlocksList},
 		{"PurgesAfterTheyEnd", signupBlocksPurge},
+		{"ImportsListsAndSkipsWhatItCannotAdd", signupBlocksImport},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newSignupBlockEnv(t, newHarness)) })
@@ -406,5 +410,99 @@ func signupBlocksPurge(t *testing.T, e *signupBlockEnv) {
 	})
 	if !errors.Is(err, errUndo) {
 		t.Fatal(err)
+	}
+}
+
+func signupBlocksImport(t *testing.T, e *signupBlockEnv) {
+	ctx := t.Context()
+	domain := moderation.SignupBlockEmailDomain
+	e.add(t, appmoderation.SignupBlockInput{Kind: domain, Value: "old.example"})
+	e.add(t, appmoderation.SignupBlockInput{Kind: domain, Value: "weak.example", Severity: moderation.SignupRequireApproval})
+	lifted := e.add(t, appmoderation.SignupBlockInput{Kind: domain, Value: "lifted.example"})
+	if err := e.svc.LiftSignupBlock(ctx, lifted.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	e.clock.Advance(time.Second)
+
+	// More values than one transaction writes, so the import spans several.
+	var text strings.Builder
+	text.WriteString("# disposable domains\nnew.example\n@Old.Example\nweak.example\nlifted.example\n192.0.2.1\nNEW.example\n\n")
+	const bulk = 600
+	for i := range bulk {
+		fmt.Fprintf(&text, "d%03d.example\n", i)
+	}
+	in := appmoderation.SignupBlockImportInput{
+		Kind: domain, Text: text.String(), Severity: moderation.SignupReject, Comment: " disposable ", CreatedByUserID: "mod-1",
+	}
+	res, err := e.svc.ImportSignupBlocks(ctx, in)
+	if err != nil {
+		t.Fatalf("ImportSignupBlocks = %v", err)
+	}
+	wantSkipped := []appmoderation.SignupBlockImportSkipped{
+		{Line: 3, Value: "@Old.Example", Reason: moderation.SignupBlockSkipAlreadyBlocked},
+		{Line: 6, Value: "192.0.2.1", Reason: moderation.SignupBlockSkipInvalid},
+		{Line: 7, Value: "NEW.example", Reason: moderation.SignupBlockSkipDuplicate},
+	}
+	// new, weak (a stronger severity than the block in effect), lifted (no block in effect), and the bulk.
+	if res.Added != 3+bulk || !reflect.DeepEqual(res.Skipped, wantSkipped) {
+		t.Errorf("ImportSignupBlocks = %d added, skipped %+v; want %d, %+v", res.Added, res.Skipped, 3+bulk, wantSkipped)
+	}
+	e.screen(t, "a@new.example", "", moderation.SignupReject)
+	e.screen(t, "a@mx.weak.example", "", moderation.SignupReject)
+	e.screen(t, "a@lifted.example", "", moderation.SignupReject)
+	e.screen(t, "a@d599.example", "", moderation.SignupReject)
+	vs, err := e.svc.SignupBlocks(ctx, appmoderation.SignupBlockFilter{Kind: domain, Active: true}, 1)
+	if err != nil || len(vs) != 1 || vs[0].Block.Comment != "disposable" || vs[0].Block.CreatedByUserID != "mod-1" || vs[0].Block.ExpiresAt != nil {
+		t.Errorf("newest imported block = %+v, %v; want the trimmed comment, the moderator, no expiry", vs, err)
+	}
+	// Each block added is audited once.
+	entries, err := e.svc.AuditLog(ctx, appmoderation.AuditQuery{ActorUserID: "mod-1"}, 2*bulk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != res.Added {
+		t.Errorf("audit log of the import has %d entries, want %d", len(entries), res.Added)
+	}
+	for _, en := range entries {
+		if en.Action != moderation.AuditSignupBlockAdded || en.TargetKind != moderation.AuditTargetSignupBlock {
+			t.Errorf("audit entry of the import = %+v, want signup_block_added", en)
+			break
+		}
+	}
+
+	// Importing the list again adds nothing: every valid value is blocked now.
+	again, err := e.svc.ImportSignupBlocks(ctx, in)
+	if err != nil || again.Added != 0 || len(again.Skipped) != len(wantSkipped)+3+bulk {
+		t.Errorf("ImportSignupBlocks again = %d added, %d skipped, %v; want 0, %d", again.Added, len(again.Skipped), err, len(wantSkipped)+3+bulk)
+	} else if s := again.Skipped[0]; s != (appmoderation.SignupBlockImportSkipped{Line: 2, Value: "new.example", Reason: moderation.SignupBlockSkipAlreadyBlocked}) {
+		t.Errorf("first skipped line of the second import = %+v, want new.example already blocked", s)
+	}
+	// A weaker severity is covered by the stronger block in effect.
+	weaker, err := e.svc.ImportSignupBlocks(ctx, appmoderation.SignupBlockImportInput{Kind: domain, Text: "new.example", Severity: moderation.SignupRequireApproval})
+	if err != nil || weaker.Added != 0 || len(weaker.Skipped) != 1 || weaker.Skipped[0].Reason != moderation.SignupBlockSkipAlreadyBlocked {
+		t.Errorf("ImportSignupBlocks(require_approval) = %+v, %v; want new.example already blocked", weaker, err)
+	}
+
+	// The settings of the import are checked before any value, and the list has a size limit.
+	for _, bad := range []appmoderation.SignupBlockImportInput{
+		{Kind: "email", Text: "a.example", Severity: moderation.SignupReject},
+		{Kind: domain, Text: "a.example", Severity: "maybe"},
+		{Kind: domain, Text: "a.example", Severity: moderation.SignupReject, Duration: -time.Hour},
+		{Kind: domain, Text: "a.example", Severity: moderation.SignupReject, Comment: strings.Repeat("x", moderation.MaxSignupBlockComment+1)},
+	} {
+		if _, err := e.svc.ImportSignupBlocks(ctx, bad); !errors.Is(err, appmoderation.ErrInvalidSignupBlock) {
+			t.Errorf("ImportSignupBlocks(%s, %q, %v) = %v, want ErrInvalidSignupBlock", bad.Kind, bad.Severity, bad.Duration, err)
+		}
+	}
+	tooMany := strings.Repeat("a.example\n", moderation.MaxSignupBlockImport+1)
+	if _, err := e.svc.ImportSignupBlocks(ctx, appmoderation.SignupBlockImportInput{Kind: domain, Text: tooMany, Severity: moderation.SignupReject}); !errors.Is(err, appmoderation.ErrTooManySignupBlocks) {
+		t.Errorf("ImportSignupBlocks(too many) = %v, want ErrTooManySignupBlocks", err)
+	}
+	// Other kinds take their own forms of values.
+	ips, err := e.svc.ImportSignupBlocks(ctx, appmoderation.SignupBlockImportInput{
+		Kind: moderation.SignupBlockIPRange, Text: "198.51.100.7\n198.51.100.0/24\nspam.example", Severity: moderation.SignupReject,
+	})
+	if err != nil || ips.Added != 2 || len(ips.Skipped) != 1 || ips.Skipped[0].Line != 3 || ips.Skipped[0].Reason != moderation.SignupBlockSkipInvalid {
+		t.Errorf("ImportSignupBlocks(ip_range) = %+v, %v; want 2 added and line 3 invalid", ips, err)
 	}
 }

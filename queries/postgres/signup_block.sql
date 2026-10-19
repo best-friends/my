@@ -52,3 +52,15 @@ WHERE NOT EXISTS (SELECT 1 FROM signup_block_lifts l WHERE l.block_id = b.id)
     OR (b.kind = 'email_hash' AND b.value = sqlc.arg(email_hash)::text)
     OR b.kind = 'ip_range')
 ORDER BY b.id;
+
+-- ListSignupBlocksInEffectOfValues returns the blocks of a kind in effect at now whose value is
+-- one of vals, for an import to skip the values already blocked.
+-- name: ListSignupBlocksInEffectOfValues :many
+SELECT b.id, b.kind, b.value, b.severity, b.comment, b.moderation_action_id, b.created_by_user_id,
+  b.expires_at, b.created_at
+FROM signup_blocks b
+WHERE b.kind = sqlc.arg(kind)::text
+  AND b.value = ANY(sqlc.arg(vals)::text[])
+  AND NOT EXISTS (SELECT 1 FROM signup_block_lifts l WHERE l.block_id = b.id)
+  AND (b.expires_at IS NULL OR b.expires_at > sqlc.arg(now)::timestamptz)
+ORDER BY b.id;
