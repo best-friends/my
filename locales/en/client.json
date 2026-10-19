@@ -299,6 +299,10 @@
     "defaultMessage": "Report unassigned",
     "description": "Heading of an audit log entry: a report was left without an assigned moderator."
   },
+  "admin.audit_log.action.revealed_private_data": {
+    "defaultMessage": "Private data shown",
+    "description": "Heading of an audit log entry: a moderator was shown the email address and the IP addresses of a local account."
+  },
   "admin.audit_log.action.role_granted": {
     "defaultMessage": "Role granted",
     "description": "Heading of an audit log entry: an administrator granted a role to a user."

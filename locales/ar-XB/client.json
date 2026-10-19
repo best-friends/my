@@ -299,6 +299,10 @@
     "defaultMessage": "‮ᴚǝdoɹʇ nuɐssıƃuǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.revealed_private_data": {
+    "defaultMessage": "‮Ԁɹıʌɐʇǝ pɐʇɐ sɥoʍu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.role_granted": {
     "defaultMessage": "‮ᴚoʅǝ ƃɹɐuʇǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."

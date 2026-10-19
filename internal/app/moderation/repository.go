@@ -114,6 +114,8 @@ type Repository interface {
 	ReportNoteRepository
 	// The follows that suspensions cut (severance.go).
 	SeveranceRepository
+	// The account management (account_admin.go).
+	AccountAdminRepository
 }
 
 // ReportQuery selects the reports of a list.

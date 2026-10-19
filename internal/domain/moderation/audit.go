@@ -121,6 +121,9 @@ const (
 	// AuditAccountDeletionCancelled: an overturned appeal of a ban cancelled the scheduled
 	// deletion of the account (account_lifecycle_events, deletion_cancelled).
 	AuditAccountDeletionCancelled AuditAction = "account_deletion_cancelled"
+	// AuditRevealedPrivateData: a moderator was shown the email address and the IP addresses of
+	// a local account (FR-714); the operation has no row of its own.
+	AuditRevealedPrivateData AuditAction = "revealed_private_data"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -150,6 +153,7 @@ var auditActions = []struct {
 	{AuditAppealUpheld, AuditTargetAppeal},
 	{AuditAppealOverturned, AuditTargetAppeal},
 	{AuditAccountDeletionCancelled, AuditTargetAccount},
+	{AuditRevealedPrivateData, AuditTargetAccount},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.
