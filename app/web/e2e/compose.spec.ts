@@ -345,6 +345,36 @@ test.describe("the floating new-post button (web-client.md G4)", () => {
     expect(225 - Math.min(fabBox.y, navBox.y)).toBeLessThanOrEqual(225 / 2);
   });
 
+  test("the tab bar and the offline bar take at most half of a 320 × 225 viewport (400% zoom) while offline", async ({
+    page,
+    context,
+    makeAxeBuilder,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 225 });
+    await page.goto("/home");
+    const fab = page.getByRole("button", { name: message("compose.open") });
+    await expect(page.getByRole("article").last()).toBeVisible();
+    await context.setOffline(true);
+    const bar = page.getByRole("status").filter({ hasText: message("shell.offline") });
+    await expect(bar).toBeVisible();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    // Into the page, as the user reads it: what stays in place there covers the posts.
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight / 2);
+    });
+    const viewport = 225;
+    /** How much of the viewport's height the element takes. */
+    const shown = (box: Box) => Math.max(0, Math.min(box.y + box.height, viewport) - Math.max(box.y, 0));
+    const fabBox = await boxOf(fab);
+    const navBox = await boxOf(page.getByRole("navigation", { name: message("shell.nav.label") }));
+    const barBox = await boxOf(bar);
+    const bottom = viewport - Math.min(fabBox.y, navBox.y);
+    expect(shown(barBox) + bottom).toBeLessThanOrEqual(viewport / 2);
+    await context.setOffline(false);
+  });
+
   test("gets focus back when the sheet it opened from the keyboard closes", async ({ page }) => {
     await page.goto("/home");
     const fab = page.getByRole("button", { name: message("compose.open") });
