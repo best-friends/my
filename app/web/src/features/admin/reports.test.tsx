@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
-import { accountFixture, otherAccountFixture, remoteAccountFixture, type Schemas, viewerFixture } from "../../test/fixtures";
+import { accountFixture, otherAccountFixture, remoteAccountFixture, type Schemas, statusFixture, viewerFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -182,7 +182,11 @@ describe("the report queue", () => {
 describe("a report's page", () => {
   test("shows the report, its posts, its target with the target's history, the assignee and the notes on one page", async () => {
     const report = reportFixture({
-      status_ids: ["0192f0c4-7a8e-7000-8000-0000000000b1", "0192f0c4-7a8e-7000-8000-0000000000b2"],
+      status_ids: ["0192f0c4-7a8e-7000-8000-0000000000b1", "0192f0c4-7a8e-7000-8000-0000000000b2", "0192f0c4-7a8e-7000-8000-0000000000b3"],
+      statuses: [
+        { status: { ...statusFixture("0192f0c4-7a8e-7000-8000-0000000000b1"), visibility: "direct" } },
+        { status: statusFixture("0192f0c4-7a8e-7000-8000-0000000000b2"), deleted_at: "2026-10-16T11:00:00Z" },
+      ],
       category: "violation",
       rule_ids: ["0192f0c4-7a8e-7000-8000-0000000f0001", "0192f0c4-7a8e-7000-8000-0000000f0009"],
       forwarded: true,
@@ -204,7 +208,6 @@ describe("a report's page", () => {
           rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000f0001", text: "No spam", lang: "en" }],
         }),
       ),
-      http.get(`${apiBase}/statuses/0192f0c4-7a8e-7000-8000-0000000000b2`, () => problem(404, "about:blank", "Not Found")),
       http.get(`${apiBase}/admin/accounts/:id/actions`, () =>
         HttpResponse.json({
           items: [
@@ -235,11 +238,13 @@ describe("a report's page", () => {
     expect(await within(summary).findByText("No spam")).toHaveAttribute("lang", "en");
     expect(within(summary).getByText("A rule no longer in effect")).toBeInTheDocument();
 
-    // The posts: one shown without the actions on it, one the moderator cannot see.
+    // The posts, whatever their visibility, without the actions on them: a direct one, one its author deleted, and
+    // one the server no longer has.
     const posts = region("Reported posts");
-    expect(await within(posts).findByRole("article")).toBeInTheDocument();
+    expect(within(posts).getAllByRole("article")).toHaveLength(2);
     expect(within(posts).queryByRole("button", { name: /Favourite|Boost|Reply/ })).not.toBeInTheDocument();
-    expect(await within(posts).findByText(/This post cannot be shown/)).toBeInTheDocument();
+    expect(within(posts).getByText(/^Deleted .+\. Kept for this report\.$/)).toBeInTheDocument();
+    expect(within(posts).getByText("The server no longer has this post.")).toBeInTheDocument();
 
     const target = region("Reported account");
     expect(within(target).getByText("@bob")).toBeInTheDocument();
@@ -386,6 +391,22 @@ describe("a report's page", () => {
     expect(api.actions.map(({ body }) => body)).toEqual([
       { kind: "delete_statuses", reason_category: "spam", report_id: report.id, notify_target: true, status_ids: ["0192f0c4-7a8e-7000-8000-0000000000b2"] },
     ]);
+  });
+
+  test("a deleted post is shown but not offered to an action on posts", async () => {
+    const report = reportFixture({
+      status_ids: ["0192f0c4-7a8e-7000-8000-0000000000b1", "0192f0c4-7a8e-7000-8000-0000000000b2"],
+      statuses: [
+        { status: statusFixture("0192f0c4-7a8e-7000-8000-0000000000b1") },
+        { status: statusFixture("0192f0c4-7a8e-7000-8000-0000000000b2"), deleted_at: "2026-10-16T11:00:00Z" },
+      ],
+    });
+    reportsServer([report]);
+    const { user } = await renderApp({ path: `/admin/reports/${report.id}` });
+
+    expect(within(await screen.findByRole("region", { name: "Reported posts" })).getAllByRole("article")).toHaveLength(2);
+    await user.click(await screen.findByRole("radio", { name: "Delete posts" }));
+    expect(within(screen.getByRole("group", { name: "Posts" })).getAllByRole("checkbox")).toHaveLength(1);
   });
 
   test("an action that fails in its confirmation says why there, which stays open", async () => {
