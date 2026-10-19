@@ -146,8 +146,10 @@ go-build: ## Build all packages statically (CGO_ENABLED=0)
 go-licenses: ## Fail on dependency licenses incompatible with AGPL-3.0
 	$(GO_TOOL) go-licenses check --allowed_licenses=$(GO_ALLOWED_LICENSES) ./...
 
+# govulncheck scans the code that ships, as it skips _test.go files. pkg/testkit/pgtest is test support that only test
+# binaries link (ADR-0041); scanning it would pull in pgmem, whose generated code needs more than 16 GB to analyze.
 go-vuln: ## Scan for known vulnerabilities with govulncheck (needs network)
-	$(GO_TOOL) govulncheck ./...
+	$(GO_TOOL) govulncheck $$(go list ./... | grep -v '/pkg/testkit/pgtest$$')
 
 # --- Database schema (ADR-0023) ---------------------------------------------------------------
 # Atlas Community Edition, pinned and checksum-verified by scripts/install-atlas.sh.
