@@ -44,7 +44,9 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 
 1. Only take issues labeled **`agent:ready`** with no assignee. Never take `status:needs-decision`.
 2. Branch `<type>/<issue>-<slug>`; never push to `main`.
-3. Run `make check` before every commit; it must pass.
+3. Before every commit, run the checks of the contexts you touched (`make go-check`, `make web-check`, ...) or
+   `make check-changed`; the CI `check` gate runs every affected context and must pass. Run the full `make check`
+   when the change touches shared configuration.
 4. Open a PR using the template, with `Closes #N` and the acceptance criteria checked.
 5. If you need a decision that no Accepted ADR covers: small → state the assumption in the PR; large → draft a *Proposed* ADR
    (`make adr-new TITLE=... SLUG=...`), comment on the issue, add `agent:blocked`, and stop.
@@ -104,7 +106,9 @@ These come from Accepted ADRs and are binding.
 
 | Command | Purpose |
 | --- | --- |
-| `make check` | Every offline check CI runs: docs lint, ADR index check, `make go-check`, `make i18n-check`, the Dockerfile image version check (Go, Node.js, Bun), `make api-check` and `make web-check` |
+| `make check` [`CHECKS=...`] [`CHECK_JOBS=N`] | Every offline check CI runs, one target per context, the contexts in parallel (each context's steps serially; output grouped per context, then a summary): `docs-check`, `go-check`, `i18n-check`, `api-check`, `ui-check`, `web-check`, `docker-check` |
+| `make check-changed` [`BASE=origin/main`] | `make check` of only the contexts changed since the merge base with `BASE` (working tree and untracked files included) and of their dependents (`scripts/changed-contexts.sh`); shared configuration (`Makefile`, `.tool-versions`, workflows, lockfiles, `api/`, `locales/`, `tools/i18n/`) or an unknown path selects every context. CI skips the jobs of the other contexts the same way |
+| `make docs-check` / `docker-check` | markdownlint and the ADR index check / the Dockerfile image version check (Go, Node.js, Bun) |
 | `make go-check` | `go mod tidy` check, `go vet`, `golangci-lint`, `go test`, `CGO_ENABLED=0 go build`, license check |
 | `make go-lint` / `go-test` / `go-build` | Run one Go step (`go-lint` uses `.golangci.yml`, including the depguard architecture rules) |
 | `make build [VERSION=...]` | Build `bin/my` with the web client embedded (`make web-build` first) and the version stamped in (`git describe` by default) |
@@ -125,7 +129,8 @@ These come from Accepted ADRs and are binding.
 | `make federation-live` [`FEDERATION_LIVE_FLAGS=...`] | Live interoperability scenarios against Mastodon and GoToSocial in `deploy/docker/federation-live` (private CA, container DNS); logs and captured activities go to `.tmp/federation-live/out`. Not part of `make check` (CI job `federation-live`, nightly) |
 | `make i18n-gen` | Regenerate pseudo-locales, Go / TS typed accessors, and parity fixtures from `locales/` (commit the result) |
 | `make i18n-check` | Catalog lint (ICU syntax, placeholders, plural categories, shared subset), stale generated files, npm licenses, TS runtime tests |
-| `make web-check` | Client workspace `app/`: `web-typecheck` (tsc), `web-lint`, `web-build` (Vite; fails when React Compiler compiled nothing or skipped a function that does not opt out; copies the build to `internal/interface/web/dist` for embedding), `web-routes-check` (the committed TanStack Router route tree is up to date), `web-licenses` (npm licenses), `web-tokens` (design token contrast and color / motion usage, [app/ui/README.md](app/ui/README.md)), `web-test` (Vitest in jsdom with Testing Library and MSW), `playwright-image-check` (every Playwright image and package version equals `PLAYWRIGHT_IMAGE`) |
+| `make ui-check` | `app/ui`: `ui-typecheck` (incremental tsc) and `ui-unit-test` (Vitest in jsdom). A change to `app/ui` also runs `web-check` |
+| `make web-check` | `app/web` and the workspace-wide client checks: `web-typecheck` (incremental tsc), `web-lint`, `web-dist` (Vite build into `app/web/dist`; fails when React Compiler compiled nothing or skipped a function that does not opt out; `make web-build` also copies it to `internal/interface/web/dist` for embedding), `web-routes-check` (the committed TanStack Router route tree is up to date), `web-licenses` (npm licenses), `web-tokens` (design token contrast and color / motion usage, [app/ui/README.md](app/ui/README.md)), `web-test` (Vitest in jsdom with Testing Library and MSW), `playwright-image-check` (every Playwright image and package version equals `PLAYWRIGHT_IMAGE`) |
 | `make web-lint` | ESLint (`app/eslint.config.js`, enforcing the 強制 column of [web-client.md](docs/architecture/web-client.md)) with `--max-warnings 0`, the tests of its custom restrictions, knip, and a no-`100vh` check on CSS |
 | `make web-e2e` [`E2E_MATRIX=full`] | Build `app/web` and `bin/my` and run the Playwright E2E (axe, horizontal scroll, ARIA snapshots) against `vite preview`, and for the server-rendered sign-in / sign-up / consent pages against a real `my serve` on SQLite (`app/web/e2e/server.ts`): the default subset of the width × locale matrix, or all of it (CI job `web-e2e` on pushes to main only, ADR-0040 — run it locally before a PR that touches the web client; nightly runs `full`). `make web-e2e-install` downloads the browser for local runs |
 | `make web-install` | Install the client workspace dependencies from `app/bun.lock` |
