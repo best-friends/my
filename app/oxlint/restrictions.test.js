@@ -75,6 +75,9 @@ ruleTester.run("restrict/syntax (every file)", restrict.rules.syntax, {
     { code: "useQuery(api.query.queryOptions('get', '/instance'));", options: syntax },
     { code: "useMutation({ mutationFn: (body) => createStatus(api, body) });", options: syntax },
     { code: "queryClient.query({ ...options, staleTime: Infinity });", options: syntax },
+    { code: "<ExternalLink href='https://remote.example/'>Remote</ExternalLink>", options: syntax },
+    { code: "<Link href='/about'>About</Link>", options: syntax },
+    { code: "<Link href={`mailto:${email}`}>Email</Link>", options: syntax },
   ],
   invalid: [
     // A5
@@ -101,6 +104,11 @@ ruleTester.run("restrict/syntax (every file)", restrict.rules.syntax, {
     { ...fails("queryClient.query({ ...options, staleTime: 'static' });"), options: syntax },
     { ...fails("queryClient.ensureQueryData(options);"), options: syntax },
     { ...fails("context.queryClient.ensureInfiniteQueryData(options);"), options: syntax },
+    // Y12
+    { ...fails("<Link href={url} target='_blank'>Source</Link>"), options: syntax },
+    { ...fails("<a href={url} target='_blank' rel='noopener'>Source</a>"), options: syntax },
+    { ...fails("<Link href='https://remote.example/'>Remote</Link>"), options: syntax },
+    { ...fails("<a href='HTTP://remote.example/'>Remote</a>"), options: syntax },
   ],
 });
 

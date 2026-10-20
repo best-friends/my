@@ -9,6 +9,7 @@ import { instanceFixture, statusPage, timelineStatusFixture } from "../../test/f
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { newTabName, visibleText } from "../../test/links";
 
 function serveInstance(overrides: Partial<Instance>) {
   server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, ...overrides })));
@@ -55,7 +56,7 @@ describe("the landing page", () => {
 
     expect(screen.getByRole("link", { name: "More about this server" })).toHaveAttribute("href", "/about");
     const documents = screen.getByRole("navigation", { name: "Terms and policies" });
-    expect(within(documents).getAllByRole("link").map((link) => link.textContent)).toEqual(["Terms of service", "Privacy policy"]);
+    expect(within(documents).getAllByRole("link").map(visibleText)).toEqual(["Terms of service", "Privacy policy"]);
   });
 
   test("orders its sections as the information page does, with the links to it and to the source code last", async () => {
@@ -85,9 +86,10 @@ describe("the landing page", () => {
   test("links to the source code the server runs, or to an email that requests it", async () => {
     serveInstance({ source_url: "https://git.example.org/fork/my" });
     const { unmount } = await renderApp({ path: "/" });
-    const view = await screen.findByRole("link", { name: "View the source code" });
+    const view = await screen.findByRole("link", { name: newTabName("View the source code") });
     expect(view).toHaveAttribute("href", "https://git.example.org/fork/my");
-    expect(view).toHaveAttribute("rel", "noreferrer");
+    expect(view).toHaveAttribute("target", "_blank");
+    expect(view).toHaveAttribute("rel", "noopener noreferrer");
     unmount();
 
     serveInstance({ source_url: "mailto:source@my.example" });

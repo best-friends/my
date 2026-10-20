@@ -18,7 +18,10 @@ test.describe("the documents' pages on the server", () => {
     await expect(main.locator('button[type="submit"]')).toHaveAttribute("aria-describedby", "sign-up-agreement");
     await expect(main.locator('.agreement a[href="/auth/terms"]')).toBeVisible();
     await expect(main.locator('.agreement a[href="/auth/privacy"]')).toBeVisible();
-    // Every server page links to them in its footer too.
+    // They open in a new tab, so the form keeps what was typed.
+    await expect(main.locator(".agreement a")).toHaveCount(2);
+    for (const link of await main.locator(".agreement a").all()) await expect(link).toHaveAttribute("target", "_blank");
+    // Every server page links to them in its footer too, in the same tab.
     const footer = page.getByRole("contentinfo").getByRole("navigation");
     await expect(footer.getByRole("link")).toHaveCount(2);
     await expectNoHorizontalScroll(page);
@@ -27,7 +30,7 @@ test.describe("the documents' pages on the server", () => {
   for (const { path, open, snapshot } of [
     {
       path: "/auth/terms",
-      open: '.agreement a[href="/auth/terms"]',
+      open: 'footer a[href="/auth/terms"]',
       snapshot: `
         - main:
           - heading [level=1]
@@ -44,7 +47,7 @@ test.describe("the documents' pages on the server", () => {
     },
     {
       path: "/auth/privacy",
-      open: '.agreement a[href="/auth/privacy"]',
+      open: 'footer a[href="/auth/privacy"]',
       snapshot: `
         - main:
           - heading [level=1]
@@ -58,7 +61,7 @@ test.describe("the documents' pages on the server", () => {
   ]) {
     test(`${path} shows the rendered document without scrolling sideways`, async ({ page }) => {
       await page.goto("/auth/sign_up");
-      await page.getByRole("main").locator(open).click();
+      await page.locator(open).click();
       await expect(page).toHaveURL(new RegExp(`${path}$`));
       const main = page.getByRole("main");
       await expect(main.getByRole("heading", { level: 1 })).toBeVisible();

@@ -10,6 +10,7 @@ import { apiBase, problem, signedInHandler, withViewer } from "../../test/msw/ht
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { publicDomainActionsFixture } from "./test/handlers";
+import { newTabName } from "../../test/links";
 
 function serveInstance(overrides: Partial<Instance>) {
   server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, ...overrides })));
@@ -101,9 +102,10 @@ describe("the information page", () => {
     await renderApp({ path: "/about" });
     const source = await screen.findByRole("region", { name: "Source code" });
     expect(within(source).getByText(/GNU Affero General Public License/u)).toBeInTheDocument();
-    const link = within(source).getByRole("link", { name: "View the source code" });
+    const link = within(source).getByRole("link", { name: newTabName("View the source code") });
     expect(link).toHaveAttribute("href", "https://git.example.org/fork/my");
-    expect(link).toHaveAttribute("rel", "noreferrer");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
     expect(within(source).queryByRole("term")).not.toBeInTheDocument();
   });
 

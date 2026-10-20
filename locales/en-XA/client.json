@@ -8083,6 +8083,10 @@
     "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ, ǿǿř ƈǿǿḿḗḗ ƀȧȧƈķ ŀȧȧŧḗḗř.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.link.new_tab": {
+    "defaultMessage": "[(ǿǿƥḗḗƞş īƞ ȧȧ ƞḗḗẇ ŧȧȧƀ)]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.loading": {
     "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8649,6 +8653,22 @@
   },
   "timeline.media.reveal": {
     "defaultMessage": "[Şħǿǿẇ şḗḗƞşīŧīṽḗḗ ḿḗḗḓīȧȧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.viewer.close": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.viewer.next": {
+    "defaultMessage": "[Ƞḗḗẋŧ īḿȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.viewer.previous": {
+    "defaultMessage": "[Ƥřḗḗṽīǿǿŭŭş īḿȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.viewer.title": {
+    "defaultMessage": "[Īḿȧȧɠḗḗ {position, number} ǿǿƒ {count, number}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.new_posts": {

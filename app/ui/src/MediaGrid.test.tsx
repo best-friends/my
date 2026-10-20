@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ariaSnapshot } from "../test/aria-snapshot";
@@ -63,6 +63,67 @@ describe("MediaGrid", () => {
     expect(blurs()).toHaveLength(1);
     fireEvent.load(screen.getByRole("img", { name: "A cat on a sofa" }));
     expect(blurs()).toHaveLength(0);
+  });
+
+  describe("viewer", () => {
+    const viewerLabels = {
+      title: (position: number, count: number) => `Image ${String(position)} of ${String(count)}`,
+      close: "Close",
+      previous: "Previous image",
+      next: "Next image",
+    };
+    const viewable: readonly MediaItem[] = [
+      { id: "a", src: "/a-small.webp", alt: "A cat on a sofa", lang: "en", original: { sources: { still: [{ url: "/a-large.png" }] }, width: 1600, height: 900 } },
+      { id: "b", src: "/b-small.webp", alt: null, original: { sources: { still: [{ url: "/b-large.png" }] } } },
+    ];
+
+    it("opens a picture at its original size, steps with the buttons and the arrow keys, and closes on Esc", async () => {
+      const user = userEvent.setup();
+      render(<MediaGrid items={viewable} noDescriptionLabel="No description" revealLabel="Show sensitive media" viewerLabels={viewerLabels} />);
+      const first = screen.getByRole("button", { name: "A cat on a sofa" });
+      expect(first).toHaveAttribute("aria-haspopup", "dialog");
+
+      await user.click(first);
+      const dialog = await screen.findByRole("dialog", { name: "Image 1 of 2" });
+      const image = within(dialog).getByRole("img", { name: "A cat on a sofa" });
+      expect(image).toHaveAttribute("src", "/a-large.png");
+      expect(image).toHaveAttribute("width", "1600");
+
+      await user.click(within(dialog).getByRole("button", { name: "Next image" }));
+      expect(screen.getByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
+      expect(within(dialog).getByRole("img", { name: "No description" })).toHaveAttribute("src", "/b-large.png");
+      // The last picture goes round to the first, so the button keeps its focus.
+      await user.click(within(dialog).getByRole("button", { name: "Next image" }));
+      expect(screen.getByRole("dialog", { name: "Image 1 of 2" })).toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: "Next image" })).toHaveFocus();
+
+      await user.keyboard("{ArrowLeft}");
+      expect(screen.getByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
+      await user.keyboard("{ArrowRight}");
+      expect(screen.getByRole("dialog", { name: "Image 1 of 2" })).toBeInTheDocument();
+
+      await user.keyboard("{Escape}");
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(first).toHaveFocus();
+      });
+    });
+
+    it("does not open pictures without viewer labels, an original, or while they are concealed", async () => {
+      const user = userEvent.setup();
+      const { rerender } = render(<MediaGrid items={viewable} noDescriptionLabel="No description" revealLabel="Show sensitive media" />);
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+
+      rerender(<MediaGrid items={items} noDescriptionLabel="No description" revealLabel="Show sensitive media" viewerLabels={viewerLabels} />);
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+
+      rerender(<MediaGrid items={viewable} sensitive noDescriptionLabel="No description" revealLabel="Show sensitive media" viewerLabels={viewerLabels} />);
+      expect(screen.getAllByRole("button")).toHaveLength(1);
+      await user.click(screen.getByRole("button", { name: "Show sensitive media" }));
+      expect(screen.getByRole("button", { name: "A cat on a sofa" })).toBeInTheDocument();
+    });
   });
 
   it("plays videos and audio files with controls, never by themselves, named by their descriptions", () => {

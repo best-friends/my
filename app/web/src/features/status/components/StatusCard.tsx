@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, BoostIcon, ContentWarning, EmojiText, ExternalLinkIcon, Link, LinkCard, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
+import { Avatar, BoostIcon, ContentWarning, EmojiText, ExternalLink, Link, LinkCard, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
 import type { Ref } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
+import { useMediaViewerLabels } from "../hooks/useMediaViewerLabels";
 import { useStatusView } from "../hooks/useStatusView";
 import { StatusActions } from "./StatusActions";
 import { StatusPoll } from "./StatusPoll";
@@ -52,6 +53,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
   const t = useT();
   const intl = useIntl();
   const view = useStatusView(status);
+  const viewerLabels = useMediaViewerLabels();
 
   const card =
     view.card === null ? undefined : (
@@ -79,6 +81,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         sensitive={view.sensitive}
         noDescriptionLabel={t("client:timeline.media.no_description")}
         revealLabel={t("client:timeline.media.reveal")}
+        viewerLabels={viewerLabels}
       />
     ) : (
       card
@@ -206,18 +209,16 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
             {view.original !== null && (
               // The post's page on its own server, shown also while nobody is signed in. The host is what it
               // shows; the name says where it leads, and contains the host (WCAG 2.5.3, label in name).
-              <Link
+              <ExternalLink
                 href={view.original.href}
-                rel="noreferrer"
                 variant="standalone"
                 aria-label={t("client:status.original", { host: view.original.host })}
-                className="ms-auto min-w-0 gap-1 text-sm font-normal text-fg-muted data-hovered:text-fg"
+                className="ms-auto min-w-0 text-sm font-normal text-fg-muted data-hovered:text-fg"
               >
                 <span dir="ltr" className="min-w-0 truncate">
                   {view.original.host}
                 </span>
-                <ExternalLinkIcon />
-              </Link>
+              </ExternalLink>
             )}
           </>
         ),

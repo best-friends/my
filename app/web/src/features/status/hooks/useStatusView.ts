@@ -10,7 +10,7 @@ import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { useT } from "../../../lib/i18n";
 import { type LinkCard, type MediaAttachment, type Status, statusHistoryPath, statusPath, statusShareUrl } from "../api/status";
-import { imageSources } from "../../../lib/images";
+import { imageSources, originalImage } from "../../../lib/images";
 
 export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
@@ -100,6 +100,7 @@ function useLinkCardView(card: LinkCard | undefined): LinkCardView | null {
  * picture, `preview_url` is the small still rendition of an upload and the media proxy's small one of a remote file; an
  * upload also has its renditions to choose from by size, still and moving. A video or audio file plays from `url`, with
  * its poster's renditions (an upload's, when it has one) as the poster. The blurhash stands in while it is concealed or loading.
+ * The image viewer shows a picture at its original size: the large rendition of an upload, or `url` (the proxy's) of a remote file.
  */
 export function mediaItems(attachments: readonly MediaAttachment[], lang: string | undefined): MediaItem[] {
   return attachments.flatMap((attachment): MediaItem[] => {
@@ -109,7 +110,7 @@ export function mediaItems(attachments: readonly MediaAttachment[], lang: string
       case "image":
         return attachment.preview_url === undefined
           ? []
-          : [{ ...common, src: attachment.preview_url, sources: imageSources(attachment.variants) }];
+          : [{ ...common, src: attachment.preview_url, sources: imageSources(attachment.variants), original: originalImage(attachment.variants, attachment.url, attachment.meta) }];
       case "video":
       case "audio":
       case "gifv":

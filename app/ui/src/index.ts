@@ -17,6 +17,7 @@ export { DurationSelect, type DurationSelectProps } from "./DurationSelect";
 export type { FieldErrorMessage, FieldTextProps } from "./Field";
 // The hidden file input behind a Button child (React Aria FileTrigger): it has no look of its own.
 export { FileTrigger, type FileTriggerProps } from "react-aria-components";
+export { ExternalLink, ExternalLinkContext, type ExternalLinkProps, type ExternalLinkSettings } from "./ExternalLink";
 export { Link, type LinkProps } from "./Link";
 export { Radio, RadioGroup, type RadioGroupProps, type RadioProps } from "./RadioGroup";
 export { ReasonField, type ReasonFieldProps } from "./ReasonField";
@@ -104,6 +105,7 @@ export { EmojiPicker, type EmojiPickerLabels, type EmojiPickerProps, type Picker
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { LinkCard, type LinkCardImage, type LinkCardProps } from "./LinkCard";
 export { MediaGrid, type MediaGridProps, type MediaItem, type MediaPlayback } from "./MediaGrid";
+export type { MediaViewerLabels } from "./MediaViewer";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
 export { PostCard, PostCardAuthor, type PostCardAuthorProps, type PostCardProps } from "./PostCard";
 export { PostContent, serverSanitizedHtml, type PostContentProps, type SanitizedHtml } from "./PostContent";

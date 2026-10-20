@@ -347,6 +347,13 @@ func (l *Localizer) ServerAuthHumanCheckUnavailable() string {
 	return l.format("server:auth.human_check.unavailable", nil)
 }
 
+// ServerAuthLinkNewTab formats "server:auth.link.new_tab". Text that only assistive technology reads, after the name of a link on the sign-in and registration pages that opens in a new browser tab (the CAPTCHA service's privacy policy and terms, the server's terms on the registration form). Keep the brackets so that it reads apart from the link's name.
+//
+//	en: (opens in a new tab)
+func (l *Localizer) ServerAuthLinkNewTab() string {
+	return l.format("server:auth.link.new_tab", nil)
+}
+
 // ServerAuthSignInEmailLabel formats "server:auth.sign_in.email_label". Label of the email address field on the sign-in form.
 //
 //	en: Email address

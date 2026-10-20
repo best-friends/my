@@ -4044,6 +4044,8 @@ export interface MessageArgs {
   "client:shell.error.unexpected.heading": {};
   /** Try again, or come back later. */
   "client:shell.error.unexpected.reason": {};
+  /** (opens in a new tab) */
+  "client:shell.link.new_tab": {};
   /** Loading */
   "client:shell.loading": {};
   /** Close */
@@ -4328,6 +4330,14 @@ export interface MessageArgs {
   "client:timeline.media.no_description": {};
   /** Show sensitive media */
   "client:timeline.media.reveal": {};
+  /** Close */
+  "client:timeline.media.viewer.close": {};
+  /** Next image */
+  "client:timeline.media.viewer.next": {};
+  /** Previous image */
+  "client:timeline.media.viewer.previous": {};
+  /** Image {position, number} of {count, number} */
+  "client:timeline.media.viewer.title": { count: number; position: number };
   /** {count, plural, one {# new post} other {# new posts}} */
   "client:timeline.new_posts": { count: number };
   /** Could not load the new posts: {reason} */
@@ -4440,6 +4450,8 @@ export interface MessageArgs {
   "server:auth.human_check.terms_link": { owner: string };
   /** The check that you are not a bot is not available right now. Try again later. */
   "server:auth.human_check.unavailable": {};
+  /** (opens in a new tab) */
+  "server:auth.link.new_tab": {};
   /** Email address */
   "server:auth.sign_in.email_label": {};
   /** The email address or password is incorrect. */

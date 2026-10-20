@@ -4,7 +4,7 @@
 <noscript><p class="alert">{{$.L.ServerAuthHumanCheckNoscript}}</p></noscript>
 <p class="hint">{{.Notice}}</p>
 {{with .Links}}<ul class="links">
-{{range .}}<li><a href="{{.URL}}" rel="noopener noreferrer">{{.Title}}</a></li>
+{{range .}}<li><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Title}}<span class="visually-hidden"> {{$.L.ServerAuthLinkNewTab}}</span></a></li>
 {{end}}</ul>{{end}}
 </div>
 {{end}}{{end}}

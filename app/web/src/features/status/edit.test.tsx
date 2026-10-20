@@ -64,7 +64,8 @@ describe("editing a post", () => {
     server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([other]))));
     const { user } = await renderApp({ path: "/local" });
 
-    const article = await screen.findByRole("article", { description: "@alice hello" });
+    // The mention links to my.example, not to the host of the app (localhost:3000), so it opens in a new tab.
+    const article = await screen.findByRole("article", { description: /^@alice ?\(opens in a new tab\) hello$/ });
     await user.click(await within(article).findByRole("button", { name: "More actions" }));
 
     expect(await screen.findByRole("menuitem", { name: "Copy link" })).toBeInTheDocument();

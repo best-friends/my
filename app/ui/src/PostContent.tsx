@@ -15,6 +15,7 @@ import { type ComponentPropsWithRef, type RefCallback, use } from "react";
 import { mergeRefs } from "react-aria";
 import { tv } from "tailwind-variants";
 import { type CustomEmojiImage, insertCustomEmojis, noCustomEmojis } from "./CustomEmoji";
+import { ExternalLinkContext, type ExternalLinkSettings, externalRel } from "./ExternalLink";
 import { AutoplayContext } from "./Picture";
 
 declare const sanitizedHtmlBrand: unique symbol;
@@ -78,8 +79,9 @@ export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "
   /** The language of the post, when the server knows it (a BCP 47 tag). */
   lang?: string | undefined;
   /**
-   * Called when a link in the body is followed in the same tab: a primary click, or Enter on the
-   * focused link, without a modifier key, on a link that has no `target` or `download`. Calling
+   * Called when a link in the body to one of the app's own pages (`isAppLink` of `ExternalLinkContext`) is
+   * followed in the same tab: a primary click, or Enter on the focused link, without a modifier key, on a link
+   * that has no `download`; every other link opens in a new tab. Calling
    * `event.preventDefault()` keeps the browser from following it, so the app can open the link itself.
    * Opening a link in a new tab or window stays the browser's.
    */
@@ -117,6 +119,57 @@ function linkClickListener(onLinkClick: PostContentProps["onLinkClick"]): RefCal
   };
 }
 
+/** The attribute that marks the "opens in a new tab" text of a link of the body, so that it comes out again. */
+const newTabMark = "data-new-tab";
+
+/**
+ * Sets how each link of the body opens (web-client.md Y12). The server writes `target="_blank"` on every link of
+ * the HTML it renders; a link to one of the app's own pages (`isAppLink`) loses it, so that it opens in the same
+ * tab and `onLinkClick` can take it, and every other link keeps it, with `noopener noreferrer` added to the
+ * server's `rel` and the "opens in a new tab" text after its content. The links are in HTML that React does not
+ * render, so they change after React set it, and change back before React replaces it.
+ */
+function linkTargetSetter(html: SanitizedHtml, { newTabLabel, isAppLink }: ExternalLinkSettings): RefCallback<HTMLDivElement> | undefined {
+  if (html === "") return undefined;
+  return (element) => {
+    if (element === null) return;
+    const restores: (() => void)[] = [];
+    for (const link of element.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+      let url: URL;
+      try {
+        url = new URL(link.href);
+      } catch {
+        continue;
+      }
+      const target = link.getAttribute("target");
+      const rel = link.getAttribute("rel");
+      if (isAppLink(url)) {
+        link.removeAttribute("target");
+      } else {
+        link.setAttribute("target", "_blank");
+        link.setAttribute("rel", externalRel(rel ?? undefined));
+        if (newTabLabel !== undefined) {
+          const label = link.ownerDocument.createElement("span");
+          label.className = "sr-only";
+          label.setAttribute(newTabMark, "");
+          label.textContent = ` ${newTabLabel}`;
+          link.append(label);
+        }
+      }
+      restores.push(() => {
+        for (const label of link.querySelectorAll(`:scope > [${newTabMark}]`)) label.remove();
+        if (target === null) link.removeAttribute("target");
+        else link.setAttribute("target", target);
+        if (rel === null) link.removeAttribute("rel");
+        else link.setAttribute("rel", rel);
+      });
+    }
+    return () => {
+      for (const restore of restores) restore();
+    };
+  };
+}
+
 /**
  * Draws the custom emoji in the body. The body is HTML that React does not render, so the emoji go in
  * after React set it, and come out again before React replaces it: the callback is made anew whenever
@@ -134,15 +187,17 @@ function emojiDrawer(html: SanitizedHtml, emojis: readonly CustomEmojiImage[], a
  * The body of a post: server-sanitized HTML in a block whose direction follows its own text (`dir="auto"`)
  * and whose `lang` is the post's language when known (web-client.md Y10). Give it an `id` to describe a
  * PostCard by it, `onLinkClick` to open the links of the body itself (the app opens the links to its
- * own pages through its router), and `emojis` to draw its custom emoji.
+ * own pages through its router), and `emojis` to draw its custom emoji. The links to any other page open in a
+ * new tab (`ExternalLinkContext`).
  */
 export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, className, ref, ...props }: PostContentProps) {
   const autoplay = use(AutoplayContext);
+  const links = use(ExternalLinkContext);
   const emojiMotion = motion ?? autoplay;
   return (
     <div
       {...props}
-      ref={mergeRefs(ref, linkClickListener(onLinkClick), emojiDrawer(html, emojis, emojiMotion))}
+      ref={mergeRefs(ref, linkTargetSetter(html, links), linkClickListener(onLinkClick), emojiDrawer(html, emojis, emojiMotion))}
       dir="auto"
       lang={lang}
       className={postContent({ className })}
