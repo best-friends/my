@@ -166,7 +166,7 @@ func process(data []byte, probe media.Probe, sizes media.Sizes, req media.Reques
 		}
 		src := gifSource(g)
 		if len(g.Image) > 1 {
-			return animate(src, targets(src.width, src.height, boxes, req), g)
+			return animate(src, targets(src.width, src.height, boxes, req), g, pngLarge(req))
 		}
 		return firstFrameOutput(src, boxes, req)
 	case probe.Format == media.FormatWebP && webpAnimated(data):
@@ -175,7 +175,7 @@ func process(data []byte, probe media.Probe, sizes media.Sizes, req media.Reques
 			return media.Output{}, err
 		}
 		if probe.Frames > 1 {
-			return animate(src, targets(src.width, src.height, boxes, req), nil)
+			return animate(src, targets(src.width, src.height, boxes, req), nil, pngLarge(req))
 		}
 		return firstFrameOutput(src, boxes, req)
 	}
@@ -218,10 +218,14 @@ func firstFrame(src animationSource) (*image.NRGBA, error) {
 	return first, nil
 }
 
+// pngLarge reports whether the large still variant of req is PNG whatever the image: the image
+// of a custom emoji, which servers take as PNG, GIF, or WebP only (ADR-0051 §2).
+func pngLarge(req media.Request) bool { return req.Purpose == media.PurposeEmoji }
+
 // stillOutput makes the variants of a still image.
 func stillOutput(img *image.NRGBA, boxes media.Boxes, req media.Request) (media.Output, error) {
 	imgs := renderAll(img, targets(img.Rect.Dx(), img.Rect.Dy(), boxes, req), draw.CatmullRom)
-	still, err := stillVariants(imgs)
+	still, err := stillVariants(imgs, pngLarge(req))
 	if err != nil {
 		return media.Output{}, err
 	}

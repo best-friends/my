@@ -632,6 +632,18 @@ export interface MessageArgs {
   "client:admin.audit_log.action.appeal_overturned": {};
   /** Appeal upheld */
   "client:admin.audit_log.action.appeal_upheld": {};
+  /** Custom emoji registered */
+  "client:admin.audit_log.action.custom_emoji_created": {};
+  /** Custom emoji deleted */
+  "client:admin.audit_log.action.custom_emoji_deleted": {};
+  /** Custom emoji disabled */
+  "client:admin.audit_log.action.custom_emoji_disabled": {};
+  /** Custom emoji enabled */
+  "client:admin.audit_log.action.custom_emoji_enabled": {};
+  /** Custom emoji image replaced */
+  "client:admin.audit_log.action.custom_emoji_image_replaced": {};
+  /** Custom emoji changed */
+  "client:admin.audit_log.action.custom_emoji_updated": {};
   /** Domain action taken */
   "client:admin.audit_log.action.domain_action_issued": {};
   /** Domain action lifted */
@@ -734,6 +746,8 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.account": {};
   /** Appeal */
   "client:admin.audit_log.target_kind.appeal": {};
+  /** Custom emoji */
+  "client:admin.audit_log.target_kind.custom_emoji": {};
   /** Domain */
   "client:admin.audit_log.target_kind.domain": {};
   /** Report */
@@ -752,6 +766,146 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.user": {};
   /** Audit log */
   "client:admin.audit_log.title": {};
+  /** Other names */
+  "client:admin.custom_emojis.aliases": {};
+  /** Names that the picker's search also finds the emoji by, separated by spaces or commas; up to {max}, each like a shortcode. */
+  "client:admin.custom_emojis.aliases.description": { max: string };
+  /** Up to {max} other names. */
+  "client:admin.custom_emojis.aliases.too_many": { max: string };
+  /** Cancel */
+  "client:admin.custom_emojis.cancel": {};
+  /** Category */
+  "client:admin.custom_emojis.category": {};
+  /** Groups the emoji in the picker. Optional, up to {max} characters. */
+  "client:admin.custom_emojis.category.description": { max: string };
+  /** Could not change the custom emoji: {reason} */
+  "client:admin.custom_emojis.change_failed": { reason: string };
+  /** Could not register the custom emoji: {reason} */
+  "client:admin.custom_emojis.create_failed": { reason: string };
+  /** {emoji} is registered. */
+  "client:admin.custom_emojis.created": { emoji: string };
+  /** Delete */
+  "client:admin.custom_emojis.delete": {};
+  /** Delete {emoji} */
+  "client:admin.custom_emojis.delete_emoji": { emoji: string };
+  /** Posts and profiles that use it show {emoji} as text. A new emoji with the same shortcode is another emoji, and does not appear in them. This cannot be undone. */
+  "client:admin.custom_emojis.delete.description": { emoji: string };
+  /** Delete {emoji}? */
+  "client:admin.custom_emojis.delete.title": { emoji: string };
+  /** {emoji} is deleted. */
+  "client:admin.custom_emojis.deleted": { emoji: string };
+  /** Disable */
+  "client:admin.custom_emojis.disable": {};
+  /** Disable {emoji} */
+  "client:admin.custom_emojis.disable_emoji": { emoji: string };
+  /** {emoji} is disabled. */
+  "client:admin.custom_emojis.disabled_status": { emoji: string };
+  /** Server */
+  "client:admin.custom_emojis.domain": {};
+  /** Edit */
+  "client:admin.custom_emojis.edit": {};
+  /** Edit {emoji} */
+  "client:admin.custom_emojis.edit_emoji": { emoji: string };
+  /** Close */
+  "client:admin.custom_emojis.edit.close": {};
+  /** Edit {emoji} */
+  "client:admin.custom_emojis.edit.title": { emoji: string };
+  /** No custom emoji yet */
+  "client:admin.custom_emojis.empty.local": {};
+  /** Emoji registered here appear in the picker of the post form and the profile. */
+  "client:admin.custom_emojis.empty.local.description": {};
+  /** No custom emoji of other servers */
+  "client:admin.custom_emojis.empty.remote": {};
+  /** No custom emoji match the search */
+  "client:admin.custom_emojis.empty.search": {};
+  /** Enable */
+  "client:admin.custom_emojis.enable": {};
+  /** Enable {emoji} */
+  "client:admin.custom_emojis.enable_emoji": { emoji: string };
+  /** Enabled */
+  "client:admin.custom_emojis.enabled": {};
+  /** {emoji} is enabled. */
+  "client:admin.custom_emojis.enabled_status": { emoji: string };
+  /** A disabled emoji is shown nowhere; its :shortcode: stays text. */
+  "client:admin.custom_emojis.enabled.description": {};
+  /** Server */
+  "client:admin.custom_emojis.filter.label": {};
+  /** This server */
+  "client:admin.custom_emojis.filter.local": {};
+  /** Other servers */
+  "client:admin.custom_emojis.filter.remote": {};
+  /** Image */
+  "client:admin.custom_emojis.image": {};
+  /** The server could not process the image. */
+  "client:admin.custom_emojis.image_failed": {};
+  /** The image of {emoji} is replaced. Other servers fetch it again. */
+  "client:admin.custom_emojis.image_replaced": { emoji: string };
+  /** Choose an image */
+  "client:admin.custom_emojis.image.choose": {};
+  /** Chosen: {name} */
+  "client:admin.custom_emojis.image.chosen": { name: string };
+  /** PNG, GIF, or WebP, at most 1,024 pixels on each side. It is shown within 256 pixels; an animated PNG shows its first frame only. */
+  "client:admin.custom_emojis.image.description": {};
+  /** This image is larger than 100 KB. Some servers (GoToSocial by default) do not show custom emoji that large. */
+  "client:admin.custom_emojis.image.large_hint": {};
+  /** Choose an image. */
+  "client:admin.custom_emojis.image.required": {};
+  /** Registered custom emoji */
+  "client:admin.custom_emojis.list.title": {};
+  /** Register a custom emoji */
+  "client:admin.custom_emojis.new.title": {};
+  /** Not shown (its server's media is rejected) */
+  "client:admin.custom_emojis.no_image": {};
+  /** None */
+  "client:admin.custom_emojis.none": {};
+  /** Picker */
+  "client:admin.custom_emojis.picker": {};
+  /** Hidden */
+  "client:admin.custom_emojis.picker.hidden": {};
+  /** Shown */
+  "client:admin.custom_emojis.picker.shown": {};
+  /** Replace the image */
+  "client:admin.custom_emojis.replace_image": {};
+  /** Replace the image of {emoji} */
+  "client:admin.custom_emojis.replace_image_of": { emoji: string };
+  /** Save */
+  "client:admin.custom_emojis.save": {};
+  /** Show all */
+  "client:admin.custom_emojis.search.clear": {};
+  /** Domain */
+  "client:admin.custom_emojis.search.domain": {};
+  /** Search custom emoji */
+  "client:admin.custom_emojis.search.label": {};
+  /** Shortcode contains */
+  "client:admin.custom_emojis.search.shortcode": {};
+  /** Search */
+  "client:admin.custom_emojis.search.submit": {};
+  /** Shortcode */
+  "client:admin.custom_emojis.shortcode": {};
+  /** 2 to 30 letters (A to Z), digits, and underscores; capitals count. People type it between colons, like :blobcat:. It cannot be changed later. */
+  "client:admin.custom_emojis.shortcode.description": {};
+  /** Use 2 to 30 letters (A to Z), digits, and underscores. */
+  "client:admin.custom_emojis.shortcode.invalid": {};
+  /** State */
+  "client:admin.custom_emojis.state": {};
+  /** Disabled: shown as text */
+  "client:admin.custom_emojis.state.disabled": {};
+  /** Enabled */
+  "client:admin.custom_emojis.state.enabled": {};
+  /** Register */
+  "client:admin.custom_emojis.submit": {};
+  /** Register this server's custom emoji, and disable those of other servers. */
+  "client:admin.custom_emojis.summary": {};
+  /** Custom emoji */
+  "client:admin.custom_emojis.title": {};
+  /** {emoji} is saved. */
+  "client:admin.custom_emojis.updated": { emoji: string };
+  /** Image set */
+  "client:admin.custom_emojis.updated_at": {};
+  /** Show in the picker */
+  "client:admin.custom_emojis.visible_in_picker": {};
+  /** An emoji hidden from the picker can still be typed as its :shortcode:. */
+  "client:admin.custom_emojis.visible_in_picker.description": {};
   /** Attempts */
   "client:admin.dead_jobs.attempts": {};
   /** Created */
@@ -1726,6 +1880,20 @@ export interface MessageArgs {
   "client:documents.privacy_policy": {};
   /** Terms of service */
   "client:documents.terms": {};
+  /** Add emoji */
+  "client:emoji.picker.button": {};
+  /** No emoji found */
+  "client:emoji.picker.empty": {};
+  /** Custom emoji */
+  "client:emoji.picker.grid": {};
+  /** Recently used */
+  "client:emoji.picker.recent": {};
+  /** Search emoji */
+  "client:emoji.picker.search": {};
+  /** Custom emoji */
+  "client:emoji.picker.title": {};
+  /** Other */
+  "client:emoji.picker.uncategorized": {};
   /** Home */
   "client:home.title": {};
   /** This server does not show the public posts of its accounts in one timeline. */
@@ -2244,6 +2412,8 @@ export interface MessageArgs {
   "client:settings.profile.display_name": {};
   /** Up to {max} characters. Leave it empty to show your username. */
   "client:settings.profile.display_name.description": { max: string };
+  /** Add emoji to the display name */
+  "client:settings.profile.display_name.emoji": {};
   /** Field {number} */
   "client:settings.profile.field": { number: string };
   /** Label */
@@ -2274,6 +2444,8 @@ export interface MessageArgs {
   "client:settings.profile.locked.description": {};
   /** Bio */
   "client:settings.profile.note": {};
+  /** Add emoji to the bio */
+  "client:settings.profile.note.emoji": {};
   /** Save profile */
   "client:settings.profile.save": {};
   /** Your profile has been saved. */
@@ -3004,6 +3176,10 @@ export interface MessageArgs {
   "server:errors.interaction_restricted": {};
   /** An unexpected error occurred. Please try again later. */
   "server:errors.internal": {};
+  /** The custom emoji cannot be saved. */
+  "server:errors.invalid_custom_emoji": {};
+  /** {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} other {The custom emoji breaks a rule.}} */
+  "server:errors.invalid_custom_emoji_detail": { reason: "invalid_alias" | "invalid_category" | "invalid_shortcode" | "media_not_found" | "media_not_ready" | "remote_emoji" | "shortcode_taken" | "too_big" | "too_large" | "unsupported_format" | (string & {}) };
   /** The parameter {name} has an invalid value. */
   "server:errors.invalid_parameter": { name: string };
   /** The theme cannot be saved. */

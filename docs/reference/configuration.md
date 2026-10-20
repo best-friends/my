@@ -53,6 +53,7 @@ An instance setting that has never been set reads as its default, which is defin
 | [`media_max_image_side`](#media_max_image_side) | `MY_MEDIA_MAX_IMAGE_SIDE` | `8192` | no | no |
 | [`media_max_image_pixels`](#media_max_image_pixels) | `MY_MEDIA_MAX_IMAGE_PIXELS` | `33177600` | no | no |
 | [`media_unattached_ttl`](#media_unattached_ttl) | `MY_MEDIA_UNATTACHED_TTL` | `24h` | no | no |
+| [`custom_emoji_max_bytes`](#custom_emoji_max_bytes) | `MY_CUSTOM_EMOJI_MAX_BYTES` | `262144` | no | no |
 | [`remote_media_cache_max_bytes`](#remote_media_cache_max_bytes) | `MY_REMOTE_MEDIA_CACHE_MAX_BYTES` | `1073741824` | no | no |
 | [`kv`](#kv) | `MY_KV` | `db` | no | no |
 | [`valkey_url`](#valkey_url) | `MY_VALKEY_URL` | none | when `kv = valkey` or `stream = valkey` | yes |
@@ -266,6 +267,14 @@ How long an upload may stay unattached to any post or profile before the hourly 
 
 - Environment variable: `MY_MEDIA_UNATTACHED_TTL`
 - Default: `24h`
+- Required: no
+
+### `custom_emoji_max_bytes`
+
+Largest image in bytes that a local custom emoji may be registered with (ADR-0051 §2); the image must also be a PNG, a GIF, or a WebP of at most 1,024 pixels on a side. The default is Mastodon's limit. GoToSocial does not fetch remote emoji larger than 100 KiB by default.
+
+- Environment variable: `MY_CUSTOM_EMOJI_MAX_BYTES`
+- Default: `262144`
 - Required: no
 
 ### `remote_media_cache_max_bytes`

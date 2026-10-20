@@ -313,17 +313,24 @@ describe("the audit log", () => {
 
 describe("the link of an entry's target", () => {
   test("goes to the admin screen of an account, a report, a domain or a sign-up block while the target is there", () => {
-    expect(auditTargetHref({ target_kind: "account", target_id: "a1", target_exists: true })).toBe("/moderation/accounts/a1");
-    expect(auditTargetHref({ target_kind: "report", target_id: "r1", target_exists: true })).toBe("/moderation/reports/r1");
-    expect(auditTargetHref({ target_kind: "domain", target_id: "spam.example", target_exists: true })).toBe(
+    expect(auditTargetHref({ target_kind: "account", target_id: "a1", target_label: "a1", target_exists: true })).toBe("/moderation/accounts/a1");
+    expect(auditTargetHref({ target_kind: "report", target_id: "r1", target_label: "r1", target_exists: true })).toBe("/moderation/reports/r1");
+    expect(auditTargetHref({ target_kind: "domain", target_id: "spam.example", target_label: "spam.example", target_exists: true })).toBe(
       "/moderation/domain-actions?filter=all&domain=spam.example",
     );
-    expect(auditTargetHref({ target_kind: "signup_block", target_id: "0192f0c4-7a8e-7000-8000-0000000001a1", target_exists: true })).toBe("/moderation/signup-blocks?filter=all");
-    expect(auditTargetHref({ target_kind: "setting", target_id: "registration_mode", target_exists: true })).toBeUndefined();
+    expect(auditTargetHref({ target_kind: "signup_block", target_id: "0192f0c4-7a8e-7000-8000-0000000001a1", target_label: "0192f0c4-7a8e-7000-8000-0000000001a1", target_exists: true })).toBe("/moderation/signup-blocks?filter=all");
+    expect(auditTargetHref({ target_kind: "setting", target_id: "registration_mode", target_label: "registration_mode", target_exists: true })).toBeUndefined();
+  });
+
+  test("goes to the custom emoji screen searched by the emoji's shortcode, of this server or of its domain", () => {
+    expect(auditTargetHref({ target_kind: "custom_emoji", target_id: "e1", target_label: ":blobcat:", target_exists: true })).toBe("/admin/custom-emojis?shortcode=blobcat");
+    expect(auditTargetHref({ target_kind: "custom_emoji", target_id: "e2", target_label: ":blobfox:@remote.example", target_exists: true })).toBe(
+      "/admin/custom-emojis?origin=remote&shortcode=blobfox&domain=remote.example",
+    );
   });
 
   test("is not there for an account or a report that is gone", () => {
-    expect(auditTargetHref({ target_kind: "account", target_id: "a1", target_exists: false })).toBeUndefined();
-    expect(auditTargetHref({ target_kind: "report", target_id: "r1", target_exists: false })).toBeUndefined();
+    expect(auditTargetHref({ target_kind: "account", target_id: "a1", target_label: "a1", target_exists: false })).toBeUndefined();
+    expect(auditTargetHref({ target_kind: "report", target_id: "r1", target_label: "r1", target_exists: false })).toBeUndefined();
   });
 });

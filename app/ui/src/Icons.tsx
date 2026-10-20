@@ -33,6 +33,7 @@ import {
   PiRepeat,
   PiRepeatBold,
   PiShieldCheck,
+  PiSmiley,
   PiSlidersHorizontal,
   PiStar,
   PiStarFill,
@@ -92,6 +93,7 @@ export const iconTable = {
   WarningIcon: { off: glyph(PiWarning, "PiWarning"), on: glyph(PiWarningFill, "PiWarningFill") },
   EyeIcon: { off: glyph(PiEye, "PiEye") },
   LanguageIcon: { off: glyph(PiTranslate, "PiTranslate") },
+  EmojiIcon: { off: glyph(PiSmiley, "PiSmiley") },
   // Navigation.
   HomeIcon: { off: glyph(PiHouse, "PiHouse") },
   TimelinesIcon: { off: glyph(PiCards, "PiCards") },
@@ -195,6 +197,11 @@ export function EyeIcon() {
 /** Two scripts side by side, for the language of a post. */
 export function LanguageIcon() {
   return renderIcon(iconTable.LanguageIcon);
+}
+
+/** A smiling face, for the button that opens the picker of custom emoji. */
+export function EmojiIcon() {
+  return renderIcon(iconTable.EmojiIcon);
 }
 
 // Navigation.

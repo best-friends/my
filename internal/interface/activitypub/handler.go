@@ -84,6 +84,9 @@ type Options struct {
 	Suspensions Suspensions
 	// Images reads the avatars and headers of local actors; nil serves none.
 	Images appfederation.ProfileImages
+	// EmojiTags reads the custom emoji of local actors' profiles and serves the local custom
+	// emoji at their ids (ADR-0051 §3); nil serves none.
+	EmojiTags appfederation.EmojiTagReader
 	// Inbox receives the activities POSTed to the inboxes; nil serves no inbox.
 	Inbox Inbox
 	// HTML serves the web client's page for profile pages (/@alice) and other single-segment
@@ -146,6 +149,7 @@ func (h *Handler) Register(r Router) {
 	}
 	r.Handle("GET "+objectsPrefix+"{id}", http.HandlerFunc(h.object))
 	r.Handle("GET "+objectsPrefix+"{id}/"+activitySegment, http.HandlerFunc(h.object))
+	r.Handle("GET "+emojisPrefix+"{id}", http.HandlerFunc(h.emoji))
 	// A wildcard cannot share a path segment with "@", so every single-segment GET that no
 	// more specific pattern serves comes here; profilePage passes those that are not profile
 	// pages to the HTML handler.

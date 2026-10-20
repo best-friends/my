@@ -72,6 +72,15 @@ func TestMediaRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestCustomEmojiRepositoryContract(t *testing.T) {
+	testkit.CustomEmojiRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.CustomEmojiHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.CustomEmojiHarness{
+			UnitOfWork: db, Media: db.MediaRepository(), Statuses: db.StatusRepository(), Emojis: db.CustomEmojiRepository(),
+		}
+	})
+}
+
 func TestStatusRepositoryContract(t *testing.T) {
 	testkit.StatusRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.StatusHarness {
 		db, _ := newTestDB(t, "", opts)

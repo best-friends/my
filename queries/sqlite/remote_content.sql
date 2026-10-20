@@ -150,12 +150,17 @@ VALUES (@poll_id, @position, @votes, @voters_count);
 SELECT poll_id, position, votes, voters_count FROM poll_tallies WHERE poll_id = @poll_id ORDER BY position;
 
 -- ListCurrentCustomEmojiImages returns the custom emoji with an ID in @emoji_ids that have an
--- image, each with its current (newest) image, for the emoji of a page of statuses and accounts.
+-- image, each with its current (newest) image and its settings, for the emoji of a page of
+-- statuses and accounts.
 -- name: ListCurrentCustomEmojiImages :many
 SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
-  i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at
+  i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,
+  CAST(COALESCE(s.enabled, 1) AS INTEGER) AS enabled,
+  CAST(COALESCE(s.visible_in_picker, 1) AS INTEGER) AS visible_in_picker,
+  CAST(COALESCE(s.category, '') AS TEXT) AS category
 FROM custom_emojis e
 JOIN custom_emoji_images i ON i.emoji_id = e.id
+LEFT JOIN custom_emoji_settings s ON s.emoji_id = e.id
 WHERE e.id IN (SELECT value FROM json_each(CAST(@emoji_ids AS TEXT)))
   AND i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
 ORDER BY e.id;

@@ -4,6 +4,7 @@
     "https://w3id.org/security/v1",
     "https://www.w3.org/ns/cid/v1",
     {
+      "Emoji": "toot:Emoji",
       "Hashtag": "as:Hashtag",
       "PropertyValue": "schema:PropertyValue",
       "blurhash": "toot:blurhash",

@@ -156,6 +156,8 @@ type App struct {
 	Blobs          blob.Store
 	MediaProcessor media.Processor
 	Media          *content.MediaService
+	// CustomEmojis manages the local custom emoji (ADR-0051).
+	CustomEmojis *content.CustomEmojiService
 	// MediaProxy relays remote media files under /media/proxy/ and signs their URLs (ADR-0005).
 	MediaProxy *content.MediaProxy
 	// Previews reads profiles and statuses as an anonymous visitor sees them, for the link
@@ -296,6 +298,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		notifs       notification.Repository
 		pushes       notification.PushRepository
 		medias       content.MediaRepository
+		emojis       content.CustomEmojiRepository
 		feds         federationRepository
 		mods         moderation.Repository
 		retention    retentionRepositories
@@ -311,6 +314,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
+		emojis = d.CustomEmojiRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
 		feds = d.FederationRepository()
@@ -332,6 +336,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.postgresPool = d.Pool()
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
+		emojis = d.CustomEmojiRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
 		feds = d.FederationRepository()
@@ -402,6 +407,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Sanitizer:          newHTMLSanitizer(),
 		RecordRemoteImage:  a.recordRemoteImage,
 		RecordRemoteEmojis: a.recordRemoteEmojis,
+		// The local custom emoji of profiles, which the content module keeps (ADR-0051 §3).
+		LocalEmojis: func(ctx context.Context, texts ...string) ([]string, error) {
+			return a.CustomEmojis.LocalEmojiIDs(ctx, texts...)
+		},
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{
@@ -482,7 +491,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		RemoteMedia:     remoteMediaRecorder{a}, // reads a.Media, built by setMedia
 		MaxStatusLength: a.Instance.MaxStatusLength,
 		DefaultLanguage: a.defaultPostLanguage,
-		Clock:           a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
+		// Reads a.CustomEmojis, built by setMedia.
+		LocalEmojis: func(ctx context.Context, texts ...string) ([]string, error) {
+			return a.CustomEmojis.LocalEmojiIDs(ctx, texts...)
+		},
+		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain,
 	})
 	// After RegisterProjectors, which creates the counters that these projectors update.
 	content.RegisterInteractionProjectors(a.Projectors, interactions)
@@ -538,7 +551,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
-	if err := a.setMedia(cfg, medias); err != nil {
+	if err := a.setMedia(cfg, medias, emojis); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
@@ -577,6 +590,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Suspensions: a.ModerationPolicy,
 		LocalPosts:  a.Content.LocalPostCount,
 		Images:      a.Media.Images,
+		EmojiTags:   a.Media.EmojiTags,
 	})
 	ap.Register(surfaceRouter{a, surfaceActivityPub})
 	// The web client's pages answer the requests that ask for ActivityPub: a post page redirects
@@ -629,7 +643,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
 		// The instance theme (ADR-0059) and the URLs of its stylesheets, which the web handler serves.
 		Themes: a.Instance, ThemeStylesheetPath: web.ThemeStylesheetPath,
-		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
+		// The custom emoji of the picker and their administration (ADR-0051).
+		CustomEmojis: a.CustomEmojis,
+		RateLimiter:  a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	}).Register(clientAPIRouter{a})
 	a.registerMetricsSnapshot()
 	return a, nil
@@ -667,10 +683,11 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox,
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
 		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph, Images: a.Media.Images,
-		Blocks:  a.Graph,
-		Reports: a.Moderation,
-		Domains: a.ModerationPolicy,
-		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
+		EmojiTags: a.Media.EmojiTags,
+		Blocks:    a.Graph,
+		Reports:   a.Moderation,
+		Domains:   a.ModerationPolicy,
+		Clock:     a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
 	})
 	a.FanOut.RegisterJobs(a.Handlers)
@@ -772,7 +789,7 @@ func (a *App) setMediaProcessor(cfg *config.Config) error {
 }
 
 // setMedia builds the media use cases, and registers their jobs and schedules.
-func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
+func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository, emojis content.CustomEmojiRepository) error {
 	a.Media = content.NewMediaService(content.MediaDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Blobs: a.Blobs, Processor: a.MediaProcessor,
 		Outbox: a.Outbox, Jobs: a.Jobs, Clock: a.Clock, IDs: a.IDs,
@@ -786,6 +803,10 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 		Logger:    a.Logger,
 	})
 	a.Media.RegisterJobs(a.Handlers, a.Scheduler)
+	a.CustomEmojis = content.NewCustomEmojiService(content.CustomEmojiDeps{
+		UnitOfWork: a.UnitOfWork, Repository: emojis, Media: a.Media, Clock: a.Clock, IDs: a.IDs,
+		MaxBytes: cfg.CustomEmojiMaxBytes,
+	})
 	return nil
 }
 

@@ -295,3 +295,12 @@ export const preloadReloadKey = declareKey<number | null>("my:preload-error-relo
   parse: schemaParser(z.number()),
   userData: false,
 });
+
+/** The shortcodes of the custom emoji picked recently on this browser, most recent first (features/emoji, ADR-0051 §4). */
+export const recentEmojisKey = declareKey<readonly string[]>("my:emoji:recent", {
+  area: "local",
+  version: 1,
+  defaultValue: [],
+  parse: schemaParser(z.array(z.string()).max(64)),
+  userData: false,
+});

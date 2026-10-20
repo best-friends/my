@@ -69,8 +69,8 @@ func (n notes) note(ctx context.Context, st appcontent.Status, rev appcontent.Re
 
 // statusNote returns the Note of a local status st as of rev by author, addressed by the
 // effective visibility vis to its followers and the mentioned accounts of parts, with the body of
-// rev: content per language, content warning, attachments, and the mentions and hashtags of parts
-// as tag (federation.md §7.4). Its url is the status page under the author's current username
+// rev: content per language, content warning, attachments, and the mentions, hashtags, and custom
+// emoji of parts as tag (federation.md §7.4, ADR-0051 §3). Its url is the status page under the author's current username
 // (ADR-0053). A zero updated leaves updated out.
 func statusNote(st appcontent.Status, rev appcontent.Revision, author appaccount.Actor, vis appcontent.Visibility, parts appcontent.RevisionParts, updated time.Time, host, accountDomain string) federation.NoteDocument {
 	mentioned := make([]federation.IRI, 0, len(parts.Mentions))
@@ -121,6 +121,9 @@ func statusNote(st appcontent.Status, rev appcontent.Revision, author appaccount
 		note.Tag = append(note.Tag, federation.TagDocument{
 			Type: federation.TagHashtag, Href: "https://" + host + "/tags/" + url.PathEscape(t.Name), Name: "#" + t.Name,
 		})
+	}
+	for _, e := range parts.Emojis {
+		note.Tag = append(note.Tag, EmojiTagOf(e, host))
 	}
 	return note
 }
@@ -178,6 +181,9 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 	if act.ObjectKind == federation.OutboundAccount {
 		images, err := LocalActorImages(ctx, f.d.Images, s.actor)
 		if err != nil {
+			return nil, err
+		}
+		if images.Emojis, err = LocalActorEmojis(ctx, f.d.EmojiTags, f.d.Host, s.actor); err != nil {
 			return nil, err
 		}
 		return accountDocument(f.d.Host, act, s.actor, images, s.suspended)

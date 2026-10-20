@@ -8,7 +8,8 @@
 // The accepted formats are JPEG, PNG (an APNG is read as its default image), GIF, and WebP,
 // the last two animated or not. Every file gets small, medium, and large still variants within
 // the boxes of its purpose (ADR-0054 §1, §2): the large one is JPEG when opaque and PNG
-// otherwise, which every federated server shows, and the small and medium ones are WebP. An
+// otherwise, which every federated server shows (always PNG for a custom emoji, which servers
+// do not take as JPEG, ADR-0051 §2), and the small and medium ones are WebP. An
 // animation also gets moving variants: a GIF for the large one and animated WebP for the
 // others (§3); its still variants show its first frame.
 package media
@@ -278,7 +279,8 @@ type Output struct {
 	// Width and Height are the dimensions of the source after its EXIF orientation.
 	Width, Height int
 	// Still are the still variants; of an animation, they show its first frame. Large is
-	// JPEG when opaque and PNG otherwise; Small and Medium are WebP.
+	// JPEG when opaque and PNG otherwise (always PNG for PurposeEmoji); Small and Medium are
+	// WebP.
 	Still Variants
 	// Animated are the moving variants of an animation, nil for a still image. Large is a
 	// GIF; Small and Medium are animated WebP.

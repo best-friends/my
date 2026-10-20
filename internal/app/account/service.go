@@ -47,6 +47,9 @@ type Deps struct {
 	// domain with their images owned by the account, and returns their IDs, sorted (the content
 	// module, ADR-0051 §3); nil keeps remote profiles without custom emoji.
 	RecordRemoteEmojis func(ctx context.Context, tx uow.Tx, accountID, domain string, emojis []RemoteEmojiInput) ([]string, error)
+	// LocalEmojis returns the IDs, sorted, of the enabled local custom emoji that the texts of
+	// a local profile use as :shortcode: (the content module, ADR-0051 §3); nil records none.
+	LocalEmojis func(ctx context.Context, texts ...string) ([]string, error)
 }
 
 // ErrUnusableImage reports an avatar or header that is not a processed image of the account.
@@ -252,6 +255,8 @@ type ProfileInput struct {
 	Fields []account.ProfileField
 	// Source is what the owner typed, nil for none; its FieldValues match Fields.
 	Source *account.ProfileSource
+	// EmojiIDs are the custom emoji of the display name, note, and fields, sorted.
+	EmojiIDs []string
 }
 
 // IsMediaReferenced reports whether any profile revision, current or not, uses a media file as
@@ -276,6 +281,7 @@ func (s *Service) ReviseProfile(ctx context.Context, accountID string, in Profil
 		HeaderMediaID: in.HeaderMediaID,
 		RevisedAt:     s.d.Clock.Now(),
 		Source:        in.Source,
+		EmojiIDs:      in.EmojiIDs,
 	}
 	if in.Source != nil && len(in.Source.FieldValues) != len(in.Fields) {
 		return account.ProfileRevision{}, fmt.Errorf("account: %d field sources for %d fields", len(in.Source.FieldValues), len(in.Fields))

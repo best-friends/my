@@ -129,8 +129,8 @@ func webpSource(data []byte) (animationSource, error) {
 // animate makes the variants of an animation: the still ones from its first frame, and the
 // moving ones (ADR-0054 §3). When original is not nil and the large target keeps the whole
 // screen unscaled, the large moving variant is original re-encoded, which keeps its frames and
-// palettes exactly.
-func animate(src animationSource, ts [3]target, original *gif.GIF) (media.Output, error) {
+// palettes exactly. pngLarge makes the large still variant PNG (stillVariants).
+func animate(src animationSource, ts [3]target, original *gif.GIF, pngLarge bool) (media.Output, error) {
 	out := media.Output{Width: src.width, Height: src.height}
 	var (
 		webpBufs [2]bytes.Buffer
@@ -191,7 +191,7 @@ func animate(src animationSource, ts [3]target, original *gif.GIF) (media.Output
 	if n == 0 {
 		return media.Output{}, fmt.Errorf("%w: no frames", media.ErrCorrupt)
 	}
-	if out.Still, err = stillVariants(first); err != nil {
+	if out.Still, err = stillVariants(first, pngLarge); err != nil {
 		return media.Output{}, err
 	}
 	out.Blurhash = blurhash(first[0], blurhashX, blurhashY)

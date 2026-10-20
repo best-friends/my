@@ -33,7 +33,7 @@ const moderator = {
   indexable: true,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_jobs", "manage_settings"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_jobs", "manage_settings", "manage_custom_emojis"],
 };
 
 /** The reported account: a long display name, local. */
@@ -179,6 +179,22 @@ const auditEntry = {
   occurred_at: "2026-10-17T09:30:00Z",
 };
 
+/** A local custom emoji with a long category and other names, as GET /admin/custom_emojis lists it. */
+const customEmoji: Schemas["AdminCustomEmoji"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000e2",
+  shortcode: "blobcat_with_a_very_long_name",
+  local: true,
+  uri: "https://my.example/ap/emojis/0192f0c4-7a8e-7000-8000-0000000000e2",
+  url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGUlEQVR4nGN4ViH3nxLMMGrAqAGjBgwXAwAvJnsfj06SzAAAAABJRU5ErkJggg==",
+  static_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGUlEQVR4nGN4ViH3nxLMMGrAqAGjBgwXAwAvJnsfj06SzAAAAABJRU5ErkJggg==",
+  enabled: true,
+  visible_in_picker: true,
+  category: "Blobs and other round creatures of the fediverse",
+  aliases: ["cat", "kitty", "round_cat_of_the_fediverse"],
+  created_at: "2026-10-20T00:00:00Z",
+  updated_at: "2026-10-20T00:00:00Z",
+};
+
 const instance = { domain: longDomain, state: "unavailable", since: "2026-10-10T08:00:00Z", failure_days: 7, last_failure_day: "2026-10-10" };
 
 const deadJob = {
@@ -290,6 +306,7 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/dead_jobs") return json(route, { items: [deadJob] });
     if (key === "GET /admin/instance_texts") return json(route, { items: [documentText, ...instanceNames] });
     if (key === "GET /admin/theme") return json(route, adminTheme);
+    if (key === "GET /admin/custom_emojis") return json(route, { items: url.searchParams.get("local") === "false" ? [] : [customEmoji] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return issued;
@@ -335,6 +352,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "moderation.audit-log": { path: "/moderation/audit-log", ready: auditEntry.target_label },
   "moderation.instances": { path: "/moderation/instances", ready: longDomain },
   "moderation.instances_.$domain": { path: `/moderation/instances/${longDomain}`, ready: longDomain },
+  "admin.custom-emojis": { path: "/admin/custom-emojis", ready: customEmoji.category ?? "" },
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },

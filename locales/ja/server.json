@@ -890,5 +890,13 @@
   "preview.title": {
     "defaultMessage": "{name}（@{handle}）",
     "description": "Title of the link preview (og:title and the page title) of a profile or a post. {name} is the display name, or the username when there is none; {handle} is username@domain."
+  },
+  "errors.invalid_custom_emoji": {
+    "defaultMessage": "カスタム絵文字を保存できません。",
+    "description": "API error title for HTTP 422 when an administrator registers or changes a custom emoji that breaks a rule; the detail and the reason property say which."
+  },
+  "errors.invalid_custom_emoji_detail": {
+    "defaultMessage": "{reason, select, invalid_shortcode {ショートコードは、2〜30 文字の英字（A〜Z）・数字・アンダースコアです。} shortcode_taken {このサーバーのカスタム絵文字に、同じショートコードのものがあります。} invalid_alias {別名は 2〜30 文字の英字（A〜Z）・数字・アンダースコアで、1 つの絵文字に 10 個までです。} invalid_category {カテゴリは 64 文字までです。} media_not_found {アップロードした画像の中に見つかりません。} media_not_ready {画像はまだ処理中です。少し待ってからもう一度試してください。} unsupported_format {画像は PNG・GIF・WebP のどれかにしてください。} too_large {画像がこのサーバーの上限より大きいです。} too_big {画像は縦横とも 1024 ピクセル以下にしてください。} remote_emoji {この操作は、このサーバーのカスタム絵文字にだけ行えます。} other {カスタム絵文字が規則に合いません。}}",
+    "description": "Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule."
   }
 }

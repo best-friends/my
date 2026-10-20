@@ -55,11 +55,15 @@ const (
 	AuditTargetSetting     AuditTargetKind = "setting"
 	AuditTargetRule        AuditTargetKind = "rule"
 	AuditTargetSignupBlock AuditTargetKind = "signup_block"
+	// AuditTargetCustomEmoji is a custom emoji (ADR-0051 §5); its label is :shortcode:, or
+	// :shortcode:@domain for a remote one.
+	AuditTargetCustomEmoji AuditTargetKind = "custom_emoji"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
+	AuditTargetCustomEmoji,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -131,6 +135,20 @@ const (
 	// AuditTwoFactorDisabled: an administrator removed the two-factor authentication of a local
 	// account (totp_enrollment_revocations).
 	AuditTwoFactorDisabled AuditAction = "two_factor_disabled"
+	// AuditCustomEmojiCreated: a local custom emoji was registered (custom_emojis).
+	AuditCustomEmojiCreated AuditAction = "custom_emoji_created"
+	// AuditCustomEmojiImageReplaced: a local custom emoji got a new image (custom_emoji_images).
+	AuditCustomEmojiImageReplaced AuditAction = "custom_emoji_image_replaced"
+	// AuditCustomEmojiUpdated: the category, aliases, or place in the picker of a local custom
+	// emoji changed (custom_emoji_settings, custom_emoji_aliases).
+	AuditCustomEmojiUpdated AuditAction = "custom_emoji_updated"
+	// AuditCustomEmojiEnabled and AuditCustomEmojiDisabled: a custom emoji, local or remote, was
+	// enabled or disabled (custom_emoji_settings).
+	AuditCustomEmojiEnabled  AuditAction = "custom_emoji_enabled"
+	AuditCustomEmojiDisabled AuditAction = "custom_emoji_disabled"
+	// AuditCustomEmojiDeleted: a local custom emoji was deleted with its images; the operation
+	// has no row of its own.
+	AuditCustomEmojiDeleted AuditAction = "custom_emoji_deleted"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -164,6 +182,12 @@ var auditActions = []struct {
 	{AuditSignupBlockAdded, AuditTargetSignupBlock},
 	{AuditSignupBlockLifted, AuditTargetSignupBlock},
 	{AuditTwoFactorDisabled, AuditTargetAccount},
+	{AuditCustomEmojiCreated, AuditTargetCustomEmoji},
+	{AuditCustomEmojiImageReplaced, AuditTargetCustomEmoji},
+	{AuditCustomEmojiUpdated, AuditTargetCustomEmoji},
+	{AuditCustomEmojiEnabled, AuditTargetCustomEmoji},
+	{AuditCustomEmojiDisabled, AuditTargetCustomEmoji},
+	{AuditCustomEmojiDeleted, AuditTargetCustomEmoji},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

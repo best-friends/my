@@ -150,11 +150,23 @@ type CustomEmoji struct {
 	CreatedAt time.Time
 }
 
+type CustomEmojiAlias struct {
+	EmojiID string
+	Alias   string
+}
+
 type CustomEmojiImage struct {
 	ID        string
 	EmojiID   string
 	MediaID   string
 	RevisedAt time.Time
+}
+
+type CustomEmojiSetting struct {
+	EmojiID         string
+	Enabled         bool
+	VisibleInPicker bool
+	Category        *string
 }
 
 type Delivery struct {

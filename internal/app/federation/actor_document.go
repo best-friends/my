@@ -16,9 +16,42 @@ import (
 // the files that cannot be shown; (*appcontent.MediaService).Images is one.
 type ProfileImages func(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]appcontent.Image, error)
 
-// ActorImages are the avatar and header of an actor's document, nil when it has none.
+// ActorImages are the avatar and header of an actor's document, nil when it has none, and the
+// Emoji tags of the custom emoji of its profile (LocalActorEmojis).
 type ActorImages struct {
 	Icon, Image *federation.ImageDocument
+	Emojis      []federation.TagDocument
+}
+
+// EmojiTagReader returns the Emoji tags of the custom emoji with an ID in ids that can be shown;
+// (*appcontent.MediaService).EmojiTags is one.
+type EmojiTagReader func(ctx context.Context, ids []string) ([]appcontent.EmojiTag, error)
+
+// EmojiTagOf returns the Emoji tag of a custom emoji (ADR-0051 §3): a local emoji's id is derived
+// from its ID on host, and a remote one has its recorded id, or none.
+func EmojiTagOf(e appcontent.EmojiTag, host string) federation.TagDocument {
+	id := federation.IRI(e.URI)
+	if e.Local {
+		id = federation.IRI(appcontent.CustomEmojiURI(host, e.ID))
+	}
+	return federation.EmojiTag(id, e.Shortcode, e.Updated, e.MediaType, e.URL)
+}
+
+// LocalActorEmojis returns the Emoji tags of the custom emoji of a local actor's profile (its
+// display name, note, and fields, ADR-0051 §3), with the ids of host. A nil emojis reads none.
+func LocalActorEmojis(ctx context.Context, emojis EmojiTagReader, host string, a appaccount.Actor) ([]federation.TagDocument, error) {
+	if emojis == nil || a.Profile == nil || len(a.Profile.EmojiIDs) == 0 {
+		return nil, nil
+	}
+	tags, err := emojis(ctx, a.Profile.EmojiIDs)
+	if err != nil {
+		return nil, fmt.Errorf("federation: the custom emoji of %s: %w", a.Account.ID, err)
+	}
+	out := make([]federation.TagDocument, 0, len(tags))
+	for _, t := range tags {
+		out = append(out, EmojiTagOf(t, host))
+	}
+	return out, nil
 }
 
 // LocalActorImages reads the avatar and header of a local actor through images, as their large
@@ -66,7 +99,7 @@ func ProfileURL(host, username string) string { return "https://" + host + "/@" 
 // of its id (federation.md §10) and the object of the Update its profile revisions send
 // (§7.1). The instance actor's document is the minimal one that signs the instance's requests;
 // its preferredUsername is instanceUsername. images are the actor's avatar and header
-// (LocalActorImages).
+// (LocalActorImages) and the Emoji tags of its profile (LocalActorEmojis).
 func LocalActorDocument(host string, a appaccount.Actor, instanceUsername string, images ActorImages) federation.ActorDocument {
 	id := federation.IRI(a.Account.URI)
 	doc := federation.ActorDocument{
@@ -107,6 +140,9 @@ func LocalActorDocument(host string, a appaccount.Actor, instanceUsername string
 		doc.Icon, doc.Image = images.Icon, images.Image
 		for _, f := range p.Fields {
 			doc.Attachment = append(doc.Attachment, federation.PropertyValue{Type: "PropertyValue", Name: f.Name, Value: f.ValueHTML})
+		}
+		for _, t := range images.Emojis {
+			doc.Tag = append(doc.Tag, t)
 		}
 	}
 	return doc

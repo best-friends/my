@@ -29,6 +29,9 @@ func (o *Objects) ArchiveActor(ctx context.Context, accountID string, w io.Write
 	if err != nil {
 		return err
 	}
+	if images.Emojis, err = LocalActorEmojis(ctx, o.d.Reader.EmojiTags, o.d.Host, a); err != nil {
+		return err
+	}
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	return enc.Encode(LocalActorDocument(o.d.Host, a, "", images))
@@ -81,7 +84,10 @@ func (o *Objects) ArchiveOutbox(ctx context.Context, accountID string, w io.Writ
 			return err
 		}
 		for _, v := range views {
-			parts := appcontent.RevisionParts{Attachments: v.Attachments, Mentions: v.Mentions, Tags: v.Tags}
+			parts, err := o.viewParts(ctx, v)
+			if err != nil {
+				return err
+			}
 			note := statusNote(v.Status, v.Revision, v.Author, v.Status.Visibility, parts, updatedOf(v.Revision), o.d.Host, o.d.AccountDomain)
 			item, err := marshalNoEscape(createOf(v.Status, actor, note).Embedded())
 			if err != nil {

@@ -262,6 +262,12 @@ export const auditActions = [
   "account_deletion_cancelled",
   "signup_block_added",
   "signup_block_lifted",
+  "custom_emoji_created",
+  "custom_emoji_image_replaced",
+  "custom_emoji_updated",
+  "custom_emoji_enabled",
+  "custom_emoji_disabled",
+  "custom_emoji_deleted",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */
@@ -276,6 +282,7 @@ export const auditTargetKinds = [
   "setting",
   "rule",
   "signup_block",
+  "custom_emoji",
 ] as const satisfies readonly AuditTargetKind[];
 
 /**

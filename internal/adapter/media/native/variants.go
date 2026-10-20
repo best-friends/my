@@ -128,8 +128,9 @@ func renderAll(img *image.NRGBA, ts [3]target, scaler draw.Scaler) [3]*image.NRG
 }
 
 // stillVariants encodes the still variants: the large one as JPEG when opaque and PNG
-// otherwise, the others as lossy WebP.
-func stillVariants(imgs [3]*image.NRGBA) (media.Variants, error) {
+// otherwise, or always as PNG with pngLarge (custom emoji, which no server takes as JPEG), the
+// others as lossy WebP.
+func stillVariants(imgs [3]*image.NRGBA, pngLarge bool) (media.Variants, error) {
 	var out media.Variants
 	var err error
 	if out.Small, err = encodeWebP(imgs[0]); err != nil {
@@ -138,18 +139,18 @@ func stillVariants(imgs [3]*image.NRGBA) (media.Variants, error) {
 	if out.Medium, err = encodeWebP(imgs[1]); err != nil {
 		return media.Variants{}, err
 	}
-	if out.Large, err = encodeLarge(imgs[2]); err != nil {
+	if out.Large, err = encodeLarge(imgs[2], pngLarge); err != nil {
 		return media.Variants{}, err
 	}
 	return out, nil
 }
 
-// encodeLarge writes img as PNG when it has transparency and as JPEG otherwise. Neither
-// encoder writes metadata.
-func encodeLarge(img *image.NRGBA) (media.Variant, error) {
+// encodeLarge writes img as PNG when it has transparency or with forcePNG, and as JPEG otherwise.
+// Neither encoder writes metadata.
+func encodeLarge(img *image.NRGBA, forcePNG bool) (media.Variant, error) {
 	var buf bytes.Buffer
 	v := media.Variant{Width: img.Rect.Dx(), Height: img.Rect.Dy()}
-	if !img.Opaque() {
+	if forcePNG || !img.Opaque() {
 		if err := png.Encode(&buf, img); err != nil {
 			return media.Variant{}, fmt.Errorf("media/native: encode png: %w", err)
 		}

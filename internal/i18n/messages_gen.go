@@ -984,6 +984,20 @@ func (l *Localizer) ServerErrorsInternal() string {
 	return l.format("server:errors.internal", nil)
 }
 
+// ServerErrorsInvalidCustomEmoji formats "server:errors.invalid_custom_emoji". API error title for HTTP 422 when an administrator registers or changes a custom emoji that breaks a rule; the detail and the reason property say which.
+//
+//	en: The custom emoji cannot be saved.
+func (l *Localizer) ServerErrorsInvalidCustomEmoji() string {
+	return l.format("server:errors.invalid_custom_emoji", nil)
+}
+
+// ServerErrorsInvalidCustomEmojiDetail formats "server:errors.invalid_custom_emoji_detail". Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule.
+//
+//	en: {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} other {The custom emoji breaks a rule.}}
+func (l *Localizer) ServerErrorsInvalidCustomEmojiDetail(reason string) string {
+	return l.format("server:errors.invalid_custom_emoji_detail", map[string]any{"reason": reason})
+}
+
 // ServerErrorsInvalidParameter formats "server:errors.invalid_parameter". Detail of an API error (HTTP 400) when a path, query, or header parameter cannot be parsed. {name} is the parameter name, e.g. limit (not translated).
 //
 //	en: The parameter {name} has an invalid value.

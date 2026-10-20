@@ -195,6 +195,10 @@ func (w *objWorld) Parts(_ context.Context, rev appcontent.Revision) (appcontent
 	return p, nil
 }
 
+func (w *objWorld) EmojiTags(context.Context, []string) ([]appcontent.EmojiTag, error) {
+	return nil, nil
+}
+
 func (w *objWorld) Pinned(ctx context.Context, viewer appcontent.Viewer, _ string) ([]appcontent.StatusView, error) {
 	p, err := w.Profile(ctx, viewer, authorID, apptimeline.ProfileFilter{ExcludeBoosts: true}, apptimeline.Query{})
 	if err != nil {

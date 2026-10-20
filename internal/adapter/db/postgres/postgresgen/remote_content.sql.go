@@ -462,27 +462,35 @@ func (q *Queries) IsCustomEmojiImage(ctx context.Context, mediaID string) (bool,
 
 const listCurrentCustomEmojiImages = `-- name: ListCurrentCustomEmojiImages :many
 SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
-  i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at
+  i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,
+  COALESCE(s.enabled, TRUE)::boolean AS enabled,
+  COALESCE(s.visible_in_picker, TRUE)::boolean AS visible_in_picker,
+  COALESCE(s.category, '')::text AS category
 FROM custom_emojis e
 JOIN custom_emoji_images i ON i.emoji_id = e.id
+LEFT JOIN custom_emoji_settings s ON s.emoji_id = e.id
 WHERE e.id = ANY($1::text[])
   AND i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
 ORDER BY e.id
 `
 
 type ListCurrentCustomEmojiImagesRow struct {
-	ID             string
-	Shortcode      string
-	Domain         string
-	Uri            *string
-	CreatedAt      time.Time
-	ImageID        string
-	ImageMediaID   string
-	ImageRevisedAt time.Time
+	ID              string
+	Shortcode       string
+	Domain          string
+	Uri             *string
+	CreatedAt       time.Time
+	ImageID         string
+	ImageMediaID    string
+	ImageRevisedAt  time.Time
+	Enabled         bool
+	VisibleInPicker bool
+	Category        string
 }
 
 // ListCurrentCustomEmojiImages returns the custom emoji with an ID in @emoji_ids that have an
-// image, each with its current (newest) image, for the emoji of a page of statuses and accounts.
+// image, each with its current (newest) image and its settings, for the emoji of a page of
+// statuses and accounts.
 func (q *Queries) ListCurrentCustomEmojiImages(ctx context.Context, emojiIds []string) ([]ListCurrentCustomEmojiImagesRow, error) {
 	rows, err := q.db.Query(ctx, listCurrentCustomEmojiImages, emojiIds)
 	if err != nil {
@@ -501,6 +509,9 @@ func (q *Queries) ListCurrentCustomEmojiImages(ctx context.Context, emojiIds []s
 			&i.ImageID,
 			&i.ImageMediaID,
 			&i.ImageRevisedAt,
+			&i.Enabled,
+			&i.VisibleInPicker,
+			&i.Category,
 		); err != nil {
 			return nil, err
 		}

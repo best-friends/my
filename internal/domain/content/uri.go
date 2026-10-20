@@ -7,6 +7,12 @@ func StatusURI(host, statusID string) string {
 	return "https://" + host + "/ap/objects/" + statusID
 }
 
+// CustomEmojiURI returns the ActivityPub id of a local custom emoji on host (ADR-0051 §3); it is
+// derived from the emoji's ID and never stored.
+func CustomEmojiURI(host, emojiID string) string {
+	return "https://" + host + "/ap/emojis/" + emojiID
+}
+
 // StatusPageSegment is the reserved word under a profile page that the page of one of its
 // statuses lives under: /@{username}/status/{id} (ADR-0053).
 const StatusPageSegment = "status"

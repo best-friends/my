@@ -39,6 +39,8 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runAdminAudit(args[1:], stdout, stderr)
 	case args[0] == "domain":
 		return runAdminDomain(args[1:], stdout, stderr)
+	case args[0] == "emoji":
+		return runAdminEmoji(args[1:], stdout, stderr)
 	case args[0] == "report":
 		return runAdminReport(args[1:], stdout, stderr)
 	case args[0] == "retention":
@@ -184,6 +186,7 @@ func adminUsage(w io.Writer) {
        my admin account disable-two-factor <account>   (my admin account disable-two-factor -help)
        my admin appeal list|uphold|overturn ...   (my admin appeal -help)
        my admin domain list|issue|lift ...   (my admin domain -help)
+       my admin emoji create|list|enable|disable|delete ...   (my admin emoji -help)
        my admin report list|show|assign|unassign|resolve ...   (my admin report -help)
        my admin audit list ...   (my admin audit -help)
        my admin retention hold|release|list ...   (my admin retention -help)
@@ -198,6 +201,7 @@ account export-moderation writes them all for a request of access.
 my admin account disable-two-factor removes the two-factor authentication of a
 user who lost their authenticator app and recovery codes.
 my admin role grants and revokes the roles of local users.
+my admin emoji registers and manages the custom emoji.
 my admin signup-block blocks sign-ups by email domain, email address, or IP range.
 
 my admin create creates an administrator: a user with the password, the email address as primary

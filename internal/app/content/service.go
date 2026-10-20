@@ -136,8 +136,11 @@ type Deps struct {
 	// DefaultLanguage returns the default post language of a user (FR-110), used when a post
 	// names none; nil or UndeterminedLanguage leaves the language undetermined.
 	DefaultLanguage func(ctx context.Context, userID string) (string, error)
-	Clock           kernel.Clock
-	IDs             kernel.IDGenerator
+	// LocalEmojis returns the enabled local custom emoji that texts use as :shortcode:
+	// ((*CustomEmojiService).LocalEmojiIDs, ADR-0051 §3); nil records no custom emoji.
+	LocalEmojis func(ctx context.Context, texts ...string) ([]string, error)
+	Clock       kernel.Clock
+	IDs         kernel.IDGenerator
 	// Host is the serving domain of the status URIs and pages (ADR-0018).
 	Host string
 	// AccountDomain is the domain of local handles; @user@AccountDomain and @user@Host mention a
@@ -515,6 +518,7 @@ type preparedText struct {
 	html        string
 	mentions    []string // account IDs, sorted
 	hashtags    []Hashtag
+	emojis      []string // custom emoji IDs, sorted
 }
 
 // CountCharacters returns the length of a post as max_status_length counts it: the characters
@@ -556,6 +560,12 @@ func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in T
 	if err != nil {
 		return preparedText{}, err
 	}
+	var emojis []string
+	if s.d.LocalEmojis != nil {
+		if emojis, err = s.d.LocalEmojis(ctx, in.Text, in.SpoilerText); err != nil {
+			return preparedText{}, err
+		}
+	}
 	return preparedText{
 		in:          in,
 		language:    language,
@@ -563,6 +573,7 @@ func (s *Service) prepareText(ctx context.Context, author appaccount.Actor, in T
 		html:        html,
 		mentions:    mentions,
 		hashtags:    parsed.Hashtags(),
+		emojis:      emojis,
 	}, nil
 }
 
@@ -690,6 +701,7 @@ func (p preparedText) revision(id, statusID string, seq int, at time.Time) conte
 		Source:              &content.Source{Text: p.in.Text, Format: content.SourceTextPlain},
 		Attachments:         p.attachments,
 		MentionedAccountIDs: p.mentions,
+		EmojiIDs:            p.emojis,
 	}
 }
 

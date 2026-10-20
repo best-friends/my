@@ -99,12 +99,13 @@ type MediaView struct {
 }
 
 // RevisionParts are what a revision refers to, resolved: the attached media that finished
-// processing, in order; the mentioned accounts that exist, in the revision's order; and the
-// hashtags, in the revision's order.
+// processing, in order; the mentioned accounts that exist, in the revision's order; the
+// hashtags, in the revision's order; and the custom emoji that can be shown, by shortcode.
 type RevisionParts struct {
 	Attachments []MediaView
 	Mentions    []appaccount.Actor
 	Tags        []content.Tag
+	Emojis      []EmojiTag
 }
 
 // RevisionView is one revision of a status, for its edit history.
@@ -384,7 +385,19 @@ func (r *Reader) Parts(ctx context.Context, rev content.Revision) (RevisionParts
 		}
 		out.Tags = append(out.Tags, tag)
 	}
+	if out.Emojis, err = r.EmojiTags(ctx, rev.EmojiIDs); err != nil {
+		return RevisionParts{}, err
+	}
 	return out, nil
+}
+
+// EmojiTags returns the Emoji tags of the custom emoji with an ID in ids that can be shown
+// ((*MediaService).EmojiTags); none without Media.
+func (r *Reader) EmojiTags(ctx context.Context, ids []string) ([]EmojiTag, error) {
+	if r.d.Media == nil {
+		return nil, nil
+	}
+	return r.d.Media.EmojiTags(ctx, ids)
 }
 
 // relation returns what accountID did with st.

@@ -22,6 +22,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/custom_emojis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the custom emoji of the picker
+         * @description The custom emoji of the instance that the picker offers (FR-111, ADR-0051 §4): every
+         *     enabled local emoji that is not hidden from the picker, by category (those without one
+         *     first) and shortcode. A text can use every enabled local emoji, hidden or not. The list
+         *     is not paginated.
+         */
+        get: operations["listCustomEmojis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/instance/domain_actions": {
         parameters: {
             query?: never;
@@ -1977,6 +2000,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/custom_emojis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the custom emoji
+         * @description The custom emoji, local and remote, newest first (ADR-0051 §4). `local` keeps the
+         *     emoji of this instance (`true`) or of other servers (`false`); `domain` keeps those of
+         *     one remote domain; `shortcode` keeps those whose shortcode contains it, ignoring case.
+         *     Needs the `manage_custom_emojis` permission.
+         */
+        get: operations["listAdminCustomEmojis"];
+        put?: never;
+        /**
+         * Register a local custom emoji
+         * @description Registers a local emoji with the image of a media file that the user uploaded and that
+         *     finished processing (upload it with the `emoji` purpose). The image must be a PNG, a
+         *     GIF, or a WebP, at most `custom_emoji_max_bytes` (256 KiB by default) and 1,024 pixels
+         *     on its longer side; an APNG shows only its first frame. A shortcode that breaks the
+         *     rules or that a local emoji has, an alias or a category that breaks the rules, or an
+         *     image that does not qualify is a 422 `/api/v1/problems/invalid-custom-emoji` whose
+         *     `reason` says which. The registration is recorded in the audit log. Needs the
+         *     `manage_custom_emojis` permission.
+         */
+        post: operations["createCustomEmoji"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/custom_emojis/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the custom emoji. */
+                id: components["parameters"]["CustomEmojiId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a custom emoji
+         * @description An unknown ID is a 404. Needs the `manage_custom_emojis` permission.
+         */
+        get: operations["getAdminCustomEmoji"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a local custom emoji
+         * @description Deletes a local emoji for good, with its images; the posts and profiles that used it
+         *     show its `:shortcode:` as text. A new emoji with the same shortcode is another emoji.
+         *     A remote emoji is a 422 with the reason `remote_emoji` (disable it instead). The
+         *     deletion is recorded in the audit log. An unknown ID is a 404. Needs the
+         *     `manage_custom_emojis` permission.
+         */
+        delete: operations["deleteCustomEmoji"];
+        options?: never;
+        head?: never;
+        /**
+         * Change the settings of a custom emoji
+         * @description Changes what the request names and keeps the rest. A remote emoji can only be enabled
+         *     and disabled (`enabled`); a change of its other settings is a 422 with the reason
+         *     `remote_emoji`. A disabled emoji is shown nowhere: its `:shortcode:` stays text.
+         *     `category` is trimmed, and an empty one removes the category; `aliases` replace the
+         *     aliases. Each change is recorded in the audit log. An unknown ID is a 404. Needs the
+         *     `manage_custom_emojis` permission.
+         */
+        patch: operations["updateCustomEmoji"];
+        trace?: never;
+    };
+    "/admin/custom_emojis/{id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace the image of a local custom emoji
+         * @description Makes the image of a media file the new image of a local emoji, checked as for a new
+         *     emoji; the servers that have the emoji fetch it again (its `updated_at` changes). A
+         *     remote emoji is a 422 with the reason `remote_emoji`. The change is recorded in the
+         *     audit log. An unknown ID is a 404. Needs the `manage_custom_emojis` permission.
+         */
+        put: operations["replaceCustomEmojiImage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/instance_texts": {
         parameters: {
             query?: never;
@@ -2577,6 +2697,8 @@ export interface components {
          *       authentication.
          *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
          *       operation, has no two-factor authentication.
+         *     - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
+         *       says which.
          *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
          *       reason in `theme_errors` (`PUT /admin/theme`).
          */
@@ -3786,10 +3908,13 @@ export interface components {
          *     user): `role_granted`, `role_revoked`. On an `appeal`:
          *     `appeal_upheld`, `appeal_overturned` (which also records the action's
          *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
-         *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`.
+         *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
+         *     `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+         *     `custom_emoji_updated` (its category, aliases, or place in the picker),
+         *     `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -3845,7 +3970,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji";
         /** @description A moderation action on a remote domain and its subdomains (FR-702). */
         AdminDomainAction: {
             id: components["schemas"]["Id"];
@@ -4142,10 +4267,11 @@ export interface components {
          *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
          *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
          *     log. `manage_two_factor`: removing the two-factor authentication of a local user (only
-         *     the built-in admin role by default). The others guard no client API operation yet.
+         *     the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
+         *     remote. The others guard no client API operation yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor" | "manage_custom_emojis";
         /**
          * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
          *     across revisions, so reports keep citing it.
@@ -4204,6 +4330,134 @@ export interface components {
             /** @description The place among the rules in effect, from 1. */
             position: number;
         };
+        /**
+         * @description A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
+         *     `:shortcode:` into the text.
+         */
+        PickerCustomEmoji: {
+            /** @description The shortcode, without the colons around it. */
+            shortcode: string;
+            /**
+             * Format: uri
+             * @description The URL of the image, animated when the emoji is.
+             */
+            url: string;
+            /**
+             * Format: uri
+             * @description The URL of a still image of the emoji.
+             */
+            static_url: string;
+            /** @description The category that the picker groups the emoji in; absent for none. */
+            category?: string;
+            /** @description Other names that a search of the picker finds the emoji by. */
+            aliases: string[];
+        };
+        /** @description The custom emoji of the picker. */
+        PickerCustomEmojiList: {
+            items: components["schemas"]["PickerCustomEmoji"][];
+        };
+        /**
+         * @description A custom emoji as the administrators manage it (ADR-0051 §4): a local one, or a remote
+         *     one recorded from the posts and profiles of another server.
+         */
+        AdminCustomEmoji: {
+            id: components["schemas"]["Id"];
+            /** @description The shortcode, without the colons around it. */
+            shortcode: string;
+            /** @description Whether the emoji is of this instance. */
+            local: boolean;
+            /** @description The domain of a remote emoji; absent for a local one. */
+            domain?: string;
+            /**
+             * Format: uri
+             * @description The ActivityPub `id` of the emoji: `https://{host}/ap/emojis/{id}` for a local one,
+             *     and the recorded one for a remote one; absent when a remote emoji has none.
+             */
+            uri?: string;
+            /**
+             * Format: uri
+             * @description The URL of the image, animated when the emoji is; absent when the image cannot be
+             *     shown (such as a remote one from a domain whose media the instance rejects).
+             */
+            url?: string;
+            /**
+             * Format: uri
+             * @description The URL of a still image of the emoji; absent with `url`.
+             */
+            static_url?: string;
+            /** @description Whether the emoji is shown; a disabled one stays `:shortcode:` text. */
+            enabled: boolean;
+            /** @description Whether the picker offers the local emoji; always `true` for a remote one. */
+            visible_in_picker: boolean;
+            /** @description The category of a local emoji in the picker; absent for none. */
+            category?: string;
+            /** @description The other names of a local emoji that the picker finds it by. */
+            aliases: string[];
+            /**
+             * Format: date-time
+             * @description When the emoji was registered or first seen.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When its current image was set, its ActivityPub `updated`.
+             */
+            updated_at: string;
+        };
+        /** @description A page of custom emoji. */
+        AdminCustomEmojiPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminCustomEmoji"][];
+        };
+        /** @description A new local custom emoji. */
+        CreateCustomEmojiRequest: {
+            /** @description 2 to 30 letters (A to Z, a to z), digits, and underscores; case matters. */
+            shortcode: string;
+            media_id: components["schemas"]["Id"];
+            /** @description The category in the picker, up to 64 characters; empty for none. */
+            category?: string;
+            /** @description Other names, each following the rules of a shortcode; at most 10. */
+            aliases?: string[];
+            /**
+             * @description Whether the picker offers the emoji.
+             * @default true
+             */
+            visible_in_picker: boolean;
+        };
+        /** @description The settings of a custom emoji to change; absent ones stay. */
+        UpdateCustomEmojiRequest: {
+            /** @description Whether the emoji is shown. */
+            enabled?: boolean;
+            /** @description Whether the picker offers the local emoji. */
+            visible_in_picker?: boolean;
+            /** @description The category in the picker, up to 64 characters; empty removes it. */
+            category?: string;
+            /** @description The new aliases, each following the rules of a shortcode; at most 10. */
+            aliases?: string[];
+        };
+        /** @description The new image of a local custom emoji. */
+        ReplaceCustomEmojiImageRequest: {
+            media_id: components["schemas"]["Id"];
+        };
+        /**
+         * @description The problem of a custom emoji that breaks a rule (422,
+         *     `/api/v1/problems/invalid-custom-emoji`); `reason` says which. Another 422 (a malformed
+         *     request) has none.
+         */
+        CustomEmojiProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["CustomEmojiProblemReason"];
+        };
+        /**
+         * @description Why a custom emoji is refused. `invalid_shortcode`: not 2 to 30 letters, digits, and
+         *     underscores. `shortcode_taken`: a local emoji has the shortcode. `invalid_alias`: an
+         *     alias breaks the rules of a shortcode, or there are more than 10. `invalid_category`:
+         *     the category is longer than 64 characters or not text. `media_not_found`: the media
+         *     file is not an upload of the user. `media_not_ready`: it has not finished processing.
+         *     `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
+         *     than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
+         *     `remote_emoji`: the operation is for local emoji only.
+         * @enum {string}
+         */
+        CustomEmojiProblemReason: "invalid_shortcode" | "shortcode_taken" | "invalid_alias" | "invalid_category" | "media_not_found" | "media_not_ready" | "unsupported_format" | "too_large" | "too_big" | "remote_emoji";
         /**
          * @description The override of one design token, named without `--` (`color-accent`, `radius-md`): `light`
          *     and `dark` for a color token, `value` for the others.
@@ -4811,6 +5065,28 @@ export interface components {
                 "application/json": components["schemas"]["AdminRule"];
             };
         };
+        /** @description The custom emoji. */
+        AdminCustomEmoji: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminCustomEmoji"];
+            };
+        };
+        /** @description The custom emoji breaks a rule; nothing was changed. */
+        CustomEmojiProblem: {
+            headers: {
+                /** @description The locale of `title` and `detail`. */
+                "Content-Language"?: string;
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["CustomEmojiProblem"];
+            };
+        };
         /** @description The roles. */
         AdminRoleList: {
             headers: {
@@ -4871,6 +5147,8 @@ export interface components {
         AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
         RuleId: components["schemas"]["Id"];
+        /** @description The ID of the custom emoji. */
+        CustomEmojiId: components["schemas"]["Id"];
         /** @description The key of the text. */
         InstanceTextKey: components["schemas"]["InstanceTextKey"];
         /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
@@ -4913,6 +5191,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Instance"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listCustomEmojis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The custom emoji. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PickerCustomEmojiList"];
                 };
             };
             default: components["responses"]["Problem"];
@@ -7066,6 +7366,138 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ThemeProblem"];
                 };
             };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAdminCustomEmojis: {
+        parameters: {
+            query?: {
+                /** @description Keep the local emoji (`true`) or the remote ones (`false`). */
+                local?: boolean;
+                /** @description Keep the emoji of this remote domain. */
+                domain?: string;
+                /** @description Keep the emoji whose shortcode contains this text, ignoring case. */
+                shortcode?: string;
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the custom emoji. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCustomEmojiPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createCustomEmoji: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCustomEmojiRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminCustomEmoji"];
+            422: components["responses"]["CustomEmojiProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAdminCustomEmoji: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the custom emoji. */
+                id: components["parameters"]["CustomEmojiId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminCustomEmoji"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteCustomEmoji: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the custom emoji. */
+                id: components["parameters"]["CustomEmojiId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The emoji is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            422: components["responses"]["CustomEmojiProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateCustomEmoji: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the custom emoji. */
+                id: components["parameters"]["CustomEmojiId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCustomEmojiRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminCustomEmoji"];
+            422: components["responses"]["CustomEmojiProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    replaceCustomEmojiImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the custom emoji. */
+                id: components["parameters"]["CustomEmojiId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceCustomEmojiImageRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminCustomEmoji"];
+            422: components["responses"]["CustomEmojiProblem"];
             default: components["responses"]["Problem"];
         };
     };

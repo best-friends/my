@@ -73,6 +73,8 @@ type StatusReader interface {
 	NoteParts
 	Views(ctx context.Context, viewer appcontent.Viewer, ids []string) ([]appcontent.StatusView, error)
 	Pinned(ctx context.Context, viewer appcontent.Viewer, accountID string) ([]appcontent.StatusView, error)
+	// EmojiTags returns the Emoji tags of the custom emoji with an ID in ids that can be shown.
+	EmojiTags(ctx context.Context, ids []string) ([]appcontent.EmojiTag, error)
 }
 
 // FetchSettings reads the instance setting that restricts GETs to signed requests;
@@ -422,7 +424,11 @@ func (o *Objects) Outbox(ctx context.Context, accountID, before string) (OutboxP
 	out := OutboxPage{Items: []federation.ActivityDocument{}, Next: page.Next}
 	for _, v := range views {
 		actor := federation.IRI(v.Author.Account.URI)
-		out.Items = append(out.Items, createOf(v.Status, actor, o.viewNote(v)).Embedded())
+		note, err := o.viewNote(ctx, v)
+		if err != nil {
+			return OutboxPage{}, err
+		}
+		out.Items = append(out.Items, createOf(v.Status, actor, note).Embedded())
 	}
 	return out, nil
 }
@@ -436,7 +442,11 @@ func (o *Objects) Featured(ctx context.Context, accountID string) ([]federation.
 	}
 	out := []federation.NoteDocument{}
 	for _, v := range views {
-		out = append(out, o.viewNote(v))
+		note, err := o.viewNote(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, note)
 	}
 	return out, nil
 }
@@ -445,10 +455,22 @@ func (o *Objects) Featured(ctx context.Context, accountID string) ([]federation.
 // reader resolved. The reader showed the status to an anonymous visitor, so it is public or
 // unlisted and its effective visibility is its own (a ceiling would have made it followers-only):
 // no mention is left out of tag (ADR-0035 is about local statuses).
-func (o *Objects) viewNote(v appcontent.StatusView) federation.NoteDocument {
-	parts := appcontent.RevisionParts{Attachments: v.Attachments, Mentions: v.Mentions, Tags: v.Tags}
+func (o *Objects) viewNote(ctx context.Context, v appcontent.StatusView) (federation.NoteDocument, error) {
+	parts, err := o.viewParts(ctx, v)
+	if err != nil {
+		return federation.NoteDocument{}, err
+	}
 	return statusNote(v.Status, v.Revision, v.Author, v.Status.Visibility, parts,
-		updatedOf(v.Revision), o.d.Host, o.d.AccountDomain)
+		updatedOf(v.Revision), o.d.Host, o.d.AccountDomain), nil
+}
+
+// viewParts returns the parts of the Note of a status from those the reader resolved, with the
+// custom emoji of its revision.
+func (o *Objects) viewParts(ctx context.Context, v appcontent.StatusView) (appcontent.RevisionParts, error) {
+	parts := appcontent.RevisionParts{Attachments: v.Attachments, Mentions: v.Mentions, Tags: v.Tags}
+	var err error
+	parts.Emojis, err = o.d.Reader.EmojiTags(ctx, v.Revision.EmojiIDs)
+	return parts, err
 }
 
 // updatedOf returns when an edited status was last revised, zero for one never edited.

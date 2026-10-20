@@ -44,6 +44,9 @@ type FanOutDeps struct {
 	Parts NoteParts
 	// Images reads the avatars and headers of the actors that Updates carry; nil sends none.
 	Images ProfileImages
+	// EmojiTags reads the custom emoji of the profiles of the actors that Updates carry; nil
+	// sends none.
+	EmojiTags EmojiTagReader
 	// Blocks reads the local blocks that Block and Undo Block are about.
 	Blocks BlockFinder
 	// Follows reads the follows that Follow, Accept, Reject, and Undo Follow are about; nil
