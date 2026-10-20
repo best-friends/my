@@ -593,6 +593,49 @@ CREATE TABLE instance_texts (
 );
 
 -- ---------------------------------------------------------------------------------------------
+-- instance: theme (data-model §4.9, ADR-0059, FR-605). Owned by internal/app/instance.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event (revision): one version of the instance theme: the administrator's custom CSS, with its
+-- token overrides in instance_theme_tokens. A revision without tokens and CSS resets the theme.
+-- revised_by_user_id is NULL for a change from the CLI.
+CREATE TABLE instance_theme_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  custom_css text NOT NULL,
+  revised_by_user_id text COLLATE "C",
+  revised_at timestamptz NOT NULL
+);
+
+-- Event (child of a revision): the value of one overridden design token in one color scheme
+-- (light and dark for a color token, all for the others). The token list is generated from the
+-- web client's theme.css (internal/domain/instance/theme_tokens.gen.go).
+CREATE TABLE instance_theme_tokens (
+  theme_revision_id text COLLATE "C" NOT NULL,
+  token text COLLATE "C" NOT NULL CHECK (token IN (
+    'color-surface', 'color-surface-raised', 'color-surface-sunken', 'color-fg', 'color-fg-muted',
+    'color-accent', 'color-accent-hover', 'color-accent-fg', 'color-danger', 'color-danger-fg',
+    'color-success', 'color-success-fg', 'color-warning', 'color-warning-fg', 'color-border',
+    'color-border-strong', 'color-focus', 'color-overlay', 'font-sans', 'font-mono', 'text-xs',
+    'text-xs--line-height', 'text-sm', 'text-sm--line-height', 'text-base',
+    'text-base--line-height', 'text-lg', 'text-lg--line-height', 'text-xl', 'text-xl--line-height',
+    'text-2xl', 'text-2xl--line-height', 'text-3xl', 'text-3xl--line-height', 'spacing',
+    'radius-sm', 'radius-md', 'radius-lg', 'radius-xl', 'elevation-sm', 'elevation-md',
+    'elevation-lg', 'ease-standard', 'ease-enter', 'ease-exit', 'transition-duration-fast',
+    'transition-duration-normal', 'transition-duration-slow', 'default-transition-duration',
+    'default-transition-timing-function'
+  )),
+  scheme text COLLATE "C" NOT NULL CHECK (scheme IN ('light', 'dark', 'all')),
+  value text NOT NULL,
+  PRIMARY KEY (theme_revision_id, token, scheme)
+);
+
+-- Projection: the current theme revision, one row once a theme has been saved.
+CREATE TABLE instance_theme (
+  id integer NOT NULL PRIMARY KEY CHECK (id = 1),
+  revision_id text COLLATE "C" NOT NULL
+);
+
+-- ---------------------------------------------------------------------------------------------
 -- instance: rules (data-model §4.9, FR-705). Owned by internal/app/instance.
 -- A rule keeps its ID across revisions, so reports cite it by rule_id; retired rules stay.
 -- ---------------------------------------------------------------------------------------------

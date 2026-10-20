@@ -349,6 +349,13 @@ type InstanceTextRevision struct {
 	RevisedAt       time.Time
 }
 
+type InstanceThemeRevision struct {
+	ID              string
+	CustomCss       string
+	RevisedByUserID *string
+	RevisedAt       time.Time
+}
+
 type Invite struct {
 	ID              string
 	Code            string
