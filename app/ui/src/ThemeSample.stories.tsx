@@ -38,7 +38,7 @@ function Gallery() {
             <ReplyIcon />
             Reply
           </Button>
-          <ToggleButton aria-label="Favourite" defaultSelected>
+          <ToggleButton aria-label="Favourite">
             <StarIcon />
           </ToggleButton>
         </div>
