@@ -2,6 +2,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { ProfileView } from "../features/profile";
+import { pinnedStatusesQueryOptions } from "../features/status";
 import { type AccountTimelineFilter, accountTimelineFilters, timelineQueryOptions } from "../features/timeline";
 import { PageHeading } from "./-layout/PageHeading";
 import { loadAccount, profileParamsSchema } from "./-profile/loadAccount";
@@ -24,10 +25,14 @@ export const Route = createFileRoute("/@{$acct}")({
   // marked stale are shown at once, marked ones are fetched again first (web-client.md S7).
   loader: async ({ context, params: { acct }, deps: { tab } }) => {
     const account = await loadAccount(context, acct);
-    await context.queryClient.infiniteQuery({
-      ...timelineQueryOptions(context.api, { kind: "account", id: account.id, filter: tab }),
-      staleTime: Infinity,
-    });
+    await Promise.all([
+      context.queryClient.infiniteQuery({
+        ...timelineQueryOptions(context.api, { kind: "account", id: account.id, filter: tab }),
+        staleTime: Infinity,
+      }),
+      // The posts tab starts with the account's pinned posts (FR-403).
+      tab === "posts" && context.queryClient.query({ ...pinnedStatusesQueryOptions(context.api, account.id), staleTime: Infinity }),
+    ]);
   },
   component: ProfilePage,
   notFoundComponent: ProfileNotFound,

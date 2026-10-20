@@ -307,6 +307,18 @@ linters:
               desc: sign and verify through federation.Signer / federation.Verifier (internal/adapter/httpsig)
             - pkg: github.com/dunglas/httpsfv
               desc: Structured Fields of HTTP signatures are parsed in internal/adapter/httpsig
+        # The OpenTelemetry SDK and the Prometheus client stay inside the adapters of kernel.Meter
+        # (ADR-0055 §1), so that the core, the interfaces, and the other adapters measure through the port.
+        opentelemetry:
+          list-mode: lax
+          files:
+            - $all
+            - "!**/internal/adapter/telemetry/**"
+          deny:
+            - pkg: go.opentelemetry.io
+              desc: measure through kernel.Meter (internal/adapter/telemetry)
+            - pkg: github.com/prometheus
+              desc: measure through kernel.Meter (internal/adapter/telemetry)
         interface:
           list-mode: lax
           files:

@@ -73,6 +73,9 @@ type DeliverDeps struct {
 	IDs     kernel.IDGenerator
 	// Logger logs deliveries that cannot run; nil means slog.Default().
 	Logger *slog.Logger
+	// Meter records my.delivery.attempts and my.delivery.duration (ADR-0055 §3); nil records
+	// nothing.
+	Meter kernel.Meter
 }
 
 // Deliverer runs JobDeliver: one POST of an outbound activity's document to one inbox
@@ -87,7 +90,11 @@ type DeliverDeps struct {
 //     delivery_attempts, whose projector updates instance_health in the same transaction.
 //  5. A success or a permanent failure is Done; a retryable failure is Retry, after the
 //     server's Retry-After when it gives one, otherwise on DeliveryRetryPolicy.
-type Deliverer struct{ d DeliverDeps }
+type Deliverer struct {
+	d        DeliverDeps
+	attempts kernel.Counter
+	duration kernel.Histogram
+}
 
 // NewDeliverer returns the delivery on d.
 func NewDeliverer(d DeliverDeps) *Deliverer {
@@ -100,7 +107,8 @@ func NewDeliverer(d DeliverDeps) *Deliverer {
 	if d.Logger == nil {
 		d.Logger = slog.Default()
 	}
-	return &Deliverer{d: d}
+	m := kernel.MeterOrNop(d.Meter)
+	return &Deliverer{d: d, attempts: m.Counter(DeliveryAttempts), duration: m.Histogram(DeliveryDuration)}
 }
 
 // RegisterJobs registers the JobDeliver handler with DeliveryRetryPolicy.
@@ -174,7 +182,11 @@ func (d *Deliverer) Deliver(ctx context.Context, deliveryID string) queue.Result
 		return queue.Retry(0, err)
 	}
 
+	started := time.Now()
 	attempt, retryAfter := d.send(ctx, del, document, key)
+	if attempt.Outcome != "" {
+		d.duration.Record(ctx, time.Since(started).Seconds(), kernel.NewLabels(LabelOutcome, deliveryOutcome(attempt)))
+	}
 	if attempt.Outcome == "" {
 		// The job's context ended (lease or shutdown) before an answer: try again without
 		// counting an attempt against the server.
@@ -218,6 +230,7 @@ func (d *Deliverer) send(ctx context.Context, del federation.Delivery, document 
 // finish records a in one transaction with its event, so that the instance_health projector
 // sees it, and turns the outcome into the job's result.
 func (d *Deliverer) finish(ctx context.Context, del federation.Delivery, a federation.DeliveryAttempt, retryAfter time.Duration) queue.Result {
+	d.attempts.Add(ctx, 1, kernel.NewLabels(LabelOutcome, deliveryOutcome(a)))
 	a.ID = d.d.IDs.NewID()
 	a.DeliveryID = del.ID
 	a.AttemptedAt = kernel.Normalize(d.d.Clock.Now())

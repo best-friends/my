@@ -68,6 +68,11 @@ func (n normalizer) document(o object) (*Document, error) {
 	return &Document{Object: obj}, err
 }
 
+// KnownActivityType reports whether t names one of the known activity types.
+func KnownActivityType(t string) bool {
+	return t != "" && slices.Contains(activityTypes, ActivityType(t))
+}
+
 var (
 	activityTypes = []ActivityType{
 		ActivityCreate, ActivityUpdate, ActivityDelete, ActivityFollow, ActivityAccept, ActivityReject,

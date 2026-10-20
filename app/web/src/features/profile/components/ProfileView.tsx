@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A profile (FR-204): the header with the account's picture, name, handle, profile text, metadata fields,
 // follow counts and the relationship buttons, then its posts in tabs (WAI-ARIA APG, tabs pattern) whose
-// selection the route keeps in the URL (web-client.md S3).
+// selection the route keeps in the URL (web-client.md S3), the posts tab starting with its pinned posts.
 import { Avatar, EmojiText, ExternalLinkIcon, Link, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
-import { type ReactNode, useId, useState } from "react";
+import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed, useRemoteFetch } from "../../timeline";
+import { usePinnedStatuses } from "../hooks/usePinnedStatuses";
 import { isolate, type ProfileView as ProfileViewData, useProfile } from "../hooks/useProfile";
 import { useRelationship } from "../hooks/useRelationship";
 import { RelationshipActions } from "./RelationshipActions";
@@ -207,7 +208,26 @@ function AccountPosts({ accountId, filter, original, labelledBy }: AccountPostsP
       {fetching && (
         <p className="px-4 py-3 text-sm text-fg-muted">{t("client:profile.remote.fetching")}</p>
       )}
-      <TimelineFeed timeline={{ kind: "account", id: accountId, filter }} aria-labelledby={labelledBy} {...(origin !== undefined && { origin })} />
+      {filter === "posts" ? (
+        <PostsWithPinned accountId={accountId} labelledBy={labelledBy} origin={origin} />
+      ) : (
+        <TimelineFeed timeline={{ kind: "account", id: accountId, filter }} aria-labelledby={labelledBy} {...(origin !== undefined && { origin })} />
+      )}
     </div>
+  );
+}
+
+type PostsWithPinnedProps = { accountId: string; labelledBy: string; origin: ComponentProps<typeof TimelineFeed>["origin"] };
+
+/** The posts tab: the account's pinned posts at the top of its posts (FR-403), as Mastodon shows them. */
+function PostsWithPinned({ accountId, labelledBy, origin }: PostsWithPinnedProps) {
+  const pinned = usePinnedStatuses(accountId);
+  return (
+    <TimelineFeed
+      timeline={{ kind: "account", id: accountId, filter: "posts" }}
+      aria-labelledby={labelledBy}
+      pinned={pinned}
+      {...(origin !== undefined && { origin })}
+    />
   );
 }

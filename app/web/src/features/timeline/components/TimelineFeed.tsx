@@ -2,7 +2,7 @@
 import { Button, EmptyState, Feed, Link, VisuallyHidden } from "@my/ui";
 import type { ReactNode } from "react";
 import { useT } from "../../../lib/i18n";
-import type { Timeline } from "../api/timelines";
+import type { Status, Timeline } from "../api/timelines";
 import { useTimeline } from "../hooks/useTimeline";
 import { StatusCard } from "../../status";
 
@@ -15,17 +15,27 @@ export type TimelineFeedProps = {
    * profile, ADR-0044): shown above the posts, and in the empty state when there are none.
    */
   origin?: { notice: string; link: ReactNode };
+  /** The posts pinned to the top of the timeline (a profile's, FR-403), before its own posts. */
+  pinned?: readonly Status[];
 };
+
+/** No pinned posts: one array for every render, so that the default is stable. */
+const noPosts: readonly Status[] = [];
 
 /**
  * A timeline as a feed (web-client.md Y6) with its older pages loaded as the reader nears the end, or an
  * empty state. The first page comes from the route loader; render it inside the route that loads it.
  */
-export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin }: TimelineFeedProps) {
+export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin, pinned = noPosts }: TimelineFeedProps) {
   const t = useT();
   const { statuses, hasMore, isLoadingMore, loadMore, loadMoreError } = useTimeline(timeline);
+  // A pinned post is in the timeline too, further down, so its entry at the top has a key of its own.
+  const entries = [
+    ...pinned.map((status) => ({ key: `pinned:${status.id}`, status, pinned: true })),
+    ...statuses.map((status) => ({ key: status.id, status, pinned: false })),
+  ];
 
-  if (statuses.length === 0 && !hasMore) return <TimelineEmpty timeline={timeline} origin={origin} />;
+  if (entries.length === 0 && !hasMore) return <TimelineEmpty timeline={timeline} origin={origin} />;
 
   return (
     <div className="flex flex-col">
@@ -41,9 +51,9 @@ export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin }
       </VisuallyHidden>
       <Feed
         aria-labelledby={labelledBy}
-        items={statuses}
-        getKey={(status) => status.id}
-        renderItem={(status) => <StatusCard status={status} />}
+        items={entries}
+        getKey={(entry) => entry.key}
+        renderItem={(entry) => <StatusCard status={entry.status} pinned={entry.pinned} />}
         isLoading={isLoadingMore}
         // After a failure the feed stops loading by itself; the retry button below asks again.
         hasMore={hasMore && loadMoreError === null}
