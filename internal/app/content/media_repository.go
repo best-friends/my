@@ -63,6 +63,10 @@ type MediaRepository interface {
 	ListLeastRecentlyAccessedRemoteMediaCache(ctx context.Context, limit int) ([]content.RemoteMediaCacheEntry, error)
 	// RemoteMediaCacheSize returns the total file size of the cache entries in bytes.
 	RemoteMediaCacheSize(ctx context.Context) (int64, error)
+	// LocalMediaSize returns the bytes that the local uploads keep, in bytes: the variants of
+	// the current processing result of each upload, and the originals that wait for their
+	// first processing.
+	LocalMediaSize(ctx context.Context) (int64, error)
 	// IsCustomEmojiImage reports whether any revision of a custom emoji uses a media file as
 	// its image.
 	IsCustomEmojiImage(ctx context.Context, mediaID string) (bool, error)

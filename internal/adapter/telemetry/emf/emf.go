@@ -9,13 +9,15 @@
 // or a job) are written when it ends: one line per distinct label set, holding every metric
 // recorded with those labels (a counter's sum, a histogram's values). A measurement outside a
 // unit of work is written at once. UpDownCounters record nothing, since they are values of one
-// process that the platform's own metrics stand in for (Lambda's concurrency), and Gauges are
-// never collected.
+// process that the platform's own metrics stand in for (Lambda's concurrency). Gauges are not
+// collected: WriteGauges (kernel.GaugeWriter) writes them when the periodic job of the metrics
+// snapshot asks (ADR-0055 §4).
 package emf
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"slices"
 	"strings"
@@ -48,9 +50,20 @@ type Options struct {
 type Meter struct {
 	opts Options
 	mu   sync.Mutex // serializes the writes, one line each
+
+	gaugesMu sync.Mutex
+	gauges   []gauge
 }
 
-var _ kernel.Meter = (*Meter)(nil)
+type gauge struct {
+	i kernel.Instrument
+	f kernel.GaugeFunc
+}
+
+var (
+	_ kernel.Meter       = (*Meter)(nil)
+	_ kernel.GaugeWriter = (*Meter)(nil)
+)
 
 // New returns the Meter on opts. Writer and Clock are required.
 func New(opts Options) *Meter {
@@ -85,8 +98,38 @@ func (m *Meter) Histogram(i kernel.Instrument) kernel.Histogram {
 	return instrument{m: m, i: i, k: kindValues}
 }
 
-// Gauge implements kernel.Meter; EMF has no collection, so f is never called.
-func (m *Meter) Gauge(kernel.Instrument, kernel.GaugeFunc) {}
+// Gauge implements kernel.Meter. EMF has no collection: WriteGauges calls f.
+func (m *Meter) Gauge(i kernel.Instrument, f kernel.GaugeFunc) {
+	m.gaugesMu.Lock()
+	defer m.gaugesMu.Unlock()
+	m.gauges = append(m.gauges, gauge{i: i, f: f})
+}
+
+// WriteGauges implements kernel.GaugeWriter: it calls the gauge functions and writes their
+// values, one line per distinct label set, and returns the errors of the functions.
+func (m *Meter) WriteGauges(ctx context.Context) error {
+	m.gaugesMu.Lock()
+	gauges := slices.Clone(m.gauges)
+	m.gaugesMu.Unlock()
+	b := &batch{}
+	bctx := context.WithValue(ctx, batchKey{}, b)
+	var errs []error
+	for _, g := range gauges {
+		errs = append(errs, g.f(ctx, gaugeObserver{m: m, ctx: bctx, i: g.i}))
+	}
+	m.flush(b)
+	return errors.Join(errs...)
+}
+
+type gaugeObserver struct {
+	m   *Meter
+	ctx context.Context
+	i   kernel.Instrument
+}
+
+func (o gaugeObserver) Observe(v float64, l kernel.Labels) {
+	o.m.record(o.ctx, o.i, kindValues, v, 0, l)
+}
 
 type batchKey struct{}
 

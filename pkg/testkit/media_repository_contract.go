@@ -43,7 +43,7 @@ type MediaFactory func(t *testing.T, opts uow.Options) MediaHarness
 // until a status attaches the file, the cleanup of old unattached uploads that keeps attached
 // and referenced ones, the erasure of a deleted account's uploads with their blobs that keeps
 // the attached and referenced ones, remote media files recorded once per owner and URL, and the media
-// proxy's remote media cache with its cleanup.
+// proxy's remote media cache with its cleanup, and the bytes that the local uploads keep.
 func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 	t.Helper()
 	cases := []struct {
@@ -67,6 +67,7 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"CachesRemoteMediaUnderThePolicy", mediaCachesRemoteMedia},
 		{"CachesTheSmallVariantOfRemoteMedia", mediaCachesSmallRemoteVariants},
 		{"CleansUpTheRemoteMediaCache", mediaCleansUpRemoteMediaCache},
+		{"CountsStoredBytes", mediaCountsStoredBytes},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newMediaEnv(t, newHarness)) })
@@ -838,4 +839,39 @@ func mediaLargeKey(m appcontent.Media) string {
 	}
 	v, _ := m.Result.Variant(content.SizeLarge, content.MotionStill)
 	return v.BlobKey
+}
+
+// mediaCountsStoredBytes checks MediaService.StoredBytes: the local uploads count with the
+// variants of their current result once processed, and with the file as received before.
+func mediaCountsStoredBytes(t *testing.T, e *mediaEnv) {
+	ctx := t.Context()
+	local, remote, err := e.service.StoredBytes(ctx)
+	if err != nil || local != 0 || remote != 0 {
+		t.Fatalf("StoredBytes of an empty database = %d, %d, %v", local, remote, err)
+	}
+	processed := e.upload(t, FixturePNG(40, 30, false))
+	pending := e.upload(t, FixtureGIF(4, 3, 2))
+	e.process(t, processed.File.ID)
+	want := pending.Upload.FileSize
+	result := e.media(t, processed.File.ID).Result
+	if result == nil || len(result.Variants) == 0 {
+		t.Fatalf("Result = %+v, want variants", result)
+	}
+	for _, v := range result.Variants {
+		want += v.FileSize
+	}
+	if local, _, err = e.service.StoredBytes(ctx); err != nil || local != want {
+		t.Errorf("StoredBytes local = %d, %v, want %d", local, err, want)
+	}
+
+	// The variants of an earlier result no longer count.
+	e.clock.Advance(time.Second)
+	e.processFor(t, processed.File.ID, content.PurposeAvatar)
+	want = pending.Upload.FileSize
+	for _, v := range e.media(t, processed.File.ID).Result.Variants {
+		want += v.FileSize
+	}
+	if local, _, err = e.service.StoredBytes(ctx); err != nil || local != want {
+		t.Errorf("after processing again: StoredBytes local = %d, %v, want %d", local, err, want)
+	}
 }

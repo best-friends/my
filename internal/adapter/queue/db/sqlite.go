@@ -210,3 +210,23 @@ func (sqliteStore) deleteOutbox(ctx context.Context, tx uow.Tx, id string) error
 	}
 	return q.DeleteOutboxEvent(ctx, id)
 }
+
+func (sqliteStore) backlog(ctx context.Context, tx uow.Tx, now time.Time) (queue.Backlog, error) {
+	q, err := sqliteQueries(tx)
+	if err != nil {
+		return queue.Backlog{}, err
+	}
+	rows, err := q.CountReadyJobs(ctx, millis(now))
+	if err != nil {
+		return queue.Backlog{}, err
+	}
+	b := queue.Backlog{Ready: make(map[string]int64, len(rows))}
+	for _, r := range rows {
+		b.Ready[r.Type] = r.Ready
+		if at := fromMillis(r.OldestRunAt); b.OldestReadyAt.IsZero() || at.Before(b.OldestReadyAt) {
+			b.OldestReadyAt = at
+		}
+	}
+	b.Dead, err = q.CountDeadJobs(ctx)
+	return b, err
+}

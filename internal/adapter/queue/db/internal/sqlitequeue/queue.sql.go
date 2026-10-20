@@ -68,6 +68,57 @@ func (q *Queries) ClaimJob(ctx context.Context, arg ClaimJobParams) (ClaimJobRow
 	return i, err
 }
 
+const countDeadJobs = `-- name: CountDeadJobs :one
+SELECT COUNT(*) FROM dead_jobs
+`
+
+func (q *Queries) CountDeadJobs(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countDeadJobs)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countReadyJobs = `-- name: CountReadyJobs :many
+SELECT type, COUNT(*) AS ready, CAST(MIN(run_at) AS INTEGER) AS oldest_run_at
+FROM jobs
+WHERE run_at <= ?1 AND (locked_until IS NULL OR locked_until <= ?1)
+GROUP BY type
+ORDER BY type
+`
+
+type CountReadyJobsRow struct {
+	Type        string
+	Ready       int64
+	OldestRunAt int64
+}
+
+// CountReadyJobs counts the due, unleased jobs of each type, with the earliest run_at among
+// them, for the queue gauges of the metrics snapshot (ADR-0055 section 4). It counts the jobs
+// that their ordering key holds back too.
+func (q *Queries) CountReadyJobs(ctx context.Context, now int64) ([]CountReadyJobsRow, error) {
+	rows, err := q.db.QueryContext(ctx, countReadyJobs, now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountReadyJobsRow{}
+	for rows.Next() {
+		var i CountReadyJobsRow
+		if err := rows.Scan(&i.Type, &i.Ready, &i.OldestRunAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteClaimedJob = `-- name: DeleteClaimedJob :execrows
 DELETE FROM jobs WHERE id = ? AND locked_by = ? AND attempt = ?
 `

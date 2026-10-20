@@ -806,3 +806,16 @@ func (s *MediaService) deleteUnattached(ctx context.Context, id string) (bool, e
 	}
 	return true, nil
 }
+
+// StoredBytes returns the bytes that the media files keep in blob storage: those of the local
+// uploads (their current variants and the originals waiting for processing), and those of
+// the cache of remote files (ADR-0055 §3, my.media.stored_bytes).
+func (s *MediaService) StoredBytes(ctx context.Context) (local, remoteCache int64, err error) {
+	if local, err = s.d.Repository.LocalMediaSize(ctx); err != nil {
+		return 0, 0, err
+	}
+	if remoteCache, err = s.d.Repository.RemoteMediaCacheSize(ctx); err != nil {
+		return 0, 0, err
+	}
+	return local, remoteCache, nil
+}

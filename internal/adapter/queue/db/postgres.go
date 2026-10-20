@@ -257,3 +257,23 @@ func (postgresStore) deleteOutbox(ctx context.Context, tx uow.Tx, id string) err
 	}
 	return q.DeleteOutboxEvent(ctx, id)
 }
+
+func (postgresStore) backlog(ctx context.Context, tx uow.Tx, now time.Time) (queue.Backlog, error) {
+	q, err := postgresQueries(tx)
+	if err != nil {
+		return queue.Backlog{}, err
+	}
+	rows, err := q.CountReadyJobs(ctx, now)
+	if err != nil {
+		return queue.Backlog{}, err
+	}
+	b := queue.Backlog{Ready: make(map[string]int64, len(rows))}
+	for _, r := range rows {
+		b.Ready[r.Type] = r.Ready
+		if b.OldestReadyAt.IsZero() || r.OldestRunAt.Before(b.OldestReadyAt) {
+			b.OldestReadyAt = r.OldestRunAt.UTC()
+		}
+	}
+	b.Dead, err = q.CountDeadJobs(ctx)
+	return b, err
+}
