@@ -117,25 +117,30 @@ make check-changed
 ## 9. Parallel batches
 
 When many changes land at once, running the web E2E on every pull request costs time and runners without making the
-result more accurate: the PRs of a batch keep changing the same areas, so a per-PR run checks a state that `main`
-never has. A batch therefore checks each PR with the `check` gate only, runs the slow suites once on `main` after the
-batch has merged, and fixes what they find from there. Single-issue work keeps the per-PR web E2E of §5.
+result more accurate: the PRs keep changing the same areas, so a per-PR run checks a state that `main` never has, and
+a spec that passes alone can still break elsewhere. Waiting for the web E2E on `main` after each group of PRs stalls
+the agents for the same reason. Parallel work therefore runs as a rolling queue: each PR is checked by the `check`
+gate only, the web E2E runs on `main` without holding up the queue, and its failures are fixed together once the
+milestone's implementation issues are done. Single-issue work keeps the per-PR web E2E of §5.
 
 ### Planning (orchestrator)
 
+- Keep about 4–5 agents running, capped by the load of the machine. Whenever an agent finishes and a slot frees,
+  start the next issue; there is no barrier between groups of issues.
 - For each candidate issue, list the shared files it is likely to touch:
   - the sources of generated code: `api/openapi.yaml`, `locales/`, `schema/<dialect>.sql` and the sqlc queries,
     the web route tree (`app/web/src/routes/`), the config schema;
   - the indexes and tables many changes edit: the ADR index in `docs/adr/README.md`, the FR table in
     [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`.
-- Do not run two issues that touch the same shared files at the same time: put them in different batches, or order
-  them so that the second starts after the first has merged.
-- Cap the number of agents running at once by the load of the machine (about 4–5).
+- Never run two issues that touch the same shared files at the same time: when the next issue in line shares files
+  with a running one, start a different issue for the free slot, and start the held issue after the running one has
+  merged.
 
-### Agents in a batch
+### Agents in the queue
 
 - The PR gate is `make check-changed` locally and the PR's `check` CI. Do not run the web E2E per PR (`make web-e2e`
-  or `web-e2e.yml`): write and update the E2E specs the change needs, but do not run the suite.
+  or `web-e2e.yml`), not even the specs the change adds: write and update the E2E specs the change needs, but do not
+  run the suite.
 - Before waiting on CI, check that the PR is mergeable (`gh pr view <PR> -R best-friends/my --json mergeable`).
   CI does not start on a conflicting PR; merge `origin/main` into the branch first, as in §7.
 - Resolve conflicts in generated files by regenerating them (§7), never by hand.
@@ -145,19 +150,21 @@ batch has merged, and fixes what they find from there. Single-issue work keeps t
 
 - Enable auto-merge as soon as a PR is opened (`gh pr merge <PR> -R best-friends/my --auto --merge`); the merge queue
   takes it when its `check` is green.
-- Watch every PR of the batch with one watcher for three events: merged, conflicting, and CI failure.
+- Watch every open PR with one watcher for three events: merged, conflicting, and CI failure.
 - A conflict drops the PR from the queue and turns off its auto-merge. Have the agent that owns the PR merge `main`
   into the branch, then enable auto-merge again.
 - Never remove a worktree that an agent still works in.
 - Work that follows a merged PR goes to a new agent, on a new branch.
 
-### Stabilization (orchestrator)
+### Failures on `main` (orchestrator)
 
-- Once every PR of the batch has merged, run the web E2E once on `main`. Pushes to `main` already run the subset
-  ([ADR-0047](../adr/0047-ci-protection-layers.md)); dispatch the full matrix when the batch changed the web client
-  broadly (`gh workflow run web-e2e.yml -R best-friends/my --ref main -f matrix=full`).
-- Group the failures by cause, file one issue per cause, and fix them.
-- Start the next batch only after `main` is green again.
+- Failures of the `check` gate, the Go tests, or the merge queue are fixed at once. The merge queue keeps them off
+  `main` by design; when a build or a test on `main` still breaks, fix it before starting more issues.
+- The web E2E runs on pushes to `main` ([ADR-0047](../adr/0047-ci-protection-layers.md)) and nightly, and does not
+  pause the queue. Collect its failures on `main` as they appear.
+- Once the milestone's implementation issues are done, run the full matrix on `main`
+  (`gh workflow run web-e2e.yml -R best-friends/my --ref main -f matrix=full`), group the collected failures by cause,
+  file one issue per cause, and fix them together.
 
 ### Recording decisions
 

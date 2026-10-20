@@ -52,7 +52,7 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 4. Open a PR using the template, with `Closes #N` and the acceptance criteria checked, and wait for its CI to pass.
    Pull requests run the `check` gate ([ADR-0047](docs/adr/0047-ci-protection-layers.md)) but not the web E2E: in single-issue work, for a
    change to the web client, run `make web-e2e` or `gh workflow run web-e2e.yml --ref <branch>`. In a parallel batch run by an orchestrator,
-   follow [workflow.md §9](docs/agents/workflow.md#9-parallel-batches) instead (no per-PR web E2E; one run on `main` after the batch).
+   follow [workflow.md §9](docs/agents/workflow.md#9-parallel-batches) instead (no per-PR web E2E; web E2E failures on `main` are fixed together at the end of the milestone).
    Do not merge or queue the PR yourself: the orchestrator or the decider queues it with `gh pr merge --auto`, and the merge queue
    runs `check` again on top of the latest `main` before merging. Merge `main` into the branch only when the PR conflicts or the
    queue drops it. Pushes to `main` and the nightly run the slower suites, and CodeQL code scanning (`codeql.yml`) runs on
