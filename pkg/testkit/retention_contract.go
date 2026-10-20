@@ -30,6 +30,14 @@ type RetentionHarness struct {
 	Retention    appcontent.RetentionRepository
 	Purges       appfederation.PurgeRepository
 	Profiles     appaccount.ProfilePruneRepository
+	Emojis       EmojiPurgeStore
+}
+
+// EmojiPurgeStore is the content module's custom emoji repository, which the purge of remote
+// custom emoji uses.
+type EmojiPurgeStore interface {
+	appcontent.CustomEmojiRepository
+	appcontent.EmojiPurgeRepository
 }
 
 // RetentionFactory returns a harness on a new, empty database whose UnitOfWork uses opts.
@@ -44,7 +52,9 @@ type RetentionFactory func(t *testing.T, opts uow.Options) RetentionHarness
 // remote status goes, leaving the local accounts' interactions, except those that the moderation
 // records retain (a reported status, a held author); each transaction deletes a
 // bounded batch; a purged status can be fetched and deleted again; the inbox and delivery records
-// and the tombstones of unknown objects and Follows go after their retention; and unrelated remote accounts keep only their current profile.
+// and the tombstones of unknown objects and Follows go after their retention; unrelated remote accounts keep only their current profile;
+// and the remote custom emoji that no status, profile, or reaction refers to any more go with the
+// remote media of their images, while the referenced ones stay, disabled or not.
 func RetentionContract(t *testing.T, newHarness RetentionFactory) {
 	t.Helper()
 	cases := []struct {
@@ -59,6 +69,7 @@ func RetentionContract(t *testing.T, newHarness RetentionFactory) {
 		{"IngestsAPurgedStatusAgain", retentionRefetch},
 		{"PurgesInboxAndDeliveryRecords", retentionFederationRecords},
 		{"PrunesProfilesOfUnrelatedRemoteAccounts", retentionProfiles},
+		{"PurgesUnreferencedRemoteEmoji", retentionEmojis},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRetentionEnv(t, newHarness)) })

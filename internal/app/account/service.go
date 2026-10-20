@@ -266,6 +266,13 @@ func (s *Service) IsMediaReferenced(ctx context.Context, mediaID string) (bool, 
 	return s.d.Repository.IsMediaReferenced(ctx, mediaID)
 }
 
+// IsEmojiReferenced reports whether any profile revision, current or not, uses a custom emoji in
+// its display name, note, or fields. It implements content.EmojiReferrer, so that the purge of
+// remote custom emoji keeps those of profiles.
+func (s *Service) IsEmojiReferenced(ctx context.Context, emojiID string) (bool, error) {
+	return s.d.Repository.IsEmojiReferenced(ctx, emojiID)
+}
+
 // ReviseProfile records a new revision of an account's profile and makes it current.
 func (s *Service) ReviseProfile(ctx context.Context, accountID string, in ProfileInput) (account.ProfileRevision, error) {
 	base := account.ProfileRevision{

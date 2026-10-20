@@ -385,3 +385,58 @@ type stubPreview struct{ media.Processor }
 func (stubPreview) Preview(_ context.Context, data []byte, _ media.Limits, _ media.Sizes, _ media.Request) (media.Variant, error) {
 	return media.Variant{Data: append([]byte("small:"), data[:8]...), ContentType: "image/webp", Extension: "webp", Width: 1, Height: 1}, nil
 }
+
+func TestMediaProxyLimitsCustomEmojiImages(t *testing.T) {
+	jpeg := append([]byte("\xFF\xD8\xFF\xE0"), make([]byte, 100)...)
+	gif := append([]byte("GIF89a"), make([]byte, 100)...)
+	webp := append([]byte("RIFF\x00\x00\x00\x00WEBPVP8 "), make([]byte, 100)...)
+	big := append(append([]byte{}, pngData...), make([]byte, 1<<20)...)
+	for _, tc := range []struct {
+		name     string
+		purpose  domain.MediaPurpose
+		maxBytes int64
+		resp     fakeResponse
+		want     error
+	}{
+		{"png", domain.PurposeEmoji, 0, fakeResponse{body: pngData}, nil},
+		{"gif", domain.PurposeEmoji, 0, fakeResponse{body: gif}, nil},
+		{"webp", domain.PurposeEmoji, 0, fakeResponse{body: webp}, nil},
+		{"jpeg", domain.PurposeEmoji, 0, fakeResponse{body: jpeg}, content.ErrNotFound},
+		{"jpeg of an attachment", domain.PurposeAttachment, 0, fakeResponse{body: jpeg}, nil},
+		{"over 1 MiB by Content-Length", domain.PurposeEmoji, 0, fakeResponse{
+			header: http.Header{"Content-Length": {strconv.Itoa(len(big))}}, body: big,
+		}, content.ErrNotFound},
+		{"over 1 MiB without a length", domain.PurposeEmoji, 0, fakeResponse{body: big}, content.ErrNotFound},
+		{"over 1 MiB of an attachment", domain.PurposeAttachment, 0, fakeResponse{body: big}, nil},
+		{"exactly the limit", domain.PurposeEmoji, int64(len(pngData)), fakeResponse{body: pngData}, nil},
+		{"over the configured limit", domain.PurposeEmoji, int64(len(pngData)) - 1, fakeResponse{body: pngData}, content.ErrNotFound},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newProxyEnv(t)
+			if tc.maxBytes > 0 {
+				p, err := content.NewMediaProxy(content.ProxyDeps{
+					Repository: e.repo, HTTP: e.http, Accounts: domains{ownerID: "remote.example"}, Policy: e.rej,
+					Settings: func(context.Context) (content.ProxySettings, error) {
+						return content.ProxySettings{Policy: content.RemoteMediaCacheNone, CacheTTL: time.Hour}, nil
+					},
+					Keys: [][]byte{bytes.Repeat([]byte("k"), 32)}, BaseURL: "https://social.example/", EmojiMaxBytes: tc.maxBytes,
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				e.proxy = p
+			}
+			e.add(pngID, "https://remote.example/emoji", domain.MediaTypeImage, tc.resp)
+			m := e.repo.files[pngID]
+			m.Purpose = tc.purpose
+			e.repo.files[pngID] = m
+			_, data, err := e.open(t, pngID)
+			switch {
+			case tc.want == nil && (err != nil || !bytes.Equal(data, tc.resp.body)):
+				t.Errorf("Open = %d bytes, %v; want the file", len(data), err)
+			case tc.want != nil && !errors.Is(err, tc.want):
+				t.Errorf("Open = %v, want %v", err, tc.want)
+			}
+		})
+	}
+}

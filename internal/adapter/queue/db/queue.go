@@ -205,6 +205,23 @@ func (q *Queue) RequeueDeadJob(ctx context.Context, id string) error {
 	return err
 }
 
+// DeleteDeadJob implements queue.DeadJobs.
+func (q *Queue) DeleteDeadJob(ctx context.Context, id string) error {
+	var n int64
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		n, err = q.st.deleteDead(ctx, tx, id)
+		return err
+	})
+	switch {
+	case err != nil:
+		return fmt.Errorf("queue/db: delete dead job: %w", err)
+	case n == 0:
+		return queue.ErrDeadJobNotFound
+	}
+	return nil
+}
+
 // DeleteDeadJobsBefore implements queue.DeadJobs, in one short transaction.
 func (q *Queue) DeleteDeadJobsBefore(ctx context.Context, before time.Time, limit int) (int64, error) {
 	if limit <= 0 {

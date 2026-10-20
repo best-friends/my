@@ -46,4 +46,31 @@ func TestMeterReportsProgrammingErrors(t *testing.T) {
 	if got := m.Sum("my.level", nil); got != 5 {
 		t.Errorf("gauge = %v, want 5", got)
 	}
+
+	m = testkit.NewMeter()
+	total := 3.0
+	m.ObservableCounter(kernel.Instrument{Name: "my.cpu", Unit: "s"}, func(_ context.Context, o kernel.GaugeObserver) error {
+		o.Observe(total, kernel.Labels{})
+		return nil
+	})
+	if err := m.Collect(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	total = 4
+	if err := m.Collect(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Err(); err != nil {
+		t.Fatalf("Err() = %v after a growing total", err)
+	}
+	if got := m.Measurements("my.cpu", nil); len(got) != 2 || got[1].Value != 4 {
+		t.Errorf("observable counter = %v, want 3 then 4", got)
+	}
+	total = 2
+	if err := m.Collect(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if m.Err() == nil {
+		t.Error("Err() = nil after an observable counter went down")
+	}
 }

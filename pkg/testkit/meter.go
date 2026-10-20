@@ -14,15 +14,20 @@ import (
 )
 
 // Meter is a kernel.Meter that keeps every measurement, for tests of the code that measures.
-// A label whose key the instrument did not declare, or an instrument declared twice with
-// different label keys or units, is a programming error that Err reports (ADR-0055 §1).
+// A label whose key the instrument did not declare, an instrument declared twice with
+// different label keys or units, or an observable counter whose total goes down between two
+// collections, is a programming error that Err reports (ADR-0055 §1).
 // It is safe for concurrent use.
 type Meter struct {
 	mu          sync.Mutex
 	instruments map[string]kernel.Instrument
 	points      []Measurement
 	gauges      map[string]kernel.GaugeFunc
-	errs        []error
+	// counters are the observable counters, and totals their totals at the previous Collect
+	// by series.
+	counters map[string]bool
+	totals   map[string]float64
+	errs     []error
 }
 
 var _ kernel.Meter = (*Meter)(nil)
@@ -94,25 +99,62 @@ func (m *Meter) Gauge(i kernel.Instrument, f kernel.GaugeFunc) {
 	m.gauges[i.Name] = f
 }
 
+// ObservableCounter implements kernel.Meter. Collect calls f and records the totals it
+// observes; a total lower than at the previous Collect is reported by Err.
+func (m *Meter) ObservableCounter(i kernel.Instrument, f kernel.GaugeFunc) {
+	m.Gauge(i, f)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.counters == nil {
+		m.counters = map[string]bool{}
+	}
+	m.counters[i.Name] = true
+}
+
 // Begin implements kernel.Meter.
 func (m *Meter) Begin(ctx context.Context) (context.Context, func()) { return ctx, func() {} }
 
-// Collect calls the gauge functions, recording what they observe, and returns the first error.
+// Collect calls the functions of the gauges and the observable counters, recording what they
+// observe, and returns their errors.
 func (m *Meter) Collect(ctx context.Context) error {
 	m.mu.Lock()
 	gauges := maps.Clone(m.gauges)
 	instruments := maps.Clone(m.instruments)
+	counters := maps.Clone(m.counters)
 	m.mu.Unlock()
 	var errs []error
 	for _, name := range slices.Sorted(maps.Keys(gauges)) {
 		i := instruments[name]
-		errs = append(errs, gauges[name](ctx, observerFunc(func(v float64, l kernel.Labels) { m.record(i, v, l) })))
+		errs = append(errs, gauges[name](ctx, observerFunc(func(v float64, l kernel.Labels) {
+			if counters[name] {
+				m.checkTotal(i, v, l)
+			}
+			m.record(i, v, l)
+		})))
 	}
 	return errors.Join(errs...)
 }
 
+// checkTotal reports a total of an observable counter that is negative or lower than at the
+// previous Collect.
+func (m *Meter) checkTotal(i kernel.Instrument, v float64, l kernel.Labels) {
+	key := i.Name
+	for k, val := range l.All() {
+		key += fmt.Sprintf("{%s=%s}", k, val)
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.totals == nil {
+		m.totals = map[string]float64{}
+	}
+	if prev, ok := m.totals[key]; v < 0 || ok && v < prev {
+		m.errs = append(m.errs, fmt.Errorf("observable counter %s went down to %v", key, v))
+	}
+	m.totals[key] = v
+}
+
 // Err returns the programming errors seen so far: undeclared labels, negative counter
-// increments, and conflicting declarations.
+// increments, observable counters that went down, and conflicting declarations.
 func (m *Meter) Err() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

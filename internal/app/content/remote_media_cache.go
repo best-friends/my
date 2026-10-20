@@ -99,7 +99,13 @@ func remoteMediaKey(remoteURL string) string {
 // served, so that a file over the size limit or cut short is neither kept nor sent.
 func (p *MediaProxy) openCached(ctx context.Context, m content.RemoteMedia, ttl time.Duration) (*ProxiedMedia, error) {
 	if pm, err := p.openCopy(ctx, m.RemoteURL, ttl); pm != nil || err != nil {
-		return pm, err
+		if err == nil {
+			err = p.checkEmojiCopy(m, pm)
+		}
+		if err != nil {
+			return nil, err
+		}
+		return pm, nil
 	}
 	f, err := p.fetch(ctx, m)
 	if err != nil {

@@ -512,6 +512,17 @@ func (q *Queries) InsertProfileRevisionSource(ctx context.Context, arg InsertPro
 	return err
 }
 
+const isEmojiReferencedByProfiles = `-- name: IsEmojiReferencedByProfiles :one
+SELECT EXISTS (SELECT 1 FROM account_profile_revision_emojis WHERE emoji_id = $1)
+`
+
+func (q *Queries) IsEmojiReferencedByProfiles(ctx context.Context, emojiID string) (bool, error) {
+	row := q.db.QueryRow(ctx, isEmojiReferencedByProfiles, emojiID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const isMediaReferencedByProfiles = `-- name: IsMediaReferencedByProfiles :one
 SELECT EXISTS (
   SELECT 1 FROM account_profile_revisions

@@ -61,6 +61,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runInstance(fs.Args()[1:], os.Stdin, stdout, stderr)
 	case "invite":
 		return runInvite(fs.Args()[1:], stdout, stderr)
+	case "job":
+		return runJob(fs.Args()[1:], stdout, stderr)
 	case "projection":
 		return runProjection(fs.Args()[1:], stdout, stderr)
 	case "registration":
@@ -89,6 +91,7 @@ Commands:
   instance  Read and change the instance settings and rules
             (my instance list|get|set|history|rule)
   invite    Manage invite codes (my invite create|list|revoke)
+  job       List, retry, and delete the dead jobs (my job list|retry|delete)
   projection
             Rebuild and verify the projections
             (my projection list|rebuild|verify)

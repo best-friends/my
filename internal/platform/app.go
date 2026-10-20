@@ -331,7 +331,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
 		hooks = d.WebhookRepository()
-		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
+		retention = retentionRepositories{
+			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+		}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
@@ -355,7 +357,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
 		hooks = d.WebhookRepository()
-		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
+		retention = retentionRepositories{
+			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+		}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
 			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
@@ -887,7 +891,7 @@ func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*c
 		},
 		// The account module's avatars and headers are what the avatars policy keeps.
 		UnitOfWork: a.UnitOfWork, Blobs: a.Blobs, Clock: a.Clock, ProfileImages: a.Accounts,
-		MaxCacheSize: cfg.RemoteMediaCacheMaxBytes, Processor: a.MediaProcessor,
+		MaxCacheSize: cfg.RemoteMediaCacheMaxBytes, EmojiMaxBytes: cfg.RemoteCustomEmojiMaxBytes, Processor: a.MediaProcessor,
 		Keys: keys, BaseURL: cfg.ServerOrigin(), Logger: a.Logger,
 	})
 	if err != nil {

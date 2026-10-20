@@ -130,6 +130,9 @@ type Repository interface {
 	// IsMediaReferenced reports whether any profile revision uses a media file as its avatar
 	// or header.
 	IsMediaReferenced(ctx context.Context, mediaID string) (bool, error)
+	// IsEmojiReferenced reports whether any profile revision, current or not, uses a custom
+	// emoji.
+	IsEmojiReferenced(ctx context.Context, emojiID string) (bool, error)
 	// CountLocalAccounts counts the local accounts of users (not the instance actor) that are
 	// not deleted.
 	CountLocalAccounts(ctx context.Context) (int, error)

@@ -17,13 +17,15 @@ type retentionRepositories struct {
 	statuses content.RetentionRepository
 	purges   federation.PurgeRepository
 	profiles account.ProfilePruneRepository
+	emojis   content.EmojiPurgeRepository
 }
 
 // setUpRetention registers the purges of federated data and their schedules (ADR-0034, FR-803):
 // the remote statuses past remote_status_retention (or remote_status_max_retention), the inbox
-// and delivery records, and the past profiles of unrelated remote accounts. The statuses that the
-// moderation records need stay (ADR-0038). It comes after the
-// content, graph, and notification services, which tell what local data refers to.
+// and delivery records, the past profiles of unrelated remote accounts, and the remote custom
+// emoji that nothing refers to any more (ADR-0051 §1). The statuses that the moderation records
+// need stay (ADR-0038). It comes after the content, graph, and notification services, which tell
+// what local data refers to.
 func (a *App) setUpRetention(cfg *config.Config, repos retentionRepositories, statuses content.Repository) {
 	content.NewRetention(content.RetentionDeps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Retention: repos.statuses, Notifications: a.Notifications,
@@ -35,6 +37,12 @@ func (a *App) setUpRetention(cfg *config.Config, repos retentionRepositories, st
 	}).RegisterJobs(a.Handlers, a.Scheduler)
 	account.NewProfilePruner(account.PruneDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repos.profiles, Relations: remoteRelations{a}, Jobs: a.Jobs,
+	}).RegisterJobs(a.Handlers, a.Scheduler)
+	// The profiles of the account module use emoji, and their avatars and headers may share a
+	// remote media file with an emoji image.
+	content.NewEmojiPurge(content.EmojiPurgeDeps{
+		UnitOfWork: a.UnitOfWork, Repository: repos.emojis, Referrers: []content.EmojiReferrer{a.Accounts},
+		MediaReferrers: []content.MediaReferrer{a.Accounts}, Jobs: a.Jobs,
 	}).RegisterJobs(a.Handlers, a.Scheduler)
 }
 

@@ -11,7 +11,7 @@ my serve          # 設定の role に従って起動する（-config <file> で
 ```
 
 `my serve` は設定を検証してから DB・ジョブキュー・鍵管理のアダプタを組み立て、`listen` で HTTP を受け付ける。
-スキーマは適用しない。起動前に Atlas で適用する（`make db-apply`、[ADR-0023](../adr/0023-declarative-schema-management.md)）。
+スキーマは適用しない。起動前に Atlas で適用する（[DB の初期化と作り直し](database.md)、[ADR-0023](../adr/0023-declarative-schema-management.md)）。
 Docker Compose の構成（`deploy/docker/compose.yaml`、手順は [README](../../README.md#クイックスタートdocker-compose)）では、一回限りの `schema` サービスが適用してからサーバーが起動する。
 スキーマが未適用でもプロセスは起動し、readiness が 503 を返す。
 
@@ -84,13 +84,13 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 | `go.goroutine.count`・`go.processor.limit`・`go.config.gogc` | Gauge | なし |
 | `go.schedule.duration`・`go.memory.gc.pause.duration` | Histogram・秒 | なし（実行可能になってから動き出すまでの待ち、GC の停止） |
 | `go.memory.gc.cycles` | Counter | なし |
-| `process.cpu.time` | Gauge・秒（起動からの合計） | `cpu.mode`（`user` / `system`） |
+| `process.cpu.time` | Observable Counter・秒（起動からの合計） | `cpu.mode`（`user` / `system`） |
 | `process.memory.usage` | Gauge・バイト | なし（常駐メモリ、RSS） |
 | `process.unix.file_descriptor.count`・`my.process.file_descriptor.limit` | Gauge | なし（開いたファイル記述子の数と上限） |
 | `process.uptime` | Gauge・秒 | なし |
 | `db.client.connection.count` | Gauge | `db.client.connection.pool.name`（`postgres` / `sqlite`）、`db.client.connection.state`（`idle` / `used`） |
 | `db.client.connection.max` | Gauge | `db.client.connection.pool.name` |
-| `db.client.connection.wait_time`・`my.db.client.connection.waits`・`db.client.connection.timeouts` | Gauge（起動からの合計。秒・回） | `db.client.connection.pool.name`。`timeouts` は PostgreSQL だけ |
+| `db.client.connection.wait_time`・`my.db.client.connection.waits`・`db.client.connection.timeouts` | Observable Counter（起動からの合計。秒・回） | `db.client.connection.pool.name`。`timeouts` は PostgreSQL だけ |
 | `my.adapter.operation.duration` | Histogram・秒 | `my.adapter`（`queue.db` / `kv.db` / `kv.memory` / `kv.valkey` / `stream.<stream>` / `blob.fs`）、`my.operation`、`my.outcome`（`success` / `error`） |
 | `my.adapter.connections` | UpDownCounter | `my.adapter`（`valkey` の接続、`stream.<stream>` の受信） |
 | `my.adapter.reconnects` | Counter | `my.adapter` |
@@ -98,8 +98,9 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 | `http.client.open_connections` | UpDownCounter | なし |
 | `my.readiness.failures` | Counter | なし |
 
-- Go のランタイムの指標（`go.*`）は `prometheus` と `otlp` だけが出す。プロセスと接続のプールの Gauge は、`emf` ではスナップショットの定期ジョブが書く
-- プールの待ちと CPU 時間は、プールとランタイムが持つ起動からの合計なので Gauge で出す。PromQL の `rate()` で増え方を見る
+- Go のランタイムの指標（`go.*`）は `prometheus` と `otlp` だけが出す。プロセスと接続のプールの Gauge と Observable Counter は、`emf` ではスナップショットの定期ジョブが書く
+- プールの待ちと CPU 時間は、プールとカーネルが持つ起動からの合計を収集のときに読む Observable Counter で出す。Prometheus では `_total` の Counter（`process_cpu_time_seconds_total` など）、OTLP では単調増加の Sum になり、PromQL の `rate()` で増え方を見る。
+  `emf` には合計の Counter がないので、前回の書き込みからの増分を書く（CloudWatch の Sum で足し合わせる）
 - キューの取得（`claim`）は、ジョブを取れたときと失敗したときだけ計測する。待機中のワーカーのポーリングは何も記録しない
 - `db.client.connection.pending_requests` は出さない。pgx と `database/sql` の統計に待っている数がないので、待ちの回数と時間で代える
 - 警報の目安: `go.memory.used` の合計と `go.memory.limit` の比、`db.client.connection.wait_time` の増え方（プールの上限に当たっている）
@@ -119,6 +120,22 @@ SIGTERM または SIGINT で graceful shutdown する。
 2. 処理中のリクエストと実行中のジョブの終了を最大 25 秒待つ（Kubernetes・ECS の既定の猶予 30 秒に収まる）。
 3. 25 秒を過ぎたら、残ったリクエストとジョブのコンテキストを取り消して接続を閉じ、終了コード 1 で終わる。
    取り消されたジョブは再試行され、途中で強制終了されたジョブもリースが切れると別のワーカーが拾い直す（[ADR-0004](../adr/0004-job-queue-abstraction.md)）。
+
+## 失敗したジョブ（dead job）
+
+ハンドラが失敗を確定したジョブと、再試行の回数を使い切ったジョブは、DB キュー（`queue = db`）の dead job になる（ADR-0004）。
+`my job` で一覧・再実行・削除ができる（FR-801）。管理画面（`/admin/dead-jobs`）と管理 API（`GET /api/v1/admin/dead_jobs`、`POST /api/v1/admin/dead_jobs/{id}/retry`、権限 `manage_jobs`）でも一覧と再実行ができる。
+
+```sh
+my job list                 # 新しく失敗した順に ID・型・実行回数・失敗した時刻・最後のエラー（-limit で件数、既定 50）
+my job retry <id> [<id>...]  # 試行回数を数え直して、すぐに実行するようにキューへ戻す
+my job delete <id> [<id>...] # 実行せずに消す
+```
+
+- 再実行は、同じ冪等キーのジョブが待っていれば、そのジョブが代わりになる。ジョブのハンドラは冪等なので、同じジョブを何度戻してもよい。
+- 存在しない ID があると、その ID を表示して終了コード 1 で終わる。ほかの ID は処理する。終了コード 2 は引数の誤り。
+- 誰も再実行しない dead job は、失敗から `dead_job_retention`（既定 30 日）が過ぎると毎時の掃除で消える（FR-803、[設定](../reference/configuration.md#dead_job_retention)）。
+- `queue = inline` の dead job はサーバーのプロセスのメモリにあるので、`my job` からは扱えない（終了コード 1）。
 
 ## ヘルスチェック（FR-802）
 

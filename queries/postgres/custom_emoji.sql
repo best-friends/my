@@ -72,3 +72,35 @@ WHERE e.domain = ''
   AND i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
   AND (@all_shortcodes::boolean OR e.shortcode = ANY(@shortcodes::text[]))
 ORDER BY e.shortcode;
+
+-- ListUnreferencedRemoteEmojis returns, in ID order after the cursor, the IDs of the remote custom
+-- emoji that no status revision and no reaction refers to (the purge of ADR-0051).
+-- name: ListUnreferencedRemoteEmojis :many
+SELECT e.id FROM custom_emojis e
+WHERE e.domain <> '' AND e.id > CAST(@after AS TEXT)
+  AND NOT EXISTS (SELECT 1 FROM status_revision_emojis r WHERE r.emoji_id = e.id)
+  AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.custom_emoji_id = e.id)
+ORDER BY e.id
+LIMIT @row_limit;
+
+-- name: ListCustomEmojiImageMediaIDs :many
+SELECT DISTINCT media_id FROM custom_emoji_images WHERE emoji_id = @emoji_id ORDER BY media_id;
+
+-- DeleteUnreferencedRemoteEmoji deletes the row of a remote custom emoji while no status
+-- revision and no reaction refers to it.
+-- name: DeleteUnreferencedRemoteEmoji :execrows
+DELETE FROM custom_emojis
+WHERE custom_emojis.id = sqlc.arg(id) AND custom_emojis.domain <> ''
+  AND NOT EXISTS (SELECT 1 FROM status_revision_emojis r WHERE r.emoji_id = sqlc.arg(id))
+  AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.custom_emoji_id = sqlc.arg(id));
+
+-- DeleteUnreferencedRemoteMedia deletes the remote subtype of a remote media file while no
+-- custom emoji image and no attachment uses it.
+-- name: DeleteUnreferencedRemoteMedia :execrows
+DELETE FROM remote_media
+WHERE remote_media.media_id = sqlc.arg(media_id)
+  AND NOT EXISTS (SELECT 1 FROM custom_emoji_images c WHERE c.media_id = sqlc.arg(media_id))
+  AND NOT EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = sqlc.arg(media_id));
+
+-- name: DeleteRemoteMediaFile :exec
+DELETE FROM media_files WHERE media_files.id = sqlc.arg(id) AND media_files.origin = 'remote';

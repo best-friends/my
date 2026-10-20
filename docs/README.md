@@ -30,6 +30,7 @@
 - [ボット対策の CAPTCHA（Turnstile / hCaptcha / reCAPTCHA）](operations/captcha.md)
 - [ドメイン単位の処分と通報の対応](operations/moderation.md)
 - [鍵暗号化鍵（KEK）の管理](operations/key-management.md)
+- [DB の初期化と作り直し](operations/database.md)
 - [サーバーの起動・停止とヘルスチェック](operations/running.md)
 - [リンクプレビュー（OGP / X Card / fediverse:creator）](operations/link-previews.md)
 - [サーバー単位の webhook](operations/webhooks.md)
