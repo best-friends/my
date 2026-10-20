@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server settings screen through the whole app (web-client.md T4): an administrator with manage_settings
 // names the server in each language, the app then calls the server by that name instead of its domain, and
-// a name that the server would refuse is caught in the form; with MSW playing the API.
+// a name that the server would refuse is caught in the form; the descriptions are saved by language, and the
+// policies (registration, language, timelines, federation, domain actions) together; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
@@ -9,6 +10,7 @@ import { instanceFixture, type Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { instanceSettingsFixture } from "./test/handlers";
 
 beforeEach(() => {
   document.documentElement.lang = "en";
@@ -159,4 +161,114 @@ test("a viewer without manage_settings sees why instead of the names, and nothin
   expect(await screen.findByText(/manage_settings/)).toBeInTheDocument();
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   expect(reads).toBe(0);
+});
+
+describe("the server's descriptions", () => {
+  beforeEach(() => {
+    server.use(signedInHandler, operatorHandler(["manage_settings"]));
+  });
+
+  test("saves only the descriptions that changed, each in its language", async () => {
+    const changes: { key: string; locale: string; body: string }[] = [];
+    server.use(
+      http.get(`${apiBase}/admin/instance_texts`, () =>
+        HttpResponse.json({ items: [{ key: "short_description", locale: "en", body: "A small server.", revised_at: "2026-10-16T00:00:00Z" }] satisfies Text[] }),
+      ),
+      http.put(`${apiBase}/admin/instance_texts/:key/:locale`, async ({ request, params }) => {
+        const { body } = (await request.json()) as Schemas["SetInstanceTextRequest"];
+        const key = String(params["key"]) as Schemas["InstanceTextKey"];
+        changes.push({ key, locale: String(params["locale"]), body });
+        return HttpResponse.json({ key, locale: String(params["locale"]), body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
+      }),
+    );
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const section = await screen.findByRole("region", { name: "Descriptions" });
+    expect(within(section).getByRole("textbox", { name: "Short description in English" })).toHaveValue("A small server.");
+
+    await user.type(within(section).getByRole("textbox", { name: "Description in Japanese" }), "小さなサーバーです。");
+    await user.click(within(section).getByRole("button", { name: "Save the descriptions" }));
+
+    expect(await within(section).findByText("Saved the descriptions. The audit log records the change.")).toBeInTheDocument();
+    expect(changes).toEqual([{ key: "description", locale: "ja", body: "小さなサーバーです。" }]);
+  });
+});
+
+describe("the server's policies", () => {
+  beforeEach(() => {
+    server.use(signedInHandler, operatorHandler(["manage_settings"]));
+  });
+
+  /** Plays PATCH /admin/settings and counts the reads of GET /instance; records the changes. */
+  function settingsServer() {
+    const patches: Schemas["UpdateInstanceSettingsRequest"][] = [];
+    let instanceReads = 0;
+    server.use(
+      http.get(`${apiBase}/instance`, () => {
+        instanceReads++;
+        return HttpResponse.json(instanceFixture);
+      }),
+      http.patch(`${apiBase}/admin/settings`, async ({ request }) => {
+        const body = (await request.json()) as Schemas["UpdateInstanceSettingsRequest"];
+        patches.push(body);
+        return HttpResponse.json(instanceSettingsFixture(body.values));
+      }),
+    );
+    return { patches, instanceReads: () => instanceReads };
+  }
+
+  test("shows the saved settings and sends the changed ones together", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const registration = await screen.findByRole("region", { name: "Registration" });
+    expect(within(registration).getByRole("radio", { name: "With approval" })).toBeChecked();
+    const timelines = screen.getByRole("region", { name: "Timelines" });
+    expect(within(timelines).getByRole("checkbox", { name: "Offer the local timeline" })).toBeChecked();
+
+    await user.click(within(registration).getByRole("radio", { name: "With an invite" }));
+    await user.click(within(timelines).getByRole("checkbox", { name: "Offer the local timeline" }));
+    await user.click(within(screen.getByRole("region", { name: "Federation" })).getByRole("checkbox", { name: "Require signed requests (authorized fetch)" }));
+    const domainActions = screen.getByRole("radiogroup", { name: "Who may read the list" });
+    await user.click(within(domainActions).getByRole("radio", { name: "Signed-in users" }));
+    const reads = settings.instanceReads();
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
+    expect(settings.patches).toEqual([
+      { values: { registration_mode: "invite", local_timeline_enabled: "false", authorized_fetch: "true", domain_actions_visibility: "users" } },
+    ]);
+    // The navigation's timelines and the registration mode come from GET /instance, read again before the status.
+    expect(settings.instanceReads()).toBeGreaterThan(reads);
+    expect(within(registration).getByRole("radio", { name: "With an invite" })).toBeChecked();
+
+    // Saving again without a change sends nothing.
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+    expect(await screen.findByText("The settings are already saved.")).toBeInTheDocument();
+    expect(settings.patches).toHaveLength(1);
+  });
+
+  test("sends the default language picked from the app's languages", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const language = await screen.findByRole("region", { name: "Language" });
+    await user.click(within(language).getByRole("button", { name: /Default language/ }));
+    await user.click(await screen.findByRole("option", { name: "Japanese" }));
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText(/^Saved the settings\./)).toBeInTheDocument();
+    expect(settings.patches).toEqual([{ values: { default_locale: "ja" } }]);
+  });
+
+  test("shows why a save failed, keeps the choices and changes nothing", async () => {
+    const refusal: Schemas["Problem"] = { type: "about:blank", title: "Unprocessable", status: 422, detail: "values.registration_mode is invalid" };
+    server.use(
+      http.patch(`${apiBase}/admin/settings`, () => HttpResponse.json(refusal, { status: 422, headers: { "Content-Type": "application/problem+json" } })),
+    );
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const registration = await screen.findByRole("region", { name: "Registration" });
+    await user.click(within(registration).getByRole("radio", { name: "Nobody" }));
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText("Could not save the settings; nothing was changed: values.registration_mode is invalid")).toHaveAttribute("role", "alert");
+    expect(within(registration).getByRole("radio", { name: "Nobody" })).toBeChecked();
+  });
 });

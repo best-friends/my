@@ -10,7 +10,7 @@
 画面は JavaScript なしで動き、ログイン画面と同じく CSRF トークンとクロスオリジン要求の拒否で守られます（ADR-0030）。
 ボット対策に CAPTCHA を選んだときは、登録とログインの画面にそのウィジェットを出し、JavaScript が要ります（[CAPTCHA](captcha.md)）。
 
-登録モードはインスタンス設定 `registration_mode` で選びます（[インスタンス設定](instance-settings.md)）。変更は次の登録から効きます。
+登録モードはインスタンス設定 `registration_mode` で、CLI か Web クライアントの「サーバーの設定」（`/admin/settings`）で選びます（[インスタンス設定](instance-settings.md)）。変更は次の登録から効きます。
 
 ```sh
 my instance set registration_mode invite
@@ -64,6 +64,10 @@ my invite revoke <code>
 - コードは大文字小文字・空白・ハイフンを区別せずに照合します。
 - 同時に登録されても、使用回数の上限を超えて使われることはありません（`invite_redemptions` の一意制約）。
 - 取り消したコード・期限切れのコード・使い切ったコードは、どれも同じエラー（使えない招待）になります。
+- 招待は CLI のほか、Web クライアントのモデレーションの画面（「招待」、`/moderation/invites`）とクライアント API
+  （`GET` / `POST /api/v1/admin/invites`・`POST /api/v1/admin/invites/{id}/revoke`）で作成・一覧・失効できます。どちらもロールの権限 `manage_invites` が要ります
+  （組み込みの `moderator` は持たないので、任せるときはその権限を持つロールを作って与えます）。
+  画面は作成した招待のコードと登録画面のリンクを出し、使える招待のリンクをコピーできます。登録モードが `invite` でないときは、招待では誰も登録できないことを画面に出します。
 
 ## 承認と却下
 

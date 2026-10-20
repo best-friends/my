@@ -12,6 +12,7 @@ import { type StaffPage, StaffMenuSection, StaffPages, useShownStaffPages } from
  */
 const adminPages: readonly StaffPage[] = [
   { href: "/admin/settings", permission: "manage_settings", label: "client:admin.settings.title", description: "client:admin.settings.summary" },
+  { href: "/admin/rules", permission: "manage_rules", label: "client:admin.rules.title", description: "client:admin.rules.summary" },
   { href: "/admin/theme", permission: "manage_settings", label: "client:admin.theme.title", description: "client:admin.theme.summary" },
   { href: "/admin/documents", permission: "manage_settings", label: "client:admin.documents.title", description: "client:admin.documents.summary" },
   {

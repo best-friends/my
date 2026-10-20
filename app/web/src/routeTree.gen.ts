@@ -25,6 +25,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
+import { Route as AdminRulesRouteImport } from './routes/admin.rules'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminThemeRouteImport } from './routes/admin.theme'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
@@ -34,6 +35,7 @@ import { Route as ModerationAppealsRouteImport } from './routes/moderation.appea
 import { Route as ModerationAuditLogRouteImport } from './routes/moderation.audit-log'
 import { Route as ModerationDomainActionsRouteImport } from './routes/moderation.domain-actions'
 import { Route as ModerationInstancesRouteImport } from './routes/moderation.instances'
+import { Route as ModerationInvitesRouteImport } from './routes/moderation.invites'
 import { Route as ModerationRegistrationsRouteImport } from './routes/moderation.registrations'
 import { Route as ModerationReportsRouteImport } from './routes/moderation.reports'
 import { Route as ModerationSignupBlocksRouteImport } from './routes/moderation.signup-blocks'
@@ -136,6 +138,11 @@ const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
   path: '/admin/documents',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRulesRoute = AdminRulesRouteImport.update({
+  id: '/admin/rules',
+  path: '/admin/rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -179,6 +186,11 @@ const ModerationDomainActionsRoute = ModerationDomainActionsRouteImport.update({
 const ModerationInstancesRoute = ModerationInstancesRouteImport.update({
   id: '/moderation/instances',
   path: '/moderation/instances',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModerationInvitesRoute = ModerationInvitesRouteImport.update({
+  id: '/moderation/invites',
+  path: '/moderation/invites',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ModerationRegistrationsRoute = ModerationRegistrationsRouteImport.update({
@@ -296,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
   '/login/callback': typeof LoginCallbackRoute
@@ -304,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/moderation/audit-log': typeof ModerationAuditLogRoute
   '/moderation/domain-actions': typeof ModerationDomainActionsRoute
   '/moderation/instances': typeof ModerationInstancesRoute
+  '/moderation/invites': typeof ModerationInvitesRoute
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
@@ -342,6 +356,7 @@ export interface FileRoutesByTo {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
   '/login/callback': typeof LoginCallbackRoute
@@ -350,6 +365,7 @@ export interface FileRoutesByTo {
   '/moderation/audit-log': typeof ModerationAuditLogRoute
   '/moderation/domain-actions': typeof ModerationDomainActionsRoute
   '/moderation/instances': typeof ModerationInstancesRoute
+  '/moderation/invites': typeof ModerationInvitesRoute
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
@@ -389,6 +405,7 @@ export interface FileRoutesById {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
   '/login_/callback': typeof LoginCallbackRoute
@@ -397,6 +414,7 @@ export interface FileRoutesById {
   '/moderation/audit-log': typeof ModerationAuditLogRoute
   '/moderation/domain-actions': typeof ModerationDomainActionsRoute
   '/moderation/instances': typeof ModerationInstancesRoute
+  '/moderation/invites': typeof ModerationInvitesRoute
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
@@ -437,6 +455,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
     | '/login/callback'
@@ -445,6 +464,7 @@ export interface FileRouteTypes {
     | '/moderation/audit-log'
     | '/moderation/domain-actions'
     | '/moderation/instances'
+    | '/moderation/invites'
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
@@ -483,6 +503,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
     | '/login/callback'
@@ -491,6 +512,7 @@ export interface FileRouteTypes {
     | '/moderation/audit-log'
     | '/moderation/domain-actions'
     | '/moderation/instances'
+    | '/moderation/invites'
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
@@ -529,6 +551,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
     | '/login_/callback'
@@ -537,6 +560,7 @@ export interface FileRouteTypes {
     | '/moderation/audit-log'
     | '/moderation/domain-actions'
     | '/moderation/instances'
+    | '/moderation/invites'
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
@@ -576,6 +600,7 @@ export interface RootRouteChildren {
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
+  AdminRulesRoute: typeof AdminRulesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminThemeRoute: typeof AdminThemeRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
@@ -584,6 +609,7 @@ export interface RootRouteChildren {
   ModerationAuditLogRoute: typeof ModerationAuditLogRoute
   ModerationDomainActionsRoute: typeof ModerationDomainActionsRoute
   ModerationInstancesRoute: typeof ModerationInstancesRoute
+  ModerationInvitesRoute: typeof ModerationInvitesRoute
   ModerationRegistrationsRoute: typeof ModerationRegistrationsRoute
   ModerationReportsRoute: typeof ModerationReportsRoute
   ModerationSignupBlocksRoute: typeof ModerationSignupBlocksRoute
@@ -721,6 +747,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/rules': {
+      id: '/admin/rules'
+      path: '/admin/rules'
+      fullPath: '/admin/rules'
+      preLoaderRoute: typeof AdminRulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/admin/settings'
@@ -782,6 +815,13 @@ declare module '@tanstack/react-router' {
       path: '/moderation/instances'
       fullPath: '/moderation/instances'
       preLoaderRoute: typeof ModerationInstancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/moderation/invites': {
+      id: '/moderation/invites'
+      path: '/moderation/invites'
+      fullPath: '/moderation/invites'
+      preLoaderRoute: typeof ModerationInvitesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/moderation/registrations': {
@@ -936,6 +976,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
+  AdminRulesRoute: AdminRulesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminThemeRoute: AdminThemeRoute,
   LoginCallbackRoute: LoginCallbackRoute,
@@ -944,6 +985,7 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationAuditLogRoute: ModerationAuditLogRoute,
   ModerationDomainActionsRoute: ModerationDomainActionsRoute,
   ModerationInstancesRoute: ModerationInstancesRoute,
+  ModerationInvitesRoute: ModerationInvitesRoute,
   ModerationRegistrationsRoute: ModerationRegistrationsRoute,
   ModerationReportsRoute: ModerationReportsRoute,
   ModerationSignupBlocksRoute: ModerationSignupBlocksRoute,

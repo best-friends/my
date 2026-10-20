@@ -14,7 +14,7 @@ import { renderApp } from "../../test/render";
 import { accountActionFixture, appealFixture, domainActionFixture, registrationFixture, reportFixture } from "./test/handlers";
 
 beforeEach(() => {
-  server.use(signedInHandler, operatorHandler(["manage_accounts", "manage_reports", "manage_domains", "manage_settings", "view_audit"]));
+  server.use(signedInHandler, operatorHandler(["manage_accounts", "manage_reports", "manage_domains", "manage_settings", "manage_rules", "view_audit"]));
   document.documentElement.lang = "en";
   document.documentElement.dir = "ltr";
 });
@@ -31,7 +31,7 @@ type Write = {
   /** The audited operation, as the audit log lists it. */
   action: Schemas["AdminAuditAction"];
   /** The request of the write, which the server records. */
-  method: "post" | "put";
+  method: "post" | "put" | "patch";
   path: string;
   /** The screen of the write. */
   page: string;
@@ -210,6 +210,28 @@ const writes: Write[] = [
       await user.type(await screen.findByRole("textbox", { name: "Name in English" }), "Example Social");
       await user.click(screen.getByRole("button", { name: "Save" }));
       expect(await screen.findByText("Saved the name.")).toBeInTheDocument();
+    },
+  },
+  {
+    action: "setting_changed",
+    method: "patch",
+    path: "/admin/settings",
+    page: "/admin/settings",
+    write: async (user) => {
+      await user.click(await screen.findByRole("radio", { name: "With an invite" }));
+      await user.click(screen.getByRole("button", { name: "Save the settings" }));
+      expect(await screen.findByText(/^Saved the settings\./)).toBeInTheDocument();
+    },
+  },
+  {
+    action: "rule_added",
+    method: "post",
+    path: "/admin/rules",
+    page: "/admin/rules",
+    write: async (user) => {
+      await user.type(await screen.findByRole("textbox", { name: "Rule in English" }), "Be kind");
+      await user.click(screen.getByRole("button", { name: "Add the rule" }));
+      expect(await screen.findByText(/^Added the rule/)).toBeInTheDocument();
     },
   },
 ];

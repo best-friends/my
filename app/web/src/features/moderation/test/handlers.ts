@@ -63,6 +63,33 @@ export function newSignupBlock(body: Schemas["CreateSignupBlockRequest"]): Schem
   };
 }
 
+/** A usable invite for one sign-up, created at 2026-10-16 and expiring a week later, as the server answers it; `overrides` replace its fields. */
+export function inviteFixture(overrides: Partial<Schemas["AdminInvite"]> = {}): Schemas["AdminInvite"] {
+  const code = overrides.code ?? "ABCDEFGHJKLMNPQR";
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000006a1",
+    code,
+    url: `https://my.example/auth/sign_up?invite=${code}`,
+    max_uses: 1,
+    uses: 0,
+    state: "usable",
+    expires_at: "2026-10-23T00:00:00Z",
+    created_at: "2026-10-16T00:00:00Z",
+    ...overrides,
+  };
+}
+
+/** The invite that POST /admin/invites creates for `body`, at 2026-10-17T00:00:00Z. */
+export function newInvite(body: Schemas["CreateInviteRequest"]): Schemas["AdminInvite"] {
+  const createdAt = "2026-10-17T00:00:00Z";
+  const { max_uses: _, expires_at: __, ...invite } = inviteFixture({ id: "0192f0c4-7a8e-7000-8000-0000000006af", code: "NEWCODE234567ABC", created_at: createdAt });
+  return {
+    ...invite,
+    ...(body.max_uses === undefined ? {} : { max_uses: body.max_uses }),
+    ...(body.expires_in === undefined ? {} : { expires_at: new Date(Date.parse(createdAt) + body.expires_in * 1000).toISOString() }),
+  };
+}
+
 /** A registration of `bob` awaiting approval since 2026-10-16, as the server lists it; `overrides` replace its fields. */
 export function registrationFixture(overrides: Partial<Schemas["AdminRegistration"]> = {}): Schemas["AdminRegistration"] {
   return {
@@ -289,6 +316,15 @@ export const handlers = [
     const added = body.text.split("\n").filter((line) => line.trim() !== "" && !line.trim().startsWith("#")).length;
     return withViewer(request, () => HttpResponse.json({ added, skipped: [] } satisfies Schemas["SignupBlockImportResult"]));
   }),
+  // operationIds listInvites, createInvite, revokeInvite: no invites; a new one is created as asked.
+  http.get(`${apiBase}/admin/invites`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.post(`${apiBase}/admin/invites`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["CreateInviteRequest"];
+    return withViewer(request, () => HttpResponse.json(newInvite(body)));
+  }),
+  http.post(`${apiBase}/admin/invites/:id/revoke`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(inviteFixture({ id: String(params["id"]), state: "revoked" }))),
+  ),
   // operationId listAuditLog.
   http.get(`${apiBase}/admin/audit_log`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   // operationIds listPendingRegistrations, approveRegistration, rejectRegistration.

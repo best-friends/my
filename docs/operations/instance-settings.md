@@ -1,6 +1,6 @@
 # インスタンス設定
 
-運営者向けの手順です。要件は FR-001・FR-101・FR-705（[機能要件](../requirements/01-functional.md)）、
+運営者向けの手順です。要件は FR-001・FR-101・FR-202・FR-408・FR-704・FR-705・FR-718（[機能要件](../requirements/01-functional.md)）、
 テーブルは [データモデル §4.9](../architecture/data-model.md#49-instance) です。
 
 ## 設定（環境変数）とインスタンス設定（DB）の分担
@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | 内容 | デプロイの構成: 役割・アダプタ・接続先・ホスト名・秘密情報 | 運営の方針: 登録モード・文字数上限・既定のロケール・タイムラインの有効 / 無効、インスタンスの名前・説明・規約 |
 | 置き場所 | 環境変数 `MY_*` と設定ファイル（[設定リファレンス](../reference/configuration.md)、ADR-0010） | DB。変更はすべて版として残る |
-| 変更 | プロセスの再起動で反映 | `my instance set` で即時に反映 |
+| 変更 | プロセスの再起動で反映 | `my instance set`・Web クライアントの管理画面・クライアント API で即時に反映（[管理画面とクライアント API](#管理画面とクライアント-api)） |
 | 未設定のとき | スキーマの既定値（必須なら起動しない） | コードで定義した既定値 |
 
 - **同じキーが両方にあることはありません。** どちらかがもう一方を上書きする優先順位は存在しません。
@@ -67,7 +67,7 @@
   読み手のロケールは、画面の文言のロケールを選んだ要求のロケール（利用者の設定、または `Accept-Language` のタグ）を地域や文字体系ごと使います。
   `ja-JP` の読み手は文言は `ja` のカタログで読みますが、文章は `ja-JP` から探します。
 - 空の文章を設定すると、そのロケールの文章を消したことになり、チェーンの次のロケールが使われます。
-- 文章は CLI のほか、Web クライアントの管理画面（名前は「サーバーの設定」、`/admin/settings`。利用規約とプライバシーポリシーは「規約とポリシー」、`/admin/documents`）とクライアント API（`GET /api/v1/admin/instance_texts`・`PUT /api/v1/admin/instance_texts/{key}/{locale}`）で変えられます。どちらもロールの権限 `manage_settings` が要り、変更は監査ログ（`text_changed`）に残ります。
+- 文章は CLI のほか、Web クライアントの管理画面（名前・短い説明・説明は「サーバーの設定」、`/admin/settings`。利用規約とプライバシーポリシーは「規約とポリシー」、`/admin/documents`）とクライアント API（`GET /api/v1/admin/instance_texts`・`PUT /api/v1/admin/instance_texts/{key}/{locale}`）で変えられます。どちらもロールの権限 `manage_settings` が要り、変更は監査ログ（`text_changed`）に残ります。
 
 ### 利用規約とプライバシーポリシー
 
@@ -114,6 +114,28 @@ my instance set preview_image ""                      # 同梱の既定画像に
 - 同じ値を設定し直しても版は増えます。
 - 終了コード: 0 は成功、1 は値の拒否や DB のエラー（何も変更しない）、2 は引数の誤り。
 
+## 管理画面とクライアント API
+
+CLI で変えられる設定値は、Web クライアントの管理画面とクライアント API でも変えられます。どちらもロールの権限 `manage_settings` が要り（組み込みの `admin` だけが持つ）、
+変更は CLI と同じく版として残り、キーごとに監査ログ（`setting_changed`、対象は設定、操作者はその利用者）に記録されます。監査ログはモデレーションの画面（「監査ログ」、`/moderation/audit-log`）で引けます。
+
+- **Web クライアント**（「サーバーの設定」、`/admin/settings`、[ADR-0058](../adr/0058-moderation-admin-separation.md) のサーバー管理）: 名前・説明（言語ごと）と、次の設定を変えられます。
+  設定はまとめて 1 つのフォームで保存し、変えたものだけを送ります。
+
+  | 区画 | 設定 |
+  | --- | --- |
+  | 登録 | `registration_mode` |
+  | 言語 | `default_locale`（アプリのある言語から選ぶ） |
+  | タイムライン | `local_timeline_enabled`・`federated_timeline_enabled` |
+  | 連合 | `authorized_fetch`・`remote_media_policy`・`remote_media_cache_ttl`（1 時間・1 日・7 日・30 日・365 日から選ぶ） |
+  | 制限・凍結したサーバー | `domain_actions_visibility`・`domain_actions_rationale_visibility` |
+
+  `max_status_length`・`preview_image`・`appeal_window`・保持期間（`retention_*`）は、画面には出ず、CLI とクライアント API で変えます。
+- **クライアント API**: `GET /api/v1/admin/settings` がすべての設定値を、現在値・既定値・設定済みか・型と受け付ける値（選択肢・範囲）とともに返します。
+  `PATCH /api/v1/admin/settings` は `{"values": {"<キー>": "<値>", ...}}` の設定値をまとめて変えます。値はすべて文字列で、CLI と同じく正規形にして保存します。
+  1 つでも知らないキーか不正な値があれば、そのキーを挙げた 422 で、何も変えません。変えたキーは同じトランザクションで版と監査ログに残ります。
+- 登録モードを `invite` にしたときの招待は、モデレーションの画面（「招待」、`/moderation/invites`、権限 `manage_invites`）で作ります（[利用者登録](registration.md#招待コード)）。
+
 ## ルール
 
 インスタンスのルール（FR-705）は、`GET /api/v1/instance` の `rules` が並べ、通報が ID で引用します。
@@ -135,6 +157,8 @@ my instance rule list                                 # 有効なルール（-al
 ```
 
 - 管理 API は `/api/v1/admin/rules`（一覧・追加・取得・改訂・移動・廃止）で、ロールの権限 `manage_rules` を要します。
+- Web クライアントの管理画面（「ルール」、`/admin/rules`、`manage_rules`）で、言語ごとの文と補足でのルールの追加、編集、「上へ」「下へ」での並べ替え、廃止（確認のダイアログを経る）ができます。
+  どの変更も監査ログ（`rule_added`・`rule_revised`・`rule_moved`・`rule_retired`）に残ります。
 - 終了コードは設定と同じです（0 は成功、1 は値の拒否や DB のエラー、2 は引数の誤り）。
 
 ## テーマ

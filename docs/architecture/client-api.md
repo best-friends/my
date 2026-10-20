@@ -32,8 +32,8 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 - `operationId` は lowerCamelCase の動詞句（`getInstance`、`createStatus`）です。Go のメソッド名（`GetInstance`）と TS の操作名になります。
 - プロパティ名とパス・クエリのパラメータ名は snake_case です（lint で強制）。
 - タグはモジュール単位（`instance`、`statuses`、`accounts` など）で付けます。スタッフの操作（`/admin/...`）だけは、モジュールではなく区分（[ADR-0058](../adr/0058-moderation-admin-separation.md)）で
-  `admin-moderation`（通報・異議申し立て・アカウントと処分・登録・登録の拒否・ドメインへの処分・連合先・監査ログ・`/admin/counts`）と
-  `admin-server`（設定と文章・ルール・ロールとその付与・カスタム絵文字・dead job）に分けます。操作のタグは、その操作が要る権限の区分（`identity.Permission.Category`）に合わせます。
+  `admin-moderation`（通報・異議申し立て・アカウントと処分・登録・登録の拒否・招待・ドメインへの処分・連合先・監査ログ・`/admin/counts`）と
+  `admin-server`（インスタンス設定と文章・ルール・テーマ・ロールとその付与・カスタム絵文字・dead job）に分けます。操作のタグは、その操作が要る権限の区分（`identity.Permission.Category`）に合わせます。
 
 ### 2.2 ID とページング
 

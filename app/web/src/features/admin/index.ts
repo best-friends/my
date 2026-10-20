@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server administration feature (ADR-0058): the server's settings (its name in each language), its terms
-// of service and privacy policy (#489), the custom emoji (ADR-0051), and the dead jobs of the job queue with running them again. Each screen
-// is for a viewer whose roles have its permission (manage_settings, manage_custom_emojis, manage_jobs); the server checks it on every
+// The server administration feature (ADR-0058): the server's settings (its name and descriptions in each language
+// and its policies), its rules, its terms of service and privacy policy (#489), the custom emoji (ADR-0051), and the dead jobs of the job queue with running them again. Each screen
+// is for a viewer whose roles have its permission (manage_settings, manage_rules, manage_custom_emojis, manage_jobs); the server checks it on every
 // request. The parts and the permissions that the screens share with the moderation screens come from the
 // moderation feature.
 // Routes and other features use it through this file only (web-client.md A3).
@@ -11,9 +11,13 @@ export { DeadJobList } from "./components/DeadJobList";
 // The terms of service and the privacy policy (#489), for manage_settings.
 export { instanceTextsQueryOptions } from "./api/documents";
 export { DocumentSettings } from "./components/DocumentSettings";
-// The server's settings: its name in each language, which people see in place of its domain, for manage_settings.
+// The server's settings: its name and descriptions in each language, and its policies, for manage_settings.
 export { instanceQueryOptions as ownInstanceQueryOptions } from "./api/documents";
+export { instanceSettingsQueryOptions } from "./api/settings";
 export { ServerSettings } from "./components/ServerSettings";
+// The server's rules (FR-705), for manage_rules.
+export { rulesQueryOptions } from "./api/rules";
+export { RuleSettings } from "./components/RuleSettings";
 // The server's theme: overrides of the design tokens and a custom CSS (ADR-0059), for manage_settings.
 export { themeQueryOptions } from "./api/theme";
 export { ThemeSettings } from "./components/ThemeSettings";

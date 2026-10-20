@@ -2663,6 +2663,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the instance settings
+         * @description Every instance setting (FR-705, docs/operations/instance-settings.md): its current
+         *     value, or its default when it has never been set, with what it accepts. The policies
+         *     that administrators change at run time live here; the deployment configuration does
+         *     not. Needs the `manage_settings` permission.
+         */
+        get: operations["listInstanceSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change instance settings
+         * @description Sets the settings named in `values`, all of them or none: each value is checked against
+         *     its key and stored in its canonical form (`TRUE` is `true`, `ja_jp` is `ja-JP`), and
+         *     each change is kept as a revision and audited (`setting_changed`). Setting the current
+         *     value again still records a revision, so clients send only the settings they change.
+         *     The changes take effect on the next request. An unknown key, or a value its key
+         *     rejects, is a 422 naming the key, and nothing is changed. Needs the `manage_settings`
+         *     permission.
+         */
+        patch: operations["updateInstanceSettings"];
+        trace?: never;
+    };
+    "/admin/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the invites
+         * @description The invites that let people sign up while the registration mode is `invite` (FR-001),
+         *     newest first, with how they have been used. Needs the `manage_invites` permission.
+         */
+        get: operations["listInvites"];
+        put?: never;
+        /**
+         * Create an invite
+         * @description Creates an invite with a new random code. It works only while the registration mode is
+         *     `invite`. `max_uses` outside 1 to 1,000,000 or `expires_in` outside 1 second to 10
+         *     years is a 422 naming it. Needs the `manage_invites` permission.
+         */
+        post: operations["createInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/invites/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke an invite
+         * @description The invite stops working at once; the people who signed up with it keep their
+         *     accounts. Revoking a revoked invite changes nothing. An unknown ID is a 404. Needs the
+         *     `manage_invites` permission.
+         */
+        post: operations["revokeInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4950,6 +5032,91 @@ export interface components {
          * @enum {string}
          */
         ReportState: "open" | "resolved";
+        /**
+         * @description An instance setting: its value and what it accepts. Every value is a string in its
+         *     canonical form, whatever its kind.
+         */
+        AdminSetting: {
+            key: components["schemas"]["InstanceSettingKey"];
+            kind: components["schemas"]["InstanceSettingKind"];
+            /** @description The current value, which is `default` when `stored` is false. */
+            value: string;
+            /** @description The value of the setting while it has never been set. */
+            default: string;
+            /** @description Whether the setting has been set; false means its default applies. */
+            stored: boolean;
+            /** @description The values an `enum` setting accepts, in order; omitted for other kinds. */
+            choices?: string[];
+            /** @description The least value of an `int` setting; omitted for other kinds. */
+            minimum?: number;
+            /** @description The greatest value of an `int` setting; omitted for other kinds. */
+            maximum?: number;
+        };
+        /** @description Every instance setting, in a fixed order. */
+        AdminSettingList: {
+            items: components["schemas"]["AdminSetting"][];
+        };
+        /**
+         * @description The key of an instance setting (docs/operations/instance-settings.md). New keys may be
+         *     added; clients show the ones they know.
+         * @enum {string}
+         */
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log";
+        /**
+         * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
+         *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
+         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+         * @enum {string}
+         */
+        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media";
+        /** @description New values of some instance settings, saved together. */
+        UpdateInstanceSettingsRequest: {
+            /** @description The new value of each setting to change, by key, as a string. */
+            values: {
+                [key: string]: string;
+            };
+        };
+        /** @description An invite that lets people sign up while the registration mode is `invite`. */
+        AdminInvite: {
+            id: components["schemas"]["Id"];
+            /** @description The code people enter on the registration page, 16 characters. */
+            code: string;
+            /**
+             * Format: uri
+             * @description The registration page with the code filled in, to send to people.
+             */
+            url: string;
+            /** @description How many sign-ups the invite allows; omitted when there is no limit. */
+            max_uses?: number;
+            /** @description How many people have signed up with the invite. */
+            uses: number;
+            state: components["schemas"]["AdminInviteState"];
+            /**
+             * Format: date-time
+             * @description When the invite stops working; omitted when it never does.
+             */
+            expires_at?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description A page of invites, newest first. */
+        AdminInvitePage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminInvite"][];
+        };
+        /**
+         * @description What the invite allows now. `usable`: people may sign up with it. `revoked`: a staff
+         *     member revoked it. `expired`: it passed `expires_at`. `exhausted`: it was used
+         *     `max_uses` times.
+         * @enum {string}
+         */
+        AdminInviteState: "usable" | "revoked" | "expired" | "exhausted";
+        /** @description A new invite. */
+        CreateInviteRequest: {
+            /** @description How many sign-ups the invite allows; omitted for no limit. */
+            max_uses?: number;
+            /** @description How many seconds the invite works; omitted for an invite that never expires. */
+            expires_in?: number;
+        };
     };
     responses: {
         /** @description A page of posts and boosts, newest first. */
@@ -5157,6 +5324,26 @@ export interface components {
                 "application/json": components["schemas"]["AdminSignupBlock"];
             };
         };
+        /** @description Every instance setting. */
+        AdminSettingList: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminSettingList"];
+            };
+        };
+        /** @description The invite. */
+        AdminInvite: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminInvite"];
+            };
+        };
     };
     parameters: {
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
@@ -5199,6 +5386,8 @@ export interface components {
         RegistrationUserId: components["schemas"]["Id"];
         /** @description The ID of the sign-up block. */
         SignupBlockId: components["schemas"]["Id"];
+        /** @description The ID of the invite. */
+        InviteId: components["schemas"]["Id"];
     };
     requestBodies: never;
     headers: {
@@ -8091,6 +8280,96 @@ export interface operations {
                     "application/json": components["schemas"]["SignupBlockImportResult"];
                 };
             };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInstanceSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminSettingList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateInstanceSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateInstanceSettingsRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminSettingList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listInvites: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of invites. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInvitePage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInviteRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminInvite"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the invite. */
+                id: components["parameters"]["InviteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminInvite"];
             default: components["responses"]["Problem"];
         };
     };
