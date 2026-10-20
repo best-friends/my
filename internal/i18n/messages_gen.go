@@ -1145,6 +1145,20 @@ func (l *Localizer) ServerErrorsRequestTooLarge() string {
 	return l.format("server:errors.request_too_large", nil)
 }
 
+// ServerErrorsRoleInvalid formats "server:errors.role.invalid". API error title for HTTP 422 when a change to a role (creating, changing, or deleting it) breaks a rule; the detail says which.
+//
+//	en: The role cannot be saved.
+func (l *Localizer) ServerErrorsRoleInvalid() string {
+	return l.format("server:errors.role.invalid", nil)
+}
+
+// ServerErrorsRoleInvalidDetail formats "server:errors.role.invalid_detail". API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, or missing_permission.
+//
+//	en: {reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} other {The change breaks a rule.}}
+func (l *Localizer) ServerErrorsRoleInvalidDetail(reason string) string {
+	return l.format("server:errors.role.invalid_detail", map[string]any{"reason": reason})
+}
+
 // ServerErrorsSelfRelationship formats "server:errors.self_relationship". Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account.
 //
 //	en: You cannot do this to your own account.

@@ -27,6 +27,8 @@ type fakeRoles struct {
 	// anyHolderManagesRoles grants manage_roles to every holder of a role, so that the rank
 	// check, not the permission, refuses a change.
 	anyHolderManagesRoles bool
+	// defErr is what CreateRole, UpdateRole, and DeleteRole fail with, or nil for success.
+	defErr error
 }
 
 var fakeRoleIDs = map[string]string{

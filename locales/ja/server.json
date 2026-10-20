@@ -643,6 +643,14 @@
     "defaultMessage": "リクエストが大きすぎます。",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
   },
+  "errors.role.invalid": {
+    "defaultMessage": "ロールを保存できません。",
+    "description": "API error title for HTTP 422 when a change to a role (creating, changing, or deleting it) breaks a rule; the detail says which."
+  },
+  "errors.role.invalid_detail": {
+    "defaultMessage": "{reason, select, key {キーは 1〜64 文字の英小文字・数字・アンダースコア・ハイフンにしてください。} key_taken {このキーのロールがすでにあります。} position {位置は 0〜999 にしてください。} permissions {同じ権限は 1 回だけ選んでください。} builtin {admin のロールは変えられず、組み込みのロールは削除できません。} held {先に、このロールを持つ全員から剥奪してください。} missing_permission {付けたり外したりできるのは、自分が持つ権限だけです。} other {変更が規則に反しています。}}",
+    "description": "API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, or missing_permission."
+  },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",
     "description": "Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account."

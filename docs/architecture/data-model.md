@@ -270,8 +270,9 @@ flowchart LR
 
 #### 権限
 
-固定の `role` enum ではなく、ロールと権限を分けます。組み込みロールは起動時に冪等に作ります（`roles (key)` の一意制約で重複しない）。
-`admin`（`position` 1000）はすべての権限、`moderator`（`position` 100）は `manage_reports`・`manage_accounts`・`view_audit` を持ちます。
+固定の `role` enum ではなく、ロールと権限を分けます。組み込みロールは冪等に作ります（`roles (key)` の一意制約で重複しない）。
+`admin`（`position` 1000）はすべての権限、`moderator`（`position` 100）は最初 `manage_reports`・`manage_accounts`・`view_audit` を持ちます。
+組み込みロールを作り直すときは、ない組み込みロールを足し、`admin` にすべての権限（新しい版で増えた権限を含む）を持たせ、`moderator` の権限と位置は管理者が変えたまま残します。
 権限は区分（[ADR-0058](../adr/0058-moderation-admin-separation.md)）を持ちます。モデレーションは `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`、
 サーバー管理は `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs` です。区分は列に持たず、`internal/domain/identity` の `Permission.Category` が返します
 （Web クライアントのナビゲーションの出し分けと `my admin role list` の表示が使う）。
@@ -289,6 +290,11 @@ flowchart LR
 - 利用者は自分のロールの最も高い `position` 以下のロールだけを付与・剥奪できます（FR-720）。CLI はどのロールも付与・剥奪できます。
 - `admin` は最後の 1 人から剥奪できません。1 つのロールの変更は、トランザクションの最初にそのロールの行を読んで（PostgreSQL では `FOR UPDATE`）1 つずつ進めます。
 - 権限は要求ごとに `user_roles` から読むので、変更は次の要求から効きます。モデレーター向けの通知の宛先も、通知を作るときの `user_roles` で決まります。
+- ロールの作成・変更・削除（FR-720）は `roles` と `role_permissions` を書き、同じトランザクションで監査ログ（`role_created`・`role_updated`・`role_deleted`）を書きます。
+  キーは 1〜64 文字の英小文字・数字・`_`・`-` で、変えられません。`admin` 以外のロールの `position` は 0〜999 で、`admin` がいつもいちばん上にあります。
+  `admin` は変えられず（すべての権限と `position` 1000。権限を取り戻す道のため）、`admin` と `moderator` は削除できません。`moderator` の権限と位置は変えられます。
+  持っている人がいるロールは削除できない（先に剥奪する）ので、`user_roles` が消えたロールを指すことはありません。消えたロールを指すのは剥奪済みの `user_role_grants` だけです。
+  利用者は自分のいちばん高いロール以下のロールだけを作り・変え・消せ（新しい位置も同じ）、自分のロールが持つ権限だけを付け外しできます。CLI は何でもできます。
 
 #### セッション・OAuth
 
@@ -559,6 +565,7 @@ flowchart LR
   | `rule_added`, `rule_revised`, `rule_moved` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_revisions.id`（移動は動かしたルールの版。動かしたルールの位置が変わらないときは最初に記録した版） |
   | `rule_retired` | `rule` | `instance_rules.id` | 最初のロケールのルールの文 | `instance_rule_retirements.rule_id` |
   | `role_granted`, `role_revoked` | `role` | `roles.id` | ロールのキーと利用者のハンドル（`moderator @alice`） | `user_role_grants.id`（剥奪の行もこの ID が PK） |
+  | `role_created`, `role_updated`, `role_deleted` | `role` | `roles.id` | ロールのキー | なし（元の記録を持たない操作） |
   | `appeal_upheld`, `appeal_overturned` | `appeal` | `moderation_appeals.id` | 申し立てたアカウントのハンドル | `moderation_appeal_decisions.appeal_id`（= `moderation_appeals.id`） |
   | `revealed_private_data` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | なし（元の記録を持たない操作） |
   | `two_factor_disabled` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | `totp_enrollment_revocations.enrollment_id` |
@@ -570,7 +577,7 @@ flowchart LR
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 一覧（`moderation.Service.GoneAuditTargets`）は、ページの行の対象が今もあるかを、対象の種類ごとに 1 回の問い合わせでまとめて確かめます。
-  アカウントは `account` の公開 API（`account.Service.ExistingIDs`）に、通報・異議申し立て・登録の拒否は `moderation` 自身の `reports`・`moderation_appeals`・`signup_blocks` に問い合わせ、ほかの種類の対象（ドメイン・利用者・ロール・設定・ルール）は消えないので問い合わせません。
+  アカウントは `account` の公開 API（`account.Service.ExistingIDs`）に、通報・異議申し立て・登録の拒否は `moderation` 自身の `reports`・`moderation_appeals`・`signup_blocks` に問い合わせ、ほかの種類の対象のうち、ドメイン・利用者・設定・ルールは消えず、ロール・カスタム絵文字・webhook は削除されても今は問い合わせません。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。
 - 更新・削除の API と CLI はありません。保持期間（ADR-0038、既定 730 日）を過ぎた行だけを消去ジョブが消します。
 

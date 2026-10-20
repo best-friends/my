@@ -4,6 +4,7 @@ package postgres
 
 import (
 	"context"
+	"slices"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
 	appidentity "github.com/best-friends/my/internal/app/identity"
@@ -98,4 +99,68 @@ func (r *IdentityRepository) InsertRoleRevocation(ctx context.Context, tx uow.Tx
 func (r *IdentityRepository) ListRoleHolderIDs(ctx context.Context, roleID string) ([]string, error) {
 	ids, err := r.db.reader().ListRoleHolderIDs(ctx, roleID)
 	return ids, wrap(err, "list role holders")
+}
+
+// Creating, changing, and deleting roles (FR-720).
+
+// RolePermissions implements identity.RoleRepository.
+func (r *IdentityRepository) RolePermissions(ctx context.Context, tx uow.Tx, roleID string) ([]identity.Permission, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListRolePermissions(ctx, roleID)
+	if err != nil {
+		return nil, wrap(err, "list role permissions")
+	}
+	out := []identity.Permission{}
+	for _, p := range identity.AllPermissions() {
+		if slices.Contains(rows, string(p)) {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
+// SetRolePermissions implements identity.RoleRepository.
+func (r *IdentityRepository) SetRolePermissions(ctx context.Context, tx uow.Tx, roleID string, perms []identity.Permission) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	if err := q.DeleteRolePermissions(ctx, roleID); err != nil {
+		return wrap(err, "delete role permissions")
+	}
+	for _, p := range perms {
+		err := q.InsertRolePermissionIfAbsent(ctx, postgresgen.InsertRolePermissionIfAbsentParams{RoleID: roleID, Permission: string(p)})
+		if err != nil {
+			return wrap(err, "insert role permission")
+		}
+	}
+	return nil
+}
+
+// UpdateRolePosition implements identity.RoleRepository.
+func (r *IdentityRepository) UpdateRolePosition(ctx context.Context, tx uow.Tx, roleID string, position int) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	pos, err := toInt32(position, "role position")
+	if err != nil {
+		return err
+	}
+	return wrap(q.UpdateRolePosition(ctx, postgresgen.UpdateRolePositionParams{ID: roleID, Position: pos}), "update role position")
+}
+
+// DeleteRole implements identity.RoleRepository.
+func (r *IdentityRepository) DeleteRole(ctx context.Context, tx uow.Tx, roleID string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	if err := q.DeleteRolePermissions(ctx, roleID); err != nil {
+		return wrap(err, "delete role permissions")
+	}
+	return wrap(q.DeleteRole(ctx, roleID), "delete role")
 }

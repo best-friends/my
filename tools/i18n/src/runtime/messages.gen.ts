@@ -3788,6 +3788,10 @@ export interface MessageArgs {
   "server:errors.report.not_resolved": {};
   /** The request is too large. */
   "server:errors.request_too_large": {};
+  /** The role cannot be saved. */
+  "server:errors.role.invalid": {};
+  /** {reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} other {The change breaks a rule.}} */
+  "server:errors.role.invalid_detail": { reason: "builtin" | "held" | "key" | "key_taken" | "missing_permission" | "permissions" | "position" | (string & {}) };
   /** You cannot do this to your own account. */
   "server:errors.self_relationship": {};
   /** The service is temporarily unavailable. Please try again later. */

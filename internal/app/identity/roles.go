@@ -36,6 +36,15 @@ type RoleRepository interface {
 	InsertRoleRevocation(ctx context.Context, tx uow.Tx, r identity.RoleRevocation) error
 	// ListRoleHolderIDs returns the users who hold the role now, by ID.
 	ListRoleHolderIDs(ctx context.Context, roleID string) ([]string, error)
+	// RolePermissions returns inside tx the permissions of the role, in the order of
+	// identity.AllPermissions.
+	RolePermissions(ctx context.Context, tx uow.Tx, roleID string) ([]identity.Permission, error)
+	// SetRolePermissions makes perms the permissions of the role.
+	SetRolePermissions(ctx context.Context, tx uow.Tx, roleID string, perms []identity.Permission) error
+	// UpdateRolePosition changes the position of the role.
+	UpdateRolePosition(ctx context.Context, tx uow.Tx, roleID string, position int) error
+	// DeleteRole deletes the role and its permissions; nobody may hold it.
+	DeleteRole(ctx context.Context, tx uow.Tx, roleID string) error
 }
 
 // RoleWithPermissions is a role with the permissions it grants, in the order of
